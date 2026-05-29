@@ -1,0 +1,396 @@
+{
+  "module": "0",
+  "document": "scoring_and_routing_logic",
+  "version": "1.1",
+  "last_updated": "2026-05-28",
+  "evaluation_order": [
+    "1. Hard stops \u2014 any single hard stop = DO_NOT_PROCEED immediately",
+    "2. Attorney-recommended flags \u2014 accumulate",
+    "3. Risk flags \u2014 accumulate",
+    "4. Final outcome from accumulated flags"
+  ],
+  "outcomes": {
+    "DO_NOT_PROCEED": "Hard stop triggered. No payment shown. Attorney referral shown.",
+    "ATTORNEY_RECOMMENDED": "Attorney flags present. Show acknowledgment gate. If acknowledged, treat as PROCEED_RISK.",
+    "PROCEED_RISK": "Risk flags only. Payment unlocked. Persistent risk banner shown throughout.",
+    "PROCEED": "No flags. Payment unlocked. Clean eligibility confirmation shown."
+  },
+  "hard_stops": [
+    {
+      "code": "PR-01",
+      "question": "Q0-01",
+      "trigger": [
+        "I am a permanent resident of Canada, but not a Canadian citizen",
+        "I am not a Canadian citizen"
+      ]
+    },
+    {
+      "code": "PR-02",
+      "question": "Q0-03",
+      "trigger": [
+        "I am currently in the United States without valid status"
+      ]
+    },
+    {
+      "code": "PR-03",
+      "question": "Q0-04",
+      "trigger": [
+        "No \u2014 I do not currently have funds available for the investment"
+      ]
+    },
+    {
+      "code": "PR-04",
+      "question": "Q0-07",
+      "trigger": [
+        "Yes \u2014 a loan secured by the assets of the business I am investing in"
+      ]
+    },
+    {
+      "code": "PR-05",
+      "question": "Q0-08",
+      "trigger": [
+        "I will mainly be a passive investor"
+      ]
+    },
+    {
+      "code": "PR-06",
+      "question": "Q0-09",
+      "trigger": [
+        "More than two equal owners"
+      ]
+    },
+    {
+      "code": "PR-07",
+      "question": "Q0-10",
+      "trigger": [
+        "Passive real estate holding or rental-only investment"
+      ]
+    },
+    {
+      "code": "PR-08",
+      "question": "Q0-10",
+      "trigger": [
+        "Cannabis or marijuana-related activity"
+      ]
+    },
+    {
+      "code": "PR-09",
+      "question": "Q0-10",
+      "trigger": [
+        "A business where I would not be actively involved in management"
+      ]
+    }
+  ],
+  "attorney_flags": [
+    {
+      "code": "W-02",
+      "question": "Q0-03",
+      "trigger": [
+        "I am currently in the United States and I am not sure whether my status is valid"
+      ]
+    },
+    {
+      "code": "W-03",
+      "question": "Q0-03",
+      "trigger": [
+        "I am in another country"
+      ]
+    },
+    {
+      "code": "W-07",
+      "question": "Q0-06",
+      "trigger": [
+        "No \u2014 I cannot clearly document the source or movement of funds",
+        "I am not sure"
+      ]
+    },
+    {
+      "code": "W-08",
+      "question": "Q0-07",
+      "trigger": [
+        "Yes \u2014 but I am not sure how the loan is secured"
+      ]
+    },
+    {
+      "code": "W-09",
+      "question": "Q0-08",
+      "trigger": [
+        "I am not sure yet"
+      ]
+    },
+    {
+      "code": "W-10",
+      "question": "Q0-09",
+      "trigger": [
+        "Two owners but not 50/50",
+        "I am not sure yet"
+      ]
+    },
+    {
+      "code": "W-12",
+      "question": "Q0-12",
+      "trigger": [
+        "Yes",
+        "I am not sure"
+      ]
+    },
+    {
+      "code": "W-14",
+      "question": "Q0-14",
+      "trigger": [
+        "No",
+        "I am not sure"
+      ],
+      "condition": "Q0-09 = Two equal 50/50 owners"
+    },
+    {
+      "code": "W-15",
+      "question": "Q0-15",
+      "trigger": [
+        "No",
+        "I am not sure"
+      ],
+      "condition": "Q0-09 = Two equal 50/50 owners"
+    },
+    {
+      "code": "W-16",
+      "question": "Q0-17",
+      "trigger": [
+        "No"
+      ],
+      "condition": "Q0-16 includes spouse"
+    },
+    {
+      "code": "W-18",
+      "question": "Q0-19",
+      "trigger": [
+        "Yes",
+        "I am not sure"
+      ],
+      "condition": "Q0-16 includes children"
+    },
+    {
+      "code": "W-19",
+      "question": "Q0-20",
+      "trigger": [
+        "Yes",
+        "I am not sure"
+      ],
+      "condition": "Q0-16 includes any dependent"
+    },
+    {
+      "code": "W-11-RECENT",
+      "question": "Q0-11",
+      "trigger": [
+        "Yes \u2014 one refusal, within the last 5 years"
+      ],
+      "level": "attorney_recommended"
+    },
+    {
+      "code": "W-11-MULTIPLE",
+      "question": "Q0-11",
+      "trigger": [
+        "Yes \u2014 more than one refusal"
+      ],
+      "level": "attorney_recommended"
+    },
+    {
+      "code": "W-13-RECENT",
+      "question": "Q0-13",
+      "trigger": [
+        "Yes \u2014 a minor conviction within the last 10 years"
+      ],
+      "level": "attorney_recommended"
+    },
+    {
+      "code": "W-13-SERIOUS",
+      "question": "Q0-13",
+      "trigger": [
+        "Yes \u2014 a serious conviction (any time)"
+      ],
+      "level": "attorney_recommended"
+    },
+    {
+      "code": "W-13-UNSURE",
+      "question": "Q0-13",
+      "trigger": [
+        "I am not sure"
+      ],
+      "level": "attorney_recommended"
+    },
+    {
+      "code": "W-NI-NONE",
+      "question": "Q0-NI-composite",
+      "trigger": "confirmed_ties == 0",
+      "level": "attorney_recommended",
+      "note": "Composite: calculated after Q0-NI-01, Q0-NI-02, Q0-NI-03"
+    }
+  ],
+  "risk_flags": [
+    {
+      "code": "W-01",
+      "question": "Q0-02",
+      "trigger": [
+        "No",
+        "I am not sure"
+      ]
+    },
+    {
+      "code": "W-04",
+      "question": "Q0-04",
+      "trigger": [
+        "No \u2014 funds are available, but nothing has been committed yet"
+      ]
+    },
+    {
+      "code": "W-06",
+      "question": "Q0-06",
+      "trigger": [
+        "Mostly \u2014 I have most of the documentation, but there may be gaps"
+      ]
+    },
+    {
+      "code": "W-17",
+      "question": "Q0-18",
+      "trigger": [
+        "No",
+        "I am not sure"
+      ],
+      "condition": "Q0-16 includes dependents"
+    },
+    {
+      "code": "W-11-OLD",
+      "question": "Q0-11",
+      "trigger": [
+        "Yes \u2014 one refusal, more than 5 years ago"
+      ],
+      "level": "risk_flag"
+    },
+    {
+      "code": "W-13-OLD",
+      "question": "Q0-13",
+      "trigger": [
+        "Yes \u2014 a minor conviction, more than 10 years ago"
+      ],
+      "level": "risk_flag"
+    },
+    {
+      "code": "W-NI-01",
+      "question": "Q0-NI-01",
+      "trigger": [
+        "Yes \u2014 I own Canadian property but may sell it before moving",
+        "No \u2014 I do not own Canadian real estate",
+        "Not applicable"
+      ],
+      "level": "risk_flag"
+    },
+    {
+      "code": "W-NI-02",
+      "question": "Q0-NI-02",
+      "trigger": [
+        "No \u2014 my immediate family will come with me",
+        "I do not have immediate family"
+      ],
+      "level": "risk_flag"
+    },
+    {
+      "code": "W-NI-03",
+      "question": "Q0-NI-03",
+      "trigger": [
+        "No \u2014 I plan to close or transfer all accounts",
+        "I am not sure yet"
+      ],
+      "level": "risk_flag"
+    },
+    {
+      "code": "W-NI-WEAK",
+      "question": "Q0-NI-composite",
+      "trigger": "confirmed_ties == 1",
+      "level": "risk_flag",
+      "note": "Composite: calculated after Q0-NI-01, Q0-NI-02, Q0-NI-03"
+    },
+    {
+      "code": "W-PROP-SOFT",
+      "question": "Q0-05",
+      "trigger": "75000 <= amount_usd <= 149999",
+      "level": "risk_flag",
+      "denial_risk": "D-01"
+    },
+    {
+      "code": "W-PROP-STRONG",
+      "question": "Q0-05",
+      "trigger": "amount_usd < 75000",
+      "level": "risk_flag",
+      "denial_risk": "D-01"
+    }
+  ],
+  "investment_thresholds_usd": {
+    "clean": {
+      "min_usd": 150000,
+      "flag": null
+    },
+    "soft_advisory": {
+      "min_usd": 75000,
+      "max_usd": 149999,
+      "flag": "W-PROP-SOFT"
+    },
+    "strong_warning": {
+      "max_usd": 74999,
+      "flag": "W-PROP-STRONG"
+    },
+    "currency_conversion": "Convert CAD to USD using daily cached rate before applying thresholds. Display rate used to user.",
+    "note": "No statutory minimum. Thresholds are advisory only based on observed practice."
+  },
+  "session_record_fields": [
+    "id",
+    "session_token",
+    "email",
+    "casl_consent",
+    "outcome",
+    "hard_stop_codes",
+    "attorney_flag_codes",
+    "risk_flag_codes",
+    "application_type",
+    "family_type",
+    "investment_amount",
+    "investment_currency",
+    "acknowledged_risk",
+    "completed_at"
+  ],
+  "post_payment_routing": {
+    "solo": "Load solo onboarding flow in Module 1",
+    "partnership": "Load partnership onboarding flow in Module 1",
+    "individual": "Skip dependent tabs in Module 3",
+    "couple": "Load spouse tab in Module 3",
+    "family": "Load spouse + children tabs in Module 3",
+    "attorney_flags_present": "Show persistent advisory banner throughout",
+    "risk_flags_present": "Show persistent risk notes at relevant tabs"
+  },
+  "non_immigrant_intent_composite": {
+    "description": "After Q0-NI-01, Q0-NI-02, Q0-NI-03 \u2014 count confirmed ties",
+    "tie_confirmed_answers": {
+      "Q0-NI-01": [
+        "Yes \u2014 I own Canadian property and will keep it"
+      ],
+      "Q0-NI-02": [
+        "Yes \u2014 close family will remain in Canada",
+        "Mixed \u2014 some family in Canada, some coming with me"
+      ],
+      "Q0-NI-03": [
+        "Yes \u2014 I will keep active Canadian financial accounts",
+        "Partially \u2014 I will keep some accounts active"
+      ]
+    },
+    "scoring": {
+      "2_or_3_ties": "proceed_cleanly",
+      "1_tie": "risk_flag:W-NI-WEAK",
+      "0_ties": "attorney_recommended:W-NI-NONE"
+    }
+  },
+  "version_notes": [
+    "Q0-11: W-11 split \u2192 W-11-OLD (risk flag), W-11-RECENT (attorney), W-11-MULTIPLE (attorney). Trigger strings match questions JSON v2.1 exactly.",
+    "Q0-13: W-13 split \u2192 W-13-OLD (risk flag), W-13-RECENT (attorney), W-13-SERIOUS (attorney), W-13-UNSURE (attorney). Trigger strings match questions JSON v2.1 exactly.",
+    "Non-immigrant intent composite added: Q0-NI-01/02/03 individual flags + tie-count composite \u2192 W-NI-WEAK (risk) / W-NI-NONE (attorney).",
+    "Investment threshold floor corrected: $75K (not $100K/$50K). W-05 removed. W-PROP-SOFT ($75K\u2013$149,999) and W-PROP-STRONG (<$75K) now in risk_flags and investment_thresholds_usd."
+  ]
+}

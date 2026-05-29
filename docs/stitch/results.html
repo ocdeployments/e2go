@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>e2go.app - Investment Proof Interview</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary-container": "#2563eb",
+                        "tertiary-fixed-dim": "#ffb596",
+                        "on-surface": "#0b1c30",
+                        "inverse-surface": "#213145",
+                        "on-primary-fixed": "#00174b",
+                        "inverse-on-surface": "#eaf1ff",
+                        "on-surface-variant": "#434655",
+                        "on-secondary-container": "#5c647a",
+                        "surface-container-lowest": "#ffffff",
+                        "on-tertiary-fixed-variant": "#7d2d00",
+                        "on-primary-container": "#eeefff",
+                        "on-secondary-fixed-variant": "#3f465c",
+                        "on-background": "#0b1c30",
+                        "secondary-container": "#dae2fd",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "surface-container-highest": "#d3e4fe",
+                        "secondary-fixed-dim": "#bec6e0",
+                        "on-secondary-fixed": "#131b2e",
+                        "tertiary-container": "#bc4800",
+                        "surface-container-high": "#dce9ff",
+                        "on-tertiary-fixed": "#360f00",
+                        "on-tertiary": "#ffffff",
+                        "surface-tint": "#0053db",
+                        "inverse-primary": "#b4c5ff",
+                        "error-container": "#ffdad6",
+                        "surface-bright": "#f8f9ff",
+                        "primary-fixed": "#dbe1ff",
+                        "secondary-fixed": "#dae2fd",
+                        "primary": "#004ac6",
+                        "surface-variant": "#d3e4fe",
+                        "on-error": "#ffffff",
+                        "surface": "#f8f9ff",
+                        "on-secondary": "#ffffff",
+                        "on-primary": "#ffffff",
+                        "surface-container-low": "#eff4ff",
+                        "tertiary-fixed": "#ffdbcd",
+                        "secondary": "#565e74",
+                        "error": "#ba1a1a",
+                        "surface-container": "#e5eeff",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "outline-variant": "#c3c6d7",
+                        "background": "#f8f9ff",
+                        "tertiary": "#943700",
+                        "on-error-container": "#93000a",
+                        "on-tertiary-container": "#ffede6",
+                        "surface-dim": "#cbdbf5",
+                        "outline": "#737686"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "base": "8px",
+                        "margin-mobile": "16px",
+                        "2xl": "48px",
+                        "xl": "32px",
+                        "container-max": "1280px",
+                        "lg": "24px",
+                        "margin-desktop": "32px",
+                        "gutter": "24px",
+                        "sm": "8px",
+                        "xs": "4px",
+                        "3xl": "64px",
+                        "md": "16px"
+                    },
+                    "fontFamily": {
+                        "label-md": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "body-md": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "display-lg-mobile": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "headline-lg-mobile": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "body-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "label-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "500" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "display-lg-mobile": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-sm": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .active-radio {
+            border-color: #2563eb !important;
+            background-color: #eff4ff !important;
+            box-shadow: 0 0 0 1px #2563eb;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-md min-h-screen flex flex-col items-center">
+<!-- TopAppBar -->
+<header class="w-full top-0 sticky bg-surface border-b border-outline-variant z-50">
+<div class="flex justify-between items-center px-margin-mobile md:px-margin-desktop h-16 w-full max-w-container-max mx-auto">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary" data-icon="account_balance">account_balance</span>
+<h1 class="text-headline-md font-headline-md font-bold text-primary">e2go.app</h1>
+</div>
+<button class="flex items-center justify-center w-10 h-10 rounded-full hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="account_circle">account_circle</span>
+</button>
+</div>
+</header>
+<main class="w-full max-w-[600px] flex-grow flex flex-col px-margin-mobile py-lg relative">
+<!-- Header Background Element (Subtle Brand Continuity) -->
+<div class="absolute top-0 left-0 w-full h-32 opacity-10 pointer-events-none -z-10 bg-no-repeat bg-cover bg-center" style="background-image: url('https://lh3.googleusercontent.com/aida/ADBb0ug1DL7odC1hoCJOICyi01_cRHKTU8rg9z63_CNlhCw6k62SkLvnkSD1ETFr49rhNhqZkzGkeZtx2Kwz4taPyqPIedHc3B-70yNUIiEsyspCcJXAglcPAwJEuCEVADwqyNY9-1u_Z-l4ka9UXpUeVA-U-XcOgJgqK7Z0MH9xFRzPkGXX04QaK--Xft9jOHO0vUIls9I6ZZ2oRlO6LiX8NVYK067UtFXwn7n9FoQw5XL-ZY4aQiY59wIg3A')"></div>
+<!-- Section Progress -->
+<section class="mb-xl">
+<div class="flex justify-between items-end mb-xs">
+<div>
+<p class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Tab F — Investment Proof</p>
+<p class="font-label-md text-label-md text-primary font-bold">Question 3 of 12</p>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">25% Complete</span>
+</div>
+<!-- Progress Bar -->
+<div class="h-2 w-full bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-primary-container w-1/4 transition-all duration-500"></div>
+</div>
+</section>
+<!-- Question Area -->
+<section class="mb-xl">
+<div class="flex items-start gap-sm mb-lg">
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface leading-tight">
+                    What is the primary source of the capital used for your initial $50,000 investment deposit?
+                </h2>
+<button class="mt-1 text-primary hover:bg-surface-container rounded-full p-1 transition-colors flex items-center justify-center" title="Help &amp; Guidance">
+<span class="material-symbols-outlined" data-icon="info" style="font-size: 20px;">info</span>
+</button>
+</div>
+<!-- Options List -->
+<div class="space-y-md" id="radio-group">
+<label class="block cursor-pointer">
+<input class="hidden peer" name="source" type="radio" value="savings"/>
+<div class="flex items-center gap-md p-lg bg-surface-container-lowest border border-outline-variant rounded-xl hover:border-outline transition-all active:scale-[0.98] peer-checked:border-primary-container peer-checked:bg-surface-container-low">
+<div class="w-6 h-6 rounded-full border-2 border-outline-variant flex items-center justify-center peer-checked:border-primary-container">
+<div class="w-3 h-3 rounded-full bg-primary-container scale-0 peer-checked:scale-100 transition-transform"></div>
+</div>
+<span class="font-body-lg text-body-lg">Personal Savings</span>
+</div>
+</label>
+<label class="block cursor-pointer">
+<input class="hidden peer" name="source" type="radio" value="gift"/>
+<div class="flex items-center gap-md p-lg bg-surface-container-lowest border border-outline-variant rounded-xl hover:border-outline transition-all active:scale-[0.98] peer-checked:border-primary-container peer-checked:bg-surface-container-low">
+<div class="w-6 h-6 rounded-full border-2 border-outline-variant flex items-center justify-center peer-checked:border-primary-container">
+<div class="w-3 h-3 rounded-full bg-primary-container scale-0 peer-checked:scale-100 transition-transform"></div>
+</div>
+<span class="font-body-lg text-body-lg">Gift from Family</span>
+</div>
+</label>
+<label class="block cursor-pointer">
+<input class="hidden peer" name="source" type="radio" value="revenue"/>
+<div class="flex items-center gap-md p-lg bg-surface-container-lowest border border-outline-variant rounded-xl hover:border-outline transition-all active:scale-[0.98] peer-checked:border-primary-container peer-checked:bg-surface-container-low">
+<div class="w-6 h-6 rounded-full border-2 border-outline-variant flex items-center justify-center peer-checked:border-primary-container">
+<div class="w-3 h-3 rounded-full bg-primary-container scale-0 peer-checked:scale-100 transition-transform"></div>
+</div>
+<span class="font-body-lg text-body-lg">Business Revenue</span>
+</div>
+</label>
+<label class="block cursor-pointer">
+<input class="hidden peer" name="source" type="radio" value="loan"/>
+<div class="flex items-center gap-md p-lg bg-surface-container-lowest border border-outline-variant rounded-xl hover:border-outline transition-all active:scale-[0.98] peer-checked:border-primary-container peer-checked:bg-surface-container-low">
+<div class="w-6 h-6 rounded-full border-2 border-outline-variant flex items-center justify-center peer-checked:border-primary-container">
+<div class="w-3 h-3 rounded-full bg-primary-container scale-0 peer-checked:scale-100 transition-transform"></div>
+</div>
+<span class="font-body-lg text-body-lg">Loan / Credit Line</span>
+</div>
+</label>
+</div>
+</section>
+<!-- Navigation Buttons -->
+<footer class="mt-auto pt-xl pb-lg flex flex-col gap-md">
+<button class="w-full h-11 bg-primary-container text-on-primary-container font-label-md text-label-md rounded-lg shadow-sm hover:brightness-110 active:scale-[0.99] transition-all flex items-center justify-center gap-xs" id="btn-continue">
+                Continue
+                <span class="material-symbols-outlined" data-icon="arrow_forward">arrow_forward</span>
+</button>
+<button class="w-full h-11 bg-transparent text-on-surface font-label-md text-label-md rounded-lg border border-on-surface hover:bg-surface-container transition-all flex items-center justify-center gap-xs">
+<span class="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
+                Back
+            </button>
+</footer>
+</main>
+<!-- Footer -->
+<footer class="w-full mt-auto border-t border-outline-variant bg-surface-container-lowest">
+<div class="flex flex-col md:flex-row justify-between items-center py-lg px-margin-mobile md:px-margin-desktop w-full max-w-container-max mx-auto gap-md">
+<div class="flex flex-col items-center md:items-start">
+<p class="font-label-md text-label-md font-bold text-on-surface mb-xs">e2go.app</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">© 2024 e2go.app - The American Dream Edition</p>
+</div>
+<div class="flex gap-lg">
+<a class="font-body-sm text-body-sm text-on-surface-variant hover:text-primary transition-colors" href="#">Privacy Policy</a>
+<a class="font-body-sm text-body-sm text-on-surface-variant hover:text-primary transition-colors" href="#">Terms of Service</a>
+<a class="font-body-sm text-body-sm text-on-surface-variant hover:text-primary transition-colors" href="#">Contact Support</a>
+</div>
+</div>
+</footer>
+<script>
+        // Simple micro-interaction for option selection
+        const radioGroup = document.getElementById('radio-group');
+        const radios = radioGroup.querySelectorAll('input[type="radio"]');
+        const containerDivs = radioGroup.querySelectorAll('div.flex');
+        const dotDivs = radioGroup.querySelectorAll('.w-3.h-3');
+
+        radios.forEach((radio, index) => {
+            radio.addEventListener('change', () => {
+                // Reset all
+                containerDivs.forEach(div => {
+                    div.classList.remove('border-primary-container', 'bg-surface-container-low');
+                    div.classList.add('border-outline-variant', 'bg-surface-container-lowest');
+                });
+                dotDivs.forEach(dot => dot.classList.add('scale-0'));
+
+                // Set active
+                if (radio.checked) {
+                    containerDivs[index].classList.remove('border-outline-variant', 'bg-surface-container-lowest');
+                    containerDivs[index].classList.add('border-primary-container', 'bg-surface-container-low');
+                    dotDivs[index].classList.remove('scale-0');
+                    dotDivs[index].classList.add('scale-100');
+                }
+            });
+        });
+
+        // Continue button logic simulation
+        document.getElementById('btn-continue').addEventListener('click', function() {
+            const selected = Array.from(radios).find(r => r.checked);
+            if (!selected) {
+                alert('Please select an option to continue.');
+                return;
+            }
+            this.innerHTML = '<span class="material-symbols-outlined animate-spin" data-icon="progress_activity">progress_activity</span> Saving...';
+            setTimeout(() => {
+                alert('Response saved. Proceeding to Question 4.');
+                window.location.reload();
+            }, 1000);
+        });
+    </script>
+</body></html>

@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>e2go.app - Built from Official Sources</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-variant": "#d3e4fe",
+                        "surface-container-low": "#eff4ff",
+                        "secondary-fixed-dim": "#bec6e0",
+                        "surface-dim": "#cbdbf5",
+                        "on-tertiary-fixed-variant": "#7d2d00",
+                        "on-error-container": "#93000a",
+                        "primary-container": "#2563eb",
+                        "on-secondary-container": "#5c647a",
+                        "on-secondary-fixed-variant": "#3f465c",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "inverse-primary": "#b4c5ff",
+                        "tertiary-container": "#bc4800",
+                        "surface-container-highest": "#d3e4fe",
+                        "outline-variant": "#c3c6d7",
+                        "on-tertiary-container": "#ffede6",
+                        "on-secondary-fixed": "#131b2e",
+                        "tertiary": "#943700",
+                        "inverse-surface": "#213145",
+                        "on-tertiary": "#ffffff",
+                        "background": "#f8f9ff",
+                        "secondary-fixed": "#dae2fd",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "surface-container": "#e5eeff",
+                        "outline": "#737686",
+                        "error": "#ba1a1a",
+                        "on-error": "#ffffff",
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary-fixed-dim": "#ffb596",
+                        "surface-bright": "#f8f9ff",
+                        "inverse-on-surface": "#eaf1ff",
+                        "surface-container-high": "#dce9ff",
+                        "secondary-container": "#dae2fd",
+                        "on-surface": "#0b1c30",
+                        "on-secondary": "#ffffff",
+                        "primary-fixed": "#dbe1ff",
+                        "on-surface-variant": "#434655",
+                        "surface": "#f8f9ff",
+                        "primary": "#004ac6",
+                        "tertiary-fixed": "#ffdbcd",
+                        "secondary": "#565e74",
+                        "on-primary-fixed": "#00174b",
+                        "on-primary-container": "#eeefff",
+                        "on-background": "#0b1c30",
+                        "error-container": "#ffdad6",
+                        "on-tertiary-fixed": "#360f00",
+                        "on-primary": "#ffffff",
+                        "surface-tint": "#0053db"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "gutter": "24px",
+                        "container-max": "1280px",
+                        "2xl": "48px",
+                        "xs": "4px",
+                        "md": "16px",
+                        "sm": "8px",
+                        "margin-mobile": "16px",
+                        "margin-desktop": "32px",
+                        "lg": "24px",
+                        "base": "8px",
+                        "3xl": "64px",
+                        "xl": "32px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "label-md": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "display-lg-mobile": ["Inter"],
+                        "headline-lg-mobile": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                        "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "500"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "display-lg-mobile": ["36px", {"lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "headline-lg-mobile": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen flex flex-col">
+<!-- TopAppBar -->
+<header class="w-full sticky top-0 z-50 bg-surface dark:bg-on-background border-b border-outline-variant dark:border-outline">
+<div class="flex justify-between items-center h-[64px] px-margin-mobile md:px-margin-desktop max-w-container-max mx-auto">
+<div class="flex items-center gap-sm cursor-pointer active:opacity-80">
+<span class="material-symbols-outlined text-primary dark:text-primary-fixed-dim" data-icon="bolt">bolt</span>
+<span class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed-dim">e2go.app</span>
+</div>
+<button class="font-label-md text-label-md text-primary dark:text-primary-fixed-dim border border-primary dark:border-primary-fixed-dim px-lg py-sm rounded-lg hover:bg-surface-container-low dark:hover:bg-on-secondary-fixed-variant transition-colors cursor-pointer active:opacity-80">
+                Sign In
+            </button>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-grow">
+<!-- Hero Section for context -->
+<section class="py-2xl px-margin-mobile md:px-margin-desktop max-w-container-max mx-auto text-center">
+<div class="mb-xl inline-flex items-center gap-xs px-md py-xs bg-surface-container-high rounded-full text-primary">
+<span class="material-symbols-outlined text-[18px]" data-icon="verified_user">verified_user</span>
+<span class="font-label-sm text-label-sm">VERIFIED LEGAL FRAMEWORK</span>
+</div>
+<h1 class="font-display-lg-mobile md:font-display-lg text-display-lg-mobile md:text-display-lg text-on-surface mb-md">
+                Built from Official Sources
+            </h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl mx-auto mb-3xl">
+                Our platform is engineered to align perfectly with the regulatory standards of the United States visa adjudication process.
+            </p>
+<!-- 2x2 Grid Section -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-md md:gap-lg">
+<!-- Card 1 -->
+<div class="bg-surface-container-lowest border border-outline-variant p-md md:p-lg flex flex-col items-start text-left transition-all hover:border-outline hover:shadow-lg active:scale-[0.98]">
+<div class="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center rounded-lg bg-surface-container mb-md">
+<span class="material-symbols-outlined text-primary text-[28px]" data-icon="account_balance">account_balance</span>
+</div>
+<span class="font-label-sm text-label-sm text-primary mb-xs">9 FAM 402.9</span>
+<h3 class="font-label-md text-label-md font-bold text-on-surface mb-xs uppercase">U.S. Department of State</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-2">Foreign Affairs Manual — E Visa Guidance</p>
+</div>
+<!-- Card 2 -->
+<div class="bg-surface-container-lowest border border-outline-variant p-md md:p-lg flex flex-col items-start text-left transition-all hover:border-outline hover:shadow-lg active:scale-[0.98]">
+<div class="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center rounded-lg bg-surface-container mb-md">
+<span class="material-symbols-outlined text-primary text-[28px]" data-icon="gavel">gavel</span>
+</div>
+<span class="font-label-sm text-label-sm text-primary mb-xs">INA § 101(a)(15)(E)</span>
+<h3 class="font-label-md text-label-md font-bold text-on-surface mb-xs uppercase">U.S. Congress</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-2">Immigration and Nationality Act</p>
+</div>
+<!-- Card 3 -->
+<div class="bg-surface-container-lowest border border-outline-variant p-md md:p-lg flex flex-col items-start text-left transition-all hover:border-outline hover:shadow-lg active:scale-[0.98]">
+<div class="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center rounded-lg bg-surface-container mb-md">
+<span class="material-symbols-outlined text-primary text-[28px]" data-icon="verified">verified</span>
+</div>
+<span class="font-label-sm text-label-sm text-primary mb-xs">E-2 Policy Manual</span>
+<h3 class="font-label-md text-label-md font-bold text-on-surface mb-xs uppercase">USCIS</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-2">Adjudication Standards &amp; Requirements</p>
+</div>
+<!-- Card 4 -->
+<div class="bg-surface-container-lowest border border-outline-variant p-md md:p-lg flex flex-col items-start text-left transition-all hover:border-outline hover:shadow-lg active:scale-[0.98]">
+<div class="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center rounded-lg bg-surface-container mb-md">
+<span class="material-symbols-outlined text-primary text-[28px]" data-icon="language">language</span>
+</div>
+<span class="font-label-sm text-label-sm text-primary mb-xs">DOS Treaty Table</span>
+<h3 class="font-label-md text-label-md font-bold text-on-surface mb-xs uppercase">U.S. Department of State</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-2">E Visa Treaty Country Listing</p>
+</div>
+</div>
+<!-- Disclaimer -->
+<div class="mt-3xl py-md border-t border-outline-variant">
+<p class="font-label-sm text-label-sm text-outline italic">
+                    e2go.app is not affiliated with USCIS, the U.S. Department of State, or any government agency.
+                </p>
+</div>
+</section>
+<!-- Decorative Section to showcase style -->
+<section class="mt-3xl bg-surface-container-low py-3xl px-margin-mobile">
+<div class="max-w-container-max mx-auto overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest relative">
+<img alt="Minimalist Architecture" class="w-full h-[400px] object-cover opacity-90 grayscale hover:grayscale-0 transition-all duration-700" data-alt="A clean, minimalist high-end office lobby with vast floor-to-ceiling windows showing a bright city skyline. The interior features white marble floors, sharp black furniture accents, and a sense of absolute precision and silence. Soft, even lighting fills the space, emphasizing a corporate, professional, and trustworthy atmosphere with high-contrast utility." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCMvOUBtSr6CSZBboyupjtdTC4e32yJ45qtlhK7Bu2J1-NJGCU2ddR8w07G15iLMK6wQ926jISJc-QQgqHhEx6NFYBoDdqT78_WBMtw1mgYmgBKZbkvGZAdw56U2A-XOpJAtTTlGmcM7pE4nG6Gv1lXiH5JfcSKelzsCbAA46pFT-X_kekBMRg7Pz2lMoF7_QSgB7k_41zaQrwYVExtT96ZaRza_WM3G32MCILlp1q7oSixE5WQEv8mPQkaA-X1bDgrDi984zVw_w"/>
+<div class="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent flex flex-col justify-end p-xl">
+<h2 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface mb-sm">Professional Integrity</h2>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-xl">Every data point and document generated through e2go.app undergoes strict verification against the primary sources listed above.</p>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="w-full py-xl bg-surface-container-lowest dark:bg-on-background border-t border-outline-variant dark:border-outline">
+<div class="flex flex-col md:flex-row justify-between items-center gap-md px-margin-mobile md:px-margin-desktop max-w-container-max mx-auto">
+<div class="flex flex-col items-center md:items-start gap-xs">
+<span class="font-label-md text-label-md font-bold text-on-surface dark:text-surface">e2go.app</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant dark:text-outline-variant text-center md:text-left">
+                    © 2024 e2go.app. All rights reserved.
+                </p>
+</div>
+<nav class="flex flex-wrap justify-center gap-lg">
+<a class="font-body-sm text-body-sm text-on-surface-variant dark:text-outline-variant hover:text-primary dark:hover:text-primary-fixed-dim transition-all duration-200" href="#">Terms of Service</a>
+<a class="font-body-sm text-body-sm text-on-surface-variant dark:text-outline-variant hover:text-primary dark:hover:text-primary-fixed-dim transition-all duration-200" href="#">Privacy Policy</a>
+<a class="font-body-sm text-body-sm text-on-surface-variant dark:text-outline-variant hover:text-primary dark:hover:text-primary-fixed-dim transition-all duration-200" href="#">Refund Policy</a>
+<a class="font-body-sm text-body-sm text-on-surface-variant dark:text-outline-variant hover:text-primary dark:hover:text-primary-fixed-dim transition-all duration-200" href="#">Contact Support</a>
+</nav>
+</div>
+</footer>
+<!-- Micro-interaction Script -->
+<script>
+        document.querySelectorAll('.active\\:scale-\\[0\\.98\\]').forEach(card => {
+            card.addEventListener('mouseenter', () => {
+                card.style.transform = 'translateY(-4px)';
+            });
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = 'translateY(0px)';
+            });
+        });
+    </script>
+</body></html>

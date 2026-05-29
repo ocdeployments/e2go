@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "inverse-on-surface": "#eaf1ff",
+                        "inverse-surface": "#213145",
+                        "surface-soft": "#F8FAFC",
+                        "secondary-fixed-dim": "#6bd8cb",
+                        "on-secondary-container": "#006f66",
+                        "surface-variant": "#d3e4fe",
+                        "on-primary-fixed-variant": "#3f465c",
+                        "surface-container-highest": "#d3e4fe",
+                        "error-container": "#ffdad6",
+                        "secondary": "#006a61",
+                        "on-primary": "#ffffff",
+                        "on-tertiary-fixed": "#2a1700",
+                        "tertiary": "#000000",
+                        "on-secondary-fixed-variant": "#005049",
+                        "tertiary-fixed": "#ffddb8",
+                        "on-tertiary-fixed-variant": "#653e00",
+                        "on-background": "#0b1c30",
+                        "surface-dim": "#cbdbf5",
+                        "on-secondary-fixed": "#00201d",
+                        "success-teal": "#0D9488",
+                        "outline-variant": "#c6c6cd",
+                        "on-secondary": "#ffffff",
+                        "outline": "#76777d",
+                        "on-tertiary-container": "#b87500",
+                        "tertiary-container": "#2a1700",
+                        "on-surface": "#0b1c30",
+                        "primary-fixed": "#dae2fd",
+                        "border-subtle": "#E2E8F0",
+                        "on-error": "#ffffff",
+                        "on-primary-container": "#7c839b",
+                        "secondary-fixed": "#89f5e7",
+                        "on-error-container": "#93000a",
+                        "surface-container-low": "#eff4ff",
+                        "warning-amber": "#FBBF24",
+                        "surface-container-high": "#dce9ff",
+                        "surface-container": "#e5eeff",
+                        "on-surface-variant": "#45464d",
+                        "surface-tint": "#565e74",
+                        "surface": "#f8f9ff",
+                        "on-tertiary": "#ffffff",
+                        "primary-fixed-dim": "#bec6e0",
+                        "error-muted": "#F87171",
+                        "inverse-primary": "#bec6e0",
+                        "background": "#f8f9ff",
+                        "error": "#ba1a1a",
+                        "secondary-container": "#86f2e4",
+                        "surface-bright": "#f8f9ff",
+                        "tertiary-fixed-dim": "#ffb95f",
+                        "primary": "#000000",
+                        "surface-container-lowest": "#ffffff",
+                        "primary-container": "#131b2e",
+                        "on-primary-fixed": "#131b2e"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "stack-lg": "48px",
+                        "stack-sm": "8px",
+                        "stack-md": "24px",
+                        "margin-mobile": "16px",
+                        "container-max-width": "640px",
+                        "gutter": "24px",
+                        "unit": "8px"
+                    },
+                    "fontFamily": {
+                        "label-sm": ["Inter"],
+                        "headline-lg-mobile": ["Inter"],
+                        "headline-xl": ["Inter"],
+                        "label-md": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "body-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "headline-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.04em", "fontWeight": "600"}],
+                        "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "headline-xl": ["40px", {"lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "label-md": ["14px", {"lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "500"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .feature-card-shadow {
+            box-shadow: 0px 4px 20px rgba(15, 23, 42, 0.05);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface-soft text-on-surface antialiased">
+<!-- Top Navigation Anchor -->
+<header class="bg-surface-soft border-b border-border-subtle sticky top-0 z-50">
+<div class="flex justify-between items-center w-full px-margin-mobile h-20 max-w-container-max-width mx-auto">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-headline-md" data-icon="account_balance">account_balance</span>
+<span class="font-headline-md text-headline-md font-bold text-primary">e2go.app</span>
+</div>
+<button class="bg-primary text-on-primary px-4 py-2 rounded-lg font-label-md text-label-md hover:opacity-90 transition-opacity">
+                Get Started
+            </button>
+</div>
+</header>
+<main class="w-full px-margin-mobile py-stack-lg max-w-container-max-width mx-auto">
+<!-- Part 1: Main Feature Grid -->
+<section class="space-y-stack-md" id="features">
+<div class="text-center mb-stack-lg">
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile text-primary tracking-tight mb-2">
+                    Everything your application needs. Built in.
+                </h1>
+<div class="h-1 w-12 bg-secondary mx-auto rounded-full"></div>
+</div>
+<div class="grid grid-cols-1 gap-4">
+<!-- Card 1 -->
+<div class="bg-surface-container-lowest p-6 rounded-xl border border-border-subtle feature-card-shadow transition-all active:scale-[0.98]">
+<div class="w-12 h-12 bg-surface-container flex items-center justify-center rounded-lg mb-4">
+<span class="material-symbols-outlined text-secondary" data-icon="edit_note">edit_note</span>
+</div>
+<h3 class="font-label-md text-label-md text-on-surface mb-2">Document Interview Engine</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">11 tabs, ~250 guided questions. Every answer builds a document. Covers all Toronto consulate requirements.</p>
+</div>
+<!-- Card 2 -->
+<div class="bg-surface-container-lowest p-6 rounded-xl border border-border-subtle feature-card-shadow transition-all active:scale-[0.98]">
+<div class="w-12 h-12 bg-surface-container flex items-center justify-center rounded-lg mb-4">
+<span class="material-symbols-outlined text-secondary" data-icon="business_center">business_center</span>
+</div>
+<h3 class="font-label-md text-label-md text-on-surface mb-2">Business Plan Generator</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">AI-generated, consulate-formatted business plan built from your actual financial data. Not a template.</p>
+</div>
+<!-- Card 3 -->
+<div class="bg-surface-container-lowest p-6 rounded-xl border border-border-subtle feature-card-shadow transition-all active:scale-[0.98]">
+<div class="w-12 h-12 bg-surface-container flex items-center justify-center rounded-lg mb-4">
+<span class="material-symbols-outlined text-secondary" data-icon="analytics">analytics</span>
+</div>
+<h3 class="font-label-md text-label-md text-on-surface mb-2">Application Confidence Score</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Your application scored across 8 dimensions before you submit. Every weakness flagged with a specific fix.</p>
+</div>
+<!-- Card 4 -->
+<div class="bg-surface-container-lowest p-6 rounded-xl border border-border-subtle feature-card-shadow transition-all active:scale-[0.98]">
+<div class="w-12 h-12 bg-surface-container flex items-center justify-center rounded-lg mb-4">
+<span class="material-symbols-outlined text-secondary" data-icon="record_voice_over">record_voice_over</span>
+</div>
+<h3 class="font-label-md text-label-md text-on-surface mb-2">Interview Simulator</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Practice with an AI officer who has read your application. Questions drawn from your specific case.</p>
+</div>
+<!-- Card 5 -->
+<div class="bg-surface-container-lowest p-6 rounded-xl border border-border-subtle feature-card-shadow transition-all active:scale-[0.98]">
+<div class="w-12 h-12 bg-surface-container flex items-center justify-center rounded-lg mb-4">
+<span class="material-symbols-outlined text-secondary" data-icon="picture_as_pdf">picture_as_pdf</span>
+</div>
+<h3 class="font-label-md text-label-md text-on-surface mb-2">PDF Package Generator</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Complete, tab-organized binder formatted to Toronto consulate standards. 70-page limit enforced automatically.</p>
+</div>
+<!-- Card 6 -->
+<div class="bg-surface-container-lowest p-6 rounded-xl border border-border-subtle feature-card-shadow transition-all active:scale-[0.98]">
+<div class="w-12 h-12 bg-surface-container flex items-center justify-center rounded-lg mb-4">
+<span class="material-symbols-outlined text-secondary" data-icon="checklist">checklist</span>
+</div>
+<h3 class="font-label-md text-label-md text-on-surface mb-2">Document Checklist</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Every document your application needs, annotated with exactly what it must show and where to obtain it.</p>
+</div>
+</div>
+</section>
+<!-- Part 2: Also Included Section -->
+<section class="mt-stack-lg pt-stack-lg border-t border-border-subtle" id="additional-perks">
+<div class="flex items-center gap-4 mb-stack-md">
+<h2 class="font-label-sm text-label-sm uppercase tracking-widest text-outline">Also included</h2>
+<div class="flex-grow h-px bg-border-subtle"></div>
+</div>
+<div class="space-y-4">
+<!-- Perk 1 -->
+<div class="flex items-start gap-4 p-4 rounded-lg bg-surface-container-low border border-border-subtle/50">
+<span class="material-symbols-outlined text-secondary mt-1" data-icon="account_balance">account_balance</span>
+<div>
+<h4 class="font-label-md text-label-md text-on-surface">LLC Formation Guide</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant">50-state formation walkthrough for your U.S. business entity.</p>
+</div>
+</div>
+<!-- Perk 2 -->
+<div class="flex items-start gap-4 p-4 rounded-lg bg-surface-container-low border border-border-subtle/50">
+<span class="material-symbols-outlined text-secondary mt-1" data-icon="payments">payments</span>
+<div>
+<h4 class="font-label-md text-label-md text-on-surface">U.S. Banking Setup Guide</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Step-by-step guide to opening a U.S. business account as a Canadian — including cross-border specialists.</p>
+</div>
+</div>
+<!-- Perk 3 -->
+<div class="flex items-start gap-4 p-4 rounded-lg bg-surface-container-low border border-border-subtle/50">
+<span class="material-symbols-outlined text-secondary mt-1" data-icon="calculate">calculate</span>
+<div>
+<h4 class="font-label-md text-label-md text-on-surface">Canadian Departure Tax Planner</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant">RRSP, departure returns, provincial health coverage timing, and non-resident tax implications.</p>
+</div>
+</div>
+<!-- Perk 4 -->
+<div class="flex items-start gap-4 p-4 rounded-lg bg-surface-container-low border border-border-subtle/50">
+<span class="material-symbols-outlined text-secondary mt-1" data-icon="calendar_month">calendar_month</span>
+<div>
+<h4 class="font-label-md text-label-md text-on-surface">Compliance Calendar</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Auto-generated timeline of every deadline — visa renewal, tax filings, FBAR, employment milestones.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Bottom Line -->
+<footer class="mt-stack-lg text-center">
+<p class="font-body-sm text-body-sm text-outline opacity-80">
+                One-time fee · Lifetime access · No subscription
+            </p>
+</footer>
+</main>
+<!-- Global Footer Component -->
+<footer class="bg-surface-container-lowest border-t border-border-subtle mt-stack-lg">
+<div class="w-full py-stack-md px-margin-mobile flex flex-col items-center gap-stack-sm max-w-container-max-width mx-auto">
+<div class="font-headline-sm text-headline-sm font-bold text-primary mb-2">e2go.app</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant text-center px-4">
+                © 2024 e2go.app. All rights reserved. Professional E-2 visa self-service for Canadian entrepreneurs.
+            </p>
+<div class="flex flex-wrap justify-center gap-x-4 gap-y-2 mt-4">
+<a class="font-body-sm text-body-sm text-outline-variant hover:text-primary transition-colors" href="#">Terms of Service</a>
+<a class="font-body-sm text-body-sm text-outline-variant hover:text-primary transition-colors" href="#">Privacy Policy</a>
+<a class="font-body-sm text-body-sm text-outline-variant hover:text-primary transition-colors" href="#">Legal Disclaimer</a>
+<a class="font-body-sm text-body-sm text-outline-variant hover:text-primary transition-colors" href="#">Contact Support</a>
+</div>
+</div>
+</footer>
+<!-- Interactive Atmospheric Micro-interaction -->
+<script>
+        // Subtle scroll reveal effect for cards
+        const observerOptions = {
+            threshold: 0.1
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('opacity-100', 'translate-y-0');
+                    entry.target.classList.remove('opacity-0', 'translate-y-4');
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.feature-card-shadow, .bg-surface-container-low').forEach(card => {
+            card.classList.add('transition-all', 'duration-500', 'opacity-0', 'translate-y-4');
+            observer.observe(card);
+        });
+    </script>
+</body></html>

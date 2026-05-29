@@ -1,0 +1,538 @@
+{
+  "module": "0",
+  "name": "Eligibility Quiz",
+  "version": "2.1",
+  "last_updated": "2026-05-28",
+  "source_standard": [
+    "U.S. Embassy Toronto",
+    "State Department Foreign Affairs Manual",
+    "USCIS / Travel.state.gov where directly relevant"
+  ],
+  "purpose": [
+    "Determine whether the principal applicant appears eligible to proceed",
+    "Detect cases outside safe self-service scope",
+    "Route user to the correct path",
+    "Collect only information necessary at eligibility stage"
+  ],
+  "outcomes": [
+    "Proceed",
+    "Proceed with Risk Flag",
+    "Attorney Recommended",
+    "Do Not Proceed"
+  ],
+  "questions": [
+    {
+      "id": "Q0-01",
+      "type": "select",
+      "question": "What is your citizenship status?",
+      "section": "principal",
+      "options": [
+        "I am a Canadian citizen",
+        "I am a dual citizen and one of my citizenships is Canadian",
+        "I am a permanent resident of Canada, but not a Canadian citizen",
+        "I am not a Canadian citizen"
+      ],
+      "stop_codes": [
+        "PR-01"
+      ]
+    },
+    {
+      "id": "Q0-02",
+      "type": "select",
+      "question": "Do you currently hold a valid Canadian passport?",
+      "section": "principal",
+      "options": [
+        "Yes",
+        "No",
+        "I am not sure"
+      ],
+      "warning_codes": [
+        "W-01"
+      ]
+    },
+    {
+      "id": "Q0-03",
+      "type": "select",
+      "question": "Are you currently in Canada or in the United States?",
+      "section": "principal",
+      "options": [
+        "I am currently in Canada",
+        "I am currently in the United States on valid status",
+        "I am currently in the United States and I am not sure whether my status is valid",
+        "I am currently in the United States without valid status",
+        "I am in another country"
+      ],
+      "stop_codes": [
+        "PR-02"
+      ],
+      "warning_codes": [
+        "W-02",
+        "W-03"
+      ]
+    },
+    {
+      "id": "Q0-04",
+      "type": "select",
+      "question": "Have you already invested funds into the U.S. business, or are you in the process of committing funds to it?",
+      "section": "investment",
+      "options": [
+        "Yes \u2014 funds have already been invested",
+        "Yes \u2014 funds are in the process of being committed",
+        "No \u2014 funds are available, but nothing has been committed yet",
+        "No \u2014 I do not currently have funds available for the investment"
+      ],
+      "stop_codes": [
+        "PR-03"
+      ],
+      "warning_codes": [
+        "W-04"
+      ]
+    },
+    {
+      "id": "Q0-05",
+      "type": "currency",
+      "question": "Approximately how much capital do you expect to invest in the business?",
+      "section": "investment",
+      "currency_options": [
+        "CAD",
+        "USD"
+      ],
+      "warning_codes": [
+        "W-05"
+      ],
+      "proportionality_thresholds_usd": {
+        "clean": {
+          "min": 150000,
+          "flag": null
+        },
+        "soft_advisory": {
+          "min": 75000,
+          "max": 149999,
+          "flag": "W-PROP-SOFT"
+        },
+        "strong_warning": {
+          "max": 74999,
+          "flag": "W-PROP-STRONG"
+        }
+      },
+      "currency_conversion_note": "Convert CAD to USD using daily cached rate before applying thresholds. Display rate used to user."
+    },
+    {
+      "id": "Q0-06",
+      "type": "select",
+      "question": "Can you document where your investment funds came from and how they moved into the business?",
+      "section": "investment",
+      "options": [
+        "Yes \u2014 I can document the source and movement of funds",
+        "Mostly \u2014 I have most of the documentation, but there may be gaps",
+        "No \u2014 I cannot clearly document the source or movement of funds",
+        "I am not sure"
+      ],
+      "warning_codes": [
+        "W-06",
+        "W-07"
+      ]
+    },
+    {
+      "id": "Q0-07",
+      "type": "select",
+      "question": "Are any of your investment funds coming from a loan?",
+      "section": "investment",
+      "options": [
+        "No",
+        "Yes \u2014 a loan secured only by my personal assets",
+        "Yes \u2014 a loan secured by the assets of the business I am investing in",
+        "Yes \u2014 but I am not sure how the loan is secured"
+      ],
+      "stop_codes": [
+        "PR-04"
+      ],
+      "warning_codes": [
+        "W-08"
+      ]
+    },
+    {
+      "id": "Q0-08",
+      "type": "select",
+      "question": "What best describes your intended role in the business?",
+      "section": "business_role",
+      "options": [
+        "I will actively develop and direct the business myself",
+        "I will actively run the business with one equal business partner",
+        "I will mainly be a passive investor",
+        "I am not sure yet"
+      ],
+      "stop_codes": [
+        "PR-05"
+      ],
+      "warning_codes": [
+        "W-09"
+      ]
+    },
+    {
+      "id": "Q0-09",
+      "type": "select",
+      "question": "Is your business arrangement one of the following?",
+      "section": "business_role",
+      "options": [
+        "Sole owner",
+        "Two equal 50/50 owners",
+        "More than two equal owners",
+        "Two owners but not 50/50",
+        "I am not sure yet"
+      ],
+      "stop_codes": [
+        "PR-06"
+      ],
+      "warning_codes": [
+        "W-10"
+      ],
+      "routes": {
+        "solo": "Sole owner",
+        "partnership": "Two equal 50/50 owners"
+      }
+    },
+    {
+      "id": "Q0-10",
+      "type": "multiselect",
+      "question": "Is the business primarily any of the following?",
+      "section": "business_type",
+      "options": [
+        "Passive real estate holding or rental-only investment",
+        "Cannabis or marijuana-related activity",
+        "A business where I would not be actively involved in management",
+        "None of the above"
+      ],
+      "stop_codes": [
+        "PR-07",
+        "PR-08",
+        "PR-09"
+      ]
+    },
+    {
+      "id": "Q0-11",
+      "type": "select",
+      "question": "Have you ever been refused a U.S. visa or had a U.S. visa application denied?",
+      "section": "risk",
+      "denial_risk": "D-09",
+      "options": [
+        "No \u2014 never",
+        "Yes \u2014 one refusal, more than 5 years ago",
+        "Yes \u2014 one refusal, within the last 5 years",
+        "Yes \u2014 more than one refusal"
+      ],
+      "logic": {
+        "No \u2014 never": "proceed",
+        "Yes \u2014 one refusal, more than 5 years ago": "risk_flag:W-11-OLD",
+        "Yes \u2014 one refusal, within the last 5 years": "attorney_recommended:W-11-RECENT",
+        "Yes \u2014 more than one refusal": "attorney_recommended:W-11-MULTIPLE"
+      },
+      "warnings": {
+        "W-11-OLD": "A single refusal more than five years ago carries less weight than a recent refusal, but it must still be disclosed accurately on your DS-160 and addressed in your application. The Interview Simulator will prepare you for the question the officer may ask about it.",
+        "W-11-RECENT": "A visa refusal within the last five years will be actively reviewed by the consular officer handling your E-2 application. It must be disclosed on your DS-160. Your cover letter should address it proactively \u2014 explaining what has changed since the refusal. Legal review is recommended before proceeding.",
+        "W-11-MULTIPLE": "Multiple prior refusals significantly increase the scrutiny your application will receive. This does not automatically disqualify your case, but it requires careful, proactive handling \u2014 including a direct explanation in the cover letter. Legal review is strongly recommended."
+      },
+      "ack_required_if_continue": true
+    },
+    {
+      "id": "Q0-12",
+      "type": "select",
+      "question": "Have you ever been refused entry to the United States, removed, or deported?",
+      "section": "risk",
+      "options": [
+        "No",
+        "Yes",
+        "I am not sure"
+      ],
+      "warning_codes": [
+        "W-12"
+      ],
+      "ack_required_if_continue": true
+    },
+    {
+      "id": "Q0-13",
+      "type": "select",
+      "question": "Have you ever been convicted of, cautioned for, or charged with a criminal offence in any country \u2014 including charges that were dropped, withdrawn, or for which you received a pardon?",
+      "section": "risk",
+      "denial_risk": "FAM 9 FAM 302.3",
+      "options": [
+        "No \u2014 no convictions or charges",
+        "Yes \u2014 a minor conviction, more than 10 years ago",
+        "Yes \u2014 a minor conviction within the last 10 years",
+        "Yes \u2014 a serious conviction (any time)",
+        "I am not sure"
+      ],
+      "logic": {
+        "No \u2014 no convictions or charges": "proceed",
+        "Yes \u2014 a minor conviction, more than 10 years ago": "risk_flag:W-13-OLD",
+        "Yes \u2014 a minor conviction within the last 10 years": "attorney_recommended:W-13-RECENT",
+        "Yes \u2014 a serious conviction (any time)": "attorney_recommended:W-13-SERIOUS",
+        "I am not sure": "attorney_recommended:W-13-UNSURE"
+      },
+      "warnings": {
+        "W-13-OLD": "A minor, older conviction may fall within the petty offence exception under U.S. immigration law \u2014 meaning it may not constitute a ground of inadmissibility. This depends on the specific offence, the maximum possible sentence, and the actual sentence served. It must still be disclosed accurately on your DS-160. Legal review is recommended.",
+        "W-13-RECENT": "A conviction within the last 10 years \u2014 even a minor one \u2014 will be reviewed by the consular officer. Whether it triggers inadmissibility depends on the offence type and sentence. Do not assume it is resolved without individualized legal review.",
+        "W-13-SERIOUS": "A serious conviction requires individualized legal analysis before relying on a self-service preparation tool. Depending on the offence, mandatory inadmissibility grounds may apply. Legal review is essential before proceeding.",
+        "W-13-UNSURE": "If you are not sure whether you have a relevant criminal history, clarify this before proceeding. Failing to disclose a conviction on the DS-160 is itself a serious issue. Legal review recommended."
+      },
+      "ack_required_if_continue": true
+    },
+    {
+      "id": "Q0-NI-01",
+      "type": "select",
+      "question": "Do you own real estate in Canada that you intend to keep while living in the United States?",
+      "section": "non_immigrant_intent",
+      "denial_risk": "D-15",
+      "options": [
+        "Yes \u2014 I own Canadian property and will keep it",
+        "Yes \u2014 I own Canadian property but may sell it before moving",
+        "No \u2014 I do not own Canadian real estate",
+        "Not applicable"
+      ],
+      "logic": {
+        "Yes \u2014 I own Canadian property and will keep it": "tie_confirmed",
+        "Yes \u2014 I own Canadian property but may sell it before moving": "risk_flag:W-NI-01",
+        "No \u2014 I do not own Canadian real estate": "risk_flag:W-NI-01",
+        "Not applicable": "risk_flag:W-NI-01"
+      }
+    },
+    {
+      "id": "Q0-NI-02",
+      "type": "select",
+      "question": "Do you have immediate family members \u2014 spouse, children, or parents \u2014 who will remain living in Canada while you are in the United States?",
+      "section": "non_immigrant_intent",
+      "denial_risk": "D-15",
+      "options": [
+        "Yes \u2014 close family will remain in Canada",
+        "No \u2014 my immediate family will come with me",
+        "Mixed \u2014 some family in Canada, some coming with me",
+        "I do not have immediate family"
+      ],
+      "logic": {
+        "Yes \u2014 close family will remain in Canada": "tie_confirmed",
+        "Mixed \u2014 some family in Canada, some coming with me": "tie_confirmed",
+        "No \u2014 my immediate family will come with me": "risk_flag:W-NI-02",
+        "I do not have immediate family": "risk_flag:W-NI-02"
+      }
+    },
+    {
+      "id": "Q0-NI-03",
+      "type": "select",
+      "question": "Will you maintain active Canadian financial accounts, pension plans, or retirement savings (such as an RRSP) while in the United States?",
+      "section": "non_immigrant_intent",
+      "denial_risk": "D-15",
+      "options": [
+        "Yes \u2014 I will keep active Canadian financial accounts",
+        "Partially \u2014 I will keep some accounts active",
+        "No \u2014 I plan to close or transfer all accounts",
+        "I am not sure yet"
+      ],
+      "logic": {
+        "Yes \u2014 I will keep active Canadian financial accounts": "tie_confirmed",
+        "Partially \u2014 I will keep some accounts active": "tie_confirmed",
+        "No \u2014 I plan to close or transfer all accounts": "risk_flag:W-NI-03",
+        "I am not sure yet": "risk_flag:W-NI-03"
+      }
+    },
+    {
+      "id": "Q0-14",
+      "type": "select",
+      "question": "Is your business partner a Canadian citizen?",
+      "section": "partner",
+      "show_if": {
+        "Q0-09": "Two equal 50/50 owners"
+      },
+      "options": [
+        "Yes",
+        "No",
+        "I am not sure"
+      ],
+      "warning_codes": [
+        "W-14"
+      ]
+    },
+    {
+      "id": "Q0-15",
+      "type": "select",
+      "question": "Will your partner also be actively developing and directing the business?",
+      "section": "partner",
+      "show_if": {
+        "Q0-09": "Two equal 50/50 owners"
+      },
+      "options": [
+        "Yes",
+        "No",
+        "I am not sure"
+      ],
+      "warning_codes": [
+        "W-15"
+      ]
+    },
+    {
+      "id": "Q0-16",
+      "type": "select",
+      "question": "Will any family members apply as your dependents?",
+      "section": "family",
+      "options": [
+        "No",
+        "Yes \u2014 spouse only",
+        "Yes \u2014 children only",
+        "Yes \u2014 spouse and children",
+        "I am not sure yet"
+      ]
+    },
+    {
+      "id": "Q0-17",
+      "type": "select",
+      "question": "If a spouse is applying with you, are you legally married?",
+      "section": "family",
+      "show_if": {
+        "Q0-16": [
+          "Yes \u2014 spouse only",
+          "Yes \u2014 spouse and children"
+        ]
+      },
+      "options": [
+        "Yes",
+        "No",
+        "Not applicable"
+      ],
+      "warning_codes": [
+        "W-16"
+      ]
+    },
+    {
+      "id": "Q0-18",
+      "type": "select",
+      "question": "Will every dependent applying with you have a valid passport for visa processing?",
+      "section": "family",
+      "show_if": {
+        "Q0-16": [
+          "Yes \u2014 spouse only",
+          "Yes \u2014 children only",
+          "Yes \u2014 spouse and children"
+        ]
+      },
+      "options": [
+        "Yes",
+        "No",
+        "I am not sure",
+        "Not applicable"
+      ],
+      "warning_codes": [
+        "W-17"
+      ]
+    },
+    {
+      "id": "Q0-19",
+      "type": "select",
+      "question": "Do any children applying with you fall into either of these categories: 21 or older, or married?",
+      "section": "family",
+      "show_if": {
+        "Q0-16": [
+          "Yes \u2014 children only",
+          "Yes \u2014 spouse and children"
+        ]
+      },
+      "options": [
+        "No",
+        "Yes",
+        "Not applicable",
+        "I am not sure"
+      ],
+      "warning_codes": [
+        "W-18"
+      ]
+    },
+    {
+      "id": "Q0-20",
+      "type": "select",
+      "question": "Does any dependent have prior U.S. visa refusals, entry refusals, removal history, or criminal history?",
+      "section": "family",
+      "show_if": {
+        "Q0-16": [
+          "Yes \u2014 spouse only",
+          "Yes \u2014 children only",
+          "Yes \u2014 spouse and children"
+        ]
+      },
+      "options": [
+        "No",
+        "Yes",
+        "I am not sure",
+        "Not applicable"
+      ],
+      "warning_codes": [
+        "W-19"
+      ]
+    },
+    {
+      "id": "Q0-21",
+      "type": "text",
+      "question": "Where should we send your eligibility result and next-step summary?",
+      "section": "consent",
+      "validation": "email"
+    },
+    {
+      "id": "Q0-22",
+      "type": "acknowledgment",
+      "question": "If your case includes one or more risk flags, do you understand that E2Pathway is a preparation tool and not a legal service?",
+      "section": "consent",
+      "show_if": "attorney_recommended_and_user_continues"
+    }
+  ],
+  "hard_stops": {
+    "PR-01": "Principal applicant not a Canadian citizen",
+    "PR-02": "Principal applicant in U.S. without valid status",
+    "PR-03": "No investment funds currently available",
+    "PR-04": "Loan secured by business assets",
+    "PR-05": "Passive investor role",
+    "PR-06": "More than two equal owners",
+    "PR-07": "Passive real estate holding",
+    "PR-08": "Cannabis-related business",
+    "PR-09": "No active management role"
+  },
+  "attorney_recommended_flags": {
+    "W-02": "Unsure about U.S. status",
+    "W-03": "Outside standard Canada/U.S. path context",
+    "W-07": "Source/path of funds unclear",
+    "W-08": "Loan structure unclear",
+    "W-09": "Principal role unclear",
+    "W-10": "Two-owner structure not 50/50",
+    "W-11": "Prior visa refusal",
+    "W-12": "Prior refusal of entry/removal/deportation",
+    "W-13": "Criminal history or uncertainty",
+    "W-14": "Partner citizenship uncertain or non-Canadian",
+    "W-15": "Partner role uncertain or inactive",
+    "W-16": "Relationship may not qualify for spouse-dependent workflow",
+    "W-18": "Child age/marital-status issue",
+    "W-19": "Dependent admissibility issue"
+  },
+  "non_immigrant_intent_composite": {
+    "description": "After Q0-NI-01 through Q0-NI-03, count confirmed ties",
+    "logic": {
+      "2_or_3_ties": "proceed_cleanly",
+      "1_tie": "risk_flag:W-NI-WEAK",
+      "0_ties": "attorney_recommended:W-NI-NONE"
+    }
+  },
+  "investment_thresholds_usd": {
+    "clean": 150000,
+    "soft_advisory": {
+      "min": 75000,
+      "max": 149999,
+      "flag": "W-PROP-SOFT"
+    },
+    "strong_warning": {
+      "max": 74999,
+      "flag": "W-PROP-STRONG"
+    },
+    "note": "No statutory minimum. Thresholds are advisory only based on observed practice."
+  },
+  "version_notes": [
+    "Section 0.9 (Non-Immigrant Intent) moved to appear after Section 0.5 (Risk) and before Section 0.6 (Partner Screening)",
+    "Q0-11 revised to 4 options: no refusal / one >5yr / one <5yr / multiple",
+    "Q0-13 revised to 5 options: none / minor >10yr / minor <10yr / serious / unsure",
+    "Warning tiers written in V2.1 style for all new options"
+  ]
+}

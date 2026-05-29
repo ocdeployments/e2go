@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+
+<html class="scroll-smooth" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>e2go.app | Your Guided Path to the U.S. E-2 Visa</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container-high": "#dce9ff",
+                    "surface": "#f8f9ff",
+                    "on-secondary": "#ffffff",
+                    "on-surface": "#0b1c30",
+                    "outline": "#737686",
+                    "on-tertiary-fixed": "#360f00",
+                    "secondary-fixed": "#dae2fd",
+                    "on-error-container": "#93000a",
+                    "on-secondary-container": "#5c647a",
+                    "inverse-on-surface": "#eaf1ff",
+                    "error-container": "#ffdad6",
+                    "on-tertiary-container": "#ffede6",
+                    "on-primary-container": "#eeefff",
+                    "on-tertiary": "#ffffff",
+                    "secondary-fixed-dim": "#bec6e0",
+                    "on-error": "#ffffff",
+                    "on-secondary-fixed-variant": "#3f465c",
+                    "inverse-primary": "#b4c5ff",
+                    "on-surface-variant": "#434655",
+                    "tertiary-fixed-dim": "#ffb596",
+                    "surface-bright": "#f8f9ff",
+                    "inverse-surface": "#213145",
+                    "primary-container": "#2563eb",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "surface-variant": "#d3e4fe",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "surface-container-low": "#eff4ff",
+                    "surface-container-highest": "#d3e4fe",
+                    "tertiary-container": "#bc4800",
+                    "surface-container-lowest": "#ffffff",
+                    "tertiary": "#943700",
+                    "tertiary-fixed": "#ffdbcd",
+                    "on-primary-fixed": "#00174b",
+                    "secondary": "#565e74",
+                    "on-tertiary-fixed-variant": "#7d2d00",
+                    "on-primary": "#ffffff",
+                    "primary-fixed": "#dbe1ff",
+                    "error": "#ba1a1a",
+                    "surface-tint": "#0053db",
+                    "on-background": "#0b1c30",
+                    "background": "#f8f9ff",
+                    "surface-dim": "#cbdbf5",
+                    "on-secondary-fixed": "#131b2e",
+                    "surface-container": "#e5eeff",
+                    "secondary-container": "#dae2fd",
+                    "primary": "#004ac6",
+                    "outline-variant": "#c3c6d7"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "margin-mobile": "16px",
+                    "gutter": "24px",
+                    "3xl": "64px",
+                    "margin-desktop": "32px",
+                    "xl": "32px",
+                    "container-max": "1280px",
+                    "base": "8px",
+                    "xs": "4px",
+                    "sm": "8px",
+                    "lg": "24px",
+                    "2xl": "48px",
+                    "md": "16px"
+            },
+            "fontFamily": {
+                    "headline-md": ["Inter"],
+                    "body-md": ["Inter"],
+                    "body-lg": ["Inter"],
+                    "headline-lg": ["Inter"],
+                    "body-sm": ["Inter"],
+                    "headline-lg-mobile": ["Inter"],
+                    "display-lg-mobile": ["Inter"],
+                    "display-lg": ["Inter"],
+                    "label-md": ["Inter"],
+                    "label-sm": ["Inter"]
+            },
+            "fontSize": {
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "headline-lg-mobile": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "display-lg-mobile": ["36px", {"lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "500"}],
+                    "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        .reveal {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .reveal.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(226, 232, 240, 1);
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface font-body-md overflow-x-hidden">
+<!-- Top Navigation -->
+<header class="fixed top-0 left-0 right-0 z-50 bg-surface/80 backdrop-blur-md border-b border-outline-variant">
+<nav class="flex justify-between items-center px-gutter h-16 w-full max-w-container-max mx-auto py-unit">
+<span class="font-headline-md text-headline-md-mobile font-bold text-primary tracking-tight">e2go.app</span>
+<button class="bg-primary text-on-primary px-4 py-2 rounded-lg font-label-md hover:opacity-80 transition-opacity active:scale-95 duration-100">
+                Sign In
+            </button>
+</nav>
+</header>
+<!-- Hero Section -->
+<main class="pt-24 pb-16 px-margin-mobile">
+<section class="flex flex-col gap-8">
+<div class="relative rounded-2xl overflow-hidden min-h-[480px] flex flex-col justify-end p-6 reveal">
+<!-- Background Image with Overlay -->
+<div class="absolute inset-0 z-0">
+<img alt="US Flag" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida/ADBb0ug1DL7odC1hoCJOICyi01_cRHKTU8rg9z63_CNlhCw6k62SkLvnkSD1ETFr49rhNhqZkzGkeZtx2Kwz4taPyqPIedHc3B-70yNUIiEsyspCcJXAglcPAwJEuCEVADwqyNY9-1u_Z-l4ka9UXpUeVA-U-XcOgJgqK7Z0MH9xFRzPkGXX04QaK--Xft9jOHO0vUIls9I6ZZ2oRlO6LiX8NVYK067UtFXwn7n9FoQw5XL-ZY4aQiY59wIg3A"/>
+<div class="absolute inset-0 bg-gradient-to-t from-on-surface/90 via-on-surface/40 to-transparent"></div>
+</div>
+<!-- Hero Content -->
+<div class="relative z-10 space-y-4">
+<h1 class="font-display-lg-mobile text-display-lg-mobile text-white">The guided path to your U.S. E-2 Visa.</h1>
+<p class="font-body-md text-white/90">Stop overpaying for legal complexity. Save over $10,000 on attorney fees with our expert-backed guided platform.</p>
+<button class="w-full bg-primary-container text-white py-4 rounded-xl font-headline-md flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-all">
+                        Start Eligibility Quiz — It's Free
+                        <span class="material-symbols-outlined">arrow_forward</span>
+</button>
+</div>
+</div>
+<!-- Dashboard Mockup Card -->
+<div class="reveal delay-100">
+<div class="glass-card rounded-2xl p-6 shadow-xl border-l-4 border-primary">
+<div class="flex justify-between items-start mb-6">
+<div>
+<span class="font-label-sm text-primary uppercase tracking-widest block mb-1">Your Dashboard</span>
+<h3 class="font-headline-md text-headline-md-mobile">Application Status: <span class="text-primary">In Progress</span></h3>
+</div>
+<span class="material-symbols-outlined text-primary scale-125">analytics</span>
+</div>
+<div class="space-y-4">
+<div class="space-y-2">
+<div class="flex justify-between items-center">
+<span class="font-label-md text-on-surface-variant">Drafting Business Plan</span>
+<span class="font-label-md font-bold text-primary">75%</span>
+</div>
+<div class="h-2 w-full bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full transition-all duration-1000" style="width: 75%;"></div>
+</div>
+</div>
+<div class="flex items-center gap-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px]">verified</span>
+<span class="text-body-sm italic">Next step: Financial Projections Audit</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Value Framing / Comparison Section -->
+<section class="py-16 reveal">
+<div class="text-center mb-10">
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile mb-4">Why pay for a lawyer's overhead?</h2>
+<p class="text-on-surface-variant">We automate the paperwork, you keep the capital for your business.</p>
+</div>
+<div class="grid grid-cols-1 gap-6">
+<!-- Competitor -->
+<div class="p-6 rounded-2xl border border-outline-variant bg-surface-container-low opacity-60">
+<div class="flex items-center gap-3 mb-4">
+<span class="material-symbols-outlined text-error">gavel</span>
+<h4 class="font-headline-md text-headline-md-mobile">Traditional Attorneys</h4>
+</div>
+<ul class="space-y-3">
+<li class="flex gap-2 text-body-sm">
+<span class="material-symbols-outlined text-error text-[18px]">close</span>
+                            $10,000 - $15,000 upfront fees
+                        </li>
+<li class="flex gap-2 text-body-sm">
+<span class="material-symbols-outlined text-error text-[18px]">close</span>
+                            Slow response times (weeks)
+                        </li>
+<li class="flex gap-2 text-body-sm">
+<span class="material-symbols-outlined text-error text-[18px]">close</span>
+                            Complex legal jargon
+                        </li>
+</ul>
+</div>
+<!-- e2go.app -->
+<div class="p-6 rounded-2xl border-2 border-primary bg-white shadow-xl relative overflow-hidden">
+<div class="absolute top-0 right-0 bg-primary text-on-primary px-3 py-1 rounded-bl-lg font-label-sm">RECOMMENDED</div>
+<div class="flex items-center gap-3 mb-4">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">stars</span>
+<h4 class="font-headline-md text-headline-md-mobile">e2go.app Platform</h4>
+</div>
+<ul class="space-y-3">
+<li class="flex gap-2 text-body-sm font-medium">
+<span class="material-symbols-outlined text-primary text-[18px]">check_circle</span>
+                            Transparent flat pricing (Save 80%)
+                        </li>
+<li class="flex gap-2 text-body-sm font-medium">
+<span class="material-symbols-outlined text-primary text-[18px]">check_circle</span>
+                            Real-time AI-powered feedback
+                        </li>
+<li class="flex gap-2 text-body-sm font-medium">
+<span class="material-symbols-outlined text-primary text-[18px]">check_circle</span>
+                            Guided step-by-step workflow
+                        </li>
+</ul>
+</div>
+</div>
+</section>
+<!-- How it Works Section -->
+<section class="py-16 bg-surface-container-low -mx-margin-mobile px-margin-mobile">
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile text-center mb-12 reveal">How it Works</h2>
+<div class="space-y-12 relative">
+<!-- Connecting Line -->
+<div class="absolute left-6 top-8 bottom-8 w-0.5 bg-primary/20 z-0"></div>
+<!-- Step 1 -->
+<div class="flex gap-6 relative z-10 reveal">
+<div class="w-12 h-12 rounded-full bg-primary flex items-center justify-center shrink-0 shadow-md">
+<span class="text-on-primary font-bold">1</span>
+</div>
+<div>
+<h3 class="font-headline-md text-headline-md-mobile mb-2">Check Eligibility</h3>
+<p class="text-on-surface-variant">A 5-minute intelligent assessment to confirm you meet the E-2 treaty requirements before you spend a dime.</p>
+</div>
+</div>
+<!-- Step 2 -->
+<div class="flex gap-6 relative z-10 reveal">
+<div class="w-12 h-12 rounded-full bg-primary flex items-center justify-center shrink-0 shadow-md">
+<span class="text-on-primary font-bold">2</span>
+</div>
+<div>
+<h3 class="font-headline-md text-headline-md-mobile mb-2">Build Your Case</h3>
+<p class="text-on-surface-variant">Use our guided drafting tools to build your business plan and organize your investment evidence with professional precision.</p>
+</div>
+</div>
+<!-- Step 3 -->
+<div class="flex gap-6 relative z-10 reveal">
+<div class="w-12 h-12 rounded-full bg-primary flex items-center justify-center shrink-0 shadow-md">
+<span class="text-on-primary font-bold">3</span>
+</div>
+<div>
+<h3 class="font-headline-md text-headline-md-mobile mb-2">Review &amp; File</h3>
+<p class="text-on-surface-variant">Our final audit ensures every document is embassy-ready. We provide a complete packet ready for submission.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Honest Limits Section -->
+<section class="py-16 reveal">
+<div class="bg-secondary-container rounded-3xl p-8 flex flex-col items-center text-center gap-6">
+<div class="w-16 h-16 rounded-full bg-white flex items-center justify-center">
+<span class="material-symbols-outlined text-primary scale-150">info</span>
+</div>
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile">Our Honest Limits</h2>
+<p class="text-body-md text-on-secondary-container">
+                    We help with 95% of standard E-2 applications. For high-complexity cases involving criminal history or complex corporate structures, we refer you to our network of top immigration attorneys.
+                </p>
+<div class="flex items-center gap-2 text-primary font-bold uppercase tracking-widest text-[12px]">
+<span class="material-symbols-outlined text-[16px]">verified_user</span>
+                    Transparency is our priority
+                </div>
+</div>
+</section>
+<!-- CTA Section -->
+<section class="py-16 text-center reveal">
+<div class="bg-primary p-10 rounded-[40px] text-on-primary shadow-2xl space-y-8">
+<h2 class="font-display-lg-mobile text-display-lg-mobile">Ready to start your U.S. journey?</h2>
+<p class="text-body-lg opacity-90 max-w-sm mx-auto">Join thousands of entrepreneurs who successfully launched their American dream without the legal markup.</p>
+<button class="w-full bg-white text-primary py-5 rounded-2xl font-headline-md shadow-lg active:scale-95 transition-all">
+                    Get Started Now
+                </button>
+<p class="font-label-sm opacity-70">No credit card required for the quiz.</p>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="bg-surface-container dark:bg-inverse-surface mt-12 py-12 px-margin-mobile">
+<div class="w-full max-w-container-max mx-auto flex flex-col items-center gap-8">
+<span class="text-label-md font-bold text-primary">e2go.app</span>
+<nav class="flex flex-wrap justify-center gap-x-8 gap-y-4">
+<a class="text-on-surface-variant font-label-md hover:text-primary transition-colors" href="#">Terms of Service</a>
+<a class="text-on-surface-variant font-label-md hover:text-primary transition-colors" href="#">Privacy Policy</a>
+<a class="text-on-surface-variant font-label-md hover:text-primary transition-colors" href="#">Government Sources</a>
+<a class="text-on-surface-variant font-label-md hover:text-primary transition-colors" href="#">Contact Support</a>
+</nav>
+<div class="text-center space-y-4">
+<p class="font-body-sm text-body-sm text-on-surface-variant dark:text-surface-variant max-w-md">
+                    © 2024 e2go.app. Not a law firm. Information provided is for educational purposes only.
+                </p>
+</div>
+</div>
+</footer>
+<!-- Image for alt generation context -->
+<div class="hidden">
+<img data-alt="A cinematic, high-key photograph of a weathered American flag fluttering gracefully in a warm sunset breeze over a soft-focus mountain landscape. The lighting is golden and ethereal, highlighting the fabric's texture and creating a mood of hope and prestige. This visual anchors a professional, modern immigration services platform with a clean, light-mode aesthetic, utilizing deep navy and electric blue accents for a sense of reliability and trust." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAV15UApo5-B2aRqAQyh5XajSQRrMHj1oTh4b-r4SR_2T2VeExAgmL84D0ugG50uI7b3pBFooFC_yXVBOQskkwJV9kl6sj_CzqL-oEG5iIjSd0kSuhr4V7qK2cA30IWsS4PQEe2VlVDkFVa4af8_77uG6cGOLENBC-IA-jZ_l0nlP7nQuhadYMutaHbXweYU5LIQ9bgj9Lg6TFM5g6Uwupfdf9QLant391kypEtzUOyJkZoaGxtMSS-o7NpOrrE7UmU_KqCLDyglQ"/>
+</div>
+<script>
+        // Scroll Reveal Animation Logic
+        function reveal() {
+            var reveals = document.querySelectorAll(".reveal");
+            for (var i = 0; i < reveals.length; i++) {
+                var windowHeight = window.innerHeight;
+                var elementTop = reveals[i].getBoundingClientRect().top;
+                var elementVisible = 150;
+                if (elementTop < windowHeight - elementVisible) {
+                    reveals[i].classList.add("active");
+                }
+            }
+        }
+
+        window.addEventListener("scroll", reveal);
+        // Initial trigger
+        document.addEventListener("DOMContentLoaded", reveal);
+    </script>
+</body></html>

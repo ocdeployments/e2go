@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Eligibility Results - e2go.app</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-secondary-container": "#5c647a",
+                        "on-secondary-fixed-variant": "#3f465c",
+                        "surface-dim": "#cbdbf5",
+                        "background": "#f8f9ff",
+                        "primary": "#004ac6",
+                        "on-primary-container": "#eeefff",
+                        "secondary-fixed-dim": "#bec6e0",
+                        "secondary-container": "#dae2fd",
+                        "surface-container-lowest": "#ffffff",
+                        "secondary-fixed": "#dae2fd",
+                        "surface-container-low": "#eff4ff",
+                        "secondary": "#565e74",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "on-surface-variant": "#434655",
+                        "on-secondary": "#ffffff",
+                        "on-background": "#0b1c30",
+                        "on-tertiary-fixed": "#360f00",
+                        "on-primary": "#ffffff",
+                        "on-tertiary-container": "#ffede6",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "surface-tint": "#0053db",
+                        "on-tertiary": "#ffffff",
+                        "tertiary-fixed": "#ffdbcd",
+                        "inverse-primary": "#b4c5ff",
+                        "surface-container": "#e5eeff",
+                        "surface-container-high": "#dce9ff",
+                        "error-container": "#ffdad6",
+                        "surface-bright": "#f8f9ff",
+                        "outline-variant": "#c3c6d7",
+                        "surface-variant": "#d3e4fe",
+                        "surface-container-highest": "#d3e4fe",
+                        "surface": "#f8f9ff",
+                        "on-tertiary-fixed-variant": "#7d2d00",
+                        "inverse-on-surface": "#eaf1ff",
+                        "tertiary-fixed-dim": "#ffb596",
+                        "outline": "#737686",
+                        "on-error": "#ffffff",
+                        "error": "#ba1a1a",
+                        "on-primary-fixed": "#00174b",
+                        "inverse-surface": "#213145",
+                        "primary-container": "#2563eb",
+                        "on-surface": "#0b1c30",
+                        "on-error-container": "#93000a",
+                        "primary-fixed": "#dbe1ff",
+                        "tertiary": "#943700",
+                        "tertiary-container": "#bc4800",
+                        "on-secondary-fixed": "#131b2e"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "md": "16px",
+                        "margin-mobile": "16px",
+                        "2xl": "48px",
+                        "container-max": "1280px",
+                        "base": "8px",
+                        "3xl": "64px",
+                        "sm": "8px",
+                        "gutter": "24px",
+                        "lg": "24px",
+                        "xs": "4px",
+                        "xl": "32px",
+                        "margin-desktop": "32px"
+                    },
+                    "fontFamily": {
+                        "headline-lg-mobile": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "display-lg-mobile": ["Inter"],
+                        "body-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "label-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-lg-mobile": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "display-lg-mobile": ["36px", {"lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                        "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "500"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        @keyframes wave {
+            0% { transform: translateY(0) scale(1.05); }
+            50% { transform: translateY(-10px) scale(1.08); }
+            100% { transform: translateY(0) scale(1.05); }
+        }
+        .animate-wave {
+            animation: wave 8s ease-in-out infinite;
+        }
+        .reveal {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .reveal.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(8px);
+            border: 1px solid #e2e8f0;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-md overflow-x-hidden">
+<!-- Header Section -->
+<header class="fixed top-0 left-0 right-0 z-50 bg-surface/80 backdrop-blur-md">
+<div class="flex justify-between items-center px-gutter w-full max-w-container-max mx-auto py-unit h-16">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">stars</span>
+<span class="font-headline-md text-headline-md-mobile font-bold text-primary tracking-tight">e2go.app</span>
+</div>
+<button class="text-on-surface-variant font-medium hover:opacity-80 transition-opacity flex items-center gap-1">
+                Sign In
+            </button>
+</div>
+</header>
+<main class="pt-16">
+<!-- Hero Section with Flag Background -->
+<section class="relative h-[400px] flex items-center justify-center overflow-hidden">
+<div class="absolute inset-0 z-0">
+<img alt="American flag waving" class="w-full h-full object-cover animate-wave opacity-40 grayscale-[0.2]" src="https://lh3.googleusercontent.com/aida/ADBb0ug1DL7odC1hoCJOICyi01_cRHKTU8rg9z63_CNlhCw6k62SkLvnkSD1ETFr49rhNhqZkzGkeZtx2Kwz4taPyqPIedHc3B-70yNUIiEsyspCcJXAglcPAwJEuCEVADwqyNY9-1u_Z-l4ka9UXpUeVA-U-XcOgJgqK7Z0MH9xFRzPkGXX04QaK--Xft9jOHO0vUIls9I6ZZ2oRlO6LiX8NVYK067UtFXwn7n9FoQw5XL-ZY4aQiY59wIg3A"/>
+<div class="absolute inset-0 bg-gradient-to-b from-background/10 via-background/60 to-background"></div>
+</div>
+<div class="relative z-10 px-margin-mobile w-full text-center reveal" id="hero-reveal">
+<div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary mb-6 border border-primary/20">
+<span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="font-label-md text-label-md uppercase tracking-wider">Analysis Complete</span>
+</div>
+<h1 class="font-display-lg-mobile text-display-lg-mobile mb-4 text-on-background">You're Eligible to Build Your U.S. Future.</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-[600px] mx-auto">Based on your answers, you meet the foundational requirements for the E-2 Treaty Investor Visa.</p>
+</div>
+</section>
+<!-- The 6-Pillar Breakdown (Bento Style) -->
+<section class="px-margin-mobile py-xl max-w-container-max mx-auto">
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile mb-gutter text-center reveal">The 6-Pillar Eligibility Check</h2>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-md reveal">
+<!-- Pillar 1 -->
+<div class="glass-card p-lg rounded-xl flex flex-col gap-4">
+<div class="flex justify-between items-start">
+<div class="p-2 bg-emerald-50 rounded-lg">
+<span class="material-symbols-outlined text-emerald-600" style="font-variation-settings: 'FILL' 1;">public</span>
+</div>
+<span class="material-symbols-outlined text-emerald-500">check_circle</span>
+</div>
+<div>
+<h3 class="font-headline-md text-[18px] mb-1">Treaty Nationality</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Validated as a citizen of a country with an E-2 treaty.</p>
+</div>
+</div>
+<!-- Pillar 2 -->
+<div class="glass-card p-lg rounded-xl flex flex-col gap-4">
+<div class="flex justify-between items-start">
+<div class="p-2 bg-emerald-50 rounded-lg">
+<span class="material-symbols-outlined text-emerald-600" style="font-variation-settings: 'FILL' 1;">payments</span>
+</div>
+<span class="material-symbols-outlined text-emerald-500">check_circle</span>
+</div>
+<div>
+<h3 class="font-headline-md text-[18px] mb-1">Investment Capacity</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Total capital exceeds the 'substantiality' threshold for your industry.</p>
+</div>
+</div>
+<!-- Pillar 3 -->
+<div class="glass-card p-lg rounded-xl flex flex-col gap-4">
+<div class="flex justify-between items-start">
+<div class="p-2 bg-emerald-50 rounded-lg">
+<span class="material-symbols-outlined text-emerald-600" style="font-variation-settings: 'FILL' 1;">engineering</span>
+</div>
+<span class="material-symbols-outlined text-emerald-500">check_circle</span>
+</div>
+<div>
+<h3 class="font-headline-md text-[18px] mb-1">Active Management</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Confirmed direct role in developing and directing operations.</p>
+</div>
+</div>
+<!-- Pillar 4 -->
+<div class="glass-card p-lg rounded-xl flex flex-col gap-4">
+<div class="flex justify-between items-start">
+<div class="p-2 bg-emerald-50 rounded-lg">
+<span class="material-symbols-outlined text-emerald-600" style="font-variation-settings: 'FILL' 1;">storefront</span>
+</div>
+<span class="material-symbols-outlined text-emerald-500">check_circle</span>
+</div>
+<div>
+<h3 class="font-headline-md text-[18px] mb-1">Business Type</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Bona-fide active enterprise with significant economic impact.</p>
+</div>
+</div>
+<!-- Pillar 5 -->
+<div class="glass-card p-lg rounded-xl flex flex-col gap-4">
+<div class="flex justify-between items-start">
+<div class="p-2 bg-emerald-50 rounded-lg">
+<span class="material-symbols-outlined text-emerald-600" style="font-variation-settings: 'FILL' 1;">verified_user</span>
+</div>
+<span class="material-symbols-outlined text-emerald-500">check_circle</span>
+</div>
+<div>
+<h3 class="font-headline-md text-[18px] mb-1">Admissibility</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">No immediate disqualifying factors or prior U.S. issues detected.</p>
+</div>
+</div>
+<!-- Pillar 6 (Warning) -->
+<div class="border-2 border-amber-200 bg-amber-50/30 p-lg rounded-xl flex flex-col gap-4">
+<div class="flex justify-between items-start">
+<div class="p-2 bg-amber-100 rounded-lg">
+<span class="material-symbols-outlined text-amber-700" style="font-variation-settings: 'FILL' 1;">flag</span>
+</div>
+<span class="material-symbols-outlined text-amber-500">warning</span>
+</div>
+<div>
+<h3 class="font-headline-md text-[18px] mb-1">Canadian Ties</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Minor Clarification Needed regarding residence vs citizenship status.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Flagged Items -->
+<section class="px-margin-mobile py-lg max-w-container-max mx-auto reveal">
+<div class="bg-surface-container-high rounded-xl p-lg flex flex-col md:flex-row gap-lg items-center border border-outline-variant/30">
+<div class="bg-amber-100 text-amber-900 p-md rounded-full">
+<span class="material-symbols-outlined text-[32px]">pending_actions</span>
+</div>
+<div>
+<h4 class="font-headline-md text-[16px] font-bold mb-1">Action Required: Source of Funds</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant">We noticed a potential gap in the documentation for your initial $50,000 deposit. You'll need to provide a clear paper trail from your Canadian savings account to the U.S. escrow account during the Case Builder phase.</p>
+</div>
+</div>
+</section>
+<!-- Recommended Path -->
+<section class="px-margin-mobile py-xl max-w-container-max mx-auto reveal">
+<div class="text-center mb-lg">
+<p class="text-primary font-bold uppercase tracking-widest text-label-sm mb-2">Our Recommendation</p>
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile">Solo Application Path</h2>
+</div>
+<div class="max-w-[800px] mx-auto grid grid-cols-1 md:grid-cols-2 gap-md">
+<div class="p-lg bg-white border border-outline-variant rounded-xl">
+<span class="material-symbols-outlined text-primary mb-2">speed</span>
+<h4 class="font-bold mb-2">Efficiency First</h4>
+<p class="text-body-sm text-on-surface-variant">Your case is high-confidence. A guided solo application will save you $10k+ in legal fees while maintaining 100% compliance.</p>
+</div>
+<div class="p-lg bg-white border border-outline-variant rounded-xl">
+<span class="material-symbols-outlined text-primary mb-2">fact_check</span>
+<h4 class="font-bold mb-2">Automated Review</h4>
+<p class="text-body-sm text-on-surface-variant">Our AI-powered engine will cross-check your documents against 1,200+ previous successful E-2 petitions.</p>
+</div>
+</div>
+</section>
+<!-- The Hard Gate & CTA -->
+<section class="bg-primary px-margin-mobile py-3xl text-white relative overflow-hidden reveal">
+<div class="absolute inset-0 opacity-10">
+<img alt="Background pattern" class="w-full h-full object-cover scale-150 grayscale invert" src="https://lh3.googleusercontent.com/aida/ADBb0ug1DL7odC1hoCJOICyi01_cRHKTU8rg9z63_CNlhCw6k62SkLvnkSD1ETFr49rhNhqZkzGkeZtx2Kwz4taPyqPIedHc3B-70yNUIiEsyspCcJXAglcPAwJEuCEVADwqyNY9-1u_Z-l4ka9UXpUeVA-U-XcOgJgqK7Z0MH9xFRzPkGXX04QaK--Xft9jOHO0vUIls9I6ZZ2oRlO6LiX8NVYK067UtFXwn7n9FoQw5XL-ZY4aQiY59wIg3A"/>
+</div>
+<div class="relative z-10 max-w-[640px] mx-auto text-center">
+<h2 class="font-display-lg-mobile text-display-lg-mobile mb-6">Ready to start your U.S. journey?</h2>
+<p class="font-body-lg text-body-lg mb-gutter opacity-90">Unlock the full Case Builder, generate your E-2 business plan, and prepare your USCIS dossier with confidence.</p>
+<div class="bg-white/10 backdrop-blur-md rounded-2xl p-xl border border-white/20 mb-xl inline-block w-full">
+<div class="flex justify-between items-center mb-4 border-b border-white/20 pb-4">
+<span class="text-label-md">Professional Case Builder Access</span>
+<span class="font-bold text-headline-md">$247</span>
+</div>
+<div class="flex items-center gap-2 text-label-sm mb-gutter justify-center">
+<span class="material-symbols-outlined text-[16px]">verified</span>
+<span>One-time fee • Lifetime access • Secure processing</span>
+</div>
+<button class="w-full bg-white text-primary font-bold py-4 rounded-lg hover:bg-surface transition-all active:scale-[0.98] h-[56px] text-lg shadow-lg">
+                        Begin Your Application
+                    </button>
+</div>
+<p class="text-label-sm opacity-60 italic">Money-back guarantee if we find a fatal flaw in your documents during first review.</p>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="bg-surface-container dark:bg-inverse-surface mt-2xl">
+<div class="w-full px-gutter py-stack-lg flex flex-col md:flex-row justify-between items-center gap-stack-md max-w-container-max mx-auto py-3xl">
+<div class="flex flex-col gap-2 items-center md:items-start">
+<div class="text-label-md font-bold text-primary">e2go.app</div>
+<p class="text-on-surface-variant text-body-sm text-center md:text-left max-w-[400px]">
+                    © 2024 e2go.app. Not a law firm. Information provided is for educational purposes only.
+                </p>
+</div>
+<div class="flex flex-wrap justify-center gap-md">
+<a class="text-on-surface-variant hover:text-primary transition-colors text-label-md" href="#">Terms of Service</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors text-label-md" href="#">Privacy Policy</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors text-label-md" href="#">Government Sources</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors text-label-md" href="#">Contact Support</a>
+</div>
+</div>
+</footer>
+<script>
+        // Simple scroll reveal observer
+        const observerOptions = {
+            threshold: 0.1
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('active');
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.reveal').forEach(el => {
+            observer.observe(el);
+        });
+
+        // Forced initial reveal for hero
+        setTimeout(() => {
+            document.getElementById('hero-reveal').classList.add('active');
+        }, 100);
+    </script>
+</body></html>
