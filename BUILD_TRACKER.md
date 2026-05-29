@@ -132,7 +132,9 @@
 
 ## Vercel Issues
 
-*(To be filled after first deploy)*
+- GitHub repo created: https://github.com/ocdeployments/e2go
+- To complete Vercel deploy: link Vercel project to this repo in Vercel dashboard
+- Manual steps needed: Add env vars to Vercel, create Upstash Redis if desired
 
 ---
 
