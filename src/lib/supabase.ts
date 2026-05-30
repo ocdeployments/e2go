@@ -4,32 +4,20 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-// Client-side Supabase client (for browser)
-// Only create if env vars are available (runtime check)
-let _supabase: SupabaseClient | undefined;
-
-export function getSupabaseClient(): SupabaseClient {
-  if (_supabase) return _supabase;
-
-  if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY');
-  }
-
-  _supabase = createClient(supabaseUrl, supabaseAnonKey);
-  return _supabase;
+// Validate env vars immediately
+if (!supabaseUrl) {
+  throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL environment variable');
+}
+if (!supabaseAnonKey) {
+  throw new Error('Missing NEXT_PUBLIC_SUPABASE_ANON_KEY environment variable');
 }
 
-// Export a proxy that lazily initializes the client
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const supabase = new Proxy({} as any, {
-  get() {
-    return getSupabaseClient();
-  }
-});
+// Client-side Supabase client
+export const supabase: SupabaseClient = createClient(supabaseUrl, supabaseAnonKey);
 
 // Server-side client for API routes
-export function createSupabaseServerClient() {
-  return getSupabaseClient();
+export function createSupabaseServerClient(): SupabaseClient {
+  return supabase;
 }
 
 // Type definitions
