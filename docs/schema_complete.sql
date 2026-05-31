@@ -60,7 +60,8 @@ CREATE TABLE IF NOT EXISTS public.answers (
     application_id UUID REFERENCES public.applications(id) ON DELETE CASCADE,
     question_key TEXT NOT NULL,
     answer_value TEXT,
-    answered_at TIMESTAMPTZ DEFAULT NOW()
+    answered_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE (application_id, question_key)
 );
 
 -- ============================================================================
