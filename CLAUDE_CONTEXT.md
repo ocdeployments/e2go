@@ -404,6 +404,18 @@ Every completed task ends with a raw verification command (git log --oneline, gr
 ### RULE 13 — THREE STATES PER FEATURE
 Before building any feature, spec the loading state, success state, and empty/error state. If you cannot describe all three, do not build it yet.
 
+### RULE 14 — QA SNAPSHOT BEFORE EVERY PUSH
+Before any git push, run npm run qa manually and review the full output — not just pass/fail. Look for:
+- Dead buttons (onClick handlers that don't fire)
+- Orphaned pages (routes with no navigation path to them)
+- Broken links (404s in the network tab)
+- Silent failures (actions that complete but don't update state)
+
+The pre-push hook tells you pass/fail.
+The manual qa run tells you what to investigate before it becomes a production bug.
+
+Rule: never push solely because the hook passed. Review the output.
+
 ---
 
 ## DOCUMENT GENERATION PIPELINE
