@@ -9,6 +9,7 @@
     "lint": "next lint",
     "prepare": "husky install",
     "qa": "tsc --noEmit && npm run build && npx playwright test",
+    "qa:snapshot": "bash scripts/qa-snapshot.sh",
     "test": "echo test"
   },
   "dependencies": {
