@@ -56,6 +56,12 @@
       "code": "PR-08",
       "question": "Q0-10_sub",
       "trigger": ["A cannabis or marijuana-related business"]
+    },
+    {
+      "code": "PR-THIRD-COUNTRY",
+      "question": "Q0-03",
+      "trigger": ["In another country outside my home country and the U.S."],
+      "message": "As of September 6, 2025, E-2 visa applications must be filed at a consulate in your country of nationality or legal residence. Third-country processing is no longer available."
     }
   ],
   "attorney_flags": [
@@ -69,7 +75,9 @@
       "code": "W-03",
       "question": "Q0-03",
       "trigger": ["In another country outside my home country and the U.S."],
-      "level": "attorney_recommended"
+      "level": "do_not_proceed",
+      "stop_code": "PR-THIRD-COUNTRY",
+      "message": "As of September 6, 2025, E-2 visa applications must be filed at a consulate in your country of nationality or legal residence. Processing at a third-country consulate is no longer permitted. If you are temporarily abroad, you will need to apply when you return home. An immigration attorney can advise on your specific situation."
     },
     {
       "code": "W-E2-DENIED",
@@ -82,11 +90,6 @@
       "question": "Q0-E2",
       "trigger": ["Yes — my application is still pending or under review"],
       "level": "attorney_recommended"
-    },
-    {
-      "code": "W-06",
-      "question": "Q0-06",
-      "trigger": ["I have the money but I have not thought through how to document where it came from"]
     },
     {
       "code": "W-08",
@@ -184,12 +187,6 @@
       "question": "Q0-20",
       "trigger": ["Yes", "I am not sure"],
       "level": "attorney_recommended"
-    },
-    {
-      "code": "W-TIMELINE-URGENT",
-      "question": "Q0-TIMELINE",
-      "trigger": ["Within the next 3 months"],
-      "level": "attorney_recommended"
     }
   ],
   "risk_flags": [
@@ -229,13 +226,13 @@
     {
       "code": "W-NI-01",
       "question": "Q0-NI-01",
-      "trigger": ["I own property but I am thinking of selling it before I move", "I own property but have not decided what to do with it yet", "No — I do not own property there"],
+      "trigger": ["I own property but I am thinking of selling it before I move"],
       "level": "risk_flag"
     },
     {
       "code": "W-NI-02",
       "question": "Q0-NI-02",
-      "trigger": ["No — all my close family is moving to the U.S. with me", "I do not have immediate family there"],
+      "trigger": ["No — all my close family is moving to the U.S. with me"],
       "level": "risk_flag"
     },
     {
@@ -324,7 +321,8 @@
         "Yes — I own investment property I plan to keep"
       ],
       "Q0-NI-02": [
-        "Yes — close family members will remain there"
+        "Yes — close family members will remain there",
+        "Mixed — some family remaining, some moving with me"
       ],
       "Q0-NI-03": [
         "Yes — I plan to keep my accounts open there",
