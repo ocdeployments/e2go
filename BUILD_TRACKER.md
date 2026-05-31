@@ -34,6 +34,16 @@
 | Module 3 Engine | ✅ PASS | Tab A scaffold, auto-save, TabShell |
 | Husky Hooks | ✅ PASS | pre-push configured |
 
+### Standing Build Rules Added
+
+| Rule | Description |
+|------|-------------|
+| Rule 11 | One file per commit |
+| Rule 12 | Verify with raw output |
+| Rule 13 | Three states per feature |
+| Rule 14 | QA snapshot before push |
+| Rule 15 | No Canada-only assumptions |
+
 ---
 
 ## Completed This Session
@@ -211,6 +221,18 @@
 - GitHub repo created: https://github.com/ocdeployments/e2go
 - To complete Vercel deploy: link Vercel project to this repo in Vercel dashboard
 - Manual steps needed: Add env vars to Vercel, create Upstash Redis if desired
+
+---
+
+## Research Assets
+
+| File | Owns | Source |
+|------|------|--------|
+| docs/spec/E2_Community_Questions_Raw.md | Community question database, 315 questions | Perplexity research |
+| docs/spec/E2_Answers_Part1_Eligibility_Investment.md | Verified answers categories 1-2 | Perplexity research |
+| docs/spec/E2_Global_Consulate_Intelligence_Report_Part1.md | Global consulate intelligence, master table | Perplexity research |
+| docs/spec/E2_Official_Knowledge_Base_Research.md | Official guidance compilation | Pending |
+| Consulate fee research | Government fee schedule by country | Pending |
 
 ---
 
