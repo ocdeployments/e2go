@@ -5,7 +5,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+import { createBrowserSupabaseClient } from "@/lib/supabase";
 
 interface Question {
   id: string;
@@ -49,6 +49,7 @@ export default function QuizPage() {
   const [currencyToggle, setCurrencyToggle] = useState<"CAD" | "USD">("USD");
   const [currencyValue, setCurrencyValue] = useState("");
   const [proportionalityFlag, setProportionalityFlag] = useState<string | null>(null);
+  const [supabase] = useState(() => createBrowserSupabaseClient());
   const [isAnimating, setIsAnimating] = useState(false);
   const [emailValue, setEmailValue] = useState("");
   const [cadUsdRate, setCadUsdRate] = useState<number | null>(null);
