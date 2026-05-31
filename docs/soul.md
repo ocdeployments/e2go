@@ -180,4 +180,39 @@ If the answer is the latter: rebuild it.
 
 ---
 
-*Version 1.1 | May 28, 2026 | E2Pathway*
+## Approved Landing Page Copy — Do Not Rewrite
+
+Are you one of those people?
+
+Funds sourced. Business model outlined. A state shortlisted. A lawyer's number saved in your phone.
+
+Everything except the one thing that actually moves things forward — starting.
+
+It's not laziness. It's a form of fear that hides within preparation. One more question, one more piece of research, one more person to ask. The research phase can quietly become a place to live.
+
+e2go was built for exactly this moment.
+
+What takes most applicants months of back-and-forth, lawyer fees, and second-guessing — we walk you through in hours. Not because we cut corners. Because we've already done the hard work of knowing exactly what the consulate needs, exactly how to present it, and exactly what trips people up.
+
+You bring the investment and the business. We'll build the application.
+
+Start with the quiz. Ten minutes. Free. No commitment.
+
+Find out where you stand — then let us get you ready.
+
+Trust line: "Optimized for Toronto. Built for every treaty country."
+
+---
+
+## Franchise Nudge — Approved Framing
+
+When a user has not decided on a business type, we educate on why franchises tend to produce stronger E-2 applications. This is factually accurate and genuinely in the applicant's interest.
+
+Approved framing:
+"Applicants with an established franchise tend to have stronger applications — the business model is proven, the financials are documented, and many franchises have processed E-2 visas before. If you have not settled on a direction yet, it is worth understanding why consular officers respond well to franchise applications."
+
+This nudge appears once only — in Module 2 when user selects 'still researching' or 'own business concept'. Never on landing page. Never repeatedly. Once only.
+
+---
+
+*Version 1.2 | May 31, 2026 | E2Pathway*
