@@ -64,14 +64,10 @@ But the real denial pattern is more specific: funds transferred to a
 U.S. business bank account but not yet SPENT are considered idle and
 therefore not "at risk."
 
-**Fix needed:** Add explicit question:
-  QF-NEW-01: "Has any of the investment capital been spent on actual
-  business expenses — such as a signed lease, equipment purchase, inventory,
-  franchise fee payment, or professional fees?"
-  Options: Yes — substantially all committed to expenses /
-           Yes — partially spent / No — funds are in the account but not
-           yet spent on expenses
-  Branch: Not yet spent → Red flag D-02 — must address before submission
+**Fix:** ✅ RESOLVED — QF-NEW-01 added in Tab F
+  "Of the funds transferred to the business, how much has been spent on actual
+  business expenses — franchise fees, equipment, deposits, build-out?"
+  Includes D-02 advisory if $0 deployed.
 
 ---
 
@@ -82,16 +78,10 @@ The real denial pattern shows that SPECIFIC GAPS are what cause problems:
 cash deposits, foreign wire transfers without source statements,
 cryptocurrency conversions, informal gifts without documentation.
 
-**Fix needed:** Add a checklist of specific gap types:
-  QH-NEW-01: "Are any of the following true about your funds?"
-  Multiselect:
-  - Some funds originated as cash with no bank deposit record
-  - Some funds came from cryptocurrency
-  - Some funds were transferred informally without banking records
-  - Some funds came from a country with restricted banking documentation
-  - I received a large deposit I cannot fully explain
-  - None of the above
-  Branch: Any selected (except none) → D-03 flag with specific advisory
+**Fix:** ✅ RESOLVED — QH-NEW-01 added in Tab H
+  "Are there any gaps in your funds trail — periods where money moved
+  through an account you cannot produce statements for, or funds that
+  changed form (cash, crypto, gold, informal transfer)?"
 
 ---
 
@@ -101,15 +91,9 @@ cryptocurrency conversions, informal gifts without documentation.
 pattern shows officers look for SPECIFICITY — job titles, wages, timelines,
 and the connection between hiring and revenue growth.
 
-**Fix needed:** Strengthen QI-04 from "describe the positions" to structured data:
-  QI-04-REVISED: Repeating group — one entry per planned role
-  Fields: Job title / Full-time or Part-time /
-          Approximate start date (Month, Year) /
-          Approximate annual wage (USD) /
-          Primary function (customer service / operations / delivery /
-          admin / sales / other)
-
-This makes the hiring plan specific enough to survive officer scrutiny.
+**Fix:** ✅ RESOLVED — QI-NEW-01 added in Tab I
+  Repeating group with job title, full-time/part-time, salary, hire month.
+  Also QI-NEW-03 for household expenses to calculate marginality ratio.
 
 ---
 
@@ -120,15 +104,9 @@ But the denial pattern specifically identifies "inflated projections without
 assumptions" as a trigger. The numbers alone are not enough — the officer
 needs to see WHY you project those numbers.
 
-**Fix needed:** After each year's projection fields, add:
-  QK-08-REVISED: "What is the primary driver behind Year 1 revenue?"
-  Options:
-  - Franchise system average unit revenue (FDD data)
-  - Prior year revenue from this same business (acquisition)
-  - Market research showing demand in this area
-  - Comparable business data from same industry
-  - My own experience-based estimate
-  Branch: Experience-based only → advisory flag — strengthen with data
+**Fix:** ✅ RESOLVED — QI-NEW-02 and QK-NEW-01 added
+  QI-NEW-02: "What are your Year 1 revenue projections based on?"
+  QK-NEW-01: FDD Item 19 review question
 
 ---
 
@@ -196,15 +174,10 @@ and what the applicant says at interview.
 
 **Problem:** QG-02 asked operational status as a simple select. The denial
 pattern shows that "entity formed but not operating" applications are treated
-very differently from applications where real operations exist. The question
-needs to draw out MORE operational evidence for early-stage businesses.
+very differently from applications where real operations exist.
 
-**Fix needed:** If QG-02 = "Entity formed but operations not started":
-  Add advisory: "Applications where operations have not yet begun are
-  held to a higher standard on investment commitment and business plan
-  quality. The officer must be convinced that the investment is real and
-  that the business WILL operate — not just that it might."
-  + trigger Module 4 flag for additional review
+**Fix:** ✅ RESOLVED — QG-NEW-01 and QG-BANK added in Tab G
+  License reference tracking, business bank account questions.
 
 ---
 
@@ -226,18 +199,24 @@ non-immigrant intent with SPECIFIC, VERIFIABLE Canadian ties.
 
 ---
 
-## Summary of Questions to Add or Revise
+## Summary of Questions Added (v1.1 Update)
 
-| ID | Action | Denial Addressed |
-|----|--------|-----------------|
-| QF-NEW-01 | ADD: Are funds actually spent on business expenses? | D-02 |
-| QH-NEW-01 | ADD: Specific paper trail gap screener | D-03 |
-| QI-04 | REVISE: Make hiring plan a structured repeating group | D-04, D-07 |
-| QK-08 | REVISE: Add projection assumption type selector | D-05, D-06 |
-| QD-05 | REVISE: Structured Canadian ties selector | D-15 |
-| Module 5 | ADD: Interview simulator with 20 real questions | D-08, D-09 |
-| Module 4 | ADD: Cross-tab consistency checker | D-09 |
-| Module 4 | ADD: Readiness flags for D-01 through D-15 | All |
+| ID | Action | Denial Addressed | Status |
+|----|--------|-----------------|--------|
+| QF-NEW-01 | ADD: funds spent on expenses | D-02 | ✅ RESOLVED |
+| QF-NEW-02 | ADD: loan structure confirmation | D-12 | ✅ RESOLVED |
+| QH-NEW-01 | ADD: paper trail gaps screener | D-03 | ✅ RESOLVED |
+| QI-NEW-01 | ADD: structured hiring plan | D-07 | ✅ RESOLVED |
+| QI-NEW-02 | ADD: revenue projections basis | D-06 | ✅ RESOLVED |
+| QI-NEW-03 | ADD: household expenses for marginality | D-04 | ✅ RESOLVED |
+| QG-NEW-01 | ADD: license tracking | D-10 | ✅ RESOLVED |
+| QG-BANK | ADD: business bank account | D-10 | ✅ RESOLVED |
+| QE-NEW-01 | ADD: Membership Interest Ledger | D-13 | ✅ RESOLVED |
+| QE-NEW-02 | ADD: Operating Agreement control rights | D-13 | ✅ RESOLVED |
+| QK-NEW-01 | ADD: FDD Item 19 review | D-06 | ✅ RESOLVED |
+| QL-AGE-OUT | ADD: child age-out awareness | Future | ✅ ADDED |
+| Module 5 | ADD: Interview simulator | D-08, D-09 | PENDING |
+| Module 4 | ADD: Cross-tab consistency | D-09 | PENDING |
 
 ---
 
@@ -257,4 +236,4 @@ same issues that cause other applications to fail.
 
 ---
 *End of Denial-Based Audit*
-*Version 1.1 | May 28, 2026*
+*Version 1.1 | May 31, 2026 — Updated with resolved gaps*
