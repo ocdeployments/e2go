@@ -20,6 +20,7 @@ interface QuestionConfig {
   tooltip: string;
   options?: QuestionOption[];
   required: boolean;
+  sensitivity?: 'high' | 'medium' | 'low';
   warningTriggers?: WarningTrigger[];
 }
 
@@ -27,6 +28,7 @@ interface QuestionRendererProps {
   question: QuestionConfig;
   value: string | string[] | number | null;
   onChange: (value: string | string[] | number | null) => void;
+  onSkip?: () => void;
   disabled: boolean;
 }
 
@@ -34,12 +36,25 @@ export default function QuestionRenderer({
   question,
   value,
   onChange,
+  onSkip,
   disabled,
 }: QuestionRendererProps) {
   const [showTooltip, setShowTooltip] = useState(false);
+  const [isSkipped, setIsSkipped] = useState(false);
   const activeWarning = question.warningTriggers?.find(
     (wt) => wt.value === value
   );
+
+  const sensitivity = question.sensitivity || 'low';
+  const showSkip = sensitivity === 'high' || sensitivity === 'medium';
+
+  const handleSkip = () => {
+    setIsSkipped(true);
+    onChange(null);
+    if (onSkip) {
+      onSkip();
+    }
+  };
 
   const renderSingle = () => (
     <div className="space-y-3">
@@ -235,17 +250,27 @@ export default function QuestionRenderer({
       {question.type === 'number' && renderNumber()}
       {question.type === 'date' && renderDate()}
 
-      {/* Skip link */}
-      <div className="text-center pt-2">
-        <button
-          type="button"
-          onClick={() => {}}
-          className="text-[#45464d] hover:text-[#004ac6] underline text-sm"
-          style={{ fontSize: '14px' }}
-        >
-          Not sure yet? Skip for now — you can come back to this.
-        </button>
-      </div>
+      {/* Skip link for sensitive fields */}
+      {showSkip && !isSkipped && (
+        <div className="text-center pt-2">
+          <button
+            type="button"
+            onClick={handleSkip}
+            className="text-[#64748b] hover:text-[#004ac6] text-sm"
+            style={{ fontSize: '14px' }}
+          >
+            Not comfortable sharing this here?{' '}
+            <span className="underline">Skip for now — I will fill this in myself</span>
+          </button>
+        </div>
+      )}
+
+      {/* Skipped indicator */}
+      {isSkipped && (
+        <div className="p-3 bg-[#FEF3C7] border border-[#FCD34D] rounded-lg text-sm text-[#92400E]">
+          No problem — we will leave a space in your document that you can fill in yourself before submitting.
+        </div>
+      )}
 
       {/* Warning card - amber, never alarm */}
       {activeWarning && (
