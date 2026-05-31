@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createBrowserSupabaseClient } from '@/lib/supabase';
+import { ApplicationProvider, useApplication } from '@/contexts/ApplicationContext';
 import TabShell from '@/components/module3/TabShell';
 import tabQuestions from '@/data/module3/tab-a.json';
 
@@ -16,88 +17,6 @@ interface QuestionConfig {
   warningTriggers?: { value: string; message: string }[];
 }
 
-interface AnswerState {
-  answers: Record<string, string | string[] | number | null>;
-  setAnswer: (key: string, value: string | string[] | number | null) => void;
-  saveStatus: 'idle' | 'saving' | 'saved' | 'error';
-}
-
-function useAnswerState(applicationId: string | null): AnswerState {
-  const [supabase] = useState(() => createBrowserSupabaseClient());
-  const [answers, setAnswersState] = useState<Record<string, string | string[] | number | null>>({});
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
-  const [debounceTimer, setDebounceTimer] = useState<NodeJS.Timeout | null>(null);
-
-  // Fetch existing answers on mount
-  useEffect(() => {
-    if (!applicationId) return;
-
-    const fetchAnswers = async () => {
-      const { data } = await supabase
-        .from('answers')
-        .select('question_key, answer_value')
-        .eq('application_id', applicationId);
-
-      if (data) {
-        const answersMap: Record<string, string | string[] | number | null> = {};
-        data.forEach((row) => {
-          answersMap[row.question_key] = row.answer_value;
-        });
-        setAnswersState(answersMap);
-      }
-    };
-
-    fetchAnswers();
-  }, [applicationId, supabase]);
-
-  const saveAnswer = async (key: string, value: string | string[] | number | null) => {
-    if (!applicationId) return;
-    setSaveStatus('saving');
-
-    try {
-      const response = await fetch('/api/answers', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question_key: key, answer_value: value, application_id: applicationId }),
-      });
-
-      if (!response.ok) throw new Error('Save failed');
-      setSaveStatus('saved');
-      setTimeout(() => setSaveStatus('idle'), 2000);
-    } catch {
-      setTimeout(async () => {
-        try {
-          const retry = await fetch('/api/answers', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ question_key: key, answer_value: value, application_id: applicationId }),
-          });
-          if (!retry.ok) throw new Error('Retry failed');
-          setSaveStatus('saved');
-          setTimeout(() => setSaveStatus('idle'), 2000);
-        } catch {
-          setSaveStatus('error');
-        }
-      }, 5000);
-    }
-  };
-
-  const setAnswer = (key: string, value: string | string[] | number | null) => {
-    setAnswersState((prev) => ({ ...prev, [key]: value }));
-    if (debounceTimer) clearTimeout(debounceTimer);
-    const timer = setTimeout(() => saveAnswer(key, value), 2000);
-    setDebounceTimer(timer);
-  };
-
-  useEffect(() => {
-    return () => {
-      if (debounceTimer) clearTimeout(debounceTimer);
-    };
-  }, [debounceTimer]);
-
-  return { answers, setAnswer, saveStatus };
-}
-
 function TabAPageContent() {
   const router = useRouter();
   const [supabase] = useState(() => createBrowserSupabaseClient());
@@ -106,29 +25,6 @@ function TabAPageContent() {
   const [applicationId, setApplicationId] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
-
-  // Track progress for screen state determination
-  const [totalAnswered, setTotalAnswered] = useState(0);
-  const [lastQuestionIndex, setLastQuestionIndex] = useState(0);
-
-  const { answers, setAnswer, saveStatus } = useAnswerState(applicationId);
-
-  // Calculate answered count and last question index when answers change
-  useEffect(() => {
-    if (answers && tabQuestions) {
-      let answered = 0;
-      let lastIdx = 0;
-      (tabQuestions as QuestionConfig[]).forEach((q, idx) => {
-        const val = answers[q.key];
-        if (val !== undefined && val !== null && val !== '') {
-          answered++;
-          lastIdx = idx;
-        }
-      });
-      setTotalAnswered(answered);
-      setLastQuestionIndex(lastIdx);
-    }
-  }, [answers]);
 
   useEffect(() => {
     const init = async () => {
@@ -158,9 +54,15 @@ function TabAPageContent() {
           .upsert({ id: authUser.id, email: authUser.email, tier: 'free' })
           .select();
 
+        // If profile upsert fails, log and fail immediately - don't proceed
         if (profileError) {
-          console.error('Profile upsert error:', profileError);
+          console.error('CRITICAL: Profile upsert failed:', profileError);
+          setLoadError(`Profile creation failed: ${profileError.message}`);
+          setLoading(false);
+          return;
         }
+
+        console.log('Profile upsert succeeded for user:', authUser.id);
 
         const { data: newApp, error: createError } = await supabase
           .from('applications')
@@ -169,10 +71,12 @@ function TabAPageContent() {
           .single();
 
         if (createError) {
-          setLoadError('Failed to create application');
+          console.error('CRITICAL: Application insert failed:', createError);
+          setLoadError(`Failed to create application: ${createError.message}`);
           setLoading(false);
           return;
         }
+        console.log('Application created:', newApp.id);
         setApplicationId(newApp.id);
       }
 
@@ -219,18 +123,80 @@ function TabAPageContent() {
     );
   }
 
+  // Wrap with ApplicationProvider when we have applicationId
+  if (applicationId) {
+    return (
+      <ApplicationProvider applicationId={applicationId}>
+        <TabAWithContext
+          loadError={loadError}
+          onRetry={handleRetry}
+          onComplete={handleComplete}
+        />
+      </ApplicationProvider>
+    );
+  }
+
+  // Error state (no applicationId and we have an error)
   return (
     <TabShell
       tabLetter="A"
       tabTitle="DS-160 Reference"
       tabDescription="Personal information for your visa application"
       questions={tabQuestions as QuestionConfig[]}
-      onComplete={handleComplete}
+      onComplete={() => {}}
+      answers={{}}
+      onAnswerChange={() => {}}
+      saveStatus="idle"
+      loadError={loadError}
+      onRetry={handleRetry}
+      nextTab={{ letter: 'B', title: 'Investment Details', description: 'Information about your E-2 investment' }}
+    />
+  );
+}
+
+// Inner component that uses ApplicationContext
+function TabAWithContext({
+  loadError,
+  onRetry,
+  onComplete,
+}: {
+  loadError: string | null;
+  onRetry: () => void;
+  onComplete: () => void;
+}) {
+  const { answers, saveStatus, setAnswer } = useApplication();
+  const [totalAnswered, setTotalAnswered] = useState(0);
+  const [lastQuestionIndex, setLastQuestionIndex] = useState(0);
+
+  // Calculate answered count when answers change
+  useEffect(() => {
+    if (answers && tabQuestions) {
+      let answered = 0;
+      let lastIdx = 0;
+      (tabQuestions as QuestionConfig[]).forEach((q, idx) => {
+        const val = answers[q.key];
+        if (val !== undefined && val !== null && val !== '') {
+          answered++;
+          lastIdx = idx;
+        }
+      });
+      setTotalAnswered(answered);
+      setLastQuestionIndex(lastIdx);
+    }
+  }, [answers]);
+
+  return (
+    <TabShell
+      tabLetter="A"
+      tabTitle="DS-160 Reference"
+      tabDescription="Personal information for your visa application"
+      questions={tabQuestions as QuestionConfig[]}
+      onComplete={onComplete}
       answers={answers}
       onAnswerChange={setAnswer}
       saveStatus={saveStatus}
       loadError={loadError}
-      onRetry={handleRetry}
+      onRetry={onRetry}
       nextTab={{ letter: 'B', title: 'Investment Details', description: 'Information about your E-2 investment' }}
       totalAnswered={totalAnswered}
       lastQuestionIndex={lastQuestionIndex}
