@@ -48,7 +48,7 @@ No exceptions.
 
 **App name:** e2go.app
 **What it is:** Self-service U.S. E-2 Treaty Investor visa preparation platform
-**Who it serves:** Canadian citizens applying via the Toronto consulate
+**Who it serves:** Nationals of all 82 E-2 treaty countries. Primary market: Canada via Toronto consulate.
 **What it replaces:** $6,500–$15,000 immigration attorney engagement
 **What it produces:** A complete, consulate-formatted E-2 application package
 **Legal position:** Preparation and document drafting tool — NOT a law firm
@@ -192,7 +192,7 @@ Do not change these without explicit instruction:
 | Decision | Rule |
 |---|---|
 | Branch strategy | All Claude Code work happens on the dev branch. Never commit directly to main. Vercel auto-deploys dev to a preview URL on every push. Main is merged manually after preview URL is verified. Production (main) is never broken. |
-| Paywall timing | Triggers AFTER Module 3 completes, before document generation. Show 1–2 page preview. Free to collect answers, pay to download. |
+| Paywall timing | Triggers after Module 3 personal tabs complete (Tabs A, B, J, F personal section). User pays and receives Batch 1 documents immediately. Business tabs and Batch 2 documents follow at user's pace. |
 | Document generation | Sequential — ONE document at a time. Checkpointed. Never parallel. |
 | Supabase auth | Use auth.users. Create public.profiles — not public.users. |
 | AI calls | Server-side only via /api/ai/route.ts. Never client-side. |
@@ -204,6 +204,15 @@ Do not change these without explicit instruction:
 | Currency | All platform fees and pricing are in USD only. No multi-currency. No conversion. No CAD, GBP, AUD anywhere in the app except Q0-05 investment amount question which converts CAD input to USD for threshold checking only — this is a qualification calculation, not a payment display. |
 | Global positioning | e2go serves all 82 E-2 treaty countries. Canadian/Toronto is the primary market. Never hardcode Canada-only assumptions into any feature. All nationality references use treaty country logic. |
 | Consulate selector | As of September 6 2025, third-country national E-2 processing was eliminated by the State Department. Applicants must apply at the consulate in their country of nationality or lawful residence only. The consulate selector must enforce nationality-matched consulates. No free consulate selection. Source: State Department policy change Sept 2025. Annual review required. |
+| Two-batch document model | Batch 1 — generated immediately after payment: Declaration, Qualifications, Net Worth Statement, Spouse Declaration (if applicable). Batch 2 — generated as business formation completes: All remaining documents. Cover Letter always last. |
+| 50-page limit — Toronto | 50 pages maximum, new applications only. Official source: ca.usembassy.gov May 2026. Exempt: DS-160, DS-156E, G-28, appointment letter, civil documents, passport copies. Frankfurt exception: 30 pages maximum, 5MB, business plan in executive summary format only. London exception: 20MB upload cap. Annual review required. |
+| Partnership — Negative Control doctrine | Two-investor 50/50 maximum. Source: 9 FAM 402.9-6(F). Three or more equal partners: hard stop PR-PARTNER. Each partner: separate DS-160, separate personal docs. Partnership submission format: UNCONFIRMED — flag open. Contact EVisaCanada@state.gov to confirm. Build both combined and separate binder modes. |
+| Global positioning | e2go serves all 82 E-2 treaty countries. Canada/Toronto is primary market. Never hardcode Canada-only assumptions. Third-country processing eliminated September 6 2025. Consulate selector enforces nationality-matched posts only. |
+| Currency | USD only throughout app. Exception: Q0-05 investment amount converts CAD to USD for threshold checking only — not a payment display. |
+| Franchise categories | Pre-researched in docs/spec/E2_Franchise_Categories_Section5.md Do not rebuild. Read that file before building Module 2 matching engine. |
+| Document standards constitution | docs/spec/Document_Generation_Standards.md Read before generating any document or building any generation feature. Non-negotiable. |
+| Document conditionals | docs/spec/Document_Conditionals.md Read before generating any document. Every document is conditional on applicant situation. |
+| Platform legal boundary | docs/spec/E2_Attorney_Review_Register.md Read before writing any tooltip, warning, or educational copy. Defines what platform can and cannot say legally. |
 
 ---
 
@@ -423,6 +432,18 @@ Rule: never push solely because the hook passed. Review the output.
 ### RULE 15 — NO CANADA-ONLY ASSUMPTIONS
 Every feature must work for any E-2 treaty country national. Never hardcode Canadian-specific language, fees, or consulate references into components. Use treaty country logic and consulate profiles from src/lib/treatyCountries.ts.
 
+### RULE 16 — ALL FOUR MODULE 3 SCREEN STATES REQUIRED
+INTRO, QUESTION, COMPLETION, RESUME. All four implemented before tab is considered complete.
+
+### RULE 17 — TAB CONFIG JSON IS SINGLE SOURCE OF TRUTH
+Navigation name, description, have-ready list, estimated time, all questions live in JSON config. Never hardcode tab content in components.
+
+### RULE 18 — DOCUMENT CONDITIONALS ENFORCED
+No document generated unless triggered by applicant answers. Check Document_Conditionals.md before generating any document.
+
+### RULE 19 — COVER LETTER ALWAYS LAST
+No exceptions. Auto-generates tab index from documents that actually exist. Never references documents not yet generated.
+
 ---
 
 ## PLATFORM BOUNDARIES
@@ -487,20 +508,33 @@ All referrals require explicit CASL-compliant consent before any data is shared.
 
 ## DOCUMENT GENERATION PIPELINE
 
+Two-batch document model:
+- Batch 1 — generated immediately after payment: Declaration, Qualifications, Net Worth Statement, Spouse Declaration (if applicable)
+- Batch 2 — generated as business formation completes: All remaining documents. Cover Letter always last.
+
 Generate ONE document at a time in this exact order:
 
 ```
-Step 1  → Cover Letter (Tab D)        → save to DB → continue
-Step 2  → Source of Funds (Tab H)     → save to DB → continue
-Step 3  → Investment Proof (Tab F)    → save to DB → continue
-Step 4  → Business Plan (Tab K)       → save to DB → continue
-Step 5  → Qualifications (Tab J)      → save to DB → continue
-Step 6  → DS-160 Reference (Tab A)    → save to DB → continue
-Step 7  → Gap analysis (all docs)     → save gap report
-Step 8  → Repetition checker          → save clean versions
-Step 9  → Consistency checker         → lock final versions
-Step 10 → Quality gate                → pass/fail per document
-Step 11 → Preview unlocked for user
+Step 1  → Declaration (Tab J)         → save to DB → continue
+Step 2  → Qualifications (Tab J)     → save to DB → continue
+Step 3  → Net Worth Statement (Tab H) → save to DB → continue
+Step 4  → Spouse Declaration (Tab J) → save to DB → if applicable
+Step 5  → Investment Proof (Tab F)   → save to DB → continue
+Step 6  → Source of Funds (Tab H)     → save to DB → continue
+Step 7  → Business Plan (Tab K)       → save to DB → continue
+Step 8  → DS-160 Reference (Tab A)   → save to DB → continue
+Step 9  → Treaty Country Statement    → save to DB → continue
+Step 10 → Substantiality Narrative   → save to DB → continue
+Step 11 → Develop & Direct Evidence  → save to DB → continue
+Step 12 → Immigrant Intent Defense   → save to DB → continue
+Step 13 → Denial Prevention Docs      → save to DB → continue
+Step 14 → Renewal Readiness Docs     → save to DB → continue
+Step 15 → Gap analysis (all docs)    → save gap report
+Step 16 → Repetition checker         → save clean versions
+Step 17 → Consistency checker        → lock final versions
+Step 18 → Quality gate              → pass/fail per document
+Step 19 → Cover Letter (Tab D)       → save to DB → ALWAYS LAST
+Step 20 → Preview unlocked for user
 ```
 
 Crash recovery:
