@@ -107,7 +107,28 @@ function TabAPageContent() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
 
+  // Track progress for screen state determination
+  const [totalAnswered, setTotalAnswered] = useState(0);
+  const [lastQuestionIndex, setLastQuestionIndex] = useState(0);
+
   const { answers, setAnswer, saveStatus } = useAnswerState(applicationId);
+
+  // Calculate answered count and last question index when answers change
+  useEffect(() => {
+    if (answers && tabQuestions) {
+      let answered = 0;
+      let lastIdx = 0;
+      (tabQuestions as QuestionConfig[]).forEach((q, idx) => {
+        const val = answers[q.key];
+        if (val !== undefined && val !== null && val !== '') {
+          answered++;
+          lastIdx = idx;
+        }
+      });
+      setTotalAnswered(answered);
+      setLastQuestionIndex(lastIdx);
+    }
+  }, [answers]);
 
   useEffect(() => {
     const init = async () => {
@@ -193,6 +214,7 @@ function TabAPageContent() {
         onAnswerChange={() => {}}
         saveStatus="idle"
         isLoading={true}
+        nextTab={{ letter: 'B', title: 'Investment Details', description: 'Information about your E-2 investment' }}
       />
     );
   }
@@ -209,6 +231,9 @@ function TabAPageContent() {
       saveStatus={saveStatus}
       loadError={loadError}
       onRetry={handleRetry}
+      nextTab={{ letter: 'B', title: 'Investment Details', description: 'Information about your E-2 investment' }}
+      totalAnswered={totalAnswered}
+      lastQuestionIndex={lastQuestionIndex}
     />
   );
 }
