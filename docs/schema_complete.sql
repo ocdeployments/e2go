@@ -27,6 +27,8 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     last_login_at TIMESTAMPTZ,
     login_count INTEGER DEFAULT 0,
     is_active BOOLEAN DEFAULT TRUE,
+    founding_member BOOLEAN DEFAULT FALSE,
+    guarantee_eligible BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );

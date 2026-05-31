@@ -1,12 +1,33 @@
-  "use client";
+"use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { createBrowserSupabaseClient } from "@/lib/supabase";
 
 export default function PricingPage() {
   const handleSelect = () => {
     // TODO: Wire Stripe checkout
     alert("Coming soon! Stripe integration to be added.");
   };
+
+  const [applicationCount, setApplicationCount] = useState<number>(0);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchCount = async () => {
+      const supabase = createBrowserSupabaseClient();
+      const { count } = await supabase
+        .from("applications")
+        .select("*", { count: "exact", head: true });
+
+      setApplicationCount(count || 0);
+      setLoading(false);
+    };
+
+    fetchCount();
+  }, []);
+
+  const spotsRemaining = Math.max(0, 500 - applicationCount);
 
   const tiers = [
     {
@@ -103,6 +124,20 @@ export default function PricingPage() {
             </p>
           </div>
 
+          {/* Founding Member Counter */}
+          {!loading && (
+            <div className="text-center mb-8">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-amber-50 border border-amber-200 rounded-lg">
+                <svg className="w-5 h-5 text-amber-600" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+                </svg>
+                <span className="text-sm font-medium text-amber-800">
+                  {spotsRemaining} of 500 founding spots remaining
+                </span>
+              </div>
+            </div>
+          )}
+
           {/* Pricing Cards */}
           <div className="grid grid-cols-1 gap-4 max-w-3xl mx-auto mb-12">
             {tiers.map((tier) => (
@@ -112,8 +147,16 @@ export default function PricingPage() {
                   tier.recommended ? "border-[#004ac6] border-2 shadow-lg" : "border-[#e2e8f0]"
                 }`}
               >
+                {/* Founding Member Badge */}
+                <div className="absolute -top-3 left-6 bg-amber-500 text-white text-xs font-semibold px-3 py-1 rounded-full flex items-center gap-1">
+                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+                  </svg>
+                  FOUNDING MEMBER PRICING
+                </div>
+
                 {tier.recommended && (
-                  <div className="absolute -top-3 left-6 bg-[#004ac6] text-white text-xs font-semibold px-3 py-1 rounded-full flex items-center gap-1">
+                  <div className="absolute -top-3 right-6 bg-[#004ac6] text-white text-xs font-semibold px-3 py-1 rounded-full flex items-center gap-1">
                     <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
                       <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
                     </svg>
@@ -122,7 +165,7 @@ export default function PricingPage() {
                 )}
 
                 <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
-                  <div className="flex-1">
+                  <div className="flex-1 pt-2">
                     <h3 className="text-xl font-semibold text-[#0b1c30] mb-1">{tier.name}</h3>
                     <div className="flex items-baseline gap-2">
                       <span className={`text-3xl font-bold ${tier.recommended ? "text-[#004ac6]" : "text-[#0b1c30]"}`}>
@@ -157,6 +200,30 @@ export default function PricingPage() {
                 </div>
               </div>
             ))}
+          </div>
+
+          {/* Guarantee Section */}
+          <div className="bg-white border border-[#e2e8f0] rounded-xl p-6 mb-12">
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0 w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                <svg className="w-6 h-6 text-green-600" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-[#0b1c30] mb-2">
+                  Founding Member Guarantee
+                </h3>
+                <p className="text-sm text-[#434655] mb-4">
+                  If you are not satisfied within 14 days of purchase, we will refund your payment
+                  in full minus payment processing fees.
+                </p>
+                <div className="text-sm text-[#737686]">
+                  <p className="mb-2"><strong>To qualify:</strong> Request within 14 days of purchase, Module 1 started but no documents generated.</p>
+                  <p>Email <a href="mailto:support@e2go.app" className="text-[#004ac6] underline">support@e2go.app</a> — we respond within 2 business days. No forms. No arguments.</p>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Trust Badges */}
