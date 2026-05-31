@@ -1,7 +1,7 @@
 # BUILD TRACKER
 
 **Last Updated:** 2026-05-31
-**Session:** 11 (Complete)
+**Session:** 12 (Complete)
 
 ---
 
@@ -301,6 +301,67 @@ New spec files created:
 - src/contexts/ApplicationContext.tsx (800ms debounce)
 - src/data/module3/tab-a.json (sensitivity data + conversational language)
 - src/app/apply/module3/a/page.tsx (interface update)
+
+---
+
+## Session 12 Log
+
+**Date:** May 31, 2026
+**Session:** 12
+
+**Completed:**
+- Privacy Category System: replaced sensitivity with privacy_category (red/amber/green/required)
+- RED fields show modal with specific advisory on skip
+- AMBER fields show inline note on skip
+- GREEN fields show simple "No problem" message
+- REQUIRED fields show brief explanation, no skip option
+- Added 9 new questions from attorney intake (social media, parents, passport loss, US travel, countries visited, US relatives, green card history, drivers license, prior visa)
+- Updated all Tab A questions with privacy_category and skip_advisory per spec
+- Schema: added skipped_by_user and privacy_category columns to answers table
+- PWA Setup: manifest.json, service worker (cache-first static, network-first API)
+- PWA install prompt: handles both Android (beforeinstallprompt) and iOS (manual instructions)
+- Service worker registration component
+- Added PWA meta tags to layout
+- All 45 tests passing, build clean, pushed to dev
+
+**Key Decisions:**
+- Privacy category replaces sensitivity per Session 12 CORE PRINCIPLE
+- RED: modal with specific consequence advisory
+- AMBER: inline note about what skipping affects
+- GREEN: simple reassurance, no advisory
+- REQUIRED: name and nationality only (no skip)
+
+**Files Changed:**
+- src/components/module3/QuestionRenderer.tsx (privacy category system)
+- src/components/module3/TabShell.tsx (interface update)
+- src/data/module3/tab-a.json (21 questions with privacy categories)
+- src/app/apply/module3/a/page.tsx (interface update)
+- docs/schema_complete.sql (answers table columns)
+- public/manifest.json, public/sw.js (PWA)
+- src/components/PWAInstallPrompt.tsx, ServiceWorkerRegistration.tsx (PWA)
+- src/app/layout.tsx (PWA meta tags)
+- src/app/page.tsx (install prompt on landing)
+
+**Commits:**
+- 9d5aa86 QuestionRenderer.tsx: privacy_category system
+- 48c384b TabShell.tsx: interface update
+- e3f33de tab-a.json: privacy categories per spec
+- 6b155fc module3/a/page.tsx: interface update
+- e097f99 schema_complete.sql: answers columns
+- 3db71d9 PWA: manifest.json and service worker
+- f962370 PWA: install prompt and registration
+- 02c1c45 layout.tsx: PWA meta tags
+- c0d65b7 page.tsx: PWAInstallPrompt on landing
+
+---
+
+## Session 13 Priorities
+
+1. Wire actual questions into Tabs B-L (currently scaffolds only — need real question configs)
+2. Franchise matching flow in Module 2
+3. Sidebar navigation in TabShell
+4. Stripe paywall integration
+5. Batch 1 document generation engine (first pass)
 
 **Commits:**
 - f40fa9d QuestionRenderer.tsx: add sensitivity field and skip toggle
