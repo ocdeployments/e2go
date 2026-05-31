@@ -242,6 +242,7 @@ export default function ResultsPage() {
     };
 
     init();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router]);
 
   if (loading || !result) {
