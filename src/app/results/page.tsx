@@ -7,6 +7,24 @@ import { useRouter } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import scoringLogic from "../../../public/data/module0_scoring_logic.json";
 
+interface ScoringFlag {
+  code: string;
+  question: string;
+  trigger: string | string[];
+  level?: string;
+  condition?: string;
+  note?: string;
+}
+
+interface ScoringLogicType {
+  hard_stops: Array<{ code: string; question: string; trigger: string[] }>;
+  attorney_flags: ScoringFlag[];
+  risk_flags: ScoringFlag[];
+  non_immigrant_intent_composite?: {
+    tie_confirmed_answers: Record<string, string[]>;
+  };
+}
+
 interface QuizResult {
   outcome: string;
   hard_stop_codes: string[];
@@ -42,8 +60,10 @@ export default function ResultsPage() {
     const attorneyFlagCodes: string[] = [];
     const riskFlagCodes: string[] = [];
 
+    const typedScoring = scoringLogic as ScoringLogicType;
+
     // Check hard stops
-    for (const stop of scoringLogic.hard_stops) {
+    for (const stop of typedScoring.hard_stops) {
       const answer = answerMap[stop.question];
       if (answer && stop.trigger.includes(answer)) {
         hardStopCodes.push(stop.code);
@@ -63,7 +83,7 @@ export default function ResultsPage() {
     }
 
     // Check attorney flags
-    for (const flag of scoringLogic.attorney_flags) {
+    for (const flag of typedScoring.attorney_flags) {
       let shouldCheck = true;
 
       // Check conditions
@@ -87,10 +107,13 @@ export default function ResultsPage() {
           if (flag.trigger === "confirmed_ties == 0") {
             let confirmedTies = 0;
             const niAnswers = ["Q0-NI-01", "Q0-NI-02", "Q0-NI-03"];
+            // v3 updated tie values
             const confirmedTieValues = [
-              "Yes — I own Canadian property and will keep it",
-              "Yes — close family will remain in Canada",
-              "Yes — I will keep active Canadian financial accounts",
+              "Yes — I own my home and plan to keep it (rent it out or maintain it)",
+              "Yes — I own investment property I plan to keep",
+              "Yes — close family members will remain there",
+              "Yes — I plan to keep my accounts open there",
+              "Probably — though I have not thought it through fully",
             ];
             niAnswers.forEach((q) => {
               if (confirmedTieValues.includes(answerMap[q])) confirmedTies++;
@@ -100,9 +123,11 @@ export default function ResultsPage() {
             let confirmedTies = 0;
             const niAnswers = ["Q0-NI-01", "Q0-NI-02", "Q0-NI-03"];
             const confirmedTieValues = [
-              "Yes — I own Canadian property and will keep it",
-              "Yes — close family will remain in Canada",
-              "Yes — I will keep active Canadian financial accounts",
+              "Yes — I own my home and plan to keep it (rent it out or maintain it)",
+              "Yes — I own investment property I plan to keep",
+              "Yes — close family members will remain there",
+              "Yes — I plan to keep my accounts open there",
+              "Probably — though I have not thought it through fully",
             ];
             niAnswers.forEach((q) => {
               if (confirmedTieValues.includes(answerMap[q])) confirmedTies++;
@@ -119,7 +144,7 @@ export default function ResultsPage() {
     }
 
     // Check risk flags
-    for (const flag of scoringLogic.risk_flags) {
+    for (const flag of typedScoring.risk_flags) {
       let shouldCheck = true;
 
       if (flag.condition) {

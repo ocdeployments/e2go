@@ -7,9 +7,17 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 
+interface SubQuestion {
+  show_if: string;
+  question: string;
+  options: string[];
+  warning_codes?: string[];
+  stop_codes?: string[];
+}
+
 interface Question {
   id: string;
-  type: "select" | "multiselect" | "currency" | "text" | "acknowledgment";
+  type: "select" | "multiselect" | "currency" | "text" | "acknowledgment" | "searchable_select" | "state_select";
   question: string;
   section: string;
   options?: string[];
@@ -24,6 +32,21 @@ interface Question {
   show_if?: Record<string, string | string[]>;
   validation?: string;
   tooltip?: string;
+  display_note?: string;
+  sub_question?: SubQuestion;
+  helper_text?: string;
+}
+
+interface TreatyCountry {
+  code: string;
+  name: string;
+  consulate: string;
+  notes: string;
+}
+
+interface USState {
+  code: string;
+  name: string;
 }
 
 interface QuestionsData {
@@ -38,6 +61,30 @@ interface ScoringLogic {
   risk_flags: Array<{ code: string; question: string; trigger: string[]; level?: string }>;
 }
 
+const US_STATES: USState[] = [
+  { code: "AL", name: "Alabama" }, { code: "AK", name: "Alaska" }, { code: "AZ", name: "Arizona" },
+  { code: "AR", name: "Arkansas" }, { code: "CA", name: "California" }, { code: "CO", name: "Colorado" },
+  { code: "CT", name: "Connecticut" }, { code: "DE", name: "Delaware" }, { code: "FL", name: "Florida" },
+  { code: "GA", name: "Georgia" }, { code: "HI", name: "Hawaii" }, { code: "ID", name: "Idaho" },
+  { code: "IL", name: "Illinois" }, { code: "IN", name: "Indiana" }, { code: "IA", name: "Iowa" },
+  { code: "KS", name: "Kansas" }, { code: "KY", name: "Kentucky" }, { code: "LA", name: "Louisiana" },
+  { code: "ME", name: "Maine" }, { code: "MD", name: "Maryland" }, { code: "MA", name: "Massachusetts" },
+  { code: "MI", name: "Michigan" }, { code: "MN", name: "Minnesota" }, { code: "MS", name: "Mississippi" },
+  { code: "MO", name: "Missouri" }, { code: "MT", name: "Montana" }, { code: "NE", name: "Nebraska" },
+  { code: "NV", name: "Nevada" }, { code: "NH", name: "New Hampshire" }, { code: "NJ", name: "New Jersey" },
+  { code: "NM", name: "New Mexico" }, { code: "NY", name: "New York" }, { code: "NC", name: "North Carolina" },
+  { code: "ND", name: "North Dakota" }, { code: "OH", name: "Ohio" }, { code: "OK", name: "Oklahoma" },
+  { code: "OR", name: "Oregon" }, { code: "PA", name: "Pennsylvania" }, { code: "RI", name: "Rhode Island" },
+  { code: "SC", name: "South Carolina" }, { code: "SD", name: "South Dakota" }, { code: "TN", name: "Tennessee" },
+  { code: "TX", name: "Texas" }, { code: "UT", name: "Utah" }, { code: "VT", name: "Vermont" },
+  { code: "VA", name: "Virginia" }, { code: "WA", name: "Washington" }, { code: "WV", name: "West Virginia" },
+  { code: "WI", name: "Wisconsin" }, { code: "WY", name: "Wyoming" }
+];
+
+// Currency symbols for display - keeping for future use
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const _CURRENCY_SYMBOLS = { USD: "$", CAD: "C$", EUR: "€", GBP: "£", AUD: "A$", JPY: "¥", CNY: "¥", INR: "₹", MXN: "MX$", BRL: "R$" };
+
 export default function QuizPage() {
   const router = useRouter();
   const [questionsData, setQuestionsData] = useState<QuestionsData | null>(null);
@@ -46,35 +93,45 @@ export default function QuizPage() {
   const [answers, setAnswers] = useState<Record<string, string | string[]>>({});
   const [showTooltip, setShowTooltip] = useState(false);
   const [stopScreen, setStopScreen] = useState<{ code: string; message: string } | null>(null);
-  const [currencyToggle, setCurrencyToggle] = useState<"CAD" | "USD">("USD");
+  const [currencyToggle, setCurrencyToggle] = useState<string>("USD");
   const [currencyValue, setCurrencyValue] = useState("");
   const [proportionalityFlag, setProportionalityFlag] = useState<string | null>(null);
   const [supabase] = useState(() => createBrowserSupabaseClient());
   const [isAnimating, setIsAnimating] = useState(false);
   const [emailValue, setEmailValue] = useState("");
-  const [cadUsdRate, setCadUsdRate] = useState<number | null>(null);
-  const [rateLoading, setRateLoading] = useState(false);
-  const [rateError, setRateError] = useState(false);
+  // v3 state
+  const [treatyCountries, setTreatyCountries] = useState<TreatyCountry[]>([]);
+  const [countrySearch, setCountrySearch] = useState("");
+  const [selectedCountry, setSelectedCountry] = useState<TreatyCountry | null>(null);
+  const [showCountryDropdown, setShowCountryDropdown] = useState(false);
+  const [stateSearch, setStateSearch] = useState("");
+  const [showStateDropdown, setShowStateDropdown] = useState(false);
+  const [currencyRates, setCurrencyRates] = useState<Record<string, number>>({});
 
-  // Fetch CAD/USD rate once on mount
+  // Fetch treaty countries and currency rates (v3)
   useEffect(() => {
-    const fetchRate = async () => {
+    fetch("/data/treaty_countries.json")
+      .then((r) => r.json())
+      .then((data) => {
+        setTreatyCountries(data.countries || []);
+      })
+      .catch(console.error);
+  }, []);
+
+  // Fetch currency rates for all supported currencies (v3)
+  useEffect(() => {
+    const fetchRates = async () => {
       try {
-        setRateLoading(true);
-        const res = await fetch("https://open.er-api.com/v6/latest/CAD");
+        const res = await fetch("https://open.er-api.com/v6/latest/USD");
         const data = await res.json();
-        if (data.rates?.USD) {
-          setCadUsdRate(data.rates.USD);
-        } else {
-          setRateError(true);
+        if (data.rates) {
+          setCurrencyRates(data.rates);
         }
       } catch {
-        setRateError(true);
-      } finally {
-        setRateLoading(false);
+        console.error("Failed to fetch currency rates");
       }
     };
-    fetchRate();
+    fetchRates();
   }, []);
 
   // Load questions and scoring logic
@@ -113,17 +170,104 @@ export default function QuizPage() {
   const getCurrentSection = () => {
     if (!currentQuestion) return "";
     const sections: Record<string, string> = {
-      principal: "About You",
-      investment: "Investment Details",
-      business_role: "Your Role",
-      business_type: "Business Type",
-      risk: "Risk Assessment",
-      non_immigrant_intent: "Ties to Canada",
-      partner: "Business Partner",
-      family: "Family Members",
-      consent: "Final Steps",
+      who_you_are: "Who You Are",
+      your_investment: "Your Investment",
+      your_business: "Your Business Plans",
+      where_youre_headed: "Where You're Headed",
+      your_history: "Your History",
+      your_ties: "Your Ties to Home",
+      your_family: "Your Family",
+      consent: "Consent",
     };
     return sections[currentQuestion.section] || currentQuestion.section;
+  };
+
+  // Filter countries based on search (v3)
+  const filteredCountries = treatyCountries.filter(c =>
+    c.name.toLowerCase().includes(countrySearch.toLowerCase())
+  ).slice(0, 10);
+
+  // Filter states based on search (v3)
+  const filteredStates = US_STATES.filter(s =>
+    s.name.toLowerCase().includes(stateSearch.toLowerCase())
+  );
+
+  // Handle treaty country selection (v3)
+  const handleCountrySelect = (country: TreatyCountry) => {
+    setSelectedCountry(country);
+    setShowCountryDropdown(false);
+    setCountrySearch(country.name);
+
+    const newAnswers = { ...answers, [currentQuestion!.id]: country.name };
+    setAnswers(newAnswers);
+
+    // Check if it's a treaty country
+    if (country.notes?.includes("No E-2 treaty") || country.notes?.includes("EMERGENCY")) {
+      setStopScreen({ code: "PR-01", message: `${country.name} does not have an E-2 treaty with the United States.` });
+      return;
+    }
+
+    // Check for Iran special case
+    if (country.code === "IR") {
+      setStopScreen({ code: "PR-01", message: "Iran has an E-2 treaty but the U.S. Embassy is closed. No processing available. Consider obtaining citizenship in an active E-2 treaty country." });
+      return;
+    }
+
+    setIsAnimating(true);
+    setTimeout(() => setIsAnimating(false), 200);
+    if (currentIndex < visibleQuestions.length - 1) {
+      setCurrentIndex(currentIndex + 1);
+    } else {
+      calculateAndRedirect(newAnswers);
+    }
+  };
+
+  // Handle state selection (v3)
+  const handleStateSelect = (stateName: string) => {
+    setShowStateDropdown(false);
+    setStateSearch(stateName);
+    const newAnswers = { ...answers, [currentQuestion!.id]: stateName };
+    setAnswers(newAnswers);
+
+    setIsAnimating(true);
+    setTimeout(() => setIsAnimating(false), 200);
+    if (currentIndex < visibleQuestions.length - 1) {
+      setCurrentIndex(currentIndex + 1);
+    } else {
+      calculateAndRedirect(newAnswers);
+    }
+  };
+
+  // Handle sub-question answer (v3)
+  const handleSubQuestionAnswer = (answer: string) => {
+    if (!currentQuestion?.sub_question) return;
+    const newAnswers = { ...answers, [`${currentQuestion.id}_sub`]: answer };
+    setAnswers(newAnswers);
+
+    // Check sub_question hard stops
+    if (currentQuestion.sub_question.stop_codes?.length) {
+      const stopCode = currentQuestion.sub_question.stop_codes[0];
+      if (stopCode === "PR-05" && answer === "A business where I would not be personally involved in managing it") {
+        setStopScreen({ code: "PR-05", message: "The E-2 visa requires you to come to the U.S. to develop and direct the business. An arrangement where you would not be personally involved in managing it does not fit the E-2 model." });
+        return;
+      }
+      if (stopCode === "PR-07" && answer === "A property investment or rental business") {
+        setStopScreen({ code: "PR-07", message: "A passive real estate investment does not qualify for an E-2 visa. The E-2 requires an active, operating business." });
+        return;
+      }
+      if (stopCode === "PR-08" && answer === "A cannabis or marijuana-related business") {
+        setStopScreen({ code: "PR-08", message: "Cannabis-related businesses create a conflict between U.S. state law and federal law. This falls outside what we can support." });
+        return;
+      }
+    }
+
+    setIsAnimating(true);
+    setTimeout(() => setIsAnimating(false), 200);
+    if (currentIndex < visibleQuestions.length - 1) {
+      setCurrentIndex(currentIndex + 1);
+    } else {
+      calculateAndRedirect(newAnswers);
+    }
   };
 
   // Check for hard stops after each answer
@@ -187,9 +331,11 @@ export default function QuizPage() {
     if (!currencyValue || !currentQuestion) return;
 
     const amount = parseFloat(currencyValue);
-    // Use live rate if available, fallback to 0.73
-    const rate = cadUsdRate || 0.73;
-    const amountUSD = currencyToggle === "CAD" ? amount * rate : amount;
+    // Use multi-currency rate conversion (v3)
+    let amountUSD = amount;
+    if (currencyToggle !== "USD" && currencyRates[currencyToggle]) {
+      amountUSD = amount / currencyRates[currencyToggle];
+    }
 
     // Check proportionality
     if (currentQuestion.proportionality_thresholds_usd) {
@@ -417,23 +563,25 @@ export default function QuizPage() {
     );
   }
 
-  // Currency input display
+  // Currency input display (v3 - multi-currency)
   const getCurrencyUSD = () => {
     if (!currencyValue) return "";
     const amount = parseFloat(currencyValue);
     if (isNaN(amount)) return "";
-    // Use live rate if available, fallback to 0.73
-    const rate = cadUsdRate || 0.73;
-    const usd = currencyToggle === "CAD" ? amount * rate : amount;
-    return usd.toLocaleString("en-US", { style: "currency", currency: "USD" });
+    let amountUSD = amount;
+    if (currencyToggle !== "USD" && currencyRates[currencyToggle]) {
+      amountUSD = amount / currencyRates[currencyToggle];
+    }
+    return amountUSD.toLocaleString("en-US", { style: "currency", currency: "USD" });
   };
 
-  // Get rate display
+  // Get rate display (v3)
   const getRateDisplay = () => {
-    if (rateError || !cadUsdRate) return null;
+    if (!currencyRates[currencyToggle]) return null;
+    const rateToUSD = currencyToggle === "USD" ? 1 : 1 / currencyRates[currencyToggle];
     return (
       <span className="text-xs text-[#737686]">
-        Rate: 1 CAD = {cadUsdRate.toFixed(4)} USD
+        Rate: 1 {currencyToggle} = {rateToUSD.toFixed(4)} USD
       </span>
     );
   };
@@ -498,6 +646,94 @@ export default function QuizPage() {
             {showTooltip && currentQuestion.tooltip && (
               <div className="mb-6 p-4 bg-[#eff4ff] rounded-lg border border-[#dce9ff]">
                 <p className="text-sm text-[#434655]">{currentQuestion.tooltip}</p>
+              </div>
+            )}
+
+            {/* Display note for Q0-01 */}
+            {currentQuestion.display_note && (
+              <div className="mb-4 p-3 bg-[#eff4ff] rounded-lg">
+                <p className="text-sm text-[#434655]">{currentQuestion.display_note}</p>
+              </div>
+            )}
+
+            {/* Searchable Select - Treaty Country (v3) */}
+            {currentQuestion.type === "searchable_select" && (
+              <div className="space-y-4">
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={countrySearch}
+                    onChange={(e) => { setCountrySearch(e.target.value); setShowCountryDropdown(true); }}
+                    onFocus={() => setShowCountryDropdown(true)}
+                    placeholder="Start typing your country..."
+                    className="w-full p-4 rounded-lg border border-[#c3c6d7] bg-white text-[#0b1c30] text-lg focus:outline-none focus:border-[#004ac6] focus:ring-1 focus:ring-[#004ac6]"
+                  />
+                  {showCountryDropdown && countrySearch && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-[#c3c6d7] rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                      {filteredCountries.length === 0 ? (
+                        <div className="p-4 text-[#737686]">No countries found</div>
+                      ) : (
+                        filteredCountries.map((country) => (
+                          <button
+                            key={country.code}
+                            onClick={() => handleCountrySelect(country)}
+                            className="w-full text-left p-3 hover:bg-[#eff4ff] border-b border-[#e5eeff] last:border-b-0"
+                          >
+                            <span className="text-[#0b1c30]">{country.name}</span>
+                            {country.notes && <span className="block text-xs text-[#737686]">{country.notes}</span>}
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
+                {selectedCountry && (
+                  <div className="p-3 bg-[#eff4ff] rounded-lg">
+                    <p className="text-sm text-[#434655]">
+                      Selected: <span className="font-medium">{selectedCountry.name}</span>
+                      {selectedCountry.consulate !== "Not applicable" && <span className="block">Consulate: {selectedCountry.consulate}</span>}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* State Select (v3) */}
+            {currentQuestion.type === "state_select" && (
+              <div className="space-y-4">
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={stateSearch}
+                    onChange={(e) => { setStateSearch(e.target.value); setShowStateDropdown(true); }}
+                    onFocus={() => setShowStateDropdown(true)}
+                    placeholder="Start typing a U.S. state..."
+                    className="w-full p-4 rounded-lg border border-[#c3c6d7] bg-white text-[#0b1c30] text-lg focus:outline-none focus:border-[#004ac6] focus:ring-1 focus:ring-[#004ac6]"
+                  />
+                  {showStateDropdown && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-[#c3c6d7] rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                      {filteredStates.length === 0 ? (
+                        <div className="p-4 text-[#737686]">No states found</div>
+                      ) : (
+                        filteredStates.map((state) => (
+                          <button
+                            key={state.code}
+                            onClick={() => handleStateSelect(state.name)}
+                            className="w-full text-left p-3 hover:bg-[#eff4ff] border-b border-[#e5eeff] last:border-b-0"
+                          >
+                            <span className="text-[#0b1c30]">{state.name}</span>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
+                <button
+                  onClick={() => handleStateSelect("I have not decided yet")}
+                  className="w-full text-[#737686] font-medium py-3 hover:text-[#004ac6] transition-colors"
+                >
+                  I have not decided yet
+                </button>
               </div>
             )}
 
@@ -596,13 +832,7 @@ export default function QuizPage() {
                     CAD
                   </button>
                   </div>
-                  {rateLoading ? (
-                    <span className="text-xs text-[#737686]">Loading rate...</span>
-                  ) : rateError ? (
-                    <span className="text-xs text-amber-600">Enter amount in USD</span>
-                  ) : (
-                    getRateDisplay()
-                  )}
+                  {getRateDisplay()}
                 </div>
 
                 <input
@@ -664,6 +894,26 @@ export default function QuizPage() {
                 >
                   Continue
                 </button>
+              </div>
+            )}
+
+            {/* Sub-Question (v3) */}
+            {currentQuestion.sub_question && answers[currentQuestion.id] === currentQuestion.sub_question.show_if && (
+              <div className="mt-6 p-4 bg-[#f8f9ff] rounded-lg border border-[#c3c6d7]">
+                <h2 className="text-lg font-semibold text-[#0b1c30] mb-4">
+                  {currentQuestion.sub_question.question}
+                </h2>
+                <div className="space-y-3">
+                  {currentQuestion.sub_question.options?.map((option) => (
+                    <button
+                      key={option}
+                      onClick={() => handleSubQuestionAnswer(option)}
+                      className="w-full text-left p-4 rounded-lg border border-[#c3c6d7] bg-white hover:border-[#737686] transition-all"
+                    >
+                      <span className="text-[#0b1c30]">{option}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
 
