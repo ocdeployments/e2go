@@ -14,8 +14,14 @@ test.describe('Module 3 - Document Interview Engine', () => {
     expect(response?.status()).toBe(200);
   });
 
-  test('/apply/module3/z returns 200 (redirects client-side to /a)', async ({ page }) => {
+  test('/apply/module3/b returns 200 (placeholder page)', async ({ page }) => {
+    const response = await page.goto(BASE_URL + '/apply/module3/b', { waitUntil: 'domcontentloaded' });
+    expect(response?.status()).toBe(200);
+  });
+
+  test('/apply/module3/z returns 200 (falls through to redirect)', async ({ page }) => {
     const response = await page.goto(BASE_URL + '/apply/module3/z', { waitUntil: 'domcontentloaded' });
+    // Returns 200 then redirects client-side via page.tsx
     expect(response?.status()).toBe(200);
   });
 });
