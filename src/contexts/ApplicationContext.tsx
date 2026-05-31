@@ -122,10 +122,10 @@ export function ApplicationProvider({ children, applicationId }: { children: Rea
       clearTimeout(debounceTimer);
     }
 
-    // Debounce save by 2 seconds
+    // Debounce save by 800ms
     const timer = setTimeout(() => {
       saveAnswer(key, value);
-    }, 2000);
+    }, 800);
 
     setDebounceTimer(timer);
   }, [debounceTimer, saveAnswer]);
