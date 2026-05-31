@@ -4,7 +4,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+import { createBrowserSupabaseClient } from "@/lib/supabase";
 import scoringLogic from "../../../public/data/module0_scoring_logic.json";
 
 interface QuizResult {
@@ -25,6 +25,7 @@ interface Answer {
 export default function ResultsPage() {
   const router = useRouter();
   const [result, setResult] = useState<QuizResult | null>(null);
+  const [supabase] = useState(() => createBrowserSupabaseClient());
   const [acknowledged, setAcknowledged] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [user, setUser] = useState<any>(null);
