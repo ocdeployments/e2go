@@ -1371,6 +1371,18 @@ Full details in CLAUDE_CONTEXT.md. These apply to every task every session:
 11. Test full flow: signup → quiz → results → pricing → dashboard
 12. Run npm run build — confirm zero errors
 
+---
+
+## Session 9 — May 31, 2026
+
+**Module 3 Tabs Update (completed from prior session):**
+- Global language fixes applied to all tabs (Canada → home country)
+- Batch assignments added to all tabs (Batch 1: personal, Batch 2: business)
+- 18 new questions added across Tabs B, D, E, F, G, H, I, J, K, L
+- Lead temperature scoring fields added to schema
+- Denial audit gaps D-02 D-03 D-04 D-06 D-07 D-10 D-12 D-13 resolved
+- Referral triggers added: LLC formation, CPA (RRSP/property), FX (large wire), banking (TD/RBC), discovery day, attorney (age-out)
+
 **Key decisions made:**
 - Paywall moved to post-Module 3 (before document generation)
 - Interview simulator: 2 sessions included, $9.99/bundle extra
@@ -1383,6 +1395,18 @@ Full details in CLAUDE_CONTEXT.md. These apply to every task every session:
 - Adaptive case-building: 4-layer probe system, 10 gap categories
 - Content library started: "The Preparation Paralysis"
 - Newsletter: "The E-2 Insider" — 4 segments, 2-week cadence
+
+---
+
+## Session 10 Priorities
+
+1. Fix Supabase 406/403 errors on Tab A (applications + profiles RLS)
+2. Build /apply/overview orientation page
+3. Build /apply/checklist three-phase checklist
+4. Wire Tab B-L question configs from updated specs
+5. Generate Sarah Mitchell prototype documents (4 Word docs)
+
+---
 
 **Claude Code priorities for Session 2:**
 1. Fix database schema (profiles table, all tables with RLS)
