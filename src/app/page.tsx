@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 
 export default function Home() {
   return (
@@ -545,6 +546,9 @@ export default function Home() {
           </p>
         </div>
       </footer>
+
+      {/* PWA Install Prompt */}
+      <PWAInstallPrompt />
     </div>
   );
 }
