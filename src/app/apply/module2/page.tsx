@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { supabase } from "@/lib/supabase";
+import { createBrowserSupabaseClient } from "@/lib/supabase";
 
 // Business categories from Vol 3 Section 6.9 - E-2 qualifying businesses
 const BUSINESS_CATEGORIES = [
@@ -60,6 +60,7 @@ interface Answer {
 
 export default function Module2Page() {
   const router = useRouter();
+  const [supabase] = useState(() => createBrowserSupabaseClient());
   const [loading, setLoading] = useState(true);
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
@@ -124,6 +125,7 @@ export default function Module2Page() {
     };
 
     init();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router]);
 
   const saveAnswer = async (questionKey: string, value: string) => {
