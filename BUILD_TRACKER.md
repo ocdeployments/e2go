@@ -1,7 +1,7 @@
 # BUILD TRACKER
 
 **Last Updated:** 2026-05-31
-**Session:** 6 (Complete)
+**Session:** 7 (Complete)
 
 ---
 
@@ -26,15 +26,15 @@
 | Next.js Build | ✅ PASS | Zero errors |
 | TypeScript | ✅ PASS | No type errors |
 | Middleware | ✅ PASS | Auth protection active |
-| Schema | ✅ PASS | Pushed to Supabase |
+| Schema | ⚠️ PENDING | Need unique constraint on answers table |
 | Auth | ✅ PASS | Login/Signup wired |
 | Quiz Engine | ✅ PASS | Scoring logic connected |
 | AI Client | ✅ PASS | OpenRouter wired with auth |
-| Playwright Tests | ✅ PASS | 42 tests passing |
-| Module 3 Engine | ✅ PASS | Tab A scaffold, auto-save, TabShell |
+| Playwright Tests | ✅ PASS | 45 tests passing |
+| Module 3 Engine | ✅ PASS | Tab A complete with ApplicationContext |
 | Husky Hooks | ✅ PASS | pre-push configured |
 
-### Standing Build Rules Added
+### Standing Build Rules
 
 | Rule | Description |
 |------|-------------|
@@ -50,13 +50,20 @@
 
 | # | Task | Status |
 |---|------|--------|
-| 1 | Vercel Deploy Prep - env vars audit + vercel.json | ✅ |
-| 2 | Vercel Deploy Prep - @upstash/redis rate limiter | ✅ |
-| 3 | Vercel Deploy Prep - /api/health endpoint | ✅ |
-| 4 | Module 2: Business Type Advisor (6 screens) | ✅ |
-| 5 | Module 3: Placeholder page | ✅ |
-| 6 | GitHub push + repo created | ✅ |
-| 7 | Full QA test pass | ✅ |
+| 1 | Update CLAUDE_CONTEXT.md with new rules | ✅ |
+| 2 | Update soul.md with approved copy | ✅ |
+| 3 | Rename Module 2 to Your Business | ✅ |
+| 4 | Update BUILD_TRACKER.md | ✅ |
+| 5 | Update DOC_INDEX.md | ✅ |
+| 6 | Add build:clean script | ✅ |
+| 7 | Implement TabShell 4 screen states | ✅ |
+| 8 | Update QuestionRenderer styling | ✅ |
+| 9 | Wire screen states in Tab A | ✅ |
+| 10 | Run diagnostic on Tab A | ✅ |
+| 11 | Wire ApplicationContext in Tab A | ✅ |
+| 12 | Add explicit error handling | ✅ |
+| 13 | Add unique constraint to schema | ✅ |
+| 14 | Full QA test pass | ✅ |
 
 ---
 
@@ -64,8 +71,9 @@
 
 | Issue | Priority | Fix |
 |-------|----------|-----|
-| Dev server defaults to port 3001 (tests need updating) | LOW | Document in CLAUDE_CONTEXT.md |
-| Quiz currency rate sometimes fails to load on first render | LOW | Fallback to 0.73 works, UI shows "Enter amount in USD" |
+| Answers table missing unique constraint | CRITICAL | Run SQL in Supabase: ALTER TABLE public.answers ADD CONSTRAINT answers_application_question_unique UNIQUE (application_id, question_key); |
+| Dev server defaults to port 3001 | LOW | Document in CLAUDE_CONTEXT.md |
+| Quiz currency rate sometimes fails | LOW | Fallback to 0.73 works |
 
 ---
 
@@ -181,9 +189,39 @@
 
 ---
 
-## Session 7 Priorities
+## Session 7 Log
 
-1. Run Supabase SQL to backfill missing profiles and recreate trigger
+**Date:** May 31, 2026
+**Session:** 7
+
+**Completed:**
+- CLAUDE_CONTEXT.md: added currency, global positioning, consulate selector rules
+- CLAUDE_CONTEXT.md: added Platform Boundaries, Lawyer Positioning, Revenue Streams sections
+- docs/soul.md: added approved landing page copy and franchise nudge framing
+- BUILD_TRACKER.md: added standing rules summary and research assets section
+- DOC_INDEX.md: added research assets and treatyCountries entries
+- package.json: added build:clean script
+- TabShell.tsx: implemented 4 screen states (INTRO, QUESTION, COMPLETION, RESUME)
+- QuestionRenderer.tsx: updated styling to InvestmentDESIGN.md tokens
+- module3/a/page.tsx: wired screen states, ApplicationContext, explicit error handling
+- Ran full diagnostic on Tab A failures
+- Schema: added UNIQUE (application_id, question_key) to answers table
+- All 45 tests passing
+
+**Key Decisions:**
+- InvestmentDESIGN.md tokens: success-teal #0D9488, surface-container-high #dce9ff, border-subtle #E2E8F0
+- ApplicationContext now provides shared state for all Module 3 tabs
+- Explicit error handling with console logging for Supabase errors
+
+**Left Incomplete:**
+- Supabase SQL: unique constraint needs to be run manually in SQL Editor
+- Full end-to-end test on preview URL
+
+---
+
+## Session 8 Priorities
+
+1. Run unique constraint SQL in Supabase: ALTER TABLE public.answers ADD CONSTRAINT answers_application_question_unique UNIQUE (application_id, question_key);
 2. Test full auth flow on Vercel preview
 3. Wire lifecycle updates on tab completion
 4. Build Tab B-L (visibility rules + question configs)
