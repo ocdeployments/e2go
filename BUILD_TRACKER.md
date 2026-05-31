@@ -72,6 +72,9 @@
 | Issue | Priority | Fix |
 |-------|----------|-----|
 | Answers table missing unique constraint | CRITICAL | Run SQL in Supabase: ALTER TABLE public.answers ADD CONSTRAINT answers_application_question_unique UNIQUE (application_id, question_key); |
+| Partnership page limit unconfirmed | HIGH | Email EVisaCanada@state.gov |
+| 131-question spec not reconciled with Tabs A-L | HIGH | Reconcile before building tab content |
+| Frankfurt compression mode not built | MEDIUM | Build when generation engine starts |
 | Dev server defaults to port 3001 | LOW | Document in CLAUDE_CONTEXT.md |
 | Quiz currency rate sometimes fails | LOW | Fallback to 0.73 works |
 
@@ -213,6 +216,49 @@
 - ApplicationContext now provides shared state for all Module 3 tabs
 - Explicit error handling with console logging for Supabase errors
 
+**Key decisions and research findings:**
+
+Document architecture:
+- Two-batch model finalized and locked
+- Paywall triggers after personal tabs complete
+- Batch 1: 4 documents generated immediately
+- Batch 2: remaining documents as prerequisites met
+- Cover Letter always last — pipeline corrected
+- 50-page limit confirmed: ca.usembassy.gov
+- Frankfurt exception: 30 pages, 5MB, exec summary only
+- London exception: 20MB upload cap
+- Per-document page targets locked for solo apps
+- Partnership page limit UNCONFIRMED — flag open
+
+Research confirmed — no rebuild needed:
+- Franchise categories: E2_Franchise_Categories_Section5.md
+- Platform logic rules: E2_Platform_Logic_Rules.md
+- Document builder spec: E2_Document_Builder_Spec.md
+- Attorney review register: E2_Attorney_Review_Register.md
+- 131 Module 3 questions already specified in Vol 3
+
+New items discovered in research:
+- Financial projections spreadsheet (.xlsx) missing from document plan — added
+- Translation requirements guide — added
+- Timeline and appointment guide — added
+- Master submission checklist — added
+- Loan structure denial risk D-12 — new Tab F question
+- TD Bank / RBC named as banking referral partners
+- Wise / OFX / Knightsbridge as wire transfer partners
+- Toronto family attendance: 2025 mandatory requirement
+- Australian E-3 alternative option to surface in quiz
+- 131 questions in Groups 3A–3I need reconciliation with Tab A–L structure before building tab content
+
+Partnership rules confirmed:
+- Negative Control: 9 FAM 402.9-6(F)
+- Two partners 50/50 maximum
+- Three or more: hard stop PR-PARTNER
+- Submission format UNCONFIRMED — email EVisaCanada@state.gov
+
+New spec files created:
+- docs/Document_Generation_Standards.md
+- docs/Document_Conditionals.md
+
 **Left Incomplete:**
 - Supabase SQL: unique constraint needs to be run manually in SQL Editor
 - Full end-to-end test on preview URL
@@ -221,10 +267,16 @@
 
 ## Session 8 Priorities
 
-1. Run unique constraint SQL in Supabase: ALTER TABLE public.answers ADD CONSTRAINT answers_application_question_unique UNIQUE (application_id, question_key);
-2. Test full auth flow on Vercel preview
-3. Wire lifecycle updates on tab completion
-4. Build Tab B-L (visibility rules + question configs)
+1. RECONCILE: Read Groups 3A-3I question spec against Tab A-L structure. Map questions to tabs. Identify gaps. Do this before writing any tab question content.
+2. PROTOTYPE: Generate 4 Word documents for Sarah Mitchell using Document_Generation_Standards.md
+3. FIX: Verify Module 3 Tab A working on Vercel (FK + unique constraint — confirm fixed)
+4. BUILD: /apply/overview master orientation page
+5. BUILD: Sidebar navigation in TabShell
+6. BUILD: Three-phase checklist /apply/checklist
+7. ADD: PR-PARTNER hard stop to quiz (3+ equal partners)
+8. UPDATE: Module 2 franchise matching uses E2_Franchise_Categories_Section5.md directly
+9. ADD: Tab F loan structure question (D-12 denial risk)
+10. PWA setup + QR code on landing page
 5. Wire Stripe integration for payment
 
 ---
