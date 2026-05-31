@@ -3,7 +3,7 @@
 import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { supabase } from "@/lib/supabase";
+import { createBrowserSupabaseClient } from "@/lib/supabase";
 
 interface QuizSessionData {
   id: string;
@@ -27,6 +27,7 @@ export default function OnboardingPage({ searchParams }: { searchParams: Promise
   const resolvedParams = use(searchParams);
   const router = useRouter();
   const isDemo = resolvedParams?.demo === "true";
+  const [supabase] = useState(() => createBrowserSupabaseClient());
 
   const [step, setStep] = useState(1);
   const [quizSession, setQuizSession] = useState<QuizSessionData | null>(null);
@@ -42,7 +43,7 @@ export default function OnboardingPage({ searchParams }: { searchParams: Promise
   useEffect(() => {
     const init = async () => {
       let authUser = null;
-      
+
       if (isDemo) {
         // Demo mode: create mock user
         const { data: { user: u } } = await supabase.auth.getUser();
@@ -95,6 +96,7 @@ export default function OnboardingPage({ searchParams }: { searchParams: Promise
     };
 
     init();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDemo, router]);
 
   const handleNext = async () => {
