@@ -1,0 +1,106 @@
+[
+  {
+    "key": "M3-A-01",
+    "type": "text",
+    "question": "What is your full legal name as it appears on your passport?",
+    "tooltip": "Enter your name exactly as it appears on your Canadian passport, including any middle names. This must match the DS-160 precisely.",
+    "required": true
+  },
+  {
+    "key": "M3-A-02",
+    "type": "single",
+    "question": "Have you ever used any other names?",
+    "tooltip": "Include maiden names, nicknames, or names in other languages.",
+    "options": [
+      { "value": "yes", "label": "Yes — I have used other names" },
+      { "value": "no", "label": "No — I have never used other names" }
+    ],
+    "required": true
+  },
+  {
+    "key": "M3-A-03",
+    "type": "date",
+    "question": "What is your date of birth?",
+    "tooltip": "You must be 18 or older to apply for an E-2 visa. If you are under 18, an advisory will be shown.",
+    "required": true
+  },
+  {
+    "key": "M3-A-04",
+    "type": "text",
+    "question": "What is your place of birth? (City and Country)",
+    "tooltip": "Enter the city and country exactly as it appears on your passport.",
+    "required": true
+  },
+  {
+    "key": "M3-A-05",
+    "type": "single",
+    "question": "What is your country of citizenship?",
+    "tooltip": "This is the country of your nationality. For E-2 visa, you must be a citizen of a treaty country.",
+    "options": [
+      { "value": "CA", "label": "Canada", "helperText": "Default selection" }
+    ],
+    "required": true,
+    "warningTriggers": [
+      { "value": "CA", "message": "Canadian citizens are eligible for E-2 visa through the U.S.-Canada treaty." }
+    ]
+  },
+  {
+    "key": "M3-A-06",
+    "type": "single",
+    "question": "Do you hold citizenship in any other country?",
+    "tooltip": "E-2 treaty investors may hold dual citizenship. Additional nationalities may require extra documentation.",
+    "options": [
+      { "value": "yes", "label": "Yes — I am a citizen of another country" },
+      { "value": "no", "label": "No — I am only a citizen of Canada" }
+    ],
+    "required": true
+  },
+  {
+    "key": "M3-A-07",
+    "type": "text",
+    "question": "What is your national identification number? (Canadian SIN or equivalent)",
+    "tooltip": "If you have a Social Insurance Number (SIN), enter it here. This is for record-keeping only and is not submitted to the consulate.",
+    "required": false
+  },
+  {
+    "key": "M3-A-08",
+    "type": "text",
+    "question": "What is your U.S. Social Security Number or Taxpayer ID?",
+    "tooltip": "Most first-time E-2 applicants will not have a U.S. SSN. Leave blank if this is your first U.S. visa application.",
+    "required": false
+  },
+  {
+    "key": "M3-A-09",
+    "type": "text",
+    "question": "What is your current home address in Canada?",
+    "tooltip": "Enter your full Canadian address including street, city, province, and postal code.",
+    "required": true
+  },
+  {
+    "key": "M3-A-10",
+    "type": "single",
+    "question": "How long have you lived at this address?",
+    "tooltip": "The consulate may request proof of residence history. Longer residence strengthens your Canadian ties.",
+    "options": [
+      { "value": "less_than_1", "label": "Less than 1 year" },
+      { "value": "1_to_2", "label": "1–2 years" },
+      { "value": "3_to_5", "label": "3–5 years" },
+      { "value": "more_than_5", "label": "More than 5 years" }
+    ],
+    "required": true
+  },
+  {
+    "key": "M3-A-11",
+    "type": "text",
+    "question": "What is your primary phone number?",
+    "tooltip": "Include country code for Canadian numbers: +1",
+    "required": true
+  },
+  {
+    "key": "M3-A-12",
+    "type": "text",
+    "question": "What is your email address?",
+    "tooltip": "This will be used for all communication regarding your application. Pre-filled from your account if available.",
+    "required": true
+  }
+]
