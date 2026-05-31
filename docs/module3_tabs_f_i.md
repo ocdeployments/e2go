@@ -1,10 +1,12 @@
 # Tabs F through I — Investment, Real Business, Funds Flow, Non-Marginality
 ## Module 3 Interview Engine
-*Version 1.0 | May 28, 2026 | Source: U.S. Embassy Toronto, FAM 9 FAM 402.9*
+*Version 1.1 | May 31, 2026 | Source: U.S. Embassy Toronto, FAM 9 FAM 402.9*
 
 ---
 
 # TAB F — Investment Proof
+
+**Batch:** 2 — Generated after business formation confirmed
 
 ## Purpose
 
@@ -63,8 +65,8 @@ substantiality for the magnitude of the dollar amount.
 **Type:** multiselect
 **Options:**
 - Personal savings
-- Sale of a Canadian property
-- Sale of a Canadian business
+- Sale of property
+- Sale of a business
 - Inheritance or gift received
 - Loan secured by personal assets
 - Proceeds from investments (stocks, bonds, mutual funds)
@@ -74,6 +76,53 @@ substantiality for the magnitude of the dollar amount.
 **QF-05a:** Who is the lender? What is the loan amount? What personal assets
 secure the loan?
 **Type:** textarea
+
+### QF-05 SOURCE-SPECIFIC ADVISORIES
+
+**If "Sale of property" selected:**
+Advisory: "Property sale proceeds may trigger departure tax. Have you spoken with a cross-border CPA about the implications?"
+Options: Yes / No — I should / I will handle it
+"No — I should" → cpa_referral_trigger=true
+lead_signal: cpa_warmth=high
+
+**If retirement account selected:**
+Advisory: "Retirement account withdrawals as a non-resident attract withholding tax. Review this with a cross-border CPA before withdrawing."
+Options: Already done / I should do this / I will handle it
+"I should" → cpa_referral_trigger=true, urgency=high
+lead_signal: cpa_warmth=very_high
+
+**If wire transfer over $50,000 USD:**
+Advisory: "Currency specialists like Wise, OFX, or Knightsbridge typically offer better rates than bank wires for transfers this size."
+Options: Show me a comparison / I have already arranged this / Not interested
+"Show me" → fx_referral_trigger=true
+lead_signal: fx_warmth=high
+
+### QF-NEW-01
+**Question:** "Of the funds transferred to the business, how much has been spent on actual business expenses — franchise fees, equipment, deposits, build-out?"
+**Type:** currency (USD)
+**Note:** 0 or very small → D-02 advisory:
+  "Funds sitting in a business bank account without being deployed
+  may not satisfy the E-2 at-risk requirement. Consulate officers
+  look for evidence funds are invested in the business, not just
+  transferred."
+**output_feeds:** source_of_funds_statement, fund_flow_chronology
+**denial_prevention:** D-02
+**lead_signal:**
+- $0 deployed → stage=B, franchise_matching_check=true
+- $50K+ deployed → stage=D, temperature+2
+
+### QF-NEW-02
+**Question:** "Confirm: your loan is secured against your personal assets, not the business assets. Can you provide the loan agreement?"
+**Type:** select
+**Options:**
+- Yes — secured against personal assets, I have the agreement
+- Yes — but I do not have the agreement yet
+- I am not certain how it is secured
+**Branch:**
+- "Not certain" → ATTORNEY_RECOMMENDED + D-12 flag
+- "No agreement yet" → add to checklist
+**output_feeds:** source_of_funds_statement
+**denial_prevention:** D-12
 
 ### QF-06
 **Question:** Can you show a continuous paper trail from your personal account
@@ -142,6 +191,8 @@ to the checklist:
 
 # TAB G — Real and Active Business Evidence
 
+**Batch:** 2 — Generated after business formation confirmed
+
 ## Purpose
 
 Tab G provides evidence that the business is a real, operating enterprise —
@@ -191,6 +242,32 @@ if applicable.
 - None yet — in progress
 - Not applicable for this business type
 
+### QG-NEW-01
+**Question:** "For each license or permit in progress, what is the application reference number and expected approval date?"
+**Type:** repeating group
+**Fields:** License name / Reference number / Expected date
+**output_feeds:** business_evidence_narrative, compliance_calendar
+**denial_prevention:** D-10
+
+### QG-BANK
+**Question:** "Have you opened a U.S. business bank account?"
+**Type:** select
+**Options:**
+- Yes — already open
+- Not yet — I know I need to
+- Not sure which bank to use
+- Not sure how to open one as a non-resident
+**Branch:**
+- "Not sure which bank" or "Not sure how" →
+  Advisory: "TD Bank and RBC offer cross-border accounts for Canadians establishing U.S. businesses. Would you like to be connected with a cross-border banking specialist?"
+  Options: Yes connect me / I will handle it
+  "Yes" → banking_referral_trigger=true
+**output_feeds:** business_evidence_narrative, checklist
+**denial_prevention:** D-10
+**lead_signal:**
+- Account open → temperature+2
+- Not yet → temperature-1, banking_warmth=high
+
 ### QG-04
 **Question:** Has the business registered for state sales tax or a state
 tax ID?
@@ -239,6 +316,8 @@ of intent, or purchase orders?
 
 # TAB H — Source and Path of Funds
 
+**Batch:** 2 — Generated after business formation confirmed
+
 ## Purpose
 
 Tab H is the detailed funds-flow documentation section. Where Tab F asks
@@ -272,6 +351,24 @@ Each step described here will correspond to a document in the checklist.
 - Over more than 5 years
 - Combination of savings over time and recent liquidation of assets
 
+### QH-NEW-01
+**Question:** "Are there any gaps in your funds trail — periods where money moved through an account you cannot produce statements for, or funds that changed form (cash, crypto, gold, informal transfer)?"
+**Type:** select
+**Options:**
+- No — my trail is clean and fully documented
+- Minor gaps I can explain
+- Significant gaps that may be hard to document
+- I am not sure
+**Branch:**
+- "Significant gaps" → ATTORNEY_RECOMMENDED + advisory:
+  "Unexplained gaps in the funds trail are one of the most common E-2 denial triggers. Document every step or consult an attorney about how to address gaps before submission."
+- "Not sure" → advisory only
+**output_feeds:** fund_flow_chronology, source_of_funds_statement
+**denial_prevention:** D-03
+**lead_signal:**
+- "Significant gaps" → attorney_warmth+2
+- "Clean trail" → temperature+1
+
 ### QH-03
 **Question:** Were the investment funds ever held in more than one currency
 before being converted to USD?
@@ -300,7 +397,7 @@ conversion made?
 **QH-05a:** What property was sold, and when was closing completed?
 **Type:** text
 **QH-05b:** What were the net proceeds after mortgage repayment and closing costs?
-**Type:** currency (CAD)
+**Type:** currency (any currency — converts to USD)
 
 ### QH-06
 **Question:** Were any of the funds proceeds from the sale of a business?
@@ -314,7 +411,7 @@ conversion made?
 
 | Document | Condition |
 |----------|-----------|
-| Canadian bank statements (12–24 months) | Always |
+| Home country bank statements (12–24 months) | Always |
 | U.S. business bank statements | Always |
 | Wire transfer confirmations | Always |
 | Currency conversion records | If multi-currency involved |
@@ -327,6 +424,8 @@ conversion made?
 ---
 
 # TAB I — Non-Marginality Evidence
+
+**Batch:** 2 — Generated after business formation confirmed
 
 ## Purpose
 
@@ -344,6 +443,68 @@ table (to complement the full business plan in Tab K).
 ---
 
 ## Questions
+
+### QI-NEW-01
+**Question:** "For each role you plan to hire in Year 1, please provide the details."
+**Type:** repeating group (up to 10 entries)
+**Fields per entry:**
+- Job title
+- Full-time or part-time
+- Estimated annual salary (USD)
+- Estimated hire month (1-12 after opening)
+**Tooltip:** "A specific, credible hiring plan is one of the strongest non-marginality arguments. Vague projections are a common denial trigger."
+**output_feeds:** marginality_rebuttal, business_plan_hiring_section, Template_5
+**denial_prevention:** D-07
+**lead_signal:** detailed_plan=true → sophistication+1
+
+### QI-NEW-02
+**Question:** "What are your Year 1 revenue projections based on?"
+**Type:** select
+**Options:**
+- FDD Item 19 data (franchise financial performance representations)
+- Comparable business sales data I researched
+- Prior year revenues from this business (acquisition)
+- Market research and conservative estimates
+- I have not calculated projections yet
+**Branch:**
+- "FDD Item 19" → show: "What is the average gross sales for comparable units in your FDD Item 19?"
+- Type: currency (USD)
+- "Not calculated yet" → advisory + link to financial projections section
+**output_feeds:** business_plan_financials, substantiality_memorandum
+**denial_prevention:** D-06
+**lead_signal:**
+- FDD anchored → credibility+2
+- "Not calculated" → temperature-1, needs_guidance=true
+
+### QI-NEW-03
+**Question:** "What is your household's estimated monthly living expense in the U.S.?"
+**Type:** currency (USD)
+**Tooltip:** "This helps calculate whether projected business income meaningfully exceeds your household needs — a key non-marginality test."
+**Internal calculation:**
+- annual_household_need = answer × 12
+- year1_revenue_projection / annual_household_need = marginality_ratio
+- If ratio < 3 → amber flag in Module 4 confidence score
+- If ratio < 1.5 → red flag
+**output_feeds:** marginality_rebuttal, confidence_score_dimension_3
+**denial_prevention:** D-04
+
+### QI-NEW-04
+**Question:** "Have you visited or spoken with existing operators in this type of business?"
+**Type:** select
+**Options:**
+- Yes — I have visited locations and spoken with owners
+- I have done online research but not visited in person
+- Not yet — I have not started this research
+- I am planning to — I know I should
+**Branch:**
+- "Not yet" → advisory:
+  "Visiting existing locations and speaking with owners significantly strengthens your business plan narrative. Many franchises offer discovery days. Would you like us to help arrange one?"
+  Options: Yes / Not right now
+  "Yes" → discovery_day_referral_trigger=true
+**output_feeds:** business_plan_market_section, investor_narrative
+**lead_signal:**
+- "Visited and spoken" → stage=D, temperature+2
+- "Not yet" → stage=A/B, franchise_engagement_trigger=true
 
 ### QI-01
 **Question:** How many employees does the business currently have (not
