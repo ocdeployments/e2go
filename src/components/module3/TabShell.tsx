@@ -12,6 +12,8 @@ interface QuestionConfig {
   options?: { value: string; label: string; helperText?: string }[];
   required: boolean;
   sensitivity?: 'high' | 'medium' | 'low';
+  privacy_category?: 'red' | 'amber' | 'green' | 'required';
+  skip_advisory?: string;
   warningTriggers?: { value: string; message: string }[];
 }
 
