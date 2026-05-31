@@ -44,13 +44,14 @@ const phase3Items: ChecklistItem[] = [
 
 interface PhaseProps {
   title: string;
+  subtitle?: string;
   items: ChecklistItem[];
   checkedItems: Set<string>;
   onToggle: (key: string) => void;
   phase: 1 | 2 | 3;
 }
 
-function PhaseSection({ title, items, checkedItems, onToggle, phase }: PhaseProps) {
+function PhaseSection({ title, subtitle, items, checkedItems, onToggle, phase }: PhaseProps) {
   const completion = Math.round((items.filter(i => checkedItems.has(i.key)).length / items.length) * 100);
 
   return (
@@ -58,6 +59,7 @@ function PhaseSection({ title, items, checkedItems, onToggle, phase }: PhaseProp
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-xl font-semibold text-[#0b1c30]">{title}</h2>
+          {subtitle && <p className="text-sm text-[#64748b] mt-1">{subtitle}</p>}
           <p className="text-sm text-[#434655]">{items.length} items</p>
         </div>
         <div className="text-right">
