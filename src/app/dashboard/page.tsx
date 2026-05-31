@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { supabase } from "@/lib/supabase";
+import { createBrowserSupabaseClient } from "@/lib/supabase";
 
 interface UserProfile {
   email?: string;
@@ -27,12 +27,13 @@ interface LifecycleData {
   module6_completed_at?: string;
 }
 
-const handleSignOut = async () => {
-  await supabase.auth.signOut();
-  window.location.href = "/";
-};
-
 export default function DashboardPage() {
+  const [supabase] = useState(() => createBrowserSupabaseClient());
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    window.location.href = "/";
+  };
   const [user, setUser] = useState<UserProfile | null>(null);
   const [quiz, setQuiz] = useState<QuizData | null>(null);
   const [lifecycle, setLifecycle] = useState<LifecycleData | null>(null);
