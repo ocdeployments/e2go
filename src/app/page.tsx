@@ -1,554 +1,691 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
-import PWAInstallPrompt from "@/components/PWAInstallPrompt";
+
+// Inline styles for glassmorphism (no Tailwind per task requirements)
+const styles = {
+  page: {
+    position: "relative" as const,
+    zIndex: 1,
+    minHeight: "100vh",
+  },
+  nav: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: "24px 48px",
+    borderBottom: "1px solid var(--glass-border)",
+    backdropFilter: "blur(12px)",
+    WebkitBackdropFilter: "blur(12px)",
+    background: "rgba(6,13,31,0.6)",
+    position: "sticky" as const,
+    top: "3px",
+    zIndex: 100,
+  },
+  navLogo: {
+    fontFamily: "'Playfair Display', serif",
+    fontSize: "22px",
+    fontWeight: 600,
+    color: "var(--white)",
+    letterSpacing: "-0.02em",
+    textDecoration: "none",
+  },
+  navLogoSpan: {
+    color: "var(--teal)",
+  },
+  navLinks: {
+    display: "flex",
+    gap: "32px",
+    listStyle: "none",
+  },
+  navLink: {
+    color: "var(--white-dim)",
+    textDecoration: "none",
+    fontSize: "14px",
+    fontWeight: 400,
+    transition: "color 0.2s",
+  },
+  navCta: {
+    background: "var(--teal)",
+    color: "#fff",
+    border: "none",
+    borderRadius: "6px",
+    padding: "10px 22px",
+    fontFamily: "'DM Sans', sans-serif",
+    fontSize: "13px",
+    fontWeight: 500,
+    cursor: "pointer",
+    transition: "background 0.2s, transform 0.15s",
+    textDecoration: "none",
+  },
+  hero: {
+    padding: "100px 48px 80px",
+    maxWidth: "1100px",
+    margin: "0 auto",
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: "64px",
+    alignItems: "center",
+  },
+  heroEyebrow: {
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+    fontSize: "11px",
+    fontWeight: 500,
+    letterSpacing: "0.14em",
+    textTransform: "uppercase" as const,
+    color: "var(--teal)",
+    marginBottom: "24px",
+  },
+  heroEyebrowLine: {
+    display: "block",
+    width: "28px",
+    height: "1px",
+    background: "var(--teal)",
+  },
+  heroHeadline: {
+    fontFamily: "'Playfair Display', serif",
+    fontSize: "52px",
+    fontWeight: 600,
+    lineHeight: 1.1,
+    color: "var(--white)",
+    marginBottom: "12px",
+    letterSpacing: "-0.02em",
+  },
+  heroHeadlineEm: {
+    fontStyle: "italic",
+    color: "var(--teal)",
+  },
+  heroSub: {
+    fontSize: "16px",
+    lineHeight: 1.7,
+    color: "var(--white-dim)",
+    marginBottom: "40px",
+    maxWidth: "440px",
+  },
+  heroActions: {
+    display: "flex",
+    gap: "14px",
+    alignItems: "center",
+    flexWrap: "wrap" as const,
+  },
+  btnPrimary: {
+    background: "var(--teal)",
+    color: "#fff",
+    border: "none",
+    borderRadius: "8px",
+    padding: "15px 30px",
+    fontFamily: "'DM Sans', sans-serif",
+    fontSize: "14px",
+    fontWeight: 500,
+    cursor: "pointer",
+    transition: "background 0.2s, transform 0.15s, box-shadow 0.2s",
+    boxShadow: "0 0 30px rgba(13,148,136,0.25)",
+    textDecoration: "none",
+    display: "inline-block",
+  },
+  btnGhost: {
+    background: "transparent",
+    color: "var(--white-dim)",
+    border: "1px solid var(--glass-border)",
+    borderRadius: "8px",
+    padding: "14px 24px",
+    fontFamily: "'DM Sans', sans-serif",
+    fontSize: "14px",
+    fontWeight: 400,
+    cursor: "pointer",
+    transition: "border-color 0.2s, color 0.2s",
+    textDecoration: "none",
+    display: "inline-block",
+  },
+  glass: {
+    background: "var(--glass-bg)",
+    backdropFilter: "blur(16px)",
+    WebkitBackdropFilter: "blur(16px)",
+    border: "1px solid var(--glass-border)",
+    borderRadius: "16px",
+  },
+  heroCard: {
+    padding: "32px",
+    transition: "transform 0.3s",
+  },
+  heroCardTitle: {
+    fontFamily: "'Playfair Display', serif",
+    fontSize: "20px",
+    fontWeight: 600,
+    color: "var(--white)",
+    marginBottom: "16px",
+  },
+  heroCardStat: {
+    display: "flex",
+    alignItems: "center",
+    gap: "12px",
+    padding: "12px 0",
+    borderBottom: "1px solid var(--glass-border)",
+  },
+  heroCardStatLast: {
+    borderBottom: "none",
+  },
+  heroCardStatIcon: {
+    width: "32px",
+    height: "32px",
+    borderRadius: "8px",
+    background: "var(--teal-dim)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    color: "var(--teal)",
+    fontSize: "16px",
+  },
+  heroCardStatLabel: {
+    fontSize: "13px",
+    color: "var(--white-dim)",
+  },
+  heroCardStatValue: {
+    fontSize: "13px",
+    color: "var(--white)",
+    fontWeight: 500,
+  },
+  section: {
+    padding: "80px 48px",
+    maxWidth: "1100px",
+    margin: "0 auto",
+  },
+  sectionEyebrow: {
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+    fontSize: "11px",
+    fontWeight: 500,
+    letterSpacing: "0.14em",
+    textTransform: "uppercase" as const,
+    color: "var(--teal)",
+    marginBottom: "16px",
+  },
+  sectionEyebrowLine: {
+    display: "block",
+    width: "28px",
+    height: "1px",
+    background: "var(--teal)",
+  },
+  sectionTitle: {
+    fontFamily: "'Playfair Display', serif",
+    fontSize: "36px",
+    fontWeight: 600,
+    color: "var(--white)",
+    marginBottom: "48px",
+    letterSpacing: "-0.02em",
+  },
+  trustBar: {
+    display: "grid",
+    gridTemplateColumns: "repeat(4, 1fr)",
+    gap: "24px",
+    marginBottom: "80px",
+  },
+  trustItem: {
+    textAlign: "center" as const,
+    padding: "24px",
+    borderRadius: "12px",
+    background: "var(--glass-bg)",
+    border: "1px solid var(--glass-border)",
+  },
+  trustIcon: {
+    fontSize: "24px",
+    marginBottom: "12px",
+    color: "var(--teal)",
+  },
+  trustLabel: {
+    fontSize: "13px",
+    color: "var(--white-dim)",
+    lineHeight: 1.5,
+  },
+  howGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(3, 1fr)",
+    gap: "24px",
+  },
+  stepCard: {
+    padding: "32px",
+    borderRadius: "16px",
+    background: "var(--glass-bg)",
+    border: "1px solid var(--glass-border)",
+    transition: "transform 0.3s, background 0.3s",
+    cursor: "default",
+  },
+  stepNumber: {
+    fontFamily: "'Playfair Display', serif",
+    fontSize: "48px",
+    fontWeight: 600,
+    color: "var(--teal)",
+    opacity: 0.3,
+    marginBottom: "16px",
+    lineHeight: 1,
+  },
+  stepTitle: {
+    fontSize: "18px",
+    fontWeight: 500,
+    color: "var(--white)",
+    marginBottom: "8px",
+  },
+  stepDesc: {
+    fontSize: "14px",
+    color: "var(--white-dim)",
+    lineHeight: 1.6,
+  },
+  docsSection: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: "24px",
+  },
+  docCard: {
+    padding: "32px",
+    borderRadius: "16px",
+    background: "var(--glass-bg)",
+    border: "1px solid var(--glass-border)",
+  },
+  docCardTitle: {
+    fontFamily: "'Playfair Display', serif",
+    fontSize: "22px",
+    fontWeight: 600,
+    color: "var(--white)",
+    marginBottom: "12px",
+  },
+  docCardDesc: {
+    fontSize: "14px",
+    color: "var(--white-dim)",
+    lineHeight: 1.6,
+    marginBottom: "20px",
+  },
+  docList: {
+    listStyle: "none",
+    padding: 0,
+    margin: 0,
+  },
+  docListItem: {
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+    fontSize: "13px",
+    color: "var(--white)",
+    padding: "8px 0",
+    borderBottom: "1px solid var(--glass-border)",
+  },
+  docListItemLast: {
+    borderBottom: "none",
+  },
+  pricingSection: {
+    textAlign: "center" as const,
+    padding: "80px 48px",
+  },
+  pricingCard: {
+    display: "inline-block",
+    padding: "40px 48px",
+    borderRadius: "16px",
+    background: "rgba(13,148,136,0.1)",
+    border: "1px solid var(--teal-border)",
+    backdropFilter: "blur(16px)",
+    WebkitBackdropFilter: "blur(16px)",
+  },
+  pricingLabel: {
+    fontSize: "12px",
+    fontWeight: 500,
+    letterSpacing: "0.1em",
+    textTransform: "uppercase" as const,
+    color: "var(--teal)",
+    marginBottom: "8px",
+  },
+  pricingAmount: {
+    fontFamily: "'Playfair Display', serif",
+    fontSize: "56px",
+    fontWeight: 600,
+    color: "var(--white)",
+    marginBottom: "8px",
+  },
+  pricingCompare: {
+    fontSize: "14px",
+    color: "var(--white-dim)",
+    marginBottom: "24px",
+  },
+  pricingFeatures: {
+    display: "flex",
+    gap: "24px",
+    justifyContent: "center",
+    marginBottom: "32px",
+  },
+  pricingFeature: {
+    fontSize: "13px",
+    color: "var(--white-dim)",
+  },
+  footer: {
+    padding: "48px",
+    borderTop: "1px solid var(--glass-border)",
+  },
+  footerInner: {
+    maxWidth: "1100px",
+    margin: "0 auto",
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  footerLogo: {
+    fontFamily: "'Playfair Display', serif",
+    fontSize: "18px",
+    fontWeight: 600,
+    color: "var(--white)",
+  },
+  footerLogoSpan: {
+    color: "var(--teal)",
+  },
+  footerLinks: {
+    display: "flex",
+    gap: "24px",
+    listStyle: "none",
+  },
+  footerLink: {
+    color: "var(--white-dim)",
+    textDecoration: "none",
+    fontSize: "13px",
+    transition: "color 0.2s",
+  },
+  footerCopy: {
+    fontSize: "12px",
+    color: "var(--white-dim)",
+    opacity: 0.6,
+  },
+  statueOverlay: {
+    position: "fixed" as const,
+    right: "-60px",
+    bottom: "-40px",
+    zIndex: 0,
+    opacity: 0.045,
+    width: "580px",
+  },
+};
+
+// Statue of Liberty SVG component
+function StatueOfLiberty() {
+  return (
+    <svg className="statue-overlay" style={styles.statueOverlay} viewBox="0 0 200 300" fill="none">
+      <path d="M100 10 L120 30 L120 80 L130 80 L130 100 L140 100 L140 290 L60 290 L60 100 L70 100 L70 80 L80 80 L80 30 Z" fill="#f0ede6" />
+      <path d="M100 10 L100 5" stroke="#f0ede6" strokeWidth="2" />
+      <circle cx="100" cy="0" r="3" fill="#f0ede6" />
+      <path d="M90 35 L110 35 L105 50 L95 50 Z" fill="#f0ede6" />
+    </svg>
+  );
+}
+
+// 50-star pattern (simplified)
+function StarsPattern() {
+  return (
+    <svg
+      className="stars-overlay"
+      style={{
+        position: "fixed",
+        top: "100px",
+        left: "50px",
+        zIndex: 0,
+        opacity: 0.06,
+      }}
+      width="200"
+      height="200"
+      viewBox="0 0 100 100"
+    >
+      {[...Array(25)].map((_, i) => (
+        <text
+          key={i}
+          x={((i % 5) * 20) + 5}
+          y={Math.floor(i / 5) * 20 + 10}
+          fontSize="8"
+          fill="#f0ede6"
+        >
+          ★
+        </text>
+      ))}
+    </svg>
+  );
+}
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-[#f8f9ff] text-[#0b1c30] font-sans">
-      {/* CSS Animations */}
-      <style jsx global>{`
-        @keyframes flagFlutter {
-          0%, 100% { transform: skewX(0deg) scaleX(1); }
-          25% { transform: skewX(2deg) scaleX(1.02); }
-          75% { transform: skewX(-2deg) scaleX(0.98); }
-        }
-        .flag-animation {
-          animation: flagFlutter 8s ease-in-out infinite;
-          transform-origin: left center;
-        }
-      `}</style>
+    <div style={styles.page}>
+      <StatueOfLiberty />
+      <StarsPattern />
 
       {/* Navigation */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-b border-[#c3c6d7]">
-        <div className="flex justify-between items-center h-16 px-4 md:px-8 max-w-6xl mx-auto">
-          <Link href="/" className="flex items-center gap-2">
-            <svg className="w-6 h-6 text-[#004ac6]" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 2L2 7v10l10 5 10-5V7L12 2z"/>
-            </svg>
-            <span className="text-xl font-bold text-[#004ac6]">e2go.app</span>
-          </Link>
-          <div className="flex items-center gap-4">
-            <button className="hidden md:block text-sm text-[#434655] hover:text-[#004ac6] transition-colors">
-              Sign In
-            </button>
-            <Link
-              href="/quiz"
-              className="bg-[#004ac6] text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-[#00337d] transition-colors"
-            >
-              Get Started
+      <nav style={styles.nav}>
+        <Link href="/" style={styles.navLogo}>
+          e2go<span style={styles.navLogoSpan}>.app</span>
+        </Link>
+        <ul style={styles.navLinks}>
+          <li>
+            <Link href="/quiz" style={styles.navLink}>
+              Quiz
             </Link>
-          </div>
-        </div>
-      </header>
+          </li>
+          <li>
+            <Link href="/pricing" style={styles.navLink}>
+              Pricing
+            </Link>
+          </li>
+        </ul>
+        <Link href="/login" style={styles.navCta}>
+          Sign In
+        </Link>
+      </nav>
 
       {/* Hero Section */}
-      <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden bg-[#f8f9ff] pt-16">
-        {/* Flag Background */}
-        <div className="absolute inset-0 z-0 overflow-hidden">
-          <Image
-            src="/flag.png"
-            alt=""
-            fill
-            className="object-cover"
-            style={{ opacity: 0.3, mixBlendMode: "multiply", transform: "scale(1.05)" }}
-            priority
-          />
+      <section style={styles.hero}>
+        <div>
+          <div style={styles.heroEyebrow}>
+            <span style={styles.heroEyebrowLine} />
+            E-2 Visa Preparation
+          </div>
+          <h1 style={styles.heroHeadline}>
+            Your visa package,<br />
+            <em style={styles.heroHeadlineEm}>built right.</em>
+          </h1>
+          <p style={styles.heroSub}>
+            Answer the questions. We build every document your consulate needs — formatted, cross-checked, and ready to submit.
+          </p>
+          <div style={styles.heroActions}>
+            <Link href="/quiz" style={styles.btnPrimary}>
+              Take the free eligibility quiz →
+            </Link>
+            <Link href="#how-it-works" style={styles.btnGhost}>
+              See what we build
+            </Link>
+          </div>
         </div>
 
-        <div className="relative z-10 max-w-4xl mx-auto px-4 py-20 text-center">
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-[#0b1c30] mb-6 leading-tight">
-            The E-2 investor visa, prepared properly.
-          </h1>
-
-          <p className="text-lg md:text-xl text-[#434655] mb-10 max-w-2xl mx-auto leading-relaxed">
-            A structured guide built from official U.S. government sources. Know your
-            eligibility, surface your risks, and get your complete document checklist
-            — in under 15 minutes.
-          </p>
-
-          {/* Trust Badges */}
-          <div className="flex flex-wrap justify-center gap-3 mb-10">
-            <span className="inline-flex items-center px-4 py-2 bg-white/90 backdrop-blur-sm text-sm text-[#434655] rounded-full shadow-sm border border-[#c3c6d7]">
-              Based on USCIS & State Dept. guidance
-            </span>
-            <span className="inline-flex items-center px-4 py-2 bg-white/90 backdrop-blur-sm text-sm text-[#434655] rounded-full shadow-sm border border-[#c3c6d7]">
-              Flags complex cases early
-            </span>
-            <span className="inline-flex items-center px-4 py-2 bg-white/90 backdrop-blur-sm text-sm text-[#434655] rounded-full shadow-sm border border-[#c3c6d7]">
-              Used by 2,400+ Canadians
-            </span>
+        {/* Stats Card */}
+        <div className="glass" style={{ ...styles.glass, ...styles.heroCard }}>
+          <h3 style={styles.heroCardTitle}>By the numbers</h3>
+          <div style={{ ...styles.heroCardStat, ...styles.heroCardStatLast }}>
+            <div style={styles.heroCardStatIcon}>📄</div>
+            <div>
+              <div style={styles.heroCardStatLabel}>Documents generated</div>
+              <div style={styles.heroCardStatValue}>17 per application</div>
+            </div>
           </div>
+          <div style={styles.heroCardStat}>
+            <div style={styles.heroCardStatIcon}>🌍</div>
+            <div>
+              <div style={styles.heroCardStatLabel}>Treaty countries supported</div>
+              <div style={styles.heroCardStatValue}>82 nations</div>
+            </div>
+          </div>
+          <div style={styles.heroCardStat}>
+            <div style={styles.heroCardStatIcon}>📏</div>
+            <div>
+              <div style={styles.heroCardStatLabel}>Page limit enforced</div>
+              <div style={styles.heroCardStatValue}>50 pages</div>
+            </div>
+          </div>
+          <div style={{ ...styles.heroCardStat, ...styles.heroCardStatLast }}>
+            <div style={styles.heroCardStatIcon}>💰</div>
+            <div>
+              <div style={styles.heroCardStatLabel}>vs. average attorney</div>
+              <div style={styles.heroCardStatValue}>$297 vs $13,000</div>
+            </div>
+          </div>
+        </div>
+      </section>
 
-          {/* CTA */}
-          <div className="flex flex-col items-center gap-3">
-            <Link
-              href="/quiz"
-              className="inline-flex items-center justify-center bg-[#004ac6] text-white text-lg font-medium px-8 py-4 rounded-lg hover:bg-[#00337d] transition-colors shadow-lg"
-            >
-              Check my eligibility
-            </Link>
-            <p className="text-sm text-[#737686]">
-              Takes 10–15 minutes. No account required.
-            </p>
+      {/* Trust Bar */}
+      <section style={{ ...styles.section, paddingTop: 0 }}>
+        <div style={styles.trustBar}>
+          <div style={styles.trustItem}>
+            <div style={styles.trustIcon}>✓</div>
+            <div style={styles.trustLabel}>Official U.S. government sources</div>
+          </div>
+          <div style={styles.trustItem}>
+            <div style={styles.trustIcon}>⚡</div>
+            <div style={styles.trustLabel}>15-minute eligibility quiz</div>
+          </div>
+          <div style={styles.trustItem}>
+            <div style={styles.trustIcon}>🔒</div>
+            <div style={styles.trustLabel}>Auto-save every answer</div>
+          </div>
+          <div style={styles.trustItem}>
+            <div style={styles.trustIcon}>🛡️</div>
+            <div style={styles.trustLabel}>Risk flags before they trip you up</div>
           </div>
         </div>
       </section>
 
       {/* How It Works */}
-      <section className="py-20 px-4 bg-white">
-        <div className="max-w-5xl mx-auto">
-          <h2 className="text-3xl font-semibold text-center text-[#0b1c30] mb-16">
-            How it works
-          </h2>
-
-          <div className="grid md:grid-cols-2 gap-12">
-            <div className="flex gap-4">
-              <span className="text-4xl font-bold text-[#8ab4e8] shrink-0">01</span>
-              <div>
-                <h3 className="text-lg font-semibold text-[#0b1c30] mb-2">
-                  Take the eligibility quiz
-                </h3>
-                <p className="text-[#434655] leading-relaxed">
-                  25 focused questions, one at a time. The flow adapts to your answers.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex gap-4">
-              <span className="text-4xl font-bold text-[#8ab4e8] shrink-0">02</span>
-              <div>
-                <h3 className="text-lg font-semibold text-[#0b1c30] mb-2">
-                  See your risk profile
-                </h3>
-                <p className="text-[#434655] leading-relaxed">
-                  Complications are flagged in plain English before they become a denial.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex gap-4">
-              <span className="text-4xl font-bold text-[#8ab4e8] shrink-0">03</span>
-              <div>
-                <h3 className="text-lg font-semibold text-[#0b1c30] mb-2">
-                  Receive your document checklist
-                </h3>
-                <p className="text-[#434655] leading-relaxed">
-                  Every document your application needs, organized by category.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex gap-4">
-              <span className="text-4xl font-bold text-[#8ab4e8] shrink-0">04</span>
-              <div>
-                <h3 className="text-lg font-semibold text-[#0b1c30] mb-2">
-                  Know your exact next step
-                </h3>
-                <p className="text-[#434655] leading-relaxed">
-                  A complete readiness summary — or know exactly which type of attorney to contact.
-                </p>
-              </div>
-            </div>
-          </div>
+      <section style={styles.section} id="how-it-works">
+        <div style={styles.sectionEyebrow}>
+          <span style={styles.sectionEyebrowLine} />
+          How it works
         </div>
-      </section>
-
-      {/* Features Section */}
-      <section className="py-20 px-4 bg-[#f8f9ff]">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-2xl md:text-3xl font-bold text-[#004ac6] tracking-tight mb-2">
-              Everything your application needs. Built in.
-            </h2>
-            <div className="h-1 w-12 bg-[#006a61] mx-auto rounded-full"></div>
+        <h2 style={styles.sectionTitle}>From eligibility to submission</h2>
+        <div style={styles.howGrid}>
+          <div className="glass" style={styles.stepCard}>
+            <div style={styles.stepNumber}>01</div>
+            <h3 style={styles.stepTitle}>Take the quiz</h3>
+            <p style={styles.stepDesc}>
+              26 questions. One at a time. We adapt based on your answers to surface exactly what matters for your case.
+            </p>
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {/* Card 1: Document Interview Engine */}
-            <div className="bg-white p-6 rounded-xl border border-[#e2e8f0] shadow-sm transition-all hover:shadow-md">
-              <div className="w-12 h-12 bg-[#e5eeff] flex items-center justify-center rounded-lg mb-4">
-                <svg className="w-6 h-6 text-[#006a61]" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
-                </svg>
-              </div>
-              <h3 className="text-sm font-semibold text-[#0b1c30] mb-2">Document Interview Engine</h3>
-              <p className="text-sm text-[#434655]">11 tabs, ~250 guided questions. Every answer builds a document. Covers all Toronto consulate requirements.</p>
-            </div>
-
-            {/* Card 2: Business Plan Generator */}
-            <div className="bg-white p-6 rounded-xl border border-[#e2e8f0] shadow-sm transition-all hover:shadow-md">
-              <div className="w-12 h-12 bg-[#e5eeff] flex items-center justify-center rounded-lg mb-4">
-                <svg className="w-6 h-6 text-[#006a61]" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z"/>
-                </svg>
-              </div>
-              <h3 className="text-sm font-semibold text-[#0b1c30] mb-2">Business Plan Generator</h3>
-              <p className="text-sm text-[#434655]">AI-generated, consulate-formatted business plan built from your actual financial data. Not a template.</p>
-            </div>
-
-            {/* Card 3: Application Confidence Score */}
-            <div className="bg-white p-6 rounded-xl border border-[#e2e8f0] shadow-sm transition-all hover:shadow-md">
-              <div className="w-12 h-12 bg-[#e5eeff] flex items-center justify-center rounded-lg mb-4">
-                <svg className="w-6 h-6 text-[#006a61]" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/>
-                </svg>
-              </div>
-              <h3 className="text-sm font-semibold text-[#0b1c30] mb-2">Application Confidence Score</h3>
-              <p className="text-sm text-[#434655]">Your application scored across 8 dimensions before you submit. Every weakness flagged with a specific fix.</p>
-            </div>
-
-            {/* Card 4: Interview Simulator */}
-            <div className="bg-white p-6 rounded-xl border border-[#e2e8f0] shadow-sm transition-all hover:shadow-md">
-              <div className="w-12 h-12 bg-[#e5eeff] flex items-center justify-center rounded-lg mb-4">
-                <svg className="w-6 h-6 text-[#006a61]" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 14c1.66 0 2.99-1.34 2.99-3L15 5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/>
-                </svg>
-              </div>
-              <h3 className="text-sm font-semibold text-[#0b1c30] mb-2">Interview Simulator</h3>
-              <p className="text-sm text-[#434655]">Practice with an AI officer who has read your application. Questions drawn from your specific case.</p>
-            </div>
-
-            {/* Card 5: PDF Package Generator */}
-            <div className="bg-white p-6 rounded-xl border border-[#e2e8f0] shadow-sm transition-all hover:shadow-md">
-              <div className="w-12 h-12 bg-[#e5eeff] flex items-center justify-center rounded-lg mb-4">
-                <svg className="w-6 h-6 text-[#006a61]" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M20 2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8.5 7.5c0 .83-.67 1.5-1.5 1.5H9v2H7.5V7H10c.83 0 1.5.67 1.5 1.5v1zm5 2c0 .83-.67 1.5-1.5 1.5h-2.5V7H15c.83 0 1.5.67 1.5 1.5v3zm4-3H19v1h1.5V11H19v2h-1.5V7h3v1.5zM9 9.5h1v-1H9v1zM4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm10 5.5h1v-3h-1v3z"/>
-                </svg>
-              </div>
-              <h3 className="text-sm font-semibold text-[#0b1c30] mb-2">PDF Package Generator</h3>
-              <p className="text-sm text-[#434655]">Complete, tab-organized binder formatted to Toronto consulate standards. 70-page limit enforced automatically.</p>
-            </div>
-
-            {/* Card 6: Document Checklist */}
-            <div className="bg-white p-6 rounded-xl border border-[#e2e8f0] shadow-sm transition-all hover:shadow-md">
-              <div className="w-12 h-12 bg-[#e5eeff] flex items-center justify-center rounded-lg mb-4">
-                <svg className="w-6 h-6 text-[#006a61]" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10H7v-2h10v2z"/>
-                </svg>
-              </div>
-              <h3 className="text-sm font-semibold text-[#0b1c30] mb-2">Document Checklist</h3>
-              <p className="text-sm text-[#434655]">Every document your application needs, annotated with exactly what it must show and where to obtain it.</p>
-            </div>
+          <div className="glass" style={styles.stepCard}>
+            <div style={styles.stepNumber}>02</div>
+            <h3 style={styles.stepTitle}>See your profile</h3>
+            <p style={styles.stepDesc}>
+              Get a clear eligibility result with any risk flags explained in plain English — before you pay a cent.
+            </p>
           </div>
-
-          {/* Also Included Section */}
-          <div className="mt-12 pt-12 border-t border-[#e2e8f0]">
-            <div className="flex items-center gap-4 mb-6">
-              <h2 className="text-xs font-semibold uppercase tracking-widest text-[#737686]">Also included</h2>
-              <div className="flex-grow h-px bg-[#e2e8f0]"></div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Perk 1: LLC Formation Guide */}
-              <div className="flex items-start gap-4 p-4 rounded-lg bg-[#eff4ff] border border-[#e2e8f0]/50">
-                <svg className="w-5 h-5 text-[#006a61] mt-1" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
-                </svg>
-                <div>
-                  <h4 className="text-sm font-semibold text-[#0b1c30]">LLC Formation Guide</h4>
-                  <p className="text-sm text-[#434655]">50-state formation walkthrough for your U.S. business entity.</p>
-                </div>
-              </div>
-
-              {/* Perk 2: U.S. Banking Setup Guide */}
-              <div className="flex items-start gap-4 p-4 rounded-lg bg-[#eff4ff] border border-[#e2e8f0]/50">
-                <svg className="w-5 h-5 text-[#006a61] mt-1" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/>
-                </svg>
-                <div>
-                  <h4 className="text-sm font-semibold text-[#0b1c30]">U.S. Banking Setup Guide</h4>
-                  <p className="text-sm text-[#434655]">Step-by-step guide to opening a U.S. business account as a Canadian — including cross-border specialists.</p>
-                </div>
-              </div>
-
-              {/* Perk 3: Canadian Departure Tax Planner */}
-              <div className="flex items-start gap-4 p-4 rounded-lg bg-[#eff4ff] border border-[#e2e8f0]/50">
-                <svg className="w-5 h-5 text-[#006a61] mt-1" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2"/>
-                </svg>
-                <div>
-                  <h4 className="text-sm font-semibold text-[#0b1c30]">Canadian Departure Tax Planner</h4>
-                  <p className="text-sm text-[#434655]">RRSP, departure returns, provincial health coverage timing, and non-resident tax implications.</p>
-                </div>
-              </div>
-
-              {/* Perk 4: Compliance Calendar */}
-              <div className="flex items-start gap-4 p-4 rounded-lg bg-[#eff4ff] border border-[#e2e8f0]/50">
-                <svg className="w-5 h-5 text-[#006a61] mt-1" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11zM9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm-8 4H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2z"/>
-                </svg>
-                <div>
-                  <h4 className="text-sm font-semibold text-[#0b1c30]">Compliance Calendar</h4>
-                  <p className="text-sm text-[#434655]">Auto-generated timeline of every deadline — visa renewal, tax filings, FBAR, employment milestones.</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Bottom Line */}
-          <div className="mt-12 text-center">
-            <p className="text-sm text-[#737686] opacity-80">
-              One-time fee · Lifetime access · No subscription
+          <div className="glass" style={styles.stepCard}>
+            <div style={styles.stepNumber}>03</div>
+            <h3 style={styles.stepTitle}>Build your package</h3>
+            <p style={styles.stepDesc}>
+              Answer guided questions. We generate consulate-formatted documents. Pay only when you&apos;re ready to proceed.
             </p>
           </div>
         </div>
       </section>
 
-      {/* Stats Bar */}
-      <section className="py-16 px-4 bg-[#eff4ff] border-y border-[#c3c6d7]">
-        <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-          <div>
-            <p className="text-3xl font-bold text-[#004ac6] mb-1">3–6 weeks</p>
-            <p className="text-sm text-[#434655]">Typical consulate processing time</p>
-          </div>
-          <div>
-            <p className="text-3xl font-bold text-[#004ac6] mb-1">$815 USD</p>
-            <p className="text-sm text-[#434655]">U.S. government application fee (MRV)</p>
-          </div>
-          <div>
-            <p className="text-3xl font-bold text-[#004ac6] mb-1">2–5 years</p>
-            <p className="text-sm text-[#434655]">Standard initial visa validity</p>
-          </div>
-          <div>
-            <p className="text-3xl font-bold text-[#004ac6] mb-1">Unlimited</p>
-            <p className="text-sm text-[#434655]">Renewals if status is maintained</p>
-          </div>
+      {/* Documents Section */}
+      <section style={styles.section}>
+        <div style={styles.sectionEyebrow}>
+          <span style={styles.sectionEyebrowLine} />
+          What we build
         </div>
-      </section>
-
-      {/* Sources Section */}
-      <section className="py-20 px-4 bg-[#f8f9ff]">
-        <div className="max-w-5xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#e5eeff] rounded-full text-[#004ac6] text-sm mb-8">
-            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-            </svg>
-            <span className="text-xs font-semibold uppercase tracking-wider">Verified Legal Framework</span>
-          </div>
-
-          <h2 className="text-3xl md:text-4xl font-bold text-[#0b1c30] mb-4">
-            Built from Official Sources
-          </h2>
-          <p className="text-lg text-[#434655] max-w-2xl mx-auto mb-12">
-            Our platform is engineered to align perfectly with the regulatory standards of the United States visa adjudication process.
-          </p>
-
-          {/* 2x2 Grid of Source Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-            <div className="bg-white border border-[#c3c6d7] p-4 md:p-6 flex flex-col items-start text-left transition-all hover:border-[#737686] hover:shadow-lg">
-              <div className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center rounded-lg bg-[#e5eeff] mb-4">
-                <svg className="w-6 h-6 text-[#004ac6]" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
-                </svg>
-              </div>
-              <span className="text-xs font-semibold text-[#004ac6] mb-1">9 FAM 402.9</span>
-              <h3 className="text-sm font-bold text-[#0b1c30] mb-1 uppercase">U.S. Department of State</h3>
-              <p className="text-xs text-[#434655] line-clamp-2">Foreign Affairs Manual — E Visa Guidance</p>
-            </div>
-
-            <div className="bg-white border border-[#c3c6d7] p-4 md:p-6 flex flex-col items-start text-left transition-all hover:border-[#737686] hover:shadow-lg">
-              <div className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center rounded-lg bg-[#e5eeff] mb-4">
-                <svg className="w-6 h-6 text-[#004ac6]" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M4 10.5c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5 1.5-.67 1.5-1.5-.67-1.5-1.5-1.5zm0-6c-.83 0-1.5.67-1.5 1.5S3.17 7.5 4 7.5 5.5 6.83 5.5 6 4.83 4.5 4 4.5zm0 12c-.83 0-1.5.68-1.5 1.5s.68 1.5 1.5 1.5 1.5-.68 1.5-1.5-.67-1.5-1.5-1.5zM7 19h14v-2H7v2zm0-6h14v-2H7v2zm0-8v2h14V5H7z"/>
-                </svg>
-              </div>
-              <span className="text-xs font-semibold text-[#004ac6] mb-1">INA § 101(a)(15)(E)</span>
-              <h3 className="text-sm font-bold text-[#0b1c30] mb-1 uppercase">U.S. Congress</h3>
-              <p className="text-xs text-[#434655] line-clamp-2">Immigration and Nationality Act</p>
-            </div>
-
-            <div className="bg-white border border-[#c3c6d7] p-4 md:p-6 flex flex-col items-start text-left transition-all hover:border-[#737686] hover:shadow-lg">
-              <div className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center rounded-lg bg-[#e5eeff] mb-4">
-                <svg className="w-6 h-6 text-[#004ac6]" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/>
-                </svg>
-              </div>
-              <span className="text-xs font-semibold text-[#004ac6] mb-1">E-2 Policy Manual</span>
-              <h3 className="text-sm font-bold text-[#0b1c30] mb-1 uppercase">USCIS</h3>
-              <p className="text-xs text-[#434655] line-clamp-2">Adjudication Standards & Requirements</p>
-            </div>
-
-            <div className="bg-white border border-[#c3c6d7] p-4 md:p-6 flex flex-col items-start text-left transition-all hover:border-[#737686] hover:shadow-lg">
-              <div className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center rounded-lg bg-[#e5eeff] mb-4">
-                <svg className="w-6 h-6 text-[#004ac6]" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
-                </svg>
-              </div>
-              <span className="text-xs font-semibold text-[#004ac6] mb-1">DOS Treaty Table</span>
-              <h3 className="text-sm font-bold text-[#0b1c30] mb-1 uppercase">U.S. Department of State</h3>
-              <p className="text-xs text-[#434655] line-clamp-2">E Visa Treaty Country Listing</p>
-            </div>
-          </div>
-
-          {/* Disclaimer */}
-          <div className="mt-12 pt-6 border-t border-[#c3c6d7]">
-            <p className="text-xs text-[#737686] italic">
-              e2go.app is not affiliated with USCIS, the U.S. Department of State, or any government agency.
+        <h2 style={styles.sectionTitle}>Every document your application needs</h2>
+        <div style={styles.docsSection}>
+          <div className="glass" style={styles.docCard}>
+            <h3 style={styles.docCardTitle}>Batch 1 — Immediate</h3>
+            <p style={styles.docCardDesc}>
+              Generated immediately once you unlock the application
             </p>
+            <ul style={styles.docList}>
+              <li style={{ ...styles.docListItem, ...styles.docListItemLast }}>✓ Cover Letter</li>
+              <li style={styles.docListItem}>✓ Business Plan Executive Summary</li>
+              <li style={styles.docListItem}>✓ Investment Memorandum</li>
+              <li style={styles.docListItem}>✓ Source of Funds Statement</li>
+            </ul>
+          </div>
+          <div className="glass" style={styles.docCard}>
+            <h3 style={styles.docCardTitle}>Batch 2 — Prerequisites</h3>
+            <p style={styles.docCardDesc}>
+              Generated as you complete prerequisite questions
+            </p>
+            <ul style={styles.docList}>
+              <li style={styles.docListItem}>✓ Treaty Nationality Evidence</li>
+              <li style={styles.docListItem}>✓ Business Structure Overview</li>
+              <li style={styles.docListItem}>✓ Market Analysis</li>
+              <li style={{ ...styles.docListItem, ...styles.docListItemLast }}>✓ + 10 more documents</li>
+            </ul>
           </div>
         </div>
       </section>
 
-      {/* Testimonials */}
-      <section className="py-20 px-4 bg-white">
-        <div className="max-w-3xl mx-auto">
-          <h2 className="text-2xl md:text-3xl font-bold text-[#0b1c30] text-center mb-12">
-            Real Stories from Canadian Entrepreneurs
-          </h2>
-
-          <div className="flex flex-col gap-6">
-            <div className="bg-[#f8f9ff] p-6 md:p-8 rounded-xl border border-[#c3c6d7] shadow-sm transition-all hover:shadow-md">
-              <div className="flex items-center gap-2 mb-4">
-                <svg className="w-5 h-5 text-[#004ac6]" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                </svg>
-                <span className="text-xs font-semibold text-[#737686] uppercase tracking-wider">Verified User</span>
-              </div>
-              <blockquote className="text-lg text-[#0b1c30] mb-4">
-                &ldquo;I&apos;d been putting this off for two years because the process felt impossible. e2go turned it into a weekend project. I finally understood exactly what I needed and why.&rdquo;
-              </blockquote>
-              <div className="text-sm">
-                <span className="font-bold text-[#004ac6]">Michael T.</span>, Software company founder · Toronto, ON
-              </div>
-            </div>
-
-            <div className="bg-[#f8f9ff] p-6 md:p-8 rounded-xl border border-[#c3c6d7] shadow-sm transition-all hover:shadow-md">
-              <div className="flex items-center gap-2 mb-4">
-                <svg className="w-5 h-5 text-[#004ac6]" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                </svg>
-                <span className="text-xs font-semibold text-[#737686] uppercase tracking-wider">Verified User</span>
-              </div>
-              <blockquote className="text-lg text-[#0b1c30] mb-4">
-                &ldquo;The quiz identified a gap in my fund documentation that would have sunk my application. Finding that before I filed — not at the consulate — was worth everything.&rdquo;
-              </blockquote>
-              <div className="text-sm">
-                <span className="font-bold text-[#004ac6]">Sandra P.</span>, Restaurant group owner · Vancouver, BC
-              </div>
-            </div>
-
-            <div className="bg-[#f8f9ff] p-6 md:p-8 rounded-xl border border-[#c3c6d7] shadow-sm transition-all hover:shadow-md">
-              <div className="flex items-center gap-2 mb-4">
-                <svg className="w-5 h-5 text-[#004ac6]" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                </svg>
-                <span className="text-xs font-semibold text-[#737686] uppercase tracking-wider">Verified User</span>
-              </div>
-              <blockquote className="text-lg text-[#0b1c30] mb-4">
-                &ldquo;My immigration attorney said my application package was one of the most organized they&apos;d seen. I used e2go to prepare every document. Not a single request for additional evidence.&rdquo;
-              </blockquote>
-              <div className="text-sm">
-                <span className="font-bold text-[#004ac6]">David C.</span>, Manufacturing business owner · Calgary, AB
-              </div>
-            </div>
+      {/* Pricing Band */}
+      <section style={styles.pricingSection}>
+        <div style={styles.pricingCard}>
+          <div style={styles.pricingLabel}>Founding Member Pricing</div>
+          <div style={styles.pricingAmount}>$297</div>
+          <div style={styles.pricingCompare}>vs. $13,000 average attorney fee</div>
+          <div style={styles.pricingFeatures}>
+            <span style={styles.pricingFeature}>One-time</span>
+            <span style={styles.pricingFeature}>•</span>
+            <span style={styles.pricingFeature}>Lifetime access</span>
+            <span style={styles.pricingFeature}>•</span>
+            <span style={styles.pricingFeature}>No subscription</span>
           </div>
-        </div>
-      </section>
-
-      {/* Is this right for you? */}
-      <section className="py-20 px-4 bg-[#f8f9ff]">
-        <div className="max-w-3xl mx-auto">
-          <h2 className="text-3xl font-semibold text-center text-[#0b1c30] mb-10">
-            Is this guide right for you?
-          </h2>
-
-          <div className="grid md:grid-cols-2 gap-10">
-            <div>
-              <h3 className="text-lg font-semibold text-[#0b1c30] mb-4">
-                This guide is designed for:
-              </h3>
-              <ul className="space-y-3 text-[#434655]">
-                <li className="flex items-start gap-2">
-                  <span className="text-[#004ac6] mt-1">✓</span>
-                  Canadian citizens with a concrete U.S. business opportunity
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-[#004ac6] mt-1">✓</span>
-                  Entrepreneurs expanding an existing Canadian business into the U.S.
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-[#004ac6] mt-1">✓</span>
-                  Business owners who want to understand E-2 eligibility before engaging a lawyer
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-[#004ac6] mt-1">✓</span>
-                  Applicants with a clear, documentable source of funds
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-[#004ac6] mt-1">✓</span>
-                  People with a clean immigration and criminal history
-                </li>
-              </ul>
-            </div>
-
-            <div>
-              <h3 className="text-lg font-semibold text-[#0b1c30] mb-4">
-                Speak with a lawyer first if:
-              </h3>
-              <ul className="space-y-3 text-[#434655]">
-                <li className="flex items-start gap-2">
-                  <span className="text-amber-500 mt-1">!</span>
-                  You have any criminal history in any country
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-amber-500 mt-1">!</span>
-                  You have ever been denied a U.S. visa or refused entry
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-amber-500 mt-1">!</span>
-                  Your investment funds are complex or hard to trace
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-amber-500 mt-1">!</span>
-                  You have previously overstayed a U.S. visa
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-amber-500 mt-1">!</span>
-                  Your business structure involves holding companies or passive investment
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Bottom CTA */}
-      <section className="py-20 px-4 bg-[#004ac6] text-white">
-        <div className="max-w-2xl mx-auto text-center">
-          <h2 className="text-3xl font-semibold mb-4">
-            Find out where you stand.
-          </h2>
-          <p className="text-lg text-white/80 mb-8">
-            15 minutes. No account. No legal fees. A complete picture of your eligibility,
-            your risks, and your next step.
-          </p>
-          <Link
-            href="/quiz"
-            className="inline-flex items-center justify-center bg-white text-[#004ac6] text-lg font-medium px-8 py-4 rounded-lg hover:bg-gray-100 transition-colors"
-          >
-            Start the eligibility quiz
+          <Link href="/pricing" style={styles.btnPrimary}>
+            View all pricing tiers →
           </Link>
-          <p className="mt-4 text-sm text-white/70">
-            No account required. Your answers stay on your device.
-          </p>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="py-8 px-4 bg-[#0b1c30]">
-        <div className="max-w-5xl mx-auto text-center">
-          <p className="text-sm text-gray-400">
-            This tool is a self-service preparation guide and does not constitute legal advice.
-            e2go.app is not a law firm and does not provide legal representation or immigration
-            services. For legal advice, consult a qualified U.S. immigration attorney.
-          </p>
+      <footer style={styles.footer}>
+        <div style={styles.footerInner}>
+          <div style={styles.footerLogo}>
+            e2go<span style={styles.footerLogoSpan}>.app</span>
+          </div>
+          <ul style={styles.footerLinks}>
+            <li>
+              <Link href="/quiz" style={styles.footerLink}>
+                Quiz
+              </Link>
+            </li>
+            <li>
+              <Link href="/pricing" style={styles.footerLink}>
+                Pricing
+              </Link>
+            </li>
+            <li>
+              <Link href="/login" style={styles.footerLink}>
+                Sign In
+              </Link>
+            </li>
+          </ul>
+          <div style={styles.footerCopy}>
+            Not a law firm. For preparation only.
+          </div>
         </div>
       </footer>
 
-      {/* PWA Install Prompt */}
-      <PWAInstallPrompt />
+      <style jsx global>{`
+        @keyframes statueDrift {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-12px); }
+        }
+        .glass:hover {
+          background: var(--glass-hover);
+          transform: translateY(-4px);
+        }
+        .statue-overlay {
+          animation: statueDrift 30s ease-in-out infinite;
+          pointer-events: none;
+        }
+        .stars-overlay {
+          pointer-events: none;
+        }
+      `}</style>
     </div>
   );
 }
