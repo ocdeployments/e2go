@@ -1,7 +1,7 @@
 # BUILD TRACKER
 
-**Last Updated:** 2026-05-29
-**Session:** 3 (Complete)
+**Last Updated:** 2026-05-30
+**Session:** 5 (Complete)
 
 ---
 
@@ -30,7 +30,8 @@
 | Auth | ✅ PASS | Login/Signup wired |
 | Quiz Engine | ✅ PASS | Scoring logic connected |
 | AI Client | ✅ PASS | OpenRouter wired with auth |
-| Playwright Tests | ✅ PASS | 8/8 tests passing |
+| Playwright Tests | ✅ PASS | 42 tests passing |
+| Module 3 Engine | ✅ PASS | Tab A scaffold, auto-save, TabShell |
 | Husky Hooks | ✅ PASS | pre-push configured |
 
 ---
@@ -39,14 +40,13 @@
 
 | # | Task | Status |
 |---|------|--------|
-| 1 | QA Foundation - Install Playwright + write smoke tests | ✅ |
-| 2 | QA Foundation - Install Husky + pre-push hook | ✅ |
-| 3 | QA Foundation - Add npm run qa script | ✅ |
-| 4 | Wire Dashboard to Real User Data | ✅ |
-| 5 | Module 1: Onboarding Flow (/apply/onboarding) | ✅ |
-| 6 | Module 2: Placeholder (/apply/module2) | ✅ |
-| 7 | CAD/USD Live Conversion on Quiz Q0-05 | ✅ |
-| 8 | Full Flow Test - All tests passing | ✅ |
+| 1 | Vercel Deploy Prep - env vars audit + vercel.json | ✅ |
+| 2 | Vercel Deploy Prep - @upstash/redis rate limiter | ✅ |
+| 3 | Vercel Deploy Prep - /api/health endpoint | ✅ |
+| 4 | Module 2: Business Type Advisor (6 screens) | ✅ |
+| 5 | Module 3: Placeholder page | ✅ |
+| 6 | GitHub push + repo created | ✅ |
+| 7 | Full QA test pass | ✅ |
 
 ---
 
@@ -66,6 +66,10 @@
 - Dashboard shows real user data from quiz_sessions and application_lifecycle
 - Onboarding flow with 5-step wizard (welcome, app type, family, consent, ready)
 - CAD/USD live conversion on investment question with cached rate
+- Module 3 Document Interview Engine scaffold (ApplicationContext, TabShell, QuestionRenderer)
+- Tab A with 12 DS-160 reference questions
+- /api/answers with auth, validation, auto-save (2s debounce)
+- Answer key format: M3-[A-L]-[00-99] locked
 
 ---
 
@@ -95,13 +99,68 @@
 
 ---
 
-## Session 4 Priorities
+## Session 4 Log
 
-1. Complete Module 2 (Business Type Advisor)
-2. Wire lifecycle updates on quiz completion
-3. Add /apply routes (Module 3 interview engine placeholder)
-4. Test /apply/onboarding with real auth flow
-5. Add more Playwright tests (onboarding, module2)
+**Date:** May 29, 2026
+**Session:** 4
+
+**Completed:**
+- Audited all env vars, added to BUILD_TRACKER.md
+- Created vercel.json with build config
+- Installed @upstash/redis, replaced in-memory rate limiter in /api/ai
+- Added /api/health endpoint returning { status, timestamp, version }
+- Completed Module 2: Business Type Advisor with 6 screens (category, stage, franchise, state, premises, confirmation)
+- Created Module 3 placeholder
+- Pushed to GitHub: https://github.com/ocdeployments/e2go
+- All 8 Playwright tests passing, build passes
+
+**Key Decisions:**
+- Redis fails open if Upstash not configured
+- Business categories from Vol 3 Section 6.9 spec
+- Three states (loading, success, empty) per feature per Rule 13
+- Port 3000 for dev server (not 3001) to match tests
+
+---
+
+## Session 5 Log
+
+**Date:** May 30, 2026
+**Session:** 5
+
+**Completed:**
+- ApplicationContext with auto-save (2s debounce), resume support
+- /api/answers route with auth, validation, upsert
+- questionKeyValidator (M[0-3]-[A-L]-[0-9]{2} format)
+- visibilityRules.ts (placeholder, grows with tabs)
+- useAutoSave hook
+- QuestionRenderer component (single/multi/text/number/date)
+- TabShell component (progress bar, save status, navigation)
+- Tab A questions config (12 questions from ds/spec)
+- Tab A page (/apply/module3/a) with auth check
+- Dynamic routes: /apply/module3 → /a, [tab] validation
+- Module 3 Playwright tests (18 new tests)
+- All 42 tests passing (24 smoke + 18 module3)
+- Pushed to dev branch
+
+**Key Decisions:**
+- Tab A uses local answer state with debounced API saves (not ApplicationContext to avoid SSR issues)
+- Client-side redirects for auth (useEffect) — tests adjusted accordingly
+- Question key format: M3-[A-L]-[00-99] locked
+
+**Module 3 engine scaffold:** complete
+**Tab A:** complete
+**Answer key convention:** M3-[A-L]-[00-99] locked
+**Tabs B-L:** not started
+
+---
+
+## Session 6 Priorities
+
+1. Connect real auth and test full flow on preview
+2. Wire lifecycle updates on tab completion
+3. Build Tab B-L (visibility rules + question configs)
+4. Wire Stripe integration for payment
+5. Vercel production deploy with custom domain
 
 ---
 
