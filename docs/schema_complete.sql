@@ -48,7 +48,16 @@ CREATE TABLE IF NOT EXISTS public.applications (
     family_type TEXT CHECK (family_type IN ('individual', 'couple', 'family')),
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
-    submitted_at TIMESTAMPTZ
+    submitted_at TIMESTAMPTZ,
+    lead_temperature INTEGER DEFAULT 0,
+    lead_stage TEXT DEFAULT 'unknown',
+    franchise_matching_triggered BOOLEAN DEFAULT FALSE,
+    attorney_warmth INTEGER DEFAULT 0,
+    cpa_warmth TEXT DEFAULT 'none',
+    banking_warmth TEXT DEFAULT 'none',
+    fx_warmth TEXT DEFAULT 'none',
+    multiunit_routing BOOLEAN DEFAULT FALSE,
+    growth_ambition TEXT DEFAULT 'unknown'
 );
 
 -- ============================================================================
