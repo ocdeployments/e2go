@@ -2,11 +2,10 @@
 
 import { useState, Suspense } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 
 function SignupForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get("next") || "/dashboard";
 
@@ -52,7 +51,7 @@ function SignupForm() {
         setStatus('success');
         // Redirect after showing success message
         setTimeout(() => {
-          router.push(next);
+          window.location.href = next;
         }, 2000);
       }
     } catch {
