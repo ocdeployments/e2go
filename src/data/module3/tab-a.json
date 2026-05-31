@@ -4,7 +4,7 @@
     "type": "text",
     "question": "What is your full legal name as it appears on your passport?",
     "tooltip": "Your name is used to pre-fill your DS-160 form so you do not have to enter it again. Take your time — make sure every letter matches your passport exactly.",
-    "sensitivity": "low",
+    "privacy_category": "required",
     "required": true
   },
   {
@@ -16,7 +16,8 @@
       { "value": "yes", "label": "Yes — I have used other names" },
       { "value": "no", "label": "No — I have never used other names" }
     ],
-    "sensitivity": "medium",
+    "privacy_category": "amber",
+    "skip_advisory": "You can add this directly to the DS-160 if needed.",
     "required": true
   },
   {
@@ -24,7 +25,8 @@
     "type": "date",
     "question": "What is your date of birth?",
     "tooltip": "This is used to pre-fill your DS-160. If you are not comfortable sharing this here, you can skip it and fill it in yourself later.",
-    "sensitivity": "high",
+    "privacy_category": "amber",
+    "skip_advisory": "Needed for your DS-160. You can add it directly on the government form instead.",
     "required": true
   },
   {
@@ -32,7 +34,7 @@
     "type": "text",
     "question": "What is your place of birth? (City and Country)",
     "tooltip": "Enter the city and country exactly as it appears on your passport. This is used to pre-fill your DS-160.",
-    "sensitivity": "medium",
+    "privacy_category": "green",
     "required": true
   },
   {
@@ -43,7 +45,7 @@
     "options": [
       { "value": "CA", "label": "Canada", "helperText": "Default selection" }
     ],
-    "sensitivity": "low",
+    "privacy_category": "required",
     "required": true,
     "warningTriggers": [
       { "value": "CA", "message": "Canadian citizens are eligible for E-2 visa through the U.S.-Canada treaty." }
@@ -58,7 +60,7 @@
       { "value": "yes", "label": "Yes — I am a citizen of another country" },
       { "value": "no", "label": "No — I am only a citizen of Canada" }
     ],
-    "sensitivity": "low",
+    "privacy_category": "green",
     "required": true
   },
   {
@@ -66,7 +68,7 @@
     "type": "text",
     "question": "What is your national identification number? (Canadian SIN or equivalent)",
     "tooltip": "If you have a Social Insurance Number (SIN), enter it here. This is for record-keeping only and is not submitted to the consulate. If you prefer not to share this, skip it and fill in your document later.",
-    "sensitivity": "high",
+    "privacy_category": "green",
     "required": false
   },
   {
@@ -74,7 +76,7 @@
     "type": "text",
     "question": "What is your U.S. Social Security Number or Taxpayer ID?",
     "tooltip": "Most first-time E-2 applicants will not have a U.S. SSN. If this is your first U.S. visa application, you can skip this one.",
-    "sensitivity": "high",
+    "privacy_category": "green",
     "required": false
   },
   {
@@ -82,7 +84,8 @@
     "type": "text",
     "question": "What is your current home address in Canada?",
     "tooltip": "Enter your full Canadian address including street, city, province, and postal code. This is used to pre-fill your DS-160.",
-    "sensitivity": "high",
+    "privacy_category": "amber",
+    "skip_advisory": "Appears on the DS-160. You can fill it directly on the government form if you prefer.",
     "required": true
   },
   {
@@ -96,7 +99,7 @@
       { "value": "3_to_5", "label": "3–5 years" },
       { "value": "more_than_5", "label": "More than 5 years" }
     ],
-    "sensitivity": "medium",
+    "privacy_category": "green",
     "required": true
   },
   {
@@ -104,7 +107,7 @@
     "type": "text",
     "question": "What is your primary phone number?",
     "tooltip": "Include country code for Canadian numbers: +1. This is how we will reach you about your application.",
-    "sensitivity": "high",
+    "privacy_category": "green",
     "required": true
   },
   {
@@ -112,7 +115,115 @@
     "type": "text",
     "question": "What is your email address?",
     "tooltip": "This will be used for all communication regarding your application. We have pre-filled this from your account if available.",
-    "sensitivity": "low",
+    "privacy_category": "green",
     "required": true
+  },
+  {
+    "key": "M3-A-13",
+    "type": "single",
+    "question": "Do you use any social media platforms?",
+    "tooltip": "The DS-160 asks for your social media accounts from the past 5 years. This includes Facebook, Instagram, LinkedIn, Twitter/X, TikTok, and others.",
+    "options": [
+      { "value": "yes", "label": "Yes — I will add them" },
+      { "value": "no", "label": "No — I will skip this" }
+    ],
+    "privacy_category": "amber",
+    "skip_advisory": "Required on the DS-160 — make sure to complete it accurately on the government form. Non-disclosure is treated seriously.",
+    "required": false
+  },
+  {
+    "key": "M3-A-14",
+    "type": "text",
+    "question": "What are your parents' full names?",
+    "tooltip": "Enter your parents' full legal names as they appear on their passports.",
+    "privacy_category": "green",
+    "required": false
+  },
+  {
+    "key": "M3-A-15",
+    "type": "single",
+    "question": "Have you ever lost a passport or had one stolen?",
+    "tooltip": "This must be disclosed on the DS-160.",
+    "options": [
+      { "value": "yes", "label": "Yes — it was lost/stolen" },
+      { "value": "no", "label": "No — never" }
+    ],
+    "privacy_category": "amber",
+    "skip_advisory": "Must be disclosed on the DS-160 itself — completing it here just pre-fills that form.",
+    "required": false
+  },
+  {
+    "key": "M3-A-16",
+    "type": "text",
+    "question": "List your last 5 trips to the United States with approximate dates.",
+    "tooltip": "Approximate dates are fine if you do not remember exactly. Officers have CBP records so being as accurate as possible helps.",
+    "privacy_category": "red",
+    "skip_advisory": "Your U.S. travel history appears on the DS-160. Officers can verify it against CBP border records. Inaccuracies — even unintentional — can raise questions at interview. We strongly recommend completing this.",
+    "required": false
+  },
+  {
+    "key": "M3-A-17",
+    "type": "multi",
+    "question": "Which countries have you visited in the past 5 years?",
+    "tooltip": "Include any country you spent more than 24 hours in, including transit stops.",
+    "options": [
+      { "value": "none", "label": "No international travel in past 5 years" }
+    ],
+    "privacy_category": "amber",
+    "skip_advisory": "Required on the DS-160. You can complete it directly on the government form.",
+    "required": false
+  },
+  {
+    "key": "M3-A-18",
+    "type": "single",
+    "question": "Do you have any immediate family members living in the United States?",
+    "tooltip": "Immediate family means parents, siblings, adult children, or spouse.",
+    "options": [
+      { "value": "yes", "label": "Yes — I have family in the U.S." },
+      { "value": "no", "label": "No — no close family in the U.S." }
+    ],
+    "privacy_category": "amber",
+    "skip_advisory": "If you have close family in the U.S., your cover letter can address it proactively — but only if we know about it.",
+    "required": false
+  },
+  {
+    "key": "M3-A-19",
+    "type": "single",
+    "question": "Have you ever applied for a U.S. green card or immigrant visa?",
+    "tooltip": "This includes any application for permanent residence in the United States.",
+    "options": [
+      { "value": "no", "label": "No — never applied" },
+      { "value": "yes_approved", "label": "Yes — it was approved" },
+      { "value": "yes_denied", "label": "Yes — it was denied" },
+      { "value": "yes_pending", "label": "Yes — it is still pending" }
+    ],
+    "privacy_category": "red",
+    "skip_advisory": "Prior immigrant visa applications directly affect your non-immigrant intent argument. If this applies to you, your cover letter must address it. Omitting it means we cannot prepare that explanation.",
+    "required": false
+  },
+  {
+    "key": "M3-A-20",
+    "type": "single",
+    "question": "Have you ever held a U.S. driver's license?",
+    "tooltip": "This includes any state driver's license you have held.",
+    "options": [
+      { "value": "yes", "label": "Yes — I have held a U.S. driver's license" },
+      { "value": "no", "label": "No — never" }
+    ],
+    "privacy_category": "green",
+    "required": false
+  },
+  {
+    "key": "M3-A-21",
+    "type": "single",
+    "question": "Have you held any U.S. visas in the past?",
+    "tooltip": "Include all U.S. visas — tourist, student, work, or any other type. Do not include the current E-2 you are applying for.",
+    "options": [
+      { "value": "yes", "label": "Yes — I have held U.S. visas" },
+      { "value": "no", "label": "No — this is my first U.S. visa" }
+    ],
+    "privacy_category": "red",
+    "skip_advisory": "Prior visa history affects how your cover letter is written. An incomplete history means your documents may not address your full immigration background. Officers can see this — your documents should reflect it.",
+    "required": false
   }
 ]
