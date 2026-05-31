@@ -355,6 +355,35 @@ New spec files created:
 
 ---
 
+## Session 13 Log
+
+**Date:** May 31, 2026
+**Session:** 13
+
+**Completed:**
+- Quiz question rewrite: applied all rewrites from docs/quiz_rewrites_final.md
+- Q0-01 through Q0-22 updated with conversational language
+- Removed Canada-specific language, replaced with [home country] dynamic references
+- Added cannabis informational gate after Q0-10 sub-question
+- Removed cannabis option from Q0-10 (handled via informational gate)
+- Updated scoring logic trigger strings to match new option text exactly
+- Added W-15 for partner role silent partner risk flag
+- Updated Q0-16 with new sub-question for marital status
+- All 45 tests passing, build clean, pushed to dev
+
+**Key Decisions:**
+- Cannabis gate shows once only, stored in localStorage
+- Property rental triggers hard stop directly (not via cannabis gate)
+- Q0-15 (partner role) added for partnership flows
+- Sub-question timing verified - shows immediately on selection
+
+**Files Changed:**
+- public/data/module0_questions.json (all 22 questions rewritten)
+- public/data/module0_scoring_logic.json (triggers updated)
+- src/app/quiz/page.tsx (cannabis gate + state)
+
+---
+
 ## Session 13 Priorities
 
 1. Wire actual questions into Tabs B-L (currently scaffolds only — need real question configs)
