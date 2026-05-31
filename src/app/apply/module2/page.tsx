@@ -228,7 +228,7 @@ export default function Module2Page() {
             </svg>
             <span className="text-xl font-bold text-[#004ac6]">e2go.app</span>
           </Link>
-          <div className="text-sm text-[#737686]">Step {step} of 6</div>
+          <div className="text-sm text-[#737686]">Your Business — Step {step} of 6</div>
         </div>
       </header>
 
@@ -241,7 +241,7 @@ export default function Module2Page() {
         {/* Step 1: Business Category */}
         {step === 1 && (
           <section className="bg-white rounded-xl border border-[#e2e8f0] p-8">
-            <h1 className="text-2xl font-bold text-[#0b1c30] mb-2">Select Your Business Category</h1>
+            <h1 className="text-2xl font-bold text-[#0b1c30] mb-2">Your Business — Select Category</h1>
             <p className="text-[#434655] mb-6">Choose the type of business you plan to operate in the U.S.</p>
             <div className="space-y-3 max-h-[400px] overflow-y-auto">
               {BUSINESS_CATEGORIES.map((cat) => (
