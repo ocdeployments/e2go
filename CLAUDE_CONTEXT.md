@@ -142,7 +142,7 @@ FREE (no account required)
 
 PAID — STANDARD ($247–$647 one-time)
 ├── Module 1: Onboarding + Consent
-├── Module 2: Business Type Advisor
+├── Module 2: Your Business
 ├── Module 3: Document Interview Engine (Tabs A–L, ~250 questions)
 ├── Module 4: Application Confidence Score (8 dimensions, 0–100)
 ├── Module 5: Interview Simulator (AI-powered, personalized)
@@ -201,6 +201,9 @@ Do not change these without explicit instruction:
 | Form terminology | All questions use exact DS-160 / U.S. government terminology. |
 | Interview limits | 2 simulator sessions included per application. Extra: $9.99/3-bundle. |
 | Stats | Only real government data. No fabricated approval rates or case counts. |
+| Currency | All platform fees and pricing are in USD only. No multi-currency. No conversion. No CAD, GBP, AUD anywhere in the app except Q0-05 investment amount question which converts CAD input to USD for threshold checking only — this is a qualification calculation, not a payment display. |
+| Global positioning | e2go serves all 82 E-2 treaty countries. Canadian/Toronto is the primary market. Never hardcode Canada-only assumptions into any feature. All nationality references use treaty country logic. |
+| Consulate selector | As of September 6 2025, third-country national E-2 processing was eliminated by the State Department. Applicants must apply at the consulate in their country of nationality or lawful residence only. The consulate selector must enforce nationality-matched consulates. No free consulate selection. Source: State Department policy change Sept 2025. Annual review required. |
 
 ---
 
@@ -416,6 +419,69 @@ The pre-push hook tells you pass/fail.
 The manual qa run tells you what to investigate before it becomes a production bug.
 
 Rule: never push solely because the hook passed. Review the output.
+
+### RULE 15 — NO CANADA-ONLY ASSUMPTIONS
+Every feature must work for any E-2 treaty country national. Never hardcode Canadian-specific language, fees, or consulate references into components. Use treaty country logic and consulate profiles from src/lib/treatyCountries.ts.
+
+---
+
+## PLATFORM BOUNDARIES
+
+e2go builds visa application documentation only.
+
+What we do:
+- Guide applicants through building a complete consulate-ready E-2 application package
+- Educate on what consulates look for
+- Connect applicants with franchise brokers, franchisors, and attorneys as a convenience
+
+What we never do:
+- Recommend a specific business or franchise
+- Tell an applicant their business is E-2 compatible
+- Tell an applicant their business is not E-2 compatible
+- Provide investment advice
+- Provide legal advice
+
+Approved educational framing:
+Never say: 'this business qualifies for E-2'
+Always say: 'here is what the consulate looks for in this business category'
+
+Never say: 'this business does not qualify'
+Always say: 'this category faces additional consular scrutiny — here is what that means for your application'
+
+---
+
+## LAWYER POSITIONING
+
+Approved lawyer positioning — never deviate:
+- Never say 'don't hire a lawyer'
+- Never say 'you don't need a lawyer'
+- Always say 'what you do with your finished package is up to you'
+- Approved tagline: 'Lawyer-ready documents. Lawyer-optional price.'
+- Approved comparison framing: 'If you choose attorney review at this stage, it is a 2-hour job, not a 20-hour one.'
+
+---
+
+## REVENUE STREAMS
+
+Referral and commission revenue:
+
+Scenario 1 — Franchise Explorer:
+Trigger: user selects 'exploring franchise options' in Module 2
+Action: offer franchise broker introduction
+Revenue: referral fee from broker $150-$300
+
+Scenario 2 — Franchise Identified (B2B Direct):
+Trigger: user names a specific franchise brand
+Action: offer direct franchisor introduction
+Revenue: introduction commission $5,000-$15,000
+Rule: only trigger if user named the brand themselves
+
+Scenario 3 — Own Business:
+Trigger: user has own business concept
+Action: no referral
+Revenue: platform fee only
+
+All referrals require explicit CASL-compliant consent before any data is shared. Logged to consent_log table.
 
 ---
 
