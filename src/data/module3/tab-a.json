@@ -3,32 +3,36 @@
     "key": "M3-A-01",
     "type": "text",
     "question": "What is your full legal name as it appears on your passport?",
-    "tooltip": "Enter your name exactly as it appears on your Canadian passport, including any middle names. This must match the DS-160 precisely.",
+    "tooltip": "Your name is used to pre-fill your DS-160 form so you do not have to enter it again. Take your time — make sure every letter matches your passport exactly.",
+    "sensitivity": "low",
     "required": true
   },
   {
     "key": "M3-A-02",
     "type": "single",
     "question": "Have you ever used any other names?",
-    "tooltip": "Include maiden names, nicknames, or names in other languages.",
+    "tooltip": "This includes maiden names, nicknames, or names in other languages. If you have ever been known by a different name, let us know here.",
     "options": [
       { "value": "yes", "label": "Yes — I have used other names" },
       { "value": "no", "label": "No — I have never used other names" }
     ],
+    "sensitivity": "medium",
     "required": true
   },
   {
     "key": "M3-A-03",
     "type": "date",
     "question": "What is your date of birth?",
-    "tooltip": "You must be 18 or older to apply for an E-2 visa. If you are under 18, an advisory will be shown.",
+    "tooltip": "This is used to pre-fill your DS-160. If you are not comfortable sharing this here, you can skip it and fill it in yourself later.",
+    "sensitivity": "high",
     "required": true
   },
   {
     "key": "M3-A-04",
     "type": "text",
     "question": "What is your place of birth? (City and Country)",
-    "tooltip": "Enter the city and country exactly as it appears on your passport.",
+    "tooltip": "Enter the city and country exactly as it appears on your passport. This is used to pre-fill your DS-160.",
+    "sensitivity": "medium",
     "required": true
   },
   {
@@ -39,6 +43,7 @@
     "options": [
       { "value": "CA", "label": "Canada", "helperText": "Default selection" }
     ],
+    "sensitivity": "low",
     "required": true,
     "warningTriggers": [
       { "value": "CA", "message": "Canadian citizens are eligible for E-2 visa through the U.S.-Canada treaty." }
@@ -53,27 +58,31 @@
       { "value": "yes", "label": "Yes — I am a citizen of another country" },
       { "value": "no", "label": "No — I am only a citizen of Canada" }
     ],
+    "sensitivity": "low",
     "required": true
   },
   {
     "key": "M3-A-07",
     "type": "text",
     "question": "What is your national identification number? (Canadian SIN or equivalent)",
-    "tooltip": "If you have a Social Insurance Number (SIN), enter it here. This is for record-keeping only and is not submitted to the consulate.",
+    "tooltip": "If you have a Social Insurance Number (SIN), enter it here. This is for record-keeping only and is not submitted to the consulate. If you prefer not to share this, skip it and fill in your document later.",
+    "sensitivity": "high",
     "required": false
   },
   {
     "key": "M3-A-08",
     "type": "text",
     "question": "What is your U.S. Social Security Number or Taxpayer ID?",
-    "tooltip": "Most first-time E-2 applicants will not have a U.S. SSN. Leave blank if this is your first U.S. visa application.",
+    "tooltip": "Most first-time E-2 applicants will not have a U.S. SSN. If this is your first U.S. visa application, you can skip this one.",
+    "sensitivity": "high",
     "required": false
   },
   {
     "key": "M3-A-09",
     "type": "text",
     "question": "What is your current home address in Canada?",
-    "tooltip": "Enter your full Canadian address including street, city, province, and postal code.",
+    "tooltip": "Enter your full Canadian address including street, city, province, and postal code. This is used to pre-fill your DS-160.",
+    "sensitivity": "high",
     "required": true
   },
   {
@@ -87,20 +96,23 @@
       { "value": "3_to_5", "label": "3–5 years" },
       { "value": "more_than_5", "label": "More than 5 years" }
     ],
+    "sensitivity": "medium",
     "required": true
   },
   {
     "key": "M3-A-11",
     "type": "text",
     "question": "What is your primary phone number?",
-    "tooltip": "Include country code for Canadian numbers: +1",
+    "tooltip": "Include country code for Canadian numbers: +1. This is how we will reach you about your application.",
+    "sensitivity": "high",
     "required": true
   },
   {
     "key": "M3-A-12",
     "type": "text",
     "question": "What is your email address?",
-    "tooltip": "This will be used for all communication regarding your application. Pre-filled from your account if available.",
+    "tooltip": "This will be used for all communication regarding your application. We have pre-filled this from your account if available.",
+    "sensitivity": "low",
     "required": true
   }
 ]
