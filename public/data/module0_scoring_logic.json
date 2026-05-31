@@ -30,17 +30,12 @@
     {
       "code": "PR-03",
       "question": "Q0-04",
-      "trigger": ["I do not currently have funds available for an investment"]
+      "trigger": ["I do not have funds available right now"]
     },
     {
       "code": "PR-04",
       "question": "Q0-07",
-      "trigger": ["Yes — a loan that would be secured against the U.S. business itself (not my personal assets)"]
-    },
-    {
-      "code": "PR-05",
-      "question": "Q0-10_sub",
-      "trigger": ["A business where I would not be personally involved in managing it"]
+      "trigger": ["Yes — a loan that would be backed by the U.S. business itself"]
     },
     {
       "code": "PR-06",
@@ -50,17 +45,12 @@
     {
       "code": "PR-07",
       "question": "Q0-10_sub",
-      "trigger": ["A property investment or rental business"]
-    },
-    {
-      "code": "PR-08",
-      "question": "Q0-10_sub",
-      "trigger": ["A cannabis or marijuana-related business"]
+      "trigger": ["A property rental or investment business"]
     },
     {
       "code": "PR-THIRD-COUNTRY",
       "question": "Q0-03",
-      "trigger": ["In another country outside my home country and the U.S."],
+      "trigger": ["In another country"],
       "message": "As of September 6, 2025, E-2 visa applications must be filed at a consulate in your country of nationality or legal residence. Third-country processing is no longer available."
     }
   ],
@@ -68,13 +58,13 @@
     {
       "code": "W-02",
       "question": "Q0-03",
-      "trigger": ["In the United States — I am not sure about my current status"],
+      "trigger": ["In the United States — I am not sure of my status"],
       "level": "attorney_recommended"
     },
     {
       "code": "W-03",
       "question": "Q0-03",
-      "trigger": ["In another country outside my home country and the U.S."],
+      "trigger": ["In another country"],
       "level": "do_not_proceed",
       "stop_code": "PR-THIRD-COUNTRY",
       "message": "As of September 6, 2025, E-2 visa applications must be filed at a consulate in your country of nationality or legal residence. Processing at a third-country consulate is no longer permitted. If you are temporarily abroad, you will need to apply when you return home. An immigration attorney can advise on your specific situation."
@@ -94,13 +84,13 @@
     {
       "code": "W-08",
       "question": "Q0-07",
-      "trigger": ["Possibly — I am not sure how it would be structured"],
+      "trigger": ["I am not sure how the loan would be structured"],
       "level": "attorney_recommended"
     },
     {
       "code": "W-09",
       "question": "Q0-08",
-      "trigger": ["Overseeing it at a management level — I would hire people to handle daily operations while I provide direction"],
+      "trigger": ["As a manager — I will oversee the business and hire people to run daily operations"],
       "level": "attorney_recommended"
     },
     {
@@ -161,7 +151,7 @@
     {
       "code": "W-COMMONLAW",
       "question": "Q0-16_sub",
-      "trigger": ["Common-law or de facto"],
+      "trigger": ["We are in a common-law or de facto relationship"],
       "level": "attorney_recommended"
     },
     {
@@ -173,13 +163,13 @@
     {
       "code": "W-18-OVER21",
       "question": "Q0-19",
-      "trigger": ["Yes — one or more children are 21 or older"],
+      "trigger": ["One or more are 21 or older"],
       "level": "attorney_recommended"
     },
     {
       "code": "W-18-MARRIED",
       "question": "Q0-19",
-      "trigger": ["Yes — one or more children are married"],
+      "trigger": ["One or more are married"],
       "level": "attorney_recommended"
     },
     {
@@ -198,12 +188,18 @@
     {
       "code": "W-04",
       "question": "Q0-04",
-      "trigger": ["I have funds available but I have not decided on a business yet", "I am still figuring out how much I will need and where it will come from"]
+      "trigger": ["I have the funds but I have not chosen a business yet", "I am still figuring out the finances"]
+    },
+    {
+      "code": "W-15",
+      "question": "Q0-15",
+      "trigger": ["No — they will be more of a silent partner", "We have not decided yet"],
+      "level": "risk_flag"
     },
     {
       "code": "W-06",
       "question": "Q0-06",
-      "trigger": ["Yes — but some of it may be harder to document clearly", "I have the money but I have not thought through how to document where it came from"]
+      "trigger": ["Yes — but parts of it may be harder to document", "I have the money but I have not thought about the paper trail yet"]
     },
     {
       "code": "W-PROP-SOFT",
@@ -226,19 +222,19 @@
     {
       "code": "W-NI-01",
       "question": "Q0-NI-01",
-      "trigger": ["I own property but I am thinking of selling it before I move"],
+      "trigger": ["Yes — but I am thinking of selling before I move"],
       "level": "risk_flag"
     },
     {
       "code": "W-NI-02",
       "question": "Q0-NI-02",
-      "trigger": ["No — all my close family is moving to the U.S. with me"],
+      "trigger": ["No — everyone is moving with me"],
       "level": "risk_flag"
     },
     {
       "code": "W-NI-03",
       "question": "Q0-NI-03",
-      "trigger": ["No — I was planning to close everything and move it all", "I am not sure yet"],
+      "trigger": ["No — I plan to close everything and move it all", "I am not sure"],
       "level": "risk_flag"
     },
     {
@@ -251,12 +247,12 @@
     {
       "code": "W-17-PASSPORT",
       "question": "Q0-18",
-      "trigger": ["No or expired", "I am not sure"]
+      "trigger": ["No — one or more passports are expired or missing", "I am not sure"]
     },
     {
       "code": "W-18-AGEOUT",
       "question": "Q0-19",
-      "trigger": ["Some are close to turning 21 — within the next 2–3 years"],
+      "trigger": ["One or more are close to turning 21 (within the next 2–3 years)"],
       "level": "risk_flag"
     },
     {
@@ -317,16 +313,15 @@
     "description": "After Q0-NI-01, Q0-NI-02, Q0-NI-03 — count confirmed ties to home country",
     "tie_confirmed_answers": {
       "Q0-NI-01": [
-        "Yes — I own my home and plan to keep it (rent it out or maintain it)",
-        "Yes — I own investment property I plan to keep"
+        "Yes — and I plan to keep it"
       ],
       "Q0-NI-02": [
-        "Yes — close family members will remain there",
-        "Mixed — some family remaining, some moving with me"
+        "Yes — family will remain there",
+        "Some will stay, some will come with me"
       ],
       "Q0-NI-03": [
-        "Yes — I plan to keep my accounts open there",
-        "Probably — though I have not thought it through fully"
+        "Yes — I plan to keep my accounts open",
+        "Probably — I have not decided yet"
       ]
     },
     "scoring": {
