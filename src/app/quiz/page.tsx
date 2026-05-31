@@ -330,7 +330,7 @@ export default function QuizPage() {
   const handleCurrencyContinue = () => {
     if (!currencyValue || !currentQuestion) return;
 
-    const amount = parseFloat(currencyValue);
+    const amount = parseFloat(currencyValue.replace(/,/g, ''));
     // Use multi-currency rate conversion (v3)
     let amountUSD = amount;
     if (currencyToggle !== "USD" && currencyRates[currencyToggle]) {
@@ -566,24 +566,13 @@ export default function QuizPage() {
   // Currency input display (v3 - multi-currency)
   const getCurrencyUSD = () => {
     if (!currencyValue) return "";
-    const amount = parseFloat(currencyValue);
+    const amount = parseFloat(currencyValue.replace(/,/g, ''));
     if (isNaN(amount)) return "";
     let amountUSD = amount;
     if (currencyToggle !== "USD" && currencyRates[currencyToggle]) {
       amountUSD = amount / currencyRates[currencyToggle];
     }
-    return amountUSD.toLocaleString("en-US", { style: "currency", currency: "USD" });
-  };
-
-  // Get rate display (v3)
-  const getRateDisplay = () => {
-    if (!currencyRates[currencyToggle]) return null;
-    const rateToUSD = currencyToggle === "USD" ? 1 : 1 / currencyRates[currencyToggle];
-    return (
-      <span className="text-xs text-[#737686]">
-        Rate: 1 {currencyToggle} = {rateToUSD.toFixed(4)} USD
-      </span>
-    );
+    return amountUSD.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
   };
 
   return (
@@ -659,7 +648,7 @@ export default function QuizPage() {
             {/* Searchable Select - Treaty Country (v3) */}
             {currentQuestion.type === "searchable_select" && (
               <div className="space-y-4">
-                <div className="relative">
+                <div className="relative max-w-[480px] mx-auto w-full">
                   <input
                     type="text"
                     value={countrySearch}
@@ -677,7 +666,7 @@ export default function QuizPage() {
                           <button
                             key={country.code}
                             onClick={() => handleCountrySelect(country)}
-                            className="w-full text-left p-3 hover:bg-[#eff4ff] border-b border-[#e5eeff] last:border-b-0"
+                            className="w-full text-left p-3 hover:bg-[#eff4ff] border-b border-[#e5eeff] last:border-b-0 min-h-[44px]"
                           >
                             <span className="text-[#0b1c30]">{country.name}</span>
                             {country.notes && <span className="block text-xs text-[#737686]">{country.notes}</span>}
@@ -744,13 +733,18 @@ export default function QuizPage() {
                   <button
                     key={option}
                     onClick={() => handleAnswer(option)}
-                    className={`w-full text-left p-4 rounded-lg border transition-all ${
+                    className={`w-full text-left px-4 rounded-lg border transition-all flex items-center justify-between min-h-[48px] ${
                       answers[currentQuestion.id] === option
-                        ? "border-[#004ac6] bg-[#eff4ff] shadow-sm"
-                        : "border-[#c3c6d7] bg-white hover:border-[#737686]"
+                        ? "border-[#0D9488] bg-[#f0fdfa] shadow-sm"
+                        : "border-[#c3c6d7] bg-white hover:border-[#0D9488]"
                     }`}
                   >
-                    <span className="text-[#0b1c30]">{option}</span>
+                    <span className="text-[#0b1c30] text-[15px]">{option}</span>
+                    {answers[currentQuestion.id] === option && (
+                      <svg className="w-5 h-5 text-[#0D9488] flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    )}
                   </button>
                 ))}
               </div>
@@ -771,15 +765,15 @@ export default function QuizPage() {
                           : [...current, option];
                         setAnswers({ ...answers, [currentQuestion.id]: updated });
                       }}
-                      className={`w-full text-left p-4 rounded-lg border transition-all flex items-center gap-3 ${
+                      className={`w-full text-left px-4 rounded-lg border transition-all flex items-center gap-3 min-h-[48px] ${
                         selected
-                          ? "border-[#004ac6] bg-[#eff4ff] shadow-sm"
-                          : "border-[#c3c6d7] bg-white hover:border-[#737686]"
+                          ? "border-[#0D9488] bg-[#f0fdfa] shadow-sm"
+                          : "border-[#c3c6d7] bg-white hover:border-[#0D9488]"
                       }`}
                     >
                       <div
-                        className={`w-5 h-5 rounded border flex items-center justify-center ${
-                          selected ? "bg-[#004ac6] border-[#004ac6]" : "border-[#737686]"
+                        className={`w-5 h-5 rounded border flex items-center justify-center flex-shrink-0 ${
+                          selected ? "bg-[#0D9488] border-[#0D9488]" : "border-[#737686]"
                         }`}
                       >
                         {selected && (
@@ -792,7 +786,7 @@ export default function QuizPage() {
                           </svg>
                         )}
                       </div>
-                      <span className="text-[#0b1c30]">{option}</span>
+                      <span className="text-[#0b1c30] text-[15px]">{option}</span>
                     </button>
                   );
                 })}
@@ -809,44 +803,33 @@ export default function QuizPage() {
             {/* Currency Input */}
             {currentQuestion.type === "currency" && (
               <div className="space-y-4">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex gap-2 flex-1">
-                  <button
-                    onClick={() => setCurrencyToggle("USD")}
-                    className={`flex-1 py-2 rounded-lg border font-medium transition-all ${
-                      currencyToggle === "USD"
-                        ? "border-[#004ac6] bg-[#eff4ff] text-[#004ac6]"
-                        : "border-[#c3c6d7] text-[#434655]"
-                    }`}
+                <div className="flex items-center gap-3">
+                  <select
+                    value={currencyToggle}
+                    onChange={(e) => setCurrencyToggle(e.target.value)}
+                    className="px-3 py-3 rounded-lg border border-[#c3c6d7] bg-white text-[#0b1c30] font-medium focus:outline-none focus:border-[#004ac6]"
                   >
-                    USD
-                  </button>
-                  <button
-                    onClick={() => setCurrencyToggle("CAD")}
-                    className={`flex-1 py-2 rounded-lg border font-medium transition-all ${
-                      currencyToggle === "CAD"
-                        ? "border-[#004ac6] bg-[#eff4ff] text-[#004ac6]"
-                        : "border-[#c3c6d7] text-[#434655]"
-                    }`}
-                  >
-                    CAD
-                  </button>
-                  </div>
-                  {getRateDisplay()}
+                    <option value="USD">USD</option>
+                    <option value="CAD">CAD</option>
+                    <option value="EUR">EUR</option>
+                    <option value="GBP">GBP</option>
+                  </select>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={currencyValue}
+                    onChange={(e) => {
+                      const cleaned = e.target.value.replace(/[^0-9,]/g, '');
+                      setCurrencyValue(cleaned);
+                    }}
+                    placeholder="Enter amount"
+                    className="flex-1 p-4 rounded-lg border border-[#c3c6d7] bg-white text-[#0b1c30] text-lg focus:outline-none focus:border-[#004ac6] focus:ring-1 focus:ring-[#004ac6]"
+                  />
                 </div>
 
-                <input
-                  type="number"
-                  value={currencyValue}
-                  onChange={(e) => setCurrencyValue(e.target.value)}
-                  placeholder="Enter amount"
-                  className="w-full p-4 rounded-lg border border-[#c3c6d7] bg-white text-[#0b1c30] text-lg focus:outline-none focus:border-[#004ac6] focus:ring-1 focus:ring-[#004ac6]"
-                />
-
                 {currencyValue && (
-                  <div className="flex justify-between items-center p-3 bg-[#eff4ff] rounded-lg">
-                    <span className="text-sm text-[#434655]">USD equivalent:</span>
-                    <span className="font-medium text-[#004ac6]">{getCurrencyUSD()}</span>
+                  <div className="p-3 bg-[#f0fdfa] rounded-lg text-center">
+                    <span className="text-sm text-[#0D9488]">≈ {getCurrencyUSD()} USD</span>
                   </div>
                 )}
 
