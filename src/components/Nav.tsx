@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { supabase } from "@/lib/supabase";
+import { createBrowserSupabaseClient } from "@/lib/supabase";
 interface Profile {
   id: string;
   email: string;
@@ -13,6 +13,7 @@ import type { Session } from "@supabase/supabase-js";
 
 export default function Nav() {
   const [user, setUser] = useState<Profile | null>(null);
+  const [supabase] = useState(() => createBrowserSupabaseClient());
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
