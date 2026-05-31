@@ -191,6 +191,7 @@ Do not change these without explicit instruction:
 
 | Decision | Rule |
 |---|---|
+| Branch strategy | All Claude Code work happens on the dev branch. Never commit directly to main. Vercel auto-deploys dev to a preview URL on every push. Main is merged manually after preview URL is verified. Production (main) is never broken. |
 | Paywall timing | Triggers AFTER Module 3 completes, before document generation. Show 1–2 page preview. Free to collect answers, pay to download. |
 | Document generation | Sequential — ONE document at a time. Checkpointed. Never parallel. |
 | Supabase auth | Use auth.users. Create public.profiles — not public.users. |
