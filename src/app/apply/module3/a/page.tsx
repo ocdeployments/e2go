@@ -14,6 +14,7 @@ interface QuestionConfig {
   tooltip: string;
   options?: { value: string; label: string; helperText?: string }[];
   required: boolean;
+  sensitivity?: 'high' | 'medium' | 'low';
   warningTriggers?: { value: string; message: string }[];
 }
 
