@@ -107,6 +107,8 @@ export default function QuizPage() {
   const [stateSearch, setStateSearch] = useState("");
   const [showStateDropdown, setShowStateDropdown] = useState(false);
   const [currencyRates, setCurrencyRates] = useState<Record<string, number>>({});
+  const [cannabisGatePassed, setCannabisGatePassed] = useState(false);
+  const [showCannabisGate, setShowCannabisGate] = useState(false);
 
   // Fetch treaty countries and currency rates (v3)
   useEffect(() => {
@@ -135,6 +137,14 @@ export default function QuizPage() {
   }, []);
 
   // Load questions and scoring logic
+  useEffect(() => {
+    // Load cannabis gate state from localStorage
+    const saved = localStorage.getItem("e2go_cannabis_gate_passed");
+    if (saved === "true") {
+      setCannabisGatePassed(true);
+    }
+  }, []);
+
   useEffect(() => {
     Promise.all([
       fetch("/data/module0_questions.json").then((r) => r.json()),
@@ -246,19 +256,17 @@ export default function QuizPage() {
 
     // Check sub_question hard stops
     if (currentQuestion.sub_question.stop_codes?.length) {
-      const stopCode = currentQuestion.sub_question.stop_codes[0];
-      if (stopCode === "PR-05" && answer === "A business where I would not be personally involved in managing it") {
-        setStopScreen({ code: "PR-05", message: "The E-2 visa requires you to come to the U.S. to develop and direct the business. An arrangement where you would not be personally involved in managing it does not fit the E-2 model." });
-        return;
-      }
-      if (stopCode === "PR-07" && answer === "A property investment or rental business") {
+      if (answer === "A property rental or investment business") {
         setStopScreen({ code: "PR-07", message: "A passive real estate investment does not qualify for an E-2 visa. The E-2 requires an active, operating business." });
         return;
       }
-      if (stopCode === "PR-08" && answer === "A cannabis or marijuana-related business") {
-        setStopScreen({ code: "PR-08", message: "Cannabis-related businesses create a conflict between U.S. state law and federal law. This falls outside what we can support." });
-        return;
-      }
+    }
+
+    // Show cannabis informational gate after sub-question (not for property rental or "something else")
+    if (!cannabisGatePassed && currentQuestion.id === "Q0-10" &&
+        answer !== "A property rental or investment business" && answer !== "Something else") {
+      setShowCannabisGate(true);
+      return;
     }
 
     setIsAnimating(true);
@@ -553,6 +561,62 @@ export default function QuizPage() {
                 Start over
               </button>
             </div>
+          </div>
+        </main>
+
+        <footer className="py-4 text-center text-xs text-[#737686]">
+          e2go.app · The American Dream Edition
+        </footer>
+      </div>
+    );
+  }
+
+  // Cannabis informational gate
+  if (showCannabisGate) {
+    return (
+      <div className="min-h-screen bg-[#f8f9ff] flex flex-col">
+        <header className="w-full sticky top-0 z-50 bg-white border-b border-[#c3c6d7]">
+          <div className="flex justify-between items-center h-16 px-4 max-w-xl mx-auto">
+            <Link href="/" className="flex items-center gap-2">
+              <span className="text-xl font-bold text-[#004ac6]">e2go.app</span>
+            </Link>
+          </div>
+        </header>
+
+        <main className="flex-1 flex items-center justify-center px-4 py-12">
+          <div className="max-w-md w-full text-center">
+            <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <svg className="w-8 h-8 text-amber-600" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+              </svg>
+            </div>
+            <h1 className="text-2xl font-bold text-[#0b1c30] mb-4">
+              One thing worth knowing
+            </h1>
+            <p className="text-[#434655] mb-4">
+              Cannabis businesses are legal in many U.S. states — but U.S. immigration operates under federal law, where cannabis remains illegal. This means E-2 visas cannot be used to invest in cannabis-related businesses, regardless of which state the business is in.
+            </p>
+            <p className="text-[#434655] mb-8">
+              If your business involves cannabis in any way, please speak with an immigration attorney before proceeding.
+            </p>
+            <button
+              onClick={() => {
+                setShowCannabisGate(false);
+                setCannabisGatePassed(true);
+                localStorage.setItem("e2go_cannabis_gate_passed", "true");
+                // Continue to next question
+                setIsAnimating(true);
+                setTimeout(() => setIsAnimating(false), 200);
+                if (currentIndex < visibleQuestions.length - 1) {
+                  setCurrentIndex(currentIndex + 1);
+                } else {
+                  calculateAndRedirect(answers);
+                }
+              }}
+              className="w-full bg-[#004ac6] text-white font-medium py-4 rounded-lg hover:bg-[#00337d] transition-colors"
+            >
+              My business is not cannabis-related — continue
+            </button>
           </div>
         </main>
 
