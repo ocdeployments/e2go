@@ -417,6 +417,7 @@
       "options": [
         "Yes — close family members will remain there",
         "No — all my close family is moving to the U.S. with me",
+        "Mixed — some family remaining, some moving with me",
         "I do not have immediate family there",
         "I am not sure yet"
       ],
@@ -425,6 +426,7 @@
       "routing": {
         "family_remaining": "tie_confirmed - positive signal",
         "all_moving": "PROCEED_RISK (W-NI-02)",
+        "mixed_family": "tie_confirmed - positive signal",
         "no_family": "neutral - other ties noted",
         "not_sure": "proceed"
       },
