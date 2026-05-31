@@ -648,7 +648,7 @@ export default function QuizPage() {
             {/* Searchable Select - Treaty Country (v3) */}
             {currentQuestion.type === "searchable_select" && (
               <div className="space-y-4">
-                <div className="relative max-w-[480px] mx-auto w-full">
+                <div className="relative w-full sm:max-w-[480px] sm:mx-auto">
                   <input
                     type="text"
                     value={countrySearch}
@@ -658,7 +658,7 @@ export default function QuizPage() {
                     className="w-full p-4 rounded-lg border border-[#c3c6d7] bg-white text-[#0b1c30] text-lg focus:outline-none focus:border-[#004ac6] focus:ring-1 focus:ring-[#004ac6]"
                   />
                   {showCountryDropdown && countrySearch && (
-                    <div className="absolute z-10 w-full mt-1 bg-white border border-[#c3c6d7] rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-[#c3c6d7] rounded-lg shadow-lg max-h-60 overflow-y-auto sm:max-w-[480px]">
                       {filteredCountries.length === 0 ? (
                         <div className="p-4 text-[#737686]">No countries found</div>
                       ) : (
@@ -690,7 +690,7 @@ export default function QuizPage() {
             {/* State Select (v3) */}
             {currentQuestion.type === "state_select" && (
               <div className="space-y-4">
-                <div className="relative">
+                <div className="relative w-full sm:max-w-[480px] sm:mx-auto">
                   <input
                     type="text"
                     value={stateSearch}
@@ -700,7 +700,7 @@ export default function QuizPage() {
                     className="w-full p-4 rounded-lg border border-[#c3c6d7] bg-white text-[#0b1c30] text-lg focus:outline-none focus:border-[#004ac6] focus:ring-1 focus:ring-[#004ac6]"
                   />
                   {showStateDropdown && (
-                    <div className="absolute z-10 w-full mt-1 bg-white border border-[#c3c6d7] rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-[#c3c6d7] rounded-lg shadow-lg max-h-60 overflow-y-auto sm:max-w-[480px]">
                       {filteredStates.length === 0 ? (
                         <div className="p-4 text-[#737686]">No states found</div>
                       ) : (
