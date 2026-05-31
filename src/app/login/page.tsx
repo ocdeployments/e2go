@@ -2,11 +2,10 @@
 
 import { useState, Suspense } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 
 function LoginForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get("next") || "/dashboard";
 
@@ -35,7 +34,7 @@ function LoginForm() {
         setErrorMessage("Invalid email or password");
       } else {
         setStatus('success');
-        router.push(next ?? '/dashboard');
+        window.location.href = next ?? '/dashboard';
       }
     } catch {
       setStatus('error');
