@@ -1,7 +1,7 @@
 # BUILD TRACKER
 
 **Last Updated:** 2026-05-31
-**Session:** 7 (Complete)
+**Session:** 11 (Complete)
 
 ---
 
@@ -263,8 +263,6 @@ New spec files created:
 - Supabase SQL: unique constraint needs to be run manually in SQL Editor
 - Full end-to-end test on preview URL
 
----
-
 ## Session 8 Priorities
 
 1. RECONCILE: Read Groups 3A-3I question spec against Tab A-L structure. Map questions to tabs. Identify gaps. Do this before writing any tab question content.
@@ -277,7 +275,49 @@ New spec files created:
 8. UPDATE: Module 2 franchise matching uses E2_Franchise_Categories_Section5.md directly
 9. ADD: Tab F loan structure question (D-12 denial risk)
 10. PWA setup + QR code on landing page
-5. Wire Stripe integration for payment
+
+---
+
+## Session 11 Log
+
+**Date:** May 31, 2026
+**Session:** 11
+
+**Completed:**
+- Sensitive field placeholder mode: added sensitivity field (high/medium/low) to QuestionConfig
+- Skip toggle for high/medium sensitivity fields in QuestionRenderer (DOB, SIN, SSN, address, phone)
+- Debounced autosave: changed from 2s to 800ms per spec
+- Question helper text in tab-a.json reviewed and updated to conversational language
+- All 45 tests passing, build clean, pushed to dev
+
+**Key Decisions:**
+- Skip toggle shows "Not comfortable sharing this here? Skip for now — I will fill this in myself"
+- Skipped fields show "No problem — we will leave a space in your document that you can fill in yourself before submitting."
+- Sensitivity levels: high (always show skip), medium (show but not prominent), low (no skip)
+
+**Files Changed:**
+- src/components/module3/QuestionRenderer.tsx (sensitivity + skip toggle)
+- src/components/module3/TabShell.tsx (interface update)
+- src/contexts/ApplicationContext.tsx (800ms debounce)
+- src/data/module3/tab-a.json (sensitivity data + conversational language)
+- src/app/apply/module3/a/page.tsx (interface update)
+
+**Commits:**
+- f40fa9d QuestionRenderer.tsx: add sensitivity field and skip toggle
+- 579b8d0 TabShell.tsx: add sensitivity field to interface
+- d5eb7cd ApplicationContext.tsx: change debounce from 2s to 800ms
+- 09b13a8 tab-a.json: add sensitivity levels and conversational language
+- 5f90b99 module3/a/page.tsx: add sensitivity to interface
+
+---
+
+## Session 12 Priorities
+
+1. Wire Tab B-L question configs from updated specs (actual questions not just scaffolds)
+2. Build franchise matching flow in Module 2
+3. Build /apply/module3 sidebar navigation
+4. Paywall — wire Stripe integration
+5. Interview simulator Module 5 scaffold
 
 ---
 
