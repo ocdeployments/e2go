@@ -1,7 +1,7 @@
 # BUILD TRACKER
 
-**Last Updated:** 2026-05-30
-**Session:** 5 (Complete)
+**Last Updated:** 2026-05-31
+**Session:** 6 (Complete)
 
 ---
 
@@ -154,13 +154,30 @@
 
 ---
 
-## Session 6 Priorities
+## Session 6 Log
 
-1. Connect real auth and test full flow on preview
-2. Wire lifecycle updates on tab completion
-3. Build Tab B-L (visibility rules + question configs)
-4. Wire Stripe integration for payment
-5. Vercel production deploy with custom domain
+**Date:** May 31, 2026
+**Session:** 6
+
+**Completed:**
+- Fixed Vercel routing conflict: removed dynamic [tab] route, created individual pages for tabs b-l
+- Added profile safety check in Tab A page.tsx before application insert
+- All 45 tests passing (24 smoke + 21 module3)
+- Pushed to dev branch
+
+**Key Decisions:**
+- Individual tab pages (b-l) instead of dynamic route to avoid Vercel conflict
+- Safety check: upsert profile before inserting application to prevent FK violations
+
+---
+
+## Session 7 Priorities
+
+1. Run Supabase SQL to backfill missing profiles and recreate trigger
+2. Test full auth flow on Vercel preview
+3. Wire lifecycle updates on tab completion
+4. Build Tab B-L (visibility rules + question configs)
+5. Wire Stripe integration for payment
 
 ---
 
