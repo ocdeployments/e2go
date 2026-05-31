@@ -1,6 +1,8 @@
 # Tab A — DS-160 Reference Generator
 ## Module 3 Interview Engine
-*Version 1.0 | May 28, 2026 | Source: U.S. State Department DS-160 Official Exemplar*
+*Version 1.1 | May 31, 2026 | Source: U.S. State Department DS-160 Official Exemplar*
+
+**Batch:** 2 — Generated after business formation confirmed
 
 ---
 
@@ -26,7 +28,7 @@ answers organized in the exact order the DS-160 presents them.
 **Question:** What is your full legal name as it appears on your passport?
 **Type:** text (three fields: surname, given name, middle name)
 **Validation:** Must match passport exactly
-**Tooltip:** Enter your name exactly as it appears on your Canadian passport,
+**Tooltip:** Enter your name exactly as it appears on your passport,
 including any middle names. This must match the DS-160 precisely.
 
 ### QA-02
@@ -49,7 +51,7 @@ nicknames, or names in other languages?
 
 ### QA-05
 **Question:** What is your country of citizenship?
-**Type:** select (country list — pre-populated Canada as default)
+**Type:** select (country list — pre-populated from treaty country in Module 0)
 
 ### QA-06
 **Question:** Do you hold citizenship in any other country?
@@ -60,7 +62,7 @@ nicknames, or names in other languages?
 **Type:** select (country list)
 
 ### QA-07
-**Question:** What is your national identification number? (Canadian SIN or
+**Question:** What is your national identification number? (Social Insurance Number or
 equivalent — if applicable)
 **Type:** text
 **Tooltip:** If you have a national ID number (such as a Social Insurance
@@ -79,8 +81,8 @@ apply" if this is your first U.S. visa.
 ## Section A.2 — Address & Contact
 
 ### QA-09
-**Question:** What is your current home address in Canada?
-**Type:** text (street, city, province, postal code)
+**Question:** What is your current home address?
+**Type:** text (street, city, state/province, postal code)
 
 ### QA-10
 **Question:** How long have you lived at this address?
@@ -124,7 +126,7 @@ you actively used in the past 5 years. This is a mandatory DS-160 field.
 
 ### QA-16
 **Question:** What country issued your passport?
-**Type:** select (pre-filled Canada)
+**Type:** select (pre-filled from Module 0)
 
 ### QA-17
 **Question:** What is the issue date of your passport?
@@ -271,8 +273,8 @@ Retired / Unemployed / Other
 **Type:** date
 
 ### QA-32
-**Question:** What is your current monthly income (in CAD)?
-**Type:** currency (CAD)
+**Question:** What is your current monthly income?
+**Type:** currency (any currency — converts to USD)
 **Has N/A option:** Yes
 
 ### QA-33
