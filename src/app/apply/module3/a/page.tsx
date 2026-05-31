@@ -131,6 +131,16 @@ function TabAPageContent() {
       if (existingApp) {
         setApplicationId(existingApp.id);
       } else {
+        // Safety check: ensure profile exists before creating application
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .upsert({ id: authUser.id, email: authUser.email, tier: 'free' })
+          .select();
+
+        if (profileError) {
+          console.error('Profile upsert error:', profileError);
+        }
+
         const { data: newApp, error: createError } = await supabase
           .from('applications')
           .insert({ user_id: authUser.id, status: 'in_progress' })
