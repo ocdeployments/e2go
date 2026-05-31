@@ -47,13 +47,13 @@
     {
       "id": "Q0-02",
       "type": "select",
-      "question": "Do you currently have a valid passport from [nationality]?",
+      "question": "Do you have a valid [nationality] passport?",
       "section": "who_you_are",
       "dynamic_reference": "Q0-01 selected country name",
       "options": [
-        "Yes — my passport is valid",
-        "My passport has expired but I am a citizen",
-        "No — I do not have a passport from that country"
+        "Yes — it is valid",
+        "It has expired but I am still a citizen",
+        "No — I do not have one"
       ],
       "warning_codes": ["W-01"],
       "routing": {
@@ -66,14 +66,14 @@
     {
       "id": "Q0-03",
       "type": "select",
-      "question": "Where are you right now?",
+      "question": "Where are you living right now?",
       "section": "who_you_are",
       "options": [
         "In my home country",
-        "In the United States — on a valid visa or status",
-        "In the United States — I am not sure about my current status",
+        "In the United States — on a valid visa",
+        "In the United States — I am not sure of my status",
         "In the United States — without valid status",
-        "In another country outside my home country and the U.S."
+        "In another country"
       ],
       "stop_codes": ["PR-02"],
       "warning_codes": ["W-02", "W-03"],
@@ -108,14 +108,14 @@
     {
       "id": "Q0-04",
       "type": "select",
-      "question": "Where are you in your investment planning?",
+      "question": "Where are you in the investment process?",
       "section": "your_investment",
       "options": [
-        "I have already transferred or committed funds to a U.S. business",
-        "I have a specific business in mind and I am getting ready to commit",
-        "I have funds available but I have not decided on a business yet",
-        "I am still figuring out how much I will need and where it will come from",
-        "I do not currently have funds available for an investment"
+        "I have already committed or transferred funds to a U.S. business",
+        "I have a business in mind and I am getting ready to commit funds",
+        "I have the funds but I have not chosen a business yet",
+        "I am still figuring out the finances",
+        "I do not have funds available right now"
       ],
       "stage_awareness": {
         "already_transferred": "Stage D - Ready",
@@ -138,10 +138,10 @@
     {
       "id": "Q0-05",
       "type": "currency",
-      "question": "Roughly how much are you thinking of investing in the business?",
+      "question": "How much are you planning to invest?",
       "section": "your_investment",
       "currency_options": ["USD", "CAD", "EUR", "GBP", "AUD", "JPY", "CNY", "INR", "MXN", "BRL"],
-      "helper_text": "There is no fixed minimum set by law. But the investment must be 'substantial' in relation to the total cost of the business. Most successful applications involve $100,000 USD or more.",
+      "helper_text": "There is no official minimum. Most successful applications involve $100,000 USD or more — but what matters most is whether your investment is substantial relative to the total cost of the business.",
       "proportionality_thresholds_usd": {
         "clean": {
           "min": 150000,
@@ -167,12 +167,12 @@
     {
       "id": "Q0-06",
       "type": "select",
-      "question": "Do you have a sense of where the money for your investment will come from?",
+      "question": "Do you know where your investment money will come from?",
       "section": "your_investment",
       "options": [
-        "Yes — savings, property equity, retirement accounts, or investments I can trace on paper",
-        "Yes — but some of it may be harder to document clearly",
-        "I have the money but I have not thought through how to document where it came from",
+        "Yes — savings, property equity, investments, or retirement accounts I can trace on paper",
+        "Yes — but parts of it may be harder to document",
+        "I have the money but I have not thought about the paper trail yet",
         "I am still working out where the funds will come from"
       ],
       "warning_codes": ["W-06"],
@@ -190,10 +190,10 @@
       "question": "Are you planning to use any borrowed money as part of your investment?",
       "section": "your_investment",
       "options": [
-        "No — all my investment funds are my own assets",
-        "Yes — a personal loan or home equity loan (secured against my own personal assets)",
-        "Yes — a loan that would be secured against the U.S. business itself (not my personal assets)",
-        "Possibly — I am not sure how it would be structured",
+        "No — all my funds are from my own savings or assets",
+        "Yes — a loan secured against my own property or personal assets",
+        "Yes — a loan that would be backed by the U.S. business itself",
+        "I am not sure how the loan would be structured",
         "I have not thought about this yet"
       ],
       "stop_codes": ["PR-04"],
@@ -210,13 +210,13 @@
     {
       "id": "Q0-08",
       "type": "select",
-      "question": "When you picture yourself running a U.S. business, what feels most like what you have in mind?",
+      "question": "How do you picture yourself running this business?",
       "section": "your_business",
       "options": [
-        "Running it myself — I want to be actively involved day to day",
-        "Running it with one equal partner — we would share it 50/50",
-        "Overseeing it at a management level — I would hire people to handle daily operations while I provide direction",
-        "I am not sure yet — I am still thinking about this"
+        "Hands on — I want to be actively involved every day",
+        "As a manager — I will oversee the business and hire people to run daily operations",
+        "With a partner — we will run it together as equal co-owners",
+        "I am not sure yet"
       ],
       "warning_codes": ["W-09"],
       "routing": {
@@ -230,11 +230,11 @@
     {
       "id": "Q0-09",
       "type": "select",
-      "question": "Are you planning to do this on your own, or do you have someone in mind to go into business with?",
+      "question": "Will you own this business on your own or with someone else?",
       "section": "your_business",
       "options": [
         "On my own",
-        "With one other person as an equal partner",
+        "With one equal partner — 50/50",
         "With more than one other person",
         "I have not decided yet"
       ],
@@ -254,26 +254,24 @@
     {
       "id": "Q0-10",
       "type": "select",
-      "question": "Where are you in your thinking about the business?",
+      "question": "Have you decided on a business yet?",
       "section": "your_business",
       "options": [
-        "I have a specific business or franchise selected",
-        "I have a general direction but have not decided yet",
+        "Yes — I have a specific business or franchise in mind",
+        "I have a general idea but have not decided yet",
         "I am completely open — I have not started looking"
       ],
       "sub_question": {
-        "show_if": "I have a specific business or franchise selected",
-        "question": "Which of the following best describes it?",
+        "show_if": "Yes — I have a specific business or franchise in mind",
+        "question": "What kind of business is it?",
         "options": [
-          "A franchise — buying into an established brand with a proven system",
-          "Buying an existing business from its current owner",
+          "A franchise — buying into an established brand",
+          "Buying an existing business from its owner",
           "Starting a new business from scratch",
-          "A property investment or rental business",
-          "A cannabis or marijuana-related business",
-          "A business where I would not be personally involved in managing it",
+          "A property rental or investment business",
           "Something else"
         ],
-        "stop_codes": ["PR-05", "PR-07", "PR-08"]
+        "stop_codes": ["PR-05", "PR-07"]
       },
       "routing": {
         "specific_business": "show sub_question",
@@ -325,12 +323,12 @@
     {
       "id": "Q0-11",
       "type": "select",
-      "question": "Have you ever been refused a U.S. visa, refused entry at a U.S. border, or had your visa revoked?",
+      "question": "Have you ever been refused a U.S. visa?",
       "section": "your_history",
       "options": [
         "No — never",
         "Yes — once, more than 5 years ago",
-        "Yes — once, within the last 5 years",
+        "Yes — once, in the last 5 years",
         "Yes — more than once",
         "I am not sure"
       ],
@@ -347,7 +345,7 @@
     {
       "id": "Q0-12",
       "type": "select",
-      "question": "Have you ever overstayed a U.S. visa, been deported or removed from the United States, or violated the terms of a U.S. immigration status?",
+      "question": "Have you ever been refused entry to the U.S., deported, or asked to leave?",
       "section": "your_history",
       "options": [
         "No",
@@ -365,13 +363,14 @@
     {
       "id": "Q0-13",
       "type": "select",
-      "question": "Have you ever been arrested, charged, or convicted of a crime in any country?",
+      "question": "Have you ever been arrested, charged, or convicted of a crime — in any country?",
       "section": "your_history",
+      "helper_text": "Include anything that was charged, even if it was later dropped or pardoned. The DS-160 requires full disclosure.",
       "options": [
-        "No",
+        "No — nothing to declare",
         "Yes — a minor matter, more than 10 years ago",
-        "Yes — a minor matter, within the last 10 years",
-        "Yes — something more serious (any time)",
+        "Yes — a minor matter, in the last 10 years",
+        "Yes — something more serious",
         "I am not sure"
       ],
       "warning_codes": ["W-13-OLD", "W-13-RECENT", "W-13-SERIOUS", "W-13-UNSURE"],
@@ -387,15 +386,14 @@
     {
       "id": "Q0-NI-01",
       "type": "select",
-      "question": "Do you own property in [home country] that you intend to keep after moving to the U.S.?",
+      "question": "Do you own property in [home country]?",
       "section": "your_ties",
       "dynamic_reference": "Q0-01 selected country name",
       "options": [
-        "Yes — I own my home and plan to keep it (rent it out or maintain it)",
-        "Yes — I own investment property I plan to keep",
-        "I own property but I am thinking of selling it before I move",
-        "I own property but have not decided what to do with it yet",
-        "No — I do not own property there"
+        "Yes — and I plan to keep it",
+        "Yes — but I am thinking of selling before I move",
+        "No — I do not own property there",
+        "Not sure yet"
       ],
       "tie_tracking": "non_immigrant_intent",
       "warning_codes": ["W-NI-01"],
@@ -411,15 +409,14 @@
     {
       "id": "Q0-NI-02",
       "type": "select",
-      "question": "Will any of your immediate family — parents, adult children, or siblings — remain in [home country] when you move?",
+      "question": "Will any close family stay behind in [home country] when you move?",
       "section": "your_ties",
       "dynamic_reference": "Q0-01 selected country name",
       "options": [
-        "Yes — close family members will remain there",
-        "No — all my close family is moving to the U.S. with me",
-        "Mixed — some family remaining, some moving with me",
-        "I do not have immediate family there",
-        "I am not sure yet"
+        "Yes — family will remain there",
+        "Some will stay, some will come with me",
+        "No — everyone is moving with me",
+        "I do not have close family there"
       ],
       "tie_tracking": "non_immigrant_intent",
       "warning_codes": ["W-NI-02"],
@@ -435,14 +432,14 @@
     {
       "id": "Q0-NI-03",
       "type": "select",
-      "question": "Do you plan to keep financial accounts — bank accounts, retirement savings, or investment accounts — in [home country] after you move?",
+      "question": "Will you keep your [home country] bank accounts and savings open after you move?",
       "section": "your_ties",
       "dynamic_reference": "Q0-01 selected country name",
       "options": [
-        "Yes — I plan to keep my accounts open there",
-        "Probably — though I have not thought it through fully",
-        "No — I was planning to close everything and move it all",
-        "I am not sure yet"
+        "Yes — I plan to keep my accounts open",
+        "Probably — I have not decided yet",
+        "No — I plan to close everything and move it all",
+        "I am not sure"
       ],
       "tie_tracking": "non_immigrant_intent",
       "warning_codes": ["W-NI-03"],
@@ -457,13 +454,13 @@
     {
       "id": "Q0-16",
       "type": "select",
-      "question": "Will anyone be joining you in the U.S. as part of your E-2 application?",
+      "question": "Will anyone be moving to the U.S. with you on this visa?",
       "section": "your_family",
       "options": [
         "No — just me",
-        "Yes — my spouse or partner only",
-        "Yes — my children only",
-        "Yes — my spouse/partner and children",
+        "Yes — my spouse or partner",
+        "Yes — my children",
+        "Yes — my spouse and children",
         "I have not decided yet"
       ],
       "routing": {
@@ -474,16 +471,18 @@
         "not_decided": "show family section with optional framing"
       },
       "sub_question": {
-        "show_if": ["Yes — my spouse or partner only", "Yes — my spouse/partner and children"],
-        "question": "Is this a legally married spouse or a common-law/de facto partner?",
+        "show_if": ["Yes — my spouse or partner", "Yes — my spouse and children"],
+        "question": "Are you and your spouse legally married?",
         "options": [
-          "Legally married",
-          "Common-law or de facto"
+          "Yes — we are legally married",
+          "We are in a common-law or de facto relationship",
+          "Not applicable"
         ],
         "warning_codes": ["W-COMMONLAW"],
         "routing": {
           "legally_married": "standard spouse flow",
-          "common_law": "ATTORNEY_RECOMMENDED (W-COMMONLAW)"
+          "common_law": "ATTORNEY_RECOMMENDED (W-COMMONLAW)",
+          "not_applicable": "proceed"
         }
       },
       "tooltip": "Your spouse and unmarried children under 21 can join you in the U.S. on E-2 dependent status. Your spouse can also apply for work authorization once in the U.S."
@@ -491,38 +490,56 @@
     {
       "id": "Q0-17",
       "type": "select",
-      "question": "Is your spouse a citizen of [nationality from Q0-01]?",
-      "section": "your_family",
+      "question": "Is your partner a citizen of a country that qualifies for the E-2 visa?",
+      "section": "your_business",
       "show_if": {
-        "Q0-16": ["Yes — my spouse or partner only", "Yes — my spouse/partner and children"]
+        "Q0-09": ["With one equal partner — 50/50", "With more than one other person"]
       },
-      "dynamic_reference": "Q0-01 selected country name",
+      "helper_text": "Your partner does not need to be from the same country as you — they just need to be a citizen of any E-2 treaty country.",
       "options": [
-        "Yes — same country as me",
-        "No — they hold citizenship in a different country",
-        "They hold dual citizenship including [home country]",
+        "Yes — they are a citizen of a treaty country",
+        "No — they are not",
         "I am not sure"
       ],
       "warning_codes": ["W-17-NATIONALITY"],
       "routing": {
-        "same_country": "standard dependent flow - proceed",
-        "different_country": "ATTORNEY_RECOMMENDED (W-17-NATIONALITY)",
-        "dual_including_home": "proceed",
+        "yes": "proceed",
+        "no": "ATTORNEY_RECOMMENDED (W-17-NATIONALITY)",
         "not_sure": "ATTORNEY_RECOMMENDED (W-17-NATIONALITY)"
       },
-      "tooltip": "As an E-2 dependent, your spouse's visa eligibility derives from your status — not their own nationality. But their immigration history and background are still reviewed independently."
+      "tooltip": "Your partner does not need to be from the same country as you — they just need to be a citizen of any E-2 treaty country."
+    },
+    {
+      "id": "Q0-15",
+      "type": "select",
+      "question": "Will your partner be actively involved in running the business day to day?",
+      "section": "your_business",
+      "show_if": {
+        "Q0-09": ["With one equal partner — 50/50", "With more than one other person"]
+      },
+      "options": [
+        "Yes — they will be hands-on in the business",
+        "No — they will be more of a silent partner",
+        "We have not decided yet"
+      ],
+      "warning_codes": ["W-15"],
+      "routing": {
+        "yes": "proceed",
+        "no": "PROCEED_RISK (W-15)",
+        "not_sure": "proceed"
+      }
     },
     {
       "id": "Q0-18",
       "type": "select",
-      "question": "Does your spouse have a valid passport?",
+      "question": "Does everyone coming with you have a valid passport?",
       "section": "your_family",
       "show_if": {
-        "Q0-16": ["Yes — my spouse or partner only", "Yes — my spouse/partner and children"]
+        "Q0-16": ["Yes — my spouse or partner", "Yes — my children", "Yes — my spouse and children"]
       },
       "options": [
-        "Yes",
-        "No or expired",
+        "Yes — everyone has a valid passport",
+        "No — one or more passports are expired or missing",
         "I am not sure"
       ],
       "warning_codes": ["W-17-PASSPORT"],
@@ -535,16 +552,16 @@
     {
       "id": "Q0-19",
       "type": "select",
-      "question": "Do any of the children applying with you fall into either of these categories?",
+      "question": "How old are the children who will be coming with you?",
       "section": "your_family",
       "show_if": {
-        "Q0-16": ["Yes — children only", "Yes — my spouse/partner and children"]
+        "Q0-16": ["Yes — my children", "Yes — my spouse and children"]
       },
       "options": [
-        "No — all my children are under 21 and unmarried",
-        "Yes — one or more children are 21 or older",
-        "Yes — one or more children are married",
-        "Some are close to turning 21 — within the next 2–3 years"
+        "All under 21 and unmarried",
+        "One or more are 21 or older",
+        "One or more are married",
+        "One or more are close to turning 21 (within the next 2–3 years)"
       ],
       "warning_codes": ["W-18-OVER21", "W-18-MARRIED", "W-18-AGEOUT"],
       "routing": {
@@ -558,13 +575,13 @@
     {
       "id": "Q0-20",
       "type": "select",
-      "question": "Does your spouse or any of your children have a history of U.S. visa refusals, removal from the U.S., or criminal matters in any country?",
+      "question": "Has your spouse or any of your children ever had a U.S. visa refused, been denied entry, or had any criminal matters?",
       "section": "your_family",
       "show_if": {
-        "Q0-16": ["Yes — my spouse or partner only", "Yes — children only", "Yes — my spouse/partner and children"]
+        "Q0-16": ["Yes — my spouse or partner", "Yes — my children", "Yes — my spouse and children"]
       },
       "options": [
-        "No — none of the above",
+        "No — nothing to declare",
         "Yes",
         "I am not sure"
       ],
@@ -593,7 +610,7 @@
       "question": "Before you continue, please confirm you understand the following.",
       "section": "consent",
       "show_if": "attorney_recommended_and_user_continues",
-      "acknowledgment_text": "e2go is a visa preparation and document drafting tool — not a law firm. The risk flags identified in your quiz suggest that your case has complexities that may benefit from attorney review.\n\nYou are welcome to continue using the app. We will flag these areas throughout your preparation and help you build the strongest possible application. But we want to be honest: some situations genuinely benefit from a qualified immigration attorney, and yours may be one.\n\nI understand this and choose to continue.",
+      "acknowledgment_text": "e2go is a visa preparation tool — not a law firm. Based on your answers, your situation has some complexity that may benefit from legal advice.\n\nYou are welcome to continue. We will flag these areas as you go and help you build the strongest possible application. But we want to be honest with you: a qualified immigration attorney may add real value to your case.\n\nI understand this and want to continue.",
       "required": true
     }
   ],
