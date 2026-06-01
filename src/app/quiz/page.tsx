@@ -640,21 +640,13 @@ export default function QuizPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8f9ff] flex flex-col">
-      {/* Header */}
-      <header className="w-full sticky top-0 z-50 bg-white border-b border-[#c3c6d7]">
+    <div className="min-h-screen" style={{ background: "var(--navy)" }}>
+      {/* Header - Glassmorphism */}
+      <header className="w-full sticky top-0 z-50" style={{ backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", background: "rgba(6,13,31,0.8)", borderBottom: "1px solid var(--glass-border)" }}>
         <div className="flex justify-between items-center h-16 px-4 max-w-xl mx-auto">
           <Link href="/" className="flex items-center gap-2">
-            <svg className="w-6 h-6 text-[#004ac6]" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 2L2 7v10l10 5 10-5V7L12 2z" />
-            </svg>
-            <span className="text-xl font-bold text-[#004ac6]">e2go.app</span>
+            <span className="text-xl font-bold" style={{ color: "var(--teal)", fontFamily: "'Playfair Display', serif" }}>e2go.app</span>
           </Link>
-          <button className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-[#eff4ff] transition-colors">
-            <svg className="w-6 h-6 text-[#434655]" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-            </svg>
-          </button>
         </div>
       </header>
 
