@@ -76,27 +76,34 @@ export default function QuestionRenderer({
           key={option.value}
           className={`flex items-start gap-3 p-5 border rounded-xl cursor-pointer transition-all ${
             value === option.value
-              ? 'border-[#004ac6] bg-[#f0f7ff]'
-              : 'border-[#E2E8F0] bg-white hover:border-[#c3c6d7]'
+              ? ''
+              : 'hover:opacity-80'
           } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+          style={{
+            borderColor: value === option.value ? "var(--teal)" : "var(--glass-border)",
+            background: value === option.value ? "var(--teal-dim)" : "var(--glass-bg)",
+          }}
         >
           <div
             className={`w-5 h-5 rounded-full border-2 flex items-center justify-center mt-0.5 flex-shrink-0 ${
               value === option.value
-                ? 'border-[#004ac6]'
-                : 'border-[#E2E8F0]'
+                ? ''
+                : ''
             }`}
+            style={{
+              borderColor: value === option.value ? "var(--teal)" : "var(--glass-border)",
+            }}
           >
             {value === option.value && (
-              <div className="w-2.5 h-2.5 rounded-full bg-[#004ac6]" />
+              <div className="w-2.5 h-2.5 rounded-full" style={{ background: "var(--teal)" }} />
             )}
           </div>
           <div className="flex-1">
-            <span className="block text-sm font-medium text-[#0b1c30]" style={{ fontWeight: 500, fontSize: '14px' }}>
+            <span className="block text-sm font-medium" style={{ fontWeight: 500, fontSize: '14px', color: "var(--white)" }}>
               {option.label}
             </span>
             {option.helperText && (
-              <span className="block text-xs text-[#45464d] mt-1" style={{ fontSize: '14px' }}>
+              <span className="block text-xs mt-1" style={{ fontSize: '14px', color: "var(--white-dim)" }}>
                 {option.helperText}
               </span>
             )}
@@ -115,9 +122,13 @@ export default function QuestionRenderer({
             key={option.value}
             className={`flex items-start gap-3 p-5 border rounded-xl cursor-pointer transition-all ${
               currentValues.includes(option.value)
-                ? 'border-[#004ac6] bg-[#f0f7ff]'
-                : 'border-[#E2E8F0] bg-white hover:border-[#c3c6d7]'
+                ? ''
+                : 'hover:opacity-80'
             } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+            style={{
+              borderColor: currentValues.includes(option.value) ? "var(--teal)" : "var(--glass-border)",
+              background: currentValues.includes(option.value) ? "var(--teal-dim)" : "var(--glass-bg)",
+            }}
           >
             <input
               type="checkbox"
@@ -131,14 +142,15 @@ export default function QuestionRenderer({
                 }
               }}
               disabled={disabled}
-              className="mt-1 w-5 h-5 text-[#004ac6] border-[#E2E8F0] rounded focus:ring-[#004ac6] flex-shrink-0"
+              className="mt-1 w-5 h-5 rounded flex-shrink-0"
+              style={{ accentColor: "var(--teal)" }}
             />
             <div>
-              <span className="block text-sm font-medium text-[#0b1c30]" style={{ fontWeight: 500, fontSize: '14px' }}>
+              <span className="block text-sm font-medium" style={{ fontWeight: 500, fontSize: '14px', color: "var(--white)" }}>
                 {option.label}
               </span>
               {option.helperText && (
-                <span className="block text-xs text-[#45464d] mt-1" style={{ fontSize: '14px' }}>
+                <span className="block text-xs mt-1" style={{ fontSize: '14px', color: "var(--white-dim)" }}>
                   {option.helperText}
                 </span>
               )}
@@ -156,10 +168,15 @@ export default function QuestionRenderer({
         onChange={(e) => onChange(e.target.value)}
         disabled={disabled}
         rows={4}
-        className="w-full px-4 py-3 border border-[#E2E8F0] rounded-lg text-[#0b1c30] focus:outline-none focus:border-[#004ac6] focus:ring-1 focus:ring-[#004ac6] disabled:opacity-50 bg-white"
+        className="w-full px-4 py-3 border rounded-lg focus:outline-none disabled:opacity-50"
+        style={{
+          borderColor: "var(--glass-border)",
+          background: "var(--glass-bg)",
+          color: "var(--white)",
+        }}
         placeholder="Enter your response..."
       />
-      <div className="text-xs text-[#45464d] mt-1 text-right" style={{ fontSize: '14px' }}>
+      <div className="text-xs mt-1 text-right" style={{ fontSize: '14px', color: "var(--white-dim)" }}>
         {typeof value === 'string' ? value.length : 0} characters
       </div>
     </div>
@@ -171,7 +188,12 @@ export default function QuestionRenderer({
       value={value as number ?? ''}
       onChange={(e) => onChange(e.target.value ? Number(e.target.value) : null)}
       disabled={disabled}
-      className="w-full px-4 py-3 border border-[#E2E8F0] rounded-lg text-[#0b1c30] focus:outline-none focus:border-[#004ac6] focus:ring-1 focus:ring-[#004ac6] disabled:opacity-50 bg-white"
+      className="w-full px-4 py-3 border rounded-lg focus:outline-none disabled:opacity-50"
+      style={{
+        borderColor: "var(--glass-border)",
+        background: "var(--glass-bg)",
+        color: "var(--white)",
+      }}
       placeholder="Enter amount"
     />
   );
@@ -186,7 +208,12 @@ export default function QuestionRenderer({
           value={month}
           onChange={(e) => onChange(`${e.target.value}/${day}/${year}`)}
           disabled={disabled}
-          className="flex-1 px-4 py-3 border border-[#E2E8F0] rounded-lg text-[#0b1c30] focus:outline-none focus:border-[#004ac6] disabled:opacity-50 bg-white"
+          className="flex-1 px-4 py-3 border rounded-lg focus:outline-none disabled:opacity-50"
+          style={{
+            borderColor: "var(--glass-border)",
+            background: "var(--glass-bg)",
+            color: "var(--white)",
+          }}
         >
           <option value="">Month</option>
           {Array.from({ length: 12 }, (_, i) => (
@@ -199,7 +226,12 @@ export default function QuestionRenderer({
           value={day}
           onChange={(e) => onChange(`${month}/${e.target.value}/${year}`)}
           disabled={disabled}
-          className="w-20 px-4 py-3 border border-[#E2E8F0] rounded-lg text-[#0b1c30] focus:outline-none focus:border-[#004ac6] disabled:opacity-50 bg-white"
+          className="w-20 px-4 py-3 border rounded-lg focus:outline-none disabled:opacity-50"
+          style={{
+            borderColor: "var(--glass-border)",
+            background: "var(--glass-bg)",
+            color: "var(--white)",
+          }}
         >
           <option value="">Day</option>
           {Array.from({ length: 31 }, (_, i) => (
@@ -212,7 +244,12 @@ export default function QuestionRenderer({
           value={year}
           onChange={(e) => onChange(`${month}/${day}/${e.target.value}`)}
           disabled={disabled}
-          className="w-28 px-4 py-3 border border-[#E2E8F0] rounded-lg text-[#0b1c30] focus:outline-none focus:border-[#004ac6] disabled:opacity-50 bg-white"
+          className="w-28 px-4 py-3 border rounded-lg focus:outline-none disabled:opacity-50"
+          style={{
+            borderColor: "var(--glass-border)",
+            background: "var(--glass-bg)",
+            color: "var(--white)",
+          }}
         >
           <option value="">Year</option>
           {Array.from({ length: 100 }, (_, i) => (
@@ -229,14 +266,15 @@ export default function QuestionRenderer({
     <div className="space-y-4">
       {/* Question header with tooltip */}
       <div className="flex items-start justify-between gap-2">
-        <h3 className="text-lg font-semibold text-[#0b1c30]" style={{ fontSize: '18px', fontWeight: 600 }}>
+        <h3 className="text-lg font-semibold font-playfair" style={{ fontSize: '18px', fontWeight: 600, color: "var(--white)" }}>
           {question.question}
-          {question.required && <span className="text-red-500 ml-1">*</span>}
+          {question.required && <span className="text-red-400 ml-1">*</span>}
         </h3>
         <button
           type="button"
           onClick={() => setShowTooltip(!showTooltip)}
-          className="text-[#45464d] hover:text-[#004ac6] p-1 flex-shrink-0"
+          className="p-1 flex-shrink-0 hover:opacity-70"
+          style={{ color: "var(--white-dim)" }}
           aria-label="More information"
         >
           <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -251,7 +289,7 @@ export default function QuestionRenderer({
 
       {/* Tooltip content */}
       {showTooltip && (
-        <div className="p-3 bg-[#f8f9ff] border border-[#E2E8F0] rounded-lg text-sm text-[#45464d]" style={{ fontSize: '14px' }}>
+        <div className="p-3 border rounded-lg text-sm" style={{ fontSize: '14px', borderColor: "var(--glass-border)", background: "var(--glass-bg)", color: "var(--white-dim)" }}>
           {question.tooltip}
         </div>
       )}
@@ -270,8 +308,8 @@ export default function QuestionRenderer({
             <button
               type="button"
               onClick={handleSkip}
-              className="text-red-600 hover:text-red-700 text-sm font-medium"
-              style={{ fontSize: '14px' }}
+              className="text-sm font-medium hover:opacity-70"
+              style={{ fontSize: '14px', color: "#f87171" }}
             >
               Not comfortable sharing this here?{' '}
               <span className="underline">Skip for now</span>
@@ -281,8 +319,8 @@ export default function QuestionRenderer({
             <button
               type="button"
               onClick={handleSkip}
-              className="text-amber-600 hover:text-amber-700 text-sm"
-              style={{ fontSize: '14px' }}
+              className="text-sm hover:opacity-70"
+              style={{ fontSize: '14px', color: "#fbbf24" }}
             >
               Not comfortable sharing this here?{' '}
               <span className="underline">Skip for now — I will fill this in myself</span>
@@ -294,7 +332,7 @@ export default function QuestionRenderer({
       {/* Required field note */}
       {isRequired && (
         <div className="text-center pt-2">
-          <p className="text-xs text-[#64748b]" style={{ fontSize: '12px' }}>
+          <p className="text-xs" style={{ fontSize: '12px', color: "var(--white-dim)" }}>
             We need this to generate your documents — it does not go further than your application package.
           </p>
         </div>
@@ -302,32 +340,32 @@ export default function QuestionRenderer({
 
       {/* AMBER inline note after skip */}
       {isSkipped && privacyCategory === 'amber' && question.skip_advisory && (
-        <div className="p-3 bg-[#FFFBEB] border border-[#FEF3C7] rounded-lg text-sm text-[#92400E]">
+        <div className="p-3 rounded-lg text-sm" style={{ background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.3)", color: "#fbbf24" }}>
           No problem. {question.skip_advisory}
         </div>
       )}
 
       {/* GREEN simple skip - no advisory */}
       {isSkipped && privacyCategory === 'green' && (
-        <div className="p-3 bg-[#F0FDF4] border border-[#BBF7D0] rounded-lg text-sm text-[#166534]">
+        <div className="p-3 rounded-lg text-sm" style={{ background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.3)", color: "#4ade80" }}>
           No problem. You can complete this later.
         </div>
       )}
 
       {/* Skipped indicator default */}
       {isSkipped && !privacyCategory && (
-        <div className="p-3 bg-[#FEF3C7] border border-[#FCD34D] rounded-lg text-sm text-[#92400E]">
+        <div className="p-3 rounded-lg text-sm" style={{ background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.3)", color: "#fbbf24" }}>
           No problem — we will leave a space in your document that you can fill in yourself before submitting.
         </div>
       )}
 
       {/* Warning card - amber, never alarm */}
       {activeWarning && (
-        <div className="p-4 bg-[#FFFBEB] border border-[#FEF3C7] rounded-xl flex gap-3">
-          <svg className="w-5 h-5 text-[#FBBF24] flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+        <div className="p-4 rounded-xl flex gap-3" style={{ background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.3)" }}>
+          <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20" style={{ color: "#fbbf24" }}>
             <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
           </svg>
-          <div className="text-sm text-[#45464d]" style={{ fontSize: '14px' }}>
+          <div className="text-sm" style={{ fontSize: '14px', color: "var(--white-dim)" }}>
             {activeWarning.message}
           </div>
         </div>
@@ -335,34 +373,36 @@ export default function QuestionRenderer({
 
       {/* RED privacy modal */}
       {showSkipModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-xl">
+        <div className="fixed inset-0 flex items-center justify-center z-50 p-4" style={{ background: "rgba(0,0,0,0.7)" }}>
+          <div className="rounded-xl max-w-md w-full p-6 shadow-xl" style={{ background: "var(--navy)", border: "1px solid var(--glass-border)" }}>
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-                <svg className="w-5 h-5 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+              <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: "rgba(239,68,68,0.2)" }}>
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" style={{ color: "#f87171" }}>
                   <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                 </svg>
               </div>
-              <h3 className="text-lg font-semibold text-[#0b1c30]">Heads up — this affects your documents</h3>
+              <h3 className="text-lg font-semibold font-playfair" style={{ color: "var(--white)" }}>Heads up — this affects your documents</h3>
             </div>
-            <p className="text-[#45464d] mb-6" style={{ fontSize: '14px', lineHeight: '24px' }}>
+            <p className="mb-6" style={{ fontSize: '14px', lineHeight: '24px', color: "var(--white-dim)" }}>
               {question.skip_advisory || 'Skipping this field will leave a placeholder in your documents that you need to fill in before submitting.'}
             </p>
-            <p className="text-xs text-[#64748b] mb-6">
+            <p className="text-xs mb-6" style={{ color: "var(--white-dim)" }}>
               You can add it later from your dashboard. Your documents will show a placeholder until you do.
             </p>
             <div className="flex gap-3">
               <button
                 type="button"
                 onClick={() => setShowSkipModal(false)}
-                className="flex-1 px-4 py-3 border border-[#E2E8F0] text-[#45464d] rounded-lg hover:bg-[#f8f9ff] transition-colors font-medium"
+                className="flex-1 px-4 py-3 border rounded-lg transition-colors font-medium"
+                style={{ borderColor: "var(--glass-border)", color: "var(--white-dim)" }}
               >
                 I will add it
               </button>
               <button
                 type="button"
                 onClick={confirmSkip}
-                className="flex-1 px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+                className="flex-1 px-4 py-3 rounded-lg transition-colors font-medium"
+                style={{ background: "#dc2626", color: "#fff" }}
               >
                 Skip for now
               </button>
