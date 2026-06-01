@@ -502,6 +502,18 @@ FULL MODULE 3 COMPLETE
   - W-13-SERIOUS: fixed to "something more serious"
 - Cannabis informational gate verified — already implemented
 - Sub-question timing verified — evaluates against current answer in same render
+
+### Session 13B (June 1, 2026) — Quiz UI Review
+- Read DESIGN_REFERENCE.html Sections 04, 05
+- Verified quiz/page.tsx matches research patterns:
+  - Progress bar: teal #0D9488, correct styling
+  - Quiz card: glass with rgba(255,255,255,0.04), blur(15px)
+  - Question text: Playfair Display 26px, #f0ede6, static position, opacity 1
+  - Options: solid elevated surfaces with teal selected state
+  - Helper text: plain, no background, rgba(240,237,230,0.42)
+  - Dynamic text replacement: working for [nationality], [home country]
+  - Background: transparent, inherits from layout.tsx
+  - Footer "American Dream Edition": NOT in quiz page (other pages have it)
 - All 45 tests passing
 
 ### Next Session Priorities (Session 14)
