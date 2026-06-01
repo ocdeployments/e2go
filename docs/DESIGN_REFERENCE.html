@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>e2go Design Reference — Component Library</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  /* ============================================
+     e2go DESIGN SYSTEM — CANONICAL REFERENCE
+     Every component shown with exact CSS.
+     Claude Code must match these exactly.
+     ============================================ */
+
+  :root {
+    /* Colors */
+    --navy:          #060d1f;
+    --navy-mid:      #0c1935;
+    --teal:          #0D9488;
+    --teal-light:    #14B8A6;
+    --teal-dim:      rgba(13,148,136,0.15);
+    --teal-border:   rgba(13,148,136,0.4);
+    --white:         #f0ede6;
+    --white-65:      rgba(240,237,230,0.65);
+    --white-45:      rgba(240,237,230,0.45);
+    --white-20:      rgba(240,237,230,0.20);
+    --white-10:      rgba(240,237,230,0.10);
+
+    /* Glass */
+    --glass-bg:      rgba(255,255,255,0.05);
+    --glass-bg-hover:rgba(255,255,255,0.08);
+    --glass-border:  rgba(255,255,255,0.10);
+    --glass-border-h:rgba(255,255,255,0.20);
+
+    /* Typography */
+    --font-serif:    'Playfair Display', Georgia, serif;
+    --font-sans:     'DM Sans', system-ui, sans-serif;
+
+    /* Radius */
+    --radius-sm:  6px;
+    --radius-md:  10px;
+    --radius-lg:  16px;
+    --radius-xl:  20px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--navy);
+    color: var(--white);
+    font-family: var(--font-sans);
+    font-weight: 400;
+    padding: 48px;
+    line-height: 1.6;
+  }
+
+  /* Reference section headers */
+  .ref-section {
+    border-top: 1px solid var(--glass-border);
+    padding-top: 40px;
+    margin-top: 40px;
+  }
+  .ref-label {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--teal);
+    margin-bottom: 8px;
+  }
+  .ref-title {
+    font-family: var(--font-serif);
+    font-size: 22px;
+    color: var(--white);
+    margin-bottom: 6px;
+  }
+  .ref-note {
+    font-size: 12px;
+    color: var(--white-45);
+    margin-bottom: 28px;
+    font-family: monospace;
+    background: rgba(255,255,255,0.03);
+    padding: 8px 12px;
+    border-radius: 4px;
+    border-left: 2px solid var(--teal);
+  }
+  .ref-row {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  /* ============================================
+     1. COLORS
+     ============================================ */
+  .color-chip {
+    width: 80px;
+    text-align: center;
+  }
+  .color-swatch {
+    width: 80px;
+    height: 48px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--glass-border);
+    margin-bottom: 6px;
+  }
+  .color-name {
+    font-size: 11px;
+    color: var(--white-45);
+    font-family: monospace;
+  }
+
+  /* ============================================
+     2. TYPOGRAPHY
+     ============================================ */
+  .type-hero {
+    font-family: var(--font-serif);
+    font-size: 52px;
+    font-weight: 600;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    color: var(--white);
+  }
+  .type-hero em {
+    font-style: italic;
+    color: var(--teal);
+  }
+  .type-h2 {
+    font-family: var(--font-serif);
+    font-size: 36px;
+    font-weight: 600;
+    line-height: 1.2;
+    color: var(--white);
+  }
+  .type-question {
+    font-family: var(--font-serif);
+    font-size: 26px;
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--white);
+    /* THIS IS WHAT QUIZ QUESTIONS LOOK LIKE */
+    /* NOT a watermark. NOT faint. Fully opaque. */
+  }
+  .type-body {
+    font-family: var(--font-sans);
+    font-size: 15px;
+    font-weight: 400;
+    color: var(--white-65);
+    line-height: 1.7;
+  }
+  .type-small {
+    font-family: var(--font-sans);
+    font-size: 13px;
+    color: var(--white-45);
+  }
+  .type-label {
+    font-family: var(--font-sans);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--teal);
+  }
+
+  /* ============================================
+     3. GLASS CARD
+     ============================================ */
+  .glass-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    padding: 28px;
+    /* NEVER white background on dark pages */
+    /* NEVER box-shadow on dark backgrounds */
+  }
+  .glass-card:hover {
+    background: var(--glass-bg-hover);
+    border-color: var(--glass-border-h);
+  }
+
+  /* ============================================
+     4. QUIZ OPTION BUTTONS
+     ============================================ */
+
+  /* DEFAULT state */
+  .quiz-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 16px 20px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: var(--radius-md);
+    color: rgba(240,237,230,0.85);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    font-weight: 400;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    margin-bottom: 10px;
+    min-height: 54px;
+    /* NOT white. NOT light grey. Glass. */
+  }
+
+  /* HOVER state */
+  .quiz-option:hover,
+  .quiz-option.hover-demo {
+    background: rgba(255,255,255,0.09);
+    border-color: rgba(255,255,255,0.22);
+    color: var(--white);
+  }
+
+  /* SELECTED state */
+  .quiz-option.selected {
+    background: rgba(13,148,136,0.15);
+    border: 1px solid rgba(13,148,136,0.5);
+    color: var(--white);
+  }
+  .quiz-option.selected .check {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    background: var(--teal);
+    border-radius: 50%;
+    color: white;
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+  .check { display: none; }
+
+  /* ============================================
+     5. TEXT INPUT / SEARCH INPUT
+     ============================================ */
+  .glass-input {
+    width: 100%;
+    max-width: 520px;
+    padding: 14px 16px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: var(--radius-md);
+    color: var(--white);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    font-weight: 400;
+    outline: none;
+    transition: border-color 0.2s;
+    /* NOT white. Glass. */
+  }
+  .glass-input::placeholder {
+    color: rgba(240,237,230,0.35);
+  }
+  .glass-input:focus {
+    border-color: var(--teal);
+    background: rgba(255,255,255,0.08);
+  }
+
+  /* Search dropdown */
+  .search-dropdown {
+    width: 100%;
+    max-width: 520px;
+    background: rgba(12,25,53,0.95);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: var(--radius-md);
+    margin-top: 4px;
+    overflow: hidden;
+  }
+  .search-result {
+    padding: 12px 16px;
+    font-size: 14px;
+    color: var(--white-65);
+    cursor: pointer;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    transition: background 0.15s;
+  }
+  .search-result:hover,
+  .search-result.active {
+    background: rgba(13,148,136,0.15);
+    color: var(--white);
+  }
+  .search-result:last-child { border-bottom: none; }
+
+  /* ============================================
+     6. BUTTONS
+     ============================================ */
+
+  /* Primary CTA */
+  .btn-primary {
+    background: var(--teal);
+    color: white;
+    border: none;
+    border-radius: var(--radius-md);
+    padding: 14px 32px;
+    font-family: var(--font-sans);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+    box-shadow: 0 0 24px rgba(13,148,136,0.3);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .btn-primary:hover {
+    background: var(--teal-light);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 32px rgba(13,148,136,0.45);
+  }
+  .btn-primary.full-width {
+    width: 100%;
+    justify-content: center;
+    padding: 15px 32px;
+  }
+
+  /* Ghost button */
+  .btn-ghost {
+    background: transparent;
+    color: var(--white-65);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
+    padding: 13px 24px;
+    font-family: var(--font-sans);
+    font-size: 14px;
+    font-weight: 400;
+    cursor: pointer;
+    transition: border-color 0.2s, color 0.2s;
+  }
+  .btn-ghost:hover {
+    border-color: rgba(255,255,255,0.25);
+    color: var(--white);
+  }
+
+  /* Back button */
+  .btn-back {
+    background: transparent;
+    color: var(--white-45);
+    border: none;
+    font-family: var(--font-sans);
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 0;
+    transition: color 0.2s;
+  }
+  .btn-back:hover { color: var(--white-65); }
+
+  /* ============================================
+     7. PROGRESS BAR
+     ============================================ */
+  .progress-container {
+    width: 100%;
+    margin-bottom: 32px;
+  }
+  .progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .progress-section {
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--teal);
+    /* NOT blue. TEAL. #0D9488 */
+  }
+  .progress-count {
+    font-size: 13px;
+    color: var(--white-45);
+  }
+  .progress-track {
+    width: 100%;
+    height: 3px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--teal);
+    /* NOT blue. TEAL. #0D9488 */
+    border-radius: 2px;
+    transition: width 0.4s ease;
+  }
+
+  /* ============================================
+     8. QUIZ QUESTION CONTAINER
+     ============================================ */
+  .quiz-container {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 80px 24px;
+  }
+  .quiz-card {
+    background: rgba(255,255,255,0.04);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: var(--radius-lg);
+    padding: 40px 44px;
+  }
+  .quiz-question-text {
+    font-family: var(--font-serif);
+    font-size: 26px;
+    font-weight: 600;
+    color: var(--white);
+    line-height: 1.3;
+    margin-bottom: 10px;
+    /* FOREGROUND TEXT. Fully visible. Not watermark. */
+  }
+  .quiz-helper-text {
+    font-size: 13px;
+    color: var(--white-45);
+    line-height: 1.6;
+    margin-bottom: 28px;
+    /* Small helper text. Not a white card. */
+  }
+  .quiz-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin-bottom: 24px;
+  }
+  .quiz-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 8px;
+  }
+
+  /* ============================================
+     9. NAV
+     ============================================ */
+  .nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 48px;
+    background: rgba(6,13,31,0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--glass-border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .nav-logo {
+    font-family: var(--font-serif);
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--white);
+    text-decoration: none;
+  }
+  .nav-logo span { color: var(--teal); }
+
+  /* ============================================
+     10. STAT CARD (for hero section)
+     ============================================ */
+  .stat-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 20px;
+  }
+  .stat-item {}
+  .stat-number {
+    font-family: var(--font-serif);
+    font-size: 36px;
+    font-weight: 400;
+    color: var(--white);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .stat-label {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--white-45);
+  }
+
+  /* ============================================
+     11. BADGE / TAG
+     ============================================ */
+  .badge-teal {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--teal-dim);
+    border: 1px solid var(--teal-border);
+    border-radius: 4px;
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--teal);
+  }
+  .badge-amber {
+    background: rgba(217,119,6,0.15);
+    border-color: rgba(217,119,6,0.35);
+    color: #D97706;
+  }
+  .badge-ready {
+    background: rgba(13,148,136,0.12);
+    border: 1px solid rgba(13,148,136,0.3);
+    color: var(--teal);
+    border-radius: 3px;
+    padding: 2px 7px;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  /* ============================================
+     12. DIVIDER
+     ============================================ */
+  .divider {
+    height: 1px;
+    background: var(--glass-border);
+    margin: 20px 0;
+  }
+
+  /* ============================================
+     DEMO LAYOUT
+     ============================================ */
+  .demo-bg {
+    background: var(--navy);
+    border-radius: var(--radius-lg);
+    padding: 32px;
+    margin-bottom: 12px;
+  }
+  .spec-pill {
+    display: inline-block;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 4px;
+    padding: 3px 8px;
+    font-size: 11px;
+    color: rgba(240,237,230,0.4);
+    font-family: monospace;
+    margin: 2px;
+  }
+</style>
+</head>
+<body>
+
+<div style="max-width:900px; margin:0 auto;">
+
+  <div style="margin-bottom:48px;">
+    <div class="type-label" style="margin-bottom:12px;">e2go Design System</div>
+    <div class="type-h2" style="margin-bottom:8px;">Component Reference</div>
+    <div class="type-body" style="max-width:560px;">
+      This file is the canonical visual reference for every UI component in e2go.
+      Claude Code must read this file before writing any CSS or component code.
+      Match these components exactly — do not invent new styling.
+    </div>
+  </div>
+
+  <!-- COLORS -->
+  <div class="ref-section">
+    <div class="ref-label">01</div>
+    <div class="ref-title">Color System</div>
+    <div class="ref-note">These are the only colors used. No purple. No blue accents. No white backgrounds on dark pages.</div>
+    <div class="ref-row">
+      <div class="color-chip">
+        <div class="color-swatch" style="background:#060d1f;"></div>
+        <div class="color-name">--navy<br>#060d1f</div>
+      </div>
+      <div class="color-chip">
+        <div class="color-swatch" style="background:#0D9488;"></div>
+        <div class="color-name">--teal<br>#0D9488</div>
+      </div>
+      <div class="color-chip">
+        <div class="color-swatch" style="background:#14B8A6;"></div>
+        <div class="color-name">--teal-light<br>#14B8A6</div>
+      </div>
+      <div class="color-chip">
+        <div class="color-swatch" style="background:#f0ede6;"></div>
+        <div class="color-name">--white<br>#f0ede6</div>
+      </div>
+      <div class="color-chip">
+        <div class="color-swatch" style="background:rgba(255,255,255,0.05);"></div>
+        <div class="color-name">--glass-bg<br>rgba(255,255,255,0.05)</div>
+      </div>
+      <div class="color-chip">
+        <div class="color-swatch" style="background:rgba(13,148,136,0.15);"></div>
+        <div class="color-name">--teal-dim<br>rgba(13,148,136,0.15)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TYPOGRAPHY -->
+  <div class="ref-section">
+    <div class="ref-label">02</div>
+    <div class="ref-title">Typography</div>
+    <div class="ref-note">Playfair Display for all headings. DM Sans for all body text. No other fonts.</div>
+    <div class="demo-bg">
+      <div class="type-hero" style="margin-bottom:20px;">Your visa package, <em>built right.</em></div>
+      <div class="type-h2" style="margin-bottom:16px;">Every document your consulate needs</div>
+      <div class="type-question" style="margin-bottom:16px;">Which country are you a citizen of?</div>
+      <div class="type-body" style="margin-bottom:12px;">Answer the questions. We build every document your consulate needs — formatted, cross-checked, and ready to submit.</div>
+      <div class="type-small" style="margin-bottom:12px;">The E-2 visa is available to citizens of countries that have a qualifying treaty.</div>
+      <div class="type-label">How it works</div>
+    </div>
+    <div>
+      <span class="spec-pill">hero: Playfair Display 52px 600</span>
+      <span class="spec-pill">h2: Playfair Display 36px 600</span>
+      <span class="spec-pill">question: Playfair Display 26px 600</span>
+      <span class="spec-pill">body: DM Sans 15px 400</span>
+      <span class="spec-pill">small: DM Sans 13px 400</span>
+      <span class="spec-pill">label: DM Sans 11px 500 uppercase</span>
+    </div>
+  </div>
+
+  <!-- GLASS CARD -->
+  <div class="ref-section">
+    <div class="ref-label">03</div>
+    <div class="ref-title">Glass Card</div>
+    <div class="ref-note">background: rgba(255,255,255,0.05) · backdrop-filter: blur(16px) · border: 1px solid rgba(255,255,255,0.10) · border-radius: 16px</div>
+    <div class="demo-bg">
+      <div class="glass-card" style="max-width:380px;">
+        <div class="type-label" style="margin-bottom:16px;">Your application</div>
+        <div class="stat-grid">
+          <div class="stat-item">
+            <div class="stat-number">17</div>
+            <div class="stat-label">Documents built</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-number">82</div>
+            <div class="stat-label">Treaty countries</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-number">50pg</div>
+            <div class="stat-label">Page limit enforced</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-number">$297</div>
+            <div class="stat-label">vs $13K attorney</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- QUIZ OPTION BUTTONS -->
+  <div class="ref-section">
+    <div class="ref-label">04</div>
+    <div class="ref-title">Quiz Option Buttons</div>
+    <div class="ref-note">CRITICAL: These are NEVER white cards. Always glass on navy. Three states shown below.</div>
+    <div class="demo-bg" style="max-width:640px;">
+
+      <div style="margin-bottom:28px;">
+        <div class="type-small" style="margin-bottom:10px; color:var(--teal);">DEFAULT STATE</div>
+        <button class="quiz-option">Yes — it is valid</button>
+        <button class="quiz-option">It has expired but I am still a citizen</button>
+        <button class="quiz-option">No — I do not have one</button>
+      </div>
+
+      <div style="margin-bottom:28px;">
+        <div class="type-small" style="margin-bottom:10px; color:var(--teal);">HOVER STATE</div>
+        <button class="quiz-option hover-demo">Yes — it is valid</button>
+      </div>
+
+      <div>
+        <div class="type-small" style="margin-bottom:10px; color:var(--teal);">SELECTED STATE</div>
+        <button class="quiz-option selected">
+          Yes — it is valid
+          <span class="check">✓</span>
+        </button>
+        <button class="quiz-option">It has expired but I am still a citizen</button>
+        <button class="quiz-option">No — I do not have one</button>
+      </div>
+    </div>
+    <div>
+      <span class="spec-pill">default bg: rgba(255,255,255,0.05)</span>
+      <span class="spec-pill">selected bg: rgba(13,148,136,0.15)</span>
+      <span class="spec-pill">selected border: rgba(13,148,136,0.5)</span>
+      <span class="spec-pill">height: min 54px</span>
+      <span class="spec-pill">radius: 10px</span>
+    </div>
+  </div>
+
+  <!-- FULL QUIZ QUESTION -->
+  <div class="ref-section">
+    <div class="ref-label">05</div>
+    <div class="ref-title">Complete Quiz Question Screen</div>
+    <div class="ref-note">This is what every quiz question screen looks like. Glass card on navy. Question text is PRIMARY foreground element — never a watermark.</div>
+    <div class="demo-bg">
+      <div class="quiz-container" style="padding:0;">
+        <div class="progress-container">
+          <div class="progress-header">
+            <span class="progress-section">Who You Are</span>
+            <span class="progress-count">2 of 26</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" style="width:7%;"></div>
+          </div>
+        </div>
+        <div class="quiz-card">
+          <div class="quiz-question-text">Do you have a valid Canadian passport?</div>
+          <div class="quiz-helper-text">A valid passport is required for your consulate interview. It does not need to be valid right now — but it must be valid before your interview date.</div>
+          <div class="quiz-options">
+            <button class="quiz-option selected">
+              Yes — it is valid
+              <span class="check">✓</span>
+            </button>
+            <button class="quiz-option">It has expired but I am still a citizen</button>
+            <button class="quiz-option">No — I do not have one</button>
+          </div>
+          <button class="btn-primary full-width">Continue →</button>
+          <div style="text-align:center; margin-top:14px;">
+            <button class="btn-back">← Back</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- INPUTS -->
+  <div class="ref-section">
+    <div class="ref-label">06</div>
+    <div class="ref-title">Text Input and Search</div>
+    <div class="ref-note">Glass styling. Never white. Teal border on focus.</div>
+    <div class="demo-bg">
+      <div style="max-width:520px; margin-bottom:20px;">
+        <div class="type-small" style="margin-bottom:8px; color:var(--teal);">DEFAULT</div>
+        <input class="glass-input" placeholder="Start typing your country..." style="display:block;"/>
+      </div>
+      <div style="max-width:520px; margin-bottom:20px;">
+        <div class="type-small" style="margin-bottom:8px; color:var(--teal);">WITH DROPDOWN</div>
+        <input class="glass-input" value="Can" style="display:block;"/>
+        <div class="search-dropdown">
+          <div class="search-result active">🇨🇦 Canada</div>
+          <div class="search-result">🇨🇳 China (People's Republic)</div>
+          <div class="search-result">🇨🇴 Colombia</div>
+          <div class="search-result">🇨🇷 Costa Rica</div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <span class="spec-pill">bg: rgba(255,255,255,0.06)</span>
+      <span class="spec-pill">border: rgba(255,255,255,0.12)</span>
+      <span class="spec-pill">focus border: #0D9488</span>
+      <span class="spec-pill">text: #f0ede6</span>
+    </div>
+  </div>
+
+  <!-- BUTTONS -->
+  <div class="ref-section">
+    <div class="ref-label">07</div>
+    <div class="ref-title">Buttons</div>
+    <div class="ref-note">Three button types. Primary is always teal. Ghost uses glass border.</div>
+    <div class="demo-bg">
+      <div class="ref-row" style="align-items:center;">
+        <button class="btn-primary">Take the free quiz →</button>
+        <button class="btn-ghost">See what we build</button>
+        <button class="btn-back">← Back</button>
+      </div>
+      <div style="max-width:400px; margin-top:20px;">
+        <button class="btn-primary full-width">Continue →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- BADGES -->
+  <div class="ref-section">
+    <div class="ref-label">08</div>
+    <div class="ref-title">Badges and Tags</div>
+    <div class="ref-note">Used for status indicators, labels, and ready states.</div>
+    <div class="demo-bg">
+      <div class="ref-row">
+        <span class="badge-teal">Founding Member</span>
+        <span class="badge-teal">Free · No commitment</span>
+        <span class="badge-amber">Risk flag</span>
+        <span class="badge-ready">Ready</span>
+        <span class="badge-ready" style="background:rgba(255,255,255,0.05); border-color:rgba(255,255,255,0.1); color:rgba(240,237,230,0.4);">If applicable</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- NAV -->
+  <div class="ref-section">
+    <div class="ref-label">09</div>
+    <div class="ref-title">Navigation</div>
+    <div class="ref-note">Sticky, glass, backdrop blur. Logo in Playfair Display. "app" suffix in teal.</div>
+    <div class="demo-bg" style="padding:0; overflow:hidden; border-radius:12px;">
+      <div class="nav" style="position:relative;">
+        <a class="nav-logo" href="#">e2go<span>.app</span></a>
+        <div style="display:flex; gap:28px;">
+          <a href="#" style="color:rgba(240,237,230,0.6); text-decoration:none; font-size:14px;">Quiz</a>
+          <a href="#" style="color:rgba(240,237,230,0.6); text-decoration:none; font-size:14px;">Pricing</a>
+        </div>
+        <button class="btn-primary" style="padding:9px 20px; font-size:13px;">Sign in</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROGRESS BAR -->
+  <div class="ref-section">
+    <div class="ref-label">10</div>
+    <div class="ref-title">Progress Bar</div>
+    <div class="ref-note">Section label and fill are TEAL (#0D9488). NEVER blue. Counter is dim white.</div>
+    <div class="demo-bg" style="max-width:640px;">
+      <div class="progress-container" style="margin-bottom:0;">
+        <div class="progress-header">
+          <span class="progress-section">Your Investment</span>
+          <span class="progress-count">8 of 26</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" style="width:30%;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WHAT NOT TO DO -->
+  <div class="ref-section" style="border-color:rgba(239,68,68,0.2);">
+    <div class="ref-label" style="color:#EF4444;">⚠️ What NOT to do</div>
+    <div class="ref-title">Common mistakes to avoid</div>
+    <div class="ref-note" style="border-color:#EF4444; color:rgba(240,237,230,0.6);">
+      These are the mistakes that make e2go look generic or broken.
+      Never do any of these.
+    </div>
+    <div style="display:flex; flex-direction:column; gap:10px;">
+      <div style="padding:12px 16px; background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.2); border-radius:8px; font-size:13px; color:rgba(240,237,230,0.7);">
+        ❌ White or light grey option buttons on dark backgrounds — always use glass
+      </div>
+      <div style="padding:12px 16px; background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.2); border-radius:8px; font-size:13px; color:rgba(240,237,230,0.7);">
+        ❌ Question text as a faint watermark — always fully opaque foreground text
+      </div>
+      <div style="padding:12px 16px; background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.2); border-radius:8px; font-size:13px; color:rgba(240,237,230,0.7);">
+        ❌ Blue progress bars or blue accent colors — always teal #0D9488
+      </div>
+      <div style="padding:12px 16px; background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.2); border-radius:8px; font-size:13px; color:rgba(240,237,230,0.7);">
+        ❌ Display notes as large white cards — always small dim helper text
+      </div>
+      <div style="padding:12px 16px; background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.2); border-radius:8px; font-size:13px; color:rgba(240,237,230,0.7);">
+        ❌ "[nationality]" or "[home country]" as literal text — always replaced dynamically
+      </div>
+      <div style="padding:12px 16px; background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.2); border-radius:8px; font-size:13px; color:rgba(240,237,230,0.7);">
+        ❌ Inter, Roboto, or system fonts — always Playfair Display + DM Sans
+      </div>
+      <div style="padding:12px 16px; background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.2); border-radius:8px; font-size:13px; color:rgba(240,237,230,0.7);">
+        ❌ Purple gradients, generic SaaS aesthetics, Bootstrap-era styling
+      </div>
+      <div style="padding:12px 16px; background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.2); border-radius:8px; font-size:13px; color:rgba(240,237,230,0.7);">
+        ❌ Placeholder footer text like "The American Dream Edition"
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:48px; padding-top:24px; border-top:1px solid rgba(255,255,255,0.06); font-size:12px; color:rgba(240,237,230,0.25);">
+    e2go Design Reference v1.0 · May 2026 · Read this file before writing any CSS
+  </div>
+
+</div>
+</body>
+</html>
