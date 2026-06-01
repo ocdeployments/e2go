@@ -102,27 +102,25 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#f8f9ff] flex items-center justify-center">
-        <div className="text-[#004ac6]">Loading...</div>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--navy)" }}>
+        <div style={{ color: "var(--teal)" }}>Loading...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#f8f9ff] text-[#0b1c30] font-sans">
+    <div className="min-h-screen" style={{ background: "var(--navy)" }}>
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-b border-[#c3c6d7]">
+      <header className="fixed top-0 left-0 right-0 z-50" style={{ backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", background: "rgba(6,13,31,0.8)", borderBottom: "1px solid var(--glass-border)" }}>
         <div className="flex justify-between items-center h-16 px-4 md:px-8 max-w-6xl mx-auto">
           <Link href="/" className="flex items-center gap-2">
-            <svg className="w-6 h-6 text-[#004ac6]" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 2L2 7v10l10 5 10-5V7L12 2z" />
-            </svg>
-            <span className="text-xl font-bold text-[#004ac6]">e2go.app</span>
+            <span className="text-xl font-bold" style={{ color: "var(--teal)", fontFamily: "'Playfair Display', serif" }}>e2go.app</span>
           </Link>
           <div className="flex items-center gap-4">
             <button
               onClick={handleSignOut}
-              className="text-sm text-[#434655] hover:text-[#004ac6]"
+              className="text-sm"
+              style={{ color: "var(--white-dim)" }}
             >
               Sign Out
             </button>
@@ -133,10 +131,10 @@ export default function DashboardPage() {
       <main className="pt-24 pb-12 px-4 md:px-8 max-w-6xl mx-auto">
         {/* Welcome */}
         <section className="mb-8">
-          <h1 className="text-2xl font-bold text-[#0b1c30] mb-2">
+          <h1 className="text-2xl font-bold mb-2 font-playfair" style={{ color: "var(--white)" }}>
             Welcome back{user?.full_name ? `, ${user.full_name}` : ""}
           </h1>
-          <p className="text-[#434655]">
+          <p style={{ color: "var(--white-dim)" }}>
             {user?.email || "Manage your E-2 visa application"}
           </p>
         </section>
@@ -146,41 +144,42 @@ export default function DashboardPage() {
             {/* Status Cards */}
             <section className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
               {/* Application Progress */}
-              <div className="bg-white rounded-xl border border-[#e2e8f0] p-6">
-                <h3 className="text-sm font-medium text-[#737686] mb-2">Application Progress</h3>
-                <p className="text-2xl font-bold text-[#0b1c30]">
+              <div className="glass p-6">
+                <h3 className="text-sm font-medium mb-2" style={{ color: "var(--white-dim)" }}>Application Progress</h3>
+                <p className="text-2xl font-bold font-playfair" style={{ color: "var(--white)" }}>
                   {progress > 0 ? `${progress}% Complete` : "Not Started"}
                 </p>
                 {progress > 0 && (
-                  <div className="w-full bg-[#e2e8f0] rounded-full h-2 mt-2">
-                    <div 
-                      className="bg-[#004ac6] h-2 rounded-full transition-all" 
-                      style={{ width: `${progress}%` }}
+                  <div className="w-full rounded-full h-2 mt-2" style={{ background: "var(--glass-border)" }}>
+                    <div
+                      className="h-2 rounded-full transition-all"
+                      style={{ width: `${progress}%`, background: "var(--teal)" }}
                     />
                   </div>
                 )}
               </div>
 
               {/* Quiz Result */}
-              <div className="bg-white rounded-xl border border-[#e2e8f0] p-6">
-                <h3 className="text-sm font-medium text-[#737686] mb-2">Eligibility Status</h3>
-                <p className="text-2xl font-bold text-[#0b1c30] capitalize">
+              <div className="glass p-6">
+                <h3 className="text-sm font-medium mb-2" style={{ color: "var(--white-dim)" }}>Eligibility Status</h3>
+                <p className="text-2xl font-bold font-playfair capitalize" style={{ color: "var(--white)" }}>
                   {quiz.outcome.replace(/_/g, " ")}
                 </p>
-                <p className="text-sm text-[#434655] mt-1">
+                <p className="text-sm mt-1" style={{ color: "var(--white-dim)" }}>
                   {quiz.application_type || "Solo"} Application
                 </p>
               </div>
 
               {/* Next Step */}
-              <div className="bg-white rounded-xl border border-[#e2e8f0] p-6">
-                <h3 className="text-sm font-medium text-[#737686] mb-2">Next Step</h3>
-                <p className="text-lg font-semibold text-[#0b1c30]">
+              <div className="glass p-6">
+                <h3 className="text-sm font-medium mb-2" style={{ color: "var(--white-dim)" }}>Next Step</h3>
+                <p className="text-lg font-semibold font-playfair" style={{ color: "var(--white)" }}>
                   {progress < 100 ? "Continue building your case" : "Ready to submit!"}
                 </p>
                 <Link
                   href={progress < 100 ? "/apply/onboarding?demo=true" : "/export"}
-                  className="inline-block mt-3 text-sm text-[#004ac6] hover:underline"
+                  className="inline-block mt-3 text-sm"
+                  style={{ color: "var(--teal)" }}
                 >
                   {progress < 100 ? "Continue →" : "Submit Application →"}
                 </Link>
@@ -188,8 +187,8 @@ export default function DashboardPage() {
             </section>
 
             {/* Progress Bar */}
-            <section className="bg-white rounded-xl border border-[#e2e8f0] p-6 mb-8">
-              <h2 className="text-lg font-semibold text-[#0b1c30] mb-4">Module Progress</h2>
+            <section className="glass p-6 mb-8">
+              <h2 className="text-lg font-semibold mb-4 font-playfair" style={{ color: "var(--white)" }}>Module Progress</h2>
               <div className="grid grid-cols-6 gap-2 text-center">
                 {['Quiz', 'Onboarding', 'Business', 'Documents', 'Score', 'Simulator'].map((mod, i) => {
                   const completed = [
@@ -201,7 +200,7 @@ export default function DashboardPage() {
                     lifecycle?.module5_completed_at,
                   ][i];
                   return (
-                    <div key={i} className={`p-3 rounded-lg ${completed ? 'bg-[#d4edda] text-[#155724]' : 'bg-[#f8f9ff] text-[#737686]'}`}>
+                    <div key={i} className="p-3 rounded-lg" style={{ background: completed ? "var(--teal-dim)" : "var(--glass-bg)", color: completed ? "var(--teal)" : "var(--white-dim)" }}>
                       <p className="text-xs font-medium">{mod}</p>
                       <p className="text-lg">{completed ? '✓' : '○'}</p>
                     </div>
@@ -211,50 +210,55 @@ export default function DashboardPage() {
             </section>
 
             {/* Quick Actions */}
-            <section className="bg-white rounded-xl border border-[#e2e8f0] p-6">
-              <h2 className="text-lg font-semibold text-[#0b1c30] mb-4">Quick Actions</h2>
+            <section className="glass p-6">
+              <h2 className="text-lg font-semibold mb-4 font-playfair" style={{ color: "var(--white)" }}>Quick Actions</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <Link
                   href="/quiz"
-                  className="p-4 rounded-lg border border-[#e2e8f0] hover:border-[#004ac6] hover:bg-[#f8f9ff] transition-colors"
+                  className="p-4 rounded-lg border transition-colors"
+                  style={{ borderColor: "var(--glass-border)", color: "var(--white)" }}
                 >
-                  <p className="font-medium text-[#0b1c30]">Retake Quiz</p>
-                  <p className="text-sm text-[#737686]">Check eligibility</p>
+                  <p className="font-medium" style={{ color: "var(--white)" }}>Retake Quiz</p>
+                  <p className="text-sm" style={{ color: "var(--white-dim)" }}>Check eligibility</p>
                 </Link>
                 <Link
                   href="/apply/onboarding?demo=true"
-                  className="p-4 rounded-lg border border-[#e2e8f0] hover:border-[#004ac6] hover:bg-[#f8f9ff] transition-colors"
+                  className="p-4 rounded-lg border transition-colors"
+                  style={{ borderColor: "var(--glass-border)", color: "var(--white)" }}
                 >
-                  <p className="font-medium text-[#0b1c30]">Case Builder</p>
-                  <p className="text-sm text-[#737686]">Complete your application</p>
+                  <p className="font-medium" style={{ color: "var(--white)" }}>Case Builder</p>
+                  <p className="text-sm" style={{ color: "var(--white-dim)" }}>Complete your application</p>
                 </Link>
                 <Link
                   href="/simulator"
-                  className="p-4 rounded-lg border border-[#e2e8f0] hover:border-[#004ac6] hover:bg-[#f8f9ff] transition-colors"
+                  className="p-4 rounded-lg border transition-colors"
+                  style={{ borderColor: "var(--glass-border)", color: "var(--white)" }}
                 >
-                  <p className="font-medium text-[#0b1c30]">Interview Prep</p>
-                  <p className="text-sm text-[#737686]">Practice with AI</p>
+                  <p className="font-medium" style={{ color: "var(--white)" }}>Interview Prep</p>
+                  <p className="text-sm" style={{ color: "var(--white-dim)" }}>Practice with AI</p>
                 </Link>
                 <Link
                   href="/support"
-                  className="p-4 rounded-lg border border-[#e2e8f0] hover:border-[#004ac6] hover:bg-[#f8f9ff] transition-colors"
+                  className="p-4 rounded-lg border transition-colors"
+                  style={{ borderColor: "var(--glass-border)", color: "var(--white)" }}
                 >
-                  <p className="font-medium text-[#0b1c30]">Get Help</p>
-                  <p className="text-sm text-[#737686]">Contact support</p>
+                  <p className="font-medium" style={{ color: "var(--white)" }}>Get Help</p>
+                  <p className="text-sm" style={{ color: "var(--white-dim)" }}>Contact support</p>
                 </Link>
               </div>
             </section>
           </>
         ) : (
           /* Empty State - No Quiz Completed */
-          <section className="bg-white rounded-xl border border-[#e2e8f0] p-8 text-center">
-            <h2 className="text-xl font-semibold text-[#0b1c30] mb-4">Start Your E-2 Application</h2>
-            <p className="text-[#434655] mb-6">
+          <section className="glass p-8 text-center">
+            <h2 className="text-xl font-semibold mb-4 font-playfair" style={{ color: "var(--white)" }}>Start Your E-2 Application</h2>
+            <p className="mb-6" style={{ color: "var(--white-dim)" }}>
               Take the eligibility quiz to see if you qualify for the E-2 treaty investor visa.
             </p>
             <Link
               href="/quiz"
-              className="inline-block bg-[#004ac6] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#003699] transition-colors"
+              className="inline-block px-6 py-3 rounded-lg font-medium transition-colors"
+              style={{ background: "var(--teal)", color: "#fff" }}
             >
               Start your application →
             </Link>
