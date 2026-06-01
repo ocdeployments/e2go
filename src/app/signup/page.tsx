@@ -98,10 +98,6 @@ function SignupForm() {
             </div>
           </div>
         </main>
-
-        <footer className="py-4 text-center text-xs" style={{ color: "var(--white-dim)" }}>
-          e2go.app · The American Dream Edition
-        </footer>
       </div>
     );
   }
@@ -201,10 +197,6 @@ function SignupForm() {
           </div>
         </div>
       </main>
-
-      <footer className="py-4 text-center text-xs" style={{ color: "var(--white-dim)" }}>
-        e2go.app · The American Dream Edition
-      </footer>
     </div>
   );
 }
