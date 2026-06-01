@@ -336,10 +336,7 @@ export default function ResultsPage() {
           </div>
         </main>
 
-        <footer className="py-4 text-center text-xs" style={{ color: "var(--white-dim)" }}>
-          e2go.app · The American Dream Edition
-        </footer>
-      </div>
+              </div>
     );
   }
 
@@ -413,10 +410,7 @@ export default function ResultsPage() {
           </div>
         </main>
 
-        <footer className="py-4 text-center text-xs" style={{ color: "var(--white-dim)" }}>
-          e2go.app · The American Dream Edition
-        </footer>
-      </div>
+              </div>
     );
   }
 
@@ -564,10 +558,6 @@ export default function ResultsPage() {
           </button>
         </div>
       </main>
-
-      <footer className="py-4 text-center text-xs" style={{ color: "var(--white-dim)" }}>
-        e2go.app · The American Dream Edition
-      </footer>
     </div>
   );
 }
