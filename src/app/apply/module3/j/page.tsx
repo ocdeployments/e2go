@@ -33,9 +33,6 @@ export default function TabJPage() {
         </div>
       </main>
 
-      <footer className="py-4 text-center text-xs text-[#737686]">
-        e2go.app · The American Dream Edition
-      </footer>
-    </div>
+      </div>
   );
 }
