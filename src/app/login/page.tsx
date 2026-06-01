@@ -112,10 +112,6 @@ function LoginForm() {
             </div>
           </div>
         </main>
-
-        <footer className="py-4 text-center text-xs" style={{ color: "var(--white-dim)" }}>
-          e2go.app · The American Dream Edition
-        </footer>
       </div>
     );
   }
@@ -216,10 +212,6 @@ function LoginForm() {
           </div>
         </div>
       </main>
-
-      <footer className="py-4 text-center text-xs" style={{ color: "var(--white-dim)" }}>
-        e2go.app · The American Dream Edition
-      </footer>
     </div>
   );
 }
