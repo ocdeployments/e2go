@@ -272,8 +272,8 @@ export default function ResultsPage() {
 
   if (loading || !result) {
     return (
-      <div className="min-h-screen bg-[#f8f9ff] flex items-center justify-center">
-        <div className="text-[#004ac6]">Loading...</div>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--navy)" }}>
+        <div style={{ color: "var(--teal)" }}>Loading...</div>
       </div>
     );
   }
@@ -295,38 +295,40 @@ export default function ResultsPage() {
     };
 
     return (
-      <div className="min-h-screen bg-[#f8f9ff] flex flex-col">
-        <header className="w-full sticky top-0 z-50 bg-white border-b border-[#c3c6d7]">
+      <div className="min-h-screen flex flex-col" style={{ background: "var(--navy)" }}>
+        {/* Header */}
+        <header className="w-full sticky top-0 z-50" style={{ backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", background: "rgba(6,13,31,0.8)", borderBottom: "1px solid var(--glass-border)" }}>
           <div className="flex justify-between items-center h-16 px-4 max-w-2xl mx-auto">
             <Link href="/" className="flex items-center gap-2">
-              <span className="text-xl font-bold text-[#004ac6]">e2go.app</span>
+              <span className="text-xl font-bold" style={{ color: "var(--teal)", fontFamily: "'Playfair Display', serif" }}>e2go.app</span>
             </Link>
           </div>
         </header>
 
         <main className="flex-1 flex items-center justify-center px-4 py-12">
-          <div className="max-w-md w-full text-center">
-            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <svg className="w-8 h-8 text-red-600" fill="currentColor" viewBox="0 0 24 24">
+          <div className="glass max-w-md w-full text-center" style={{ padding: "40px" }}>
+            <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6" style={{ background: "rgba(220,38,38,0.15)" }}>
+              <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24" style={{ color: "#dc2626" }}>
                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
               </svg>
             </div>
-            <h1 className="text-2xl font-bold text-[#0b1c30] mb-4">
+            <h1 className="text-2xl font-bold mb-4 font-playfair" style={{ color: "var(--white)" }}>
               Application Not Eligible
             </h1>
-            <p className="text-[#434655] mb-2">
+            <p className="mb-2" style={{ color: "var(--white-dim)" }}>
               {hard_stop_codes[0] && stopMessages[hard_stop_codes[0]]}
             </p>
-            <p className="text-sm text-[#737686] mb-8">
+            <p className="text-sm mb-8" style={{ color: "var(--white-dim)" }}>
               Based on your responses, the E-2 visa may not be the right path for you at this time. We recommend speaking with a qualified immigration attorney to explore your options.
             </p>
             <div className="space-y-3">
-              <button className="w-full bg-[#004ac6] text-white font-medium py-4 rounded-lg hover:bg-[#00337d] transition-colors">
+              <button className="w-full font-medium py-4 rounded-lg transition-colors" style={{ background: "var(--teal)", color: "#fff" }}>
                 Find a qualified immigration lawyer
               </button>
               <Link
                 href="/quiz"
-                className="block w-full border border-[#004ac6] text-[#004ac6] font-medium py-4 rounded-lg hover:bg-[#e5eeff] transition-colors text-center"
+                className="block w-full border font-medium py-4 rounded-lg transition-colors text-center"
+                style={{ borderColor: "var(--teal)", color: "var(--teal)" }}
               >
                 Start over
               </Link>
@@ -334,7 +336,7 @@ export default function ResultsPage() {
           </div>
         </main>
 
-        <footer className="py-4 text-center text-xs text-[#737686]">
+        <footer className="py-4 text-center text-xs" style={{ color: "var(--white-dim)" }}>
           e2go.app · The American Dream Edition
         </footer>
       </div>
@@ -344,51 +346,53 @@ export default function ResultsPage() {
   // ATTORNEY_RECOMMENDED
   if (outcome === "ATTORNEY_RECOMMENDED") {
     return (
-      <div className="min-h-screen bg-[#f8f9ff] flex flex-col">
-        <header className="w-full sticky top-0 z-50 bg-white border-b border-[#c3c6d7]">
+      <div className="min-h-screen flex flex-col" style={{ background: "var(--navy)" }}>
+        {/* Header */}
+        <header className="w-full sticky top-0 z-50" style={{ backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", background: "rgba(6,13,31,0.8)", borderBottom: "1px solid var(--glass-border)" }}>
           <div className="flex justify-between items-center h-16 px-4 max-w-2xl mx-auto">
             <Link href="/" className="flex items-center gap-2">
-              <span className="text-xl font-bold text-[#004ac6]">e2go.app</span>
+              <span className="text-xl font-bold" style={{ color: "var(--teal)", fontFamily: "'Playfair Display', serif" }}>e2go.app</span>
             </Link>
           </div>
         </header>
 
         <main className="flex-1 px-4 py-12 max-w-2xl mx-auto w-full">
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 text-center mb-8">
-            <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-6 h-6 text-amber-600" fill="currentColor" viewBox="0 0 24 24">
+          <div className="glass text-center mb-8" style={{ padding: "24px", background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.3)" }}>
+            <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4" style={{ background: "rgba(245,158,11,0.2)" }}>
+              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" style={{ color: "#f59e0b" }}>
                 <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z" />
               </svg>
             </div>
-            <h1 className="text-xl font-bold text-[#0b1c30] mb-2">
+            <h1 className="text-xl font-bold mb-2 font-playfair" style={{ color: "var(--white)" }}>
               Legal review recommended
             </h1>
-            <p className="text-sm text-[#434655]">
+            <p className="text-sm" style={{ color: "var(--white-dim)" }}>
               Your responses indicate factors that require individualized legal assessment before proceeding.
             </p>
           </div>
 
-          <div className="bg-white rounded-xl border border-[#e2e8f0] p-6 mb-8">
-            <h2 className="text-lg font-semibold text-[#0b1c30] mb-4">Factors requiring legal review</h2>
+          <div className="glass mb-8" style={{ padding: "24px" }}>
+            <h2 className="text-lg font-semibold mb-4" style={{ color: "var(--white)" }}>Factors requiring legal review</h2>
             <ul className="space-y-3">
               {attorney_flag_codes.map((flag) => (
-                <li key={flag} className="flex items-start gap-2 text-sm text-[#434655]">
-                  <span className="text-amber-500 mt-1">•</span>
+                <li key={flag} className="flex items-start gap-2 text-sm" style={{ color: "var(--white-dim)" }}>
+                  <span style={{ color: "#f59e0b", marginTop: "4px" }}>•</span>
                   {flag}
                 </li>
               ))}
             </ul>
           </div>
 
-          <div className="bg-[#eff4ff] rounded-xl p-4 mb-8">
+          <div className="glass mb-8" style={{ padding: "16px" }}>
             <label className="flex items-start gap-3 cursor-pointer">
               <input
                 type="checkbox"
                 checked={acknowledged}
                 onChange={(e) => setAcknowledged(e.target.checked)}
-                className="mt-1 w-5 h-5 rounded border-[#c3c6d7] text-[#004ac6] focus:ring-[#004ac6]"
+                className="mt-1"
+                style={{ width: "20px", height: "20px", accentColor: "var(--teal)" }}
               />
-              <span className="text-sm text-[#434655]">
+              <span className="text-sm" style={{ color: "var(--white-dim)" }}>
                 I understand that e2go.app is a preparation tool and not a law firm. I accept responsibility for consulting with a qualified immigration attorney before proceeding.
               </span>
             </label>
@@ -398,17 +402,18 @@ export default function ResultsPage() {
             <button
               disabled={!acknowledged}
               onClick={() => router.push("/pricing")}
-              className="w-full bg-[#004ac6] text-white font-medium py-4 rounded-lg hover:bg-[#00337d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full font-medium py-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ background: "var(--teal)", color: "#fff" }}
             >
               Continue to Pricing
             </button>
-            <button className="w-full border border-[#004ac6] text-[#004ac6] font-medium py-4 rounded-lg hover:bg-[#e5eeff] transition-colors">
+            <button className="w-full border font-medium py-4 rounded-lg transition-colors" style={{ borderColor: "var(--teal)", color: "var(--teal)" }}>
               Find a qualified immigration lawyer
             </button>
           </div>
         </main>
 
-        <footer className="py-4 text-center text-xs text-[#737686]">
+        <footer className="py-4 text-center text-xs" style={{ color: "var(--white-dim)" }}>
           e2go.app · The American Dream Edition
         </footer>
       </div>
@@ -429,39 +434,29 @@ export default function ResultsPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#f8f9ff] flex flex-col">
-      <header className="w-full sticky top-0 z-50 bg-white border-b border-[#c3c6d7]">
+    <div className="min-h-screen flex flex-col" style={{ background: "var(--navy)" }}>
+      {/* Header */}
+      <header className="w-full sticky top-0 z-50" style={{ backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", background: "rgba(6,13,31,0.8)", borderBottom: "1px solid var(--glass-border)" }}>
         <div className="flex justify-between items-center h-16 px-4 max-w-2xl mx-auto">
           <Link href="/" className="flex items-center gap-2">
-            <span className="text-xl font-bold text-[#004ac6]">e2go.app</span>
+            <span className="text-xl font-bold" style={{ color: "var(--teal)", fontFamily: "'Playfair Display', serif" }}>e2go.app</span>
           </Link>
         </div>
       </header>
 
       <main className="flex-1 px-4 py-8 max-w-2xl mx-auto w-full">
-        <section className="relative h-[280px] flex items-center justify-center overflow-hidden rounded-xl mb-8">
-          <div className="absolute inset-0 z-0">
-            <div
-              className="w-full h-full object-cover opacity-40"
-              style={{
-                backgroundImage: "url(/flag.png)",
-                backgroundSize: "cover",
-                backgroundPosition: "center",
-              }}
-            />
-            <div className="absolute inset-0 bg-gradient-to-b from-[#f8f9ff]/10 via-[#f8f9ff]/60 to-[#f8f9ff]" />
-          </div>
+        <section className="relative h-[280px] flex items-center justify-center overflow-hidden rounded-xl mb-8" style={{ background: "var(--glass-bg)", border: "1px solid var(--glass-border)" }}>
           <div className="relative z-10 text-center px-4">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#004ac6]/10 text-[#004ac6] mb-4 border border-[#004ac6]/20">
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-4" style={{ background: "var(--teal-dim)", border: "1px solid var(--teal-border)" }}>
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" style={{ color: "var(--teal)" }}>
                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
               </svg>
-              <span className="text-xs font-medium uppercase tracking-wider">Analysis Complete</span>
+              <span className="text-xs font-medium uppercase tracking-wider" style={{ color: "var(--teal)" }}>Analysis Complete</span>
             </div>
-            <h1 className="text-2xl md:text-3xl font-bold text-[#0b1c30] mb-2">
+            <h1 className="text-2xl md:text-3xl font-bold mb-2 font-playfair" style={{ color: "var(--white)" }}>
               {isProceedRisk ? "You appear eligible with risk flags" : "You appear eligible to proceed"}
             </h1>
-            <p className="text-sm text-[#434655] max-w-[500px] mx-auto">
+            <p className="text-sm max-w-[500px] mx-auto" style={{ color: "var(--white-dim)" }}>
               {isProceedRisk
                 ? "Based on your answers, you meet the foundational requirements with some factors to address."
                 : "Based on your answers, you meet the foundational requirements for the E-2 Treaty Investor Visa."}
@@ -470,14 +465,14 @@ export default function ResultsPage() {
         </section>
 
         {isProceedRisk && (
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
+          <div className="glass mb-6" style={{ padding: "16px", background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.3)" }}>
             <div className="flex items-start gap-2">
-              <svg className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24" style={{ color: "#f59e0b" }}>
                 <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z" />
               </svg>
               <div>
-                <p className="text-sm font-medium text-[#0b1c30]">Risk factors identified</p>
-                <p className="text-xs text-[#434655] mt-1">
+                <p className="text-sm font-medium" style={{ color: "var(--white)" }}>Risk factors identified</p>
+                <p className="text-xs mt-1" style={{ color: "var(--white-dim)" }}>
                   The following flags will be tracked through your application. Each has a specific mitigation strategy.
                 </p>
               </div>
@@ -486,40 +481,40 @@ export default function ResultsPage() {
         )}
 
         <section className="mb-8">
-          <h2 className="text-lg font-semibold text-[#0b1c30] mb-4 text-center">The 6-Pillar Eligibility Check</h2>
+          <h2 className="text-lg font-semibold mb-4 text-center font-playfair" style={{ color: "var(--white)" }}>The 6-Pillar Eligibility Check</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {pillars.map((pillar, i) => (
-              <div key={i} className="bg-white p-4 rounded-xl border border-[#e2e8f0] shadow-sm">
+              <div key={i} className="glass p-4">
                 <div className="flex justify-between items-start mb-2">
-                  <div className="p-2 bg-emerald-50 rounded-lg">
-                    <svg className="w-4 h-4 text-emerald-600" fill="currentColor" viewBox="0 0 24 24">
+                  <div className="p-2 rounded-lg" style={{ background: "var(--teal-dim)" }}>
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" style={{ color: "var(--teal)" }}>
                       <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
                     </svg>
                   </div>
                   {pillar.status === "pass" ? (
-                    <svg className="w-5 h-5 text-emerald-500" fill="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" style={{ color: "var(--teal)" }}>
                       <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
                     </svg>
                   ) : (
-                    <svg className="w-5 h-5 text-amber-500" fill="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" style={{ color: "#f59e0b" }}>
                       <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z" />
                     </svg>
                   )}
                 </div>
-                <h3 className="text-sm font-semibold text-[#0b1c30] mb-1">{pillar.name}</h3>
-                <p className="text-xs text-[#434655]">{pillar.desc}</p>
+                <h3 className="text-sm font-semibold mb-1" style={{ color: "var(--white)" }}>{pillar.name}</h3>
+                <p className="text-xs" style={{ color: "var(--white-dim)" }}>{pillar.desc}</p>
               </div>
             ))}
           </div>
         </section>
 
         {isProceedRisk && risk_flag_codes.length > 0 && (
-          <section className="bg-white rounded-xl border border-[#e2e8f0] p-6 mb-8">
-            <h2 className="text-lg font-semibold text-[#0b1c30] mb-4">Risk flags to address</h2>
+          <section className="glass mb-8" style={{ padding: "24px" }}>
+            <h2 className="text-lg font-semibold mb-4" style={{ color: "var(--white)" }}>Risk flags to address</h2>
             <ul className="space-y-3">
               {risk_flag_codes.map((flag) => (
-                <li key={flag} className="flex items-start gap-2 text-sm text-[#434655]">
-                  <span className="text-amber-500 mt-1">•</span>
+                <li key={flag} className="flex items-start gap-2 text-sm" style={{ color: "var(--white-dim)" }}>
+                  <span style={{ color: "#f59e0b", marginTop: "4px" }}>•</span>
                   {flag}
                 </li>
               ))}
@@ -527,9 +522,9 @@ export default function ResultsPage() {
           </section>
         )}
 
-        <section className="bg-[#eff4ff] rounded-xl p-6 mb-8 text-center">
-          <p className="text-sm text-[#434655] mb-2">Recommended path</p>
-          <p className="text-2xl font-bold text-[#004ac6]">{applicationType} Application</p>
+        <section className="glass mb-8 text-center" style={{ padding: "24px" }}>
+          <p className="text-sm mb-2" style={{ color: "var(--white-dim)" }}>Recommended path</p>
+          <p className="text-2xl font-bold" style={{ color: "var(--teal)" }}>{applicationType} Application</p>
         </section>
 
         <div className="space-y-3">
@@ -562,14 +557,15 @@ export default function ResultsPage() {
 
               router.push("/pricing");
             }}
-            className="block w-full bg-[#004ac6] text-white font-medium py-4 rounded-lg hover:bg-[#00337d] transition-colors text-center"
+            className="block w-full font-medium py-4 rounded-lg transition-colors text-center"
+            style={{ background: "var(--teal)", color: "#fff" }}
           >
             Begin Your Application
           </button>
         </div>
       </main>
 
-      <footer className="py-4 text-center text-xs text-[#737686]">
+      <footer className="py-4 text-center text-xs" style={{ color: "var(--white-dim)" }}>
         e2go.app · The American Dream Edition
       </footer>
     </div>
