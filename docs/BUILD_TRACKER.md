@@ -1398,6 +1398,20 @@ Full details in CLAUDE_CONTEXT.md. These apply to every task every session:
 
 ---
 
+## Session 11 — June 1, 2026
+
+**Completed:**
+- Picked up from crashed session (Tasks 6-10)
+- apply/checklist/page.tsx: redesign with glassmorphism
+- login/signup: redesign with glassmorphism, preserve auth logic
+- module3: TabShell and QuestionRenderer redesign with glassmorphism, preserve all question logic
+
+**Build:** Clean (minor themeColor warnings, non-blocking)
+**Tests:** 45/45 passed
+**Pushed:** 5 commits to dev
+
+---
+
 ## Session 10 Priorities
 
 1. Fix Supabase 406/403 errors on Tab A (applications + profiles RLS)
