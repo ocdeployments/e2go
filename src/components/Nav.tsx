@@ -66,46 +66,47 @@ export default function Nav() {
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-b border-[#c3c6d7]">
+    <header className="fixed top-0 left-0 right-0 z-50" style={{ backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", background: "rgba(6,13,31,0.8)", borderBottom: "1px solid var(--glass-border)" }}>
       <div className="flex justify-between items-center h-16 px-4 md:px-8 max-w-6xl mx-auto">
-        <Link href="/" className="flex items-center gap-2">
-          <svg className="w-6 h-6 text-[#004ac6]" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 2L2 7v10l10 5 10-5V7L12 2z" />
-          </svg>
-          <span className="text-xl font-bold text-[#004ac6]">e2go.app</span>
+        <Link href="/" className="flex items-center gap-2" style={{ textDecoration: "none" }}>
+          <span className="text-xl font-bold" style={{ color: "var(--teal)", fontFamily: "'Playfair Display', serif" }}>e2go.app</span>
         </Link>
         <div className="flex items-center gap-4">
           {!loading && (
             <>
               {user ? (
                 <>
-                  <span className="hidden md:block text-sm text-[#434655]">
+                  <span className="hidden md:block text-sm" style={{ color: "var(--white-dim)" }}>
                     {user.email}
                   </span>
                   <button
                     onClick={handleSignOut}
-                    className="text-sm text-[#434655] hover:text-[#004ac6] transition-colors"
+                    className="text-sm transition-colors"
+                    style={{ color: "var(--white-dim)" }}
                   >
                     Sign Out
                   </button>
                   <Link
                     href="/dashboard"
-                    className="hidden md:block text-sm text-[#004ac6] hover:underline"
+                    className="hidden md:block text-sm transition-colors"
+                    style={{ color: "var(--teal)" }}
                   >
-                    Dashboard
+                    My Application
                   </Link>
                 </>
               ) : (
                 <>
                   <Link
                     href="/login"
-                    className="hidden md:block text-sm text-[#434655] hover:text-[#004ac6] transition-colors"
+                    className="hidden md:block text-sm transition-colors"
+                    style={{ color: "var(--white-dim)" }}
                   >
                     Sign In
                   </Link>
                   <Link
                     href="/quiz"
-                    className="bg-[#004ac6] text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-[#00337d] transition-colors"
+                    className="text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+                    style={{ background: "var(--teal)", color: "#fff" }}
                   >
                     Get Started
                   </Link>
