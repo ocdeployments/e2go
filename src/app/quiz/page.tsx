@@ -100,7 +100,6 @@ export default function QuizPage() {
   const [scoringLogic, setScoringLogic] = useState<ScoringLogic | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string | string[]>>({});
-  const [showTooltip, setShowTooltip] = useState(false);
   const [stopScreen, setStopScreen] = useState<{ code: string; message: string } | null>(null);
   const [currencyToggle, setCurrencyToggle] = useState<string>("USD");
   const [currencyValue, setCurrencyValue] = useState("");
@@ -699,49 +698,18 @@ export default function QuizPage() {
                 {replaceDynamic(currentQuestion.question, answers)}
               </h1>
 
-              {/* Helper text - plain, no background */}
-              {currentQuestion.helper_text && (
+              {/* Helper text + Tooltip - always visible, inline, no card */}
+              {(currentQuestion.helper_text || currentQuestion.tooltip) && (
                 <p style={{
                   fontSize: '13px',
-                  color: 'rgba(240,237,230,0.42)',
+                  color: 'rgba(240,237,230,0.45)',
                   lineHeight: 1.6,
-                  marginBottom: '26px',
+                  marginBottom: '24px',
                   fontFamily: "'DM Sans', sans-serif"
                 }}>
-                  {replaceDynamic(currentQuestion.helper_text, answers)}
+                  {replaceDynamic(currentQuestion.helper_text || '', answers)}
+                  {currentQuestion.tooltip && ' ' + replaceDynamic(currentQuestion.tooltip, answers)}
                 </p>
-              )}
-
-              {/* Tooltip */}
-              {currentQuestion.tooltip && (
-                <button
-                  onClick={() => setShowTooltip(!showTooltip)}
-                  style={{
-                    width: '22px',
-                    height: '22px',
-                    borderRadius: '50%',
-                    background: 'rgba(13,148,136,0.2)',
-                    color: '#0D9488',
-                    fontSize: '12px',
-                    fontWeight: 600,
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    marginLeft: '8px',
-                    cursor: 'pointer',
-                    border: 'none',
-                    flexShrink: 0
-                  }}
-                >
-                  i
-                </button>
-              )}
-
-              {/* Tooltip content */}
-              {showTooltip && currentQuestion.tooltip && (
-                <div style={{ marginBottom: '20px', padding: '14px', background: 'rgba(255,255,255,0.06)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.10)' }}>
-                  <p style={{ fontSize: '13px', color: 'rgba(240,237,230,0.75)', lineHeight: 1.5 }}>{currentQuestion.tooltip}</p>
-                </div>
               )}
 
             {/* Searchable Select - Treaty Country - Atlys pattern */}
