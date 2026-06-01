@@ -1,495 +1,508 @@
-# BUILD TRACKER
+# e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** 2026-05-31
-**Session:** 14 (Complete)
-
----
-
-## Environment Variables
-
-| Name | Description | Public/Server | Required |
-|------|-------------|---------------|----------|
-| NEXT_PUBLIC_SUPABASE_URL | Supabase project URL | Public | Yes |
-| NEXT_PUBLIC_SUPABASE_ANON_KEY | Supabase anon key (safe for browser) | Public | Yes |
-| OPENROUTER_API_KEY | OpenRouter API key for MiniMax calls | Server | Yes |
-| MINIMAX_MODEL | Model string (default: minimax/MiniMax-Text-01) | Server | No |
-| NEXT_PUBLIC_SITE_URL | Site URL for AI referer header (default: http://localhost:3000) | Public | No |
-| UPSTASH_REDIS_REST_URL | Upstash Redis REST URL for rate limiting | Server | No |
-| UPSTASH_REDIS_REST_TOKEN | Upstash Redis REST token for rate limiting | Server | No |
+**Last Updated:** June 1, 2026 — End of Session 12
+**App Name:** e2go.app
+**Stack:** Next.js 14 · TypeScript · Tailwind CSS · Supabase · Claude API
+**Dev URL:** https://e2go-git-dev-ocdeployments-projects.vercel.app
+**Repo:** github.com/ocdeployments/e2go
+**Branch:** dev (never commit to main directly)
+**Project Path:** ~/E2-go
 
 ---
 
-## Build Status
+## SESSION COMMANDS
 
-| Component | Status | Notes |
-|-----------|--------|-------|
-| Next.js Build | ✅ PASS | Zero errors |
-| TypeScript | ✅ PASS | No type errors |
-| Middleware | ✅ PASS | Auth protection active |
-| Schema | ⚠️ PENDING | Need unique constraint on answers table |
-| Auth | ✅ PASS | Login/Signup wired |
-| Quiz Engine | ✅ PASS | Scoring logic connected |
-| AI Client | ✅ PASS | OpenRouter wired with auth |
-| Playwright Tests | ✅ PASS | 45 tests passing |
-| Module 3 Engine | ✅ PASS | Tab A complete with ApplicationContext |
-| Husky Hooks | ✅ PASS | pre-push configured |
+**To start:** type `start session`
+**To end:** type `end session`
 
-### Standing Build Rules
+On start: read CLAUDE_CONTEXT.md + BUILD_TRACKER.md +
+docs/DESIGN_REFERENCE.html (if UI work). Report status.
+Ask "Ready to confirm and begin?" before any work.
 
-| Rule | Description |
-|------|-------------|
-| Rule 11 | One file per commit |
-| Rule 12 | Verify with raw output |
-| Rule 13 | Three states per feature |
-| Rule 14 | QA snapshot before push |
-| Rule 15 | No Canada-only assumptions |
+On end: update this file, update CLAUDE_CONTEXT.md if rules
+changed, run npm run build:clean, report summary.
 
 ---
 
-## Completed This Session
+## OVERALL PROGRESS
 
-| # | Task | Status |
-|---|------|--------|
-| 1 | Global design system in layout.tsx | ✅ |
-| 2 | Landing page redesign with glassmorphism | ✅ |
-| 3 | Quiz page background + glass header | ✅ |
-| 4 | Nav component glassmorphism | ✅ |
-| 5 | Build verification | ✅ |
-| 6 | Push to dev | ✅ |
-
----
-
-## Known Issues
-
-| Issue | Priority | Fix |
-|-------|----------|-----|
-| Answers table missing unique constraint | CRITICAL | Run SQL in Supabase: ALTER TABLE public.answers ADD CONSTRAINT answers_application_question_unique UNIQUE (application_id, question_key); |
-| Partnership page limit unconfirmed | HIGH | Email EVisaCanada@state.gov |
-| 131-question spec not reconciled with Tabs A-L | HIGH | Reconcile before building tab content |
-| Frankfurt compression mode not built | MEDIUM | Build when generation engine starts |
-| Dev server defaults to port 3001 | LOW | Document in CLAUDE_CONTEXT.md |
-| Quiz currency rate sometimes fails | LOW | Fallback to 0.73 works |
-
----
-
-## New Features Discovered
-
-- Playwright smoke tests covering all public routes
-- Husky pre-push hook runs tsc + build + playwright
-- Dashboard shows real user data from quiz_sessions and application_lifecycle
-- Onboarding flow with 5-step wizard (welcome, app type, family, consent, ready)
-- CAD/USD live conversion on investment question with cached rate
-- Module 3 Document Interview Engine scaffold (ApplicationContext, TabShell, QuestionRenderer)
-- Tab A with 12 DS-160 reference questions
-- /api/answers with auth, validation, auto-save (2s debounce)
-- Answer key format: M3-[A-L]-[00-99] locked
+| Phase | Status | Notes |
+|---|---|---|
+| Next.js scaffold | ✅ COMPLETE | |
+| Database schema + RLS | ✅ COMPLETE | 45/45 tests passing |
+| Auth (login/signup) | ✅ COMPLETE | Supabase auth wired |
+| Quiz v3.0 | ✅ COMPLETE | 26 questions, global, treaty countries |
+| Full UI redesign | ✅ COMPLETE | Glassmorphism, navy, teal, Playfair |
+| PWA | ✅ COMPLETE | Manifest, service worker, install prompt |
+| Design skills installed | ✅ COMPLETE | Taste, Vercel guidelines, Lazyweb MCP |
+| Document tools installed | ✅ COMPLETE | docxtpl, docx2pdf, eigenpal skill, neat-pdf |
+| Module 3 Tab A | ✅ COMPLETE | 21 questions, privacy categories, working |
+| Module 3 Tabs B-L | ⚠️ SCAFFOLD ONLY | Specs updated, no real questions wired yet |
+| /apply/overview | ✅ COMPLETE | |
+| /apply/checklist | ✅ COMPLETE | Three phases, Supabase connected |
+| Pricing page | ✅ COMPLETE | Founding member pricing, guarantee |
+| Dashboard | ✅ COMPLETE | Needs real data wiring |
+| Landing page redesign | ⚠️ IN PROGRESS | American elements fix pending |
+| Quiz UX fixes | ⚠️ IN PROGRESS | Sub-question timing bug open |
+| Document generation specs | ✅ COMPLETE | 4 spec files — need one update pass |
+| Stripe integration | ⬜ NOT STARTED | Session 14 |
+| Document generation engine | ⬜ NOT STARTED | Sessions 15-16 |
+| Voice matching system | ⬜ NOT STARTED | Designed, not built |
+| Analysis engine | ⬜ NOT STARTED | Designed, not built |
+| Follow-up conversation | ⬜ NOT STARTED | Designed, not built |
 
 ---
 
-## Session 3 Log
+## ARCHITECTURE DECISIONS — LOCKED
 
-**Date:** May 29, 2026
-**Session:** 3
-
-**Completed:**
-- Installed Playwright, wrote smoke tests for 6 public routes + auth + API
-- Installed Husky, configured pre-push hook for tsc + build + playwright
-- Added npm run qa script to package.json
-- Rewired dashboard to pull from quiz_sessions + application_lifecycle (not demo data)
-- Created /apply/onboarding with 5-step wizard flow
-- Created /apply/module2 placeholder
-- Added CAD/USD live conversion to quiz Q0-05 using open.er-api.com
-- All 8 Playwright tests passing
-
-**Key Decisions:**
-- Used BASE_URL 3001 in tests (dev server uses 3001 when 3000 occupied)
-- Onboarding uses demo=true bypass for testing without payment
-- Currency rate cached on mount, fallback to 0.73 if fetch fails
-
-**Left Incomplete:**
-- Full manual flow test (would need test user + Stripe)
-- Real onboarding save to Supabase (demo mode skips some saves)
+| Decision | Rule |
+|---|---|
+| Paywall timing | After Module 3 personal tabs complete, before generation |
+| Document generation | Sequential — ONE at a time. Checkpointed. Never parallel. |
+| Cover letter order | Generated FIRST (Step 1) — officer's roadmap |
+| AI for documents | Anthropic Claude API direct (claude-sonnet-4-20250514) |
+| AI for app features | MiniMax via OpenRouter — server-side only |
+| Supabase auth | auth.users → public.profiles (never public.users) |
+| Data storage | Answers only. Never store passports, bank statements |
+| Document ownership | Each fact lives in exactly ONE document. No repetition. |
+| e2go branding on docs | NEVER on submitted documents |
+| Page limit | 50 pages per TAB (Toronto). Not 50 total. |
+| Prompt storage | Versioned .md files in /prompts/v1/documents/ |
+| Partnership routing | Two complete separate packages generated |
+| Form terminology | Exact DS-160/U.S. government terminology always |
+| Interview limits | 2 simulator sessions included. Extra: $9.99/3-bundle |
+| Stats | Real government data only. Never fabricated. |
+| Global scope | 82 treaty countries. No Canada-only assumptions. |
 
 ---
 
-## Session 4 Log
+## PRICING — LOCKED
 
-**Date:** May 29, 2026
-**Session:** 4
+| Application Type | Price |
+|---|---|
+| Solo individual | $297 |
+| Solo + spouse | $347 |
+| Solo + family (up to 2 kids) | $397 |
+| Solo + family (3-5 kids) | $447 |
+| Partnership no families | $497 |
+| Partnership two couples | $547 |
+| Partnership two full families | $647 |
 
-**Completed:**
-- Audited all env vars, added to BUILD_TRACKER.md
-- Created vercel.json with build config
-- Installed @upstash/redis, replaced in-memory rate limiter in /api/ai
-- Added /api/health endpoint returning { status, timestamp, version }
-- Completed Module 2: Business Type Advisor with 6 screens (category, stage, franchise, state, premises, confirmation)
-- Created Module 3 placeholder
-- Pushed to GitHub: https://github.com/ocdeployments/e2go
-- All 8 Playwright tests passing, build passes
-
-**Key Decisions:**
-- Redis fails open if Upstash not configured
-- Business categories from Vol 3 Section 6.9 spec
-- Three states (loading, success, empty) per feature per Rule 13
-- Port 3000 for dev server (not 3001) to match tests
+Founding member pricing: first 500 applications.
+Counter live on pricing page (pulled from Supabase).
+14-day money-back guarantee: first 50 founding members.
+Refund = full payment minus Stripe processing fees.
+Conditions: within 14 days, Module 1 started, no documents generated.
 
 ---
 
-## Session 5 Log
+## PAGES — BUILD STATUS
 
-**Date:** May 30, 2026
-**Session:** 5
-
-**Completed:**
-- ApplicationContext with auto-save (2s debounce), resume support
-- /api/answers route with auth, validation, upsert
-- questionKeyValidator (M[0-3]-[A-L]-[0-9]{2} format)
-- visibilityRules.ts (placeholder, grows with tabs)
-- useAutoSave hook
-- QuestionRenderer component (single/multi/text/number/date)
-- TabShell component (progress bar, save status, navigation)
-- Tab A questions config (12 questions from ds/spec)
-- Tab A page (/apply/module3/a) with auth check
-- Dynamic routes: /apply/module3 → /a, [tab] validation
-- Module 3 Playwright tests (18 new tests)
-- All 42 tests passing (24 smoke + 18 module3)
-- Pushed to dev branch
-
-**Key Decisions:**
-- Tab A uses local answer state with debounced API saves (not ApplicationContext to avoid SSR issues)
-- Client-side redirects for auth (useEffect) — tests adjusted accordingly
-- Question key format: M3-[A-L]-[00-99] locked
-
-**Module 3 engine scaffold:** complete
-**Tab A:** complete
-**Answer key convention:** M3-[A-L]-[00-99] locked
-**Tabs B-L:** not started
+| Page | Route | Status | Notes |
+|---|---|---|---|
+| Landing | / | ⚠️ IN PROGRESS | American elements (Statue/stars) fix needed |
+| Quiz | /quiz | ⚠️ IN PROGRESS | Sub-question timing bug, option styling |
+| Results | /results | ✅ COMPLETE | All 4 outcomes, redesigned |
+| Pricing | /pricing | ✅ COMPLETE | Founding member, guarantee |
+| Dashboard | /dashboard | ✅ COMPLETE | Needs real data |
+| Login | /login | ✅ COMPLETE | |
+| Signup | /signup | ✅ COMPLETE | |
+| Overview | /apply/overview | ✅ COMPLETE | |
+| Checklist | /apply/checklist | ✅ COMPLETE | 3 phases |
+| Module 3 shell | /apply/module3 | ✅ COMPLETE | |
+| Module 3 Tab A | /apply/module3/a | ✅ COMPLETE | Working, RLS fixed |
+| Module 3 Tabs B-L | /apply/module3/[b-l] | ⚠️ SCAFFOLD | No real questions |
+| Confidence Score | /score | ⬜ NOT STARTED | |
+| Interview Simulator | /simulator | ⬜ NOT STARTED | |
+| Document Generation | /generating | ⬜ NOT STARTED | |
+| Export | /export | ⬜ NOT STARTED | |
+| Support | /support | ⬜ NOT STARTED | |
+| Admin | /admin | ⬜ NOT STARTED | |
+| Education Hub | /learn | ⬜ NOT STARTED | |
+| Blog | /blog | ⬜ NOT STARTED | |
+| Partner Portals | /partner/* | ⬜ NOT STARTED | Phase 2 |
 
 ---
 
-## Session 6 Log
+## MODULE 0 — QUIZ v3.0
 
-**Date:** May 31, 2026
-**Session:** 6
-
-**Completed:**
-- Fixed Vercel routing conflict: removed dynamic [tab] route, created individual pages for tabs b-l
-- Added profile safety check in Tab A page.tsx before application insert
-- All 45 tests passing (24 smoke + 21 module3)
-- Pushed to dev branch
-
-**Key Decisions:**
-- Individual tab pages (b-l) instead of dynamic route to avoid Vercel conflict
-- Safety check: upsert profile before inserting application to prevent FK violations
+| Feature | Status | Notes |
+|---|---|---|
+| 26 questions | ✅ COMPLETE | Up from 22 |
+| Global treaty country selector | ✅ COMPLETE | 82 countries |
+| searchable_select for Q0-01 | ✅ COMPLETE | |
+| Multi-currency Q0-05 | ✅ COMPLETE | 10 currencies |
+| Stage-aware routing | ✅ COMPLETE | A through D |
+| Sub-question for Q0-10 | ⚠️ BUG | Timing bug — appears on back nav, not on click |
+| Sub-question for Q0-16 | ✅ COMPLETE | |
+| Conversational language rewrite | ✅ COMPLETE | Canada-specific language removed |
+| Cannabis informational gate | ✅ COMPLETE | Replaces hard stop |
+| [nationality] dynamic replacement | ⚠️ BUG | Showing as literal text |
+| Scoring logic v3.0 | ✅ COMPLETE | All 6 audit fixes applied |
+| Hard stops PR-01 through PR-08 | ✅ COMPLETE | |
+| PR-THIRD-COUNTRY hard stop | ✅ COMPLETE | Sept 6 2025 policy |
+| W-TIMELINE-URGENT risk only | ✅ COMPLETE | Removed from attorney flags |
+| W-NI-01 neutral answers fixed | ✅ COMPLETE | |
+| W-NI-02 no-family neutral | ✅ COMPLETE | |
+| Mixed family option Q0-NI-02 | ✅ COMPLETE | |
+| Treaty countries JSON | ✅ COMPLETE | 82 countries with consulate data |
+| Results page personalised output | ✅ COMPLETE | Nationality, consulate, state |
+| Quiz version tag | ✅ COMPLETE | quiz_version = "3.0" |
+| Progress bar teal | ⚠️ BUG | Showing blue |
+| Option buttons glass style | ⚠️ BUG | Showing white cards |
+| quiz_session save to Supabase | ✅ COMPLETE | |
+| No autosave during quiz | ✅ COMPLETE | Local state only until Q0-21 |
 
 ---
 
-## Session 7 Log
+## MODULE 3 — TABS
 
-**Date:** May 31, 2026
-**Session:** 7
+### Tab A (Working)
+| Feature | Status |
+|---|---|
+| 21 questions | ✅ COMPLETE |
+| Privacy categories (required/red/amber/green) | ✅ COMPLETE |
+| Skip toggles with advisories | ✅ COMPLETE |
+| 800ms debounce autosave | ✅ COMPLETE |
+| Saving... / Saved ✓ indicator | ✅ COMPLETE |
+| Supabase answers save | ✅ COMPLETE |
+| FK constraint fix | ✅ COMPLETE |
+| RLS policies fixed | ✅ COMPLETE |
 
-**Completed:**
-- CLAUDE_CONTEXT.md: added currency, global positioning, consulate selector rules
-- CLAUDE_CONTEXT.md: added Platform Boundaries, Lawyer Positioning, Revenue Streams sections
-- docs/soul.md: added approved landing page copy and franchise nudge framing
-- BUILD_TRACKER.md: added standing rules summary and research assets section
-- DOC_INDEX.md: added research assets and treatyCountries entries
-- package.json: added build:clean script
-- TabShell.tsx: implemented 4 screen states (INTRO, QUESTION, COMPLETION, RESUME)
-- QuestionRenderer.tsx: updated styling to InvestmentDESIGN.md tokens
-- module3/a/page.tsx: wired screen states, ApplicationContext, explicit error handling
-- Ran full diagnostic on Tab A failures
-- Schema: added UNIQUE (application_id, question_key) to answers table
+### Tabs B-L (Specs Updated, Not Yet Wired)
+All 11 tab specs updated in docs/ with:
+- Global language fixes (no Canada-only)
+- Batch tags (Batch 1 or Batch 2)
+- Privacy categories per question
+- Lead temperature signals
+- Denial prevention flags
+- 18 new questions added across tabs
+
+| Tab | Spec Status | Wired Status |
+|---|---|---|
+| B — Personal Checklist | ✅ Spec updated | ⬜ Not wired |
+| C — Visa Category | ✅ Spec updated | ⬜ Not wired |
+| D — Cover Letter | ✅ Spec updated | ⬜ Not wired |
+| E — Ownership | ✅ Spec updated | ⬜ Not wired |
+| F — Investment Proof | ✅ Spec updated | ⬜ Not wired |
+| G — Business Evidence | ✅ Spec updated | ⬜ Not wired |
+| H — Source of Funds | ✅ Spec updated | ⬜ Not wired |
+| I — Non-Marginality | ✅ Spec updated | ⬜ Not wired |
+| J — Qualifications | ✅ Spec updated | ⬜ Not wired |
+| K — Business Plan | ✅ Spec updated | ⬜ Not wired |
+| L — Family Dependents | ✅ Spec updated | ⬜ Not wired |
+
+### Batch Assignments
+- Batch 1 (personal — immediate after payment): B, partial F, J, L
+- Batch 2 (business — after formation): A, C, D, E, F business, G, H, I, K
+- Paywall triggers after Batch 1 personal tabs complete
+
+---
+
+## MODULE 6 — DOCUMENT GENERATION
+
+### Generation Order (LOCKED)
+```
+Step 1  → Cover Letter (Tab D)       — FIRST, always
+Step 2  → Source of Funds (Tab H)
+Step 3  → Investment Proof (Tab F)
+Step 4  → Business Plan (Tab K)
+Step 5  → Qualifications (Tab J)
+Step 6  → DS-160 Reference (Tab A)
+Step 7  → Gap analysis
+Step 8  → Repetition checker
+Step 9  → Consistency checker
+Step 10 → AI detection audit
+Step 11 → Humanization pass
+Step 12 → Metadata sanitization
+Step 13 → Quality gate
+Step 14 → Pre-download acknowledgment (5 checkboxes)
+Step 15 → Preview unlocked
+```
+
+### Page Budget (Toronto — 50 pages per tab)
+Generated narrative documents target:
+- Cover letter: 4 pages max
+- Declaration: 1 page
+- Qualifications: 2 pages
+- Net worth: 1 page
+- Source of funds: 2 pages
+- Fund flow chronology: 1 page
+- Substantiality memo: 2 pages
+- Marginality rebuttal: 1 page
+- Business plan: 8 pages max
+Total generated: ~22 pages
+
+User-uploaded evidence shares per-tab budget.
+Guidance on which specific pages of evidence to include
+is built into the checklist and binder assembly guide.
+
+### Feature Build Status
+| Feature | Status |
+|---|---|
+| Analysis engine | ⬜ Spec written — not built |
+| Voice sample collection | ⬜ Spec written — not built |
+| AI detection on voice sample | ⬜ Spec written — not built |
+| Voice profile extraction | ⬜ Spec written — not built |
+| Follow-up conversation | ⬜ Spec written — not built |
+| Generation prompts (/prompts/v1/) | ⬜ Not created |
+| Sequential generation engine | ⬜ Not built |
+| Checkpoint DB table | ⬜ Not built |
+| Server-Sent Events progress | ⬜ Not built |
+| Repetition checker | ⬜ Not built |
+| Consistency checker | ⬜ Not built |
+| AI detection audit | ⬜ Not built |
+| Humanization pass | ⬜ Not built |
+| Metadata sanitization | ⬜ Not built |
+| Quality gate | ⬜ Not built |
+| Pre-download acknowledgment gate | ⬜ Not built |
+| Word document template | ⬜ Not built |
+| docxtpl integration | ⬜ Not built |
+| neat-pdf integration | ⬜ Not built |
+| PDF export | ⬜ Not built |
+| 50-page per tab enforcement | ⬜ Not built |
+| Partnership dual-package generation | ⬜ Not built |
+| Sarah Mitchell prototype docs | ⚠️ MD only — .docx not generated |
+
+---
+
+## SPEC FILES — STATUS
+
+| File | Status | Known Issues |
+|---|---|---|
+| docs/Spec1_Analysis_Engine.md | ✅ Written | Page limit fix needed |
+| docs/Spec2_Followup_Conversation.md | ✅ Written | References existing probe cascade |
+| docs/Spec3_Generation_Prompts.md | ✅ Written | Cover letter order fix needed, API model fix needed, prompt file storage fix needed |
+| docs/Spec4_Quality_Gate_Pipeline.md | ✅ Written | Page limit fix needed |
+
+Required updates to specs before building:
+1. Cover letter is Step 1 (not last) — fix Spec 3 and Spec 4
+2. Page limit is 50 per tab (not 50 total) — fix Spec 1 and Spec 4
+3. AI model is Anthropic API (not raw Claude call) — fix Spec 3
+4. Prompts stored in /prompts/v1/documents/ as .md files — fix Spec 3
+5. Partnership routing (dual packages) — add to all specs
+
+---
+
+## DESIGN SYSTEM — LOCKED
+
+Read docs/DESIGN_REFERENCE.html before any UI work.
+
+| Token | Value |
+|---|---|
+| Background | #060d1f |
+| Teal accent | #0D9488 |
+| Text primary | #f0ede6 |
+| Glass card | rgba(255,255,255,0.05) + blur(16px) |
+| Heading font | Playfair Display |
+| Body font | DM Sans |
+
+Rules:
+- Option buttons: NEVER white. Always glass.
+- Progress bars: ALWAYS teal #0D9488. Never blue.
+- Question text: Playfair Display 26px, foreground, fully opaque
+- No e2go branding on submitted documents
+
+Design skills installed:
+- /taste — activate before any UI session
+- web-design-guidelines — run "review my UI" after building
+- Lazyweb MCP — 257K+ real app screens
+
+---
+
+## DATABASE — CURRENT SCHEMA
+
+Tables created and confirmed:
+- profiles (user profiles, founding_member, guarantee_eligible)
+- applications (with lead temperature columns)
+- answers (with skipped_by_user, privacy_category)
+- quiz_sessions
+- application_lifecycle
+- document_generation_log (schema written, not yet run)
+- generation_pipeline_log (schema written, not yet run)
+- applicant_voice_profile (schema written, not yet run)
+- followup_responses (schema written, not yet run)
+
+Supabase SQL needed (run these):
+```sql
+-- Lead temperature columns (if not already applied)
+ALTER TABLE applications ADD COLUMN IF NOT EXISTS
+  lead_temperature INTEGER DEFAULT 0;
+ALTER TABLE applications ADD COLUMN IF NOT EXISTS
+  lead_stage TEXT DEFAULT 'unknown';
+ALTER TABLE applications ADD COLUMN IF NOT EXISTS
+  franchise_matching_triggered BOOLEAN DEFAULT FALSE;
+ALTER TABLE applications ADD COLUMN IF NOT EXISTS
+  attorney_warmth INTEGER DEFAULT 0;
+ALTER TABLE applications ADD COLUMN IF NOT EXISTS
+  cpa_warmth TEXT DEFAULT 'none';
+ALTER TABLE applications ADD COLUMN IF NOT EXISTS
+  banking_warmth TEXT DEFAULT 'none';
+ALTER TABLE applications ADD COLUMN IF NOT EXISTS
+  fx_warmth TEXT DEFAULT 'none';
+ALTER TABLE applications ADD COLUMN IF NOT EXISTS
+  multiunit_routing BOOLEAN DEFAULT FALSE;
+ALTER TABLE applications ADD COLUMN IF NOT EXISTS
+  growth_ambition TEXT DEFAULT 'unknown';
+
+-- Privacy columns (if not already applied)
+ALTER TABLE answers ADD COLUMN IF NOT EXISTS
+  skipped_by_user BOOLEAN DEFAULT FALSE;
+ALTER TABLE answers ADD COLUMN IF NOT EXISTS
+  privacy_category TEXT DEFAULT 'green';
+
+-- Founding member columns (if not already applied)
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS
+  founding_member BOOLEAN DEFAULT FALSE;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS
+  guarantee_eligible BOOLEAN DEFAULT FALSE;
+```
+
+---
+
+## CRITICAL PATH TO FIRST PAYING USER
+
+```
+Quiz sub-question bug fix       ← IN PROGRESS
+Quiz option styling fix         ← IN PROGRESS
+Landing page American elements  ← IN PROGRESS
+DESIGN_REFERENCE.html in repo   ← ACTION NEEDED
+         ↓
+Session 13A — Wire Tabs B + C
+Session 13B — Wire Tabs D + J
+Session 13C — Wire Tab F personal section
+         ↓
+Session 14 — Stripe paywall
+Session 15 — Batch 1 document generation
+Session 16 — End-to-end test
+         ↓
+FIRST PAYING USER
+         ↓
+Session 13D — Wire Tabs E + G
+Session 13E — Wire Tabs H + I
+Session 13F — Wire Tabs K + L
+         ↓
+FULL MODULE 3 COMPLETE
+```
+
+---
+
+## KNOWN ISSUES / BUGS
+
+| Issue | Priority | Fix Needed |
+|---|---|---|
+| Quiz Q0-10 sub-question timing | HIGH | Appears on back nav, not on click. Fix: derive visibility from current answer value, not useState. |
+| Quiz option buttons white | HIGH | Use glass styling per DESIGN_REFERENCE.html |
+| [nationality] literal text in quiz | HIGH | Replace dynamically from Q0-01 answer |
+| Progress bar blue not teal | HIGH | Always #0D9488 |
+| Landing page Statue of Liberty = building | HIGH | Replace with correct SVG silhouette |
+| Landing page document list wrong | HIGH | Cover letter first not last; correct Batch 1/2 lists |
+| "American Dream Edition" footer text | HIGH | Remove from quiz page entirely |
+| BUILD_TRACKER 70-page limit | FIXED | Now correctly 50 per tab |
+| Tabs B-L no real questions | HIGH | Sessions 13A-13F |
+| Stripe not integrated | HIGH | Session 14 |
+| Document generation engine not built | HIGH | Sessions 15-16 |
+| Sarah Mitchell docs are .md not .docx | MEDIUM | Regenerate using docx skill properly |
+| Spec files need 5 updates | MEDIUM | Before building generation engine |
+| DESIGN_REFERENCE.html not in repo | MEDIUM | Copy from Downloads, commit |
+
+---
+
+## STANDING BUILD RULES
+
+| # | Rule | Summary |
+|---|---|---|
+| 1 | SEO on every page | Metadata + OG tags when built. Never retrofit. noindex on app routes. |
+| 2 | Mobile first | Verify at 390px. Min 44px tap targets. |
+| 3 | No Canada-only | Global app, 82 treaty countries, dynamic references. |
+| 4 | Design reference first | Read DESIGN_REFERENCE.html + /taste before any UI. |
+| 5 | Activate taste | Run /taste before UI sessions. |
+| 6 | One file per commit | Never bundle multiple files. |
+| 7 | Verify with raw output | git log --oneline after every push. |
+| 8 | Doc generation safety | One at a time. Save to DB. Quality gate before preview. |
+| 9 | Lifecycle tracking | Every user action → application_lifecycle table. |
+| 10 | Build tracker update | end session updates both files. |
+| 11 | No e2go on documents | Branding never on submitted documents. |
+| 12 | Legal boundary | Never state legal standards are met. |
+| 13 | Never infer in docs | Every sentence traces to applicant answer. |
+| 14 | AI detection mandatory | Threshold 0.35. Max 3 attempts. Human review if all fail. |
+| 15 | Metadata clean | Strip all AI markers before every download. |
+| 16 | Four screen states | Every Module 3 tab: INTRO, QUESTION, COMPLETION, RESUME. |
+| 17 | Tab config source of truth | Tab JSON is single source for questions. |
+| 18 | Document conditionals | Document_Conditionals.md enforced. |
+| 19 | Database safety | Never DROP TABLE. Always IF NOT EXISTS. |
+
+---
+
+## SESSION LOG
+
+### Sessions 1-7 (May 29 – May 31, 2026)
+- Full product architecture designed
+- Quiz v2.1 → v3.0 (26 questions, global, stage-aware)
+- Auth wired (login/signup working on Vercel)
+- Database schema complete (17 tables, RLS, profiles trigger)
+- Module 3 TabShell — 4 screen states implemented
+- Tab A wired with 21 questions
+- All 12 module 3 tabs spec updated
+- 45/45 tests passing throughout
+
+### Session 8 (June 1, 2026)
+- Quiz v3.0 JSON files built
+- Treaty countries JSON (82 countries)
+- Quiz component updated (searchable_select, state_select, sub_questions, 10-currency)
+- Results page updated for v3.0 scoring logic
+- 45/45 tests passing
+
+### Session 9 (June 1, 2026)
+- Module 3 tab specs updated — all 12 tabs
+- Global language fixes applied
+- Batch tags added to all tabs
+- 18 new questions added across Tabs B-L
+- Lead temperature scoring fields added to schema
+- Denial audit gaps D-02, D-03, D-04, D-06, D-07, D-10, D-12, D-13 resolved
+- Referral triggers added (LLC, CPA, FX, banking, discovery day, attorney)
+
+### Session 10 (June 1, 2026)
+- Supabase profiles INSERT RLS policy fixed
+- /apply/overview page built
+- /apply/checklist three-phase built
+- Pricing page — founding member badge + counter
+- Sarah Mitchell prototype docs (MD only — need .docx)
+- 45/45 tests passing
+
+### Session 11 (June 1, 2026)
+- Privacy category system (red/amber/green/required) — QuestionRenderer
+- Skip toggles with appropriate advisories
+- 800ms debounce autosave (down from 2s)
+- Tab A questions updated with privacy categories
+- Conversational language review across Tab A
+
+### Session 12 (June 1, 2026)
+- Privacy categories applied to all remaining tab questions
+- 9 new Tab A questions from attorney intake (DS-160 fields)
+- Photo requirements — checklist items + education card
+- Corporate investor flag — Q0-INVESTOR-TYPE added to quiz
+- Dashboard placeholder counter
+- PWA — manifest.json, service worker, install prompt
+- Quiz UX fixes — teal styling, searchable select responsive width
+- DESIGN_REFERENCE.html created
+- Full UI redesign Sessions 12A-12C:
+  Results, Pricing, Dashboard, Overview, Checklist, Login/Signup,
+  Module 3 TabShell/QuestionRenderer, Navigation
+- Landing page redesign (American elements partially applied)
 - All 45 tests passing
 
-**Key Decisions:**
-- InvestmentDESIGN.md tokens: success-teal #0D9488, surface-container-high #dce9ff, border-subtle #E2E8F0
-- ApplicationContext now provides shared state for all Module 3 tabs
-- Explicit error handling with console logging for Supabase errors
-
-**Key decisions and research findings:**
-
-Document architecture:
-- Two-batch model finalized and locked
-- Paywall triggers after personal tabs complete
-- Batch 1: 4 documents generated immediately
-- Batch 2: remaining documents as prerequisites met
-- Cover Letter always last — pipeline corrected
-- 50-page limit confirmed: ca.usembassy.gov
-- Frankfurt exception: 30 pages, 5MB, exec summary only
-- London exception: 20MB upload cap
-- Per-document page targets locked for solo apps
-- Partnership page limit UNCONFIRMED — flag open
-
-Research confirmed — no rebuild needed:
-- Franchise categories: E2_Franchise_Categories_Section5.md
-- Platform logic rules: E2_Platform_Logic_Rules.md
-- Document builder spec: E2_Document_Builder_Spec.md
-- Attorney review register: E2_Attorney_Review_Register.md
-- 131 Module 3 questions already specified in Vol 3
-
-New items discovered in research:
-- Financial projections spreadsheet (.xlsx) missing from document plan — added
-- Translation requirements guide — added
-- Timeline and appointment guide — added
-- Master submission checklist — added
-- Loan structure denial risk D-12 — new Tab F question
-- TD Bank / RBC named as banking referral partners
-- Wise / OFX / Knightsbridge as wire transfer partners
-- Toronto family attendance: 2025 mandatory requirement
-- Australian E-3 alternative option to surface in quiz
-- 131 questions in Groups 3A–3I need reconciliation with Tab A–L structure before building tab content
-
-Partnership rules confirmed:
-- Negative Control: 9 FAM 402.9-6(F)
-- Two partners 50/50 maximum
-- Three or more: hard stop PR-PARTNER
-- Submission format UNCONFIRMED — email EVisaCanada@state.gov
-
-New spec files created:
-- docs/Document_Generation_Standards.md
-- docs/Document_Conditionals.md
-
-**Left Incomplete:**
-- Supabase SQL: unique constraint needs to be run manually in SQL Editor
-- Full end-to-end test on preview URL
-
-## Session 8 Priorities
-
-1. RECONCILE: Read Groups 3A-3I question spec against Tab A-L structure. Map questions to tabs. Identify gaps. Do this before writing any tab question content.
-2. PROTOTYPE: Generate 4 Word documents for Sarah Mitchell using Document_Generation_Standards.md
-3. FIX: Verify Module 3 Tab A working on Vercel (FK + unique constraint — confirm fixed)
-4. BUILD: /apply/overview master orientation page
-5. BUILD: Sidebar navigation in TabShell
-6. BUILD: Three-phase checklist /apply/checklist
-7. ADD: PR-PARTNER hard stop to quiz (3+ equal partners)
-8. UPDATE: Module 2 franchise matching uses E2_Franchise_Categories_Section5.md directly
-9. ADD: Tab F loan structure question (D-12 denial risk)
-10. PWA setup + QR code on landing page
+### Next Session Priorities (Session 13)
+1. Copy DESIGN_REFERENCE.html into docs/ and commit
+2. Fix quiz: sub-question timing, option styling, nationality replacement,
+   progress bar color, footer text removal
+3. Fix landing page: correct document lists, Statue of Liberty SVG,
+   correct American elements
+4. Session 13A: Wire real questions into Tabs B + C
+5. Update 4 spec files with 5 corrections before building generation engine
 
 ---
 
-## Session 11 Log
-
-**Date:** May 31, 2026
-**Session:** 11
-
-**Completed:**
-- Sensitive field placeholder mode: added sensitivity field (high/medium/low) to QuestionConfig
-- Skip toggle for high/medium sensitivity fields in QuestionRenderer (DOB, SIN, SSN, address, phone)
-- Debounced autosave: changed from 2s to 800ms per spec
-- Question helper text in tab-a.json reviewed and updated to conversational language
-- All 45 tests passing, build clean, pushed to dev
-
-**Key Decisions:**
-- Skip toggle shows "Not comfortable sharing this here? Skip for now — I will fill this in myself"
-- Skipped fields show "No problem — we will leave a space in your document that you can fill in yourself before submitting."
-- Sensitivity levels: high (always show skip), medium (show but not prominent), low (no skip)
-
-**Files Changed:**
-- src/components/module3/QuestionRenderer.tsx (sensitivity + skip toggle)
-- src/components/module3/TabShell.tsx (interface update)
-- src/contexts/ApplicationContext.tsx (800ms debounce)
-- src/data/module3/tab-a.json (sensitivity data + conversational language)
-- src/app/apply/module3/a/page.tsx (interface update)
-
----
-
-## Session 12 Log
-
-**Date:** May 31, 2026
-**Session:** 12
-
-**Completed:**
-- Privacy Category System: replaced sensitivity with privacy_category (red/amber/green/required)
-- RED fields show modal with specific advisory on skip
-- AMBER fields show inline note on skip
-- GREEN fields show simple "No problem" message
-- REQUIRED fields show brief explanation, no skip option
-- Added 9 new questions from attorney intake (social media, parents, passport loss, US travel, countries visited, US relatives, green card history, drivers license, prior visa)
-- Updated all Tab A questions with privacy_category and skip_advisory per spec
-- Schema: added skipped_by_user and privacy_category columns to answers table
-- PWA Setup: manifest.json, service worker (cache-first static, network-first API)
-- PWA install prompt: handles both Android (beforeinstallprompt) and iOS (manual instructions)
-- Service worker registration component
-- Added PWA meta tags to layout
-- All 45 tests passing, build clean, pushed to dev
-
-**Key Decisions:**
-- Privacy category replaces sensitivity per Session 12 CORE PRINCIPLE
-- RED: modal with specific consequence advisory
-- AMBER: inline note about what skipping affects
-- GREEN: simple reassurance, no advisory
-- REQUIRED: name and nationality only (no skip)
-
-**Files Changed:**
-- src/components/module3/QuestionRenderer.tsx (privacy category system)
-- src/components/module3/TabShell.tsx (interface update)
-- src/data/module3/tab-a.json (21 questions with privacy categories)
-- src/app/apply/module3/a/page.tsx (interface update)
-- docs/schema_complete.sql (answers table columns)
-- public/manifest.json, public/sw.js (PWA)
-- src/components/PWAInstallPrompt.tsx, ServiceWorkerRegistration.tsx (PWA)
-- src/app/layout.tsx (PWA meta tags)
-- src/app/page.tsx (install prompt on landing)
-
-**Commits:**
-- 9d5aa86 QuestionRenderer.tsx: privacy_category system
-- 48c384b TabShell.tsx: interface update
-- e3f33de tab-a.json: privacy categories per spec
-- 6b155fc module3/a/page.tsx: interface update
-- e097f99 schema_complete.sql: answers columns
-- 3db71d9 PWA: manifest.json and service worker
-- f962370 PWA: install prompt and registration
-- 02c1c45 layout.tsx: PWA meta tags
-- c0d65b7 page.tsx: PWAInstallPrompt on landing
-
----
-
-## Session 13 Log
-
-**Date:** May 31, 2026
-**Session:** 13
-
-**Completed:**
-- Quiz question rewrite: applied all rewrites from docs/quiz_rewrites_final.md
-- Q0-01 through Q0-22 updated with conversational language
-- Removed Canada-specific language, replaced with [home country] dynamic references
-- Added cannabis informational gate after Q0-10 sub-question
-- Removed cannabis option from Q0-10 (handled via informational gate)
-- Updated scoring logic trigger strings to match new option text exactly
-- Added W-15 for partner role silent partner risk flag
-- Updated Q0-16 with new sub-question for marital status
-- All 45 tests passing, build clean, pushed to dev
-
-**Key Decisions:**
-- Cannabis gate shows once only, stored in localStorage
-- Property rental triggers hard stop directly (not via cannabis gate)
-- Q0-15 (partner role) added for partnership flows
-- Sub-question timing verified - shows immediately on selection
-
-**Files Changed:**
-- public/data/module0_questions.json (all 22 questions rewritten)
-- public/data/module0_scoring_logic.json (triggers updated)
-- src/app/quiz/page.tsx (cannabis gate + state)
-
----
-
-## Session 13 Priorities
-
-1. Wire actual questions into Tabs B-L (currently scaffolds only — need real question configs)
-2. Franchise matching flow in Module 2
-3. Sidebar navigation in TabShell
-4. Stripe paywall integration
-5. Batch 1 document generation engine (first pass)
-
-**Commits:**
-- f40fa9d QuestionRenderer.tsx: add sensitivity field and skip toggle
-- 579b8d0 TabShell.tsx: add sensitivity field to interface
-- d5eb7cd ApplicationContext.tsx: change debounce from 2s to 800ms
-- 09b13a8 tab-a.json: add sensitivity levels and conversational language
-- 5f90b99 module3/a/page.tsx: add sensitivity to interface
-
----
-
-## Session 12 Priorities
-
-1. Wire Tab B-L question configs from updated specs (actual questions not just scaffolds)
-2. Build franchise matching flow in Module 2
-3. Build /apply/module3 sidebar navigation
-4. Paywall — wire Stripe integration
-5. Interview simulator Module 5 scaffold
-
----
-
----
-
-## Phase 1 Scope Boundary
-
-**Phase 1 (in progress):** Modules 0–3, auth, dashboard, document generation, PDF export, Stripe, Vercel deploy.
-
-**Phase 2 (backlog only):** B2B portals (/partner/attorney, /partner/broker), /learn hub, compliance calendar, renewal module, voice simulator, referral engine UI.
-
-**Rule:** Any new feature request not in Phase 1 goes to the Phase 2 backlog. Trade-off must be stated before saying yes.
-
----
-
-## Pre-Vercel Checklist
-
-- [ ] All env vars added to Vercel dashboard (never via CLI — Rule from Careified)
-- [ ] Supabase redirect URLs updated to include https://e2go.app and https://*.vercel.app
-- [ ] Upstash Redis instance created, keys added to Vercel dashboard
-- [ ] Custom domain e2go.app pointed to Vercel
-- [ ] npm run qa passes clean
-- [ ] npm run build passes clean
-- [ ] /api/health returns 200 on preview URL
-- [ ] Manual auth test on preview URL (signup → login → dashboard)
-
----
-
-## Vercel Issues
-
-- GitHub repo created: https://github.com/ocdeployments/e2go
-- To complete Vercel deploy: link Vercel project to this repo in Vercel dashboard
-- Manual steps needed: Add env vars to Vercel, create Upstash Redis if desired
-
----
-
-## Research Assets
-
-| File | Owns | Source |
-|------|------|--------|
-| docs/spec/E2_Community_Questions_Raw.md | Community question database, 315 questions | Perplexity research |
-| docs/spec/E2_Answers_Part1_Eligibility_Investment.md | Verified answers categories 1-2 | Perplexity research |
-| docs/spec/E2_Global_Consulate_Intelligence_Report_Part1.md | Global consulate intelligence, master table | Perplexity research |
-| docs/spec/E2_Official_Knowledge_Base_Research.md | Official guidance compilation | Pending |
-| Consulate fee research | Government fee schedule by country | Pending |
-
----
-
-## Session 14 Log
-
-**Date:** May 31, 2026
-**Session:** 14
-
-**Completed:**
-- Full App UI Redesign: layout.tsx global design system
-- Landing page (/) complete glassmorphism redesign
-- Quiz page (/quiz) navy background + glass header
-- Nav component glassmorphism
-- All 45 tests passing, build clean, pushed to dev
-
-**Key Decisions:**
-- Used inline styles for glassmorphism (not Tailwind) per task requirements
-- Navy background (#060d1f), teal accent (#0D9488)
-- Playfair Display headings, DM Sans body
-- Animated gradient orbs and 60px grid overlay
-- Red-white-red flag strip at top
-
-**Files Changed:**
-- src/app/layout.tsx (fonts, background scene, orbs, grid, flag strip)
-- src/app/globals.css (design system CSS, glass card, animations)
-- src/app/page.tsx (complete landing page redesign)
-- src/app/quiz/page.tsx (glass header)
-- src/components/Nav.tsx (glassmorphism nav)
-
-**Commits:**
-- 603044f layout.tsx: global design system, fonts, background scene
-- 61c334f page.tsx: landing page redesign, glassmorphism, American elements
-- 44208a8 quiz/page.tsx: add glassmorphism background and header
-- eb1a738 Nav.tsx: redesign navigation component
-- bc14126 results/page.tsx: redesign results UI, preserve all outcome logic
-- 41378e8 pricing/page.tsx: redesign pricing UI, preserve tier structure
-
-**Session 14 Priorities:**
-1. Results page redesign ✅ (completed)
-2. Pricing page redesign ✅ (completed)
-3. Dashboard page redesign (pending)
-4. Apply glassmorphism to Login/Signup pages (pending)
-5. Module 3 Tab A styling (TabShell, QuestionRenderer) (pending)
-6. Mobile responsiveness verification at 390px (pending)
-
----
-
-*Auto-generated by Claude Code during session end*
+*Single source of truth for build status.*
+*Update at end of every session.*
+*File: ~/E2-go/BUILD_TRACKER.md*
