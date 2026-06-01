@@ -53,24 +53,30 @@ interface PhaseProps {
 
 function PhaseSection({ title, subtitle, items, checkedItems, onToggle, phase }: PhaseProps) {
   const completion = Math.round((items.filter(i => checkedItems.has(i.key)).length / items.length) * 100);
+  const phaseColors = {
+    1: { accent: "var(--teal)", bg: "var(--teal-dim)" },
+    2: { accent: "#f59e0b", bg: "rgba(245,158,11,0.1)" },
+    3: { accent: "var(--white-dim)", bg: "var(--glass-bg)" },
+  };
+  const colors = phaseColors[phase];
 
   return (
-    <div className="bg-white border border-[#e2e8f0] rounded-xl p-6 mb-6">
+    <div className="glass mb-6" style={{ padding: "24px" }}>
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h2 className="text-xl font-semibold text-[#0b1c30]">{title}</h2>
-          {subtitle && <p className="text-sm text-[#64748b] mt-1">{subtitle}</p>}
-          <p className="text-sm text-[#434655]">{items.length} items</p>
+          <h2 className="text-xl font-semibold font-playfair" style={{ color: "var(--white)" }}>{title}</h2>
+          {subtitle && <p className="text-sm mt-1" style={{ color: "var(--white-dim)" }}>{subtitle}</p>}
+          <p className="text-sm" style={{ color: "var(--white-dim)" }}>{items.length} items</p>
         </div>
         <div className="text-right">
-          <span className="text-2xl font-bold text-[#004ac6]">{completion}%</span>
-          <p className="text-xs text-[#434655]">complete</p>
+          <span className="text-2xl font-bold" style={{ color: colors.accent }}>{completion}%</span>
+          <p className="text-xs" style={{ color: "var(--white-dim)" }}>complete</p>
         </div>
       </div>
-      <div className="w-full bg-[#e2e8f0] rounded-full h-2 mb-6">
+      <div className="w-full rounded-full h-2 mb-6" style={{ background: "var(--glass-border)" }}>
         <div
-          className="bg-[#004ac6] h-2 rounded-full transition-all duration-300"
-          style={{ width: `${completion}%` }}
+          className="h-2 rounded-full transition-all duration-300"
+          style={{ width: `${completion}%`, background: colors.accent }}
         />
       </div>
       <div className="space-y-3">
@@ -81,12 +87,13 @@ function PhaseSection({ title, subtitle, items, checkedItems, onToggle, phase }:
                 type="checkbox"
                 checked={checkedItems.has(item.key)}
                 onChange={() => onToggle(item.key)}
-                className="w-5 h-5 rounded border-[#c3c6d7] text-[#004ac6] focus:ring-[#004ac6]"
+                className="w-5 h-5 rounded"
+                style={{ accentColor: colors.accent }}
               />
-              <span className="text-[#0b1c30]">{item.label}</span>
+              <span style={{ color: "var(--white)" }}>{item.label}</span>
             </label>
             {phase === 1 && item.helpKey && (
-              <button className="text-sm text-[#004ac6] hover:underline flex items-center gap-1">
+              <button className="text-sm flex items-center gap-1" style={{ color: colors.accent }}>
                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
                 </svg>
