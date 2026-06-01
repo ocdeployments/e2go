@@ -102,7 +102,7 @@
     {
       "code": "W-11-RECENT",
       "question": "Q0-11",
-      "trigger": ["Yes — once, within the last 5 years"],
+      "trigger": ["Yes — once, in the last 5 years"],
       "level": "attorney_recommended"
     },
     {
@@ -126,13 +126,13 @@
     {
       "code": "W-13-RECENT",
       "question": "Q0-13",
-      "trigger": ["Yes — a minor matter, within the last 10 years"],
+      "trigger": ["Yes — a minor matter, in the last 10 years"],
       "level": "attorney_recommended"
     },
     {
       "code": "W-13-SERIOUS",
       "question": "Q0-13",
-      "trigger": ["Yes — something more serious (any time)"],
+      "trigger": ["Yes — something more serious"],
       "level": "attorney_recommended"
     },
     {
@@ -157,7 +157,7 @@
     {
       "code": "W-17-NATIONALITY",
       "question": "Q0-17",
-      "trigger": ["No — they hold citizenship in a different country", "I am not sure"],
+      "trigger": ["No — they are not", "I am not sure"],
       "level": "attorney_recommended"
     },
     {
@@ -183,7 +183,7 @@
     {
       "code": "W-01",
       "question": "Q0-02",
-      "trigger": ["My passport has expired but I am a citizen", "No — I do not have a passport from that country"]
+      "trigger": ["It has expired but I am still a citizen", "No — I do not have one"]
     },
     {
       "code": "W-04",
