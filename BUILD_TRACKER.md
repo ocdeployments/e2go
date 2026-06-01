@@ -43,7 +43,7 @@ changed, run npm run build:clean, report summary.
 | Pricing page | ✅ COMPLETE | Founding member pricing, guarantee |
 | Dashboard | ✅ COMPLETE | Needs real data wiring |
 | Landing page redesign | ⚠️ IN PROGRESS | American elements fix pending |
-| Quiz UX fixes | ⚠️ IN PROGRESS | Sub-question timing bug open |
+| Quiz UX fixes | ⚠️ IN PROGRESS | Styling, nationality dynamic, progress bar |
 | Document generation specs | ✅ COMPLETE | 4 spec files — need one update pass |
 | Stripe integration | ⬜ NOT STARTED | Session 14 |
 | Document generation engine | ⬜ NOT STARTED | Sessions 15-16 |
@@ -133,11 +133,11 @@ Conditions: within 14 days, Module 1 started, no documents generated.
 | searchable_select for Q0-01 | ✅ COMPLETE | |
 | Multi-currency Q0-05 | ✅ COMPLETE | 10 currencies |
 | Stage-aware routing | ✅ COMPLETE | A through D |
-| Sub-question for Q0-10 | ⚠️ BUG | Timing bug — appears on back nav, not on click |
+| Sub-question for Q0-10 | ✅ COMPLETE | Appears immediately on selection |
 | Sub-question for Q0-16 | ✅ COMPLETE | |
 | Conversational language rewrite | ✅ COMPLETE | Canada-specific language removed |
 | Cannabis informational gate | ✅ COMPLETE | Replaces hard stop |
-| [nationality] dynamic replacement | ⚠️ BUG | Showing as literal text |
+| [nationality] dynamic replacement | ✅ COMPLETE | Working in quiz component |
 | Scoring logic v3.0 | ✅ COMPLETE | All 6 audit fixes applied |
 | Hard stops PR-01 through PR-08 | ✅ COMPLETE | |
 | PR-THIRD-COUNTRY hard stop | ✅ COMPLETE | Sept 6 2025 policy |
@@ -492,14 +492,25 @@ FULL MODULE 3 COMPLETE
 - Landing page redesign (American elements partially applied)
 - All 45 tests passing
 
-### Next Session Priorities (Session 13)
+### Session 13 (June 1, 2026)
+- Quiz question rewrites verified — already have conversational language
+- Scoring logic triggers updated to match exact option text:
+  - W-01: fixed passport expiry triggers
+  - W-17-NATIONALITY: fixed to match "No — they are not"
+  - W-11-RECENT: fixed to "in the last 5 years"
+  - W-13-RECENT: fixed to "in the last 10 years"
+  - W-13-SERIOUS: fixed to "something more serious"
+- Cannabis informational gate verified — already implemented
+- Sub-question timing verified — evaluates against current answer in same render
+- All 45 tests passing
+
+### Next Session Priorities (Session 14)
 1. Copy DESIGN_REFERENCE.html into docs/ and commit
-2. Fix quiz: sub-question timing, option styling, nationality replacement,
-   progress bar color, footer text removal
-3. Fix landing page: correct document lists, Statue of Liberty SVG,
-   correct American elements
+2. Fix quiz: option styling, nationality replacement, progress bar color, footer text removal
+3. Fix landing page: correct document lists, Statue of Liberty SVG, correct American elements
 4. Session 13A: Wire real questions into Tabs B + C
 5. Update 4 spec files with 5 corrections before building generation engine
+6. Stripe paywall integration
 
 ---
 
