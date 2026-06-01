@@ -82,23 +82,21 @@ export default function PricingPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#f8f9ff] text-[#0b1c30] font-sans">
+    <div className="min-h-screen" style={{ background: "var(--navy)" }}>
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-b border-[#c3c6d7]">
+      <header className="fixed top-0 left-0 right-0 z-50" style={{ backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", background: "rgba(6,13,31,0.8)", borderBottom: "1px solid var(--glass-border)" }}>
         <div className="flex justify-between items-center h-16 px-4 md:px-8 max-w-6xl mx-auto">
           <Link href="/" className="flex items-center gap-2">
-            <svg className="w-6 h-6 text-[#004ac6]" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 2L2 7v10l10 5 10-5V7L12 2z" />
-            </svg>
-            <span className="text-xl font-bold text-[#004ac6]">e2go.app</span>
+            <span className="text-xl font-bold" style={{ color: "var(--teal)", fontFamily: "'Playfair Display', serif" }}>e2go.app</span>
           </Link>
           <div className="flex items-center gap-4">
-            <button className="hidden md:block text-sm text-[#434655] hover:text-[#004ac6]">
+            <Link href="/login" className="hidden md:block text-sm" style={{ color: "var(--white-dim)" }}>
               Sign In
-            </button>
+            </Link>
             <Link
               href="/quiz"
-              className="bg-[#004ac6] text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-[#00337d]"
+              className="text-sm font-medium px-4 py-2 rounded-lg"
+              style={{ background: "var(--teal)", color: "#fff" }}
             >
               Get Started
             </Link>
@@ -110,16 +108,16 @@ export default function PricingPage() {
         <div className="max-w-4xl mx-auto">
           {/* Hero */}
           <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#e5eeff] rounded-full text-[#004ac6] text-sm mb-6">
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm mb-6" style={{ background: "var(--teal-dim)", border: "1px solid var(--teal-border)" }}>
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" style={{ color: "var(--teal)" }}>
                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
               </svg>
-              <span className="text-xs font-semibold uppercase tracking-wider">U.S. E-2 VISA SPECIALIST</span>
+              <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--teal)" }}>U.S. E-2 VISA SPECIALIST</span>
             </div>
-            <h1 className="text-3xl md:text-4xl font-bold text-[#0b1c30] mb-4">
+            <h1 className="text-3xl md:text-4xl font-bold mb-4 font-playfair" style={{ color: "var(--white)" }}>
               Choose Your Solo Path
             </h1>
-            <p className="text-lg text-[#434655] max-w-2xl mx-auto">
+            <p className="text-lg max-w-2xl mx-auto" style={{ color: "var(--white-dim)" }}>
               Unlock your professional visa application package. One-time fee, lifetime access.
             </p>
           </div>
@@ -127,11 +125,11 @@ export default function PricingPage() {
           {/* Founding Member Counter */}
           {!loading && (
             <div className="text-center mb-8">
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-amber-50 border border-amber-200 rounded-lg">
-                <svg className="w-5 h-5 text-amber-600" fill="currentColor" viewBox="0 0 24 24">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg" style={{ background: "rgba(245,158,11,0.15)", border: "1px solid rgba(245,158,11,0.3)" }}>
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" style={{ color: "#f59e0b" }}>
                   <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
                 </svg>
-                <span className="text-sm font-medium text-amber-800">
+                <span className="text-sm font-medium" style={{ color: "#fbbf24" }}>
                   {spotsRemaining} of 500 founding spots remaining
                 </span>
               </div>
@@ -143,12 +141,11 @@ export default function PricingPage() {
             {tiers.map((tier) => (
               <div
                 key={tier.name}
-                className={`relative bg-white border rounded-xl p-6 transition-all hover:shadow-lg ${
-                  tier.recommended ? "border-[#004ac6] border-2 shadow-lg" : "border-[#e2e8f0]"
-                }`}
+                className="glass relative p-6 transition-all hover:lift-on-hover"
+                style={tier.recommended ? { border: "1px solid var(--teal)" } : {}}
               >
                 {/* Founding Member Badge */}
-                <div className="absolute -top-3 left-6 bg-amber-500 text-white text-xs font-semibold px-3 py-1 rounded-full flex items-center gap-1">
+                <div className="absolute -top-3 left-6 text-white text-xs font-semibold px-3 py-1 rounded-full flex items-center gap-1" style={{ background: "#f59e0b" }}>
                   <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
                   </svg>
@@ -156,7 +153,7 @@ export default function PricingPage() {
                 </div>
 
                 {tier.recommended && (
-                  <div className="absolute -top-3 right-6 bg-[#004ac6] text-white text-xs font-semibold px-3 py-1 rounded-full flex items-center gap-1">
+                  <div className="absolute -top-3 right-6 text-white text-xs font-semibold px-3 py-1 rounded-full flex items-center gap-1" style={{ background: "var(--teal)" }}>
                     <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
                       <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
                     </svg>
@@ -166,20 +163,20 @@ export default function PricingPage() {
 
                 <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
                   <div className="flex-1 pt-2">
-                    <h3 className="text-xl font-semibold text-[#0b1c30] mb-1">{tier.name}</h3>
+                    <h3 className="text-xl font-semibold mb-1 font-playfair" style={{ color: "var(--white)" }}>{tier.name}</h3>
                     <div className="flex items-baseline gap-2">
-                      <span className={`text-3xl font-bold ${tier.recommended ? "text-[#004ac6]" : "text-[#0b1c30]"}`}>
+                      <span className="text-3xl font-bold" style={{ color: tier.recommended ? "var(--teal)" : "var(--white)" }}>
                         ${tier.price}
                       </span>
-                      <span className="text-sm text-[#737686]">USD</span>
+                      <span className="text-sm" style={{ color: "var(--white-dim)" }}>USD</span>
                     </div>
                   </div>
 
                   <div className="flex-1">
                     <ul className="space-y-2 mb-4">
                       {tier.features.map((feature, i) => (
-                        <li key={i} className="flex items-center gap-2 text-sm text-[#434655]">
-                          <svg className="w-4 h-4 text-[#004ac6]" fill="currentColor" viewBox="0 0 24 24">
+                        <li key={i} className="flex items-center gap-2 text-sm" style={{ color: "var(--white-dim)" }}>
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" style={{ color: "var(--teal)" }}>
                             <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
                           </svg>
                           {feature}
@@ -188,11 +185,8 @@ export default function PricingPage() {
                     </ul>
                     <button
                       onClick={handleSelect}
-                      className={`w-full font-medium py-3 rounded-lg transition-colors ${
-                        tier.recommended
-                          ? "bg-[#004ac6] text-white hover:bg-[#00337d]"
-                          : "border border-[#004ac6] text-[#004ac6] hover:bg-[#e5eeff]"
-                      }`}
+                      className="w-full font-medium py-3 rounded-lg transition-colors"
+                      style={tier.recommended ? { background: "var(--teal)", color: "#fff" } : { border: "1px solid var(--teal)", color: "var(--teal)" }}
                     >
                       {tier.recommended ? "Get Started" : `Select ${tier.name}`}
                     </button>
@@ -203,46 +197,46 @@ export default function PricingPage() {
           </div>
 
           {/* Guarantee Section */}
-          <div className="bg-white border border-[#e2e8f0] rounded-xl p-6 mb-12">
+          <div className="glass mb-12" style={{ padding: "24px" }}>
             <div className="flex items-start gap-4">
-              <div className="flex-shrink-0 w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                <svg className="w-6 h-6 text-green-600" fill="currentColor" viewBox="0 0 24 24">
+              <div className="flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center" style={{ background: "rgba(34,197,94,0.15)" }}>
+                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" style={{ color: "#22c55e" }}>
                   <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z" />
                 </svg>
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-[#0b1c30] mb-2">
+                <h3 className="text-lg font-semibold mb-2 font-playfair" style={{ color: "var(--white)" }}>
                   Founding Member Guarantee
                 </h3>
-                <p className="text-sm text-[#434655] mb-4">
+                <p className="text-sm mb-4" style={{ color: "var(--white-dim)" }}>
                   If you are not satisfied within 14 days of purchase, we will refund your payment
                   in full minus payment processing fees.
                 </p>
-                <div className="text-sm text-[#737686]">
+                <div className="text-sm" style={{ color: "var(--white-dim)" }}>
                   <p className="mb-2"><strong>To qualify:</strong> Request within 14 days of purchase, Module 1 started but no documents generated.</p>
-                  <p>Email <a href="mailto:support@e2go.app" className="text-[#004ac6] underline">support@e2go.app</a> — we respond within 2 business days. No forms. No arguments.</p>
+                  <p>Email <a href="mailto:support@e2go.app" style={{ color: "var(--teal)", textDecoration: "underline" }}>support@e2go.app</a> — we respond within 2 business days. No forms. No arguments.</p>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Trust Badges */}
-          <div className="pt-8 border-t border-[#e2e8f0] max-w-2xl mx-auto">
-            <div className="flex flex-col md:flex-row justify-between items-center gap-4 opacity-80">
-              <div className="flex items-center gap-2 text-sm text-[#434655]">
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+          <div className="pt-8 border-t border-[var(--glass-border)] max-w-2xl mx-auto">
+            <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+              <div className="flex items-center gap-2 text-sm" style={{ color: "var(--white-dim)" }}>
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" style={{ color: "var(--teal)" }}>
                   <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z" />
                 </svg>
                 Secure payment via Stripe
               </div>
-              <div className="flex items-center gap-2 text-sm text-[#434655]">
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+              <div className="flex items-center gap-2 text-sm" style={{ color: "var(--white-dim)" }}>
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" style={{ color: "var(--teal)" }}>
                   <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z" />
                 </svg>
                 256-bit encryption
               </div>
-              <div className="flex items-center gap-2 text-sm text-[#434655]">
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+              <div className="flex items-center gap-2 text-sm" style={{ color: "var(--white-dim)" }}>
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" style={{ color: "var(--teal)" }}>
                   <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
                 </svg>
                 100% money-back guarantee
@@ -253,21 +247,21 @@ export default function PricingPage() {
       </main>
 
       {/* Stats Section */}
-      <section className="py-12 px-4 bg-white border-t border-[#e2e8f0]">
+      <section className="py-12 px-4" style={{ borderTop: "1px solid var(--glass-border)" }}>
         <div className="max-w-4xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
           {stats.map((stat, i) => (
             <div key={i}>
-              <p className="text-2xl md:text-3xl font-bold text-[#004ac6] mb-1">{stat.value}</p>
-              <p className="text-sm text-[#434655]">{stat.label}</p>
+              <p className="text-2xl md:text-3xl font-bold mb-1 font-playfair" style={{ color: "var(--teal)" }}>{stat.value}</p>
+              <p className="text-sm" style={{ color: "var(--white-dim)" }}>{stat.label}</p>
             </div>
           ))}
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="py-8 px-4 bg-[#0b1c30]">
+      <footer className="py-8 px-4" style={{ background: "rgba(6,13,31,0.8)", borderTop: "1px solid var(--glass-border)" }}>
         <div className="max-w-5xl mx-auto text-center">
-          <p className="text-sm text-gray-400">
+          <p className="text-sm" style={{ color: "var(--white-dim)" }}>
             This tool is a self-service preparation guide and does not constitute legal advice.
             e2go.app is not a law firm and does not provide legal representation or immigration
             services. For legal advice, consult a qualified U.S. immigration attorney.
