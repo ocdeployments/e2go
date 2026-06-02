@@ -537,6 +537,18 @@ All document conditional logic from Document_Conditionals.md applied.
 ### RULE 19 — DATABASE SAFETY
 Never DROP TABLE. Always IF NOT EXISTS. Idempotent scripts only.
 
+### RULE 20 — MAGIC MCP FOR UI
+Invoke Magic MCP before writing any new component shell. Never write UI shells from scratch.
+
+### RULE 21 — LAZYWEB BEFORE MAGIC
+Invoke Lazyweb for reference screens before describing to Magic.
+
+### RULE 22 — MAGIC FOR NEW SURFACES ONLY
+Magic for net-new UI. Extensions of existing components follow DESIGN_REFERENCE.html Section 07 directly.
+
+### RULE 23 — SPEC FILES STAY CURRENT
+Any question added or changed during a session must be written back to the relevant spec file in the same session. Code and spec must never diverge.
+
 ---
 
 ## DOCUMENT TOOLKIT INSTALLED
