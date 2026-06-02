@@ -184,7 +184,7 @@ All 11 tab specs updated in docs/ with:
 | C — Visa Category | ✅ Spec updated | ✅ Wired (Session 13A) |
 | D — Cover Letter | ✅ Spec updated | ✅ Wired (Session 13B) |
 | E — Ownership | ✅ Spec updated | ⬜ Not wired |
-| F — Investment Proof | ✅ Spec updated | ✅ Wired (Session 13C) |
+| F — Investment Proof | ✅ Spec updated | ✅ Batch 1 Wired (Session 13C) · Batch 2 pending |
 | G — Business Evidence | ✅ Spec updated | ⬜ Not wired |
 | H — Source of Funds | ✅ Spec updated | ⬜ Not wired |
 | I — Non-Marginality | ✅ Spec updated | ⬜ Not wired |
@@ -405,6 +405,7 @@ FULL MODULE 3 COMPLETE
 | Sarah Mitchell docs are .md not .docx | MEDIUM | Regenerate using docx skill properly |
 | Spec files need 5 updates | MEDIUM | Before building generation engine |
 | DESIGN_REFERENCE.html not in repo | MEDIUM | Copy from Downloads, commit |
+| Magic MCP not loading | MEDIUM | Server starts and shuts down. API key restored. enabledPlugins fix did not resolve. Investigate separately — not a build blocker. |
 
 ---
 
