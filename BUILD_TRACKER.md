@@ -180,8 +180,8 @@ All 11 tab specs updated in docs/ with:
 
 | Tab | Spec Status | Wired Status |
 |---|---|---|
-| B — Personal Checklist | ✅ Spec updated | ⬜ Not wired |
-| C — Visa Category | ✅ Spec updated | ⬜ Not wired |
+| B — Personal Checklist | ✅ Spec updated | ✅ Wired (Session 13A) |
+| C — Visa Category | ✅ Spec updated | ✅ Wired (Session 13A) |
 | D — Cover Letter | ✅ Spec updated | ⬜ Not wired |
 | E — Ownership | ✅ Spec updated | ⬜ Not wired |
 | F — Investment Proof | ✅ Spec updated | ⬜ Not wired |
@@ -516,13 +516,26 @@ FULL MODULE 3 COMPLETE
   - Footer "American Dream Edition": NOT in quiz page (other pages have it)
 - All 45 tests passing
 
-### Next Session Priorities (Session 14)
-1. Copy DESIGN_REFERENCE.html into docs/ and commit
-2. Fix quiz: option styling, nationality replacement, progress bar color, footer text removal
-3. Fix landing page: correct document lists, Statue of Liberty SVG, correct American elements
-4. Session 13A: Wire real questions into Tabs B + C
-5. Update 4 spec files with 5 corrections before building generation engine
-6. Stripe paywall integration
+### Session 13A (June 1, 2026) — Tab B and C Wiring
+- Wire Tab B (Personal Documents Checklist) with real content:
+  - INTRO, QUESTION, COMPLETION, RESUME states
+  - Checklist generated from Supabase answers (always + conditional items)
+  - Photo requirements card with U.S. visa specs
+  - 800ms debounce autosave to QB-CHECK-[slug]
+- Wire Tab C (Visa Category Confirmation Letter) with real content:
+  - INTRO, QUESTION, COMPLETION, RESUME states
+  - Formal E-2 letter generated from answers
+  - Confirmation flow saves QC-CONFIRMED
+- DESIGN_REFERENCE.html Section 07 added for Module 3 patterns
+- All tabs use glassmorphism design system (#060d1f, #0D9488, Playfair/DM Sans)
+- Build passes with zero errors
+
+### Next Session Priorities (Session 13B)
+1. Wire Tab D (Cover Letter) — first tab with real interview questions
+2. Wire Tab J (Qualifications) — investor experience and background
+3. Both tabs use INTRO/COMPLETION patterns from Session 13A
+4. Tab D pulls from QA-51 through QA-56 for investment details
+5. Tab J pulls from investor experience questions
 
 ---
 
