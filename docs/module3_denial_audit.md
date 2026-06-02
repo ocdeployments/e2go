@@ -203,8 +203,8 @@ non-immigrant intent with SPECIFIC, VERIFIABLE Canadian ties.
 
 | ID | Action | Denial Addressed | Status |
 |----|--------|-----------------|--------|
-| QF-NEW-01 | ADD: funds spent on expenses | D-02 | ✅ RESOLVED |
-| QF-NEW-02 | ADD: loan structure confirmation | D-12 | ✅ RESOLVED |
+| QF-NEW-01 | Wire: Tab F QF-NEW-01, currency input | D-02 | ✅ WIRED (Session 13C) — Red advisory: "Funds sitting idle in a business bank account are NOT considered 'at risk' and are one of the most common E-2 denial reasons. The investment must be spent or irrevocably committed to specific expenses." |
+| QF-NEW-02 | Wire: Tab F QF-NEW-02, select options | D-12 | ✅ WIRED (Session 13C) — Red advisory: "E-2 loans must be secured against personal assets, not business assets. Uncertain loan security should be clarified with the lender or an attorney." |
 | QH-NEW-01 | ADD: paper trail gaps screener | D-03 | ✅ RESOLVED |
 | QI-NEW-01 | ADD: structured hiring plan | D-07 | ✅ RESOLVED |
 | QI-NEW-02 | ADD: revenue projections basis | D-06 | ✅ RESOLVED |
