@@ -184,7 +184,7 @@ All 11 tab specs updated in docs/ with:
 | C — Visa Category | ✅ Spec updated | ✅ Wired (Session 13A) |
 | D — Cover Letter | ✅ Spec updated | ✅ Wired (Session 13B) |
 | E — Ownership | ✅ Spec updated | ⬜ Not wired |
-| F — Investment Proof | ✅ Spec updated | ⬜ Not wired |
+| F — Investment Proof | ✅ Spec updated | ✅ Wired (Session 13C) |
 | G — Business Evidence | ✅ Spec updated | ⬜ Not wired |
 | H — Source of Funds | ✅ Spec updated | ⬜ Not wired |
 | I — Non-Marginality | ✅ Spec updated | ⬜ Not wired |
@@ -553,9 +553,27 @@ FULL MODULE 3 COMPLETE
 - Glassmorphism design (#060d1f, #0D9488, Playfair/DM Sans)
 - Build passes with zero errors
 
-### Next Session Priorities (Session 13C)
-1. Wire Tab F personal section
-2. Continue with remaining tabs per BUILD_TRACKER
+### Session 13C (June 2, 2026) — Tab F Wiring (Investment Proof)
+- Wired Tab F personal section with 9 questions:
+  - QF-01: Investment type (existing/new/franchise)
+  - QF-02: Total amount invested
+  - QF-03: Total business cost
+  - QF-04: Investment form (multiselect)
+  - QF-05: Source of funds (multiselect)
+  - QF-NEW-01: Funds deployed amount (D-02 flag)
+  - QF-NEW-02: Loan security confirmation (D-12 flag)
+  - QF-06: Paper trail (W-06 flag)
+  - QF-07: U.S. business bank account
+- Auto-generated document checklist based on answers
+- Attorney advisories for paper trail gaps, funds not deployed, uncertain loan security
+- Batch 2 placeholder card for business-specific questions
+- INTRO/COMPLETION/RESUME patterns from DESIGN_REFERENCE.html
+- Glassmorphism design (#060d1f, #0D9488, Playfair/DM Sans)
+- Build passes with zero errors
+
+### Next Session Priorities (Session 14)
+1. Stripe paywall integration — Tab F's COMPLETION CTA routes here
+2. The paywall triggers after Batch 1 personal tabs complete
 
 ---
 
