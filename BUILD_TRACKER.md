@@ -182,13 +182,13 @@ All 11 tab specs updated in docs/ with:
 |---|---|---|
 | B — Personal Checklist | ✅ Spec updated | ✅ Wired (Session 13A) |
 | C — Visa Category | ✅ Spec updated | ✅ Wired (Session 13A) |
-| D — Cover Letter | ✅ Spec updated | ⬜ Not wired |
+| D — Cover Letter | ✅ Spec updated | ✅ Wired (Session 13B) |
 | E — Ownership | ✅ Spec updated | ⬜ Not wired |
 | F — Investment Proof | ✅ Spec updated | ⬜ Not wired |
 | G — Business Evidence | ✅ Spec updated | ⬜ Not wired |
 | H — Source of Funds | ✅ Spec updated | ⬜ Not wired |
 | I — Non-Marginality | ✅ Spec updated | ⬜ Not wired |
-| J — Qualifications | ✅ Spec updated | ⬜ Not wired |
+| J — Qualifications | ✅ Spec updated | ✅ Wired (Session 13B) |
 | K — Business Plan | ✅ Spec updated | ⬜ Not wired |
 | L — Family Dependents | ✅ Spec updated | ⬜ Not wired |
 
@@ -536,6 +536,26 @@ FULL MODULE 3 COMPLETE
 3. Both tabs use INTRO/COMPLETION patterns from Session 13A
 4. Tab D pulls from QA-51 through QA-56 for investment details
 5. Tab J pulls from investor experience questions
+
+### Session 13B (June 1, 2026) — Tab D and Tab J Wiring
+- Created prompts/v1/documents/cover-letter-v1.md (generation prompt)
+- Wired Tab D (Cover Letter Generator) with 6 questions:
+  - QD-01 through QD-06 (professional background, motivation, qualifications, 12-month plan, ties to home, unusual case)
+  - Generation screen with animated progress steps
+  - Letter preview and confirmation flow
+  - 800ms debounce autosave to Supabase
+- Wired Tab J (Qualifications + Org Chart) with questions:
+  - QJ-01 through QJ-06 plus branches (education, certifications, work history, relevant experience, prior business, team management)
+  - Org chart visualization (solo and partnership modes)
+  - Document checklist auto-generation
+  - "No management experience" advisory for W-MGMT flag
+- Both tabs use Section 07 INTRO/COMPLETION patterns from DESIGN_REFERENCE.html
+- Glassmorphism design (#060d1f, #0D9488, Playfair/DM Sans)
+- Build passes with zero errors
+
+### Next Session Priorities (Session 13C)
+1. Wire Tab F personal section
+2. Continue with remaining tabs per BUILD_TRACKER
 
 ---
 
