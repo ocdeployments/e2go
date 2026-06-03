@@ -549,6 +549,26 @@ Magic for net-new UI. Extensions of existing components follow DESIGN_REFERENCE.
 ### RULE 23 — SPEC FILES STAY CURRENT
 Any question added or changed during a session must be written back to the relevant spec file in the same session. Code and spec must never diverge.
 
+### RULE 24 — DESIGN DIRECTION LOCKED — OBSIDIAN GOLD PERMANENTLY
+Background #0a0a0a, accent #C9A84C, text #f5f0e8,
+Cormorant Garamond headings, DM Sans body.
+Never teal, navy, glassmorphism, Inter headline.
+
+### RULE 25 — FORM UX LOCKED — CATEGORY-BASED LAYOUT ONLY
+Never one-question-at-a-time in Module 3.
+Left sidebar with completion rings.
+All questions in a category visible simultaneously.
+
+### RULE 26 — VOICE PROFILE JSON EXTRACTION ELIMINATED
+Pass raw writing sample text directly into generation prompts.
+Do not extract structured JSON perplexity/burstiness scores.
+
+### RULE 27 — COVER LETTER — DRAFT STEP 1, FINALISE STEP 15
+Not first. Not last. Both phases.
+Draft: 8-paragraph framework, narrative, placeholders.
+Finalise: insert cross-references and confirmed figures
+after all other documents are generated.
+
 ---
 
 ## DOCUMENT TOOLKIT INSTALLED
