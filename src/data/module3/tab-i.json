@@ -1,0 +1,12 @@
+{
+  "QI-01": { "type": "currency", "question": "What is your projected gross revenue for Year 1?", "section": "Revenue Projections" },
+  "QI-02": { "type": "currency", "question": "What is your projected gross revenue for Year 3?", "section": "Revenue Projections" },
+  "QI-03": { "type": "multiselect", "question": "What is the basis for your revenue projections?", "section": "Revenue Projections", "options": ["FDD Item 19 (franchise disclosure data)", "Market research", "Prior owner financials", "Industry benchmarks", "Personal experience estimate", "Professional business plan", "Other"] },
+  "QI-04": { "type": "currency", "question": "What will your annual salary or draw from the business be in Year 1?", "section": "Revenue Projections" },
+  "QI-05": { "type": "number", "question": "How many full-time U.S. employees will you hire in Year 1?", "section": "Job Creation" },
+  "QI-06": { "type": "number", "question": "How many part-time U.S. employees will you hire in Year 1?", "section": "Job Creation" },
+  "QI-07": { "type": "textarea", "question": "What are the planned roles for Year 1 hires?", "section": "Job Creation" },
+  "QI-08": { "type": "number", "question": "What is your Year 3 total employee count projection?", "section": "Job Creation" },
+  "QI-09": { "type": "select", "question": "Does the business produce goods or services for the U.S. market beyond supporting your household?", "section": "Economic Contribution", "options": ["Yes — serves U.S. customers directly", "Yes — provides B2B services to U.S. businesses", "Primarily supports my own income", "Not yet operational"] },
+  "QI-10": { "type": "multiselect", "question": "What evidence supports your non-marginality argument?", "section": "Economic Contribution", "options": ["FDD performance data", "Signed client contracts", "Letters of intent", "Market research report", "Prior owner financials", "Industry association data", "Business plan projections"] }
+}

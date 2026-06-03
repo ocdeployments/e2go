@@ -1,38 +1,58 @@
 'use client';
 
-import Link from 'next/link';
+import { ApplicationProvider, useApplication } from '@/contexts/ApplicationContext';
+import TabPage from '@/components/module3/TabPage';
+import { Section } from '@/types/module3';
+
+const sections: Section[] = [
+  {
+    id: "revenue-projections",
+    title: "Revenue Projections",
+    fields: [
+      { key: "QI-01", type: "number", label: "What is your projected gross revenue for Year 1?", helperText: "Base this on FDD Item 19 data, market research, or comparable business performance. This figure appears in your business plan.", required: true, privacy_category: "required" },
+      { key: "QI-02", type: "number", label: "What is your projected gross revenue for Year 3?", required: true, privacy_category: "required" },
+      { key: "QI-03", type: "multiselect", label: "What is the basis for your revenue projections?", options: [{value: "FDD Item 19 (franchise disclosure data)", label: "FDD Item 19 (franchise disclosure data)"}, {value: "Market research", label: "Market research"}, {value: "Prior owner financials", label: "Prior owner financials"}, {value: "Industry benchmarks", label: "Industry benchmarks"}, {value: "Personal experience estimate", label: "Personal experience estimate"}, {value: "Professional business plan", label: "Professional business plan"}, {value: "Other", label: "Other"}], required: true, privacy_category: "required" },
+      { key: "QI-04", type: "number", label: "What will your annual salary or draw from the business be in Year 1?", helperText: "Used to calculate the marginality ratio. Must be reasonable relative to revenue.", required: true, privacy_category: "required" }
+    ]
+  },
+  {
+    id: "job-creation",
+    title: "Job Creation",
+    fields: [
+      { key: "QI-05", type: "number", label: "How many full-time U.S. employees will you hire in Year 1?", helperText: "Full-time = 35+ hours per week. Officers look for job creation beyond your role.", required: true, privacy_category: "required" },
+      { key: "QI-06", type: "number", label: "How many part-time U.S. employees will you hire in Year 1?", required: true, privacy_category: "green" },
+      { key: "QI-07", type: "text", label: "What are the planned roles for Year 1 hires?", helperText: "List job titles and approximate wages. Example: 2 × Caregiver ($18/hr), 1 × Coordinator ($22/hr)", required: true, privacy_category: "green" },
+      { key: "QI-08", type: "number", label: "What is your Year 3 total employee count projection?", required: true, privacy_category: "green" }
+    ]
+  },
+  {
+    id: "economic-contribution",
+    title: "Economic Contribution",
+    fields: [
+      { key: "QI-09", type: "select", label: "Does the business produce goods or services for the U.S. market beyond supporting your household?", options: [{value: "Yes — serves U.S. customers directly", label: "Yes — serves U.S. customers directly"}, {value: "Yes — provides B2B services to U.S. businesses", label: "Yes — provides B2B services to U.S. businesses"}, {value: "Primarily supports my own income", label: "Primarily supports my own income"}, {value: "Not yet operational", label: "Not yet operational"}], required: true, privacy_category: "required" },
+      { key: "QI-10", type: "multiselect", label: "What evidence supports your non-marginality argument?", options: [{value: "FDD performance data", label: "FDD performance data"}, {value: "Signed client contracts", label: "Signed client contracts"}, {value: "Letters of intent", label: "Letters of intent"}, {value: "Market research report", label: "Market research report"}, {value: "Prior owner financials", label: "Prior owner financials"}, {value: "Industry association data", label: "Industry association data"}, {value: "Business plan projections", label: "Business plan projections"}], required: true, privacy_category: "green" }
+    ]
+  }
+];
+
+function TabIContent() {
+  const { answers, setAnswer } = useApplication();
+  return (
+    <TabPage
+      tabTitle="Non-Marginality Evidence"
+      tabDescription="Provide proof that your business will contribute significantly to the U.S. economy."
+      sections={sections as Section[]}
+      answers={answers}
+      onAnswerChange={(key, val) => setAnswer(key, val)}
+      onSaveSection={async () => {}}
+    />
+  );
+}
 
 export default function TabIPage() {
   return (
-    <div className="min-h-screen bg-[#f8f9ff] flex flex-col">
-      <header className="w-full sticky top-0 z-50 bg-white border-b border-[#c3c6d7]">
-        <div className="flex justify-between items-center h-16 px-4 max-w-2xl mx-auto">
-          <Link href="/" className="flex items-center gap-2">
-            <span className="text-xl font-bold text-[#004ac6]">e2go.app</span>
-          </Link>
-          <Link href="/dashboard" className="text-sm text-[#434655] hover:text-[#004ac6]">
-            Dashboard
-          </Link>
-        </div>
-      </header>
-
-      <main className="flex-1 flex items-center justify-center px-4 py-12">
-        <div className="max-w-md w-full text-center">
-          <div className="bg-white rounded-xl border border-[#e2e8f0] p-8">
-            <h1 className="text-2xl font-bold text-[#0b1c30] mb-4">Tab I — Coming Soon</h1>
-            <p className="text-[#434655] mb-6">
-              This section is currently in development.
-            </p>
-            <Link
-              href="/apply/module3/a"
-              className="inline-block px-6 py-3 bg-[#004ac6] text-white rounded-lg font-medium hover:bg-[#00337d] transition-colors"
-            >
-              Back to Tab A
-            </Link>
-          </div>
-        </div>
-      </main>
-
-      </div>
+    <ApplicationProvider>
+      <TabIContent />
+    </ApplicationProvider>
   );
 }
