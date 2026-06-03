@@ -84,7 +84,7 @@ export default function OverviewPage() {
       <header className="fixed top-0 left-0 right-0 z-50" style={{ backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", background: "rgba(6,13,31,0.8)", borderBottom: "1px solid var(--glass-border)" }}>
         <div className="flex justify-between items-center h-16 px-4 md:px-8 max-w-6xl mx-auto">
           <Link href="/" className="flex items-center gap-2">
-            <span className="text-xl font-bold" style={{ color: "var(--teal)", fontFamily: "'Playfair Display', serif" }}>e2go.app</span>
+            <span className="text-xl font-bold" style={{ color: "var(--gold)", fontFamily: "'Cormorant Garamond', serif" }}>e2go.app</span>
           </Link>
           <div className="flex items-center gap-4">
             <Link href="/dashboard" className="text-sm" style={{ color: "var(--white-dim)" }}>
@@ -99,10 +99,10 @@ export default function OverviewPage() {
           {/* Hero */}
           <div className="text-center mb-12">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm mb-6" style={{ background: "var(--teal-dim)", border: "1px solid var(--teal-border)" }}>
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" style={{ color: "var(--teal)" }}>
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" style={{ color: "var(--gold)" }}>
                 <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" />
               </svg>
-              <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--teal)" }}>MODULE 3</span>
+              <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--gold)" }}>MODULE 3</span>
             </div>
             <h1 className="text-3xl md:text-4xl font-bold mb-4 font-playfair" style={{ color: "var(--white)" }}>
               Document Interview Engine
@@ -121,7 +121,7 @@ export default function OverviewPage() {
                 className="glass p-5 transition-all hover:lift-on-hover"
               >
                 <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center font-bold" style={{ background: "var(--teal)", color: "#fff" }}>
+                  <div className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center font-bold" style={{ background: "var(--gold)", color: "#fff" }}>
                     {tab.letter}
                   </div>
                   <div className="flex-1">
@@ -129,7 +129,7 @@ export default function OverviewPage() {
                       <h3 className="font-semibold font-playfair" style={{ color: "var(--white)" }}>{tab.title}</h3>
                       <span className="text-xs px-2 py-1 rounded-full" style={{
                         background: tab.status === "Required" ? "var(--teal-dim)" : "var(--glass-bg)",
-                        color: tab.status === "Required" ? "var(--teal)" : "var(--white-dim)"
+                        color: tab.status === "Required" ? "var(--gold)" : "var(--white-dim)"
                       }}>
                         {tab.status}
                       </span>
@@ -146,7 +146,7 @@ export default function OverviewPage() {
             <Link
               href="/apply/module3/a"
               className="inline-block text-lg font-medium px-8 py-4 rounded-xl transition-colors"
-              style={{ background: "var(--teal)", color: "#fff", boxShadow: "0 0 30px rgba(13,148,136,0.25)" }}
+              style={{ background: "var(--gold)", color: "#fff", boxShadow: "0 0 30px rgba(13,148,136,0.25)" }}
             >
               I&apos;m ready. Let&apos;s begin.
             </Link>

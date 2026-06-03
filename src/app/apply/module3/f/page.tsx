@@ -393,13 +393,13 @@ export default function TabFPage() {
     return (
       <div className="min-h-screen" style={{ background: '#060d1f' }}>
         <div className="fixed top-0 left-0 right-0 h-1 z-40" style={{ background: 'rgba(255,255,255,0.1)' }}>
-          <div className="h-full transition-all" style={{ width: '16.67%', background: '#0D9488' }} />
+          <div className="h-full transition-all" style={{ width: '16.67%', background: 'var(--gold)' }} />
         </div>
 
         <header className="fixed top-1 left-0 right-0 z-50" style={{ backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', background: 'rgba(6,13,31,0.8)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
           <div className="flex justify-between items-center h-16 px-4 md:px-8 max-w-3xl mx-auto">
             <div onClick={() => router.push('/')} className="flex items-center gap-2 cursor-pointer">
-              <span className="text-xl font-bold" style={{ color: '#0D9488', fontFamily: "'Playfair Display', serif" }}>e2go.app</span>
+              <span className="text-xl font-bold" style={{ color: 'var(--gold)', fontFamily: "'Cormorant Garamond', serif" }}>e2go.app</span>
             </div>
             <div className="text-sm" style={{ color: 'rgba(240,237,230,0.65)' }}>Tab F</div>
           </div>
@@ -407,8 +407,8 @@ export default function TabFPage() {
 
         <main className="pt-24 pb-12 px-4 max-w-2xl mx-auto">
           <div className="glass p-8 text-center" style={{ background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px' }}>
-            <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6" style={{ background: 'rgba(13,148,136,0.15)' }}>
-              <svg className="w-10 h-10" fill="currentColor" viewBox="0 0 24 24" style={{ color: '#0D9488' }}>
+            <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6" style={{ background: 'rgba(201,168,76,0.15)' }}>
+              <svg className="w-10 h-10" fill="currentColor" viewBox="0 0 24 24" style={{ color: 'var(--gold)' }}>
                 <path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z" />
               </svg>
             </div>
@@ -422,15 +422,15 @@ export default function TabFPage() {
             </p>
 
             <div className="flex flex-wrap justify-center gap-2 mb-8">
-              <span className="px-3 py-1 rounded-full text-xs" style={{ background: 'rgba(13,148,136,0.15)', color: '#0D9488', border: '1px solid rgba(13,148,136,0.3)' }}>Investment amount</span>
-              <span className="px-3 py-1 rounded-full text-xs" style={{ background: 'rgba(13,148,136,0.15)', color: '#0D9488', border: '1px solid rgba(13,148,136,0.3)' }}>Fund source</span>
-              <span className="px-3 py-1 rounded-full text-xs" style={{ background: 'rgba(13,148,136,0.15)', color: '#0D9488', border: '1px solid rgba(13,148,136,0.3)' }}>Paper trail</span>
+              <span className="px-3 py-1 rounded-full text-xs" style={{ background: 'rgba(201,168,76,0.15)', color: 'var(--gold)', border: '1px solid rgba(201,168,76,0.3)' }}>Investment amount</span>
+              <span className="px-3 py-1 rounded-full text-xs" style={{ background: 'rgba(201,168,76,0.15)', color: 'var(--gold)', border: '1px solid rgba(201,168,76,0.3)' }}>Fund source</span>
+              <span className="px-3 py-1 rounded-full text-xs" style={{ background: 'rgba(201,168,76,0.15)', color: 'var(--gold)', border: '1px solid rgba(201,168,76,0.3)' }}>Paper trail</span>
             </div>
 
             <button
               onClick={() => setScreenState('question')}
               className="w-full font-medium rounded-lg transition-colors mb-4"
-              style={{ minHeight: '56px', fontSize: '16px', fontWeight: 500, background: '#0D9488', color: '#fff', borderRadius: '8px' }}
+              style={{ minHeight: '56px', fontSize: '16px', fontWeight: 500, background: 'var(--gold)', color: '#fff', borderRadius: '8px' }}
             >
               Start Investment Proof →
             </button>
@@ -453,18 +453,18 @@ export default function TabFPage() {
     return (
       <div className="min-h-screen" style={{ background: '#060d1f' }}>
         <div className="fixed top-0 left-0 right-0 h-1 z-40" style={{ background: 'rgba(255,255,255,0.1)' }}>
-          <div className="h-full transition-all" style={{ width: `${16.67 + (progress / 100) * 8.33}%`, background: '#0D9488' }} />
+          <div className="h-full transition-all" style={{ width: `${16.67 + (progress / 100) * 8.33}%`, background: 'var(--gold)' }} />
         </div>
 
         <header className="fixed top-1 left-0 right-0 z-50" style={{ backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', background: 'rgba(6,13,31,0.8)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
           <div className="flex justify-between items-center h-16 px-4 md:px-8 max-w-3xl mx-auto">
             <div onClick={() => router.push('/')} className="flex items-center gap-2 cursor-pointer">
-              <span className="text-xl font-bold" style={{ color: '#0D9488', fontFamily: "'Playfair Display', serif" }}>e2go.app</span>
+              <span className="text-xl font-bold" style={{ color: 'var(--gold)', fontFamily: "'Cormorant Garamond', serif" }}>e2go.app</span>
             </div>
-            <div className="flex items-center gap-2 text-sm" style={{ color: '#0D9488' }}>
+            <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--gold)' }}>
               {saveStatus === 'saving' ? (
                 <>
-                  <div className="w-4 h-4 border-2 border-[#0D9488] border-t-transparent rounded-full animate-spin" />
+                  <div className="w-4 h-4 border-2 border-[var(--gold)] border-t-transparent rounded-full animate-spin" />
                   <span>Saving...</span>
                 </>
               ) : (
@@ -491,7 +491,7 @@ export default function TabFPage() {
             </div>
 
             <div className="h-2 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.1)' }}>
-              <div className="h-full transition-all" style={{ width: `${progress}%`, background: '#0D9488' }} />
+              <div className="h-full transition-all" style={{ width: `${progress}%`, background: 'var(--gold)' }} />
             </div>
           </div>
 
@@ -502,7 +502,7 @@ export default function TabFPage() {
               setScreenState('question');
             }}
             className="w-full font-medium rounded-lg transition-colors"
-            style={{ minHeight: '56px', fontSize: '16px', fontWeight: 500, background: '#0D9488', color: '#fff', borderRadius: '8px' }}
+            style={{ minHeight: '56px', fontSize: '16px', fontWeight: 500, background: 'var(--gold)', color: '#fff', borderRadius: '8px' }}
           >
             Continue →
           </button>
@@ -516,18 +516,18 @@ export default function TabFPage() {
     return (
       <div className="min-h-screen" style={{ background: '#060d1f' }}>
         <div className="fixed top-0 left-0 right-0 h-1 z-40" style={{ background: 'rgba(255,255,255,0.1)' }}>
-          <div className="h-full transition-all" style={{ width: `${16.67 + ((currentQuestionIndex + 1) / QUESTIONS.length) * 8.33}%`, background: '#0D9488' }} />
+          <div className="h-full transition-all" style={{ width: `${16.67 + ((currentQuestionIndex + 1) / QUESTIONS.length) * 8.33}%`, background: 'var(--gold)' }} />
         </div>
 
         <header className="fixed top-1 left-0 right-0 z-50" style={{ backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', background: 'rgba(6,13,31,0.8)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
           <div className="flex justify-between items-center h-16 px-4 md:px-8 max-w-3xl mx-auto">
             <div onClick={() => router.push('/')} className="flex items-center gap-2 cursor-pointer">
-              <span className="text-xl font-bold" style={{ color: '#0D9488', fontFamily: "'Playfair Display', serif" }}>e2go.app</span>
+              <span className="text-xl font-bold" style={{ color: 'var(--gold)', fontFamily: "'Cormorant Garamond', serif" }}>e2go.app</span>
             </div>
-            <div className="flex items-center gap-2 text-sm" style={{ color: '#0D9488' }}>
+            <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--gold)' }}>
               {saveStatus === 'saving' ? (
                 <>
-                  <div className="w-4 h-4 border-2 border-[#0D9488] border-t-transparent rounded-full animate-spin" />
+                  <div className="w-4 h-4 border-2 border-[var(--gold)] border-t-transparent rounded-full animate-spin" />
                   <span>Saving...</span>
                 </>
               ) : (
@@ -548,7 +548,7 @@ export default function TabFPage() {
             <span className="text-xs uppercase font-semibold" style={{ letterSpacing: '0.04em', fontSize: '12px', fontWeight: 600, color: 'rgba(240,237,230,0.65)' }}>
               INVESTMENT PROOF
             </span>
-            <span className="px-2 py-0.5 rounded text-xs font-medium" style={{ background: 'rgba(13,148,136,0.15)', color: '#0D9488' }}>
+            <span className="px-2 py-0.5 rounded text-xs font-medium" style={{ background: 'rgba(13,148,136,0.15)', color: 'var(--gold)' }}>
               {currentQuestionIndex + 1} of {QUESTIONS.length}
             </span>
           </div>
@@ -613,8 +613,8 @@ export default function TabFPage() {
                         <div
                           className="w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0"
                           style={{
-                            borderColor: isSelected ? '#0D9488' : 'rgba(255,255,255,0.3)',
-                            background: isSelected ? '#0D9488' : 'transparent'
+                            borderColor: isSelected ? 'var(--gold)' : 'rgba(255,255,255,0.3)',
+                            background: isSelected ? 'var(--gold)' : 'transparent'
                           }}
                         >
                           {isSelected && (
@@ -703,7 +703,7 @@ export default function TabFPage() {
               <button
                 onClick={handleNext}
                 className="flex-1 font-medium rounded-lg transition-colors"
-                style={{ minHeight: '56px', fontSize: '16px', fontWeight: 500, background: '#0D9488', color: '#fff', borderRadius: '8px' }}
+                style={{ minHeight: '56px', fontSize: '16px', fontWeight: 500, background: 'var(--gold)', color: '#fff', borderRadius: '8px' }}
               >
                 {currentQuestionIndex === QUESTIONS.length - 1 ? 'Complete →' : 'Next →'}
               </button>
@@ -719,16 +719,16 @@ export default function TabFPage() {
     return (
       <div className="min-h-screen" style={{ background: '#060d1f' }}>
         <div className="fixed top-0 left-0 right-0 h-1 z-40" style={{ background: 'rgba(255,255,255,0.1)' }}>
-          <div className="h-full transition-all" style={{ width: '25%', background: '#0D9488' }} />
+          <div className="h-full transition-all" style={{ width: '25%', background: 'var(--gold)' }} />
         </div>
 
         <header className="fixed top-1 left-0 right-0 z-50" style={{ backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', background: 'rgba(6,13,31,0.8)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
           <div className="flex justify-between items-center h-16 px-4 md:px-8 max-w-3xl mx-auto">
             <div onClick={() => router.push('/')} className="flex items-center gap-2 cursor-pointer">
-              <span className="text-xl font-bold" style={{ color: '#0D9488', fontFamily: "'Playfair Display', serif" }}>e2go.app</span>
+              <span className="text-xl font-bold" style={{ color: 'var(--gold)', fontFamily: "'Cormorant Garamond', serif" }}>e2go.app</span>
             </div>
             <div className="flex items-center gap-2 text-sm">
-              <span style={{ color: '#0D9488' }}>✓ Saved</span>
+              <span style={{ color: 'var(--gold)' }}>✓ Saved</span>
             </div>
           </div>
         </header>
@@ -736,7 +736,7 @@ export default function TabFPage() {
         <main className="pt-24 pb-24 px-4 max-w-2xl mx-auto">
           <div className="glass p-8 text-center" style={{ background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px' }}>
             <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6" style={{ background: 'rgba(13,148,136,0.15)' }}>
-              <svg className="w-10 h-10" fill="currentColor" viewBox="0 0 24 24" style={{ color: '#0D9488' }}>
+              <svg className="w-10 h-10" fill="currentColor" viewBox="0 0 24 24" style={{ color: 'var(--gold)' }}>
                 <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
               </svg>
             </div>
@@ -752,7 +752,7 @@ export default function TabFPage() {
             {/* Document count */}
             <div className="flex items-center justify-center gap-4 mb-8">
               <div className="text-center">
-                <div className="text-3xl font-bold" style={{ color: '#0D9488' }}>{checklistItems.length}</div>
+                <div className="text-3xl font-bold" style={{ color: 'var(--gold)' }}>{checklistItems.length}</div>
                 <div className="text-xs uppercase" style={{ color: 'rgba(240,237,230,0.45)', letterSpacing: '0.04em' }}>Documents</div>
               </div>
             </div>
@@ -775,7 +775,7 @@ export default function TabFPage() {
             <button
               onClick={() => router.push('/apply/module3/j')}
               className="w-full font-medium rounded-lg transition-colors"
-              style={{ minHeight: '56px', fontSize: '16px', fontWeight: 500, background: '#0D9488', color: '#fff', borderRadius: '8px' }}
+              style={{ minHeight: '56px', fontSize: '16px', fontWeight: 500, background: 'var(--gold)', color: '#fff', borderRadius: '8px' }}
             >
               Continue — Unlock Your Application Package
             </button>
@@ -788,7 +788,7 @@ export default function TabFPage() {
   // Loading state
   return (
     <div className="min-h-screen flex items-center justify-center" style={{ background: '#060d1f' }}>
-      <div className="w-8 h-8 border-2 border-[#0D9488] border-t-transparent rounded-full animate-spin" />
+      <div className="w-8 h-8 border-2 border-[var(--gold)] border-t-transparent rounded-full animate-spin" />
     </div>
   );
 }

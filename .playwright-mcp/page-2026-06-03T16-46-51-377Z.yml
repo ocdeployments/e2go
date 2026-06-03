@@ -1,0 +1,144 @@
+- generic [ref=e2]:
+  - banner [ref=e3]:
+    - generic [ref=e4]:
+      - link "e2go.app" [ref=e5] [cursor=pointer]:
+        - /url: /
+        - generic [ref=e6]: e2go.app
+      - generic [ref=e7]:
+        - link "Sign In" [ref=e8] [cursor=pointer]:
+          - /url: /login
+        - link "Get Started" [ref=e9] [cursor=pointer]:
+          - /url: /quiz
+  - main [ref=e10]:
+    - generic [ref=e11]:
+      - generic [ref=e12]:
+        - generic [ref=e13]:
+          - img [ref=e14]
+          - generic [ref=e16]: U.S. E-2 VISA SPECIALIST
+        - heading "Choose Your Solo Path" [level=1] [ref=e17]
+        - paragraph [ref=e18]: Unlock your professional visa application package. One-time fee, lifetime access.
+      - generic [ref=e19]:
+        - generic [ref=e20]:
+          - generic [ref=e21]:
+            - img [ref=e22]
+            - text: FOUNDING MEMBER PRICING
+          - generic [ref=e24]:
+            - img [ref=e25]
+            - text: MOST POPULAR
+          - generic [ref=e27]:
+            - generic [ref=e28]:
+              - heading "Solo Individual" [level=3] [ref=e29]
+              - generic [ref=e30]:
+                - generic [ref=e31]: $247
+                - generic [ref=e32]: USD
+            - generic [ref=e33]:
+              - list [ref=e34]:
+                - listitem [ref=e35]:
+                  - img [ref=e36]
+                  - text: Full Case Builder
+                - listitem [ref=e38]:
+                  - img [ref=e39]
+                  - text: Business Plan Generator
+                - listitem [ref=e41]:
+                  - img [ref=e42]
+                  - text: 6-Pillar Analysis
+                - listitem [ref=e44]:
+                  - img [ref=e45]
+                  - text: PDF Package Export
+              - button "Get Started" [ref=e47] [cursor=pointer]
+        - generic [ref=e48]:
+          - generic [ref=e49]:
+            - img [ref=e50]
+            - text: FOUNDING MEMBER PRICING
+          - generic [ref=e52]:
+            - generic [ref=e53]:
+              - heading "Solo Couple" [level=3] [ref=e54]
+              - generic [ref=e55]:
+                - generic [ref=e56]: $297
+                - generic [ref=e57]: USD
+            - generic [ref=e58]:
+              - list [ref=e59]:
+                - listitem [ref=e60]:
+                  - img [ref=e61]
+                  - text: Everything in Individual
+                - listitem [ref=e63]:
+                  - img [ref=e64]
+                  - text: Spouse EAD application prep
+              - button "Select Solo Couple" [ref=e66] [cursor=pointer]
+        - generic [ref=e67]:
+          - generic [ref=e68]:
+            - img [ref=e69]
+            - text: FOUNDING MEMBER PRICING
+          - generic [ref=e71]:
+            - generic [ref=e72]:
+              - heading "Solo Family" [level=3] [ref=e73]
+              - generic [ref=e74]:
+                - generic [ref=e75]: $347
+                - generic [ref=e76]: USD
+            - generic [ref=e77]:
+              - list [ref=e78]:
+                - listitem [ref=e79]:
+                  - img [ref=e80]
+                  - text: Everything in Couple
+                - listitem [ref=e82]:
+                  - img [ref=e83]
+                  - text: Minor children dependency forms
+              - button "Select Solo Family" [ref=e85] [cursor=pointer]
+        - generic [ref=e86]:
+          - generic [ref=e87]:
+            - img [ref=e88]
+            - text: FOUNDING MEMBER PRICING
+          - generic [ref=e90]:
+            - generic [ref=e91]:
+              - heading "Solo Extended" [level=3] [ref=e92]
+              - generic [ref=e93]:
+                - generic [ref=e94]: $397
+                - generic [ref=e95]: USD
+            - generic [ref=e96]:
+              - list [ref=e97]:
+                - listitem [ref=e98]:
+                  - img [ref=e99]
+                  - text: Everything in Family
+                - listitem [ref=e101]:
+                  - img [ref=e102]
+                  - text: Additional business partner inclusion
+              - button "Select Solo Extended" [ref=e104] [cursor=pointer]
+      - generic [ref=e106]:
+        - img [ref=e108]
+        - generic [ref=e110]:
+          - heading "Founding Member Guarantee" [level=3] [ref=e111]
+          - paragraph [ref=e112]: If you are not satisfied within 14 days of purchase, we will refund your payment in full minus payment processing fees.
+          - generic [ref=e113]:
+            - paragraph [ref=e114]:
+              - strong [ref=e115]: "To qualify:"
+              - text: Request within 14 days of purchase, Module 1 started but no documents generated.
+            - paragraph [ref=e116]:
+              - text: Email
+              - link "support@e2go.app" [ref=e117] [cursor=pointer]:
+                - /url: mailto:support@e2go.app
+              - text: — we respond within 2 business days. No forms. No arguments.
+      - generic [ref=e119]:
+        - generic [ref=e120]:
+          - img [ref=e121]
+          - text: Secure payment via Stripe
+        - generic [ref=e123]:
+          - img [ref=e124]
+          - text: 256-bit encryption
+        - generic [ref=e126]:
+          - img [ref=e127]
+          - text: 100% money-back guarantee
+  - generic [ref=e130]:
+    - generic [ref=e131]:
+      - paragraph [ref=e132]: 54,364
+      - paragraph [ref=e133]: E-2 visas issued FY2024
+    - generic [ref=e134]:
+      - paragraph [ref=e135]: 90%
+      - paragraph [ref=e136]: Global approval rate FY2024
+    - generic [ref=e137]:
+      - paragraph [ref=e138]: 3–6 weeks
+      - paragraph [ref=e139]: Typical Toronto processing
+    - generic [ref=e140]:
+      - paragraph [ref=e141]: $0
+      - paragraph [ref=e142]: Hidden fees
+  - contentinfo [ref=e143]:
+    - paragraph [ref=e145]: This tool is a self-service preparation guide and does not constitute legal advice. e2go.app is not a law firm and does not provide legal representation or immigration services. For legal advice, consult a qualified U.S. immigration attorney.

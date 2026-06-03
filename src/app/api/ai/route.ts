@@ -22,7 +22,6 @@ async function checkRateLimitWithRedis(userId: string): Promise<boolean> {
       const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN;
 
       if (!redisUrl || !redisToken) {
-        console.log("[AI] Redis not configured, failing open");
         return true;
       }
 

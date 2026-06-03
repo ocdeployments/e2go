@@ -325,13 +325,13 @@ export default function TabJPage() {
               onClick={() => handleAnswerChange(currentQuestion.key, opt.value)}
               className="w-full text-left p-4 rounded-lg transition-all"
               style={{
-                background: (answers as Record<string, string>)[currentQuestion.key] === opt.value ? 'rgba(13,148,136,0.15)' : 'rgba(255,255,255,0.05)',
-                border: `1px solid ${(answers as Record<string, string>)[currentQuestion.key] === opt.value ? 'rgba(13,148,136,0.5)' : 'rgba(255,255,255,0.1)'}`,
+                background: (answers as Record<string, string>)[currentQuestion.key] === opt.value ? 'rgba(201,168,76,0.15)' : 'rgba(255,255,255,0.05)',
+                border: `1px solid ${(answers as Record<string, string>)[currentQuestion.key] === opt.value ? 'rgba(201,168,76,0.5)' : 'rgba(255,255,255,0.1)'}`,
                 color: '#f0ede6',
               }}
             >
               {(answers as Record<string, string>)[currentQuestion.key] === opt.value && (
-                <span className="float-right" style={{ color: '#0D9488' }}>✓</span>
+                <span className="float-right" style={{ color: 'var(--gold)' }}>✓</span>
               )}
               {opt.label}
             </button>
@@ -350,7 +350,7 @@ export default function TabJPage() {
                   type="checkbox"
                   checked={!(answers as Record<string, string>)[currentQuestion.key] && (answers as Record<string, string>)[currentQuestion.key] !== undefined}
                   onChange={(e) => handleAnswerChange(currentQuestion.key, e.target.checked ? currentQuestion.naLabel || 'N/A' : '')}
-                  style={{ accentColor: '#0D9488' }}
+                  style={{ accentColor: 'var(--gold)' }}
                 />
                 <span>{currentQuestion.naLabel}</span>
               </label>
@@ -380,11 +380,11 @@ export default function TabJPage() {
   // Render document checklist
   const renderDocChecklist = () => (
     <div className="mt-8 p-4 rounded-xl" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
-      <h3 className="text-sm font-semibold mb-3" style={{ color: '#0D9488', letterSpacing: '0.04em' }}>DOCUMENT CHECKLIST</h3>
+      <h3 className="text-sm font-semibold mb-3" style={{ color: 'var(--gold)', letterSpacing: '0.04em' }}>DOCUMENT CHECKLIST</h3>
       <div className="space-y-2">
         {DOC_CHECKLIST_ITEMS.map(item => (
-          <div key={item.id} className="flex items-start gap-3 p-2 rounded" style={{ background: item.always ? 'rgba(13,148,136,0.1)' : 'transparent', border: item.always ? '1px solid rgba(13,148,136,0.3)' : 'none' }}>
-            <div className="w-5 h-5 rounded border flex items-center justify-center mt-0.5" style={{ borderColor: item.always ? '#0D9488' : 'rgba(255,255,255,0.3)', background: item.always ? '#0D9488' : 'transparent' }}>
+          <div key={item.id} className="flex items-start gap-3 p-2 rounded" style={{ background: item.always ? 'rgba(201,168,76,0.1)' : 'transparent', border: item.always ? '1px solid rgba(201,168,76,0.3)' : 'none' }}>
+            <div className="w-5 h-5 rounded border flex items-center justify-center mt-0.5" style={{ borderColor: item.always ? 'var(--gold)' : 'rgba(255,255,255,0.3)', background: item.always ? 'var(--gold)' : 'transparent' }}>
               {item.always && <svg className="w-3 h-3" fill="white" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>}
             </div>
             <div>
@@ -403,17 +403,17 @@ export default function TabJPage() {
 
     return (
       <div className="mt-8">
-        <h3 className="text-sm font-semibold mb-4" style={{ color: '#0D9488', letterSpacing: '0.04em' }}>ORGANIZATIONAL CHART</h3>
+        <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--gold)', letterSpacing: '0.04em' }}>ORGANIZATIONAL CHART</h3>
 
         {/* Solo applicant */}
         {!orgChartData.partnerName ? (
           <div className="flex flex-col items-center">
-            <div className="p-4 rounded-xl text-center" style={{ background: 'rgba(13,148,136,0.15)', border: '1px solid rgba(13,148,136,0.4)', minWidth: '200px' }}>
-              <p style={{ color: '#f0ede6', fontFamily: "'Playfair Display', serif", fontSize: '16px', fontWeight: 600 }}>{orgChartData.applicantName}</p>
+            <div className="p-4 rounded-xl text-center" style={{ background: 'rgba(201,168,76,0.15)', border: '1px solid rgba(201,168,76,0.4)', minWidth: '200px' }}>
+              <p style={{ color: '#f0ede6', fontFamily: "'Cormorant Garamond', serif", fontSize: '16px', fontWeight: 600 }}>{orgChartData.applicantName}</p>
               <p style={{ color: 'rgba(240,237,230,0.65)', fontSize: '13px' }}>{orgChartData.applicantTitle}</p>
-              <p style={{ color: '#0D9488', fontSize: '12px' }}>({orgChartData.ownershipPercent}%)</p>
+              <p style={{ color: 'var(--gold)', fontSize: '12px' }}>({orgChartData.ownershipPercent}%)</p>
             </div>
-            <div className="w-px h-8" style={{ background: '#0D9488' }} />
+            <div className="w-px h-8" style={{ background: 'var(--gold)' }} />
             <div className="flex gap-4">
               {orgChartData.employeeRoles.length > 0 ? orgChartData.employeeRoles.slice(0, 3).map((role, i) => (
                 <div key={i} className="p-3 rounded-lg text-center" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', minWidth: '100px' }}>
@@ -430,14 +430,14 @@ export default function TabJPage() {
           /* Partnership */
           <div className="flex justify-center gap-8">
             <div className="flex flex-col items-center">
-              <div className="p-4 rounded-xl text-center" style={{ background: 'rgba(13,148,136,0.15)', border: '1px solid rgba(13,148,136,0.4)', minWidth: '120px' }}>
-                <p style={{ color: '#f0ede6', fontFamily: "'Playfair Display', serif", fontSize: '14px', fontWeight: 600 }}>{orgChartData.applicantName}</p>
+              <div className="p-4 rounded-xl text-center" style={{ background: 'rgba(201,168,76,0.15)', border: '1px solid rgba(201,168,76,0.4)', minWidth: '120px' }}>
+                <p style={{ color: '#f0ede6', fontFamily: "'Cormorant Garamond', serif", fontSize: '14px', fontWeight: 600 }}>{orgChartData.applicantName}</p>
                 <p style={{ color: 'rgba(240,237,230,0.65)', fontSize: '11px' }}>Co-Owner ({orgChartData.ownershipPercent}%)</p>
               </div>
             </div>
             <div className="flex flex-col items-center">
-              <div className="p-4 rounded-xl text-center" style={{ background: 'rgba(13,148,136,0.15)', border: '1px solid rgba(13,148,136,0.4)', minWidth: '120px' }}>
-                <p style={{ color: '#f0ede6', fontFamily: "'Playfair Display', serif", fontSize: '14px', fontWeight: 600 }}>{orgChartData.partnerName}</p>
+              <div className="p-4 rounded-xl text-center" style={{ background: 'rgba(201,168,76,0.15)', border: '1px solid rgba(201,168,76,0.4)', minWidth: '120px' }}>
+                <p style={{ color: '#f0ede6', fontFamily: "'Cormorant Garamond', serif", fontSize: '14px', fontWeight: 600 }}>{orgChartData.partnerName}</p>
                 <p style={{ color: 'rgba(240,237,230,0.65)', fontSize: '11px' }}>Co-Owner ({orgChartData.partnerOwnership}%)</p>
               </div>
             </div>
@@ -450,7 +450,7 @@ export default function TabJPage() {
           <button
             onClick={handleConfirmOrgChart}
             className="flex-1 font-medium rounded-lg"
-            style={{ minHeight: '56px', background: '#0D9488', color: '#fff', borderRadius: '8px' }}
+            style={{ minHeight: '56px', background: 'var(--gold)', color: '#fff', borderRadius: '8px' }}
           >
             This looks correct →
           </button>
@@ -469,15 +469,15 @@ export default function TabJPage() {
   // ==================== INTRO STATE ====================
   if (screenState === 'intro') {
     return (
-      <div className="min-h-screen" style={{ background: '#060d1f' }}>
+      <div className="min-h-screen" style={{ background: 'var(--bg)' }}>
         <div className="fixed top-0 left-0 right-0 h-1 z-40" style={{ background: 'rgba(255,255,255,0.1)' }}>
-          <div className="h-full transition-all" style={{ width: '75%', background: '#0D9488' }} />
+          <div className="h-full transition-all" style={{ width: '75%', background: 'var(--gold)' }} />
         </div>
 
         <header className="fixed top-1 left-0 right-0 z-50" style={{ backdropFilter: 'blur(12px)', background: 'rgba(6,13,31,0.8)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
           <div className="flex justify-between items-center h-16 px-4 md:px-8 max-w-3xl mx-auto">
             <div className="flex items-center gap-2">
-              <span className="text-xl font-bold" style={{ color: '#0D9488', fontFamily: "'Playfair Display', serif" }}>e2go.app</span>
+              <span className="text-xl font-bold" style={{ color: 'var(--gold)', fontFamily: "'Cormorant Garamond', serif" }}>e2go.app</span>
             </div>
             <div className="text-sm" style={{ color: 'rgba(240,237,230,0.65)' }}>Tab J</div>
           </div>
@@ -485,8 +485,8 @@ export default function TabJPage() {
 
         <main className="pt-24 pb-12 px-4 max-w-2xl mx-auto">
           <div className="glass p-8 text-center" style={{ background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px' }}>
-            <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6" style={{ background: 'rgba(13,148,136,0.15)' }}>
-              <svg className="w-10 h-10" fill="currentColor" viewBox="0 0 24 24" style={{ color: '#0D9488' }}>
+            <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6" style={{ background: 'rgba(201,168,76,0.15)' }}>
+              <svg className="w-10 h-10" fill="currentColor" viewBox="0 0 24 24" style={{ color: 'var(--gold)' }}>
                 <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
               </svg>
             </div>
@@ -500,10 +500,10 @@ export default function TabJPage() {
             </p>
 
             <div className="flex flex-wrap justify-center gap-2 mb-6">
-              <span style={{ padding: '4px 10px', borderRadius: '4px', fontSize: '11px', background: 'rgba(13,148,136,0.15)', color: '#0D9488', border: '1px solid rgba(13,148,136,0.3)' }}>Work history</span>
-              <span style={{ padding: '4px 10px', borderRadius: '4px', fontSize: '11px', background: 'rgba(13,148,136,0.15)', color: '#0D9488', border: '1px solid rgba(13,148,136,0.3)' }}>Education and certifications</span>
-              <span style={{ padding: '4px 10px', borderRadius: '4px', fontSize: '11px', background: 'rgba(13,148,136,0.15)', color: '#0D9488', border: '1px solid rgba(13,148,136,0.3)' }}>Org chart generated automatically</span>
-              <span style={{ padding: '4px 10px', borderRadius: '4px', fontSize: '11px', background: 'rgba(13,148,136,0.15)', color: '#0D9488', border: '1px solid rgba(13,148,136,0.3)' }}>Directly feeds your cover letter</span>
+              <span style={{ padding: '4px 10px', borderRadius: '4px', fontSize: '11px', background: 'rgba(201,168,76,0.15)', color: 'var(--gold)', border: '1px solid rgba(201,168,76,0.3)' }}>Work history</span>
+              <span style={{ padding: '4px 10px', borderRadius: '4px', fontSize: '11px', background: 'rgba(201,168,76,0.15)', color: 'var(--gold)', border: '1px solid rgba(201,168,76,0.3)' }}>Education and certifications</span>
+              <span style={{ padding: '4px 10px', borderRadius: '4px', fontSize: '11px', background: 'rgba(201,168,76,0.15)', color: 'var(--gold)', border: '1px solid rgba(201,168,76,0.3)' }}>Org chart generated automatically</span>
+              <span style={{ padding: '4px 10px', borderRadius: '4px', fontSize: '11px', background: 'rgba(201,168,76,0.15)', color: 'var(--gold)', border: '1px solid rgba(201,168,76,0.3)' }}>Directly feeds your cover letter</span>
             </div>
 
             <p className="text-sm mb-6" style={{ color: 'rgba(240,237,230,0.45)', fontSize: '14px' }}>
@@ -513,7 +513,7 @@ export default function TabJPage() {
             <button
               onClick={handleIntroStart}
               className="w-full font-medium rounded-lg transition-colors mb-4"
-              style={{ minHeight: '56px', fontSize: '16px', fontWeight: 500, background: '#0D9488', color: '#fff', borderRadius: '8px' }}
+              style={{ minHeight: '56px', fontSize: '16px', fontWeight: 500, background: 'var(--gold)', color: '#fff', borderRadius: '8px' }}
             >
               Begin Qualifications →
             </button>
@@ -534,15 +534,15 @@ export default function TabJPage() {
   // ==================== ORGCHART STATE ====================
   if (screenState === 'orgchart') {
     return (
-      <div className="min-h-screen" style={{ background: '#060d1f' }}>
+      <div className="min-h-screen" style={{ background: 'var(--bg)' }}>
         <div className="fixed top-0 left-0 right-0 h-1 z-40" style={{ background: 'rgba(255,255,255,0.1)' }}>
-          <div className="h-full transition-all" style={{ width: '91%', background: '#0D9488' }} />
+          <div className="h-full transition-all" style={{ width: '91%', background: 'var(--gold)' }} />
         </div>
 
         <header className="fixed top-1 left-0 right-0 z-50" style={{ backdropFilter: 'blur(12px)', background: 'rgba(6,13,31,0.8)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
           <div className="flex justify-between items-center h-16 px-4 md:px-8 max-w-3xl mx-auto">
             <div className="flex items-center gap-2">
-              <span className="text-xl font-bold" style={{ color: '#0D9488', fontFamily: "'Playfair Display', serif" }}>e2go.app</span>
+              <span className="text-xl font-bold" style={{ color: 'var(--gold)', fontFamily: "'Cormorant Garamond', serif" }}>e2go.app</span>
             </div>
           </div>
         </header>
@@ -563,26 +563,26 @@ export default function TabJPage() {
   // ==================== COMPLETION STATE ====================
   if (screenState === 'completion') {
     return (
-      <div className="min-h-screen" style={{ background: '#060d1f' }}>
+      <div className="min-h-screen" style={{ background: 'var(--bg)' }}>
         <div className="fixed top-0 left-0 right-0 h-1 z-40" style={{ background: 'rgba(255,255,255,0.1)' }}>
-          <div className="h-full transition-all" style={{ width: '100%', background: '#0D9488' }} />
+          <div className="h-full transition-all" style={{ width: '100%', background: 'var(--gold)' }} />
         </div>
 
         <header className="fixed top-1 left-0 right-0 z-50" style={{ backdropFilter: 'blur(12px)', background: 'rgba(6,13,31,0.8)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
           <div className="flex justify-between items-center h-16 px-4 md:px-8 max-w-3xl mx-auto">
             <div className="flex items-center gap-2">
-              <span className="text-xl font-bold" style={{ color: '#0D9488', fontFamily: "'Playfair Display', serif" }}>e2go.app</span>
+              <span className="text-xl font-bold" style={{ color: 'var(--gold)', fontFamily: "'Cormorant Garamond', serif" }}>e2go.app</span>
             </div>
             <div className="flex items-center gap-2 text-sm">
-              <span style={{ color: '#0D9488' }}>✓ Saved</span>
+              <span style={{ color: 'var(--gold)' }}>✓ Saved</span>
             </div>
           </div>
         </header>
 
         <main className="pt-24 pb-24 px-4 max-w-2xl mx-auto">
           <div className="glass p-8 text-center" style={{ background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px' }}>
-            <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6" style={{ background: 'rgba(13,148,136,0.15)' }}>
-              <svg className="w-10 h-10" fill="currentColor" viewBox="0 0 24 24" style={{ color: '#0D9488' }}>
+            <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6" style={{ background: 'rgba(201,168,76,0.15)' }}>
+              <svg className="w-10 h-10" fill="currentColor" viewBox="0 0 24 24" style={{ color: 'var(--gold)' }}>
                 <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
               </svg>
             </div>
@@ -596,15 +596,15 @@ export default function TabJPage() {
             </p>
 
             <div className="text-center mb-2">
-              <span className="text-xs uppercase font-semibold" style={{ letterSpacing: '0.04em', fontSize: '12px', fontWeight: 600, color: '#0D9488' }}>
+              <span className="text-xs uppercase font-semibold" style={{ letterSpacing: '0.04em', fontSize: '12px', fontWeight: 600, color: 'var(--gold)' }}>
                 NEXT SECTION
               </span>
             </div>
 
             <div className="glass p-4 mb-6 text-left" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px' }}>
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(13,148,136,0.15)' }}>
-                  <span className="font-semibold" style={{ color: '#0D9488' }}>K</span>
+                <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(201,168,76,0.15)' }}>
+                  <span className="font-semibold" style={{ color: 'var(--gold)' }}>K</span>
                 </div>
                 <div>
                   <p className="font-medium" style={{ color: '#f0ede6' }}>Business Plan</p>
@@ -618,7 +618,7 @@ export default function TabJPage() {
                 <button
                   onClick={handleCompletionNext}
                   className="w-full font-medium rounded-lg transition-colors"
-                  style={{ minHeight: '56px', fontSize: '16px', fontWeight: 500, background: '#0D9488', color: '#fff' }}
+                  style={{ minHeight: '56px', fontSize: '16px', fontWeight: 500, background: 'var(--gold)', color: '#fff' }}
                 >
                   Continue to Business Plan →
                 </button>
@@ -632,20 +632,20 @@ export default function TabJPage() {
 
   // ==================== QUESTION STATE ====================
   return (
-    <div className="min-h-screen" style={{ background: '#060d1f' }}>
+    <div className="min-h-screen" style={{ background: 'var(--bg)' }}>
       <div className="fixed top-0 left-0 right-0 h-1 z-40" style={{ background: 'rgba(255,255,255,0.1)' }}>
-        <div className="h-full transition-all" style={{ width: `${((9 + ((currentIndex + 1) / QUESTIONS.filter(q => !q.showIf).length)) / 12) * 100}%`, background: '#0D9488' }} />
+        <div className="h-full transition-all" style={{ width: `${((9 + ((currentIndex + 1) / QUESTIONS.filter(q => !q.showIf).length)) / 12) * 100}%`, background: 'var(--gold)' }} />
       </div>
 
       <header className="fixed top-1 left-0 right-0 z-50" style={{ backdropFilter: 'blur(12px)', background: 'rgba(6,13,31,0.8)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
         <div className="flex justify-between items-center h-16 px-4 md:px-8 max-w-3xl mx-auto">
           <div className="flex items-center gap-2">
-            <span className="text-xl font-bold" style={{ color: '#0D9488', fontFamily: "'Playfair Display', serif" }}>e2go.app</span>
+            <span className="text-xl font-bold" style={{ color: 'var(--gold)', fontFamily: "'Cormorant Garamond', serif" }}>e2go.app</span>
           </div>
-          <div className="flex items-center gap-2 text-sm" style={{ color: '#0D9488' }}>
+          <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--gold)' }}>
             {saveStatus === 'saving' ? (
               <>
-                <div className="w-4 h-4 border-2 border-[#0D9488] border-t-transparent rounded-full animate-spin" />
+                <div className="w-4 h-4 border-2 border-[var(--gold)] border-t-transparent rounded-full animate-spin" />
                 <span>Saving...</span>
               </>
             ) : (
@@ -665,14 +665,14 @@ export default function TabJPage() {
           <span className="text-xs uppercase font-semibold" style={{ letterSpacing: '0.04em', fontSize: '12px', fontWeight: 600, color: 'rgba(240,237,230,0.65)' }}>
             QUESTION {currentIndex + 1} OF {QUESTIONS.filter(q => !q.showIf).length}
           </span>
-          <span className="px-2 py-0.5 rounded text-xs font-medium" style={{ background: 'rgba(13,148,136,0.15)', color: '#0D9488' }}>
+          <span className="px-2 py-0.5 rounded text-xs font-medium" style={{ background: 'rgba(201,168,76,0.15)', color: 'var(--gold)' }}>
             Qualifications
           </span>
         </div>
 
         {currentQuestion && (
           <div className="glass p-6" style={{ background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px' }}>
-            <label className="block text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: '#0D9488', letterSpacing: '0.04em' }}>
+            <label className="block text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--gold)', letterSpacing: '0.04em' }}>
               {currentQuestion.label}
             </label>
 
@@ -689,7 +689,7 @@ export default function TabJPage() {
             {/* No management advisory */}
             {showNoMgmtAdvisory && (
               <div className="mb-4 p-3 rounded-lg" style={{ background: 'rgba(217,119,6,0.15)', border: '1px solid rgba(217,119,6,0.35)' }}>
-                <p style={{ color: '#D97706', fontSize: '13px' }}>
+                <p style={{ color: 'var(--gold)', fontSize: '13px' }}>
                   No direct staff management experience isn&apos;t disqualifying — but your business plan should show a gradual staffing plan. We&apos;ll frame your transferable skills and your plan for managing growth.
                 </p>
               </div>
@@ -709,7 +709,7 @@ export default function TabJPage() {
                 onClick={handleContinue}
                 disabled={saveStatus === 'saving'}
                 className="px-6 py-3 font-medium rounded-lg disabled:opacity-50"
-                style={{ minHeight: '56px', background: '#0D9488', color: '#fff', borderRadius: '8px' }}
+                style={{ minHeight: '56px', background: 'var(--gold)', color: '#fff', borderRadius: '8px' }}
               >
                 {saveStatus === 'saving' ? 'Saving...' : isLastQuestion ? 'Review Org Chart' : 'Continue'}
               </button>

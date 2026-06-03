@@ -122,7 +122,7 @@ function TabAPageContent() {
           return;
         }
 
-        console.log('Profile upsert succeeded for user:', authUser.id);
+        // Profile created successfully.
 
         const { data: newApp, error: createError } = await supabase
           .from('applications')
@@ -136,7 +136,6 @@ function TabAPageContent() {
           setLoading(false);
           return;
         }
-        console.log('Application created:', newApp.id);
         setApplicationId(newApp.id);
       }
 
@@ -208,8 +207,8 @@ function TabAWithContext() {
     setAnswer(key, value);
   }, [setAnswer]);
 
-  const handleSaveSection = useCallback(async (_sectionId: string) => {
-    console.log('Section saved:', _sectionId);
+  const handleSaveSection = useCallback(async () => {
+    // Section saved.
   }, []);
 
   return (

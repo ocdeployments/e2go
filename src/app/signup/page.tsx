@@ -63,9 +63,9 @@ function SignupForm() {
   // Loading state
   if (status === 'loading') {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--navy)" }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--bg)" }}>
         <div className="text-center">
-          <div className="w-8 h-8 border-4 border-[var(--teal)] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <div className="w-8 h-8 border-4 border-[var(--gold)] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p style={{ color: "var(--white-dim)" }}>Creating your account...</p>
         </div>
       </div>
@@ -75,11 +75,11 @@ function SignupForm() {
   // Success state
   if (status === 'success') {
     return (
-      <div className="min-h-screen flex flex-col" style={{ background: "var(--navy)" }}>
+      <div className="min-h-screen flex flex-col" style={{ background: "var(--bg)" }}>
         <header className="fixed top-0 left-0 right-0 z-50" style={{ backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", background: "rgba(6,13,31,0.8)", borderBottom: "1px solid var(--glass-border)" }}>
           <div className="flex justify-between items-center h-16 px-4 max-w-xl mx-auto">
             <Link href="/" className="flex items-center gap-2">
-              <span className="text-xl font-bold" style={{ color: "var(--teal)", fontFamily: "'Playfair Display', serif" }}>e2go.app</span>
+              <span className="text-xl font-bold" style={{ color: "var(--gold)", fontFamily: "'Cormorant Garamond', serif" }}>e2go.app</span>
             </Link>
           </div>
         </header>
@@ -88,7 +88,7 @@ function SignupForm() {
           <div className="w-full max-w-md">
             <div className="glass p-8 text-center">
               <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4" style={{ background: "var(--teal-dim)" }}>
-                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" style={{ color: "var(--teal)" }}>
+                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" style={{ color: "var(--gold)" }}>
                   <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
                 </svg>
               </div>
@@ -104,11 +104,11 @@ function SignupForm() {
 
   // Idle/Error state - show form
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: "var(--navy)" }}>
+    <div className="min-h-screen flex flex-col" style={{ background: "var(--bg)" }}>
       <header className="fixed top-0 left-0 right-0 z-50" style={{ backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", background: "rgba(6,13,31,0.8)", borderBottom: "1px solid var(--glass-border)" }}>
         <div className="flex justify-between items-center h-16 px-4 max-w-xl mx-auto">
           <Link href="/" className="flex items-center gap-2">
-            <span className="text-xl font-bold" style={{ color: "var(--teal)", fontFamily: "'Playfair Display', serif" }}>e2go.app</span>
+            <span className="text-xl font-bold" style={{ color: "var(--gold)", fontFamily: "'Cormorant Garamond', serif" }}>e2go.app</span>
           </Link>
         </div>
       </header>
@@ -176,7 +176,7 @@ function SignupForm() {
               <button
                 type="submit"
                 className="w-full font-medium py-3 rounded-lg transition-colors"
-                style={{ background: "var(--teal)", color: "#fff" }}
+                style={{ background: "var(--gold)", color: "#fff" }}
               >
                 Create Account
               </button>
@@ -190,7 +190,7 @@ function SignupForm() {
 
             <p className="mt-6 text-center text-sm" style={{ color: "var(--white-dim)" }}>
               Already have an account?{" "}
-              <Link href="/login" className="hover:underline" style={{ color: "var(--teal)" }}>
+              <Link href="/login" className="hover:underline" style={{ color: "var(--gold)" }}>
                 Sign in
               </Link>
             </p>
@@ -204,8 +204,8 @@ function SignupForm() {
 export default function SignupPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--navy)" }}>
-        <div className="w-8 h-8 border-4 border-[var(--teal)] border-t-transparent rounded-full animate-spin"></div>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--bg)" }}>
+        <div className="w-8 h-8 border-4 border-[var(--gold)] border-t-transparent rounded-full animate-spin"></div>
       </div>
     }>
       <SignupForm />

@@ -1,0 +1,144 @@
+- generic [ref=e2]:
+  - banner [ref=e3]:
+    - generic [ref=e4]:
+      - link "e2go.app" [ref=e5] [cursor=pointer]:
+        - /url: /
+        - generic [ref=e6]: e2go.app
+      - generic [ref=e7]:
+        - link "Sign In" [ref=e8] [cursor=pointer]:
+          - /url: /login
+        - link "Get Started" [ref=e9] [cursor=pointer]:
+          - /url: /quiz
+  - main [ref=e10]:
+    - generic [ref=e11]:
+      - generic [ref=e12]:
+        - generic [ref=e13]:
+          - img [ref=e14]
+          - text: U.S. E-2 VISA SPECIALIST
+        - heading "Choose Your Solo Path" [level=1] [ref=e16]
+        - paragraph [ref=e17]: Unlock your professional visa application package. One-time fee, lifetime access.
+      - generic [ref=e18]:
+        - generic [ref=e19]:
+          - generic [ref=e20]:
+            - img [ref=e21]
+            - text: FOUNDING MEMBER PRICING
+          - generic [ref=e23]:
+            - img [ref=e24]
+            - text: MOST POPULAR
+          - generic [ref=e26]:
+            - generic [ref=e27]:
+              - heading "Solo Individual" [level=3] [ref=e28]
+              - generic [ref=e29]:
+                - generic [ref=e30]: $247
+                - text: USD
+            - generic [ref=e31]:
+              - list [ref=e32]:
+                - listitem [ref=e33]:
+                  - img [ref=e34]
+                  - text: Full Case Builder
+                - listitem [ref=e36]:
+                  - img [ref=e37]
+                  - text: Business Plan Generator
+                - listitem [ref=e39]:
+                  - img [ref=e40]
+                  - text: 6-Pillar Analysis
+                - listitem [ref=e42]:
+                  - img [ref=e43]
+                  - text: PDF Package Export
+              - button "Get Started" [ref=e45]
+        - generic [ref=e46]:
+          - generic [ref=e47]:
+            - img [ref=e48]
+            - text: FOUNDING MEMBER PRICING
+          - generic [ref=e50]:
+            - generic [ref=e51]:
+              - heading "Solo Couple" [level=3] [ref=e52]
+              - generic [ref=e53]:
+                - generic [ref=e54]: $297
+                - text: USD
+            - generic [ref=e55]:
+              - list [ref=e56]:
+                - listitem [ref=e57]:
+                  - img [ref=e58]
+                  - text: Everything in Individual
+                - listitem [ref=e60]:
+                  - img [ref=e61]
+                  - text: Spouse EAD application prep
+              - button "Select Solo Couple" [ref=e63]
+        - generic [ref=e64]:
+          - generic [ref=e65]:
+            - img [ref=e66]
+            - text: FOUNDING MEMBER PRICING
+          - generic [ref=e68]:
+            - generic [ref=e69]:
+              - heading "Solo Family" [level=3] [ref=e70]
+              - generic [ref=e71]:
+                - generic [ref=e72]: $347
+                - text: USD
+            - generic [ref=e73]:
+              - list [ref=e74]:
+                - listitem [ref=e75]:
+                  - img [ref=e76]
+                  - text: Everything in Couple
+                - listitem [ref=e78]:
+                  - img [ref=e79]
+                  - text: Minor children dependency forms
+              - button "Select Solo Family" [ref=e81]
+        - generic [ref=e82]:
+          - generic [ref=e83]:
+            - img [ref=e84]
+            - text: FOUNDING MEMBER PRICING
+          - generic [ref=e86]:
+            - generic [ref=e87]:
+              - heading "Solo Extended" [level=3] [ref=e88]
+              - generic [ref=e89]:
+                - generic [ref=e90]: $397
+                - text: USD
+            - generic [ref=e91]:
+              - list [ref=e92]:
+                - listitem [ref=e93]:
+                  - img [ref=e94]
+                  - text: Everything in Family
+                - listitem [ref=e96]:
+                  - img [ref=e97]
+                  - text: Additional business partner inclusion
+              - button "Select Solo Extended" [ref=e99]
+      - generic [ref=e101]:
+        - img [ref=e103]
+        - generic [ref=e105]:
+          - heading "Founding Member Guarantee" [level=3] [ref=e106]
+          - paragraph [ref=e107]: If you are not satisfied within 14 days of purchase, we will refund your payment in full minus payment processing fees.
+          - generic [ref=e108]:
+            - paragraph [ref=e109]:
+              - strong [ref=e110]: "To qualify:"
+              - text: Request within 14 days of purchase, Module 1 started but no documents generated.
+            - paragraph [ref=e111]:
+              - text: Email
+              - link "support@e2go.app" [ref=e112] [cursor=pointer]:
+                - /url: mailto:support@e2go.app
+              - text: — we respond within 2 business days. No forms. No arguments.
+      - generic [ref=e114]:
+        - generic [ref=e115]:
+          - img [ref=e116]
+          - text: Secure payment via Stripe
+        - generic [ref=e118]:
+          - img [ref=e119]
+          - text: 256-bit encryption
+        - generic [ref=e121]:
+          - img [ref=e122]
+          - text: 100% money-back guarantee
+  - generic [ref=e125]:
+    - generic [ref=e126]:
+      - paragraph [ref=e127]: 54,364
+      - paragraph [ref=e128]: E-2 visas issued FY2024
+    - generic [ref=e129]:
+      - paragraph [ref=e130]: 90%
+      - paragraph [ref=e131]: Global approval rate FY2024
+    - generic [ref=e132]:
+      - paragraph [ref=e133]: 3–6 weeks
+      - paragraph [ref=e134]: Typical Toronto processing
+    - generic [ref=e135]:
+      - paragraph [ref=e136]: $0
+      - paragraph [ref=e137]: Hidden fees
+  - contentinfo [ref=e138]:
+    - paragraph [ref=e140]: This tool is a self-service preparation guide and does not constitute legal advice. e2go.app is not a law firm and does not provide legal representation or immigration services. For legal advice, consult a qualified U.S. immigration attorney.

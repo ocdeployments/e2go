@@ -130,7 +130,7 @@ export default function TabShell({
         <div className="fixed top-0 left-0 right-0 h-1 z-40" style={{ background: "var(--glass-border)" }}>
           <div
             className="h-full transition-all"
-            style={{ width: `${((tabIndex) / TABS.length) * 100}%`, background: "var(--teal)" }}
+            style={{ width: `${((tabIndex) / TABS.length) * 100}%`, background: "var(--gold)" }}
           />
         </div>
 
@@ -138,7 +138,7 @@ export default function TabShell({
         <header className="fixed top-1 left-0 right-0 z-50" style={{ backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", background: "rgba(6,13,31,0.8)", borderBottom: "1px solid var(--glass-border)" }}>
           <div className="flex justify-between items-center h-16 px-4 md:px-8 max-w-3xl mx-auto">
             <Link href="/" className="flex items-center gap-2">
-              <span className="text-xl font-bold" style={{ color: "var(--teal)", fontFamily: "'Playfair Display', serif" }}>e2go.app</span>
+              <span className="text-xl font-bold" style={{ color: "var(--gold)", fontFamily: "'Cormorant Garamond', serif" }}>e2go.app</span>
             </Link>
             <div className="text-sm" style={{ color: "var(--white-dim)" }}>Tab {tabLetter}</div>
           </div>
@@ -148,7 +148,7 @@ export default function TabShell({
           <div className="glass p-8 text-center">
             {/* Large teal icon in circle background */}
             <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6" style={{ background: "var(--teal-dim)" }}>
-              <svg className="w-10 h-10" fill="currentColor" viewBox="0 0 24 24" style={{ color: "var(--teal)" }}>
+              <svg className="w-10 h-10" fill="currentColor" viewBox="0 0 24 24" style={{ color: "var(--gold)" }}>
                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
               </svg>
             </div>
@@ -172,7 +172,7 @@ export default function TabShell({
             <button
               onClick={handleIntroStart}
               className="w-full font-medium rounded-lg transition-colors mb-6"
-              style={{ minHeight: '56px', fontSize: '16px', fontWeight: 500, background: "var(--teal)", color: "#fff" }}
+              style={{ minHeight: '56px', fontSize: '16px', fontWeight: 500, background: "var(--gold)", color: "#fff" }}
             >
               Let&apos;s begin →
             </button>
@@ -201,7 +201,7 @@ export default function TabShell({
         <div className="fixed top-0 left-0 right-0 h-1 z-40" style={{ background: "var(--glass-border)" }}>
           <div
             className="h-full transition-all"
-            style={{ width: `${((tabIndex + (totalAnswered / questions.length)) / TABS.length) * 100}%`, background: "var(--teal)" }}
+            style={{ width: `${((tabIndex + (totalAnswered / questions.length)) / TABS.length) * 100}%`, background: "var(--gold)" }}
           />
         </div>
 
@@ -209,7 +209,7 @@ export default function TabShell({
         <header className="fixed top-1 left-0 right-0 z-50" style={{ backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", background: "rgba(6,13,31,0.8)", borderBottom: "1px solid var(--glass-border)" }}>
           <div className="flex justify-between items-center h-16 px-4 md:px-8 max-w-3xl mx-auto">
             <Link href="/" className="flex items-center gap-2">
-              <span className="text-xl font-bold" style={{ color: "var(--teal)", fontFamily: "'Playfair Display', serif" }}>e2go.app</span>
+              <span className="text-xl font-bold" style={{ color: "var(--gold)", fontFamily: "'Cormorant Garamond', serif" }}>e2go.app</span>
             </Link>
             <div className="text-sm" style={{ color: "var(--white-dim)" }}>Tab {tabLetter}</div>
           </div>
@@ -218,9 +218,9 @@ export default function TabShell({
         <main className="pt-24 pb-12 px-4 max-w-2xl mx-auto">
           <div className="glass p-8 text-center">
             {/* Teal circular progress ring */}
-            <div className="w-24 h-24 rounded-full border-4 flex items-center justify-center mx-auto mb-6" style={{ borderColor: "var(--teal)" }}>
+            <div className="w-24 h-24 rounded-full border-4 flex items-center justify-center mx-auto mb-6" style={{ borderColor: "var(--gold)" }}>
               <div className="text-center">
-                <div className="text-2xl font-bold" style={{ color: "var(--teal)" }}>{percentComplete}%</div>
+                <div className="text-2xl font-bold" style={{ color: "var(--gold)" }}>{percentComplete}%</div>
                 <div className="text-xs uppercase" style={{ color: "var(--white-dim)", letterSpacing: '0.04em' }}>Complete</div>
               </div>
             </div>
@@ -239,7 +239,7 @@ export default function TabShell({
             <button
               onClick={handleResume}
               className="w-full font-medium rounded-lg transition-colors mb-4"
-              style={{ minHeight: '56px', fontSize: '16px', fontWeight: 500, background: "var(--teal)", color: "#fff" }}
+              style={{ minHeight: '56px', fontSize: '16px', fontWeight: 500, background: "var(--gold)", color: "#fff" }}
             >
               Continue where you left off →
             </button>
@@ -255,7 +255,7 @@ export default function TabShell({
 
             {/* Info card */}
             <div className="mt-6 p-4 rounded-xl flex gap-3 text-left" style={{ background: "var(--teal-dim)" }}>
-              <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20" style={{ color: "var(--teal)" }}>
+              <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20" style={{ color: "var(--gold)" }}>
                 <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
               </svg>
               <p className="text-sm" style={{ color: "var(--white-dim)", fontSize: '14px' }}>
@@ -276,7 +276,7 @@ export default function TabShell({
         <div className="fixed top-0 left-0 right-0 h-1 z-40" style={{ background: "var(--glass-border)" }}>
           <div
             className="h-full transition-all"
-            style={{ width: `${((tabIndex + 1) / TABS.length) * 100}%`, background: "var(--teal)" }}
+            style={{ width: `${((tabIndex + 1) / TABS.length) * 100}%`, background: "var(--gold)" }}
           />
         </div>
 
@@ -284,10 +284,10 @@ export default function TabShell({
         <header className="fixed top-1 left-0 right-0 z-50" style={{ backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", background: "rgba(6,13,31,0.8)", borderBottom: "1px solid var(--glass-border)" }}>
           <div className="flex justify-between items-center h-16 px-4 md:px-8 max-w-3xl mx-auto">
             <Link href="/" className="flex items-center gap-2">
-              <span className="text-xl font-bold" style={{ color: "var(--teal)", fontFamily: "'Playfair Display', serif" }}>e2go.app</span>
+              <span className="text-xl font-bold" style={{ color: "var(--gold)", fontFamily: "'Cormorant Garamond', serif" }}>e2go.app</span>
             </Link>
             <div className="flex items-center gap-2 text-sm">
-              <span style={{ color: "var(--teal)" }}>✓ Saved</span>
+              <span style={{ color: "var(--gold)" }}>✓ Saved</span>
             </div>
           </div>
         </header>
@@ -296,7 +296,7 @@ export default function TabShell({
           <div className="glass p-8 text-center">
             {/* Completion checkmark */}
             <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6" style={{ background: "var(--teal-dim)" }}>
-              <svg className="w-10 h-10" fill="currentColor" viewBox="0 0 24 24" style={{ color: "var(--teal)" }}>
+              <svg className="w-10 h-10" fill="currentColor" viewBox="0 0 24 24" style={{ color: "var(--gold)" }}>
                 <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
               </svg>
             </div>
@@ -314,7 +314,7 @@ export default function TabShell({
             {/* NEXT SECTION label */}
             {nextTab && (
               <div className="text-center mb-2">
-                <span className="text-xs uppercase font-semibold" style={{ letterSpacing: '0.04em', fontSize: '12px', fontWeight: 600, color: "var(--teal)" }}>
+                <span className="text-xs uppercase font-semibold" style={{ letterSpacing: '0.04em', fontSize: '12px', fontWeight: 600, color: "var(--gold)" }}>
                   NEXT SECTION
                 </span>
               </div>
@@ -325,7 +325,7 @@ export default function TabShell({
               <div className="glass p-4 mb-6 text-left">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: "var(--teal-dim)" }}>
-                    <span className="font-semibold" style={{ color: "var(--teal)" }}>{nextTab.letter}</span>
+                    <span className="font-semibold" style={{ color: "var(--gold)" }}>{nextTab.letter}</span>
                   </div>
                   <div>
                     <p className="font-medium" style={{ color: "var(--white)" }}>{nextTab.title}</p>
@@ -341,7 +341,7 @@ export default function TabShell({
                 <button
                   onClick={handleCompletionNext}
                   className="w-full font-medium rounded-lg transition-colors"
-                  style={{ minHeight: '56px', fontSize: '16px', fontWeight: 500, background: "var(--teal)", color: "#fff" }}
+                  style={{ minHeight: '56px', fontSize: '16px', fontWeight: 500, background: "var(--gold)", color: "#fff" }}
                 >
                   {nextTab ? `Continue to ${nextTab.title} →` : 'Complete →'}
                 </button>
@@ -361,13 +361,13 @@ export default function TabShell({
       <div className="min-h-screen" style={{ background: "var(--navy)" }}>
         {/* Progress bar skeleton */}
         <div className="fixed top-0 left-0 right-0 h-1 z-40" style={{ background: "var(--glass-border)" }}>
-          <div className="h-full transition-all" style={{ width: `${(tabIndex / TABS.length) * 100}%`, background: "var(--teal)" }} />
+          <div className="h-full transition-all" style={{ width: `${(tabIndex / TABS.length) * 100}%`, background: "var(--gold)" }} />
         </div>
 
         <header className="fixed top-1 left-0 right-0 z-50" style={{ backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", background: "rgba(6,13,31,0.8)", borderBottom: "1px solid var(--glass-border)" }}>
           <div className="flex justify-between items-center h-16 px-4 md:px-8 max-w-3xl mx-auto">
             <Link href="/" className="flex items-center gap-2">
-              <span className="text-xl font-bold" style={{ color: "var(--teal)", fontFamily: "'Playfair Display', serif" }}>e2go.app</span>
+              <span className="text-xl font-bold" style={{ color: "var(--gold)", fontFamily: "'Cormorant Garamond', serif" }}>e2go.app</span>
             </Link>
           </div>
         </header>
@@ -403,7 +403,7 @@ export default function TabShell({
             <button
               onClick={onRetry}
               className="font-medium py-3 px-6 rounded-lg transition-colors"
-              style={{ minHeight: '56px', background: "var(--teal)", color: "#fff" }}
+              style={{ minHeight: '56px', background: "var(--gold)", color: "#fff" }}
             >
               Try Again
             </button>
@@ -420,7 +420,7 @@ export default function TabShell({
       <div className="fixed top-0 left-0 right-0 h-1 z-40" style={{ background: "var(--glass-border)" }}>
         <div
           className="h-full transition-all"
-          style={{ width: `${((tabIndex + ((currentIndex + 1) / questions.length)) / TABS.length) * 100}%`, background: "var(--teal)" }}
+          style={{ width: `${((tabIndex + ((currentIndex + 1) / questions.length)) / TABS.length) * 100}%`, background: "var(--gold)" }}
         />
       </div>
 
@@ -428,12 +428,12 @@ export default function TabShell({
       <header className="fixed top-1 left-0 right-0 z-50" style={{ backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", background: "rgba(6,13,31,0.8)", borderBottom: "1px solid var(--glass-border)" }}>
         <div className="flex justify-between items-center h-16 px-4 md:px-8 max-w-3xl mx-auto">
           <Link href="/" className="flex items-center gap-2">
-            <span className="text-xl font-bold" style={{ color: "var(--teal)", fontFamily: "'Playfair Display', serif" }}>e2go.app</span>
+            <span className="text-xl font-bold" style={{ color: "var(--gold)", fontFamily: "'Cormorant Garamond', serif" }}>e2go.app</span>
           </Link>
-          <div className="flex items-center gap-2 text-sm" style={{ color: "var(--teal)" }}>
+          <div className="flex items-center gap-2 text-sm" style={{ color: "var(--gold)" }}>
             {saveStatus === 'saving' ? (
               <>
-                <div className="w-4 h-4 border-2 border-[var(--teal)] border-t-transparent rounded-full animate-spin" />
+                <div className="w-4 h-4 border-2 border-[var(--gold)] border-t-transparent rounded-full animate-spin" />
                 <span>Saving...</span>
               </>
             ) : saveStatus === 'saved' || saveStatus === 'idle' ? (
@@ -456,7 +456,7 @@ export default function TabShell({
           <span className="text-xs uppercase font-semibold" style={{ letterSpacing: '0.04em', fontSize: '12px', fontWeight: 600, color: "var(--white-dim)" }}>
             QUESTION {currentIndex + 1} OF {questions.length}
           </span>
-          <span className="px-2 py-0.5 rounded text-xs font-medium" style={{ background: "var(--teal-dim)", color: "var(--teal)" }}>
+          <span className="px-2 py-0.5 rounded text-xs font-medium" style={{ background: "var(--teal-dim)", color: "var(--gold)" }}>
             Building: {tabTitle}
           </span>
         </div>
@@ -484,7 +484,7 @@ export default function TabShell({
                 onClick={handleContinue}
                 disabled={!canContinue || saveStatus === 'saving'}
                 className="px-6 py-3 font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{ minHeight: '56px', background: "var(--teal)", color: "#fff" }}
+                style={{ minHeight: '56px', background: "var(--gold)", color: "#fff" }}
               >
                 {saveStatus === 'saving'
                   ? 'Saving...'

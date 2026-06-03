@@ -63,10 +63,7 @@ export async function callAI(options: AICallOptions): Promise<AICallResponse> {
     const tokens_used = data.usage?.total_tokens;
     const content = data.choices?.[0]?.message?.content || "";
 
-    if (tokens_used) {
-      console.log(`[AI] Used ${tokens_used} tokens (${model})`);
-    }
-
+    // Tokens might be logged here if needed for debugging in non-production
     return {
       response: content,
       tokens_used,
@@ -167,8 +164,7 @@ export async function callAIStreaming(
       }
     }
 
-    console.log(`[AI] Used approximately ${tokens} tokens (${model}, streaming)`);
-
+    // Tokens might be tracked if needed
     return {
       response: fullResponse,
       tokens_used: tokens,

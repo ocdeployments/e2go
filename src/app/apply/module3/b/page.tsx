@@ -292,15 +292,15 @@ export default function TabBPage() {
   // ==================== INTRO STATE ====================
   if (screenState === 'intro') {
     return (
-      <div className="min-h-screen" style={{ background: '#060d1f' }}>
+      <div className="min-h-screen" style={{ background: 'var(--bg)' }}>
         <div className="fixed top-0 left-0 right-0 h-1 z-40" style={{ background: 'rgba(255,255,255,0.1)' }}>
-          <div className="h-full transition-all" style={{ width: '16.67%', background: '#0D9488' }} />
+          <div className="h-full transition-all" style={{ width: '16.67%', background: 'var(--gold)' }} />
         </div>
 
         <header className="fixed top-1 left-0 right-0 z-50" style={{ backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', background: 'rgba(6,13,31,0.8)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
           <div className="flex justify-between items-center h-16 px-4 md:px-8 max-w-3xl mx-auto">
             <div onClick={() => router.push('/')} className="flex items-center gap-2 cursor-pointer">
-              <span className="text-xl font-bold" style={{ color: '#0D9488', fontFamily: "'Playfair Display', serif" }}>e2go.app</span>
+              <span className="text-xl font-bold" style={{ color: 'var(--gold)', fontFamily: "'Cormorant Garamond', serif" }}>e2go.app</span>
             </div>
             <div className="text-sm" style={{ color: 'rgba(240,237,230,0.65)' }}>Tab B</div>
           </div>
@@ -308,13 +308,13 @@ export default function TabBPage() {
 
         <main className="pt-24 pb-12 px-4 max-w-2xl mx-auto">
           <div className="glass p-8 text-center" style={{ background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px' }}>
-            <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6" style={{ background: 'rgba(13,148,136,0.15)' }}>
-              <svg className="w-10 h-10" fill="currentColor" viewBox="0 0 24 24" style={{ color: '#0D9488' }}>
+            <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6" style={{ background: 'rgba(201,168,76,0.15)' }}>
+              <svg className="w-10 h-10" fill="currentColor" viewBox="0 0 24 24" style={{ color: 'var(--gold)' }}>
                 <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zM6 20V4h7v5h5v11H6z" />
               </svg>
             </div>
 
-            <h1 className="text-2xl font-semibold mb-4" style={{ color: '#f0ede6', fontSize: '24px', fontWeight: 600, fontFamily: "'Playfair Display', serif" }}>
+            <h1 className="text-2xl font-semibold mb-4" style={{ color: '#f0ede6', fontSize: '24px', fontWeight: 600, fontFamily: "'Cormorant Garamond', serif" }}>
               Your Personal Document Checklist
             </h1>
 
@@ -324,15 +324,15 @@ export default function TabBPage() {
 
             {/* Feature highlights */}
             <div className="flex flex-wrap justify-center gap-2 mb-8">
-              <span className="px-3 py-1 rounded-full text-xs" style={{ background: 'rgba(13,148,136,0.15)', color: '#0D9488', border: '1px solid rgba(13,148,136,0.3)' }}>Generated from your answers</span>
-              <span className="px-3 py-1 rounded-full text-xs" style={{ background: 'rgba(13,148,136,0.15)', color: '#0D9488', border: '1px solid rgba(13,148,136,0.3)' }}>Organised by binder tab</span>
-              <span className="px-3 py-1 rounded-full text-xs" style={{ background: 'rgba(13,148,136,0.15)', color: '#0D9488', border: '1px solid rgba(13,148,136,0.3)' }}>Photo requirements included</span>
+              <span className="px-3 py-1 rounded-full text-xs" style={{ background: 'rgba(201,168,76,0.15)', color: 'var(--gold)', border: '1px solid rgba(201,168,76,0.3)' }}>Generated from your answers</span>
+              <span className="px-3 py-1 rounded-full text-xs" style={{ background: 'rgba(201,168,76,0.15)', color: 'var(--gold)', border: '1px solid rgba(201,168,76,0.3)' }}>Organised by binder tab</span>
+              <span className="px-3 py-1 rounded-full text-xs" style={{ background: 'rgba(201,168,76,0.15)', color: 'var(--gold)', border: '1px solid rgba(201,168,76,0.3)' }}>Photo requirements included</span>
             </div>
 
             <button
               onClick={() => setScreenState('question')}
               className="w-full font-medium rounded-lg transition-colors mb-4"
-              style={{ minHeight: '56px', fontSize: '16px', fontWeight: 500, background: '#0D9488', color: '#fff', borderRadius: '8px' }}
+              style={{ minHeight: '56px', fontSize: '16px', fontWeight: 500, background: 'var(--gold)', color: '#fff', borderRadius: '8px' }}
             >
               View My Checklist →
             </button>
@@ -353,20 +353,20 @@ export default function TabBPage() {
   // ==================== RESUME STATE ====================
   if (screenState === 'resume') {
     return (
-      <div className="min-h-screen" style={{ background: '#060d1f' }}>
+      <div className="min-h-screen" style={{ background: 'var(--bg)' }}>
         <div className="fixed top-0 left-0 right-0 h-1 z-40" style={{ background: 'rgba(255,255,255,0.1)' }}>
-          <div className="h-full transition-all" style={{ width: `${16.67 + (percentComplete / 100) * 8.33}%`, background: '#0D9488' }} />
+          <div className="h-full transition-all" style={{ width: `${16.67 + (percentComplete / 100) * 8.33}%`, background: 'var(--gold)' }} />
         </div>
 
         <header className="fixed top-1 left-0 right-0 z-50" style={{ backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', background: 'rgba(6,13,31,0.8)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
           <div className="flex justify-between items-center h-16 px-4 md:px-8 max-w-3xl mx-auto">
             <div onClick={() => router.push('/')} className="flex items-center gap-2 cursor-pointer">
-              <span className="text-xl font-bold" style={{ color: '#0D9488', fontFamily: "'Playfair Display', serif" }}>e2go.app</span>
+              <span className="text-xl font-bold" style={{ color: 'var(--gold)', fontFamily: "'Cormorant Garamond', serif" }}>e2go.app</span>
             </div>
-            <div className="flex items-center gap-2 text-sm" style={{ color: '#0D9488' }}>
+            <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--gold)' }}>
               {saveStatus === 'saving' ? (
                 <>
-                  <div className="w-4 h-4 border-2 border-[#0D9488] border-t-transparent rounded-full animate-spin" />
+                  <div className="w-4 h-4 border-2 border-[var(--gold)] border-t-transparent rounded-full animate-spin" />
                   <span>Saving...</span>
                 </>
               ) : (
@@ -384,12 +384,12 @@ export default function TabBPage() {
         <main className="pt-24 pb-24 px-4 max-w-2xl mx-auto">
           <div className="glass p-6 mb-6" style={{ background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px' }}>
             <div className="text-center mb-6">
-              <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4" style={{ background: 'rgba(13,148,136,0.15)' }}>
-                <svg className="w-10 h-10" fill="currentColor" viewBox="0 0 24 24" style={{ color: '#0D9488' }}>
+              <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4" style={{ background: 'rgba(201,168,76,0.15)' }}>
+                <svg className="w-10 h-10" fill="currentColor" viewBox="0 0 24 24" style={{ color: 'var(--gold)' }}>
                   <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zM6 20V4h7v5h5v11H6z" />
                 </svg>
               </div>
-              <h1 className="text-xl font-semibold mb-2" style={{ color: '#f0ede6', fontFamily: "'Playfair Display', serif" }}>
+              <h1 className="text-xl font-semibold mb-2" style={{ color: '#f0ede6', fontFamily: "'Cormorant Garamond', serif" }}>
                 Welcome back
               </h1>
               <p style={{ color: 'rgba(240,237,230,0.65)', fontSize: '14px' }}>
@@ -399,7 +399,7 @@ export default function TabBPage() {
 
             {/* Progress bar */}
             <div className="h-2 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.1)' }}>
-              <div className="h-full transition-all" style={{ width: `${percentComplete}%`, background: '#0D9488' }} />
+              <div className="h-full transition-all" style={{ width: `${percentComplete}%`, background: 'var(--gold)' }} />
             </div>
           </div>
 
@@ -413,20 +413,20 @@ export default function TabBPage() {
   // ==================== QUESTION STATE ====================
   if (screenState === 'question') {
     return (
-      <div className="min-h-screen" style={{ background: '#060d1f' }}>
+      <div className="min-h-screen" style={{ background: 'var(--bg)' }}>
         <div className="fixed top-0 left-0 right-0 h-1 z-40" style={{ background: 'rgba(255,255,255,0.1)' }}>
-          <div className="h-full transition-all" style={{ width: `${16.67 + (percentComplete / 100) * 8.33}%`, background: '#0D9488' }} />
+          <div className="h-full transition-all" style={{ width: `${16.67 + (percentComplete / 100) * 8.33}%`, background: 'var(--gold)' }} />
         </div>
 
         <header className="fixed top-1 left-0 right-0 z-50" style={{ backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', background: 'rgba(6,13,31,0.8)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
           <div className="flex justify-between items-center h-16 px-4 md:px-8 max-w-3xl mx-auto">
             <div onClick={() => router.push('/')} className="flex items-center gap-2 cursor-pointer">
-              <span className="text-xl font-bold" style={{ color: '#0D9488', fontFamily: "'Playfair Display', serif" }}>e2go.app</span>
+              <span className="text-xl font-bold" style={{ color: 'var(--gold)', fontFamily: "'Cormorant Garamond', serif" }}>e2go.app</span>
             </div>
-            <div className="flex items-center gap-2 text-sm" style={{ color: '#0D9488' }}>
+            <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--gold)' }}>
               {saveStatus === 'saving' ? (
                 <>
-                  <div className="w-4 h-4 border-2 border-[#0D9488] border-t-transparent rounded-full animate-spin" />
+                  <div className="w-4 h-4 border-2 border-[var(--gold)] border-t-transparent rounded-full animate-spin" />
                   <span>Saving...</span>
                 </>
               ) : (
@@ -446,7 +446,7 @@ export default function TabBPage() {
             <span className="text-xs uppercase font-semibold" style={{ letterSpacing: '0.04em', fontSize: '12px', fontWeight: 600, color: 'rgba(240,237,230,0.65)' }}>
               DOCUMENT CHECKLIST
             </span>
-            <span className="px-2 py-0.5 rounded text-xs font-medium" style={{ background: 'rgba(13,148,136,0.15)', color: '#0D9488' }}>
+            <span className="px-2 py-0.5 rounded text-xs font-medium" style={{ background: 'rgba(201,168,76,0.15)', color: 'var(--gold)' }}>
               {checkedCount}/{totalCount} gathered
             </span>
           </div>
@@ -456,13 +456,13 @@ export default function TabBPage() {
 
           {/* Photo requirements card */}
           <div className="mt-6 glass p-5" style={{ background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px' }}>
-            <h3 className="font-medium mb-3" style={{ color: '#f0ede6', fontFamily: "'Playfair Display', serif", fontSize: '16px' }}>
+            <h3 className="font-medium mb-3" style={{ color: '#f0ede6', fontFamily: "'Cormorant Garamond', serif", fontSize: '16px' }}>
               U.S. Visa Photo Requirements
             </h3>
             <ul className="space-y-1.5 mb-3">
               {PHOTO_REQUIREMENTS.map((req, i) => (
                 <li key={i} className="flex items-start gap-2 text-sm" style={{ color: 'rgba(240,237,230,0.65)' }}>
-                  <span style={{ color: '#0D9488' }}>•</span>
+                  <span style={{ color: 'var(--gold)' }}>•</span>
                   {req}
                 </li>
               ))}
@@ -478,7 +478,7 @@ export default function TabBPage() {
               <button
                 onClick={() => setScreenState('completion')}
                 className="w-full font-medium rounded-lg transition-colors"
-                style={{ minHeight: '56px', fontSize: '16px', fontWeight: 500, background: '#0D9488', color: '#fff', borderRadius: '8px' }}
+                style={{ minHeight: '56px', fontSize: '16px', fontWeight: 500, background: 'var(--gold)', color: '#fff', borderRadius: '8px' }}
               >
                 Continue to Tab C →
               </button>
@@ -492,31 +492,31 @@ export default function TabBPage() {
   // ==================== COMPLETION STATE ====================
   if (screenState === 'completion') {
     return (
-      <div className="min-h-screen" style={{ background: '#060d1f' }}>
+      <div className="min-h-screen" style={{ background: 'var(--bg)' }}>
         <div className="fixed top-0 left-0 right-0 h-1 z-40" style={{ background: 'rgba(255,255,255,0.1)' }}>
-          <div className="h-full transition-all" style={{ width: '25%', background: '#0D9488' }} />
+          <div className="h-full transition-all" style={{ width: '25%', background: 'var(--gold)' }} />
         </div>
 
         <header className="fixed top-1 left-0 right-0 z-50" style={{ backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', background: 'rgba(6,13,31,0.8)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
           <div className="flex justify-between items-center h-16 px-4 md:px-8 max-w-3xl mx-auto">
             <div onClick={() => router.push('/')} className="flex items-center gap-2 cursor-pointer">
-              <span className="text-xl font-bold" style={{ color: '#0D9488', fontFamily: "'Playfair Display', serif" }}>e2go.app</span>
+              <span className="text-xl font-bold" style={{ color: 'var(--gold)', fontFamily: "'Cormorant Garamond', serif" }}>e2go.app</span>
             </div>
             <div className="flex items-center gap-2 text-sm">
-              <span style={{ color: '#0D9488' }}>✓ Saved</span>
+              <span style={{ color: 'var(--gold)' }}>✓ Saved</span>
             </div>
           </div>
         </header>
 
         <main className="pt-24 pb-24 px-4 max-w-2xl mx-auto">
           <div className="glass p-8 text-center" style={{ background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px' }}>
-            <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6" style={{ background: 'rgba(13,148,136,0.15)' }}>
-              <svg className="w-10 h-10" fill="currentColor" viewBox="0 0 24 24" style={{ color: '#0D9488' }}>
+            <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6" style={{ background: 'rgba(201,168,76,0.15)' }}>
+              <svg className="w-10 h-10" fill="currentColor" viewBox="0 0 24 24" style={{ color: 'var(--gold)' }}>
                 <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
               </svg>
             </div>
 
-            <h1 className="text-2xl font-semibold mb-4" style={{ color: '#f0ede6', fontSize: '24px', fontWeight: 600, fontFamily: "'Playfair Display', serif" }}>
+            <h1 className="text-2xl font-semibold mb-4" style={{ color: '#f0ede6', fontSize: '24px', fontWeight: 600, fontFamily: "'Cormorant Garamond', serif" }}>
               Documents Identified
             </h1>
 
@@ -527,7 +527,7 @@ export default function TabBPage() {
             {/* Progress */}
             <div className="flex items-center justify-center gap-4 mb-8">
               <div className="text-center">
-                <div className="text-3xl font-bold" style={{ color: '#0D9488' }}>{checkedCount}</div>
+                <div className="text-3xl font-bold" style={{ color: 'var(--gold)' }}>{checkedCount}</div>
                 <div className="text-xs uppercase" style={{ color: 'rgba(240,237,230,0.45)', letterSpacing: '0.04em' }}>Checked</div>
               </div>
               <div className="h-10 w-px" style={{ background: 'rgba(255,255,255,0.1)' }} />
@@ -540,7 +540,7 @@ export default function TabBPage() {
             <button
               onClick={() => router.push('/apply/module3/c')}
               className="w-full font-medium rounded-lg transition-colors"
-              style={{ minHeight: '56px', fontSize: '16px', fontWeight: 500, background: '#0D9488', color: '#fff', borderRadius: '8px' }}
+              style={{ minHeight: '56px', fontSize: '16px', fontWeight: 500, background: 'var(--gold)', color: '#fff', borderRadius: '8px' }}
             >
               Continue to Tab C →
             </button>
@@ -552,8 +552,8 @@ export default function TabBPage() {
 
   // Loading state
   return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background: '#060d1f' }}>
-      <div className="w-8 h-8 border-2 border-[#0D9488] border-t-transparent rounded-full animate-spin" />
+    <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg)' }}>
+      <div className="w-8 h-8 border-2 border-[var(--gold)] border-t-transparent rounded-full animate-spin" />
     </div>
   );
 }
@@ -601,7 +601,7 @@ function ChecklistCard({ item, onCheck }: { item: ChecklistItem; onCheck: (id: s
       style={{
         background: item.checked ? 'rgba(13,148,136,0.1)' : 'rgba(255,255,255,0.05)',
         backdropFilter: 'blur(16px)',
-        border: `1px solid ${item.checked ? 'rgba(13,148,136,0.3)' : 'rgba(255,255,255,0.1)'}`,
+        border: `1px solid ${item.checked ? 'rgba(201,168,76,0.3)' : 'rgba(255,255,255,0.1)'}`,
         borderRadius: '12px'
       }}
       onClick={() => onCheck(item.id, !item.checked)}
@@ -609,8 +609,8 @@ function ChecklistCard({ item, onCheck }: { item: ChecklistItem; onCheck: (id: s
       <div
         className="w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 mt-0.5"
         style={{
-          borderColor: item.checked ? '#0D9488' : 'rgba(255,255,255,0.3)',
-          background: item.checked ? '#0D9488' : 'transparent'
+          borderColor: item.checked ? 'var(--gold)' : 'rgba(255,255,255,0.3)',
+          background: item.checked ? 'var(--gold)' : 'transparent'
         }}
       >
         {item.checked && (
@@ -622,7 +622,7 @@ function ChecklistCard({ item, onCheck }: { item: ChecklistItem; onCheck: (id: s
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1">
           <span style={{ color: '#f0ede6', fontSize: '15px', fontWeight: 500 }}>{item.name}</span>
-          <span className="px-2 py-0.5 rounded text-xs flex-shrink-0" style={{ background: 'rgba(13,148,136,0.15)', color: '#0D9488' }}>
+          <span className="px-2 py-0.5 rounded text-xs flex-shrink-0" style={{ background: 'rgba(201,168,76,0.15)', color: 'var(--gold)' }}>
             Tab {item.binderTab}
           </span>
         </div>

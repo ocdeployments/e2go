@@ -354,17 +354,17 @@ export default function TabDPage() {
   // ==================== INTRO STATE ====================
   if (screenState === 'intro') {
     return (
-      <div className="min-h-screen" style={{ background: '#060d1f' }}>
+      <div className="min-h-screen" style={{ background: 'var(--bg)' }}>
         {/* Progress bar */}
         <div className="fixed top-0 left-0 right-0 h-1 z-40" style={{ background: 'rgba(255,255,255,0.1)' }}>
-          <div className="h-full transition-all" style={{ width: '25%', background: '#0D9488' }} />
+          <div className="h-full transition-all" style={{ width: '25%', background: 'var(--gold)' }} />
         </div>
 
         {/* Header */}
         <header className="fixed top-1 left-0 right-0 z-50" style={{ backdropFilter: 'blur(12px)', background: 'rgba(6,13,31,0.8)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
           <div className="flex justify-between items-center h-16 px-4 md:px-8 max-w-3xl mx-auto">
             <div className="flex items-center gap-2">
-              <span className="text-xl font-bold" style={{ color: '#0D9488', fontFamily: "'Playfair Display', serif" }}>e2go.app</span>
+              <span className="text-xl font-bold" style={{ color: 'var(--gold)', fontFamily: "'Cormorant Garamond', serif" }}>e2go.app</span>
             </div>
             <div className="text-sm" style={{ color: 'rgba(240,237,230,0.65)' }}>Tab D</div>
           </div>
@@ -373,8 +373,8 @@ export default function TabDPage() {
         <main className="pt-24 pb-12 px-4 max-w-2xl mx-auto">
           <div className="glass p-8 text-center" style={{ background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px' }}>
             {/* Large teal icon in circle background */}
-            <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6" style={{ background: 'rgba(13,148,136,0.15)' }}>
-              <svg className="w-10 h-10" fill="currentColor" viewBox="0 0 24 24" style={{ color: '#0D9488' }}>
+            <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6" style={{ background: 'rgba(201,168,76,0.15)' }}>
+              <svg className="w-10 h-10" fill="currentColor" viewBox="0 0 24 24" style={{ color: 'var(--gold)' }}>
                 <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zM6 20V4h7v5h5v11H6z"/>
               </svg>
             </div>
@@ -391,10 +391,10 @@ export default function TabDPage() {
 
             {/* Feature highlights */}
             <div className="flex flex-wrap justify-center gap-2 mb-6">
-              <span style={{ padding: '4px 10px', borderRadius: '4px', fontSize: '11px', background: 'rgba(13,148,136,0.15)', color: '#0D9488', border: '1px solid rgba(13,148,136,0.3)' }}>6 focused questions</span>
-              <span style={{ padding: '4px 10px', borderRadius: '4px', fontSize: '11px', background: 'rgba(13,148,136,0.15)', color: '#0D9488', border: '1px solid rgba(13,148,136,0.3)' }}>AI-generated from your answers</span>
-              <span style={{ padding: '4px 10px', borderRadius: '4px', fontSize: '11px', background: 'rgba(13,148,136,0.15)', color: '#0D9488', border: '1px solid rgba(13,148,136,0.3)' }}>Structured to answer every officer concern</span>
-              <span style={{ padding: '4px 10px', borderRadius: '4px', fontSize: '11px', background: 'rgba(13,148,136,0.15)', color: '#0D9488', border: '1px solid rgba(13,148,136,0.3)' }}>Review and confirm before it&apos;s locked</span>
+              <span style={{ padding: '4px 10px', borderRadius: '4px', fontSize: '11px', background: 'rgba(201,168,76,0.15)', color: 'var(--gold)', border: '1px solid rgba(201,168,76,0.3)' }}>6 focused questions</span>
+              <span style={{ padding: '4px 10px', borderRadius: '4px', fontSize: '11px', background: 'rgba(201,168,76,0.15)', color: 'var(--gold)', border: '1px solid rgba(201,168,76,0.3)' }}>AI-generated from your answers</span>
+              <span style={{ padding: '4px 10px', borderRadius: '4px', fontSize: '11px', background: 'rgba(201,168,76,0.15)', color: 'var(--gold)', border: '1px solid rgba(201,168,76,0.3)' }}>Structured to answer every officer concern</span>
+              <span style={{ padding: '4px 10px', borderRadius: '4px', fontSize: '11px', background: 'rgba(201,168,76,0.15)', color: 'var(--gold)', border: '1px solid rgba(201,168,76,0.3)' }}>Review and confirm before it&apos;s locked</span>
             </div>
 
             {/* Question count */}
@@ -406,7 +406,7 @@ export default function TabDPage() {
             <button
               onClick={handleIntroStart}
               className="w-full font-medium rounded-lg transition-colors mb-4"
-              style={{ minHeight: '56px', fontSize: '16px', fontWeight: 500, background: '#0D9488', color: '#fff', borderRadius: '8px' }}
+              style={{ minHeight: '56px', fontSize: '16px', fontWeight: 500, background: 'var(--gold)', color: '#fff', borderRadius: '8px' }}
             >
               Begin Cover Letter Questions →
             </button>
@@ -428,16 +428,16 @@ export default function TabDPage() {
   // ==================== GENERATION STATE ====================
   if (screenState === 'generation') {
     return (
-      <div className="min-h-screen" style={{ background: '#060d1f' }}>
+      <div className="min-h-screen" style={{ background: 'var(--bg)' }}>
         {/* Progress bar */}
         <div className="fixed top-0 left-0 right-0 h-1 z-40" style={{ background: 'rgba(255,255,255,0.1)' }}>
-          <div className="h-full transition-all" style={{ width: '41%', background: '#0D9488' }} />
+          <div className="h-full transition-all" style={{ width: '41%', background: 'var(--gold)' }} />
         </div>
 
         <header className="fixed top-1 left-0 right-0 z-50" style={{ backdropFilter: 'blur(12px)', background: 'rgba(6,13,31,0.8)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
           <div className="flex justify-between items-center h-16 px-4 md:px-8 max-w-3xl mx-auto">
             <div className="flex items-center gap-2">
-              <span className="text-xl font-bold" style={{ color: '#0D9488', fontFamily: "'Playfair Display', serif" }}>e2go.app</span>
+              <span className="text-xl font-bold" style={{ color: 'var(--gold)', fontFamily: "'Cormorant Garamond', serif" }}>e2go.app</span>
             </div>
           </div>
         </header>
@@ -455,16 +455,16 @@ export default function TabDPage() {
                   key={index}
                   className="flex items-center gap-3 p-3 rounded-lg"
                   style={{
-                    background: index < generationStep ? 'rgba(13,148,136,0.15)' : index === generationStep ? 'rgba(255,255,255,0.05)' : 'transparent',
-                    border: index === generationStep ? '1px solid rgba(13,148,136,0.3)' : '1px solid transparent',
+                    background: index < generationStep ? 'rgba(201,168,76,0.15)' : index === generationStep ? 'rgba(255,255,255,0.05)' : 'transparent',
+                    border: index === generationStep ? '1px solid rgba(201,168,76,0.3)' : '1px solid transparent',
                   }}
                 >
                   {index < generationStep ? (
-                    <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" style={{ color: '#0D9488' }}>
+                    <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" style={{ color: 'var(--gold)' }}>
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
                   ) : index === generationStep ? (
-                    <div className="w-5 h-5 border-2 border-[#0D9488] border-t-transparent rounded-full animate-spin" />
+                    <div className="w-5 h-5 border-2 border-[var(--gold)] border-t-transparent rounded-full animate-spin" />
                   ) : (
                     <div className="w-5 h-5 border-2 border-[rgba(255,255,255,0.2)] rounded-full" />
                   )}
@@ -491,7 +491,7 @@ export default function TabDPage() {
                 <button
                   onClick={handleConfirmLetter}
                   className="w-full font-medium rounded-lg transition-colors mb-3"
-                  style={{ minHeight: '56px', fontSize: '16px', fontWeight: 500, background: '#0D9488', color: '#fff', borderRadius: '8px' }}
+                  style={{ minHeight: '56px', fontSize: '16px', fontWeight: 500, background: 'var(--gold)', color: '#fff', borderRadius: '8px' }}
                 >
                   This looks correct — confirm →
                 </button>
@@ -514,19 +514,19 @@ export default function TabDPage() {
   // ==================== COMPLETION STATE ====================
   if (screenState === 'completion') {
     return (
-      <div className="min-h-screen" style={{ background: '#060d1f' }}>
+      <div className="min-h-screen" style={{ background: 'var(--bg)' }}>
         {/* Progress bar */}
         <div className="fixed top-0 left-0 right-0 h-1 z-40" style={{ background: 'rgba(255,255,255,0.1)' }}>
-          <div className="h-full transition-all" style={{ width: '50%', background: '#0D9488' }} />
+          <div className="h-full transition-all" style={{ width: '50%', background: 'var(--gold)' }} />
         </div>
 
         <header className="fixed top-1 left-0 right-0 z-50" style={{ backdropFilter: 'blur(12px)', background: 'rgba(6,13,31,0.8)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
           <div className="flex justify-between items-center h-16 px-4 md:px-8 max-w-3xl mx-auto">
             <div className="flex items-center gap-2">
-              <span className="text-xl font-bold" style={{ color: '#0D9488', fontFamily: "'Playfair Display', serif" }}>e2go.app</span>
+              <span className="text-xl font-bold" style={{ color: 'var(--gold)', fontFamily: "'Cormorant Garamond', serif" }}>e2go.app</span>
             </div>
             <div className="flex items-center gap-2 text-sm">
-              <span style={{ color: '#0D9488' }}>✓ Saved</span>
+              <span style={{ color: 'var(--gold)' }}>✓ Saved</span>
             </div>
           </div>
         </header>
@@ -534,8 +534,8 @@ export default function TabDPage() {
         <main className="pt-24 pb-24 px-4 max-w-2xl mx-auto">
           <div className="glass p-8 text-center" style={{ background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px' }}>
             {/* Completion checkmark */}
-            <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6" style={{ background: 'rgba(13,148,136,0.15)' }}>
-              <svg className="w-10 h-10" fill="currentColor" viewBox="0 0 24 24" style={{ color: '#0D9488' }}>
+            <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6" style={{ background: 'rgba(201,168,76,0.15)' }}>
+              <svg className="w-10 h-10" fill="currentColor" viewBox="0 0 24 24" style={{ color: 'var(--gold)' }}>
                 <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
               </svg>
             </div>
@@ -552,7 +552,7 @@ export default function TabDPage() {
 
             {/* NEXT SECTION label */}
             <div className="text-center mb-2">
-              <span className="text-xs uppercase font-semibold" style={{ letterSpacing: '0.04em', fontSize: '12px', fontWeight: 600, color: '#0D9488' }}>
+              <span className="text-xs uppercase font-semibold" style={{ letterSpacing: '0.04em', fontSize: '12px', fontWeight: 600, color: 'var(--gold)' }}>
                 NEXT SECTION
               </span>
             </div>
@@ -560,8 +560,8 @@ export default function TabDPage() {
             {/* Next section card */}
             <div className="glass p-4 mb-6 text-left" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px' }}>
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(13,148,136,0.15)' }}>
-                  <span className="font-semibold" style={{ color: '#0D9488' }}>E</span>
+                <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(201,168,76,0.15)' }}>
+                  <span className="font-semibold" style={{ color: 'var(--gold)' }}>E</span>
                 </div>
                 <div>
                   <p className="font-medium" style={{ color: '#f0ede6' }}>Ownership Structure</p>
@@ -576,7 +576,7 @@ export default function TabDPage() {
                 <button
                   onClick={handleCompletionNext}
                   className="w-full font-medium rounded-lg transition-colors"
-                  style={{ minHeight: '56px', fontSize: '16px', fontWeight: 500, background: '#0D9488', color: '#fff' }}
+                  style={{ minHeight: '56px', fontSize: '16px', fontWeight: 500, background: 'var(--gold)', color: '#fff' }}
                 >
                   Continue to Ownership Structure →
                 </button>
@@ -590,12 +590,12 @@ export default function TabDPage() {
 
   // ==================== QUESTION STATE ====================
   return (
-    <div className="min-h-screen" style={{ background: '#060d1f' }}>
+    <div className="min-h-screen" style={{ background: 'var(--bg)' }}>
       {/* Progress bar */}
       <div className="fixed top-0 left-0 right-0 h-1 z-40" style={{ background: 'rgba(255,255,255,0.1)' }}>
         <div
           className="h-full transition-all"
-          style={{ width: `${((3 + ((currentIndex + 1) / QUESTIONS.length)) / 12) * 100}%`, background: '#0D9488' }}
+          style={{ width: `${((3 + ((currentIndex + 1) / QUESTIONS.length)) / 12) * 100}%`, background: 'var(--gold)' }}
         />
       </div>
 
@@ -603,12 +603,12 @@ export default function TabDPage() {
       <header className="fixed top-1 left-0 right-0 z-50" style={{ backdropFilter: 'blur(12px)', background: 'rgba(6,13,31,0.8)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
         <div className="flex justify-between items-center h-16 px-4 md:px-8 max-w-3xl mx-auto">
           <div className="flex items-center gap-2">
-            <span className="text-xl font-bold" style={{ color: '#0D9488', fontFamily: "'Playfair Display', serif" }}>e2go.app</span>
+            <span className="text-xl font-bold" style={{ color: 'var(--gold)', fontFamily: "'Cormorant Garamond', serif" }}>e2go.app</span>
           </div>
-          <div className="flex items-center gap-2 text-sm" style={{ color: '#0D9488' }}>
+          <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--gold)' }}>
             {saveStatus === 'saving' ? (
               <>
-                <div className="w-4 h-4 border-2 border-[#0D9488] border-t-transparent rounded-full animate-spin" />
+                <div className="w-4 h-4 border-2 border-[var(--gold)] border-t-transparent rounded-full animate-spin" />
                 <span>Saving...</span>
               </>
             ) : saveStatus === 'saved' || saveStatus === 'idle' ? (
@@ -631,7 +631,7 @@ export default function TabDPage() {
           <span className="text-xs uppercase font-semibold" style={{ letterSpacing: '0.04em', fontSize: '12px', fontWeight: 600, color: 'rgba(240,237,230,0.65)' }}>
             QUESTION {currentIndex + 1} OF {QUESTIONS.length}
           </span>
-          <span className="px-2 py-0.5 rounded text-xs font-medium" style={{ background: 'rgba(13,148,136,0.15)', color: '#0D9488' }}>
+          <span className="px-2 py-0.5 rounded text-xs font-medium" style={{ background: 'rgba(201,168,76,0.15)', color: 'var(--gold)' }}>
             Cover Letter
           </span>
         </div>
@@ -640,7 +640,7 @@ export default function TabDPage() {
         {currentQuestion && (
           <div className="glass p-6" style={{ background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px' }}>
             {/* Label */}
-            <label className="block text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: '#0D9488', letterSpacing: '0.04em' }}>
+            <label className="block text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--gold)', letterSpacing: '0.04em' }}>
               {currentQuestion.label}
             </label>
 
@@ -656,7 +656,7 @@ export default function TabDPage() {
 
             {/* Example (for QD-01 only) */}
             {currentQuestion.example && (
-              <div className="mb-4 p-3 rounded-lg" style={{ background: 'rgba(255,255,255,0.03)', borderLeft: '3px solid #0D9488' }}>
+              <div className="mb-4 p-3 rounded-lg" style={{ background: 'rgba(255,255,255,0.03)', borderLeft: '3px solid var(--gold)' }}>
                 <p className="text-xs mb-1" style={{ color: 'rgba(240,237,230,0.45)' }}>Example:</p>
                 <p className="text-sm" style={{ color: 'rgba(240,237,230,0.75)', fontStyle: 'italic' }}>
                   {currentQuestion.example}
@@ -673,7 +673,7 @@ export default function TabDPage() {
                     checked={!hasComplexCase && !!answers['QD-06']}
                     onChange={handleQ6NAToggle}
                     className="w-5 h-5 rounded"
-                    style={{ accentColor: '#0D9488' }}
+                    style={{ accentColor: 'var(--gold)' }}
                   />
                   <span>{currentQuestion.naLabel}</span>
                 </label>
@@ -711,7 +711,7 @@ export default function TabDPage() {
                 onClick={handleContinue}
                 disabled={saveStatus === 'saving'}
                 className="px-6 py-3 font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{ minHeight: '56px', background: '#0D9488', color: '#fff', borderRadius: '8px' }}
+                style={{ minHeight: '56px', background: 'var(--gold)', color: '#fff', borderRadius: '8px' }}
               >
                 {saveStatus === 'saving'
                   ? 'Saving...'

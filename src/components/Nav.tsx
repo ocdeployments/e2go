@@ -69,7 +69,7 @@ export default function Nav() {
     <header className="fixed top-0 left-0 right-0 z-50" style={{ backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", background: "rgba(6,13,31,0.8)", borderBottom: "1px solid var(--glass-border)" }}>
       <div className="flex justify-between items-center h-16 px-4 md:px-8 max-w-6xl mx-auto">
         <Link href="/" className="flex items-center gap-2" style={{ textDecoration: "none" }}>
-          <span className="text-xl font-bold" style={{ color: "var(--teal)", fontFamily: "'Playfair Display', serif" }}>e2go.app</span>
+          <span className="text-xl font-bold" style={{ color: "var(--gold)", fontFamily: "'Cormorant Garamond', serif" }}>e2go.app</span>
         </Link>
         <div className="flex items-center gap-4">
           {!loading && (
@@ -89,7 +89,7 @@ export default function Nav() {
                   <Link
                     href="/dashboard"
                     className="hidden md:block text-sm transition-colors"
-                    style={{ color: "var(--teal)" }}
+                    style={{ color: "var(--gold)" }}
                   >
                     My Application
                   </Link>
@@ -106,7 +106,7 @@ export default function Nav() {
                   <Link
                     href="/quiz"
                     className="text-sm font-medium px-4 py-2 rounded-lg transition-colors"
-                    style={{ background: "var(--teal)", color: "#fff" }}
+                    style={{ background: "var(--gold)", color: "#fff" }}
                   >
                     Get Started
                   </Link>
