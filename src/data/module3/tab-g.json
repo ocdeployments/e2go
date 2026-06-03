@@ -1,0 +1,12 @@
+{
+  "QG-01": { "type": "select", "question": "Has your U.S. business been officially registered?", "section": "Business Registration", "options": ["Yes — registered and active", "Registration in progress", "Not yet registered"] },
+  "QG-02": { "type": "textarea", "question": "What is the primary business activity?", "section": "Business Registration" },
+  "QG-03": { "type": "select", "question": "Does the business have a Federal Employer Identification Number (EIN)?", "section": "Business Registration", "options": ["Yes", "Applied — pending", "Not yet applied"] },
+  "QG-04": { "type": "select", "question": "Does the business have a physical U.S. location?", "section": "Physical Premises", "options": ["Yes — signed lease or owned property", "Yes — franchise location assigned", "Not yet — location search in progress", "Business operates remotely (no physical location)"] },
+  "QG-05": { "type": "text", "question": "What is the business address?", "section": "Physical Premises" },
+  "QG-06": { "type": "select", "question": "What type of premises does the business occupy?", "section": "Physical Premises", "options": ["Retail storefront", "Office space", "Industrial or warehouse", "Home office", "Franchise-provided location", "Other"] },
+  "QG-07": { "type": "select", "question": "What is the lease term or ownership status?", "section": "Physical Premises", "options": ["Multi-year lease (2+ years)", "Month-to-month lease", "Owned property", "Franchise agreement includes location", "Not yet secured"] },
+  "QG-08": { "type": "select", "question": "Is the business currently operational?", "section": "Operating Evidence", "options": ["Yes — actively operating", "Partially — soft launch or pre-revenue", "No — pre-opening stage", "No — investment committed, opening pending"] },
+  "QG-09": { "type": "select", "question": "Does the business have any customers or clients yet?", "section": "Operating Evidence", "options": ["Yes — paying customers", "Yes — signed contracts pending start", "No — pre-revenue", "Not applicable (franchise pre-opening)"] },
+  "QG-10": { "type": "textarea", "question": "What licenses or permits does the business hold or have applied for?", "section": "Operating Evidence" }
+}
