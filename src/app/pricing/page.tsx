@@ -5,9 +5,15 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 
+const SZ = {
+  xs: { display: "block" as const, width: "12px", height: "12px", minWidth: "12px", flexShrink: 0 },
+  sm: { display: "block" as const, width: "16px", height: "16px", minWidth: "16px", flexShrink: 0 },
+  md: { display: "block" as const, width: "20px", height: "20px", minWidth: "20px", flexShrink: 0 },
+  lg: { display: "block" as const, width: "24px", height: "24px", minWidth: "24px", flexShrink: 0 },
+};
+
 export default function PricingPage() {
   const handleSelect = () => {
-    // TODO: Wire Stripe checkout
     alert("Coming soon! Stripe integration to be added.");
   };
 
@@ -20,11 +26,9 @@ export default function PricingPage() {
       const { count } = await supabase
         .from("applications")
         .select("*", { count: "exact", head: true });
-
       setApplicationCount(count || 0);
       setLoading(false);
     };
-
     fetchCount();
   }, []);
 
@@ -88,7 +92,9 @@ export default function PricingPage() {
       <header className="fixed top-0 left-0 right-0 z-50" style={{ background: "#0a0a0a", borderBottom: "1px solid rgba(201,168,76,0.2)" }}>
         <div className="flex justify-between items-center h-16 px-4 md:px-8 max-w-6xl mx-auto">
           <Link href="/" className="flex items-center gap-2">
-            <span className="text-xl font-bold" style={{ color: "#C9A84C", fontFamily: "'Cormorant Garamond', serif", fontWeight: 300 }}>e2go<span style={{ color: '#f5f0e8' }}>.app</span></span>
+            <span className="text-xl font-bold" style={{ color: "#C9A84C", fontFamily: "'Cormorant Garamond', serif", fontWeight: 300 }}>
+              e2go<span style={{ color: "#f5f0e8" }}>.app</span>
+            </span>
           </Link>
           <div className="flex items-center gap-4">
             <Link href="/login" className="hidden md:block text-sm" style={{ color: "rgba(245,240,232,0.6)" }}>
@@ -110,7 +116,7 @@ export default function PricingPage() {
           {/* Hero */}
           <div className="text-center mb-12">
             <div className="inline-flex items-center gap-2 px-4 py-2 text-sm mb-6" style={{ background: "rgba(201,168,76,0.08)", border: "1px solid rgba(201,168,76,0.3)", borderRadius: 0 }}>
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" style={{ color: "#C9A84C" }}>
+              <svg style={{ ...SZ.sm, color: "#C9A84C" }} fill="currentColor" viewBox="0 0 24 24">
                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
               </svg>
               <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#C9A84C" }}>U.S. E-2 VISA SPECIALIST</span>
@@ -127,7 +133,7 @@ export default function PricingPage() {
           {!loading && (
             <div className="text-center mb-8">
               <div className="inline-flex items-center gap-2 px-4 py-2" style={{ background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.3)", borderRadius: 0 }}>
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" style={{ color: "#f59e0b" }}>
+                <svg style={{ ...SZ.md, color: "#f59e0b" }} fill="currentColor" viewBox="0 0 24 24">
                   <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
                 </svg>
                 <span className="text-sm font-medium" style={{ color: "#f59e0b" }}>
@@ -146,12 +152,12 @@ export default function PricingPage() {
                 style={{
                   background: "rgba(201,168,76,0.02)",
                   border: tier.recommended ? "1px solid rgba(201,168,76,0.5)" : "1px solid rgba(201,168,76,0.12)",
-                  borderRadius: 0
+                  borderRadius: 0,
                 }}
               >
                 {/* Founding Member Badge */}
                 <div className="absolute -top-3 left-6 text-xs font-semibold px-3 py-1 flex items-center gap-1" style={{ background: "#C9A84C", color: "#0a0a0a" }}>
-                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+                  <svg style={SZ.xs} fill="currentColor" viewBox="0 0 24 24">
                     <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
                   </svg>
                   FOUNDING MEMBER PRICING
@@ -159,7 +165,7 @@ export default function PricingPage() {
 
                 {tier.recommended && (
                   <div className="absolute -top-3 right-6 text-xs font-semibold px-3 py-1 flex items-center gap-1" style={{ background: "#C9A84C", color: "#0a0a0a" }}>
-                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+                    <svg style={SZ.xs} fill="currentColor" viewBox="0 0 24 24">
                       <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
                     </svg>
                     MOST POPULAR
@@ -181,7 +187,7 @@ export default function PricingPage() {
                     <ul className="space-y-2 mb-4">
                       {tier.features.map((feature, i) => (
                         <li key={i} className="flex items-center gap-2 text-sm" style={{ color: "rgba(245,240,232,0.6)" }}>
-                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" style={{ color: "#C9A84C" }}>
+                          <svg style={{ ...SZ.sm, color: "#C9A84C" }} fill="currentColor" viewBox="0 0 24 24">
                             <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
                           </svg>
                           {feature}
@@ -191,7 +197,9 @@ export default function PricingPage() {
                     <button
                       onClick={handleSelect}
                       className="w-full font-medium py-3 transition-colors"
-                      style={tier.recommended ? { background: "#C9A84C", color: "#0a0a0a", borderRadius: 0 } : { border: "1px solid #C9A84C", color: "#C9A84C", borderRadius: 0 }}
+                      style={tier.recommended
+                        ? { background: "#C9A84C", color: "#0a0a0a", borderRadius: 0 }
+                        : { border: "1px solid #C9A84C", color: "#C9A84C", borderRadius: 0 }}
                     >
                       {tier.recommended ? "Get Started" : `Select ${tier.name}`}
                     </button>
@@ -204,8 +212,8 @@ export default function PricingPage() {
           {/* Guarantee Section */}
           <div className="mb-12" style={{ padding: "24px", background: "rgba(201,168,76,0.02)", border: "1px solid rgba(201,168,76,0.12)", borderRadius: 0 }}>
             <div className="flex items-start gap-4">
-              <div className="flex-shrink-0 w-12 h-12 flex items-center justify-center" style={{ background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.3)" }}>
-                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" style={{ color: "#22c55e" }}>
+              <div className="flex-shrink-0 flex items-center justify-center" style={{ width: "48px", height: "48px", minWidth: "48px", background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.3)" }}>
+                <svg style={{ ...SZ.lg, color: "#22c55e" }} fill="currentColor" viewBox="0 0 24 24">
                   <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z" />
                 </svg>
               </div>
@@ -226,22 +234,22 @@ export default function PricingPage() {
           </div>
 
           {/* Trust Badges */}
-          <div className="pt-8 border-t border-[rgba(201,168,76,0.2)] max-w-2xl mx-auto">
+          <div className="pt-8 max-w-2xl mx-auto" style={{ borderTop: "1px solid rgba(201,168,76,0.2)" }}>
             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
               <div className="flex items-center gap-2 text-sm" style={{ color: "rgba(245,240,232,0.45)" }}>
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" style={{ color: "#C9A84C" }}>
+                <svg style={{ ...SZ.sm, color: "#C9A84C" }} fill="currentColor" viewBox="0 0 24 24">
                   <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z" />
                 </svg>
                 Secure payment via Stripe
               </div>
               <div className="flex items-center gap-2 text-sm" style={{ color: "rgba(245,240,232,0.45)" }}>
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" style={{ color: "#C9A84C" }}>
+                <svg style={{ ...SZ.sm, color: "#C9A84C" }} fill="currentColor" viewBox="0 0 24 24">
                   <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z" />
                 </svg>
                 256-bit encryption
               </div>
               <div className="flex items-center gap-2 text-sm" style={{ color: "rgba(245,240,232,0.45)" }}>
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" style={{ color: "#C9A84C" }}>
+                <svg style={{ ...SZ.sm, color: "#C9A84C" }} fill="currentColor" viewBox="0 0 24 24">
                   <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
                 </svg>
                 100% money-back guarantee
