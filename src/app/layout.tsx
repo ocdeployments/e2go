@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
-import { Playfair_Display, DM_Sans } from "next/font/google";
+import { Cormorant_Garamond, DM_Sans } from "next/font/google";
 import "./globals.css";
 import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
 
-const playfair = Playfair_Display({
+const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
-  variable: "--font-playfair",
+  variable: "--font-cormorant",
   display: "swap",
-  weight: ["400", "600"],
+  weight: ["300", "400", "500"],
   style: ["normal", "italic"],
 });
 
@@ -20,22 +20,24 @@ const dmSans = DM_Sans({
 
 export const metadata: Metadata = {
   title: {
-    default: "e2go.app - E-2 Visa Application Guide",
+    default: "e2go — U.S. E-2 Treaty Investor Visa Preparation",
     template: "%s | e2go.app",
   },
-  description: "Self-service guided application for U.S. E-2 Treaty Investor visa",
+  description: "Prepare your complete E-2 visa application package without an immigration attorney. All 11 consulate tabs. 82 treaty countries. From $297.",
   metadataBase: new URL("https://e2go.app"),
   openGraph: {
     type: "website",
     locale: "en_US",
     siteName: "e2go.app",
+    title: "e2go — U.S. E-2 Treaty Investor Visa Preparation",
+    description: "Prepare your complete E-2 visa application package without an immigration attorney.",
   },
   robots: {
     index: true,
     follow: true,
   },
   manifest: "/manifest.json",
-  themeColor: "#0D9488",
+  themeColor: "#0a0a0a",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
@@ -55,22 +57,11 @@ export default function RootLayout({
     <html lang="en">
       <head>
         <link
-          href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap"
           rel="stylesheet"
         />
       </head>
-      <body className={`${playfair.variable} ${dmSans.variable} font-sans antialiased`}>
-        {/* Flag accent strip */}
-        <div className="flag-strip" />
-
-        {/* Global background scene */}
-        <div className="bg-scene">
-          <div className="orb orb-1" />
-          <div className="orb orb-2" />
-          <div className="orb orb-3" />
-        </div>
-        <div className="grid-overlay" />
-
+      <body className={`${cormorant.variable} ${dmSans.variable} font-sans antialiased`}>
         <ServiceWorkerRegistration />
         {children}
       </body>
