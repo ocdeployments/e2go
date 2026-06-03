@@ -1,0 +1,15 @@
+{
+  "QE-01": { "type": "percentage", "question": "What percentage of the U.S. business will you own?", "section": "Ownership & Equity" },
+  "QE-02": { "type": "multiselect", "question": "How is your ownership documented?", "section": "Ownership & Equity", "options": ["LLC Membership Agreement", "Stock Certificate", "Operating Agreement", "Partnership Agreement", "Articles of Incorporation", "Other"] },
+  "QE-03": { "type": "select", "question": "Will you have any business partners?", "section": "Ownership & Equity", "options": ["No — I am the sole owner", "Yes — one partner", "Yes — two or more partners"] },
+  "QE-04": { "type": "text", "question": "What percentage will your partner(s) own?", "section": "Ownership & Equity", "show_if": { "QE-03": ["Yes — one partner", "Yes — two or more partners"] } },
+  "QE-05": { "type": "select", "question": "Will any partner also apply for E-2 status?", "section": "Ownership & Equity", "options": ["Yes — joint E-2 application", "No — partner is a U.S. citizen or resident", "No — partner will not be in the U.S.", "Not yet determined"], "show_if": { "QE-03": ["Yes — one partner", "Yes — two or more partners"] } },
+  "QE-06": { "type": "text", "question": "What will your official title be in the business?", "section": "Control & Management" },
+  "QE-07": { "type": "select", "question": "Will you have authority to hire and terminate employees?", "section": "Control & Management", "options": ["Yes — full authority", "Yes — with co-approval required", "No — handled by someone else", "Not yet determined"] },
+  "QE-08": { "type": "select", "question": "Will you be responsible for day-to-day operational decisions?", "section": "Control & Management", "options": ["Yes — full operational control", "Partially — shared with a manager", "No — I will focus on strategy only"] },
+  "QE-09": { "type": "select", "question": "Will you have authority to sign contracts and financial commitments on behalf of the business?", "section": "Control & Management", "options": ["Yes", "No", "Shared with partner"] },
+  "QE-10": { "type": "select", "question": "What is the legal structure of the U.S. business?", "section": "Corporate Structure", "options": ["LLC", "C-Corporation", "S-Corporation", "Sole Proprietorship", "Partnership", "Other"] },
+  "QE-11": { "type": "searchable_select", "question": "In which U.S. state is or will the business be registered?", "section": "Corporate Structure" },
+  "QE-12": { "type": "select", "question": "Has the business entity been formed yet?", "section": "Corporate Structure", "options": ["Yes — already formed and registered", "No — formation is in progress", "No — not yet started"] },
+  "QE-13": { "type": "text", "question": "What is the exact legal name of the U.S. business entity?", "section": "Corporate Structure", "show_if": { "QE-12": "Yes — already formed and registered" } }
+}
