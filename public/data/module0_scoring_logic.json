@@ -228,7 +228,7 @@
     {
       "code": "W-NI-02",
       "question": "Q0-NI-02",
-      "trigger": ["No — everyone is moving with me"],
+      "trigger": ["No — all close family is moving with me"],
       "level": "risk_flag"
     },
     {
@@ -316,8 +316,9 @@
         "Yes — and I plan to keep it"
       ],
       "Q0-NI-02": [
-        "Yes — family will remain there",
-        "Some will stay, some will come with me"
+        "Yes — immediate family will remain (spouse, children, parents)",
+        "Yes — extended family will remain (siblings, grandparents, other relatives)",
+        "Some family will stay, some will come with me"
       ],
       "Q0-NI-03": [
         "Yes — I plan to keep my accounts open",
