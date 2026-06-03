@@ -117,6 +117,7 @@ export default function QuizPage() {
   const [currencyRates, setCurrencyRates] = useState<Record<string, number>>({});
   const [cannabisGatePassed, setCannabisGatePassed] = useState(false);
   const [showCannabisGate, setShowCannabisGate] = useState(false);
+  const [knownEmail, setKnownEmail] = useState<string | null>(null);
 
   // Fetch treaty countries and currency rates (v3)
   useEffect(() => {
@@ -153,6 +154,17 @@ export default function QuizPage() {
     }
   }, []);
 
+  // Check if user is authenticated to skip Q0-21 email
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user?.email) {
+        setKnownEmail(user.email);
+      }
+    };
+    checkAuth();
+  }, [supabase]);
+
   useEffect(() => {
     Promise.all([
       fetch("/data/module0_questions.json").then((r) => r.json()),
@@ -167,6 +179,8 @@ export default function QuizPage() {
   const getVisibleQuestions = useCallback(() => {
     if (!questionsData) return [];
     return questionsData.questions.filter((q) => {
+      // Skip Q0-21 if user email is already known
+      if (q.id === "Q0-21" && knownEmail) return false;
       if (!q.show_if) return true;
       for (const [dependQId, dependValue] of Object.entries(q.show_if)) {
         const dependentAnswer = answers[dependQId];
@@ -179,7 +193,7 @@ export default function QuizPage() {
       }
       return true;
     });
-  }, [questionsData, answers]);
+  }, [questionsData, answers, knownEmail]);
 
   const visibleQuestions = getVisibleQuestions();
   const currentQuestion = visibleQuestions[currentIndex];
@@ -496,8 +510,8 @@ export default function QuizPage() {
       const currencyKey = `${amountKey}_currency`;
       const investmentCurrency = finalAnswers[currencyKey] as "USD" | "CAD" || null;
 
-      // Get email from Q0-21
-      const email = finalAnswers["Q0-21"] as string;
+      // Get email from Q0-21 or from authenticated session
+      const email = (finalAnswers["Q0-21"] as string) || knownEmail;
 
       await supabase.from("quiz_sessions").insert({
         user_id: user.id,
