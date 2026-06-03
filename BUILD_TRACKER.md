@@ -1,6 +1,6 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 3, 2026 — End of Session 13D
+**Last Updated:** June 3, 2026 — End of Session 13F
 **App Name:** e2go.app
 **Stack:** Next.js 14 · TypeScript · Tailwind CSS · Supabase · Claude API
 **Dev URL:** https://e2go-git-dev-ocdeployments-projects.vercel.app
@@ -290,17 +290,19 @@ Read docs/DESIGN_REFERENCE.html before any UI work.
 
 | Token | Value |
 |---|---|
-| Background | #060d1f |
-| Teal accent | #0D9488 |
-| Text primary | #f0ede6 |
-| Glass card | rgba(255,255,255,0.05) + blur(16px) |
-| Heading font | Playfair Display |
-| Body font | DM Sans |
+| Background | #0a0a0a (obsidian) |
+| Primary accent | #C9A84C (aged gold) |
+| Text primary | #f5f0e8 |
+| Surface card | rgba(201,168,76,0.02) + border rgba(201,168,76,0.12) |
+| Heading font | Cormorant Garamond Light (300) |
+| Body font | DM Sans 300/400/500 |
+| Border radius | 0 — no rounded corners anywhere |
 
 Rules:
-- Option buttons: NEVER white. Always glass.
-- Progress bars: ALWAYS teal #0D9488. Never blue.
-- Question text: Playfair Display 26px, foreground, fully opaque
+- Option buttons: NEVER white. Gold border or gold fill.
+- Progress bars: Gold (#C9A84C). Never blue.
+- Question text: Cormorant Garamond, foreground, fully opaque
+- No glassmorphism, no teal (#0D9488), no navy (#060d1f)
 - No e2go branding on submitted documents
 
 Design skills installed:
@@ -405,6 +407,8 @@ FULL MODULE 3 COMPLETE
 | Sarah Mitchell docs are .md not .docx | MEDIUM | Regenerate using docx skill properly |
 | Spec files need 5 updates | MEDIUM | Before building generation engine |
 | DESIGN_REFERENCE.html v2 — Playwright visual verification pending | MEDIUM | Run at start of next session before any UI work proceeds. |
+| Quiz/results conditional SVGs — Tailwind size classes | MEDIUM | Hard-stop screens (e.g. PR-01, W-ATTORNEY flags) have SVGs that may expand. Add SZ inline styles when fixing quiz bugs. Same pattern as pricing fix. |
+| Service worker caches pages during local Playwright testing | LOW | Unregister SW in Playwright before visual verification: navigator.serviceWorker.getRegistrations() then unregister all. |
 | Magic MCP not loading | MEDIUM | Server starts and shuts down. API key restored. enabledPlugins fix did not resolve. Investigate separately — not a build blocker. |
 
 ---
@@ -604,9 +608,26 @@ FULL MODULE 3 COMPLETE
 - Obsidian Gold (#0a0a0a, #C9A84C, Cormorant Garamond, DM Sans)
 - Build passes with zero errors
 
-### Session 13F Priorities
-1. Continue Module 3 tab wiring per 13A-13D progress
-2. Wire remaining tabs (E, G, H, I, K, L) with real questions
+### Session 13F (June 3, 2026) — Obsidian Gold Token Swap + Pricing Fix
+- Token swap applied to all 5 remaining pages: dashboard, login, pricing, quiz, results
+- Fixed stray `>` JSX syntax error in login/page.tsx introduced during token swap
+- Fixed pricing page SVG sizing bug — SVGs were expanding to full viewport width
+  - Root cause: service worker caching old compiled output + Tailwind size classes
+    not applying in flex containers without explicit width/height
+  - Fix: SZ helper object with inline px dimensions on all SVG elements
+  - Root discovery: PWA service worker was serving stale page to Playwright
+- All 5 pages confirmed: #0a0a0a background, #C9A84C gold, Cormorant Garamond
+- Build clean (zero errors) before and after fix
+- 2 commits pushed to dev
+
+### Session 13F Priorities (complete — see Session 14 next)
+- All token swap work done. Pages verified via Playwright (service worker bypassed).
+- NOTE: quiz/results conditional SVGs (hard-stop screens) use Tailwind size classes
+  same as pricing bug. Add inline SZ styles when fixing quiz bugs next session.
+
+### Next Session Priorities (Session 14)
+1. Quiz bug fixes — option button styling, progress bar color, sub-question timing
+2. Stripe paywall integration — Tab F COMPLETION CTA routes here
 
 ### Next Session Priorities (Session 14)
 1. Stripe paywall integration — Tab F's COMPLETION CTA routes here
