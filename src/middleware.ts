@@ -38,15 +38,7 @@ export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   // Protected routes that require authentication
-  const protectedRoutes = [
-    '/dashboard',
-    '/apply/',
-    '/score',
-    '/simulator',
-    '/export',
-    '/generating',
-    '/support/tickets'
-  ];
+  const protectedRoutes = ['/dashboard', '/apply/', '/admin'];
 
   // Auth routes - redirect to dashboard if already logged in
   const authRoutes = ['/login', '/signup'];
@@ -70,11 +62,7 @@ export const config = {
   matcher: [
     '/dashboard/:path*',
     '/apply/:path*',
-    '/score/:path*',
-    '/simulator/:path*',
-    '/export/:path*',
-    '/generating/:path*',
-    '/support/tickets/:path*',
+    '/admin/:path*',
     '/login',
     '/signup',
   ],
