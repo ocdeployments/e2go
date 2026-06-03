@@ -520,8 +520,8 @@ export default function QuizPage() {
   // Loading state
   if (!questionsData || !scoringLogic) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div style={{ color: "#0D9488" }}>Loading...</div>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#0a0a0a' }}>
+        <div style={{ color: "#C9A84C" }}>Loading...</div>
       </div>
     );
   }
@@ -529,33 +529,33 @@ export default function QuizPage() {
   // Stop screen
   if (stopScreen) {
     return (
-      <div className="min-h-screen flex flex-col" style={{ background: "var(--navy)" }}>
-        <header className="w-full sticky top-0 z-50" style={{ backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", background: "rgba(6,13,31,0.8)", borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
+      <div className="min-h-screen flex flex-col" style={{ background: '#0a0a0a' }}>
+        <header className="w-full sticky top-0 z-50" style={{ background: '#0a0a0a', borderBottom: '1px solid rgba(201,168,76,0.2)' }}>
           <div className="flex justify-between items-center h-16 px-4 max-w-xl mx-auto">
             <Link href="/" className="flex items-center gap-2">
-              <span className="text-xl font-bold" style={{ color: "#0D9488", fontFamily: "'Playfair Display', serif" }}>e2go.app</span>
+              <span className="text-xl font-bold" style={{ color: "#C9A84C", fontFamily: "'Cormorant Garamond', serif", fontWeight: 300 }}>e2go<span style={{ color: '#f5f0e8' }}>.app</span></span>
             </Link>
           </div>
         </header>
 
         <main className="flex-1 flex items-center justify-center px-4 py-12">
           <div className="max-w-md w-full text-center">
-            <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6" style={{ background: "rgba(220,38,38,0.15)" }}>
+            <div className="w-16 h-16 flex items-center justify-center mx-auto mb-6" style={{ background: 'rgba(201,168,76,0.08)', border: '1px solid rgba(201,168,76,0.3)' }}>
               <svg className="w-8 h-8" style={{ color: "#ef4444" }} fill="currentColor" viewBox="0 0 24 24">
                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
               </svg>
             </div>
-            <h1 className="text-2xl font-bold mb-4" style={{ color: "#f0ede6", fontFamily: "'Playfair Display', serif" }}>
+            <h1 className="text-2xl font-bold mb-4" style={{ color: "#f5f0e8", fontFamily: "'Cormorant Garamond', serif", fontWeight: 300 }}>
               Application Not Eligible
             </h1>
-            <p className="mb-8" style={{ color: "rgba(240,237,230,0.75)" }}>
+            <p className="mb-8" style={{ color: "rgba(245,240,232,0.75)" }}>
               {stopScreen.message}
             </p>
-            <p className="text-sm mb-8" style={{ color: "rgba(240,237,230,0.45)" }}>
+            <p className="text-sm mb-8" style={{ color: "rgba(245,240,232,0.45)" }}>
               Based on your responses, the E-2 visa may not be the right path for you at this time. We recommend speaking with a qualified immigration attorney to explore your options.
             </p>
             <div className="space-y-3">
-              <button className="w-full text-white font-medium py-4 rounded-lg transition-colors" style={{ background: "#0D9488" }}>
+              <button className="w-full font-medium py-4 transition-colors" style={{ background: "#C9A84C", color: "#0a0a0a", borderRadius: 0 }}>
                 Find a qualified immigration lawyer
               </button>
               <button
@@ -564,8 +564,8 @@ export default function QuizPage() {
                   setCurrentIndex(0);
                   setAnswers({});
                 }}
-                className="w-full font-medium py-4 rounded-lg transition-colors"
-                style={{ border: "1px solid #0D9488", color: "#0D9488" }}
+                className="w-full font-medium py-4 transition-colors"
+                style={{ border: "1px solid #C9A84C", color: "#C9A84C", borderRadius: 0 }}
               >
                 Start over
               </button>
@@ -579,29 +579,29 @@ export default function QuizPage() {
   // Cannabis informational gate
   if (showCannabisGate) {
     return (
-      <div className="min-h-screen flex flex-col" style={{ background: "var(--navy)" }}>
-        <header className="w-full sticky top-0 z-50" style={{ backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", background: "rgba(6,13,31,0.8)", borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
+      <div className="min-h-screen flex flex-col" style={{ background: '#0a0a0a' }}>
+        <header className="w-full sticky top-0 z-50" style={{ background: '#0a0a0a', borderBottom: '1px solid rgba(201,168,76,0.2)' }}>
           <div className="flex justify-between items-center h-16 px-4 max-w-xl mx-auto">
             <Link href="/" className="flex items-center gap-2">
-              <span className="text-xl font-bold" style={{ color: "#0D9488", fontFamily: "'Playfair Display', serif" }}>e2go.app</span>
+              <span className="text-xl font-bold" style={{ color: "#C9A84C", fontFamily: "'Cormorant Garamond', serif", fontWeight: 300 }}>e2go<span style={{ color: '#f5f0e8' }}>.app</span></span>
             </Link>
           </div>
         </header>
 
         <main className="flex-1 flex items-center justify-center px-4 py-12">
           <div className="max-w-md w-full text-center">
-            <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6" style={{ background: "rgba(245,158,11,0.15)" }}>
+            <div className="w-16 h-16 flex items-center justify-center mx-auto mb-6" style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)' }}>
               <svg className="w-8 h-8" style={{ color: "#f59e0b" }} fill="currentColor" viewBox="0 0 24 24">
                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
               </svg>
             </div>
-            <h1 className="text-2xl font-bold mb-4" style={{ color: "#f0ede6", fontFamily: "'Playfair Display', serif" }}>
+            <h1 className="text-2xl font-bold mb-4" style={{ color: "#f5f0e8", fontFamily: "'Cormorant Garamond', serif", fontWeight: 300 }}>
               One thing worth knowing
             </h1>
-            <p className="mb-4" style={{ color: "rgba(240,237,230,0.75)" }}>
+            <p className="mb-4" style={{ color: "rgba(245,240,232,0.75)" }}>
               Cannabis businesses are legal in many U.S. states — but U.S. immigration operates under federal law, where cannabis remains illegal. This means E-2 visas cannot be used to invest in cannabis-related businesses, regardless of which state the business is in.
             </p>
-            <p className="mb-8" style={{ color: "rgba(240,237,230,0.75)" }}>
+            <p className="mb-8" style={{ color: "rgba(245,240,232,0.75)" }}>
               If your business involves cannabis in any way, please speak with an immigration attorney before proceeding.
             </p>
             <button
@@ -618,8 +618,8 @@ export default function QuizPage() {
                   calculateAndRedirect(answers);
                 }
               }}
-              className="w-full text-white font-medium py-4 rounded-lg transition-colors"
-              style={{ background: "#0D9488" }}
+              className="w-full font-medium py-4 transition-colors"
+              style={{ background: "#C9A84C", color: "#0a0a0a", borderRadius: 0 }}
             >
               My business is not cannabis-related — continue
             </button>
@@ -642,40 +642,38 @@ export default function QuizPage() {
   };
 
   return (
-    <div className="min-h-screen">
-      {/* Header - Glassmorphism */}
-      <header className="w-full sticky top-0 z-50" style={{ backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", background: "rgba(6,13,31,0.8)", borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
+    <div className="min-h-screen" style={{ background: '#0a0a0a' }}>
+      {/* Header - Obsidian Gold */}
+      <header className="w-full sticky top-0 z-50" style={{ background: '#0a0a0a', borderBottom: '1px solid rgba(201,168,76,0.2)' }}>
         <div className="flex justify-between items-center h-16 px-4 max-w-xl mx-auto">
           <Link href="/" className="flex items-center gap-2">
-            <span className="text-xl font-bold" style={{ color: "#0D9488", fontFamily: "'Playfair Display', serif" }}>e2go.app</span>
+            <span className="text-xl font-bold" style={{ color: "#C9A84C", fontFamily: "'Cormorant Garamond', serif", fontWeight: 300 }}>e2go<span style={{ color: '#f5f0e8' }}>.app</span></span>
           </Link>
         </div>
       </header>
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col max-w-xl mx-auto w-full px-4 py-8">
-        {/* Progress Bar - TBR pattern, teal */}
+        {/* Progress Bar - Gold */}
         <div style={{ marginBottom: '24px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-            <span style={{ fontSize: '11px', fontWeight: 500, letterSpacing: '0.10em', textTransform: 'uppercase', color: '#0D9488' }}>
+            <span style={{ fontSize: '11px', fontWeight: 500, letterSpacing: '0.10em', textTransform: 'uppercase', color: '#C9A84C' }}>
               {getCurrentSection()}
             </span>
-            <span style={{ fontSize: '12px', color: 'rgba(240,237,230,0.45)' }}>
+            <span style={{ fontSize: '12px', color: 'rgba(245,240,232,0.45)' }}>
               {currentIndex + 1} of {visibleQuestions.length}
             </span>
           </div>
-          <div style={{ height: '3px', background: 'rgba(255,255,255,0.08)', borderRadius: '2px', overflow: 'hidden' }}>
-            <div style={{ height: '100%', background: '#0D9488', borderRadius: '2px', width: `${((currentIndex + 1) / visibleQuestions.length) * 100}%`, transition: 'width 0.4s ease' }} />
+          <div style={{ height: '3px', background: 'rgba(201,168,76,0.15)', borderRadius: '2px', overflow: 'hidden' }}>
+            <div style={{ height: '100%', background: '#C9A84C', borderRadius: '2px', width: `${((currentIndex + 1) / visibleQuestions.length) * 100}%`, transition: 'width 0.4s ease' }} />
           </div>
         </div>
 
-        {/* Quiz Card - Glass container */}
+        {/* Quiz Card - Gold border, no glassmorphism */}
         <div style={{
-          background: 'rgba(255,255,255,0.04)',
-          backdropFilter: 'blur(15px)',
-          WebkitBackdropFilter: 'blur(15px)',
-          border: '1px solid rgba(255,255,255,0.10)',
-          borderRadius: '16px',
+          background: 'rgba(201,168,76,0.02)',
+          border: '1px solid rgba(201,168,76,0.12)',
+          borderRadius: 0,
           padding: '40px 44px'
         }}>
           {/* Question */}
@@ -683,12 +681,12 @@ export default function QuizPage() {
             <div
               className={`flex-1 transition-opacity duration-200 ${isAnimating ? "opacity-0" : "opacity-100"}`}
             >
-              {/* Question text - Playfair Display, fully opaque, first */}
+              {/* Question text - Cormorant Garamond, fully opaque */}
               <h1 style={{
-                fontFamily: "'Playfair Display', Georgia, serif",
-                fontSize: '26px',
-                fontWeight: 600,
-                color: '#f0ede6',
+                fontFamily: "'Cormorant Garamond', Georgia, serif",
+                fontSize: '28px',
+                fontWeight: 300,
+                color: '#f5f0e8',
                 lineHeight: 1.3,
                 marginBottom: '8px',
                 opacity: 1,
@@ -698,11 +696,12 @@ export default function QuizPage() {
                 {replaceDynamic(currentQuestion.question, answers)}
               </h1>
 
-              {/* Helper text + Tooltip - always visible, inline, no card */}
+              {/* Helper text + Tooltip */}
               {(currentQuestion.helper_text || currentQuestion.tooltip) && (
                 <p style={{
                   fontSize: '13px',
-                  color: 'rgba(240,237,230,0.45)',
+                  fontWeight: 300,
+                  color: 'rgba(245,240,232,0.45)',
                   lineHeight: 1.6,
                   marginBottom: '24px',
                   fontFamily: "'DM Sans', sans-serif"
@@ -712,7 +711,7 @@ export default function QuizPage() {
                 </p>
               )}
 
-            {/* Searchable Select - Treaty Country - Atlys pattern */}
+            {/* Searchable Select - Treaty Country */}
             {currentQuestion.type === "searchable_select" && (
               <div className="space-y-4">
                 <div className="relative w-full">
@@ -725,10 +724,10 @@ export default function QuizPage() {
                     style={{
                       width: '100%',
                       padding: '14px 16px',
-                      background: 'rgba(255,255,255,0.07)',
-                      border: '1px solid rgba(255,255,255,0.12)',
-                      borderRadius: '10px',
-                      color: '#f0ede6',
+                      background: 'rgba(255,255,255,0.04)',
+                      border: '1px solid rgba(201,168,76,0.2)',
+                      borderRadius: 0,
+                      color: '#f5f0e8',
                       fontFamily: "'DM Sans', sans-serif",
                       fontSize: '15px',
                       outline: 'none',
@@ -741,16 +740,15 @@ export default function QuizPage() {
                       top: 'calc(100% + 4px)',
                       left: 0,
                       right: 0,
-                      background: 'rgba(10,18,40,0.97)',
-                      backdropFilter: 'blur(20px)',
-                      border: '1px solid rgba(255,255,255,0.12)',
-                      borderRadius: '10px',
+                      background: '#0a0a0a',
+                      border: '1px solid rgba(201,168,76,0.2)',
+                      borderRadius: 0,
                       zIndex: 50,
                       maxHeight: '240px',
                       overflowY: 'auto'
                     }}>
                       {filteredCountries.length === 0 ? (
-                        <div style={{ padding: '14px 16px', color: 'rgba(240,237,230,0.45)' }}>No countries found</div>
+                        <div style={{ padding: '14px 16px', color: 'rgba(245,240,232,0.45)' }}>No countries found</div>
                       ) : (
                         filteredCountries.map((country) => (
                           <button
@@ -759,9 +757,9 @@ export default function QuizPage() {
                             style={{
                               padding: '11px 16px',
                               fontSize: '14px',
-                              color: 'rgba(240,237,230,0.65)',
+                              color: 'rgba(245,240,232,0.65)',
                               cursor: 'pointer',
-                              borderBottom: '1px solid rgba(255,255,255,0.05)',
+                              borderBottom: '1px solid rgba(201,168,76,0.08)',
                               transition: 'background 0.12s',
                               display: 'flex',
                               alignItems: 'center',
@@ -774,16 +772,16 @@ export default function QuizPage() {
                               borderRight: 'none'
                             }}
                             onMouseEnter={(e) => {
-                              e.currentTarget.style.background = 'rgba(13,148,136,0.15)';
-                              e.currentTarget.style.color = '#f0ede6';
+                              e.currentTarget.style.background = 'rgba(201,168,76,0.08)';
+                              e.currentTarget.style.color = '#f5f0e8';
                             }}
                             onMouseLeave={(e) => {
                               e.currentTarget.style.background = 'transparent';
-                              e.currentTarget.style.color = 'rgba(240,237,230,0.65)';
+                              e.currentTarget.style.color = 'rgba(245,240,232,0.65)';
                             }}
                           >
-                            <span style={{ color: '#f0ede6' }}>{country.name}</span>
-                            {country.notes && <span style={{ fontSize: '11px', color: 'rgba(240,237,230,0.4)' }}>{country.notes}</span>}
+                            <span style={{ color: '#f5f0e8' }}>{country.name}</span>
+                            {country.notes && <span style={{ fontSize: '11px', color: 'rgba(245,240,232,0.4)' }}>{country.notes}</span>}
                           </button>
                         ))
                       )}
@@ -791,17 +789,17 @@ export default function QuizPage() {
                   )}
                 </div>
                 {selectedCountry && (
-                  <div style={{ padding: '12px 14px', background: 'rgba(13,148,136,0.1)', borderRadius: '8px', border: '1px solid rgba(13,148,136,0.2)' }}>
-                    <p style={{ fontSize: '13px', color: 'rgba(240,237,230,0.8)' }}>
-                      Selected: <span style={{ fontWeight: 500, color: '#f0ede6' }}>{selectedCountry.name}</span>
-                      {selectedCountry.consulate !== "Not applicable" && <span style={{ display: 'block', fontSize: '12px', color: 'rgba(240,237,230,0.5)' }}>Consulate: {selectedCountry.consulate}</span>}
+                  <div style={{ padding: '12px 14px', background: 'rgba(201,168,76,0.05)', borderRadius: 0, border: '1px solid rgba(201,168,76,0.2)' }}>
+                    <p style={{ fontSize: '13px', color: 'rgba(245,240,232,0.8)' }}>
+                      Selected: <span style={{ fontWeight: 500, color: '#f5f0e8' }}>{selectedCountry.name}</span>
+                      {selectedCountry.consulate !== "Not applicable" && <span style={{ display: 'block', fontSize: '12px', color: 'rgba(245,240,232,0.5)' }}>Consulate: {selectedCountry.consulate}</span>}
                     </p>
                   </div>
                 )}
               </div>
             )}
 
-            {/* State Select - Atlys pattern */}
+            {/* State Select */}
             {currentQuestion.type === "state_select" && (
               <div className="space-y-4">
                 <div className="relative w-full">
@@ -814,10 +812,10 @@ export default function QuizPage() {
                     style={{
                       width: '100%',
                       padding: '14px 16px',
-                      background: 'rgba(255,255,255,0.07)',
-                      border: '1px solid rgba(255,255,255,0.12)',
-                      borderRadius: '10px',
-                      color: '#f0ede6',
+                      background: 'rgba(255,255,255,0.04)',
+                      border: '1px solid rgba(201,168,76,0.2)',
+                      borderRadius: 0,
+                      color: '#f5f0e8',
                       fontFamily: "'DM Sans', sans-serif",
                       fontSize: '15px',
                       outline: 'none',
@@ -830,16 +828,15 @@ export default function QuizPage() {
                       top: 'calc(100% + 4px)',
                       left: 0,
                       right: 0,
-                      background: 'rgba(10,18,40,0.97)',
-                      backdropFilter: 'blur(20px)',
-                      border: '1px solid rgba(255,255,255,0.12)',
-                      borderRadius: '10px',
+                      background: '#0a0a0a',
+                      border: '1px solid rgba(201,168,76,0.2)',
+                      borderRadius: 0,
                       zIndex: 50,
                       maxHeight: '240px',
                       overflowY: 'auto'
                     }}>
                       {filteredStates.length === 0 ? (
-                        <div style={{ padding: '14px 16px', color: 'rgba(240,237,230,0.45)' }}>No states found</div>
+                        <div style={{ padding: '14px 16px', color: 'rgba(245,240,232,0.45)' }}>No states found</div>
                       ) : (
                         filteredStates.map((state) => (
                           <button
@@ -848,9 +845,9 @@ export default function QuizPage() {
                             style={{
                               padding: '11px 16px',
                               fontSize: '14px',
-                              color: 'rgba(240,237,230,0.65)',
+                              color: 'rgba(245,240,232,0.65)',
                               cursor: 'pointer',
-                              borderBottom: '1px solid rgba(255,255,255,0.05)',
+                              borderBottom: '1px solid rgba(201,168,76,0.08)',
                               transition: 'background 0.12s',
                               display: 'flex',
                               alignItems: 'center',
@@ -863,15 +860,15 @@ export default function QuizPage() {
                               borderRight: 'none'
                             }}
                             onMouseEnter={(e) => {
-                              e.currentTarget.style.background = 'rgba(13,148,136,0.15)';
-                              e.currentTarget.style.color = '#f0ede6';
+                              e.currentTarget.style.background = 'rgba(201,168,76,0.08)';
+                              e.currentTarget.style.color = '#f5f0e8';
                             }}
                             onMouseLeave={(e) => {
                               e.currentTarget.style.background = 'transparent';
-                              e.currentTarget.style.color = 'rgba(240,237,230,0.65)';
+                              e.currentTarget.style.color = 'rgba(245,240,232,0.65)';
                             }}
                           >
-                            <span style={{ color: '#f0ede6' }}>{state.name}</span>
+                            <span style={{ color: '#f5f0e8' }}>{state.name}</span>
                           </button>
                         ))
                       )}
@@ -882,7 +879,7 @@ export default function QuizPage() {
                   onClick={() => handleStateSelect("I have not decided yet")}
                   style={{
                     width: '100%',
-                    color: 'rgba(240,237,230,0.40)',
+                    color: 'rgba(245,240,232,0.35)',
                     fontSize: '13px',
                     fontFamily: "'DM Sans', sans-serif",
                     padding: '12px',
@@ -891,15 +888,15 @@ export default function QuizPage() {
                     cursor: 'pointer',
                     transition: 'color 0.2s'
                   }}
-                  onMouseEnter={(e) => e.currentTarget.style.color = 'rgba(240,237,230,0.65)'}
-                  onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(240,237,230,0.40)'}
+                  onMouseEnter={(e) => e.currentTarget.style.color = 'rgba(245,240,232,0.6)'}
+                  onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(245,240,232,0.35)'}
                 >
                   I have not decided yet
                 </button>
               </div>
             )}
 
-            {/* Select Options - Opal radio card pattern with solid surfaces */}
+            {/* Select Options - Gold border style */}
             {currentQuestion.type === "select" && (
               <div>
                 {currentQuestion.options?.map((option) => {
@@ -914,10 +911,10 @@ export default function QuizPage() {
                         gap: '14px',
                         width: '100%',
                         padding: '15px 18px',
-                        background: isSelected ? 'rgba(13,148,136,0.18)' : 'rgba(255,255,255,0.06)',
-                        border: isSelected ? '1px solid rgba(13,148,136,0.55)' : '1px solid rgba(255,255,255,0.09)',
-                        borderRadius: '10px',
-                        color: isSelected ? '#f0ede6' : 'rgba(240,237,230,0.80)',
+                        background: isSelected ? 'rgba(201,168,76,0.08)' : 'rgba(201,168,76,0.02)',
+                        border: isSelected ? '1px solid #C9A84C' : '1px solid rgba(201,168,76,0.2)',
+                        borderRadius: 0,
+                        color: isSelected ? '#f5f0e8' : 'rgba(245,240,232,0.80)',
                         fontFamily: "'DM Sans', sans-serif",
                         fontSize: '15px',
                         fontWeight: 400,
@@ -929,17 +926,17 @@ export default function QuizPage() {
                       }}
                       onMouseEnter={(e) => {
                         if (!isSelected) {
-                          e.currentTarget.style.background = 'rgba(255,255,255,0.10)';
-                          e.currentTarget.style.borderColor = 'rgba(255,255,255,0.18)';
-                          e.currentTarget.style.color = 'rgba(240,237,230,0.95)';
+                          e.currentTarget.style.background = 'rgba(201,168,76,0.06)';
+                          e.currentTarget.style.borderColor = 'rgba(201,168,76,0.4)';
+                          e.currentTarget.style.color = 'rgba(245,240,232,0.95)';
                           e.currentTarget.style.transform = 'translateX(2px)';
                         }
                       }}
                       onMouseLeave={(e) => {
                         if (!isSelected) {
-                          e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
-                          e.currentTarget.style.borderColor = 'rgba(255,255,255,0.09)';
-                          e.currentTarget.style.color = 'rgba(240,237,230,0.80)';
+                          e.currentTarget.style.background = 'rgba(201,168,76,0.02)';
+                          e.currentTarget.style.borderColor = 'rgba(201,168,76,0.2)';
+                          e.currentTarget.style.color = 'rgba(245,240,232,0.80)';
                           e.currentTarget.style.transform = 'translateX(0)';
                         }
                       }}
@@ -949,9 +946,9 @@ export default function QuizPage() {
                         <div style={{
                           width: '22px',
                           height: '22px',
-                          borderRadius: '50%',
-                          background: '#0D9488',
-                          color: 'white',
+                          borderRadius: 0,
+                          background: '#C9A84C',
+                          color: '#0a0a0a',
                           fontSize: '12px',
                           display: 'flex',
                           alignItems: 'center',
@@ -967,7 +964,7 @@ export default function QuizPage() {
               </div>
             )}
 
-            {/* Multiselect Options - Opal pattern */}
+            {/* Multiselect Options */}
             {currentQuestion.type === "multiselect" && (
               <div>
                 {currentQuestion.options?.map((option) => {
@@ -988,10 +985,10 @@ export default function QuizPage() {
                         gap: '14px',
                         width: '100%',
                         padding: '15px 18px',
-                        background: selected ? 'rgba(13,148,136,0.18)' : 'rgba(255,255,255,0.06)',
-                        border: selected ? '1px solid rgba(13,148,136,0.55)' : '1px solid rgba(255,255,255,0.09)',
-                        borderRadius: '10px',
-                        color: selected ? '#f0ede6' : 'rgba(240,237,230,0.80)',
+                        background: selected ? 'rgba(201,168,76,0.08)' : 'rgba(201,168,76,0.02)',
+                        border: selected ? '1px solid #C9A84C' : '1px solid rgba(201,168,76,0.2)',
+                        borderRadius: 0,
+                        color: selected ? '#f5f0e8' : 'rgba(245,240,232,0.80)',
                         fontFamily: "'DM Sans', sans-serif",
                         fontSize: '15px',
                         fontWeight: 400,
@@ -1003,16 +1000,16 @@ export default function QuizPage() {
                       }}
                       onMouseEnter={(e) => {
                         if (!selected) {
-                          e.currentTarget.style.background = 'rgba(255,255,255,0.10)';
-                          e.currentTarget.style.borderColor = 'rgba(255,255,255,0.18)';
-                          e.currentTarget.style.color = 'rgba(240,237,230,0.95)';
+                          e.currentTarget.style.background = 'rgba(201,168,76,0.06)';
+                          e.currentTarget.style.borderColor = 'rgba(201,168,76,0.4)';
+                          e.currentTarget.style.color = 'rgba(245,240,232,0.95)';
                         }
                       }}
                       onMouseLeave={(e) => {
                         if (!selected) {
-                          e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
-                          e.currentTarget.style.borderColor = 'rgba(255,255,255,0.09)';
-                          e.currentTarget.style.color = 'rgba(240,237,230,0.80)';
+                          e.currentTarget.style.background = 'rgba(201,168,76,0.02)';
+                          e.currentTarget.style.borderColor = 'rgba(201,168,76,0.2)';
+                          e.currentTarget.style.color = 'rgba(245,240,232,0.80)';
                         }
                       }}
                     >
@@ -1020,9 +1017,9 @@ export default function QuizPage() {
                         style={{
                           width: '20px',
                           height: '20px',
-                          borderRadius: '4px',
-                          border: selected ? 'none' : '1px solid rgba(240,237,230,0.4)',
-                          background: selected ? '#0D9488' : 'transparent',
+                          borderRadius: 0,
+                          border: selected ? 'none' : '1px solid rgba(245,240,232,0.4)',
+                          background: selected ? '#C9A84C' : 'transparent',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
@@ -1030,7 +1027,7 @@ export default function QuizPage() {
                         }}
                       >
                         {selected && (
-                          <svg style={{ width: '12px', height: '12px', color: 'white' }} fill="currentColor" viewBox="0 0 20 20">
+                          <svg style={{ width: '12px', height: '12px', color: '#0a0a0a' }} fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                           </svg>
                         )}
@@ -1045,17 +1042,16 @@ export default function QuizPage() {
                   style={{
                     width: '100%',
                     padding: '14px',
-                    background: '#0D9488',
-                    color: 'white',
+                    background: '#C9A84C',
+                    color: '#0a0a0a',
                     border: 'none',
-                    borderRadius: '8px',
+                    borderRadius: 0,
                     fontFamily: "'DM Sans', sans-serif",
                     fontSize: '14px',
                     fontWeight: 500,
                     cursor: ((answers[currentQuestion.id] as string[]) || []).length ? 'pointer' : 'not-allowed',
                     marginTop: '20px',
-                    transition: 'background 0.2s, box-shadow 0.2s',
-                    boxShadow: '0 0 20px rgba(13,148,136,0.25)',
+                    transition: 'background 0.2s',
                     opacity: ((answers[currentQuestion.id] as string[]) || []).length ? 1 : 0.5
                   }}
                 >
@@ -1064,7 +1060,7 @@ export default function QuizPage() {
               </div>
             )}
 
-            {/* Currency Input - Stripe pattern */}
+            {/* Currency Input */}
             {currentQuestion.type === "currency" && (
               <div className="space-y-4">
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -1073,10 +1069,10 @@ export default function QuizPage() {
                     onChange={(e) => setCurrencyToggle(e.target.value)}
                     style={{
                       padding: '12px 14px',
-                      borderRadius: '8px',
-                      border: '1px solid rgba(255,255,255,0.12)',
-                      background: 'rgba(255,255,255,0.07)',
-                      color: '#f0ede6',
+                      borderRadius: 0,
+                      border: '1px solid rgba(201,168,76,0.2)',
+                      background: 'rgba(255,255,255,0.04)',
+                      color: '#f5f0e8',
                       fontFamily: "'DM Sans', sans-serif",
                       fontSize: '14px',
                       fontWeight: 500,
@@ -1084,10 +1080,10 @@ export default function QuizPage() {
                       cursor: 'pointer'
                     }}
                   >
-                    <option value="USD" style={{ background: '#0a1228' }}>USD</option>
-                    <option value="CAD" style={{ background: '#0a1228' }}>CAD</option>
-                    <option value="EUR" style={{ background: '#0a1228' }}>EUR</option>
-                    <option value="GBP" style={{ background: '#0a1228' }}>GBP</option>
+                    <option value="USD" style={{ background: '#0a0a0a' }}>USD</option>
+                    <option value="CAD" style={{ background: '#0a0a0a' }}>CAD</option>
+                    <option value="EUR" style={{ background: '#0a0a0a' }}>EUR</option>
+                    <option value="GBP" style={{ background: '#0a0a0a' }}>GBP</option>
                   </select>
                   <input
                     type="text"
@@ -1101,10 +1097,10 @@ export default function QuizPage() {
                     style={{
                       flex: 1,
                       padding: '14px 16px',
-                      borderRadius: '10px',
-                      border: '1px solid rgba(255,255,255,0.12)',
-                      background: 'rgba(255,255,255,0.07)',
-                      color: '#f0ede6',
+                      borderRadius: 0,
+                      border: '1px solid rgba(201,168,76,0.2)',
+                      background: 'rgba(255,255,255,0.04)',
+                      color: '#f5f0e8',
                       fontFamily: "'DM Sans', sans-serif",
                       fontSize: '15px',
                       outline: 'none',
@@ -1114,8 +1110,8 @@ export default function QuizPage() {
                 </div>
 
                 {currencyValue && (
-                  <div style={{ padding: '12px', background: 'rgba(13,148,136,0.1)', borderRadius: '8px', textAlign: 'center' }}>
-                    <span style={{ fontSize: '13px', color: '#0D9488' }}>≈ {getCurrencyUSD()} USD</span>
+                  <div style={{ padding: '12px', background: 'rgba(201,168,76,0.05)', borderRadius: 0, textAlign: 'center' }}>
+                    <span style={{ fontSize: '13px', color: '#C9A84C' }}>≈ {getCurrencyUSD()} USD</span>
                   </div>
                 )}
 
@@ -1123,9 +1119,9 @@ export default function QuizPage() {
                   <div
                     style={{
                       padding: '12px',
-                      borderRadius: '8px',
-                      background: proportionalityFlag === "W-PROP-STRONG" ? 'rgba(220,38,38,0.1)' : 'rgba(245,158,11,0.1)',
-                      border: `1px solid ${proportionalityFlag === "W-PROP-STRONG" ? 'rgba(220,38,38,0.3)' : 'rgba(245,158,11,0.3)'}`
+                      borderRadius: 0,
+                      background: proportionalityFlag === "W-PROP-STRONG" ? 'rgba(239,68,68,0.08)' : 'rgba(245,158,11,0.08)',
+                      border: `1px solid ${proportionalityFlag === "W-PROP-STRONG" ? 'rgba(239,68,68,0.3)' : 'rgba(245,158,11,0.3)'}`
                     }}
                   >
                     <p style={{ fontSize: '13px', color: proportionalityFlag === "W-PROP-STRONG" ? '#fca5a5' : '#fcd34d' }}>
@@ -1142,17 +1138,16 @@ export default function QuizPage() {
                   style={{
                     width: '100%',
                     padding: '14px',
-                    background: '#0D9488',
-                    color: 'white',
+                    background: '#C9A84C',
+                    color: '#0a0a0a',
                     border: 'none',
-                    borderRadius: '8px',
+                    borderRadius: 0,
                     fontFamily: "'DM Sans', sans-serif",
                     fontSize: '14px',
                     fontWeight: 500,
                     cursor: currencyValue ? 'pointer' : 'not-allowed',
                     marginTop: '20px',
-                    transition: 'background 0.2s, box-shadow 0.2s',
-                    boxShadow: '0 0 20px rgba(13,148,136,0.25)',
+                    transition: 'background 0.2s',
                     opacity: currencyValue ? 1 : 0.5
                   }}
                 >
@@ -1161,7 +1156,7 @@ export default function QuizPage() {
               </div>
             )}
 
-            {/* Text/Email Input - Stripe pattern */}
+            {/* Text/Email Input */}
             {currentQuestion.type === "text" && (
               <div className="space-y-4">
                 <input
@@ -1172,10 +1167,10 @@ export default function QuizPage() {
                   style={{
                     width: '100%',
                     padding: '14px 16px',
-                    borderRadius: '10px',
-                    border: '1px solid rgba(255,255,255,0.12)',
-                    background: 'rgba(255,255,255,0.07)',
-                    color: '#f0ede6',
+                    borderRadius: 0,
+                    border: '1px solid rgba(201,168,76,0.2)',
+                    background: 'rgba(255,255,255,0.04)',
+                    color: '#f5f0e8',
                     fontFamily: "'DM Sans', sans-serif",
                     fontSize: '15px',
                     outline: 'none',
@@ -1189,17 +1184,16 @@ export default function QuizPage() {
                   style={{
                     width: '100%',
                     padding: '14px',
-                    background: '#0D9488',
-                    color: 'white',
+                    background: '#C9A84C',
+                    color: '#0a0a0a',
                     border: 'none',
-                    borderRadius: '8px',
+                    borderRadius: 0,
                     fontFamily: "'DM Sans', sans-serif",
                     fontSize: '14px',
                     fontWeight: 500,
                     cursor: emailValue ? 'pointer' : 'not-allowed',
                     marginTop: '20px',
-                    transition: 'background 0.2s, box-shadow 0.2s',
-                    boxShadow: '0 0 20px rgba(13,148,136,0.25)',
+                    transition: 'background 0.2s',
                     opacity: emailValue ? 1 : 0.5
                   }}
                 >
@@ -1208,14 +1202,14 @@ export default function QuizPage() {
               </div>
             )}
 
-            {/* Sub-Question - Opal pattern */}
+            {/* Sub-Question */}
             {currentQuestion.sub_question && answers[currentQuestion.id] === currentQuestion.sub_question.show_if && (
-              <div style={{ marginTop: '24px', padding: '20px', background: 'rgba(255,255,255,0.04)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.10)' }}>
+              <div style={{ marginTop: '24px', padding: '20px', background: 'rgba(201,168,76,0.02)', borderRadius: 0, border: '1px solid rgba(201,168,76,0.12)' }}>
                 <h2 style={{
-                  fontFamily: "'Playfair Display', Georgia, serif",
+                  fontFamily: "'Cormorant Garamond', Georgia, serif",
                   fontSize: '20px',
-                  fontWeight: 600,
-                  color: '#f0ede6',
+                  fontWeight: 300,
+                  color: '#f5f0e8',
                   marginBottom: '16px'
                 }}>
                   {replaceDynamic(currentQuestion.sub_question.question, answers)}
@@ -1231,10 +1225,10 @@ export default function QuizPage() {
                         gap: '14px',
                         width: '100%',
                         padding: '15px 18px',
-                        background: 'rgba(255,255,255,0.06)',
-                        border: '1px solid rgba(255,255,255,0.09)',
-                        borderRadius: '10px',
-                        color: 'rgba(240,237,230,0.80)',
+                        background: 'rgba(201,168,76,0.02)',
+                        border: '1px solid rgba(201,168,76,0.2)',
+                        borderRadius: 0,
+                        color: 'rgba(245,240,232,0.80)',
                         fontFamily: "'DM Sans', sans-serif",
                         fontSize: '15px',
                         fontWeight: 400,
@@ -1245,14 +1239,14 @@ export default function QuizPage() {
                         minHeight: '52px'
                       }}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.background = 'rgba(255,255,255,0.10)';
-                        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.18)';
-                        e.currentTarget.style.color = 'rgba(240,237,230,0.95)';
+                        e.currentTarget.style.background = 'rgba(201,168,76,0.06)';
+                        e.currentTarget.style.borderColor = 'rgba(201,168,76,0.4)';
+                        e.currentTarget.style.color = 'rgba(245,240,232,0.95)';
                       }}
                       onMouseLeave={(e) => {
-                        e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
-                        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.09)';
-                        e.currentTarget.style.color = 'rgba(240,237,230,0.80)';
+                        e.currentTarget.style.background = 'rgba(201,168,76,0.02)';
+                        e.currentTarget.style.borderColor = 'rgba(201,168,76,0.2)';
+                        e.currentTarget.style.color = 'rgba(245,240,232,0.80)';
                       }}
                     >
                       <span>{replaceDynamic(option, answers)}</span>
@@ -1262,7 +1256,7 @@ export default function QuizPage() {
               </div>
             )}
 
-            {/* Back Button - plain text */}
+            {/* Back Button */}
             {currentIndex > 0 && (
               <button
                 onClick={handleBack}
@@ -1272,7 +1266,7 @@ export default function QuizPage() {
                   textAlign: 'center',
                   marginTop: '12px',
                   padding: '8px',
-                  color: 'rgba(240,237,230,0.40)',
+                  color: 'rgba(245,240,232,0.35)',
                   fontSize: '13px',
                   fontFamily: "'DM Sans', sans-serif",
                   background: 'transparent',
@@ -1280,8 +1274,8 @@ export default function QuizPage() {
                   cursor: 'pointer',
                   transition: 'color 0.2s'
                 }}
-                onMouseEnter={(e) => e.currentTarget.style.color = 'rgba(240,237,230,0.65)'}
-                onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(240,237,230,0.40)'}
+                onMouseEnter={(e) => e.currentTarget.style.color = 'rgba(245,240,232,0.6)'}
+                onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(245,240,232,0.35)'}
               >
                 ← Back
               </button>
