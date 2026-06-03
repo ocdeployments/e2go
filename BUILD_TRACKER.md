@@ -1,6 +1,6 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 1, 2026 — End of Session 12
+**Last Updated:** June 3, 2026 — End of Session 13D
 **App Name:** e2go.app
 **Stack:** Next.js 14 · TypeScript · Tailwind CSS · Supabase · Claude API
 **Dev URL:** https://e2go-git-dev-ocdeployments-projects.vercel.app
@@ -404,7 +404,7 @@ FULL MODULE 3 COMPLETE
 | Document generation engine not built | HIGH | Sessions 15-16 |
 | Sarah Mitchell docs are .md not .docx | MEDIUM | Regenerate using docx skill properly |
 | Spec files need 5 updates | MEDIUM | Before building generation engine |
-| DESIGN_REFERENCE.html not in repo | MEDIUM | Copy from Downloads, commit |
+| DESIGN_REFERENCE.html v2 — Playwright visual verification pending | MEDIUM | Run at start of next session before any UI work proceeds. |
 | Magic MCP not loading | MEDIUM | Server starts and shuts down. API key restored. enabledPlugins fix did not resolve. Investigate separately — not a build blocker. |
 
 ---
@@ -571,6 +571,24 @@ FULL MODULE 3 COMPLETE
 - INTRO/COMPLETION/RESUME patterns from DESIGN_REFERENCE.html
 - Glassmorphism design (#060d1f, #0D9488, Playfair/DM Sans)
 - Build passes with zero errors
+
+### Session 13D (June 3, 2026) — DESIGN_REFERENCE.html v2 + Obsidian Gold
+- Module 3 form components built (FormField, SectionForm, TabSidebar, TabPage, types/module3.ts)
+- Tab A migrated to 5-section category-based layout
+- DESIGN_REFERENCE.html v2 written — Obsidian Gold design system
+  - All 10 sections rendered live (tokens, typography, buttons, forms, cards, nav, progress, module3 pattern, decorative, spacing)
+  - Background: #0a0a0a obsidian
+  - Primary accent: #C9A84C aged gold
+  - Heading font: Cormorant Garamond light + italic
+  - Body font: DM Sans 300/400/500
+  - No glassmorphism, no teal, no navy, no rounded corners
+- Lazyweb + Firecrawl research (Deel, luxury legal platforms)
+- 6 commits pushed to dev
+- Build passes with zero errors
+
+### Session 13E Priorities
+1. Playwright visual verification of DESIGN_REFERENCE.html
+2. Continue Module 3 tab wiring per 13A-13D progress
 
 ### Next Session Priorities (Session 14)
 1. Stripe paywall integration — Tab F's COMPLETION CTA routes here
