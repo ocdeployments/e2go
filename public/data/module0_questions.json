@@ -409,25 +409,26 @@
     {
       "id": "Q0-NI-02",
       "type": "select",
-      "question": "Will any close family stay behind in [home country] when you move?",
+      "question": "Will any family members — including extended family — remain in [home country] when you move to the U.S.?",
       "section": "your_ties",
       "dynamic_reference": "Q0-01 selected country name",
+      "helper_text": "Family ties to [home country] are one of the strongest indicators that you intend to return home when your visa expires. This includes parents, siblings, grandparents, adult children, or any close relatives staying behind.",
       "options": [
-        "Yes — family will remain there",
-        "Some will stay, some will come with me",
-        "No — everyone is moving with me",
-        "I do not have close family there"
+        "Yes — immediate family will remain (spouse, children, parents)",
+        "Yes — extended family will remain (siblings, grandparents, other relatives)",
+        "Some family will stay, some will come with me",
+        "No — all close family is moving with me",
+        "I do not have close family in [home country]"
       ],
       "tie_tracking": "non_immigrant_intent",
       "warning_codes": ["W-NI-02"],
       "routing": {
-        "family_remaining": "tie_confirmed - positive signal",
-        "all_moving": "PROCEED_RISK (W-NI-02)",
+        "immediate_family_remaining": "tie_confirmed - positive signal",
+        "extended_family_remaining": "tie_confirmed - positive signal",
         "mixed_family": "tie_confirmed - positive signal",
-        "no_family": "neutral - other ties noted",
-        "not_sure": "proceed"
-      },
-      "tooltip": "Family ties to your home country are one of the indicators a consulate officer looks at when assessing whether you intend to return home when your visa expires."
+        "all_moving": "PROCEED_RISK (W-NI-02)",
+        "no_family": "neutral - other ties noted"
+      }
     },
     {
       "id": "Q0-NI-03",
@@ -454,8 +455,9 @@
     {
       "id": "Q0-16",
       "type": "select",
-      "question": "Will anyone be moving to the U.S. with you on this visa?",
+      "question": "Will your spouse or any children be applying for E-2 dependent status alongside you?",
       "section": "your_family",
+      "helper_text": "E-2 dependents travel on the same visa category. Your spouse may also apply for U.S. work authorization once in the country.",
       "options": [
         "No — just me",
         "Yes — my spouse or partner",
