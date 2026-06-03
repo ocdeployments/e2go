@@ -43,7 +43,7 @@ changed, run npm run build:clean, report summary.
 | Pricing page | ✅ COMPLETE | Founding member pricing, guarantee |
 | Dashboard | ✅ COMPLETE | Needs real data wiring |
 | Landing page redesign | ✅ COMPLETE | Obsidian Gold rebuild, all sections, mobile verified |
-| Quiz UX fixes | ⚠️ IN PROGRESS | Styling, nationality dynamic, progress bar |
+| Quiz UX fixes | ✅ COMPLETE | styling, nationality dynamic, progress bar |
 | Document generation specs | ✅ COMPLETE | 4 spec files — need one update pass |
 | Stripe integration | ⬜ NOT STARTED | Session 14 |
 | Document generation engine | ⬜ NOT STARTED | Sessions 15-16 |
