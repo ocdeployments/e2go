@@ -16,7 +16,21 @@
 **To end:** type `end session`
 
 On start: read CLAUDE_CONTEXT.md + BUILD_TRACKER.md +
-docs/DESIGN_REFERENCE.html (if UI work). Report status.
+docs/DESIGN_REFERENCE.html (if UI work). BEFORE ANYTHING ELSE — READ THIS:
+
+Two API keys are present in .env.local:
+- OPENROUTER_API_KEY — use this for ALL app AI features
+- ANTHROPIC_API_KEY — use this ONLY for document generation
+
+Do NOT switch any existing OpenRouter calls to the Anthropic API.
+Do NOT use ANTHROPIC_API_KEY anywhere except:
+  - src/lib/generation-engine.ts (document generation calls)
+  - The humanization pass in the same file
+
+If Claude Code asks "should I use the Anthropic API key?" — the answer is:
+Only for document generation. Everything else stays on OpenRouter.
+
+Confirm you understand this before proceeding.Report status.
 Ask "Ready to confirm and begin?" before any work.
 
 On end: update this file, update CLAUDE_CONTEXT.md if rules
@@ -336,6 +350,57 @@ All 6 spec corrections applied and committed:
 5. Partnership routing = two separate packages (all specs)
 6. Voice profile = raw text only, no JSON (Spec2)
 Status: COMPLETE
+
+---
+
+## COMPONENT BACKLOG — UI POLISH (Magic MCP — 21st.dev)
+
+These components have been sourced and assessed. Code is saved in
+docs/components/. Integrate in the sessions listed below.
+
+| Component | Source File | Where in App | Session |
+|---|---|---|---|
+| Animated Gradient Border | docs/components/animated-gradient-border.md | Pricing Most Popular card, Landing CTA button, Module 3 active sidebar | Polish session after Session 16 |
+| Image Slider Login | docs/components/image-slider-login.md | /verify page, /login, /signup | Already applied (Session 15B) — revisit for polish |
+| FAQ Monochrome | docs/components/faq-monochrome.md | Landing page FAQ section (new section needed) | Polish session after Session 16 |
+| AI Generation Reveal | docs/components/ai-generation-reveal.md | Document generation screen — blur-lift effect per document | Session 16 — generation progress page |
+
+### Animated Gradient Border — Implementation Notes
+- Colors: primary #8B6914, secondary #C9A84C, accent #E8D5A3
+- backgroundColor: #0a0a0a
+- borderRadius: 0 (no rounded corners — locked rule)
+- borderWidth: 1
+- Apply to: pricing Most Popular card (speed 10), landing CTA button
+  (speed 6, rotate-on-hover), Module 3 active sidebar section (speed 12)
+- CSS: add @keyframes gradient-rotate + @property --gradient-angle to globals.css
+- Component path: src/components/ui/animated-gradient-border.tsx
+
+### Image Slider Login — Implementation Notes
+- Split screen: image slider left, form right
+- Left images: U.S. themed — Statue of Liberty, New York skyline, business settings
+- Right: signup/login form with pre-filled email on /verify
+- Uses framer-motion (fine on auth pages — not SEO-critical)
+- Dependencies: framer-motion (already installed)
+- Apply Obsidian Gold tokens — no white backgrounds, no rounded corners
+
+### FAQ Monochrome — Implementation Notes
+- New section needed on landing page between Testimonials and Footer
+- Questions to answer: "Is this a law firm?", "What if I'm denied?",
+  "How is this different from hiring an attorney?", "Is my data secure?",
+  "What countries are eligible?", "How long does it take?"
+- Swap white accent → #C9A84C for gold
+- Dark palette only — remove light mode toggle (locked to dark)
+- Animated intro pill + card glow on hover → keep both
+
+### AI Generation Reveal — Implementation Notes
+- Use on /generate/[applicationId] progress page (Session 16)
+- Wire progress prop to SSE percentage from generation pipeline
+- Each document preview reveals with blur-lift as it completes
+- Replace the right-panel "live document preview" in Session 16 Step 6
+  with this component instead of a plain scrolling text panel
+- Dependencies: motion (npm install motion)
+
+---
 
 ## SESSION 15A — Build the Analysis Engine
 - Database tables (migration created)
