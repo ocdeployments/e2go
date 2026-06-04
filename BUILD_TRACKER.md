@@ -1,6 +1,6 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 3, 2026 — End of Session 15E
+**Last Updated:** June 4, 2026 — End of Session 16
 **App Name:** e2go.app
 **Stack:** Next.js 14 · TypeScript · Tailwind CSS · Supabase · Claude API
 **Dev URL:** https://e2go-git-dev-ocdeployments-projects.vercel.app
@@ -62,9 +62,9 @@ changed, run npm run build:clean, report summary.
 | Cleanup complete | ✅ COMPLETE | Legacy tokens/vars removed from all files |
 | Stripe integration | ⬜ NOT STARTED | Session 14 |
 | Email verification funnel | ✅ COMPLETE | Session 15A/B |
-| Document generation engine | ⬜ NOT STARTED | Sessions 15-16 |
+| Document generation engine | ✅ COMPLETE | Session 16 — prompts, engine, API routes, progress UI, review page |
 | Voice matching system | ⬜ NOT STARTED | Designed, not built |
-| Analysis engine | ⬜ NOT STARTED | Designed, not built |
+| Analysis engine | ✅ COMPLETE | Session 15A — types, lib, api, tests |
 | Follow-up conversation | ⬜ NOT STARTED | Designed, not built |
 
 ---
@@ -261,17 +261,18 @@ is built into the checklist and binder assembly guide.
 | AI detection on voice sample | ⬜ Spec written — not built |
 | Voice profile extraction | ⬜ Spec written — not built |
 | Follow-up conversation | ⬜ Spec written — not built |
-| Generation prompts (/prompts/v1/) | ⬜ Not created |
-| Sequential generation engine | ⬜ Not built |
-| Checkpoint DB table | ⬜ Not built |
-| Server-Sent Events progress | ⬜ Not built |
-| Repetition checker | ⬜ Not built |
-| Consistency checker | ⬜ Not built |
-| AI detection audit | ⬜ Not built |
-| Humanization pass | ⬜ Not built |
-| Metadata sanitization | ⬜ Not built |
-| Quality gate | ⬜ Not built |
-| Pre-download acknowledgment gate | ⬜ Not built |
+| Generation prompts (/prompts/v1/) | ✅ COMPLETE (Session 16) |
+| Sequential generation engine | ✅ COMPLETE (Session 16) |
+| Checkpoint DB table | ✅ COMPLETE (Session 16) |
+| Server-Sent Events progress | ✅ COMPLETE (Session 16) |
+| Narrative progress screen | ✅ COMPLETE (Session 16) |
+| Repetition checker | ✅ COMPLETE (Session 16 — in pipeline) |
+| Consistency checker | ✅ COMPLETE (Session 16) |
+| AI detection audit | ✅ COMPLETE (Session 16 — in pipeline) |
+| Humanization pass | ✅ COMPLETE (Session 16) |
+| Metadata sanitization | ✅ COMPLETE (Session 16) |
+| Quality gate | ✅ COMPLETE (Session 16) |
+| Pre-download acknowledgment gate | ✅ COMPLETE (Session 16) |
 | Word document template | ⬜ Not built |
 | docxtpl integration | ⬜ Not built |
 | neat-pdf integration | ⬜ Not built |
@@ -455,22 +456,53 @@ Status: COMPLETE
 
 ---
 
-## BUILD STATE — End of day, June 3, 2026
+## SESSION 16 — Document Generation Engine (June 4, 2026)
+
+Completed:
+- 6 generation prompt files created (`/prompts/v1/documents/`)
+- Database migration: 5 tables with RLS (`document_generation_jobs`, `generated_documents`, `revision_credits`, `document_change_log`, `document_generation_log`)
+- Types defined (`src/types/generation.ts`) — `GenerationJob`, `GeneratedDocument`, `RevisionCredit`, generation step labels
+- Core generation engine (`src/lib/generation-engine.ts`) — prompt loading, payload building, Claude API calls, humanization pass, consistency checker, quality gate, main orchestrator with 15-step pipeline
+- 4 API routes: `POST /api/generate/start`, `GET /api/generate/progress/[jobId]` (SSE), `GET /api/generate/documents/[applicationId]`, `POST /api/generate/run/[jobId]`
+- Progress page (`/generate/[applicationId]`) — 15-step narrative, live document preview, Obsidian Gold design
+- Documents review page (`/documents/[applicationId]`) — document cards, approval modal, revision requests, 5-checkbox acknowledgment gate
+- Module 3 overview page rewritten (`/apply/module3`) — tab completion tracking, "Generate My Package" button
+- 8 unit tests (Sarah Mitchell case) — all passing
+- `npm run build`: clean — 39 routes compiled
+- Anthropic SDK (`@anthropic-ai/sdk`) installed, Jest configured
+
+Decisions:
+- AI model for documents: `claude-sonnet-4-20250514` via Anthropic SDK (not OpenRouter)
+- Cover letter always generated first (Step 1)
+- 15-step pipeline: sequential only, checkpointed after each step
+- SSE + polling fallback for progress
+- Revision credits: 10 per application
+- 5 acknowledgment checkboxes required before download
+
+Status: COMPLETE
+
+---
+
+## BUILD STATE — End of Session 16, June 4, 2026
 - Branch: `dev`
 - Working tree: clean
-- Last commit: `8002b17` — Fix: quiz scoring logic — wire actual evaluation
-- `npm run build`: clean, all routes prerender or server-render correctly
-- Quiz v3.0: live; outcome actually evaluated from `/data/module0_scoring_logic.json`
-- Results: 4 outcomes with email verification funnel
-- Module 3: all 12 tabs (A–L) wired
-- Analysis engine: built and tested (Session 15A)
+- Last commit: `1a621cd` — Fix: ESLint errors — build clean, all routes compiled
+- `npm run build`: clean — 39 routes, 0 errors
+- 8/8 unit tests passing (generation-engine.test.ts)
+- Quiz v3.0: live, scoring wired
+- Module 3: all 12 tabs (A–L) wired, overview page with generate button
+- Analysis engine: built and tested
+- Document generation engine: fully built
+- Generation progress UI: built
+- Documents review + approval page: built
 
 ---
 
 ## NEXT SESSION
-**Session 14 — Stripe paywall**
-- Integrate Stripe checkout
-- Wire paywall after Batch 1 personal tabs (B, partial F, J, L)
-- Apply founding member pricing ($297–$647)
-- Apply 14-day money-back guarantee (first 50 founding members)
-- Wire `email_verifications` table into user signup flow
+**Session 17 — docxtpl integration + PDF export**
+- Word document template generation (docxtpl)
+- PDF export (neat-pdf MCP)
+- ZIP download endpoint (`/api/generate/download/[applicationId]`)
+- Wire download button on documents review page
+- End-to-end test: generate → humanize → quality gate → approve → download
+- Stripe paywall integration (session 14 items deferred)
