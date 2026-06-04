@@ -54,7 +54,7 @@ function TabEContent() {
 
 export default function TabEPage() {
   return (
-    <ApplicationProvider>
+    <ApplicationProvider applicationId="dummy-id">
       <TabEContent />
     </ApplicationProvider>
   );

@@ -52,7 +52,7 @@ function TabHContent() {
 
 export default function TabHPage() {
   return (
-    <ApplicationProvider>
+    <ApplicationProvider applicationId="dummy-id">
       <TabHContent />
     </ApplicationProvider>
   );

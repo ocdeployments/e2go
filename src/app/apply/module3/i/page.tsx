@@ -51,7 +51,7 @@ function TabIContent() {
 
 export default function TabIPage() {
   return (
-    <ApplicationProvider>
+    <ApplicationProvider applicationId="dummy-id">
       <TabIContent />
     </ApplicationProvider>
   );

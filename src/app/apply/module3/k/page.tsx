@@ -67,7 +67,7 @@ function TabKContent() {
 
 export default function TabKPage() {
   return (
-    <ApplicationProvider>
+    <ApplicationProvider applicationId="dummy-id">
       <TabKContent />
     </ApplicationProvider>
   );

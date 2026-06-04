@@ -51,7 +51,7 @@ function TabLContent() {
 
 export default function TabLPage() {
   return (
-    <ApplicationProvider>
+    <ApplicationProvider applicationId="dummy-id">
       <TabLContent />
     </ApplicationProvider>
   );

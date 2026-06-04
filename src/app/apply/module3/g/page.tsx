@@ -51,7 +51,7 @@ function TabGContent() {
 
 export default function TabGPage() {
   return (
-    <ApplicationProvider>
+    <ApplicationProvider applicationId="dummy-id">
       <TabGContent />
     </ApplicationProvider>
   );
