@@ -347,6 +347,18 @@ Status: COMPLETE
 
 ---
 
+## SESSION 15F — Quiz Scoring Wiring Fix (June 3, 2026)
+- Found: `calculateAndRedirect` in `src/app/quiz/page.tsx` initialised `hardStopCodes`, `attorneyFlags`, `riskFlags` to empty arrays — outcome was always `'qualified'` regardless of answers
+- Fixed: real evaluation against `module0_scoring_logic.json` (hard_stops, attorney_flags, risk_flags)
+- Supports array triggers (string match) and string triggers with arithmetic (`amount_usd < 75000`, `75000 <= amount_usd <= 149999`)
+- Attorney flags with `level: "do_not_proceed"` route their `stop_code` into `hardStopCodes` (W-03 → PR-THIRD-COUNTRY)
+- Widened `ScoringLogic` interface: `trigger: string | string[]`
+- Build: clean (`/quiz` route 6.91 kB → 7.2 kB)
+- Commit: `8002b17 Fix: quiz scoring logic — wire actual evaluation from module0_scoring_logic.json`
+Status: COMPLETE
+
+---
+
 ## SESSION 15B — Email Verification Funnel (June 3, 2026)
 - `email_verifications` table migration (3d800df)
 - `/api/email/results` route — Resend integration (c9ca588)
@@ -381,11 +393,12 @@ Status: COMPLETE
 ## BUILD STATE — End of day, June 3, 2026
 - Branch: `dev`
 - Working tree: clean
-- Last commit: `b4f3d55` — Fix: all TypeScript and ESLint build errors
+- Last commit: `8002b17` — Fix: quiz scoring logic — wire actual evaluation
 - `npm run build`: clean, all routes prerender or server-render correctly
-- Quiz v3.0: live; outcome computed from `/data/module0_scoring_logic.json`
+- Quiz v3.0: live; outcome actually evaluated from `/data/module0_scoring_logic.json`
 - Results: 4 outcomes with email verification funnel
 - Module 3: all 12 tabs (A–L) wired
+- Analysis engine: built and tested (Session 15A)
 
 ---
 
