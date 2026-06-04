@@ -1,0 +1,16 @@
+{
+  "QK-01": { "type": "textarea", "question": "Describe your business in 2-3 sentences.", "section": "Business Description" },
+  "QK-02": { "type": "textarea", "question": "What is your target market?", "section": "Business Description" },
+  "QK-03": { "type": "textarea", "question": "Who are your main competitors and what is your competitive advantage?", "section": "Business Description" },
+  "QK-04": { "type": "textarea", "question": "How will the business operate day-to-day?", "section": "Operations Plan" },
+  "QK-05": { "type": "textarea", "question": "What are the key operational milestones for Year 1?", "section": "Operations Plan" },
+  "QK-06": { "type": "textarea", "question": "What equipment, inventory, or technology does the business require?", "section": "Operations Plan" },
+  "QK-07": { "type": "textarea", "question": "What are your startup costs broken down by category?", "section": "Financial Projections" },
+  "QK-08": { "type": "textarea", "question": "What is your projected monthly revenue for months 1-6?", "section": "Financial Projections" },
+  "QK-09": { "type": "textarea", "question": "What are your projected monthly operating expenses?", "section": "Financial Projections" },
+  "QK-10": { "type": "select", "question": "When do you project the business will reach break-even?", "section": "Financial Projections", "options": ["Within 6 months", "6-12 months", "12-18 months", "18-24 months", "More than 24 months"] },
+  "QK-11": { "type": "textarea", "question": "What is the size of your target market?", "section": "Market Analysis" },
+  "QK-12": { "type": "textarea", "question": "What market trends support your business?", "section": "Market Analysis" },
+  "QK-13": { "type": "textarea", "question": "What is your 3-year growth plan?", "section": "Growth Strategy" },
+  "QK-14": { "type": "select", "question": "Are there plans to expand beyond the initial location?", "section": "Growth Strategy", "options": ["Yes — multi-unit expansion planned", "Possibly — evaluating after Year 1", "No — single location focus"] }
+}

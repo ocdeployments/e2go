@@ -2,7 +2,7 @@
 
 import { ApplicationProvider, useApplication } from '@/contexts/ApplicationContext';
 import TabPage from '@/components/module3/TabPage';
-import { FieldConfig, Section } from '@/types/module3';
+import { Section } from '@/types/module3';
 
 const sections: Section[] = [
   {
