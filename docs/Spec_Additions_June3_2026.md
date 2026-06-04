@@ -27,7 +27,6 @@ Layer 8 — Quality Gate (existing Spec4)
 ```
 
 ### KB Validation Process
-
 ```
 inputs:
   consulate = applicant's filing consulate (from Tab A)
@@ -168,7 +167,7 @@ Add to module0_scoring_logic.json:
 
 {
   "code": "W-ROLE-EXEC",
-  "question": "Q0-08",  (or new Q0-ROLE question)
+  "question": "Q0-08",
   "trigger": "proposed_role_not_executive_or_supervisory",
   "level": "attorney_recommended",
   "message": "Your proposed role in the business must meet the 
