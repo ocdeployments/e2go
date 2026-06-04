@@ -5,7 +5,6 @@ const createJestConfig = nextJest({
 });
 
 const customJestConfig = {
-  setupFilesAfterSetup: [],
   testEnvironment: "node",
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/src/$1",

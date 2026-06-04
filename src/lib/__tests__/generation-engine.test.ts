@@ -192,12 +192,13 @@ She directed HR operations for 47 staff across three office locations.
   // ---------------------------------------------------------------------------
   it("should pass a clean, complete document", () => {
     // Generate clean content without template interpolation issues
+    // Needs >800 words but under 1000 (cover letter max 4 pages at 250 w/p = 1000)
     const sentence =
-      "Ms. Sarah Mitchell has dedicated her career to operational excellence " +
-      "spanning over eight years in senior management roles across multiple locations. ";
+      "Ms. Mitchell dedicated her career to operational excellence spanning " +
+      "over eight years in senior management roles across multiple locations. ";
 
-    // Build ~900+ words
-    const content = Array.from({ length: 50 }, () => sentence).join("\n");
+    // 19 words per sentence * 43 = 817 words, page estimate = 4 (817/250=3.27→4)
+    const content = Array.from({ length: 43 }, () => sentence).join("\n");
 
     const doc = makeMockDocument("cover_letter", content);
 
@@ -207,6 +208,7 @@ She directed HR operations for 47 staff across three office locations.
     expect(result.has_template_placeholders).toBe(false);
     expect(result.has_legal_conclusions).toBe(false);
     expect(result.word_count).toBeGreaterThan(800);
+    expect(result.page_estimate).toBeLessThanOrEqual(4);
     expect(result.passed).toBe(true);
   });
 
