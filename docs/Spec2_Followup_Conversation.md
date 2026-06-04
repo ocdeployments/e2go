@@ -1,5 +1,5 @@
-# e2go Document Generation — Follow-Up Conversation Specification
-## Version 1.0 | June 2026
+## Pipeline Integration Rules
+- Partnership status: Generate two separate complete application packages for partnership applications.
 
 ---
 
