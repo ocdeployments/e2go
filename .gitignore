@@ -44,3 +44,5 @@ node_modules/
 /playwright/.auth/
 .lazyweb/
 .lazyweb/
+.playwright-mcp/
+*.png
