@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { BorderRotate } from "@/components/ui/animated-gradient-border";
 
 export default function Home() {
   const [scrolled, setScrolled] = useState(false);
@@ -341,9 +342,17 @@ export default function Home() {
         <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "18px", fontWeight: 300, color: "rgba(245,240,232,0.60)", maxWidth: "500px", margin: "0 auto 32px" }}>
           The eligibility check takes 10 minutes. It&apos;s free. No account required to start. You&apos;ll know exactly where you stand.
         </p>
-        <Link href="/quiz" className="btn-gold-animate" style={{ background: "#C9A84C", color: "#0a0a0a", padding: "18px 40px", fontFamily: "'DM Sans', sans-serif", fontSize: "16px", fontWeight: 500, textDecoration: "none", display: "inline-block" }}>
-          Check My Eligibility →
-        </Link>
+        <BorderRotate
+          animationSpeed={6}
+          borderWidth={1}
+          borderRadius={0}
+          animationMode="rotate-on-hover"
+          className="inline-block"
+        >
+          <Link href="/quiz" className="btn-gold-animate" style={{ background: "#C9A84C", color: "#0a0a0a", padding: "18px 40px", fontFamily: "'DM Sans', sans-serif", fontSize: "16px", fontWeight: 500, textDecoration: "none", display: "inline-block" }}>
+            Check My Eligibility →
+          </Link>
+        </BorderRotate>
         <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "12px", fontWeight: 300, color: "rgba(245,240,232,0.30)", marginTop: "16px" }}>
           No credit card required · Takes 10 minutes
         </p>

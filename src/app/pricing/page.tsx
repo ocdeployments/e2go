@@ -4,6 +4,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
+import { BorderRotate } from "@/components/ui/animated-gradient-border";
 
 const SZ = {
   xs: { display: "block" as const, width: "12px", height: "12px", minWidth: "12px", flexShrink: 0 },
@@ -145,68 +146,85 @@ export default function PricingPage() {
 
           {/* Pricing Cards */}
           <div className="grid grid-cols-1 gap-4 max-w-3xl mx-auto mb-12">
-            {tiers.map((tier) => (
-              <div
-                key={tier.name}
-                className="relative p-6 transition-all"
-                style={{
-                  background: "rgba(201,168,76,0.02)",
-                  border: tier.recommended ? "1px solid rgba(201,168,76,0.5)" : "1px solid rgba(201,168,76,0.12)",
-                  borderRadius: 0,
-                }}
-              >
-                {/* Founding Member Badge */}
-                <div className="absolute -top-3 left-6 text-xs font-semibold px-3 py-1 flex items-center gap-1" style={{ background: "#C9A84C", color: "#0a0a0a" }}>
-                  <svg style={SZ.xs} fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
-                  </svg>
-                  FOUNDING MEMBER PRICING
-                </div>
-
-                {tier.recommended && (
-                  <div className="absolute -top-3 right-6 text-xs font-semibold px-3 py-1 flex items-center gap-1" style={{ background: "#C9A84C", color: "#0a0a0a" }}>
+            {tiers.map((tier) => {
+              const card = (
+                <div
+                  className="relative p-6 transition-all"
+                  style={{
+                    background: "rgba(201,168,76,0.02)",
+                    border: tier.recommended ? "1px solid transparent" : "1px solid rgba(201,168,76,0.12)",
+                    borderRadius: 0,
+                  }}
+                >
+                  {/* Founding Member Badge */}
+                  <div className="absolute -top-3 left-6 text-xs font-semibold px-3 py-1 flex items-center gap-1" style={{ background: "#C9A84C", color: "#0a0a0a" }}>
                     <svg style={SZ.xs} fill="currentColor" viewBox="0 0 24 24">
                       <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
                     </svg>
-                    MOST POPULAR
+                    FOUNDING MEMBER PRICING
                   </div>
-                )}
 
-                <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
-                  <div className="flex-1 pt-2">
-                    <h3 className="text-xl font-semibold mb-1" style={{ color: "#f5f0e8", fontFamily: "'Cormorant Garamond', serif", fontWeight: 300 }}>{tier.name}</h3>
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-3xl font-bold" style={{ color: tier.recommended ? "#C9A84C" : "#f5f0e8" }}>
-                        ${tier.price}
-                      </span>
-                      <span className="text-sm" style={{ color: "rgba(245,240,232,0.45)" }}>USD</span>
+                  {tier.recommended && (
+                    <div className="absolute -top-3 right-6 text-xs font-semibold px-3 py-1 flex items-center gap-1" style={{ background: "#C9A84C", color: "#0a0a0a" }}>
+                      <svg style={SZ.xs} fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+                      </svg>
+                      MOST POPULAR
+                    </div>
+                  )}
+
+                  <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
+                    <div className="flex-1 pt-2">
+                      <h3 className="text-xl font-semibold mb-1" style={{ color: "#f5f0e8", fontFamily: "'Cormorant Garamond', serif", fontWeight: 300 }}>{tier.name}</h3>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-3xl font-bold" style={{ color: tier.recommended ? "#C9A84C" : "#f5f0e8" }}>
+                          ${tier.price}
+                        </span>
+                        <span className="text-sm" style={{ color: "rgba(245,240,232,0.45)" }}>USD</span>
+                      </div>
+                    </div>
+
+                    <div className="flex-1">
+                      <ul className="space-y-2 mb-4">
+                        {tier.features.map((feature, i) => (
+                          <li key={i} className="flex items-center gap-2 text-sm" style={{ color: "rgba(245,240,232,0.6)" }}>
+                            <svg style={{ ...SZ.sm, color: "#C9A84C" }} fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+                            </svg>
+                            {feature}
+                          </li>
+                        ))}
+                      </ul>
+                      <button
+                        onClick={handleSelect}
+                        className="w-full font-medium py-3 transition-colors"
+                        style={tier.recommended
+                          ? { background: "#C9A84C", color: "#0a0a0a", borderRadius: 0 }
+                          : { border: "1px solid #C9A84C", color: "#C9A84C", borderRadius: 0 }}
+                      >
+                        {tier.recommended ? "Get Started" : `Select ${tier.name}`}
+                      </button>
                     </div>
                   </div>
-
-                  <div className="flex-1">
-                    <ul className="space-y-2 mb-4">
-                      {tier.features.map((feature, i) => (
-                        <li key={i} className="flex items-center gap-2 text-sm" style={{ color: "rgba(245,240,232,0.6)" }}>
-                          <svg style={{ ...SZ.sm, color: "#C9A84C" }} fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
-                          </svg>
-                          {feature}
-                        </li>
-                      ))}
-                    </ul>
-                    <button
-                      onClick={handleSelect}
-                      className="w-full font-medium py-3 transition-colors"
-                      style={tier.recommended
-                        ? { background: "#C9A84C", color: "#0a0a0a", borderRadius: 0 }
-                        : { border: "1px solid #C9A84C", color: "#C9A84C", borderRadius: 0 }}
-                    >
-                      {tier.recommended ? "Get Started" : `Select ${tier.name}`}
-                    </button>
-                  </div>
                 </div>
-              </div>
-            ))}
+              );
+
+              if (tier.recommended) {
+                return (
+                  <BorderRotate
+                    key={tier.name}
+                    animationSpeed={10}
+                    borderWidth={1}
+                    borderRadius={0}
+                    className="flex-1 flex flex-col"
+                  >
+                    {card}
+                  </BorderRotate>
+                );
+              }
+
+              return <div key={tier.name}>{card}</div>;
+            })}
           </div>
 
           {/* Guarantee Section */}

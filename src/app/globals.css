@@ -136,3 +136,30 @@ body {
     text-wrap: balance;
   }
 }
+
+/* ── Animated gradient border (BorderRotate component) ── */
+@property --gradient-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+@keyframes gradient-rotate {
+  from { --gradient-angle: 0deg; }
+  to { --gradient-angle: 360deg; }
+}
+.gradient-border-auto {
+  animation: gradient-rotate
+    var(--animation-duration, 8s) linear infinite;
+}
+.gradient-border-hover { animation: none; }
+.gradient-border-hover:hover {
+  animation: gradient-rotate
+    var(--animation-duration, 8s) linear infinite;
+}
+.gradient-border-stop-hover {
+  animation: gradient-rotate
+    var(--animation-duration, 8s) linear infinite;
+}
+.gradient-border-stop-hover:hover {
+  animation-play-state: paused;
+}

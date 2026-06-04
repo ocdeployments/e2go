@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef } from 'react';
+import { BorderRotate } from '@/components/ui/animated-gradient-border';
 
 interface Section {
   id: string;
@@ -114,45 +115,59 @@ export default function TabSidebar({
           {sections.map((section) => {
             const isActive = section.id === activeSectionId;
 
+            const itemButton = (
+              <button
+                onClick={() => onSectionClick(section.id)}
+                className={`w-full flex items-center gap-3 px-4 py-3 transition-all duration-200 text-left ${
+                  isActive ? '' : 'rounded-lg'
+                }`}
+                style={{
+                  background: isActive ? 'rgba(201,168,76,0.08)' : 'transparent',
+                }}
+              >
+                <CompletionRing
+                  answered={section.answeredCount}
+                  total={section.questionCount}
+                />
+                <div className="flex-1 min-w-0">
+                  <div
+                    className="text-sm truncate"
+                    style={{
+                      fontFamily: "'Cormorant Garamond', serif",
+                      fontWeight: isActive ? 500 : 400,
+                      fontStyle: isActive ? 'italic' : 'normal',
+                      color: isActive ? '#f5f0e8' : 'rgba(245,240,232,0.6)',
+                    }}
+                  >
+                    {section.title}
+                  </div>
+                  <div className="text-xs mt-0.5" style={{ color: 'rgba(245,240,232,0.4)' }}>
+                    {section.answeredCount} of {section.questionCount} questions
+                  </div>
+                </div>
+                {isActive && (
+                  <div
+                    className="w-1.5 h-1.5 rounded-full"
+                    style={{ background: '#C9A84C' }}
+                  />
+                )}
+              </button>
+            );
+
             return (
               <li key={section.id}>
-                <button
-                  onClick={() => onSectionClick(section.id)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 text-left ${
-                    isActive ? 'border-l-2' : ''
-                  }`}
-                  style={{
-                    borderLeftColor: isActive ? '#C9A84C' : 'transparent',
-                    background: isActive ? 'rgba(201,168,76,0.08)' : 'transparent',
-                  }}
-                >
-                  <CompletionRing
-                    answered={section.answeredCount}
-                    total={section.questionCount}
-                  />
-                  <div className="flex-1 min-w-0">
-                    <div
-                      className="text-sm truncate"
-                      style={{
-                        fontFamily: "'Cormorant Garamond', serif",
-                        fontWeight: isActive ? 500 : 400,
-                        fontStyle: isActive ? 'italic' : 'normal',
-                        color: isActive ? '#f5f0e8' : 'rgba(245,240,232,0.6)',
-                      }}
-                    >
-                      {section.title}
-                    </div>
-                    <div className="text-xs mt-0.5" style={{ color: 'rgba(245,240,232,0.4)' }}>
-                      {section.answeredCount} of {section.questionCount} questions
-                    </div>
-                  </div>
-                  {isActive && (
-                    <div
-                      className="w-1.5 h-1.5 rounded-full"
-                      style={{ background: '#C9A84C' }}
-                    />
-                  )}
-                </button>
+                {isActive ? (
+                  <BorderRotate
+                    animationSpeed={15}
+                    borderWidth={1}
+                    borderRadius={0}
+                    className="w-full"
+                  >
+                    {itemButton}
+                  </BorderRotate>
+                ) : (
+                  itemButton
+                )}
               </li>
             );
           })}
