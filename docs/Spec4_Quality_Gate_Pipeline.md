@@ -1,5 +1,5 @@
-# e2go Document Generation — Quality Gate and Pipeline Specification
-## Version 1.0 | June 2026
+## Pipeline Integration Rules
+- Partnership status: Generate two separate complete application packages for partnership applications.
 
 ---
 
@@ -117,25 +117,25 @@ If generation fails or produces unusable output:
 ### Section Generation Order
 
 ```
-1.  Principal Applicant Declaration
-2.  Qualifications Summary
-3.  Personal Net Worth Statement
-4.  Source of Funds Statement
-5.  Fund Flow Chronology
-6.  Operating Agreement (if needed)
-7.  Business Plan
-8.  Substantiality Memorandum
-9.  Marginality Rebuttal
-10. Property Portfolio (if applicable)
-11. Investment Portfolio (if applicable)
-12. DS-160 Reference
-13. Spouse Declaration (if applicable)
-14. Child Declarations (if applicable)
-15. Financial Projections Spreadsheet
-16. Timeline and Appointment Guide
-17. Master Submission Checklist
-18. [Consistency check across all above]
-19. Cover Letter — LAST
+1.  Cover Letter
+2.  Principal Applicant Declaration
+3.  Qualifications Summary
+4.  Personal Net Worth Statement
+5.  Source of Funds Statement
+6.  Fund Flow Chronology
+7.  Operating Agreement (if needed)
+8.  Business Plan
+9.  Substantiality Memorandum
+10. Marginality Rebuttal
+11. Property Portfolio (if applicable)
+12. Investment Portfolio (if applicable)
+13. DS-160 Reference
+14. Spouse Declaration (if applicable)
+15. Child Declarations (if applicable)
+16. Financial Projections Spreadsheet
+17. Timeline and Appointment Guide
+18. Master Submission Checklist
+19. [Consistency check across all above]
 20. [Final quality gate]
 ```
 
@@ -392,7 +392,7 @@ with specific instruction to remove it.
 
 ```python
 PAGE_LIMITS = {
-    "toronto": 50,
+    "toronto": 50, # 50 pages per tab
     "frankfurt": 30,
     "london": 50  # 20MB limit not page limit
 }
