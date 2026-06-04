@@ -29,7 +29,7 @@ const sections: Section[] = [
     id: "relationship-docs",
     title: "Relationship Documents",
     fields: [
-      { key: "QL-09", type: "multiselect", label: "What relationship documents do you have available?", options: [{value: "Marriage certificate", label: "Marriage certificate"}, {value: "Civil union certificate", label: "Civil union certificate"}, {value: "Birth certificates for children", label: "Birth certificates for children"}, {value: "Adoption certificates", label: "Adoption certificates"}, {value: "Passport copies for all dependents", label: "Passport copies for all dependents"}], required: true, privacy_category: "amber" },
+      { key: "QL-09", type: "multi_select", label: "What relationship documents do you have available?", options: [{value: "Marriage certificate", label: "Marriage certificate"}, {value: "Civil union certificate", label: "Civil union certificate"}, {value: "Birth certificates for children", label: "Birth certificates for children"}, {value: "Adoption certificates", label: "Adoption certificates"}, {value: "Passport copies for all dependents", label: "Passport copies for all dependents"}], required: true, privacy_category: "amber" },
       { key: "QL-10", type: "select", label: "Have all dependent documents been officially translated to English?", options: [{value: "Yes — certified translations complete", label: "Yes — certified translations complete"}, {value: "In progress", label: "In progress"}, {value: "Not yet started", label: "Not yet started"}, {value: "Not applicable — documents are in English", label: "Not applicable — documents are in English"}], required: true, privacy_category: "green" }
     ]
   }
