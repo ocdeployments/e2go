@@ -1,6 +1,6 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 3, 2026 — End of Session 13G
+**Last Updated:** June 3, 2026 — End of Session 15E
 **App Name:** e2go.app
 **Stack:** Next.js 14 · TypeScript · Tailwind CSS · Supabase · Claude API
 **Dev URL:** https://e2go-git-dev-ocdeployments-projects.vercel.app
@@ -113,7 +113,7 @@ Conditions: within 14 days, Module 1 started, no documents generated.
 | Checklist | /apply/checklist | ✅ COMPLETE | 3 phases |
 | Module 3 shell | /apply/module3 | ✅ COMPLETE | |
 | Module 3 Tab A | /apply/module3/a | ✅ COMPLETE | Working, RLS fixed |
-| Module 3 Tabs B-L | /apply/module3/[b-l] | ⚠️ SCAFFOLD | No real questions |
+| Module 3 Tabs B-L | /apply/module3/[b-l] | ✅ COMPLETE | All 12 tabs wired (Sessions 13A–13G) |
 | Confidence Score | /score | ⬜ NOT STARTED | |
 | Interview Simulator | /simulator | ⬜ NOT STARTED | |
 | Document Generation | /generating | ⬜ NOT STARTED | |
@@ -185,14 +185,14 @@ All 11 tab specs updated in docs/ with:
 | B — Personal Checklist | ✅ Spec updated | ✅ Wired (Session 13A) |
 | C — Visa Category | ✅ Spec updated | ✅ Wired (Session 13A) |
 | D — Cover Letter | ✅ Spec updated | ✅ Wired (Session 13B) |
-| E — Ownership | ✅ Spec updated | ⬜ Not wired |
+| E — Ownership | ✅ Spec updated | ✅ Wired (Session 13G) |
 | F — Investment Proof | ✅ Spec updated | ✅ Batch 1 Wired (Session 13C) · Batch 2 pending |
-| G — Business Evidence | ✅ Spec updated | ⬜ Not wired |
-| H — Source of Funds | ✅ Spec updated | ⬜ Not wired |
-| I — Non-Marginality | ✅ Spec updated | ⬜ Not wired |
+| G — Business Evidence | ✅ Spec updated | ✅ Wired (Session 13G) |
+| H — Source of Funds | ✅ Spec updated | ✅ Wired (Session 13G) |
+| I — Non-Marginality | ✅ Spec updated | ✅ Wired (Session 13G) |
 | J — Qualifications | ✅ Spec updated | ✅ Wired (Session 13B) |
-| K — Business Plan | ✅ Spec updated | ⬜ Not wired |
-| L — Family Dependents | ✅ Spec updated | ⬜ Not wired |
+| K — Business Plan | ✅ Spec updated | ✅ Wired (Session 13G) |
+| L — Family Dependents | ✅ Spec updated | ✅ Wired (Session 13G) |
 
 ### Batch Assignments
 - Batch 1 (personal — immediate after payment): B, partial F, J, L
@@ -242,7 +242,7 @@ is built into the checklist and binder assembly guide.
 ### Feature Build Status
 | Feature | Status |
 |---|---|
-| Analysis engine | ⬜ Spec written — not built |
+| Analysis engine | ✅ Built (Session 15A) — schema, types, lib, api route, Sarah Mitchell test |
 | Voice sample collection | ⬜ Spec written — not built |
 | AI detection on voice sample | ⬜ Spec written — not built |
 | Voice profile extraction | ⬜ Spec written — not built |
@@ -344,3 +344,55 @@ Status: COMPLETE
 - API route (src/app/api/analysis/run/route.ts)
 - Sarah Mitchell test case (src/lib/__tests__/analysis-engine.test.ts)
 Status: COMPLETE
+
+---
+
+## SESSION 15B — Email Verification Funnel (June 3, 2026)
+- `email_verifications` table migration (3d800df)
+- `/api/email/results` route — Resend integration (c9ca588)
+- `actions/verify-token.ts` server action (73d1e8b)
+- `/verify` page — token validation + forced signup (9e01dc2)
+Status: COMPLETE
+
+---
+
+## SESSIONS 13G + 15C–15E — Quiz & Results Completion (June 3, 2026)
+- Module 3 Tabs E, G, H, I, K, L wired (Session 13G, commits 4041f0c → 89a7680)
+- Quiz completion: email send + redirect on Q0-21 (2c5a733)
+- Results page rebuild: 4 outcomes + email capture banner (2d1ac64)
+- Results page recovery after stream error (d4dadba)
+- Build clean: all TypeScript and ESLint errors fixed (b4f3d55)
+Status: COMPLETE
+
+---
+
+## SPEC CORRECTIONS — June 3, 2026
+All 6 spec corrections applied and committed:
+1. Cover letter = Step 1 always (Spec3, Spec4)
+2. Page limit = 50 per TAB not total (Spec1, Spec4)
+3. AI model = Anthropic API direct (Spec3)
+4. Prompt storage = /prompts/v1/documents/ (Spec3)
+5. Partnership routing = two separate packages (all specs)
+6. Voice profile = raw text only, no JSON (Spec2)
+Status: COMPLETE
+
+---
+
+## BUILD STATE — End of day, June 3, 2026
+- Branch: `dev`
+- Working tree: clean
+- Last commit: `b4f3d55` — Fix: all TypeScript and ESLint build errors
+- `npm run build`: clean, all routes prerender or server-render correctly
+- Quiz v3.0: live; outcome computed from `/data/module0_scoring_logic.json`
+- Results: 4 outcomes with email verification funnel
+- Module 3: all 12 tabs (A–L) wired
+
+---
+
+## NEXT SESSION
+**Session 14 — Stripe paywall**
+- Integrate Stripe checkout
+- Wire paywall after Batch 1 personal tabs (B, partial F, J, L)
+- Apply founding member pricing ($297–$647)
+- Apply 14-day money-back guarantee (first 50 founding members)
+- Wire `email_verifications` table into user signup flow
