@@ -148,19 +148,19 @@ Standard 4 mapping:
 
 ### Generation Order
 ```
-Step 1  → Cover Letter (Tab D)        → save to DB → continue
-Step 2  → Source of Funds (Tab H)     → save to DB → continue
-Step 3  → Investment Proof (Tab F)    → save to DB → continue
-Step 4  → Business Plan (Tab K)       → save to DB → continue
-Step 5  → Qualifications (Tab J)      → save to DB → continue
-Step 6  → DS-160 Reference (Tab A)    → save to DB → continue
-Step 7  → Gap analysis (all docs)     → save gap report
-Step 8  → Repetition checker          → save clean versions
-Step 9  → Consistency checker         → lock final versions
-Step 10 → AI detection audit          → flag if AI-detectable
-Step 11 → Humanization pass           → rewrite flagged sections
-Step 12 → Metadata sanitization       → strip all AI markers
-Step 13 → Quality gate                → pass/fail per document
+Step 1  → Cover Letter (Tab D)
+Step 2  → Source of Funds (Tab H)
+Step 3  → Investment Proof (Tab F)
+Step 4  → Business Plan (Tab K)
+Step 5  → Qualifications (Tab J)
+Step 6  → DS-160 Reference (Tab A)
+Step 7  → Gap analysis
+Step 8  → Repetition checker
+Step 9  → Consistency checker
+Step 10 → AI detection audit
+Step 11 → Humanization pass
+Step 12 → Metadata sanitization
+Step 13 → Quality gate
 Step 14 → Pre-download acknowledgment gate (5 checkboxes)
 Step 15 → Preview unlocked for user
 ```

@@ -1,18 +1,28 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { verifyToken, markTokenUsed } from "../actions/verify-token";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import Link from "next/link";
 
-export default function VerifyPage() {
+type TokenResult = {
+  valid: boolean;
+  email?: string;
+  outcome?: string;
+  result_json?: Record<string, unknown>;
+  quiz_session_id?: string;
+  franchise_interest?: boolean;
+  reason?: string;
+};
+
+function VerifyPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [verifiedData, setVerifiedData] = useState<any>(null);
+  const [verifiedData, setVerifiedData] = useState<TokenResult | null>(null);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [authError, setAuthError] = useState("");
@@ -48,6 +58,11 @@ export default function VerifyPage() {
       return;
     }
 
+    if (!verifiedData?.email) {
+      setAuthError("Verification data missing.");
+      return;
+    }
+
     const { data: auth, error: authErr } = await supabase.auth.signUp({
       email: verifiedData.email,
       password,
@@ -61,15 +76,12 @@ export default function VerifyPage() {
       return;
     }
 
-    // Link quiz_session to new user
     await supabase.from("quiz_sessions")
       .update({ user_id: auth.user!.id })
       .eq("id", verifiedData.quiz_session_id);
 
-    // Mark token as used
     await markTokenUsed(token!);
 
-    // Save result to local storage
     localStorage.setItem("e2go_quiz_result", JSON.stringify(verifiedData.result_json));
 
     router.push("/results?verified=true");
@@ -105,7 +117,7 @@ export default function VerifyPage() {
         <form onSubmit={handleSignup} className="space-y-6">
           <div className="space-y-1">
             <label className="text-[12px] font-medium tracking-[0.12em] uppercase text-zinc-500">Email</label>
-            <input type="email" value={verifiedData.email} disabled className="w-full p-3 bg-zinc-900 border border-zinc-700 text-zinc-400" />
+            <input type="email" value={verifiedData?.email ?? ""} disabled className="w-full p-3 bg-zinc-900 border border-zinc-700 text-zinc-400" />
           </div>
           <div className="space-y-1">
             <label className="text-[12px] font-medium tracking-[0.12em] uppercase text-zinc-500">Create a password</label>
@@ -126,5 +138,13 @@ export default function VerifyPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function VerifyPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-[#C9A84C]" style={{ background: '#0a0a0a' }}>Loading...</div>}>
+      <VerifyPageInner />
+    </Suspense>
   );
 }

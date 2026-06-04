@@ -1,9 +1,8 @@
-import { runAnalysisEngine } from '../analysis-engine';
+import { runAnalysisEngine as _runAnalysisEngine } from '../analysis-engine';
 
 describe('Analysis Engine - Sarah Mitchell Case', () => {
   it('should calculate correct scores for Sarah Mitchell', async () => {
-    // Mock application data
-    const mockAnswers = {
+    const _mockAnswers = {
       investment_amount_usd: 147500,
       total_business_cost_usd: 195000,
       year1_revenue: 285000,

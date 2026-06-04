@@ -50,10 +50,12 @@ export default function SectionForm({
   }, [onSkipField]);
 
   useEffect(() => {
+    const timers = debounceTimers.current;
+    const saveTimeout = saveTimeoutRef.current;
     return () => {
-      Object.values(debounceTimers.current).forEach(clearTimeout);
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
+      Object.values(timers).forEach(clearTimeout);
+      if (saveTimeout) {
+        clearTimeout(saveTimeout);
       }
     };
   }, []);

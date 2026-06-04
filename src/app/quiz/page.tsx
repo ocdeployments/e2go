@@ -425,6 +425,13 @@ export default function QuizPage() {
     const hardStopCodes: string[] = [];
     const attorneyFlags: string[] = [];
     const riskFlags: string[] = [];
+    const outcome: string = hardStopCodes.length > 0
+      ? 'not_qualified'
+      : attorneyFlags.length > 0
+        ? 'attorney_required'
+        : riskFlags.length > 0
+          ? 'qualified_with_risks'
+          : 'qualified';
 
     // Check hard stops, attorney flags, risk flags... (omitted for brevity, assume existing logic)
     // ... [existing logic to determine hardStopCodes, attorneyFlags, riskFlags, outcome]

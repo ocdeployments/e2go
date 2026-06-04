@@ -8,13 +8,31 @@ import {
   type CaseBrief,
 } from '@/types/analysis';
 
+interface CoreScores {
+  substantiality: ScoreLevel;
+  fund_source: ScoreLevel;
+  experience: ScoreLevel;
+  intent: ScoreLevel;
+  executive_role: ExecutiveRoleScore;
+  ownership_control: ScoreLevel;
+}
+
+interface KBValidationResult {
+  complete: boolean;
+  consulate_profile_used: string;
+  business_type_profile_used: string;
+  kb_flags: KBFlag[];
+  dimensions_confirmed: string[];
+  dimensions_flagged: string[];
+}
+
 export async function runAnalysisEngine(
   applicationId: string,
-  userId: string
+  _userId: string
 ): Promise<CaseBrief> {
   const answers = await loadApplicationAnswers(applicationId);
-  const consulate = answers.consulate || 'toronto';
-  const businessType = answers.business_type || 'service';
+  const consulate = (answers.consulate as string) || 'toronto';
+  const businessType = (answers.business_type as string) || 'service';
 
   const scores = {
     substantiality: calculateSubstantialityScore(answers),
@@ -45,7 +63,20 @@ async function loadApplicationAnswers(applicationId: string): Promise<Record<str
   return {};
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function calculateSubstantialityScore(_answers: Record<string, unknown>): ScoreLevel {
+  return 'ADEQUATE';
+}
+
+function calculateMarginalityScore(_answers: Record<string, unknown>): MarginalityScore {
+  return {
+    income_score: 'ADEQUATE',
+    contribution_score: 'ADEQUATE',
+    combined_score: 'ADEQUATE',
+    job_creation_score: 'ADEQUATE',
+    economic_activity_score: 'ADEQUATE',
+  };
+}
+
 function calculateFundSourceScore(_answers: Record<string, unknown>): ScoreLevel {
   return 'ADEQUATE';
 }
@@ -75,20 +106,11 @@ function calculateOwnershipControlScore(_answers: Record<string, unknown>): Scor
   return 'STRONG';
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function assessDenialRisks(_answers: Record<string, unknown>, _scores: Record<string, unknown>): DenialRisk[] {
+function assessDenialRisks(_answers: Record<string, unknown>, _scores: CoreScores): DenialRisk[] {
   return [];
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function runKBValidation(_scores: Record<string, unknown>, _cons: string, _bus: string): {
-  complete: boolean,
-  consulate_profile_used: string,
-  business_type_profile_used: string,
-  kb_flags: KBFlag[],
-  dimensions_confirmed: string[],
-  dimensions_flagged: string[]
-} {
+function runKBValidation(_scores: CoreScores, _cons: string, _bus: string): KBValidationResult {
   return {
     complete: true,
     consulate_profile_used: _cons,
@@ -99,13 +121,11 @@ function runKBValidation(_scores: Record<string, unknown>, _cons: string, _bus: 
   };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function generateFramingDecisions(_scores: Record<string, unknown>, _kbFlags: KBFlag[], _risks: DenialRisk[]): FramingDecision[] {
+function generateFramingDecisions(_scores: CoreScores, _kbFlags: KBFlag[], _risks: DenialRisk[]): FramingDecision[] {
   return [];
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function assembleCaseBrief(appId: string, scores: Record<string, unknown>, marg: MarginalityScore, _risks: DenialRisk[], _kb: Record<string, unknown>, _framing: FramingDecision[]): CaseBrief {
+function assembleCaseBrief(appId: string, scores: CoreScores, marg: MarginalityScore, _risks: DenialRisk[], _kb: KBValidationResult, _framing: FramingDecision[]): CaseBrief {
   return {
     application_id: appId,
     generated_at: new Date().toISOString(),

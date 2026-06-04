@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Cormorant_Garamond, DM_Sans } from "next/font/google";
 import "./globals.css";
 import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
@@ -37,7 +37,6 @@ export const metadata: Metadata = {
     follow: true,
   },
   manifest: "/manifest.json",
-  themeColor: "#0a0a0a",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
@@ -48,20 +47,18 @@ export const metadata: Metadata = {
   },
 };
 
+export const viewport: Viewport = {
+  themeColor: "#0a0a0a",
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <head>
-        <link
-          href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap"
-          rel="stylesheet"
-        />
-      </head>
-      <body className={`${cormorant.variable} ${dmSans.variable} font-sans antialiased`}>
+    <html lang="en" className={`${cormorant.variable} ${dmSans.variable}`}>
+      <body className="font-sans antialiased">
         <ServiceWorkerRegistration />
         {children}
       </body>

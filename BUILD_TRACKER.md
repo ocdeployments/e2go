@@ -47,6 +47,7 @@ changed, run npm run build:clean, report summary.
 | Document generation specs | ✅ COMPLETE | 4 spec files — need one update pass |
 | Cleanup complete | ✅ COMPLETE | Legacy tokens/vars removed from all files |
 | Stripe integration | ⬜ NOT STARTED | Session 14 |
+| Email verification funnel | ✅ COMPLETE | Session 15A/B |
 | Document generation engine | ⬜ NOT STARTED | Sessions 15-16 |
 | Voice matching system | ⬜ NOT STARTED | Designed, not built |
 | Analysis engine | ⬜ NOT STARTED | Designed, not built |
