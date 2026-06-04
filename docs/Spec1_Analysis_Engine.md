@@ -1,7 +1,5 @@
-# e2go Document Generation — Analysis Engine Specification
-## Version 1.0 | June 2026
-## This spec is the source of truth for the analysis engine.
-## Claude Code builds from this. Nothing is built without this being approved.
+## Pipeline Integration Rules
+- Partnership status: Generate two separate complete application packages for partnership applications.
 
 ---
 
@@ -167,23 +165,42 @@ For each denial category:
 ### 6. Marginality Ratio
 
 ```
-year1_revenue_projection = Tab I answer
-household_monthly_expenses = Tab I answer (QI-NEW-03)
-annual_household_need = household_monthly_expenses * 12
+marginality_income_score:
+  year1_revenue / annual_household_need
+  >= 5.0 → STRONG
+  >= 3.0 → ADEQUATE
+  >= 1.5 → WEAK
+  < 1.5  → CRITICAL
 
-marginality_ratio = year1_revenue_projection / annual_household_need
+marginality_contribution_score (NEW):
+  
+  job_creation_score:
+    5+ US jobs Year 1 → STRONG
+    3-4 US jobs Year 1 → ADEQUATE
+    1-2 US jobs Year 1 → WEAK
+    0 jobs planned → CRITICAL
+  
+  economic_activity_score:
+    Produces goods/services for US market: confirmed → +1
+    Economic activity beyond investor salary: documented → +1
+    Job wages specified with timelines: yes → +1
+    Community economic impact documented: yes → +1
+    Score 3-4 → STRONG
+    Score 2 → ADEQUATE
+    Score 0-1 → WEAK
 
-ratio >= 5.0 → STRONG non-marginality — cite job creation as primary argument
-ratio >= 3.0 → ADEQUATE — standard non-marginality argument
-ratio >= 1.5 → WEAK — needs stronger job creation framing
-ratio < 1.5  → CRITICAL — business may appear marginal
+  combined_marginality_contribution_score:
+    Both STRONG → STRONG
+    Mixed → lower of the two
+    If job_creation_score = CRITICAL → 
+      combined = CRITICAL regardless of economic_activity
 
-hiring_plan_jobs = count from Tab I QI-NEW-01
-job_creation_score:
-  5+ jobs Year 1 → STRONG
-  3-4 jobs Year 1 → ADEQUATE
-  1-2 jobs Year 1 → WEAK
-  0 jobs → CRITICAL
+combined_marginality_score:
+  Uses LOWER of income_score and contribution_score
+  If contribution_score = CRITICAL → 
+    override income_score, combined = CRITICAL
+  Note: "Officer likely checking 402.9-6(E) due to weak 
+    hiring plan — address contribution explicitly"
 ```
 
 ---
