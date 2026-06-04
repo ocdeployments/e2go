@@ -1,38 +1,74 @@
 'use client';
 
-import Link from 'next/link';
+import { ApplicationProvider, useApplication } from '@/contexts/ApplicationContext';
+import TabPage from '@/components/module3/TabPage';
+import { Section } from '@/types/module3';
+
+const sections: Section[] = [
+  {
+    id: "business-desc",
+    title: "Business Description",
+    fields: [
+      { key: "QK-01", type: "text", label: "Describe your business in 2-3 sentences.", helperText: "Plain language. What does it do, who does it serve, where does it operate?", required: true, privacy_category: "required" },
+      { key: "QK-02", type: "text", label: "What is your target market?", helperText: "Who are your customers? Be specific — demographics, location, needs.", required: true, privacy_category: "required" },
+      { key: "QK-03", type: "text", label: "Who are your main competitors and what is your competitive advantage?", required: true, privacy_category: "green" }
+    ]
+  },
+  {
+    id: "ops-plan",
+    title: "Operations Plan",
+    fields: [
+      { key: "QK-04", type: "text", label: "How will the business operate day-to-day?", helperText: "Describe main activities, who does what, how services/products are delivered.", required: true, privacy_category: "required" },
+      { key: "QK-05", type: "text", label: "What are the key operational milestones for Year 1?", helperText: "Example: Month 1 — secure location, Month 3 — hire first employee, Month 6 — launch.", required: true, privacy_category: "green" },
+      { key: "QK-06", type: "text", label: "What equipment, inventory, or technology does the business require?", required: true, privacy_category: "green" }
+    ]
+  },
+  {
+    id: "financial-projections",
+    title: "Financial Projections",
+    fields: [
+      { key: "QK-07", type: "text", label: "What are your startup costs broken down by category?", helperText: "Example: Franchise fee $45,000, Equipment $30,000, Working capital $72,500. Total must match your investment amount.", required: true, privacy_category: "required" },
+      { key: "QK-08", type: "text", label: "What is your projected monthly revenue for months 1-6?", helperText: "Month-by-month breakdown showing ramp-up. Must align with your Year 1 total in Tab I.", required: true, privacy_category: "required" },
+      { key: "QK-09", type: "text", label: "What are your projected monthly operating expenses?", helperText: "Rent, payroll, supplies, royalties, insurance, utilities, etc.", required: true, privacy_category: "required" },
+      { key: "QK-10", type: "select", label: "When do you project the business will reach break-even?", options: [{value: "Within 6 months", label: "Within 6 months"}, {value: "6-12 months", label: "6-12 months"}, {value: "12-18 months", label: "12-18 months"}, {value: "18-24 months", label: "18-24 months"}, {value: "More than 24 months", label: "More than 24 months"}], required: true, privacy_category: "green" }
+    ]
+  },
+  {
+    id: "market-analysis",
+    title: "Market Analysis",
+    fields: [
+      { key: "QK-11", type: "text", label: "What is the size of your target market?", helperText: "Use data where possible — industry reports, census data, franchise disclosure data.", required: true, privacy_category: "green" },
+      { key: "QK-12", type: "text", label: "What market trends support your business?", helperText: "Why is now a good time for this business? Demographic trends, regulatory changes, demand shifts.", required: true, privacy_category: "green" }
+    ]
+  },
+  {
+    id: "growth-strategy",
+    title: "Growth Strategy",
+    fields: [
+      { key: "QK-13", type: "text", label: "What is your 3-year growth plan?", helperText: "Where will the business be in Year 3? Revenue, employees, locations, market position.", required: true, privacy_category: "green" },
+      { key: "QK-14", type: "select", label: "Are there plans to expand beyond the initial location?", options: [{value: "Yes — multi-unit expansion planned", label: "Yes — multi-unit expansion planned"}, {value: "Possibly — evaluating after Year 1", label: "Possibly — evaluating after Year 1"}, {value: "No — single location focus", label: "No — single location focus"}], required: true, privacy_category: "green" }
+    ]
+  }
+];
+
+function TabKContent() {
+  const { answers, setAnswer } = useApplication();
+  return (
+    <TabPage
+      tabTitle="Business Plan"
+      tabDescription="Provide a comprehensive operational and financial blueprint."
+      sections={sections as Section[]}
+      answers={answers}
+      onAnswerChange={(key, val) => setAnswer(key, val)}
+      onSaveSection={async () => {}}
+    />
+  );
+}
 
 export default function TabKPage() {
   return (
-    <div className="min-h-screen bg-[#f8f9ff] flex flex-col">
-      <header className="w-full sticky top-0 z-50 bg-white border-b border-[#c3c6d7]">
-        <div className="flex justify-between items-center h-16 px-4 max-w-2xl mx-auto">
-          <Link href="/" className="flex items-center gap-2">
-            <span className="text-xl font-bold text-[#004ac6]">e2go.app</span>
-          </Link>
-          <Link href="/dashboard" className="text-sm text-[#434655] hover:text-[#004ac6]">
-            Dashboard
-          </Link>
-        </div>
-      </header>
-
-      <main className="flex-1 flex items-center justify-center px-4 py-12">
-        <div className="max-w-md w-full text-center">
-          <div className="bg-white rounded-xl border border-[#e2e8f0] p-8">
-            <h1 className="text-2xl font-bold text-[#0b1c30] mb-4">Tab K — Coming Soon</h1>
-            <p className="text-[#434655] mb-6">
-              This section is currently in development.
-            </p>
-            <Link
-              href="/apply/module3/a"
-              className="inline-block px-6 py-3 bg-[#004ac6] text-white rounded-lg font-medium hover:bg-[#00337d] transition-colors"
-            >
-              Back to Tab A
-            </Link>
-          </div>
-        </div>
-      </main>
-
-      </div>
+    <ApplicationProvider>
+      <TabKContent />
+    </ApplicationProvider>
   );
 }
