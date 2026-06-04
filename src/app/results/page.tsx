@@ -46,9 +46,58 @@ export default function ResultsPage() {
   const [result, setResult] = useState<QuizResult | null>(null);
   const [supabase] = useState(() => createBrowserSupabaseClient());
   const [acknowledged, setAcknowledged] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [showBanner, setShowBanner] = useState(true);
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const init = async () => {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      setUser(authUser);
+
+      // Determine if we need the email banner
+      // Show if !authUser && localStorage has the quiz session result
+      const storedResult = localStorage.getItem("e2go_quiz_result");
+      const dismissedBanner = localStorage.getItem("e2go_banner_dismissed");
+      if (!authUser && storedResult && !dismissedBanner) {
+        setShowBanner(true);
+      } else {
+        setShowBanner(false);
+      }
+      // ... [rest of init logic]
+    };
+    init();
+  }, []);
+
+  // ... (inside the component return function)
+  {showBanner && !user && result && (
+    <div style={{
+      background: 'rgba(201,168,76,0.08)',
+      borderBottom: '1px solid rgba(201,168,76,0.2)',
+      padding: '16px',
+      marginBottom: '24px'
+    }}>
+      <div className="max-w-2xl mx-auto flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <svg className="w-5 h-5" style={{ color: '#C9A84C' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+          </svg>
+          <p className="text-sm" style={{ color: 'rgba(245,240,232,0.8)' }}>
+            We sent your result to {result.answers['Q0-21']}. Click the link to save your result.
+          </p>
+        </div>
+        <button
+          onClick={() => {
+            setShowBanner(false);
+            localStorage.setItem("e2go_banner_dismissed", "true");
+          }}
+          style={{ color: 'rgba(245,240,232,0.4)', background: 'none', border: 'none', cursor: 'pointer' }}
+        >
+          ✕
+        </button>
+      </div>
+    </div>
+  )}
 
   // Compute result from answers using scoring logic
   const computeResult = (answers: Answer[]): QuizResult => {
