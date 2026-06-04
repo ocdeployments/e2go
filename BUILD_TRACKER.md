@@ -277,11 +277,11 @@ is built into the checklist and binder assembly guide.
 | docs/Spec4_Quality_Gate_Pipeline.md | ✅ Written | Page limit fix needed |
 
 Required updates to specs before building:
-1. Cover letter is Step 1 (not last) — fix Spec 3 and Spec 4
-2. Page limit is 50 per tab (not 50 total) — fix Spec 1 and Spec 4
-3. AI model is Anthropic API (not raw Claude call) — fix Spec 3
-4. Prompts stored in /prompts/v1/documents/ as .md files — fix Spec 3
-5. Partnership routing (dual packages) — add to all specs
+1. Cover letter is Step 1 (not last) — ✅ COMPLETE
+2. Page limit is 50 per tab (not 50 total) — ✅ COMPLETE
+3. AI model is Anthropic API (not raw Claude call) — ✅ COMPLETE
+4. Prompts stored in /prompts/v1/documents/ as .md files — ✅ COMPLETE
+5. Partnership routing (dual packages) — ✅ COMPLETE
 
 ---
 
@@ -325,3 +325,13 @@ Tables created and confirmed:
 - generation_pipeline_log (schema written, not yet run)
 - applicant_voice_profile (schema written, not yet run)
 - followup_responses (schema written, not yet run)
+
+## SPEC CORRECTIONS — June 3, 2026
+All 6 spec corrections applied and committed:
+1. Cover letter = Step 1 always (Spec3, Spec4)
+2. Page limit = 50 per TAB not total (Spec1, Spec4)
+3. AI model = Anthropic API direct (Spec3)
+4. Prompt storage = /prompts/v1/documents/ (Spec3)
+5. Partnership routing = two separate packages (all specs)
+6. Voice profile = raw text only, no JSON (Spec2)
+Status: COMPLETE
