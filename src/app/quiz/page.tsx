@@ -65,9 +65,9 @@ interface QuestionsData {
 }
 
 interface ScoringLogic {
-  hard_stops: Array<{ code: string; question: string; trigger: string[] }>;
-  attorney_flags: Array<{ code: string; question: string; trigger: string[]; level?: string }>;
-  risk_flags: Array<{ code: string; question: string; trigger: string[]; level?: string }>;
+  hard_stops: Array<{ code: string; question: string; trigger: string | string[]; message?: string }>;
+  attorney_flags: Array<{ code: string; question: string; trigger: string | string[]; level?: string; stop_code?: string; message?: string }>;
+  risk_flags: Array<{ code: string; question: string; trigger: string | string[]; level?: string }>;
 }
 
 const US_STATES: USState[] = [
@@ -421,10 +421,58 @@ export default function QuizPage() {
   const calculateAndRedirect = async (finalAnswers: Record<string, string | string[]>) => {
     if (!scoringLogic) return;
 
-    // 1. Calculate outcome (same as before)
+    // 1. Calculate outcome by evaluating all scoring rules against finalAnswers
+    const evaluateTrigger = (trigger: string | string[], answer: string | string[] | undefined): boolean => {
+      if (answer === undefined || answer === null) return false;
+      const answerArr = Array.isArray(answer) ? answer : [answer];
+
+      if (typeof trigger === 'string') {
+        const numericAnswer = answerArr
+          .map(a => {
+            if (typeof a === 'number') return a;
+            if (typeof a === 'string') {
+              const m = a.match(/[\d,]+/);
+              return m ? parseFloat(m[0].replace(/,/g, '')) : NaN;
+            }
+            return NaN;
+          })
+          .find(n => !isNaN(n));
+
+        if (numericAnswer === undefined) return false;
+        if (trigger === 'amount_usd < 75000') return numericAnswer < 75000;
+        if (trigger === '75000 <= amount_usd <= 149999') return numericAnswer >= 75000 && numericAnswer <= 149999;
+        return false;
+      }
+
+      return answerArr.some(a => trigger.includes(a));
+    };
+
     const hardStopCodes: string[] = [];
     const attorneyFlags: string[] = [];
     const riskFlags: string[] = [];
+
+    for (const stop of scoringLogic.hard_stops ?? []) {
+      if (evaluateTrigger(stop.trigger, finalAnswers[stop.question])) {
+        hardStopCodes.push(stop.code);
+      }
+    }
+
+    for (const flag of scoringLogic.attorney_flags ?? []) {
+      if (evaluateTrigger(flag.trigger, finalAnswers[flag.question])) {
+        if (flag.level === 'do_not_proceed' && flag.stop_code) {
+          if (!hardStopCodes.includes(flag.stop_code)) hardStopCodes.push(flag.stop_code);
+        } else {
+          attorneyFlags.push(flag.code);
+        }
+      }
+    }
+
+    for (const flag of scoringLogic.risk_flags ?? []) {
+      if (evaluateTrigger(flag.trigger, finalAnswers[flag.question])) {
+        riskFlags.push(flag.code);
+      }
+    }
+
     const outcome: string = hardStopCodes.length > 0
       ? 'not_qualified'
       : attorneyFlags.length > 0
@@ -432,13 +480,6 @@ export default function QuizPage() {
         : riskFlags.length > 0
           ? 'qualified_with_risks'
           : 'qualified';
-
-    // Check hard stops, attorney flags, risk flags... (omitted for brevity, assume existing logic)
-    // ... [existing logic to determine hardStopCodes, attorneyFlags, riskFlags, outcome]
-    // (Self-correction: I will reuse existing logic here, but I must implement the email logic)
-
-    // REDACTED: Assuming existing outcome logic determines `outcome`, `hardStopCodes`, `attorneyFlags`, `riskFlags`.
-    // Let's assume these variables are defined.
 
     const { data: { user } } = await supabase.auth.getUser();
 
