@@ -195,7 +195,7 @@ const CONSISTENCY_FIELDS: { field: string; patterns: RegExp[] }[] = [
   {
     field: 'investment_amount_usd',
     patterns: [
-      /\$([0-9,]+\s*(?:USD)?)/g,
+      /\$([0-9,]+)(?:\s*USD)?/,
       /investment\s+of\s+\$([0-9,]+)/i,
       /\$([0-9,]+)\s*(?:USD|United States dollars)/i,
     ],
@@ -641,7 +641,7 @@ export async function runGenerationPipeline(
     emitStep(10, 'running');
     await updateJob({ current_step: 10, current_step_label: GENERATION_STEP_LABELS[10] });
 
-    let allQualityPassed = true;
+    let _allQualityPassed = true;
     for (const doc of generatedDocs) {
       const qualityResult = runQualityGate(doc, doc.document_type);
 
@@ -696,11 +696,11 @@ export async function runGenerationPipeline(
               .eq('document_type', doc.document_type);
 
             if (!retryQuality.passed) {
-              allQualityPassed = false;
+              _allQualityPassed = false;
             }
           }
         } catch {
-          allQualityPassed = false;
+          _allQualityPassed = false;
         }
       } else {
         await supabase

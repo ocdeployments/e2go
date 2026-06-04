@@ -13,8 +13,6 @@ import type {
   DocumentType,
 } from "@/types/generation";
 
-type ViewMode = "list" | "modal";
-
 interface ModalState {
   open: boolean;
   document: GeneratedDocument | null;

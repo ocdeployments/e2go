@@ -21,7 +21,7 @@ export default function GenerateProgressPage() {
   const router = useRouter();
   const applicationId = params.applicationId as string;
 
-  const [jobId, setJobId] = useState<string | null>(null);
+  const [_jobId, setJobId] = useState<string | null>(null);
   const [steps, setSteps] = useState<StepState[]>(() =>
     Array.from({ length: 15 }, (_, i) => ({
       id: i + 1,
@@ -86,6 +86,52 @@ export default function GenerateProgressPage() {
     [updateStepStatus]
   );
 
+  const startPolling = useCallback((jid: string) => {
+    const poll = setInterval(async () => {
+      try {
+        await fetch(`/api/generate/progress/${jid}`);
+        const jobRes = await fetch(`/api/generate/documents/${applicationId}`, {
+          headers: { Authorization: "Bearer poll" },
+        });
+        if (jobRes.ok) {
+          const data = await jobRes.json();
+          setDocumentsComplete(
+            data.documents?.filter(
+              (d: { status: string }) => d.status === "under_review"
+            ).length || 0
+          );
+        }
+      } catch {
+        // Ignore poll errors
+      }
+    }, POLL_INTERVAL);
+
+    return () => clearInterval(poll);
+  }, [applicationId]);
+
+  const connectSSE = useCallback((jid: string) => {
+    const eventSource = new EventSource(`/api/generate/progress/${jid}`);
+
+    eventSource.onmessage = (event) => {
+      try {
+        const msg: SSEProgressMessage = JSON.parse(event.data);
+        processMessage(msg);
+        if (msg.status === "completed" || msg.status === "failed") {
+          eventSource.close();
+        }
+      } catch {
+        // Ignore parse errors on SSE
+      }
+    };
+
+    eventSource.onerror = () => {
+      eventSource.close();
+      startPolling(jid);
+    };
+
+    return () => eventSource.close();
+  }, [processMessage, startPolling]);
+
   const startGeneration = useCallback(async () => {
     try {
       // Get userId from localStorage or session
@@ -123,55 +169,7 @@ export default function GenerateProgressPage() {
     } catch (err) {
       setErrorMessage(err instanceof Error ? err.message : "Unknown error");
     }
-  }, [applicationId]);
-
-  const connectSSE = useCallback((jid: string) => {
-    const eventSource = new EventSource(`/api/generate/progress/${jid}`);
-
-    eventSource.onmessage = (event) => {
-      try {
-        const msg: SSEProgressMessage = JSON.parse(event.data);
-        processMessage(msg);
-        if (msg.status === "completed" || msg.status === "failed") {
-          eventSource.close();
-        }
-      } catch {
-        // Ignore parse errors on SSE
-      }
-    };
-
-    eventSource.onerror = () => {
-      eventSource.close();
-      // Fall back to polling
-      startPolling(jid);
-    };
-
-    return () => eventSource.close();
-  }, [processMessage]);
-
-  const startPolling = useCallback((jid: string) => {
-    const poll = setInterval(async () => {
-      try {
-        const res = await fetch(`/api/generate/progress/${jid}`);
-        // SSE fallback won't work like this — poll the job directly
-        const jobRes = await fetch(`/api/generate/documents/${applicationId}`, {
-          headers: { Authorization: "Bearer poll" },
-        });
-        if (jobRes.ok) {
-          const data = await jobRes.json();
-          setDocumentsComplete(
-            data.documents?.filter(
-              (d: { status: string }) => d.status === "under_review"
-            ).length || 0
-          );
-        }
-      } catch {
-        // Ignore poll errors
-      }
-    }, POLL_INTERVAL);
-
-    return () => clearInterval(poll);
-  }, [applicationId]);
+  }, [applicationId, connectSSE]);
 
   useEffect(() => {
     startGeneration();

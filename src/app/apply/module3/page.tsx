@@ -77,7 +77,7 @@ export default function Module3Overview() {
           .select("question_id")
           .eq("application_id", appId);
 
-        const answeredIds = new Set(answers?.map((a: { question_id: string }) => a.question_id) || []);
+        const _answeredIds = new Set(answers?.map((a: { question_id: string }) => a.question_id) || []);
 
         // Tab prefixes: Tab A answers use a_ prefix, etc.
         const updatedTabs = TABS.map((tab) => {
