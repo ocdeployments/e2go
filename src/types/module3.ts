@@ -1,4 +1,4 @@
-export type FieldType = 'text' | 'textarea' | 'select' | 'multi_select' | 'date' | 'date_range' | 'currency' | 'percentage';
+export type FieldType = 'text' | 'textarea' | 'select' | 'multi_select' | 'date' | 'date_range' | 'currency' | 'percentage' | 'number';
 
 export interface FieldConfig {
   key: string;
