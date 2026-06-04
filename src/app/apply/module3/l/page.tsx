@@ -1,38 +1,58 @@
 'use client';
 
-import Link from 'next/link';
+import { ApplicationProvider, useApplication } from '@/contexts/ApplicationContext';
+import TabPage from '@/components/module3/TabPage';
+import { Section } from '@/types/module3';
+
+const sections: Section[] = [
+  {
+    id: "spouse-info",
+    title: "Spouse Information",
+    fields: [
+      { key: "QL-01", type: "select", label: "Will your spouse or partner be applying for E-2 dependent status?", options: [{value: "Yes", label: "Yes"}, {value: "No — not applicable", label: "No — not applicable"}, {value: "Not yet decided", label: "Not yet decided"}], required: true, privacy_category: "required" },
+      { key: "QL-02", type: "text", label: "Spouse full legal name", helperText: "As it appears on their passport.", required: false, privacy_category: "red" },
+      { key: "QL-03", type: "text", label: "Spouse date of birth", required: false, privacy_category: "red" },
+      { key: "QL-04", type: "select", label: "Spouse nationality", options: [], required: false, privacy_category: "red" },
+      { key: "QL-05", type: "text", label: "Spouse passport number", helperText: "Will not be stored after document generation.", required: false, privacy_category: "red" },
+      { key: "QL-06", type: "select", label: "Will your spouse apply for U.S. work authorization (EAD)?", options: [{value: "Yes", label: "Yes"}, {value: "No", label: "No"}, {value: "Undecided", label: "Undecided"}], required: false, privacy_category: "amber" }
+    ]
+  },
+  {
+    id: "dependent-children",
+    title: "Dependent Children",
+    fields: [
+      { key: "QL-07", type: "select", label: "Will any children be applying as E-2 dependents?", options: [{value: "Yes", label: "Yes"}, {value: "No", label: "No"}], required: true, privacy_category: "required" },
+      { key: "QL-08", type: "text", label: "Dependent details", helperText: "Children must be unmarried and under 21 to qualify as E-2 dependents.", required: false, privacy_category: "red" }
+    ]
+  },
+  {
+    id: "relationship-docs",
+    title: "Relationship Documents",
+    fields: [
+      { key: "QL-09", type: "multiselect", label: "What relationship documents do you have available?", options: [{value: "Marriage certificate", label: "Marriage certificate"}, {value: "Civil union certificate", label: "Civil union certificate"}, {value: "Birth certificates for children", label: "Birth certificates for children"}, {value: "Adoption certificates", label: "Adoption certificates"}, {value: "Passport copies for all dependents", label: "Passport copies for all dependents"}], required: true, privacy_category: "amber" },
+      { key: "QL-10", type: "select", label: "Have all dependent documents been officially translated to English?", options: [{value: "Yes — certified translations complete", label: "Yes — certified translations complete"}, {value: "In progress", label: "In progress"}, {value: "Not yet started", label: "Not yet started"}, {value: "Not applicable — documents are in English", label: "Not applicable — documents are in English"}], required: true, privacy_category: "green" }
+    ]
+  }
+];
+
+function TabLContent() {
+  const { answers, setAnswer } = useApplication();
+  return (
+    <TabPage
+      tabTitle="Family Dependents"
+      tabDescription="Provide information about family members applying as E-2 dependents."
+      sections={sections as Section[]}
+      answers={answers}
+      onAnswerChange={(key, val) => setAnswer(key, val)}
+      onSaveSection={async () => {}}
+    />
+  );
+}
 
 export default function TabLPage() {
   return (
-    <div className="min-h-screen bg-[#f8f9ff] flex flex-col">
-      <header className="w-full sticky top-0 z-50 bg-white border-b border-[#c3c6d7]">
-        <div className="flex justify-between items-center h-16 px-4 max-w-2xl mx-auto">
-          <Link href="/" className="flex items-center gap-2">
-            <span className="text-xl font-bold text-[#004ac6]">e2go.app</span>
-          </Link>
-          <Link href="/dashboard" className="text-sm text-[#434655] hover:text-[#004ac6]">
-            Dashboard
-          </Link>
-        </div>
-      </header>
-
-      <main className="flex-1 flex items-center justify-center px-4 py-12">
-        <div className="max-w-md w-full text-center">
-          <div className="bg-white rounded-xl border border-[#e2e8f0] p-8">
-            <h1 className="text-2xl font-bold text-[#0b1c30] mb-4">Tab L — Coming Soon</h1>
-            <p className="text-[#434655] mb-6">
-              This section is currently in development.
-            </p>
-            <Link
-              href="/apply/module3/a"
-              className="inline-block px-6 py-3 bg-[#004ac6] text-white rounded-lg font-medium hover:bg-[#00337d] transition-colors"
-            >
-              Back to Tab A
-            </Link>
-          </div>
-        </div>
-      </main>
-
-      </div>
+    <ApplicationProvider>
+      <TabLContent />
+    </ApplicationProvider>
   );
 }

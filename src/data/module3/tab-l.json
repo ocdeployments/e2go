@@ -1,0 +1,12 @@
+{
+  "QL-01": { "type": "select", "question": "Will your spouse or partner be applying for E-2 dependent status?", "section": "Spouse Information", "options": ["Yes", "No — not applicable", "Not yet decided"] },
+  "QL-02": { "type": "text", "question": "Spouse full legal name", "section": "Spouse Information", "show_if": { "QL-01": "Yes" } },
+  "QL-03": { "type": "date", "question": "Spouse date of birth", "section": "Spouse Information", "show_if": { "QL-01": "Yes" } },
+  "QL-04": { "type": "searchable_select", "question": "Spouse nationality", "section": "Spouse Information", "show_if": { "QL-01": "Yes" } },
+  "QL-05": { "type": "text", "question": "Spouse passport number", "section": "Spouse Information", "show_if": { "QL-01": "Yes" } },
+  "QL-06": { "type": "select", "question": "Will your spouse apply for U.S. work authorization (EAD)?", "section": "Spouse Information", "show_if": { "QL-01": "Yes" }, "options": ["Yes", "No", "Undecided"] },
+  "QL-07": { "type": "select", "question": "Will any children be applying as E-2 dependents?", "section": "Dependent Children", "options": ["Yes", "No"] },
+  "QL-08": { "type": "text", "question": "Dependent details", "section": "Dependent Children", "show_if": { "QL-07": "Yes" } },
+  "QL-09": { "type": "multiselect", "question": "What relationship documents do you have available?", "section": "Relationship Documents", "options": ["Marriage certificate", "Civil union certificate", "Birth certificates for children", "Adoption certificates", "Passport copies for all dependents"] },
+  "QL-10": { "type": "select", "question": "Have all dependent documents been officially translated to English?", "section": "Relationship Documents", "options": ["Yes — certified translations complete", "In progress", "Not yet started", "Not applicable — documents are in English"] }
+}
