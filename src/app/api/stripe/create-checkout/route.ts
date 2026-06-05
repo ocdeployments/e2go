@@ -17,23 +17,38 @@ function getStripe(): Stripe | null {
   return new Stripe(secretKey, { apiVersion: '2026-05-27.dahlia' });
 }
 
-function getPaymentTypeFromPriceId(priceId: string): string {
-  const priceMap: Record<string, string> = {
-    solo: 'solo',
-    solo_spouse: 'solo_spouse',
-    solo_family_2: 'solo_family_2',
-    solo_family_5: 'solo_family_5',
-    partnership: 'partnership',
-    partnership_couples: 'partnership_couples',
-    partnership_families: 'partnership_families',
-  };
+// Fallback price IDs from env (if DB unavailable)
+const FALLBACK_PRICE_IDS: Record<string, string> = {
+  solo_none: process.env.STRIPE_PRICE_SOLO || '',
+  solo_spouse: process.env.STRIPE_PRICE_SOLO_SPOUSE || '',
+  solo_family_small: process.env.STRIPE_PRICE_SOLO_FAMILY_2 || '',
+  solo_family_large: process.env.STRIPE_PRICE_SOLO_FAMILY_5 || '',
+  partnership_none: process.env.STRIPE_PRICE_PARTNERSHIP || '',
+  partnership_couples: process.env.STRIPE_PRICE_PARTNERSHIP_COUPLES || '',
+  partnership_families: process.env.STRIPE_PRICE_PARTNERSHIP_FAMILIES || '',
+};
 
-  for (const [key, type] of Object.entries(priceMap)) {
-    if (priceId.includes(key)) {
-      return type;
-    }
+async function getStripePriceId(supabase: ReturnType<typeof getSupabase>, tierId: string): Promise<string | null> {
+  // Try DB first
+  const { data: tier, error } = await supabase
+    .from('pricing')
+    .select('stripe_price_id, active')
+    .eq('tier_id', tierId)
+    .eq('active', true)
+    .single();
+
+  if (!error && tier && tier.stripe_price_id) {
+    return tier.stripe_price_id;
   }
-  return 'unknown';
+
+  // Fallback to env var
+  const fallback = FALLBACK_PRICE_IDS[tierId];
+  if (fallback) {
+    console.warn(`Using fallback price ID for ${tierId} from env`);
+    return fallback;
+  }
+
+  return null;
 }
 
 export async function POST(request: NextRequest) {
@@ -48,16 +63,25 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { priceId, applicationId, userId } = body;
+    const { tierId, applicationId, userId } = body;
 
-    if (!priceId || !applicationId || !userId) {
+    if (!tierId || !applicationId || !userId) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: 'Missing required fields: tierId, applicationId, userId' },
         { status: 400 }
       );
     }
 
     const supabase = getSupabase();
+
+    // Get Stripe Price ID from DB or fallback
+    const priceId = await getStripePriceId(supabase, tierId);
+    if (!priceId) {
+      return NextResponse.json(
+        { error: 'Pricing tier not found or not configured', status: 404 },
+        { status: 404 }
+      );
+    }
 
     // Get user email for Stripe
     const { data: profile } = await supabase
@@ -87,21 +111,20 @@ export async function POST(request: NextRequest) {
       metadata: {
         applicationId,
         userId,
+        tierId,
       },
     });
 
     // Create pending payment record
-    const paymentType = getPaymentTypeFromPriceId(priceId);
-
     await supabase.from('payments').insert({
       application_id: applicationId,
       user_id: userId,
       stripe_session_id: session.id,
       stripe_price_id: priceId,
-      amount_paid: 0, // Will be updated by webhook
+      amount_paid: 0,
       currency: 'usd',
       status: 'pending',
-      payment_type: paymentType,
+      payment_type: tierId,
     });
 
     return NextResponse.json({

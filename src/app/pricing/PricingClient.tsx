@@ -4,23 +4,32 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
-import { getPricingTier, getTierData, TierId, QuizData } from "@/lib/pricing-tier";
+import { getPricingTier, TierId, QuizData } from "@/lib/pricing-tier";
 import PricingCard from "@/components/PricingCard";
 
-const STRIPE_PRICE_IDS: Record<string, string> = {
-  solo_none: 'price_solo_297',
-  solo_spouse: 'price_solo_spouse_347',
-  solo_family_small: 'price_solo_family_2_397',
-  solo_family_large: 'price_solo_family_5_447',
-  partnership_none: 'price_partnership_497',
-  partnership_couples: 'price_partnership_couples_547',
-  partnership_families: 'price_partnership_families_647',
-};
+interface PricingTier {
+  tier_id: string;
+  name: string;
+  amount: number;
+  stripe_price_id: string;
+  active: boolean;
+}
 
 const FOUNDING_MEMBER_LIMIT = 500;
 
+const DEFAULT_TIERS: PricingTier[] = [
+  { tier_id: 'solo_none', name: 'Solo Individual', amount: 29700, stripe_price_id: '', active: true },
+  { tier_id: 'solo_spouse', name: 'Solo + Spouse', amount: 34700, stripe_price_id: '', active: true },
+  { tier_id: 'solo_family_small', name: 'Solo + Family up to 2 kids', amount: 39700, stripe_price_id: '', active: true },
+  { tier_id: 'solo_family_large', name: 'Solo + Family 3-5 kids', amount: 44700, stripe_price_id: '', active: true },
+  { tier_id: 'partnership_none', name: 'Partnership', amount: 49700, stripe_price_id: '', active: true },
+  { tier_id: 'partnership_couples', name: 'Partnership Two Couples', amount: 54700, stripe_price_id: '', active: true },
+  { tier_id: 'partnership_families', name: 'Partnership Two Full Families', amount: 64700, stripe_price_id: '', active: true },
+];
+
 export default function PricingPage() {
   const router = useRouter();
+  const [pricingTiers, setPricingTiers] = useState<PricingTier[]>(DEFAULT_TIERS);
   const [foundingCount, setFoundingCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [selectedTier, setSelectedTier] = useState<TierId | null>(null);
@@ -32,8 +41,19 @@ export default function PricingPage() {
   const highlightRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const fetchCount = async () => {
+    const fetchData = async () => {
       const supabase = createBrowserSupabaseClient();
+
+      // Fetch pricing tiers from DB
+      const { data: tiers, error: tiersError } = await supabase
+        .from('pricing')
+        .select('tier_id, name, amount, stripe_price_id, active')
+        .eq('active', true)
+        .order('amount', { ascending: true });
+
+      if (!tiersError && tiers && tiers.length > 0) {
+        setPricingTiers(tiers);
+      }
 
       // Get count of completed payments for founding member counter
       const { count } = await supabase
@@ -50,11 +70,11 @@ export default function PricingPage() {
       }
 
       // Check if we're in test mode
-      setTestMode(process.env.STRIPE_SECRET_KEY?.startsWith('sk_test_') || false);
+      setTestMode(process.env.NEXT_PUBLIC_STRIPE_SECRET_KEY?.startsWith('sk_test_') || false);
 
       setLoading(false);
     };
-    fetchCount();
+    fetchData();
   }, []);
 
   useEffect(() => {
@@ -145,13 +165,11 @@ export default function PricingPage() {
     // Initiate Stripe checkout
     setIsProcessingPayment(true);
     try {
-      const priceId = STRIPE_PRICE_IDS[id as TierId];
-
       const response = await fetch('/api/stripe/create-checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          priceId,
+          tierId: id,
           applicationId,
           userId: user.id,
         }),
@@ -170,16 +188,6 @@ export default function PricingPage() {
       setIsProcessingPayment(false);
     }
   };
-
-  const tierOrder: TierId[] = [
-    'solo_none',
-    'solo_spouse',
-    'solo_family_small',
-    'solo_family_large',
-    'partnership_none',
-    'partnership_couples',
-    'partnership_families',
-  ];
 
   return (
     <div className="min-h-screen" style={{ background: "#0a0a0a" }}>
@@ -257,22 +265,31 @@ export default function PricingPage() {
 
           {/* Pricing Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto mb-12">
-            {tierOrder.map((tierId) => {
-              const tier = getTierData(tierId);
-              const isHighlighted = selectedTier === tierId;
+            {pricingTiers.map((tier) => {
+              const tierFromDb = pricingTiers.find(t => t.tier_id === tier.tier_id);
+              const tierName = tierFromDb?.name || tier.name;
+              const tierAmount = tierFromDb?.amount || tier.amount;
+              const isHighlighted = selectedTier === tier.tier_id;
+              const isSolo = tier.tier_id.startsWith('solo');
+              const description = isSolo
+                ? 'Individual E-2 application with comprehensive document package'
+                : 'Partnership E-2 application for treaty investor businesses';
+              const features = isSolo
+                ? ['DS-160 Form Preparation', 'Business Plan Draft', 'Investment Letter', 'Consulate Guide']
+                : ['DS-160 for All Partners', 'Partnership Business Plan', 'Corporate Documents', 'Consulate Guide'];
 
               return (
                 <div
-                  key={tierId}
+                  key={tier.tier_id}
                   ref={isHighlighted ? highlightRef : undefined}
                   className={isHighlighted ? "md:col-span-2 lg:col-span-2" : ""}
                 >
                   <PricingCard
-                    id={tierId}
-                    name={tier.name}
-                    price={tier.price}
-                    description={tier.description}
-                    features={tier.features}
+                    id={tier.tier_id}
+                    name={tierName}
+                    price={tierAmount / 100}
+                    description={description}
+                    features={features}
                     isHighlighted={isHighlighted && hasQuizData}
                     isSelected={isHighlighted}
                     onSelect={handleSelect}

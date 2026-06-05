@@ -31,10 +31,12 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.60.0",
+    "@types/dotenv": "^6.1.1",
     "@types/jest": "^30.0.0",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "dotenv": "^17.4.2",
     "eslint": "^8",
     "eslint-config-next": "14.2.35",
     "husky": "^8.0.0",
