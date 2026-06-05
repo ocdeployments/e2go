@@ -33,12 +33,12 @@ export async function POST(req: Request) {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
   const verifyLink = `${appUrl}/verify?token=${token}`;
 
-  const isProceed = ['PROCEED', 'PROCEED_WITH_RISK'].includes(outcome);
-  const subject = isProceed
+  const isQualified = ['qualified', 'qualified_with_risks'].includes(outcome);
+  const subject = isQualified
     ? "Good news — your E-2 eligibility result"
     : "Your E-2 eligibility assessment result";
 
-  const htmlContent = isProceed
+  const htmlContent = isQualified
     ? `
       <div style="font-family: 'Cormorant Garamond', serif; color: #f5f0e8;">
         <h1>Your eligibility assessment is ready.</h1>
