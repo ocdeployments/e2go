@@ -522,7 +522,7 @@ Status: COMPLETE
 - **Build:** clean — 43 routes, 0 errors
 - **Commit:** `daf7817` — "feat: document generation blur-lift reveal animation"
 - **Pushed:** origin/dev ✓
-- **Note:** `docs/ai-generation-reveal.md` spec file was not produced this session — code exists but dedicated spec file missing. Flag for future documentation pass.
+- **Post-session documentation:** `docs/ai-generation-reveal.md` spec file created retroactively. Covers: purpose, visual behaviour, 6-card order, motion library usage (blur-lift 1.2s easeOut), progress wiring from SSE pipeline, isCurrent logic, design tokens. Includes post-implementation caveat. (Commit: `30bdf46`)
 
 ---
 
