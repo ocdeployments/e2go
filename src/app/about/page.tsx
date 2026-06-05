@@ -27,30 +27,68 @@ export const metadata: Metadata = {
 
 export default function AboutPage() {
   return (
-    <main className="pt-8 pb-16 px-4 min-h-screen bg-[#0a0a0a]">
+    <main className="pt-8 pb-16 px-4 min-h-screen" style={{ background: "#0a0a0a" }}>
       <div className="max-w-3xl mx-auto">
         <Breadcrumb items={[{ label: "Home", href: "/" }, { label: "About" }]} />
 
-        <h1 className="text-3xl md:text-4xl font-medium mb-6" style={{ color: "#f5f0e8", fontFamily: "'Cormorant Garamond', serif", fontWeight: 300 }}>
-          About e2go.app
+        <h1 className="text-4xl md:text-5xl mb-8" style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 300, fontStyle: "italic", color: "#f5f0e8" }}>
+          Built for the journey, not just the documents.
         </h1>
 
-        <div className="space-y-6 text-[rgba(245,240,232,0.65)]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-          <p>
-            e2go.app was built to democratize access to the U.S. E-2 Treaty Investor visa. We believe that preparing your application should not require paying $6,500–$15,000 to an immigration consultant.
-          </p>
-          <p>
-            Our platform guides you through the exact same 11-tab structure required by U.S. consulates, using AI to help you draft compelling, consulate-ready documents based on your unique situation.
-          </p>
+        <div className="space-y-12" style={{ fontFamily: "'DM Sans', sans-serif", color: "rgba(245,240,232,0.75)", fontWeight: 300, lineHeight: 1.7, fontSize: "15px" }}>
+          <section>
+            <h2 className="text-2xl mb-4" style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 400, color: "#C9A84C" }}>Why e2go exists</h2>
+            <p className="mb-4">
+              The E-2 visa process is not complicated because the law is complicated. It is complicated because no one has ever organised it properly.
+            </p>
+            <p className="mb-4">
+              The documents exist. The requirements are known. The preparation discipline that separates approved applications from refused ones is learnable.
+            </p>
+            <p className="font-medium" style={{ color: "#f5f0e8" }}>
+              e2go is that discipline, automated.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-2xl mb-4" style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 400, color: "#C9A84C" }}>What we do and do not do</h2>
+            <p className="mb-4">
+              We prepare documents. What you do with them is up to you.
+            </p>
+            <p className="mb-4">
+              If you choose to have an immigration consultant review your package, it is a 2-hour job — not a 20-hour one.
+            </p>
+            <p className="mb-4">
+              We never store your passports, bank statements, or financial records. Only your answers. Your documents belong to you.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-2xl mb-4" style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 400, color: "#C9A84C" }}>The product</h2>
+            <p className="mb-4">
+              e2go prepares a complete, consulate-formatted E-2 application package.
+            </p>
+            <p className="mb-4">
+              Every document is tested against 15 real denial patterns. Every fact is cross-checked across all documents. Every package is reviewed and approved by you before it leaves the platform.
+            </p>
+          </section>
         </div>
 
-        <div className="mt-12">
+        <div className="mt-16 pt-8" style={{ borderTop: "1px solid rgba(201,168,76,0.2)" }}>
+          <p className="text-lg mb-6" style={{ fontFamily: "'Cormorant Garamond', serif", fontStyle: "italic", color: "#f5f0e8" }}>
+            Check your eligibility — it takes 10 minutes.
+          </p>
           <Link
-            href="/"
-            className="text-sm font-medium px-5 py-2.5 border border-[#C9A84C] text-[#C9A84C] hover:bg-[rgba(201,168,76,0.06)] transition-colors"
-            style={{ borderRadius: 0 }}
+            href="/quiz"
+            className="inline-block px-8 py-3 text-center transition-colors duration-200"
+            style={{
+              background: "#C9A84C",
+              color: "#0a0a0a",
+              fontFamily: "'DM Sans', sans-serif",
+              fontWeight: 500,
+              fontSize: "15px",
+            }}
           >
-            ← Back to Home
+            Check My Eligibility →
           </Link>
         </div>
       </div>
