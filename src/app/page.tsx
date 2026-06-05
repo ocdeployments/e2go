@@ -83,7 +83,7 @@ export default function Home() {
         <ul style={{ display: "flex", gap: "32px", listStyle: "none", margin: 0, padding: 0 }} className="mobile-hidden">
           {["How It Works", "What You Get", "Pricing", "Learn"].map((link) => (
             <li key={link}>
-              <Link href={`#${link.toLowerCase().replace(" ", "-")}`} style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "14px", fontWeight: 400, color: "rgba(245,240,232,0.70)", textDecoration: "none", transition: "color 0.2s ease" }}>
+              <Link href={`#${link.toLowerCase().replace(/ /g, "-")}`} style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "14px", fontWeight: 400, color: "rgba(245,240,232,0.70)", textDecoration: "none", transition: "color 0.2s ease" }}>
                 {link}
               </Link>
             </li>
@@ -107,7 +107,7 @@ export default function Home() {
           <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "24px" }}>
             {["How It Works", "What You Get", "Pricing", "Learn"].map((link) => (
               <li key={link}>
-                <Link href={`#${link.toLowerCase().replace(" ", "-")}`} onClick={() => setMobileMenuOpen(false)} style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "18px", color: "#f5f0e8", textDecoration: "none" }}>
+                <Link href={`#${link.toLowerCase().replace(/ /g, "-")}`} onClick={() => setMobileMenuOpen(false)} style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "18px", color: "#f5f0e8", textDecoration: "none" }}>
                   {link}
                 </Link>
               </li>
@@ -369,14 +369,19 @@ export default function Home() {
             <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "12px" }}>
               {["How It Works", "What You Get", "Pricing"].map((link) => (
                 <li key={link}>
-                  <Link href={`#${link.toLowerCase().replace(" ", "-")}`} style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "13px", color: "rgba(245,240,232,0.50)", textDecoration: "none" }}>{link}</Link>
+                  <Link href={`#${link.toLowerCase().replace(/ /g, "-")}`} style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "13px", color: "rgba(245,240,232,0.50)", textDecoration: "none" }}>{link}</Link>
                 </li>
               ))}
             </ul>
             <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "12px" }}>
-              {["Learn", "Quiz", "Login", "Sign Up"].map((link) => (
-                <li key={link}>
-                  <Link href={`/${link.toLowerCase().replace(" ", "-")}`} style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "13px", color: "rgba(245,240,232,0.50)", textDecoration: "none" }}>{link}</Link>
+              {[
+                { label: "Learn", href: "/learn" },
+                { label: "Quiz", href: "/quiz" },
+                { label: "Login", href: "/login" },
+                { label: "Sign Up", href: "/signup" },
+              ].map((link) => (
+                <li key={link.label}>
+                  <Link href={link.href} style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "13px", color: "rgba(245,240,232,0.50)", textDecoration: "none" }}>{link.label}</Link>
                 </li>
               ))}
             </ul>

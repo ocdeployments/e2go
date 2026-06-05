@@ -1,5 +1,5 @@
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
-const MINIMAX_MODEL = process.env.MINIMAX_MODEL || "minimax/MiniMax-Text-01";
+const MINIMAX_MODEL = process.env.MINIMAX_MODEL || "minimax/minimax-m2.5";
 const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
 
 export interface AICallOptions {

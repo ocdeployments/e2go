@@ -13,14 +13,14 @@ export default function Footer() {
             services. For legal advice, consult a qualified U.S. immigration attorney.
           </p>
           <div className="flex flex-wrap justify-center gap-x-6 gap-y-2">
-            <Link href="#" className="text-sm text-gray-500 hover:text-white transition-colors">
-              Terms of Service
+            <Link href="/learn" className="text-sm text-gray-500 hover:text-white transition-colors">
+              Learn
             </Link>
-            <Link href="#" className="text-sm text-gray-500 hover:text-white transition-colors">
-              Privacy Policy
+            <Link href="/quiz" className="text-sm text-gray-500 hover:text-white transition-colors">
+              Eligibility Quiz
             </Link>
-            <Link href="#" className="text-sm text-gray-500 hover:text-white transition-colors">
-              Contact Support
+            <Link href="/support" className="text-sm text-gray-500 hover:text-white transition-colors">
+              Support
             </Link>
             <Link href="#" className="text-sm text-gray-500 hover:text-white transition-colors">
               Legal Disclaimer

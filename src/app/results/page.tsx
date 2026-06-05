@@ -79,7 +79,7 @@ export default function ResultsPage() {
       <div className="max-w-md w-full text-center p-10 bg-[rgba(239,68,68,0.04)] border border-[rgba(239,68,68,0.2)]">
         <h1 className="text-2xl font-bold mb-4 text-[#f5f0e8] font-serif">The E-2 visa may not be available to you.</h1>
         <p className="mb-6 text-[rgba(245,240,232,0.75)]">{hard_stop_codes[0] && stopMessages[hard_stop_codes[0]]}</p>
-        <Link href="/attorney-intro" className="block w-full py-4 bg-[#C9A84C] text-[#0a0a0a] font-medium transition-colors">Find an Immigration Attorney →</Link>
+        <Link href="/signup" className="block w-full py-4 bg-[#C9A84C] text-[#0a0a0a] font-medium transition-colors">Create an Account →</Link>
       </div>
     </main>
   );
@@ -88,7 +88,7 @@ export default function ResultsPage() {
     <main className="flex-1 px-4 py-12 max-w-2xl mx-auto w-full">
       <h1 className="text-4xl font-bold mb-6 text-center text-[#f5f0e8] font-serif">We recommend speaking with an attorney first.</h1>
       <div className="flex flex-col gap-4">
-        <Link href="/attorney-intro" className="w-full py-4 bg-[#C9A84C] text-[#0a0a0a] font-medium text-center">Connect Me With an Attorney →</Link>
+        <Link href="/signup" className="w-full py-4 bg-[#C9A84C] text-[#0a0a0a] font-medium text-center">Create an Account →</Link>
         <Link href="/signup" className="w-full py-4 border border-[#C9A84C] text-[#C9A84C] text-center">Prepare My Documents Anyway</Link>
       </div>
     </main>
