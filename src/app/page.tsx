@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { BorderRotate } from "@/components/ui/animated-gradient-border";
 import ComparisonSection from "@/components/landing/ComparisonSection";
+import FAQSection from "@/components/landing/FAQSection";
 
 export default function Home() {
   const [scrolled, setScrolled] = useState(false);
@@ -215,6 +216,9 @@ export default function Home() {
 
       {/* Comparison Section */}
       <ComparisonSection />
+
+      {/* FAQ Section */}
+      <FAQSection />
 
       {/* Document Binder */}
       <section id="what-you-get" style={{ padding: "80px 48px", maxWidth: "1100px", margin: "0 auto" }}>
