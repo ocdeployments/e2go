@@ -402,8 +402,8 @@ export default function Module2Page() {
               </div>
             </div>
             <div className="flex justify-between mt-8">
-              <button onClick={handleBack} className="px-6 py-3 text-[#434655]">Back</button>
-              <button onClick={handleNext} disabled={saving} className="px-6 py-3 bg-[#004ac6] text-white rounded-lg hover:bg-[#003699]">{saving ? "Saving..." : "Continue to Module 3 →"}</button>
+              <Link href="/apply/overview" className="px-6 py-3 text-[#434655] hover:text-[#004ac6]">← Back to Overview</Link>
+              <button onClick={handleNext} disabled={saving} className="px-6 py-3 bg-[#004ac6] text-white rounded-lg hover:bg-[#003699]">{saving ? "Saving..." : "Next: Application Profile →"}</button>
             </div>
           </section>
         )}

@@ -79,94 +79,103 @@ const tabs = [
 
 export default function OverviewPage() {
   return (
-    <div className="min-h-screen" style={{ background: "var(--navy)" }}>
-      {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50" style={{ backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", background: "rgba(6,13,31,0.8)", borderBottom: "1px solid var(--glass-border)" }}>
-        <div className="flex justify-between items-center h-16 px-4 md:px-8 max-w-6xl mx-auto">
-          <Link href="/" className="flex items-center gap-2">
-            <span className="text-xl font-bold" style={{ color: "var(--gold)", fontFamily: "'Cormorant Garamond', serif" }}>e2go.app</span>
-          </Link>
-          <div className="flex items-center gap-4">
-            <Link href="/dashboard" className="text-sm" style={{ color: "var(--white-dim)" }}>
-              Dashboard
-            </Link>
-          </div>
-        </div>
-      </header>
-
-      <main className="pt-24 pb-16 px-4">
+    <div className="min-h-screen bg-[#0a0a0a]">
+      <main className="pt-8 pb-16 px-4">
         <div className="max-w-4xl mx-auto">
+          {/* Breadcrumb */}
+          <div className="flex items-center gap-2 text-sm mb-8">
+            <Link href="/dashboard" className="text-[rgba(245,240,232,0.65)] hover:text-[#f5f0e8] transition-colors">Dashboard</Link>
+            <span className="text-[rgba(245,240,232,0.45)]">/</span>
+            <span className="text-[#C9A84C]">Application Overview</span>
+          </div>
+
           {/* Hero */}
           <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm mb-6" style={{ background: "var(--teal-dim)", border: "1px solid var(--teal-border)" }}>
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" style={{ color: "var(--gold)" }}>
+            <div className="inline-flex items-center gap-2 px-4 py-2 mb-6 border border-[rgba(201,168,76,0.2)]">
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" style={{ color: "#C9A84C" }}>
                 <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" />
               </svg>
-              <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--gold)" }}>MODULE 3</span>
+              <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#C9A84C", fontFamily: "'DM Sans', sans-serif" }}>MODULE 3</span>
             </div>
-            <h1 className="text-3xl md:text-4xl font-bold mb-4 font-playfair" style={{ color: "var(--white)" }}>
+            <h1 className="text-3xl md:text-4xl font-medium mb-4" style={{ color: "#f5f0e8", fontFamily: "'Cormorant Garamond', serif", fontWeight: 300 }}>
               Document Interview Engine
             </h1>
-            <p className="text-lg max-w-2xl mx-auto" style={{ color: "var(--white-dim)" }}>
+            <p className="text-lg max-w-2xl mx-auto" style={{ color: "rgba(245,240,232,0.65)" }}>
               12 tabs. Each one builds a piece of your application.
               Answer the questions — we build the documents.
             </p>
           </div>
 
+          {/* Checklist Link */}
+          <div className="mb-8 p-5 border border-[rgba(201,168,76,0.2)] bg-[rgba(201,168,76,0.02)]">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-medium mb-1" style={{ color: "#f5f0e8", fontFamily: "'Cormorant Garamond', serif" }}>Need to gather documents first?</h3>
+                <p className="text-sm" style={{ color: "rgba(245,240,232,0.65)" }}>View your personalized document checklist before starting the interview.</p>
+              </div>
+              <Link
+                href="/apply/checklist"
+                className="text-sm font-medium px-4 py-2 border border-[#C9A84C] text-[#C9A84C] hover:bg-[rgba(201,168,76,0.06)] transition-colors"
+                style={{ borderRadius: 0 }}
+              >
+                View Checklist →
+              </Link>
+            </div>
+          </div>
+
           {/* Tabs Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-12">
             {tabs.map((tab) => (
-              <div
+              <Link
                 key={tab.letter}
-                className="glass p-5 transition-all hover:lift-on-hover"
+                href={`/apply/module3/${tab.letter.toLowerCase()}`}
+                className="p-5 border border-[rgba(201,168,76,0.2)] bg-[#0a0a0a] hover:bg-[rgba(201,168,76,0.02)] transition-colors group"
+                style={{ borderRadius: 0, textDecoration: "none" }}
               >
                 <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center font-bold" style={{ background: "var(--gold)", color: "#fff" }}>
+                  <div className="flex-shrink-0 w-10 h-10 flex items-center justify-center font-medium border border-[#C9A84C] text-[#C9A84C] group-hover:bg-[#C9A84C] group-hover:text-[#0a0a0a] transition-colors" style={{ borderRadius: 0, fontFamily: "'Cormorant Garamond', serif" }}>
                     {tab.letter}
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center justify-between mb-1">
-                      <h3 className="font-semibold font-playfair" style={{ color: "var(--white)" }}>{tab.title}</h3>
-                      <span className="text-xs px-2 py-1 rounded-full" style={{
-                        background: tab.status === "Required" ? "var(--teal-dim)" : "var(--glass-bg)",
-                        color: tab.status === "Required" ? "var(--gold)" : "var(--white-dim)"
+                      <h3 className="font-medium" style={{ color: "#f5f0e8", fontFamily: "'Cormorant Garamond', serif" }}>{tab.title}</h3>
+                      <span className="text-xs px-2 py-1 border" style={{
+                        borderColor: tab.status === "Required" ? "#C9A84C" : "rgba(201,168,76,0.2)",
+                        color: tab.status === "Required" ? "#C9A84C" : "rgba(245,240,232,0.65)",
+                        borderRadius: 0,
+                        fontFamily: "'DM Sans', sans-serif"
                       }}>
                         {tab.status}
                       </span>
                     </div>
-                    <p className="text-sm" style={{ color: "var(--white-dim)" }}>{tab.description}</p>
+                    <p className="text-sm" style={{ color: "rgba(245,240,232,0.65)" }}>{tab.description}</p>
                   </div>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
 
           {/* CTA */}
-          <div className="text-center">
+          <div className="text-center flex flex-col items-center gap-4">
             <Link
               href="/apply/module3/a"
-              className="inline-block text-lg font-medium px-8 py-4 rounded-xl transition-colors"
-              style={{ background: "var(--gold)", color: "#fff", boxShadow: "0 0 30px rgba(13,148,136,0.25)" }}
+              className="text-lg font-medium px-8 py-4 bg-[#C9A84C] text-[#0a0a0a] hover:bg-[#D4BC6A] transition-colors"
+              style={{ borderRadius: 0 }}
             >
               I&apos;m ready. Let&apos;s begin.
             </Link>
-            <p className="mt-4 text-sm" style={{ color: "var(--white-dim)" }}>
+            <Link
+              href="/dashboard"
+              className="text-sm text-[rgba(245,240,232,0.65)] hover:text-[#f5f0e8] transition-colors"
+            >
+              ← Back to Dashboard
+            </Link>
+            <p className="text-sm" style={{ color: "rgba(245,240,232,0.45)" }}>
               Takes 30–60 minutes to complete all 12 tabs
             </p>
           </div>
         </div>
       </main>
-
-      {/* Footer */}
-      <footer className="py-8 px-4" style={{ background: "rgba(6,13,31,0.8)", borderTop: "1px solid var(--glass-border)" }}>
-        <div className="max-w-5xl mx-auto text-center">
-          <p className="text-sm" style={{ color: "var(--white-dim)" }}>
-            This tool is a self-service preparation guide and does not constitute legal advice.
-            e2go.app is not a law firm and does not provide legal representation or immigration
-            services. For legal advice, consult a qualified U.S. immigration attorney.
-          </p>
-        </div>
-      </footer>
     </div>
   );
 }

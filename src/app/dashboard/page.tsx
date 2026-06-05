@@ -241,11 +241,11 @@ export default function DashboardPage() {
                   {progress < 100 ? "Continue building your case" : "Ready to submit!"}
                 </p>
                 <Link
-                  href={progress < 100 ? "/apply/onboarding?demo=true" : "/export"}
-                  className="inline-block mt-3 text-sm"
-                  style={{ color: "#C9A84C" }}
+                  href="/apply/overview"
+                  className="inline-block mt-3 text-sm font-medium px-4 py-2 bg-[#C9A84C] text-[#0a0a0a] transition-colors hover:bg-[#D4BC6A]"
+                  style={{ borderRadius: 0 }}
                 >
-                  {progress < 100 ? "Continue →" : "Submit Application →"}
+                  Continue my application →
                 </Link>
               </div>
             </section>
@@ -276,30 +276,22 @@ export default function DashboardPage() {
             {/* Quick Actions */}
             <section style={{ padding: "24px", background: "rgba(201,168,76,0.02)", border: "1px solid rgba(201,168,76,0.12)", borderRadius: 0 }}>
               <h2 className="text-lg font-semibold mb-4" style={{ color: "#f5f0e8", fontFamily: "'Cormorant Garamond', serif", fontWeight: 300 }}>Quick Actions</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Link
-                  href="/quiz"
+                  href="/apply/checklist"
                   className="p-4 transition-colors"
                   style={{ border: "1px solid rgba(201,168,76,0.2)", borderRadius: 0, color: "#f5f0e8" }}
                 >
-                  <p className="font-medium" style={{ color: "#f5f0e8" }}>Retake Quiz</p>
-                  <p className="text-sm" style={{ color: "rgba(245,240,232,0.45)" }}>Check eligibility</p>
+                  <p className="font-medium" style={{ color: "#f5f0e8" }}>Document Checklist</p>
+                  <p className="text-sm" style={{ color: "rgba(245,240,232,0.45)" }}>View required documents</p>
                 </Link>
                 <Link
-                  href="/apply/onboarding?demo=true"
+                  href="/score"
                   className="p-4 transition-colors"
                   style={{ border: "1px solid rgba(201,168,76,0.2)", borderRadius: 0, color: "#f5f0e8" }}
                 >
-                  <p className="font-medium" style={{ color: "#f5f0e8" }}>Case Builder</p>
-                  <p className="text-sm" style={{ color: "rgba(245,240,232,0.45)" }}>Complete your application</p>
-                </Link>
-                <Link
-                  href="/simulator"
-                  className="p-4 transition-colors"
-                  style={{ border: "1px solid rgba(201,168,76,0.2)", borderRadius: 0, color: "#f5f0e8" }}
-                >
-                  <p className="font-medium" style={{ color: "#f5f0e8" }}>Interview Prep</p>
-                  <p className="text-sm" style={{ color: "rgba(245,240,232,0.45)" }}>Practice with AI</p>
+                  <p className="font-medium" style={{ color: "#f5f0e8" }}>View my confidence score</p>
+                  <p className="text-sm" style={{ color: "rgba(245,240,232,0.45)" }}>Assess application strength</p>
                 </Link>
                 <Link
                   href="/support"

@@ -1,4 +1,28 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+
+export const metadata: Metadata = {
+  title: "Learn About the E-2 Visa | e2go",
+  description: "Comprehensive guide to the E-2 Treaty Investor Visa. Requirements, process, timelines, and how to build a successful application.",
+  openGraph: {
+    title: "Learn About the E-2 Visa | e2go",
+    description: "Comprehensive guide to the E-2 Treaty Investor Visa. Requirements, process, and timelines.",
+    type: "website",
+    url: "https://e2go.app/learn",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Learn About the E-2 Visa",
+      },
+    ],
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
+};
 
 export default function Learn() {
   const articles = [

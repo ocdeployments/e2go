@@ -4,6 +4,9 @@ import { getConfidenceScoreData, type ScoreData } from "@/lib/score-sync";
 // In a real app, this would come from the current user's session/application ID
 const MOCK_APP_ID = "test-app-123";
 
+import Link from "next/link";
+import Breadcrumb from "@/components/Breadcrumb";
+
 export default async function ConfidenceScorePage() {
   let scoreData: ScoreData | null = null;
 
@@ -41,6 +44,9 @@ export default async function ConfidenceScorePage() {
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-[#f5f0e8] font-[DM_Sans] p-6 md:p-12">
       <div className="max-w-3xl mx-auto space-y-8">
+        {/* Breadcrumb */}
+        <Breadcrumb items={[{ label: "Dashboard", href: "/dashboard" }, { label: "Confidence Score" }]} />
+
         {/* Header */}
         <div>
           <h1 className="text-3xl font-medium mb-2">Case Confidence Score</h1>
@@ -110,6 +116,17 @@ export default async function ConfidenceScorePage() {
         <p className="text-[11px] text-[#f5f0e8]/50 font-[DM_Sans] font-light text-center pt-4">
           This reflects the completeness of your preparation — not a legal determination of your eligibility.
         </p>
+
+        {/* Back to Dashboard */}
+        <div className="text-center pt-4">
+          <Link
+            href="/dashboard"
+            className="inline-block text-sm font-medium px-5 py-2.5 border border-[#C9A84C] text-[#C9A84C] hover:bg-[rgba(201,168,76,0.06)] transition-colors"
+            style={{ borderRadius: 0 }}
+          >
+            ← Back to Dashboard
+          </Link>
+        </div>
       </div>
     </div>
   );

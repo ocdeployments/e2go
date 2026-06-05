@@ -1,5 +1,10 @@
 "use client";
 
+// REACH CONTEXT: This page is ONLY reached via an email link sent after
+// completing the eligibility quiz. It is intentionally NOT linked from
+// the main navigation or footer, as it requires a valid, single-use token
+// parameter to function. Do not add this route to the Nav or Footer components.
+
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { verifyToken, markTokenUsed } from "../actions/verify-token";

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 
 interface TimelineData {
@@ -27,7 +27,6 @@ const ITEM_LABELS: Record<string, string> = {
 };
 
 export default function ComplianceCalendarPage() {
-  const router = useRouter();
   const [supabase] = useState(() => createBrowserSupabaseClient());
   const [timeline, setTimeline] = useState<TimelineData | null>(null);
   const [items, setItems] = useState<CalendarItem[]>([]);
@@ -186,13 +185,22 @@ export default function ComplianceCalendarPage() {
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-[#f5f0e8]">
       <div className="mx-auto max-w-3xl px-6 py-12">
-        <button
-          onClick={() => router.back()}
-          className="mb-6 text-sm text-white/50 hover:text-[#C9A84C] transition-colors"
-          style={{ fontFamily: "'DM Sans', sans-serif" }}
-        >
-          ← Back to Dashboard
-        </button>
+        <div className="flex justify-between items-center mb-6">
+          <Link
+            href="/dashboard"
+            className="text-sm text-white/50 hover:text-[#C9A84C] transition-colors"
+            style={{ fontFamily: "'DM Sans', sans-serif" }}
+          >
+            ← Back to Dashboard
+          </Link>
+          <Link
+            href="/documents"
+            className="text-sm font-medium px-4 py-2 bg-[#C9A84C] text-[#0a0a0a] hover:bg-[#D4BC6A] transition-colors"
+            style={{ borderRadius: 0, fontFamily: "'DM Sans', sans-serif" }}
+          >
+            Next: Documents →
+          </Link>
+        </div>
 
         <h1
           className="text-3xl font-light tracking-wide mb-2"
