@@ -14,6 +14,7 @@ import {
   GENERATION_STEP_LABELS,
 } from '@/types/generation';
 import { type CaseBrief } from '@/types/analysis';
+import { wrapUserContent } from './prompt-sanitizer';
 
 const PROMPTS_DIR = join(process.cwd(), 'prompts', 'v1', 'documents');
 
@@ -100,16 +101,16 @@ export async function callClaudeAPI(payload: GenerationPayload): Promise<string>
     `Document type: ${docLabel}`,
     '',
     `APPLICANT CASE BRIEF:`,
-    JSON.stringify(payload.case_brief, null, 2),
+    wrapUserContent(JSON.stringify(payload.case_brief, null, 2)),
     '',
     `APPLICANT MODULE 3 ANSWERS:`,
-    JSON.stringify(payload.module_3_answers, null, 2),
+    wrapUserContent(JSON.stringify(payload.module_3_answers, null, 2)),
     '',
     `VOICE PROFILE:`,
-    payload.voice_profile,
+    wrapUserContent(payload.voice_profile),
     '',
     `FOLLOW-UP CONVERSATION:`,
-    JSON.stringify(payload.follow_up_responses, null, 2),
+    wrapUserContent(JSON.stringify(payload.follow_up_responses, null, 2)),
     '',
     `Generate the ${docLabel} now. Follow all instructions in the system prompt.`,
     'Do not include any headers, labels, or meta-commentary in your output.',
@@ -160,7 +161,7 @@ export async function humanizeDocument(rawContent: string, voiceProfile: string)
 
   const userMessage = [
     'VOICE PROFILE:',
-    voiceProfile,
+    wrapUserContent(voiceProfile),
     '',
     'DOCUMENT TO HUMANIZE:',
     rawContent,
