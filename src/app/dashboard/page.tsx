@@ -27,6 +27,11 @@ interface LifecycleData {
   module6_completed_at?: string;
 }
 
+interface TimelineData {
+  workingTargetDate: string | null;
+  confirmedInterviewDate: string | null;
+}
+
 export default function DashboardPage() {
   const [supabase] = useState(() => createBrowserSupabaseClient());
 
@@ -37,6 +42,7 @@ export default function DashboardPage() {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [quiz, setQuiz] = useState<QuizData | null>(null);
   const [lifecycle, setLifecycle] = useState<LifecycleData | null>(null);
+  const [timeline, setTimeline] = useState<TimelineData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -73,9 +79,28 @@ export default function DashboardPage() {
           lifecycleData = life;
         }
 
+        // Get timeline data
+        let timelineData: TimelineData | null = null;
+        if (quizData) {
+          const { data: app } = await supabase
+            .from("applications")
+            .select("working_target_date, confirmed_interview_date")
+            .eq("user_id", authUser.id)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .single();
+          timelineData = app
+            ? {
+                workingTargetDate: app.working_target_date,
+                confirmedInterviewDate: app.confirmed_interview_date,
+              }
+            : null;
+        }
+
         setUser(profile || null);
         setQuiz(quizData || null);
         setLifecycle(lifecycleData);
+        setTimeline(timelineData);
       }
       setLoading(false);
     };
@@ -141,7 +166,7 @@ export default function DashboardPage() {
         {quiz ? (
           <>
             {/* Status Cards */}
-            <section className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
               {/* Application Progress */}
               <div style={{ padding: "24px", background: "rgba(201,168,76,0.02)", border: "1px solid rgba(201,168,76,0.12)", borderRadius: 0 }}>
                 <h3 className="text-sm font-medium mb-2" style={{ color: "rgba(245,240,232,0.6)" }}>Application Progress</h3>
@@ -167,6 +192,46 @@ export default function DashboardPage() {
                 <p className="text-sm mt-1" style={{ color: "rgba(245,240,232,0.45)" }}>
                   {quiz.application_type || "Solo"} Application
                 </p>
+              </div>
+
+              {/* Timeline Status */}
+              <div style={{ padding: "24px", background: "rgba(201,168,76,0.02)", border: "1px solid rgba(201,168,76,0.12)", borderRadius: 0 }}>
+                <h3 className="text-sm font-medium mb-2" style={{ color: "rgba(245,240,232,0.6)" }}>Interview Timeline</h3>
+                {timeline?.confirmedInterviewDate ? (
+                  <>
+                    <p className="text-xl font-bold flex items-center gap-2" style={{ color: "#C9A84C", fontFamily: "'Cormorant Garamond', serif", fontWeight: 300 }}>
+                      <span>Interview confirmed</span>
+                      <span className="inline-block w-2 h-2 rounded-full bg-[#C9A84C]" />
+                    </p>
+                    <p className="text-sm mt-1" style={{ color: "rgba(245,240,232,0.8)" }}>
+                      {new Date(timeline.confirmedInterviewDate).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+                    </p>
+                  </>
+                ) : timeline?.workingTargetDate ? (
+                  <>
+                    <p className="text-xl font-bold" style={{ color: "#f5f0e8", fontFamily: "'Cormorant Garamond', serif", fontWeight: 300 }}>
+                      {new Date(timeline.workingTargetDate).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+                    </p>
+                    <p className="text-xs mt-1" style={{ color: "rgba(245,240,232,0.45)" }}>
+                      Target move date (planning)
+                    </p>
+                    <p className="text-xs mt-1" style={{ color: "rgba(245,240,232,0.6)" }}>
+                      Confirm your interview date to lock in deadlines
+                    </p>
+                    <Link href="/apply/calendar" className="inline-block mt-2 text-xs" style={{ color: "#C9A84C" }}>
+                      Enter confirmed date →
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-lg font-semibold" style={{ color: "rgba(245,240,232,0.6)", fontFamily: "'Cormorant Garamond', serif", fontWeight: 300 }}>
+                      Not set
+                    </p>
+                    <Link href="/apply/calendar" className="inline-block mt-2 text-xs" style={{ color: "#C9A84C" }}>
+                      Set timeline →
+                    </Link>
+                  </>
+                )}
               </div>
 
               {/* Next Step */}
