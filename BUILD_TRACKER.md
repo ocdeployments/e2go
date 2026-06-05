@@ -65,7 +65,7 @@ changed, run npm run build:clean, report summary.
 | Document generation engine | ✅ COMPLETE | Session 16 — prompts, engine, API routes, progress UI, review page |
 | Voice matching system | ⬜ NOT STARTED | Designed, not built |
 | Analysis engine | ✅ COMPLETE | Session 15A — types, lib, api, tests |
-| Follow-up conversation | ⬜ NOT STARTED | Designed, not built |
+| Follow-up conversation | ✅ COMPLETE | Session 15B — voice sample, questions, responses, summary UI |
 | Module 3 Pre-Fill Pass | ✅ COMPLETE | Session S5 — quiz data auto-populates Tabs A, F, L with edit affordances and legal gates |
 
 ---
