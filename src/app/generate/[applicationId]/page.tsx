@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { GENERATION_STEP_LABELS, DOCUMENT_TYPE_LABELS } from "@/types/generation";
 import type { SSEProgressMessage, DocumentType } from "@/types/generation";
+import { motion } from "motion/react";
 
 type StepStatus = "pending" | "running" | "complete" | "failed";
 
@@ -15,6 +16,101 @@ interface StepState {
 
 const TOTAL_DOCUMENTS = 6;
 const POLL_INTERVAL = 2000;
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const DOCUMENTS = [
+  { id: 1, name: "Cover Letter", step: 1 },
+  { id: 2, name: "Source of Funds", step: 2 },
+  { id: 3, name: "Investment Proof", step: 3 },
+  { id: 4, name: "Business Plan", step: 4 },
+  { id: 5, name: "Qualifications", step: 5 },
+  { id: 6, name: "DS-160 Reference", step: 6 },
+] as const;
+
+interface DocumentCardProps {
+  doc: (typeof DOCUMENTS)[number];
+  isRevealed: boolean;
+  isCurrent: boolean;
+  documentText: string;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function DocumentCard({ doc, isRevealed, isCurrent, documentText }: DocumentCardProps) {
+  const progress = isRevealed ? 100 : 0;
+
+  return (
+    <div className="relative overflow-hidden border border-white/8 bg-[#0d0d0d]">
+      <div className="flex items-center justify-between border-b border-white/8 px-4 py-3">
+        <span
+          className="text-xs font-medium uppercase tracking-wider text-white/60"
+          style={{ fontFamily: "'DM Sans', sans-serif" }}
+        >
+          {doc.name}
+        </span>
+        {isCurrent && !isRevealed && (
+          <span
+            className="inline-flex items-center gap-1.5 border border-[#C9A84C]/40 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-[#C9A84C]"
+            style={{ fontFamily: "'DM Sans', sans-serif" }}
+          >
+            <span className="inline-block h-1.5 w-1.5 rounded-none bg-[#C9A84C] animate-pulse" />
+            GENERATING
+          </span>
+        )}
+        {isRevealed && (
+          <span
+            className="inline-flex items-center gap-1.5 border border-[#C9A84C]/40 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-[#C9A84C]"
+            style={{ fontFamily: "'DM Sans', sans-serif" }}
+          >
+            COMPLETE
+          </span>
+        )}
+      </div>
+
+      <div className="p-4">
+        {isRevealed || isCurrent ? (
+          <pre
+            className="whitespace-pre-wrap text-sm leading-relaxed text-white/70"
+            style={{ fontFamily: "'DM Sans', monospace" }}
+          >
+            {isRevealed
+              ? "Document generated and saved to your application package."
+              : documentText || "Initializing generation..."}
+          </pre>
+        ) : (
+          <div className="flex h-24 items-center justify-center">
+            <p
+              className="text-sm text-white/20"
+              style={{ fontFamily: "'DM Sans', sans-serif" }}
+            >
+              Waiting to start...
+            </p>
+          </div>
+        )}
+      </div>
+
+      <motion.div
+        className="absolute inset-0 pointer-events-none backdrop-blur-3xl"
+        initial={false}
+        animate={{
+          clipPath: `polygon(0 ${progress}%, 100% ${progress}%, 100% 100%, 0 100%)`,
+          opacity: progress >= 100 ? 0 : 1,
+        }}
+        transition={{ duration: 1.2, ease: "easeOut" }}
+        style={{
+          clipPath: `polygon(0 ${progress}%, 100% ${progress}%, 100% 100%, 0 100%)`,
+          maskImage:
+            progress === 0
+              ? "linear-gradient(to bottom, black -5%, black 100%)"
+              : `linear-gradient(to bottom, transparent ${progress - 5}%, transparent ${progress}%, black ${progress + 5}%)`,
+          WebkitMaskImage:
+            progress === 0
+              ? "linear-gradient(to bottom, black -5%, black 100%)"
+              : `linear-gradient(to bottom, transparent ${progress - 5}%, transparent ${progress}%, black ${progress + 5}%)`,
+        }}
+      />
+    </div>
+  );
+}
 
 export default function GenerateProgressPage() {
   const params = useParams();
@@ -287,66 +383,29 @@ export default function GenerateProgressPage() {
             </div>
           </div>
 
-          {/* Right: Live Document Preview */}
+          {/* Right: Document Cards with Blur-Lift Reveal */}
           <div className="order-1 lg:order-2">
-            <div className="flex items-center justify-between mb-4">
-              <h2
-                className="text-xs font-medium uppercase tracking-widest text-white/30"
-                style={{ fontFamily: "'DM Sans', sans-serif" }}
-              >
-                Live Preview
-              </h2>
-              {currentDocument && !isComplete && (
-                <span
-                  className="inline-flex items-center gap-1.5 border border-[#C9A84C]/40 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-[#C9A84C]"
-                  style={{ fontFamily: "'DM Sans', sans-serif" }}
-                >
-                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#C9A84C] animate-pulse" />
-                  GENERATING
-                </span>
-              )}
-              {isComplete && (
-                <span
-                  className="inline-flex items-center gap-1.5 border border-[#C9A84C]/40 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-[#C9A84C]"
-                  style={{ fontFamily: "'DM Sans', sans-serif" }}
-                >
-                  COMPLETE
-                </span>
-              )}
-            </div>
-            {currentDocument && (
-              <p
-                className="mb-3 text-sm text-white/60"
-                style={{ fontFamily: "'DM Sans', sans-serif" }}
-              >
-                {currentDocument}
-              </p>
-            )}
-            <div
-              ref={previewRef}
-              className="h-[500px] overflow-y-auto border border-white/8 bg-[#0d0d0d] p-6"
+            <h2
+              className="mb-4 text-xs font-medium uppercase tracking-widest text-white/30"
+              style={{ fontFamily: "'DM Sans', sans-serif" }}
             >
-              {documentText ? (
-                <pre
-                  className="whitespace-pre-wrap text-sm leading-relaxed text-white/70"
-                  style={{ fontFamily: "'DM Sans', monospace" }}
-                >
-                  {documentText}
-                </pre>
-              ) : (
-                <div className="flex h-full items-center justify-center">
-                  <p
-                    className="text-sm text-white/20"
-                    style={{ fontFamily: "'DM Sans', sans-serif" }}
-                  >
-                    {isComplete
-                      ? "All documents generated."
-                      : isFailed
-                        ? "Generation encountered an error."
-                        : "Document preview will appear here..."}
-                  </p>
-                </div>
-              )}
+              Documents
+            </h2>
+            <div className="space-y-4">
+              {DOCUMENTS.map((doc) => {
+                const isRevealed = documentsComplete >= doc.id;
+                const isCurrent = currentDocument === doc.name && !isRevealed;
+
+                return (
+                  <DocumentCard
+                    key={doc.id}
+                    doc={doc}
+                    isRevealed={isRevealed}
+                    isCurrent={isCurrent}
+                    documentText={isCurrent ? documentText : ""}
+                  />
+                );
+              })}
             </div>
           </div>
         </div>
