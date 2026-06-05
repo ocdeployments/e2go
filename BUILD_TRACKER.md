@@ -579,11 +579,29 @@ Status: COMPLETE
 
 ---
 
+## SESSION S27 — Module 1 & Module 2 Implementation (June 6, 2026)
+- **Completed Module 1**: Built `/apply/module1` (6-screen onboarding: welcome/application type, ToS/Privacy with 90-day retention disclosure, CASL consent, 5-category referral opt-in, family composition with quiz pre-fill, record creation).
+- **Completed Module 2**: Built `/apply/module2` (6-screen business advisor: background questionnaire, category selection with E-2 complexity badges, business shortlist, franchise referral trigger with consent fallback, experience gap detection advisory, completion summary).
+- **Database**: Created `supabase/migrations/20260605150000_module1_consent_tables.sql` (consent_log, referral_consents, RLS policies, application flags) and `20260605160000_module2_business_advisor.sql` (experience_gap_flag, business_shortlist, specific_business_description).
+- **Design**: Strict Obsidian Gold compliance (`#0a0a0a` bg, `#C9A84C` accents, Cormorant Garamond headings, DM Sans body, 0 border radius, grain overlay).
+- **Verification**: `npm run build` clean (54 routes, 0 errors). Added `tests/module-flow-e2e.spec.ts` for Playwright E2E walkthrough of all 12 screens → Module 3 redirect.
+- **Commits**: 
+  - `feat: Module 1 — onboarding, consent, application record creation`
+  - `feat: Module 2 — business type advisor, category selection, referral trigger`
+  - `test: Module 1 → Module 2 → Module 3 end-to-end flow verified`
+- **Pushed**: origin/dev ✓
+
+---
+
 ## NEXT SESSION
 **S21 — Animated Gradient Border** (Tier 6 polish)
 - Apply animated gold gradient border to: Pricing "Most Popular" card (speed 10), Landing page main CTA button (speed 6), Module 3 active sidebar tab (speed 12).
 - Add `@keyframes gradient-rotate` to `globals.css`.
 - Playwright verification of all three locations.
 
-**Other Remaining Tier 6 polish:**
-- S25 — Journey wizard as post-quiz page
+**Other Remaining Priorities:**
+- **S25** — Journey wizard as post-quiz page (per IDEAS.md 12B/12C pre-fill logic).
+- **S28** — Module 3 Tab A (Personal/DS-160) expansion with new pre-fill gates and data reuse enforcement.
+- **S29** — Stripe integration setup (Phase 1: pricing page webhook wiring).
+- **S30** — Document generation engine PDF export polish (S15) and metadata sanitization.
+- **S31** — Interview simulator baseline context wiring (per IDEAS.md 12G).
