@@ -2,6 +2,13 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
+// Payment wall bypass for development
+const SKIP_PAYMENT_WALL = process.env.SKIP_PAYMENT_WALL === 'true';
+
+if (SKIP_PAYMENT_WALL) {
+  console.warn('⚠️ Payment wall bypassed — dev mode only');
+}
+
 // Simple in-memory rate limiter
 const rateLimits = new Map<string, { count: number; resetAt: number }>();
 
@@ -105,6 +112,11 @@ export async function middleware(req: NextRequest) {
 
   // Protected routes that require authentication
   const protectedRoutes = ['/dashboard', '/apply/', '/admin'];
+
+  // Payment wall bypass for dev mode
+  if (SKIP_PAYMENT_WALL) {
+    return supabaseResponse;
+  }
 
   // Auth routes - redirect to dashboard if already logged in
   const authRoutes = ['/login', '/signup'];

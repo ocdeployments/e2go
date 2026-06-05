@@ -2,24 +2,56 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import { getPricingTier, getTierData, TierId, QuizData } from "@/lib/pricing-tier";
 import PricingCard from "@/components/PricingCard";
 
+const STRIPE_PRICE_IDS: Record<string, string> = {
+  solo_none: 'price_solo_297',
+  solo_spouse: 'price_solo_spouse_347',
+  solo_family_small: 'price_solo_family_2_397',
+  solo_family_large: 'price_solo_family_5_447',
+  partnership_none: 'price_partnership_497',
+  partnership_couples: 'price_partnership_couples_547',
+  partnership_families: 'price_partnership_families_647',
+};
+
+const FOUNDING_MEMBER_LIMIT = 500;
+
 export default function PricingPage() {
-  const [applicationCount, setApplicationCount] = useState<number>(0);
+  const router = useRouter();
+  const [foundingCount, setFoundingCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [selectedTier, setSelectedTier] = useState<TierId | null>(null);
   const [hasQuizData, setHasQuizData] = useState(false);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [stripeNotConfigured, setStripeNotConfigured] = useState(false);
+  const [testMode, setTestMode] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const highlightRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const fetchCount = async () => {
       const supabase = createBrowserSupabaseClient();
+
+      // Get count of completed payments for founding member counter
       const { count } = await supabase
-        .from("applications")
-        .select("*", { count: "exact", head: true });
-      setApplicationCount(count || 0);
+        .from('payments')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'completed');
+
+      setFoundingCount(count || 0);
+
+      // Check if Stripe is configured
+      const response = await fetch('/api/stripe/checkout', { method: 'HEAD' });
+      if (response.status === 503) {
+        setStripeNotConfigured(true);
+      }
+
+      // Check if we're in test mode
+      setTestMode(process.env.STRIPE_SECRET_KEY?.startsWith('sk_test_') || false);
+
       setLoading(false);
     };
     fetchCount();
@@ -57,12 +89,86 @@ export default function PricingPage() {
     }
   }, [selectedTier]);
 
-  const spotsRemaining = Math.max(0, 500 - applicationCount);
+  const spotsRemaining = Math.max(0, FOUNDING_MEMBER_LIMIT - foundingCount);
+  const foundingActive = foundingCount < FOUNDING_MEMBER_LIMIT;
 
-  const handleSelect = (id: string) => {
+  const handleSelect = async (id: string) => {
     setSelectedTier(id as TierId);
-    // TODO: Stripe integration to be added
-    // alert(`Selected ${id}. Stripe integration coming soon.`);
+    setError(null);
+
+    if (stripeNotConfigured) {
+      setError('Payment processing is not configured. Please try again later.');
+      return;
+    }
+
+    // Get current user
+    const supabase = createBrowserSupabaseClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      // Store selected tier and redirect to signup
+      localStorage.setItem('e2go_selected_tier', id);
+      router.push('/signup');
+      return;
+    }
+
+    // Create or get application
+    const { data: existingApp } = await supabase
+      .from('applications')
+      .select('id')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    let applicationId = existingApp?.id;
+
+    if (!applicationId) {
+      // Create a new application record
+      const { data: newApp, error: appError } = await supabase
+        .from('applications')
+        .insert({
+          user_id: user.id,
+          application_type: id.startsWith('partnership') ? 'partnership' : 'solo',
+          status: 'pending',
+        })
+        .select('id')
+        .single();
+
+      if (appError) {
+        setError('Failed to create application. Please try again.');
+        return;
+      }
+      applicationId = newApp.id;
+    }
+
+    // Initiate Stripe checkout
+    setIsProcessingPayment(true);
+    try {
+      const priceId = STRIPE_PRICE_IDS[id as TierId];
+
+      const response = await fetch('/api/stripe/create-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          priceId,
+          applicationId,
+          userId: user.id,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        setError(data.error || 'Failed to start payment');
+      }
+    } catch {
+      setError('Payment failed. Please try again.');
+    } finally {
+      setIsProcessingPayment(false);
+    }
   };
 
   const tierOrder: TierId[] = [
@@ -124,14 +230,26 @@ export default function PricingPage() {
           </div>
 
           {/* Founding Member Counter */}
-          {!loading && (
+          {/* Test Mode Banner */}
+          {testMode && (
+            <div className="text-center mb-6">
+              <div className="inline-flex items-center gap-2 px-4 py-2" style={{ background: "rgba(59,130,246,0.1)", border: "1px solid rgba(59,130,246,0.3)", borderRadius: 0 }}>
+                <span className="text-sm" style={{ color: "#3b82f6" }}>
+                  Test mode — no real payments will be processed
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Founding Member Counter */}
+          {!loading && foundingActive && (
             <div className="text-center mb-8">
               <div className="inline-flex items-center gap-2 px-4 py-2" style={{ background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.3)", borderRadius: 0 }}>
                 <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24" style={{ color: "#f59e0b" }}>
                   <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
                 </svg>
                 <span className="text-sm font-medium" style={{ color: "#f59e0b" }}>
-                  {spotsRemaining} of 500 founding spots remaining
+                  {spotsRemaining} of {FOUNDING_MEMBER_LIMIT} founding spots remaining
                 </span>
               </div>
             </div>
@@ -163,6 +281,23 @@ export default function PricingPage() {
               );
             })}
           </div>
+
+          {/* Error Display */}
+          {error && (
+            <div className="max-w-md mx-auto mb-6 p-4" style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 0 }}>
+              <p className="text-sm text-center" style={{ color: "#ef4444" }}>{error}</p>
+            </div>
+          )}
+
+          {/* Loading/Processing Overlay */}
+          {isProcessingPayment && (
+            <div className="fixed inset-0 flex items-center justify-center z-50" style={{ background: "rgba(10,10,10,0.8)" }}>
+              <div className="text-center">
+                <div className="w-8 h-8 border-2 border-[#C9A84C] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                <p className="text-[#f5f0e8]" style={{ fontFamily: 'DM Sans, sans-serif' }}>Redirecting to payment...</p>
+              </div>
+            </div>
+          )}
 
           {/* Guarantee Section */}
           <div className="mb-12 max-w-3xl mx-auto" style={{ padding: "24px", background: "rgba(201,168,76,0.02)", border: "1px solid rgba(201,168,76,0.12)", borderRadius: 0 }}>

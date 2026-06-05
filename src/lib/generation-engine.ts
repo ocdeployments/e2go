@@ -579,6 +579,14 @@ export async function runGenerationPipeline(
       }
     }
 
+    // All documents generated successfully (including DS-160 at step 7)
+    // Flip refund eligibility - 14-day guarantee now void
+    await supabase
+      .from('payments')
+      .update({ refund_eligible: false })
+      .eq('application_id', applicationId)
+      .eq('status', 'completed');
+
     // Step 8: Humanization pass on all 6 documents
     emitStep(8, 'running');
     await updateJob({ current_step: 8, current_step_label: GENERATION_STEP_LABELS[8] });

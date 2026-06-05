@@ -11,6 +11,8 @@ interface PricingCardProps {
   features: string[];
   isHighlighted?: boolean;
   isSelected?: boolean;
+  disabled?: boolean;
+  disabledText?: string;
   onSelect: (id: string) => void;
 }
 
@@ -22,6 +24,8 @@ export default function PricingCard({
   features,
   isHighlighted = false,
   isSelected = false,
+  disabled = false,
+  disabledText = "Coming soon",
   onSelect,
 }: PricingCardProps) {
   const cardContent = (
@@ -53,14 +57,17 @@ export default function PricingCard({
       </ul>
 
       <button
-        onClick={() => onSelect(id)}
+        onClick={() => !disabled && onSelect(id)}
+        disabled={disabled}
         className={`w-full py-4 text-sm font-medium font-[DM_Sans] transition-colors ${
-          isHighlighted || isSelected
-            ? "bg-[#C9A84C] text-[#0a0a0a] hover:bg-[#d4b35a]"
-            : "bg-transparent border border-[#C9A84C] text-[#C9A84C] hover:bg-[rgba(201,168,76,0.08)]"
+          disabled
+            ? "bg-[rgba(201,168,76,0.1)] text-[rgba(201,168,76,0.4)] cursor-not-allowed"
+            : isHighlighted || isSelected
+              ? "bg-[#C9A84C] text-[#0a0a0a] hover:bg-[#d4b35a]"
+              : "bg-transparent border border-[#C9A84C] text-[#C9A84C] hover:bg-[rgba(201,168,76,0.08)]"
         }`}
       >
-        {isSelected ? "Selected" : "Select Plan"}
+        {disabled ? disabledText : isSelected ? "Selected" : "Select Plan"}
       </button>
     </div>
   );
