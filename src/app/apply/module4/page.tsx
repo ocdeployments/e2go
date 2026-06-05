@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 
 interface Question {
@@ -115,7 +115,7 @@ export default function Module4Page() {
     setIsFlagged(false);
   };
 
-  const handleGenerateQuestions = async () => {
+  const handleGenerateQuestions = useCallback(async () => {
     if (!applicationId) return;
 
     setIsLoadingQuestions(true);
@@ -134,7 +134,7 @@ export default function Module4Page() {
     } finally {
       setIsLoadingQuestions(false);
     }
-  };
+  }, [applicationId]);
 
   const handleSaveAnswer = async (skip = false) => {
     if (!applicationId) return;
@@ -190,7 +190,7 @@ export default function Module4Page() {
     if (screen === 3 && applicationId && questions.length === 0 && !isLoadingQuestions) {
       handleGenerateQuestions();
     }
-  }, [screen, applicationId, questions.length, isLoadingQuestions]);
+  }, [screen, applicationId, questions.length, isLoadingQuestions, handleGenerateQuestions]);
 
   const handleGetSummary = async () => {
     if (!applicationId) return;

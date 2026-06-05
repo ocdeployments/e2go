@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 
 const IMAGES = [
   // New York City / Business skyline
@@ -34,10 +35,11 @@ export default function AuthImageSlider() {
             opacity: index === currentIndex ? 1 : 0,
           }}
         >
-          <img
+          <Image
             src={src}
             alt="U.S. business and landmark environment"
-            className="w-full h-full object-cover opacity-50"
+            fill
+            className="object-cover opacity-50"
           />
           {/* Subtle Gold Gradient Overlay for Obsidian Gold aesthetic */}
           <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0a] via-[#0a0a0a]/40 to-transparent" />
