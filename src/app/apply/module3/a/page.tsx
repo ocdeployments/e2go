@@ -1,3 +1,8 @@
+// DS-160 work history and education fields are NOT collected here.
+// Tab J (QJ-03, QJ-01) is the single source of truth for work history and education.
+// If DS-160 fields are added to Tab A in future, they must pre-fill from Tab J.
+// See IDEAS.md Section 11, duplications 9 and 10.
+
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';

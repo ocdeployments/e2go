@@ -542,6 +542,11 @@ Before adding any question to any tab or module:
 This rule applies to every module, every tab, every question,
 every document generation prompt. No exceptions.
 
+### Duplication 9 and 10 — Work History and Education [DECIDED]
+June 4 2026 audit: Tab A does not currently collect work history or education.
+Tab J is already the single source. No deduplication needed.
+If Tab A DS-160 fields are added in future, they must read from Tab J — never collect independently.
+
 ---
 
 ## SECTION 12 — DUPLICATION AUDIT & RESOLUTION (DECIDED — June 4, 2026)
