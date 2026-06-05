@@ -74,40 +74,89 @@ export default function ResultsPage() {
     "PR-07": "The proposed business type does not qualify for E-2 status.",
   };
 
+  const riskMessages: Record<string, string> = {
+    "W-01": "Investment amount is below typical E-2 thresholds. A detailed business plan will be critical.",
+    "W-02": "Source of funds requires additional documentation. Prepare bank records and transfer history.",
+    "W-03": "Third-country national applying through a non-primary consulate. Processing may require extra steps.",
+    "W-04": "Business plan does not demonstrate substantial job creation potential.",
+    "W-05": "Prior visa refusal in application history. Full disclosure required in DS-160.",
+    "W-06": "Business is in a marginal or service-only category. Strong financial documentation required.",
+    "W-07": "Investment funds are not yet fully committed. A detailed fund deployment timeline will be needed.",
+    "W-08": "Applicant has limited business management experience. Qualifications section will require careful framing.",
+  };
+
+  const deferredStrengthMessage = (
+    <p className="text-center text-[rgba(245,240,232,0.40)] text-sm mt-8 font-[DM_Sans]">
+      Your full case strength assessment will be available once you complete your application profile.
+    </p>
+  );
+
   const renderDO_NOT_PROCEED = () => (
     <main className="flex-1 flex items-center justify-center px-4 py-12">
       <div className="max-w-md w-full text-center p-10 bg-[rgba(239,68,68,0.04)] border border-[rgba(239,68,68,0.2)]">
         <h1 className="text-2xl font-bold mb-4 text-[#f5f0e8] font-serif">The E-2 visa may not be available to you.</h1>
         <p className="mb-6 text-[rgba(245,240,232,0.75)]">{hard_stop_codes[0] && stopMessages[hard_stop_codes[0]]}</p>
         <Link href="/signup" className="block w-full py-4 bg-[#C9A84C] text-[#0a0a0a] font-medium transition-colors">Create an Account →</Link>
+        <p className="text-[rgba(245,240,232,0.40)] text-xs mt-6 font-[DM_Sans]">
+          Your full case assessment will be available once you complete your application profile.
+        </p>
       </div>
     </main>
   );
 
-  const renderATTORNEY_RECOMMENDED = () => (
-    <main className="flex-1 px-4 py-12 max-w-2xl mx-auto w-full">
-      <h1 className="text-4xl font-bold mb-6 text-center text-[#f5f0e8] font-serif">We recommend speaking with an attorney first.</h1>
-      <div className="flex flex-col gap-4">
-        <Link href="/signup" className="w-full py-4 bg-[#C9A84C] text-[#0a0a0a] font-medium text-center">Create an Account →</Link>
-        <Link href="/signup" className="w-full py-4 border border-[#C9A84C] text-[#C9A84C] text-center">Prepare My Documents Anyway</Link>
-      </div>
-    </main>
-  );
+  const renderATTORNEY_RECOMMENDED = () => {
+    const { attorney_flag_codes } = result;
+    return (
+      <main className="flex-1 px-4 py-12 max-w-2xl mx-auto w-full">
+        <h1 className="text-4xl font-bold mb-6 text-center text-[#f5f0e8] font-serif">We recommend speaking with an immigration consultant first.</h1>
+        <p className="text-center text-[rgba(245,240,232,0.60)] mb-8 font-[DM_Sans]">
+          Your answers suggest complexity that benefits from professional review before you invest in document preparation.
+        </p>
+        {attorney_flag_codes && attorney_flag_codes.length > 0 && (
+          <div className="mb-8 p-6 bg-[rgba(245,158,11,0.04)] border border-[rgba(245,158,11,0.2)]">
+            <p className="text-[rgba(245,240,232,0.70)] text-sm mb-3 font-[DM_Sans]">Flags identified:</p>
+            {attorney_flag_codes.map((code: string) => (
+              <p key={code} className="mb-2 text-[#f5f0e8] font-[DM_Sans] text-sm">
+                • {riskMessages[code] || code}
+              </p>
+            ))}
+          </div>
+        )}
+        <div className="flex flex-col gap-4">
+          <Link href="/signup" className="w-full py-4 bg-[#C9A84C] text-[#0a0a0a] font-medium text-center">Create an Account →</Link>
+          <Link href="/signup" className="w-full py-4 border border-[#C9A84C] text-[#C9A84C] text-center">Prepare My Documents Anyway</Link>
+        </div>
+        {deferredStrengthMessage}
+      </main>
+    );
+  };
 
   const renderPROCEED_RISK = () => (
     <main className="flex-1 px-4 py-12 max-w-2xl mx-auto w-full">
       <h1 className="text-4xl font-bold mb-6 text-center text-[#f5f0e8] font-serif">You may qualify — with some considerations.</h1>
+      <p className="text-center text-[rgba(245,240,232,0.60)] mb-8 font-[DM_Sans]">
+        Your answers indicate eligibility, but the following items will need attention in your application:
+      </p>
       <div className="mb-8 p-6 bg-[rgba(245,158,11,0.04)] border border-[rgba(245,158,11,0.2)]">
-        {risk_flag_codes.map(code => <p key={code} className="mb-2 text-[#f5f0e8]">• {code}</p>)}
+        {risk_flag_codes.map(code => (
+          <p key={code} className="mb-3 text-[#f5f0e8] font-[DM_Sans] text-sm">
+            • {riskMessages[code] || code}
+          </p>
+        ))}
       </div>
       <Link href="/signup" className="block w-full py-4 bg-[#C9A84C] text-[#0a0a0a] font-medium text-center">Start My Application →</Link>
+      {deferredStrengthMessage}
     </main>
   );
 
   const renderPROCEED = () => (
     <main className="flex-1 px-4 py-12 max-w-2xl mx-auto w-full text-center">
       <h1 className="text-4xl font-bold mb-6 text-[#f5f0e8] font-serif">You appear to qualify for the E-2.</h1>
+      <p className="text-center text-[rgba(245,240,232,0.60)] mb-8 font-[DM_Sans]">
+        Based on your answers, you meet the basic eligibility requirements for the E-2 Treaty Investor visa.
+      </p>
       <Link href="/signup" className="block w-full py-4 bg-[#C9A84C] text-[#0a0a0a] font-medium text-center">Start My Application →</Link>
+      {deferredStrengthMessage}
     </main>
   );
 
