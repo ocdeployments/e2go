@@ -501,12 +501,10 @@ Status: COMPLETE
 
 ---
 
-## SESSION 6 & 7 — Business Data Deduplication (June 5, 2026)
-- Completed S6: Audited Tab A for work history/education; confirmed Tab J is the single source of truth. Added clarifying comment to `src/app/apply/module3/a/page.tsx` and documented in `docs/IDEAS.md`. No code changes needed.
-- Completed S7: Established Tab A as the single source of truth for business details (`M3-A-51` for business name, `M3-A-55` for ownership percentage).
-- Created `ContradictionFlag` component to detect and resolve mismatches between master fields (`Tab A`) and derived fields (`Tab E` QE-13, QE-01).
-- Updated Tab E page to pre-fill business name and ownership percentage from Tab A.
-- Commit: `c2719b3 feat: business data deduplication — single master source for each field`
+## SESSION 6, 7 & 8 — Business Data & Security History Deduplication (June 5, 2026)
+- **Completed S6**: Audited Tab A for work history/education; confirmed Tab J is the single source of truth. Added clarifying comment to `src/app/apply/module3/a/page.tsx` and documented in `docs/IDEAS.md`.
+- **Completed S7**: Established Tab A as the single source of truth for business details (`M3-A-51` for business name, `M3-A-55` for ownership percentage). Created `ContradictionFlag` component to detect and resolve mismatches between master and derived fields. Updated Tab E page to pre-fill from Tab A. (Commit: `c2719b3`)
+- **Completed S8**: Security history pre-fill with legal confirmation gate on Tab A. Extended `src/lib/prefill.ts` mappings and `PreFilledField.tsx` to support `requiresConfirmation`. Added a security subtitle to `SectionForm.tsx` and disabled the "Save Section" button until all sensitive pre-filled fields (QA-23, QA-39) are explicitly confirmed. Verified via Playwright: pre-filled states show unchecked badges, submit gate is active, editing unchecks the confirmation, and re-confirming re-enables save. (Commit: `edd86f3`)
 
 ---
 
