@@ -46,3 +46,5 @@ node_modules/
 .lazyweb/
 .playwright-mcp/
 *.png
+scripts/test-applicant-michael-chen.json
+docs/test-applicant-michael-chen.json
