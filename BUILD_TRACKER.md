@@ -1,6 +1,6 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 4, 2026 — End of Session 16
+**Last Updated:** June 5, 2026 — End of Session S5
 **App Name:** e2go.app
 **Stack:** Next.js 14 · TypeScript · Tailwind CSS · Supabase · Claude API
 **Dev URL:** https://e2go-git-dev-ocdeployments-projects.vercel.app
@@ -66,6 +66,7 @@ changed, run npm run build:clean, report summary.
 | Voice matching system | ⬜ NOT STARTED | Designed, not built |
 | Analysis engine | ✅ COMPLETE | Session 15A — types, lib, api, tests |
 | Follow-up conversation | ⬜ NOT STARTED | Designed, not built |
+| Module 3 Pre-Fill Pass | ✅ COMPLETE | Session S5 — quiz data auto-populates Tabs A, F, L with edit affordances and legal gates |
 
 ---
 
@@ -173,7 +174,7 @@ Conditions: within 14 days, Module 1 started, no documents generated.
 
 ## MODULE 3 — TABS
 
-### Tab A (Working)
+### Tab A (Working + Pre-Fill)
 | Feature | Status |
 |---|---|
 | 21 questions | ✅ COMPLETE |
@@ -184,6 +185,7 @@ Conditions: within 14 days, Module 1 started, no documents generated.
 | Supabase answers save | ✅ COMPLETE |
 | FK constraint fix | ✅ COMPLETE |
 | RLS policies fixed | ✅ COMPLETE |
+| Quiz pre-fill + legal confirmation gates | ✅ COMPLETE (Session S5) |
 
 ### Tabs B-L (Specs Updated, Not Yet Wired)
 All 11 tab specs updated in docs/ with:
@@ -200,13 +202,13 @@ All 11 tab specs updated in docs/ with:
 | C — Visa Category | ✅ Spec updated | ✅ Wired (Session 13A) |
 | D — Cover Letter | ✅ Spec updated | ✅ Wired (Session 13B) |
 | E — Ownership | ✅ Spec updated | ✅ Wired (Session 13G) |
-| F — Investment Proof | ✅ Spec updated | ✅ Batch 1 Wired (Session 13C) · Batch 2 pending |
+| F — Investment Proof | ✅ Spec updated | ✅ Batch 1 Wired (Session 13C) · Batch 2 pending · Pre-fill wired (Session S5) |
 | G — Business Evidence | ✅ Spec updated | ✅ Wired (Session 13G) |
 | H — Source of Funds | ✅ Spec updated | ✅ Wired (Session 13G) |
 | I — Non-Marginality | ✅ Spec updated | ✅ Wired (Session 13G) |
 | J — Qualifications | ✅ Spec updated | ✅ Wired (Session 13B) |
 | K — Business Plan | ✅ Spec updated | ✅ Wired (Session 13G) |
-| L — Family Dependents | ✅ Spec updated | ✅ Wired (Session 13G) |
+| L — Family Dependents | ✅ Spec updated | ✅ Wired (Session 13G) · Pre-fill wired (Session S5) |
 
 ### Batch Assignments
 - Batch 1 (personal — immediate after payment): B, partial F, J, L
@@ -496,6 +498,15 @@ Status: COMPLETE
 - Generation progress UI: built
 - Documents review + approval page: built
 - Pricing page: pre-selects tier from quiz session data, 7-tier mapping, manual override supported, Playwright verified
+
+---
+
+## SESSION 6 & 7 — Business Data Deduplication (June 5, 2026)
+- Completed S6: Audited Tab A for work history/education; confirmed Tab J is the single source of truth. Added clarifying comment to `src/app/apply/module3/a/page.tsx` and documented in `docs/IDEAS.md`. No code changes needed.
+- Completed S7: Established Tab A as the single source of truth for business details (`M3-A-51` for business name, `M3-A-55` for ownership percentage).
+- Created `ContradictionFlag` component to detect and resolve mismatches between master fields (`Tab A`) and derived fields (`Tab E` QE-13, QE-01).
+- Updated Tab E page to pre-fill business name and ownership percentage from Tab A.
+- Commit: `c2719b3 feat: business data deduplication — single master source for each field`
 
 ---
 
