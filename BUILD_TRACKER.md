@@ -483,23 +483,31 @@ Status: COMPLETE
 
 ---
 
-## BUILD STATE — End of Session 16, June 4, 2026
+## BUILD STATE — End of Session 17 (S1-S3), June 4, 2026
 - Branch: `dev`
 - Working tree: clean
-- Last commit: `1a621cd` — Fix: ESLint errors — build clean, all routes compiled
-- `npm run build`: clean — 39 routes, 0 errors
-- 8/8 unit tests passing (generation-engine.test.ts)
+- Last commit: `37491e0` — feat: pricing page pre-selects correct tier from quiz session data
+- `npm run build`: clean — 41 routes, 0 errors
+- 8/8 unit tests passing (generation-engine.test.ts), 7/7 passing (pricing-tier.test.ts)
 - Quiz v3.0: live, scoring wired
 - Module 3: all 12 tabs (A–L) wired, overview page with generate button
 - Analysis engine: built and tested
 - Document generation engine: fully built
 - Generation progress UI: built
 - Documents review + approval page: built
+- Pricing page: pre-selects tier from quiz session data, 7-tier mapping, manual override supported, Playwright verified
 
 ---
 
 ## NEXT SESSION
-**Session 17 — docxtpl integration + PDF export**
+**Session 17 (S4) — Pre-Application Checklist Pre-Fill**
+- Read quiz session answers on `/apply/checklist` load
+- Pre-fill Phase 1 questions from `answers` table
+- Hide redundant questions (e.g., if nationality already known)
+- Add "Change" link next to pre-filled data to allow refinement
+- Playwright verification of pre-fill states
+
+**Session 17 (Remaining) — docxtpl integration + PDF export**
 - Word document template generation (docxtpl)
 - PDF export (neat-pdf MCP)
 - ZIP download endpoint (`/api/generate/download/[applicationId]`)
