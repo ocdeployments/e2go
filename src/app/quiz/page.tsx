@@ -118,6 +118,7 @@ export default function QuizPage() {
   const [cannabisGatePassed, setCannabisGatePassed] = useState(false);
   const [showCannabisGate, setShowCannabisGate] = useState(false);
   const [knownEmail, setKnownEmail] = useState<string | null>(null);
+  const [caslConsent, setCaslConsent] = useState(false);
 
   // Fetch treaty countries and currency rates (v3)
   useEffect(() => {
@@ -492,6 +493,8 @@ export default function QuizPage() {
       attorney_flag_codes: attorneyFlags,
       risk_flag_codes: riskFlags,
       application_type: finalAnswers["Q0-09"] === "Two equal 50/50 owners" ? "partnership" : "solo",
+      casl_consent: caslConsent,
+      casl_consent_at: caslConsent ? new Date().toISOString() : null,
     }).select('id').single();
 
     if (sessionError) {
@@ -1195,6 +1198,47 @@ export default function QuizPage() {
                     transition: 'border-color 0.2s'
                   }}
                 />
+
+                {currentQuestion.validation === "email" && (
+                  <div style={{ marginTop: '16px', display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                    <div
+                      onClick={() => setCaslConsent(!caslConsent)}
+                      style={{
+                        width: '18px',
+                        height: '18px',
+                        borderRadius: 0,
+                        border: `1px solid ${caslConsent ? '#C9A84C' : 'rgba(201,168,76,0.4)'}`,
+                        background: caslConsent ? '#C9A84C' : 'transparent',
+                        flexShrink: 0,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transition: 'all 0.2s ease'
+                      }}
+                    >
+                      {caslConsent && (
+                        <svg style={{ width: '10px', height: '10px', color: '#0a0a0a' }} fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      )}
+                    </div>
+                    <label
+                      onClick={() => setCaslConsent(!caslConsent)}
+                      style={{
+                        fontFamily: "'DM Sans', sans-serif",
+                        fontSize: '13px',
+                        fontWeight: 300,
+                        color: 'rgba(245,240,232,0.65)',
+                        cursor: 'pointer',
+                        lineHeight: 1.4,
+                        userSelect: 'none'
+                      }}
+                    >
+                      I&apos;d like to receive E-2 processing updates, policy changes, and preparation tips from e2go. You can unsubscribe at any time.
+                    </label>
+                  </div>
+                )}
 
                 <button
                   onClick={handleTextContinue}
