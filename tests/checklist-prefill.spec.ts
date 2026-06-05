@@ -22,10 +22,41 @@ test.describe('Pre-Application Checklist Pre-fill', () => {
     // Confirm pre-fill notes appear on relevant items
     await expect(page.getByText('We know you are married from your eligibility check')).toBeVisible();
 
-    // Confirm marriage certificate has cross-tab note
-    await expect(page.getByText('Shared document').first()).toBeVisible();
-
     await page.screenshot({ path: 'test-results/checklist-married-spouse-child.png', fullPage: true });
+  });
+
+  test('cross-tab note expands and collapses correctly', async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('e2go_quiz_result', JSON.stringify({
+        answers: {
+          'Q0-09': 'On my own',
+          'Q0-16': 'Yes — my spouse and children',
+          'Q0-17': 'Yes — we are legally married',
+        }
+      }));
+    });
+    await page.goto('http://localhost:3000/apply/checklist');
+
+    // Confirm marriage certificate shows info icon (next to marriage certificate text)
+    const marriageRow = page.locator('div.group').filter({ hasText: 'Marriage certificate' }).first();
+    await expect(marriageRow.locator('button[aria-label="Toggle cross-tab note"]')).toBeVisible();
+    await page.screenshot({ path: 'test-results/cross-tab-note-icon.png', fullPage: true });
+
+    // Click the info icon
+    await marriageRow.locator('button[aria-label="Toggle cross-tab note"]').click();
+    await page.waitForTimeout(350); // Wait for transition
+
+    // Confirm cross-tab note expands with correct text
+    await expect(page.getByText('One certified copy covers both your personal binder (Tab B) and your dependent section (Tab L).')).toBeVisible();
+    await page.screenshot({ path: 'test-results/cross-tab-note-expanded.png', fullPage: true });
+
+    // Click × to collapse
+    await marriageRow.locator('button[aria-label="Close note"]').click();
+    await page.waitForTimeout(350); // Wait for transition
+
+    // Confirm note collapses cleanly
+    await expect(page.getByText('One certified copy covers both your personal binder (Tab B) and your dependent section (Tab L).')).not.toBeVisible();
+    await page.screenshot({ path: 'test-results/cross-tab-note-collapsed.png', fullPage: true });
   });
 
   test('shows minimal checklist for single no-family profile', async ({ page }) => {

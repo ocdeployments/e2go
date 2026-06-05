@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Check, X, AlertCircle, ChevronDown, ChevronRight } from "lucide-react";
+import CrossTabNote from "./CrossTabNote";
 
 export interface ChecklistItem {
   id: string;
@@ -11,7 +12,8 @@ export interface ChecklistItem {
   prefillNote: string | null;
   required: boolean;
   tabReference: string;
-  sharedTab?: string;
+  sharedTabs?: string[];
+  crossTabNote?: string;
   warning?: string;
 }
 
@@ -146,14 +148,8 @@ export default function PreAppChecklist({ items, promptForQuiz = false }: PreApp
                 <div className="flex flex-wrap items-center gap-3 text-xs text-[#f5f0e8]/50">
                   <span className="font-mono text-[#C9A84C]/70">{item.tabReference}</span>
 
-                  {item.sharedTab && (
-                    <div className="flex items-center gap-1 group/tooltip relative">
-                      <AlertCircle className="w-3.5 h-3.5" />
-                      <span>Shared document</span>
-                      <div className="absolute bottom-full left-0 mb-2 hidden group-hover/tooltip:block w-64 p-2 bg-[#1c1c1c] border border-[#C9A84C]/20 text-[#f5f0e8]/80 text-xs z-10">
-                        This document covers both {item.sharedTab}. One certified copy is sufficient.
-                      </div>
-                    </div>
+                  {item.sharedTabs && item.crossTabNote && (
+                    <CrossTabNote coversTabs={item.sharedTabs} note={item.crossTabNote} />
                   )}
                 </div>
 

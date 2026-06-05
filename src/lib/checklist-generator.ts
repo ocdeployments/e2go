@@ -6,7 +6,8 @@ export interface ChecklistItem {
   prefillNote: string | null;
   required: boolean;
   tabReference: string;
-  sharedTab?: string;
+  sharedTabs?: string[];
+  crossTabNote?: string;
   warning?: string;
 }
 
@@ -52,7 +53,8 @@ export function generatePreAppChecklist(quizData: QuizData | null): ChecklistIte
       prefillNote: "We know you are married from your eligibility check. One certified copy of your marriage certificate is required.",
       required: true,
       tabReference: "Tab B",
-      sharedTab: hasChildren ? "Tab B and Tab L" : undefined
+      sharedTabs: ["Tab B", "Tab L"],
+      crossTabNote: "One certified copy covers both your personal binder (Tab B) and your dependent section (Tab L)."
     });
   }
 
@@ -64,7 +66,9 @@ export function generatePreAppChecklist(quizData: QuizData | null): ChecklistIte
       source: "pre-filled",
       prefillNote: "Your spouse is listed as a dependent in your eligibility check.",
       required: true,
-      tabReference: "Tab L"
+      tabReference: "Tab L",
+      sharedTabs: ["Tab B", "Tab L"],
+      crossTabNote: "One copy covers both Tab B and Tab L."
     });
     items.push({
       id: "spouse_birth_cert",
@@ -73,7 +77,9 @@ export function generatePreAppChecklist(quizData: QuizData | null): ChecklistIte
       source: "pre-filled",
       prefillNote: "Your spouse is listed as a dependent in your eligibility check.",
       required: true,
-      tabReference: "Tab L"
+      tabReference: "Tab L",
+      sharedTabs: ["Tab B", "Tab L"],
+      crossTabNote: "One certified copy covers both Tab B and Tab L."
     });
   }
 
@@ -85,7 +91,9 @@ export function generatePreAppChecklist(quizData: QuizData | null): ChecklistIte
       source: "pre-filled",
       prefillNote: "Dependent children were indicated in your eligibility check.",
       required: true,
-      tabReference: "Tab L"
+      tabReference: "Tab L",
+      sharedTabs: ["Tab B", "Tab L"],
+      crossTabNote: "One copy per child covers both Tab B and Tab L."
     });
     items.push({
       id: "child_birth_cert",
@@ -94,7 +102,9 @@ export function generatePreAppChecklist(quizData: QuizData | null): ChecklistIte
       source: "pre-filled",
       prefillNote: "Dependent children were indicated in your eligibility check.",
       required: true,
-      tabReference: "Tab L"
+      tabReference: "Tab L",
+      sharedTabs: ["Tab B", "Tab L"],
+      crossTabNote: "One certified copy per child covers both Tab B and Tab L."
     });
   }
 
