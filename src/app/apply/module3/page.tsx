@@ -129,8 +129,8 @@ export default function Module3Overview() {
         body: JSON.stringify({ userId }),
       });
 
-      // Navigate to progress page
-      router.push(`/generate/${applicationId}`);
+      // Navigate to Module 4 (follow-up conversation) before generation
+      router.push(`/apply/module4`);
     } catch {
       setGenerating(false);
     }
