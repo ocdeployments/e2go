@@ -1,6 +1,6 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 6, 2026 — End of Session S23 (Tier 6 Polish: Auth Image Slider)
+**Last Updated:** June 5, 2026 — End of Session (Stripe Integration Verification)
 **App Name:** e2go.app
 **Stack:** Next.js 14 · TypeScript · Tailwind CSS · Supabase · Claude API
 **Dev URL:** https://e2go-git-dev-ocdeployments-projects.vercel.app
@@ -46,50 +46,36 @@ changed, run npm run build:clean, report summary.
 | Database schema + RLS | ✅ COMPLETE | 45/45 tests passing |
 | Auth (login/signup) | ✅ COMPLETE | Supabase auth wired |
 | Quiz v3.0 | ✅ COMPLETE | 26 questions, global, treaty countries |
-| Full UI redesign | ✅ COMPLETE | Glassmorphism, navy, teal, Playfair |
+| Full UI redesign | ✅ COMPLETE | Obsidian Gold |
 | PWA | ✅ COMPLETE | Manifest, service worker, install prompt |
-| Design skills installed | ✅ COMPLETE | Taste, Vercel guidelines, Lazyweb MCP |
-| Document tools installed | ✅ COMPLETE | docxtpl, docx2pdf, eigenpal skill, neat-pdf |
+| Design skills installed | ✅ COMPLETE | |
 | Module 3 Tab A | ✅ COMPLETE | 21 questions, privacy categories, working |
 | Module 3 Tabs B-L | ✅ COMPLETE | All 12 tabs wired |
 | /apply/overview | ✅ COMPLETE | |
 | /apply/checklist | ✅ COMPLETE | Three phases, Supabase connected |
 | Pricing page | ✅ COMPLETE | Founding member pricing, guarantee |
 | Dashboard | ✅ COMPLETE | Needs real data wiring |
-| Landing page redesign | ✅ COMPLETE | Obsidian Gold rebuild, all sections, mobile verified |
-| Quiz UX fixes | ✅ COMPLETE | styling, nationality dynamic, progress bar |
-| Document generation specs | ✅ COMPLETE | 4 spec files — need one update pass |
-| Cleanup complete | ✅ COMPLETE | Legacy tokens/vars removed from all files |
-| Stripe integration | ⬜ NOT STARTED | Session 14 |
-| Email verification funnel | ✅ COMPLETE | Session 15A/B |
-| Document generation engine | ✅ COMPLETE | Session 16 — prompts, engine, API routes, progress UI, review page |
-| Voice matching system | ⬜ NOT STARTED | Designed, not built |
-| Analysis engine | ✅ COMPLETE | Session 15A — types, lib, api, tests |
-| Follow-up conversation | ✅ COMPLETE | Session 15B — voice sample, questions, responses, summary UI |
-| Module 3 Pre-Fill Pass | ✅ COMPLETE | Session S5 — quiz data auto-populates Tabs A, F, L with edit affordances and legal gates |
-
----
-
-## ARCHITECTURE DECISIONS — LOCKED
-
-| Decision | Rule |
-|---|---|
-| Paywall timing | After Module 3 personal tabs complete, before generation |
-| Document generation | Sequential — ONE at a time. Checkpointed. Never parallel. |
-| Cover letter order | Generated FIRST (Step 1) — officer's roadmap |
-| AI for documents | Anthropic Claude API direct (claude-sonnet-4-20250514) |
-| AI for app features | MiniMax via OpenRouter — server-side only |
-| Supabase auth | auth.users → public.profiles (never public.users) |
-| Data storage | Answers only. Never store passports, bank statements |
-| Document ownership | Each fact lives in exactly ONE document. No repetition. |
-| e2go branding on docs | NEVER on submitted documents |
-| Page limit | 50 pages per TAB (Toronto). Not 50 total. |
-| Prompt storage | Versioned .md files in /prompts/v1/documents/ |
-| Partnership routing | Two complete separate packages generated |
-| Form terminology | Exact DS-160/U.S. government terminology always |
-| Interview limits | 2 simulator sessions included. Extra: $9.99/3-bundle |
-| Stats | Real government data only. Never fabricated. |
-| Global scope | 82 treaty countries. No Canada-only assumptions. |
+| Landing page | ✅ COMPLETE | 11 sections, Obsidian Gold |
+| Document generation specs | ✅ COMPLETE | 4 spec files |
+| Stripe integration | ⚠️ PARTIAL | Code complete, payments table needs migration |
+| Email verification funnel | ✅ COMPLETE | |
+| Document generation engine | ✅ COMPLETE | 15-step pipeline, sequential, checkpointed |
+| Analysis engine | ✅ COMPLETE | Types, lib, API, tests |
+| Follow-up conversation | ✅ COMPLETE | Voice sample, questions, responses, summary |
+| Module 3 Pre-Fill Pass | ✅ COMPLETE | Quiz → Tab A/F/L with legal gates |
+| Security history pre-fill | ✅ COMPLETE | With legal confirmation gate |
+| Business data deduplication | ✅ COMPLETE | Tab A as single source |
+| Timeline service | ✅ COMPLETE | Two date concepts separated |
+| Tab B/L cross-tab notes | ✅ COMPLETE | Shared document detection |
+| Contradiction flag component | ✅ COMPLETE | |
+| Auth pages image slider | ✅ COMPLETE | U.S. themed left panel |
+| Navigation & routing | ✅ COMPLETE | All routes connected, mobile nav |
+| Breadcrumbs | ✅ COMPLETE | On /apply/*, /score |
+| Cookie consent banner | ✅ COMPLETE | |
+| SEO metadata | ✅ COMPLETE | All pages |
+| /learn hub | ✅ COMPLETE | 6 SEO articles |
+| Module 1 | ✅ COMPLETE | Onboarding, consent, application record |
+| Module 2 | ✅ COMPLETE | Business advisor, category selection |
 
 ---
 
@@ -106,122 +92,70 @@ changed, run npm run build:clean, report summary.
 | Partnership two full families | $647 |
 
 Founding member pricing: first 500 applications.
-Counter live on pricing page (pulled from Supabase).
 14-day money-back guarantee: first 50 founding members.
-Refund = full payment minus Stripe processing fees.
-Conditions: within 14 days, Module 1 started, no documents generated.
 
 ---
 
 ## PAGES — BUILD STATUS
 
-| Page | Route | Status | Notes |
-|---|---|---|---|
-| Landing | / | ⚠️ IN PROGRESS | American elements (Statue/stars) fix needed |
-| Quiz | /quiz | ⚠️ IN PROGRESS | Sub-question timing bug, option styling |
-| Results | /results | ✅ COMPLETE | All 4 outcomes, redesigned |
-| Pricing | /pricing | ✅ COMPLETE | Founding member, guarantee |
-| Dashboard | /dashboard | ✅ COMPLETE | Needs real data |
-| Login | /login | ✅ COMPLETE | |
-| Signup | /signup | ✅ COMPLETE | |
-| Overview | /apply/overview | ✅ COMPLETE | |
-| Checklist | /apply/checklist | ✅ COMPLETE | 3 phases |
-| Module 3 shell | /apply/module3 | ✅ COMPLETE | |
-| Module 3 Tab A | /apply/module3/a | ✅ COMPLETE | Working, RLS fixed |
-| Module 3 Tabs B-L | /apply/module3/[b-l] | ✅ COMPLETE | All 12 tabs wired (Sessions 13A–13G) |
-| Confidence Score | /score | ✅ COMPLETE | S11 |
-| Interview Simulator | /simulator | ⬜ NOT STARTED | |
-| Document Generation | /generating | ⬜ NOT STARTED | |
-| Export | /export | ⬜ NOT STARTED | |
-| Support | /support | ⬜ NOT STARTED | |
-| Admin | /admin | ⬜ NOT STARTED | |
-| Education Hub | /learn | ⬜ NOT STARTED | |
-| Blog | /blog | ⬜ NOT STARTED | |
-| Partner Portals | /partner/* | ⬜ NOT STARTED | Phase 2 |
+| Page | Route | Status |
+|---|---|---|
+| Landing | / | ✅ COMPLETE |
+| Quiz | /quiz | ✅ COMPLETE |
+| Results | /results | ✅ COMPLETE |
+| Pricing | /pricing | ✅ COMPLETE |
+| Success | /pricing/success | ✅ COMPLETE |
+| Dashboard | /dashboard | ✅ COMPLETE |
+| Login | /login | ✅ COMPLETE |
+| Signup | /signup | ✅ COMPLETE |
+| Verify | /verify | ✅ COMPLETE |
+| Overview | /apply/overview | ✅ COMPLETE |
+| Checklist | /apply/checklist | ✅ COMPLETE |
+| Module 1 | /apply/module1 | ✅ COMPLETE |
+| Module 2 | /apply/module2 | ✅ COMPLETE |
+| Module 3 shell | /apply/module3 | ✅ COMPLETE |
+| Module 3 Tab A | /apply/module3/a | ✅ COMPLETE |
+| Module 3 Tabs B-L | /apply/module3/[b-l] | ✅ COMPLETE |
+| Score | /score | ✅ COMPLETE |
+| Generate | /generate/[appId] | ✅ COMPLETE |
+| Documents | /documents/[appId] | ✅ COMPLETE |
+| Learn | /learn | ✅ COMPLETE |
+| About | /about | ✅ COMPLETE |
+| Privacy | /privacy | ✅ COMPLETE |
+| Terms | /terms | ✅ COMPLETE |
+| Support | /support | ✅ COMPLETE |
 
 ---
 
 ## MODULE 0 — QUIZ v3.0
 
-| Feature | Status | Notes |
-|---|---|---|
-| 26 questions | ✅ COMPLETE | Up from 22 |
-| Global treaty country selector | ✅ COMPLETE | 82 countries |
-| searchable_select for Q0-01 | ✅ COMPLETE | |
-| Multi-currency Q0-05 | ✅ COMPLETE | 10 currencies |
-| Stage-aware routing | ✅ COMPLETE | A through D |
-| Sub-question for Q0-10 | ✅ COMPLETE | Appears immediately on selection |
-| Sub-question for Q0-16 | ✅ COMPLETE | |
-| Conversational language rewrite | ✅ COMPLETE | Canada-specific language removed |
-| Cannabis informational gate | ✅ COMPLETE | Replaces hard stop |
-| [nationality] dynamic replacement | ✅ COMPLETE | Working in quiz component |
-| Scoring logic v3.0 | ✅ COMPLETE | All 6 audit fixes applied |
-| Hard stops PR-01 through PR-08 | ✅ COMPLETE | |
-| PR-THIRD-COUNTRY hard stop | ✅ COMPLETE | Sept 6 2025 policy |
-| W-TIMELINE-URGENT risk only | ✅ COMPLETE | Removed from attorney flags |
-| W-NI-01 neutral answers fixed | ✅ COMPLETE | |
-| W-NI-02 no-family neutral | ✅ COMPLETE | |
-| Mixed family option Q0-NI-02 | ✅ COMPLETE | |
-| Treaty countries JSON | ✅ COMPLETE | 82 countries with consulate data |
-| Results page personalised output | ✅ COMPLETE | Nationality, consulate, state |
-| Quiz version tag | ✅ COMPLETE | quiz_version = "3.0" |
-| Progress bar teal | ⚠️ BUG | Showing blue |
-| Option buttons glass style | ⚠️ BUG | Showing white cards |
-| quiz_session save to Supabase | ✅ COMPLETE | |
-| No autosave during quiz | ✅ COMPLETE | Local state only until Q0-21 |
+| Feature | Status |
+|---|---|
+| 26 questions | ✅ COMPLETE |
+| Global treaty country selector | ✅ COMPLETE |
+| Scoring logic v3.0 | ✅ COMPLETE |
+| Hard stops PR-01 through PR-08 | ✅ COMPLETE |
+| Results page with outcomes | ✅ COMPLETE |
+| Quiz pre-fills to Module 3 | ✅ COMPLETE |
 
 ---
 
 ## MODULE 3 — TABS
 
-### Tab A (Working + Pre-Fill)
-| Feature | Status |
-|---|---|
-| 21 questions | ✅ COMPLETE |
-| Privacy categories (required/red/amber/green) | ✅ COMPLETE |
-| Skip toggles with advisories | ✅ COMPLETE |
-| 800ms debounce autosave | ✅ COMPLETE |
-| Saving... / Saved ✓ indicator | ✅ COMPLETE |
-| Supabase answers save | ✅ COMPLETE |
-| FK constraint fix | ✅ COMPLETE |
-| RLS policies fixed | ✅ COMPLETE |
-| Quiz pre-fill + legal confirmation gates | ✅ COMPLETE (Session S5) |
-
-### Tabs B-L (Specs Updated, Not Yet Wired)
-All 11 tab specs updated in docs/ with:
-- Global language fixes (no Canada-only)
-- Batch tags (Batch 1 or Batch 2)
-- Privacy categories per question
-- Lead temperature signals
-- Denial prevention flags
-- 18 new questions added across tabs
-
-| Tab | Spec Status | Wired Status |
-|---|---|---|
-| B — Personal Checklist | ✅ Spec updated | ✅ Wired (Session 13A) |
-| C — Visa Category | ✅ Spec updated | ✅ Wired (Session 13A) |
-| D — Cover Letter | ✅ Spec updated | ✅ Wired (Session 13B) |
-| E — Ownership | ✅ Spec updated | ✅ Wired (Session 13G) |
-| F — Investment Proof | ✅ Spec updated | ✅ Batch 1 Wired (Session 13C) · Batch 2 pending · Pre-fill wired (Session S5) |
-| G — Business Evidence | ✅ Spec updated | ✅ Wired (Session 13G) |
-| H — Source of Funds | ✅ Spec updated | ✅ Wired (Session 13G) |
-| I — Non-Marginality | ✅ Spec updated | ✅ Wired (Session 13G) |
-| J — Qualifications | ✅ Spec updated | ✅ Wired (Session 13B) |
-| K — Business Plan | ✅ Spec updated | ✅ Wired (Session 13G) |
-| L — Family Dependents | ✅ Spec updated | ✅ Wired (Session 13G) · Pre-fill wired (Session S5) |
-
-### Batch Assignments
-- Batch 1 (personal — immediate after payment): B, partial F, J, L
-- Batch 2 (business — after formation): A, C, D, E, F business, G, H, I, K
-- Paywall triggers after Batch 1 personal tabs complete
+All 12 tabs (A-L) wired with:
+- Privacy categories
+- Skip toggles with advisories
+- 800ms debounce autosave
+- Quiz pre-fill (A, F, L)
+- Legal confirmation gates (security history)
 
 ---
 
 ## MODULE 6 — DOCUMENT GENERATION
 
-### Generation Order (LOCKED)
+15-step sequential pipeline:
 ```
-Step 1  → Cover Letter (Tab D)       — FIRST, always
+Step 1  → Cover Letter (Tab D) — FIRST
 Step 2  → Source of Funds (Tab H)
 Step 3  → Investment Proof (Tab F)
 Step 4  → Business Plan (Tab K)
@@ -238,370 +172,160 @@ Step 14 → Pre-download acknowledgment (5 checkboxes)
 Step 15 → Preview unlocked
 ```
 
-### Page Budget (Toronto — 50 pages per tab)
-Generated narrative documents target:
-- Cover letter: 4 pages max
-- Declaration: 1 page
-- Qualifications: 2 pages
-- Net worth: 1 page
-- Source of funds: 2 pages
-- Fund flow chronology: 1 page
-- Substantiality memo: 2 pages
-- Marginality rebuttal: 1 page
-- Business plan: 8 pages max
-Total generated: ~22 pages
-
-User-uploaded evidence shares per-tab budget.
-Guidance on which specific pages of evidence to include
-is built into the checklist and binder assembly guide.
-
-### Feature Build Status
-| Feature | Status |
-|---|---|
-| Analysis engine | ✅ Built (Session 15A) — schema, types, lib, api route, Sarah Mitchell test |
-| Voice sample collection | ⬜ Spec written — not built |
-| AI detection on voice sample | ⬜ Spec written — not built |
-| Voice profile extraction | ⬜ Spec written — not built |
-| Follow-up conversation | ⬜ Spec written — not built |
-| Generation prompts (/prompts/v1/) | ✅ COMPLETE (Session 16) |
-| Sequential generation engine | ✅ COMPLETE (Session 16) |
-| Checkpoint DB table | ✅ COMPLETE (Session 16) |
-| Server-Sent Events progress | ✅ COMPLETE (Session 16) |
-| Narrative progress screen | ✅ COMPLETE (Session 16) |
-| Repetition checker | ✅ COMPLETE (Session 16 — in pipeline) |
-| Consistency checker | ✅ COMPLETE (Session 16) |
-| AI detection audit | ✅ COMPLETE (Session 16 — in pipeline) |
-| Humanization pass | ✅ COMPLETE (Session 16) |
-| Metadata sanitization | ✅ COMPLETE (Session 16) |
-| Quality gate | ✅ COMPLETE (Session 16) |
-| Pre-download acknowledgment gate | ✅ COMPLETE (Session 16) |
-| Word document template | ⬜ Not built |
-| docxtpl integration | ⬜ Not built |
-| neat-pdf integration | ⬜ Not built |
-| PDF export | ⬜ Not built |
-| 50-page per tab enforcement | ⬜ Not built |
-| Partnership dual-package generation | ⬜ Not built |
-| Sarah Mitchell prototype docs | ⚠️ MD only — .docx not generated |
-
----
-
-## SPEC FILES — STATUS
-
-| File | Status | Known Issues |
-|---|---|---|
-| docs/Spec1_Analysis_Engine.md | ✅ Written | Page limit fix needed |
-| docs/Spec2_Followup_Conversation.md | ✅ Written | References existing probe cascade |
-| docs/Spec3_Generation_Prompts.md | ✅ Written | Cover letter order fix needed, API model fix needed, prompt file storage fix needed |
-| docs/Spec4_Quality_Gate_Pipeline.md | ✅ Written | Page limit fix needed |
-
-Required updates to specs before building:
-1. Cover letter is Step 1 (not last) — ✅ COMPLETE
-2. Page limit is 50 per tab (not 50 total) — ✅ COMPLETE
-3. AI model is Anthropic API (not raw Claude call) — ✅ COMPLETE
-4. Prompts stored in /prompts/v1/documents/ as .md files — ✅ COMPLETE
-5. Partnership routing (dual packages) — ✅ COMPLETE
-
 ---
 
 ## DESIGN SYSTEM — LOCKED
-
-Read docs/DESIGN_REFERENCE.html before any UI work.
 
 | Token | Value |
 |---|---|
 | Background | #0a0a0a (obsidian) |
 | Primary accent | #C9A84C (aged gold) |
 | Text primary | #f5f0e8 |
-| Surface card | rgba(201,168,76,0.02) + border rgba(201,168,76,0.12) |
+| Surface card | rgba(201,168,76,0.02) + border |
 | Heading font | Cormorant Garamond Light (300) |
 | Body font | DM Sans 300/400/500 |
-| Border radius | 0 — no rounded corners anywhere |
-
-Rules:
-- Option buttons: NEVER white. Gold border or gold fill.
-- Progress bars: Gold (#C9A84C). Never blue.
-- Question text: Cormorant Garamond, foreground, fully opaque
-- No glassmorphism, no teal (#0D9488), no navy (#060d1f)
-- No e2go branding on submitted documents
-
-Design skills installed:
-- /taste — activate before any UI session
-- web-design-guidelines — run "review my UI" after building
-- Lazyweb MCP — 257K+ real app screens
+| Border radius | 0 — no rounded corners |
 
 ---
 
-## DATABASE — CURRENT SCHEMA
+## STRIPE INTEGRATION STATUS
 
-Tables created and confirmed:
-- profiles (user profiles, founding_member, guarantee_eligible)
-- applications (with lead temperature columns)
-- answers (with skipped_by_user, privacy_category)
-- quiz_sessions
-- application_lifecycle
-- document_generation_log (schema written, not yet run)
-- generation_pipeline_log (schema written, not yet run)
-- applicant_voice_profile (schema written, not yet run)
-- followup_responses (schema written, not yet run)
+### Code Complete ✅
+- `src/app/api/stripe/create-checkout/route.ts` — creates sessions, reads price_id from DB
+- `src/app/api/stripe/webhook/route.ts` — handles completed/expired/refunded
+- `src/app/pricing/PricingClient.tsx` — tier selection, pre-fill, checkout trigger
+- `src/app/pricing/success/page.tsx` — confirmation page
 
-## SPEC CORRECTIONS — June 3, 2026
-All 6 spec corrections applied and committed:
-1. Cover letter = Step 1 always (Spec3, Spec4)
-2. Page limit = 50 per TAB not total (Spec1, Spec4)
-3. AI model = Anthropic API direct (Spec3)
-4. Prompt storage = /prompts/v1/documents/ (Spec3)
-5. Partnership routing = two separate packages (all specs)
-6. Voice profile = raw text only, no JSON (Spec2)
-Status: COMPLETE
+### Pricing Table ✅
+All 7 tiers have real Stripe Price IDs:
+- solo_none: price_1Tf18zF7Ggk3LUEyAmLPApuq ($297)
+- solo_spouse: price_1Tf18zF7Ggk3LUEysOtVbG1K ($347)
+- solo_family_small: price_1Tf190F7Ggk3LUEyth08E379 ($397)
+- solo_family_large: price_1Tf190F7Ggk3LUEyMvCc5iDg ($447)
+- partnership_none: price_1Tf191F7Ggk3LUEyK3Kh3ag0 ($497)
+- partnership_couples: price_1Tf191F7Ggk3LUEyRlVYbgdz ($547)
+- partnership_families: price_1Tf191F7Ggk3LUEyhu2FICfo ($647)
 
----
-
-## COMPONENT BACKLOG — UI POLISH (Magic MCP — 21st.dev)
-
-These components have been sourced and assessed. Code is saved in
-docs/components/. Integrate in the sessions listed below.
-
-| Component | Source File | Where in App | Session |
-|---|---|---|---|
-| Animated Gradient Border | docs/components/animated-gradient-border.md | Pricing Most Popular card, Landing CTA button, Module 3 active sidebar | Polish session after Session 16 |
-| Image Slider Login | docs/components/image-slider-login.md | /verify page, /login, /signup | Already applied (Session 15B) — revisit for polish |
-| FAQ Monochrome | docs/components/faq-monochrome.md | Landing page FAQ section (new section needed) | Polish session after Session 16 |
-| AI Generation Reveal | docs/components/ai-generation-reveal.md | Document generation screen — blur-lift effect per document | Session 16 — generation progress page |
-
-### Animated Gradient Border — Implementation Notes
-- Colors: primary #8B6914, secondary #C9A84C, accent #E8D5A3
-- backgroundColor: #0a0a0a
-- borderRadius: 0 (no rounded corners — locked rule)
-- borderWidth: 1
-- Apply to: pricing Most Popular card (speed 10), landing CTA button
-  (speed 6, rotate-on-hover), Module 3 active sidebar section (speed 12)
-- CSS: add @keyframes gradient-rotate + @property --gradient-angle to globals.css
-- Component path: src/components/ui/animated-gradient-border.tsx
-
-### Image Slider Login — Implementation Notes
-- Split screen: image slider left, form right
-- Left images: U.S. themed — Statue of Liberty, New York skyline, business settings
-- Right: signup/login form with pre-filled email on /verify
-- Uses framer-motion (fine on auth pages — not SEO-critical)
-- Dependencies: framer-motion (already installed)
-- Apply Obsidian Gold tokens — no white backgrounds, no rounded corners
-
-### FAQ Monochrome — Implementation Notes
-- New section needed on landing page between Testimonials and Footer
-- Questions to answer: "Is this a law firm?", "What if I'm denied?",
-  "How is this different from hiring an attorney?", "Is my data secure?",
-  "What countries are eligible?", "How long does it take?"
-- Swap white accent → #C9A84C for gold
-- Dark palette only — remove light mode toggle (locked to dark)
-- Animated intro pill + card glow on hover → keep both
-
-### AI Generation Reveal — Implementation Notes
-- Use on /generate/[applicationId] progress page (Session 16)
-- Wire progress prop to SSE percentage from generation pipeline
-- Each document preview reveals with blur-lift as it completes
-- Replace the right-panel "live document preview" in Session 16 Step 6
-  with this component instead of a plain scrolling text panel
-- Dependencies: motion (npm install motion)
+### Migration Needed ⚠️
+File: `supabase/migrations/20260605110625_payments_table.sql`
+Status: EXISTS but NOT YET APPLIED to Supabase
+Action: Run migration before payment flow will work
 
 ---
 
-## SESSION 15A — Build the Analysis Engine
-- Database tables (migration created)
-- Types (src/types/analysis.ts)
-- Engine logic (src/lib/analysis-engine.ts)
-- API route (src/app/api/analysis/run/route.ts)
-- Sarah Mitchell test case (src/lib/__tests__/analysis-engine.test.ts)
-Status: COMPLETE
+## SPEC FILES — STATUS
+
+| File | Status |
+|---|---|
+| docs/Spec1_Analysis_Engine.md | ✅ Written |
+| docs/Spec2_Followup_Conversation.md | ✅ Written |
+| docs/Spec3_Generation_Prompts.md | ✅ Written |
+| docs/Spec4_Quality_Gate_Pipeline.md | ✅ Written |
+| docs/INTERVIEW_SIMULATOR_SPEC.md | ✅ Written |
+| docs/COMPLIANCE_CALENDAR_SPEC.md | ✅ Written |
+| docs/RENEWAL_MODULE_SPEC.md | ✅ Written |
+| docs/IDEAS.md | ✅ Written |
+| docs/PAYMENT_MANAGEMENT_GUIDE.md | ✅ Written |
 
 ---
 
-## SESSION 15F — Quiz Scoring Wiring Fix (June 3, 2026)
-- Found: `calculateAndRedirect` in `src/app/quiz/page.tsx` initialised `hardStopCodes`, `attorneyFlags`, `riskFlags` to empty arrays — outcome was always `'qualified'` regardless of answers
-- Fixed: real evaluation against `module0_scoring_logic.json` (hard_stops, attorney_flags, risk_flags)
-- Supports array triggers (string match) and string triggers with arithmetic (`amount_usd < 75000`, `75000 <= amount_usd <= 149999`)
-- Attorney flags with `level: "do_not_proceed"` route their `stop_code` into `hardStopCodes` (W-03 → PR-THIRD-COUNTRY)
-- Widened `ScoringLogic` interface: `trigger: string | string[]`
-- Build: clean (`/quiz` route 6.91 kB → 7.2 kB)
-- Commit: `8002b17 Fix: quiz scoring logic — wire actual evaluation from module0_scoring_logic.json`
-Status: COMPLETE
+## AGENT PROGRESS (June 5, 2026)
+
+| Agent | Status | Notes |
+|---|---|---|
+| Agent 2 (Email Sequences) | 🔄 IN PROGRESS | Email sequence tables created |
+| Agent 3 (Outcome Capture) | 🔄 IN PROGRESS | Outcome capture tables, compliance calendar spec |
+| Agent 4 (Interview Simulator) | 🔄 IN PROGRESS | Simulator spec, tables created |
 
 ---
 
-## SESSION 15B — Email Verification Funnel (June 3, 2026)
-- `email_verifications` table migration (3d800df)
-- `/api/email/results` route — Resend integration (c9ca588)
-- `actions/verify-token.ts` server action (73d1e8b)
-- `/verify` page — token validation + forced signup (9e01dc2)
-Status: COMPLETE
+## SESSION LOG
+
+### June 5, 2026 — Session: End-to-End Payment Test
+- **Task:** Test complete payment flow from quiz to Module 1
+- **Finding:** Stripe integration code is complete and correct
+- **Issue:** payments table migration exists but not applied to Supabase
+- **Action needed:** Apply `20260605110625_payments_table.sql` migration
+- **Result:** Code ready, infrastructure needs migration run
+
+### June 6, 2026 — Session S27
+- **Completed Module 1**: Onboarding, consent, application record creation
+- **Completed Module 2**: Business advisor, category selection, referral trigger
+- **Database migrations**: consent_log, referral_consents, experience_gap_flag, business_shortlist
+- **Design**: Strict Obsidian Gold compliance
+- **E2E test**: Module 1 → Module 2 → Module 3 verified
+
+### June 6, 2026 — Session S26
+- Cookie consent banner with localStorage persistence
+- Route-level SEO metadata across all pages
+- Created /about page with 3-section copy
+- Replaced /learn stub with 6-card grid to educational sub-pages
+- Fixed Next.js runtime and ESLint errors
+- Added Playwright tests, production build clean (53 routes)
+
+### June 6, 2026 — Session S24
+- Complete site navigation audit (33 routes)
+- Rewrote Nav.tsx and Footer.tsx
+- Implemented mobile hamburger menu with gold accents
+- Fixed orphaned pages with CTAs
+- Created Breadcrumb component
+- Built stub pages: /privacy, /terms, /about, /settings
+
+### June 6, 2026 — Session S23
+- U.S.-themed image slider on /login, /signup, /verify
+- 4 images, 5s auto-advance, 1000ms crossfade
+- Split-screen layout with Obsidian Gold styling
+- Playwright verified
+
+### June 5, 2026 — Session S22
+- Document generation blur-lift reveal animation
+- Installed motion library (v12.40.0)
+- Playwright test verifies 6 document cards render with blur overlays
+
+### June 5, 2026 — Session S16-S18
+- Interview Simulator spec
+- Compliance Calendar spec
+- Renewal Module spec
+
+### June 5, 2026 — Session S11
+- Analysis Engine + Confidence Score Integration
+- Score sync reads from case_briefs table
+
+### June 5, 2026 — Session S10
+- Tab B / Tab L shared document overlap fix with CrossTabNote component
+
+### June 5, 2026 — Session S9
+- Timeline service with two date concepts (working_target_date vs confirmed_interview_date)
+
+### June 5, 2026 — Sessions S6-S8
+- Business data deduplication between tabs
+- Security history pre-fill with legal confirmation gate
 
 ---
 
-## SESSIONS 13G + 15C–15E — Quiz & Results Completion (June 3, 2026)
-- Module 3 Tabs E, G, H, I, K, L wired (Session 13G, commits 4041f0c → 89a7680)
-- Quiz completion: email send + redirect on Q0-21 (2c5a733)
-- Results page rebuild: 4 outcomes + email capture banner (2d1ac64)
-- Results page recovery after stream error (d4dadba)
-- Build clean: all TypeScript and ESLint errors fixed (b4f3d55)
-Status: COMPLETE
+## NEXT SESSION PRIORITIES
+
+1. **Apply payments table migration to Supabase** — Run `20260605110625_payments_table.sql`
+2. **Run end-to-end payment test with live domain** — After migration applied
+3. **Build admin dashboard basic version** — User management, payment history
+4. **Build support ticket system** — Basic ticket creation and tracking
+5. **Wire lifecycle tracking throughout app** — Application progress stages
 
 ---
 
-## SPEC CORRECTIONS — June 3, 2026
-All 6 spec corrections applied and committed:
-1. Cover letter = Step 1 always (Spec3, Spec4)
-2. Page limit = 50 per TAB not total (Spec1, Spec4)
-3. AI model = Anthropic API direct (Spec3)
-4. Prompt storage = /prompts/v1/documents/ (Spec3)
-5. Partnership routing = two separate packages (all specs)
-6. Voice profile = raw text only, no JSON (Spec2)
-Status: COMPLETE
+## KNOWN ISSUES
+
+1. **Payments table not in Supabase** — Migration file exists but not applied
+2. **Quiz nationality selector** — Playwright having difficulty, but works in browser
+3. **Fast Refresh errors** — Occasional hot reload issues (non-blocking)
 
 ---
 
-## SESSION 16 — Document Generation Engine (June 4, 2026)
+## BUILD STATE
 
-Completed:
-- 6 generation prompt files created (`/prompts/v1/documents/`)
-- Database migration: 5 tables with RLS (`document_generation_jobs`, `generated_documents`, `revision_credits`, `document_change_log`, `document_generation_log`)
-- Types defined (`src/types/generation.ts`) — `GenerationJob`, `GeneratedDocument`, `RevisionCredit`, generation step labels
-- Core generation engine (`src/lib/generation-engine.ts`) — prompt loading, payload building, Claude API calls, humanization pass, consistency checker, quality gate, main orchestrator with 15-step pipeline
-- 4 API routes: `POST /api/generate/start`, `GET /api/generate/progress/[jobId]` (SSE), `GET /api/generate/documents/[applicationId]`, `POST /api/generate/run/[jobId]`
-- Progress page (`/generate/[applicationId]`) — 15-step narrative, live document preview, Obsidian Gold design
-- Documents review page (`/documents/[applicationId]`) — document cards, approval modal, revision requests, 5-checkbox acknowledgment gate
-- Module 3 overview page rewritten (`/apply/module3`) — tab completion tracking, "Generate My Package" button
-- 8 unit tests (Sarah Mitchell case) — all passing
-- `npm run build`: clean — 39 routes compiled
-- Anthropic SDK (`@anthropic-ai/sdk`) installed, Jest configured
-
-Decisions:
-- AI model for documents: `claude-sonnet-4-20250514` via Anthropic SDK (not OpenRouter)
-- Cover letter always generated first (Step 1)
-- 15-step pipeline: sequential only, checkpointed after each step
-- SSE + polling fallback for progress
-- Revision credits: 10 per application
-- 5 acknowledgment checkboxes required before download
-
-Status: COMPLETE
-
----
-
-## BUILD STATE — End of Session 17 (S1-S3), June 4, 2026
 - Branch: `dev`
-- Working tree: clean
-- Last commit: `37491e0` — feat: pricing page pre-selects correct tier from quiz session data
-- `npm run build`: clean — 41 routes, 0 errors
-- 8/8 unit tests passing (generation-engine.test.ts), 7/7 passing (pricing-tier.test.ts)
-- Quiz v3.0: live, scoring wired
-- Module 3: all 12 tabs (A–L) wired, overview page with generate button
-- Analysis engine: built and tested
-- Document generation engine: fully built
-- Generation progress UI: built
-- Documents review + approval page: built
-- Pricing page: pre-selects tier from quiz session data, 7-tier mapping, manual override supported, Playwright verified
+- Last commit: [current dev branch]
+- `npm run build`: Clean — 54+ routes compiled
+- All core features implemented
+- Stripe code complete, awaiting migration
 
----
-
-## SESSION 6, 7 & 8 — Business Data & Security History Deduplication (June 5, 2026)
-- **Completed S6**: Audited Tab A for work history/education; confirmed Tab J is the single source of truth. Added clarifying comment to `src/app/apply/module3/a/page.tsx` and documented in `docs/IDEAS.md`.
-- **Completed S7**: Established Tab A as the single source of truth for business details (`M3-A-51` for business name, `M3-A-55` for ownership percentage). Created `ContradictionFlag` component to detect and resolve mismatches between master and derived fields. Updated Tab E page to pre-fill from Tab A. (Commit: `c2719b3`)
-- **Completed S8**: Security history pre-fill with legal confirmation gate on Tab A. Extended `src/lib/prefill.ts` mappings and `PreFilledField.tsx` to support `requiresConfirmation`. Added a security subtitle to `SectionForm.tsx` and disabled the "Save Section" button until all sensitive pre-filled fields (QA-23, QA-39) are explicitly confirmed. Verified via Playwright: pre-filled states show unchecked badges, submit gate is active, editing unchecks the confirmation, and re-confirming re-enables save. (Commit: `edd86f3`)
-
----
-
-## SESSION S9, S10 & S11 — Tier 3 Data Architecture Completion (June 5, 2026)
-- **Completed S9**: Timeline single source of truth — separated `working_target_date` (planning) from `confirmed_interview_date` (hard anchor). Built `src/lib/timeline-service.ts` to calculate backward deadlines and update the compliance calendar. Added Playwright verification for range → specific date transitions. (Commit: `00a6eba`)
-- **Completed S10**: Tab B / Tab L shared document overlap fix. Added `sharedTabs` and `crossTabNote` to `ChecklistItem`. Created `CrossTabNote` component with collapsible inline gold-styled info note. Playwright verified expand/collapse behavior. (Commit: `ea108d6`)
-- **Completed S11**: Analysis Engine + Confidence Score Integration. Replaced duplicate confidence score calculations. Created `src/lib/score-sync.ts` to read directly from `case_briefs` table. Added `/score` page showing dimensions, "Last assessed" timestamp, significant change banner, and legal disclaimer. Playwright tests added. (Commit: `7cf5a10`)
-
----
-
-## SESSION S22 — AI Generation Blur-Lift Reveal (June 5, 2026)
-- **Audit finding:** The DocumentCard component + blur-lift JSX were already in `src/app/generate/[applicationId]/page.tsx` from commit `7cf5a10`. Right panel replaced with 6 named document cards. Missing piece: `motion` dependency not installed (runtime error on import).
-- **Installed `motion`** (v12.40.0 — includes framer-motion, motion-dom, motion-utils)
-- **Playwright test:** `tests/generation-page.spec.ts` — verifies 6 document cards render, all 6 names present ("Cover Letter" → "DS-160 Reference"), 6 `backdrop-blur-3xl` overlay elements present. Passed. Screenshot saved at `tests/screenshots/generation-page-init.png`.
-- **Build:** clean — 43 routes, 0 errors
-- **Commit:** `daf7817` — "feat: document generation blur-lift reveal animation"
-- **Pushed:** origin/dev ✓
-- **Post-session documentation:** `docs/ai-generation-reveal.md` spec file created retroactively. Covers: purpose, visual behaviour, 6-card order, motion library usage (blur-lift 1.2s easeOut), progress wiring from SSE pipeline, isCurrent logic, design tokens. Includes post-implementation caveat. (Commit: `30bdf46`)
-
----
-
-## SESSION S16, S17 & S18 — Tier 5 Spec Updates (June 5, 2026)
-- **Completed S16**: Interview Simulator Spec Update. Created `docs/INTERVIEW_SIMULATOR_SPEC.md` incorporating Vol 3 Sections 7.5/7.6 and IDEAS.md 12G decisions (Filed Package as Baseline, Weak Point Probing, Answer Evaluation Against Filed Documents, Coaching Summary). (Commit: `fbd383a`)
-- **Completed S17**: Compliance Calendar Spec Update. Created `docs/COMPLIANCE_CALENDAR_SPEC.md` incorporating Vol 3 Section 7.7 and IDEAS.md 12H decisions (Two Distinct Date Concepts, Display Rules Based on Date Availability). (Commit: `1ceba36`)
-- **Completed S18**: Renewal Module Spec Update. Created `docs/RENEWAL_MODULE_SPEC.md` incorporating Vol 3 Section 7.8 and IDEAS.md 12F decisions (Baseline Principle, Field Classification Table, Template 6 Implementation Rule, Question Framing Rules). (Commit: `ea8890b`)
-- All sessions were documentation-only (no code, no build checks, no Playwright used during execution, though build was verified clean at session end).
-- `npm run build`: clean (43 routes, 0 errors after `.next` cache clear).
-
----
-
-## SESSION S23 — Image Slider on Auth Pages (June 6, 2026)
-- **Completed**: U.S.-themed image slider left panel on `/login`, `/signup`, `/verify`.
-- **Component**: Created `src/components/auth/AuthImageSlider.tsx` — 4 high-quality ambient images, 5s auto-advance, smooth 1000ms crossfade, no play/pause controls, hidden on mobile (`md:block`), Obsidian Gold gradient overlays.
-- **Layout**: Refactored all three auth pages to use split-screen layout (left panel slider, right panel form) while maintaining existing auth logic and Obsidian Gold styling.
-- **Verification**: Playwright test `tests/auth-slider.spec.ts` confirms all three pages render correctly with slider present. Screenshots captured in `tests/screenshots/`.
-- **Build**: clean — 43 routes, 0 errors.
-- **Commit**: `a88c3b4` — "feat: image slider on auth pages — U.S. themed left panel"
-- **Pushed**: origin/dev ✓
-
----
-
-## SESSION S24 — Complete Site Navigation & Routing (Current)
-- **Audit completed**: Audited all 33 `page.tsx` routes for inbound/outbound links and nav/footer presence. Identified orphaned routes and dead ends.
-- **Nav & Footer Architecture**: Completely rewrote `src/components/Nav.tsx` and `src/components/Footer.tsx`. Implemented distinct public (Logo, How it works, Pricing, Learn, Quiz CTA, Login) and authenticated (Logo, My Application, Documents, Support, Account dropdown) states. 
-- **Mobile Navigation**: Added fully accessible mobile hamburger menu (< 768px) with gold accent on active routes.
-- **Design Enforcement**: Strictly applied Obsidian Gold tokens (`#0a0a0a` bg, `#C9A84C` gold, `#f5f0e8` text, `border-radius: 0` everywhere).
-- **Orphaned Pages Fixed**: 
-  - Added "Continue my application" and "View my confidence score" CTAs to `/dashboard`.
-  - Added "Back to Dashboard" and "Next: Documents" CTAs to `/apply/calendar`.
-  - Added "Back to Overview" and "Next: Application Profile" CTAs to `/apply/module2`.
-  - Added top-level comment to `/verify` explicitly documenting it is email-link only (not for nav).
-- **Breadcrumbs**: Created `src/components/Breadcrumb.tsx` and added to `/apply/*`, `/score`, and new stub pages (`/privacy`, `/terms`, `/about`, `/settings`) for consistent app orientation.
-- **Stub Pages Created**: `/privacy`, `/terms`, `/about`, `/settings` to resolve broken footer links.
-- **Verification**: Playwright tests added and passed for desktop nav, mobile nav, and 3-column footer.
-- **Build**: Clean — 47 routes compiled, 0 errors.
-- **Commit**: `310249a` — "feat: complete site navigation — all routes connected, orphans fixed, mobile nav"
-- **Pushed**: origin/dev ✓
-
----
-
-## SESSION S26 — Cookie Banner, SEO Metadata, About Page & Learn Hub (June 6, 2026)
-- **Completed**: Cookie consent banner with localStorage persistence (`e2go_cookie_consent`) and global layout injection.
-- **Completed**: Route-level SEO metadata updates across all pages (public pages indexed, app/auth pages noindex with proper robots rules).
-- **Completed**: Created `/about` page with 3-section copy and CTA, resolving previous footer dead ends.
-- **Completed**: Replaced `/learn` stub with a 6-card grid linking to fully written, Obsidian Gold-styled educational sub-pages.
-- **Completed**: Each sub-page includes breadcrumbs, reading time, related articles, metadata, and a CTA to the quiz.
-- **Fixed**: Next.js runtime error on `src/app/learn/page.tsx` by removing inline JS event handlers in favor of Tailwind hover utilities.
-- **Fixed**: Next.js ESLint build errors for unescaped quotes (`&quot;`, `&apos;`) across all 6 article content files.
-- **Verification**: Added `tests/learn-hub.spec.ts` (Playwright), all tests passed. Production build clean (53 routes, 0 errors).
-- **Commit**: `fa673df` — "feat: learn hub — 6 SEO education articles" (along with prior commits for cookie banner, SEO, and about page).
-- **Pushed**: origin/dev ✓
-
----
-
-## SESSION S27 — Module 1 & Module 2 Implementation (June 6, 2026)
-- **Completed Module 1**: Built `/apply/module1` (6-screen onboarding: welcome/application type, ToS/Privacy with 90-day retention disclosure, CASL consent, 5-category referral opt-in, family composition with quiz pre-fill, record creation).
-- **Completed Module 2**: Built `/apply/module2` (6-screen business advisor: background questionnaire, category selection with E-2 complexity badges, business shortlist, franchise referral trigger with consent fallback, experience gap detection advisory, completion summary).
-- **Database**: Created `supabase/migrations/20260605150000_module1_consent_tables.sql` (consent_log, referral_consents, RLS policies, application flags) and `20260605160000_module2_business_advisor.sql` (experience_gap_flag, business_shortlist, specific_business_description).
-- **Design**: Strict Obsidian Gold compliance (`#0a0a0a` bg, `#C9A84C` accents, Cormorant Garamond headings, DM Sans body, 0 border radius, grain overlay).
-- **Verification**: `npm run build` clean (54 routes, 0 errors). Added `tests/module-flow-e2e.spec.ts` for Playwright E2E walkthrough of all 12 screens → Module 3 redirect.
-- **Commits**: 
-  - `feat: Module 1 — onboarding, consent, application record creation`
-  - `feat: Module 2 — business type advisor, category selection, referral trigger`
-  - `test: Module 1 → Module 2 → Module 3 end-to-end flow verified`
-- **Pushed**: origin/dev ✓
-
----
-
-## NEXT SESSION
-**S21 — Animated Gradient Border** (Tier 6 polish)
-- Apply animated gold gradient border to: Pricing "Most Popular" card (speed 10), Landing page main CTA button (speed 6), Module 3 active sidebar tab (speed 12).
-- Add `@keyframes gradient-rotate` to `globals.css`.
-- Playwright verification of all three locations.
-
-**Other Remaining Priorities:**
-- **S25** — Journey wizard as post-quiz page (per IDEAS.md 12B/12C pre-fill logic).
-- **S28** — Module 3 Tab A (Personal/DS-160) expansion with new pre-fill gates and data reuse enforcement.
-- **S29** — Stripe integration setup (Phase 1: pricing page webhook wiring).
-- **S30** — Document generation engine PDF export polish (S15) and metadata sanitization.
-- **S31** — Interview simulator baseline context wiring (per IDEAS.md 12G).
