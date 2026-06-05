@@ -64,8 +64,67 @@ export default function PrivacyPolicyPage() {
             <li><strong>Access Controls:</strong> Access to user data is restricted to authorized personnel on a need-to-know basis. Access is logged and audited.</li>
             <li><strong>Storage Location:</strong> User data is stored on servers located in Canada or the United States.</li>
             <li><strong>Retention:</strong> Application data is retained until 90 days after your visa outcome is confirmed, then permanently deleted. Minimal compliance calendar data (email, visa dates, business name) is retained for compliance calendar subscribers only. You may request deletion at any time.</li>
-            <li><strong>Third-Party Processors:</strong> Cloud hosting, payment processing (Stripe), email delivery, analytics (anonymized), and document generation (LLM API providers — inputs are processed in-memory and not retained beyond the API call).</li>
+            <li><strong>Third-Party Processors:</strong> Cloud hosting, payment processing (Stripe), email delivery, analytics (anonymized), document generation (LLM API providers — inputs are processed in-memory and not retained beyond the API call), and voice transcription (Groq — audio processed transiently, not retained).</li>
           </ul>
+
+          <h3 className="text-lg mb-2 mt-4 font-medium" style={{ color: "#f5f0e8" }}>Sub-Processors</h3>
+          <div className="overflow-x-auto mb-6">
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "14px" }}>
+              <thead>
+                <tr style={{ borderBottom: "1px solid rgba(201,168,76,0.3)" }}>
+                  <th style={{ textAlign: "left", padding: "8px 0", color: "#C9A84C" }}>Processor</th>
+                  <th style={{ textAlign: "left", padding: "8px 0", color: "#C9A84C" }}>Service</th>
+                  <th style={{ textAlign: "left", padding: "8px 0", color: "#C9A84C" }}>Data Processed</th>
+                  <th style={{ textAlign: "left", padding: "8px 0", color: "#C9A84C" }}>Location</th>
+                  <th style={{ textAlign: "left", padding: "8px 0", color: "#C9A84C" }}>Retention</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr style={{ borderBottom: "1px solid rgba(201,168,76,0.15)" }}>
+                  <td style={{ padding: "8px 0" }}>Supabase Inc.</td>
+                  <td style={{ padding: "8px 0" }}>Cloud hosting & database</td>
+                  <td style={{ padding: "8px 0" }}>Application data</td>
+                  <td style={{ padding: "8px 0" }}>Canada / US</td>
+                  <td style={{ padding: "8px 0" }}>Per retention policy</td>
+                </tr>
+                <tr style={{ borderBottom: "1px solid rgba(201,168,76,0.15)" }}>
+                  <td style={{ padding: "8px 0" }}>Stripe Inc.</td>
+                  <td style={{ padding: "8px 0" }}>Payment processing</td>
+                  <td style={{ padding: "8px 0" }}>Payment tokens only</td>
+                  <td style={{ padding: "8px 0" }}>United States</td>
+                  <td style={{ padding: "8px 0" }}>Per Stripe policy</td>
+                </tr>
+                <tr style={{ borderBottom: "1px solid rgba(201,168,76,0.15)" }}>
+                  <td style={{ padding: "8px 0" }}>Resend Inc.</td>
+                  <td style={{ padding: "8px 0" }}>Email delivery</td>
+                  <td style={{ padding: "8px 0" }}>Email addresses</td>
+                  <td style={{ padding: "8px 0" }}>United States</td>
+                  <td style={{ padding: "8px 0" }}>Per Resend policy</td>
+                </tr>
+                <tr style={{ borderBottom: "1px solid rgba(201,168,76,0.15)" }}>
+                  <td style={{ padding: "8px 0" }}>PostHog Inc.</td>
+                  <td style={{ padding: "8px 0" }}>Analytics (anonymized)</td>
+                  <td style={{ padding: "8px 0" }}>Anonymous usage data</td>
+                  <td style={{ padding: "8px 0" }}>United States</td>
+                  <td style={{ padding: "8px 0" }}>90 days</td>
+                </tr>
+                <tr style={{ borderBottom: "1px solid rgba(201,168,76,0.15)" }}>
+                  <td style={{ padding: "8px 0" }}>Anthropic PBC</td>
+                  <td style={{ padding: "8px 0" }}>Document generation</td>
+                  <td style={{ padding: "8px 0" }}>Application data (transient)</td>
+                  <td style={{ padding: "8px 0" }}>United States</td>
+                  <td style={{ padding: "8px 0" }}>In-memory only</td>
+                </tr>
+                <tr>
+                  <td style={{ padding: "8px 0" }}>Groq Inc.</td>
+                  <td style={{ padding: "8px 0" }}>Voice transcription</td>
+                  <td style={{ padding: "8px 0" }}>Audio (transient, not retained)</td>
+                  <td style={{ padding: "8px 0" }}>United States</td>
+                  <td style={{ padding: "8px 0" }}>Zero Data Retention enabled</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
 
           <h2 className="text-2xl mb-4 mt-8" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#f5f0e8", fontWeight: 400 }}>4. SENSITIVE INFORMATION</h2>
           <ul className="list-disc ml-6 mb-4 space-y-2">
@@ -111,6 +170,9 @@ export default function PrivacyPolicyPage() {
 
           <h2 className="text-2xl mb-4 mt-8" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#f5f0e8", fontWeight: 400 }}>10. CONTACT</h2>
           <p className="mb-4">For privacy-related inquiries: privacy@e2go.app<br />For general support: support@e2go.app</p>
+
+          <h2 className="text-2xl mb-4 mt-8" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#f5f0e8", fontWeight: 400 }}>11. VOICE TRANSCRIPTION</h2>
+          <p className="mb-4">If you use the interview simulator in voice mode, your audio is transcribed by Groq Inc. (groq.com), a third-party service located in the United States. Audio is sent to Groq solely for the purpose of converting speech to text. Groq does not retain audio or transcription data after processing — Zero Data Retention is enabled on our account. By using voice mode, you consent to this processing. You may use text mode at any time as an alternative that does not involve audio transmission.</p>
         </div>
 
         <div className="mt-12 pt-8" style={{ borderTop: "1px solid rgba(201,168,76,0.2)" }}>
