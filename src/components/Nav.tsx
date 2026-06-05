@@ -2,29 +2,37 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
+
 interface Profile {
   id: string;
   email: string;
   full_name?: string;
   tier?: string;
 }
-import type { Session } from "@supabase/supabase-js";
+
+interface Application {
+  id: string;
+}
 
 export default function Nav() {
   const [user, setUser] = useState<Profile | null>(null);
-  const [supabase] = useState(() => createBrowserSupabaseClient());
+  const [application, setApplication] = useState<Application | null>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const pathname = usePathname();
+  const router = useRouter();
+  const supabase = createBrowserSupabaseClient();
 
   useEffect(() => {
-    // Check current session
     const checkSession = async () => {
       const {
         data: { session },
       } = await supabase.auth.getSession();
 
       if (session?.user) {
-        // Fetch user profile from our users table
         const { data: userData } = await supabase
           .from("profiles")
           .select("*")
@@ -32,16 +40,27 @@ export default function Nav() {
           .single();
 
         setUser(userData);
+
+        const { data: appData } = await supabase
+          .from("applications")
+          .select("id")
+          .eq("user_id", session.user.id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .single();
+
+        if (appData) {
+          setApplication(appData);
+        }
       }
       setLoading(false);
     };
 
     checkSession();
 
-    // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event: string, session: Session | null) => {
+    } = supabase.auth.onAuthStateChange(async (event: string, session) => {
       if (session?.user) {
         const { data: userData } = await supabase
           .from("profiles")
@@ -50,72 +69,201 @@ export default function Nav() {
           .single();
 
         setUser(userData);
+
+        const { data: appData } = await supabase
+          .from("applications")
+          .select("id")
+          .eq("user_id", session.user.id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .single();
+
+        if (appData) {
+          setApplication(appData);
+        }
       } else {
         setUser(null);
+        setApplication(null);
       }
       setLoading(false);
     });
 
     return () => subscription.unsubscribe();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [supabase]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    window.location.href = "/";
+    router.push("/");
+    setMobileMenuOpen(false);
+    setDropdownOpen(false);
   };
 
+  const isActive = (path: string) => pathname === path;
+
+  const navLinkClass = (path: string) =>
+    `text-sm transition-colors ${
+      isActive(path) ? "text-[#C9A84C]" : "text-[rgba(245,240,232,0.65)] hover:text-[#f5f0e8]"
+    }`;
+
+  if (loading) return null;
+
   return (
-    <header className="fixed top-0 left-0 right-0 z-50" style={{ backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", background: "rgba(6,13,31,0.8)", borderBottom: "1px solid var(--glass-border)" }}>
-      <div className="flex justify-between items-center h-16 px-4 md:px-8 max-w-6xl mx-auto">
-        <Link href="/" className="flex items-center gap-2" style={{ textDecoration: "none" }}>
-          <span className="text-xl font-bold" style={{ color: "var(--gold)", fontFamily: "'Cormorant Garamond', serif" }}>e2go.app</span>
+    <header className="fixed top-0 left-0 right-0 z-50 bg-[#0a0a0a] border-b border-[rgba(201,168,76,0.2)]">
+      <div className="flex justify-between items-center h-16 px-4 md:px-8 max-w-7xl mx-auto">
+        <Link
+          href={user ? "/dashboard" : "/"}
+          className="flex items-center gap-2"
+          style={{ textDecoration: "none" }}
+        >
+          <span className="text-xl font-medium tracking-tight text-[#f5f0e8]" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
+            e2go<span className="text-[#C9A84C]">.app</span>
+          </span>
         </Link>
-        <div className="flex items-center gap-4">
-          {!loading && (
+
+        <div className="hidden md:flex items-center gap-6">
+          {!user ? (
             <>
-              {user ? (
-                <>
-                  <span className="hidden md:block text-sm" style={{ color: "var(--white-dim)" }}>
-                    {user.email}
-                  </span>
-                  <button
-                    onClick={handleSignOut}
-                    className="text-sm transition-colors"
-                    style={{ color: "var(--white-dim)" }}
-                  >
-                    Sign Out
-                  </button>
-                  <Link
-                    href="/dashboard"
-                    className="hidden md:block text-sm transition-colors"
-                    style={{ color: "var(--gold)" }}
-                  >
-                    My Application
-                  </Link>
-                </>
-              ) : (
-                <>
-                  <Link
-                    href="/login"
-                    className="hidden md:block text-sm transition-colors"
-                    style={{ color: "var(--white-dim)" }}
-                  >
-                    Sign In
-                  </Link>
-                  <Link
-                    href="/quiz"
-                    className="text-sm font-medium px-4 py-2 rounded-lg transition-colors"
-                    style={{ background: "var(--gold)", color: "#fff" }}
-                  >
-                    Get Started
-                  </Link>
-                </>
+              <Link href="/#how-it-works" className={navLinkClass("/#how-it-works")}>
+                How it works
+              </Link>
+              <Link href="/pricing" className={navLinkClass("/pricing")}>
+                Pricing
+              </Link>
+              <Link href="/learn" className={navLinkClass("/learn")}>
+                Learn
+              </Link>
+              <Link href="/login" className={navLinkClass("/login")}>
+                Login
+              </Link>
+              <Link
+                href="/quiz"
+                className="text-sm font-medium px-5 py-2.5 bg-[#C9A84C] text-[#0a0a0a] transition-colors hover:bg-[#D4BC6A]"
+                style={{ borderRadius: 0 }}
+              >
+                Start your eligibility check
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link href="/apply/overview" className={navLinkClass("/apply/overview")}>
+                My Application
+              </Link>
+              {application && (
+                <Link href={`/documents/${application.id}`} className={navLinkClass(`/documents/${application.id}`)}>
+                  Documents
+                </Link>
               )}
+              <Link href="/support" className={navLinkClass("/support")}>
+                Support
+              </Link>
+
+              <div className="relative">
+                <button
+                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                  className="flex items-center gap-2 text-sm text-[rgba(245,240,232,0.65)] hover:text-[#f5f0e8] transition-colors"
+                >
+                  <span>Account</span>
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" className="transition-transform" style={{ transform: dropdownOpen ? "rotate(180deg)" : "rotate(0deg)" }}>
+                    <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="square" />
+                  </svg>
+                </button>
+
+                {dropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-48 bg-[#0a0a0a] border border-[rgba(201,168,76,0.2)] shadow-lg z-50">
+                    <Link
+                      href="/dashboard"
+                      className="block px-4 py-3 text-sm text-[rgba(245,240,232,0.65)] hover:bg-[rgba(201,168,76,0.06)] hover:text-[#f5f0e8] transition-colors"
+                      onClick={() => setDropdownOpen(false)}
+                    >
+                      Dashboard
+                    </Link>
+                    <Link
+                      href="/settings"
+                      className="block px-4 py-3 text-sm text-[rgba(245,240,232,0.65)] hover:bg-[rgba(201,168,76,0.06)] hover:text-[#f5f0e8] transition-colors"
+                      onClick={() => setDropdownOpen(false)}
+                    >
+                      Settings
+                    </Link>
+                    <div className="border-t border-[rgba(201,168,76,0.2)]" />
+                    <button
+                      onClick={handleSignOut}
+                      className="w-full text-left px-4 py-3 text-sm text-[rgba(245,240,232,0.65)] hover:bg-[rgba(201,168,76,0.06)] hover:text-[#f5f0e8] transition-colors"
+                    >
+                      Log out
+                    </button>
+                  </div>
+                )}
+              </div>
             </>
           )}
         </div>
+
+        <button
+          className="md:hidden flex flex-col gap-1.5 p-2"
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          aria-label="Toggle mobile menu"
+        >
+          <span className={`block w-6 h-0.5 bg-[#C9A84C] transition-transform ${mobileMenuOpen ? "rotate-45 translate-y-2" : ""}`} />
+          <span className={`block w-6 h-0.5 bg-[#C9A84C] transition-opacity ${mobileMenuOpen ? "opacity-0" : "opacity-100"}`} />
+          <span className={`block w-6 h-0.5 bg-[#C9A84C] transition-transform ${mobileMenuOpen ? "-rotate-45 -translate-y-2" : ""}`} />
+        </button>
       </div>
+
+      {/* Mobile Menu */}
+      {mobileMenuOpen && (
+        <div className="md:hidden bg-[#0a0a0a] border-b border-[rgba(201,168,76,0.2)] px-4 pb-6 pt-2">
+          {!user ? (
+            <div className="flex flex-col gap-4">
+              <Link href="/#how-it-works" className={navLinkClass("/#how-it-works")} onClick={() => setMobileMenuOpen(false)}>
+                How it works
+              </Link>
+              <Link href="/pricing" className={navLinkClass("/pricing")} onClick={() => setMobileMenuOpen(false)}>
+                Pricing
+              </Link>
+              <Link href="/learn" className={navLinkClass("/learn")} onClick={() => setMobileMenuOpen(false)}>
+                Learn
+              </Link>
+              <Link href="/login" className={navLinkClass("/login")} onClick={() => setMobileMenuOpen(false)}>
+                Login
+              </Link>
+              <Link
+                href="/quiz"
+                className="text-sm font-medium px-5 py-3 bg-[#C9A84C] text-[#0a0a0a] text-center transition-colors hover:bg-[#D4BC6A]"
+                style={{ borderRadius: 0 }}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Start your eligibility check
+              </Link>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-4">
+              <Link href="/apply/overview" className={navLinkClass("/apply/overview")} onClick={() => setMobileMenuOpen(false)}>
+                My Application
+              </Link>
+              {application && (
+                <Link href={`/documents/${application.id}`} className={navLinkClass(`/documents/${application.id}`)} onClick={() => setMobileMenuOpen(false)}>
+                  Documents
+                </Link>
+              )}
+              <Link href="/support" className={navLinkClass("/support")} onClick={() => setMobileMenuOpen(false)}>
+                Support
+              </Link>
+              <Link href="/dashboard" className={navLinkClass("/dashboard")} onClick={() => setMobileMenuOpen(false)}>
+                Dashboard
+              </Link>
+              <Link href="/settings" className={navLinkClass("/settings")} onClick={() => setMobileMenuOpen(false)}>
+                Settings
+              </Link>
+              <button
+                onClick={handleSignOut}
+                className="text-left text-sm text-[rgba(245,240,232,0.65)] hover:text-[#f5f0e8] transition-colors py-2"
+              >
+                Log out
+              </button>
+            </div>
+          )}
+        </div>
+      )}
     </header>
   );
 }
