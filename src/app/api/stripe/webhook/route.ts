@@ -2,6 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
 
+const ALLOWED_EVENT_TYPES = [
+  'checkout.session.completed',
+  'checkout.session.expired',
+  'charge.refunded',
+  'payment_intent.payment_failed',
+];
+
 function getSupabase() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -29,24 +36,46 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const body = await request.text();
   const signature = request.headers.get('stripe-signature');
 
   if (!signature) {
-    return NextResponse.json({ error: 'Missing signature' }, { status: 400 });
+    return NextResponse.json({ error: 'No signature' }, { status: 400 });
   }
 
+  const body = await request.text();
   let event: Stripe.Event;
 
   try {
-    event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+    event = stripe.webhooks.constructEvent(
+      body,
+      signature,
+      webhookSecret,
+      300 // reject events older than 5 minutes
+    );
   } catch (err) {
-    console.error('Webhook signature verification failed:', err);
+    console.error('Webhook signature failed:', err);
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
+  }
+
+  // Event type allowlist — ignore unknown events
+  if (!ALLOWED_EVENT_TYPES.includes(event.type)) {
+    return NextResponse.json({ received: true, ignored: true });
   }
 
   const supabase = getSupabase();
 
+  // Idempotency — prevent replay attacks
+  const { data: existing } = await supabase
+    .from('processed_webhook_events')
+    .select('id')
+    .eq('stripe_event_id', event.id)
+    .single();
+
+  if (existing) {
+    return NextResponse.json({ received: true, duplicate: true });
+  }
+
+  // Process the event
   switch (event.type) {
     case 'checkout.session.completed': {
       const session = event.data.object as Stripe.Checkout.Session;
@@ -134,10 +163,12 @@ export async function POST(request: NextRequest) {
         .eq('stripe_payment_intent_id', paymentIntent.id);
       break;
     }
-
-    default:
-      console.log(`Unhandled event type: ${event.type}`);
   }
+
+  // Record processed event for idempotency
+  await supabase
+    .from('processed_webhook_events')
+    .insert({ stripe_event_id: event.id, processed_at: new Date().toISOString() });
 
   return NextResponse.json({ received: true });
 }
