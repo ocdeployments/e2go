@@ -1,6 +1,6 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 5, 2026 — End of Sessions S16–S18 (Tier 5 Spec Updates)
+**Last Updated:** June 6, 2026 — End of Session S23 (Tier 6 Polish: Auth Image Slider)
 **App Name:** e2go.app
 **Stack:** Next.js 14 · TypeScript · Tailwind CSS · Supabase · Claude API
 **Dev URL:** https://e2go-git-dev-ocdeployments-projects.vercel.app
@@ -535,13 +535,22 @@ Status: COMPLETE
 
 ---
 
-## NEXT SESSION
-**S23 — Image Slider on Auth Pages** (Tier 6 polish, after S22 ✓)
-- U.S.-themed image slider left panel on /login, /signup, /verify
-- Auto-advance every 5s, smooth crossfade, ambient (no controls)
-- Apply Obsidian Gold tokens
-- Playwright verification of all three pages
+## SESSION S23 — Image Slider on Auth Pages (June 6, 2026)
+- **Completed**: U.S.-themed image slider left panel on `/login`, `/signup`, `/verify`.
+- **Component**: Created `src/components/auth/AuthImageSlider.tsx` — 4 high-quality ambient images, 5s auto-advance, smooth 1000ms crossfade, no play/pause controls, hidden on mobile (`md:block`), Obsidian Gold gradient overlays.
+- **Layout**: Refactored all three auth pages to use split-screen layout (left panel slider, right panel form) while maintaining existing auth logic and Obsidian Gold styling.
+- **Verification**: Playwright test `tests/auth-slider.spec.ts` confirms all three pages render correctly with slider present. Screenshots captured in `tests/screenshots/`.
+- **Build**: clean — 43 routes, 0 errors.
+- **Commit**: `a88c3b4` — "feat: image slider on auth pages — U.S. themed left panel"
+- **Pushed**: origin/dev ✓
 
-**Remaining Tier 6 polish:**
-- S21 — Animated gradient border (pricing, CTA, module 3 sidebar)
+---
+
+## NEXT SESSION
+**S21 — Animated Gradient Border** (Tier 6 polish)
+- Apply animated gold gradient border to: Pricing "Most Popular" card (speed 10), Landing page main CTA button (speed 6), Module 3 active sidebar tab (speed 12).
+- Add `@keyframes gradient-rotate` to `globals.css`.
+- Playwright verification of all three locations.
+
+**Other Remaining Tier 6 polish:**
 - S24 — Journey wizard as post-quiz page
