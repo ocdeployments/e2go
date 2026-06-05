@@ -565,6 +565,20 @@ Status: COMPLETE
 
 ---
 
+## SESSION S26 — Cookie Banner, SEO Metadata, About Page & Learn Hub (June 6, 2026)
+- **Completed**: Cookie consent banner with localStorage persistence (`e2go_cookie_consent`) and global layout injection.
+- **Completed**: Route-level SEO metadata updates across all pages (public pages indexed, app/auth pages noindex with proper robots rules).
+- **Completed**: Created `/about` page with 3-section copy and CTA, resolving previous footer dead ends.
+- **Completed**: Replaced `/learn` stub with a 6-card grid linking to fully written, Obsidian Gold-styled educational sub-pages.
+- **Completed**: Each sub-page includes breadcrumbs, reading time, related articles, metadata, and a CTA to the quiz.
+- **Fixed**: Next.js runtime error on `src/app/learn/page.tsx` by removing inline JS event handlers in favor of Tailwind hover utilities.
+- **Fixed**: Next.js ESLint build errors for unescaped quotes (`&quot;`, `&apos;`) across all 6 article content files.
+- **Verification**: Added `tests/learn-hub.spec.ts` (Playwright), all tests passed. Production build clean (53 routes, 0 errors).
+- **Commit**: `fa673df` — "feat: learn hub — 6 SEO education articles" (along with prior commits for cookie banner, SEO, and about page).
+- **Pushed**: origin/dev ✓
+
+---
+
 ## NEXT SESSION
 **S21 — Animated Gradient Border** (Tier 6 polish)
 - Apply animated gold gradient border to: Pricing "Most Popular" card (speed 10), Landing page main CTA button (speed 6), Module 3 active sidebar tab (speed 12).
