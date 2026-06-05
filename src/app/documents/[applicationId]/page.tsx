@@ -39,7 +39,19 @@ export default function DocumentsReviewPage() {
     attorney: false,
     responsible: false,
   });
-  const [showDownload, setShowDownload] = useState(false);
+  const [downloadState, setDownloadState] = useState<"locked" | "ready" | "downloading" | "complete">("locked");
+
+  const allApproved = documents.every((d) => d.status === "approved");
+  const allAcknowledged = Object.values(acknowledgments).every(Boolean);
+  const canDownload = allApproved && allAcknowledged;
+
+  useEffect(() => {
+    if (canDownload) {
+      setDownloadState("ready");
+    } else {
+      setDownloadState("locked");
+    }
+  }, [canDownload]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchDocuments = useCallback(async () => {
     try {
@@ -120,9 +132,6 @@ export default function DocumentsReviewPage() {
     }
   };
 
-  const allApproved = documents.every((d) => d.status === "approved");
-  const allAcknowledged = Object.values(acknowledgments).every(Boolean);
-  const canDownload = allApproved && allAcknowledged;
 
   const getStatusBadge = (status: string) => {
     const baseClasses = "text-[10px] font-medium uppercase tracking-wider px-2 py-0.5 border";
@@ -404,21 +413,56 @@ export default function DocumentsReviewPage() {
 
             <div className="mt-8 text-center">
               <button
-                disabled={!allAcknowledged}
-                onClick={() => setShowDownload(true)}
-                className="border border-[#C9A84C] bg-[#C9A84C] px-8 py-3 text-sm font-medium uppercase tracking-wider text-[#0a0a0a] transition-colors hover:bg-[#d4b35c] disabled:opacity-30"
+                disabled={downloadState === "locked" || downloadState === "downloading"}
+                onClick={async () => {
+                  if (downloadState !== "ready") return;
+                  setDownloadState("downloading");
+                  try {
+                    const stored = localStorage.getItem("supabase_user");
+                    const userId = stored ? JSON.parse(stored).id : null;
+                    const res = await fetch(`/api/generate/download/${applicationId}`, {
+                      headers: { Authorization: `Bearer ${userId}` },
+                    });
+                    if (!res.ok) throw new Error("Download failed");
+
+                    const blob = await res.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = `e2go-embassy-package-${new Date().toISOString().split("T")[0]}.zip`;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    window.URL.revokeObjectURL(url);
+
+                    setDownloadState("complete");
+                  } catch (err) {
+                    console.error("Download error:", err);
+                    setDownloadState("ready");
+                  }
+                }}
+                className={`border px-8 py-3 text-sm font-medium uppercase tracking-wider transition-all duration-300 ${
+                  downloadState === "locked"
+                    ? "border-[rgba(201,168,76,0.2)] bg-[rgba(201,168,76,0.1)] text-[rgba(245,240,232,0.3)] cursor-not-allowed"
+                    : downloadState === "downloading"
+                    ? "border-[#C9A84C] bg-[rgba(201,168,76,0.1)] text-[#C9A84C] cursor-wait"
+                    : downloadState === "complete"
+                    ? "border-[#22c55e] bg-[rgba(34,197,94,0.1)] text-[#22c55e] cursor-default"
+                    : "border-[#C9A84C] bg-[#C9A84C] text-[#0a0a0a] cursor-pointer hover:bg-[#d4b35c]"
+                }`}
                 style={{ fontFamily: "'DM Sans', sans-serif" }}
               >
-                {allAcknowledged
-                  ? "Download Complete Package (ZIP)"
-                  : "Check All Boxes to Download"}
+                {downloadState === "locked" && "Complete all confirmations to download"}
+                {downloadState === "downloading" && "Preparing your package..."}
+                {downloadState === "complete" && "Package downloaded"}
+                {downloadState === "ready" && "Download your embassy package"}
               </button>
-              {showDownload && canDownload && (
+              {downloadState === "complete" && (
                 <p
-                  className="mt-3 text-xs text-[#C9A84C]"
+                  className="mt-3 text-xs text-[#22c55e]"
                   style={{ fontFamily: "'DM Sans', sans-serif" }}
                 >
-                  Download starting... (ZIP export coming in next session)
+                  Your package has been downloaded. Keep it secure.
                 </p>
               )}
             </div>
