@@ -78,20 +78,35 @@ export default function SectionForm({
     }
   }, [onSave]);
 
+  const hasUnconfirmedRequiredFields = fields.some(f => {
+    const hasPrefill = f.prefillValue !== null && f.prefillValue !== undefined && f.prefillValue !== '';
+    return f.requiresConfirmation && hasPrefill && !confirmationStates[f.key];
+  });
+
+  const isSaveDisabled = hasUnconfirmedRequiredFields;
+  const showSecuritySubtitle = sectionId === 'security-background';
+
   return (
     <div id={`section-${sectionId}`} className="py-8">
       <div className="flex items-center justify-between mb-6">
-        <h2
-          className="text-2xl"
-          style={{
-            fontFamily: "'Cormorant Garamond', serif",
-            fontWeight: 300,
-            fontStyle: 'italic',
-            color: '#f5f0e8'
-          }}
-        >
-          {sectionTitle}
-        </h2>
+        <div>
+          <h2
+            className="text-2xl"
+            style={{
+              fontFamily: "'Cormorant Garamond', serif",
+              fontWeight: 300,
+              fontStyle: 'italic',
+              color: '#f5f0e8'
+            }}
+          >
+            {sectionTitle}
+          </h2>
+          {showSecuritySubtitle && (
+            <p className="mt-2 text-sm font-light text-[#f5f0e8]/50 font-[DM_Sans] leading-relaxed max-w-3xl">
+              These fields have been pre-filled from your eligibility check. Review each answer carefully and confirm accuracy before proceeding. These declarations will appear in your DS-160 and are subject to consular scrutiny.
+            </p>
+          )}
+        </div>
         <span className="text-sm" style={{ color: 'rgba(245,240,232,0.5)' }}>
           {answeredCount} of {fields.length} answered
         </span>
@@ -144,14 +159,14 @@ export default function SectionForm({
         <button
           type="button"
           onClick={handleManualSave}
-          disabled={saveStatus === 'saving'}
+          disabled={saveStatus === 'saving' || isSaveDisabled}
           className="px-6 py-3 rounded-lg transition-all duration-200 border"
           style={{
             borderColor: saveStatus === 'saved' ? '#10B981' : '#C9A84C',
             background: saveStatus === 'saved' ? 'rgba(16,185,129,0.1)' : 'transparent',
             color: saveStatus === 'saved' ? '#10B981' : '#C9A84C',
-            cursor: saveStatus === 'saving' ? 'wait' : 'pointer',
-            opacity: saveStatus === 'saving' ? 0.7 : 1,
+            cursor: saveStatus === 'saving' || isSaveDisabled ? 'not-allowed' : 'pointer',
+            opacity: saveStatus === 'saving' || isSaveDisabled ? 0.7 : 1,
           }}
         >
           {saveStatus === 'saving' && (
@@ -169,7 +184,8 @@ export default function SectionForm({
             </>
           )}
           {saveStatus === 'error' && 'Save Failed - Retry'}
-          {saveStatus === 'idle' && 'Save Section'}
+          {saveStatus === 'idle' && isSaveDisabled && 'Confirm Required Fields to Save'}
+          {saveStatus === 'idle' && !isSaveDisabled && 'Save Section'}
         </button>
       </div>
 
