@@ -3,6 +3,9 @@ import { createClient } from '@supabase/supabase-js';
 import type { DocumentListResponse } from '@/types/generation';
 
 function getSupabase() {
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    return null;
+  }
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -22,6 +25,12 @@ export async function GET(
 ) {
   try {
     const supabase = getSupabase();
+    if (!supabase) {
+      return NextResponse.json(
+        { error: 'Service temporarily unavailable' },
+        { status: 503 }
+      );
+    }
     const { applicationId } = params;
 
     const authHeader = request.headers.get('Authorization');
@@ -89,6 +98,12 @@ export async function POST(
 ) {
   try {
     const supabase = getSupabase();
+    if (!supabase) {
+      return NextResponse.json(
+        { error: 'Service temporarily unavailable' },
+        { status: 503 }
+      );
+    }
     const { applicationId } = params;
 
     const authHeader = request.headers.get('Authorization');
@@ -137,6 +152,12 @@ export async function PATCH(
 ) {
   try {
     const supabase = getSupabase();
+    if (!supabase) {
+      return NextResponse.json(
+        { error: 'Service temporarily unavailable' },
+        { status: 503 }
+      );
+    }
     const { applicationId } = params;
 
     const authHeader = request.headers.get('Authorization');
