@@ -9,6 +9,6 @@ export const SMOKE_ROUTES = [
   { path: '/terms', expectedStatus: 200, name: 'Terms' },
   { path: '/learn', expectedStatus: 200, name: 'Learn' },
   { path: '/api/health', expectedStatus: 200, name: 'Health' },
-  { path: '/dashboard', expectedStatus: 307, name: 'Dashboard redirect' },
-  { path: '/apply/module3', expectedStatus: 307, name: 'Module3 redirect' },
+  { path: '/dashboard', expectedStatus: 200, name: 'Dashboard (auth check)' },
+  { path: '/apply/module3', expectedStatus: 200, name: 'Module3 (auth check)' },
 ]
