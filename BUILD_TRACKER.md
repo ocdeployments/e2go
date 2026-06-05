@@ -546,6 +546,25 @@ Status: COMPLETE
 
 ---
 
+## SESSION S24 — Complete Site Navigation & Routing (Current)
+- **Audit completed**: Audited all 33 `page.tsx` routes for inbound/outbound links and nav/footer presence. Identified orphaned routes and dead ends.
+- **Nav & Footer Architecture**: Completely rewrote `src/components/Nav.tsx` and `src/components/Footer.tsx`. Implemented distinct public (Logo, How it works, Pricing, Learn, Quiz CTA, Login) and authenticated (Logo, My Application, Documents, Support, Account dropdown) states. 
+- **Mobile Navigation**: Added fully accessible mobile hamburger menu (< 768px) with gold accent on active routes.
+- **Design Enforcement**: Strictly applied Obsidian Gold tokens (`#0a0a0a` bg, `#C9A84C` gold, `#f5f0e8` text, `border-radius: 0` everywhere).
+- **Orphaned Pages Fixed**: 
+  - Added "Continue my application" and "View my confidence score" CTAs to `/dashboard`.
+  - Added "Back to Dashboard" and "Next: Documents" CTAs to `/apply/calendar`.
+  - Added "Back to Overview" and "Next: Application Profile" CTAs to `/apply/module2`.
+  - Added top-level comment to `/verify` explicitly documenting it is email-link only (not for nav).
+- **Breadcrumbs**: Created `src/components/Breadcrumb.tsx` and added to `/apply/*`, `/score`, and new stub pages (`/privacy`, `/terms`, `/about`, `/settings`) for consistent app orientation.
+- **Stub Pages Created**: `/privacy`, `/terms`, `/about`, `/settings` to resolve broken footer links.
+- **Verification**: Playwright tests added and passed for desktop nav, mobile nav, and 3-column footer.
+- **Build**: Clean — 47 routes compiled, 0 errors.
+- **Commit**: `310249a` — "feat: complete site navigation — all routes connected, orphans fixed, mobile nav"
+- **Pushed**: origin/dev ✓
+
+---
+
 ## NEXT SESSION
 **S21 — Animated Gradient Border** (Tier 6 polish)
 - Apply animated gold gradient border to: Pricing "Most Popular" card (speed 10), Landing page main CTA button (speed 6), Module 3 active sidebar tab (speed 12).
@@ -553,4 +572,4 @@ Status: COMPLETE
 - Playwright verification of all three locations.
 
 **Other Remaining Tier 6 polish:**
-- S24 — Journey wizard as post-quiz page
+- S25 — Journey wizard as post-quiz page
