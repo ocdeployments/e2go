@@ -2,6 +2,9 @@ import type { Metadata, Viewport } from "next";
 import { Cormorant_Garamond, DM_Sans } from "next/font/google";
 import "./globals.css";
 import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
+import Nav from "@/components/Nav";
+import Footer from "@/components/Footer";
+import CookieBanner from "@/components/CookieBanner";
 
 const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
@@ -58,9 +61,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${cormorant.variable} ${dmSans.variable}`}>
-      <body className="font-sans antialiased">
+      <body className="font-sans antialiased bg-[#0a0a0a] text-[#f5f0e8]">
         <ServiceWorkerRegistration />
-        {children}
+        <Nav />
+        <main className="pt-16 min-h-screen">
+          {children}
+        </main>
+        <Footer />
+        <CookieBanner />
       </body>
     </html>
   );
