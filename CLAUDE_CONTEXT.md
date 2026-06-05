@@ -338,6 +338,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=
 OPENROUTER_API_KEY=          ← MiniMax, all app features
 ANTHROPIC_API_KEY=           ← document generation ONLY
 MINIMAX_MODEL=minimax/MiniMax-Text-01
+GROQ_API_KEY=                ← voice mode transcription (whisper-large-v3-turbo)
 RESEND_API_KEY=
 STRIPE_PUBLISHABLE_KEY=      ← publishable key (pk_test_*/pk_live_*)
 STRIPE_SECRET_KEY=           ← secret key (sk_test_*/sk_live_*)
