@@ -225,5 +225,21 @@
     "privacy_category": "red",
     "skip_advisory": "Prior visa history affects how your cover letter is written. An incomplete history means your documents may not address your full immigration background. Officers can see this — your documents should reflect it.",
     "required": false
+  },
+  {
+    "key": "M3-A-51",
+    "type": "text",
+    "question": "What is the exact legal name of the U.S. business entity?",
+    "tooltip": "This is the master record for your business name and will pre-fill other sections of your application.",
+    "privacy_category": "green",
+    "required": true
+  },
+  {
+    "key": "M3-A-55",
+    "type": "text",
+    "question": "What percentage of the U.S. business will you own?",
+    "tooltip": "This must match the ownership percentage stated in your business formation documents.",
+    "privacy_category": "green",
+    "required": true
   }
 ]

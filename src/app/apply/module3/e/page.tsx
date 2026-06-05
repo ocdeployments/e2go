@@ -1,10 +1,12 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { ApplicationProvider, useApplication } from '@/contexts/ApplicationContext';
 import TabPage from '@/components/module3/TabPage';
-import { Section } from '@/types/module3';
+import ContradictionFlag from '@/components/ContradictionFlag';
+import { Section, FieldConfig } from '@/types/module3';
 
-const sections: Section[] = [
+const baseSections: Section[] = [
   {
     id: "ownership",
     title: "Ownership & Equity",
@@ -40,15 +42,67 @@ const sections: Section[] = [
 
 function TabEContent() {
   const { answers, setAnswer } = useApplication();
+  const [sections, setSections] = useState<Section[]>([]);
+
+  useEffect(() => {
+    const tabABusinessName = answers["M3-A-51"] as string | undefined;
+    const tabAOwnershipPct = answers["M3-A-55"] as string | undefined;
+
+    const enrichedSections = baseSections.map(section => ({
+      ...section,
+      fields: section.fields.map(field => {
+        let enrichedField = { ...field };
+
+        // Business Name pre-fill (Tab A M3-A-51 -> Tab E QE-13)
+        if (field.key === "QE-13" && tabABusinessName) {
+          enrichedField = {
+            ...enrichedField,
+            prefillValue: tabABusinessName,
+            prefillNote: "From your business details (Tab A)",
+          };
+        }
+
+        // Ownership % pre-fill (Tab A M3-A-55 -> Tab E QE-01)
+        if (field.key === "QE-01" && tabAOwnershipPct) {
+          enrichedField = {
+            ...enrichedField,
+            prefillValue: tabAOwnershipPct,
+            prefillNote: "From your business details (Tab A)",
+          };
+        }
+
+        return enrichedField as FieldConfig;
+      }),
+    }));
+
+    setSections(enrichedSections);
+  }, [answers]);
+
   return (
-    <TabPage
-      tabTitle="Ownership Structure"
-      tabDescription="Define your ownership, corporate structure, and operational authority."
-      sections={sections as Section[]}
-      answers={answers}
-      onAnswerChange={(key, val) => setAnswer(key, val)}
-      onSaveSection={async () => {}}
-    />
+    <div>
+      {/* Contradiction Flag for Ownership % */}
+      {answers["M3-A-55"] && answers["QE-01"] && String(answers["M3-A-55"]) !== String(answers["QE-01"]) && (
+        <div className="max-w-4xl mx-auto px-4 mb-4">
+          <ContradictionFlag
+            fieldALabel="Tab A (Master)"
+            fieldAValue={String(answers["M3-A-55"])}
+            fieldBLabel="Tab E"
+            fieldBValue={String(answers["QE-01"])}
+            onUseA={() => setAnswer("QE-01", answers["M3-A-55"])}
+            onUseB={() => setAnswer("M3-A-55", answers["QE-01"])}
+          />
+        </div>
+      )}
+
+      <TabPage
+        tabTitle="Ownership Structure"
+        tabDescription="Define your ownership, corporate structure, and operational authority."
+        sections={sections}
+        answers={answers}
+        onAnswerChange={(key, val) => setAnswer(key, val)}
+        onSaveSection={async () => {}}
+      />
+    </div>
   );
 }
 
