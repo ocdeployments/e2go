@@ -1013,3 +1013,219 @@ feature, or update any copy until all open questions in 13H are resolved
 and this section is marked [LOCKED].*
 
 *Revisit: before building compliance calendar, renewal module, or S15 PDF export.*
+
+---
+
+## SECTION 14 — TESTING AND SECURITY PLAN (DECIDED — June 5, 2026)
+
+**Status:** [PLANNED — do after core features complete, before first real payment]
+**Source:** saas_b2c_testing_report.md cross-referenced against built features
+**Do not start these sessions until:** Admin dashboard built, domain on Vercel, all agents complete
+
+---
+
+### 14A — Current Testing Score: 5/10
+
+The app is functionally ready but security and compliance
+testing is largely undone. The three sessions below bring
+it to 8/10 — sufficient for launch. The remaining 2/10
+(penetration testing, load testing, accessibility audit)
+can be done post-launch in month one.
+
+---
+
+### 14B — What Is Already Done
+
+Authentication and authorization:
+  ✅ Supabase auth — login, signup, forgot password, verify
+  ✅ Rate limiting — login (5 attempts/15min), quiz (3/hr), AI API (50/day)
+  ✅ RLS policies on all tables scoped by user_id
+  ✅ Auth middleware protecting /dashboard, /apply/*, /score, /simulator
+
+Data protection:
+  ✅ Vercel enforces HTTPS
+  ✅ Supabase encrypts at rest
+  ✅ API keys in environment variables only — never in code
+  ✅ Answers only stored — no raw documents, passports, or financial records
+  ✅ PDF metadata stripping (built — not yet independently verified)
+
+Compliance:
+  ✅ CASL opt-in checkbox on quiz
+  ✅ Cookie consent banner
+  ✅ Privacy policy with correct data retention language
+  ✅ Terms of service
+  ✅ Module 1 consent screen — 5 referral categories
+  ✅ HST collection via Stripe Tax
+
+Security headers:
+  ✅ Content-Security-Policy
+  ✅ X-Frame-Options: DENY
+  ✅ X-Content-Type-Options: nosniff
+  ✅ Referrer-Policy
+  ✅ Permissions-Policy
+
+Dev bypass safety:
+  ✅ SKIP_PAYMENT_WALL exists in .env.local
+  ⚠️ No CI check confirming it is never set on Vercel production
+
+---
+
+### 14C — What Is Missing (pre-launch blockers)
+
+Critical — must fix before first real payment:
+
+1. No IDOR test — User A accessing User B's application not tested
+2. No payment bypass test — Module 3 accessible without payment not tested
+3. No privilege escalation test — non-admin reaching admin endpoints not tested
+4. No end-to-end automated test — quiz → signup → payment → Module 3 → download
+5. No prompt injection test — crafted answers manipulating generation not tested
+6. No PDF metadata verification — stripping not independently confirmed
+7. No SKIP_PAYMENT_WALL production check — dev flag could leak to Vercel
+8. No CI/CD pipeline — no automated security gates on push
+9. No session timeout — 24hr inactivity force-logout not built
+10. No concurrent session detection — multiple device login not detected
+
+Important — fix before scaling:
+
+11. No MFA — account takeover risk for high-value immigration data
+12. No SSRF test on Stripe webhook endpoint
+13. No formal PIPEDA deletion workflow test
+14. No cookie consent opt-out verification test
+15. No Stripe webhook signature verification test
+16. No load or stress testing on document generation pipeline
+17. No accessibility audit — WCAG 2.1 AA not verified
+18. No Core Web Vitals measurement
+
+---
+
+### 14D — Three Testing Sessions
+
+These run after admin dashboard is built and domain is on Vercel.
+Run in this order. Do not skip or reorder.
+
+SESSION T1 — CI/CD Security Gates
+Priority: 🔴 CRITICAL
+Time: 3–4 hours
+What gets built:
+- GitHub Actions workflow on every push to dev:
+  - CodeQL or Semgrep SAST scan
+  - GitLeaks secret scanning
+  - npm audit — fail build on high severity vulnerabilities
+  - Confirm SKIP_PAYMENT_WALL not set in Vercel production env
+  - OWASP ZAP scan against staging URL
+- Pre-push hook enforcing clean build before any push
+- Dependency update monitoring (Dependabot or equivalent)
+
+SESSION T2 — Auth, Authorization, and Business Logic Hardening
+Priority: 🔴 CRITICAL
+Time: 4–5 hours
+What gets built and tested:
+- Session timeout — force logout after 24hr inactivity
+- Concurrent session detection — alert on 2+ active sessions
+- IDOR test suite:
+  Create two test users. Confirm User A cannot read, write,
+  or delete User B's application, answers, documents, or payments.
+- Privilege escalation test:
+  Confirm non-admin user cannot reach /admin/* routes.
+  Confirm non-admin cannot call admin-only API endpoints.
+- Payment bypass test:
+  Confirm /apply/module3 and all downstream routes return 403
+  if payment_status != 'paid' and SKIP_PAYMENT_WALL is false.
+- Prompt injection test:
+  Submit crafted Module 3 answers containing prompt injection
+  attempts. Confirm generation output is not manipulated.
+  Confirm legal disclaimer text cannot be removed by injection.
+- PDF metadata verification:
+  Generate a test document. Extract PDF metadata.
+  Confirm Author, Creator, Producer are all blank.
+  Confirm no AI tool names in any metadata field.
+- SKIP_PAYMENT_WALL production guard:
+  Add a startup check that throws an error if
+  SKIP_PAYMENT_WALL=true in a non-development environment.
+
+SESSION T3 — E2E Critical Path and Compliance Verification
+Priority: 🟡 HIGH
+Time: 4–5 hours
+What gets built and tested:
+- Fix quiz nationality selector for Playwright automation
+- Complete automated E2E test:
+  Quiz → Results → Pricing → Payment (test card) →
+  Success → Module 1 → Module 2 → Module 3 Tab A →
+  Generation → Document review → ZIP download
+  All steps must pass automatically on every CI run.
+- PIPEDA opt-out test:
+  User unchecks CASL on quiz. Confirm they receive no
+  marketing emails. Confirm opt-out is logged correctly.
+- Data deletion test:
+  User requests account deletion. Confirm all answers,
+  documents, and personal data removed within 30 seconds.
+  Confirm email address retained only in email_log
+  for legal records if required.
+- Cookie consent test:
+  Reject cookies. Confirm no analytics events fire.
+  Accept cookies. Confirm analytics events fire.
+- Stripe webhook signature test:
+  Send a webhook request without a valid whsec_ signature.
+  Confirm the endpoint returns 400 and does not process.
+  Send a valid signed request. Confirm it processes correctly.
+
+---
+
+### 14E — Post-Launch Testing (month one)
+
+These are important but not launch blockers.
+Schedule them within 30 days of first paying user.
+
+- External penetration test — hire a specialist, not an automated tool
+- Load and stress testing — document generation pipeline under 50 concurrent users
+- Accessibility audit — WCAG 2.1 AA with a screen reader
+- Core Web Vitals baseline — Lighthouse CI, target LCP < 2.5s
+- Business logic abuse testing — attempt to manipulate founding member counter,
+  bypass session limits, exploit referral engine
+- RBAC formal review — confirm admin role cannot be self-assigned
+- Incident response drill — simulate a data breach, test notification workflow
+
+---
+
+### 14F — e2go-Specific Risks Not in the Generic Report
+
+These are unique to what e2go does and must be in the test plan:
+
+1. Prompt injection in document generation
+   A user could craft Module 3 answers to inject instructions
+   into the Anthropic prompt. Could produce documents without
+   legal disclaimers or with fabricated legal conclusions.
+   Test: submit known injection payloads, verify output is clean.
+
+2. Payment wall bypass via SKIP_PAYMENT_WALL
+   If the dev bypass flag is ever set on Vercel, all users
+   get free access to the entire paid product.
+   Test: CI check confirming flag is absent in production.
+   Runtime check: throw error if flag set outside development.
+
+3. Document metadata leakage
+   PDF export strips metadata. If stripping fails, documents
+   could contain AI tool names, author fields, or timestamps
+   that a consular officer could detect.
+   Test: verify every exported PDF has clean metadata.
+
+4. Cross-application answer contamination
+   If RLS is misconfigured, a user's follow-up conversation
+   or analysis engine results could reference another user's
+   answers. This would be both a privacy violation and a
+   document quality disaster.
+   Test: IDOR test specifically on answers, case_briefs,
+   and followup_responses tables.
+
+5. Stripe webhook replay attack
+   A malicious actor could replay a previously valid webhook
+   event to trigger duplicate payment processing.
+   Test: Stripe's timestamp-based replay prevention is built in,
+   but confirm the webhook handler checks event timestamps
+   and rejects events older than 5 minutes.
+
+---
+
+*Status: PLANNED — do not start until admin dashboard built and domain on Vercel*
+*Sessions: T1 → T2 → T3 in order. Do not skip or reorder.*
+*Post-launch: complete month-one testing within 30 days of first paying user*

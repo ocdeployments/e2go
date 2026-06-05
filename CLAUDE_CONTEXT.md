@@ -304,6 +304,14 @@ Use "immigration consultant" or "traditional route."
 Never use "voice" or "voice profile" in user-facing copy.
 Use "writing style" or "personal writing profile."
 
+### RULE 14 — TESTING SESSIONS (do after admin dashboard + domain)
+Three mandatory security and testing sessions must run before
+first real payment from a real user. See IDEAS.md Section 14.
+T1: CI/CD security gates (GitHub Actions, SAST, secret scanning)
+T2: Auth hardening + IDOR + payment bypass + prompt injection tests
+T3: E2E critical path + PIPEDA + Stripe webhook verification
+Do not skip. Do not reorder. Run T1 → T2 → T3.
+
 ### RULE 13 — ASK ONCE, USE EVERYWHERE
 Never ask the user for information that has already been collected
 anywhere in the app. Every answer is stored in the answers table
@@ -338,11 +346,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=
 OPENROUTER_API_KEY=          ← MiniMax, all app features
 ANTHROPIC_API_KEY=           ← document generation ONLY
 MINIMAX_MODEL=minimax/MiniMax-Text-01
-GROQ_API_KEY=                ← voice mode transcription (whisper-large-v3-turbo)
 RESEND_API_KEY=
-STRIPE_PUBLISHABLE_KEY=      ← publishable key (pk_test_*/pk_live_*)
-STRIPE_SECRET_KEY=           ← secret key (sk_test_*/sk_live_*)
-STRIPE_WEBHOOK_SECRET=      ← webhook signing secret (whsec_*)
 PLAYWRIGHT_BYPASS_AUTH=true  ← dev only, never set on Vercel
 ```
 
