@@ -129,7 +129,7 @@ Conditions: within 14 days, Module 1 started, no documents generated.
 | Module 3 shell | /apply/module3 | ✅ COMPLETE | |
 | Module 3 Tab A | /apply/module3/a | ✅ COMPLETE | Working, RLS fixed |
 | Module 3 Tabs B-L | /apply/module3/[b-l] | ✅ COMPLETE | All 12 tabs wired (Sessions 13A–13G) |
-| Confidence Score | /score | ⬜ NOT STARTED | |
+| Confidence Score | /score | ✅ COMPLETE | S11 |
 | Interview Simulator | /simulator | ⬜ NOT STARTED | |
 | Document Generation | /generating | ⬜ NOT STARTED | |
 | Export | /export | ⬜ NOT STARTED | |
@@ -505,6 +505,13 @@ Status: COMPLETE
 - **Completed S6**: Audited Tab A for work history/education; confirmed Tab J is the single source of truth. Added clarifying comment to `src/app/apply/module3/a/page.tsx` and documented in `docs/IDEAS.md`.
 - **Completed S7**: Established Tab A as the single source of truth for business details (`M3-A-51` for business name, `M3-A-55` for ownership percentage). Created `ContradictionFlag` component to detect and resolve mismatches between master and derived fields. Updated Tab E page to pre-fill from Tab A. (Commit: `c2719b3`)
 - **Completed S8**: Security history pre-fill with legal confirmation gate on Tab A. Extended `src/lib/prefill.ts` mappings and `PreFilledField.tsx` to support `requiresConfirmation`. Added a security subtitle to `SectionForm.tsx` and disabled the "Save Section" button until all sensitive pre-filled fields (QA-23, QA-39) are explicitly confirmed. Verified via Playwright: pre-filled states show unchecked badges, submit gate is active, editing unchecks the confirmation, and re-confirming re-enables save. (Commit: `edd86f3`)
+
+---
+
+## SESSION S9, S10 & S11 — Tier 3 Data Architecture Completion (June 5, 2026)
+- **Completed S9**: Timeline single source of truth — separated `working_target_date` (planning) from `confirmed_interview_date` (hard anchor). Built `src/lib/timeline-service.ts` to calculate backward deadlines and update the compliance calendar. Added Playwright verification for range → specific date transitions. (Commit: `00a6eba`)
+- **Completed S10**: Tab B / Tab L shared document overlap fix. Added `sharedTabs` and `crossTabNote` to `ChecklistItem`. Created `CrossTabNote` component with collapsible inline gold-styled info note. Playwright verified expand/collapse behavior. (Commit: `ea108d6`)
+- **Completed S11**: Analysis Engine + Confidence Score Integration. Replaced duplicate confidence score calculations. Created `src/lib/score-sync.ts` to read directly from `case_briefs` table. Added `/score` page showing dimensions, "Last assessed" timestamp, significant change banner, and legal disclaimer. Playwright tests added. (Commit: `7cf5a10`)
 
 ---
 
