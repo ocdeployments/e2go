@@ -1,6 +1,6 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 5, 2026 — End of Session S5
+**Last Updated:** June 5, 2026 — End of Sessions S16–S18 (Tier 5 Spec Updates)
 **App Name:** e2go.app
 **Stack:** Next.js 14 · TypeScript · Tailwind CSS · Supabase · Claude API
 **Dev URL:** https://e2go-git-dev-ocdeployments-projects.vercel.app
@@ -515,18 +515,33 @@ Status: COMPLETE
 
 ---
 
-## NEXT SESSION
-**Session 17 (S4) — Pre-Application Checklist Pre-Fill**
-- Read quiz session answers on `/apply/checklist` load
-- Pre-fill Phase 1 questions from `answers` table
-- Hide redundant questions (e.g., if nationality already known)
-- Add "Change" link next to pre-filled data to allow refinement
-- Playwright verification of pre-fill states
+## SESSION S22 — AI Generation Blur-Lift Reveal (June 5, 2026)
+- **Audit finding:** The DocumentCard component + blur-lift JSX were already in `src/app/generate/[applicationId]/page.tsx` from commit `7cf5a10`. Right panel replaced with 6 named document cards. Missing piece: `motion` dependency not installed (runtime error on import).
+- **Installed `motion`** (v12.40.0 — includes framer-motion, motion-dom, motion-utils)
+- **Playwright test:** `tests/generation-page.spec.ts` — verifies 6 document cards render, all 6 names present ("Cover Letter" → "DS-160 Reference"), 6 `backdrop-blur-3xl` overlay elements present. Passed. Screenshot saved at `tests/screenshots/generation-page-init.png`.
+- **Build:** clean — 43 routes, 0 errors
+- **Commit:** `daf7817` — "feat: document generation blur-lift reveal animation"
+- **Pushed:** origin/dev ✓
+- **Note:** `docs/ai-generation-reveal.md` spec file was not produced this session — code exists but dedicated spec file missing. Flag for future documentation pass.
 
-**Session 17 (Remaining) — docxtpl integration + PDF export**
-- Word document template generation (docxtpl)
-- PDF export (neat-pdf MCP)
-- ZIP download endpoint (`/api/generate/download/[applicationId]`)
-- Wire download button on documents review page
-- End-to-end test: generate → humanize → quality gate → approve → download
-- Stripe paywall integration (session 14 items deferred)
+---
+
+## SESSION S16, S17 & S18 — Tier 5 Spec Updates (June 5, 2026)
+- **Completed S16**: Interview Simulator Spec Update. Created `docs/INTERVIEW_SIMULATOR_SPEC.md` incorporating Vol 3 Sections 7.5/7.6 and IDEAS.md 12G decisions (Filed Package as Baseline, Weak Point Probing, Answer Evaluation Against Filed Documents, Coaching Summary). (Commit: `fbd383a`)
+- **Completed S17**: Compliance Calendar Spec Update. Created `docs/COMPLIANCE_CALENDAR_SPEC.md` incorporating Vol 3 Section 7.7 and IDEAS.md 12H decisions (Two Distinct Date Concepts, Display Rules Based on Date Availability). (Commit: `1ceba36`)
+- **Completed S18**: Renewal Module Spec Update. Created `docs/RENEWAL_MODULE_SPEC.md` incorporating Vol 3 Section 7.8 and IDEAS.md 12F decisions (Baseline Principle, Field Classification Table, Template 6 Implementation Rule, Question Framing Rules). (Commit: `ea8890b`)
+- All sessions were documentation-only (no code, no build checks, no Playwright used during execution, though build was verified clean at session end).
+- `npm run build`: clean (43 routes, 0 errors after `.next` cache clear).
+
+---
+
+## NEXT SESSION
+**S23 — Image Slider on Auth Pages** (Tier 6 polish, after S22 ✓)
+- U.S.-themed image slider left panel on /login, /signup, /verify
+- Auto-advance every 5s, smooth crossfade, ambient (no controls)
+- Apply Obsidian Gold tokens
+- Playwright verification of all three pages
+
+**Remaining Tier 6 polish:**
+- S21 — Animated gradient border (pricing, CTA, module 3 sidebar)
+- S24 — Journey wizard as post-quiz page
