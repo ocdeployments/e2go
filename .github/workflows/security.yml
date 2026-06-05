@@ -1,0 +1,71 @@
+name: Security Gates
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main]
+
+jobs:
+  dependency-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm ci
+      - name: Fail on HIGH/CRITICAL vulnerabilities
+        run: |
+          VULNS=$(npm audit --json 2>/dev/null | node -e "
+            const d=JSON.parse(require('fs').readFileSync('/dev/stdin','utf8'));
+            const h=Object.values(d.vulnerabilities||{}).filter(v=>['high','critical'].includes(v.severity));
+            process.stdout.write(String(h.length));
+          " 2>/dev/null || echo "0")
+          if [ "$VULNS" -gt "0" ]; then echo "HIGH vulnerabilities: $VULNS"; exit 1; fi
+
+  secret-scanning:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Scan for hardcoded secrets
+        run: |
+          if grep -rn "sk_live_\|sk_test_\|gsk_\|AKIA" \
+            --include="*.ts" --include="*.tsx" --include="*.js" \
+            --exclude-dir=".git" --exclude-dir="node_modules" \
+            --exclude="*.example" . ; then
+            echo "ERROR: Possible hardcoded API key found in source files"
+            exit 1
+          fi
+          if grep -rn "SKIP_PAYMENT_WALL=true" \
+            --exclude-dir=".git" --exclude-dir="node_modules" . ; then
+            echo "ERROR: SKIP_PAYMENT_WALL=true found in committed files"
+            exit 1
+          fi
+          echo "No hardcoded secrets found"
+
+  build-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm ci
+      - name: Create test env
+        run: |
+          cat > .env.local << 'EOF'
+          NEXT_PUBLIC_SUPABASE_URL=https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder_anon_key
+          OPENROUTER_API_KEY=placeholder
+          ANTHROPIC_API_KEY=placeholder
+          MINIMAX_MODEL=minimax/minimax-m2.5
+          RESEND_API_KEY=placeholder
+          STRIPE_PUBLISHABLE_KEY=pk_test_placeholder
+          STRIPE_SECRET_KEY=sk_test_placeholder
+          STRIPE_WEBHOOK_SECRET=whsec_placeholder
+          GROQ_API_KEY=gsk_placeholder
+          EOF
+      - run: npm run build
