@@ -542,11 +542,6 @@ Before adding any question to any tab or module:
 This rule applies to every module, every tab, every question,
 every document generation prompt. No exceptions.
 
-### Duplication 9 and 10 — Work History and Education [DECIDED]
-June 4 2026 audit: Tab A does not currently collect work history or education.
-Tab J is already the single source. No deduplication needed.
-If Tab A DS-160 fields are added in future, they must read from Tab J — never collect independently.
-
 ---
 
 ## SECTION 12 — DUPLICATION AUDIT & RESOLUTION (DECIDED — June 4, 2026)
@@ -796,3 +791,225 @@ When these items are built, implement in this order:
 Each item should be a separate commit.
 Each item should be verified with Playwright before marking complete.
 
+
+---
+
+## SECTION 13 — DATA RETENTION POLICY (DECIDED IN PRINCIPLE — REVISIT BEFORE LAUNCH)
+
+**Date:** June 4, 2026
+**Status:** [DECIDED IN PRINCIPLE] — copy changes and code changes needed before launch
+**Do not build compliance calendar, renewal module, or deletion flows until this section is finalised**
+
+---
+
+### 13A — The Core Principle
+
+Data minimisation. Hold only what is needed for the stated purpose,
+for only as long as it is needed. Delete everything else.
+This is legally cleaner, commercially more honest, and a genuine
+trust differentiator in the immigration space.
+
+"We delete your sensitive application data after your journey is
+complete" is a stronger trust signal than silent indefinite retention.
+
+---
+
+### 13B — Two Separate Retention Clocks
+
+There are two distinct situations that trigger the deletion sequence.
+They are different emotional contexts and must be handled differently.
+
+CLOCK 1 — INACTIVITY (during active application):
+Triggered when: user has not logged in or made any progress
+for 90 consecutive days at any point during the application.
+This is a gentle nudge. The user may have paused their plans.
+Tone: warm re-engagement. "Your application is waiting for you."
+Sequence:
+  Day 60 of inactivity: first re-engagement email
+  Day 67: second email
+  Day 74: third email
+  Day 81: fourth email — "Your data will be deleted in 9 days"
+  Day 90: data deleted
+If user logs in at any point: clock resets to zero.
+Clock 1 applies only while the application is in progress
+— not after the outcome is confirmed.
+
+CLOCK 2 — POST-OUTCOME (after visa approved or refused):
+Triggered when: user records their outcome in the app
+(approved or refused — both trigger the same clock).
+This is a handoff moment. The journey is complete.
+Tone: completion framing. "You've completed your journey.
+Here is your record to keep."
+Sequence:
+  Outcome confirmed: immediate download prompt shown in app
+  Day 60 after outcome: first email — "Download your record"
+  Day 75: second email — "Your data will be deleted in 15 days"
+  Day 83: third email — "Your data will be deleted in 7 days"
+  Day 90: application data deleted permanently
+Clock 2 applies regardless of whether the user downloaded.
+The deletion happens at day 90 whether or not they acted.
+
+---
+
+### 13C — What Is Deleted at Day 90
+
+All Module 3 answers (every tab, every question).
+All generated documents.
+All analysis engine output and case briefs.
+All confidence score history.
+All follow-up conversation responses.
+All writing style profile data.
+All uploaded file references.
+Quiz session answers (beyond the minimal fields below).
+
+---
+
+### 13D — What Is NOT Deleted
+
+These are retained beyond 90 days with explicit purpose:
+
+Compliance calendar subscribers (opt-in, $29/year):
+  Email address
+  Visa issue date
+  Visa expiry date
+  Business name
+  U.S. state of operation
+  Number of dependents and their ages (for age-out alerts)
+  FBAR flag (U.S. bank account over $10,000 — yes/no)
+  Nothing else. These eight fields only.
+
+Renewal baseline (retained until renewal module completed):
+  Original revenue projections from Tab I (QI-05, QI-06)
+  Original hiring plan from Tab I (QI-02, QI-03)
+  These are a handful of numbers. Not sensitive personal data.
+  Deleted when renewal module is completed or user requests deletion.
+
+Account record:
+  Email address, account creation date, payment history.
+  Retained per standard financial/legal requirements.
+  Not application data — account administration only.
+
+---
+
+### 13E — The Re-Upload Feature (Critical — Build Before Renewal Module)
+
+When a returning user starts a new application after:
+  - A previous refusal
+  - A gap of any length
+  - A renewal cycle
+
+The app must accept their downloaded application export file
+as an upload and use it to pre-populate the new application.
+
+The export file (downloaded before deletion) must contain:
+  Every answer given across all Module 3 tabs
+  Every document generated (as text, not PDF)
+  Original projections from Tab I
+  Quiz session answers
+  Application type, family composition, business details
+
+On upload:
+  App recognises the e2go export format (JSON structure)
+  Pre-populates every field it can from the previous application
+  Marks each pre-filled field with "From your previous application"
+  badge — same PreFilledField component pattern as S5
+  User reviews and confirms pre-filled data
+  User updates whatever has changed
+  New application proceeds from there
+
+This feature makes a second application dramatically faster.
+It also makes the deletion policy commercially viable —
+the user is not losing their data forever, they are taking
+custody of it. The app can restore it when they return.
+
+For renewal specifically:
+  Upload pre-populates the projected column in Template 6
+  (the only renewal field that uses original data as baseline)
+  All other renewal fields collect fresh as per IDEAS.md 12F
+
+---
+
+### 13F — Copy Changes Required Before Launch
+
+These locations in the app contain promises or language that
+conflicts with the data retention policy. All must be updated
+before launch. Do not change any of these until the full policy
+is finalised and locked.
+
+| Location | Current language | Must change to |
+|---|---|---|
+| Privacy policy Section 3.4 | "5 years from last active session" | "90 days after outcome confirmed. Minimal calendar data retained for subscribers." |
+| Renewal module entry screen | "$97 — your original data is pre-loaded" | "$97 — upload your application export to restore your data" |
+| Session resume UX | "Welcome back. You left off at Tab F..." | Add: "Your progress is saved while your application is active." |
+| Module 1 consent screen | No retention disclosure | Add: "Application data is retained until 90 days after your outcome is confirmed, then permanently deleted. Download your record at any time." |
+| Post-outcome screen | No deletion disclosure | Add download prompt and explain 90-day window |
+| Re-engagement emails | "Your saved application expires in 7 days" | Rewrite for Clock 1 vs Clock 2 contexts |
+
+---
+
+### 13G — New Emails Required
+
+Two new email sequences needed — not yet written anywhere:
+
+CLOCK 1 SEQUENCE (inactivity re-engagement):
+Tone: warm, curious, no pressure in early emails, urgency only at day 81+
+Day 60: "We noticed you haven't been back in a while. Your application is
+         still waiting — pick up exactly where you left off."
+Day 67: "Three things have changed in E-2 processing times since you
+         were last here. Your application is still saved."
+Day 74: "Your application is still here. But we wanted you to know —
+         if you don't log in within 16 days, your data will be deleted."
+Day 81: "Final notice — your application data will be deleted in 9 days.
+         Log in now to continue, or download your data to keep a copy."
+
+CLOCK 2 SEQUENCE (post-outcome handoff):
+Tone: completion, pride, practical — not alarming
+Immediate: "Congratulations / We're sorry to hear about your outcome.
+            Your complete application record is ready to download.
+            Keep it — it belongs to you."
+Day 60: "A reminder — your application data will be deleted in 30 days.
+         Download your record before then."
+Day 75: "15 days until your application data is permanently deleted.
+         Download your record to keep a copy and make any future
+         reapplication significantly faster."
+Day 83: "7 days remaining. After this, your data cannot be recovered."
+
+---
+
+### 13H — Open Questions (Revisit Before Building)
+
+1. What exactly does the e2go export file look like?
+   JSON structure needs to be defined before the re-upload feature
+   is built. This drives both the export format (S15) and the
+   re-upload parser.
+
+2. Does the 90-day inactivity clock apply to unpaid users too?
+   Someone who took the quiz and created an account but never paid —
+   do we delete their quiz session data after 90 days of inactivity?
+   Recommendation: yes, with a shorter sequence (30-day warning only).
+
+3. What happens if the outcome is never recorded?
+   Some users will never log back in to record their outcome.
+   Do we apply the inactivity clock in that case?
+   Recommendation: yes — inactivity clock applies regardless of
+   whether an outcome was recorded.
+
+4. CASL compliance for the deletion warning emails.
+   These are transactional emails about the user's account — not
+   marketing. They do not require separate opt-in consent under CASL.
+   Confirm this with legal review before launch.
+
+5. The $97 vs $147 renewal pricing.
+   The price differential was justified by "data pre-loaded."
+   Under the new policy it is justified by "export file accepted."
+   The commercial logic still holds — existing users have their
+   export file, new users have to enter everything from scratch.
+   But the language everywhere must reflect upload, not silent retention.
+
+---
+
+*Status: DECIDED IN PRINCIPLE. Do not build deletion flows, re-upload
+feature, or update any copy until all open questions in 13H are resolved
+and this section is marked [LOCKED].*
+
+*Revisit: before building compliance calendar, renewal module, or S15 PDF export.*
