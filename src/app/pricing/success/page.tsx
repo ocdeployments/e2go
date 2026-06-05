@@ -111,7 +111,7 @@ function SuccessContent() {
           </svg>
         </div>
 
-        <h1 className="text-[#f5f0e8] text-3xl mb-4" style={{ fontFamily: 'Cormorant Garamond, serif' }}>
+        <h1 className="text-[#f5f0e8] text-3xl mb-4" data-testid="payment-confirmed" style={{ fontFamily: 'Cormorant Garamond, serif' }}>
           Payment Confirmed
         </h1>
 

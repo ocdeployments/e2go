@@ -38,9 +38,12 @@ function getBaseHtml(content: string): string {
           </tr>
           <tr>
             <td style="padding: 32px 0 0 0; border-top: 1px solid rgba(201,168,76,0.15);">
-              <p style="font-size: 12px; color: rgba(245,240,232,0.4); margin: 0; line-height: 1.6;">
+              <p style="font-size: 12px; color: rgba(245,240,232,0.4); margin: 0 0 8px 0; line-height: 1.6;">
                 e2go.app — document preparation tool, not a law firm.<br>
                 Your data is handled per our <a href="${appUrl}/privacy" style="color: #C9A84C; text-decoration: none;">privacy policy</a>.
+              </p>
+              <p style="font-size: 11px; color: rgba(245,240,232,0.3); margin: 0; line-height: 1.6;">
+                To unsubscribe: <a href="${appUrl}/unsubscribe" style="color: rgba(245,240,232,0.4); text-decoration: underline;"> unsubscribe</a> | e2go.app | support@e2go.app
               </p>
             </td>
           </tr>

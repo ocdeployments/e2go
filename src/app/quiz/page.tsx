@@ -663,7 +663,7 @@ export default function QuizPage() {
   };
 
   return (
-    <div className="min-h-screen" style={{ background: '#0a0a0a' }}>
+    <div className="min-h-screen" style={{ background: '#0a0a0a' }} data-testid="quiz-container">
       {/* Header - Obsidian Gold */}
       <header className="w-full sticky top-0 z-50" style={{ background: '#0a0a0a', borderBottom: '1px solid rgba(201,168,76,0.2)' }}>
         <div className="flex justify-between items-center h-16 px-4 max-w-xl mx-auto">
@@ -1058,6 +1058,7 @@ export default function QuizPage() {
                   );
                 })}
                 <button
+                  data-testid="quiz-next"
                   onClick={handleMultiselectContinue}
                   disabled={!((answers[currentQuestion.id] as string[]) || []).length}
                   style={{
@@ -1154,6 +1155,7 @@ export default function QuizPage() {
                 )}
 
                 <button
+                  data-testid="quiz-next"
                   onClick={handleCurrencyContinue}
                   disabled={!currencyValue}
                   style={{
@@ -1241,6 +1243,7 @@ export default function QuizPage() {
                 )}
 
                 <button
+                  data-testid="quiz-next"
                   onClick={handleTextContinue}
                   disabled={!emailValue}
                   style={{

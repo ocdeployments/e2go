@@ -94,7 +94,7 @@ export default function ResultsPage() {
   const renderDO_NOT_PROCEED = () => (
     <main className="flex-1 flex items-center justify-center px-4 py-12">
       <div className="max-w-md w-full text-center p-10 bg-[rgba(239,68,68,0.04)] border border-[rgba(239,68,68,0.2)]">
-        <h1 className="text-2xl font-bold mb-4 text-[#f5f0e8] font-serif">The E-2 visa may not be available to you.</h1>
+        <h1 className="text-2xl font-bold mb-4 text-[#f5f0e8] font-serif" data-testid="quiz-outcome">The E-2 visa may not be available to you.</h1>
         <p className="mb-6 text-[rgba(245,240,232,0.75)]">{hard_stop_codes[0] && stopMessages[hard_stop_codes[0]]}</p>
         <Link href="/signup" className="block w-full py-4 bg-[#C9A84C] text-[#0a0a0a] font-medium transition-colors">Create an Account →</Link>
         <p className="text-[rgba(245,240,232,0.40)] text-xs mt-6 font-[DM_Sans]">
@@ -108,7 +108,7 @@ export default function ResultsPage() {
     const { attorney_flag_codes } = result;
     return (
       <main className="flex-1 px-4 py-12 max-w-2xl mx-auto w-full">
-        <h1 className="text-4xl font-bold mb-6 text-center text-[#f5f0e8] font-serif">We recommend speaking with an immigration consultant first.</h1>
+        <h1 className="text-4xl font-bold mb-6 text-center text-[#f5f0e8] font-serif" data-testid="quiz-outcome">We recommend speaking with an immigration consultant first.</h1>
         <p className="text-center text-[rgba(245,240,232,0.60)] mb-8 font-[DM_Sans]">
           Your answers suggest complexity that benefits from professional review before you invest in document preparation.
         </p>
@@ -133,7 +133,7 @@ export default function ResultsPage() {
 
   const renderPROCEED_RISK = () => (
     <main className="flex-1 px-4 py-12 max-w-2xl mx-auto w-full">
-      <h1 className="text-4xl font-bold mb-6 text-center text-[#f5f0e8] font-serif">You may qualify — with some considerations.</h1>
+      <h1 className="text-4xl font-bold mb-6 text-center text-[#f5f0e8] font-serif" data-testid="quiz-outcome">You may qualify — with some considerations.</h1>
       <p className="text-center text-[rgba(245,240,232,0.60)] mb-8 font-[DM_Sans]">
         Your answers indicate eligibility, but the following items will need attention in your application:
       </p>
@@ -151,7 +151,7 @@ export default function ResultsPage() {
 
   const renderPROCEED = () => (
     <main className="flex-1 px-4 py-12 max-w-2xl mx-auto w-full text-center">
-      <h1 className="text-4xl font-bold mb-6 text-[#f5f0e8] font-serif">You appear to qualify for the E-2.</h1>
+      <h1 className="text-4xl font-bold mb-6 text-[#f5f0e8] font-serif" data-testid="quiz-outcome">You appear to qualify for the E-2.</h1>
       <p className="text-center text-[rgba(245,240,232,0.60)] mb-8 font-[DM_Sans]">
         Based on your answers, you meet the basic eligibility requirements for the E-2 Treaty Investor visa.
       </p>

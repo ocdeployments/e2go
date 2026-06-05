@@ -264,7 +264,7 @@ export default function PricingPage() {
           )}
 
           {/* Pricing Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto mb-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto mb-12" data-testid="pricing-tiers">
             {pricingTiers.map((tier) => {
               const tierFromDb = pricingTiers.find(t => t.tier_id === tier.tier_id);
               const tierName = tierFromDb?.name || tier.name;

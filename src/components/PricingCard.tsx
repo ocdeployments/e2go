@@ -57,6 +57,7 @@ export default function PricingCard({
       </ul>
 
       <button
+        data-testid={`pricing-cta-${id}`}
         onClick={() => !disabled && onSelect(id)}
         disabled={disabled}
         className={`w-full py-4 text-sm font-medium font-[DM_Sans] transition-colors ${
