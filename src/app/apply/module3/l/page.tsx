@@ -1,8 +1,12 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { ApplicationProvider, useApplication } from '@/contexts/ApplicationContext';
 import TabPage from '@/components/module3/TabPage';
 import { Section } from '@/types/module3';
+import { getPreFill } from '@/lib/prefill';
+import { createBrowserSupabaseClient } from '@/lib/supabase';
 
 const sections: Section[] = [
   {
@@ -37,11 +41,41 @@ const sections: Section[] = [
 
 function TabLContent() {
   const { answers, setAnswer } = useApplication();
+  const [userEmail, setUserEmail] = useState<string | undefined>(undefined);
+
+  useEffect(() => {
+    const getUserEmail = async () => {
+      const supabase = createBrowserSupabaseClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user?.email) {
+        setUserEmail(user.email);
+      }
+    };
+    getUserEmail();
+  }, []);
+
+  const mappedSections = sections.map(section => ({
+    ...section,
+    fields: section.fields.map(field => {
+      const prefill = getPreFill(field.key, userEmail);
+      if (prefill.value !== null) {
+        return {
+          ...field,
+          prefillValue: prefill.value,
+          prefillNote: prefill.note,
+          requiresConfirmation: prefill.requiresConfirmation,
+          confirmationText: prefill.confirmationText,
+        };
+      }
+      return field;
+    }),
+  }));
+
   return (
     <TabPage
       tabTitle="Family Dependents"
       tabDescription="Provide information about family members applying as E-2 dependents."
-      sections={sections as Section[]}
+      sections={mappedSections as Section[]}
       answers={answers}
       onAnswerChange={(key, val) => setAnswer(key, val)}
       onSaveSection={async () => {}}
@@ -49,10 +83,68 @@ function TabLContent() {
   );
 }
 
-export default function TabLPage() {
+function TabLPageContent() {
+  const router = useRouter();
+  const [supabase] = useState(() => createBrowserSupabaseClient());
+  const [loading, setLoading] = useState(true);
+  const [applicationId, setApplicationId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const init = async () => {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser) {
+        router.push('/login?next=/apply/module3/l');
+        return;
+      }
+
+      const { data: existingApp } = await supabase
+        .from('applications')
+        .select('id')
+        .eq('user_id', authUser.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (existingApp) {
+        setApplicationId(existingApp.id);
+      } else {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .upsert({ id: authUser.id, email: authUser.email, tier: 'free' })
+          .select();
+
+        if (!profileError) {
+          const { data: newApp } = await supabase
+            .from('applications')
+            .insert({ user_id: authUser.id, status: 'in_progress' })
+            .select('id')
+            .single();
+          if (newApp) {
+            setApplicationId(newApp.id);
+          }
+        }
+      }
+      setLoading(false);
+    };
+
+    init();
+  }, [router, supabase]);
+
+  if (loading || !applicationId) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#0a0a0a' }}>
+        <div className="w-8 h-8 border-2 border-[#C9A84C] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   return (
-    <ApplicationProvider applicationId="dummy-id">
+    <ApplicationProvider applicationId={applicationId}>
       <TabLContent />
     </ApplicationProvider>
   );
+}
+
+export default function TabLPage() {
+  return <TabLPageContent />;
 }

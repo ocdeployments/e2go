@@ -6,6 +6,7 @@ import { createBrowserSupabaseClient } from '@/lib/supabase';
 import { ApplicationProvider, useApplication } from '@/contexts/ApplicationContext';
 import TabPage from '@/components/module3/TabPage';
 import tabQuestions from '@/data/module3/tab-a.json';
+import { getPreFill } from '@/lib/prefill';
 import { FieldConfig, Section } from '@/types/module3';
 
 interface QuestionConfig {
@@ -200,8 +201,35 @@ function TabAPageContent() {
 
 function TabAWithContext() {
   const { answers, setAnswer } = useApplication();
+  const [userEmail, setUserEmail] = useState<string | undefined>(undefined);
 
-  const sections = transformQuestionsToSections(tabQuestions as QuestionConfig[]);
+  useEffect(() => {
+    const getUserEmail = async () => {
+      const supabase = createBrowserSupabaseClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user?.email) {
+        setUserEmail(user.email);
+      }
+    };
+    getUserEmail();
+  }, []);
+
+  const sections = transformQuestionsToSections(tabQuestions as QuestionConfig[]).map(section => ({
+    ...section,
+    fields: section.fields.map(field => {
+      const prefill = getPreFill(field.key, userEmail);
+      if (prefill.value !== null) {
+        return {
+          ...field,
+          prefillValue: prefill.value,
+          prefillNote: prefill.note,
+          requiresConfirmation: prefill.requiresConfirmation,
+          confirmationText: prefill.confirmationText,
+        };
+      }
+      return field;
+    }),
+  }));
 
   const handleAnswerChange = useCallback((key: string, value: string | string[] | number | null) => {
     setAnswer(key, value);
@@ -214,7 +242,7 @@ function TabAWithContext() {
   return (
     <TabPage
       tabTitle="DS-160 Reference"
-      tabDescription="Personal information for your visa application"
+      tabDescription="Personal information for your visa application. Fields pre-filled from your eligibility check are marked and can be edited."
       sections={sections}
       answers={answers}
       onAnswerChange={handleAnswerChange}

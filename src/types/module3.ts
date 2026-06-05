@@ -12,6 +12,10 @@ export interface FieldConfig {
   privacy_category?: 'red' | 'amber' | 'green' | 'required';
   conditionField?: string;
   conditionValue?: string;
+  prefillValue?: string | string[] | null;
+  prefillNote?: string | null;
+  requiresConfirmation?: boolean;
+  confirmationText?: string;
 }
 
 export interface Section {

@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import FormField from './FormField';
+import PreFilledField from '@/components/PreFilledField';
 import { SectionFormProps } from '@/types/module3';
 
 export default function SectionForm({
@@ -16,6 +17,7 @@ export default function SectionForm({
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const debounceTimers = useRef<Record<string, NodeJS.Timeout>>({});
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [confirmationStates, setConfirmationStates] = useState<Record<string, boolean>>({});
 
   const answeredCount = fields.filter(f => {
     const answer = answers[f.key];
@@ -96,16 +98,46 @@ export default function SectionForm({
       </div>
 
       <div className="space-y-6">
-        {fields.map((field) => (
-          <FormField
-            key={field.key}
-            field={field}
-            value={answers[field.key]}
-            onChange={(value) => handleFieldChange(field.key, value)}
-            onSkip={() => handleSkipField(field.key)}
-            disabled={false}
-          />
-        ))}
+        {fields.map((field) => {
+          const hasPrefill = field.prefillValue !== null && field.prefillValue !== undefined && field.prefillValue !== '';
+
+          if (hasPrefill) {
+            return (
+              <PreFilledField
+                key={field.key}
+                questionId={field.key}
+                label={field.label}
+                prefillValue={field.prefillValue!}
+                prefillNote={field.prefillNote || null}
+                requiresConfirmation={field.requiresConfirmation}
+                confirmationText={field.confirmationText}
+                isConfirmed={!!confirmationStates[field.key]}
+                onConfirmChange={(checked) => {
+                  setConfirmationStates(prev => ({ ...prev, [field.key]: checked }));
+                }}
+              >
+                <FormField
+                  field={field}
+                  value={answers[field.key]}
+                  onChange={(value) => handleFieldChange(field.key, value)}
+                  onSkip={() => handleSkipField(field.key)}
+                  disabled={false}
+                />
+              </PreFilledField>
+            );
+          }
+
+          return (
+            <FormField
+              key={field.key}
+              field={field}
+              value={answers[field.key]}
+              onChange={(value) => handleFieldChange(field.key, value)}
+              onSkip={() => handleSkipField(field.key)}
+              disabled={false}
+            />
+          );
+        })}
       </div>
 
       <div className="mt-8 flex items-center justify-between">

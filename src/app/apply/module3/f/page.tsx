@@ -3,9 +3,18 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { createBrowserSupabaseClient } from '@/lib/supabase';
+import { getPreFill } from '@/lib/prefill';
+import _PreFilledField from '@/components/PreFilledField';
 
 // Types
 type ScreenState = 'intro' | 'question' | 'completion' | 'resume';
+
+interface PreFilledQuestion extends Question {
+  prefillValue?: string | string[] | null;
+  prefillNote?: string | null;
+  requiresConfirmation?: boolean;
+  confirmationText?: string;
+}
 
 // Question data
 interface Question {
@@ -126,6 +135,34 @@ export default function TabFPage() {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const [userEmail, setUserEmail] = useState<string | undefined>(undefined);
+  const [_confirmationStates, _setConfirmationStates] = useState<Record<string, boolean>>({});
+  const [prefilledQuestions, setPrefilledQuestions] = useState<PreFilledQuestion[]>([]);
+
+  useEffect(() => {
+    const getUserData = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user?.email) {
+        setUserEmail(user.email);
+      }
+    };
+    getUserData();
+  }, [supabase]);
+
+  useEffect(() => {
+    // Convert static QUESTIONS to PrefilledQuestions on userEmail change
+    if (userEmail !== undefined) {
+      setPrefilledQuestions(
+        (QUESTIONS as PreFilledQuestion[]).map(q => {
+          const prefill = getPreFill(q.id, userEmail);
+          if (prefill.value !== null) {
+            return { ...q, ...prefill };
+          }
+          return q;
+        })
+      );
+    }
+  }, [userEmail]);
 
   // Build document checklist based on answers
   const checklistItems = useMemo((): ChecklistItem[] => {
@@ -272,13 +309,13 @@ export default function TabFPage() {
         setAnswers(existingAnswers);
 
         // Check if we should resume or show completion
-        const answeredCount = QUESTIONS.filter(q => existingAnswers[q.id]).length;
-        if (answeredCount >= QUESTIONS.length) {
+        const answeredCount = prefilledQuestions.filter(q => existingAnswers[q.id]).length;
+        if (answeredCount >= prefilledQuestions.length) {
           setScreenState('completion');
         } else if (answeredCount > 0) {
           setScreenState('resume');
           // Find first unanswered question
-          const firstUnanswered = QUESTIONS.findIndex(q => !existingAnswers[q.id]);
+          const firstUnanswered = prefilledQuestions.findIndex(q => !existingAnswers[q.id]);
           setCurrentQuestionIndex(firstUnanswered >= 0 ? firstUnanswered : 0);
         }
       }
@@ -287,7 +324,7 @@ export default function TabFPage() {
     };
 
     init();
-  }, [router, supabase]);
+  }, [router, supabase, prefilledQuestions]);
 
   const handleAnswer = (questionId: string, value: string) => {
     setAnswers(prev => ({ ...prev, [questionId]: value }));
@@ -295,7 +332,7 @@ export default function TabFPage() {
   };
 
   const handleNext = () => {
-    if (currentQuestionIndex < QUESTIONS.length - 1) {
+    if (currentQuestionIndex < prefilledQuestions.length - 1) {
       setCurrentQuestionIndex(prev => prev + 1);
     } else {
       setScreenState('completion');
@@ -308,9 +345,9 @@ export default function TabFPage() {
     }
   };
 
-  const currentQuestion = QUESTIONS[currentQuestionIndex];
-  const answeredCount = QUESTIONS.filter(q => answers[q.id]).length;
-  const progress = Math.round((answeredCount / QUESTIONS.length) * 100);
+  const currentQuestion = prefilledQuestions[currentQuestionIndex] || QUESTIONS[0];
+  const answeredCount = prefilledQuestions.filter(q => answers[q.id]).length;
+  const progress = prefilledQuestions.length > 0 ? Math.round((answeredCount / prefilledQuestions.length) * 100) : 0;
 
   // Advisory cards based on answers
   const renderAdvisories = () => {
