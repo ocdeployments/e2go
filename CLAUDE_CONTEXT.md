@@ -339,6 +339,9 @@ OPENROUTER_API_KEY=          ← MiniMax, all app features
 ANTHROPIC_API_KEY=           ← document generation ONLY
 MINIMAX_MODEL=minimax/MiniMax-Text-01
 RESEND_API_KEY=
+STRIPE_PUBLISHABLE_KEY=      ← publishable key (pk_test_*/pk_live_*)
+STRIPE_SECRET_KEY=           ← secret key (sk_test_*/sk_live_*)
+STRIPE_WEBHOOK_SECRET=      ← webhook signing secret (whsec_*)
 PLAYWRIGHT_BYPASS_AUTH=true  ← dev only, never set on Vercel
 ```
 
