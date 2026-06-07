@@ -86,6 +86,7 @@ The following variables are available in the generation payload:
 
 - `case_brief_json` — Complete case brief with analysis scores, investment details, business info
 - `module_3_answers` — All answers from Module 3 tabs (A through L)
+- `investment_breakdown` — Structured investment data with EXACT dollar amounts
 - `voice_profile_text` — Applicant's writing style profile from their sample
 - `follow_up_responses` — Responses from the follow-up conversation
 - `consulate_post` — Target consulate (toronto, frankfurt, london, auckland)
@@ -97,6 +98,14 @@ For Source of Funds, specifically extract from module_3_answers:
 - Tab H questions about fund sources
 - Any loan details (institution, amount, collateral type)
 - Property sale details if applicable
+
+## INVESTMENT DATA — CRITICAL
+
+The investment breakdown is provided as a structured table with EXACT dollar amounts.
+You MUST use these exact values. NEVER estimate, round, or substitute any amounts.
+
+If any investment figure is marked "NOT PROVIDED" or null, state that the
+figure is "not yet confirmed" — NEVER invent a number.
 - Business sale details if applicable
 
 ---

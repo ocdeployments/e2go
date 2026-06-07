@@ -9,6 +9,7 @@ export type DocumentType =
 export type GenerationJobStatus =
   | 'queued'
   | 'running'
+  | 'awaiting_approval'
   | 'completed'
   | 'failed'
   | 'partial';
@@ -16,10 +17,13 @@ export type GenerationJobStatus =
 export type DocumentStatus =
   | 'queued'
   | 'generating'
+  | 'generated'
+  | 'awaiting_approval'
   | 'under_review'
   | 'approved'
   | 'locked'
-  | 'failed';
+  | 'failed'
+  | 'revision_requested';
 
 export type GenerationStepStatus =
   | 'pending'
@@ -154,10 +158,24 @@ export interface GenerationPayload {
   system_prompt: string;
   case_brief: Record<string, unknown>;
   module_3_answers: Record<string, unknown>;
+  investment_breakdown: InvestmentBreakdownData;
   voice_profile: string;
   consulate_post: string;
   document_type: DocumentType;
   follow_up_responses: Record<string, unknown>;
+}
+
+export interface InvestmentBreakdownData {
+  total_invested: number | null;
+  total_business_cost: number | null;
+  franchise_fee: number | null;
+  leasehold_improvements: number | null;
+  equipment_technology: number | null;
+  educational_materials: number | null;
+  working_capital: number | null;
+  professional_fees: number | null;
+  marketing_launch: number | null;
+  at_risk_amount: number | null;
 }
 
 export interface ConsistencyIssue {
@@ -188,7 +206,12 @@ export interface SSEProgressMessage {
   documentsComplete: number;
   totalDocuments: number;
   currentDocument?: string;
+  currentDocumentType?: string;
   currentDocumentText?: string;
+  currentDocumentPreview?: string;
+  wordCount?: number;
+  pageEstimate?: number;
+  awaitingApproval?: boolean;
   error?: string;
 }
 

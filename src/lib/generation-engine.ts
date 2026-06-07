@@ -42,6 +42,95 @@ export async function loadPrompt(documentType: DocumentType): Promise<string> {
 }
 
 // ---------------------------------------------------------------------------
+// Investment breakdown extraction
+// ---------------------------------------------------------------------------
+
+interface InvestmentBreakdown {
+  total_invested: number | null;
+  total_business_cost: number | null;
+  franchise_fee: number | null;
+  leasehold_improvements: number | null;
+  equipment_technology: number | null;
+  educational_materials: number | null;
+  working_capital: number | null;
+  professional_fees: number | null;
+  marketing_launch: number | null;
+  at_risk_amount: number | null;
+}
+
+function extractInvestmentBreakdown(answers: Record<string, unknown>): InvestmentBreakdown {
+  const getNumber = (key: string): number | null => {
+    const val = answers[key];
+    if (typeof val === 'number') return val;
+    if (typeof val === 'string') {
+      const num = parseFloat(val.replace(/[$,]/g, ''));
+      return isNaN(num) ? null : num;
+    }
+    return null;
+  };
+
+  // QF-02: Total invested to date
+  // QF-03: Total business cost
+  // QF-NEW-01: Amount spent on actual business expenses
+  return {
+    total_invested: getNumber('QF-02'),
+    total_business_cost: getNumber('QF-03'),
+    franchise_fee: getNumber('franchise_fee'),
+    leasehold_improvements: getNumber('leasehold_improvements'),
+    equipment_technology: getNumber('equipment_technology'),
+    educational_materials: getNumber('educational_materials'),
+    working_capital: getNumber('working_capital'),
+    professional_fees: getNumber('professional_fees'),
+    marketing_launch: getNumber('marketing_launch'),
+    at_risk_amount: getNumber('QF-NEW-01'),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Data validation
+// ---------------------------------------------------------------------------
+
+interface ValidationResult {
+  valid: boolean;
+  missingFields: string[];
+}
+
+function validateContext(
+  caseBrief: CaseBrief,
+  module3Answers: Record<string, unknown>,
+  investmentBreakdown: InvestmentBreakdown
+): ValidationResult {
+  const missingFields: string[] = [];
+
+  // Check case brief fields
+  const caseBriefData = caseBrief as unknown as Record<string, unknown>;
+  if (!caseBriefData.applicant_name && !caseBriefData.applicantName) {
+    missingFields.push('applicant_name');
+  }
+
+  // Check investment data
+  if (!investmentBreakdown.total_invested && !investmentBreakdown.total_business_cost) {
+    missingFields.push('investment_total');
+  }
+
+  // Check business info
+  if (!caseBriefData.business_name && !caseBriefData.businessName) {
+    missingFields.push('business_name');
+  }
+
+  // Check source of funds
+  const sourceOfFunds = module3Answers['QF-05'];
+  if (!sourceOfFunds) {
+    missingFields.push('source_of_funds_summary');
+  }
+
+  return {
+    valid: missingFields.length === 0,
+    missingFields,
+  };
+}
+
+// ---------------------------------------------------------------------------
 // 4b. Build the generation payload
 // ---------------------------------------------------------------------------
 
@@ -76,10 +165,14 @@ export async function buildGenerationPayload(
     }
   }
 
+  // Extract investment breakdown as structured data
+  const investmentBreakdown = extractInvestmentBreakdown(module3Answers);
+
   return {
     system_prompt: systemPrompt,
     case_brief: caseBrief as unknown as Record<string, unknown>,
     module_3_answers: module3Answers,
+    investment_breakdown: investmentBreakdown,
     voice_profile: voiceProfile?.voice_profile_text || '',
     consulate_post: (caseBrief as unknown as Record<string, unknown>).consulate_post as string || 'toronto',
     document_type: documentType,
@@ -95,11 +188,31 @@ export async function callClaudeAPI(payload: GenerationPayload): Promise<string>
   const anthropic = getAnthropic();
   const docLabel = DOCUMENT_TYPE_LABELS[payload.document_type];
 
+  // Format investment breakdown as a clear table
+  const ib = payload.investment_breakdown;
+  const investmentBreakdownText = ib ? [
+    `INVESTMENT BREAKDOWN (USE EXACT VALUES — DO NOT ESTIMATE):`,
+    `  Total Invested: ${ib.total_invested ? `$${ib.total_invested.toLocaleString()}` : 'NOT PROVIDED'}`,
+    `  Total Business Cost: ${ib.total_business_cost ? `$${ib.total_business_cost.toLocaleString()}` : 'NOT PROVIDED'}`,
+    `  At-Risk Amount: ${ib.at_risk_amount ? `$${ib.at_risk_amount.toLocaleString()}` : 'NOT PROVIDED'}`,
+    ib.franchise_fee !== null ? `  Franchise Fee: $${ib.franchise_fee.toLocaleString()}` : null,
+    ib.leasehold_improvements !== null ? `  Leasehold Improvements: $${ib.leasehold_improvements.toLocaleString()}` : null,
+    ib.equipment_technology !== null ? `  Equipment & Technology: $${ib.equipment_technology.toLocaleString()}` : null,
+    ib.educational_materials !== null ? `  Educational Materials: $${ib.educational_materials.toLocaleString()}` : null,
+    ib.working_capital !== null ? `  Working Capital: $${ib.working_capital.toLocaleString()}` : null,
+    ib.professional_fees !== null ? `  Professional Fees: $${ib.professional_fees.toLocaleString()}` : null,
+    ib.marketing_launch !== null ? `  Marketing & Launch: $${ib.marketing_launch.toLocaleString()}` : null,
+    '',
+    `IMPORTANT: Use EXACT dollar amounts from this breakdown. Never estimate, round, or substitute any amounts.`,
+    `If a figure is marked "NOT PROVIDED", state it is not yet confirmed — NEVER invent a number.`,
+  ].filter(Boolean).join('\n') : '';
+
   const userMessage = [
     `KNOWLEDGE CONTEXT:`,
     `Consulate post: ${payload.consulate_post}`,
     `Document type: ${docLabel}`,
     '',
+    investmentBreakdownText,
     `APPLICANT CASE BRIEF:`,
     wrapUserContent(JSON.stringify(payload.case_brief, null, 2)),
     '',
@@ -502,6 +615,28 @@ export async function runGenerationPipeline(
 
       try {
         const payload = await buildGenerationPayload(applicationId, docType, caseBrief);
+
+        // Validate required context before calling API
+        const validation = validateContext(
+          caseBrief,
+          payload.module_3_answers,
+          payload.investment_breakdown
+        );
+        if (!validation.valid) {
+          const errorMsg = `Missing required data: ${validation.missingFields.join(', ')}. Complete Module 3 before generating.`;
+          await supabase
+            .from('generated_documents')
+            .update({
+              status: 'failed',
+              error_message: errorMsg,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('job_id', jobId)
+            .eq('document_type', docType);
+          await fail(stepNum, errorMsg);
+          return;
+        }
+
         const content = await callClaudeAPI(payload);
 
         const wc = countWords(content);

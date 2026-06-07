@@ -28,6 +28,11 @@ yarn-error.log*
 # local env files
 .env*.local
 
+# test data and seed scripts
+/scripts/test-applicant*.json
+/scripts/seed-test-applicant.ts
+/scripts/cleanup-test-data.ts
+
 # vercel
 .vercel
 
