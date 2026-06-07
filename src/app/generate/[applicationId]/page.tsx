@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { createBrowserSupabaseClient } from "@/lib/supabase";
 import { GENERATION_STEP_LABELS, DOCUMENT_TYPE_LABELS } from "@/types/generation";
 import type { SSEProgressMessage, DocumentType } from "@/types/generation";
 import { motion } from "motion/react";
@@ -230,11 +231,12 @@ export default function GenerateProgressPage() {
 
   const startGeneration = useCallback(async () => {
     try {
-      // Get userId from localStorage or session
-      const stored = localStorage.getItem("supabase_user");
-      const userId = stored ? JSON.parse(stored).id : null;
+      // Get userId from Supabase session
+      const supabase = createBrowserSupabaseClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      const userId = session?.user?.id ?? null;
       if (!userId) {
-        setErrorMessage("Not authenticated");
+        setErrorMessage("Please log in to continue");
         return;
       }
 
