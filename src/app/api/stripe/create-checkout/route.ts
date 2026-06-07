@@ -26,6 +26,9 @@ const FALLBACK_PRICE_IDS: Record<string, string> = {
   partnership_none: process.env.STRIPE_PRICE_PARTNERSHIP || '',
   partnership_couples: process.env.STRIPE_PRICE_PARTNERSHIP_COUPLES || '',
   partnership_families: process.env.STRIPE_PRICE_PARTNERSHIP_FAMILIES || '',
+  simulator_3pack: process.env.STRIPE_PRICE_SIMULATOR_3PACK || '',
+  renewal: process.env.STRIPE_PRICE_RENEWAL || '',
+  child_surcharge: process.env.STRIPE_PRICE_CHILD_SURCHARGE || '',
 };
 
 async function getStripePriceId(supabase: ReturnType<typeof getSupabase>, tierId: string): Promise<string | null> {
@@ -63,7 +66,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { tierId, applicationId, userId } = body;
+    const { tierId, applicationId, userId, children_count } = body;
 
     if (!tierId || !applicationId || !userId) {
       return NextResponse.json(
@@ -95,15 +98,28 @@ export async function POST(request: NextRequest) {
     // Get the app URL
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
+    // Build line items
+    const lineItems: { price: string; quantity: number }[] = [
+      { price: priceId, quantity: 1 },
+    ];
+
+    // Handle per-child surcharge for partnership_families
+    if (tierId === 'partnership_families' && children_count !== undefined && children_count > 2) {
+      const extraChildren = children_count - 2; // Base includes 2 kids per family = 4 total
+      const childSurchargePriceId = await getStripePriceId(supabase, 'child_surcharge');
+      if (childSurchargePriceId) {
+        // Add surcharge line item with quantity = extra children (2 families, so per-family extra * 2)
+        lineItems.push({
+          price: childSurchargePriceId,
+          quantity: extraChildren * 2,
+        });
+      }
+    }
+
     // Create Stripe checkout session
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
-      line_items: [
-        {
-          price: priceId,
-          quantity: 1,
-        },
-      ],
+      line_items: lineItems,
       mode: 'payment',
       success_url: `${appUrl}/pricing/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${appUrl}/pricing`,
@@ -112,6 +128,7 @@ export async function POST(request: NextRequest) {
         applicationId,
         userId,
         tierId,
+        children_count: children_count?.toString() || '0',
       },
     });
 
@@ -125,6 +142,10 @@ export async function POST(request: NextRequest) {
       currency: 'usd',
       status: 'pending',
       payment_type: tierId,
+      metadata: {
+        children_count: children_count || 0,
+        line_items_count: lineItems.length,
+      },
     });
 
     return NextResponse.json({
