@@ -167,11 +167,12 @@ export async function PATCH(
 
     const userId = getUserIdFromAuth(authHeader);
     const body = await request.json();
-    const { documentId, status } = body;
+    const { documentId, documentType, action } = body;
 
-    if (!documentId || !status) {
+    // Support both old format (documentId + status) and new format (documentType + action)
+    if (!documentId && !documentType) {
       return NextResponse.json(
-        { error: 'documentId and status are required' },
+        { error: 'documentId or documentType is required' },
         { status: 400 }
       );
     }
@@ -194,21 +195,58 @@ export async function PATCH(
       return new NextResponse('Forbidden', { status: 403 });
     }
 
+    // Find the document to update
+    let targetDocument;
+    if (documentId) {
+      const { data: doc } = await supabase
+        .from('generated_documents')
+        .select('*')
+        .eq('id', documentId)
+        .eq('application_id', applicationId)
+        .single();
+      targetDocument = doc;
+    } else if (documentType) {
+      // Get the most recent document of this type for the application
+      const { data: doc } = await supabase
+        .from('generated_documents')
+        .select('*')
+        .eq('application_id', applicationId)
+        .eq('document_type', documentType)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+      targetDocument = doc;
+    }
+
+    if (!targetDocument) {
+      return NextResponse.json(
+        { error: 'Document not found' },
+        { status: 404 }
+      );
+    }
+
+    // Handle the action
     const updateData: Record<string, unknown> = {
-      status,
       updated_at: new Date().toISOString(),
     };
 
-    // If approving, set approved_at timestamp
-    if (status === 'approved') {
+    if (action === 'approve') {
+      updateData.status = 'approved';
       updateData.approved_at = new Date().toISOString();
+    } else if (action === 'revise') {
+      updateData.status = 'revision_requested';
+    } else if (body.status) {
+      // Backward compatibility: use explicit status if provided
+      updateData.status = body.status;
+      if (body.status === 'approved') {
+        updateData.approved_at = new Date().toISOString();
+      }
     }
 
     const { data: updatedDoc, error: updateError } = await supabase
       .from('generated_documents')
       .update(updateData)
-      .eq('id', documentId)
-      .eq('application_id', applicationId)
+      .eq('id', targetDocument.id)
       .select()
       .single();
 

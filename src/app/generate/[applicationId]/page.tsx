@@ -32,15 +32,31 @@ interface DocumentCardProps {
   doc: (typeof DOCUMENTS)[number];
   isRevealed: boolean;
   isCurrent: boolean;
+  isAwaitingApproval: boolean;
   documentText: string;
+  documentPreview?: string;
+  wordCount?: number;
+  pageEstimate?: number;
+  onApprove: () => void;
+  onRevise: () => void;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function DocumentCard({ doc, isRevealed, isCurrent, documentText }: DocumentCardProps) {
+function DocumentCard({
+  doc,
+  isRevealed,
+  isCurrent,
+  isAwaitingApproval,
+  documentText,
+  documentPreview,
+  wordCount,
+  pageEstimate,
+  onApprove,
+  onRevise,
+}: DocumentCardProps) {
   const progress = isRevealed ? 100 : 0;
 
   return (
-    <div className="relative overflow-hidden border border-white/8 bg-[#0d0d0d]">
+    <div className={`relative overflow-hidden border border-white/8 bg-[#0d0d0d] ${isAwaitingApproval ? 'ring-1 ring-[#C9A84C] animate-pulse' : ''}`}>
       <div className="flex items-center justify-between border-b border-white/8 px-4 py-3">
         <span
           className="text-xs font-medium uppercase tracking-wider text-white/60"
@@ -48,7 +64,16 @@ function DocumentCard({ doc, isRevealed, isCurrent, documentText }: DocumentCard
         >
           {doc.name}
         </span>
-        {isCurrent && !isRevealed && (
+        {isAwaitingApproval && (
+          <span
+            className="inline-flex items-center gap-1.5 border border-[#C9A84C] bg-[#C9A84C]/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-[#C9A84C]"
+            style={{ fontFamily: "'DM Sans', sans-serif" }}
+          >
+            <span className="inline-block h-1.5 w-1.5 rounded-none bg-[#C9A84C] animate-pulse" />
+            REVIEW NEEDED
+          </span>
+        )}
+        {isCurrent && !isRevealed && !isAwaitingApproval && (
           <span
             className="inline-flex items-center gap-1.5 border border-[#C9A84C]/40 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-[#C9A84C]"
             style={{ fontFamily: "'DM Sans', sans-serif" }}
@@ -57,18 +82,51 @@ function DocumentCard({ doc, isRevealed, isCurrent, documentText }: DocumentCard
             GENERATING
           </span>
         )}
-        {isRevealed && (
+        {isRevealed && !isAwaitingApproval && (
           <span
             className="inline-flex items-center gap-1.5 border border-[#C9A84C]/40 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-[#C9A84C]"
             style={{ fontFamily: "'DM Sans', sans-serif" }}
           >
-            COMPLETE
+            APPROVED
           </span>
         )}
       </div>
 
       <div className="p-4">
-        {isRevealed || isCurrent ? (
+        {isAwaitingApproval ? (
+          <div className="space-y-4">
+            {documentPreview && (
+              <pre
+                className="max-h-40 overflow-y-auto whitespace-pre-wrap text-sm leading-relaxed text-white/70"
+                style={{ fontFamily: "'DM Sans', monospace" }}
+              >
+                {documentPreview}...
+              </pre>
+            )}
+            {wordCount && pageEstimate && (
+              <div className="flex gap-4 text-xs text-white/40">
+                <span>{wordCount} words</span>
+                <span>~{pageEstimate} pages</span>
+              </div>
+            )}
+            <div className="flex gap-3 pt-2">
+              <button
+                onClick={onApprove}
+                className="flex-1 border border-[#C9A84C] bg-[#C9A84C] px-4 py-2 text-sm font-medium uppercase tracking-wider text-[#0a0a0a] transition-colors hover:bg-[#d4b35c]"
+                style={{ fontFamily: "'DM Sans', sans-serif" }}
+              >
+                Approve & Continue
+              </button>
+              <button
+                onClick={onRevise}
+                className="flex-1 border border-white/20 px-4 py-2 text-sm font-medium uppercase tracking-wider text-white/60 transition-colors hover:border-white/40 hover:text-white"
+                style={{ fontFamily: "'DM Sans', sans-serif" }}
+              >
+                Request Revision
+              </button>
+            </div>
+          </div>
+        ) : isRevealed || isCurrent ? (
           <pre
             className="whitespace-pre-wrap text-sm leading-relaxed text-white/70"
             style={{ fontFamily: "'DM Sans', monospace" }}
@@ -127,8 +185,13 @@ export default function GenerateProgressPage() {
     }))
   );
   const [currentDocument, setCurrentDocument] = useState<string>("");
+  const [currentDocumentType, setCurrentDocumentType] = useState<string>("");
   const [documentText, setDocumentText] = useState<string>("");
-  const [documentsComplete, setDocumentsComplete] = useState(0);
+  const [documentPreview, setDocumentPreview] = useState<string>("");
+  const [wordCount, setWordCount] = useState<number>(0);
+  const [pageEstimate, setPageEstimate] = useState<number>(0);
+  const [awaitingApproval, setAwaitingApproval] = useState(false);
+  const [approvedDocuments, setApprovedDocuments] = useState(0);
   const [jobStatus, setJobStatus] = useState<string>("queued");
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [overallProgress, setOverallProgress] = useState(0);
@@ -159,25 +222,45 @@ export default function GenerateProgressPage() {
       setJobStatus(msg.status);
       if (msg.error) setErrorMessage(msg.error);
 
-      setDocumentsComplete(msg.documentsComplete);
+      // Handle awaiting_approval status
+      const isAwaitingApproval = msg.status === 'awaiting_approval' || msg.awaitingApproval === true;
+      setAwaitingApproval(isAwaitingApproval);
+
+      // Handle new approval flow fields
+      if (msg.currentDocument) {
+        setCurrentDocument(mapDocumentType(msg.currentDocument));
+      }
+      if (msg.currentDocumentType) {
+        setCurrentDocumentType(msg.currentDocumentType);
+      }
+      if (msg.currentDocumentText) {
+        setDocumentText(msg.currentDocumentText);
+      }
+      if (msg.currentDocumentPreview) {
+        setDocumentPreview(msg.currentDocumentPreview);
+      }
+      if (msg.wordCount) {
+        setWordCount(msg.wordCount);
+      }
+      if (msg.pageEstimate) {
+        setPageEstimate(msg.pageEstimate);
+      }
 
       const stepNum = msg.step || 0;
       if (msg.status === "completed") {
         updateStepStatus(stepNum, "complete");
         setOverallProgress(100);
+        setAwaitingApproval(false);
       } else if (msg.status === "failed") {
         updateStepStatus(stepNum, "failed");
+        setOverallProgress(Math.round((stepNum / 15) * 100));
+        setAwaitingApproval(false);
+      } else if (msg.status === "awaiting_approval") {
+        updateStepStatus(stepNum, "running");
         setOverallProgress(Math.round((stepNum / 15) * 100));
       } else {
         updateStepStatus(stepNum, "running");
         setOverallProgress(Math.round((stepNum / 15) * 100));
-      }
-
-      if (msg.currentDocument) {
-        setCurrentDocument(mapDocumentType(msg.currentDocument));
-      }
-      if (msg.currentDocumentText) {
-        setDocumentText(msg.currentDocumentText);
       }
     },
     [updateStepStatus]
@@ -192,9 +275,9 @@ export default function GenerateProgressPage() {
         });
         if (jobRes.ok) {
           const data = await jobRes.json();
-          setDocumentsComplete(
+          setApprovedDocuments(
             data.documents?.filter(
-              (d: { status: string }) => d.status === "under_review"
+              (d: { status: string }) => d.status === "approved"
             ).length || 0
           );
         }
@@ -205,6 +288,52 @@ export default function GenerateProgressPage() {
 
     return () => clearInterval(poll);
   }, [applicationId]);
+
+  // Approve current document and continue
+  const handleApprove = useCallback(async () => {
+    if (!currentDocumentType) return;
+
+    try {
+      const res = await fetch(`/api/generate/documents/${applicationId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          documentType: currentDocumentType,
+          action: 'approve',
+        }),
+      });
+
+      if (res.ok) {
+        setApprovedDocuments(prev => prev + 1);
+        setAwaitingApproval(false);
+      }
+    } catch (err) {
+      console.error('Failed to approve document:', err);
+    }
+  }, [applicationId, currentDocumentType]);
+
+  // Request revision on current document
+  const handleRevise = useCallback(async () => {
+    if (!currentDocumentType) return;
+
+    try {
+      const res = await fetch(`/api/generate/documents/${applicationId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          documentType: currentDocumentType,
+          action: 'revise',
+        }),
+      });
+
+      if (res.ok) {
+        // The pipeline will regenerate when it sees revision_requested status
+        setAwaitingApproval(false);
+      }
+    } catch (err) {
+      console.error('Failed to request revision:', err);
+    }
+  }, [applicationId, currentDocumentType]);
 
   const connectSSE = useCallback((jid: string) => {
     const eventSource = new EventSource(`/api/generate/progress/${jid}`);
@@ -395,8 +524,9 @@ export default function GenerateProgressPage() {
             </h2>
             <div className="space-y-4">
               {DOCUMENTS.map((doc) => {
-                const isRevealed = documentsComplete >= doc.id;
+                const isRevealed = approvedDocuments >= doc.id;
                 const isCurrent = currentDocument === doc.name && !isRevealed;
+                const isAwaitingThisApproval = awaitingApproval && currentDocument === doc.name;
 
                 return (
                   <DocumentCard
@@ -404,7 +534,13 @@ export default function GenerateProgressPage() {
                     doc={doc}
                     isRevealed={isRevealed}
                     isCurrent={isCurrent}
+                    isAwaitingApproval={isAwaitingThisApproval}
                     documentText={isCurrent ? documentText : ""}
+                    documentPreview={isAwaitingThisApproval ? documentPreview : undefined}
+                    wordCount={isAwaitingThisApproval ? wordCount : undefined}
+                    pageEstimate={isAwaitingThisApproval ? pageEstimate : undefined}
+                    onApprove={handleApprove}
+                    onRevise={handleRevise}
                   />
                 );
               })}
@@ -419,7 +555,8 @@ export default function GenerateProgressPage() {
               className="text-xs text-white/40"
               style={{ fontFamily: "'DM Sans', sans-serif" }}
             >
-              {documentsComplete} of {TOTAL_DOCUMENTS} documents complete
+              {approvedDocuments} of {TOTAL_DOCUMENTS} documents approved
+              {awaitingApproval && ' — review needed'}
             </span>
             <span
               className="text-xs text-white/40"

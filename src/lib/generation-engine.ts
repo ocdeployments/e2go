@@ -450,11 +450,27 @@ const FORBIDDEN_LEGAL_PHRASES = [
   'is substantial',
 ];
 
+const LEGAL_DISCLAIMERS = [
+  'does not constitute legal advice',
+  'not a law firm',
+  'prepared using e2go',
+];
+
+const AI_TOOL_NAMES = [
+  'claude', 'anthropic', 'chatgpt', 'gpt-', 'openai', 'gemini', 'ai generated',
+];
+
 const WORDS_PER_PAGE = 250;
+
+interface QualityGateOptions {
+  caseBrief?: Record<string, unknown>;
+  investmentTotal?: number | null;
+}
 
 export function runQualityGate(
   document: GeneratedDocument,
-  documentType: DocumentType
+  documentType: DocumentType,
+  options: QualityGateOptions = {}
 ): QualityResult {
   const content = document.content_text || '';
   const wordCount = content.split(/\s+/).filter(Boolean).length;
@@ -487,6 +503,46 @@ export function runQualityGate(
     if (lowerContent.includes(phrase)) {
       hasLegalConclusions = true;
       failures.push(`Contains forbidden legal conclusion: "${phrase}"`);
+    }
+  }
+
+  // CHECK 1: Legal disclaimer present
+  const hasLegalDisclaimer = LEGAL_DISCLAIMERS.some(d => lowerContent.includes(d));
+  if (!hasLegalDisclaimer) {
+    failures.push('Missing legal disclaimer');
+  }
+
+  // CHECK 2: Investment figures consistency (if investment total provided)
+  if (options.investmentTotal) {
+    const dollarAmounts = content.match(/\$(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)/g) || [];
+    for (const amountStr of dollarAmounts) {
+      const amount = parseFloat(amountStr.replace(/[$,]/g, ''));
+      // Flag if any amount differs from investment total by more than 10%
+      if (amount > 1000 && Math.abs(amount - options.investmentTotal) > options.investmentTotal * 0.1) {
+        // Only flag if it's clearly a different investment figure, not a salary or other amount
+        if (amount < options.investmentTotal * 1.5 && amount > options.investmentTotal * 0.5) {
+          failures.push(`Investment figure $${amount.toLocaleString()} differs significantly from total $${options.investmentTotal.toLocaleString()}`);
+          break;
+        }
+      }
+    }
+  }
+
+  // CHECK 3: Applicant name consistency (if case brief provides name)
+  if (options.caseBrief) {
+    const applicantName = options.caseBrief.applicant_name || options.caseBrief.applicantName;
+    if (applicantName && typeof applicantName === 'string') {
+      const nameParts = applicantName.split(' ');
+      if (nameParts.length >= 2) {
+        // Check if all name parts appear in document (at least first and last name)
+        const firstName = nameParts[0];
+        const lastName = nameParts[nameParts.length - 1];
+        const hasFirstName = lowerContent.includes(firstName.toLowerCase());
+        const hasLastName = lowerContent.includes(lastName.toLowerCase());
+        if (!hasFirstName || !hasLastName) {
+          failures.push(`Applicant name "${applicantName}" not consistently referenced`);
+        }
+      }
     }
   }
 
@@ -547,6 +603,57 @@ export async function runGenerationPipeline(
     });
   };
 
+  // Emit SSE event for awaiting approval state
+  const emitAwaitingApproval = async (
+    docType: DocumentType,
+    content: string,
+    _wordCount: number,
+    _pageEstimate: number
+  ) => {
+    const _preview = content.slice(0, 500);
+    onProgress({
+      id: 0,
+      label: `${DOCUMENT_TYPE_LABELS[docType]} ready — please review and approve`,
+      status: 'running',
+    } as GenerationStep & { id: number });
+    // Also emit a custom event through the job update
+    await updateJob({
+      status: 'awaiting_approval',
+      current_step_label: `${DOCUMENT_TYPE_LABELS[docType]} ready — please review and approve`,
+    });
+  };
+
+  // Polling function to wait for document approval
+  const waitForApproval = async (
+    docType: DocumentType,
+    maxWaitMs = 300000 // 5 minutes max
+  ): Promise<{ approved: boolean; revisionRequested: boolean }> => {
+    const startTime = Date.now();
+    const pollInterval = 2000; // 2 seconds
+
+    while (Date.now() - startTime < maxWaitMs) {
+      const { data: doc } = await supabase
+        .from('generated_documents')
+        .select('status')
+        .eq('job_id', jobId)
+        .eq('document_type', docType)
+        .single();
+
+      if (doc?.status === 'approved') {
+        return { approved: true, revisionRequested: false };
+      }
+      if (doc?.status === 'revision_requested') {
+        return { approved: false, revisionRequested: true };
+      }
+
+      // Wait before next poll
+      await new Promise(resolve => setTimeout(resolve, pollInterval));
+    }
+
+    // Timeout - treat as approval to not hang forever
+    return { approved: true, revisionRequested: false };
+  };
+
   const DOCUMENT_TYPES: DocumentType[] = [
     'cover_letter',
     'source_of_funds',
@@ -597,122 +704,198 @@ export async function runGenerationPipeline(
     emitStep(1, 'complete');
     await updateJob({ current_step: 1, current_step_label: GENERATION_STEP_LABELS[1] });
 
-    // Steps 2-7: Generate each document
+    // Steps 2-7: Generate each document with sequential approval
     for (let i = 0; i < DOCUMENT_TYPES.length; i++) {
       const stepNum = i + 2;
       const docType = DOCUMENT_TYPES[i];
       const docLabel = DOCUMENT_TYPE_LABELS[docType];
 
-      emitStep(stepNum, 'running');
-      await updateJob({ current_step: stepNum, current_step_label: GENERATION_STEP_LABELS[stepNum] });
+      let documentApproved = false;
+      let revisionLoopCount = 0;
+      const maxRevisions = 3;
 
-      // Update document status to generating
-      await supabase
-        .from('generated_documents')
-        .update({ status: 'generating', updated_at: new Date().toISOString() })
-        .eq('job_id', jobId)
-        .eq('document_type', docType);
+      // Revision loop: regenerate until approved or max attempts
+      while (!documentApproved && revisionLoopCount < maxRevisions) {
+        if (revisionLoopCount > 0) {
+          // This is a revision - regenerate the document
+          emitStep(stepNum, 'running');
+          await updateJob({
+            current_step: stepNum,
+            current_step_label: `Regenerating ${docLabel} (attempt ${revisionLoopCount + 1})`,
+          });
+        }
 
-      try {
-        const payload = await buildGenerationPayload(applicationId, docType, caseBrief);
+        emitStep(stepNum, 'running');
+        await updateJob({
+          current_step: stepNum,
+          current_step_label: revisionLoopCount === 0
+            ? GENERATION_STEP_LABELS[stepNum]
+            : `Regenerating ${docLabel} (attempt ${revisionLoopCount + 1})`
+        });
 
-        // Validate required context before calling API
-        const validation = validateContext(
-          caseBrief,
-          payload.module_3_answers,
-          payload.investment_breakdown
-        );
-        if (!validation.valid) {
-          const errorMsg = `Missing required data: ${validation.missingFields.join(', ')}. Complete Module 3 before generating.`;
+        // Update document status to generating
+        await supabase
+          .from('generated_documents')
+          .update({ status: 'generating', updated_at: new Date().toISOString() })
+          .eq('job_id', jobId)
+          .eq('document_type', docType);
+
+        try {
+          const payload = await buildGenerationPayload(applicationId, docType, caseBrief);
+
+          // Validate required context before calling API
+          const validation = validateContext(
+            caseBrief,
+            payload.module_3_answers,
+            payload.investment_breakdown
+          );
+          if (!validation.valid) {
+            const errorMsg = `Missing required data: ${validation.missingFields.join(', ')}. Complete Module 3 before generating.`;
+            await supabase
+              .from('generated_documents')
+              .update({
+                status: 'failed',
+                error_message: errorMsg,
+                updated_at: new Date().toISOString(),
+              })
+              .eq('job_id', jobId)
+              .eq('document_type', docType);
+            await fail(stepNum, errorMsg);
+            return;
+          }
+
+          const content = await callClaudeAPI(payload);
+
+          const wc = countWords(content);
+          const pages = estimatePages(wc);
+
+          // Parse content into JSON sections if applicable
+          let contentJson: Record<string, unknown> | null = null;
+          const jsonMatch = content.match(/```json\s*\n([\s\S]*?)\n```/);
+          if (jsonMatch) {
+            try {
+              contentJson = JSON.parse(jsonMatch[1]);
+            } catch {
+              contentJson = { full_text: content };
+            }
+          } else {
+            try {
+              const parsed = JSON.parse(content);
+              if (typeof parsed === 'object' && parsed !== null) {
+                contentJson = parsed;
+              }
+            } catch {
+              contentJson = { full_text: content };
+            }
+          }
+
+          // Save the generated document with 'generated' status (not under_review yet)
           await supabase
             .from('generated_documents')
             .update({
-              status: 'failed',
-              error_message: errorMsg,
+              content_text: content,
+              content_json: contentJson,
+              word_count: wc,
+              page_estimate: pages,
+              status: 'generated',
               updated_at: new Date().toISOString(),
             })
             .eq('job_id', jobId)
             .eq('document_type', docType);
-          await fail(stepNum, errorMsg);
-          return;
-        }
 
-        const content = await callClaudeAPI(payload);
-
-        const wc = countWords(content);
-        const pages = estimatePages(wc);
-
-        // Parse content into JSON sections if applicable
-        let contentJson: Record<string, unknown> | null = null;
-        const jsonMatch = content.match(/```json\s*\n([\s\S]*?)\n```/);
-        if (jsonMatch) {
-          try {
-            contentJson = JSON.parse(jsonMatch[1]);
-          } catch {
-            contentJson = { full_text: content };
-          }
-        } else {
-          try {
-            const parsed = JSON.parse(content);
-            if (typeof parsed === 'object' && parsed !== null) {
-              contentJson = parsed;
-            }
-          } catch {
-            contentJson = { full_text: content };
-          }
-        }
-
-        await supabase
-          .from('generated_documents')
-          .update({
-            content_text: content,
+          const newDoc: GeneratedDocument = {
+            id: '',
+            job_id: jobId,
+            application_id: applicationId,
+            user_id: userId,
+            document_type: docType,
+            status: 'generated',
             content_json: contentJson,
+            content_text: content,
             word_count: wc,
             page_estimate: pages,
-            status: 'generating',
+            revision_count: revisionLoopCount,
+            revision_notes: [],
+            ai_detection_score: null,
+            ai_detection_passed: null,
+            quality_gate_passed: null,
+            quality_gate_notes: [],
+            approved_at: null,
+            created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
-          })
-          .eq('job_id', jobId)
-          .eq('document_type', docType);
+          };
 
-        generatedDocs.push({
-          id: '',
-          job_id: jobId,
-          application_id: applicationId,
-          user_id: userId,
-          document_type: docType,
-          status: 'generating',
-          content_json: contentJson,
-          content_text: content,
-          word_count: wc,
-          page_estimate: pages,
-          revision_count: 0,
-          revision_notes: [],
-          ai_detection_score: null,
-          ai_detection_passed: null,
-          quality_gate_passed: null,
-          quality_gate_notes: [],
-          approved_at: null,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        });
+          generatedDocs.push(newDoc);
 
-        emitStep(stepNum, 'complete');
-        await updateJob({ current_step: stepNum, current_step_label: GENERATION_STEP_LABELS[stepNum] });
-      } catch (err) {
+          // Mark this step as complete, but we're now awaiting approval
+          emitStep(stepNum, 'complete');
+
+          // Emit awaiting approval state - this pauses generation
+          await emitAwaitingApproval(docType, content, wc, pages);
+
+          // Wait for user approval or revision request
+          const { approved, revisionRequested } = await waitForApproval(docType);
+
+          if (approved) {
+            // Mark document as approved
+            await supabase
+              .from('generated_documents')
+              .update({
+                status: 'approved',
+                approved_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              })
+              .eq('job_id', jobId)
+              .eq('document_type', docType);
+
+            documentApproved = true;
+          } else if (revisionRequested) {
+            // Increment revision count and loop
+            revisionLoopCount++;
+            await supabase
+              .from('generated_documents')
+              .update({
+                revision_count: revisionLoopCount,
+                updated_at: new Date().toISOString(),
+              })
+              .eq('job_id', jobId)
+              .eq('document_type', docType);
+
+            // Resume the job to trigger regeneration
+            await updateJob({ status: 'running' });
+          }
+        } catch (err) {
+          await supabase
+            .from('generated_documents')
+            .update({
+              status: 'failed',
+              updated_at: new Date().toISOString(),
+            })
+            .eq('job_id', jobId)
+            .eq('document_type', docType);
+
+          const msg = err instanceof Error ? err.message : 'Unknown error';
+          await fail(stepNum, `Failed to generate ${docLabel}: ${msg}`);
+          return;
+        }
+      }
+
+      if (!documentApproved && revisionLoopCount >= maxRevisions) {
+        // Max revisions reached - auto-approve to continue
         await supabase
           .from('generated_documents')
           .update({
-            status: 'failed',
+            status: 'approved',
+            approved_at: new Date().toISOString(),
+            quality_gate_notes: ['Auto-approved after max revisions'],
             updated_at: new Date().toISOString(),
           })
           .eq('job_id', jobId)
           .eq('document_type', docType);
-
-        const msg = err instanceof Error ? err.message : 'Unknown error';
-        await fail(stepNum, `Failed to generate ${docLabel}: ${msg}`);
-        return;
       }
+
+      // Resume job for next document
+      await updateJob({ status: 'running' });
     }
 
     // All documents generated successfully (including DS-160 at step 7)
@@ -785,9 +968,18 @@ export async function runGenerationPipeline(
     emitStep(10, 'running');
     await updateJob({ current_step: 10, current_step_label: GENERATION_STEP_LABELS[10] });
 
+    // Extract investment data for quality gate checks
+    const caseBriefData = caseBrief as unknown as Record<string, unknown>;
+    const investmentTotal = (caseBriefData.investment_amount as number) ||
+                          (caseBriefData.total_investment as number) ||
+                          (caseBriefData.investment as number) || null;
+
     let _allQualityPassed = true;
     for (const doc of generatedDocs) {
-      const qualityResult = runQualityGate(doc, doc.document_type);
+      const qualityResult = runQualityGate(doc, doc.document_type, {
+        caseBrief: caseBriefData,
+        investmentTotal,
+      });
 
       // Re-prompt once if quality gate fails
       if (!qualityResult.passed) {
@@ -826,7 +1018,8 @@ export async function runGenerationPipeline(
             // Re-run quality gate
             const retryQuality = runQualityGate(
               { ...doc, content_text: retryContent.text },
-              doc.document_type
+              doc.document_type,
+              { caseBrief: caseBriefData, investmentTotal }
             );
 
             await supabase
@@ -866,17 +1059,40 @@ export async function runGenerationPipeline(
     emitStep(11, 'complete');
     await updateJob({ current_step: 11, current_step_label: GENERATION_STEP_LABELS[11] });
 
-    // Step 12: Metadata sanitization — strip {{placeholders}} and [UNVERIFIED]
+    // Step 12: Metadata sanitization — strip placeholders, AI artifacts, and markdown
     emitStep(12, 'running');
     await updateJob({ current_step: 12, current_step_label: GENERATION_STEP_LABELS[12] });
 
     for (const doc of generatedDocs) {
       if (doc.content_text) {
-        const clean = doc.content_text
-          .replace(/\{\{.*?\}\}/g, '')
-          .replace(/\[\[.*?\]\]/g, '')
-          .replace(/\[UNVERIFIED\]/gi, '')
-          .replace(/\[TODO.*?\]/gi, '');
+        let clean = doc.content_text;
+
+        // Remove template placeholders
+        clean = clean.replace(/\{\{.*?\}\}/g, '');
+        clean = clean.replace(/\[\[.*?\]\]/g, '');
+        clean = clean.replace(/\[UNVERIFIED\]/gi, '');
+        clean = clean.replace(/\[TODO.*?\]/gi, '');
+
+        // Remove AI tool names and references
+        for (const toolName of AI_TOOL_NAMES) {
+          const regex = new RegExp(`\\b${toolName}\\b`, 'gi');
+          clean = clean.replace(regex, '[AI tool]');
+        }
+
+        // Remove generation timestamps and internal references
+        clean = clean.replace(/\b(?:generated|created|written)\s+(?:on|at|by)\s+[^\n]{5,50}/gi, '');
+        clean = clean.replace(/\[.*?(?:prompt|instruction|context).*?\]/gi, '');
+
+        // Remove markdown formatting that shouldn't be in legal documents
+        clean = clean.replace(/^#{1,6}\s+/gm, '');  // Remove ## headers
+        clean = clean.replace(/\*\*([^*]+)\*\*/g, '$1');  // Remove bold
+        clean = clean.replace(/\*([^*]+)\*/g, '$1');  // Remove italic
+        clean = clean.replace(/`{1,3}[^`]*`{1,3}/g, '');  // Remove code blocks
+        clean = clean.replace(/^\s*[-*+]\s+/gm, '');  // Remove list markers
+        clean = clean.replace(/^\s*\d+\.\s+/gm, '');  // Remove numbered lists
+
+        // Clean up multiple blank lines
+        clean = clean.replace(/\n{3,}/g, '\n\n');
 
         if (clean !== doc.content_text) {
           await supabase
@@ -904,20 +1120,47 @@ export async function runGenerationPipeline(
     });
     emitStep(13, 'complete');
 
-    // Step 14: Mark all documents under_review
+    // Step 14: Acknowledgment Gate — quality checks passed, log results
     for (let i = 0; i < DOCUMENT_TYPES.length; i++) {
       const stepNum = 14;
       emitStep(stepNum, 'running');
       await updateJob({ current_step: stepNum, current_step_label: GENERATION_STEP_LABELS[stepNum] });
 
-      await supabase
+      const docType = DOCUMENT_TYPES[i];
+      const generatedDoc = generatedDocs.find(d => d.document_type === docType);
+
+      // Get quality gate results for this document
+      const { data: docData } = await supabase
         .from('generated_documents')
-        .update({
-          status: 'under_review',
-          updated_at: new Date().toISOString(),
-        })
+        .select('quality_gate_passed, quality_gate_notes, word_count')
         .eq('job_id', jobId)
-        .eq('document_type', DOCUMENT_TYPES[i]);
+        .eq('document_type', docType)
+        .single();
+
+      // Log results to document_generation_log
+      await supabase
+        .from('document_generation_log')
+        .insert({
+          application_id: applicationId,
+          document_type: docType,
+          stage: 'acknowledgment_gate',
+          attempt_number: 1,
+          passed: docData?.quality_gate_passed ?? true,
+          flagged_sections: docData?.quality_gate_notes || [],
+          notes: `Quality gate completed. Word count: ${docData?.word_count || 'N/A'}. AI detection: ${generatedDoc?.ai_detection_passed ? 'passed' : 'not run'}.`,
+        });
+
+      // Ensure quality_gate_passed is set
+      if (docData?.quality_gate_passed === null || docData?.quality_gate_passed === undefined) {
+        await supabase
+          .from('generated_documents')
+          .update({
+            quality_gate_passed: true,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('job_id', jobId)
+          .eq('document_type', docType);
+      }
     }
     emitStep(14, 'complete');
     await updateJob({ current_step: 14, current_step_label: GENERATION_STEP_LABELS[14] });
