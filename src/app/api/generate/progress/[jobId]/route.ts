@@ -56,7 +56,7 @@ export async function GET(
             .from('generated_documents')
             .select('*', { count: 'exact', head: true })
             .eq('job_id', jobId)
-            .eq('status', 'under_review');
+            .eq('status', 'approved');
 
           // Get currently generating document
           const { data: currentDoc } = await supabase
@@ -66,14 +66,23 @@ export async function GET(
             .eq('status', 'generating')
             .single();
 
+          // Get document awaiting approval
+          const { data: awaitingDoc } = await supabase
+            .from('generated_documents')
+            .select('document_type, content_text')
+            .eq('job_id', jobId)
+            .eq('status', 'awaiting_approval')
+            .single();
+
           send({
             step: job.current_step,
             stepLabel: job.current_step_label || '',
             status: job.status,
             documentsComplete: count || 0,
             totalDocuments: 6,
-            currentDocument: currentDoc?.document_type || undefined,
-            currentDocumentText: currentDoc?.content_text || undefined,
+            awaitingApproval: job.status === 'awaiting_approval',
+            currentDocument: awaitingDoc?.document_type || currentDoc?.document_type || undefined,
+            currentDocumentText: awaitingDoc?.content_text || currentDoc?.content_text || undefined,
             error: job.error_message || undefined,
           });
 
