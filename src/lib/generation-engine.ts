@@ -913,18 +913,17 @@ export async function runGenerationPipeline(
   const emitAwaitingApproval = async (
     docType: DocumentType,
     content: string,
-    _wordCount: number,
-    _pageEstimate: number
+    stepNum: number
   ) => {
-    const _preview = content.slice(0, 500);
     onProgress({
-      id: 0,
+      id: stepNum,
       label: `${DOCUMENT_TYPE_LABELS[docType]} ready — please review and approve`,
       status: 'running',
-    } as GenerationStep & { id: number });
+    } as unknown as GenerationStep);
     // Also emit a custom event through the job update
     await updateJob({
       status: 'awaiting_approval',
+      current_step: stepNum,
       current_step_label: `${DOCUMENT_TYPE_LABELS[docType]} ready — please review and approve`,
     });
   };
@@ -1137,7 +1136,7 @@ export async function runGenerationPipeline(
           emitStep(stepNum, 'complete');
 
           // Emit awaiting approval state - this pauses generation
-          await emitAwaitingApproval(docType, content, wc, pages);
+          await emitAwaitingApproval(docType, content, stepNum);
 
           // Wait for user approval or revision request
           const { approved, revisionRequested } = await waitForApproval(docType);
