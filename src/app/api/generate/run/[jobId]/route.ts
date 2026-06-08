@@ -51,9 +51,9 @@ export async function POST(
       );
     }
 
-    // Idempotent: return 200 for any existing job status
+    // Idempotent: return 200 for any non-failed job status
     // React Strict Mode may call this endpoint twice; both calls succeed
-    if (job.status === 'running' || job.status === 'pending' || job.status === 'processing') {
+    if (job.status === 'running' || job.status === 'pending' || job.status === 'processing' || job.status === 'awaiting_approval') {
       return NextResponse.json(
         { jobId, message: 'Generation already in progress', status: job.status },
         { status: 200 }
