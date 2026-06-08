@@ -1095,7 +1095,7 @@ export async function runGenerationPipeline(
             }
           }
 
-          // Save the generated document with 'generated' status (not under_review yet)
+          // Save the generated document with 'awaiting_approval' status — frontend polls for approval
           await supabase
             .from('generated_documents')
             .update({
@@ -1103,7 +1103,7 @@ export async function runGenerationPipeline(
               content_json: contentJson,
               word_count: wc,
               page_estimate: pages,
-              status: 'generated',
+              status: 'awaiting_approval',
               updated_at: new Date().toISOString(),
             })
             .eq('job_id', jobId)
@@ -1115,7 +1115,7 @@ export async function runGenerationPipeline(
             application_id: applicationId,
             user_id: userId,
             document_type: docType,
-            status: 'generated',
+            status: 'awaiting_approval',
             content_json: contentJson,
             content_text: content,
             word_count: wc,
