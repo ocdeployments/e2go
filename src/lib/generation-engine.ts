@@ -30,6 +30,66 @@ function getAnthropic(): Anthropic {
 }
 
 // ---------------------------------------------------------------------------
+// Get generation model from database config
+// ---------------------------------------------------------------------------
+
+let cachedModel: string | null = null;
+let modelCacheTime = 0;
+const MODEL_CACHE_TTL = 60000; // 1 minute cache
+
+async function getGenerationModel(): Promise<string> {
+  const now = Date.now();
+
+  // Return cached model if still valid
+  if (cachedModel && (now - modelCacheTime) < MODEL_CACHE_TTL) {
+    return cachedModel;
+  }
+
+  try {
+    const supabase = getSupabase();
+    const { data, error } = await supabase
+      .from('app_settings')
+      .select('value')
+      .eq('key', 'generation_model')
+      .single();
+
+    if (error) {
+      console.warn('Failed to read generation_model from app_settings, using fallback:', error.message);
+      cachedModel = 'claude-opus-4-8';
+    } else {
+      cachedModel = data?.value ?? 'claude-opus-4-8';
+    }
+
+    modelCacheTime = now;
+    return cachedModel ?? 'claude-opus-4-8';
+  } catch (err) {
+    console.warn('Error reading generation model, using fallback:', err);
+    return 'claude-opus-4-8';
+  }
+}
+
+// Check for deprecation warnings in API response and update settings
+async function checkDeprecationWarning(response: unknown): Promise<void> {
+  try {
+    // Anthropic deprecation warnings typically appear in response headers or model field
+    const responseObj = response as { model?: string; warnings?: string[] };
+
+    if (responseObj.model && responseObj.model.includes('deprecated')) {
+      const supabase = getSupabase();
+      await supabase.from('app_settings').upsert({
+        key: 'model_deprecation_warning',
+        value: 'WARNING: Current generation model is deprecated. Update in app_settings.',
+        description: 'Auto-set when Anthropic deprecation detected',
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'key' });
+      console.warn('Deprecation warning detected for model');
+    }
+  } catch {
+    // Non-fatal - continue
+  }
+}
+
+// ---------------------------------------------------------------------------
 // 4a. Load prompt files
 // ---------------------------------------------------------------------------
 
@@ -231,12 +291,16 @@ export async function callClaudeAPI(payload: GenerationPayload): Promise<string>
   ].join('\n');
 
   async function attempt(): Promise<string> {
+    const model = await getGenerationModel();
     const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model,
       max_tokens: 4000,
       system: payload.system_prompt,
       messages: [{ role: 'user', content: userMessage }],
     });
+
+    // Check for deprecation warnings
+    await checkDeprecationWarning(response);
 
     const content = response.content[0];
     if (content.type !== 'text') {
@@ -280,12 +344,16 @@ export async function humanizeDocument(rawContent: string, voiceProfile: string)
     rawContent,
   ].join('\n');
 
+  const model = await getGenerationModel();
   const response = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model,
     max_tokens: 4000,
     system: systemPrompt,
     messages: [{ role: 'user', content: userMessage }],
   });
+
+  // Check for deprecation warnings
+  await checkDeprecationWarning(response);
 
   const content = response.content[0];
   if (content.type !== 'text') {
@@ -766,8 +834,9 @@ export async function runAIDetectionAudit(
     if (!doc.content_text) continue;
 
     try {
+      const model = await getGenerationModel();
       const response = await anthropic.messages.create({
-        model: 'claude-sonnet-4-20250514',
+        model,
         max_tokens: 500,
         system: `You are an AI detection tool. Analyze the following text and estimate how likely it was written by an AI.
 
@@ -1338,8 +1407,9 @@ export async function runGenerationPipeline(
             'Rewrite the document addressing all failures above.',
           ].join('\n');
 
+          const model = await getGenerationModel();
           const retryResponse = await getAnthropic().messages.create({
-            model: 'claude-sonnet-4-20250514',
+            model,
             max_tokens: 4000,
             system: payload.system_prompt + '\n\n' + failureInstructions,
             messages: [{ role: 'user', content: 'Regenerate the document now.' }],
