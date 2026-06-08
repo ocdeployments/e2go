@@ -61,7 +61,7 @@ export async function middleware(req: NextRequest) {
   }
 
   // Rate limit AI API route: 50 calls per user per day
-  if (pathname.startsWith('/api/generate') || pathname.startsWith('/api/analysis')) {
+  if ((pathname.startsWith('/api/generate') && !pathname.includes('/progress')) || pathname.startsWith('/api/analysis')) {
     const userId = req.headers.get('x-user-id') || ip;
     const key = `ai:${userId}`;
     const allowed = checkRateLimit(key, 50, 24 * 60 * 60 * 1000);
