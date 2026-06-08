@@ -65,18 +65,20 @@ export default function Home() {
         style={{
           position: "fixed",
           top: 0,
-          left: 0,
-          right: 0,
+          left: "50%",
+          transform: "translateX(-50%)",
           zIndex: 100,
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          padding: scrolled ? "16px 48px" : "24px 48px",
+          padding: scrolled ? "16px 32px" : "24px 32px",
           background: scrolled ? "rgba(10,10,10,0.95)" : "transparent",
           backdropFilter: scrolled ? "blur(12px)" : "none",
           WebkitBackdropFilter: scrolled ? "blur(12px)" : "none",
           borderBottom: scrolled ? "1px solid rgba(201,168,76,0.15)" : "none",
           transition: "all 0.3s ease",
+          maxWidth: "1280px",
+          width: "100%",
         }}
       >
         <Link href="/" style={{ textDecoration: "none" }}>
@@ -119,30 +121,32 @@ export default function Home() {
       )}
 
       {/* Hero Section */}
-      <section style={{ padding: "140px 48px 80px", maxWidth: "1100px", margin: "0 auto" }}>
-        <h1 className="hero-headline" style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "72px", fontWeight: 300, color: "#f5f0e8", lineHeight: 1.1, marginBottom: "16px" }}>
-          Your E-2 Visa Application.<br />
-          <em style={{ fontStyle: "italic", color: "#C9A84C" }}>Built to Pass.</em>
-        </h1>
-        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "20px", fontWeight: 300, color: "rgba(245,240,232,0.70)", maxWidth: "600px", lineHeight: 1.6, marginBottom: "32px" }}>
-          Answer our questions. We analyze your case, identify every gap, and generate a complete consulate-formatted application package — without the $15,000 attorney fee.
-        </p>
-        <div style={{ display: "flex", gap: "16px", marginBottom: "32px", flexWrap: "wrap" }}>
-          <Link href="/quiz" className="btn-gold-animate" style={{ background: "#C9A84C", color: "#0a0a0a", padding: "14px 28px", fontFamily: "'DM Sans', sans-serif", fontSize: "15px", fontWeight: 500, textDecoration: "none", display: "inline-block" }}>
-            Check My Eligibility — Free
-          </Link>
-          <Link href="#what-you-get" style={{ border: "1px solid rgba(201,168,76,0.50)", color: "#C9A84C", padding: "14px 28px", fontFamily: "'DM Sans', sans-serif", fontSize: "15px", fontWeight: 400, textDecoration: "none", display: "inline-block" }}>
-            See What&apos;s Included
-          </Link>
+      <section className="min-h-screen flex items-center justify-center" style={{ padding: "128px 32px 96px" }}>
+        <div style={{ maxWidth: "760px", margin: "0 auto", textAlign: "center" }}>
+          <h1 className="hero-headline" style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "clamp(40px, 6vw, 72px)", fontWeight: 300, color: "#f5f0e8", lineHeight: 1.1, marginBottom: "16px" }}>
+            Your E-2 Visa Application.<br />
+            <em style={{ fontStyle: "italic", color: "#C9A84C" }}>Built to Pass.</em>
+          </h1>
+          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "20px", fontWeight: 300, color: "rgba(245,240,232,0.70)", lineHeight: 1.6, marginBottom: "32px" }}>
+            Answer our questions. We analyze your case, identify every gap, and generate a complete consulate-formatted application package — without the $15,000 attorney fee.
+          </p>
+          <div style={{ display: "flex", gap: "16px", marginBottom: "32px", flexWrap: "wrap", justifyContent: "center" }}>
+            <Link href="/quiz" className="btn-gold-animate" style={{ background: "#C9A84C", color: "#0a0a0a", padding: "14px 28px", fontFamily: "'DM Sans', sans-serif", fontSize: "15px", fontWeight: 500, textDecoration: "none", display: "inline-block" }}>
+              Check My Eligibility — Free
+            </Link>
+            <Link href="#what-you-get" style={{ border: "1px solid rgba(201,168,76,0.50)", color: "#C9A84C", padding: "14px 28px", fontFamily: "'DM Sans', sans-serif", fontSize: "15px", fontWeight: 400, textDecoration: "none", display: "inline-block" }}>
+              See What&apos;s Included
+            </Link>
+          </div>
+          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "13px", fontWeight: 300, color: "rgba(245,240,232,0.45)" }}>
+            82 treaty countries · Toronto consulate specialists · 15 denial risks checked automatically
+          </p>
         </div>
-        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "13px", fontWeight: 300, color: "rgba(245,240,232,0.45)" }}>
-          82 treaty countries · Toronto consulate specialists · 15 denial risks checked automatically
-        </p>
       </section>
 
       {/* Stat Strip */}
-      <section ref={statsRef} style={{ borderTop: "1px solid rgba(201,168,76,0.12)", borderBottom: "1px solid rgba(201,168,76,0.12)", background: "rgba(201,168,76,0.03)", padding: "48px" }}>
-        <div style={{ maxWidth: "1100px", margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "48px" }}>
+      <section ref={statsRef} style={{ borderTop: "1px solid rgba(201,168,76,0.12)", borderBottom: "1px solid rgba(201,168,76,0.12)", background: "rgba(201,168,76,0.03)", padding: "96px 32px" }}>
+        <div style={{ maxWidth: "1100px", margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "32px" }}>
           {[
             { number: "82", label: "TREATY COUNTRIES" },
             { number: "11", label: "APPLICATION TABS COVERED" },
@@ -161,8 +165,8 @@ export default function Home() {
       </section>
 
       {/* Problem Contrast */}
-      <section style={{ padding: "80px 48px", maxWidth: "1100px", margin: "0 auto" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "48px" }}>
+      <section style={{ padding: "96px 32px", maxWidth: "1100px", margin: "0 auto" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "32px" }}>
           <div>
             <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "24px", fontWeight: 300, fontStyle: "italic", color: "rgba(245,240,232,0.40)", marginBottom: "32px" }}>The traditional path</h3>
             {[
@@ -194,12 +198,12 @@ export default function Home() {
       </section>
 
       {/* How It Works */}
-      <section id="how-it-works" style={{ padding: "80px 48px", maxWidth: "1100px", margin: "0 auto" }}>
+      <section id="how-it-works" style={{ padding: "96px 32px", maxWidth: "1100px", margin: "0 auto" }}>
         <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "10px", fontWeight: 500, color: "#C9A84C", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: "16px" }}>THE PROCESS</div>
         <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "42px", fontWeight: 300, color: "#f5f0e8", marginBottom: "48px" }}>
           From your first answer to your completed binder.
         </h2>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "24px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "32px" }}>
           {[
             { num: "01", title: "Answer", desc: "Tell us about your investment, your business, and your background. Takes 20–40 minutes." },
             { num: "02", title: "We Analyze", desc: "Our engine checks your answers against 15 real denial patterns and scores your case across 8 dimensions." },
@@ -221,7 +225,7 @@ export default function Home() {
       <FAQSection />
 
       {/* Document Binder */}
-      <section id="what-you-get" style={{ padding: "80px 48px", maxWidth: "1100px", margin: "0 auto" }}>
+      <section id="what-you-get" style={{ padding: "96px 32px", maxWidth: "1100px", margin: "0 auto" }}>
         <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "10px", fontWeight: 500, color: "#C9A84C", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: "16px" }}>WHAT&apos;S INCLUDED</div>
         <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "42px", fontWeight: 300, color: "#f5f0e8", marginBottom: "16px" }}>
           A complete, consulate-formatted application package.
@@ -229,7 +233,7 @@ export default function Home() {
         <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "16px", fontWeight: 300, color: "rgba(245,240,232,0.60)", marginBottom: "48px" }}>
           Every document your officer expects to see. In the right order. At the right length.
         </p>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "24px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "32px" }}>
           {docTabs.map((tab, i) => (
             <div key={i} style={{ display: "flex", alignItems: "center", gap: "16px", padding: "16px", borderBottom: "1px solid rgba(201,168,76,0.12)" }}>
               <span style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "18px", fontWeight: 300, fontStyle: "italic", color: "#C9A84C", minWidth: "24px" }}>{tab.letter}</span>
@@ -246,8 +250,8 @@ export default function Home() {
       </section>
 
       {/* Confidence Score */}
-      <section style={{ padding: "80px 48px", maxWidth: "1100px", margin: "0 auto", borderTop: "1px solid rgba(201,168,76,0.12)" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: "48px", alignItems: "center" }}>
+      <section style={{ padding: "96px 32px", maxWidth: "1100px", margin: "0 auto", borderTop: "1px solid rgba(201,168,76,0.12)" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: "32px", alignItems: "center" }}>
           <div>
             <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "10px", fontWeight: 500, color: "#C9A84C", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: "16px" }}>MODULE 4</div>
             <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "36px", fontWeight: 300, color: "#f5f0e8", marginBottom: "24px" }}>
@@ -282,7 +286,7 @@ export default function Home() {
       </section>
 
       {/* Pricing */}
-      <section id="pricing" style={{ padding: "80px 48px", maxWidth: "1100px", margin: "0 auto", borderTop: "1px solid rgba(201,168,76,0.12)" }}>
+      <section id="pricing" style={{ padding: "96px 32px", maxWidth: "1100px", margin: "0 auto", borderTop: "1px solid rgba(201,168,76,0.12)" }}>
         <div style={{ textAlign: "center" }}>
           <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "10px", fontWeight: 500, color: "#C9A84C", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: "16px" }}>FOUNDING MEMBER PRICING</div>
           <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "42px", fontWeight: 300, color: "#f5f0e8", marginBottom: "16px" }}>
@@ -293,7 +297,7 @@ export default function Home() {
           </p>
           <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "14px", fontWeight: 500, color: "#C9A84C", marginBottom: "48px" }}>[ 47 ] founding member spots remaining</p>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "24px", maxWidth: "900px", margin: "0 auto" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "32px", maxWidth: "900px", margin: "0 auto" }}>
           {pricingCards.map((card, i) => (
             <div key={i} className="card" style={{ padding: "32px", textAlign: "center", border: card.popular ? "1px solid rgba(201,168,76,0.50)" : "1px solid rgba(201,168,76,0.12)", background: "rgba(201,168,76,0.02)", position: "relative" }}>
               {card.popular && (
@@ -324,8 +328,8 @@ export default function Home() {
       </section>
 
       {/* Trust Signals */}
-      <section style={{ padding: "80px 48px", maxWidth: "1100px", margin: "0 auto", borderTop: "1px solid rgba(201,168,76,0.12)" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "48px" }}>
+      <section style={{ padding: "96px 32px", maxWidth: "1100px", margin: "0 auto", borderTop: "1px solid rgba(201,168,76,0.12)" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "32px" }}>
           {[
             { title: "Preparation tool. Not a law firm.", body: "Every sentence in every document traces directly to an answer you provided. We never infer, invent, or make legal conclusions on your behalf." },
             { title: "Your data stays yours.", body: "We store your answers — never your actual documents, passport scans, or bank statements. Documents are generated fresh and downloaded directly." },
@@ -342,7 +346,7 @@ export default function Home() {
       </section>
 
       {/* Final CTA */}
-      <section style={{ padding: "80px 48px", textAlign: "center", borderTop: "1px solid rgba(201,168,76,0.12)" }}>
+      <section style={{ padding: "96px 32px", textAlign: "center", borderTop: "1px solid rgba(201,168,76,0.12)" }}>
         <div style={{ width: "40%", height: "1px", background: "rgba(201,168,76,0.30)", margin: "0 auto 48px" }} />
         <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "56px", fontWeight: 300, color: "#f5f0e8", maxWidth: "700px", margin: "0 auto 24px", lineHeight: 1.2 }}>
           Your consulate interview is closer than you think.
@@ -368,7 +372,7 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer style={{ padding: "48px 48px 32px", borderTop: "1px solid rgba(201,168,76,0.12)", background: "#0a0a0a" }}>
+      <footer style={{ padding: "64px 32px 32px", borderTop: "1px solid rgba(201,168,76,0.12)", background: "#0a0a0a" }}>
         <div style={{ maxWidth: "1100px", margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "32px" }}>
           <div>
             <span style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "20px", fontWeight: 300, color: "#C9A84C" }}>e2go</span>

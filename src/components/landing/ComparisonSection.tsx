@@ -24,8 +24,8 @@ const e2goSteps = [
 
 export default function ComparisonSection() {
   return (
-    <section className="w-full py-20 px-4 bg-[#0a0a0a]">
-      <div className="max-w-5xl mx-auto">
+    <section className="w-full py-24 px-8 bg-[#0a0a0a]">
+      <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="text-center mb-12">
           <p className="text-[#C9A84C] text-[11px] uppercase tracking-[0.18em] font-['DM_Sans'] font-medium mb-4">
