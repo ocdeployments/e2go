@@ -570,6 +570,243 @@ function estimatePages(wordCount: number): number {
 }
 
 // ---------------------------------------------------------------------------
+// 4h. Gap Analysis - Check for missing required elements in documents
+// ---------------------------------------------------------------------------
+
+interface GapAnalysisResult {
+  missing_elements: Record<DocumentType, string[]>;
+  recommendations: string[];
+}
+
+const REQUIRED_ELEMENTS: Record<DocumentType, string[]> = {
+  cover_letter: [
+    'applicant_name',
+    'business_name',
+    'investment_amount',
+    'treaty_country',
+    'consulate_post',
+  ],
+  source_of_funds: [
+    'source_description',
+    'timeline',
+    'amount',
+    'documentation_mentioned',
+  ],
+  investment_proof: [
+    'investment_amount',
+    'at_risk_amount',
+    'funds_movement',
+    'business_ownership',
+  ],
+  business_plan: [
+    'business_description',
+    'market_analysis',
+    'financial_projections',
+    'job_creation',
+  ],
+  qualifications: [
+    'applicant_background',
+    'experience',
+    'education',
+    'relevant_skills',
+  ],
+  ds160_reference: [
+    'personal_information',
+    'travel_history',
+    'family_information',
+    'employment',
+  ],
+};
+
+function extractKeyElements(text: string): string[] {
+  const lower = text.toLowerCase();
+  const elements: string[] = [];
+
+  // Common patterns for key elements
+  const patterns = {
+    applicant_name: /(?:applicant|name|i)\s*[:\-]?\s*([a-z]+\s+[a-z]+)/i,
+    business_name: /(?:business|company|llc|inc)\s*[:\-]?\s*([a-z0-9\s]+)/i,
+    investment_amount: /\$\d{1,3}(?:,\d{3})*(?:\.\d{2})?/,
+    treaty_country: /(?:treaty|country|national|citizen)\s*[:\-]?\s*([a-z\s]+)/i,
+    consulate_post: /(?:consulate|post|embassy)\s*[:\-]?\s*([a-z\s]+)/i,
+    source_description: /(?:source|origin|derivation|earned|saved|inherited)/i,
+    timeline: /(?:timeline|date|when|since|year|month)/i,
+    amount: /\$\d{1,3}(?:,\d{3})*/,
+    documentation_mentioned: /(?:document|evidence|proof|certificate|statement)/i,
+    at_risk_amount: /(?:at\s*risk|endanger|vulnerable)/i,
+    funds_movement: /(?:transfer|wire|move|spent|used)/i,
+    business_ownership: /(?:own|ownership|share|percent|stake)/i,
+    market_analysis: /(?:market|competition|industry|customers|target)/i,
+    financial_projections: /(?:projection|forecast|revenue|profit|income)/i,
+    job_creation: /(?:job|employment|hire|staff|team)/i,
+    experience: /(?:experience|worked|years|background)/i,
+    education: /(?:education|degree|university|college|school)/i,
+    travel_history: /(?:travel|visited|country|trip)/i,
+    family_information: /(?:family|spouse|children|married)/i,
+    employment: /(?:employment|work|job|occupation)/i,
+  };
+
+  for (const [key, pattern] of Object.entries(patterns)) {
+    if (pattern.test(lower)) {
+      elements.push(key);
+    }
+  }
+
+  return elements;
+}
+
+export function runGapAnalysis(documents: GeneratedDocument[]): GapAnalysisResult {
+  const missing_elements: Record<DocumentType, string[]> = {
+    cover_letter: [],
+    source_of_funds: [],
+    investment_proof: [],
+    business_plan: [],
+    qualifications: [],
+    ds160_reference: [],
+  };
+
+  const recommendations: string[] = [];
+
+  for (const doc of documents) {
+    if (!doc.content_text) continue;
+
+    const required = REQUIRED_ELEMENTS[doc.document_type] || [];
+    const found = extractKeyElements(doc.content_text);
+
+    for (const req of required) {
+      if (!found.includes(req) && !missing_elements[doc.document_type].includes(req)) {
+        missing_elements[doc.document_type].push(req);
+      }
+    }
+  }
+
+  // Generate recommendations based on missing elements
+  for (const [docType, missing] of Object.entries(missing_elements)) {
+    if (missing.length > 0) {
+      recommendations.push(`${docType}: Missing elements - ${missing.join(', ')}`);
+    }
+  }
+
+  return { missing_elements, recommendations };
+}
+
+// ---------------------------------------------------------------------------
+// 4i. Repetition Check - Detect duplicate content across documents
+// ---------------------------------------------------------------------------
+
+function computeSimilarity(text1: string, text2: string): number {
+  const words1 = text1.toLowerCase().split(/\s+/).filter(Boolean);
+  const words2 = text2.toLowerCase().split(/\s+/).filter(Boolean);
+
+  const set1 = new Set(words1);
+  const set2 = new Set(words2);
+
+  if (set1.size === 0 || set2.size === 0) return 0;
+
+  let intersectionSize = 0;
+  set1.forEach(word => {
+    if (set2.has(word)) intersectionSize++;
+  });
+
+  const unionSize = new Set([...words1, ...words2]).size;
+
+  return intersectionSize / unionSize;
+}
+
+interface RepetitionResult {
+  has_excessive_repetition: boolean;
+  duplicate_pairs: Array<{
+    doc1: DocumentType;
+    doc2: DocumentType;
+    similarity: number;
+  }>;
+}
+
+export function checkRepetition(documents: GeneratedDocument[]): RepetitionResult {
+  const duplicates: Array<{ doc1: DocumentType; doc2: DocumentType; similarity: number }> = [];
+  const SIMILARITY_THRESHOLD = 0.70;
+
+  for (let i = 0; i < documents.length; i++) {
+    for (let j = i + 1; j < documents.length; j++) {
+      const doc1 = documents[i];
+      const doc2 = documents[j];
+
+      if (!doc1.content_text || !doc2.content_text) continue;
+
+      const similarity = computeSimilarity(doc1.content_text, doc2.content_text);
+
+      if (similarity >= SIMILARITY_THRESHOLD) {
+        duplicates.push({
+          doc1: doc1.document_type,
+          doc2: doc2.document_type,
+          similarity,
+        });
+      }
+    }
+  }
+
+  return {
+    has_excessive_repetition: duplicates.length > 0,
+    duplicate_pairs: duplicates,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// 4j. AI Detection Audit - Check if content appears AI-generated
+// ---------------------------------------------------------------------------
+
+const AI_DETECTION_THRESHOLD = 0.35;
+
+export async function runAIDetectionAudit(
+  documents: GeneratedDocument[]
+): Promise<void> {
+  const anthropic = getAnthropic();
+
+  for (const doc of documents) {
+    if (!doc.content_text) continue;
+
+    try {
+      const response = await anthropic.messages.create({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 500,
+        system: `You are an AI detection tool. Analyze the following text and estimate how likely it was written by an AI.
+
+Respond with ONLY a JSON object in this exact format:
+{"ai_score": 0.0-1.0, "reasoning": "brief explanation"}
+
+Where ai_score is 0.0 (definitely human) to 1.0 (definitely AI).
+Consider: repetitive phrasing, formal structure, lack of personal voice, formulaic transitions.`,
+        messages: [{ role: 'user', content: `Analyze this document for AI writing patterns:\n\n${doc.content_text.slice(0, 3000)}` }],
+      });
+
+      const content = response.content[0];
+      if (content.type === 'text') {
+        const match = content.text.match(/"ai_score"\s*:\s*([0-9.]+)/);
+        if (match) {
+          const aiScore = parseFloat(match[1]);
+          const passed = aiScore < AI_DETECTION_THRESHOLD;
+
+          // Update document with AI detection results
+          const supabase = getSupabase();
+          await supabase
+            .from('generated_documents')
+            .update({
+              ai_detection_score: aiScore,
+              ai_detection_passed: passed,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('job_id', doc.job_id)
+            .eq('document_type', doc.document_type);
+        }
+      }
+    } catch (err) {
+      console.error(`AI detection failed for ${doc.document_type}:`, err);
+      // Non-fatal - continue
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
 // 4g. Main orchestrator
 // ---------------------------------------------------------------------------
 
@@ -906,32 +1143,50 @@ export async function runGenerationPipeline(
       .eq('application_id', applicationId)
       .eq('status', 'completed');
 
-    // Step 8: Humanization pass on all 6 documents
+    // Step 7: Gap Analysis - Check for missing required elements
+    emitStep(7, 'running');
+    await updateJob({ current_step: 7, current_step_label: GENERATION_STEP_LABELS[7] });
+
+    const gapResult = runGapAnalysis(generatedDocs);
+
+    // Log gap analysis results
+    if (gapResult.recommendations.length > 0) {
+      await supabase
+        .from('document_generation_log')
+        .insert({
+          application_id: applicationId,
+          document_type: 'all',
+          stage: 'gap_analysis',
+          attempt_number: 1,
+          passed: gapResult.recommendations.length === 0,
+          flagged_sections: gapResult.recommendations,
+          notes: `Gap analysis completed. ${gapResult.recommendations.length} recommendations.`,
+        });
+    }
+
+    emitStep(7, 'complete');
+    await updateJob({ current_step: 7, current_step_label: GENERATION_STEP_LABELS[7] });
+
+    // Step 8: Repetition Check - Detect duplicate content across documents
     emitStep(8, 'running');
     await updateJob({ current_step: 8, current_step_label: GENERATION_STEP_LABELS[8] });
 
-    for (const doc of generatedDocs) {
-      if (doc.content_text && voiceProfile) {
-        try {
-          const humanized = await humanizeDocument(doc.content_text, voiceProfile);
-          const wc = countWords(humanized);
-          const pages = estimatePages(wc);
+    const repetitionResult = checkRepetition(generatedDocs);
 
-          await supabase
-            .from('generated_documents')
-            .update({
-              content_text: humanized,
-              word_count: wc,
-              page_estimate: pages,
-              updated_at: new Date().toISOString(),
-            })
-            .eq('job_id', jobId)
-            .eq('document_type', doc.document_type);
-        } catch (err) {
-          console.error(`Humanization failed for ${doc.document_type}:`, err);
-          // Non-fatal — continue with original content
-        }
-      }
+    if (repetitionResult.has_excessive_repetition) {
+      await supabase
+        .from('document_generation_log')
+        .insert({
+          application_id: applicationId,
+          document_type: 'all',
+          stage: 'repetition_check',
+          attempt_number: 1,
+          passed: false,
+          flagged_sections: repetitionResult.duplicate_pairs.map(
+            d => `${d.doc1} <-> ${d.doc2}: ${Math.round(d.similarity * 100)}% similar`
+          ),
+          notes: 'Excessive repetition detected between documents',
+        });
     }
 
     emitStep(8, 'complete');
@@ -964,9 +1219,100 @@ export async function runGenerationPipeline(
     emitStep(9, 'complete');
     await updateJob({ current_step: 9, current_step_label: GENERATION_STEP_LABELS[9] });
 
-    // Step 10: Quality gate on each document
+    // Step 10: AI Detection Audit - Check if content appears AI-generated (threshold: 0.35)
     emitStep(10, 'running');
     await updateJob({ current_step: 10, current_step_label: GENERATION_STEP_LABELS[10] });
+
+    await runAIDetectionAudit(generatedDocs);
+
+    emitStep(10, 'complete');
+    await updateJob({ current_step: 10, current_step_label: GENERATION_STEP_LABELS[10] });
+
+    // Step 11: Humanization pass on all 6 documents
+    emitStep(11, 'running');
+    await updateJob({ current_step: 11, current_step_label: GENERATION_STEP_LABELS[11] });
+
+    for (const doc of generatedDocs) {
+      if (doc.content_text && voiceProfile) {
+        try {
+          const humanized = await humanizeDocument(doc.content_text, voiceProfile);
+          const wc = countWords(humanized);
+          const pages = estimatePages(wc);
+
+          await supabase
+            .from('generated_documents')
+            .update({
+              content_text: humanized,
+              word_count: wc,
+              page_estimate: pages,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('job_id', jobId)
+            .eq('document_type', doc.document_type);
+        } catch (err) {
+          console.error(`Humanization failed for ${doc.document_type}:`, err);
+          // Non-fatal — continue with original content
+        }
+      }
+    }
+
+    emitStep(11, 'complete');
+    await updateJob({ current_step: 11, current_step_label: GENERATION_STEP_LABELS[11] });
+
+    // Step 12: Metadata sanitization — strip placeholders, AI artifacts, and markdown
+    emitStep(12, 'running');
+    await updateJob({ current_step: 12, current_step_label: GENERATION_STEP_LABELS[12] });
+
+    for (const doc of generatedDocs) {
+      if (doc.content_text) {
+        let clean = doc.content_text;
+
+        // Remove template placeholders
+        clean = clean.replace(/\{\{.*?\}\}/g, '');
+        clean = clean.replace(/\[\[.*?\]\]/g, '');
+        clean = clean.replace(/\[UNVERIFIED\]/gi, '');
+        clean = clean.replace(/\[TODO.*?\]/gi, '');
+
+        // Remove AI tool names and references
+        for (const toolName of AI_TOOL_NAMES) {
+          const regex = new RegExp(`\\b${toolName}\\b`, 'gi');
+          clean = clean.replace(regex, '[AI tool]');
+        }
+
+        // Remove generation timestamps and internal references
+        clean = clean.replace(/\b(?:generated|created|written)\s+(?:on|at|by)\s+[^\n]{5,50}/gi, '');
+        clean = clean.replace(/\[.*?(?:prompt|instruction|context).*?\]/gi, '');
+
+        // Remove markdown formatting that shouldn't be in legal documents
+        clean = clean.replace(/^#{1,6}\s+/gm, '');  // Remove ## headers
+        clean = clean.replace(/\*\*([^*]+)\*\*/g, '$1');  // Remove bold
+        clean = clean.replace(/\*([^*]+)\*/g, '$1');  // Remove italic
+        clean = clean.replace(/`{1,3}[^`]*`{1,3}/g, '');  // Remove code blocks
+        clean = clean.replace(/^\s*[-*+]\s+/gm, '');  // Remove list markers
+        clean = clean.replace(/^\s*\d+\.\s+/gm, '');  // Remove numbered lists
+
+        // Clean up multiple blank lines
+        clean = clean.replace(/\n{3,}/g, '\n\n');
+
+        if (clean !== doc.content_text) {
+          await supabase
+            .from('generated_documents')
+            .update({
+              content_text: clean,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('job_id', jobId)
+            .eq('document_type', doc.document_type);
+        }
+      }
+    }
+
+    emitStep(12, 'complete');
+    await updateJob({ current_step: 12, current_step_label: GENERATION_STEP_LABELS[12] });
+
+    // Step 13: Quality Gate - Final validation of each document
+    emitStep(13, 'running');
+    await updateJob({ current_step: 13, current_step_label: GENERATION_STEP_LABELS[13] });
 
     // Extract investment data for quality gate checks
     const caseBriefData = caseBrief as unknown as Record<string, unknown>;
@@ -1052,73 +1398,8 @@ export async function runGenerationPipeline(
       }
     }
 
-    emitStep(10, 'complete');
-    await updateJob({ current_step: 10, current_step_label: GENERATION_STEP_LABELS[10] });
-
-    // Step 11: Quality gate result (already handled in step 10)
-    emitStep(11, 'complete');
-    await updateJob({ current_step: 11, current_step_label: GENERATION_STEP_LABELS[11] });
-
-    // Step 12: Metadata sanitization — strip placeholders, AI artifacts, and markdown
-    emitStep(12, 'running');
-    await updateJob({ current_step: 12, current_step_label: GENERATION_STEP_LABELS[12] });
-
-    for (const doc of generatedDocs) {
-      if (doc.content_text) {
-        let clean = doc.content_text;
-
-        // Remove template placeholders
-        clean = clean.replace(/\{\{.*?\}\}/g, '');
-        clean = clean.replace(/\[\[.*?\]\]/g, '');
-        clean = clean.replace(/\[UNVERIFIED\]/gi, '');
-        clean = clean.replace(/\[TODO.*?\]/gi, '');
-
-        // Remove AI tool names and references
-        for (const toolName of AI_TOOL_NAMES) {
-          const regex = new RegExp(`\\b${toolName}\\b`, 'gi');
-          clean = clean.replace(regex, '[AI tool]');
-        }
-
-        // Remove generation timestamps and internal references
-        clean = clean.replace(/\b(?:generated|created|written)\s+(?:on|at|by)\s+[^\n]{5,50}/gi, '');
-        clean = clean.replace(/\[.*?(?:prompt|instruction|context).*?\]/gi, '');
-
-        // Remove markdown formatting that shouldn't be in legal documents
-        clean = clean.replace(/^#{1,6}\s+/gm, '');  // Remove ## headers
-        clean = clean.replace(/\*\*([^*]+)\*\*/g, '$1');  // Remove bold
-        clean = clean.replace(/\*([^*]+)\*/g, '$1');  // Remove italic
-        clean = clean.replace(/`{1,3}[^`]*`{1,3}/g, '');  // Remove code blocks
-        clean = clean.replace(/^\s*[-*+]\s+/gm, '');  // Remove list markers
-        clean = clean.replace(/^\s*\d+\.\s+/gm, '');  // Remove numbered lists
-
-        // Clean up multiple blank lines
-        clean = clean.replace(/\n{3,}/g, '\n\n');
-
-        if (clean !== doc.content_text) {
-          await supabase
-            .from('generated_documents')
-            .update({
-              content_text: clean,
-              updated_at: new Date().toISOString(),
-            })
-            .eq('job_id', jobId)
-            .eq('document_type', doc.document_type);
-        }
-      }
-    }
-
-    emitStep(12, 'complete');
-    await updateJob({ current_step: 12, current_step_label: GENERATION_STEP_LABELS[12] });
-
-    // Step 13: Mark job completed
-    emitStep(13, 'running');
-    await updateJob({
-      current_step: 13,
-      current_step_label: GENERATION_STEP_LABELS[13],
-      status: 'completed',
-      completed_at: new Date().toISOString(),
-    });
     emitStep(13, 'complete');
+    await updateJob({ current_step: 13, current_step_label: GENERATION_STEP_LABELS[13] });
 
     // Step 14: Acknowledgment Gate — quality checks passed, log results
     for (let i = 0; i < DOCUMENT_TYPES.length; i++) {
