@@ -122,6 +122,8 @@ export default function GenerateProgressPage() {
 
   const processMessage = useCallback(
     (msg: SSEProgressMessage) => {
+      console.log('[SSE msg]', msg.status, msg.awaitingApproval, msg.currentDocument);
+
       setJobStatus(msg.status);
       if (msg.error) setErrorMessage(msg.error);
 
@@ -129,7 +131,7 @@ export default function GenerateProgressPage() {
       setAwaitingApproval(isAwaitingApproval);
 
       if (msg.currentDocument) {
-        setCurrentDocumentType(mapDocumentType(msg.currentDocument));
+        setCurrentDocumentType(msg.currentDocument);
       }
       if (msg.currentDocumentType) {
         setCurrentDocumentType(msg.currentDocumentType);
@@ -488,7 +490,7 @@ export default function GenerateProgressPage() {
                   className="text-[11px] font-medium uppercase tracking-widest text-white/50"
                   style={{ fontFamily: "'DM Sans', sans-serif" }}
                 >
-                  {currentDocumentType?.replace(/_/g, " ").toUpperCase() || "COVER LETTER"}
+                  {mapDocumentType(currentDocumentType).toUpperCase() || "COVER LETTER"}
                 </h2>
                 <div className="mt-2 h-px w-full bg-[#C9A84C]/30">
                   <div
@@ -532,7 +534,7 @@ export default function GenerateProgressPage() {
                     className="text-xl italic text-[#C9A84C] mb-2"
                     style={{ fontFamily: "'Cormorant Garamond', serif" }}
                   >
-                    {currentDocumentType?.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase())} complete
+                    {mapDocumentType(currentDocumentType)} complete
                   </h3>
 
                   <p
