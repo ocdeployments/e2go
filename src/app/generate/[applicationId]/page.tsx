@@ -5,7 +5,6 @@ import { useParams, useRouter } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import { GENERATION_STEP_LABELS, DOCUMENT_TYPE_LABELS } from "@/types/generation";
 import type { SSEProgressMessage, DocumentType } from "@/types/generation";
-import { motion } from "motion/react";
 
 type StepStatus = "pending" | "running" | "complete" | "failed";
 
@@ -16,159 +15,46 @@ interface StepState {
 }
 
 const TOTAL_DOCUMENTS = 6;
-const POLL_INTERVAL = 2000;
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const DOCUMENTS = [
-  { id: 1, name: "Cover Letter", step: 1 },
-  { id: 2, name: "Source of Funds", step: 2 },
-  { id: 3, name: "Investment Proof", step: 3 },
-  { id: 4, name: "Business Plan", step: 4 },
-  { id: 5, name: "Qualifications", step: 5 },
-  { id: 6, name: "DS-160 Reference", step: 6 },
-] as const;
+const DOCUMENT_LIST = [
+  { id: "cover_letter", label: "Cover Letter", status: "pending" as StepStatus },
+  { id: "source_of_funds", label: "Source of Funds", status: "pending" as StepStatus },
+  { id: "investment_proof", label: "Investment Proof", status: "pending" as StepStatus },
+  { id: "business_plan", label: "Business Plan", status: "pending" as StepStatus },
+  { id: "qualifications", label: "Qualifications", status: "pending" as StepStatus },
+  { id: "ds160_reference", label: "DS-160 Reference", status: "pending" as StepStatus },
+];
 
-interface DocumentCardProps {
-  doc: (typeof DOCUMENTS)[number];
-  isRevealed: boolean;
-  isCurrent: boolean;
-  isAwaitingApproval: boolean;
-  documentText: string;
-  documentPreview?: string;
-  wordCount?: number;
-  pageEstimate?: number;
-  onApprove: () => void;
-  onRevise: () => void;
-}
+const QUALITY_STEPS = [
+  { id: 7, label: "Gap Analysis" },
+  { id: 8, label: "Repetition Check" },
+  { id: 9, label: "Consistency Check" },
+  { id: 10, label: "AI Detection Audit" },
+  { id: 11, label: "Humanization Pass" },
+  { id: 12, label: "Metadata Sanitization" },
+  { id: 13, label: "Quality Gate" },
+  { id: 14, label: "Pre-download Ack" },
+  { id: 15, label: "Preview Unlock" },
+];
 
-function DocumentCard({
-  doc,
-  isRevealed,
-  isCurrent,
-  isAwaitingApproval,
-  documentText,
-  documentPreview,
-  wordCount,
-  pageEstimate,
-  onApprove,
-  onRevise,
-}: DocumentCardProps) {
-  const progress = isRevealed ? 100 : 0;
+const STATUS_MESSAGES: Record<string, string> = {
+  cover_letter: "Establishing your investment narrative for the consular officer...",
+  source_of_funds: "Tracing your investment funds from source to business account...",
+  investment_proof: "Documenting your investment breakdown and irrevocability...",
+  business_plan: "Building your financial projections and staffing plan...",
+  qualifications: "Presenting your professional qualifications and management experience...",
+  ds160_reference: "Preparing your DS-160 form reference guide...",
+  quality_steps: "Applying final quality checks before your package is ready...",
+};
 
-  return (
-    <div className={`relative overflow-hidden border border-white/8 bg-[#0d0d0d] ${isAwaitingApproval ? 'ring-1 ring-[#C9A84C] animate-pulse' : ''}`}>
-      <div className="flex items-center justify-between border-b border-white/8 px-4 py-3">
-        <span
-          className="text-xs font-medium uppercase tracking-wider text-white/60"
-          style={{ fontFamily: "'DM Sans', sans-serif" }}
-        >
-          {doc.name}
-        </span>
-        {isAwaitingApproval && (
-          <span
-            className="inline-flex items-center gap-1.5 border border-[#C9A84C] bg-[#C9A84C]/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-[#C9A84C]"
-            style={{ fontFamily: "'DM Sans', sans-serif" }}
-          >
-            <span className="inline-block h-1.5 w-1.5 rounded-none bg-[#C9A84C] animate-pulse" />
-            REVIEW NEEDED
-          </span>
-        )}
-        {isCurrent && !isRevealed && !isAwaitingApproval && (
-          <span
-            className="inline-flex items-center gap-1.5 border border-[#C9A84C]/40 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-[#C9A84C]"
-            style={{ fontFamily: "'DM Sans', sans-serif" }}
-          >
-            <span className="inline-block h-1.5 w-1.5 rounded-none bg-[#C9A84C] animate-pulse" />
-            GENERATING
-          </span>
-        )}
-        {isRevealed && !isAwaitingApproval && (
-          <span
-            className="inline-flex items-center gap-1.5 border border-[#C9A84C]/40 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-[#C9A84C]"
-            style={{ fontFamily: "'DM Sans', sans-serif" }}
-          >
-            APPROVED
-          </span>
-        )}
-      </div>
-
-      <div className="p-4">
-        {isAwaitingApproval ? (
-          <div className="space-y-4">
-            {documentPreview && (
-              <pre
-                className="max-h-40 overflow-y-auto whitespace-pre-wrap text-sm leading-relaxed text-white/70"
-                style={{ fontFamily: "'DM Sans', monospace" }}
-              >
-                {documentPreview}...
-              </pre>
-            )}
-            {wordCount && pageEstimate && (
-              <div className="flex gap-4 text-xs text-white/40">
-                <span>{wordCount} words</span>
-                <span>~{pageEstimate} pages</span>
-              </div>
-            )}
-            <div className="flex gap-3 pt-2">
-              <button
-                onClick={onApprove}
-                className="flex-1 border border-[#C9A84C] bg-[#C9A84C] px-4 py-2 text-sm font-medium uppercase tracking-wider text-[#0a0a0a] transition-colors hover:bg-[#d4b35c]"
-                style={{ fontFamily: "'DM Sans', sans-serif" }}
-              >
-                Approve & Continue
-              </button>
-              <button
-                onClick={onRevise}
-                className="flex-1 border border-white/20 px-4 py-2 text-sm font-medium uppercase tracking-wider text-white/60 transition-colors hover:border-white/40 hover:text-white"
-                style={{ fontFamily: "'DM Sans', sans-serif" }}
-              >
-                Request Revision
-              </button>
-            </div>
-          </div>
-        ) : isRevealed || isCurrent ? (
-          <pre
-            className="whitespace-pre-wrap text-sm leading-relaxed text-white/70"
-            style={{ fontFamily: "'DM Sans', monospace" }}
-          >
-            {isRevealed
-              ? "Document generated and saved to your application package."
-              : documentText || "Initializing generation..."}
-          </pre>
-        ) : (
-          <div className="flex h-24 items-center justify-center">
-            <p
-              className="text-sm text-white/20"
-              style={{ fontFamily: "'DM Sans', sans-serif" }}
-            >
-              Waiting to start...
-            </p>
-          </div>
-        )}
-      </div>
-
-      <motion.div
-        className="absolute inset-0 pointer-events-none backdrop-blur-3xl"
-        initial={false}
-        animate={{
-          clipPath: `polygon(0 ${progress}%, 100% ${progress}%, 100% 100%, 0 100%)`,
-          opacity: progress >= 100 ? 0 : 1,
-        }}
-        transition={{ duration: 1.2, ease: "easeOut" }}
-        style={{
-          clipPath: `polygon(0 ${progress}%, 100% ${progress}%, 100% 100%, 0 100%)`,
-          maskImage:
-            progress === 0
-              ? "linear-gradient(to bottom, black -5%, black 100%)"
-              : `linear-gradient(to bottom, transparent ${progress - 5}%, transparent ${progress}%, black ${progress + 5}%)`,
-          WebkitMaskImage:
-            progress === 0
-              ? "linear-gradient(to bottom, black -5%, black 100%)"
-              : `linear-gradient(to bottom, transparent ${progress - 5}%, transparent ${progress}%, black ${progress + 5}%)`,
-        }}
-      />
-    </div>
-  );
+interface ApplicationData {
+  applicantName?: string;
+  businessName?: string;
+  city?: string;
+  state?: string;
+  investmentAmount?: number;
+  consulate?: string;
+  nationality?: string;
 }
 
 export default function GenerateProgressPage() {
@@ -177,25 +63,46 @@ export default function GenerateProgressPage() {
   const applicationId = params.applicationId as string;
 
   const [_jobId, setJobId] = useState<string | null>(null);
-  const [steps, setSteps] = useState<StepState[]>(() =>
+  const [_steps, setSteps] = useState<StepState[]>(() =>
     Array.from({ length: 15 }, (_, i) => ({
       id: i + 1,
       label: GENERATION_STEP_LABELS[i + 1] || `Step ${i + 1}`,
       status: "pending" as StepStatus,
     }))
   );
-  const [currentDocument, setCurrentDocument] = useState<string>("");
   const [currentDocumentType, setCurrentDocumentType] = useState<string>("");
   const [documentText, setDocumentText] = useState<string>("");
   const [documentPreview, setDocumentPreview] = useState<string>("");
-  const [wordCount, setWordCount] = useState<number>(0);
-  const [pageEstimate, setPageEstimate] = useState<number>(0);
   const [awaitingApproval, setAwaitingApproval] = useState(false);
   const [approvedDocuments, setApprovedDocuments] = useState(0);
   const [jobStatus, setJobStatus] = useState<string>("queued");
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [overallProgress, setOverallProgress] = useState(0);
+  const [applicationData, setApplicationData] = useState<ApplicationData>({});
+  const [currentQualityStep, setCurrentQualityStep] = useState(0);
   const previewRef = useRef<HTMLDivElement>(null);
+
+  // Map document type to display name
+  const mapDocumentType = (type: string): string => {
+    const key = type as DocumentType;
+    return DOCUMENT_TYPE_LABELS[key] || type;
+  };
+
+  // Get document state based on progress
+  const getDocumentState = (docId: string): StepStatus => {
+    const docIndex = DOCUMENT_LIST.findIndex(d => d.id === docId);
+    if (approvedDocuments > docIndex) return "complete";
+    if (currentDocumentType === docId && !awaitingApproval && jobStatus !== "completed") return "running";
+    if (awaitingApproval && currentDocumentType === docId) return "running";
+    return "pending";
+  };
+
+  // Get quality step state
+  const getQualityStepState = (stepId: number): StepStatus => {
+    if (stepId < currentQualityStep) return "complete";
+    if (stepId === currentQualityStep && approvedDocuments >= 6) return "running";
+    return "pending";
+  };
 
   const updateStepStatus = useCallback(
     (stepNum: number, status: StepStatus) => {
@@ -212,23 +119,16 @@ export default function GenerateProgressPage() {
     []
   );
 
-  const mapDocumentType = (type: string): string => {
-    const key = type as DocumentType;
-    return DOCUMENT_TYPE_LABELS[key] || type;
-  };
-
   const processMessage = useCallback(
     (msg: SSEProgressMessage) => {
       setJobStatus(msg.status);
       if (msg.error) setErrorMessage(msg.error);
 
-      // Handle awaiting_approval status
       const isAwaitingApproval = msg.status === 'awaiting_approval' || msg.awaitingApproval === true;
       setAwaitingApproval(isAwaitingApproval);
 
-      // Handle new approval flow fields
       if (msg.currentDocument) {
-        setCurrentDocument(mapDocumentType(msg.currentDocument));
+        setCurrentDocumentType(mapDocumentType(msg.currentDocument));
       }
       if (msg.currentDocumentType) {
         setCurrentDocumentType(msg.currentDocumentType);
@@ -239,14 +139,12 @@ export default function GenerateProgressPage() {
       if (msg.currentDocumentPreview) {
         setDocumentPreview(msg.currentDocumentPreview);
       }
-      if (msg.wordCount) {
-        setWordCount(msg.wordCount);
-      }
-      if (msg.pageEstimate) {
-        setPageEstimate(msg.pageEstimate);
-      }
 
       const stepNum = msg.step || 0;
+      if (stepNum >= 7) {
+        setCurrentQualityStep(stepNum);
+      }
+
       if (msg.status === "completed") {
         updateStepStatus(stepNum, "complete");
         setOverallProgress(100);
@@ -265,29 +163,6 @@ export default function GenerateProgressPage() {
     },
     [updateStepStatus]
   );
-
-  const startPolling = useCallback((jid: string) => {
-    const poll = setInterval(async () => {
-      try {
-        await fetch(`/api/generate/progress/${jid}`);
-        const jobRes = await fetch(`/api/generate/documents/${applicationId}`, {
-          headers: { Authorization: "Bearer poll" },
-        });
-        if (jobRes.ok) {
-          const data = await jobRes.json();
-          setApprovedDocuments(
-            data.documents?.filter(
-              (d: { status: string }) => d.status === "approved"
-            ).length || 0
-          );
-        }
-      } catch {
-        // Ignore poll errors
-      }
-    }, POLL_INTERVAL);
-
-    return () => clearInterval(poll);
-  }, [applicationId]);
 
   // Approve current document and continue
   const handleApprove = useCallback(async () => {
@@ -327,7 +202,6 @@ export default function GenerateProgressPage() {
       });
 
       if (res.ok) {
-        // The pipeline will regenerate when it sees revision_requested status
         setAwaitingApproval(false);
       }
     } catch (err) {
@@ -352,21 +226,34 @@ export default function GenerateProgressPage() {
 
     eventSource.onerror = () => {
       eventSource.close();
-      startPolling(jid);
     };
 
     return () => eventSource.close();
-  }, [processMessage, startPolling]);
+  }, [processMessage]);
 
   const startGeneration = useCallback(async () => {
     try {
-      // Get userId from Supabase session
       const supabase = createBrowserSupabaseClient();
       const { data: { session } } = await supabase.auth.getSession();
       const userId = session?.user?.id ?? null;
       if (!userId) {
         setErrorMessage("Please log in to continue");
         return;
+      }
+
+      // Fetch application data for header
+      const appRes = await fetch(`/api/applications/${applicationId}`);
+      if (appRes.ok) {
+        const appData = await appRes.json();
+        setApplicationData({
+          applicantName: appData.applicant_name,
+          businessName: appData.business_name,
+          city: appData.city,
+          state: appData.state,
+          investmentAmount: appData.investment_amount,
+          consulate: appData.consulate,
+          nationality: appData.nationality,
+        });
       }
 
       const res = await fetch("/api/generate/start", {
@@ -384,14 +271,12 @@ export default function GenerateProgressPage() {
       const newJobId = data.jobId;
       setJobId(newJobId);
 
-      // Kick off background pipeline
       await fetch(`/api/generate/run/${newJobId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId }),
       });
 
-      // Connect to SSE
       connectSSE(newJobId);
     } catch (err) {
       setErrorMessage(err instanceof Error ? err.message : "Unknown error");
@@ -410,214 +295,378 @@ export default function GenerateProgressPage() {
 
   const isComplete = jobStatus === "completed";
   const isFailed = jobStatus === "failed" && !errorMessage.includes("retry");
+  const isGenerating = jobStatus === "running" || jobStatus === "awaiting_approval";
+  const isQualityPhase = approvedDocuments >= 6 && !isComplete;
 
-  const getStatusIcon = (status: StepStatus) => {
-    switch (status) {
-      case "pending":
-        return (
-          <span className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-white/15 text-xs text-white/30">
-            ○
-          </span>
-        );
-      case "running":
-        return (
-          <span className="inline-flex h-6 w-6 items-center justify-center animate-pulse text-sm text-[#C9A84C]">
-            ⟳
-          </span>
-        );
-      case "complete":
-        return (
-          <span className="inline-flex h-6 w-6 items-center justify-center text-sm text-[#C9A84C]">
-            ✓
-          </span>
-        );
-      case "failed":
-        return (
-          <span className="inline-flex h-6 w-6 items-center justify-center text-sm text-[#dc2626]">
-            ✗
-          </span>
-        );
-    }
-  };
+  // Get active document for status message
+  const activeDoc = currentDocumentType || "cover_letter";
+  const statusMessage = isQualityPhase
+    ? STATUS_MESSAGES["quality_steps"]
+    : STATUS_MESSAGES[activeDoc] || STATUS_MESSAGES["cover_letter"];
+
+  // Calculate progress bar percentage
+  const progressPercent = documentText.length > 0
+    ? Math.min(95, (documentText.length / 500) * 100)
+    : 0;
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-[#f5f0e8]">
-      <div className="mx-auto max-w-6xl px-6 py-12">
-        {/* Header */}
-        <div className="mb-12 text-center">
-          <h1
-            className="font-light text-4xl tracking-wide"
-            style={{ fontFamily: "'Cormorant Garamond', serif" }}
+      {/* ZONE 1: CASE HEADER */}
+      <header className="pt-12 pb-8 text-center">
+        <h1
+          className="font-light text-2xl tracking-wide italic text-[#C9A84C]"
+          style={{ fontFamily: "'Cormorant Garamond', serif" }}
+        >
+          {isComplete
+            ? "Your application package is ready"
+            : `Preparing the E-2 application of ${applicationData.applicantName || "your application"}`
+          }
+        </h1>
+
+        {!isComplete && !isFailed && applicationData.businessName && (
+          <p
+            className="mt-2 text-[13px] text-white/50"
+            style={{ fontFamily: "'DM Sans', sans-serif" }}
           >
-            {isComplete
-              ? "Your Package Is Ready"
-              : "Preparing Your Application Package"}
-          </h1>
-          {!isComplete && !isFailed && (
-            <p
-              className="mt-3 text-sm text-white/50"
-              style={{ fontFamily: "'DM Sans', sans-serif" }}
-            >
-              Each document is being written for your specific case. This takes
-              3–5 minutes.
-            </p>
-          )}
-          {isFailed && (
-            <p
-              className="mt-3 text-sm text-[#dc2626]"
-              style={{ fontFamily: "'DM Sans', sans-serif" }}
-            >
-              Our team has been notified and will email you within 2 hours.
-            </p>
-          )}
-        </div>
+            {applicationData.businessName}
+            {applicationData.city && applicationData.state && ` · ${applicationData.city}, ${applicationData.state}`}
+            {applicationData.investmentAmount && ` · $${applicationData.investmentAmount.toLocaleString()} invested`}
+          </p>
+        )}
 
-        {/* Main Content */}
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-          {/* Left: Step List */}
-          <div className="order-2 lg:order-1">
-            <h2
-              className="mb-4 text-xs font-medium uppercase tracking-widest text-white/30"
-              style={{ fontFamily: "'DM Sans', sans-serif" }}
-            >
-              Progress
-            </h2>
-            <div className="space-y-1">
-              {steps.map((step) => (
-                <div
-                  key={step.id}
-                  className={`flex items-center gap-3 px-2 py-2 transition-colors duration-300 ${
-                    step.status === "running"
-                      ? "bg-[#C9A84C]/5 border-l-2 border-[#C9A84C]"
-                      : "border-l-2 border-transparent"
-                  }`}
-                >
-                  <span className="flex-shrink-0 w-8 text-center">
-                    {getStatusIcon(step.status)}
-                  </span>
-                  <span
-                    className={`text-sm ${
-                      step.status === "complete"
-                        ? "text-[#C9A84C]"
-                        : step.status === "running"
-                          ? "text-[#f5f0e8]"
-                          : step.status === "failed"
-                            ? "text-[#dc2626]"
-                            : "text-white/30"
-                    }`}
-                    style={{ fontFamily: "'DM Sans', sans-serif" }}
-                  >
-                    {step.id}. {step.label}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
+        {!isComplete && !isFailed && applicationData.consulate && (
+          <p
+            className="mt-1 text-[12px] text-white/35"
+            style={{ fontFamily: "'DM Sans', sans-serif" }}
+          >
+            {applicationData.consulate} Consulate
+            {applicationData.nationality && ` · ${applicationData.nationality} National`}
+          </p>
+        )}
 
-          {/* Right: Document Cards with Blur-Lift Reveal */}
-          <div className="order-1 lg:order-2">
+        <div
+          className="mx-auto mt-6 h-px w-full max-w-[600px] bg-[#C9A84C]/40"
+        />
+      </header>
+
+      {/* MAIN LAYOUT: Sidebar + Content */}
+      <div className="flex min-h-[calc(100vh-220px)]">
+        {/* ZONE 2: LEFT SIDEBAR - Desktop only */}
+        <aside className="hidden lg:block w-1/4 min-w-[280px] bg-[#111111] border-r border-[#C9A84C]/10 p-8">
+          <div className="sticky top-8">
             <h2
-              className="mb-4 text-xs font-medium uppercase tracking-widest text-white/30"
+              className="mb-6 text-[10px] font-medium uppercase tracking-widest text-white/30"
               style={{ fontFamily: "'DM Sans', sans-serif" }}
             >
               Documents
             </h2>
-            <div className="space-y-4">
-              {DOCUMENTS.map((doc) => {
-                const isRevealed = approvedDocuments >= doc.id;
-                const isCurrent = currentDocument === doc.name && !isRevealed;
-                const isAwaitingThisApproval = awaitingApproval && currentDocument === doc.name;
 
+            <div className="space-y-3">
+              {DOCUMENT_LIST.map((doc) => {
+                const state = getDocumentState(doc.id);
                 return (
-                  <DocumentCard
+                  <div
                     key={doc.id}
-                    doc={doc}
-                    isRevealed={isRevealed}
-                    isCurrent={isCurrent}
-                    isAwaitingApproval={isAwaitingThisApproval}
-                    documentText={isCurrent ? documentText : ""}
-                    documentPreview={isAwaitingThisApproval ? documentPreview : undefined}
-                    wordCount={isAwaitingThisApproval ? wordCount : undefined}
-                    pageEstimate={isAwaitingThisApproval ? pageEstimate : undefined}
-                    onApprove={handleApprove}
-                    onRevise={handleRevise}
-                  />
+                    className={`flex items-center gap-3 text-[13px] transition-all duration-300 ${
+                      state === "complete" ? "text-white/60" :
+                      state === "running" ? "text-[#C9A84C]" :
+                      "text-white/40"
+                    }`}
+                    style={{ fontFamily: "'DM Sans', sans-serif" }}
+                  >
+                    {/* Status indicator */}
+                    {state === "pending" && (
+                      <span className="h-1.5 w-1.5 rounded-full bg-white/20" />
+                    )}
+                    {state === "running" && (
+                      <span className="h-1.5 w-1.5 rounded-full bg-[#C9A84C] animate-pulse" />
+                    )}
+                    {state === "complete" && (
+                      <span className="text-[#C9A84C] text-xs">✓</span>
+                    )}
+                    {state === "failed" && (
+                      <span className="text-[#ef4444] text-xs">×</span>
+                    )}
+
+                    <span>{doc.label}</span>
+                  </div>
                 );
               })}
             </div>
-          </div>
-        </div>
 
-        {/* Bottom: Progress Bar */}
-        <div className="mt-10">
-          <div className="mb-3 flex items-center justify-between">
-            <span
-              className="text-xs text-white/40"
-              style={{ fontFamily: "'DM Sans', sans-serif" }}
-            >
-              {approvedDocuments} of {TOTAL_DOCUMENTS} documents approved
-              {awaitingApproval && ' — review needed'}
-            </span>
-            <span
-              className="text-xs text-white/40"
-              style={{ fontFamily: "'DM Sans', sans-serif" }}
-            >
-              {overallProgress}%
-            </span>
+            {/* Quality Steps */}
+            {approvedDocuments >= 6 && (
+              <>
+                <div className="my-6 h-px bg-[#C9A84C]/20" />
+
+                <h2
+                  className="mb-4 text-[10px] font-medium uppercase tracking-widest text-white/30"
+                  style={{ fontFamily: "'DM Sans', sans-serif" }}
+                >
+                  Quality Checks
+                </h2>
+
+                <div className="space-y-2">
+                  {QUALITY_STEPS.map((step) => {
+                    const state = getQualityStepState(step.id);
+                    return (
+                      <div
+                        key={step.id}
+                        className={`flex items-center gap-3 text-[11px] transition-all duration-300 ${
+                          state === "complete" ? "text-white/40" :
+                          state === "running" ? "text-white/50" :
+                          "text-white/25"
+                        }`}
+                        style={{ fontFamily: "'DM Sans', sans-serif" }}
+                      >
+                        {state === "pending" && (
+                          <span className="h-1 w-1 rounded-full bg-white/15" />
+                        )}
+                        {state === "running" && (
+                          <span className="h-1 w-1 rounded-full bg-[#C9A84C]/60" />
+                        )}
+                        {state === "complete" && (
+                          <span className="text-[#C9A84C]/60 text-[8px]">✓</span>
+                        )}
+
+                        <span>{step.label}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
           </div>
-          <div className="h-[2px] w-full bg-white/8">
-            <div
-              className="h-full transition-all duration-700 ease-out"
-              style={{
-                width: `${overallProgress}%`,
-                backgroundColor: "#C9A84C",
-              }}
-            />
+        </aside>
+
+        {/* ZONE 3: MAIN CONTENT */}
+        <main className="flex-1 px-8 lg:px-12 pb-32">
+          {/* Mobile progress bar */}
+          <div className="lg:hidden mb-6">
+            <div className="flex items-center justify-between text-[11px] text-white/40 mb-2">
+              <span style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                {approvedDocuments} of {TOTAL_DOCUMENTS} documents
+              </span>
+              <span style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                {Math.round(overallProgress)}%
+              </span>
+            </div>
+            <div className="h-px w-full bg-white/8">
+              <div
+                className="h-full transition-all duration-500"
+                style={{ width: `${overallProgress}%`, backgroundColor: "#C9A84C" }}
+              />
+            </div>
           </div>
-          {!isComplete && !isFailed && (
-            <p
-              className="mt-4 text-center text-xs text-white/25"
-              style={{ fontFamily: "'DM Sans', sans-serif" }}
-            >
-              Your documents are being prepared with care. Do not close this
-              window.
-            </p>
+
+          {/* IDLE STATE - Before generation starts */}
+          {!isGenerating && !isComplete && !isFailed && (
+            <div className="flex flex-col items-center justify-center min-h-[400px]">
+              {/* Animated gold line */}
+              <div className="relative w-[200px] h-px mb-6">
+                <div className="absolute inset-0 bg-[#C9A84C]/20" />
+                <div className="absolute inset-0 bg-[#C9A84C] animate-pulse" style={{ animationDuration: '2s' }} />
+              </div>
+              <p
+                className="text-sm text-white/50"
+                style={{ fontFamily: "'DM Sans', sans-serif" }}
+              >
+                Your documents are being prepared...
+              </p>
+            </div>
           )}
-        </div>
 
-        {/* Completion CTA */}
-        {isComplete && (
-          <div className="mt-12 text-center">
-            <button
-              onClick={() => router.push(`/documents/${applicationId}`)}
-              className="border border-[#C9A84C] bg-[#C9A84C] px-8 py-3 text-sm font-medium uppercase tracking-wider text-[#0a0a0a] transition-colors hover:bg-[#d4b35c]"
-              style={{ fontFamily: "'DM Sans', sans-serif" }}
-            >
-              Review Your Documents →
-            </button>
-          </div>
-        )}
+          {/* GENERATING STATE */}
+          {isGenerating && !isQualityPhase && (
+            <div className="max-w-[680px]">
+              {/* Document header */}
+              <div className="mb-6">
+                <h2
+                  className="text-[11px] font-medium uppercase tracking-widest text-white/50"
+                  style={{ fontFamily: "'DM Sans', sans-serif" }}
+                >
+                  {currentDocumentType?.replace(/_/g, " ").toUpperCase() || "COVER LETTER"}
+                </h2>
+                <div className="mt-2 h-px w-full bg-[#C9A84C]/30">
+                  <div
+                    className="h-full bg-[#C9A84C] relative"
+                    style={{ width: `${progressPercent}%` }}
+                  >
+                    <div className="absolute inset-0 bg-white/30 animate-pulse" style={{ animationDuration: '1.5s' }} />
+                  </div>
+                </div>
+              </div>
 
-        {/* Failure State */}
-        {isFailed && (
-          <div className="mt-12 text-center">
-            <p
-              className="mb-4 text-sm text-[#dc2626]"
-              style={{ fontFamily: "'DM Sans', sans-serif" }}
-            >
-              One document encountered an issue. Our team will follow up within
-              2 hours.
-            </p>
-            <button
-              onClick={startGeneration}
-              className="border border-[#C9A84C] px-6 py-2 text-sm font-medium uppercase tracking-wider text-[#C9A84C] transition-colors hover:bg-[#C9A84C]/10"
-              style={{ fontFamily: "'DM Sans', sans-serif" }}
-            >
-              Retry Generation
-            </button>
-          </div>
-        )}
+              {/* Streaming text area */}
+              <div
+                ref={previewRef}
+                className="overflow-hidden"
+                style={{ maxHeight: '500px' }}
+              >
+                {documentText ? (
+                  <pre
+                    className="text-[13px] leading-[1.8] text-[#f5f0e8] whitespace-pre-wrap"
+                    style={{ fontFamily: "'Georgia', 'Times New Roman', serif" }}
+                  >
+                    {documentText}
+                  </pre>
+                ) : (
+                  <p
+                    className="text-sm text-white/30 italic"
+                    style={{ fontFamily: "'DM Sans', sans-serif" }}
+                  >
+                    Initializing generation...
+                  </p>
+                )}
+              </div>
+
+              {/* AWAITING APPROVAL STATE */}
+              {awaitingApproval && (
+                <div className="mt-8 pt-6">
+                  <div className="h-px w-full bg-[#C9A84C] mb-6" />
+
+                  <h3
+                    className="text-xl italic text-[#C9A84C] mb-2"
+                    style={{ fontFamily: "'Cormorant Garamond', serif" }}
+                  >
+                    {currentDocumentType?.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase())} complete
+                  </h3>
+
+                  <p
+                    className="text-[13px] text-white/50 mb-6"
+                    style={{ fontFamily: "'DM Sans', sans-serif" }}
+                  >
+                    Review and approve to continue to {DOCUMENT_LIST[approvedDocuments + 1]?.label || "next document"}
+                  </p>
+
+                  {/* Preview of last paragraph */}
+                  {documentPreview && (
+                    <div className="mb-6 p-4 border border-[#C9A84C]/20 bg-[#C9A84C]/5">
+                      <pre
+                        className="text-[13px] leading-[1.8] text-white/60 whitespace-pre-wrap"
+                        style={{ fontFamily: "'Georgia', 'Times New Roman', serif" }}
+                      >
+                        {documentPreview.slice(-500)}
+                      </pre>
+                    </div>
+                  )}
+
+                  <div className="flex gap-4">
+                    <button
+                      onClick={handleApprove}
+                      className="flex-1 bg-[#C9A84C] px-6 py-3 text-sm font-medium uppercase tracking-wider text-[#0a0a0a] transition-colors hover:bg-[#d4b35c]"
+                      style={{ fontFamily: "'DM Sans', sans-serif" }}
+                    >
+                      Approve & Continue →
+                    </button>
+                    <button
+                      onClick={handleRevise}
+                      className="flex-1 border border-[#C9A84C]/40 px-6 py-3 text-sm font-medium uppercase tracking-wider text-white/60 transition-colors hover:border-[#C9A84C] hover:text-white"
+                      style={{ fontFamily: "'DM Sans', sans-serif" }}
+                    >
+                      Request Revision
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* QUALITY STEPS STATE */}
+          {isQualityPhase && !isComplete && (
+            <div className="flex flex-col items-center justify-center min-h-[400px]">
+              <h3
+                className="text-xl italic text-[#C9A84C] mb-8 text-center"
+                style={{ fontFamily: "'Cormorant Garamond', serif" }}
+              >
+                Applying final quality checks...
+              </h3>
+
+              {/* Animated status cycling */}
+              <div className="relative h-6 overflow-hidden">
+                <div className="flex flex-col items-center animate-pulse" style={{ animationDuration: '3s' }}>
+                  {approvedDocuments >= 6 && currentQualityStep >= 7 && (
+                    <span
+                      className="text-[13px] text-white/50"
+                      style={{ fontFamily: "'DM Sans', sans-serif" }}
+                    >
+                      {currentQualityStep === 7 && "Reviewing document consistency..."}
+                      {currentQualityStep === 8 && "Running AI detection audit..."}
+                      {currentQualityStep === 9 && "Applying humanization pass..."}
+                      {currentQualityStep === 10 && "Sanitizing document metadata..."}
+                      {currentQualityStep >= 11 && "Final quality gate..."}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* COMPLETE STATE */}
+          {isComplete && (
+            <div className="flex flex-col items-center justify-center min-h-[400px]">
+              <h2
+                className="text-2xl italic text-[#C9A84C] mb-4 text-center"
+                style={{ fontFamily: "'Cormorant Garamond', serif" }}
+              >
+                Your application package is ready.
+              </h2>
+
+              <p
+                className="text-sm text-white/50 mb-8"
+                style={{ fontFamily: "'DM Sans', sans-serif" }}
+              >
+                All documents have passed quality review.
+              </p>
+
+              <button
+                onClick={() => router.push(`/documents/${applicationId}`)}
+                className="bg-[#C9A84C] px-8 py-3 text-sm font-medium uppercase tracking-wider text-[#0a0a0a] transition-colors hover:bg-[#d4b35c]"
+                style={{ fontFamily: "'DM Sans', sans-serif" }}
+              >
+                Review Your Documents →
+              </button>
+            </div>
+          )}
+
+          {/* FAILURE STATE */}
+          {isFailed && (
+            <div className="flex flex-col items-center justify-center min-h-[400px]">
+              <h2
+                className="text-xl italic text-[#ef4444] mb-4"
+                style={{ fontFamily: "'Cormorant Garamond', serif" }}
+              >
+                Generation encountered an issue
+              </h2>
+
+              <p
+                className="text-sm text-white/50 mb-8"
+                style={{ fontFamily: "'DM Sans', sans-serif" }}
+              >
+                Our team has been notified and will follow up within 2 hours.
+              </p>
+
+              <button
+                onClick={startGeneration}
+                className="border border-[#C9A84C] px-6 py-3 text-sm font-medium uppercase tracking-wider text-[#C9A84C] transition-colors hover:bg-[#C9A84C]/10"
+                style={{ fontFamily: "'DM Sans', sans-serif" }}
+              >
+                Retry Generation
+              </button>
+            </div>
+          )}
+        </main>
       </div>
+
+      {/* STATUS BAR - Bottom */}
+      <footer className="fixed bottom-0 left-0 right-0 h-10 bg-[#000000] border-t border-[#C9A84C]/10 flex items-center justify-center">
+        <p
+          className="text-[12px] italic text-white/40"
+          style={{ fontFamily: "'DM Sans', sans-serif" }}
+        >
+          {errorMessage || statusMessage || "Preparing your E-2 visa application package..."}
+        </p>
+      </footer>
     </div>
   );
 }
