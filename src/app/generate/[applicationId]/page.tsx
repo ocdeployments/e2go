@@ -81,6 +81,7 @@ export default function GenerateProgressPage() {
   const [applicationData, setApplicationData] = useState<ApplicationData>({});
   const [currentQualityStep, setCurrentQualityStep] = useState(0);
   const previewRef = useRef<HTMLDivElement>(null);
+  const generationStarted = useRef(false);
 
   // Map document type to display name
   const mapDocumentType = (type: string): string => {
@@ -284,8 +285,10 @@ export default function GenerateProgressPage() {
   }, [applicationId, connectSSE]);
 
   useEffect(() => {
+    if (generationStarted.current) return;
+    generationStarted.current = true;
     startGeneration();
-  }, [startGeneration]);
+  }, []);
 
   useEffect(() => {
     if (previewRef.current) {

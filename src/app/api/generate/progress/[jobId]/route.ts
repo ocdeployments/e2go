@@ -51,12 +51,12 @@ export async function GET(
             return;
           }
 
-          // Count completed documents
+          // Count completed documents (approved + awaiting_approval)
           const { count } = await supabase
             .from('generated_documents')
             .select('*', { count: 'exact', head: true })
             .eq('job_id', jobId)
-            .eq('status', 'approved');
+            .in('status', ['approved', 'awaiting_approval']);
 
           // Get currently generating document
           const { data: currentDoc } = await supabase
