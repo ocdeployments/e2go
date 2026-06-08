@@ -51,12 +51,23 @@ export async function POST(
       );
     }
 
-    if (job.status === 'running') {
+    // Idempotent: return 200 for any existing job status
+    // React Strict Mode may call this endpoint twice; both calls succeed
+    if (job.status === 'running' || job.status === 'pending' || job.status === 'processing') {
       return NextResponse.json(
-        { error: 'Job is already running', jobId },
-        { status: 409 }
+        { jobId, message: 'Generation already in progress', status: job.status },
+        { status: 200 }
       );
     }
+
+    if (job.status === 'completed') {
+      return NextResponse.json(
+        { jobId, message: 'Generation already completed', status: job.status },
+        { status: 200 }
+      );
+    }
+
+    // job.status === 'failed' or other states allow restart (continue below)
 
     // Fire and forget — run pipeline in background
     const onProgress = async (step: GenerationStep) => {
