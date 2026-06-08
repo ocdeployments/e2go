@@ -164,22 +164,22 @@ function validateContext(
 
   // Check case brief fields
   const caseBriefData = caseBrief as unknown as Record<string, unknown>;
-  if (!caseBriefData.applicant_name && !caseBriefData.applicantName) {
+  if (!caseBriefData.applicant_name && !caseBriefData.applicantName && !caseBriefData.applicant) {
     missingFields.push('applicant_name');
   }
 
   // Check investment data
-  if (!investmentBreakdown.total_invested && !investmentBreakdown.total_business_cost) {
+  if (!investmentBreakdown.total_invested && !investmentBreakdown.total_business_cost && !caseBriefData.investment) {
     missingFields.push('investment_total');
   }
 
   // Check business info
-  if (!caseBriefData.business_name && !caseBriefData.businessName) {
+  if (!caseBriefData.business_name && !caseBriefData.businessName && !caseBriefData.business) {
     missingFields.push('business_name');
   }
 
   // Check source of funds
-  const sourceOfFunds = module3Answers['QF-05'];
+  const sourceOfFunds = module3Answers['QF-05'] || caseBriefData.source_of_funds;
   if (!sourceOfFunds) {
     missingFields.push('source_of_funds_summary');
   }
@@ -598,7 +598,7 @@ export function runQualityGate(
 
   // CHECK 3: Applicant name consistency (if case brief provides name)
   if (options.caseBrief) {
-    const applicantName = options.caseBrief.applicant_name || options.caseBrief.applicantName;
+    const applicantName = options.caseBrief.applicant_name || options.caseBrief.applicantName || (options.caseBrief as Record<string, unknown>).applicant as string;
     if (applicantName && typeof applicantName === 'string') {
       const nameParts = applicantName.split(' ');
       if (nameParts.length >= 2) {
@@ -1385,9 +1385,9 @@ export async function runGenerationPipeline(
 
     // Extract investment data for quality gate checks
     const caseBriefData = caseBrief as unknown as Record<string, unknown>;
-    const investmentTotal = (caseBriefData.investment_amount as number) ||
-                          (caseBriefData.total_investment as number) ||
-                          (caseBriefData.investment as number) || null;
+    const investmentTotal = (caseBriefData.investment as number) ||
+                          (caseBriefData.investment_amount as number) ||
+                          (caseBriefData.total_investment as number) || null;
 
     let _allQualityPassed = true;
     for (const doc of generatedDocs) {
