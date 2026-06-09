@@ -35,7 +35,8 @@ function LoginForm() {
       } else {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          await supabase
+          // Fire and forget — do not block redirect
+          supabase
             .from("quiz_sessions")
             .update({ user_id: user.id })
             .eq("email", email)
