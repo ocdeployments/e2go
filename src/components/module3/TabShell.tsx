@@ -138,7 +138,7 @@ export default function TabShell({
         <header className="fixed top-1 left-0 right-0 z-50" style={{ backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", background: "rgba(6,13,31,0.8)", borderBottom: "1px solid var(--glass-border)" }}>
           <div className="flex justify-between items-center h-16 px-4 md:px-8 max-w-3xl mx-auto">
             <Link href="/" className="flex items-center gap-2">
-              <span className="text-xl font-bold" style={{ color: "var(--gold)", fontFamily: "'Cormorant Garamond', serif" }}>e2go.app</span>
+              <span className="text-xl font-bold" style={{ color: "var(--gold)", fontFamily: "'Cormorant Garamond', serif" }}>E2go.app</span>
             </Link>
             <div className="text-sm" style={{ color: "var(--white-dim)" }}>Tab {tabLetter}</div>
           </div>
@@ -209,7 +209,7 @@ export default function TabShell({
         <header className="fixed top-1 left-0 right-0 z-50" style={{ backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", background: "rgba(6,13,31,0.8)", borderBottom: "1px solid var(--glass-border)" }}>
           <div className="flex justify-between items-center h-16 px-4 md:px-8 max-w-3xl mx-auto">
             <Link href="/" className="flex items-center gap-2">
-              <span className="text-xl font-bold" style={{ color: "var(--gold)", fontFamily: "'Cormorant Garamond', serif" }}>e2go.app</span>
+              <span className="text-xl font-bold" style={{ color: "var(--gold)", fontFamily: "'Cormorant Garamond', serif" }}>E2go.app</span>
             </Link>
             <div className="text-sm" style={{ color: "var(--white-dim)" }}>Tab {tabLetter}</div>
           </div>
@@ -284,7 +284,7 @@ export default function TabShell({
         <header className="fixed top-1 left-0 right-0 z-50" style={{ backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", background: "rgba(6,13,31,0.8)", borderBottom: "1px solid var(--glass-border)" }}>
           <div className="flex justify-between items-center h-16 px-4 md:px-8 max-w-3xl mx-auto">
             <Link href="/" className="flex items-center gap-2">
-              <span className="text-xl font-bold" style={{ color: "var(--gold)", fontFamily: "'Cormorant Garamond', serif" }}>e2go.app</span>
+              <span className="text-xl font-bold" style={{ color: "var(--gold)", fontFamily: "'Cormorant Garamond', serif" }}>E2go.app</span>
             </Link>
             <div className="flex items-center gap-2 text-sm">
               <span style={{ color: "var(--gold)" }}>✓ Saved</span>
@@ -367,7 +367,7 @@ export default function TabShell({
         <header className="fixed top-1 left-0 right-0 z-50" style={{ backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", background: "rgba(6,13,31,0.8)", borderBottom: "1px solid var(--glass-border)" }}>
           <div className="flex justify-between items-center h-16 px-4 md:px-8 max-w-3xl mx-auto">
             <Link href="/" className="flex items-center gap-2">
-              <span className="text-xl font-bold" style={{ color: "var(--gold)", fontFamily: "'Cormorant Garamond', serif" }}>e2go.app</span>
+              <span className="text-xl font-bold" style={{ color: "var(--gold)", fontFamily: "'Cormorant Garamond', serif" }}>E2go.app</span>
             </Link>
           </div>
         </header>
@@ -428,7 +428,7 @@ export default function TabShell({
       <header className="fixed top-1 left-0 right-0 z-50" style={{ backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", background: "rgba(6,13,31,0.8)", borderBottom: "1px solid var(--glass-border)" }}>
         <div className="flex justify-between items-center h-16 px-4 md:px-8 max-w-3xl mx-auto">
           <Link href="/" className="flex items-center gap-2">
-            <span className="text-xl font-bold" style={{ color: "var(--gold)", fontFamily: "'Cormorant Garamond', serif" }}>e2go.app</span>
+            <span className="text-xl font-bold" style={{ color: "var(--gold)", fontFamily: "'Cormorant Garamond', serif" }}>E2go.app</span>
           </Link>
           <div className="flex items-center gap-2 text-sm" style={{ color: "var(--gold)" }}>
             {saveStatus === 'saving' ? (

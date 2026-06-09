@@ -64,7 +64,7 @@ export default function HomeClient() {
   const faqs = [
     {
       q: "Is this a law firm?",
-      a: "No. e2go prepares documents. What you do with your finished package is entirely up to you. If you choose to have an immigration consultant review it at this stage, it is a 2-hour job — not a 20-hour one.",
+      a: "No. E2go prepares documents. What you do with your finished package is entirely up to you. If you choose to have an immigration consultant review it at this stage, it is a 2-hour job — not a 20-hour one.",
     },
     {
       q: "What if I am denied?",
@@ -72,7 +72,7 @@ export default function HomeClient() {
     },
     {
       q: "How is this different from hiring a consultant?",
-      a: "A consultant works on one case at a time, in their own way. e2go applies the same preparation discipline to every case, every time — tested against every denial pattern in our knowledge base and reviewed by you before a single document leaves the platform.",
+      a: "A consultant works on one case at a time, in their own way. E2go applies the same preparation discipline to every case, every time — tested against every denial pattern in our knowledge base and reviewed by you before a single document leaves the platform.",
     },
     {
       q: "Is my data secure?",
@@ -192,9 +192,9 @@ export default function HomeClient() {
             className="font-['Cormorant_Garamond'] text-4xl md:text-6xl lg:text-7xl font-light text-[#f5f0e8] leading-tight mb-6"
             style={{ textShadow: '0 2px 20px rgba(0,0,0,0.9)' }}
           >
-            Your U.S. business visa.<br />
+            Your E-2 Investor Visa;<br />
             Without the <em className="text-[#C9A84C]">$12,000</em><br />
-            legal bill.
+            price tag.
           </h1>
           <p
             className="text-base md:text-lg text-[rgba(245,240,232,0.5)] leading-relaxed max-w-xl mb-4"
@@ -202,14 +202,14 @@ export default function HomeClient() {
           >
             Most E-2 investors spend $150,000 on a business and $12,000 on a
             consultant. They spend $0 understanding what the embassy actually
-            needs to see. That is the gap e2go closes.
+            needs to see. That is the gap E2go closes.
           </p>
           <p className="text-base text-[rgba(245,240,232,0.75)] mb-8 max-w-xl" style={{ textShadow: '0 1px 10px rgba(0,0,0,0.95)' }}>
-            What most people need first is not a lawyer. It is clarity.
+            &ldquo;Investors who get approved treat document preparation as the first step, not a final step.&rdquo;
           </p>
           <div className="flex flex-col sm:flex-row gap-3 mb-12">
             <Link href="/quiz" className="w-full sm:w-auto text-center px-8 py-4 bg-[#C9A84C] text-[#0a0a0a] text-sm font-medium tracking-widest uppercase hover:opacity-85 transition-opacity">
-              Check my eligibility →
+              Check eligibility →
             </Link>
             <Link href="#how-it-works" className="w-full sm:w-auto text-center px-8 py-4 border border-[rgba(201,168,76,0.3)] text-[rgba(245,240,232,0.65)] text-sm tracking-widest uppercase hover:border-[rgba(201,168,76,0.6)] transition-colors">
               See how it works
@@ -252,7 +252,7 @@ export default function HomeClient() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-0">
           {[
             { n: "01", t: "Eligibility quiz", d: "14 questions. 4 minutes. Instant verdict with a score out of 100, personalised risk flags, and your estimated timeline to interview." },
-            { n: "02", t: "Document interview", d: "A guided conversation across 12 tabs that captures everything the consulate will ask about. Your answers become your documents." },
+            { n: "02", t: "E-2 Discovery ", d: "A guided conversation across 12 tabs that captures everything the consulate will ask about. Your answers become your documents." },
             { n: "03", t: "AI document engine", d: "Six documents generated in sequence. Tested against 15 denial patterns. Cross-checked for consistency. Written in your voice." },
             { n: "04", t: "Consulate package", d: "A complete formatted binder — every tab, every document, in the exact order your consulate expects. Download and go." },
           ].map((s, i) => (
@@ -319,10 +319,10 @@ export default function HomeClient() {
                 ))}
               </div>
             </div>
-            {/* e2go */}
+            {/* E2go */}
             <div className="border border-[rgba(201,168,76,0.25)] p-5 bg-[rgba(201,168,76,0.02)]">
               <div className="flex items-center justify-between mb-4">
-                <div className="text-[10px] tracking-[0.1em] uppercase text-[#C9A84C]">e2go route</div>
+                <div className="text-[10px] tracking-[0.1em] uppercase text-[#C9A84C]">E2go route</div>
                 <div className="font-['Cormorant_Garamond'] text-xl font-light text-[#C9A84C]">{e2goDuration}</div>
               </div>
               <div className="flex flex-col gap-2">
@@ -347,8 +347,8 @@ export default function HomeClient() {
               {!isE2goAchievable
                 ? `Your ${targetMonths}-month target is tight. Start immediately — every week matters.`
                 : !isTradAchievable
-                ? `The traditional route cannot meet your ${targetMonths}-month target. e2go can — with ${monthsSaved > 0 ? `${monthsSaved} months to spare` : "time to spare"}.`
-                : `e2go gets you to your interview approximately ${monthsSaved} months faster than the traditional route.`
+                ? `The traditional route cannot meet your ${targetMonths}-month target. E2go can — with ${monthsSaved > 0 ? `${monthsSaved} months to spare` : "time to spare"}.`
+                : `E2go gets you to your interview approximately ${monthsSaved} months faster than the traditional route.`
               }
             </p>
             <Link href="/quiz" className="flex-shrink-0 px-5 min-h-[44px] py-3 bg-[#C9A84C] text-[#0a0a0a] text-xs font-medium tracking-widest uppercase hover:opacity-85 transition-opacity">
@@ -395,7 +395,7 @@ export default function HomeClient() {
             Weeks become months. Months become a year.
             And the move you have been planning quietly stays a plan.
             <br /><br />
-            You already have what you need. e2go gets you started —
+            You already have what you need. E2go gets you started —
             every document built, every gap closed, every question
             the consulate will ask already answered.
             <br /><br />
@@ -413,7 +413,7 @@ export default function HomeClient() {
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-0">
           {[
-            { q: "I had spoken to two consultants and walked away more confused than when I started. e2go was the first thing that actually explained what the consulate needed to see and why.", a: "Marco T.", c: "Italy", t: "Franchise applicant" },
+            { q: "I had spoken to two consultants and walked away more confused than when I started. E2go was the first thing that actually explained what the consulate needed to see and why.", a: "Marco T.", c: "Italy", t: "Franchise applicant" },
             { q: "The source of funds section alone would have taken days with a consultant. The engine asked me the right questions and built the narrative from my answers.", a: "Aisha K.", c: "United Kingdom", t: "Solo applicant" },
             { q: "I downloaded the package on a Friday. By Monday I had reviewed every document. My attorney said it was the cleanest first draft she had ever seen from a self-prepared applicant.", a: "David L.", c: "Canada", t: "Partnership applicant" },
           ].map((t, i) => (
@@ -485,7 +485,7 @@ export default function HomeClient() {
               e2go<span className="text-[rgba(245,240,232,0.5)]">.app</span>
             </div>
             <p className="text-xs text-[rgba(245,240,232,0.25)] leading-relaxed">
-              © 2026 e2go.app. All rights reserved.
+              © 2026 E2go.app. All rights reserved.
             </p>
           </div>
           <div className="flex flex-wrap gap-x-6 gap-y-2">

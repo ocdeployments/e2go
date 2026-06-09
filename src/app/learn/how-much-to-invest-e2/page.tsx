@@ -3,7 +3,7 @@ import Link from "next/link";
 import Breadcrumb from "@/components/Breadcrumb";
 
 export const metadata: Metadata = {
-  title: "How Much Do You Need to Invest for an E-2 Visa? | e2go",
+  title: "How Much Do You Need to Invest for an E-2 Visa? | E2go",
   description: "The substantiality test explained, the proportionality principle, and typical ranges by business type.",
   robots: { index: true, follow: true },
 };

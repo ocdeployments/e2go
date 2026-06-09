@@ -21,7 +21,7 @@ function getBaseHtml(content: string): string {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>e2go</title>
+  <title>E2go</title>
 </head>
 <body style="margin: 0; padding: 0; background-color: #0a0a0a; font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #0a0a0a; min-height: 100vh;">
@@ -30,7 +30,7 @@ function getBaseHtml(content: string): string {
         <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 520px; background-color: #0a0a0a;">
           <tr>
             <td style="padding: 0 0 32px 0; border-bottom: 1px solid rgba(201,168,76,0.15);">
-              <span style="font-family: 'Cormorant Garamond', serif; font-size: 24px; font-weight: 300; color: #C9A84C;">e2go</span><span style="font-family: 'Cormorant Garamond', serif; font-size: 24px; font-weight: 300; color: #f5f0e8;">.app</span>
+              <span style="font-family: 'Cormorant Garamond', serif; font-size: 24px; font-weight: 300; color: #C9A84C;">E2go</span><span style="font-family: 'Cormorant Garamond', serif; font-size: 24px; font-weight: 300; color: #f5f0e8;">.app</span>
             </td>
           </tr>
           <tr>
@@ -83,7 +83,7 @@ export async function sendClock1Day60(data: Clock1EmailData): Promise<boolean> {
   const { recipient, application, currentTabName = 'your application' } = data;
   const continueUrl = `${appUrl}/apply/overview?app=${application.applicationId}`;
 
-  const subject = "Your e2go application is still waiting for you";
+  const subject = "Your E2go application is still waiting for you";
   const content = getBaseHtml(`
     <h1 style="font-family: 'Cormorant Garamond', serif; font-size: 28px; font-weight: 300; color: #f5f0e8; margin: 0 0 20px 0; line-height: 1.3;">
       We noticed you haven't been back in a while

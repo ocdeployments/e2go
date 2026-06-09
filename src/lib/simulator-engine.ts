@@ -449,7 +449,7 @@ Evaluate this answer and return your assessment in JSON format:
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
         'HTTP-Referer': 'https://e2go.app',
-        'X-Title': 'e2go Interview Simulator',
+        'X-Title': 'E2go Interview Simulator',
       },
       body: JSON.stringify({
         model: 'minimax/minimax-text-01',

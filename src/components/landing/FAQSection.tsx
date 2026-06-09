@@ -5,7 +5,7 @@ import { useState } from "react";
 const faqs = [
   {
     question: "Is this a law firm?",
-    answer: "No. e2go prepares documents. What you do with your finished package is entirely up to you. If you choose to have an immigration consultant review it at this stage, it's a 2-hour job — not a 20-hour one.",
+    answer: "No. E2go prepares documents. What you do with your finished package is entirely up to you. If you choose to have an immigration consultant review it at this stage, it's a 2-hour job — not a 20-hour one.",
   },
   {
     question: "What if I'm denied?",
@@ -13,7 +13,7 @@ const faqs = [
   },
   {
     question: "How is this different from hiring a consultant?",
-    answer: "A consultant works on one case at a time, in their own way. e2go applies the same preparation discipline to every case, every time — tested against every denial pattern in our knowledge base and reviewed by you before a single document leaves the platform.",
+    answer: "A consultant works on one case at a time, in their own way. E2go applies the same preparation discipline to every case, every time — tested against every denial pattern in our knowledge base and reviewed by you before a single document leaves the platform.",
   },
   {
     question: "Is my data secure?",

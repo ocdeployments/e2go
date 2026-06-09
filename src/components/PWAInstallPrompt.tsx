@@ -88,8 +88,8 @@ export default function PWAInstallPrompt() {
           <div className="flex-1">
             <p className="text-sm text-[#0b1c30] font-medium">
               {isIOS
-                ? 'Add e2go to your home screen for the best experience'
-                : 'Install e2go on your phone for the best experience'}
+                ? 'Add E2go to your home screen for the best experience'
+                : 'Install E2go on your phone for the best experience'}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -123,7 +123,7 @@ export default function PWAInstallPrompt() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-xl">
             <h3 className="text-lg font-semibold text-[#0b1c30] mb-4">
-              Add e2go to your home screen
+              Add E2go to your home screen
             </h3>
             <ol className="space-y-4 text-[#45464d] mb-6">
               <li className="flex gap-3">

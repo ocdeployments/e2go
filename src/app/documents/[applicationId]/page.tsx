@@ -343,7 +343,7 @@ export default function DocumentsReviewPage() {
                   className="text-sm text-white/70"
                   style={{ fontFamily: "'DM Sans', sans-serif" }}
                 >
-                  I understand e2go has prepared these documents to support my
+                  I understand E2go has prepared these documents to support my
                   application, not guarantee its approval
                 </span>
               </label>

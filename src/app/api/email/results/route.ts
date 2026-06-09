@@ -51,7 +51,7 @@ export async function POST(req: Request) {
     `
     : `
       <div style="font-family: 'Cormorant Garamond', serif; color: #f5f0e8;">
-        <p>You completed the e2go eligibility assessment. We have important information to share about your E-2 eligibility based on your answers.</p>
+        <p>You completed the E2go eligibility assessment. We have important information to share about your E-2 eligibility based on your answers.</p>
         <a href="${verifyLink}" style="background-color: #C9A84C; color: #0a0a0a; padding: 14px 28px; text-decoration: none;">View My Result →</a>
       </div>
     `;

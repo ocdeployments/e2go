@@ -4,13 +4,13 @@ import { useState } from 'react';
 
 const faqs = [
   {
-    question: "Is e2go a law firm or immigration service?",
-    answer: "No. e2go is a document preparation tool. We help you organize your information and generate consulate-formatted application documents based on your answers. We do not provide legal advice, represent you before any government authority, or guarantee any outcome. For legal questions specific to your situation, we recommend consulting a licensed immigration attorney.",
+    question: "Is E2go a law firm or immigration service?",
+    answer: "No. E2go is a document preparation tool. We help you organize your information and generate consulate-formatted application documents based on your answers. We do not provide legal advice, represent you before any government authority, or guarantee any outcome. For legal questions specific to your situation, we recommend consulting a licensed immigration attorney.",
     meta: "Legal"
   },
   {
     question: "How is this different from hiring an immigration attorney?",
-    answer: "An immigration attorney provides legal advice, represents you, and can advocate on your behalf if issues arise. e2go prepares your documents at a fraction of the cost. Many applicants use e2go to prepare their documents and then have an attorney review them before submission.",
+    answer: "An immigration attorney provides legal advice, represents you, and can advocate on your behalf if issues arise. E2go prepares your documents at a fraction of the cost. Many applicants use E2go to prepare their documents and then have an attorney review them before submission.",
     meta: "Comparison"
   },
   {
@@ -19,7 +19,7 @@ const faqs = [
     meta: "Denial"
   },
   {
-    question: "How does e2go know what documents I need?",
+    question: "How does E2go know what documents I need?",
     answer: "Our question engine is built on the 9 FAM 402.9 Foreign Affairs Manual — the same document consular officers use to evaluate E-2 applications. Every question maps to a specific evaluation criterion. The documents we generate address each criterion directly using your exact answers.",
     meta: "Process"
   },
@@ -98,7 +98,7 @@ export default function FAQSection() {
               margin: 0,
             }}
           >
-            Everything you need to know about e2go and the E-2 visa process.
+            Everything you need to know about E2go and the E-2 visa process.
           </p>
         </div>
 

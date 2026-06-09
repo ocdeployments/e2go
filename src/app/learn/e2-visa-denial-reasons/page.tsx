@@ -3,7 +3,7 @@ import Link from "next/link";
 import Breadcrumb from "@/components/Breadcrumb";
 
 export const metadata: Metadata = {
-  title: "Why E-2 Visa Applications Get Denied | e2go",
+  title: "Why E-2 Visa Applications Get Denied | E2go",
   description: "The 5 most common denial reasons, what consular officers look for, and how preparation affects outcomes.",
   robots: { index: true, follow: true },
 };

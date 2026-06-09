@@ -157,9 +157,9 @@ export default function JourneyWizard() {
 
       {/* Timeline Comparison */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-        {/* e2go Track */}
+        {/* E2go Track */}
         <div className="space-y-4">
-          <h3 className="text-lg font-medium text-[#C9A84C] mb-4 border-b border-[rgba(201,168,76,0.2)] pb-2">The e2go route</h3>
+          <h3 className="text-lg font-medium text-[#C9A84C] mb-4 border-b border-[rgba(201,168,76,0.2)] pb-2">The E2go route</h3>
           <div className="space-y-3">
             {visibleMilestones
               .filter((m) => m.track === "e2go")

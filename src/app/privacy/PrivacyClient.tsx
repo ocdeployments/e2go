@@ -28,7 +28,7 @@ export default function PrivacyPolicyPage() {
 
         <div style={{ color: "rgba(245,240,232,0.75)", fontFamily: "'DM Sans', sans-serif", fontWeight: 300, lineHeight: 1.7, fontSize: "15px" }}>
           <p className="mb-6">
-            E2Pathway Inc. (&apos;Company&apos;, &apos;we&apos;, &apos;us&apos;, &apos;our&apos;) is committed to protecting your privacy. This Privacy Policy explains how we collect, use, store, and share information when you use the e2go application (&apos;App&apos;).
+            E2Pathway Inc. (&apos;Company&apos;, &apos;we&apos;, &apos;us&apos;, &apos;our&apos;) is committed to protecting your privacy. This Privacy Policy explains how we collect, use, store, and share information when you use the E2go application (&apos;App&apos;).
           </p>
           <p className="mb-6">
             This policy is designed to comply with the Personal Information Protection and Electronic Documents Act (PIPEDA) and applicable Canadian provincial privacy laws.
@@ -40,7 +40,7 @@ export default function PrivacyPolicyPage() {
           <ul className="list-disc ml-6 mb-4 space-y-2">
             <li><strong>Account Information:</strong> Full legal name, email address, password (stored as a hashed value — never in plain text), province of residence.</li>
             <li><strong>Application Data:</strong> Date of birth, passport number (stored encrypted; displayed as last 4 digits only), passport expiry date, home address, phone number, employment history, education history, business information, investment amounts and fund source descriptions, financial institution names and partial account references, family and dependent information, social media handles, interview date and outcome.</li>
-            <li><strong>Payment Information:</strong> Payment processing is handled by Stripe. e2go does not store full card numbers, CVC codes, or bank account details. We receive only a tokenized payment reference from Stripe.</li>
+            <li><strong>Payment Information:</strong> Payment processing is handled by Stripe. E2go does not store full card numbers, CVC codes, or bank account details. We receive only a tokenized payment reference from Stripe.</li>
           </ul>
 
           <h3 className="text-lg mb-2 mt-4 font-medium" style={{ color: "#f5f0e8" }}>Information Collected Automatically</h3>

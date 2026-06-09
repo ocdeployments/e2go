@@ -240,7 +240,7 @@ export default function Module1Page() {
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-10 bg-[#0a0a0a] border-b border-[rgba(201,168,76,0.2)]">
         <div className="flex justify-between items-center h-16 px-6 md:px-12 max-w-4xl mx-auto">
-          <span className="font-['Cormorant_Garamond'] text-xl font-normal text-[#f5f0e8]">e2go<span className="text-[#C9A84C]">.app</span></span>
+          <span className="font-['Cormorant_Garamond'] text-xl font-normal text-[#f5f0e8]">E2go<span className="text-[#C9A84C]">.app</span></span>
           <div className="text-[10px] font-medium uppercase tracking-[0.18em] text-[rgba(245,240,232,0.45)]">Step {step} of 6</div>
         </div>
       </header>
@@ -479,7 +479,7 @@ export default function Module1Page() {
               Connect you with the right experts
             </h1>
             <p className="text-[#f5f0e8]/60 text-[16px] leading-relaxed mb-8 max-w-2xl">
-              At key points in your journey, we can introduce you to specialists who work with E-2 investors. Each introduction is your choice — we will never share your details without asking first. e2go may receive a referral fee.
+              At key points in your journey, we can introduce you to specialists who work with E-2 investors. Each introduction is your choice — we will never share your details without asking first. E2go may receive a referral fee.
             </p>
 
             <div className="space-y-4 mb-8">

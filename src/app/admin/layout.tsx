@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Admin Dashboard | e2go",
-  description: "e2go administrative dashboard.",
+  title: "Admin Dashboard | E2go",
+  description: "E2go administrative dashboard.",
   robots: { index: false, follow: false },
 };
 

@@ -26,23 +26,23 @@ const dmSans = DM_Sans({
 
 export const metadata: Metadata = {
   title: {
-    default: "e2go — U.S. E-2 Treaty Investor Visa Preparation",
-    template: "%s | e2go",
+    default: "E2go — U.S. E-2 Treaty Investor Visa Preparation",
+    template: "%s | E2go",
   },
   description: "Prepare your complete E-2 visa application package without an immigration attorney. All 11 consulate tabs. 82 treaty countries. From $297.",
   metadataBase: new URL("https://e2go.app"),
   openGraph: {
     type: "website",
     locale: "en_US",
-    siteName: "e2go",
-    title: "e2go — U.S. E-2 Treaty Investor Visa Preparation",
+    siteName: "E2go",
+    title: "E2go — U.S. E-2 Treaty Investor Visa Preparation",
     description: "Prepare your complete E-2 visa application package without an immigration attorney.",
     images: [
       {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "e2go — U.S. E-2 Treaty Investor Visa Preparation",
+        alt: "E2go — U.S. E-2 Treaty Investor Visa Preparation",
       },
     ],
   },
@@ -54,7 +54,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "e2go",
+    title: "E2go",
   },
   other: {
     "mobile-web-app-capable": "yes",

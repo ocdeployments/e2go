@@ -152,7 +152,7 @@ export async function checkInactivityAndSendEmails(): Promise<{
 
         const sent = await sendClock1Day60(emailData);
         if (sent) {
-          await logEmailSent(app.id, app.user_id, 'clock1_day60', 'Your e2go application is still waiting for you', 'clock1', 60);
+          await logEmailSent(app.id, app.user_id, 'clock1_day60', 'Your E2go application is still waiting for you', 'clock1', 60);
           result.emailsSent++;
         }
       }

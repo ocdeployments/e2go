@@ -1,7 +1,7 @@
 # e2go.app — Build Tracker & Session Handoff
 
 **Last Updated:** June 9, 2026 — Results page benefits section
-**App Name:** e2go.app
+**App Name:** E2go.app
 **Stack:** Next.js 14 · TypeScript · Tailwind CSS · Supabase · Claude API
 **Dev URL:** https://e2go-git-dev-ocdeployments-projects.vercel.app
 **Repo:** github.com/ocdeployments/e2go

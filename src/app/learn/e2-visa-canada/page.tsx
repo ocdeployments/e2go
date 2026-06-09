@@ -3,7 +3,7 @@ import Link from "next/link";
 import Breadcrumb from "@/components/Breadcrumb";
 
 export const metadata: Metadata = {
-  title: "The E-2 Visa for Canadian Citizens | e2go",
+  title: "The E-2 Visa for Canadian Citizens | E2go",
   description: "Toronto consulate process, typical wait times, Canadian investment structures, and RRSP considerations.",
   robots: { index: true, follow: true },
 };

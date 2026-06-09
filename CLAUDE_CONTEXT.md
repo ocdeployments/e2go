@@ -56,7 +56,7 @@ Only for document generation. Everything else stays on OpenRouter.
 
 ## PRODUCT OVERVIEW
 
-**App name:** e2go.app (never "E2Pathway" — that name is retired)
+**App name:** E2go.app (never "E2Pathway" — that name is retired)
 **What it is:** Self-service U.S. E-2 Treaty Investor visa preparation platform
 **Who it serves:** Global applicants from 82 treaty countries
 **Primary market:** Canadian citizens applying via the Toronto consulate

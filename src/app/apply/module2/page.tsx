@@ -251,7 +251,7 @@ export default function Module2Page() {
 
       <header className="fixed top-0 left-0 right-0 z-10 bg-[#0a0a0a] border-b border-[rgba(201,168,76,0.2)]">
         <div className="flex justify-between items-center h-16 px-6 md:px-12 max-w-4xl mx-auto">
-          <span className="font-['Cormorant_Garamond'] text-xl font-normal text-[#f5f0e8]">e2go<span className="text-[#C9A84C]">.app</span></span>
+          <span className="font-['Cormorant_Garamond'] text-xl font-normal text-[#f5f0e8]">E2go<span className="text-[#C9A84C]">.app</span></span>
           <div className="text-[10px] font-medium uppercase tracking-[0.18em] text-[rgba(245,240,232,0.45)]">Step {step} of 6</div>
         </div>
       </header>

@@ -28,12 +28,12 @@ export default function TermsOfServicePage() {
 
         <div style={{ color: "rgba(245,240,232,0.75)", fontFamily: "'DM Sans', sans-serif", fontWeight: 300, lineHeight: 1.7, fontSize: "15px" }}>
           <p className="mb-6">
-            Please read these Terms of Service (&apos;Terms&apos;) carefully before using the e2go application (&apos;App&apos;) operated by E2Pathway Inc. (&apos;Company&apos;, &apos;we&apos;, &apos;us&apos;, or &apos;our&apos;). By accessing or using the App, you agree to be bound by these Terms.
+            Please read these Terms of Service (&apos;Terms&apos;) carefully before using the E2go application (&apos;App&apos;) operated by E2Pathway Inc. (&apos;Company&apos;, &apos;we&apos;, &apos;us&apos;, or &apos;our&apos;). By accessing or using the App, you agree to be bound by these Terms.
           </p>
 
           <h2 className="text-2xl mb-4 mt-8" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#f5f0e8", fontWeight: 400 }}>1. ACCEPTANCE OF TERMS</h2>
           <p className="mb-4">
-            By creating an account, accessing, or using e2go, you acknowledge that you have read, understood, and agree to be bound by these Terms and our Privacy Policy. If you do not agree, do not use the App.
+            By creating an account, accessing, or using E2go, you acknowledge that you have read, understood, and agree to be bound by these Terms and our Privacy Policy. If you do not agree, do not use the App.
           </p>
           <p className="mb-4">
             These Terms constitute a binding legal agreement between you (&apos;User&apos;) and the Company. If you are using the App on behalf of a third party, you represent that you have authority to bind that party to these Terms.
@@ -41,7 +41,7 @@ export default function TermsOfServicePage() {
 
           <h2 className="text-2xl mb-4 mt-8" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#f5f0e8", fontWeight: 400 }}>2. DESCRIPTION OF SERVICE</h2>
           <p className="mb-4">
-            e2go is a self-service document preparation and interview readiness platform designed to assist applicants preparing materials in connection with U.S. E-2 Treaty Investor visa applications. The App provides:
+            E2go is a self-service document preparation and interview readiness platform designed to assist applicants preparing materials in connection with U.S. E-2 Treaty Investor visa applications. The App provides:
           </p>
           <ul className="list-disc ml-6 mb-4 space-y-2">
             <li>Guided document preparation assistance including DS-160 reference sheets, cover letter drafts, business plan templates, source of funds chronologies, organizational charts, and hiring plans;</li>

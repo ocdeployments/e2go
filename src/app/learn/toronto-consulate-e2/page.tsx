@@ -3,7 +3,7 @@ import Link from "next/link";
 import Breadcrumb from "@/components/Breadcrumb";
 
 export const metadata: Metadata = {
-  title: "The E-2 Visa Interview at Toronto Consulate | e2go",
+  title: "The E-2 Visa Interview at Toronto Consulate | E2go",
   description: "What to expect, typical questions, required documents, and what happens after the interview.",
   robots: { index: true, follow: true },
 };

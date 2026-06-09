@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Verify Email | e2go",
-  description: "Verify your email address to access your e2go account.",
+  title: "Verify Email | E2go",
+  description: "Verify your email address to access your E2go account.",
   robots: { index: false, follow: false },
 };
 

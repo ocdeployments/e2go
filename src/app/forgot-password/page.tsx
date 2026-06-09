@@ -22,7 +22,7 @@ export default function ForgotPassword() {
     <main style={{ minHeight: "100vh", background: "#0a0a0a", display: "flex", alignItems: "center", justifyContent: "center", padding: "24px" }}>
       <div style={{ maxWidth: "400px", width: "100%", padding: "40px", background: "rgba(201,168,76,0.02)", border: "1px solid rgba(201,168,76,0.12)" }}>
         <Link href="/" style={{ textDecoration: "none" }}>
-          <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "24px", fontWeight: 300, color: "#C9A84C", marginBottom: "24px", textAlign: "center" as const }}>e2go</h1>
+          <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "24px", fontWeight: 300, color: "#C9A84C", marginBottom: "24px", textAlign: "center" as const }}>E2go</h1>
         </Link>
 
         {sent ? (

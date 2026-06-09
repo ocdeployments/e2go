@@ -67,13 +67,13 @@ export default function JourneyWizard() {
       const monthsSpare = Math.round((tradMinWeeks - targetWeeksNum) / 4);
       return {
         type: "gold",
-        text: `The traditional route cannot meet your ${targetMonths[targetDate]} target. e2go can — with ${monthsSpare} months to spare.`,
+        text: `The traditional route cannot meet your ${targetMonths[targetDate]} target. E2go can — with ${monthsSpare} months to spare.`,
       };
     }
     const speedup = Math.round((tradMinWeeks - e2goMaxWeeks) / 4);
     return {
       type: "gold",
-      text: `e2go gets you to your interview approximately ${speedup} months faster than the traditional route.`,
+      text: `E2go gets you to your interview approximately ${speedup} months faster than the traditional route.`,
     };
   }, [targetWeeksNum, e2goMinWeeks, e2goMaxWeeks, tradMinWeeks, targetDate]);
 
@@ -188,9 +188,9 @@ export default function JourneyWizard() {
           </div>
         </div>
 
-        {/* e2go Route */}
+        {/* E2go Route */}
         <div className="border border-[rgba(201,168,76,0.3)] bg-[rgba(201,168,76,0.02)] p-6">
-          <h3 className="font-sans text-lg text-[#C9A84C] mb-6">e2go route</h3>
+          <h3 className="font-sans text-lg text-[#C9A84C] mb-6">E2go route</h3>
           <div className="space-y-0">
             {e2goSteps.map((step, idx) => (
               <div

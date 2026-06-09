@@ -3,11 +3,11 @@ import Link from "next/link";
 import Breadcrumb from "@/components/Breadcrumb";
 
 export const metadata: Metadata = {
-  title: "About e2go",
-  description: "About e2go — Built for the journey, not just the documents. Learn how our E-2 visa preparation platform works.",
+  title: "About E2go",
+  description: "About E2go — Built for the journey, not just the documents. Learn how our E-2 visa preparation platform works.",
   openGraph: {
-    title: "About e2go",
-    description: "About e2go — Built for the journey, not just the documents.",
+    title: "About E2go",
+    description: "About E2go — Built for the journey, not just the documents.",
     type: "website",
     url: "https://e2go.app/about",
     images: [
@@ -15,7 +15,7 @@ export const metadata: Metadata = {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "About e2go",
+        alt: "About E2go",
       },
     ],
   },
@@ -37,7 +37,7 @@ export default function AboutPage() {
 
         <div className="space-y-12" style={{ fontFamily: "'DM Sans', sans-serif", color: "rgba(245,240,232,0.75)", fontWeight: 300, lineHeight: 1.7, fontSize: "15px" }}>
           <section>
-            <h2 className="text-2xl mb-4" style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 400, color: "#C9A84C" }}>Why e2go exists</h2>
+            <h2 className="text-2xl mb-4" style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 400, color: "#C9A84C" }}>Why E2go exists</h2>
             <p className="mb-4">
               The E-2 visa process is not complicated because the law is complicated. It is complicated because no one has ever organised it properly.
             </p>
@@ -45,7 +45,7 @@ export default function AboutPage() {
               The documents exist. The requirements are known. The preparation discipline that separates approved applications from refused ones is learnable.
             </p>
             <p className="font-medium" style={{ color: "#f5f0e8" }}>
-              e2go is that discipline, automated.
+              E2go is that discipline, automated.
             </p>
           </section>
 
@@ -65,7 +65,7 @@ export default function AboutPage() {
           <section>
             <h2 className="text-2xl mb-4" style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 400, color: "#C9A84C" }}>The product</h2>
             <p className="mb-4">
-              e2go prepares a complete, consulate-formatted E-2 application package.
+              E2go prepares a complete, consulate-formatted E-2 application package.
             </p>
             <p className="mb-4">
               Every document is tested against 15 real denial patterns. Every fact is cross-checked across all documents. Every package is reviewed and approved by you before it leaves the platform.

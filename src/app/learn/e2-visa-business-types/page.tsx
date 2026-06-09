@@ -3,7 +3,7 @@ import Link from "next/link";
 import Breadcrumb from "@/components/Breadcrumb";
 
 export const metadata: Metadata = {
-  title: "What Businesses Qualify for an E-2 Visa? | e2go",
+  title: "What Businesses Qualify for an E-2 Visa? | E2go",
   description: "Active operating enterprise requirements, disqualifying factors, and franchise vs independent businesses.",
   robots: { index: true, follow: true },
 };

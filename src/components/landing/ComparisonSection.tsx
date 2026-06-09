@@ -80,10 +80,10 @@ export default function ComparisonSection() {
             </div>
           </div>
 
-          {/* e2go Route */}
+          {/* E2go Route */}
           <div className="flex flex-col">
             <h3 className="text-lg font-medium text-[#C9A84C] mb-6 pb-2 border-b border-[rgba(201,168,76,0.25)]">
-              The e2go route
+              The E2go route
             </h3>
             <div className="space-y-5 flex-1">
               {e2goSteps.map((step, idx) => (
@@ -98,7 +98,7 @@ export default function ComparisonSection() {
                       </span>
                       {step.accel && (
                         <span className="text-[10px] px-1.5 py-0.5 rounded border border-[rgba(201,168,76,0.40)] text-[#C9A84C]">
-                          e2go accelerates
+                          E2go accelerates
                         </span>
                       )}
                     </div>

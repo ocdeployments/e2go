@@ -3,10 +3,10 @@ import Link from "next/link";
 import Breadcrumb from "@/components/Breadcrumb";
 
 export const metadata: Metadata = {
-  title: "Learn About the E-2 Visa | e2go",
+  title: "Learn About the E-2 Visa | E2go",
   description: "Comprehensive guide to the E-2 Treaty Investor Visa. Requirements, process, timelines, and how to build a successful application.",
   openGraph: {
-    title: "Learn About the E-2 Visa | e2go",
+    title: "Learn About the E-2 Visa | E2go",
     description: "Comprehensive guide to the E-2 Treaty Investor Visa. Requirements, process, and timelines.",
     type: "website",
     url: "https://e2go.app/learn",
