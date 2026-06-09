@@ -89,6 +89,7 @@ function VerifyPageInner() {
     await markTokenUsed(token!);
 
     localStorage.setItem("e2go_quiz_result", JSON.stringify(verifiedData.result_json));
+    localStorage.removeItem('e2go_quiz_draft');
 
     router.push("/results?verified=true");
   };

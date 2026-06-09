@@ -41,6 +41,33 @@ function LoginForm() {
             .update({ user_id: user.id })
             .eq("email", email)
             .is("user_id", null);
+
+          // Check for unlinked quiz draft in localStorage
+          const draft = localStorage.getItem('e2go_quiz_draft');
+          if (draft) {
+            try {
+              const parsed = JSON.parse(draft);
+              if (parsed.answers && Object.keys(parsed.answers).length >= 10) {
+                supabase.from('quiz_sessions').insert({
+                  user_id: user.id,
+                  email: email,
+                  outcome: parsed.outcome || 'PROCEED',
+                  score: parsed.score || 80,
+                  hard_stop_codes: [],
+                  attorney_flag_codes: parsed.attorneyFlags || [],
+                  risk_flag_codes: parsed.warnings || [],
+                  application_type: 'solo',
+                  franchise_interest: parsed.franchiseInterest || false,
+                  result_json: parsed,
+                  completed_at: parsed.savedAt || new Date().toISOString(),
+                }).then(() => {
+                  localStorage.removeItem('e2go_quiz_draft');
+                });
+              }
+            } catch {
+              // Invalid draft — ignore
+            }
+          }
         }
         setStatus('success');
         window.location.href = next ?? '/dashboard';
