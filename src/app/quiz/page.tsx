@@ -369,14 +369,6 @@ export default function QuizPage() {
     };
   }, [supabase, router]);
 
-  // Fallback: force authChecked to true after mount if still false
-  useEffect(() => {
-    const fallback = setTimeout(() => {
-      if (!authChecked) setAuthChecked(true);
-    }, 1500);
-    return () => clearTimeout(fallback);
-  }, []);
-
   const advance = useCallback(() => {
     setIsAnimating(true);
     setTimeout(() => {
