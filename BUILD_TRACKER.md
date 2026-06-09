@@ -1,6 +1,6 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 9, 2026 — Landing page mistakes section complete
+**Last Updated:** June 9, 2026 — Landing page redesign complete
 **App Name:** E2go.app
 **Stack:** Next.js 14 · TypeScript · Tailwind CSS · Supabase · Claude API
 **Dev URL:** https://e2go-git-dev-ocdeployments-projects.vercel.app
@@ -55,7 +55,7 @@ changed, run npm run build:clean, report summary.
 | /apply/checklist | ✅ COMPLETE | Three phases, Supabase connected |
 | Pricing page | ✅ COMPLETE | Founding member pricing, guarantee |
 | Dashboard | ✅ COMPLETE | Needs real data wiring |
-| Landing page | ✅ COMPLETE | 12 sections, Obsidian Gold. Mistakes section added, pricing updated to $550, copy fixes, FAQ expanded to 7 items |
+| Landing page | ✅ COMPLETE | 12 sections, Obsidian Gold. Portrait hero, row mistakes, connected steps, hero feature with binder image, testimonial photos |
 | Document generation specs | ✅ COMPLETE | 4 spec files |
 | Stripe integration | ⚠️ PARTIAL | Code complete, payments table needs migration |
 | Email verification funnel | ✅ COMPLETE | |
@@ -479,3 +479,29 @@ Clean — 0 errors
 
 ### Commit
 eba36d9 — rebrand: e2go → E2go throughout app UI and metadata
+
+---
+
+## SESSION — Landing Page Redesign (June 9, 2026)
+
+### Completed
+- **Hero**: Investor portrait (investor-man.png) added alongside flag, blends into dark background via luminosity mix-blend-mode + gradient fades
+- **Mistakes**: Full-width horizontal rows with 120px watermark numbers, gold left accent bar, italic serif titles, gridTemplateColumns: 100px 1fr
+- **How it works**: 72px step numbers, horizontal connecting thread (1px line at top:4px), thread dots (filled gold for steps 0-2, empty for step 3)
+- **What's included**: Hero feature (case analysis engine + document-binder.png in 1fr 360px grid) + 5-card row with watermark numbers, optional note field
+- **Testimonials**: 180px background quote marks, 40px portrait thumbnails (investor-man, investor-woman, couple-documents), gold hairline dividers
+
+### Images
+All 6 Gemini-generated images in public/images/:
+- investor-man.png — hero portrait + testimonial
+- investor-woman.png — testimonial
+- couple-documents.png — testimonial
+- document-binder.png — hero feature
+- franchise-exterior.png — reserved
+- consulate.png — reserved for /learn page
+
+### Build
+Clean — 0 errors
+
+### Commit
+51b2808 — feat: landing page redesign — portrait hero, row mistakes, connected steps, hero feature, testimonial photos
