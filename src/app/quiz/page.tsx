@@ -364,6 +364,23 @@ export default function QuizPage() {
       } catch {
       } finally {
         setAuthChecked(true);
+        const draft = localStorage.getItem('e2go_quiz_draft');
+        if (draft) {
+          try {
+            const parsed = JSON.parse(draft);
+            const savedAt = new Date(parsed.savedAt);
+            const daysSince = (Date.now() - savedAt.getTime()) / (1000 * 60 * 60 * 24);
+            if (daysSince < 7 && parsed.answers && Object.keys(parsed.answers).length > 0) {
+              setAnswers(parsed.answers);
+              setCur(parsed.cur || 0);
+              setWarnings(parsed.warnings || []);
+              setAttorneyFlags(parsed.attorneyFlags || []);
+              setFranchiseInterest(parsed.franchiseInterest || false);
+            }
+          } catch {
+            localStorage.removeItem('e2go_quiz_draft');
+          }
+        }
       }
     };
     checkAuth();
@@ -378,6 +395,11 @@ export default function QuizPage() {
       if (el) el.scrollIntoView({ block: 'nearest' });
     }
   }, [highlightedIdx]);
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const getFirstQuestionOfSection = (secIdx: number) => {
+    return QUESTIONS.findIndex(q => q.sec === secIdx);
+  };
 
   const advance = useCallback(() => {
     setIsAnimating(true);
@@ -414,6 +436,7 @@ export default function QuizPage() {
     };
 
     localStorage.setItem("e2go_quiz_result", JSON.stringify(resultData));
+    localStorage.removeItem('e2go_quiz_draft');
 
     if (loggedInUser) {
       setIsSaving(true);
@@ -451,6 +474,14 @@ export default function QuizPage() {
     setSelectedIdx(idx);
     const newAnswers = { ...answers, [q.id]: opt.t };
     setAnswers(newAnswers);
+    localStorage.setItem('e2go_quiz_draft', JSON.stringify({
+      answers: newAnswers,
+      cur: cur,
+      warnings: warnings,
+      attorneyFlags: attorneyFlags,
+      franchiseInterest: franchiseInterest,
+      savedAt: new Date().toISOString(),
+    }));
 
     if (opt.a === "stop") {
       setTimeout(() => setStopCode(opt.code || ""), 280);
@@ -461,12 +492,29 @@ export default function QuizPage() {
       const newWarns = [...warnings, opt.w];
       setWarnings(newWarns);
       setWarnMsg(opt.w);
+      setTimeout(() => {
+        const nextIdx = cur + 1;
+        if (nextIdx >= visibleQuestions.length) {
+          handleComplete(newAnswers, newWarns, attorneyFlags, franchiseInterest);
+        } else {
+          advance();
+        }
+      }, 1200);
       return;
     }
 
     if (opt.a === "attorney") {
       const newFlags = [...attorneyFlags, opt.t];
       setAttorneyFlags(newFlags);
+      setTimeout(() => {
+        const nextIdx = cur + 1;
+        if (nextIdx >= visibleQuestions.length) {
+          handleComplete(newAnswers, warnings, newFlags, franchiseInterest);
+        } else {
+          advance();
+        }
+      }, 1200);
+      return;
     }
 
     if (opt.a === "franchise_yes") {
@@ -514,6 +562,14 @@ export default function QuizPage() {
     const selected = multiSel.map(i => opts[i].t);
     const newAnswers = { ...answers, [q.id]: selected };
     setAnswers(newAnswers);
+    localStorage.setItem('e2go_quiz_draft', JSON.stringify({
+      answers: newAnswers,
+      cur: cur,
+      warnings: warnings,
+      attorneyFlags: attorneyFlags,
+      franchiseInterest: franchiseInterest,
+      savedAt: new Date().toISOString(),
+    }));
     const nextIdx = cur + 1;
     if (nextIdx >= visibleQuestions.length) {
       handleComplete(newAnswers, warnings, attorneyFlags, franchiseInterest);
@@ -597,7 +653,7 @@ export default function QuizPage() {
           <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "28px", fontWeight: 300, color: "#f5f0e8", marginBottom: "12px", lineHeight: 1.3 }}>{stop.title}</div>
           <div style={{ fontSize: "14px", color: "rgba(245,240,232,0.5)", lineHeight: 1.7, marginBottom: "28px", maxWidth: "460px" }}>{stop.body}</div>
           <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-            <button onClick={() => { setStopCode(null); setCur(0); setAnswers({}); setWarnings([]); setAttorneyFlags([]); setFranchiseInterest(false); setSelectedIdx(null); setWarnMsg(null); setSelectedCountry(null); setCountrySearch(""); }} style={{ padding: "11px 24px", background: "transparent", border: "1px solid rgba(201,168,76,0.35)", color: "#C9A84C", fontSize: "12px", cursor: "pointer", letterSpacing: "0.07em", textTransform: "uppercase", fontFamily: "'DM Sans', sans-serif", borderRadius: 0 }}>Start over</button>
+            <button onClick={() => { setStopCode(null); setCur(0); setAnswers({}); setWarnings([]); setAttorneyFlags([]); setFranchiseInterest(false); setSelectedIdx(null); setWarnMsg(null); setSelectedCountry(null); setCountrySearch(""); localStorage.removeItem('e2go_quiz_draft'); }} style={{ padding: "11px 24px", background: "transparent", border: "1px solid rgba(201,168,76,0.35)", color: "#C9A84C", fontSize: "12px", cursor: "pointer", letterSpacing: "0.07em", textTransform: "uppercase", fontFamily: "'DM Sans', sans-serif", borderRadius: 0 }}>Start over</button>
             <button style={{ padding: "11px 24px", background: "transparent", border: "1px solid rgba(201,168,76,0.15)", color: "rgba(245,240,232,0.35)", fontSize: "12px", cursor: "pointer", letterSpacing: "0.07em", textTransform: "uppercase", fontFamily: "'DM Sans', sans-serif", borderRadius: 0 }}>Find an attorney →</button>
           </div>
         </div>
@@ -664,7 +720,7 @@ export default function QuizPage() {
 
       <div style={{ display: "flex", gap: 0, padding: "0 clamp(16px, 5vw, 40px)", borderBottom: "1px solid rgba(201,168,76,0.08)", overflowX: "auto", whiteSpace: "nowrap" }}>
         {SECTIONS.map((s, i) => (
-          <div key={s} style={{ fontSize: "10px", letterSpacing: "0.1em", textTransform: "uppercase", color: i === q.sec ? "#C9A84C" : i < q.sec ? "rgba(245,240,232,0.45)" : "rgba(245,240,232,0.4)", padding: "10px 0", marginRight: "18px", borderBottom: `2px solid ${i === q.sec ? "#C9A84C" : i < q.sec ? "rgba(201,168,76,0.25)" : "transparent"}`, transition: "all 0.2s", whiteSpace: "nowrap" }}>{s}</div>
+          <div key={s} onClick={i < q.sec ? () => { const firstQ = getFirstQuestionOfSection(i); if (firstQ !== -1) { setCur(firstQ); setSelectedIdx(null); setWarnMsg(null); setMultiSel([]); } } : undefined} onMouseEnter={i < q.sec ? e => e.currentTarget.style.color = "rgba(245,240,232,0.65)" : undefined} onMouseLeave={i < q.sec ? e => e.currentTarget.style.color = "rgba(245,240,232,0.45)" : undefined} style={{ fontSize: "10px", letterSpacing: "0.1em", textTransform: "uppercase", color: i === q.sec ? "#C9A84C" : i < q.sec ? "rgba(245,240,232,0.45)" : "rgba(245,240,232,0.4)", padding: "10px 0", marginRight: "18px", borderBottom: `2px solid ${i === q.sec ? "#C9A84C" : i < q.sec ? "rgba(201,168,76,0.25)" : "transparent"}`, transition: "all 0.2s", whiteSpace: "nowrap", cursor: i < q.sec ? "pointer" : "default" }}>{s}</div>
         ))}
       </div>
       <div style={{ padding: "0 clamp(16px, 5vw, 40px)", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
@@ -685,6 +741,31 @@ export default function QuizPage() {
             <div style={{ color: "#C9A84C", fontSize: "14px", flexShrink: 0 }}>!</div>
             <div style={{ fontSize: "12px", color: "rgba(245,240,232,0.55)", lineHeight: 1.6 }}>{warnMsg}</div>
           </div>
+        )}
+
+        {cur > 0 && (
+          <button
+            onClick={() => {
+              setCur(c => c - 1);
+              setSelectedIdx(null);
+              setWarnMsg(null);
+              setMultiSel([]);
+            }}
+            style={{
+              marginTop: '20px',
+              background: 'none',
+              border: 'none',
+              fontSize: '12px',
+              color: 'rgba(245,240,232,0.35)',
+              cursor: 'pointer',
+              fontFamily: "'DM Sans', sans-serif",
+              letterSpacing: '0.05em',
+              padding: '8px 0',
+              display: 'block'
+            }}
+          >
+            ← Back
+          </button>
         )}
 
         {isCountry && (

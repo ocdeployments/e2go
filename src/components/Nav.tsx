@@ -139,6 +139,9 @@ export default function Nav() {
               <Link href="/learn" className={navLinkClass("/learn")}>
                 Learn
               </Link>
+              <Link href="/support" className={navLinkClass("/support")}>
+                Support
+              </Link>
               <Link href="/login" className={navLinkClass("/login")}>
                 Login
               </Link>
@@ -229,6 +232,9 @@ export default function Nav() {
               </Link>
               <Link href="/learn" className={navLinkClass("/learn")} onClick={() => setMobileMenuOpen(false)}>
                 Learn
+              </Link>
+              <Link href="/support" className={navLinkClass("/support")} onClick={() => setMobileMenuOpen(false)}>
+                Support
               </Link>
               <Link href="/login" className={navLinkClass("/login")} onClick={() => setMobileMenuOpen(false)}>
                 Login

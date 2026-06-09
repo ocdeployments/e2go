@@ -3,7 +3,6 @@ import { useState } from "react";
 import Link from "next/link";
 
 export default function HomeClient() {
-  const [menuOpen, setMenuOpen] = useState(false);
   const [targetDate, setTargetDate] = useState("6");
   const [currentStage, setCurrentStage] = useState("business");
   const [applyingWith, setApplyingWith] = useState("family");
@@ -64,54 +63,8 @@ export default function HomeClient() {
   return (
     <div className="bg-[#0a0a0a] text-[#f5f0e8] min-h-screen overflow-x-hidden">
 
-      {/* NAV */}
-      <nav className="sticky top-0 z-50 bg-[#0a0a0a] border-b border-[rgba(201,168,76,0.1)]">
-        <div className="px-4 md:px-10 lg:px-16">
-          <div className="flex items-center justify-between h-16 md:h-20">
-            <Link href="/" className="font-['Cormorant_Garamond'] text-2xl font-light text-[#C9A84C]">
-              e2go<span className="text-[#f5f0e8]">.app</span>
-            </Link>
-            <div className="hidden md:flex items-center gap-8">
-              {["How it works", "Pricing", "Quiz", "Learn"].map(l => (
-                <Link key={l} href={`/${l.toLowerCase().replace(/ /g, "-")}`}
-                  className="text-sm text-[rgba(245,240,232,0.55)] hover:text-[#f5f0e8] transition-colors tracking-wide">
-                  {l}
-                </Link>
-              ))}
-            </div>
-            <div className="hidden md:flex items-center gap-3">
-              <Link href="/login" className="text-sm text-[rgba(245,240,232,0.55)] hover:text-[#f5f0e8] transition-colors px-3 py-2">
-                Log in
-              </Link>
-              <Link href="/quiz" className="px-5 py-2.5 border border-[rgba(201,168,76,0.4)] text-[#C9A84C] text-sm tracking-widest uppercase hover:border-[#C9A84C] transition-colors">
-                Check eligibility
-              </Link>
-            </div>
-            <button onClick={() => setMenuOpen(!menuOpen)}
-              className="md:hidden p-2 text-[rgba(245,240,232,0.6)]">
-              <div className="w-5 h-0.5 bg-current mb-1"></div>
-              <div className="w-5 h-0.5 bg-current mb-1"></div>
-              <div className="w-5 h-0.5 bg-current"></div>
-            </button>
-          </div>
-        </div>
-        {menuOpen && (
-          <div className="md:hidden border-t border-[rgba(201,168,76,0.1)] px-4 py-4 flex flex-col gap-4">
-            {["How it works", "Pricing", "Quiz", "Learn", "Log in"].map(l => (
-              <Link key={l} href={`/${l.toLowerCase().replace(/ /g, "-")}`}
-                className="text-sm text-[rgba(245,240,232,0.65)] py-2 border-b border-[rgba(201,168,76,0.08)]">
-                {l}
-              </Link>
-            ))}
-            <Link href="/quiz" className="mt-2 w-full text-center px-5 py-3 bg-[#C9A84C] text-[#0a0a0a] text-sm font-medium tracking-widest uppercase">
-              Check eligibility
-            </Link>
-          </div>
-        )}
-      </nav>
-
       {/* HERO */}
-      <section className="px-4 md:px-10 lg:px-16 pt-16 md:pt-24 pb-16 md:pb-20 max-w-5xl">
+      <section className="px-4 md:px-10 lg:px-16 pt-16 md:pt-24 pb-16 md:pb-20 max-w-5xl mx-auto w-full">
         <p className="text-[10px] tracking-[0.18em] uppercase text-[rgba(201,168,76,0.65)] mb-5">
           E-2 Treaty Investor Visa · 82 Treaty Countries
         </p>
@@ -198,7 +151,7 @@ export default function HomeClient() {
 
         <div className="border border-[rgba(201,168,76,0.2)] p-6 md:p-10">
           {/* Controls */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8 overflow-x-auto whitespace-nowrap">
             {[
               { label: "Target move date", id: "target", val: targetDate, set: setTargetDate,
                 opts: [["3","In 3 months"],["6","In 6 months"],["9","In 9 months"],["12","In 12 months"],["18","In 18 months"]] },
@@ -271,7 +224,7 @@ export default function HomeClient() {
                 : `e2go gets you to your interview approximately ${monthsSaved} months faster than the traditional route.`
               }
             </p>
-            <Link href="/quiz" className="flex-shrink-0 px-5 py-2.5 bg-[#C9A84C] text-[#0a0a0a] text-xs font-medium tracking-widest uppercase hover:opacity-85 transition-opacity">
+            <Link href="/quiz" className="flex-shrink-0 px-5 min-h-[44px] py-3 bg-[#C9A84C] text-[#0a0a0a] text-xs font-medium tracking-widest uppercase hover:opacity-85 transition-opacity">
               Check my eligibility →
             </Link>
           </div>
@@ -298,7 +251,7 @@ export default function HomeClient() {
             { t: "Specialist referral network", d: "Franchise brokers, cross-border accountants, LLC formation specialists — connected at the right moment, briefed on your situation." },
           ].map((f, i) => (
             <div key={i} className="p-6 md:p-8 border border-[rgba(201,168,76,0.1)] -mt-px -ml-px hover:border-[rgba(201,168,76,0.3)] transition-colors group">
-              <div className="text-[#C9A84C] text-lg mb-3 group-hover:scale-110 transition-transform inline-block">◈</div>
+              <div className="text-[#C9A84C] text-2xl mb-3 group-hover:scale-110 transition-transform inline-block">◈</div>
               <div className="text-sm font-medium text-[#f5f0e8] mb-2">{f.t}</div>
               <div className="text-xs text-[rgba(245,240,232,0.45)] leading-relaxed">{f.d}</div>
             </div>
@@ -307,7 +260,7 @@ export default function HomeClient() {
       </section>
 
       {/* FOUNDER NOTE */}
-      <section className="px-4 md:px-10 lg:px-16 py-16 md:py-24">
+      <section className="px-4 md:px-10 lg:px-16 py-16 md:py-24 pb-16 md:pb-24">
         <div className="max-w-xl mx-auto text-center">
           <div className="w-10 h-px bg-[#C9A84C] mx-auto mb-8 opacity-60"></div>
           <p className="font-['Cormorant_Garamond'] text-xl md:text-2xl font-light italic text-[rgba(245,240,232,0.65)] leading-relaxed">
