@@ -354,3 +354,22 @@ Clean — 66 routes, 0 errors
 ### Known remaining
 - Visual E2E test of generate page approval gate requires manual browser test (auth required)
 - npm test not configured
+
+---
+
+## SESSION — Quiz + Results Rebuild (June 9, 2026)
+
+### Completed
+- **module0_questions.json**: Global v4.0 — 14 core questions, 19 total including conditionals, all Canadian references removed, 82-country selector, franchise lead capture wired
+- **quiz/page.tsx**: Complete rewrite — auth-aware, no login hang, fire-and-forget auth check with 3s timeout, correct sub-question flow, multi-select, auto-advance, email gate for anonymous users, direct to results for logged-in users
+- **results/page.tsx**: Complete rewrite — score/100, personalised verdict, profile grid, flags, timeline, franchise broker card, consulate intelligence, pricing pre-calc, reads from localStorage + Supabase fallback
+- **middleware.ts**: Rate limiter production-only confirmed
+
+### Build
+Clean — 0 errors
+
+### Auth flows confirmed in code
+1. Logged in + quiz done → bypass quiz → dashboard
+2. Logged in + no quiz → take quiz → skip email gate → results
+3. Not logged in → take quiz → email gate → results
+4. Login page → no rate limiting in dev → no hanging spinner
