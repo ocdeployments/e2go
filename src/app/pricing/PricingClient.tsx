@@ -18,13 +18,13 @@ interface PricingTier {
 const FOUNDING_MEMBER_LIMIT = 500;
 
 const DEFAULT_TIERS: PricingTier[] = [
-  { tier_id: 'solo_none', name: 'Solo Individual', amount: 29700, stripe_price_id: '', active: true },
-  { tier_id: 'solo_spouse', name: 'Solo + Spouse', amount: 34700, stripe_price_id: '', active: true },
-  { tier_id: 'solo_family_small', name: 'Solo + Family up to 2 kids', amount: 39700, stripe_price_id: '', active: true },
-  { tier_id: 'solo_family_large', name: 'Solo + Family 3-5 kids', amount: 44700, stripe_price_id: '', active: true },
-  { tier_id: 'partnership_none', name: 'Partnership', amount: 49700, stripe_price_id: '', active: true },
-  { tier_id: 'partnership_couples', name: 'Partnership Two Couples', amount: 54700, stripe_price_id: '', active: true },
-  { tier_id: 'partnership_families', name: 'Partnership Two Full Families', amount: 64700, stripe_price_id: '', active: true },
+  { tier_id: 'solo_none', name: 'Solo Individual', amount: 55000, stripe_price_id: process.env.NEXT_PUBLIC_STRIPE_PRICE_SOLO || '', active: true },
+  { tier_id: 'solo_spouse', name: 'Solo + Spouse', amount: 69700, stripe_price_id: process.env.NEXT_PUBLIC_STRIPE_PRICE_SOLO_SPOUSE || '', active: true },
+  { tier_id: 'solo_family_small', name: 'Solo + Family up to 2 kids', amount: 75000, stripe_price_id: process.env.NEXT_PUBLIC_STRIPE_PRICE_SOLO_FAMILY_2 || '', active: true },
+  { tier_id: 'solo_family_large', name: 'Solo + Family 3-5 kids', amount: 79700, stripe_price_id: process.env.NEXT_PUBLIC_STRIPE_PRICE_SOLO_FAMILY_5 || '', active: true },
+  { tier_id: 'partnership_none', name: 'Partnership', amount: 99700, stripe_price_id: process.env.NEXT_PUBLIC_STRIPE_PRICE_PARTNERSHIP || '', active: true },
+  { tier_id: 'partnership_couples', name: 'Partnership Two Couples', amount: 129700, stripe_price_id: process.env.NEXT_PUBLIC_STRIPE_PRICE_PARTNERSHIP_COUPLES || '', active: true },
+  { tier_id: 'partnership_families', name: 'Partnership Two Full Families', amount: 139700, stripe_price_id: process.env.NEXT_PUBLIC_STRIPE_PRICE_PARTNERSHIP_FAMILIES || '', active: true },
 ];
 
 export default function PricingPage() {
