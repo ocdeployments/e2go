@@ -51,12 +51,10 @@ export default function JourneyWizard() {
   const traditionalDuration = Object.values(stageDurations)[currentStage];
   const e2goDuration = Object.values(stageDurations)[currentStage];
 
-  const targetWeeks = (targetMonths[targetDate] as string).replace(" months", "") as unknown as number * 4;
   const targetWeeksNum = parseInt(targetMonths[targetDate]) * 4;
   const e2goMinWeeks = parseInt(e2goDuration.e2go.split("–")[0]) * 7;
   const e2goMaxWeeks = parseInt(e2goDuration.e2go.split("–")[1]?.replace(" weeks", "") || e2goDuration.e2go.split("–")[0]) * 7;
   const tradMinWeeks = parseInt(traditionalDuration.traditional.split("–")[0]) * 4;
-  const tradMaxWeeks = parseInt(traditionalDuration.traditional.split("–")[1]?.replace(" months", "") || traditionalDuration.traditional.split("–")[0]) * 4;
 
   const gapMessage = useMemo(() => {
     if (targetWeeksNum < e2goMinWeeks) {
