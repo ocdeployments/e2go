@@ -248,6 +248,13 @@ Action: Run migration before payment flow will work
 - **Action needed:** Apply `20260605110625_payments_table.sql` migration
 - **Result:** Code ready, infrastructure needs migration run
 
+### June 8, 2026 — Session S28
+- **updateJob() error handling**: Added const { error } = ... with console.error in generation-engine.ts
+- **keystatic/ folder removed**: Was causing build failure (route conflict)
+- **Backend verification**: Approval gate works correctly on fresh jobs
+- **Visual E2E test**: Blocked by auth requirement — generate page requires authenticated Supabase session; needs manual browser test
+- **Build**: Clean — 66 routes compiled, 0 errors
+
 ### June 6, 2026 — Session S27
 - **Completed Module 1**: Onboarding, consent, application record creation
 - **Completed Module 2**: Business advisor, category selection, referral trigger
