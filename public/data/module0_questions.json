@@ -1,663 +1,440 @@
 {
-  "module": "0",
-  "name": "Eligibility Quiz",
-  "version": "3.0",
-  "last_updated": "2026-05-31",
-  "source_standard": [
-    "U.S. Embassy Toronto",
-    "State Department Foreign Affairs Manual",
-    "USCIS / Travel.state.gov where directly relevant"
-  ],
-  "purpose": [
-    "Determine whether the principal applicant appears eligible to proceed",
-    "Detect cases outside safe self-service scope",
-    "Route user to the correct path (solo, partnership, family)",
-    "Collect only information necessary at eligibility stage"
-  ],
-  "outcomes": [
-    "Proceed",
-    "Proceed with Risk Flag",
-    "Attorney Recommended",
-    "Do Not Proceed"
-  ],
-  "user_stages": [
-    "Stage A - Early explorer: heard about E-2, knows little, no business decided",
-    "Stage B - Researcher: knows the basics, considering options, no commitment",
-    "Stage C - Serious: has a business in mind, hasn't committed funds yet",
-    "Stage D - Ready: business selected, funds committed, ready to apply"
-  ],
+  "module": "module0",
+  "version": "4.0",
+  "last_updated": "2026-06-09",
   "questions": [
     {
       "id": "Q0-01",
-      "type": "searchable_select",
-      "question": "Which country are you a citizen of?",
-      "section": "who_you_are",
-      "data_source": "treaty_countries.json",
-      "treaty_check": true,
-      "display_note": "The E-2 visa is available to citizens of countries that have a qualifying treaty with the United States. Start typing your country to see if you qualify.",
-      "tooltip": "This matters because the E-2 visa is only available to people who hold citizenship — not just residency — in a country that has a qualifying treaty with the United States. There are currently 82 qualifying countries.",
-      "stop_codes": ["PR-01"],
-      "special_routing": {
-        "india": "DO_NOT_PROCEED - Show EB-5 and citizenship-by-investment options",
-        "china_prc": "DO_NOT_PROCEED - Check Taiwan eligibility",
-        "russia": "DO_NOT_PROCEED - Show EB-5 and alternative investor visa options",
-        "iran": "DO_NOT_PROCEED - Embassy closed, recommend citizenship-by-investment"
+      "type": "searchable_country",
+      "section": "eligibility",
+      "question": "What is your citizenship?",
+      "helper_text": "The E-2 visa requires citizenship in a qualifying treaty country. Permanent residency alone does not qualify.",
+      "tooltip": "There are 82 E-2 treaty countries. Dual citizenship in any treaty country qualifies you.",
+      "options": [],
+      "routing": {
+        "treaty_country": "continue",
+        "non_treaty": "stop:PR-01",
+        "permanent_resident_only": "stop:PR-01"
       }
     },
     {
       "id": "Q0-02",
       "type": "select",
-      "question": "Do you have a valid [nationality] passport?",
-      "section": "who_you_are",
-      "dynamic_reference": "Q0-01 selected country name",
+      "section": "eligibility",
+      "question": "Where are you applying from?",
+      "helper_text": "Your location determines which application path is available to you.",
+      "tooltip": "Most applicants apply through their home country consulate. If you are in the U.S. on valid status, Change of Status through USCIS may be an option.",
       "options": [
-        "Yes — it is valid",
-        "It has expired but I am still a citizen",
-        "No — I do not have one"
+        "From my home country — consular processing",
+        "From inside the U.S. — on a valid visa or status",
+        "From inside the U.S. — without valid status"
       ],
-      "warning_codes": ["W-01"],
       "routing": {
-        "valid": "proceed",
-        "expired": "PROCEED_RISK - continue with advisory",
-        "no_passport": "PROCEED_RISK - continue with advisory"
-      },
-      "tooltip": "A valid passport is required for the consulate interview. It does not need to be valid right now — but it must be valid before your interview date."
+        "home_country": "continue",
+        "us_valid_status": "continue:flag_cos",
+        "us_no_status": "stop:PR-09"
+      }
     },
     {
       "id": "Q0-03",
       "type": "select",
-      "question": "Where are you living right now?",
-      "section": "who_you_are",
+      "section": "investment",
+      "question": "How are you funding your investment?",
+      "helper_text": "The E-2 requires capital you own and control — committed to the business, not sitting in a personal account.",
+      "tooltip": "Borrowed funds can be part of the picture but cannot be the primary source. The investment must be at risk.",
       "options": [
-        "In my home country",
-        "In the United States — on a valid visa",
-        "In the United States — I am not sure of my status",
-        "In the United States — without valid status",
-        "In another country"
-      ],
-      "stop_codes": ["PR-02"],
-      "warning_codes": ["W-02", "W-03"],
-      "routing": {
-        "home_country": "proceed cleanly",
-        "us_valid": "proceed with COS routing note",
-        "us_unsure": "ATTORNEY_RECOMMENDED (W-02)",
-        "us_without_status": "DO_NOT_PROCEED (PR-02)",
-        "third_country": "ATTORNEY_RECOMMENDED (W-03)"
-      },
-      "tooltip": "Where you are right now affects where your visa interview will take place and which application process applies to you."
-    },
-    {
-      "id": "Q0-E2",
-      "type": "select",
-      "question": "Have you applied for an E-2 Treaty Investor visa before?",
-      "section": "who_you_are",
-      "options": [
-        "No — this is my first time",
-        "Yes — I was approved and I am renewing or reapplying",
-        "Yes — my application was denied",
-        "Yes — my application is still pending or under review"
+        "Personal funds — ready or accessible",
+        "Liquidating assets to fund it",
+        "Primarily a business loan or third-party financing",
+        "I don't have funds available yet"
       ],
       "routing": {
-        "first_time": "proceed - new application flow",
-        "previously_approved": "PROCEED with renewal routing note",
-        "previously_denied": "ATTORNEY_RECOMMENDED (W-E2-DENIED)",
-        "currently_pending": "ATTORNEY_RECOMMENDED (W-E2-PENDING)"
-      },
-      "tooltip": "This helps us understand your history so we can prepare the right documents. A prior denial is not disqualifying — but it does require specific handling."
+        "personal_funds": "continue",
+        "liquidating": "continue",
+        "primarily_loan": "stop:PR-02",
+        "no_funds": "stop:PR-03"
+      }
     },
     {
       "id": "Q0-04",
       "type": "select",
-      "question": "Where are you in the investment process?",
-      "section": "your_investment",
+      "section": "investment",
+      "question": "How much are you investing?",
+      "helper_text": "No official minimum exists, but consulates expect the investment to be substantial relative to the total cost of the business.",
+      "tooltip": "The substantiality test compares your investment to the total cost of establishing the business — not an absolute dollar figure.",
       "options": [
-        "I have already committed or transferred funds to a U.S. business",
-        "I have a business in mind and I am getting ready to commit funds",
-        "I have the funds but I have not chosen a business yet",
-        "I am still figuring out the finances",
-        "I do not have funds available right now"
+        "Over $150,000 USD",
+        "$100,000 – $150,000 USD",
+        "$75,000 – $99,999 USD",
+        "$50,000 – $74,999 USD",
+        "Under $50,000 USD"
       ],
-      "stage_awareness": {
-        "already_transferred": "Stage D - Ready",
-        "getting_ready": "Stage C - Serious",
-        "funds_available_no_business": "Stage B - Researcher",
-        "still_figuring": "Stage A - Early explorer",
-        "no_funds": "Stage A - Early explorer"
-      },
-      "stop_codes": ["PR-03"],
-      "warning_codes": ["W-04"],
       "routing": {
-        "already_transferred": "proceed - Stage D user",
-        "getting_ready": "proceed - Stage C user",
-        "funds_available_no_business": "PROCEED_RISK (W-04) - Stage B user",
-        "still_figuring": "PROCEED_RISK (W-04) - Stage A user",
-        "no_funds": "DO_NOT_PROCEED (PR-03)"
+        "over_150k": "continue",
+        "100k_150k": "continue",
+        "75k_99k": "continue:warn:W-INVEST-LOW",
+        "50k_74k": "continue:warn:W-INVEST-VERY-LOW",
+        "under_50k": "stop:PR-04"
       },
-      "tooltip": "The E-2 requires investment funds to be committed — not just available in a bank account. But you can start preparing your application long before that step."
+      "warning_codes": {
+        "W-INVEST-LOW": "Within range — your business selection will be critical at this investment level.",
+        "W-INVEST-VERY-LOW": "Below the typical threshold. This significantly narrows eligible business types."
+      }
     },
     {
       "id": "Q0-05",
-      "type": "currency",
-      "question": "How much are you planning to invest?",
-      "section": "your_investment",
-      "currency_options": ["USD", "CAD", "EUR", "GBP", "AUD", "JPY", "CNY", "INR", "MXN", "BRL"],
-      "helper_text": "There is no official minimum. Most successful applications involve $100,000 USD or more — but what matters most is whether your investment is substantial relative to the total cost of the business.",
-      "proportionality_thresholds_usd": {
-        "clean": {
-          "min": 150000,
-          "flag": null
-        },
-        "soft_advisory": {
-          "min": 75000,
-          "max": 149999,
-          "flag": "W-PROP-SOFT"
-        },
-        "strong_warning": {
-          "max": 74999,
-          "flag": "W-PROP-STRONG"
-        }
-      },
-      "routing": {
-        "150000_plus": "proceed cleanly",
-        "75000_149999": "PROCEED_RISK (W-PROP-SOFT)",
-        "below_75000": "ATTORNEY_RECOMMENDED (W-PROP-STRONG)"
-      },
-      "tooltip": "The law does not set a specific dollar minimum. But consulate officers assess whether your investment is 'substantial' relative to the cost of the business you are buying into. In practice, most approved applications involve $100,000 or more."
+      "type": "multiselect",
+      "section": "investment",
+      "question": "Where did this money originate?",
+      "helper_text": "Select all that apply — this builds your source-of-funds narrative for the consulate.",
+      "tooltip": "A complete, unbroken paper trail from source to investment is one of the most scrutinised elements of any E-2 application.",
+      "options": [
+        "Personal savings",
+        "Property sale",
+        "Business sale",
+        "Inheritance or gift",
+        "Retirement account withdrawal",
+        "Investment portfolio",
+        "Home equity loan",
+        "Employment income accumulated over time"
+      ]
     },
     {
       "id": "Q0-06",
       "type": "select",
-      "question": "Do you know where your investment money will come from?",
-      "section": "your_investment",
+      "section": "investment",
+      "question": "How well documented is your funds trail?",
+      "helper_text": "Bank statements, contracts, transaction records — the consulate will want to trace every dollar from source to investment.",
+      "tooltip": "Gaps in documentation are a leading cause of 221(g) requests and refusals.",
       "options": [
-        "Yes — savings, property equity, investments, or retirement accounts I can trace on paper",
-        "Yes — but parts of it may be harder to document",
-        "I have the money but I have not thought about the paper trail yet",
-        "I am still working out where the funds will come from"
+        "Fully documented — bank statements, contracts, records",
+        "Mostly — minor gaps I can explain",
+        "Partial — significant gaps exist",
+        "I cannot document the source of my funds"
       ],
-      "warning_codes": ["W-06"],
       "routing": {
-        "clear_documentation": "proceed",
-        "some_gaps": "PROCEED_RISK (W-06)",
-        "have_funds_no_doc_plan": "PROCEED_RISK (W-06)",
-        "still_working_out": "proceed - early stage education only"
+        "full": "continue",
+        "mostly": "continue:warn:W-DOCS-MINOR",
+        "partial": "continue:warn:W-DOCS-SIGNIFICANT",
+        "cannot_document": "stop:PR-05"
       },
-      "tooltip": "Documenting where your funds came from is one of the most scrutinized parts of an E-2 application. Every dollar needs a paper trail — from its origin to the U.S. business account."
+      "warning_codes": {
+        "W-DOCS-MINOR": "Minor gaps are manageable with a clear narrative. We will help you address them.",
+        "W-DOCS-SIGNIFICANT": "Significant gaps are a serious risk factor. Legal guidance is strongly recommended before proceeding."
+      }
     },
     {
       "id": "Q0-07",
       "type": "select",
-      "question": "Are you planning to use any borrowed money as part of your investment?",
-      "section": "your_investment",
+      "section": "business",
+      "question": "What will your role in this business be?",
+      "helper_text": "The E-2 requires that you enter the U.S. to develop and direct your business — not simply hold an investment.",
+      "tooltip": "Active management means day-to-day involvement. A purely supervisory or absentee role significantly weakens your application.",
       "options": [
-        "No — all my funds are from my own savings or assets",
-        "Yes — a loan secured against my own property or personal assets",
-        "Yes — a loan that would be backed by the U.S. business itself",
-        "I am not sure how the loan would be structured",
-        "I have not thought about this yet"
+        "Primary owner-operator — managing day-to-day",
+        "50/50 partner — both of us managing the business",
+        "I'll hire a manager — involved but not daily",
+        "Passive investor — not involved in operations"
       ],
-      "stop_codes": ["PR-04"],
-      "warning_codes": ["W-08"],
       "routing": {
-        "no_borrowed": "proceed",
-        "personal_loan": "proceed with note about personal-asset-secured loans qualifying",
-        "business_assets": "DO_NOT_PROCEED (PR-04)",
-        "not_sure": "ATTORNEY_RECOMMENDED (W-08)",
-        "not_thought": "proceed - education later in app"
+        "owner_operator": "continue",
+        "equal_partner": "continue",
+        "hired_manager": "continue:warn:W-ROLE-SUPERVISORY",
+        "passive": "stop:PR-06"
       },
-      "tooltip": "The E-2 requires that your investment is genuinely 'at risk' — meaning if the business fails, you personally lose the money. Loans secured only against the business itself don't meet this standard."
+      "warning_codes": {
+        "W-ROLE-SUPERVISORY": "A supervisory-only role is a risk factor. Your application will need to demonstrate meaningful active involvement."
+      }
     },
     {
       "id": "Q0-08",
       "type": "select",
-      "question": "How do you picture yourself running this business?",
-      "section": "your_business",
+      "section": "business",
+      "question": "Where are you in your business search?",
+      "helper_text": "You do not need a business chosen to start. Knowing where you are helps us guide you correctly.",
+      "tooltip": "The business must be real and operating — or at a committed stage of investment — by the time of your consulate interview.",
       "options": [
-        "Hands on — I want to be actively involved every day",
-        "As a manager — I will oversee the business and hire people to run daily operations",
-        "With a partner — we will run it together as equal co-owners",
-        "I am not sure yet"
+        "I have a specific business or franchise in mind",
+        "I have a general direction but haven't chosen yet",
+        "I'm open — I haven't started looking"
       ],
-      "warning_codes": ["W-09"],
       "routing": {
-        "running_myself": "proceed - solo active management",
-        "one_equal_partner": "proceed - partnership routing",
-        "overseeing_management": "ATTORNEY_RECOMMENDED (W-09)",
-        "not_sure": "proceed - note that this is fine at this stage"
+        "specific_business": "sub:Q0-08a",
+        "general_direction": "sub:Q0-08b",
+        "open": "sub:Q0-08b"
+      }
+    },
+    {
+      "id": "Q0-08a",
+      "type": "select",
+      "section": "business",
+      "is_sub": true,
+      "parent": "Q0-08",
+      "show_if": { "Q0-08": ["I have a specific business or franchise in mind"] },
+      "question": "What kind of business is it?",
+      "helper_text": "",
+      "tooltip": "Certain business types are categorically incompatible with the E-2 visa regardless of investment amount.",
+      "options": [
+        "A franchise — buying into an established brand",
+        "Buying an existing independent business",
+        "Starting a new business from scratch",
+        "Professional services or consulting",
+        "Cannabis, gambling, adult entertainment, or passive real estate",
+        "Something else"
+      ],
+      "routing": {
+        "franchise": "sub:Q0-08b",
+        "existing_business": "continue",
+        "new_business": "continue",
+        "professional_services": "continue:warn:W-MARGINALITY",
+        "disqualified": "stop:PR-07",
+        "something_else": "continue"
       },
-      "tooltip": "The E-2 visa is for investors who come to the U.S. to actively run their business — not passive investors. You do not need to work behind a counter every day, but you do need to be genuinely in charge."
+      "warning_codes": {
+        "W-MARGINALITY": "Solo consulting businesses can face scrutiny under the marginality test. Your business plan must show capacity to grow beyond one person."
+      }
+    },
+    {
+      "id": "Q0-08b",
+      "type": "select",
+      "section": "business",
+      "is_sub": true,
+      "parent": "Q0-08",
+      "show_if": {
+        "Q0-08": ["I have a general direction but haven't chosen yet", "I'm open — I haven't started looking"],
+        "Q0-08a": ["A franchise — buying into an established brand"]
+      },
+      "question": "Would you like us to make an introduction?",
+      "helper_text": "Based on your profile, we can connect you with E-2 specialist franchise brokers in your investment range. Introductions made only with your consent.",
+      "tooltip": "Our broker partners understand which businesses have the strongest track record at consulates worldwide.",
+      "options": [
+        "Yes — please connect me with a broker",
+        "No thanks, I'll find one myself"
+      ],
+      "routing": {
+        "yes_broker": "continue:flag_franchise_interest",
+        "no_broker": "continue"
+      }
     },
     {
       "id": "Q0-09",
       "type": "select",
-      "question": "Will you own this business on your own or with someone else?",
-      "section": "your_business",
+      "section": "history",
+      "question": "Have you ever been refused a U.S. visa?",
+      "helper_text": "Prior refusals must be disclosed on your DS-160 form. They are not automatically disqualifying but require careful handling.",
+      "tooltip": "Honest disclosure is legally required. Concealing a prior refusal is grounds for a permanent bar from the United States.",
       "options": [
-        "On my own",
-        "With one equal partner — 50/50",
-        "With more than one other person",
-        "I have not decided yet"
+        "No",
+        "Yes — once, more than 5 years ago",
+        "Yes — once within the last 5 years",
+        "Yes — more than once"
       ],
-      "stop_codes": ["PR-06"],
-      "routes": {
-        "solo": "On my own",
-        "partnership": "With one other person as an equal partner"
-      },
       "routing": {
-        "on_my_own": "solo flow - set application_type = solo",
-        "one_equal_partner": "partnership flow - set application_type = partnership",
-        "more_than_one": "DO_NOT_PROCEED (PR-06)",
-        "not_decided": "proceed - note will ask again later"
-      },
-      "tooltip": "This affects how your application is structured. A two-investor 50/50 partnership is a recognized structure under E-2 law. Three or more equal partners creates a legal complexity that requires attorney guidance."
+        "no": "continue",
+        "once_old": "continue:warn:W-REFUSAL-OLD",
+        "once_recent": "continue:attorney_flag:W-REFUSAL-RECENT",
+        "multiple": "continue:attorney_flag:W-REFUSAL-MULTIPLE"
+      }
     },
     {
       "id": "Q0-10",
       "type": "select",
-      "question": "Have you decided on a business yet?",
-      "section": "your_business",
+      "section": "history",
+      "question": "Have you ever been refused entry to the U.S. or deported?",
+      "helper_text": "",
+      "tooltip": "Removal or deportation creates additional grounds of inadmissibility that must be disclosed and addressed.",
       "options": [
-        "Yes — I have a specific business or franchise in mind",
-        "I have a general idea but have not decided yet",
-        "I am completely open — I have not started looking"
+        "No",
+        "Refused entry at the border",
+        "Deported or removed from the U.S."
       ],
-      "sub_question": {
-        "show_if": "Yes — I have a specific business or franchise in mind",
-        "question": "What kind of business is it?",
-        "options": [
-          "A franchise — buying into an established brand",
-          "Buying an existing business from its owner",
-          "Starting a new business from scratch",
-          "A property rental or investment business",
-          "Something else"
-        ],
-        "stop_codes": ["PR-05", "PR-07"]
-      },
       "routing": {
-        "specific_business": "show sub_question",
-        "general_direction": "proceed with note that Module 2 will help find business",
-        "completely_open": "proceed - note you are in the right place"
-      },
-      "tooltip": "You do not need to have a business picked to use this app. But if you do have one in mind, we want to flag early if it raises any E-2 compatibility questions."
-    },
-    {
-      "id": "Q0-STATE",
-      "type": "state_select",
-      "question": "Which U.S. state are you thinking of for your business?",
-      "section": "where_youre_headed",
-      "options": ["AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ", "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY", "I have not decided yet"],
-      "state_metadata": {
-        "no_income_tax": ["TX", "FL", "NV", "WA", "WY", "TN"],
-        "high_income_tax": ["CA", "NY"],
-        "notes": "State-specific licensing and tax info auto-populates in checklist"
-      },
-      "routing": {
-        "specific_state": "proceed - store state for checklist generation",
-        "not_decided": "proceed with note that Module 2 will help decide"
-      },
-      "tooltip": "The state where your business is located affects your licensing requirements, tax picture, and application timeline."
-    },
-    {
-      "id": "Q0-TIMELINE",
-      "type": "select",
-      "question": "When are you hoping to submit your visa application?",
-      "section": "where_youre_headed",
-      "options": [
-        "Within the next 3 months",
-        "Within 3 to 6 months",
-        "Within 6 to 12 months",
-        "Within the next 1 to 2 years",
-        "I am in early planning — no specific timeline yet"
-      ],
-      "warning_codes": ["W-TIMELINE-URGENT"],
-      "routing": {
-        "3_months": "PROCEED_RISK (W-TIMELINE-URGENT) - flag time-sensitive steps",
-        "3_6_months": "proceed - urgency mode enabled",
-        "6_12_months": "proceed - standard mode",
-        "1_2_years": "proceed - planning mode",
-        "early_planning": "proceed - exploration mode"
-      },
-      "internal_use": ["urgency_weighting", "timeline_guide_generation", "dashboard_message_framing"],
-      "tooltip": "This helps us calibrate which steps to highlight first. Someone submitting in 3 months needs a very different roadmap from someone planning 18 months out."
+        "no": "continue",
+        "refused_entry": "continue:attorney_flag:W-ENTRY-REFUSED",
+        "deported": "continue:attorney_flag:W-DEPORTED"
+      }
     },
     {
       "id": "Q0-11",
       "type": "select",
-      "question": "Have you ever been refused a U.S. visa?",
-      "section": "your_history",
+      "section": "history",
+      "question": "Do you have any criminal convictions?",
+      "helper_text": "Include convictions in any country. Certain offences create grounds of inadmissibility under U.S. immigration law.",
+      "tooltip": "Even minor convictions in your home country may affect U.S. admissibility. Honest disclosure is legally required.",
       "options": [
-        "No — never",
-        "Yes — once, more than 5 years ago",
-        "Yes — once, in the last 5 years",
-        "Yes — more than once",
-        "I am not sure"
+        "No criminal convictions",
+        "Minor conviction — more than 10 years ago",
+        "Minor conviction — within the last 10 years",
+        "Serious conviction",
+        "I'm not sure whether my record affects admissibility"
       ],
-      "warning_codes": ["W-11-OLD", "W-11-RECENT", "W-11-MULTIPLE", "W-11-UNSURE"],
-      "logic": {
-        "never": "proceed",
-        "once_more_than_5": "risk_flag:W-11-OLD",
-        "once_within_5": "attorney_recommended:W-11-RECENT",
-        "more_than_once": "attorney_recommended:W-11-MULTIPLE",
-        "not_sure": "attorney_recommended:W-11-UNSURE"
-      },
-      "tooltip": "U.S. visa refusals must be disclosed on the DS-160 application form — honesty is required. A prior refusal is not automatically disqualifying, but it does require specific handling."
+      "routing": {
+        "none": "continue",
+        "minor_old": "continue:warn:W-CONVICTION-OLD",
+        "minor_recent": "continue:attorney_flag:W-CONVICTION-RECENT",
+        "serious": "stop:PR-08",
+        "not_sure": "continue:attorney_flag:W-CONVICTION-UNSURE"
+      }
     },
     {
       "id": "Q0-12",
       "type": "select",
-      "question": "Have you ever been refused entry to the U.S., deported, or asked to leave?",
-      "section": "your_history",
+      "section": "home_ties",
+      "question": "What is your plan for your home country property?",
+      "helper_text": "The consulate must be confident you intend to return home when your visa expires.",
+      "tooltip": "Selling your home country property before your visa is approved is one of the most cited reasons for a 214(b) immigrant intent refusal.",
       "options": [
-        "No",
-        "Yes",
-        "I am not sure"
+        "I own property and plan to keep it",
+        "I own property and plan to sell it before my interview",
+        "I own property — undecided on selling",
+        "I rent — no property to consider",
+        "I don't own property in my home country"
       ],
-      "warning_codes": ["W-12"],
       "routing": {
-        "no": "proceed",
-        "yes": "ATTORNEY_RECOMMENDED (W-12)",
-        "not_sure": "ATTORNEY_RECOMMENDED (W-12)"
-      },
-      "tooltip": "Past immigration issues must be disclosed. An attorney can help you understand how they affect your E-2 application and what documentation or explanation is needed."
+        "keep": "continue:tie_positive",
+        "sell_before": "continue:warn:W-PROPERTY-SALE",
+        "undecided": "continue:warn:W-PROPERTY-UNDECIDED",
+        "renting": "continue",
+        "no_property": "continue"
+      }
     },
     {
       "id": "Q0-13",
       "type": "select",
-      "question": "Have you ever been arrested, charged, or convicted of a crime — in any country?",
-      "section": "your_history",
-      "helper_text": "Include anything that was charged, even if it was later dropped or pardoned. The DS-160 requires full disclosure.",
+      "section": "home_ties",
+      "question": "Will close family remain in your home country after you move?",
+      "helper_text": "The consulate scores ongoing ties to your home country. Family ties are one of the strongest signals.",
+      "tooltip": "The E-2 is a nonimmigrant visa — demonstrating strong home country ties is one of the most important elements of your application.",
       "options": [
-        "No — nothing to declare",
-        "Yes — a minor matter, more than 10 years ago",
-        "Yes — a minor matter, in the last 10 years",
-        "Yes — something more serious",
-        "I am not sure"
+        "Yes — spouse, children, parents, or siblings staying",
+        "Some family staying, some coming with me",
+        "No — all family is moving with me"
       ],
-      "warning_codes": ["W-13-OLD", "W-13-RECENT", "W-13-SERIOUS", "W-13-UNSURE"],
-      "logic": {
-        "no": "proceed",
-        "minor_more_than_10": "risk_flag:W-13-OLD",
-        "minor_within_10": "attorney_recommended:W-13-RECENT",
-        "serious": "attorney_recommended:W-13-SERIOUS",
-        "not_sure": "attorney_recommended:W-13-UNSURE"
-      },
-      "tooltip": "The DS-160 asks about criminal history in all countries. Full disclosure is required — non-disclosure is treated as misrepresentation, which is a more serious issue than the original matter."
-    },
-    {
-      "id": "Q0-NI-01",
-      "type": "select",
-      "question": "Do you own property in [home country]?",
-      "section": "your_ties",
-      "dynamic_reference": "Q0-01 selected country name",
-      "options": [
-        "Yes — and I plan to keep it",
-        "Yes — but I am thinking of selling before I move",
-        "No — I do not own property there",
-        "Not sure yet"
-      ],
-      "tie_tracking": "non_immigrant_intent",
-      "warning_codes": ["W-NI-01"],
       "routing": {
-        "own_home_keeping": "tie_confirmed - positive signal",
-        "investment_keeping": "tie_moderate - positive",
-        "planning_to_sell": "PROCEED_RISK (W-NI-01)",
-        "havent_decided": "proceed - advisory shown later",
-        "no_property": "neutral - other ties needed"
-      },
-      "tooltip": "The E-2 is a nonimmigrant visa — you must demonstrate you intend to return home when your visa expires. Keeping your home or other property in your home country is one of the strongest signals of that intent."
-    },
-    {
-      "id": "Q0-NI-02",
-      "type": "select",
-      "question": "Will any family members — including extended family — remain in [home country] when you move to the U.S.?",
-      "section": "your_ties",
-      "dynamic_reference": "Q0-01 selected country name",
-      "helper_text": "Family ties to [home country] are one of the strongest indicators that you intend to return home when your visa expires. This includes parents, siblings, grandparents, adult children, or any close relatives staying behind.",
-      "options": [
-        "Yes — immediate family will remain (spouse, children, parents)",
-        "Yes — extended family will remain (siblings, grandparents, other relatives)",
-        "Some family will stay, some will come with me",
-        "No — all close family is moving with me",
-        "I do not have close family in [home country]"
-      ],
-      "tie_tracking": "non_immigrant_intent",
-      "warning_codes": ["W-NI-02"],
-      "routing": {
-        "immediate_family_remaining": "tie_confirmed - positive signal",
-        "extended_family_remaining": "tie_confirmed - positive signal",
-        "mixed_family": "tie_confirmed - positive signal",
-        "all_moving": "PROCEED_RISK (W-NI-02)",
-        "no_family": "neutral - other ties noted"
+        "family_stays": "continue:tie_positive",
+        "mixed": "continue",
+        "all_moving": "continue:warn:W-NO-FAMILY-TIES"
       }
     },
     {
-      "id": "Q0-NI-03",
+      "id": "Q0-14",
       "type": "select",
-      "question": "Will you keep your [home country] bank accounts and savings open after you move?",
-      "section": "your_ties",
-      "dynamic_reference": "Q0-01 selected country name",
+      "section": "home_ties",
+      "question": "Will you keep your home country financial accounts active?",
+      "helper_text": "Maintaining financial ties demonstrates intent to return — a key part of the nonimmigrant intent assessment.",
+      "tooltip": "Closing all home country accounts before your visa interview significantly weakens your nonimmigrant intent profile.",
       "options": [
-        "Yes — I plan to keep my accounts open",
-        "Probably — I have not decided yet",
-        "No — I plan to close everything and move it all",
-        "I am not sure"
-      ],
-      "tie_tracking": "non_immigrant_intent",
-      "warning_codes": ["W-NI-03"],
-      "routing": {
-        "keeping_accounts": "positive intent signal - proceed",
-        "probably_keeping": "proceed",
-        "closing_everything": "PROCEED_RISK (W-NI-03)",
-        "not_sure": "proceed"
-      },
-      "tooltip": "Maintaining financial accounts in your home country is a simple and effective way to demonstrate ties and nonimmigrant intent. Closing everything before your interview can raise questions."
-    },
-    {
-      "id": "Q0-16",
-      "type": "select",
-      "question": "Will your spouse or any children be applying for E-2 dependent status alongside you?",
-      "section": "your_family",
-      "helper_text": "E-2 dependents travel on the same visa category. Your spouse may also apply for U.S. work authorization once in the country.",
-      "options": [
-        "No — just me",
-        "Yes — my spouse or partner",
-        "Yes — my children",
-        "Yes — my spouse and children",
-        "I have not decided yet"
+        "Yes — keeping all accounts and investments active",
+        "Keeping some, closing others",
+        "Planning to close everything",
+        "Not sure yet"
       ],
       "routing": {
-        "just_me": "solo flow - skip family section",
-        "spouse_only": "show Q0-17, Q0-18, Q0-20",
-        "children_only": "show Q0-19, Q0-20",
-        "spouse_and_children": "show Q0-17, Q0-18, Q0-19, Q0-20",
-        "not_decided": "show family section with optional framing"
-      },
-      "sub_question": {
-        "show_if": ["Yes — my spouse or partner", "Yes — my spouse and children"],
-        "question": "Are you and your spouse legally married?",
-        "options": [
-          "Yes — we are legally married",
-          "We are in a common-law or de facto relationship",
-          "Not applicable"
-        ],
-        "warning_codes": ["W-COMMONLAW"],
-        "routing": {
-          "legally_married": "standard spouse flow",
-          "common_law": "ATTORNEY_RECOMMENDED (W-COMMONLAW)",
-          "not_applicable": "proceed"
-        }
-      },
-      "tooltip": "Your spouse and unmarried children under 21 can join you in the U.S. on E-2 dependent status. Your spouse can also apply for work authorization once in the U.S."
-    },
-    {
-      "id": "Q0-17",
-      "type": "select",
-      "question": "Is your partner a citizen of a country that qualifies for the E-2 visa?",
-      "section": "your_business",
-      "show_if": {
-        "Q0-09": ["With one equal partner — 50/50", "With more than one other person"]
-      },
-      "helper_text": "Your partner does not need to be from the same country as you — they just need to be a citizen of any E-2 treaty country.",
-      "options": [
-        "Yes — they are a citizen of a treaty country",
-        "No — they are not",
-        "I am not sure"
-      ],
-      "warning_codes": ["W-17-NATIONALITY"],
-      "routing": {
-        "yes": "proceed",
-        "no": "ATTORNEY_RECOMMENDED (W-17-NATIONALITY)",
-        "not_sure": "ATTORNEY_RECOMMENDED (W-17-NATIONALITY)"
-      },
-      "tooltip": "Your partner does not need to be from the same country as you — they just need to be a citizen of any E-2 treaty country."
+        "keeping_all": "continue:tie_positive",
+        "keeping_some": "continue",
+        "closing_all": "continue:warn:W-CLOSING-ACCOUNTS",
+        "not_sure": "continue"
+      }
     },
     {
       "id": "Q0-15",
       "type": "select",
-      "question": "Will your partner be actively involved in running the business day to day?",
-      "section": "your_business",
-      "show_if": {
-        "Q0-09": ["With one equal partner — 50/50", "With more than one other person"]
-      },
+      "section": "family",
+      "question": "Will you have a business partner on this application?",
+      "helper_text": "The E-2 allows a maximum of two investors per business, each owning exactly 50%.",
+      "tooltip": "A 49/51 split or any other unequal ownership disqualifies the minority partner. The 50/50 requirement is strict.",
       "options": [
-        "Yes — they will be hands-on in the business",
-        "No — they will be more of a silent partner",
-        "We have not decided yet"
+        "No — I am the sole investor",
+        "Yes — one partner, confirmed 50/50 ownership",
+        "Yes — ownership split not yet decided",
+        "Yes — more than one partner"
       ],
-      "warning_codes": ["W-15"],
       "routing": {
-        "yes": "proceed",
-        "no": "PROCEED_RISK (W-15)",
-        "not_sure": "proceed"
+        "sole_investor": "continue",
+        "partner_50_50": "continue",
+        "partner_undecided": "continue:warn:W-PARTNERSHIP-SPLIT",
+        "multiple_partners": "stop:PR-06b"
       }
     },
     {
-      "id": "Q0-18",
+      "id": "Q0-16",
       "type": "select",
-      "question": "Does everyone coming with you have a valid passport?",
-      "section": "your_family",
-      "show_if": {
-        "Q0-16": ["Yes — my spouse or partner", "Yes — my children", "Yes — my spouse and children"]
-      },
+      "section": "family",
+      "question": "Will your spouse or children be joining you in the U.S.?",
+      "helper_text": "Your spouse and unmarried children under 21 can apply as E-2 dependents. Your spouse may also apply for U.S. work authorisation.",
+      "tooltip": "Dependent status is tied to your E-2 visa. If your visa expires or is revoked, dependent status ends simultaneously.",
       "options": [
-        "Yes — everyone has a valid passport",
-        "No — one or more passports are expired or missing",
-        "I am not sure"
+        "Just me — no dependents",
+        "My spouse or partner",
+        "My spouse and children",
+        "My children only",
+        "Not decided yet"
       ],
-      "warning_codes": ["W-17-PASSPORT"],
       "routing": {
-        "yes": "proceed",
-        "no_or_expired": "PROCEED_RISK (W-17-PASSPORT)",
-        "not_sure": "proceed with note"
+        "just_me": "continue",
+        "spouse_only": "continue",
+        "spouse_and_children": "sub:Q0-16a",
+        "children_only": "sub:Q0-16a",
+        "not_decided": "continue"
       }
     },
     {
-      "id": "Q0-19",
+      "id": "Q0-16a",
       "type": "select",
-      "question": "How old are the children who will be coming with you?",
-      "section": "your_family",
+      "section": "family",
+      "is_sub": true,
+      "parent": "Q0-16",
       "show_if": {
-        "Q0-16": ["Yes — my children", "Yes — my spouse and children"]
+        "Q0-16": ["My spouse and children", "My children only"]
       },
+      "question": "How old are the children who will be joining you?",
+      "helper_text": "E-2 dependent status is only available to unmarried children under 21.",
+      "tooltip": "Children lose E-2 dependent status on their 21st birthday. Early planning is critical for children approaching this age.",
       "options": [
-        "All under 21 and unmarried",
-        "One or more are 21 or older",
-        "One or more are married",
-        "One or more are close to turning 21 (within the next 2–3 years)"
+        "All under 18",
+        "One or more are 18–20",
+        "One or more are 21 or older"
       ],
-      "warning_codes": ["W-18-OVER21", "W-18-MARRIED", "W-18-AGEOUT"],
       "routing": {
-        "all_under_21": "proceed",
-        "21_or_older": "ATTORNEY_RECOMMENDED (W-18-OVER21)",
-        "married": "ATTORNEY_RECOMMENDED (W-18-MARRIED)",
-        "approaching_21": "PROCEED_RISK (W-18-AGEOUT)"
-      },
-      "tooltip": "E-2 dependent status is available to unmarried children under 21. The day a child turns 21, their dependent status ends — this requires planning ahead if your child is close to that age."
-    },
-    {
-      "id": "Q0-20",
-      "type": "select",
-      "question": "Has your spouse or any of your children ever had a U.S. visa refused, been denied entry, or had any criminal matters?",
-      "section": "your_family",
-      "show_if": {
-        "Q0-16": ["Yes — my spouse or partner", "Yes — my children", "Yes — my spouse and children"]
-      },
-      "options": [
-        "No — nothing to declare",
-        "Yes",
-        "I am not sure"
-      ],
-      "warning_codes": ["W-19"],
-      "routing": {
-        "no": "proceed",
-        "yes": "ATTORNEY_RECOMMENDED (W-19)",
-        "not_sure": "ATTORNEY_RECOMMENDED (W-19)"
-      },
-      "tooltip": "Each family member's application is reviewed independently. Issues with a dependent's background can affect their visa outcome — though not necessarily yours."
-    },
-    {
-      "id": "Q0-21",
-      "type": "text",
-      "question": "Where should we send your eligibility result and your personalized next-step summary?",
-      "section": "consent",
-      "validation": "email",
-      "skip_if_authenticated": true,
-      "checkbox": {
-        "label": "Send me occasional updates and tips about the E-2 process",
-        "note": "You can unsubscribe at any time. We do not share your information with third parties without your consent."
+        "all_under_18": "continue",
+        "some_18_20": "continue:warn:W-AGING-OUT",
+        "some_21_plus": "continue:warn:W-OVER_21"
       }
-    },
-    {
-      "id": "Q0-22",
-      "type": "acknowledgment",
-      "question": "Before you continue, please confirm you understand the following.",
-      "section": "consent",
-      "show_if": "attorney_recommended_and_user_continues",
-      "acknowledgment_text": "e2go is a visa preparation tool — not a law firm. Based on your answers, your situation has some complexity that may benefit from legal advice.\n\nYou are welcome to continue. We will flag these areas as you go and help you build the strongest possible application. But we want to be honest with you: a qualified immigration attorney may add real value to your case.\n\nI understand this and want to continue.",
-      "required": true
     }
   ],
   "hard_stops": {
-    "PR-01": "Citizen of non-treaty country — not eligible for E-2 visa",
-    "PR-02": "In U.S. without valid immigration status — outside safe scope",
-    "PR-03": "No funds available and no plan to obtain them",
-    "PR-04": "Loan secured only by business assets — not qualifying E-2 capital",
-    "PR-05": "Confirmed passive investor intent — E-2 requires active management",
-    "PR-06": "Three or more equal partners — creates Negative Control issue",
-    "PR-07": "Passive real estate investment — not an active qualifying business",
-    "PR-08": "Cannabis-related business — conflicts with federal law"
+    "PR-01": "The E-2 visa requires citizenship in a qualifying treaty country. Permanent residency alone does not qualify.",
+    "PR-02": "The E-2 requires capital you own and control. A primarily loan-funded investment does not meet this requirement.",
+    "PR-03": "The E-2 visa requires an active investment of your own capital. Without available funds you do not currently meet this requirement.",
+    "PR-04": "An investment under $50,000 USD faces very high risk of refusal. We would rather be honest with you now than take your money for a process unlikely to succeed.",
+    "PR-05": "The consulate expects to trace every dollar from its origin to your business. Without documentation they cannot verify your investment is lawful.",
+    "PR-06": "The E-2 requires that you enter the U.S. to develop and direct your business. A passive investment role does not meet this requirement.",
+    "PR-06b": "The E-2 structure allows a maximum of two investors per business, each at exactly 50%. Three or more investors disqualifies the application.",
+    "PR-07": "This business type does not meet E-2 requirements. Cannabis is federally illegal in the U.S. Passive real estate, gambling, and adult entertainment do not qualify.",
+    "PR-08": "Certain criminal convictions create grounds of inadmissibility under U.S. immigration law. This requires assessment by a qualified immigration attorney before you proceed.",
+    "PR-09": "Applying while inside the U.S. without valid immigration status creates serious legal risk. Please consult a qualified immigration attorney immediately."
   },
-  "non_immigrant_intent_composite": {
-    "description": "After Q0-NI-01 through Q0-NI-03, count confirmed ties",
-    "logic": {
-      "3_ties": "intent_risk = low",
-      "2_ties": "intent_risk = medium",
-      "1_tie": "PROCEED_RISK (W-NI-WEAK)",
-      "0_ties": "ATTORNEY_RECOMMENDED (W-NI-NONE)"
+  "outcomes": {
+    "PROCEED": "No disqualifying conditions, no material risk flags.",
+    "PROCEED_RISK": "One or more risk flags present, no hard stops.",
+    "ATTORNEY_RECOMMENDED": "One or more complex conditions. Attorney referral shown. Acknowledgment gate required to proceed.",
+    "DO_NOT_PROCEED": "Hard disqualifying condition detected. No payment option shown."
+  },
+  "score_weights": {
+    "base_score": 100,
+    "deductions": {
+      "attorney_flag": 8,
+      "risk_flag": 4,
+      "W-DOCS-SIGNIFICANT": 12,
+      "W-REFUSAL-RECENT": 10,
+      "W-PROPERTY-SALE": 8,
+      "W-INVEST-VERY-LOW": 6,
+      "W-INVEST-LOW": 3,
+      "W-ROLE-SUPERVISORY": 5,
+      "W-MARGINALITY": 4,
+      "W-CONVICTION-OLD": 4,
+      "W-CLOSING-ACCOUNTS": 3,
+      "W-NO-FAMILY-TIES": 3
     }
-  },
-  "investment_thresholds_usd": {
-    "clean": 150000,
-    "soft_advisory": {
-      "min": 75000,
-      "max": 149999,
-      "flag": "W-PROP-SOFT"
-    },
-    "strong_warning": {
-      "max": 74999,
-      "flag": "W-PROP-STRONG"
-    },
-    "note": "No statutory minimum. Thresholds are advisory based on observed consulate practice."
-  },
-  "version_notes": [
-    "v3.0 - Global expansion from Canada-only to 82 treaty countries",
-    "Added Q0-E2: Prior E-2 application history",
-    "Added Q0-STATE: Target U.S. state selector",
-    "Added Q0-TIMELINE: Target submission timeline",
-    "Q0-01 now uses searchable_select with treaty country validation",
-    "Q0-10 now supports sub_question for business type follow-up",
-    "Currency input expanded to support 10 currencies",
-    "All Canada-specific references changed to home country",
-    "Stage-aware routing for investment and business questions"
-  ]
+  }
 }

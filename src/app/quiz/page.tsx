@@ -1,1375 +1,755 @@
-
-
 "use client";
-
-import { useState, useEffect, useCallback } from "react";
-import Link from "next/link";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 
-// Dynamic text replacement utility
-const replaceDynamic = (text: string, answers: Record<string, string | string[]>): string => {
-  const country = answers['Q0-01'] as string || 'your country';
-  return text
-    .replace(/\[nationality\]/gi, country)
-    .replace(/\[home country\]/gi, country)
-    .replace(/\[nationality from Q0-01\]/gi, country);
-};
-
-interface SubQuestion {
-  show_if: string;
-  question: string;
-  options: string[];
-  warning_codes?: string[];
-  stop_codes?: string[];
-}
-
-interface Question {
-  id: string;
-  type: "select" | "multiselect" | "currency" | "text" | "acknowledgment" | "searchable_select" | "state_select";
-  question: string;
-  section: string;
-  options?: string[];
-  currency_options?: string[];
-  warning_codes?: string[];
-  stop_codes?: string[];
-  proportionality_thresholds_usd?: {
-    clean: { min: number; flag: null };
-    soft_advisory: { min: number; max: number; flag: string };
-    strong_warning: { max: number; flag: string };
-  };
-  show_if?: Record<string, string | string[]>;
-  validation?: string;
-  tooltip?: string;
-  display_note?: string;
-  sub_question?: SubQuestion;
-  helper_text?: string;
-}
-
-interface TreatyCountry {
-  code: string;
-  name: string;
-  consulate: string;
-  notes: string;
-}
-
-interface USState {
-  code: string;
-  name: string;
-}
-
-interface QuestionsData {
-  module: string;
-  questions: Question[];
-  hard_stops: Record<string, string>;
-}
-
-interface ScoringLogic {
-  hard_stops: Array<{ code: string; question: string; trigger: string | string[]; message?: string }>;
-  attorney_flags: Array<{ code: string; question: string; trigger: string | string[]; level?: string; stop_code?: string; message?: string }>;
-  risk_flags: Array<{ code: string; question: string; trigger: string | string[]; level?: string }>;
-}
-
-const US_STATES: USState[] = [
-  { code: "AL", name: "Alabama" }, { code: "AK", name: "Alaska" }, { code: "AZ", name: "Arizona" },
-  { code: "AR", name: "Arkansas" }, { code: "CA", name: "California" }, { code: "CO", name: "Colorado" },
-  { code: "CT", name: "Connecticut" }, { code: "DE", name: "Delaware" }, { code: "FL", name: "Florida" },
-  { code: "GA", name: "Georgia" }, { code: "HI", name: "Hawaii" }, { code: "ID", name: "Idaho" },
-  { code: "IL", name: "Illinois" }, { code: "IN", name: "Indiana" }, { code: "IA", name: "Iowa" },
-  { code: "KS", name: "Kansas" }, { code: "KY", name: "Kentucky" }, { code: "LA", name: "Louisiana" },
-  { code: "ME", name: "Maine" }, { code: "MD", name: "Maryland" }, { code: "MA", name: "Massachusetts" },
-  { code: "MI", name: "Michigan" }, { code: "MN", name: "Minnesota" }, { code: "MS", name: "Mississippi" },
-  { code: "MO", name: "Missouri" }, { code: "MT", name: "Montana" }, { code: "NE", name: "Nebraska" },
-  { code: "NV", name: "Nevada" }, { code: "NH", name: "New Hampshire" }, { code: "NJ", name: "New Jersey" },
-  { code: "NM", name: "New Mexico" }, { code: "NY", name: "New York" }, { code: "NC", name: "North Carolina" },
-  { code: "ND", name: "North Dakota" }, { code: "OH", name: "Ohio" }, { code: "OK", name: "Oklahoma" },
-  { code: "OR", name: "Oregon" }, { code: "PA", name: "Pennsylvania" }, { code: "RI", name: "Rhode Island" },
-  { code: "SC", name: "South Carolina" }, { code: "SD", name: "South Dakota" }, { code: "TN", name: "Tennessee" },
-  { code: "TX", name: "Texas" }, { code: "UT", name: "Utah" }, { code: "VT", name: "Vermont" },
-  { code: "VA", name: "Virginia" }, { code: "WA", name: "Washington" }, { code: "WV", name: "West Virginia" },
-  { code: "WI", name: "Wisconsin" }, { code: "WY", name: "Wyoming" }
+const TREATY_COUNTRIES = [
+  "Albania","Argentina","Armenia","Australia","Austria","Azerbaijan",
+  "Bahrain","Bangladesh","Belgium","Bolivia","Bosnia and Herzegovina",
+  "Bulgaria","Cameroon","Canada","Chile","Colombia","Congo",
+  "Costa Rica","Croatia","Czech Republic","Denmark","Ecuador",
+  "Egypt","Estonia","Ethiopia","Finland","France","Georgia",
+  "Germany","Greece","Grenada","Honduras","Ireland","Israel",
+  "Italy","Japan","Jordan","Kazakhstan","South Korea","Kosovo",
+  "Kyrgyzstan","Latvia","Liberia","Lithuania","Luxembourg",
+  "Macedonia","Mexico","Moldova","Mongolia","Montenegro","Morocco",
+  "Netherlands","New Zealand","Norway","Oman","Pakistan","Panama",
+  "Paraguay","Philippines","Poland","Romania","Senegal","Serbia",
+  "Singapore","Slovak Republic","Slovenia","Spain","Sri Lanka",
+  "Suriname","Sweden","Switzerland","Thailand","Togo",
+  "Trinidad and Tobago","Tunisia","Turkey","Ukraine",
+  "United Kingdom","Yugoslavia"
 ];
 
-// Currency symbols for display - keeping for future use
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const _CURRENCY_SYMBOLS = { USD: "$", CAD: "C$", EUR: "€", GBP: "£", AUD: "A$", JPY: "¥", CNY: "¥", INR: "₹", MXN: "MX$", BRL: "R$" };
+const SECTIONS = ["Eligibility","Investment","Business","History","Home ties","Family"];
+
+const HARD_STOPS: Record<string, { title: string; body: string }> = {
+  "PR-01": {
+    title: "Citizenship in a treaty country required",
+    body: "The E-2 visa requires citizenship in a qualifying treaty country. Permanent residency alone does not qualify. We recommend consulting a qualified immigration attorney about alternative visa options."
+  },
+  "PR-02": {
+    title: "Loan-funded investments require legal review",
+    body: "The E-2 requires capital you own and control. A primarily loan-funded investment does not meet this requirement. A qualified immigration attorney can assess your specific situation."
+  },
+  "PR-03": {
+    title: "Investment capital required",
+    body: "The E-2 visa requires an active investment of your own capital. Without available funds you do not currently meet this requirement. When your situation changes, we will be here."
+  },
+  "PR-04": {
+    title: "Investment below threshold",
+    body: "An investment under $50,000 USD faces very high risk of refusal. We would rather be honest with you now than take your money for a process unlikely to succeed at this level."
+  },
+  "PR-05": {
+    title: "Documentation required",
+    body: "The consulate expects to trace every dollar from its origin to your business. Without documentation they cannot verify your investment is lawful — and this is grounds for refusal."
+  },
+  "PR-06": {
+    title: "Active management required",
+    body: "The E-2 requires that you enter the U.S. to develop and direct your business. A passive investment role does not meet this requirement."
+  },
+  "PR-06b": {
+    title: "More than two investors disqualifies the application",
+    body: "The E-2 structure allows a maximum of two investors per business at exactly 50% each. Three or more investors disqualifies the application. Speak with an attorney about restructuring options."
+  },
+  "PR-07": {
+    title: "This business type does not qualify",
+    body: "Cannabis is federally illegal in the U.S. Passive real estate, gambling, and adult entertainment do not meet E-2 requirements. Speak with an attorney about alternative options."
+  },
+  "PR-08": {
+    title: "Serious convictions require legal assessment",
+    body: "Certain criminal convictions create grounds of inadmissibility under U.S. immigration law. This requires assessment by a qualified immigration attorney before you proceed."
+  },
+  "PR-09": {
+    title: "U.S. presence without valid status",
+    body: "Applying while inside the U.S. without valid immigration status creates serious legal risk and may permanently affect your ability to re-enter. Please consult a qualified immigration attorney immediately."
+  }
+};
+
+type Answer = string | string[];
+
+const QUESTIONS = [
+  {
+    id: "Q0-01", sec: 0, type: "country",
+    q: "What is your citizenship?",
+    help: "The E-2 visa requires citizenship in a qualifying treaty country. Permanent residency alone does not qualify.",
+    tip: "There are 82 E-2 treaty countries. Dual citizenship in any treaty country qualifies you.",
+  },
+  {
+    id: "Q0-02", sec: 0, type: "select",
+    q: "Where are you applying from?",
+    help: "Your location determines which application path is available to you.",
+    tip: "Most applicants apply through their home country consulate. If you are in the U.S. on valid status, Change of Status may be an option.",
+    opts: [
+      { t: "From my home country — consular processing", a: "ok" },
+      { t: "From inside the U.S. — on a valid visa or status", a: "ok" },
+      { t: "From inside the U.S. — without valid status", a: "stop", code: "PR-09" },
+    ]
+  },
+  {
+    id: "Q0-03", sec: 1, type: "select",
+    q: "How are you funding your investment?",
+    help: "The E-2 requires capital you own and control — committed to the business.",
+    tip: "Borrowed funds can be part of the picture but cannot be the primary source.",
+    opts: [
+      { t: "Personal funds — ready or accessible", a: "ok" },
+      { t: "Liquidating assets to fund it", a: "ok" },
+      { t: "Primarily a business loan or third-party financing", a: "stop", code: "PR-02" },
+      { t: "I don't have funds available yet", a: "stop", code: "PR-03" },
+    ]
+  },
+  {
+    id: "Q0-04", sec: 1, type: "select",
+    q: "How much are you investing?",
+    help: "No official minimum exists, but consulates expect the investment to be substantial relative to the total business cost.",
+    tip: "The substantiality test compares your investment to the total cost of establishing the business.",
+    opts: [
+      { t: "Over $150,000 USD", a: "ok" },
+      { t: "$100,000 – $150,000 USD", a: "ok" },
+      { t: "$75,000 – $99,999 USD", a: "warn", w: "Within range — your business selection will be critical at this level." },
+      { t: "$50,000 – $74,999 USD", a: "warn", w: "Below the typical threshold. This significantly narrows eligible business types." },
+      { t: "Under $50,000 USD", a: "stop", code: "PR-04" },
+    ]
+  },
+  {
+    id: "Q0-05", sec: 1, type: "multi",
+    q: "Where did this money originate?",
+    help: "Select all that apply — this builds your source-of-funds narrative for the consulate.",
+    tip: "A complete, unbroken paper trail from source to investment is one of the most scrutinised elements of any E-2 application.",
+    opts: [
+      { t: "Personal savings" }, { t: "Property sale" }, { t: "Business sale" },
+      { t: "Inheritance or gift" }, { t: "Retirement account withdrawal" },
+      { t: "Investment portfolio" }, { t: "Home equity loan" },
+      { t: "Employment income accumulated over time" },
+    ]
+  },
+  {
+    id: "Q0-06", sec: 1, type: "select",
+    q: "How well documented is your funds trail?",
+    help: "Bank statements, contracts, records — the consulate will trace every dollar from source to investment.",
+    tip: "Gaps in documentation are a leading cause of 221(g) requests and refusals.",
+    opts: [
+      { t: "Fully documented — bank statements, contracts, records", a: "ok" },
+      { t: "Mostly — minor gaps I can explain", a: "warn", w: "Minor gaps are manageable with a clear narrative. We will help you address them." },
+      { t: "Partial — significant gaps exist", a: "warn", w: "Significant gaps are a serious risk factor. Legal guidance is strongly recommended." },
+      { t: "I cannot document the source of my funds", a: "stop", code: "PR-05" },
+    ]
+  },
+  {
+    id: "Q0-07", sec: 2, type: "select",
+    q: "What will your role in this business be?",
+    help: "The E-2 requires that you enter the U.S. to develop and direct your business — not simply hold an investment.",
+    tip: "Active management means day-to-day involvement. A supervisory-only role significantly weakens your application.",
+    opts: [
+      { t: "Primary owner-operator — managing day-to-day", a: "ok" },
+      { t: "50/50 partner — both of us managing the business", a: "ok" },
+      { t: "I'll hire a manager — involved but not daily", a: "warn", w: "A supervisory-only role is a risk factor. Your application must demonstrate meaningful active involvement." },
+      { t: "Passive investor — not involved in operations", a: "stop", code: "PR-06" },
+    ]
+  },
+  {
+    id: "Q0-08", sec: 2, type: "select",
+    q: "Where are you in your business search?",
+    help: "You do not need a business chosen to start. Knowing where you are helps us guide you correctly.",
+    tip: "The business must be real and operating — or at a committed stage of investment — by your consulate interview.",
+    opts: [
+      { t: "I have a specific business or franchise in mind", a: "sub08a" },
+      { t: "I have a general direction but haven't chosen yet", a: "broker" },
+      { t: "I'm open — I haven't started looking", a: "broker" },
+    ]
+  },
+  {
+    id: "Q0-08a", sec: 2, type: "select", isSub: true,
+    q: "What kind of business is it?",
+    help: "",
+    tip: "Certain business types are categorically incompatible with the E-2 visa regardless of investment amount.",
+    opts: [
+      { t: "A franchise — buying into an established brand", a: "broker" },
+      { t: "Buying an existing independent business", a: "ok" },
+      { t: "Starting a new business from scratch", a: "ok" },
+      { t: "Professional services or consulting", a: "warn", w: "Solo consulting businesses can face scrutiny under the marginality test. Your plan must show capacity to grow beyond one person." },
+      { t: "Cannabis, gambling, adult entertainment, or passive real estate", a: "stop", code: "PR-07" },
+      { t: "Something else", a: "ok" },
+    ]
+  },
+  {
+    id: "Q0-08b", sec: 2, type: "select", isSub: true,
+    q: "Would you like us to make an introduction?",
+    help: "Based on your profile, we can connect you with E-2 specialist franchise brokers in your investment range. Introductions made only with your consent.",
+    tip: "Our broker partners understand which businesses have the strongest track record at consulates worldwide.",
+    opts: [
+      { t: "Yes — please connect me with a broker", a: "franchise_yes" },
+      { t: "No thanks, I'll find one myself", a: "ok" },
+    ]
+  },
+  {
+    id: "Q0-09", sec: 3, type: "select",
+    q: "Have you ever been refused a U.S. visa?",
+    help: "Prior refusals must be disclosed on your DS-160 form. They are not automatically disqualifying but require careful handling.",
+    tip: "Honest disclosure is legally required. Concealing a prior refusal is grounds for a permanent bar from the United States.",
+    opts: [
+      { t: "No", a: "ok" },
+      { t: "Yes — once, more than 5 years ago", a: "warn", w: "An older refusal is manageable with proper preparation and honest disclosure. We will address it in your application." },
+      { t: "Yes — once within the last 5 years", a: "attorney" },
+      { t: "Yes — more than once", a: "attorney" },
+    ]
+  },
+  {
+    id: "Q0-10", sec: 3, type: "select",
+    q: "Have you ever been refused entry to the U.S. or deported?",
+    help: "",
+    tip: "Removal or deportation creates additional grounds of inadmissibility that must be disclosed and addressed.",
+    opts: [
+      { t: "No", a: "ok" },
+      { t: "Refused entry at the border", a: "attorney" },
+      { t: "Deported or removed from the U.S.", a: "attorney" },
+    ]
+  },
+  {
+    id: "Q0-11", sec: 3, type: "select",
+    q: "Do you have any criminal convictions?",
+    help: "Include convictions in any country. Certain offences create grounds of inadmissibility under U.S. immigration law.",
+    tip: "Even minor convictions in your home country may affect U.S. admissibility. Honest disclosure is legally required.",
+    opts: [
+      { t: "No criminal convictions", a: "ok" },
+      { t: "Minor conviction — more than 10 years ago", a: "warn", w: "An older minor conviction may not affect admissibility but must be disclosed. We will address it in your interview preparation." },
+      { t: "Minor conviction — within the last 10 years", a: "attorney" },
+      { t: "Serious conviction", a: "stop", code: "PR-08" },
+      { t: "I'm not sure whether my record affects admissibility", a: "attorney" },
+    ]
+  },
+  {
+    id: "Q0-12", sec: 4, type: "select",
+    q: "What is your plan for your home country property?",
+    help: "The consulate must be confident you intend to return home when your visa expires.",
+    tip: "Selling your home country property before your visa is approved is one of the most cited reasons for a 214(b) immigrant intent refusal.",
+    opts: [
+      { t: "I own property and plan to keep it", a: "ok" },
+      { t: "I own property and plan to sell it before my interview", a: "warn", w: "Selling your home country property before your visa is approved is one of the most cited reasons for a 214(b) refusal. Do not sell until after your visa is stamped." },
+      { t: "I own property — undecided on selling", a: "warn", w: "We strongly recommend not selling your home country property until after your visa is approved." },
+      { t: "I rent — no property to consider", a: "ok" },
+      { t: "I don't own property in my home country", a: "ok" },
+    ]
+  },
+  {
+    id: "Q0-13", sec: 4, type: "select",
+    q: "Will close family remain in your home country after you move?",
+    help: "The consulate scores ongoing ties to your home country. Family ties are one of the strongest signals.",
+    tip: "The E-2 is a nonimmigrant visa — demonstrating strong home country ties is essential.",
+    opts: [
+      { t: "Yes — spouse, children, parents, or siblings staying", a: "ok" },
+      { t: "Some family staying, some coming with me", a: "ok" },
+      { t: "No — all family is moving with me", a: "warn", w: "No remaining family ties can raise concerns at the consulate. Other strong ties — property, financial accounts — will be important for your application." },
+    ]
+  },
+  {
+    id: "Q0-14", sec: 4, type: "select",
+    q: "Will you keep your home country financial accounts active?",
+    help: "Maintaining financial ties demonstrates intent to return — a key part of the nonimmigrant intent assessment.",
+    tip: "Closing all home country accounts before your visa interview significantly weakens your nonimmigrant intent profile.",
+    opts: [
+      { t: "Yes — keeping all accounts and investments active", a: "ok" },
+      { t: "Keeping some, closing others", a: "ok" },
+      { t: "Planning to close everything", a: "warn", w: "Closing all home country financial accounts before your interview is a red flag for immigrant intent. We strongly recommend keeping at least one account active." },
+      { t: "Not sure yet", a: "ok" },
+    ]
+  },
+  {
+    id: "Q0-15", sec: 5, type: "select",
+    q: "Will you have a business partner on this application?",
+    help: "The E-2 allows a maximum of two investors per business, each owning exactly 50%.",
+    tip: "A 49/51 split or any other unequal ownership disqualifies the minority partner. The 50/50 requirement is strict.",
+    opts: [
+      { t: "No — I am the sole investor", a: "ok" },
+      { t: "Yes — one partner, confirmed 50/50 ownership", a: "ok" },
+      { t: "Yes — ownership split not yet decided", a: "warn", w: "If applying with a partner, the split must be exactly 50/50 for both to qualify. Confirm this before proceeding." },
+      { t: "Yes — more than one partner", a: "stop", code: "PR-06b" },
+    ]
+  },
+  {
+    id: "Q0-16", sec: 5, type: "select",
+    q: "Will your spouse or children be joining you in the U.S.?",
+    help: "Your spouse and unmarried children under 21 can apply as E-2 dependents. Your spouse may also apply for U.S. work authorisation.",
+    tip: "Dependent status is tied to your E-2 visa. If your visa expires or is revoked, dependent status ends simultaneously.",
+    opts: [
+      { t: "Just me — no dependents", a: "ok" },
+      { t: "My spouse or partner", a: "ok" },
+      { t: "My spouse and children", a: "sub16a" },
+      { t: "My children only", a: "sub16a" },
+      { t: "Not decided yet", a: "ok" },
+    ]
+  },
+  {
+    id: "Q0-16a", sec: 5, type: "select", isSub: true,
+    q: "How old are the children who will be joining you?",
+    help: "E-2 dependent status is only available to unmarried children under 21.",
+    tip: "Children lose E-2 dependent status on their 21st birthday. Early planning is critical for children approaching this age.",
+    opts: [
+      { t: "All under 18", a: "ok" },
+      { t: "One or more are 18–20", a: "warn", w: "Children lose E-2 dependent status on their 21st birthday. If a child is 18–20, your timeline must account for this window. We will flag this in your compliance calendar." },
+      { t: "One or more are 21 or older", a: "warn", w: "Children 21 or older cannot be included as E-2 dependents. They would need to apply for their own visa separately." },
+    ]
+  },
+];
+
+function calculateScore(warnings: string[], attorneyFlags: string[]): number {
+  let score = 100;
+  score -= warnings.length * 4;
+  score -= attorneyFlags.length * 8;
+  return Math.max(score, 0);
+}
+
+function getOutcome(warnings: string[], attorneyFlags: string[]): string {
+  if (attorneyFlags.length >= 2) return "ATTORNEY_RECOMMENDED";
+  if (attorneyFlags.length === 1) return "ATTORNEY_RECOMMENDED";
+  if (warnings.length > 0) return "PROCEED_RISK";
+  return "PROCEED";
+}
 
 export default function QuizPage() {
   const router = useRouter();
-  const [questionsData, setQuestionsData] = useState<QuestionsData | null>(null);
-  const [scoringLogic, setScoringLogic] = useState<ScoringLogic | null>(null);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, string | string[]>>({});
-  const [stopScreen, setStopScreen] = useState<{ code: string; message: string } | null>(null);
-  const [currencyToggle, setCurrencyToggle] = useState<string>("USD");
-  const [currencyValue, setCurrencyValue] = useState("");
-  const [proportionalityFlag, setProportionalityFlag] = useState<string | null>(null);
   const [supabase] = useState(() => createBrowserSupabaseClient());
-  const [isAnimating, setIsAnimating] = useState(false);
-  const [emailValue, setEmailValue] = useState("");
-  // v3 state
-  const [treatyCountries, setTreatyCountries] = useState<TreatyCountry[]>([]);
+  const [loggedInUser, setLoggedInUser] = useState<{ id: string; email: string } | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
+  const authCheckTimeout = useRef<NodeJS.Timeout | null>(null);
+
+  const [cur, setCur] = useState(0);
+  const [answers, setAnswers] = useState<Record<string, Answer>>({});
+  const [stopCode, setStopCode] = useState<string | null>(null);
+  const [warnings, setWarnings] = useState<string[]>([]);
+  const [attorneyFlags, setAttorneyFlags] = useState<string[]>([]);
+  const [franchiseInterest, setFranchiseInterest] = useState(false);
   const [countrySearch, setCountrySearch] = useState("");
-  const [selectedCountry, setSelectedCountry] = useState<TreatyCountry | null>(null);
-  const [showCountryDropdown, setShowCountryDropdown] = useState(false);
-  const [stateSearch, setStateSearch] = useState("");
-  const [showStateDropdown, setShowStateDropdown] = useState(false);
-  const [currencyRates, setCurrencyRates] = useState<Record<string, number>>({});
-  const [cannabisGatePassed, setCannabisGatePassed] = useState(false);
-  const [showCannabisGate, setShowCannabisGate] = useState(false);
-  const [knownEmail, setKnownEmail] = useState<string | null>(null);
+  const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
+  const [multiSel, setMultiSel] = useState<number[]>([]);
+  const [warnMsg, setWarnMsg] = useState<string | null>(null);
+  const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
+  const [email, setEmail] = useState("");
   const [caslConsent, setCaslConsent] = useState(false);
+  const [showEmailGate, setShowEmailGate] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [isAnimating, setIsAnimating] = useState(false);
 
-  // Fetch treaty countries and currency rates (v3)
-  useEffect(() => {
-    fetch("/data/treaty_countries.json")
-      .then((r) => r.json())
-      .then((data) => {
-        setTreatyCountries(data.countries || []);
-      })
-      .catch(console.error);
-  }, []);
+  const visibleQuestions = QUESTIONS;
+  const q = visibleQuestions[cur];
 
-  // Fetch currency rates for all supported currencies (v3)
   useEffect(() => {
-    const fetchRates = async () => {
+    authCheckTimeout.current = setTimeout(() => {
+      setAuthChecked(true);
+    }, 3000);
+
+    const checkAuth = async () => {
       try {
-        const res = await fetch("https://open.er-api.com/v6/latest/USD");
-        const data = await res.json();
-        if (data.rates) {
-          setCurrencyRates(data.rates);
+        const { data: { user } } = await supabase.auth.getUser();
+        if (authCheckTimeout.current) clearTimeout(authCheckTimeout.current);
+        if (user) {
+          setLoggedInUser({ id: user.id, email: user.email || "" });
+          const { data: existing } = await supabase
+            .from("quiz_sessions")
+            .select("id, outcome")
+            .eq("user_id", user.id)
+            .not("outcome", "is", null)
+            .order("completed_at", { ascending: false })
+            .limit(1)
+            .single();
+          if (existing) {
+            router.push("/dashboard");
+            return;
+          }
         }
       } catch {
-        console.error("Failed to fetch currency rates");
-      }
-    };
-    fetchRates();
-  }, []);
-
-  // Load questions and scoring logic
-  useEffect(() => {
-    // Load cannabis gate state from localStorage
-    const saved = localStorage.getItem("e2go_cannabis_gate_passed");
-    if (saved === "true") {
-      setCannabisGatePassed(true);
-    }
-  }, []);
-
-  // Check if user is authenticated to skip Q0-21 email
-  useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user?.email) {
-        setKnownEmail(user.email);
+      } finally {
+        setAuthChecked(true);
       }
     };
     checkAuth();
-  }, [supabase]);
-
-  useEffect(() => {
-    Promise.all([
-      fetch("/data/module0_questions.json").then((r) => r.json()),
-      fetch("/data/module0_scoring_logic.json").then((r) => r.json()),
-    ]).then(([q, s]) => {
-      setQuestionsData(q);
-      setScoringLogic(s);
-    });
-  }, []);
-
-  // Filter questions based on show_if conditions
-  const getVisibleQuestions = useCallback(() => {
-    if (!questionsData) return [];
-    return questionsData.questions.filter((q) => {
-      // Skip email question for logged-in users
-      if ((q as {skip_if_authenticated?: boolean}).skip_if_authenticated && knownEmail) return false;
-      // Skip Q0-21 if user email is already known
-      if (q.id === "Q0-21" && knownEmail) return false;
-      if (!q.show_if) return true;
-      for (const [dependQId, dependValue] of Object.entries(q.show_if)) {
-        const dependentAnswer = answers[dependQId];
-        if (!dependentAnswer) return false;
-        if (Array.isArray(dependValue)) {
-          if (!dependValue.includes(dependentAnswer as string)) return false;
-        } else {
-          if (dependentAnswer !== dependValue) return false;
-        }
-      }
-      return true;
-    });
-  }, [questionsData, answers, knownEmail]);
-
-  const visibleQuestions = getVisibleQuestions();
-  const currentQuestion = visibleQuestions[currentIndex];
-
-  // Get current section
-  const getCurrentSection = () => {
-    if (!currentQuestion) return "";
-    const sections: Record<string, string> = {
-      who_you_are: "Who You Are",
-      your_investment: "Your Investment",
-      your_business: "Your Business Plans",
-      where_youre_headed: "Where You're Headed",
-      your_history: "Your History",
-      your_ties: "Your Ties to Home",
-      your_family: "Your Family",
-      consent: "Consent",
+    return () => {
+      if (authCheckTimeout.current) clearTimeout(authCheckTimeout.current);
     };
-    return sections[currentQuestion.section] || currentQuestion.section;
-  };
+  }, [supabase, router]);
 
-  // Filter countries based on search (v3)
-  const filteredCountries = treatyCountries.filter(c =>
-    c.name.toLowerCase().includes(countrySearch.toLowerCase())
-  ).slice(0, 10);
-
-  // Filter states based on search (v3)
-  const filteredStates = US_STATES.filter(s =>
-    s.name.toLowerCase().includes(stateSearch.toLowerCase())
-  );
-
-  // Handle treaty country selection (v3)
-  const handleCountrySelect = (country: TreatyCountry) => {
-    setSelectedCountry(country);
-    setShowCountryDropdown(false);
-    setCountrySearch(country.name);
-
-    const newAnswers = { ...answers, [currentQuestion!.id]: country.name };
-    setAnswers(newAnswers);
-
-    // Check if it's a treaty country
-    if (country.notes?.includes("No E-2 treaty") || country.notes?.includes("EMERGENCY")) {
-      setStopScreen({ code: "PR-01", message: `${country.name} does not have an E-2 treaty with the United States.` });
-      return;
-    }
-
-    // Check for Iran special case
-    if (country.code === "IR") {
-      setStopScreen({ code: "PR-01", message: "Iran has an E-2 treaty but the U.S. Embassy is closed. No processing available. Consider obtaining citizenship in an active E-2 treaty country." });
-      return;
-    }
-
+  const advance = useCallback(() => {
     setIsAnimating(true);
-    setTimeout(() => setIsAnimating(false), 200);
-    if (currentIndex < visibleQuestions.length - 1) {
-      setCurrentIndex(currentIndex + 1);
-    } else {
-      calculateAndRedirect(newAnswers);
-    }
-  };
-
-  // Handle state selection (v3)
-  const handleStateSelect = (stateName: string) => {
-    setShowStateDropdown(false);
-    setStateSearch(stateName);
-    const newAnswers = { ...answers, [currentQuestion!.id]: stateName };
-    setAnswers(newAnswers);
-
-    setIsAnimating(true);
-    setTimeout(() => setIsAnimating(false), 200);
-    if (currentIndex < visibleQuestions.length - 1) {
-      setCurrentIndex(currentIndex + 1);
-    } else {
-      calculateAndRedirect(newAnswers);
-    }
-  };
-
-  // Handle sub-question answer (v3)
-  const handleSubQuestionAnswer = (answer: string) => {
-    if (!currentQuestion?.sub_question) return;
-    const newAnswers = { ...answers, [`${currentQuestion.id}_sub`]: answer };
-    setAnswers(newAnswers);
-
-    // Check sub_question hard stops
-    if (currentQuestion.sub_question.stop_codes?.length) {
-      if (answer === "A property rental or investment business") {
-        setStopScreen({ code: "PR-07", message: "A passive real estate investment does not qualify for an E-2 visa. The E-2 requires an active, operating business." });
-        return;
-      }
-    }
-
-    // Show cannabis informational gate after sub-question (not for property rental or "something else")
-    if (!cannabisGatePassed && currentQuestion.id === "Q0-10" &&
-        answer !== "A property rental or investment business" && answer !== "Something else") {
-      setShowCannabisGate(true);
-      return;
-    }
-
-    setIsAnimating(true);
-    setTimeout(() => setIsAnimating(false), 200);
-    if (currentIndex < visibleQuestions.length - 1) {
-      setCurrentIndex(currentIndex + 1);
-    } else {
-      calculateAndRedirect(newAnswers);
-    }
-  };
-
-  // Check for hard stops after each answer
-  const checkHardStops = useCallback(
-    (questionId: string, answer: string) => {
-      if (!scoringLogic || !questionsData) return;
-
-      const hardStops = scoringLogic.hard_stops;
-      for (const stop of hardStops) {
-        if (stop.question === questionId && stop.trigger.includes(answer)) {
-          const message = questionsData.hard_stops[stop.code];
-          setStopScreen({ code: stop.code, message: message || stop.code });
-          return;
+    setTimeout(() => {
+      setIsAnimating(false);
+      setCur(prev => {
+        const next = prev + 1;
+        if (next >= visibleQuestions.length) {
+          return prev;
         }
-      }
-    },
-    [scoringLogic, questionsData]
-  );
+        return next;
+      });
+      setSelectedIdx(null);
+      setWarnMsg(null);
+      setMultiSel([]);
+    }, 200);
+  }, [visibleQuestions.length]);
 
-  // Handle answer selection
-  const handleAnswer = (answer: string) => {
-    if (!currentQuestion) return;
+  const handleComplete = useCallback(async (finalAnswers: Record<string, Answer>, finalWarnings: string[], finalAttorneyFlags: string[], finalFranchise: boolean) => {
+    const score = calculateScore(finalWarnings, finalAttorneyFlags);
+    const outcome = getOutcome(finalWarnings, finalAttorneyFlags);
 
-    setIsAnimating(true);
-    setTimeout(() => setIsAnimating(false), 200);
-
-    const newAnswers = { ...answers, [currentQuestion.id]: answer };
-
-    // Wire franchise referral interest
-    if (currentQuestion.id === "Q0-FRANCHISE-REFERRAL" && answer === "Yes — please make an introduction") {
-      newAnswers["franchise_interest"] = "true";
-    }
-
-    setAnswers(newAnswers);
-
-    // Check hard stops
-    checkHardStops(currentQuestion.id, answer);
-
-    // Auto-advance for select type
-    if (currentQuestion.type === "select" && !stopScreen) {
-      // Don't auto-advance if this answer triggers a sub_question
-      const subQ = currentQuestion.sub_question;
-      const triggersSubQ = subQ && (
-        Array.isArray(subQ.show_if)
-          ? subQ.show_if.includes(answer)
-          : subQ.show_if === answer
-      );
-      if (triggersSubQ) return;
-      if (currentIndex < visibleQuestions.length - 1) {
-        setCurrentIndex(currentIndex + 1);
-      } else {
-        // Final question - calculate score and redirect
-        calculateAndRedirect(newAnswers);
-      }
-    }
-  };
-
-  // Handle multiselect continue
-  const handleMultiselectContinue = () => {
-    const selected = currentQuestion?.options?.filter((opt) => answers[currentQuestion.id]?.includes(opt)) || [];
-    if (selected.length === 0) return;
-
-    setIsAnimating(true);
-    setTimeout(() => setIsAnimating(false), 200);
-
-    if (currentIndex < visibleQuestions.length - 1) {
-      setCurrentIndex(currentIndex + 1);
-    } else {
-      calculateAndRedirect(answers);
-    }
-  };
-
-  // Handle currency question
-  const handleCurrencyContinue = () => {
-    if (!currencyValue || !currentQuestion) return;
-
-    const amount = parseFloat(currencyValue.replace(/,/g, ''));
-    // Use multi-currency rate conversion (v3)
-    let amountUSD = amount;
-    if (currencyToggle !== "USD" && currencyRates[currencyToggle]) {
-      amountUSD = amount / currencyRates[currencyToggle];
-    }
-
-    // Check proportionality
-    if (currentQuestion.proportionality_thresholds_usd) {
-      if (amountUSD < 75000) {
-        setProportionalityFlag("W-PROP-STRONG");
-      } else if (amountUSD < 150000) {
-        setProportionalityFlag("W-PROP-SOFT");
-      } else {
-        setProportionalityFlag(null);
-      }
-    }
-
-    const newAnswers = { ...answers, [currentQuestion.id]: currencyValue, [`${currentQuestion.id}_currency`]: currencyToggle };
-    setAnswers(newAnswers);
-
-    setIsAnimating(true);
-    setTimeout(() => setIsAnimating(false), 200);
-
-    if (currentIndex < visibleQuestions.length - 1) {
-      setCurrentIndex(currentIndex + 1);
-    } else {
-      calculateAndRedirect(newAnswers);
-    }
-  };
-
-  // Handle text/email question
-  const handleTextContinue = () => {
-    if (!emailValue || !currentQuestion) return;
-
-    const newAnswers = { ...answers, [currentQuestion.id]: emailValue };
-    setAnswers(newAnswers);
-
-    setIsAnimating(true);
-    setTimeout(() => setIsAnimating(false), 200);
-
-    if (currentIndex < visibleQuestions.length - 1) {
-      setCurrentIndex(currentIndex + 1);
-    } else {
-      calculateAndRedirect(newAnswers);
-    }
-  };
-
-  // Handle back
-  const handleBack = () => {
-    if (currentIndex > 0) {
-      setIsAnimating(true);
-      setTimeout(() => setIsAnimating(false), 200);
-      setCurrentIndex(currentIndex - 1);
-    }
-  };
-
-  // Save quiz_session to Supabase and handle email verification flow
-  const calculateAndRedirect = async (finalAnswers: Record<string, string | string[]>) => {
-    if (!scoringLogic) return;
-
-    // 1. Calculate outcome by evaluating all scoring rules against finalAnswers
-    const evaluateTrigger = (trigger: string | string[], answer: string | string[] | undefined): boolean => {
-      if (answer === undefined || answer === null) return false;
-      const answerArr = Array.isArray(answer) ? answer : [answer];
-
-      if (typeof trigger === 'string') {
-        const numericAnswer = answerArr
-          .map(a => {
-            if (typeof a === 'number') return a;
-            if (typeof a === 'string') {
-              const m = a.match(/[\d,]+/);
-              return m ? parseFloat(m[0].replace(/,/g, '')) : NaN;
-            }
-            return NaN;
-          })
-          .find(n => !isNaN(n));
-
-        if (numericAnswer === undefined) return false;
-        if (trigger === 'amount_usd < 75000') return numericAnswer < 75000;
-        if (trigger === '75000 <= amount_usd <= 149999') return numericAnswer >= 75000 && numericAnswer <= 149999;
-        return false;
-      }
-
-      return answerArr.some(a => trigger.includes(a));
-    };
-
-    const hardStopCodes: string[] = [];
-    const attorneyFlags: string[] = [];
-    const riskFlags: string[] = [];
-
-    for (const stop of scoringLogic.hard_stops ?? []) {
-      if (evaluateTrigger(stop.trigger, finalAnswers[stop.question])) {
-        hardStopCodes.push(stop.code);
-      }
-    }
-
-    for (const flag of scoringLogic.attorney_flags ?? []) {
-      if (evaluateTrigger(flag.trigger, finalAnswers[flag.question])) {
-        if (flag.level === 'do_not_proceed' && flag.stop_code) {
-          if (!hardStopCodes.includes(flag.stop_code)) hardStopCodes.push(flag.stop_code);
-        } else {
-          attorneyFlags.push(flag.code);
-        }
-      }
-    }
-
-    for (const flag of scoringLogic.risk_flags ?? []) {
-      if (evaluateTrigger(flag.trigger, finalAnswers[flag.question])) {
-        riskFlags.push(flag.code);
-      }
-    }
-
-    const outcome: string = hardStopCodes.length > 0
-      ? 'not_qualified'
-      : attorneyFlags.length > 0
-        ? 'attorney_required'
-        : riskFlags.length > 0
-          ? 'qualified_with_risks'
-          : 'qualified';
-
-    const { data: { user } } = await supabase.auth.getUser();
-
-    // Save quiz_session first
-    const { data: session, error: sessionError } = await supabase.from("quiz_sessions").insert({
-      user_id: user?.id || null,
-      email: (finalAnswers["Q0-21"] as string) || null,
+    const resultData = {
       outcome,
-      hard_stop_codes: hardStopCodes,
-      attorney_flag_codes: attorneyFlags,
-      risk_flag_codes: riskFlags,
-      application_type: finalAnswers["Q0-09"] === "Two equal 50/50 owners" ? "partnership" : "solo",
-      casl_consent: caslConsent,
-      casl_consent_at: caslConsent ? new Date().toISOString() : null,
-    }).select('id').single();
-
-    if (sessionError) {
-      console.error("Session save error:", sessionError);
-      alert("Quiz save error: " + JSON.stringify(sessionError));
-      return;
-    }
-
-    const result = {
-      outcome,
-      hard_stop_codes: hardStopCodes,
-      attorney_flag_codes: attorneyFlags,
-      risk_flag_codes: riskFlags,
+      score,
+      warnings: finalWarnings,
+      attorney_flags: finalAttorneyFlags,
+      franchise_interest: finalFranchise,
       answers: finalAnswers,
+      country: finalAnswers["Q0-01"] as string || "",
+      investment_range: finalAnswers["Q0-04"] as string || "",
+      application_type: (finalAnswers["Q0-15"] as string || "").includes("partner") ? "partnership" : "solo",
+      dependents: finalAnswers["Q0-16"] as string || "Just me — no dependents",
     };
-    localStorage.setItem("e2go_quiz_result", JSON.stringify(result));
 
-    if (user) {
-      // User is logged in, skip email verification
-      router.push("/results");
-    } else {
-      // User is anonymous, send email
-      const email = finalAnswers["Q0-21"] as string;
-      const franchise_interest = !!finalAnswers["franchise_interest"];
+    localStorage.setItem("e2go_quiz_result", JSON.stringify(resultData));
 
+    if (loggedInUser) {
+      setIsSaving(true);
       try {
-        await fetch('/api/email/results', {
-          method: 'POST',
-          body: JSON.stringify({
-            email,
-            outcome,
-            result_json: result,
-            quiz_session_id: session.id,
-            franchise_interest
-          })
+        await supabase.from("quiz_sessions").insert({
+          user_id: loggedInUser.id,
+          email: loggedInUser.email,
+          outcome,
+          score,
+          hard_stop_codes: [],
+          attorney_flag_codes: finalAttorneyFlags,
+          risk_flag_codes: finalWarnings,
+          application_type: resultData.application_type,
+          franchise_interest: finalFranchise,
+          result_json: resultData,
+          casl_consent: true,
+          casl_consent_at: new Date().toISOString(),
+          completed_at: new Date().toISOString(),
         });
-      } catch (e) {
-        console.error("Email send failed (non-blocking):", e);
+      } catch {
+      } finally {
+        setIsSaving(false);
       }
-
-      router.push("/results");
+      router.push("/results?from=quiz");
+    } else {
+      setShowEmailGate(true);
     }
-  };
+  }, [loggedInUser, supabase, router]);
 
-  // Loading state
-  if (!questionsData || !scoringLogic) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#0a0a0a' }}>
-        <div style={{ color: "#C9A84C" }}>Loading...</div>
-      </div>
-    );
-  }
+  const handleSelectOpt = useCallback((idx: number) => {
+    if (!q || q.type !== "select") return;
+    const opt = (q as typeof QUESTIONS[0] & { opts: { t: string; a: string; w?: string; code?: string }[] }).opts[idx];
+    if (!opt) return;
 
-  // Stop screen
-  if (stopScreen) {
-    return (
-      <div className="min-h-screen flex flex-col" style={{ background: '#0a0a0a' }}>
-        <header className="w-full sticky top-0 z-50" style={{ background: '#0a0a0a', borderBottom: '1px solid rgba(201,168,76,0.2)' }}>
-          <div className="flex justify-between items-center h-16 px-4 max-w-xl mx-auto">
-            <Link href="/" className="flex items-center gap-2">
-              <span className="text-xl font-bold" style={{ color: "#C9A84C", fontFamily: "'Cormorant Garamond', serif", fontWeight: 300 }}>e2go<span style={{ color: '#f5f0e8' }}>.app</span></span>
-            </Link>
-          </div>
-        </header>
+    setSelectedIdx(idx);
+    const newAnswers = { ...answers, [q.id]: opt.t };
+    setAnswers(newAnswers);
 
-        <main className="flex-1 flex items-center justify-center px-4 py-12">
-          <div className="max-w-md w-full text-center">
-            <div className="w-16 h-16 flex items-center justify-center mx-auto mb-6" style={{ background: 'rgba(201,168,76,0.08)', border: '1px solid rgba(201,168,76,0.3)' }}>
-              <svg className="w-8 h-8" style={{ color: "#ef4444" }} fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
-              </svg>
-            </div>
-            <h1 className="text-2xl font-bold mb-4" style={{ color: "#f5f0e8", fontFamily: "'Cormorant Garamond', serif", fontWeight: 300 }}>
-              Application Not Eligible
-            </h1>
-            <p className="mb-8" style={{ color: "rgba(245,240,232,0.75)" }}>
-              {stopScreen.message}
-            </p>
-            <p className="text-sm mb-8" style={{ color: "rgba(245,240,232,0.45)" }}>
-              Based on your responses, the E-2 visa may not be the right path for you at this time. We recommend speaking with a qualified immigration attorney to explore your options.
-            </p>
-            <div className="space-y-3">
-              <button className="w-full font-medium py-4 transition-colors" style={{ background: "#C9A84C", color: "#0a0a0a", borderRadius: 0 }}>
-                Find a qualified immigration lawyer
-              </button>
-              <button
-                onClick={() => {
-                  setStopScreen(null);
-                  setCurrentIndex(0);
-                  setAnswers({});
-                }}
-                className="w-full font-medium py-4 transition-colors"
-                style={{ border: "1px solid #C9A84C", color: "#C9A84C", borderRadius: 0 }}
-              >
-                Start over
-              </button>
-            </div>
-          </div>
-        </main>
-      </div>
-    );
-  }
-
-  // Cannabis informational gate
-  if (showCannabisGate) {
-    return (
-      <div className="min-h-screen flex flex-col" style={{ background: '#0a0a0a' }}>
-        <header className="w-full sticky top-0 z-50" style={{ background: '#0a0a0a', borderBottom: '1px solid rgba(201,168,76,0.2)' }}>
-          <div className="flex justify-between items-center h-16 px-4 max-w-xl mx-auto">
-            <Link href="/" className="flex items-center gap-2">
-              <span className="text-xl font-bold" style={{ color: "#C9A84C", fontFamily: "'Cormorant Garamond', serif", fontWeight: 300 }}>e2go<span style={{ color: '#f5f0e8' }}>.app</span></span>
-            </Link>
-          </div>
-        </header>
-
-        <main className="flex-1 flex items-center justify-center px-4 py-12">
-          <div className="max-w-md w-full text-center">
-            <div className="w-16 h-16 flex items-center justify-center mx-auto mb-6" style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)' }}>
-              <svg className="w-8 h-8" style={{ color: "#f59e0b" }} fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
-              </svg>
-            </div>
-            <h1 className="text-2xl font-bold mb-4" style={{ color: "#f5f0e8", fontFamily: "'Cormorant Garamond', serif", fontWeight: 300 }}>
-              One thing worth knowing
-            </h1>
-            <p className="mb-4" style={{ color: "rgba(245,240,232,0.75)" }}>
-              Cannabis businesses are legal in many U.S. states — but U.S. immigration operates under federal law, where cannabis remains illegal. This means E-2 visas cannot be used to invest in cannabis-related businesses, regardless of which state the business is in.
-            </p>
-            <p className="mb-8" style={{ color: "rgba(245,240,232,0.75)" }}>
-              If your business involves cannabis in any way, please speak with an immigration attorney before proceeding.
-            </p>
-            <button
-              onClick={() => {
-                setShowCannabisGate(false);
-                setCannabisGatePassed(true);
-                localStorage.setItem("e2go_cannabis_gate_passed", "true");
-                // Continue to next question
-                setIsAnimating(true);
-                setTimeout(() => setIsAnimating(false), 200);
-                if (currentIndex < visibleQuestions.length - 1) {
-                  setCurrentIndex(currentIndex + 1);
-                } else {
-                  calculateAndRedirect(answers);
-                }
-              }}
-              className="w-full font-medium py-4 transition-colors"
-              style={{ background: "#C9A84C", color: "#0a0a0a", borderRadius: 0 }}
-            >
-              My business is not cannabis-related — continue
-            </button>
-          </div>
-        </main>
-      </div>
-    );
-  }
-
-  // Currency input display (v3 - multi-currency)
-  const getCurrencyUSD = () => {
-    if (!currencyValue) return "";
-    const amount = parseFloat(currencyValue.replace(/,/g, ''));
-    if (isNaN(amount)) return "";
-    let amountUSD = amount;
-    if (currencyToggle !== "USD" && currencyRates[currencyToggle]) {
-      amountUSD = amount / currencyRates[currencyToggle];
+    if (opt.a === "stop") {
+      setTimeout(() => setStopCode(opt.code || ""), 280);
+      return;
     }
-    return amountUSD.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
-  };
+
+    if (opt.w) {
+      const newWarns = [...warnings, opt.w];
+      setWarnings(newWarns);
+      setWarnMsg(opt.w);
+      return;
+    }
+
+    if (opt.a === "attorney") {
+      const newFlags = [...attorneyFlags, opt.t];
+      setAttorneyFlags(newFlags);
+    }
+
+    if (opt.a === "franchise_yes") {
+      setFranchiseInterest(true);
+    }
+
+    const hasSubQ = opt.a === "sub08a" || opt.a === "sub16a";
+    if (hasSubQ) {
+      setTimeout(() => {
+        const subId = opt.a === "sub08a" ? "Q0-08a" : "Q0-16a";
+        const subIdx = visibleQuestions.findIndex(x => x.id === subId);
+        if (subIdx !== -1) {
+          setIsAnimating(true);
+          setTimeout(() => { setIsAnimating(false); setCur(subIdx); setSelectedIdx(null); setWarnMsg(null); }, 200);
+        }
+      }, 280);
+      return;
+    }
+
+    if (opt.a === "broker") {
+      setTimeout(() => {
+        const brokerIdx = visibleQuestions.findIndex(x => x.id === "Q0-08b");
+        if (brokerIdx !== -1) {
+          setIsAnimating(true);
+          setTimeout(() => { setIsAnimating(false); setCur(brokerIdx); setSelectedIdx(null); setWarnMsg(null); }, 200);
+        }
+      }, 280);
+      return;
+    }
+
+    setTimeout(() => {
+      const nextIdx = cur + 1;
+      if (nextIdx >= visibleQuestions.length) {
+        handleComplete(newAnswers, warnings, attorneyFlags, franchiseInterest);
+      } else {
+        advance();
+      }
+    }, 280);
+  }, [q, answers, warnings, attorneyFlags, franchiseInterest, cur, visibleQuestions, advance, handleComplete]);
+
+  const handleMultiContinue = useCallback(() => {
+    if (multiSel.length === 0) return;
+    if (!q) return;
+    const opts = (q as typeof QUESTIONS[0] & { opts: { t: string }[] }).opts;
+    const selected = multiSel.map(i => opts[i].t);
+    const newAnswers = { ...answers, [q.id]: selected };
+    setAnswers(newAnswers);
+    const nextIdx = cur + 1;
+    if (nextIdx >= visibleQuestions.length) {
+      handleComplete(newAnswers, warnings, attorneyFlags, franchiseInterest);
+    } else {
+      advance();
+    }
+  }, [multiSel, q, answers, cur, visibleQuestions, warnings, attorneyFlags, franchiseInterest, advance, handleComplete]);
+
+  const handleEmailSubmit = useCallback(async () => {
+    if (!email || !email.includes("@")) return;
+    setIsSaving(true);
+    setSaveError(null);
+
+    const stored = localStorage.getItem("e2go_quiz_result");
+    const resultData = stored ? JSON.parse(stored) : {};
+
+    try {
+      const { data: session, error } = await supabase.from("quiz_sessions").insert({
+        user_id: null,
+        email,
+        outcome: resultData.outcome || "PROCEED",
+        score: resultData.score || 80,
+        hard_stop_codes: [],
+        attorney_flag_codes: resultData.attorney_flags || [],
+        risk_flag_codes: resultData.warnings || [],
+        application_type: resultData.application_type || "solo",
+        franchise_interest: resultData.franchise_interest || false,
+        result_json: resultData,
+        casl_consent: caslConsent,
+        casl_consent_at: caslConsent ? new Date().toISOString() : null,
+        completed_at: new Date().toISOString(),
+      }).select("id").single();
+
+      if (!error && session) {
+        try {
+          await fetch("/api/email/results", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email,
+              outcome: resultData.outcome,
+              result_json: resultData,
+              quiz_session_id: session.id,
+              franchise_interest: resultData.franchise_interest,
+            }),
+          });
+        } catch {
+        }
+      }
+    } catch {
+      setSaveError("Unable to save. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
+    router.push("/results?from=quiz");
+  }, [email, caslConsent, supabase, router]);
+
+  const pct = Math.round(((cur + 1) / visibleQuestions.length) * 100);
+
+  const S = SECTIONS[q?.sec ?? 0];
+
+  if (!authChecked) {
+    return (
+      <div style={{ background: "#0a0a0a", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ color: "rgba(201,168,76,0.6)", fontSize: "13px", letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: "'DM Sans', sans-serif" }}>
+          Loading...
+        </div>
+      </div>
+    );
+  }
+
+  if (stopCode) {
+    const stop = HARD_STOPS[stopCode] || { title: "Not eligible at this time", body: "Based on your answers, we are unable to proceed. Please consult a qualified immigration attorney." };
+    return (
+      <div style={{ background: "#0a0a0a", minHeight: "100vh", fontFamily: "'DM Sans', system-ui, sans-serif", color: "#f5f0e8" }}>
+        <div style={{ padding: "18px 40px", borderBottom: "1px solid rgba(201,168,76,0.1)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ fontSize: "17px", color: "#C9A84C", fontWeight: 300 }}>e2go<span style={{ color: "rgba(245,240,232,0.9)" }}>.app</span></div>
+        </div>
+        <div style={{ padding: "56px 40px", maxWidth: "560px" }}>
+          <div style={{ width: "44px", height: "44px", border: "1px solid rgba(220,60,60,0.3)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "24px", color: "rgba(220,60,60,0.65)", fontSize: "20px" }}>✕</div>
+          <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "28px", fontWeight: 300, color: "#f5f0e8", marginBottom: "12px", lineHeight: 1.3 }}>{stop.title}</div>
+          <div style={{ fontSize: "14px", color: "rgba(245,240,232,0.5)", lineHeight: 1.7, marginBottom: "28px", maxWidth: "460px" }}>{stop.body}</div>
+          <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+            <button onClick={() => { setStopCode(null); setCur(0); setAnswers({}); setWarnings([]); setAttorneyFlags([]); setFranchiseInterest(false); setSelectedIdx(null); setWarnMsg(null); setSelectedCountry(null); setCountrySearch(""); }} style={{ padding: "11px 24px", background: "transparent", border: "1px solid rgba(201,168,76,0.35)", color: "#C9A84C", fontSize: "12px", cursor: "pointer", letterSpacing: "0.07em", textTransform: "uppercase", fontFamily: "'DM Sans', sans-serif", borderRadius: 0 }}>Start over</button>
+            <button style={{ padding: "11px 24px", background: "transparent", border: "1px solid rgba(201,168,76,0.15)", color: "rgba(245,240,232,0.35)", fontSize: "12px", cursor: "pointer", letterSpacing: "0.07em", textTransform: "uppercase", fontFamily: "'DM Sans', sans-serif", borderRadius: 0 }}>Find an attorney →</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (showEmailGate) {
+    return (
+      <div style={{ background: "#0a0a0a", minHeight: "100vh", fontFamily: "'DM Sans', system-ui, sans-serif", color: "#f5f0e8" }}>
+        <div style={{ padding: "18px 40px", borderBottom: "1px solid rgba(201,168,76,0.1)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ fontSize: "17px", color: "#C9A84C", fontWeight: 300 }}>e2go<span style={{ color: "rgba(245,240,232,0.9)" }}>.app</span></div>
+        </div>
+        <div style={{ padding: "56px 40px", maxWidth: "480px" }}>
+          <div style={{ fontSize: "10px", letterSpacing: "0.18em", textTransform: "uppercase", color: "rgba(201,168,76,0.6)", marginBottom: "16px" }}>Your result is ready</div>
+          <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "32px", fontWeight: 300, color: "#f5f0e8", marginBottom: "8px", lineHeight: 1.3 }}>Where should we send your eligibility summary?</div>
+          <div style={{ fontSize: "14px", color: "rgba(245,240,232,0.45)", marginBottom: "32px", lineHeight: 1.6 }}>We will email you a full copy of your result and your personalised next-step summary.</div>
+          <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="your@email.com" style={{ width: "100%", padding: "13px 16px", background: "rgba(201,168,76,0.02)", border: "1px solid rgba(201,168,76,0.2)", color: "#f5f0e8", fontSize: "14px", fontFamily: "'DM Sans', sans-serif", borderRadius: 0, outline: "none", marginBottom: "12px" }} />
+          <div style={{ display: "flex", alignItems: "flex-start", gap: "10px", marginBottom: "24px", cursor: "pointer" }} onClick={() => setCaslConsent(!caslConsent)}>
+            <div style={{ width: "16px", height: "16px", border: `1px solid ${caslConsent ? "#C9A84C" : "rgba(201,168,76,0.3)"}`, background: caslConsent ? "#C9A84C" : "transparent", flexShrink: 0, marginTop: "2px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              {caslConsent && <span style={{ color: "#0a0a0a", fontSize: "11px" }}>✓</span>}
+            </div>
+            <div style={{ fontSize: "12px", color: "rgba(245,240,232,0.4)", lineHeight: 1.6 }}>Send me occasional updates about the E-2 process. You can unsubscribe at any time.</div>
+          </div>
+          {saveError && <div style={{ fontSize: "13px", color: "rgba(220,60,60,0.8)", marginBottom: "12px" }}>{saveError}</div>}
+          <button onClick={handleEmailSubmit} disabled={!email.includes("@") || isSaving} style={{ width: "100%", padding: "14px", background: "#C9A84C", border: "none", color: "#0a0a0a", fontSize: "13px", fontWeight: 500, cursor: email.includes("@") && !isSaving ? "pointer" : "not-allowed", letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: "'DM Sans', sans-serif", borderRadius: 0, opacity: email.includes("@") && !isSaving ? 1 : 0.35 }}>
+            {isSaving ? "Saving..." : "View my result →"}
+          </button>
+          <button onClick={() => router.push("/results?from=quiz")} style={{ width: "100%", padding: "12px", background: "transparent", border: "none", color: "rgba(245,240,232,0.25)", fontSize: "12px", cursor: "pointer", letterSpacing: "0.06em", fontFamily: "'DM Sans', sans-serif", marginTop: "8px" }}>Skip — view result without saving</button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!q) return null;
+
+  const isCountry = q.type === "country";
+  const isMulti = q.type === "multi";
+  const isSelect = q.type === "select";
+  const qWithOpts = q as typeof QUESTIONS[0] & { opts?: { t: string; a?: string; w?: string; code?: string }[] };
+
+  const filteredCountries = countrySearch.length > 0
+    ? TREATY_COUNTRIES.filter(c => c.toLowerCase().startsWith(countrySearch.toLowerCase())).slice(0, 8)
+    : [];
 
   return (
-    <div className="min-h-screen" style={{ background: '#0a0a0a' }} data-testid="quiz-container">
-      {/* Header - Obsidian Gold */}
-      <header className="w-full sticky top-0 z-50" style={{ background: '#0a0a0a', borderBottom: '1px solid rgba(201,168,76,0.2)' }}>
-        <div className="flex justify-between items-center h-16 px-4 max-w-xl mx-auto">
-          <Link href="/" className="flex items-center gap-2">
-            <span className="text-xl font-bold" style={{ color: "#C9A84C", fontFamily: "'Cormorant Garamond', serif", fontWeight: 300 }}>e2go<span style={{ color: '#f5f0e8' }}>.app</span></span>
-          </Link>
+    <div style={{ background: "#0a0a0a", minHeight: "100vh", fontFamily: "'DM Sans', system-ui, sans-serif", color: "#f5f0e8" }}>
+      <div style={{ padding: "18px 40px", borderBottom: "1px solid rgba(201,168,76,0.1)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ fontSize: "17px", color: "#C9A84C", fontWeight: 300 }}>e2go<span style={{ color: "rgba(245,240,232,0.9)" }}>.app</span></div>
+        <div style={{ flex: 1, maxWidth: "240px", margin: "0 24px" }}>
+          <div style={{ height: "1px", background: "rgba(201,168,76,0.15)" }}>
+            <div style={{ height: "100%", background: "#C9A84C", width: `${pct}%`, transition: "width 0.5s cubic-bezier(.4,0,.2,1)" }} />
+          </div>
+          <div style={{ fontSize: "10px", color: "rgba(245,240,232,0.3)", marginTop: "5px", letterSpacing: "0.08em", textTransform: "uppercase" }}>Question {cur + 1} of {visibleQuestions.length}</div>
         </div>
-      </header>
+        <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.2)", letterSpacing: "0.07em", textTransform: "uppercase" }}>Save & exit</div>
+      </div>
 
-      {/* Main Content */}
-      <main className="flex-1 flex flex-col max-w-xl mx-auto w-full px-4 py-8">
-        {/* Progress Bar - Gold */}
-        <div style={{ marginBottom: '24px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-            <span style={{ fontSize: '11px', fontWeight: 500, letterSpacing: '0.10em', textTransform: 'uppercase', color: '#C9A84C' }}>
-              {getCurrentSection()}
-            </span>
-            <span style={{ fontSize: '12px', color: 'rgba(245,240,232,0.45)' }}>
-              {currentIndex + 1} of {visibleQuestions.length}
-            </span>
-          </div>
-          <div style={{ height: '3px', background: 'rgba(201,168,76,0.15)', borderRadius: '2px', overflow: 'hidden' }}>
-            <div style={{ height: '100%', background: '#C9A84C', borderRadius: '2px', width: `${((currentIndex + 1) / visibleQuestions.length) * 100}%`, transition: 'width 0.4s ease' }} />
-          </div>
+      <div style={{ display: "flex", gap: 0, padding: "0 40px", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
+        {SECTIONS.map((s, i) => (
+          <div key={s} style={{ fontSize: "10px", letterSpacing: "0.1em", textTransform: "uppercase", color: i === q.sec ? "#C9A84C" : i < q.sec ? "rgba(245,240,232,0.35)" : "rgba(245,240,232,0.18)", padding: "10px 0", marginRight: "18px", borderBottom: `2px solid ${i === q.sec ? "#C9A84C" : i < q.sec ? "rgba(201,168,76,0.2)" : "transparent"}`, transition: "all 0.2s", whiteSpace: "nowrap" }}>{s}</div>
+        ))}
+      </div>
+
+      <div style={{ padding: "44px 40px 32px", maxWidth: "580px", opacity: isAnimating ? 0 : 1, transition: "opacity 0.15s" }}>
+        <div style={{ display: "inline-flex", alignItems: "center", gap: "5px", fontSize: "10px", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(201,168,76,0.7)", marginBottom: "18px" }}>
+          <div style={{ width: "3px", height: "3px", borderRadius: "50%", background: "#C9A84C" }} />
+          {q.isSub ? "Follow-up" : S}
         </div>
 
-        {/* Quiz Card - Gold border, no glassmorphism */}
-        <div style={{
-          background: 'rgba(201,168,76,0.02)',
-          border: '1px solid rgba(201,168,76,0.12)',
-          borderRadius: 0,
-          padding: '40px 44px'
-        }}>
-          {/* Question */}
-          {currentQuestion && (
-            <div
-              className={`flex-1 transition-opacity duration-200 ${isAnimating ? "opacity-0" : "opacity-100"}`}
-            >
-              {/* Question text - Cormorant Garamond, fully opaque */}
-              <h1 style={{
-                fontFamily: "'Cormorant Garamond', Georgia, serif",
-                fontSize: '28px',
-                fontWeight: 300,
-                color: '#f5f0e8',
-                lineHeight: 1.3,
-                marginBottom: '8px',
-                opacity: 1,
-                position: 'static',
-                zIndex: 'auto'
-              }}>
-                {replaceDynamic(currentQuestion.question, answers)}
-              </h1>
+        <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "30px", fontWeight: 300, color: "#f5f0e8", lineHeight: 1.3, marginBottom: "8px", letterSpacing: "-0.01em" }}>{q.q}</div>
+        {q.help && <div style={{ fontSize: "13px", color: "rgba(245,240,232,0.4)", lineHeight: 1.65, marginBottom: "28px", maxWidth: "460px" }}>{q.help}</div>}
 
-              {/* Helper text + Tooltip */}
-              {(currentQuestion.helper_text || currentQuestion.tooltip) && (
-                <p style={{
-                  fontSize: '13px',
-                  fontWeight: 300,
-                  color: 'rgba(245,240,232,0.45)',
-                  lineHeight: 1.6,
-                  marginBottom: '24px',
-                  fontFamily: "'DM Sans', sans-serif"
-                }}>
-                  {replaceDynamic(currentQuestion.helper_text || '', answers)}
-                  {currentQuestion.tooltip && ' ' + replaceDynamic(currentQuestion.tooltip, answers)}
-                </p>
-              )}
-
-            {/* Searchable Select - Treaty Country */}
-            {currentQuestion.type === "searchable_select" && (
-              <div className="space-y-4">
-                <div className="relative w-full">
-                  <input
-                    type="text"
-                    value={countrySearch}
-                    onChange={(e) => { setCountrySearch(e.target.value); setShowCountryDropdown(true); }}
-                    onFocus={() => setShowCountryDropdown(true)}
-                    placeholder="Start typing your country..."
-                    style={{
-                      width: '100%',
-                      padding: '14px 16px',
-                      background: 'rgba(255,255,255,0.04)',
-                      border: '1px solid rgba(201,168,76,0.2)',
-                      borderRadius: 0,
-                      color: '#f5f0e8',
-                      fontFamily: "'DM Sans', sans-serif",
-                      fontSize: '15px',
-                      outline: 'none',
-                      transition: 'border-color 0.2s'
-                    }}
-                  />
-                  {showCountryDropdown && countrySearch && (
-                    <div style={{
-                      position: 'absolute',
-                      top: 'calc(100% + 4px)',
-                      left: 0,
-                      right: 0,
-                      background: '#0a0a0a',
-                      border: '1px solid rgba(201,168,76,0.2)',
-                      borderRadius: 0,
-                      zIndex: 50,
-                      maxHeight: '240px',
-                      overflowY: 'auto'
-                    }}>
-                      {filteredCountries.length === 0 ? (
-                        <div style={{ padding: '14px 16px', color: 'rgba(245,240,232,0.45)' }}>No countries found</div>
-                      ) : (
-                        filteredCountries.map((country) => (
-                          <button
-                            key={country.code}
-                            onClick={() => handleCountrySelect(country)}
-                            style={{
-                              padding: '11px 16px',
-                              fontSize: '14px',
-                              color: 'rgba(245,240,232,0.65)',
-                              cursor: 'pointer',
-                              borderBottom: '1px solid rgba(201,168,76,0.08)',
-                              transition: 'background 0.12s',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '10px',
-                              width: '100%',
-                              textAlign: 'left',
-                              background: 'transparent',
-                              borderTop: 'none',
-                              borderLeft: 'none',
-                              borderRight: 'none'
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.background = 'rgba(201,168,76,0.08)';
-                              e.currentTarget.style.color = '#f5f0e8';
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.background = 'transparent';
-                              e.currentTarget.style.color = 'rgba(245,240,232,0.65)';
-                            }}
-                          >
-                            <span style={{ color: '#f5f0e8' }}>{country.name}</span>
-                            {country.notes && <span style={{ fontSize: '11px', color: 'rgba(245,240,232,0.4)' }}>{country.notes}</span>}
-                          </button>
-                        ))
-                      )}
-                    </div>
-                  )}
-                </div>
-                {selectedCountry && (
-                  <div style={{ padding: '12px 14px', background: 'rgba(201,168,76,0.05)', borderRadius: 0, border: '1px solid rgba(201,168,76,0.2)' }}>
-                    <p style={{ fontSize: '13px', color: 'rgba(245,240,232,0.8)' }}>
-                      Selected: <span style={{ fontWeight: 500, color: '#f5f0e8' }}>{selectedCountry.name}</span>
-                      {selectedCountry.consulate !== "Not applicable" && <span style={{ display: 'block', fontSize: '12px', color: 'rgba(245,240,232,0.5)' }}>Consulate: {selectedCountry.consulate}</span>}
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* State Select */}
-            {currentQuestion.type === "state_select" && (
-              <div className="space-y-4">
-                <div className="relative w-full">
-                  <input
-                    type="text"
-                    value={stateSearch}
-                    onChange={(e) => { setStateSearch(e.target.value); setShowStateDropdown(true); }}
-                    onFocus={() => setShowStateDropdown(true)}
-                    placeholder="Start typing a U.S. state..."
-                    style={{
-                      width: '100%',
-                      padding: '14px 16px',
-                      background: 'rgba(255,255,255,0.04)',
-                      border: '1px solid rgba(201,168,76,0.2)',
-                      borderRadius: 0,
-                      color: '#f5f0e8',
-                      fontFamily: "'DM Sans', sans-serif",
-                      fontSize: '15px',
-                      outline: 'none',
-                      transition: 'border-color 0.2s'
-                    }}
-                  />
-                  {showStateDropdown && (
-                    <div style={{
-                      position: 'absolute',
-                      top: 'calc(100% + 4px)',
-                      left: 0,
-                      right: 0,
-                      background: '#0a0a0a',
-                      border: '1px solid rgba(201,168,76,0.2)',
-                      borderRadius: 0,
-                      zIndex: 50,
-                      maxHeight: '240px',
-                      overflowY: 'auto'
-                    }}>
-                      {filteredStates.length === 0 ? (
-                        <div style={{ padding: '14px 16px', color: 'rgba(245,240,232,0.45)' }}>No states found</div>
-                      ) : (
-                        filteredStates.map((state) => (
-                          <button
-                            key={state.code}
-                            onClick={() => handleStateSelect(state.name)}
-                            style={{
-                              padding: '11px 16px',
-                              fontSize: '14px',
-                              color: 'rgba(245,240,232,0.65)',
-                              cursor: 'pointer',
-                              borderBottom: '1px solid rgba(201,168,76,0.08)',
-                              transition: 'background 0.12s',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '10px',
-                              width: '100%',
-                              textAlign: 'left',
-                              background: 'transparent',
-                              borderTop: 'none',
-                              borderLeft: 'none',
-                              borderRight: 'none'
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.background = 'rgba(201,168,76,0.08)';
-                              e.currentTarget.style.color = '#f5f0e8';
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.background = 'transparent';
-                              e.currentTarget.style.color = 'rgba(245,240,232,0.65)';
-                            }}
-                          >
-                            <span style={{ color: '#f5f0e8' }}>{state.name}</span>
-                          </button>
-                        ))
-                      )}
-                    </div>
-                  )}
-                </div>
-                <button
-                  onClick={() => handleStateSelect("I have not decided yet")}
-                  style={{
-                    width: '100%',
-                    color: 'rgba(245,240,232,0.35)',
-                    fontSize: '13px',
-                    fontFamily: "'DM Sans', sans-serif",
-                    padding: '12px',
-                    background: 'transparent',
-                    border: 'none',
-                    cursor: 'pointer',
-                    transition: 'color 0.2s'
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.color = 'rgba(245,240,232,0.6)'}
-                  onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(245,240,232,0.35)'}
-                >
-                  I have not decided yet
-                </button>
-              </div>
-            )}
-
-            {/* Select Options - Gold border style */}
-            {currentQuestion.type === "select" && (
-              <div>
-                {currentQuestion.options?.map((option) => {
-                  const isSelected = answers[currentQuestion.id] === option;
-                  return (
-                    <button
-                      key={option}
-                      onClick={() => handleAnswer(replaceDynamic(option, answers))}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '14px',
-                        width: '100%',
-                        padding: '15px 18px',
-                        background: isSelected ? 'rgba(201,168,76,0.08)' : 'rgba(201,168,76,0.02)',
-                        border: isSelected ? '1px solid #C9A84C' : '1px solid rgba(201,168,76,0.2)',
-                        borderRadius: 0,
-                        color: isSelected ? '#f5f0e8' : 'rgba(245,240,232,0.80)',
-                        fontFamily: "'DM Sans', sans-serif",
-                        fontSize: '15px',
-                        fontWeight: 400,
-                        textAlign: 'left',
-                        cursor: 'pointer',
-                        transition: 'all 0.15s ease',
-                        marginBottom: '9px',
-                        minHeight: '52px'
-                      }}
-                      onMouseEnter={(e) => {
-                        if (!isSelected) {
-                          e.currentTarget.style.background = 'rgba(201,168,76,0.06)';
-                          e.currentTarget.style.borderColor = 'rgba(201,168,76,0.4)';
-                          e.currentTarget.style.color = 'rgba(245,240,232,0.95)';
-                          e.currentTarget.style.transform = 'translateX(2px)';
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        if (!isSelected) {
-                          e.currentTarget.style.background = 'rgba(201,168,76,0.02)';
-                          e.currentTarget.style.borderColor = 'rgba(201,168,76,0.2)';
-                          e.currentTarget.style.color = 'rgba(245,240,232,0.80)';
-                          e.currentTarget.style.transform = 'translateX(0)';
-                        }
-                      }}
-                    >
-                      <span style={{ flex: 1 }}>{replaceDynamic(option, answers)}</span>
-                      {isSelected && (
-                        <div style={{
-                          width: '22px',
-                          height: '22px',
-                          borderRadius: 0,
-                          background: '#C9A84C',
-                          color: '#0a0a0a',
-                          fontSize: '12px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          flexShrink: 0
-                        }}>
-                          ✓
-                        </div>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* Multiselect Options */}
-            {currentQuestion.type === "multiselect" && (
-              <div>
-                {currentQuestion.options?.map((option) => {
-                  const selected = answers[currentQuestion.id]?.includes(option);
-                  return (
-                    <button
-                      key={option}
-                      onClick={() => {
-                        const current = (answers[currentQuestion.id] as string[]) || [];
-                        const updated = selected
-                          ? current.filter((a) => a !== option)
-                          : [...current, option];
-                        setAnswers({ ...answers, [currentQuestion.id]: updated });
-                      }}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '14px',
-                        width: '100%',
-                        padding: '15px 18px',
-                        background: selected ? 'rgba(201,168,76,0.08)' : 'rgba(201,168,76,0.02)',
-                        border: selected ? '1px solid #C9A84C' : '1px solid rgba(201,168,76,0.2)',
-                        borderRadius: 0,
-                        color: selected ? '#f5f0e8' : 'rgba(245,240,232,0.80)',
-                        fontFamily: "'DM Sans', sans-serif",
-                        fontSize: '15px',
-                        fontWeight: 400,
-                        textAlign: 'left',
-                        cursor: 'pointer',
-                        transition: 'all 0.15s ease',
-                        marginBottom: '9px',
-                        minHeight: '52px'
-                      }}
-                      onMouseEnter={(e) => {
-                        if (!selected) {
-                          e.currentTarget.style.background = 'rgba(201,168,76,0.06)';
-                          e.currentTarget.style.borderColor = 'rgba(201,168,76,0.4)';
-                          e.currentTarget.style.color = 'rgba(245,240,232,0.95)';
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        if (!selected) {
-                          e.currentTarget.style.background = 'rgba(201,168,76,0.02)';
-                          e.currentTarget.style.borderColor = 'rgba(201,168,76,0.2)';
-                          e.currentTarget.style.color = 'rgba(245,240,232,0.80)';
-                        }
-                      }}
-                    >
-                      <div
-                        style={{
-                          width: '20px',
-                          height: '20px',
-                          borderRadius: 0,
-                          border: selected ? 'none' : '1px solid rgba(245,240,232,0.4)',
-                          background: selected ? '#C9A84C' : 'transparent',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          flexShrink: 0
-                        }}
-                      >
-                        {selected && (
-                          <svg style={{ width: '12px', height: '12px', color: '#0a0a0a' }} fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                        )}
-                      </div>
-                      <span>{replaceDynamic(option, answers)}</span>
-                    </button>
-                  );
-                })}
-                <button
-                  data-testid="quiz-next"
-                  onClick={handleMultiselectContinue}
-                  disabled={!((answers[currentQuestion.id] as string[]) || []).length}
-                  style={{
-                    width: '100%',
-                    padding: '14px',
-                    background: '#C9A84C',
-                    color: '#0a0a0a',
-                    border: 'none',
-                    borderRadius: 0,
-                    fontFamily: "'DM Sans', sans-serif",
-                    fontSize: '14px',
-                    fontWeight: 500,
-                    cursor: ((answers[currentQuestion.id] as string[]) || []).length ? 'pointer' : 'not-allowed',
-                    marginTop: '20px',
-                    transition: 'background 0.2s',
-                    opacity: ((answers[currentQuestion.id] as string[]) || []).length ? 1 : 0.5
-                  }}
-                >
-                  Continue
-                </button>
-              </div>
-            )}
-
-            {/* Currency Input */}
-            {currentQuestion.type === "currency" && (
-              <div className="space-y-4">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <select
-                    value={currencyToggle}
-                    onChange={(e) => setCurrencyToggle(e.target.value)}
-                    style={{
-                      padding: '12px 14px',
-                      borderRadius: 0,
-                      border: '1px solid rgba(201,168,76,0.2)',
-                      background: 'rgba(255,255,255,0.04)',
-                      color: '#f5f0e8',
-                      fontFamily: "'DM Sans', sans-serif",
-                      fontSize: '14px',
-                      fontWeight: 500,
-                      outline: 'none',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    <option value="USD" style={{ background: '#0a0a0a' }}>USD</option>
-                    <option value="CAD" style={{ background: '#0a0a0a' }}>CAD</option>
-                    <option value="EUR" style={{ background: '#0a0a0a' }}>EUR</option>
-                    <option value="GBP" style={{ background: '#0a0a0a' }}>GBP</option>
-                  </select>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    value={currencyValue}
-                    onChange={(e) => {
-                      const cleaned = e.target.value.replace(/[^0-9,]/g, '');
-                      setCurrencyValue(cleaned);
-                    }}
-                    placeholder="Enter amount"
-                    style={{
-                      flex: 1,
-                      padding: '14px 16px',
-                      borderRadius: 0,
-                      border: '1px solid rgba(201,168,76,0.2)',
-                      background: 'rgba(255,255,255,0.04)',
-                      color: '#f5f0e8',
-                      fontFamily: "'DM Sans', sans-serif",
-                      fontSize: '15px',
-                      outline: 'none',
-                      transition: 'border-color 0.2s'
-                    }}
-                  />
-                </div>
-
-                {currencyValue && (
-                  <div style={{ padding: '12px', background: 'rgba(201,168,76,0.05)', borderRadius: 0, textAlign: 'center' }}>
-                    <span style={{ fontSize: '13px', color: '#C9A84C' }}>≈ {getCurrencyUSD()} USD</span>
-                  </div>
-                )}
-
-                {proportionalityFlag && (
-                  <div
-                    style={{
-                      padding: '12px',
-                      borderRadius: 0,
-                      background: proportionalityFlag === "W-PROP-STRONG" ? 'rgba(239,68,68,0.08)' : 'rgba(245,158,11,0.08)',
-                      border: `1px solid ${proportionalityFlag === "W-PROP-STRONG" ? 'rgba(239,68,68,0.3)' : 'rgba(245,158,11,0.3)'}`
-                    }}
-                  >
-                    <p style={{ fontSize: '13px', color: proportionalityFlag === "W-PROP-STRONG" ? '#fca5a5' : '#fcd34d' }}>
-                      {proportionalityFlag === "W-PROP-STRONG"
-                        ? "This amount is below the recommended threshold for E-2 investment. Strong risk flag."
-                        : "This amount is below the clean threshold. Consider this a soft advisory."}
-                    </p>
-                  </div>
-                )}
-
-                <button
-                  data-testid="quiz-next"
-                  onClick={handleCurrencyContinue}
-                  disabled={!currencyValue}
-                  style={{
-                    width: '100%',
-                    padding: '14px',
-                    background: '#C9A84C',
-                    color: '#0a0a0a',
-                    border: 'none',
-                    borderRadius: 0,
-                    fontFamily: "'DM Sans', sans-serif",
-                    fontSize: '14px',
-                    fontWeight: 500,
-                    cursor: currencyValue ? 'pointer' : 'not-allowed',
-                    marginTop: '20px',
-                    transition: 'background 0.2s',
-                    opacity: currencyValue ? 1 : 0.5
-                  }}
-                >
-                  Continue
-                </button>
-              </div>
-            )}
-
-            {/* Text/Email Input */}
-            {currentQuestion.type === "text" && (
-              <div className="space-y-4">
-                <input
-                  type={currentQuestion.validation === "email" ? "email" : "text"}
-                  value={emailValue}
-                  onChange={(e) => setEmailValue(e.target.value)}
-                  placeholder={currentQuestion.validation === "email" ? "your@email.com" : "Enter your answer"}
-                  style={{
-                    width: '100%',
-                    padding: '14px 16px',
-                    borderRadius: 0,
-                    border: '1px solid rgba(201,168,76,0.2)',
-                    background: 'rgba(255,255,255,0.04)',
-                    color: '#f5f0e8',
-                    fontFamily: "'DM Sans', sans-serif",
-                    fontSize: '15px',
-                    outline: 'none',
-                    transition: 'border-color 0.2s'
-                  }}
-                />
-
-                {currentQuestion.validation === "email" && (
-                  <div style={{ marginTop: '16px', display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-                    <div
-                      onClick={() => setCaslConsent(!caslConsent)}
-                      style={{
-                        width: '18px',
-                        height: '18px',
-                        borderRadius: 0,
-                        border: `1px solid ${caslConsent ? '#C9A84C' : 'rgba(201,168,76,0.4)'}`,
-                        background: caslConsent ? '#C9A84C' : 'transparent',
-                        flexShrink: 0,
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        transition: 'all 0.2s ease'
-                      }}
-                    >
-                      {caslConsent && (
-                        <svg style={{ width: '10px', height: '10px', color: '#0a0a0a' }} fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                      )}
-                    </div>
-                    <label
-                      onClick={() => setCaslConsent(!caslConsent)}
-                      style={{
-                        fontFamily: "'DM Sans', sans-serif",
-                        fontSize: '13px',
-                        fontWeight: 300,
-                        color: 'rgba(245,240,232,0.65)',
-                        cursor: 'pointer',
-                        lineHeight: 1.4,
-                        userSelect: 'none'
-                      }}
-                    >
-                      I&apos;d like to receive E-2 processing updates, policy changes, and preparation tips from e2go. You can unsubscribe at any time.
-                    </label>
-                  </div>
-                )}
-
-                <button
-                  data-testid="quiz-next"
-                  onClick={handleTextContinue}
-                  disabled={!emailValue}
-                  style={{
-                    width: '100%',
-                    padding: '14px',
-                    background: '#C9A84C',
-                    color: '#0a0a0a',
-                    border: 'none',
-                    borderRadius: 0,
-                    fontFamily: "'DM Sans', sans-serif",
-                    fontSize: '14px',
-                    fontWeight: 500,
-                    cursor: emailValue ? 'pointer' : 'not-allowed',
-                    marginTop: '20px',
-                    transition: 'background 0.2s',
-                    opacity: emailValue ? 1 : 0.5
-                  }}
-                >
-                  Continue
-                </button>
-              </div>
-            )}
-
-            {/* Sub-Question */}
-            {currentQuestion.sub_question && (
-              Array.isArray(currentQuestion.sub_question.show_if)
-                ? currentQuestion.sub_question.show_if.includes(answers[currentQuestion.id] as string)
-                : answers[currentQuestion.id] === currentQuestion.sub_question.show_if
-            ) && (
-              <div style={{ marginTop: '24px', padding: '20px', background: 'rgba(201,168,76,0.02)', borderRadius: 0, border: '1px solid rgba(201,168,76,0.12)' }}>
-                <h2 style={{
-                  fontFamily: "'Cormorant Garamond', Georgia, serif",
-                  fontSize: '20px',
-                  fontWeight: 300,
-                  color: '#f5f0e8',
-                  marginBottom: '16px'
-                }}>
-                  {replaceDynamic(currentQuestion.sub_question.question, answers)}
-                </h2>
-                <div>
-                  {currentQuestion.sub_question.options?.map((option) => (
-                    <button
-                      key={option}
-                      onClick={() => handleSubQuestionAnswer(option)}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '14px',
-                        width: '100%',
-                        padding: '15px 18px',
-                        background: 'rgba(201,168,76,0.02)',
-                        border: '1px solid rgba(201,168,76,0.2)',
-                        borderRadius: 0,
-                        color: 'rgba(245,240,232,0.80)',
-                        fontFamily: "'DM Sans', sans-serif",
-                        fontSize: '15px',
-                        fontWeight: 400,
-                        textAlign: 'left',
-                        cursor: 'pointer',
-                        transition: 'all 0.15s ease',
-                        marginBottom: '9px',
-                        minHeight: '52px'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background = 'rgba(201,168,76,0.06)';
-                        e.currentTarget.style.borderColor = 'rgba(201,168,76,0.4)';
-                        e.currentTarget.style.color = 'rgba(245,240,232,0.95)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = 'rgba(201,168,76,0.02)';
-                        e.currentTarget.style.borderColor = 'rgba(201,168,76,0.2)';
-                        e.currentTarget.style.color = 'rgba(245,240,232,0.80)';
-                      }}
-                    >
-                      <span>{replaceDynamic(option, answers)}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Back Button */}
-            {currentIndex > 0 && (
-              <button
-                onClick={handleBack}
-                style={{
-                  display: 'block',
-                  width: '100%',
-                  textAlign: 'center',
-                  marginTop: '12px',
-                  padding: '8px',
-                  color: 'rgba(245,240,232,0.35)',
-                  fontSize: '13px',
-                  fontFamily: "'DM Sans', sans-serif",
-                  background: 'transparent',
-                  border: 'none',
-                  cursor: 'pointer',
-                  transition: 'color 0.2s'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.color = 'rgba(245,240,232,0.6)'}
-                onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(245,240,232,0.35)'}
-              >
-                ← Back
-              </button>
-            )}
+        {warnMsg && (
+          <div style={{ display: "flex", gap: "9px", padding: "11px 14px", border: "1px solid rgba(201,168,76,0.22)", background: "rgba(201,168,76,0.04)", marginBottom: "16px" }}>
+            <div style={{ color: "#C9A84C", fontSize: "14px", flexShrink: 0 }}>!</div>
+            <div style={{ fontSize: "12px", color: "rgba(245,240,232,0.55)", lineHeight: 1.6 }}>{warnMsg}</div>
           </div>
         )}
-        </div>
-      </main>
+
+        {isCountry && (
+          <>
+            <input
+              value={countrySearch}
+              onChange={e => { setCountrySearch(e.target.value); setSelectedCountry(null); }}
+              placeholder="Search your country..."
+              style={{ width: "100%", padding: "13px 16px", background: "rgba(201,168,76,0.02)", border: "1px solid rgba(201,168,76,0.2)", color: "#f5f0e8", fontSize: "14px", fontFamily: "'DM Sans', sans-serif", borderRadius: 0, outline: "none", marginBottom: "8px" }}
+            />
+            {filteredCountries.length > 0 && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "4px", marginBottom: "20px" }}>
+                {filteredCountries.map(c => (
+                  <div key={c} onClick={() => {
+                    setSelectedCountry(c);
+                    setCountrySearch(c);
+                    setAnswers(prev => ({ ...prev, [q.id]: c }));
+                    setTimeout(() => advance(), 200);
+                  }} style={{ padding: "10px 14px", background: selectedCountry === c ? "rgba(201,168,76,0.08)" : "rgba(201,168,76,0.02)", border: `1px solid ${selectedCountry === c ? "rgba(201,168,76,0.4)" : "rgba(201,168,76,0.1)"}`, color: "rgba(245,240,232,0.75)", fontSize: "13px", cursor: "pointer", transition: "all 0.12s", borderRadius: 0 }}>{c}</div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+
+        {isSelect && qWithOpts.opts && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "7px", marginBottom: "28px" }}>
+            {qWithOpts.opts.map((o, i) => (
+              <button key={i} onClick={() => handleSelectOpt(i)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "13px 16px", background: selectedIdx === i ? "rgba(201,168,76,0.09)" : "rgba(201,168,76,0.02)", border: `1px solid ${selectedIdx === i ? "#C9A84C" : "rgba(201,168,76,0.14)"}`, color: selectedIdx === i ? "#f5f0e8" : "rgba(245,240,232,0.75)", fontSize: "14px", cursor: "pointer", textAlign: "left", borderRadius: 0, fontFamily: "'DM Sans', system-ui, sans-serif", transition: "all 0.14s", gap: "12px" }}>
+                <span>{o.t}</span>
+                <div style={{ width: "16px", height: "16px", border: `1px solid ${selectedIdx === i ? "#C9A84C" : "rgba(201,168,76,0.35)"}`, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  {selectedIdx === i && <div style={{ width: "7px", height: "7px", background: "#C9A84C" }} />}
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {isMulti && qWithOpts.opts && (
+          <>
+            <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.25)", marginBottom: "14px", letterSpacing: "0.04em" }}>Select all that apply</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "7px", marginBottom: "28px" }}>
+              {qWithOpts.opts.map((o, i) => {
+                const sel = multiSel.includes(i);
+                return (
+                  <button key={i} onClick={() => {
+                    setMultiSel(prev => sel ? prev.filter(x => x !== i) : [...prev, i]);
+                  }} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "13px 16px", background: sel ? "rgba(201,168,76,0.09)" : "rgba(201,168,76,0.02)", border: `1px solid ${sel ? "#C9A84C" : "rgba(201,168,76,0.14)"}`, color: sel ? "#f5f0e8" : "rgba(245,240,232,0.75)", fontSize: "14px", cursor: "pointer", textAlign: "left", borderRadius: 0, fontFamily: "'DM Sans', system-ui, sans-serif", transition: "all 0.14s", gap: "12px" }}>
+                    <span>{o.t}</span>
+                    <div style={{ width: "16px", height: "16px", border: `1px solid ${sel ? "#C9A84C" : "rgba(201,168,76,0.35)"}`, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      {sel && <div style={{ width: "7px", height: "7px", background: "#C9A84C" }} />}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+              {cur > 0 && <button onClick={() => { setCur(c => c - 1); setSelectedIdx(null); setWarnMsg(null); setMultiSel([]); }} style={{ background: "none", border: "none", fontSize: "12px", color: "rgba(245,240,232,0.25)", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>← Back</button>}
+              <button onClick={handleMultiContinue} disabled={multiSel.length === 0} style={{ padding: "11px 26px", background: "#C9A84C", border: "none", color: "#0a0a0a", fontSize: "12px", fontWeight: 500, cursor: multiSel.length > 0 ? "pointer" : "not-allowed", letterSpacing: "0.07em", textTransform: "uppercase", fontFamily: "'DM Sans', sans-serif", borderRadius: 0, opacity: multiSel.length > 0 ? 1 : 0.25 }}>Continue</button>
+            </div>
+          </>
+        )}
+
+        {(isSelect || isCountry) && warnMsg && (
+          <div style={{ display: "flex", alignItems: "center", gap: "14px", marginTop: "4px" }}>
+            {cur > 0 && <button onClick={() => { setCur(c => c - 1); setSelectedIdx(null); setWarnMsg(null); }} style={{ background: "none", border: "none", fontSize: "12px", color: "rgba(245,240,232,0.25)", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>← Back</button>}
+            <button onClick={() => {
+              const nextIdx = cur + 1;
+              if (nextIdx >= visibleQuestions.length) {
+                handleComplete(answers, warnings, attorneyFlags, franchiseInterest);
+              } else {
+                advance();
+              }
+            }} style={{ padding: "11px 26px", background: "#C9A84C", border: "none", color: "#0a0a0a", fontSize: "12px", fontWeight: 500, cursor: "pointer", letterSpacing: "0.07em", textTransform: "uppercase", fontFamily: "'DM Sans', sans-serif", borderRadius: 0 }}>Continue anyway</button>
+          </div>
+        )}
+
+        {q.tip && (
+          <div style={{ display: "flex", gap: "8px", marginTop: "22px", padding: "11px 14px", border: "1px solid rgba(201,168,76,0.08)", background: "rgba(201,168,76,0.02)" }}>
+            <div style={{ fontSize: "13px", color: "rgba(201,168,76,0.5)", flexShrink: 0 }}>i</div>
+            <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.35)", lineHeight: 1.65 }}>{q.tip}</div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
