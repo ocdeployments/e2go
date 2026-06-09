@@ -180,6 +180,8 @@ export default function QuizPage() {
   const getVisibleQuestions = useCallback(() => {
     if (!questionsData) return [];
     return questionsData.questions.filter((q) => {
+      // Skip email question for logged-in users
+      if ((q as {skip_if_authenticated?: boolean}).skip_if_authenticated && knownEmail) return false;
       // Skip Q0-21 if user email is already known
       if (q.id === "Q0-21" && knownEmail) return false;
       if (!q.show_if) return true;

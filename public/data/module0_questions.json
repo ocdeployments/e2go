@@ -601,6 +601,7 @@
       "question": "Where should we send your eligibility result and your personalized next-step summary?",
       "section": "consent",
       "validation": "email",
+      "skip_if_authenticated": true,
       "checkbox": {
         "label": "Send me occasional updates and tips about the E-2 process",
         "note": "You can unsubscribe at any time. We do not share your information with third parties without your consent."

@@ -37,7 +37,8 @@ export async function middleware(req: NextRequest) {
   const ip = req.headers.get('x-forwarded-for') || 'unknown-ip';
 
   // Rate limit login route: 5 attempts per IP per 15 minutes
-  if (pathname === '/login' || pathname === '/api/auth/v1/token') {
+  // Disabled in development to avoid blocking during testing
+  if ((pathname === '/login' || pathname === '/api/auth/v1/token') && process.env.NODE_ENV === 'production') {
     const key = `login:${ip}`;
     const allowed = checkRateLimit(key, 5, 15 * 60 * 1000);
     if (!allowed) {
