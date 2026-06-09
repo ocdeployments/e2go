@@ -1,6 +1,6 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 5, 2026 — End of Session (Stripe Integration Verification)
+**Last Updated:** June 9, 2026 — Results page benefits section
 **App Name:** e2go.app
 **Stack:** Next.js 14 · TypeScript · Tailwind CSS · Supabase · Claude API
 **Dev URL:** https://e2go-git-dev-ocdeployments-projects.vercel.app
@@ -307,6 +307,13 @@ Action: Run migration before payment flow will work
 ### June 5, 2026 — Sessions S6-S8
 - Business data deduplication between tabs
 - Security history pre-fill with legal confirmation gate
+
+### June 9, 2026 — Results Page Benefits Section
+- Personalised E-2 benefits section added to results page (between flags and timeline)
+- getBenefits() prioritises spouse/children based on quiz dependents answer
+- 2x2 grid desktop, 1 column mobile via CSS media query
+- Design: Obsidian Gold tokens, ◈ diamond icon, no rounded corners
+- Commit: 6b8057c
 
 ---
 
