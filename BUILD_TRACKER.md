@@ -373,3 +373,48 @@ Clean — 0 errors
 2. Logged in + no quiz → take quiz → skip email gate → results
 3. Not logged in → take quiz → email gate → results
 4. Login page → no rate limiting in dev → no hanging spinner
+
+---
+
+## SESSION — Landing Page Rebuild (June 9, 2026)
+
+### Completed
+- HomeClient.tsx: Complete rebuild — 10 sections, mobile-first
+- page.tsx: Clean server component wrapper
+- NavBar.tsx: Mobile hamburger nav — manual build (Magic MCP unavailable)
+- JourneyWizard.tsx: Interactive timeline comparison — dropdowns, stage logic, gap indicator
+- FeatureGrid.tsx: 3-column feature grid with gold diamond icons
+- All sections mobile-first with Tailwind breakpoints
+- Build: clean
+
+### Design system applied
+- Background #0a0a0a throughout
+- Gold #C9A84C for all accents, CTAs, active states
+- Cormorant Garamond for all headings
+- DM Sans for all body text
+- Zero border-radius anywhere
+- No glassmorphism, no shadows, no gradients
+
+### Mobile audit
+All 14 items pass:
+- Nav collapses to hamburger on mobile
+- Hero text readable on 375px screen
+- Hero buttons full width on mobile
+- Stats grid 2x2 on mobile
+- How it works steps stack vertically on mobile
+- Journey wizard dropdowns full width on mobile
+- Journey wizard columns stack vertically on mobile
+- Feature grid single column on mobile
+- Founder's note has adequate padding on mobile
+- Testimonial cards stack on mobile
+- Final CTA buttons stack on mobile
+- Footer stacks on mobile
+- No horizontal scroll at any breakpoint
+- All touch targets minimum 44px tall
+
+### Copy note
+All copy is placeholder — owner will edit directly in VS Code.
+No copy changes should be made by the agent.
+
+### Commit
+a9d5f63 — feat: landing page complete rebuild — mobile-first, Obsidian Gold, journey wizard
