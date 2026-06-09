@@ -567,7 +567,7 @@ export default function QuizPage() {
 
   if (!authChecked) {
     return (
-      <div style={{ background: "#0a0a0a", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ background: "#0a0a0a", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", maxWidth: "100%", margin: "0 auto" }}>
         <div style={{ color: "rgba(201,168,76,0.6)", fontSize: "13px", letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: "'DM Sans', sans-serif" }}>
           Loading...
         </div>
@@ -578,11 +578,11 @@ export default function QuizPage() {
   if (stopCode) {
     const stop = HARD_STOPS[stopCode] || { title: "Not eligible at this time", body: "Based on your answers, we are unable to proceed. Please consult a qualified immigration attorney." };
     return (
-      <div style={{ background: "#0a0a0a", minHeight: "100vh", fontFamily: "'DM Sans', system-ui, sans-serif", color: "#f5f0e8" }}>
-        <div style={{ padding: "18px 40px", borderBottom: "1px solid rgba(201,168,76,0.1)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <div style={{ background: "#0a0a0a", minHeight: "100vh", fontFamily: "'DM Sans', system-ui, sans-serif", color: "#f5f0e8", maxWidth: "100%", margin: "0 auto" }}>
+        <div style={{ padding: "clamp(12px, 4vw, 18px) clamp(16px, 5vw, 40px)", borderBottom: "1px solid rgba(201,168,76,0.1)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div style={{ fontSize: "17px", color: "#C9A84C", fontWeight: 300 }}>e2go<span style={{ color: "rgba(245,240,232,0.9)" }}>.app</span></div>
         </div>
-        <div style={{ padding: "56px 40px", maxWidth: "560px" }}>
+        <div style={{ padding: "clamp(32px, 5vw, 56px) clamp(16px, 5vw, 40px)", maxWidth: "560px" }}>
           <div style={{ width: "44px", height: "44px", border: "1px solid rgba(220,60,60,0.3)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "24px", color: "rgba(220,60,60,0.65)", fontSize: "20px" }}>✕</div>
           <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "28px", fontWeight: 300, color: "#f5f0e8", marginBottom: "12px", lineHeight: 1.3 }}>{stop.title}</div>
           <div style={{ fontSize: "14px", color: "rgba(245,240,232,0.5)", lineHeight: 1.7, marginBottom: "28px", maxWidth: "460px" }}>{stop.body}</div>
@@ -597,11 +597,11 @@ export default function QuizPage() {
 
   if (showEmailGate) {
     return (
-      <div style={{ background: "#0a0a0a", minHeight: "100vh", fontFamily: "'DM Sans', system-ui, sans-serif", color: "#f5f0e8" }}>
-        <div style={{ padding: "18px 40px", borderBottom: "1px solid rgba(201,168,76,0.1)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <div style={{ background: "#0a0a0a", minHeight: "100vh", fontFamily: "'DM Sans', system-ui, sans-serif", color: "#f5f0e8", maxWidth: "100%", margin: "0 auto" }}>
+        <div style={{ padding: "clamp(12px, 4vw, 18px) clamp(16px, 5vw, 40px)", borderBottom: "1px solid rgba(201,168,76,0.1)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div style={{ fontSize: "17px", color: "#C9A84C", fontWeight: 300 }}>e2go<span style={{ color: "rgba(245,240,232,0.9)" }}>.app</span></div>
         </div>
-        <div style={{ padding: "56px 40px", maxWidth: "480px" }}>
+        <div style={{ padding: "clamp(32px, 5vw, 56px) clamp(16px, 5vw, 40px)", maxWidth: "480px" }}>
           <div style={{ fontSize: "10px", letterSpacing: "0.18em", textTransform: "uppercase", color: "rgba(201,168,76,0.6)", marginBottom: "16px" }}>Your result is ready</div>
           <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "32px", fontWeight: 300, color: "#f5f0e8", marginBottom: "8px", lineHeight: 1.3 }}>Where should we send your eligibility summary?</div>
           <div style={{ fontSize: "14px", color: "rgba(245,240,232,0.45)", marginBottom: "32px", lineHeight: 1.6 }}>We will email you a full copy of your result and your personalised next-step summary.</div>
@@ -634,10 +634,10 @@ export default function QuizPage() {
     : [];
 
   return (
-    <div style={{ background: "#0a0a0a", minHeight: "100vh", fontFamily: "'DM Sans', system-ui, sans-serif", color: "#f5f0e8" }}>
-      <div style={{ padding: "18px 40px", borderBottom: "1px solid rgba(201,168,76,0.1)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+    <div style={{ background: "#0a0a0a", minHeight: "100vh", fontFamily: "'DM Sans', system-ui, sans-serif", color: "#f5f0e8", maxWidth: "100%", margin: "0 auto" }}>
+      <div style={{ padding: "clamp(12px, 4vw, 18px) clamp(16px, 5vw, 40px)", borderBottom: "1px solid rgba(201,168,76,0.1)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div style={{ fontSize: "17px", color: "#C9A84C", fontWeight: 300 }}>e2go<span style={{ color: "rgba(245,240,232,0.9)" }}>.app</span></div>
-        <div style={{ flex: 1, maxWidth: "240px", margin: "0 24px" }}>
+        <div style={{ flex: 1, maxWidth: "clamp(100px, 30vw, 240px)", margin: "0 clamp(12px, 3vw, 24px)" }}>
           <div style={{ height: "1px", background: "rgba(201,168,76,0.15)" }}>
             <div style={{ height: "100%", background: "#C9A84C", width: `${pct}%`, transition: "width 0.5s cubic-bezier(.4,0,.2,1)" }} />
           </div>
@@ -646,13 +646,13 @@ export default function QuizPage() {
         <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.2)", letterSpacing: "0.07em", textTransform: "uppercase" }}>Save & exit</div>
       </div>
 
-      <div style={{ display: "flex", gap: 0, padding: "0 40px", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
+      <div style={{ display: "flex", gap: 0, padding: "0 clamp(16px, 5vw, 40px)", borderBottom: "1px solid rgba(201,168,76,0.08)", overflowX: "auto" }}>
         {SECTIONS.map((s, i) => (
           <div key={s} style={{ fontSize: "10px", letterSpacing: "0.1em", textTransform: "uppercase", color: i === q.sec ? "#C9A84C" : i < q.sec ? "rgba(245,240,232,0.35)" : "rgba(245,240,232,0.18)", padding: "10px 0", marginRight: "18px", borderBottom: `2px solid ${i === q.sec ? "#C9A84C" : i < q.sec ? "rgba(201,168,76,0.2)" : "transparent"}`, transition: "all 0.2s", whiteSpace: "nowrap" }}>{s}</div>
         ))}
       </div>
 
-      <div style={{ padding: "44px 40px 32px", maxWidth: "580px", opacity: isAnimating ? 0 : 1, transition: "opacity 0.15s" }}>
+      <div style={{ padding: "clamp(28px, 5vw, 44px) clamp(16px, 5vw, 40px) 32px", maxWidth: "580px", width: "100%", opacity: isAnimating ? 0 : 1, transition: "opacity 0.15s" }}>
         <div style={{ display: "inline-flex", alignItems: "center", gap: "5px", fontSize: "10px", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(201,168,76,0.7)", marginBottom: "18px" }}>
           <div style={{ width: "3px", height: "3px", borderRadius: "50%", background: "#C9A84C" }} />
           {q.isSub ? "Follow-up" : S}
