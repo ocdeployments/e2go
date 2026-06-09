@@ -1,6 +1,6 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 9, 2026 — Results page benefits section
+**Last Updated:** June 9, 2026 — Landing page mistakes section complete
 **App Name:** E2go.app
 **Stack:** Next.js 14 · TypeScript · Tailwind CSS · Supabase · Claude API
 **Dev URL:** https://e2go-git-dev-ocdeployments-projects.vercel.app
@@ -55,7 +55,7 @@ changed, run npm run build:clean, report summary.
 | /apply/checklist | ✅ COMPLETE | Three phases, Supabase connected |
 | Pricing page | ✅ COMPLETE | Founding member pricing, guarantee |
 | Dashboard | ✅ COMPLETE | Needs real data wiring |
-| Landing page | ✅ COMPLETE | 11 sections, Obsidian Gold |
+| Landing page | ✅ COMPLETE | 12 sections, Obsidian Gold. Mistakes section added, pricing updated to $550, copy fixes, FAQ expanded to 7 items |
 | Document generation specs | ✅ COMPLETE | 4 spec files |
 | Stripe integration | ⚠️ PARTIAL | Code complete, payments table needs migration |
 | Email verification funnel | ✅ COMPLETE | |
