@@ -418,3 +418,27 @@ No copy changes should be made by the agent.
 
 ### Commit
 a9d5f63 — feat: landing page complete rebuild — mobile-first, Obsidian Gold, journey wizard
+
+---
+
+## SESSION — Quiz Navigation + Draft Save (June 9, 2026)
+
+### Navigation Fixes
+- **Auto-advance on warnings**: 1200ms delay to read warning before advancing
+- **Auto-advance on attorney flags**: 1200ms delay before advancing
+- **Back button on all questions**: Added after options block, before tooltip
+- **Clickable section tabs**: Done tabs clickable, jump to section start
+- **getFirstQuestionOfSection helper**: For section navigation
+
+### Draft Save System
+- **PART A**: Save draft to localStorage on every answer (select, multi)
+- **PART B**: Restore draft on page load with 7-day expiry
+- **PART C**: Clear draft on quiz completion and hard stop
+- **PART D**: Clear draft on signup (verify page)
+- **PART E**: Backfill draft to Supabase on login (if ≥10 answers)
+
+### Build
+Clean — 0 errors
+
+### Commit
+14606e6 — feat: quiz navigation fixes + draft save system for anonymous users
