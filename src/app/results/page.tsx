@@ -165,8 +165,69 @@ export default function ResultsPage() {
     !(data.warnings || []).some(w => w.includes("documentation")) && "Investment source — clear",
   ].filter(Boolean) as string[];
 
+  function getBenefits(d: ResultData) {
+    const dep = (d.dependents || '').toLowerCase();
+    const hasSpouse = dep.includes('spouse') || dep.includes('partner');
+    const hasChildren = dep.includes('children') || dep.includes('child');
+
+    const all = [
+      {
+        key: 'spouse',
+        show: hasSpouse,
+        priority: true,
+        title: 'Your spouse can work anywhere in the U.S.',
+        desc: 'Your spouse receives work authorisation and can work for any U.S. employer in any role — not just your business.',
+      },
+      {
+        key: 'children',
+        show: hasChildren,
+        priority: true,
+        title: 'Your children attend U.S. schools',
+        desc: 'Your children receive dependent status and can attend U.S. public and private schools as legal residents.',
+      },
+      {
+        key: 'freedom',
+        show: true,
+        priority: !hasSpouse && !hasChildren,
+        title: 'No employer. No sponsorship. No queue.',
+        desc: 'You move to the U.S. on your own terms — by building something. No waiting for an employer to file on your behalf.',
+      },
+      {
+        key: 'renewable',
+        show: true,
+        priority: false,
+        title: 'Renewable with no expiry date',
+        desc: 'The E-2 renews indefinitely as long as your business operates. There is no fixed end to your time in the U.S.',
+      },
+      {
+        key: 'nocap',
+        show: true,
+        priority: false,
+        title: 'No cap, no lottery, no waiting list',
+        desc: 'Unlike the H-1B, there is no annual quota. If you qualify, you apply. Your eligibility is not subject to chance.',
+      },
+      {
+        key: 'country',
+        show: true,
+        priority: false,
+        title: `${d.country || 'Your country'} has an active E-2 treaty`,
+        desc: `Citizens of ${d.country || 'your country'} have full access to the E-2 programme. Your treaty standing is confirmed.`,
+      },
+    ];
+
+    return all
+      .filter(b => b.show)
+      .sort((a, b) => (b.priority ? 1 : 0) - (a.priority ? 1 : 0))
+      .slice(0, 4);
+  }
+
   return (
     <div style={{ background: "#0a0a0a", minHeight: "100vh", fontFamily: "'DM Sans', system-ui, sans-serif", color: "#f5f0e8" }}>
+      <style>{`
+        @media (max-width: 640px) {
+          .benefits-grid { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
 
       <div style={{ padding: "18px 40px", borderBottom: "1px solid rgba(201,168,76,0.1)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div style={{ fontSize: "17px", color: "#C9A84C", fontWeight: 300 }}>e2go<span style={{ color: "rgba(245,240,232,0.9)" }}>.app</span></div>
@@ -244,6 +305,24 @@ export default function ResultsPage() {
               </div>
             </div>
           )}
+
+          {/* E-2 Benefits */}
+          <div>
+            <div style={{ fontSize: "10px", letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(201,168,76,0.5)", marginBottom: "14px" }}>What this visa gives you</div>
+            <div className="benefits-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+              {getBenefits(data).map((benefit) => (
+                <div key={benefit.key} style={{ padding: "14px 16px", border: "1px solid rgba(201,168,76,0.1)", background: "rgba(201,168,76,0.02)" }}>
+                  <div style={{ color: "#C9A84C", fontSize: "16px", marginBottom: "8px" }}>◈</div>
+                  <div style={{ fontSize: "13px", fontWeight: 500, color: "#f5f0e8", marginBottom: "4px", lineHeight: 1.4 }}>
+                    {benefit.title}
+                  </div>
+                  <div style={{ fontSize: "12px", color: "rgba(245,240,232,0.45)", lineHeight: 1.6 }}>
+                    {benefit.desc}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
 
           <div>
             <div style={{ fontSize: "10px", letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(201,168,76,0.5)", marginBottom: "14px" }}>Estimated path to your interview</div>
