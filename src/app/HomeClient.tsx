@@ -187,6 +187,56 @@ export default function HomeClient() {
           </svg>
         </div>
 
+        {/* Portrait — investor image */}
+        <div style={{
+          position: 'absolute',
+          bottom: 0,
+          right: '60px',
+          width: '300px',
+          height: '440px',
+          zIndex: 5,
+          overflow: 'hidden',
+          pointerEvents: 'none',
+        }}>
+          <img
+            src="/images/investor-man.png"
+            alt="E-2 investor"
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              objectPosition: 'top center',
+              opacity: 0.82,
+              filter: 'grayscale(12%)',
+              mixBlendMode: 'luminosity',
+            }}
+          />
+          <div style={{
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: '200px',
+            background: 'linear-gradient(transparent, #0a0a0a)',
+          }} />
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '130px',
+            height: '100%',
+            background: 'linear-gradient(90deg, #0a0a0a, transparent)',
+          }} />
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            right: 0,
+            width: '60px',
+            height: '100%',
+            background: 'linear-gradient(270deg, #0a0a0a, transparent)',
+          }} />
+        </div>
+
         {/* Content — above flag */}
         <div style={{ position: 'relative', zIndex: 10 }}>
           <p className="text-[10px] tracking-[0.18em] uppercase text-[rgba(201,168,76,0.65)] mb-5">
@@ -261,44 +311,94 @@ export default function HomeClient() {
           caused by preparation errors that a structured process
           would have caught.
         </p>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
           {[
             {
-              n: "01",
-              t: "Rushing to invest before confirming fit",
-              d: "The costliest mistake in the E-2 process is committing capital to a business before confirming that the investment structure, the business model, and your qualifications will survive consular scrutiny. The right sequence is: assess first, invest second, document third. E2go is built around that sequence."
+              n: '01',
+              t: 'Rushing to invest before confirming fit',
+              d: 'The costliest mistake in the E-2 process is committing capital to a business before confirming that the investment structure, the business model, and your qualifications will survive consular scrutiny. The right sequence is: assess first, invest second, document third. E2go is built around that sequence.',
             },
             {
-              n: "02",
-              t: "Treating it like a checklist instead of a strategy",
-              d: "A checklist gets you organised. A strategy gets you approved. The documents E2go generates are not a checklist — they are a coordinated argument. Every document answers a specific question the officer will ask. Together, they tell one story."
+              n: '02',
+              t: 'Treating it like a checklist instead of a strategy',
+              d: 'A checklist gets you organised. A strategy gets you approved. The documents E2go generates are not a checklist — they are a coordinated argument. Every document answers a specific question the officer will ask. Together, they tell one story.',
             },
             {
-              n: "03",
-              t: "Getting legal help too early — or too late",
-              d: "Too early means paying fees to prepare documents before you know whether the business structure is E-2 compliant. Too late means arriving at the consulate hoping for the best. The right moment is after the strategy is confirmed and before the application is filed. E2go handles the strategy. A consultant reviews and signs off."
+              n: '03',
+              t: 'Getting legal help too early — or too late',
+              d: 'Too early means paying fees to prepare documents before you know whether the business structure is E-2 compliant. Too late means arriving at the consulate hoping for the best. The right moment is after the strategy is confirmed and before the application is filed. E2go handles the strategy. A consultant reviews and signs off.',
             },
             {
-              n: "04",
-              t: "Over-relying on free advice without context",
-              d: "Facebook groups and Reddit threads cannot tell you whether your specific business, at your specific investment level, with your specific background, will survive scrutiny at your specific consulate. Context is everything. E2go's consulate intelligence covers 82 treaty country consulates and tracks adjudication patterns by post."
+              n: '04',
+              t: 'Over-relying on free advice without context',
+              d: "Facebook groups and Reddit threads cannot tell you whether your specific business, at your specific investment level, with your specific background, will survive scrutiny at your specific consulate. Context is everything. E2go's consulate intelligence covers 82 treaty country consulates and tracks adjudication patterns by post.",
             },
           ].map((m, i) => (
-            <div key={i} className="p-6 md:p-8 border
-              border-[rgba(201,168,76,0.1)] -mt-px -ml-px
-              hover:border-[rgba(201,168,76,0.25)]
-              transition-colors">
-              <div className="font-['Cormorant_Garamond'] text-4xl
-                font-light text-[rgba(201,168,76,0.2)] mb-4">
-                {m.n}
-              </div>
-              <div className="text-sm font-medium
-                text-[rgba(201,168,76,0.85)] mb-3 leading-snug">
-                {m.t}
-              </div>
-              <div className="text-xs text-[rgba(245,240,232,0.5)]
-                leading-relaxed">
-                {m.d}
+            <div key={i} style={{
+              display: 'grid',
+              gridTemplateColumns: '100px 1fr',
+              gap: 0,
+              borderTop: '1px solid rgba(201,168,76,0.1)',
+              padding: '36px 0',
+              position: 'relative',
+              overflow: 'hidden',
+            }}
+            className="last:border-b last:border-[rgba(201,168,76,0.1)]"
+            >
+              {/* Watermark number */}
+              <div style={{
+                position: 'absolute',
+                left: '-8px',
+                top: '-10px',
+                fontFamily: "'Cormorant Garamond', Georgia, serif",
+                fontSize: '120px',
+                fontWeight: 300,
+                color: 'rgba(201,168,76,0.05)',
+                lineHeight: 1,
+                userSelect: 'none',
+                pointerEvents: 'none',
+              }}>{m.n}</div>
+
+              {/* Gold left accent bar */}
+              <div style={{
+                position: 'absolute',
+                left: '96px',
+                top: 0,
+                bottom: 0,
+                width: '1px',
+                background: 'rgba(201,168,76,0.2)',
+              }} />
+
+              {/* Number */}
+              <div style={{
+                fontFamily: "'Cormorant Garamond', Georgia, serif",
+                fontSize: '13px',
+                fontWeight: 300,
+                color: 'rgba(201,168,76,0.5)',
+                letterSpacing: '0.1em',
+                textTransform: 'uppercase',
+                paddingTop: '4px',
+                position: 'relative',
+                zIndex: 1,
+              }}>{m.n}</div>
+
+              {/* Body */}
+              <div style={{ position: 'relative', zIndex: 1 }}>
+                <div style={{
+                  fontFamily: "'Cormorant Garamond', Georgia, serif",
+                  fontSize: '18px',
+                  fontWeight: 300,
+                  fontStyle: 'italic',
+                  color: 'rgba(201,168,76,0.88)',
+                  marginBottom: '10px',
+                  lineHeight: 1.3,
+                }}>{m.t}</div>
+                <p style={{
+                  fontSize: '13px',
+                  color: 'rgba(245,240,232,0.5)',
+                  lineHeight: 1.75,
+                  maxWidth: '680px',
+                }}>{m.d}</p>
               </div>
             </div>
           ))}
@@ -315,7 +415,17 @@ export default function HomeClient() {
           No consultants. No back-and-forth. Your complete application,
           built and tested in days.
         </p>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-0">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-0" style={{ position: 'relative' }}>
+          {/* Connecting thread */}
+          <div style={{
+            position: 'absolute',
+            top: '4px',
+            left: '5%',
+            right: '5%',
+            height: '1px',
+            background: 'rgba(201,168,76,0.12)',
+            zIndex: 0,
+          }} />
           {[
             { n: "01", t: "Eligibility quiz", d: "14 questions. 4 minutes. Instant verdict with a score out of 100, personalised risk flags, and your estimated timeline to interview." },
             { n: "02", t: "E-2 Discovery ", d: "A guided conversation across 12 tabs that captures everything the consulate will ask about. Your answers become your documents." },
@@ -323,7 +433,25 @@ export default function HomeClient() {
             { n: "04", t: "Consulate package", d: "A complete formatted binder — every tab, every document, in the exact order your consulate expects. Download and go." },
           ].map((s, i) => (
             <div key={i} className="p-6 md:p-8 border border-[rgba(201,168,76,0.1)] -mt-px -ml-px hover:border-[rgba(201,168,76,0.3)] transition-colors">
-              <div className="font-['Cormorant_Garamond'] text-4xl font-light text-[rgba(201,168,76,0.25)] mb-4">{s.n}</div>
+              {/* Thread dot */}
+              <div style={{
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
+                background: i < 3 ? '#C9A84C' : '#0a0a0a',
+                border: '1px solid rgba(201,168,76,0.5)',
+                marginBottom: '12px',
+                position: 'relative',
+                zIndex: 1,
+              }} />
+              <div style={{
+                fontFamily: "'Cormorant Garamond', Georgia, serif",
+                fontSize: '72px',
+                fontWeight: 300,
+                color: 'rgba(201,168,76,0.12)',
+                lineHeight: 1,
+                marginBottom: '12px',
+              }}>{s.n}</div>
               <div className="text-sm font-medium text-[#f5f0e8] mb-2">{s.t}</div>
               <div className="text-xs text-[rgba(245,240,232,0.45)] leading-relaxed">{s.d}</div>
             </div>
@@ -436,30 +564,116 @@ export default function HomeClient() {
           coordinated argument. Each one answers a specific question
           the officer will ask. Together, they tell one story.
         </p>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-0">
+        {/* Hero feature — Case analysis engine with binder image */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 360px',
+          border: '1px solid rgba(201,168,76,0.15)',
+          marginBottom: '-1px',
+          minHeight: '220px',
+          overflow: 'hidden',
+        }}>
+          <div style={{ padding: '32px 28px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+            <div style={{
+              fontFamily: "'Cormorant Garamond', Georgia, serif",
+              fontSize: '64px',
+              fontWeight: 300,
+              color: 'rgba(201,168,76,0.12)',
+              lineHeight: 1,
+              marginBottom: '10px',
+            }}>01</div>
+            <div style={{ fontSize: '16px', fontWeight: 500, color: '#f5f0e8', marginBottom: '10px' }}>
+              Case analysis engine
+            </div>
+            <p style={{ fontSize: '13px', color: 'rgba(245,240,232,0.5)', lineHeight: 1.7, maxWidth: '480px' }}>
+              6 calculations. 15 denial pattern checks. Investment substantiality,
+              source of funds strength, marginality risk, non-immigrant intent —
+              all assessed and scored before a single word is written.
+              You see exactly where you stand before you commit.
+            </p>
+          </div>
+          <div style={{ position: 'relative', overflow: 'hidden' }}>
+            <img
+              src="/images/document-binder.png"
+              alt="Application document binder"
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                objectPosition: 'center',
+                opacity: 0.65,
+                filter: 'grayscale(15%)',
+              }}
+            />
+            <div style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '120px',
+              height: '100%',
+              background: 'linear-gradient(90deg, #0a0a0a, transparent)',
+            }} />
+            <div style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              height: '60px',
+              background: 'linear-gradient(#0a0a0a, transparent)',
+            }} />
+            <div style={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: '60px',
+              background: 'linear-gradient(transparent, #0a0a0a)',
+            }} />
+          </div>
+        </div>
+
+        {/* Remaining 5 features */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)' }}>
           {[
-            { t: "Case analysis engine", d: "6 calculations. 15 denial pattern checks. Investment substantiality, source of funds strength, marginality risk — all assessed before a word is written." },
-            { t: "Sequential document generation", d: "Cover letter first. Each document reviewed before the next begins. Inconsistencies caught before they compound. You approve every document." },
-            { t: "Writing style matching", d: "Your documents read like you wrote them. A writing sample calibrates the engine to your natural voice. AI detection run on every document." },
-            {
-              t: "Consulate intelligence",
-              d: "Processing times, approval patterns, known preferences — specific to your consulate. Not generic advice.",
-              note: "Generic advice cannot tell you what your specific consulate is looking for. We can — across all 82 treaty country posts."
-            },
-            { t: "Interview simulator", d: "The AI officer has read your package. Questions are generated from your specific application. Every weak point is probed before your real interview. Included in all packages — also available standalone for $197 (3 sessions)." },
-            { t: "Specialist referral network", d: "Franchise brokers, cross-border accountants, LLC formation specialists — connected at the right moment, briefed on your situation." },
+            { n: '02', t: 'Sequential document generation', d: 'Cover letter first. Each document reviewed before the next begins. Inconsistencies caught before they compound. You approve every document.' },
+            { n: '03', t: 'Writing style matching', d: 'Your documents read like you wrote them. A writing sample calibrates the engine. AI detection run on every document.' },
+            { n: '04', t: 'Consulate intelligence', d: 'Processing times, approval patterns, known preferences — specific to your consulate.', note: 'Tracks adjudication patterns across all 82 treaty country posts.' },
+            { n: '05', t: 'Interview simulator', d: 'The AI officer has read your package. Every weak point is probed before your real interview.', note: 'Included in all packages. Also available standalone — $197 for 3 sessions.' },
+            { n: '06', t: 'Specialist referral network', d: 'Franchise brokers, accountants, LLC specialists — at the right moment, briefed on your situation.' },
           ].map((f, i) => (
-            <div key={i} className="p-6 md:p-8 border border-[rgba(201,168,76,0.1)] -mt-px -ml-px hover:border-[rgba(201,168,76,0.3)] transition-colors group">
-              <div className="text-[#C9A84C] text-2xl mb-3 group-hover:scale-110 transition-transform inline-block">◈</div>
-              <div className="text-sm font-medium text-[#f5f0e8] mb-2">{f.t}</div>
-              <div className="text-xs text-[rgba(245,240,232,0.45)] leading-relaxed">{f.d}</div>
+            <div key={i} style={{
+              padding: '20px 18px',
+              border: '1px solid rgba(201,168,76,0.1)',
+              marginRight: '-1px',
+              marginTop: '-1px',
+              position: 'relative',
+              overflow: 'hidden',
+            }}>
+              <div style={{
+                position: 'absolute',
+                top: '-6px',
+                right: '10px',
+                fontFamily: "'Cormorant Garamond', Georgia, serif",
+                fontSize: '52px',
+                fontWeight: 300,
+                color: 'rgba(201,168,76,0.07)',
+                lineHeight: 1,
+                userSelect: 'none',
+              }}>{f.n}</div>
+              <div style={{ fontSize: '12px', fontWeight: 500, color: '#f5f0e8', marginBottom: '6px', position: 'relative', zIndex: 1 }}>{f.t}</div>
+              <p style={{ fontSize: '11px', color: 'rgba(245,240,232,0.45)', lineHeight: 1.65, position: 'relative', zIndex: 1 }}>{f.d}</p>
               {f.note && (
-                <div className="text-[10px] text-[rgba(201,168,76,0.6)]
-                  italic mt-3 pt-3
-                  border-t border-[rgba(201,168,76,0.1)]
-                  leading-relaxed">
-                  {f.note}
-                </div>
+                <p style={{
+                  fontSize: '10px',
+                  color: 'rgba(201,168,76,0.6)',
+                  fontStyle: 'italic',
+                  marginTop: '8px',
+                  paddingTop: '8px',
+                  borderTop: '1px solid rgba(201,168,76,0.1)',
+                  position: 'relative',
+                  zIndex: 1,
+                  lineHeight: 1.5,
+                }}>{f.note}</p>
               )}
             </div>
           ))}
@@ -493,14 +707,95 @@ export default function HomeClient() {
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-0">
           {[
-            { q: "I had spoken to two consultants and walked away more confused than when I started. E2go was the first thing that actually explained what the consulate needed to see and why.", a: "Marco T.", c: "Italy", t: "Franchise applicant" },
-            { q: "The source of funds section alone would have taken days with a consultant. The engine asked me the right questions and built the narrative from my answers.", a: "Aisha K.", c: "United Kingdom", t: "Solo applicant" },
-            { q: "I downloaded the package on a Friday. By Monday I had reviewed every document. My attorney said it was the cleanest first draft she had ever seen from a self-prepared applicant.", a: "David L.", c: "Canada", t: "Partnership applicant" },
+            {
+              q: "I had spoken to two consultants and walked away more confused than when I started. E2go was the first thing that actually explained what the consulate needed to see and why.",
+              a: "Marco T.",
+              c: "Italy",
+              t: "Franchise applicant",
+              img: "/images/investor-man.png",
+            },
+            {
+              q: "The source of funds section alone would have taken days with a consultant. The engine asked me the right questions and built the narrative from my answers.",
+              a: "Aisha K.",
+              c: "United Kingdom",
+              t: "Solo applicant",
+              img: "/images/investor-woman.png",
+            },
+            {
+              q: "I downloaded the package on a Friday. By Monday I had reviewed every document. My attorney said it was the cleanest first draft she had ever seen from a self-prepared applicant.",
+              a: "David L.",
+              c: "Canada",
+              t: "Partnership applicant",
+              img: "/images/couple-documents.png",
+            },
           ].map((t, i) => (
-            <div key={i} className="p-6 md:p-8 border border-[rgba(201,168,76,0.1)] -mt-px -ml-px">
-              <p className="font-['Cormorant_Garamond'] text-base md:text-lg font-light italic text-[rgba(245,240,232,0.75)] leading-relaxed mb-5">&ldquo;{t.q}&rdquo;</p>
-              <p className="text-xs text-[rgba(245,240,232,0.45)]">— {t.a}</p>
-              <p className="text-[10px] text-[rgba(201,168,76,0.55)] tracking-widest uppercase mt-1">{t.c} · {t.t}</p>
+            <div key={i} style={{
+              padding: '28px 24px',
+              border: '1px solid rgba(201,168,76,0.1)',
+              marginRight: '-1px',
+              marginTop: '-1px',
+              position: 'relative',
+              overflow: 'hidden',
+            }}>
+              {/* Background quote mark */}
+              <div style={{
+                position: 'absolute',
+                top: '-20px',
+                left: '10px',
+                fontFamily: "'Cormorant Garamond', Georgia, serif",
+                fontSize: '180px',
+                fontWeight: 300,
+                color: 'rgba(201,168,76,0.04)',
+                lineHeight: 1,
+                userSelect: 'none',
+                pointerEvents: 'none',
+              }}>&ldquo;</div>
+
+              {/* Portrait thumbnail */}
+              <div style={{
+                width: '40px',
+                height: '40px',
+                overflow: 'hidden',
+                marginBottom: '16px',
+                position: 'relative',
+                zIndex: 1,
+              }}>
+                <img
+                  src={t.img}
+                  alt={t.a}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                    objectPosition: 'top center',
+                    filter: 'grayscale(20%)',
+                  }}
+                />
+              </div>
+
+              {/* Quote */}
+              <p style={{
+                fontFamily: "'Cormorant Garamond', Georgia, serif",
+                fontSize: '15px',
+                fontStyle: 'italic',
+                color: 'rgba(245,240,232,0.78)',
+                lineHeight: 1.65,
+                marginBottom: '16px',
+                position: 'relative',
+                zIndex: 1,
+              }}>&ldquo;{t.q}&rdquo;</p>
+
+              {/* Divider */}
+              <div style={{
+                width: '24px',
+                height: '1px',
+                background: 'rgba(201,168,76,0.4)',
+                marginBottom: '10px',
+              }} />
+
+              {/* Attribution */}
+              <div style={{ fontSize: '12px', color: 'rgba(245,240,232,0.5)', position: 'relative', zIndex: 1 }}>{t.a}</div>
+              <div style={{ fontSize: '10px', color: 'rgba(201,168,76,0.55)', letterSpacing: '0.08em', textTransform: 'uppercase', marginTop: '3px', position: 'relative', zIndex: 1 }}>{t.c} · {t.t}</div>
             </div>
           ))}
         </div>
