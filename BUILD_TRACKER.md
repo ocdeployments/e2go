@@ -463,3 +463,19 @@ Clean — 0 errors
 
 ### Build
 Clean — 0 errors
+
+---
+
+## SESSION — Rebrand: e2go → E2go (June 9, 2026)
+
+### Completed
+- Display name changed from "e2go" to "E2go" across all UI copy
+- 63 files changed, 153 insertions / 153 deletions
+- Logo text, page titles, metadata, FAQ copy, email templates, legal disclaimers, footer text, PWA prompts, manifest.json
+- NOT changed: URLs, file paths, import paths, variable names, localStorage keys, API routes, CSS classes, email addresses
+
+### Build
+Clean — 0 errors
+
+### Commit
+eba36d9 — rebrand: e2go → E2go throughout app UI and metadata
