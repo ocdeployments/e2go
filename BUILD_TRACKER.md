@@ -336,3 +336,21 @@ Action: Run migration before payment flow will work
 - All core features implemented
 - Stripe code complete, awaiting migration
 
+
+---
+
+## SESSION 18B — June 8, 2026
+
+### Fixes
+- **login/page.tsx**: Backfill quiz session user_id on login — links anonymous quiz attempts to account after sign-in
+- **quiz/page.tsx Fix 1**: handleAnswer no longer auto-advances when selected answer triggers a sub_question — fixes double-click bug on Q0-16
+- **quiz/page.tsx Fix 2**: sub_question show_if now handles arrays correctly — fixes sub_question never showing for multi-value show_if
+- **quiz/page.tsx Fix 3**: franchise_interest flag wired to Q0-FRANCHISE-REFERRAL answer
+- **module0_questions.json**: Added Q0-FRANCHISE-REFERRAL question between Q0-10 and Q0-STATE — fires for undecided and franchise applicants
+
+### Build
+Clean — 66 routes, 0 errors
+
+### Known remaining
+- Visual E2E test of generate page approval gate requires manual browser test (auth required)
+- npm test not configured
