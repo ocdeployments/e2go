@@ -33,6 +33,14 @@ function LoginForm() {
         setStatus('error');
         setErrorMessage("Invalid email or password");
       } else {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          await supabase
+            .from("quiz_sessions")
+            .update({ user_id: user.id })
+            .eq("email", email)
+            .is("user_id", null);
+        }
         setStatus('success');
         window.location.href = next ?? '/dashboard';
       }
