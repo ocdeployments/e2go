@@ -326,6 +326,12 @@ export default function QuizPage() {
     setTimeout(() => setIsAnimating(false), 200);
 
     const newAnswers = { ...answers, [currentQuestion.id]: answer };
+
+    // Wire franchise referral interest
+    if (currentQuestion.id === "Q0-FRANCHISE-REFERRAL" && answer === "Yes — please make an introduction") {
+      newAnswers["franchise_interest"] = "true";
+    }
+
     setAnswers(newAnswers);
 
     // Check hard stops
@@ -333,6 +339,14 @@ export default function QuizPage() {
 
     // Auto-advance for select type
     if (currentQuestion.type === "select" && !stopScreen) {
+      // Don't auto-advance if this answer triggers a sub_question
+      const subQ = currentQuestion.sub_question;
+      const triggersSubQ = subQ && (
+        Array.isArray(subQ.show_if)
+          ? subQ.show_if.includes(answer)
+          : subQ.show_if === answer
+      );
+      if (triggersSubQ) return;
       if (currentIndex < visibleQuestions.length - 1) {
         setCurrentIndex(currentIndex + 1);
       } else {
@@ -499,6 +513,7 @@ export default function QuizPage() {
 
     if (sessionError) {
       console.error("Session save error:", sessionError);
+      alert("Quiz save error: " + JSON.stringify(sessionError));
       return;
     }
 
@@ -1268,7 +1283,11 @@ export default function QuizPage() {
             )}
 
             {/* Sub-Question */}
-            {currentQuestion.sub_question && answers[currentQuestion.id] === currentQuestion.sub_question.show_if && (
+            {currentQuestion.sub_question && (
+              Array.isArray(currentQuestion.sub_question.show_if)
+                ? currentQuestion.sub_question.show_if.includes(answers[currentQuestion.id] as string)
+                : answers[currentQuestion.id] === currentQuestion.sub_question.show_if
+            ) && (
               <div style={{ marginTop: '24px', padding: '20px', background: 'rgba(201,168,76,0.02)', borderRadius: 0, border: '1px solid rgba(201,168,76,0.12)' }}>
                 <h2 style={{
                   fontFamily: "'Cormorant Garamond', Georgia, serif",
