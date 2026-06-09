@@ -654,6 +654,11 @@ export default function QuizPage() {
         <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.55)", letterSpacing: "0.07em", textTransform: "uppercase", cursor: "pointer", transition: "color 0.15s" }} onMouseEnter={e => e.currentTarget.style.color = "rgba(245,240,232,0.85)"} onMouseLeave={e => e.currentTarget.style.color = "rgba(245,240,232,0.55)"}>Save & exit</div>
       </div>
 
+      <div style={{ display: "flex", gap: 0, padding: "0 clamp(16px, 5vw, 40px)", borderBottom: "1px solid rgba(201,168,76,0.08)", overflowX: "auto", whiteSpace: "nowrap" }}>
+        {SECTIONS.map((s, i) => (
+          <div key={s} style={{ fontSize: "10px", letterSpacing: "0.1em", textTransform: "uppercase", color: i === q.sec ? "#C9A84C" : i < q.sec ? "rgba(245,240,232,0.45)" : "rgba(245,240,232,0.4)", padding: "10px 0", marginRight: "18px", borderBottom: `2px solid ${i === q.sec ? "#C9A84C" : i < q.sec ? "rgba(201,168,76,0.25)" : "transparent"}`, transition: "all 0.2s", whiteSpace: "nowrap" }}>{s}</div>
+        ))}
+      </div>
       <div style={{ padding: "0 clamp(16px, 5vw, 40px)", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
         <div style={{ fontSize: "10px", letterSpacing: "0.12em", textTransform: "uppercase", color: "#C9A84C", padding: "10px 0" }}>Section {q.sec + 1} of 6 — {SECTIONS[q.sec]}</div>
       </div>
@@ -683,14 +688,14 @@ export default function QuizPage() {
               style={{ width: "100%", maxWidth: "420px", padding: "13px 16px", background: "rgba(201,168,76,0.02)", border: "1px solid rgba(201,168,76,0.2)", color: "#f5f0e8", fontSize: "14px", fontFamily: "'DM Sans', sans-serif", borderRadius: 0, outline: "none", marginBottom: "8px" }}
             />
             {filteredCountries.length > 0 && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "4px", marginBottom: "20px" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "4px", marginBottom: "20px", background: "#0a0a0a", border: "1px solid rgba(201,168,76,0.2)", zIndex: 50, position: "relative" }}>
                 {filteredCountries.map(c => (
                   <div key={c} onClick={() => {
                     setSelectedCountry(c);
                     setCountrySearch(c);
                     setAnswers(prev => ({ ...prev, [q.id]: c }));
-                    setTimeout(() => advance(), 200);
-                  }} style={{ padding: "10px 14px", background: selectedCountry === c ? "rgba(201,168,76,0.08)" : "rgba(201,168,76,0.02)", border: `1px solid ${selectedCountry === c ? "rgba(201,168,76,0.4)" : "rgba(201,168,76,0.1)"}`, color: "rgba(245,240,232,0.75)", fontSize: "13px", cursor: "pointer", transition: "all 0.12s", borderRadius: 0 }}>{c}</div>
+                    setTimeout(() => advance(), 300);
+                  }} onMouseEnter={e => { e.currentTarget.style.background = "rgba(201,168,76,0.08)"; e.currentTarget.style.color = "#f5f0e8"; }} onMouseLeave={e => { e.currentTarget.style.background = selectedCountry === c ? "rgba(201,168,76,0.08)" : "#0a0a0a"; e.currentTarget.style.color = "#f5f0e8"; }} style={{ padding: "10px 14px", background: selectedCountry === c ? "rgba(201,168,76,0.08)" : "#0a0a0a", border: `1px solid ${selectedCountry === c ? "rgba(201,168,76,0.4)" : "rgba(201,168,76,0.1)"}`, color: "#f5f0e8", fontSize: "13px", cursor: "pointer", transition: "all 0.12s", borderRadius: 0 }}>{c}</div>
                 ))}
               </div>
             )}
