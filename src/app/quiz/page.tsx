@@ -323,6 +323,7 @@ export default function QuizPage() {
   const [franchiseInterest, setFranchiseInterest] = useState(false);
   const [countrySearch, setCountrySearch] = useState("");
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
+  const [highlightedIdx, setHighlightedIdx] = useState(-1);
   const [multiSel, setMultiSel] = useState<number[]>([]);
   const [warnMsg, setWarnMsg] = useState<string | null>(null);
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
@@ -370,6 +371,13 @@ export default function QuizPage() {
       if (authCheckTimeout.current) clearTimeout(authCheckTimeout.current);
     };
   }, [supabase, router]);
+
+  useEffect(() => {
+    if (highlightedIdx >= 0) {
+      const el = document.getElementById(`country-option-${highlightedIdx}`);
+      if (el) el.scrollIntoView({ block: 'nearest' });
+    }
+  }, [highlightedIdx]);
 
   const advance = useCallback(() => {
     setIsAnimating(true);
@@ -683,19 +691,41 @@ export default function QuizPage() {
           <>
             <input
               value={countrySearch}
-              onChange={e => { setCountrySearch(e.target.value); setSelectedCountry(null); }}
+              onChange={e => { setCountrySearch(e.target.value); setSelectedCountry(null); setHighlightedIdx(-1); }}
+              onKeyDown={(e) => {
+                if (e.key === 'ArrowDown') {
+                  e.preventDefault();
+                  setHighlightedIdx(prev => Math.min(prev + 1, filteredCountries.length - 1));
+                }
+                if (e.key === 'ArrowUp') {
+                  e.preventDefault();
+                  setHighlightedIdx(prev => Math.max(prev - 1, 0));
+                }
+                if (e.key === 'Enter' && highlightedIdx >= 0) {
+                  e.preventDefault();
+                  const country = filteredCountries[highlightedIdx];
+                  setSelectedCountry(country);
+                  setCountrySearch(country);
+                  setAnswers(prev => ({ ...prev, [q.id]: country }));
+                  setTimeout(() => advance(), 300);
+                }
+                if (e.key === 'Escape') {
+                  setCountrySearch('');
+                  setHighlightedIdx(-1);
+                }
+              }}
               placeholder="Search your country..."
               style={{ width: "100%", maxWidth: "420px", padding: "13px 16px", background: "rgba(201,168,76,0.02)", border: "1px solid rgba(201,168,76,0.2)", color: "#f5f0e8", fontSize: "14px", fontFamily: "'DM Sans', sans-serif", borderRadius: 0, outline: "none", marginBottom: "8px" }}
             />
             {filteredCountries.length > 0 && (
               <div style={{ display: "flex", flexDirection: "column", gap: "4px", marginBottom: "20px", background: "#0a0a0a", border: "1px solid rgba(201,168,76,0.2)", zIndex: 50, position: "relative" }}>
-                {filteredCountries.map(c => (
-                  <div key={c} onClick={() => {
+                {filteredCountries.map((c, idx) => (
+                  <div key={c} id={`country-option-${idx}`} onClick={() => {
                     setSelectedCountry(c);
                     setCountrySearch(c);
                     setAnswers(prev => ({ ...prev, [q.id]: c }));
                     setTimeout(() => advance(), 300);
-                  }} onMouseEnter={e => { e.currentTarget.style.background = "rgba(201,168,76,0.08)"; e.currentTarget.style.color = "#f5f0e8"; }} onMouseLeave={e => { e.currentTarget.style.background = selectedCountry === c ? "rgba(201,168,76,0.08)" : "#0a0a0a"; e.currentTarget.style.color = "#f5f0e8"; }} style={{ padding: "10px 14px", background: selectedCountry === c ? "rgba(201,168,76,0.08)" : "#0a0a0a", border: `1px solid ${selectedCountry === c ? "rgba(201,168,76,0.4)" : "rgba(201,168,76,0.1)"}`, color: "#f5f0e8", fontSize: "13px", cursor: "pointer", transition: "all 0.12s", borderRadius: 0 }}>{c}</div>
+                  }} onMouseEnter={e => { e.currentTarget.style.background = "rgba(201,168,76,0.08)"; e.currentTarget.style.color = "#f5f0e8"; }} onMouseLeave={e => { e.currentTarget.style.background = highlightedIdx === idx ? "rgba(201,168,76,0.15)" : selectedCountry === c ? "rgba(201,168,76,0.08)" : "#0a0a0a"; e.currentTarget.style.color = "#f5f0e8"; }} style={{ padding: "10px 14px", background: highlightedIdx === idx ? "rgba(201,168,76,0.15)" : selectedCountry === c ? "rgba(201,168,76,0.08)" : "#0a0a0a", border: `1px solid ${selectedCountry === c ? "rgba(201,168,76,0.4)" : "rgba(201,168,76,0.1)"}`, color: "#f5f0e8", fontSize: "13px", cursor: "pointer", transition: "all 0.12s", borderRadius: 0 }}>{c}</div>
                 ))}
               </div>
             )}
