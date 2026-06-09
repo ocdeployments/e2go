@@ -449,3 +449,17 @@ Clean — 0 errors
 
 ### Commit
 14606e6 — feat: quiz navigation fixes + draft save system for anonymous users
+
+---
+
+## SESSION — Landing Page: Flag Hero + Nav Fix + FAQ (June 9, 2026)
+
+### Completed
+- **Nav.tsx**: Solid dark background (rgba(10,10,10,0.95)), correct 5 links (How it works, Learn, Pricing, Simulator, Log in), gold border CTA button, readable text, mobile hamburger with all links
+- **NavBar.tsx**: Updated to match — solid background, correct links, gold border CTA
+- **HomeClient.tsx**: American flag SVG hero background (red/white/blue stripes, 5-pointed stars via polygon, left fade to #0a0a0a, bottom fade), text shadows for readability over flag
+- **HomeClient.tsx**: FAQ accordion section — 6 questions, single-open pattern, +/− toggle, between testimonials and final CTA
+- **/learn page**: Already exists as hub with 6 article sub-pages (kept as-is)
+
+### Build
+Clean — 0 errors
