@@ -887,10 +887,13 @@ export async function runGenerationPipeline(
 ): Promise<void> {
   const supabase = getSupabase();
   const updateJob = async (updates: Record<string, unknown>) => {
-    await supabase
+    const { error } = await supabase
       .from('document_generation_jobs')
       .update({ ...updates, updated_at: new Date().toISOString() })
       .eq('id', jobId);
+    if (error) {
+      console.error('[ENGINE] updateJob failed:', JSON.stringify(error));
+    }
   };
 
   const emitStep = (stepNum: number, status: GenerationStep['status']) => {

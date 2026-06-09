@@ -9,21 +9,11 @@ export const metadata: Metadata = {
     description: "Prepare your complete E-2 visa application package without an immigration attorney. 82 treaty countries.",
     type: "website",
     url: "https://e2go.app/",
-    images: [
-      {
-        url: "/og-image.png",
-        width: 1200,
-        height: 630,
-        alt: "e2go — U.S. E-2 Treaty Investor Visa Preparation",
-      },
-    ],
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "e2go — U.S. E-2 Treaty Investor Visa Preparation" }],
   },
-  robots: {
-    index: true,
-    follow: true,
-  },
+  robots: { index: true, follow: true },
 };
 
 export default function HomePage() {
-  return <HomeClient />;
+  return <HomeClient content={null} />;
 }

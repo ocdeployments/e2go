@@ -6,19 +6,33 @@ import { BorderRotate } from "@/components/ui/animated-gradient-border";
 import ComparisonSection from "@/components/landing/ComparisonSection";
 import FAQSection from "@/components/landing/FAQSection";
 
-export default function Home() {
-  const [scrolled, setScrolled] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+type LandingContent = {
+  heroHeadline: string | null;
+  heroSubheadline: string | null;
+  heroTrustBar: string | null;
+  heroPrimaryCTA: string | null;
+  heroSecondaryCTA: string | null;
+  traditionalItems: readonly string[] | null;
+  e2goItems: readonly string[] | null;
+  featuresHeading: string | null;
+  feature1Heading: string | null;
+  feature1Body: string | null;
+  feature2Heading: string | null;
+  feature2Body: string | null;
+  feature2Disclaimer: string | null;
+  pricingHeading: string | null;
+  pricingGuarantee: string | null;
+  pricingSpotsRemaining: number | null;
+  pricingFootnote: string | null;
+  finalCtaHeading: string | null;
+  finalCtaBody: string | null;
+  finalCtaMicrocopy: string | null;
+  finalCtaButton: string | null;
+} | null;
+
+export default function HomeClient({ content }: { content: LandingContent }) {
   const [statsAnimated, setStatsAnimated] = useState(false);
   const statsRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 20);
-    };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -32,6 +46,24 @@ export default function Home() {
     if (statsRef.current) observer.observe(statsRef.current);
     return () => observer.disconnect();
   }, []);
+
+  const traditionalItems = content?.traditionalItems?.length
+    ? content.traditionalItems
+    : [
+        "$6,500–$15,000 in attorney fees",
+        "Weeks of back-and-forth emails",
+        "You never see what goes in your documents",
+        "No way to know if you're prepared",
+      ];
+
+  const e2goItems = content?.e2goItems?.length
+    ? content.e2goItems
+    : [
+        "✓ From $297 — founding member pricing",
+        "✓ Complete in your own time, at your pace",
+        "✓ Every document traces to your exact answers",
+        "✓ Confidence score across 8 dimensions",
+      ];
 
   const docTabs = [
     { letter: "A", name: "DS-160 Reference", desc: "Personal and travel history", badge: "Ready immediately" },
@@ -56,90 +88,29 @@ export default function Home() {
 
   return (
     <main style={{ background: "#0a0a0a", minHeight: "100vh", position: "relative" }}>
-      {/* Noise + Gold Pulse */}
       <div className="noise-overlay" />
       <div className="gold-pulse" />
-
-      {/* Navigation */}
-      <nav
-        style={{
-          position: "fixed",
-          top: 0,
-          left: "50%",
-          transform: "translateX(-50%)",
-          zIndex: 100,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: scrolled ? "16px 32px" : "24px 32px",
-          background: scrolled ? "rgba(10,10,10,0.95)" : "transparent",
-          backdropFilter: scrolled ? "blur(12px)" : "none",
-          WebkitBackdropFilter: scrolled ? "blur(12px)" : "none",
-          borderBottom: scrolled ? "1px solid rgba(201,168,76,0.15)" : "none",
-          transition: "all 0.3s ease",
-          maxWidth: "1280px",
-          width: "100%",
-        }}
-      >
-        <Link href="/" style={{ textDecoration: "none" }}>
-          <span style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "24px", fontWeight: 300, color: "#C9A84C" }}>e2go</span>
-        </Link>
-        <ul style={{ display: "flex", gap: "32px", listStyle: "none", margin: 0, padding: 0 }} className="mobile-hidden">
-          {["How It Works", "What You Get", "Pricing", "Learn"].map((link) => (
-            <li key={link}>
-              <Link href={`#${link.toLowerCase().replace(/ /g, "-")}`} style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "14px", fontWeight: 400, color: "rgba(245,240,232,0.70)", textDecoration: "none", transition: "color 0.2s ease" }}>
-                {link}
-              </Link>
-            </li>
-          ))}
-        </ul>
-        <Link href="/quiz" style={{ background: "#C9A84C", color: "#0a0a0a", padding: "10px 20px", fontFamily: "'DM Sans', sans-serif", fontSize: "14px", fontWeight: 500, textDecoration: "none", transition: "all 0.2s ease" }}>
-          Check My Eligibility →
-        </Link>
-        <button
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          style={{ display: "none", background: "none", border: "none", color: "#C9A84C", fontSize: "24px", cursor: "pointer" }}
-          className="mobile-menu-btn"
-        >
-          ☰
-        </button>
-      </nav>
-
-      {/* Mobile Menu Overlay */}
-      {mobileMenuOpen && (
-        <div style={{ position: "fixed", inset: 0, background: "#0a0a0a", zIndex: 99, padding: "100px 24px 24px" }}>
-          <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "24px" }}>
-            {["How It Works", "What You Get", "Pricing", "Learn"].map((link) => (
-              <li key={link}>
-                <Link href={`#${link.toLowerCase().replace(/ /g, "-")}`} onClick={() => setMobileMenuOpen(false)} style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "18px", color: "#f5f0e8", textDecoration: "none" }}>
-                  {link}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
 
       {/* Hero Section */}
       <section className="min-h-screen flex items-center justify-center" style={{ padding: "128px 32px 96px" }}>
         <div style={{ maxWidth: "760px", margin: "0 auto", textAlign: "center" }}>
           <h1 className="hero-headline" style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "clamp(40px, 6vw, 72px)", fontWeight: 300, color: "#f5f0e8", lineHeight: 1.1, marginBottom: "16px" }}>
-            Your E-2 Visa Application.<br />
+            {content?.heroHeadline ?? "Your E-2 Visa Application."}<br />
             <em style={{ fontStyle: "italic", color: "#C9A84C" }}>Built to Pass.</em>
           </h1>
           <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "20px", fontWeight: 300, color: "rgba(245,240,232,0.70)", lineHeight: 1.6, marginBottom: "32px" }}>
-            Answer our questions. We analyze your case, identify every gap, and generate a complete consulate-formatted application package — without the $15,000 attorney fee.
+            {content?.heroSubheadline ?? "Answer our questions. We analyze your case, identify every gap, and generate a complete consulate-formatted application package — without the $15,000 attorney fee."}
           </p>
           <div style={{ display: "flex", gap: "16px", marginBottom: "32px", flexWrap: "wrap", justifyContent: "center" }}>
             <Link href="/quiz" className="btn-gold-animate" style={{ background: "#C9A84C", color: "#0a0a0a", padding: "14px 28px", fontFamily: "'DM Sans', sans-serif", fontSize: "15px", fontWeight: 500, textDecoration: "none", display: "inline-block" }}>
-              Check My Eligibility — Free
+              {content?.heroPrimaryCTA ?? "Check My Eligibility — Free"}
             </Link>
             <Link href="#what-you-get" style={{ border: "1px solid rgba(201,168,76,0.50)", color: "#C9A84C", padding: "14px 28px", fontFamily: "'DM Sans', sans-serif", fontSize: "15px", fontWeight: 400, textDecoration: "none", display: "inline-block" }}>
-              See What&apos;s Included
+              {content?.heroSecondaryCTA ?? "See What's Included"}
             </Link>
           </div>
           <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "13px", fontWeight: 300, color: "rgba(245,240,232,0.45)" }}>
-            82 treaty countries · Toronto consulate specialists · 15 denial risks checked automatically
+            {content?.heroTrustBar ?? "82 treaty countries · Toronto consulate specialists · 15 denial risks checked automatically"}
           </p>
         </div>
       </section>
@@ -169,28 +140,18 @@ export default function Home() {
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "32px" }}>
           <div>
             <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "24px", fontWeight: 300, fontStyle: "italic", color: "rgba(245,240,232,0.40)", marginBottom: "32px" }}>The traditional path</h3>
-            {[
-              { left: "$6,500–$15,000 in attorney fees" },
-              { left: "Weeks of back-and-forth emails" },
-              { left: "You never see what goes in your documents" },
-              { left: "No way to know if you're prepared" },
-            ].map((item, i) => (
+            {traditionalItems.map((item, i) => (
               <div key={i} style={{ padding: "16px 0", borderBottom: "1px solid rgba(201,168,76,0.12)", fontFamily: "'DM Sans', sans-serif", fontSize: "16px", fontWeight: 300, color: "rgba(245,240,232,0.35)", textDecoration: "line-through" }}>
-                {item.left}
+                {item}
               </div>
             ))}
           </div>
           <div>
             <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "24px", fontWeight: 300, fontStyle: "italic", color: "#C9A84C", marginBottom: "32px" }}>With e2go</h3>
-            {[
-              { right: "✓ From $297 — founding member pricing" },
-              { right: "✓ Complete in your own time, at your pace" },
-              { right: "✓ Every document traces to your exact answers" },
-              { right: "✓ Confidence score across 8 dimensions" },
-            ].map((item, i) => (
+            {e2goItems.map((item, i) => (
               <div key={i} style={{ padding: "16px 0", borderBottom: "1px solid rgba(201,168,76,0.12)", fontFamily: "'DM Sans', sans-serif", fontSize: "16px", fontWeight: 400, color: "#f5f0e8" }}>
                 <span className="gold-check" style={{ marginRight: "12px" }}>✓</span>
-                {item.right.replace("✓ ", "")}
+                {item.replace("✓ ", "")}
               </div>
             ))}
           </div>
@@ -201,7 +162,7 @@ export default function Home() {
       <section id="how-it-works" style={{ padding: "96px 32px", maxWidth: "1100px", margin: "0 auto" }}>
         <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "10px", fontWeight: 500, color: "#C9A84C", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: "16px" }}>THE PROCESS</div>
         <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "42px", fontWeight: 300, color: "#f5f0e8", marginBottom: "48px" }}>
-          From your first answer to your completed binder.
+          {content?.featuresHeading ?? "From your first answer to your completed binder."}
         </h2>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "32px" }}>
           {[
@@ -218,20 +179,17 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Comparison Section */}
       <ComparisonSection />
-
-      {/* FAQ Section */}
       <FAQSection />
 
       {/* Document Binder */}
       <section id="what-you-get" style={{ padding: "96px 32px", maxWidth: "1100px", margin: "0 auto" }}>
         <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "10px", fontWeight: 500, color: "#C9A84C", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: "16px" }}>WHAT&apos;S INCLUDED</div>
         <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "42px", fontWeight: 300, color: "#f5f0e8", marginBottom: "16px" }}>
-          A complete, consulate-formatted application package.
+          {content?.feature1Heading ?? "A complete, consulate-formatted application package."}
         </h2>
         <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "16px", fontWeight: 300, color: "rgba(245,240,232,0.60)", marginBottom: "48px" }}>
-          Every document your officer expects to see. In the right order. At the right length.
+          {content?.feature1Body ?? "Every document your officer expects to see. In the right order. At the right length."}
         </p>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "32px" }}>
           {docTabs.map((tab, i) => (
@@ -255,16 +213,16 @@ export default function Home() {
           <div>
             <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "10px", fontWeight: 500, color: "#C9A84C", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: "16px" }}>MODULE 4</div>
             <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "36px", fontWeight: 300, color: "#f5f0e8", marginBottom: "24px" }}>
-              Know your application&apos;s strength before you walk in.
+              {content?.feature2Heading ?? "Know your application's strength before you walk in."}
             </h2>
             <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "16px", fontWeight: 300, color: "rgba(245,240,232,0.60)", lineHeight: 1.6, marginBottom: "16px" }}>
-              After you complete your application materials, our engine scores your case across 8 dimensions — the same criteria a consular officer evaluates.
+              {content?.feature2Body ?? "After you complete your application materials, our engine scores your case across 8 dimensions — the same criteria a consular officer evaluates."}
             </p>
             <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "16px", fontWeight: 300, color: "rgba(245,240,232,0.60)", lineHeight: 1.6, marginBottom: "24px" }}>
               See exactly where you&apos;re strong and where you need more work — before it costs you an appointment.
             </p>
             <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "12px", fontWeight: 300, fontStyle: "italic", color: "rgba(245,240,232,0.35)" }}>
-              This reflects preparation completeness — not a legal determination of E-2 eligibility.
+              {content?.feature2Disclaimer ?? "This reflects preparation completeness — not a legal determination of E-2 eligibility."}
             </p>
           </div>
           <div className="card" style={{ padding: "32px", textAlign: "center", border: "1px solid rgba(201,168,76,0.12)", background: "rgba(201,168,76,0.02)" }}>
@@ -290,12 +248,14 @@ export default function Home() {
         <div style={{ textAlign: "center" }}>
           <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "10px", fontWeight: 500, color: "#C9A84C", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: "16px" }}>FOUNDING MEMBER PRICING</div>
           <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "42px", fontWeight: 300, color: "#f5f0e8", marginBottom: "16px" }}>
-            Simple, transparent pricing.
+            {content?.pricingHeading ?? "Simple, transparent pricing."}
           </h2>
           <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "16px", fontWeight: 300, color: "rgba(245,240,232,0.60)", marginBottom: "16px" }}>
-            14-day money-back guarantee for the first 50 members.
+            {content?.pricingGuarantee ?? "14-day money-back guarantee for the first 50 members."}
           </p>
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "14px", fontWeight: 500, color: "#C9A84C", marginBottom: "48px" }}>[ 47 ] founding member spots remaining</p>
+          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "14px", fontWeight: 500, color: "#C9A84C", marginBottom: "48px" }}>
+            [ {content?.pricingSpotsRemaining ?? 47} ] founding member spots remaining
+          </p>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "32px", maxWidth: "900px", margin: "0 auto" }}>
           {pricingCards.map((card, i) => (
@@ -323,7 +283,7 @@ export default function Home() {
           ))}
         </div>
         <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "14px", fontWeight: 300, color: "rgba(245,240,232,0.45)", textAlign: "center", marginTop: "24px" }}>
-          Partnership applications from $497. Additional dependents $25 each.
+          {content?.pricingFootnote ?? "Partnership applications from $497. Additional dependents $25 each."}
         </p>
       </section>
 
@@ -333,7 +293,7 @@ export default function Home() {
           {[
             { title: "Preparation tool. Not a law firm.", body: "Every sentence in every document traces directly to an answer you provided. We never infer, invent, or make legal conclusions on your behalf." },
             { title: "Your data stays yours.", body: "We store your answers — never your actual documents, passport scans, or bank statements. Documents are generated fresh and downloaded directly." },
-            { title: "14-day money-back guarantee.", body: "For founding members. Start and decide it&apos;s not right within 14 days, before generating documents, we refund in full." },
+            { title: "14-day money-back guarantee.", body: "For founding members. Start and decide it's not right within 14 days, before generating documents, we refund in full." },
           ].map((trust, i) => (
             <div key={i} style={{ position: "relative", padding: "24px" }}>
               <div style={{ position: "absolute", top: 0, left: 0, width: "24px", height: "24px", borderTop: "2px solid #C9A84C", borderLeft: "2px solid #C9A84C" }} />
@@ -349,10 +309,10 @@ export default function Home() {
       <section style={{ padding: "96px 32px", textAlign: "center", borderTop: "1px solid rgba(201,168,76,0.12)" }}>
         <div style={{ width: "40%", height: "1px", background: "rgba(201,168,76,0.30)", margin: "0 auto 48px" }} />
         <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "56px", fontWeight: 300, color: "#f5f0e8", maxWidth: "700px", margin: "0 auto 24px", lineHeight: 1.2 }}>
-          Your consulate interview is closer than you think.
+          {content?.finalCtaHeading ?? "Your consulate interview is closer than you think."}
         </h2>
         <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "18px", fontWeight: 300, color: "rgba(245,240,232,0.60)", maxWidth: "500px", margin: "0 auto 32px" }}>
-          The eligibility check takes 10 minutes. It&apos;s free. No account required to start. You&apos;ll know exactly where you stand.
+          {content?.finalCtaBody ?? "The eligibility check takes 10 minutes. It's free. No account required to start. You'll know exactly where you stand."}
         </p>
         <BorderRotate
           animationSpeed={6}
@@ -362,11 +322,11 @@ export default function Home() {
           className="inline-block"
         >
           <Link href="/quiz" className="btn-gold-animate" style={{ background: "#C9A84C", color: "#0a0a0a", padding: "18px 40px", fontFamily: "'DM Sans', sans-serif", fontSize: "16px", fontWeight: 500, textDecoration: "none", display: "inline-block" }}>
-            Check My Eligibility →
+            {content?.finalCtaButton ?? "Check My Eligibility →"}
           </Link>
         </BorderRotate>
         <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "12px", fontWeight: 300, color: "rgba(245,240,232,0.30)", marginTop: "16px" }}>
-          No credit card required · Takes 10 minutes
+          {content?.finalCtaMicrocopy ?? "No credit card required · Takes 10 minutes"}
         </p>
         <div style={{ width: "40%", height: "1px", background: "rgba(201,168,76,0.30)", margin: "48px auto 0" }} />
       </section>
