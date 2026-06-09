@@ -337,7 +337,7 @@ export default function QuizPage() {
   useEffect(() => {
     authCheckTimeout.current = setTimeout(() => {
       setAuthChecked(true);
-    }, 3000);
+    }, 1000);
 
     const checkAuth = async () => {
       try {
@@ -368,6 +368,14 @@ export default function QuizPage() {
       if (authCheckTimeout.current) clearTimeout(authCheckTimeout.current);
     };
   }, [supabase, router]);
+
+  // Fallback: force authChecked to true after mount if still false
+  useEffect(() => {
+    const fallback = setTimeout(() => {
+      if (!authChecked) setAuthChecked(true);
+    }, 1500);
+    return () => clearTimeout(fallback);
+  }, []);
 
   const advance = useCallback(() => {
     setIsAnimating(true);
