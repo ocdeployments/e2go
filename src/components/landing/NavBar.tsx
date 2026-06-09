@@ -4,18 +4,23 @@ import Link from "next/link";
 import { useState } from "react";
 
 const navLinks = [
-  { href: "/how-it-works", label: "How it works" },
-  { href: "/pricing", label: "Pricing" },
-  { href: "/quiz", label: "Quiz" },
+  { href: "/#how-it-works", label: "How it works" },
   { href: "/learn", label: "Learn" },
-  { href: "/support", label: "Support" },
+  { href: "/pricing", label: "Pricing" },
+  { href: "/simulator", label: "Simulator" },
 ];
 
 export default function NavBar() {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <nav className="sticky top-0 z-50 bg-[#0a0a0a] border-b border-[rgba(201,168,76,0.1)]">
+    <nav
+      className="sticky top-0 z-50"
+      style={{
+        background: "rgba(10,10,10,0.95)",
+        borderBottom: "1px solid rgba(201,168,76,0.1)",
+      }}
+    >
       <div className="max-w-7xl mx-auto px-4 md:px-8">
         <div className="flex items-center justify-between h-16 md:h-20">
           {/* Logo */}
@@ -31,7 +36,10 @@ export default function NavBar() {
               <Link
                 key={link.href}
                 href={link.href}
-                className="font-sans text-sm text-[rgba(245,240,232,0.7)] hover:text-[#C9A84C] transition-colors duration-200"
+                className="font-sans text-sm transition-colors duration-200"
+                style={{ color: "rgba(245,240,232,0.75)" }}
+                onMouseEnter={e => e.currentTarget.style.color = "#f5f0e8"}
+                onMouseLeave={e => e.currentTarget.style.color = "rgba(245,240,232,0.75)"}
               >
                 {link.label}
               </Link>
@@ -42,13 +50,28 @@ export default function NavBar() {
           <div className="hidden md:flex items-center space-x-4">
             <Link
               href="/login"
-              className="font-sans text-sm text-[#f5f0e8] px-5 py-2.5 border border-[rgba(201,168,76,0.3)] hover:border-[#C9A84C] transition-colors duration-200"
+              className="font-sans text-sm transition-colors duration-200"
+              style={{ color: "rgba(245,240,232,0.55)" }}
+              onMouseEnter={e => e.currentTarget.style.color = "#f5f0e8"}
+              onMouseLeave={e => e.currentTarget.style.color = "rgba(245,240,232,0.55)"}
             >
               Log in
             </Link>
             <Link
               href="/quiz"
-              className="font-sans text-sm text-[#0a0a0a] bg-[#C9A84C] px-5 py-2.5 hover:bg-[#d4b85f] transition-colors duration-200"
+              className="font-sans text-sm transition-colors duration-200"
+              style={{
+                padding: "8px 18px",
+                border: "1px solid rgba(201,168,76,0.5)",
+                color: "#C9A84C",
+                fontSize: "11px",
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                background: "transparent",
+                borderRadius: 0,
+              }}
+              onMouseEnter={e => e.currentTarget.style.borderColor = "#C9A84C"}
+              onMouseLeave={e => e.currentTarget.style.borderColor = "rgba(201,168,76,0.5)"}
             >
               Check eligibility
             </Link>
@@ -93,34 +116,48 @@ export default function NavBar() {
           isOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
         }`}
       >
-        <div className="px-4 py-4 bg-[#0a0a0a] border-t border-[rgba(201,168,76,0.1)]">
+        <div
+          className="px-4 py-4 border-t border-[rgba(201,168,76,0.1)]"
+          style={{ background: "rgba(10,10,10,0.98)" }}
+        >
           <div className="flex flex-col space-y-3">
             {navLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
-                className="font-sans text-base text-[rgba(245,240,232,0.7)] py-3 hover:text-[#C9A84C] transition-colors duration-200"
+                className="font-sans text-base py-3 transition-colors duration-200"
+                style={{ color: "rgba(245,240,232,0.75)" }}
                 onClick={() => setIsOpen(false)}
               >
                 {link.label}
               </Link>
             ))}
-            <div className="pt-4 flex flex-col space-y-3">
-              <Link
-                href="/login"
-                className="font-sans text-base text-[#f5f0e8] py-3 text-center border border-[rgba(201,168,76,0.3)] hover:border-[#C9A84C] transition-colors duration-200"
-                onClick={() => setIsOpen(false)}
-              >
-                Log in
-              </Link>
-              <Link
-                href="/quiz"
-                className="font-sans text-base text-[#0a0a0a] bg-[#C9A84C] py-3 text-center hover:bg-[#d4b85f] transition-colors duration-200"
-                onClick={() => setIsOpen(false)}
-              >
-                Check eligibility
-              </Link>
-            </div>
+            <Link
+              href="/login"
+              className="font-sans text-base py-3 transition-colors duration-200"
+              style={{ color: "rgba(245,240,232,0.55)" }}
+              onClick={() => setIsOpen(false)}
+            >
+              Log in
+            </Link>
+            <Link
+              href="/quiz"
+              className="font-sans text-base py-3 text-center transition-colors duration-200"
+              style={{
+                padding: "8px 18px",
+                border: "1px solid rgba(201,168,76,0.5)",
+                color: "#C9A84C",
+                fontSize: "11px",
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                background: "transparent",
+                borderRadius: 0,
+                marginTop: "4px",
+              }}
+              onClick={() => setIsOpen(false)}
+            >
+              Check eligibility
+            </Link>
           </div>
         </div>
       </div>

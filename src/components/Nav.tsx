@@ -22,7 +22,6 @@ export default function Nav() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [scrolled, setScrolled] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createBrowserSupabaseClient();
@@ -92,12 +91,6 @@ export default function Nav() {
     return () => subscription.unsubscribe();
   }, [supabase]);
 
-  useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     router.push("/");
@@ -107,15 +100,16 @@ export default function Nav() {
 
   const isActive = (path: string) => pathname === path;
 
-  const navLinkClass = (path: string) =>
-    `text-sm transition-colors ${
-      isActive(path) ? "text-[#C9A84C]" : "text-[rgba(245,240,232,0.65)] hover:text-[#f5f0e8]"
-    }`;
-
   if (loading) return null;
 
   return (
-    <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? "bg-[#0a0a0a] border-b border-[rgba(201,168,76,0.2)]" : "bg-transparent border-b border-transparent"}`}>
+    <header
+      className="fixed top-0 left-0 right-0 z-50"
+      style={{
+        background: "rgba(10,10,10,0.95)",
+        borderBottom: "1px solid rgba(201,168,76,0.1)",
+      }}
+    >
       <div className="flex justify-between items-center h-16 px-4 md:px-8 max-w-7xl mx-auto">
         <Link
           href={user ? "/dashboard" : "/"}
@@ -130,47 +124,92 @@ export default function Nav() {
         <div className="hidden md:flex items-center gap-6">
           {!user ? (
             <>
-              <Link href="/#how-it-works" className={navLinkClass("/#how-it-works")}>
+              <Link
+                href="/#how-it-works"
+                className="text-sm transition-colors"
+                style={{ color: isActive("/#how-it-works") ? "#C9A84C" : "rgba(245,240,232,0.75)" }}
+                onMouseEnter={e => e.currentTarget.style.color = "#f5f0e8"}
+                onMouseLeave={e => e.currentTarget.style.color = isActive("/#how-it-works") ? "#C9A84C" : "rgba(245,240,232,0.75)"}
+              >
                 How it works
               </Link>
-              <Link href="/pricing" className={navLinkClass("/pricing")}>
-                Pricing
-              </Link>
-              <Link href="/learn" className={navLinkClass("/learn")}>
+              <Link
+                href="/learn"
+                className="text-sm transition-colors"
+                style={{ color: isActive("/learn") ? "#C9A84C" : "rgba(245,240,232,0.75)" }}
+                onMouseEnter={e => e.currentTarget.style.color = "#f5f0e8"}
+                onMouseLeave={e => e.currentTarget.style.color = isActive("/learn") ? "#C9A84C" : "rgba(245,240,232,0.75)"}
+              >
                 Learn
               </Link>
-              <Link href="/support" className={navLinkClass("/support")}>
-                Support
+              <Link
+                href="/pricing"
+                className="text-sm transition-colors"
+                style={{ color: isActive("/pricing") ? "#C9A84C" : "rgba(245,240,232,0.75)" }}
+                onMouseEnter={e => e.currentTarget.style.color = "#f5f0e8"}
+                onMouseLeave={e => e.currentTarget.style.color = isActive("/pricing") ? "#C9A84C" : "rgba(245,240,232,0.75)"}
+              >
+                Pricing
               </Link>
-              <Link href="/login" className={navLinkClass("/login")}>
-                Login
+              <Link
+                href="/simulator"
+                className="text-sm transition-colors"
+                style={{ color: isActive("/simulator") ? "#C9A84C" : "rgba(245,240,232,0.75)" }}
+                onMouseEnter={e => e.currentTarget.style.color = "#f5f0e8"}
+                onMouseLeave={e => e.currentTarget.style.color = isActive("/simulator") ? "#C9A84C" : "rgba(245,240,232,0.75)"}
+              >
+                Simulator
+              </Link>
+              <Link
+                href="/login"
+                className="text-sm transition-colors"
+                style={{ color: "rgba(245,240,232,0.55)" }}
+                onMouseEnter={e => e.currentTarget.style.color = "#f5f0e8"}
+                onMouseLeave={e => e.currentTarget.style.color = "rgba(245,240,232,0.55)"}
+              >
+                Log in
               </Link>
               <Link
                 href="/quiz"
-                className="text-sm font-medium px-5 py-2.5 bg-[#C9A84C] text-[#0a0a0a] transition-colors hover:bg-[#D4BC6A]"
-                style={{ borderRadius: 0 }}
+                className="text-sm transition-colors"
+                style={{
+                  padding: "8px 18px",
+                  border: "1px solid rgba(201,168,76,0.5)",
+                  color: "#C9A84C",
+                  fontSize: "11px",
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                  background: "transparent",
+                  borderRadius: 0,
+                }}
+                onMouseEnter={e => e.currentTarget.style.borderColor = "#C9A84C"}
+                onMouseLeave={e => e.currentTarget.style.borderColor = "rgba(201,168,76,0.5)"}
               >
-                Start your eligibility check
+                Check eligibility
               </Link>
             </>
           ) : (
             <>
-              <Link href="/apply/overview" className={navLinkClass("/apply/overview")}>
+              <Link href="/apply/overview" className="text-sm transition-colors" style={{ color: isActive("/apply/overview") ? "#C9A84C" : "rgba(245,240,232,0.75)" }}
+                onMouseEnter={e => e.currentTarget.style.color = "#f5f0e8"}
+                onMouseLeave={e => e.currentTarget.style.color = isActive("/apply/overview") ? "#C9A84C" : "rgba(245,240,232,0.75)"}
+              >
                 My Application
               </Link>
               {application && (
-                <Link href={`/documents/${application.id}`} className={navLinkClass(`/documents/${application.id}`)}>
+                <Link href={`/documents/${application.id}`} className="text-sm transition-colors" style={{ color: "rgba(245,240,232,0.75)" }}
+                  onMouseEnter={e => e.currentTarget.style.color = "#f5f0e8"}
+                  onMouseLeave={e => e.currentTarget.style.color = "rgba(245,240,232,0.75)"}
+                >
                   Documents
                 </Link>
               )}
-              <Link href="/support" className={navLinkClass("/support")}>
-                Support
-              </Link>
 
               <div className="relative">
                 <button
                   onClick={() => setDropdownOpen(!dropdownOpen)}
-                  className="flex items-center gap-2 text-sm text-[rgba(245,240,232,0.65)] hover:text-[#f5f0e8] transition-colors"
+                  className="flex items-center gap-2 text-sm transition-colors"
+                  style={{ color: "rgba(245,240,232,0.75)" }}
                 >
                   <span>Account</span>
                   <svg width="12" height="12" viewBox="0 0 12 12" fill="none" className="transition-transform" style={{ transform: dropdownOpen ? "rotate(180deg)" : "rotate(0deg)" }}>
@@ -221,50 +260,57 @@ export default function Nav() {
 
       {/* Mobile Menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden bg-[#0a0a0a] border-b border-[rgba(201,168,76,0.2)] px-4 pb-6 pt-2">
+        <div className="md:hidden border-t border-[rgba(201,168,76,0.1)] px-4 pb-6 pt-2" style={{ background: "rgba(10,10,10,0.98)" }}>
           {!user ? (
             <div className="flex flex-col gap-4">
-              <Link href="/#how-it-works" className={navLinkClass("/#how-it-works")} onClick={() => setMobileMenuOpen(false)}>
+              <Link href="/#how-it-works" className="text-sm py-2" style={{ color: "rgba(245,240,232,0.75)" }} onClick={() => setMobileMenuOpen(false)}>
                 How it works
               </Link>
-              <Link href="/pricing" className={navLinkClass("/pricing")} onClick={() => setMobileMenuOpen(false)}>
-                Pricing
-              </Link>
-              <Link href="/learn" className={navLinkClass("/learn")} onClick={() => setMobileMenuOpen(false)}>
+              <Link href="/learn" className="text-sm py-2" style={{ color: "rgba(245,240,232,0.75)" }} onClick={() => setMobileMenuOpen(false)}>
                 Learn
               </Link>
-              <Link href="/support" className={navLinkClass("/support")} onClick={() => setMobileMenuOpen(false)}>
-                Support
+              <Link href="/pricing" className="text-sm py-2" style={{ color: "rgba(245,240,232,0.75)" }} onClick={() => setMobileMenuOpen(false)}>
+                Pricing
               </Link>
-              <Link href="/login" className={navLinkClass("/login")} onClick={() => setMobileMenuOpen(false)}>
-                Login
+              <Link href="/simulator" className="text-sm py-2" style={{ color: "rgba(245,240,232,0.75)" }} onClick={() => setMobileMenuOpen(false)}>
+                Simulator
+              </Link>
+              <Link href="/login" className="text-sm py-2" style={{ color: "rgba(245,240,232,0.55)" }} onClick={() => setMobileMenuOpen(false)}>
+                Log in
               </Link>
               <Link
                 href="/quiz"
-                className="text-sm font-medium px-5 py-3 bg-[#C9A84C] text-[#0a0a0a] text-center transition-colors hover:bg-[#D4BC6A]"
-                style={{ borderRadius: 0 }}
+                className="text-sm font-medium py-3 text-center transition-colors"
+                style={{
+                  padding: "8px 18px",
+                  border: "1px solid rgba(201,168,76,0.5)",
+                  color: "#C9A84C",
+                  fontSize: "11px",
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                  background: "transparent",
+                  borderRadius: 0,
+                  marginTop: "4px",
+                }}
                 onClick={() => setMobileMenuOpen(false)}
               >
-                Start your eligibility check
+                Check eligibility
               </Link>
             </div>
           ) : (
             <div className="flex flex-col gap-4">
-              <Link href="/apply/overview" className={navLinkClass("/apply/overview")} onClick={() => setMobileMenuOpen(false)}>
+              <Link href="/apply/overview" className="text-sm py-2" style={{ color: "rgba(245,240,232,0.75)" }} onClick={() => setMobileMenuOpen(false)}>
                 My Application
               </Link>
               {application && (
-                <Link href={`/documents/${application.id}`} className={navLinkClass(`/documents/${application.id}`)} onClick={() => setMobileMenuOpen(false)}>
+                <Link href={`/documents/${application.id}`} className="text-sm py-2" style={{ color: "rgba(245,240,232,0.75)" }} onClick={() => setMobileMenuOpen(false)}>
                   Documents
                 </Link>
               )}
-              <Link href="/support" className={navLinkClass("/support")} onClick={() => setMobileMenuOpen(false)}>
-                Support
-              </Link>
-              <Link href="/dashboard" className={navLinkClass("/dashboard")} onClick={() => setMobileMenuOpen(false)}>
+              <Link href="/dashboard" className="text-sm py-2" style={{ color: "rgba(245,240,232,0.75)" }} onClick={() => setMobileMenuOpen(false)}>
                 Dashboard
               </Link>
-              <Link href="/settings" className={navLinkClass("/settings")} onClick={() => setMobileMenuOpen(false)}>
+              <Link href="/settings" className="text-sm py-2" style={{ color: "rgba(245,240,232,0.75)" }} onClick={() => setMobileMenuOpen(false)}>
                 Settings
               </Link>
               <button

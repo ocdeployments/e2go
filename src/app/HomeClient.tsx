@@ -6,6 +6,7 @@ export default function HomeClient() {
   const [targetDate, setTargetDate] = useState("6");
   const [currentStage, setCurrentStage] = useState("business");
   const [applyingWith, setApplyingWith] = useState("family");
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   // Timeline logic
   const e2goDuration = {
@@ -60,47 +61,173 @@ export default function HomeClient() {
     { text: "Consulate interview", week: "Wks 16–20", phase: 3 },
   ];
 
+  const faqs = [
+    {
+      q: "Is this a law firm?",
+      a: "No. e2go prepares documents. What you do with your finished package is entirely up to you. If you choose to have an immigration consultant review it at this stage, it is a 2-hour job — not a 20-hour one.",
+    },
+    {
+      q: "What if I am denied?",
+      a: "We test every document against 15 real denial patterns before you ever see them. We cannot guarantee an outcome — no one can. But we can make sure your preparation is not the reason.",
+    },
+    {
+      q: "How is this different from hiring a consultant?",
+      a: "A consultant works on one case at a time, in their own way. e2go applies the same preparation discipline to every case, every time — tested against every denial pattern in our knowledge base and reviewed by you before a single document leaves the platform.",
+    },
+    {
+      q: "Is my data secure?",
+      a: "We never store your passports, bank statements, or financial records. Only your answers. Your documents are generated, reviewed by you, and downloaded. They belong to you entirely.",
+    },
+    {
+      q: "What countries are eligible?",
+      a: "The E-2 visa is available to citizens of 82 treaty countries. Our eligibility check confirms your specific country and consulate in the first question — it takes under a minute.",
+    },
+    {
+      q: "How long does the whole process take?",
+      a: "Your documents are typically ready within days of completing your application profile. The overall timeline — business formation, consulate appointment, visa processing — depends on your starting point. Our journey planner shows you a personalised timeline the moment you complete the eligibility check.",
+    },
+  ];
+
   return (
     <div className="bg-[#0a0a0a] text-[#f5f0e8] min-h-screen overflow-x-hidden">
 
-      {/* HERO */}
-      <section className="px-4 md:px-10 lg:px-16 pt-16 md:pt-24 pb-16 md:pb-20 max-w-5xl mx-auto w-full">
-        <p className="text-[10px] tracking-[0.18em] uppercase text-[rgba(201,168,76,0.65)] mb-5">
-          E-2 Treaty Investor Visa · 82 Treaty Countries
-        </p>
-        <h1 className="font-['Cormorant_Garamond'] text-4xl md:text-6xl lg:text-7xl font-light text-[#f5f0e8] leading-tight mb-6">
-          Your U.S. business visa.<br />
-          Without the <em className="text-[#C9A84C]">$12,000</em><br />
-          legal bill.
-        </h1>
-        <p className="text-base md:text-lg text-[rgba(245,240,232,0.5)] leading-relaxed max-w-xl mb-4">
-          Most E-2 investors spend $150,000 on a business and $12,000 on a
-          consultant. They spend $0 understanding what the embassy actually
-          needs to see. That is the gap e2go closes.
-        </p>
-        <p className="text-base text-[rgba(245,240,232,0.75)] mb-8 max-w-xl">
-          What most people need first is not a lawyer. It is clarity.
-        </p>
-        <div className="flex flex-col sm:flex-row gap-3 mb-12">
-          <Link href="/quiz" className="w-full sm:w-auto text-center px-8 py-4 bg-[#C9A84C] text-[#0a0a0a] text-sm font-medium tracking-widest uppercase hover:opacity-85 transition-opacity">
-            Check my eligibility →
-          </Link>
-          <Link href="#how-it-works" className="w-full sm:w-auto text-center px-8 py-4 border border-[rgba(201,168,76,0.3)] text-[rgba(245,240,232,0.65)] text-sm tracking-widest uppercase hover:border-[rgba(201,168,76,0.6)] transition-colors">
-            See how it works
-          </Link>
+      {/* HERO — with flag background */}
+      <section className="relative overflow-hidden px-4 md:px-10 lg:px-16 pt-16 md:pt-24 pb-16 md:pb-20 max-w-5xl mx-auto w-full">
+        {/* Flag SVG — behind content */}
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          right: 0,
+          width: '75%',
+          height: '100%',
+          zIndex: 0,
+          overflow: 'hidden'
+        }}>
+          <svg
+            width="100%"
+            height="100%"
+            viewBox="0 0 660 520"
+            preserveAspectRatio="xMinYMid slice"
+            xmlns="http://www.w3.org/2000/svg"
+            aria-hidden="true"
+          >
+            <defs>
+              <linearGradient id="flagFadeLeft" x1="0%" y1="0%"
+                x2="100%" y2="0%">
+                <stop offset="0%"
+                  style={{stopColor:'#0a0a0a',stopOpacity:1}}/>
+                <stop offset="25%"
+                  style={{stopColor:'#0a0a0a',stopOpacity:0.7}}/>
+                <stop offset="50%"
+                  style={{stopColor:'#0a0a0a',stopOpacity:0}}/>
+              </linearGradient>
+              <linearGradient id="flagFadeBottom" x1="0%" y1="0%"
+                x2="0%" y2="100%">
+                <stop offset="85%"
+                  style={{stopColor:'#0a0a0a',stopOpacity:0}}/>
+                <stop offset="100%"
+                  style={{stopColor:'#0a0a0a',stopOpacity:0.85}}/>
+              </linearGradient>
+            </defs>
+
+            {/* 13 stripes */}
+            {[0,80,160,240,320,400,480].map((y,i) => (
+              <rect key={`r${i}`} width="660" height="40"
+                y={y} fill="#BF0A30"/>
+            ))}
+            {[40,120,200,280,360,440].map((y,i) => (
+              <rect key={`w${i}`} width="660" height="40"
+                y={y} fill="#e6e6e6"/>
+            ))}
+
+            {/* Blue canton */}
+            <rect width="264" height="280" y="0" fill="#002868"/>
+
+            {/* Stars — 5-pointed polygons */}
+            {[
+              [18,14],[50,14],[82,14],[114,14],[146,14],
+              [178,14],[210,14],[242,14],
+              [34,40],[66,40],[98,40],[130,40],[162,40],
+              [194,40],[226,40],
+              [18,66],[50,66],[82,66],[114,66],[146,66],
+              [178,66],[210,66],[242,66],
+              [34,92],[66,92],[98,92],[130,92],[162,92],
+              [194,92],[226,92],
+              [18,118],[50,118],[82,118],[114,118],[146,118],
+              [178,118],[210,118],[242,118],
+              [34,144],[66,144],[98,144],[130,144],[162,144],
+              [194,144],[226,144],
+              [18,170],[50,170],[82,170],[114,170],[146,170],
+              [178,170],[210,170],[242,170],
+              [34,196],[66,196],[98,196],[130,196],[162,196],
+              [194,196],[226,196],
+              [18,222],[50,222],[82,222],[114,222],[146,222],
+              [178,222],[210,222],[242,222],
+              [34,248],[66,248],[98,248],[130,248],[162,248],
+              [194,248],[226,248],
+            ].map(([cx,cy],i) => {
+              const r=9, ir=4;
+              const pts = Array.from({length:5},(_,k)=>{
+                const a = (k*72-90)*Math.PI/180;
+                const b = (k*72-90+36)*Math.PI/180;
+                return `${cx+r*Math.cos(a)},${cy+r*Math.sin(a)} ${cx+ir*Math.cos(b)},${cy+ir*Math.sin(b)}`;
+              }).join(' ');
+              return <polygon key={i} points={pts} fill="#FFFFFF"/>;
+            })}
+
+            {/* Fade overlays */}
+            <rect width="660" height="520"
+              fill="url(#flagFadeLeft)"/>
+            <rect width="660" height="520"
+              fill="url(#flagFadeBottom)"/>
+          </svg>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-0 border-t border-[rgba(201,168,76,0.1)] pt-8">
-          {[
-            { num: "82", label: "Treaty countries" },
-            { num: "From $297", label: "vs. $12,000+ traditional" },
-            { num: "15", label: "Denial patterns tested" },
-            { num: "4–6 mo", label: "To interview, not 12+" },
-          ].map((s, i) => (
-            <div key={i} className="pr-4 md:pr-8 pb-4 md:pb-0 border-r border-[rgba(201,168,76,0.1)] last:border-r-0 mr-4 md:mr-8 last:mr-0">
-              <div className="font-['Cormorant_Garamond'] text-2xl md:text-3xl font-light text-[#C9A84C]">{s.num}</div>
-              <div className="text-xs text-[rgba(245,240,232,0.35)] mt-1 tracking-wide">{s.label}</div>
-            </div>
-          ))}
+
+        {/* Content — above flag */}
+        <div style={{ position: 'relative', zIndex: 10 }}>
+          <p className="text-[10px] tracking-[0.18em] uppercase text-[rgba(201,168,76,0.65)] mb-5">
+            E-2 Treaty Investor Visa · 82 Treaty Countries
+          </p>
+          <h1
+            className="font-['Cormorant_Garamond'] text-4xl md:text-6xl lg:text-7xl font-light text-[#f5f0e8] leading-tight mb-6"
+            style={{ textShadow: '0 2px 20px rgba(0,0,0,0.9)' }}
+          >
+            Your U.S. business visa.<br />
+            Without the <em className="text-[#C9A84C]">$12,000</em><br />
+            legal bill.
+          </h1>
+          <p
+            className="text-base md:text-lg text-[rgba(245,240,232,0.5)] leading-relaxed max-w-xl mb-4"
+            style={{ textShadow: '0 1px 10px rgba(0,0,0,0.95)' }}
+          >
+            Most E-2 investors spend $150,000 on a business and $12,000 on a
+            consultant. They spend $0 understanding what the embassy actually
+            needs to see. That is the gap e2go closes.
+          </p>
+          <p className="text-base text-[rgba(245,240,232,0.75)] mb-8 max-w-xl" style={{ textShadow: '0 1px 10px rgba(0,0,0,0.95)' }}>
+            What most people need first is not a lawyer. It is clarity.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 mb-12">
+            <Link href="/quiz" className="w-full sm:w-auto text-center px-8 py-4 bg-[#C9A84C] text-[#0a0a0a] text-sm font-medium tracking-widest uppercase hover:opacity-85 transition-opacity">
+              Check my eligibility →
+            </Link>
+            <Link href="#how-it-works" className="w-full sm:w-auto text-center px-8 py-4 border border-[rgba(201,168,76,0.3)] text-[rgba(245,240,232,0.65)] text-sm tracking-widest uppercase hover:border-[rgba(201,168,76,0.6)] transition-colors">
+              See how it works
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-0 border-t border-[rgba(201,168,76,0.1)] pt-8">
+            {[
+              { num: "82", label: "Treaty countries" },
+              { num: "From $297", label: "vs. $12,000+ traditional" },
+              { num: "15", label: "Denial patterns tested" },
+              { num: "4–6 mo", label: "To interview, not 12+" },
+            ].map((s, i) => (
+              <div key={i} className="pr-4 md:pr-8 pb-4 md:pb-0 border-r border-[rgba(201,168,76,0.1)] last:border-r-0 mr-4 md:mr-8 last:mr-0">
+                <div className="font-['Cormorant_Garamond'] text-2xl md:text-3xl font-light text-[#C9A84C]">{s.num}</div>
+                <div className="text-xs text-[rgba(245,240,232,0.35)] mt-1 tracking-wide">{s.label}</div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -294,6 +421,34 @@ export default function HomeClient() {
               <p className="font-['Cormorant_Garamond'] text-base md:text-lg font-light italic text-[rgba(245,240,232,0.75)] leading-relaxed mb-5">&ldquo;{t.q}&rdquo;</p>
               <p className="text-xs text-[rgba(245,240,232,0.45)]">— {t.a}</p>
               <p className="text-[10px] text-[rgba(201,168,76,0.55)] tracking-widest uppercase mt-1">{t.c} · {t.t}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section className="px-4 md:px-10 lg:px-16 py-16 md:py-24 border-t border-[rgba(201,168,76,0.08)]">
+        <p className="text-[10px] tracking-[0.18em] uppercase text-[rgba(201,168,76,0.6)] mb-3">Common questions</p>
+        <h2 className="font-['Cormorant_Garamond'] text-3xl md:text-5xl font-light text-[#f5f0e8] mb-12">
+          Everything you need to know.
+        </h2>
+        <div className="max-w-2xl">
+          {faqs.map((faq, i) => (
+            <div key={i} className="border-b border-[rgba(201,168,76,0.1)]">
+              <button
+                onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                className="w-full flex items-center justify-between py-5 text-left"
+              >
+                <span className="text-[15px] font-medium text-[#f5f0e8] pr-8">{faq.q}</span>
+                <span className="text-[#C9A84C] text-xl flex-shrink-0 font-light">
+                  {openFaq === i ? '−' : '+'}
+                </span>
+              </button>
+              {openFaq === i && (
+                <div className="pb-5 text-[13px] text-[rgba(245,240,232,0.55)] leading-relaxed max-w-xl">
+                  {faq.a}
+                </div>
+              )}
             </div>
           ))}
         </div>
