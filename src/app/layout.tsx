@@ -5,8 +5,6 @@ import type { Metadata, Viewport } from "next";
 import { Cormorant_Garamond, DM_Sans } from "next/font/google";
 import "./globals.css";
 import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
-import Nav from "@/components/Nav";
-import Footer from "@/components/Footer";
 import CookieBanner from "@/components/CookieBanner";
 
 const cormorant = Cormorant_Garamond({
@@ -29,14 +27,14 @@ export const metadata: Metadata = {
     default: "E2go — U.S. E-2 Treaty Investor Visa Preparation",
     template: "%s | E2go",
   },
-  description: "Prepare your complete E-2 visa application package without an immigration attorney. All 11 consulate tabs. 82 treaty countries. From $297.",
+  description: "Prepare your complete E-2 visa application package. All consulate tabs. 82 treaty countries. From $550.",
   metadataBase: new URL("https://e2go.app"),
   openGraph: {
     type: "website",
     locale: "en_US",
     siteName: "E2go",
     title: "E2go — U.S. E-2 Treaty Investor Visa Preparation",
-    description: "Prepare your complete E-2 visa application package without an immigration attorney.",
+    description: "Prepare your complete E-2 visa application package. All consulate tabs. 82 treaty countries. From $550.",
     images: [
       {
         url: "/og-image.png",
@@ -74,11 +72,9 @@ export default function RootLayout({
     <html lang="en" className={`${cormorant.variable} ${dmSans.variable}`}>
       <body className="font-sans antialiased bg-[#0a0a0a] text-[#f5f0e8]">
         <ServiceWorkerRegistration />
-        <Nav />
-        <main className="pt-16 min-h-screen">
+        <main className="min-h-screen">
           {children}
         </main>
-        <Footer />
         <CookieBanner />
       </body>
     </html>
