@@ -310,7 +310,7 @@ export default function QuizPage() {
   const router = useRouter();
   const [supabase] = useState(() => createBrowserSupabaseClient());
   const [loggedInUser, setLoggedInUser] = useState<{ id: string; email: string } | null>(null);
-  const [authChecked, setAuthChecked] = useState(false);
+  const [authChecked, setAuthChecked] = useState(true);
   const authCheckTimeout = useRef<NodeJS.Timeout | null>(null);
 
   const [cur, setCur] = useState(0);
@@ -630,7 +630,13 @@ export default function QuizPage() {
     );
   }
 
-  if (!q) return null;
+  if (!q) {
+    return (
+      <div style={{ background: "#0a0a0a", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: "#f5f0e8", fontFamily: "'DM Sans', sans-serif" }}>
+        <div style={{ color: "rgba(201,168,76,0.6)", fontSize: "13px", letterSpacing: "0.08em", textTransform: "uppercase" }}>Loading...</div>
+      </div>
+    );
+  }
 
   const isCountry = q.type === "country";
   const isMulti = q.type === "multi";
