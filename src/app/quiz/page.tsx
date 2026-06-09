@@ -21,6 +21,8 @@ const TREATY_COUNTRIES = [
   "United Kingdom","Yugoslavia"
 ];
 
+const CORE_QUESTION_COUNT = 14;
+
 const SECTIONS = ["Eligibility","Investment","Business","History","Home ties","Family"];
 
 const HARD_STOPS: Record<string, { title: string; body: string }> = {
@@ -647,15 +649,13 @@ export default function QuizPage() {
           <div style={{ height: "1px", background: "rgba(201,168,76,0.15)" }}>
             <div style={{ height: "100%", background: "#C9A84C", width: `${pct}%`, transition: "width 0.5s cubic-bezier(.4,0,.2,1)" }} />
           </div>
-          <div style={{ fontSize: "10px", color: "rgba(245,240,232,0.3)", marginTop: "5px", letterSpacing: "0.08em", textTransform: "uppercase" }}>Question {cur + 1} of {visibleQuestions.length}</div>
+          <div style={{ fontSize: "10px", color: "rgba(245,240,232,0.65)", marginTop: "5px", letterSpacing: "0.08em", textTransform: "uppercase" }}>Question {cur + 1} of {CORE_QUESTION_COUNT}</div>
         </div>
-        <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.2)", letterSpacing: "0.07em", textTransform: "uppercase" }}>Save & exit</div>
+        <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.55)", letterSpacing: "0.07em", textTransform: "uppercase", cursor: "pointer", transition: "color 0.15s" }} onMouseEnter={e => e.currentTarget.style.color = "rgba(245,240,232,0.85)"} onMouseLeave={e => e.currentTarget.style.color = "rgba(245,240,232,0.55)"}>Save & exit</div>
       </div>
 
-      <div style={{ display: "flex", gap: 0, padding: "0 clamp(16px, 5vw, 40px)", borderBottom: "1px solid rgba(201,168,76,0.08)", overflowX: "auto" }}>
-        {SECTIONS.map((s, i) => (
-          <div key={s} style={{ fontSize: "10px", letterSpacing: "0.1em", textTransform: "uppercase", color: i === q.sec ? "#C9A84C" : i < q.sec ? "rgba(245,240,232,0.35)" : "rgba(245,240,232,0.18)", padding: "10px 0", marginRight: "18px", borderBottom: `2px solid ${i === q.sec ? "#C9A84C" : i < q.sec ? "rgba(201,168,76,0.2)" : "transparent"}`, transition: "all 0.2s", whiteSpace: "nowrap" }}>{s}</div>
-        ))}
+      <div style={{ padding: "0 clamp(16px, 5vw, 40px)", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
+        <div style={{ fontSize: "10px", letterSpacing: "0.12em", textTransform: "uppercase", color: "#C9A84C", padding: "10px 0" }}>Section {q.sec + 1} of 6 — {SECTIONS[q.sec]}</div>
       </div>
 
       <div style={{ padding: "clamp(28px, 5vw, 44px) clamp(16px, 5vw, 40px) 32px", maxWidth: "580px", width: "100%", opacity: isAnimating ? 0 : 1, transition: "opacity 0.15s" }}>
@@ -665,7 +665,7 @@ export default function QuizPage() {
         </div>
 
         <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "30px", fontWeight: 300, color: "#f5f0e8", lineHeight: 1.3, marginBottom: "8px", letterSpacing: "-0.01em" }}>{q.q}</div>
-        {q.help && <div style={{ fontSize: "13px", color: "rgba(245,240,232,0.4)", lineHeight: 1.65, marginBottom: "28px", maxWidth: "460px" }}>{q.help}</div>}
+        {q.help && <div style={{ fontSize: "13px", color: "rgba(245,240,232,0.55)", lineHeight: 1.65, marginBottom: "28px", maxWidth: "460px" }}>{q.help}</div>}
 
         {warnMsg && (
           <div style={{ display: "flex", gap: "9px", padding: "11px 14px", border: "1px solid rgba(201,168,76,0.22)", background: "rgba(201,168,76,0.04)", marginBottom: "16px" }}>
@@ -680,7 +680,7 @@ export default function QuizPage() {
               value={countrySearch}
               onChange={e => { setCountrySearch(e.target.value); setSelectedCountry(null); }}
               placeholder="Search your country..."
-              style={{ width: "100%", padding: "13px 16px", background: "rgba(201,168,76,0.02)", border: "1px solid rgba(201,168,76,0.2)", color: "#f5f0e8", fontSize: "14px", fontFamily: "'DM Sans', sans-serif", borderRadius: 0, outline: "none", marginBottom: "8px" }}
+              style={{ width: "100%", maxWidth: "420px", padding: "13px 16px", background: "rgba(201,168,76,0.02)", border: "1px solid rgba(201,168,76,0.2)", color: "#f5f0e8", fontSize: "14px", fontFamily: "'DM Sans', sans-serif", borderRadius: 0, outline: "none", marginBottom: "8px" }}
             />
             {filteredCountries.length > 0 && (
               <div style={{ display: "flex", flexDirection: "column", gap: "4px", marginBottom: "20px" }}>
@@ -750,7 +750,7 @@ export default function QuizPage() {
         )}
 
         {q.tip && (
-          <div style={{ display: "flex", gap: "8px", marginTop: "22px", padding: "11px 14px", border: "1px solid rgba(201,168,76,0.08)", background: "rgba(201,168,76,0.02)" }}>
+          <div style={{ display: "flex", gap: "8px", marginTop: "22px", padding: "11px 14px", border: "1px solid rgba(201,168,76,0.18)", background: "rgba(201,168,76,0.02)" }}>
             <div style={{ fontSize: "13px", color: "rgba(201,168,76,0.5)", flexShrink: 0 }}>i</div>
             <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.35)", lineHeight: 1.65 }}>{q.tip}</div>
           </div>
