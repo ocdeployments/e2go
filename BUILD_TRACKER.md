@@ -505,3 +505,46 @@ Clean — 0 errors
 
 ### Commit
 51b2808 — feat: landing page redesign — portrait hero, row mistakes, connected steps, hero feature, testimonial photos
+
+---
+
+## SESSION — Landing Page: Complete Rebuild (June 9, 2026)
+
+### Completed
+- **HomeClient.tsx**: Fully self-contained — no external component imports (NavBar, JourneyWizard, FeatureGrid all removed)
+- **Sections**: Nav (sticky, hamburger mobile), Hero (flag SVG, stats grid), Proof bar, Mistakes (4 rows with watermark numbers), How it works (4 steps with connecting thread), Journey wizard (3 dropdowns, traditional vs E2go timeline comparison), What's included (hero feature + 5 cards), Interview simulator, Founder note, Testimonials (3 quotes), FAQ (7 items accordion), Final CTA, Footer
+- **Layout**: Removed global Nav/Footer from layout.tsx to prevent duplicate rendering (HomeClient is self-contained)
+- **Deleted**: src/components/landing/NavBar.tsx, JourneyWizard.tsx, FeatureGrid.tsx
+
+### Design system
+- Background #0a0a0a throughout
+- Gold #C9A84C for all accents, CTAs, active states
+- Cormorant Garamond for all headings
+- DM Sans for all body text
+- Zero border-radius anywhere
+- No glassmorphism, no shadows, no gradients
+- Pricing: From $550 correct
+
+### Mobile audit — ALL 16 ITEMS PASS
+1. Nav hamburger visible at 390px, full nav at 768px+ ✅
+2. Hero headline readable at 390px ✅
+3. Hero buttons full width at 390px, side by side at 640px+ ✅
+4. Stats 2x2 grid at 390px, 4 columns at 768px+ ✅
+5. Mistakes rows full width, adequate padding ✅
+6. How it works 1 col at 390px, 2 at 768px, 4 at 1024px+ ✅
+7. Journey wizard dropdowns full width at 390px ✅
+8. Journey wizard timeline stacked at 390px ✅
+9. Features hero 1 col at 390px, 2 at 768px+ ✅
+10. Feature cards 1 col at 390px, 2 at 640px, 5 at 1024px+ ✅
+11. Testimonials 1 col at 390px, 3 at 768px+ ✅
+12. FAQ accordion works at 390px ✅
+13. Final CTA buttons full width at 390px ✅
+14. Footer stacked at 390px, 3 columns at 768px+ ✅
+15. No horizontal scroll at any breakpoint ✅
+16. All touch targets min 44px ✅
+
+### Build
+Clean — 0 errors
+
+### Commit
+191ea7c — feat: landing page complete rebuild — self-contained, mobile-first, mistakes section, premium sections
