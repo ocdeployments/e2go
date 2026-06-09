@@ -124,8 +124,10 @@ function LoginForm() {
 
   if (magicLinkSent) {
     return (
-      <div className="min-h-screen flex" style={{ background: "#0a0a0a" }}>
-        <AuthImageSlider />
+      <div className="flex min-h-screen items-center justify-center bg-[#0a0a0a] px-4 md:px-0 md:items-stretch md:justify-start">
+        <div className="hidden md:block md:w-1/2">
+          <AuthImageSlider />
+        </div>
         <div className="w-full md:w-1/2 flex flex-col">
           <header className="w-full z-50 px-8 py-6" style={{ borderBottom: "1px solid rgba(201,168,76,0.12)" }}>
             <Link href="/" className="flex items-center gap-2">
@@ -152,8 +154,10 @@ function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen flex" style={{ background: "#0a0a0a" }}>
-      <AuthImageSlider />
+    <div className="flex min-h-screen items-center justify-center bg-[#0a0a0a] px-4 md:px-0 md:items-stretch md:justify-start">
+      <div className="hidden md:block md:w-1/2">
+        <AuthImageSlider />
+      </div>
 
       <div className="w-full md:w-1/2 flex flex-col">
         <header className="w-full z-50 px-8 py-6" style={{ borderBottom: "1px solid rgba(201,168,76,0.12)" }}>
