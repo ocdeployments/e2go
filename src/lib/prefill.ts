@@ -90,9 +90,9 @@ export function getPreFill(questionId: string, userEmail?: string): PreFillResul
       break;
 
     case isPriorVisas:
-      if (answers?.["Q0-11"]) {
+      if (answers?.["Q0-09a"]) {
         return {
-          value: answers["Q0-11"],
+          value: answers["Q0-09a"],
           source: "quiz",
           note: "From your eligibility check",
           requiresConfirmation: true,
@@ -102,9 +102,9 @@ export function getPreFill(questionId: string, userEmail?: string): PreFillResul
       break;
 
     case isCriminal:
-      if (answers?.["Q0-13"]) {
+      if (answers?.["Q0-09b"]) {
         return {
-          value: answers["Q0-13"],
+          value: answers["Q0-09b"],
           source: "quiz",
           note: "Confirmed from your eligibility check",
           requiresConfirmation: true,
@@ -114,31 +114,28 @@ export function getPreFill(questionId: string, userEmail?: string): PreFillResul
       break;
 
     case isRemoval:
-      if (answers?.["Q0-12-removal"]) {
-        return {
-          value: answers["Q0-12-removal"],
-          source: "quiz",
-          note: "From your eligibility check",
-          requiresConfirmation: true,
-          confirmationText: "I confirm this accurately reflects my complete immigration history."
-        };
+      // Removal history captured in Q0-09 multiselect
+      if (answers?.["Q0-09"]) {
+        const q009 = answers["Q0-09"];
+        const hasRemoval = Array.isArray(q009) ? q009.some((v: string) => v.includes("deported")) : String(q009).includes("deported");
+        if (hasRemoval) {
+          return {
+            value: "Deportation/removal history indicated in eligibility check",
+            source: "quiz",
+            note: "From your eligibility check",
+            requiresConfirmation: true,
+            confirmationText: "I confirm this accurately reflects my complete immigration history."
+          };
+        }
       }
       break;
 
     case isOverstay:
-      if (answers?.["Q0-12-overstay"]) {
-        return {
-          value: answers["Q0-12-overstay"],
-          source: "quiz",
-          note: "From your eligibility check",
-          requiresConfirmation: true,
-          confirmationText: "I confirm this accurately reflects my complete immigration history."
-        };
-      }
+      // Overstay history no longer captured as separate question
       break;
 
     case isBundled:
-      if (answers?.["Q0-11"] || answers?.["Q0-12"]) {
+      if (answers?.["Q0-09"]) {
         return {
           value: "Combined from eligibility check",
           source: "quiz",
@@ -150,11 +147,11 @@ export function getPreFill(questionId: string, userEmail?: string): PreFillResul
       break;
 
     case questionId === "M3-L-family" || questionId === "QL-family":
-      if (answers?.["Q0-16"]) {
+      if (answers?.["Q0-03"]) {
         return {
-          value: answers["Q0-16"],
+          value: answers["Q0-03"],
           source: "quiz",
-          note: getFamilyNote(answers["Q0-16"])
+          note: getFamilyNote(answers["Q0-03"])
         };
       }
       break;

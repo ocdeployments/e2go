@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
-import { getPricingTier, TierId, QuizData } from "@/lib/pricing-tier";
+import { getPricingTier, TierId } from "@/lib/pricing-tier";
 import PricingCard from "@/components/PricingCard";
 
 interface PricingTier {
@@ -83,14 +83,10 @@ export default function PricingPage() {
       if (storedResultRaw) {
         try {
           const parsed = JSON.parse(storedResultRaw);
-          const quizAnswers = parsed.answers || {};
 
-          const quizData: QuizData = {
-            application_type: quizAnswers["Q0-09"] === "Two equal 50/50 owners" ? "partnership" : "solo",
-            family_status: quizAnswers["Q0-16"] || "none",
-          };
-
-          const tier = getPricingTier(quizData);
+          // Pass the full result — getPricingTier extracts application_type
+          // from Q0-02/Q0-04 and family_status from Q0-03 automatically
+          const tier = getPricingTier(parsed);
           if (tier) {
             setSelectedTier(tier);
             setHasQuizData(true);

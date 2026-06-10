@@ -188,8 +188,8 @@ export default function TabBPage() {
       if (nameChangeItem) items.push({ ...nameChangeItem, checked: false });
     }
 
-    // Check spouse applying (Q0-16)
-    const dependents = answers['Q0-16'] || answers['dependents'] || '';
+    // Check spouse applying (Q0-03)
+    const dependents = answers['Q0-03'] || answers['dependents'] || '';
     const hasSpouse = dependents.toLowerCase().includes('spouse');
     const hasChildren = /\d+ child/.test(dependents.toLowerCase()) || dependents.toLowerCase().includes('child');
 

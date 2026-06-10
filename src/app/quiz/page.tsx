@@ -104,6 +104,10 @@ function evaluateShowIf(
     const ans = answers[qId];
     if (typeof ans === "string") {
       if (!allowedValues.includes(ans)) return false;
+    } else if (Array.isArray(ans)) {
+      // Multiselect: show if any selected value is in the allowed list
+      const hasMatch = ans.some((v: string) => allowedValues.includes(v));
+      if (!hasMatch) return false;
     } else {
       return false;
     }
@@ -198,20 +202,11 @@ export default function QuizPage() {
 
   const q = visibleQuestions[cur] || null;
 
-  // Dynamic options for Q0-14e (insert user's country name)
+  // Options for current question
   const displayOpts = useMemo(() => {
     if (!q) return [];
-    if (q.id === "Q0-14e") {
-      const country = (answers["Q0-01"] as string) || "your country";
-      return [
-        { text: `${country} — I am the majority or equal owner`, action: "continue", code: null, warning_message: null },
-        { text: "My partner's country — they are the majority owner", action: "continue", code: null, warning_message: null },
-        { text: "We have equal ownership — either nationality could work", action: "warn:W-TREATY-NATIONALITY", code: null, warning_message: "Under 9 FAM, if a business is equally owned by nationals of two different treaty countries, E-2 visas may be issued to employees of either treaty country. However, you should pick one designation for the business and keep it consistent across all documents." },
-        { text: "I am not sure — we need to decide this", action: "attorney:W-TREATY-UNSURE", code: null, warning_message: null },
-      ];
-    }
     return q.options;
-  }, [q, answers]);
+  }, [q]);
 
   // Auth check + draft restore
   useEffect(() => {
@@ -340,15 +335,19 @@ export default function QuizPage() {
         answers: finalAnswers,
         country: (finalAnswers["Q0-01"] as string) || "",
         investment_range: (finalAnswers["Q0-04"] as string) || "",
-        application_type: (
-          typeof finalAnswers["Q0-15"] === "string" &&
-          (finalAnswers["Q0-15"] as string).includes("partner")
-        ) ? "partnership" : "solo",
+        application_type: (() => {
+          const a2 = finalAnswers["Q0-02"] as string || "";
+          if (a2.includes("partners") || a2.includes("group")) return "partnership";
+          const a4 = finalAnswers["Q0-04"] as string || "";
+          if (a4.includes("partner")) return "partnership";
+          return "solo";
+        })(),
         dependents: (() => {
           const a = finalAnswers["Q0-03"] as string || "";
-          if (a.includes("spouse") && a.includes("children")) return "spouse_and_children";
-          if (a.includes("children") && !a.includes("spouse")) return "children_only";
-          if (a.includes("spouse") && !a.includes("children")) return "spouse_only";
+          if (a.includes("spouse and children")) return "spouse_and_children";
+          if (a.includes("children only")) return "children_only";
+          if (a.includes("spouse or partner")) return "spouse_only";
+          if (a.includes("Not decided")) return "not_decided";
           return "just_me";
         })(),
         hard_stops_triggered: finalHardStops,

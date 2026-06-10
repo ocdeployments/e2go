@@ -25,12 +25,12 @@ export function generatePreAppChecklist(quizData: QuizData | null): ChecklistIte
   const answers = quizData.answers;
 
   // Parse family composition
-  const familyQ = answers["Q0-16"] as string;
+  const familyQ = answers["Q0-03"] as string;
   const hasSpouse = familyQ?.includes("spouse") || false;
   const hasChildren = familyQ?.includes("children") || false;
   const isMarried = familyQ?.includes("married") || false; // From sub-question or inferred
-  const isPartnership = (answers["Q0-09"] as string)?.includes("partner") || false;
-  const isCurrentlyInUS = (answers["Q0-03"] as string)?.includes("United States") ||
+  const isPartnership = (answers["Q0-04"] as string)?.includes("partner") || false;
+  const isCurrentlyInUS = (answers["Q0-05"] as string)?.includes("within the US") ||
                           (answers["processing_path"] as string)?.toLowerCase() === "change of status";
 
   // ALWAYS include

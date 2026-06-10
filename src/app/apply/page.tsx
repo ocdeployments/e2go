@@ -203,8 +203,8 @@ export default function ApplyPage() {
             if (quizAnswers['Q0-01'] && !nationality) {
               setNationality(quizAnswers['Q0-01']);
             }
-            if (quizAnswers['Q0-16']) {
-              const familyVal = String(quizAnswers['Q0-16']).toLowerCase();
+            if (quizAnswers['Q0-03']) {
+              const familyVal = String(quizAnswers['Q0-03']).toLowerCase();
               setHasDependents(
                 !familyVal.includes('none') && familyVal !== 'no' && familyVal !== ''
               );

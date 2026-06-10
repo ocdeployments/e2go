@@ -9,31 +9,25 @@ interface QuizAnswer {
   section: string;
 }
 
-const SECTION_ORDER = ["Eligibility", "Investment", "Business", "History", "Home ties", "Family"];
+const SECTION_ORDER = ["Eligibility", "Investment", "Family", "Business", "History", "Home Ties"];
 
 const QUESTIONS_MAP: Record<string, { q: string; section: string }> = {
-  "Q0-01": { q: "What is your citizenship?", section: "Eligibility" },
-  "Q0-02": { q: "Where are you applying from?", section: "Eligibility" },
-  "Q0-03": { q: "How are you funding your investment?", section: "Investment" },
-  "Q0-03a": { q: "Who is the primary E-2 applicant?", section: "Family" },
-  "Q0-04": { q: "How much are you investing?", section: "Investment" },
-  "Q0-05": { q: "Where did this money originate?", section: "Investment" },
-  "Q0-06": { q: "How well documented is your funds trail?", section: "Investment" },
-  "Q0-07": { q: "What will your role in this business be?", section: "Business" },
-  "Q0-08": { q: "Where are you in your business search?", section: "Business" },
-  "Q0-08a": { q: "What kind of business is it?", section: "Business" },
-  "Q0-08b": { q: "Would you like us to make an introduction?", section: "Business" },
-  "Q0-09": { q: "Have you ever been refused a U.S. visa?", section: "History" },
-  "Q0-10": { q: "Have you ever been refused entry to the U.S. or deported?", section: "History" },
-  "Q0-11": { q: "Do you have any criminal convictions?", section: "History" },
-  "Q0-12": { q: "What is your plan for your home country property?", section: "Home ties" },
-  "Q0-13a": { q: "Are your spouse and children moving to the US with you?", section: "Home ties" },
-  "Q0-13b": { q: "Do you have parents, siblings, or other close family who will remain after you move?", section: "Home ties" },
-  "Q0-14": { q: "Will you keep your home country financial accounts active?", section: "Home ties" },
-  "Q0-14b": { q: "What will be your spouse's role in the business?", section: "Family" },
-  "Q0-15": { q: "Will you have a business partner on this application?", section: "Family" },
-  "Q0-16": { q: "Will your spouse or children be joining you in the U.S.?", section: "Family" },
-  "Q0-16a": { q: "How old are the children who will be joining you?", section: "Family" },
+  "Q0-01": { q: "What is your current citizenship?", section: "Eligibility" },
+  "Q0-02": { q: "Who is this application for?", section: "Eligibility" },
+  "Q0-03": { q: "Who is moving with you?", section: "Family" },
+  "Q0-03a": { q: "What are your children's ages?", section: "Family" },
+  "Q0-04": { q: "Will you have a business partner or co-investor?", section: "Business" },
+  "Q0-04a": { q: "What is your partner's role in the business?", section: "Business" },
+  "Q0-05": { q: "Where are you applying from?", section: "Investment" },
+  "Q0-06": { q: "How are you funding your investment?", section: "Investment" },
+  "Q0-07": { q: "What is your estimated total investment?", section: "Investment" },
+  "Q0-08": { q: "What is your current business situation?", section: "Business" },
+  "Q0-08a": { q: "What type of business is it?", section: "Business" },
+  "Q0-08b": { q: "Who introduced you to the business opportunity?", section: "Business" },
+  "Q0-09": { q: "Do any of the following apply to your immigration history?", section: "History" },
+  "Q0-09a": { q: "When did the visa refusal occur?", section: "History" },
+  "Q0-09b": { q: "Please describe the nature of your criminal conviction.", section: "History" },
+  "Q0-10": { q: "What ties do you maintain in your home country?", section: "Home Ties" },
 };
 
 export default function QuizReview() {
