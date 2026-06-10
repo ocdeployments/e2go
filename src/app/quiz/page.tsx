@@ -785,37 +785,6 @@ export default function QuizPage() {
 
       {/* Question content */}
       <div style={{ padding: "clamp(28px, 5vw, 44px) clamp(16px, 5vw, 40px) 32px", maxWidth: "580px", width: "100%", opacity: isAnimating ? 0 : 1, transition: "opacity 0.15s" }}>
-        {/* Back button — BELOW section label, ABOVE question */}
-        {cur > 0 && (
-          <button
-            onClick={() => {
-              setCur((c) => c - 1);
-              setSelectedIdx(null);
-              setWarnMsg(null);
-              setMultiSel([]);
-            }}
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "6px",
-              fontSize: "13px",
-              fontWeight: 400,
-              letterSpacing: "0.04em",
-              color: "rgba(245,240,232,0.55)",
-              background: "transparent",
-              border: "none",
-              cursor: "pointer",
-              padding: "8px 0",
-              marginBottom: "24px",
-              fontFamily: "'DM Sans', sans-serif",
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(245,240,232,0.85)")}
-            onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(245,240,232,0.55)")}
-          >
-            ← Back
-          </button>
-        )}
-
         {/* Question type badge */}
         <div style={{ display: "inline-flex", alignItems: "center", gap: "5px", fontSize: "10px", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(201,168,76,0.7)", marginBottom: "18px" }}>
           <div style={{ width: "3px", height: "3px", borderRadius: "50%", background: "#C9A84C" }} />
@@ -978,15 +947,6 @@ export default function QuizPage() {
                 );
               })}
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
-              <button
-                onClick={handleMultiContinue}
-                disabled={multiSel.length === 0}
-                style={{ padding: "11px 26px", background: "#C9A84C", border: "none", color: "#0a0a0a", fontSize: "12px", fontWeight: 500, cursor: multiSel.length > 0 ? "pointer" : "not-allowed", letterSpacing: "0.07em", textTransform: "uppercase", fontFamily: "'DM Sans', sans-serif", borderRadius: 0, opacity: multiSel.length > 0 ? 1 : 0.25 }}
-              >
-                Continue
-              </button>
-            </div>
           </>
         )}
 
@@ -1016,6 +976,39 @@ export default function QuizPage() {
             <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.35)", lineHeight: 1.65 }}>{q.tooltip}</div>
           </div>
         )}
+
+        {/* Bottom navigation */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginTop: '32px',
+          paddingTop: '20px',
+          borderTop: '1px solid rgba(201,168,76,0.08)',
+        }}>
+          {cur > 0 ? (
+            <button
+              onClick={() => { setCur(c => c - 1); setSelectedIdx(null); setWarnMsg(null); setMultiSel([]); }}
+              style={{
+                background: 'transparent', border: 'none',
+                color: 'rgba(245,240,232,0.5)', fontSize: '13px',
+                letterSpacing: '0.04em', cursor: 'pointer',
+                padding: '8px 0', fontFamily: "'DM Sans', sans-serif",
+                display: 'flex', alignItems: 'center', gap: '6px',
+              }}
+            >← Back</button>
+          ) : <div />}
+
+          {isMulti && multiSel.length > 0 && (
+            <button onClick={handleMultiContinue} style={{
+              padding: '11px 26px', background: '#C9A84C',
+              border: 'none', color: '#0a0a0a', fontSize: '12px',
+              fontWeight: 500, cursor: 'pointer', letterSpacing: '0.07em',
+              textTransform: 'uppercase', fontFamily: "'DM Sans', sans-serif",
+              borderRadius: 0,
+            }}>Continue →</button>
+          )}
+        </div>
       </div>
     </div>
   );
