@@ -15,6 +15,8 @@ import {
   completeSimulatorSession,
   checkSessionAvailability,
 } from '@/lib/simulator-engine';
+import { isGroqConfigured } from '@/lib/groq-transcription';
+import { speakQuestion } from '@/lib/groq-tts';
 import type { SimulatorContext, Question, AnswerEvaluation, CoachingSummary, CompletedSession } from '@/types/simulator';
 
 const supabase = createClient(
@@ -49,6 +51,11 @@ export default function InterviewSimulator() {
   const [coachingSummary, setCoachingSummary] = useState<CoachingSummary | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [sessionTimeLeft, setSessionTimeLeft] = useState<number>(15 * 60);
+  const [timerWarning, setTimerWarning] = useState(false);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const [purchaseLoading, setPurchaseLoading] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   // Check auth and load session availability
   useEffect(() => {
@@ -78,6 +85,56 @@ export default function InterviewSimulator() {
     checkAuth();
   }, [router]);
 
+  // Clean up timer on unmount
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, []);
+
+  // Mobile detection
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+
+  // Handle successful purchase return
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const searchParams = new URLSearchParams(window.location.search);
+    if (searchParams.get('purchase') === 'success' && application) {
+      checkSessionAvailability(application.id).then(avail => setSessionInfo(avail));
+      window.history.replaceState({}, '', '/simulator');
+    }
+  }, [application]);
+
+  // Purchase handler
+  const handlePurchase = async () => {
+    if (!application || !user) return;
+    setPurchaseLoading(true);
+    try {
+      const response = await fetch('/api/stripe/create-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tierId: 'simulator_3pack',
+          applicationId: application.id,
+          userId: user.id,
+          successUrl: `${window.location.origin}/simulator?purchase=success`,
+          cancelUrl: `${window.location.origin}/simulator`,
+        }),
+      });
+      const { url } = await response.json();
+      if (url) window.location.href = url;
+    } catch (err) {
+      console.error('Purchase error:', err);
+    } finally {
+      setPurchaseLoading(false);
+    }
+  };
+
   // Start a new session
   const startSession = async (selectedMode: 'text' | 'voice') => {
     if (!application || !sessionInfo?.available) return;
@@ -102,6 +159,23 @@ export default function InterviewSimulator() {
       setCurrentEvaluation(null);
       setSubmittedAnswers([]);
       setScreen('active');
+
+      // Start 15-minute session timer
+      setSessionTimeLeft(15 * 60);
+      setTimerWarning(false);
+      timerRef.current = setInterval(() => {
+        setSessionTimeLeft(prev => {
+          if (prev <= 120 && !timerWarning) {
+            setTimerWarning(true);
+          }
+          if (prev <= 1) {
+            if (timerRef.current) clearInterval(timerRef.current);
+            completeSession();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
     } catch (err: any) {
       if (err.message === 'SESSION_LIMIT_EXCEEDED') {
         setError('You have used all your simulator sessions. Purchase more to continue practicing.');
@@ -167,6 +241,12 @@ export default function InterviewSimulator() {
   const completeSession = async () => {
     if (!currentSession || !context) return;
 
+    // Clear timer
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+
     setLoading(true);
 
     try {
@@ -214,8 +294,10 @@ export default function InterviewSimulator() {
           loading={loading}
           onStartText={() => startSession('text')}
           onStartVoice={() => startSession('voice')}
-          voiceDisabled={!process.env.NEXT_PUBLIC_GROQ_API_KEY}
+          voiceDisabled={!isGroqConfigured()}
           error={error}
+          onPurchase={handlePurchase}
+          purchaseLoading={purchaseLoading}
         />
       )}
 
@@ -232,6 +314,9 @@ export default function InterviewSimulator() {
           onNext={nextQuestion}
           loading={loading}
           isLastQuestion={currentQuestionIndex >= questions.length - 1}
+          sessionTimeLeft={sessionTimeLeft}
+          timerWarning={timerWarning}
+          isMobile={isMobile}
         />
       )}
 
@@ -263,6 +348,8 @@ function StartScreen({
   onStartVoice,
   voiceDisabled,
   error,
+  onPurchase,
+  purchaseLoading,
 }: {
   sessionsRemaining: number;
   sessionsPurchased: number;
@@ -272,6 +359,8 @@ function StartScreen({
   onStartVoice: () => void;
   voiceDisabled: boolean;
   error: string | null;
+  onPurchase: () => void;
+  purchaseLoading: boolean;
 }) {
   return (
     <div style={styles.startContainer}>
@@ -279,7 +368,7 @@ function StartScreen({
         <div style={styles.eyebrow}>INTERVIEW SIMULATOR</div>
         <h1 style={styles.startTitle}>Practice Your Interview</h1>
         <p style={styles.startSubtitle}>
-          Your simulator has been personalised to your specific application and business type.
+          Each session is 15 minutes. Your simulator has been personalised to your specific application and business type.
         </p>
 
         <div style={styles.sessionCount}>
@@ -289,10 +378,13 @@ function StartScreen({
         {!available && (
           <div style={styles.purchaseBanner}>
             <p style={styles.purchaseText}>You have used all your simulator sessions.</p>
-            <button style={styles.purchaseButton} disabled>
-              Purchase 3 more sessions — $9.99
+            <button
+              style={purchaseLoading ? {...styles.purchaseButton, cursor: 'wait'} : styles.purchaseButton}
+              onClick={onPurchase}
+              disabled={purchaseLoading}
+            >
+              {purchaseLoading ? 'Redirecting...' : 'Purchase additional sessions — $29.99'}
             </button>
-            <p style={styles.purchaseNote}>(Coming soon)</p>
           </div>
         )}
 
@@ -305,8 +397,7 @@ function StartScreen({
               onClick={onStartText}
               disabled={loading}
             >
-              <span style={styles.modeIcon}>⌨️</span>
-              <span style={styles.modeTitle}>Text mode</span>
+              <span style={styles.modeTitle}>Text</span>
               <span style={styles.modeDesc}>Type your answers</span>
             </button>
 
@@ -315,8 +406,7 @@ function StartScreen({
               onClick={onStartVoice}
               disabled={loading || voiceDisabled}
             >
-              <span style={styles.modeIcon}>🎤</span>
-              <span style={styles.modeTitle}>Voice mode</span>
+              <span style={styles.modeTitle}>Voice</span>
               <span style={styles.modeDesc}>Speak your answers</span>
               {voiceDisabled && <span style={styles.modeTooltip}>Voice mode requires configuration</span>}
             </button>
@@ -343,6 +433,9 @@ function ActiveSession({
   onNext,
   loading,
   isLastQuestion,
+  sessionTimeLeft,
+  timerWarning,
+  isMobile,
 }: {
   mode: 'text' | 'voice';
   questionNumber: number;
@@ -355,20 +448,54 @@ function ActiveSession({
   onNext: () => void;
   loading: boolean;
   isLastQuestion: boolean;
+  sessionTimeLeft: number;
+  timerWarning: boolean;
+  isMobile: boolean;
 }) {
   const wordCount = answer.trim().split(/\s+/).filter(Boolean).length;
 
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s.toString().padStart(2, '0')}`;
+  };
+
+  // Auto-speak question in voice mode
+  useEffect(() => {
+    if (mode === 'voice' && question?.text) {
+      speakQuestion(question.text).catch(() => {});
+    }
+  }, [question.text, mode]);
+
   return (
-    <div style={styles.activeContainer}>
-      <div style={styles.activeGrid}>
+    <div style={{...styles.activeContainer, padding: isMobile ? '16px' : '24px'}}>
+      <div style={{
+        ...styles.activeGrid,
+        gridTemplateColumns: isMobile ? '1fr' : '40% 60%',
+        gap: isMobile ? '16px' : '32px',
+      }}>
         {/* Left Panel - Question */}
-        <div style={styles.questionPanel}>
+        <div style={{...styles.questionPanel, padding: isMobile ? '20px' : '32px'}}>
           <div style={styles.questionHeader}>
-            <span style={styles.questionCounter}>Question {questionNumber} of {totalQuestions}</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+              <span style={styles.questionCounter}>Question {questionNumber} of {totalQuestions}</span>
+              <span style={{
+                ...styles.timerDisplay,
+                color: timerWarning ? 'rgba(239,68,68,0.9)' : 'rgba(245,240,232,0.4)',
+              }}>
+                {formatTime(sessionTimeLeft)}
+              </span>
+            </div>
             <div style={styles.progressBar}>
               <div style={{...styles.progressFill, width: `${(questionNumber / totalQuestions) * 100}%`}} />
             </div>
           </div>
+
+          {timerWarning && (
+            <div style={styles.timerWarning}>
+              2 minutes remaining — complete your current answer
+            </div>
+          )}
 
           <div style={styles.questionText}>{question.text}</div>
 
@@ -377,10 +504,20 @@ function ActiveSession({
               {question.context}
             </div>
           )}
+
+          {mode === 'voice' && (
+            <button
+              style={styles.replayButton}
+              onClick={() => speakQuestion(question.text)}
+              title="Replay question"
+            >
+              Replay
+            </button>
+          )}
         </div>
 
         {/* Right Panel - Answer */}
-        <div style={styles.answerPanel}>
+        <div style={{...styles.answerPanel, padding: isMobile ? '16px' : '32px'}}>
           {mode === 'text' && (
             <>
               <textarea
@@ -473,6 +610,7 @@ function VoiceInput({
   isLastQuestion: boolean;
 }) {
   const [recording, setRecording] = useState(false);
+  const [transcribing, setTranscribing] = useState(false);
   const [recordedText, setRecordedText] = useState('');
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -493,10 +631,30 @@ function VoiceInput({
       mediaRecorder.onstop = async () => {
         const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
         stream.getTracks().forEach(track => track.stop());
+        setTranscribing(true);
+        try {
+          const formData = new FormData();
+          formData.append('file', blob, 'recording.webm');
 
-        // For now, just show a placeholder since Groq isn't set up
-        setRecordedText('[Voice recording captured — transcription not yet configured]');
-        onAnswerChange('I will describe my business experience and investment in detail...');
+          const response = await fetch('/api/simulator/transcribe', {
+            method: 'POST',
+            body: formData,
+          });
+
+          if (!response.ok) {
+            throw new Error('Transcription failed');
+          }
+
+          const data = await response.json();
+          const transcribedText = data.text || '';
+          setRecordedText(transcribedText);
+          onAnswerChange(transcribedText);
+        } catch (err) {
+          console.error('Transcription failed:', err);
+          setRecordedText('Transcription failed. Please type your answer below.');
+        } finally {
+          setTranscribing(false);
+        }
       };
 
       mediaRecorder.start(1000);
@@ -529,13 +687,18 @@ function VoiceInput({
             onMouseDown={startRecording}
             onMouseUp={stopRecording}
             onMouseLeave={stopRecording}
+            disabled={transcribing}
           >
             <div style={styles.recordCircle} />
           </button>
 
           <p style={styles.recordHint}>
-            {recording ? 'Recording... Release to stop' : 'Hold to speak'}
+            {recording ? 'Recording... Release to stop' : transcribing ? 'Transcribing...' : 'Hold to speak'}
           </p>
+
+          {transcribing && (
+            <p style={styles.recordHint}>Transcribing...</p>
+          )}
 
           {recordedText && (
             <div style={styles.transcribedBox}>
@@ -543,14 +706,13 @@ function VoiceInput({
             </div>
           )}
 
-          {answer && (
+          {answer && !transcribing && (
             <>
               <textarea
                 style={styles.textarea}
                 value={answer}
                 onChange={(e) => onAnswerChange(e.target.value)}
                 placeholder="Your answer will appear here after recording..."
-                readOnly
               />
               <button style={styles.useAnswerButton} onClick={onSubmit} disabled={loading}>
                 Use this answer →
@@ -732,6 +894,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '48px',
     background: 'rgba(201,168,76,0.02)',
     border: '1px solid rgba(201,168,76,0.12)',
+    borderRadius: 0,
     textAlign: 'center' as const,
   },
   eyebrow: {
@@ -765,6 +928,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '24px',
     background: 'rgba(201,168,76,0.05)',
     border: '1px solid rgba(201,168,76,0.2)',
+    borderRadius: 0,
     marginBottom: '24px',
   },
   purchaseText: {
@@ -779,8 +943,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '14px 28px',
     fontSize: '14px',
     fontWeight: 500,
-    cursor: 'not-allowed',
-    opacity: 0.6,
+    cursor: 'pointer',
   },
   purchaseNote: {
     fontSize: '12px',
@@ -791,6 +954,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '12px 16px',
     background: 'rgba(239,68,68,0.1)',
     border: '1px solid rgba(239,68,68,0.3)',
+    borderRadius: 0,
     color: '#ef4444',
     fontSize: '13px',
     marginBottom: '24px',
@@ -821,7 +985,7 @@ const styles: Record<string, React.CSSProperties> = {
     marginBottom: '8px',
   },
   modeTitle: {
-    fontSize: '16px',
+    fontSize: '20px',
     fontWeight: 500,
     color: '#f5f0e8',
   },
@@ -857,6 +1021,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '32px',
     background: 'rgba(201,168,76,0.02)',
     border: '1px solid rgba(201,168,76,0.12)',
+    borderRadius: 0,
   },
   questionHeader: {
     marginBottom: '32px',
@@ -867,8 +1032,20 @@ const styles: Record<string, React.CSSProperties> = {
     letterSpacing: '0.12em',
     textTransform: 'uppercase' as const,
     color: 'rgba(245,240,232,0.6)',
-    marginBottom: '12px',
-    display: 'block',
+  },
+  timerDisplay: {
+    fontSize: '13px',
+    fontVariantNumeric: 'tabular-nums',
+    letterSpacing: '0.05em',
+  },
+  timerWarning: {
+    padding: '10px 16px',
+    background: 'rgba(239,68,68,0.08)',
+    border: '1px solid rgba(239,68,68,0.25)',
+    color: 'rgba(239,68,68,0.9)',
+    fontSize: '12px',
+    letterSpacing: '0.06em',
+    marginBottom: '16px',
   },
   progressBar: {
     height: '3px',
@@ -892,8 +1069,20 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '12px 16px',
     background: 'rgba(201,168,76,0.05)',
     border: '1px solid rgba(201,168,76,0.1)',
+    borderRadius: 0,
     fontSize: '13px',
     color: 'rgba(245,240,232,0.5)',
+  },
+  replayButton: {
+    marginTop: '16px',
+    background: 'transparent',
+    border: '1px solid rgba(201,168,76,0.3)',
+    color: 'rgba(245,240,232,0.6)',
+    fontSize: '12px',
+    letterSpacing: '0.08em',
+    padding: '6px 12px',
+    cursor: 'pointer',
+    fontFamily: "'DM Sans', sans-serif",
   },
   answerPanel: {
     padding: '32px',
@@ -940,6 +1129,7 @@ const styles: Record<string, React.CSSProperties> = {
     background: 'rgba(255,255,255,0.02)',
     border: '1px solid rgba(201,168,76,0.15)',
     borderLeftWidth: '3px',
+    borderRadius: 0,
   },
   evaluationHeader: {
     fontSize: '14px',
@@ -956,6 +1146,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '12px',
     background: 'rgba(245,158,11,0.1)',
     border: '1px solid rgba(245,158,11,0.2)',
+    borderRadius: 0,
     fontSize: '13px',
     color: 'rgba(245,240,232,0.8)',
   },
@@ -988,7 +1179,7 @@ const styles: Record<string, React.CSSProperties> = {
   recordButton: {
     width: '120px',
     height: '120px',
-    borderRadius: '50%',
+    borderRadius: 0,
     background: 'transparent',
     border: '2px solid rgba(201,168,76,0.4)',
     cursor: 'pointer',
@@ -1004,7 +1195,7 @@ const styles: Record<string, React.CSSProperties> = {
   recordCircle: {
     width: '48px',
     height: '48px',
-    borderRadius: '50%',
+    borderRadius: 0,
     background: '#C9A84C',
   },
   recordHint: {
@@ -1017,6 +1208,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '16px',
     background: 'rgba(201,168,76,0.05)',
     border: '1px solid rgba(201,168,76,0.1)',
+    borderRadius: 0,
     maxWidth: '400px',
   },
   transcribedText: {
@@ -1056,6 +1248,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '48px',
     background: 'rgba(201,168,76,0.02)',
     border: '1px solid rgba(201,168,76,0.12)',
+    borderRadius: 0,
   },
   readinessIndicator: {
     marginBottom: '48px',
@@ -1064,6 +1257,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'inline-block',
     padding: '12px 24px',
     border: '2px solid',
+    borderRadius: 0,
     fontSize: '18px',
     fontWeight: 500,
   },
@@ -1093,6 +1287,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '16px',
     background: 'rgba(255,255,255,0.02)',
     border: '1px solid rgba(201,168,76,0.1)',
+    borderRadius: 0,
     marginBottom: '12px',
   },
   resultQuestion: {
@@ -1117,6 +1312,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '24px',
     background: 'rgba(201,168,76,0.05)',
     border: '1px solid rgba(201,168,76,0.15)',
+    borderRadius: 0,
     marginBottom: '32px',
   },
   practiceTitle: {
