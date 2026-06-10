@@ -48,14 +48,14 @@ function getPricingFromAnswers(data: ResultData): { tier: string; base: number; 
   const hasSpouse = dep.toLowerCase().includes("spouse") || dep.toLowerCase().includes("partner");
   const hasChildren = dep.toLowerCase().includes("children") || dep.toLowerCase().includes("child");
 
-  const base = isPartnership ? 447 : 247;
+  const base = isPartnership ? 997 : 550;
   let spouseAdd = 0;
   let childrenAdd = 0;
 
-  if (hasSpouse && !isPartnership) spouseAdd = 47;
-  if (hasChildren) childrenAdd = 27;
+  if (hasSpouse && !isPartnership) spouseAdd = 147;
+  if (hasChildren) childrenAdd = 50;
 
-  if (isPartnership && hasSpouse) spouseAdd = 100;
+  if (isPartnership && hasSpouse) spouseAdd = 300;
 
   const total = base + spouseAdd + childrenAdd;
   const tier = isPartnership ? "Partnership Application" : "Solo Application — Standard";
