@@ -190,9 +190,9 @@ export default function Nav() {
             </>
           ) : (
             <>
-              <Link href="/apply/overview" className="text-sm transition-colors" style={{ color: isActive("/apply/overview") ? "#C9A84C" : "rgba(245,240,232,0.75)" }}
+              <Link href="/apply" className="text-sm transition-colors" style={{ color: isActive("/apply") ? "#C9A84C" : "rgba(245,240,232,0.75)" }}
                 onMouseEnter={e => e.currentTarget.style.color = "#f5f0e8"}
-                onMouseLeave={e => e.currentTarget.style.color = isActive("/apply/overview") ? "#C9A84C" : "rgba(245,240,232,0.75)"}
+                onMouseLeave={e => e.currentTarget.style.color = isActive("/apply") ? "#C9A84C" : "rgba(245,240,232,0.75)"}
               >
                 My Application
               </Link>
@@ -299,7 +299,7 @@ export default function Nav() {
             </div>
           ) : (
             <div className="flex flex-col gap-4">
-              <Link href="/apply/overview" className="text-sm py-2" style={{ color: "rgba(245,240,232,0.75)" }} onClick={() => setMobileMenuOpen(false)}>
+              <Link href="/apply" className="text-sm py-2" style={{ color: "rgba(245,240,232,0.75)" }} onClick={() => setMobileMenuOpen(false)}>
                 My Application
               </Link>
               {application && (

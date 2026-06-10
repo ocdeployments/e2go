@@ -112,7 +112,16 @@ export async function middleware(req: NextRequest) {
   } = await supabase.auth.getSession();
 
   // Protected routes that require authentication
-  const protectedRoutes = ['/dashboard', '/apply/', '/admin'];
+  const protectedRoutes = [
+    '/dashboard',
+    '/apply/',
+    '/admin',
+    '/simulator',
+    '/score',
+    '/settings',
+    '/generate/',
+    '/documents/',
+  ];
 
   // Payment wall bypass for dev mode
   if (SKIP_PAYMENT_WALL) {
@@ -144,6 +153,12 @@ export const config = {
     '/admin/:path*',
     '/login',
     '/signup',
+    '/simulator',
+    '/simulator/:path*',
+    '/score',
+    '/settings',
+    '/generate/:path*',
+    '/documents/:path*',
     '/api/quiz/submit',
     '/api/email/results',
     '/api/generate/:path*',

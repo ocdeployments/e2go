@@ -18,13 +18,9 @@ const TABS: { letter: string; title: string }[] = [
   { letter: "C", title: "Visa Category" },
   { letter: "D", title: "Cover Letter Details" },
   { letter: "E", title: "Ownership & Control" },
-  { letter: "F", title: "Investment Proof" },
-  { letter: "G", title: "Business Evidence" },
-  { letter: "H", title: "Source of Funds" },
   { letter: "I", title: "Non-Marginality" },
   { letter: "J", title: "Qualifications" },
   { letter: "K", title: "Business Plan" },
-  { letter: "L", title: "Family Dependents" },
 ];
 
 export default function Module3Overview() {

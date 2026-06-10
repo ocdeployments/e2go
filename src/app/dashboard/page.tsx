@@ -241,7 +241,7 @@ export default function DashboardPage() {
                   {progress < 100 ? "Continue building your case" : "Ready to submit!"}
                 </p>
                 <Link
-                  href="/apply/overview"
+                  href="/apply"
                   className="inline-block mt-3 text-sm font-medium px-4 py-2 bg-[#C9A84C] text-[#0a0a0a] transition-colors hover:bg-[#D4BC6A]"
                   style={{ borderRadius: 0 }}
                 >

@@ -6,6 +6,8 @@ import { createBrowserSupabaseClient } from '@/lib/supabase';
 import CaseFileHeader from '@/components/apply/CaseFileHeader';
 import SectionCard from '@/components/apply/SectionCard';
 import GenerateStrip from '@/components/apply/GenerateStrip';
+import DocumentUploadCard from '@/components/apply/DocumentUploadCard';
+import type { PreparationStatus } from '@/types/document-upload';
 
 interface SectionManifest {
   number: string;
@@ -104,6 +106,7 @@ export default function ApplyPage() {
   const [isReturning, setIsReturning] = useState(false);
   const [hasDependents, setHasDependents] = useState(false);
   const [quizCompleted, setQuizCompleted] = useState(false);
+  const [preparationStatus, setPreparationStatus] = useState<PreparationStatus>('scratch');
 
   const [answerCounts, setAnswerCounts] = useState<Record<string, number>>({});
   const [prefillCounts, setPrefillCounts] = useState<Record<string, number>>({});
@@ -133,7 +136,7 @@ export default function ApplyPage() {
         // Load latest application
         const { data: apps } = await supabase
           .from('applications')
-          .select('id, application_type, last_active_section, last_active_cluster')
+          .select('id, application_type, last_active_section, last_active_cluster, preparation_status')
           .eq('user_id', user.id)
           .order('created_at', { ascending: false })
           .limit(1);
@@ -147,6 +150,9 @@ export default function ApplyPage() {
             setLastActiveSection(app.last_active_section);
             setLastActiveCluster(app.last_active_cluster);
             setIsReturning(true);
+          }
+          if (app.preparation_status) {
+            setPreparationStatus(app.preparation_status as PreparationStatus);
           }
 
           // Load answers for this application
@@ -363,6 +369,9 @@ export default function ApplyPage() {
             </div>
           </div>
         )}
+
+        {/* Document upload card */}
+        <DocumentUploadCard preparationStatus={preparationStatus} />
 
         {/* Section grid */}
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">

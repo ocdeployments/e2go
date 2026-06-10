@@ -479,7 +479,7 @@ export default function Module4Page() {
           </button>
 
           <button
-            onClick={() => router.push('/apply/overview')}
+            onClick={() => router.push('/apply')}
             className="text-[rgba(245,240,232,0.60)] text-sm w-full hover:text-[#f5f0e8] transition-colors"
             style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 300 }}
           >
