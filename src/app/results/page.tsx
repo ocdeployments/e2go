@@ -63,10 +63,45 @@ function getPricingFromAnswers(data: ResultData): { tier: string; base: number; 
   return { tier, base, spouseAdd, childrenAdd, total };
 }
 
-function getTimelineWeeks(data: ResultData): string {
+function getTimelineWeeks(data: ResultData): { weeksMin: number; weeksMax: number } {
   const hasBusiness = (data.answers["Q0-08"] as string || "").includes("specific business");
-  if (hasBusiness) return "10 – 14 weeks";
-  return "16 – 22 weeks";
+  if (hasBusiness) return { weeksMin: 10, weeksMax: 14 };
+  return { weeksMin: 16, weeksMax: 22 };
+}
+
+function getInterviewMonthRange(weeksMin: number, weeksMax: number): string {
+  const today = new Date();
+  const monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+
+  const earliestDate = new Date(today);
+  earliestDate.setDate(today.getDate() + weeksMin * 7);
+
+  const latestDate = new Date(today);
+  latestDate.setDate(today.getDate() + weeksMax * 7);
+
+  const earliestMonth = monthNames[earliestDate.getMonth()];
+  const latestMonth = monthNames[latestDate.getMonth()];
+  const earliestYear = earliestDate.getFullYear();
+  const latestYear = latestDate.getFullYear();
+
+  if (earliestMonth === latestMonth && earliestYear === latestYear) {
+    return `${earliestMonth} ${earliestYear}`;
+  }
+  if (earliestYear === latestYear) {
+    return `${earliestMonth} — ${latestMonth} ${earliestYear}`;
+  }
+  return `${earliestMonth} ${earliestYear} — ${latestMonth} ${latestYear}`;
+}
+
+function formatToday(): string {
+  return new Date().toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric'
+  });
 }
 
 function getConsulateIntel(country: string): { name: string; intel: string } {
@@ -152,7 +187,8 @@ export default function ResultsPage() {
   const score = data.score || 80;
   const outcome = data.outcome || "PROCEED";
   const pricing = getPricingFromAnswers(data);
-  const timeline = getTimelineWeeks(data);
+  const timelineWeeks = getTimelineWeeks(data);
+  const timeline = getInterviewMonthRange(timelineWeeks.weeksMin, timelineWeeks.weeksMax);
   const consulate = getConsulateIntel(data.country);
   const scoreLabel = getScoreLabel(score);
   const verdict = getVerdict(outcome, score);
@@ -236,6 +272,23 @@ export default function ResultsPage() {
 
       <div style={{ padding: "56px 40px 40px", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
         <div style={{ maxWidth: "720px" }}>
+          <button
+            onClick={() => router.push('/quiz/review')}
+            style={{
+              fontSize: '13px',
+              color: 'rgba(245,240,232,0.45)',
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              letterSpacing: '0.04em',
+              padding: '0',
+              marginBottom: '32px',
+              fontFamily: "'DM Sans', sans-serif",
+              display: 'block',
+            }}
+          >
+            ← Review or change my answers
+          </button>
           <div style={{ fontSize: "10px", letterSpacing: "0.18em", textTransform: "uppercase", color: "rgba(201,168,76,0.6)", marginBottom: "16px", display: "flex", alignItems: "center", gap: "8px" }}>
             <div style={{ flex: "0 0 24px", height: "1px", background: "rgba(201,168,76,0.4)" }} />
             Assessment complete
@@ -328,7 +381,7 @@ export default function ResultsPage() {
             <div style={{ fontSize: "10px", letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(201,168,76,0.5)", marginBottom: "14px" }}>Estimated path to your interview</div>
             <div style={{ padding: "16px", border: "1px solid rgba(201,168,76,0.1)", background: "rgba(201,168,76,0.02)", marginBottom: "12px" }}>
               <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "28px", fontWeight: 300, color: "#C9A84C", marginBottom: "4px" }}>{timeline}</div>
-              <div style={{ fontSize: "12px", color: "rgba(245,240,232,0.4)" }}>Estimated from today to your consulate interview, based on your profile and current processing times.</div>
+              <div style={{ fontSize: "12px", color: "rgba(245,240,232,0.4)" }}>Your estimated interview window, based on your profile and current processing times. Calculated from today, {formatToday()}.</div>
             </div>
             <div style={{ display: "flex", alignItems: "flex-start" }}>
               {["Eligibility confirmed", "Business selection", "Application package", "DS-160 & booking", "Interview"].map((step, i) => (
@@ -340,6 +393,23 @@ export default function ResultsPage() {
                   <div style={{ fontSize: "10px", color: i === 0 ? "rgba(93,202,165,0.7)" : i === 1 ? "#C9A84C" : "rgba(245,240,232,0.35)", textAlign: "center", letterSpacing: "0.04em", lineHeight: 1.4, maxWidth: "60px" }}>{step}</div>
                 </div>
               ))}
+            </div>
+          </div>
+
+          <div style={{ padding: "16px", border: "1px solid rgba(201,168,76,0.15)", background: "rgba(201,168,76,0.03)" }}>
+            <div style={{ fontSize: "10px", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(201,168,76,0.5)", marginBottom: "8px" }}>Important: Officer discretion</div>
+            <div style={{ fontSize: "12px", color: "rgba(245,240,232,0.45)", lineHeight: 1.65 }}>
+              Consular officers have discretion under 9 FAM to request additional documentation beyond what is listed in standard checklists. The most common additional requests are:
+            </div>
+            <div style={{ fontSize: "12px", color: "rgba(245,240,232,0.45)", lineHeight: 1.65, marginTop: "8px", paddingLeft: "12px" }}>
+              — Bank statements extending beyond 12 months<br />
+              — Tax returns for years not initially requested<br />
+              — Third-party business valuations<br />
+              — Additional evidence of operational status<br />
+              — Further source-of-funds documentation
+            </div>
+            <div style={{ fontSize: "12px", color: "rgba(245,240,232,0.45)", lineHeight: 1.65, marginTop: "8px" }}>
+              The best defense against a 221(g) request is preparation depth — having documents ready that weren&apos;t specifically asked for. Your case file will note where additional preparation is recommended based on your profile.
             </div>
           </div>
 

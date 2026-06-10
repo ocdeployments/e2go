@@ -21,7 +21,7 @@ const TREATY_COUNTRIES = [
   "United Kingdom","Yugoslavia"
 ];
 
-const CORE_QUESTION_COUNT = 14;
+const CORE_QUESTION_COUNT = 16;
 
 const SECTIONS = ["Eligibility","Investment","Business","History","Home ties","Family"];
 
@@ -51,8 +51,16 @@ const HARD_STOPS: Record<string, { title: string; body: string }> = {
     body: "The E-2 requires that you enter the U.S. to develop and direct your business. A passive investment role does not meet this requirement."
   },
   "PR-06b": {
-    title: "More than two investors disqualifies the application",
-    body: "The E-2 structure allows a maximum of two investors per business at exactly 50% each. Three or more investors disqualifies the application. Speak with an attorney about restructuring options."
+    title: "Three or more partners changes your E-2 classification",
+    body: "Under 9 FAM 402.9, an equal partnership with more than two partners does not give any individual investor control based on ownership alone — the element of control is considered too remote. This means none of you can be classified as an E-2 treaty investor based on your ownership stake.\n\nYou have two options:\n\n1. Restructure to a two-party structure. If the business can be reorganised so that only two partners each hold 50%, both can apply as E-2 investors. The remaining investors would need to reduce their ownership or exit.\n\n2. Apply as an E-2 employee. If your company is majority-owned (50%+) by nationals of a treaty country collectively, and you hold an executive, supervisory, or essential skills role, you may qualify for an E-2 visa as an employee rather than as the investor. This is a different application type with different requirements.\n\nE2go prepares E-2 investor applications. We recommend consulting a U.S. immigration attorney to assess your options."
+  },
+  "PR-PASSIVE-INVEST": {
+    title: "This investment structure does not qualify",
+    body: "A stock portfolio, financial investment account, or purely passive real estate holding does not meet the E-2 requirement for a real and operating commercial enterprise. The E-2 requires an active business — not a passive investment vehicle. Please consult an immigration attorney about alternative visa options."
+  },
+  "PR-NONPROFIT": {
+    title: "Non-profit organisations do not qualify",
+    body: "Non-profit organisations are explicitly excluded from E-2 investor classification under 9 FAM 402.9-6(C). The E-2 requires a for-profit commercial enterprise. Please consult an immigration attorney about alternative options."
   },
   "PR-07": {
     title: "This business type does not qualify",
@@ -111,6 +119,26 @@ const QUESTIONS = [
       { t: "$75,000 – $99,999 USD", a: "warn", w: "Within range — your business selection will be critical at this level." },
       { t: "$50,000 – $74,999 USD", a: "warn", w: "Below the typical threshold. This significantly narrows eligible business types." },
       { t: "Under $50,000 USD", a: "stop", code: "PR-04" },
+    ]
+  },
+  {
+    id: "Q0-05a", sec: 1, type: "select", isSub: true,
+    q: "How committed is your investment at this point?",
+    help: "The E-2 requires that funds be irrevocably committed and at risk — not just planned. An officer will ask whether your money is actually in the business, not just earmarked for it.",
+    tip: "The 'in the process of investing' standard under 9 FAM requires binding, irrevocable commitment of capital — not just availability of funds.",
+    showIf: (answers: Record<string, string | string[]>) => {
+      const amt = answers["Q0-04"];
+      if (typeof amt === "string") {
+        return amt !== "Over $150,000 USD" && amt !== "$100,000 – $150,000 USD";
+      }
+      return false;
+    },
+    opts: [
+      { t: "Fully committed — funds are already in the US business account or spent on business expenses", a: "ok" },
+      { t: "Substantially committed — signed contracts, escrow, or franchise agreement signed with deposit paid", a: "ok" },
+      { t: "Partially committed — some funds committed, remainder being transferred", a: "warn", w: "Your application will need to show a clear timeline for when the remaining funds will be deployed. Officers look for a credible plan with specific dates and committed steps, not just a statement of intent." },
+      { t: "Not yet committed — I have the funds available but not yet deployed", a: "warn", w: "Under 9 FAM 402.9-6(A), the 'in the process of investing' standard requires binding, irrevocable commitment of capital — not just availability of funds. Before your interview, you will need signed business agreements, an executed franchise agreement with deposit, a lease, or other binding commitments that place the funds at risk." },
+      { t: "In the planning stage — I have not yet secured the funds", a: "warn", w: "You are not yet in the process of investing under US immigration law. Before applying, you need binding commitments that put capital at risk. We recommend waiting until you have signed contracts and committed funds before beginning your application." },
     ]
   },
   {
@@ -185,6 +213,19 @@ const QUESTIONS = [
     ]
   },
   {
+    id: "Q0-09a", sec: 2, type: "select", isSub: true,
+    q: "Is your US business an active, operating commercial enterprise?",
+    help: "The E-2 requires a real, active, for-profit business — not a passive investment. Some structures do not qualify.",
+    tip: "Undeveloped land, stock portfolios, and non-profit organisations are explicitly excluded under 9 FAM 402.9-6(C).",
+    opts: [
+      { t: "Yes — it is an active business selling goods or services", a: "ok" },
+      { t: "It is a real estate investment or property holding", a: "warn", w: "Pure real estate investment — undeveloped land or properties held for appreciation — does not meet the 'real and operating enterprise' requirement. However, an active real estate business (property management, development, hospitality) may qualify if you can demonstrate real operations, employees, and non-marginality." },
+      { t: "It is a stock portfolio or financial investment", a: "stop", code: "PR-PASSIVE-INVEST" },
+      { t: "It is a non-profit or charitable organisation", a: "stop", code: "PR-NONPROFIT" },
+      { t: "I am not sure of the structure", a: "warn", w: "Confirm your business structure with an attorney before proceeding. The E-2 requires a real, active, for-profit commercial enterprise — the structure matters." },
+    ]
+  },
+  {
     id: "Q0-09", sec: 3, type: "select",
     q: "Have you ever been refused a U.S. visa?",
     help: "Prior refusals must be disclosed on your DS-160 form. They are not automatically disqualifying but require careful handling.",
@@ -234,14 +275,28 @@ const QUESTIONS = [
     ]
   },
   {
-    id: "Q0-13", sec: 4, type: "select",
-    q: "Will close family remain in your home country after you move?",
-    help: "The consulate scores ongoing ties to your home country. Family ties are one of the strongest signals.",
-    tip: "The E-2 is a nonimmigrant visa — demonstrating strong home country ties is essential.",
+    id: "Q0-13a", sec: 4, type: "select",
+    q: "Are your spouse and children moving to the US with you?",
+    help: "This determines who will be included in your E-2 application as dependents.",
+    tip: "Spouse and children staying behind is a different situation from parents or siblings staying — the scoring and document implications are entirely different.",
     opts: [
-      { t: "Yes — spouse, children, parents, or siblings staying", a: "ok" },
-      { t: "Some family staying, some coming with me", a: "ok" },
-      { t: "No — all family is moving with me", a: "warn", w: "No remaining family ties can raise concerns at the consulate. Other strong ties — property, financial accounts — will be important for your application." },
+      { t: "Yes — my spouse and children are moving with me", a: "ok" },
+      { t: "My spouse is moving with me, children staying in home country", a: "ok" },
+      { t: "Spouse and children are staying — I am moving alone initially", a: "warn", w: "Moving alone while family stays behind can raise questions about your plan. Prepare a clear explanation for your cover letter about when your family will join." },
+      { t: "Not applicable — I have no spouse or children", a: "ok" },
+    ]
+  },
+  {
+    id: "Q0-13b", sec: 4, type: "select",
+    q: "Do you have parents, siblings, or other close family who will remain after you move?",
+    help: "The consulate scores ties to your home country. Extended family remaining is one of the strongest signals of non-immigrant intent.",
+    tip: "The E-2 is a nonimmigrant visa — demonstrating strong home country ties is one of the most important elements of your application.",
+    opts: [
+      { t: "Yes — parents remaining", a: "ok" },
+      { t: "Yes — siblings remaining", a: "ok" },
+      { t: "Yes — parents and siblings remaining", a: "ok" },
+      { t: "Yes — other close family remaining", a: "ok" },
+      { t: "No — no extended family remaining in home country", a: "warn", w: "No remaining extended family ties means other ties — property, financial accounts, employment — will carry more weight. Ensure these are well documented." },
     ]
   },
   {
@@ -259,14 +314,90 @@ const QUESTIONS = [
   {
     id: "Q0-15", sec: 5, type: "select",
     q: "Will you have a business partner on this application?",
-    help: "The E-2 allows a maximum of two investors per business, each owning exactly 50%.",
-    tip: "A 49/51 split or any other unequal ownership disqualifies the minority partner. The 50/50 requirement is strict.",
+    help: "The E-2 allows a maximum of two investors per business. For unrelated partners: each must own exactly 50%. For spousal partnerships: the principal applicant must be the owner-operator with majority or equal control.",
+    tip: "For unrelated partners: each investor must own exactly 50% to qualify independently. For spousal partnerships: the principal applicant must be the owner-operator with majority or equal control — the spouse's ownership percentage is more flexible as long as the applicant clearly develops and directs the business.",
     opts: [
       { t: "No — I am the sole investor", a: "ok" },
-      { t: "Yes — one partner, confirmed 50/50 ownership", a: "ok" },
-      { t: "Yes — ownership split not yet decided", a: "warn", w: "If applying with a partner, the split must be exactly 50/50 for both to qualify. Confirm this before proceeding." },
-      { t: "Yes — more than one partner", a: "stop", code: "PR-06b" },
+      { t: "Yes — one partner, 50/50 ownership", a: "ok" },
+      { t: "Yes — one partner, my spouse (any ownership split)", a: "sub14b" },
+      { t: "Yes — one partner, ownership split not yet decided", a: "warn", w: "If applying with a partner, the split must be exactly 50/50 for both to qualify. Confirm this before proceeding." },
+      { t: "Yes — more than one partner (attorney review required)", a: "stop", code: "PR-06b" },
     ]
+  },
+  {
+    id: "Q0-14b", sec: 5, type: "select", isSub: true,
+    q: "What will be your spouse's role in the business?",
+    help: "A spouse who is a silent investor can hold a minority stake. A spouse who co-operates the business alongside you may qualify for their own E-2 status.",
+    tip: "If your spouse will be actively involved, their qualifications need to be documented separately — this can strengthen your application significantly.",
+    opts: [
+      { t: "Active co-operator — managing the business with me", a: "ok" },
+      { t: "Silent investor — ownership stake, not day-to-day involved", a: "ok" },
+      { t: "Not yet decided", a: "ok" },
+    ]
+  },
+  {
+    id: "Q0-14c", sec: 2, type: "select", isSub: true,
+    q: "Do you own your share of the US business directly, or through a holding company, trust, or other entity?",
+    help: "Under US immigration law, the 50% treaty-national ownership test applies through the full ownership chain — not just at the top level. If you own the US business through an intermediate entity, your effective ownership percentage may be different from what you expect.",
+    tip: "A Canadian who owns 100% of a Canadian holdco that owns 40% of the US business has an effective ownership of 40% — below the 50% threshold.",
+    showIf: (answers: Record<string, string | string[]>) => {
+      const partner = answers["Q0-15"];
+      if (typeof partner === "string") {
+        return partner.includes("partner") || partner.includes("spouse");
+      }
+      return false;
+    },
+    opts: [
+      { t: "Directly — I own my share personally in my own name", a: "ok" },
+      { t: "Through a holding company or corporation", a: "warn", w: "Because you own through a holding company, the 50% test applies through the chain. Your effective ownership percentage equals: (your % of the holdco) × (holdco's % of the US business). For example, if you own 100% of a holdco that owns 45% of the US business, your effective ownership is 45% — below the 50% threshold. Your ownership documentation will need to show the full chain clearly." },
+      { t: "Through a family trust or other trust structure", a: "attorney", w: "Trust ownership adds complexity to the treaty-national ownership analysis. Whether trust assets are attributed to the settlor, beneficiaries, or trustee depends on the trust structure. We recommend attorney review for trust-held E-2 investments." },
+      { t: "Through a combination of the above", a: "attorney", w: "Complex ownership structures require careful analysis of the full ownership chain. We recommend attorney review to confirm your effective treaty-national ownership percentage." },
+      { t: "I am not sure", a: "warn", w: "Confirm your ownership structure with your accountant or attorney before proceeding. The 50% treaty-national ownership test applies through the full chain of entities — understanding your structure is essential." },
+    ]
+  },
+  {
+    id: "Q0-14d", sec: 2, type: "select", isSub: true,
+    q: "Even though your ownership may be below 50%, do you have documented control rights over the business?",
+    help: "Under US immigration law, control can be demonstrated through means other than majority ownership — including a managerial position, board control, veto rights, or other corporate governance rights written into your operating agreement or shareholder agreement.",
+    tip: "9 FAM 402.9 states: 'Control of the enterprise may be demonstrated by ownership of at least 50 percent of the business, by possession of operational control through a managerial position or other corporate device, or by other means.'",
+    showIf: (answers: Record<string, string | string[]>) => {
+      const own = answers["Q0-14c"];
+      if (typeof own === "string") {
+        return own !== "Directly — I own my share personally in my own name";
+      }
+      return false;
+    },
+    opts: [
+      { t: "Yes — I have veto rights or board control written into the operating agreement", a: "ok", w: "Your application will need to document these control rights clearly in your cover letter and operating agreement. The consular officer will look for: a copy of the operating or shareholder agreement showing your specific rights, a description of which decisions require your approval, and evidence that these rights are active and enforceable — not just on paper." },
+      { t: "Yes — I hold an executive or managerial title with documented decision-making authority", a: "ok", w: "Your application will need to document these control rights clearly. Include your title, scope of authority, and evidence that your role gives you operational control over the business." },
+      { t: "Yes — I have special voting shares or other governance rights", a: "ok", w: "Document these governance rights in your operating agreement or shareholder agreement. The officer will look for evidence that these rights are active and give you meaningful control over business decisions." },
+      { t: "No — my control is based on ownership percentage only", a: "warn", w: "Without majority ownership or documented control rights, you may not meet the 'develop and direct' requirement under 9 FAM. Consider whether your operating agreement can be amended to grant you veto rights or board control before your interview." },
+      { t: "I am not sure", a: "attorney", w: "Confirm whether your ownership structure includes any documented control rights. Without majority ownership or control rights, the 'develop and direct' requirement may not be met. Attorney review is recommended." },
+    ]
+  },
+  {
+    id: "Q0-14e", sec: 2, type: "select", isSub: true,
+    q: "You and your partner hold different nationalities. Which country's treaty will be the basis for your E-2 application?",
+    help: "A US business can generally have only one E-2 nationality — determined by which treaty country's nationals own at least 50% of the enterprise. All E-2 visa holders working for this company must share that nationality.",
+    tip: "Under 9 FAM 402.9-4(B), if a business is equally owned by nationals of two different treaty countries, E-2 visas may be issued to employees of either treaty country — but you should pick one designation and keep it consistent.",
+    showIf: (answers: Record<string, string | string[]>) => {
+      const partner = answers["Q0-15"];
+      const spouseRole = answers["Q0-14b"];
+      if (typeof partner === "string" && (partner.includes("50/50") || partner.includes("more than one"))) {
+        if (typeof spouseRole === "string" && spouseRole.includes("spouse")) return false;
+        return true;
+      }
+      return false;
+    },
+    opts: (() => {
+      const fallback = [
+        { t: "My country — I am the majority or equal owner", a: "ok" },
+        { t: "My partner's country — they are the majority owner", a: "ok" },
+        { t: "We have equal ownership — either nationality could work", a: "ok", w: "Under 9 FAM, if a business is equally owned by nationals of two different treaty countries, E-2 visas may be issued to employees of either treaty country. However, you should pick one designation for the business and keep it consistent across all documents." },
+        { t: "I am not sure — we need to decide this", a: "attorney" },
+      ];
+      return fallback;
+    })(),
   },
   {
     id: "Q0-16", sec: 5, type: "select",
@@ -275,7 +406,7 @@ const QUESTIONS = [
     tip: "Dependent status is tied to your E-2 visa. If your visa expires or is revoked, dependent status ends simultaneously.",
     opts: [
       { t: "Just me — no dependents", a: "ok" },
-      { t: "My spouse or partner", a: "ok" },
+      { t: "My spouse or partner", a: "sub03a" },
       { t: "My spouse and children", a: "sub16a" },
       { t: "My children only", a: "sub16a" },
       { t: "Not decided yet", a: "ok" },
@@ -290,6 +421,24 @@ const QUESTIONS = [
       { t: "All under 18", a: "ok" },
       { t: "One or more are 18–20", a: "warn", w: "Children lose E-2 dependent status on their 21st birthday. If a child is 18–20, your timeline must account for this window. We will flag this in your compliance calendar." },
       { t: "One or more are 21 or older", a: "warn", w: "Children 21 or older cannot be included as E-2 dependents. They would need to apply for their own visa separately." },
+    ]
+  },
+  {
+    id: "Q0-03a", sec: 5, type: "select", isSub: true,
+    q: "Who is the primary E-2 applicant?",
+    help: "If you are married, one spouse is the principal applicant whose qualifications, investment, and business experience lead the application. The other spouse applies as a dependent — or independently if they are also investing.",
+    tip: "All questions should be answered from the principal applicant's perspective. Their qualifications, investment, and role in the business are what the consulate will evaluate.",
+    showIf: (answers: Record<string, string | string[]>) => {
+      const dep = answers["Q0-16"];
+      if (typeof dep === "string") {
+        return dep.includes("spouse") || dep.includes("partner");
+      }
+      return false;
+    },
+    opts: [
+      { t: "I am — I am filling out this form as the principal applicant", a: "ok" },
+      { t: "My spouse is the principal applicant — I am completing this on their behalf", a: "ok" },
+      { t: "We are applying as co-investors (partnership application)", a: "ok" },
     ]
   },
 ];
@@ -333,9 +482,30 @@ export default function QuizPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [returnToResults, setReturnToResults] = useState(false);
 
-  const visibleQuestions = QUESTIONS;
+  const visibleQuestions = QUESTIONS.filter(q => {
+    if ('showIf' in q && typeof q.showIf === 'function') {
+      return q.showIf(answers);
+    }
+    return true;
+  });
   const q = visibleQuestions[cur];
+
+  const qWithOpts = q as typeof QUESTIONS[0] & { opts?: { t: string; a?: string; w?: string; code?: string }[] };
+
+  const displayOpts = (() => {
+    if (q.id === "Q0-14e") {
+      const country = (answers["Q0-01"] as string) || "your country";
+      return [
+        { t: `${country} — I am the majority or equal owner`, a: "ok" },
+        { t: "My partner's country — they are the majority owner", a: "ok" },
+        { t: "We have equal ownership — either nationality could work", a: "ok", w: "Under 9 FAM, if a business is equally owned by nationals of two different treaty countries, E-2 visas may be issued to employees of either treaty country. However, you should pick one designation for the business and keep it consistent across all documents." },
+        { t: "I am not sure — we need to decide this", a: "attorney" },
+      ];
+    }
+    return qWithOpts.opts || [];
+  })();
 
   useEffect(() => {
     authCheckTimeout.current = setTimeout(() => {
@@ -381,6 +551,15 @@ export default function QuizPage() {
             localStorage.removeItem('e2go_quiz_draft');
           }
         }
+        const jumpTo = localStorage.getItem('quiz_jump_to');
+        if (jumpTo !== null) {
+          const idx = parseInt(jumpTo, 10);
+          if (!isNaN(idx)) {
+            setCur(idx);
+            setReturnToResults(true);
+          }
+          localStorage.removeItem('quiz_jump_to');
+        }
       }
     };
     checkAuth();
@@ -398,7 +577,7 @@ export default function QuizPage() {
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const getFirstQuestionOfSection = (secIdx: number) => {
-    return QUESTIONS.findIndex(q => q.sec === secIdx);
+    return visibleQuestions.findIndex(q => q.sec === secIdx);
   };
 
   const advance = useCallback(() => {
@@ -438,6 +617,11 @@ export default function QuizPage() {
     localStorage.setItem("e2go_quiz_result", JSON.stringify(resultData));
     localStorage.removeItem('e2go_quiz_draft');
 
+    if (returnToResults) {
+      router.push("/results?from=quiz");
+      return;
+    }
+
     if (loggedInUser) {
       setIsSaving(true);
       try {
@@ -468,7 +652,7 @@ export default function QuizPage() {
 
   const handleSelectOpt = useCallback((idx: number) => {
     if (!q || q.type !== "select") return;
-    const opt = (q as typeof QUESTIONS[0] & { opts: { t: string; a: string; w?: string; code?: string }[] }).opts[idx];
+    const opt = displayOpts[idx];
     if (!opt) return;
 
     setSelectedIdx(idx);
@@ -521,10 +705,10 @@ export default function QuizPage() {
       setFranchiseInterest(true);
     }
 
-    const hasSubQ = opt.a === "sub08a" || opt.a === "sub16a";
+    const hasSubQ = opt.a === "sub08a" || opt.a === "sub16a" || opt.a === "sub14b" || opt.a === "sub03a";
     if (hasSubQ) {
       setTimeout(() => {
-        const subId = opt.a === "sub08a" ? "Q0-08a" : "Q0-16a";
+        const subId = opt.a === "sub08a" ? "Q0-08a" : opt.a === "sub14b" ? "Q0-14b" : opt.a === "sub03a" ? "Q0-03a" : "Q0-16a";
         const subIdx = visibleQuestions.findIndex(x => x.id === subId);
         if (subIdx !== -1) {
           setIsAnimating(true);
@@ -546,6 +730,10 @@ export default function QuizPage() {
     }
 
     setTimeout(() => {
+      if (returnToResults) {
+        handleComplete(newAnswers, warnings, attorneyFlags, franchiseInterest);
+        return;
+      }
       const nextIdx = cur + 1;
       if (nextIdx >= visibleQuestions.length) {
         handleComplete(newAnswers, warnings, attorneyFlags, franchiseInterest);
@@ -553,7 +741,7 @@ export default function QuizPage() {
         advance();
       }
     }, 280);
-  }, [q, answers, warnings, attorneyFlags, franchiseInterest, cur, visibleQuestions, advance, handleComplete]);
+  }, [q, answers, warnings, attorneyFlags, franchiseInterest, cur, visibleQuestions, advance, handleComplete, returnToResults, displayOpts]);
 
   const handleMultiContinue = useCallback(() => {
     if (multiSel.length === 0) return;
@@ -699,8 +887,6 @@ export default function QuizPage() {
   const isCountry = q.type === "country";
   const isMulti = q.type === "multi";
   const isSelect = q.type === "select";
-  const qWithOpts = q as typeof QUESTIONS[0] & { opts?: { t: string; a?: string; w?: string; code?: string }[] };
-
   const filteredCountries = countrySearch.length > 0
     ? TREATY_COUNTRIES.filter(c => c.toLowerCase().startsWith(countrySearch.toLowerCase())).slice(0, 8)
     : [];
@@ -728,6 +914,36 @@ export default function QuizPage() {
       </div>
 
       <div style={{ padding: "clamp(28px, 5vw, 44px) clamp(16px, 5vw, 40px) 32px", maxWidth: "580px", width: "100%", opacity: isAnimating ? 0 : 1, transition: "opacity 0.15s" }}>
+        {cur > 0 && (
+          <button
+            onClick={() => {
+              setCur(c => c - 1);
+              setSelectedIdx(null);
+              setWarnMsg(null);
+              setMultiSel([]);
+            }}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              fontSize: '13px',
+              fontWeight: 400,
+              letterSpacing: '0.04em',
+              color: 'rgba(245,240,232,0.55)',
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              padding: '8px 0',
+              marginBottom: '24px',
+              fontFamily: "'DM Sans', sans-serif",
+            }}
+            onMouseEnter={e => e.currentTarget.style.color = 'rgba(245,240,232,0.85)'}
+            onMouseLeave={e => e.currentTarget.style.color = 'rgba(245,240,232,0.55)'}
+          >
+            ← Back
+          </button>
+        )}
+
         <div style={{ display: "inline-flex", alignItems: "center", gap: "5px", fontSize: "10px", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(201,168,76,0.7)", marginBottom: "18px" }}>
           <div style={{ width: "3px", height: "3px", borderRadius: "50%", background: "#C9A84C" }} />
           {q.isSub ? "Follow-up" : S}
@@ -741,31 +957,6 @@ export default function QuizPage() {
             <div style={{ color: "#C9A84C", fontSize: "14px", flexShrink: 0 }}>!</div>
             <div style={{ fontSize: "12px", color: "rgba(245,240,232,0.55)", lineHeight: 1.6 }}>{warnMsg}</div>
           </div>
-        )}
-
-        {cur > 0 && (
-          <button
-            onClick={() => {
-              setCur(c => c - 1);
-              setSelectedIdx(null);
-              setWarnMsg(null);
-              setMultiSel([]);
-            }}
-            style={{
-              marginTop: '20px',
-              background: 'none',
-              border: 'none',
-              fontSize: '12px',
-              color: 'rgba(245,240,232,0.35)',
-              cursor: 'pointer',
-              fontFamily: "'DM Sans', sans-serif",
-              letterSpacing: '0.05em',
-              padding: '8px 0',
-              display: 'block'
-            }}
-          >
-            ← Back
-          </button>
         )}
 
         {isCountry && (
@@ -813,9 +1004,9 @@ export default function QuizPage() {
           </>
         )}
 
-        {isSelect && qWithOpts.opts && (
+        {isSelect && displayOpts.length > 0 && (
           <div style={{ display: "flex", flexDirection: "column", gap: "7px", marginBottom: "28px" }}>
-            {qWithOpts.opts.map((o, i) => (
+            {displayOpts.map((o, i) => (
               <button key={i} onClick={() => handleSelectOpt(i)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "13px 16px", background: selectedIdx === i ? "rgba(201,168,76,0.09)" : "rgba(201,168,76,0.02)", border: `1px solid ${selectedIdx === i ? "#C9A84C" : "rgba(201,168,76,0.14)"}`, color: selectedIdx === i ? "#f5f0e8" : "rgba(245,240,232,0.75)", fontSize: "14px", cursor: "pointer", textAlign: "left", borderRadius: 0, fontFamily: "'DM Sans', system-ui, sans-serif", transition: "all 0.14s", gap: "12px" }}>
                 <span>{o.t}</span>
                 <div style={{ width: "16px", height: "16px", border: `1px solid ${selectedIdx === i ? "#C9A84C" : "rgba(201,168,76,0.35)"}`, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -826,11 +1017,11 @@ export default function QuizPage() {
           </div>
         )}
 
-        {isMulti && qWithOpts.opts && (
+        {isMulti && displayOpts.length > 0 && (
           <>
             <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.25)", marginBottom: "14px", letterSpacing: "0.04em" }}>Select all that apply</div>
             <div style={{ display: "flex", flexDirection: "column", gap: "7px", marginBottom: "28px" }}>
-              {qWithOpts.opts.map((o, i) => {
+              {displayOpts.map((o, i) => {
                 const sel = multiSel.includes(i);
                 return (
                   <button key={i} onClick={() => {
@@ -845,7 +1036,6 @@ export default function QuizPage() {
               })}
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
-              {cur > 0 && <button onClick={() => { setCur(c => c - 1); setSelectedIdx(null); setWarnMsg(null); setMultiSel([]); }} style={{ background: "none", border: "none", fontSize: "12px", color: "rgba(245,240,232,0.25)", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>← Back</button>}
               <button onClick={handleMultiContinue} disabled={multiSel.length === 0} style={{ padding: "11px 26px", background: "#C9A84C", border: "none", color: "#0a0a0a", fontSize: "12px", fontWeight: 500, cursor: multiSel.length > 0 ? "pointer" : "not-allowed", letterSpacing: "0.07em", textTransform: "uppercase", fontFamily: "'DM Sans', sans-serif", borderRadius: 0, opacity: multiSel.length > 0 ? 1 : 0.25 }}>Continue</button>
             </div>
           </>
@@ -853,7 +1043,6 @@ export default function QuizPage() {
 
         {(isSelect || isCountry) && warnMsg && (
           <div style={{ display: "flex", alignItems: "center", gap: "14px", marginTop: "4px" }}>
-            {cur > 0 && <button onClick={() => { setCur(c => c - 1); setSelectedIdx(null); setWarnMsg(null); }} style={{ background: "none", border: "none", fontSize: "12px", color: "rgba(245,240,232,0.25)", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>← Back</button>}
             <button onClick={() => {
               const nextIdx = cur + 1;
               if (nextIdx >= visibleQuestions.length) {

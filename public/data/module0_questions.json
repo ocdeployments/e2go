@@ -217,6 +217,24 @@
       }
     },
     {
+      "id": "Q0-PREP-STATUS",
+      "type": "select",
+      "section": "preparation",
+      "question": "Have you already started preparing your E-2 application?",
+      "helper_text": "We'll adjust your experience based on where you are.",
+      "tooltip": "This helps us tailor your case file. If you have existing documents, we can read them and pre-fill your application — saving you time.",
+      "options": [
+        "No — I'm starting from scratch",
+        "Yes — I have some draft documents or notes",
+        "Yes — I have a near-complete package"
+      ],
+      "routing": {
+        "scratch": "continue",
+        "partial": "continue:flag_has_documents",
+        "near_complete": "continue:flag_has_documents"
+      }
+    },
+    {
       "id": "Q0-09",
       "type": "select",
       "section": "history",
@@ -299,21 +317,45 @@
       }
     },
     {
-      "id": "Q0-13",
+      "id": "Q0-13a",
       "type": "select",
       "section": "home_ties",
-      "question": "Will close family remain in your home country after you move?",
-      "helper_text": "The consulate scores ongoing ties to your home country. Family ties are one of the strongest signals.",
-      "tooltip": "The E-2 is a nonimmigrant visa — demonstrating strong home country ties is one of the most important elements of your application.",
+      "question": "Are your spouse and children moving to the US with you?",
+      "helper_text": "This determines who will be included in your E-2 application as dependents.",
+      "tooltip": "Spouse and children staying behind is a different situation from parents or siblings staying — the scoring and document implications are entirely different.",
       "options": [
-        "Yes — spouse, children, parents, or siblings staying",
-        "Some family staying, some coming with me",
-        "No — all family is moving with me"
+        "Yes — my spouse and children are moving with me",
+        "My spouse is moving with me, children staying in home country",
+        "Spouse and children are staying — I am moving alone initially",
+        "Not applicable — I have no spouse or children"
       ],
       "routing": {
-        "family_stays": "continue:tie_positive",
-        "mixed": "continue",
-        "all_moving": "continue:warn:W-NO-FAMILY-TIES"
+        "all_moving": "continue",
+        "spouse_only_moving": "continue",
+        "moving_alone": "continue:warn:W-MOVING-ALONE",
+        "no_family": "continue"
+      }
+    },
+    {
+      "id": "Q0-13b",
+      "type": "select",
+      "section": "home_ties",
+      "question": "Do you have parents, siblings, or other close family who will remain after you move?",
+      "helper_text": "The consulate scores ties to your home country. Extended family remaining is one of the strongest signals of non-immigrant intent.",
+      "tooltip": "The E-2 is a nonimmigrant visa — demonstrating strong home country ties is one of the most important elements of your application.",
+      "options": [
+        "Yes — parents remaining",
+        "Yes — siblings remaining",
+        "Yes — parents and siblings remaining",
+        "Yes — other close family remaining",
+        "No — no extended family remaining in home country"
+      ],
+      "routing": {
+        "parents": "continue:tie_positive",
+        "siblings": "continue:tie_positive",
+        "parents_and_siblings": "continue:tie_positive",
+        "other_family": "continue:tie_positive",
+        "no_extended_family": "continue:warn:W-NO-EXTENDED-FAMILY"
       }
     },
     {
@@ -341,19 +383,62 @@
       "type": "select",
       "section": "family",
       "question": "Will you have a business partner on this application?",
-      "helper_text": "The E-2 allows a maximum of two investors per business, each owning exactly 50%.",
-      "tooltip": "A 49/51 split or any other unequal ownership disqualifies the minority partner. The 50/50 requirement is strict.",
+      "helper_text": "The E-2 allows a maximum of two investors per business. For unrelated partners: each must own exactly 50%. For spousal partnerships: the principal applicant must be the owner-operator with majority or equal control.",
+      "tooltip": "For unrelated partners: each investor must own exactly 50% to qualify independently. For spousal partnerships: the principal applicant must be the owner-operator with majority or equal control — the spouse's ownership percentage is more flexible as long as the applicant clearly develops and directs the business.",
       "options": [
         "No — I am the sole investor",
-        "Yes — one partner, confirmed 50/50 ownership",
-        "Yes — ownership split not yet decided",
-        "Yes — more than one partner"
+        "Yes — one partner, 50/50 ownership",
+        "Yes — one partner, my spouse (any ownership split)",
+        "Yes — one partner, ownership split not yet decided",
+        "Yes — more than one partner (attorney review required)"
       ],
       "routing": {
         "sole_investor": "continue",
         "partner_50_50": "continue",
+        "partner_spouse": "sub:Q0-14b",
         "partner_undecided": "continue:warn:W-PARTNERSHIP-SPLIT",
         "multiple_partners": "stop:PR-06b"
+      }
+    },
+    {
+      "id": "Q0-14b",
+      "type": "select",
+      "section": "family",
+      "is_sub": true,
+      "parent": "Q0-15",
+      "show_if": { "Q0-15": ["Yes — one partner, my spouse (any ownership split)"] },
+      "question": "What will be your spouse's role in the business?",
+      "helper_text": "A spouse who is a silent investor can hold a minority stake. A spouse who co-operates the business alongside you may qualify for their own E-2 status.",
+      "tooltip": "If your spouse will be actively involved, their qualifications need to be documented separately — this can strengthen your application significantly.",
+      "options": [
+        "Active co-operator — managing the business with me",
+        "Silent investor — ownership stake, not day-to-day involved",
+        "Not yet decided"
+      ],
+      "routing": {
+        "active_cooperator": "continue:flag_spouse_qualifications",
+        "silent_investor": "continue",
+        "not_decided": "continue"
+      }
+    },
+    {
+      "id": "Q0-03a",
+      "type": "select",
+      "section": "family",
+      "is_sub": true,
+      "show_if": { "Q0-16": ["My spouse or partner", "My spouse and children"] },
+      "question": "Who is the primary E-2 applicant?",
+      "helper_text": "If you are married, one spouse is the principal applicant whose qualifications, investment, and business experience lead the application. The other spouse applies as a dependent — or independently if they are also investing.",
+      "tooltip": "All questions should be answered from the principal applicant's perspective. Their qualifications, investment, and role in the business are what the consulate will evaluate.",
+      "options": [
+        "I am — I am filling out this form as the principal applicant",
+        "My spouse is the principal applicant — I am completing this on their behalf",
+        "We are applying as co-investors (partnership application)"
+      ],
+      "routing": {
+        "i_am_principal": "continue",
+        "spouse_is_principal": "continue:flag_spouse_perspective",
+        "co_investors": "continue:route_partnership"
       }
     },
     {

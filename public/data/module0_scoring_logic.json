@@ -52,6 +52,18 @@
       "question": "Q0-03",
       "trigger": ["In another country"],
       "message": "As of September 6, 2025, E-2 visa applications must be filed at a consulate in your country of nationality or legal residence. Third-country processing is no longer available."
+    },
+    {
+      "code": "PR-PASSIVE-INVEST",
+      "question": "Q0-09a",
+      "trigger": ["It is a stock portfolio or financial investment"],
+      "message": "A stock portfolio or financial investment does not qualify for E-2. The E-2 requires a real and operating commercial enterprise."
+    },
+    {
+      "code": "PR-NONPROFIT",
+      "question": "Q0-09a",
+      "trigger": ["It is a non-profit or charitable organisation"],
+      "message": "Non-profit organisations are explicitly excluded from E-2 investor classification under 9 FAM 402.9-6(C)."
     }
   ],
   "attorney_flags": [
@@ -177,6 +189,34 @@
       "question": "Q0-20",
       "trigger": ["Yes", "I am not sure"],
       "level": "attorney_recommended"
+    },
+    {
+      "code": "W-TRUST-01",
+      "question": "Q0-14c",
+      "trigger": ["Through a family trust or other trust structure", "Through a combination of the above"],
+      "level": "attorney_recommended",
+      "note": "Trust ownership adds complexity to treaty-national ownership analysis"
+    },
+    {
+      "code": "W-CONTROL-UNSURE",
+      "question": "Q0-14d",
+      "trigger": ["I am not sure"],
+      "level": "attorney_recommended",
+      "note": "Below-50% ownership without confirmed control rights"
+    },
+    {
+      "code": "W-EVISA-NATIONALITY",
+      "question": "Q0-14e",
+      "trigger": ["I am not sure — we need to decide this"],
+      "level": "attorney_recommended",
+      "note": "Mixed-nationality partnership needs clear E-visa nationality designation"
+    },
+    {
+      "code": "W-PLANNING-STAGE",
+      "question": "Q0-05a",
+      "trigger": ["In the planning stage — I have not yet secured the funds"],
+      "level": "attorney_recommended",
+      "note": "Applicant not yet in the process of investing under 9 FAM"
     }
   ],
   "risk_flags": [
@@ -260,6 +300,48 @@
       "question": "Q0-TIMELINE",
       "trigger": ["Within the next 3 months"],
       "level": "risk_flag"
+    },
+    {
+      "code": "W-HOLDCO-01",
+      "question": "Q0-14c",
+      "trigger": ["Through a holding company or corporation"],
+      "level": "risk_flag",
+      "note": "Holding company ownership — verify effective ownership percentage through chain"
+    },
+    {
+      "code": "W-NO-CONTROL",
+      "question": "Q0-14d",
+      "trigger": ["No — my control is based on ownership percentage only"],
+      "level": "risk_flag",
+      "note": "Below-50% ownership without documented control rights — may not meet develop and direct requirement"
+    },
+    {
+      "code": "W-INVEST-PARTIAL",
+      "question": "Q0-05a",
+      "trigger": ["Partially committed — some funds committed, remainder being transferred", "Not yet committed — I have the funds available but not yet deployed"],
+      "level": "risk_flag",
+      "note": "Investment not yet fully committed — documentation of deployment timeline needed"
+    },
+    {
+      "code": "W-REAL-ESTATE",
+      "question": "Q0-09a",
+      "trigger": ["It is a real estate investment or property holding"],
+      "level": "risk_flag",
+      "note": "Real estate — must demonstrate active operations, not passive holding"
+    },
+    {
+      "code": "W-BIZ-STRUCTURE-UNSURE",
+      "question": "Q0-09a",
+      "trigger": ["I am not sure of the structure"],
+      "level": "risk_flag",
+      "note": "Business structure unclear — must confirm active for-profit enterprise"
+    },
+    {
+      "code": "W-OWNERSHIP-UNSURE",
+      "question": "Q0-14c",
+      "trigger": ["I am not sure"],
+      "level": "risk_flag",
+      "note": "Ownership structure unclear — must confirm treaty-national ownership percentage"
     }
   ],
   "investment_thresholds_usd": {
