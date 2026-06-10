@@ -228,6 +228,16 @@ Current live Price IDs (June 10, 2026):
 
 ## STANDING BUILD RULES (10 rules — confirm every session)
 
+### RULE 0 — VERIFICATION APPROACH
+Do NOT use Playwright. It crashes the agent.
+Instead verify with:
+  1. npm run build — must be clean, zero errors
+  2. curl to confirm pages return 200:
+     curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/[route]
+  3. open http://localhost:3000/[route] to launch in browser
+     for owner to visually verify
+Never block a session on visual screenshot tooling.
+
 ### RULE 1 — DESIGN SYSTEM COMPLIANCE
 Read docs/DESIGN_REFERENCE.html before writing any component.
 Zero border-radius everywhere. No glassmorphism. No blue selection
@@ -383,7 +393,7 @@ Rate limits (production only):
 | Migration 004 not applied | MEDIUM | Run: npx supabase db push (answers source constraint) |
 | Two warnings in generate/page.tsx and quiz/page.tsx | LOW | Fix in next session touching those files |
 | Stripe API version outdated (2024-06-20) | LOW | Upgrade apiVersion in scripts/stripe-setup.ts |
-| Quiz nationality selector Playwright difficulty | LOW | Works in browser |
+| Quiz nationality selector curl/browser verification difficulty | LOW | Works in browser |
 | Fast Refresh occasional hot reload errors | LOW | Non-blocking |
 
 ---

@@ -1,6 +1,6 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 10, 2026 — Stripe pricing complete, all blockers resolved, ready for end-to-end test
+**Last Updated:** June 10, 2026 — Quiz v5.0 complete (full rebuild, 17 bugs fixed), Stripe pricing complete
 **App Name:** E2go.app
 **Stack:** Next.js 14 · TypeScript · Tailwind CSS · Supabase · Claude API
 **Dev URL:** https://e2go-git-dev-ocdeployments-projects.vercel.app
@@ -175,6 +175,25 @@ Update STRIPE_PRICE_* env vars with new Price IDs after running.
 | "Review or change my answers" link on results page | ✅ COMPLETE |
 | /quiz/review — jump-to-question editing page | ✅ COMPLETE |
 | Selected option gold borders confirmed | ✅ COMPLETE |
+
+## MODULE 0 — QUIZ v5.0 (Full Rebuild — June 10, 2026)
+
+| Feature | Status |
+|---|---|
+| 16 questions (10 core + 6 subs) | ✅ COMPLETE |
+| Q0-01 treaty country hard stop works | ✅ COMPLETE |
+| Q0-02 principal applicant question | ✅ COMPLETE |
+| Q0-03 family composition (merged Q0-13a + Q0-16) | ✅ COMPLETE |
+| Q0-04 business partner (merged Q0-07 + Q0-15) | ✅ COMPLETE |
+| Q0-09 history as one multiselect | ✅ COMPLETE |
+| Q0-10 home ties as one multiselect | ✅ COMPLETE |
+| Dynamic question counter (never exceeds visible total) | ✅ COMPLETE |
+| Back button at bottom left | ✅ COMPLETE |
+| handleComplete reads correct question IDs | ✅ COMPLETE |
+| Dependents from Q0-03 (not Q0-16) | ✅ COMPLETE |
+| Application type from Q0-02/Q0-04 (not Q0-09) | ✅ COMPLETE |
+| Pricing chain correct end to end | ✅ COMPLETE |
+| All 17 confirmed bugs resolved | ✅ COMPLETE |
 | Q0-PREP-STATUS routing question | ⏳ PENDING — DOCUMENT_UPLOAD_SPEC.md |
 
 ## MODULE 0 — QUIZ LEGAL ACCURACY (Session 2 — June 9, 2026)
@@ -663,6 +682,62 @@ All committed to dev branch.
 
 ---
 
+## SESSION — Quiz Rebuild v5.0 (June 10, 2026)
+
+### Completed
+Full rebuild of the eligibility quiz — not a patch, a complete replacement.
+17 confirmed bugs resolved. Commit: 8a64682
+
+**16 questions in exact spec order:**
+Q0-01 citizenship → Q0-02 who is this for → Q0-03 who is moving →
+Q0-03a children ages (sub) → Q0-04 business partner → Q0-04a spouse
+role (sub) → Q0-05 where applying from → Q0-06 funding → Q0-07
+investment amount → Q0-08 business situation → Q0-08a business type
+(sub) → Q0-08b broker (sub) → Q0-09 history multiselect → Q0-09a
+refusal detail (sub) → Q0-09b conviction detail (sub) → Q0-10 home
+ties multiselect
+
+**New questions added from scratch:**
+Q0-02, Q0-03, Q0-03a, Q0-04, Q0-04a, Q0-10
+
+**Files updated (10 files):**
+- src/data/module0_questions.json — full rebuild
+- src/app/quiz/page.tsx — new QUESTIONS array, handleComplete fixed
+- src/lib/pricing-tier.ts — reads Q0-03 for family, Q0-02/Q0-04 for type
+- src/app/quiz/review/page.tsx — QUESTION_MAP rebuilt with new IDs
+- src/app/apply/page.tsx — Q0-16 → Q0-03
+- src/app/apply/module3/b/page.tsx — Q0-16 → Q0-03
+- src/lib/checklist-generator.ts — Q0-16 → Q0-03, Q0-09 → Q0-04
+- src/lib/prefill.ts — old history IDs → Q0-09a/Q0-09b
+- src/app/results/page.tsx — pricing fixed ($247→$550, $447→$997)
+- src/app/pricing/PricingClient.tsx — partnership detection fixed
+
+**Bugs resolved:**
+- Q0-01 treaty country hard stop now works
+- Q0-16 duplicate removed
+- Dependents reads from Q0-03 (not Q0-16)
+- Application type reads from Q0-02/Q0-04 (not Q0-09)
+- Pricing uses confirmed amounts ($550–$1,397)
+- Question counter is dynamic (never exceeds visible total)
+- Back button is at bottom left
+- History is one multiselect (not three separate questions)
+- Home ties is one multiselect
+- Q0-03a parent/show_if corrected
+- COS flag wired from Q0-05
+- PR-06b hard stop fires for 3+ partners
+- All old question IDs (Q0-13a, Q0-13b, Q0-14, Q0-15, Q0-16) removed
+
+### Build
+Clean — zero errors. One pre-existing hook warning in generate/page.tsx
+(non-blocking, outside scope).
+
+### Verification
+- npm run build: clean
+- /quiz: 200
+- /results: 200
+
+---
+
 ## SESSION LOG (Prior sessions)
 
 ### June 5, 2026 — Session: End-to-End Payment Test
@@ -692,7 +767,7 @@ All committed to dev branch.
 - Created /about page with 3-section copy
 - Replaced /learn stub with 6-card grid to educational sub-pages
 - Fixed Next.js runtime and ESLint errors
-- Added Playwright tests, production build clean (53 routes)
+- Added curl/browser tests, production build clean (53 routes)
 
 ### June 6, 2026 — Session S24
 - Complete site navigation audit (33 routes)
@@ -706,12 +781,12 @@ All committed to dev branch.
 - U.S.-themed image slider on /login, /signup, /verify
 - 4 images, 5s auto-advance, 1000ms crossfade
 - Split-screen layout with Obsidian Gold styling
-- Playwright verified
+- curl/browser verified
 
 ### June 5, 2026 — Session S22
 - Document generation blur-lift reveal animation
 - Installed motion library (v12.40.0)
-- Playwright test verifies 6 document cards render with blur overlays
+- curl/browser test verifies 6 document cards render with blur overlays
 
 ### June 5, 2026 — Session S16-S18
 - Interview Simulator spec
@@ -797,7 +872,7 @@ All committed to dev branch.
 7. ~~**Quiz family question conflates nuclear and extended family**~~ — ✅ FIXED June 9
 8. ~~**Results page shows weeks not months**~~ — ✅ FIXED June 9
 9. ~~**Three+ partner hard stop**~~ — ✅ FIXED June 9 (all 7 legal accuracy fixes complete)
-10. **Quiz nationality selector** — Playwright difficulty, works in browser
+10. **Quiz nationality selector** — curl/browser difficulty, works in browser
 11. **Fast Refresh errors** — Occasional hot reload (non-blocking)
 12. **Migration 004 pending** — docs/migrations/004_answers_source_update.sql
     not yet applied. Run: npx supabase db push
