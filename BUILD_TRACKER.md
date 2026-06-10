@@ -1,6 +1,6 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 9, 2026 — All quiz fixes complete (Session 1 + 2), simulator complete, document upload spec written
+**Last Updated:** June 10, 2026 — Stripe pricing complete, all blockers resolved, ready for end-to-end test
 **App Name:** E2go.app
 **Stack:** Next.js 14 · TypeScript · Tailwind CSS · Supabase · Claude API
 **Dev URL:** https://e2go-git-dev-ocdeployments-projects.vercel.app
@@ -70,6 +70,7 @@ changed, run npm run build:clean, report summary.
 | Contradiction flag component | ✅ COMPLETE | |
 | Auth pages image slider | ✅ COMPLETE | U.S. themed left panel |
 | Navigation & routing | ✅ COMPLETE | All routes connected, mobile nav |
+| Route cleanup | ✅ COMPLETE | 47 routes, dead pages removed, middleware hardened |
 | Breadcrumbs | ✅ COMPLETE | On /apply/*, /score |
 | Cookie consent banner | ✅ COMPLETE | |
 | SEO metadata | ✅ COMPLETE | All pages |
@@ -114,19 +115,26 @@ Update STRIPE_PRICE_* env vars with new Price IDs after running.
 | Quiz | /quiz | ✅ COMPLETE |
 | Results | /results | ✅ COMPLETE |
 | Quiz Review | /quiz/review | ✅ COMPLETE |
+| Document Upload | /apply/upload | ✅ COMPLETE |
+| Upload Processing | /apply/upload/processing | ✅ COMPLETE |
+| Upload Review | /apply/upload/review | ✅ COMPLETE |
+| Upload Gap Report | /apply/upload/gaps | ✅ COMPLETE |
 | Pricing | /pricing | ✅ COMPLETE |
 | Success | /pricing/success | ✅ COMPLETE |
 | Dashboard | /dashboard | ✅ COMPLETE |
 | Login | /login | ✅ COMPLETE |
 | Signup | /signup | ✅ COMPLETE |
 | Verify | /verify | ✅ COMPLETE |
-| Overview | /apply/overview | ✅ COMPLETE |
+| Overview | /apply/overview | ✅ REDIRECT → /apply (query-preserving shim) |
 | Checklist | /apply/checklist | ✅ COMPLETE |
 | Module 1 | /apply/module1 | ✅ COMPLETE |
 | Module 2 | /apply/module2 | ✅ COMPLETE |
-| Module 3 shell | /apply/module3 | ✅ COMPLETE |
+| Module 3 shell | /apply/module3 | ✅ COMPLETE (8 tabs: A B C D E I J K) |
 | Module 3 Tab A | /apply/module3/a | ✅ COMPLETE |
-| Module 3 Tabs B-L | /apply/module3/[b-l] | ✅ COMPLETE |
+| Module 3 Tabs B,C,D,E,I,J,K | /apply/module3/[b-k] | ✅ COMPLETE |
+| ~~Module 3 Tabs F,G,H,L~~ | ~~deleted~~ | ✅ REMOVED — superseded by case file |
+| ~~Onboarding~~ | ~~deleted~~ | ✅ REMOVED — orphaned |
+| ~~Outcome~~ | ~~deleted~~ | ✅ REMOVED — orphaned |
 | Case File Overview | /apply | ✅ COMPLETE |
 | Case File: Your Story | /apply/story | ✅ COMPLETE |
 | Case File: Your Business | /apply/business | ✅ COMPLETE |
@@ -184,6 +192,36 @@ Update STRIPE_PRICE_* env vars with new Price IDs after running.
 
 New scoring entries: 2 hard stops (PR-PASSIVE-INVEST, PR-NONPROFIT),
 4 attorney flags, 6 risk flags — all additive, no existing entries modified.
+
+---
+
+## DOCUMENT UPLOAD FEATURE — STATUS (Updated June 9, 2026)
+
+| Feature | Status |
+|---|---|
+| Q0-PREP-STATUS quiz routing question | ✅ COMPLETE |
+| DB migration — application_documents table | ✅ COMPLETE |
+| DB migration — document_discrepancies table | ✅ COMPLETE |
+| DB migration — answers.confidence + source_document_type | ✅ COMPLETE |
+| DB migration — applications.preparation_status | ✅ COMPLETE |
+| Supabase Storage bucket: application-documents | ✅ COMPLETE |
+| POST /api/documents — file upload route | ✅ COMPLETE |
+| POST /api/documents/extract — SSE extraction pipeline | ✅ COMPLETE |
+| POST /api/documents/resolve-discrepancy | ✅ COMPLETE |
+| GET /api/documents/gap-report | ✅ COMPLETE |
+| src/lib/text-extraction.ts — PDF/DOCX/XLSX/CSV parsing | ✅ COMPLETE |
+| src/lib/document-validation.ts — file validation | ✅ COMPLETE |
+| src/lib/document-extraction-engine.ts — AI extraction | ✅ COMPLETE |
+| DocumentUploadCard — intake card on /apply overview | ✅ COMPLETE |
+| /apply/upload — document type selection + drag-and-drop | ✅ COMPLETE |
+| /apply/upload/processing — SSE progress screen | ✅ COMPLETE |
+| /apply/upload/review — discrepancy resolution | ✅ COMPLETE |
+| /apply/upload/gaps — gap report with section coverage | ✅ COMPLETE |
+| PreFillBadge — amber document variants added | ✅ COMPLETE |
+| Acknowledgment tracking for pre-filled fields | ✅ COMPLETE |
+
+⚠️ ACTION REQUIRED: Apply migration docs/migrations/004_answers_source_update.sql
+to Supabase: npx supabase db push
 
 ---
 
@@ -295,20 +333,22 @@ Step 15 → Preview unlocked
 - `src/app/pricing/PricingClient.tsx` — tier selection, pre-fill, checkout trigger
 - `src/app/pricing/success/page.tsx` — confirmation page
 
-### Pricing Table ✅
-All 7 tiers have real Stripe Price IDs:
-- solo_none: price_1Tf18zF7Ggk3LUEyAmLPApuq ($297)
-- solo_spouse: price_1Tf18zF7Ggk3LUEysOtVbG1K ($347)
-- solo_family_small: price_1Tf190F7Ggk3LUEyth08E379 ($397)
-- solo_family_large: price_1Tf190F7Ggk3LUEyMvCc5iDg ($447)
-- partnership_none: price_1Tf191F7Ggk3LUEyK3Kh3ag0 ($497)
-- partnership_couples: price_1Tf191F7Ggk3LUEyRlVYbgdz ($547)
-- partnership_families: price_1Tf191F7Ggk3LUEyhu2FICfo ($647)
+### Pricing Table ✅ (Updated June 10, 2026)
+All 10 tiers have live Stripe Price IDs at confirmed pricing:
+- solo_none: price_1TgewyF7Ggk3LUEyIkxlp1ry ($550)
+- solo_spouse: price_1TgewyF7Ggk3LUEybTTTUG95 ($697)
+- solo_family_small: price_1TgewzF7Ggk3LUEym0UKbRa0 ($750)
+- solo_family_large: price_1TgewzF7Ggk3LUEyjErIbBO8 ($797)
+- partnership_none: price_1TgewzF7Ggk3LUEyUbjuK8R4 ($997)
+- partnership_couples: price_1Tgex0F7Ggk3LUEyPEleDScH ($1,297)
+- partnership_families: price_1Tgex0F7Ggk3LUEyJJD6U7ot ($1,397)
+- simulator_3pack: price_1Tgex0F7Ggk3LUEyhOhKvmKz ($29.99)
+- renewal: price_1Tgex1F7Ggk3LUEykVcoLswI ($497)
+- child_surcharge: price_1Tgex1F7Ggk3LUEymMJnQQH5 (+$50 dynamic)
 
-### Migration Needed ⚠️
+### Migration Status ✅
 File: `supabase/migrations/20260605110625_payments_table.sql`
-Status: EXISTS but NOT YET APPLIED to Supabase
-Action: Run migration before payment flow will work
+Status: APPLIED — database is up to date
 
 ---
 
@@ -414,6 +454,117 @@ Action: Run migration before payment flow will work
 No code changes — planning session only.
 All decisions logged in IDEAS.md Sections 13–21.
 All session files written to docs/sessions/.
+
+---
+
+## SESSION — Stripe Price IDs Updated (June 10, 2026)
+
+### Completed
+- npx tsx scripts/stripe-setup.ts — all 10 Price IDs created at
+  new confirmed pricing ($550–$1,397 + simulator + renewal + child)
+- .env.local updated automatically by setup script
+- Supabase pricing table updated via SQL Editor:
+  all 10 rows have correct tier_id, amount (cents), and stripe_price_id
+- child_surcharge amount corrected: 50 → 5000 cents
+
+### New Price IDs
+| Tier | Price ID |
+|---|---|
+| solo_none | price_1TgewyF7Ggk3LUEyIkxlp1ry |
+| solo_spouse | price_1TgewyF7Ggk3LUEybTTTUG95 |
+| solo_family_small | price_1TgewzF7Ggk3LUEym0UKbRa0 |
+| solo_family_large | price_1TgewzF7Ggk3LUEyjErIbBO8 |
+| partnership_none | price_1TgewzF7Ggk3LUEyUbjuK8R4 |
+| partnership_couples | price_1Tgex0F7Ggk3LUEyPEleDScH |
+| partnership_families | price_1Tgex0F7Ggk3LUEyJJD6U7ot |
+| simulator_3pack | price_1Tgex0F7Ggk3LUEyhOhKvmKz |
+| renewal | price_1Tgex1F7Ggk3LUEykVcoLswI |
+| child_surcharge | price_1Tgex1F7Ggk3LUEymMJnQQH5 |
+
+Note: Stripe API version warning (2024-06-20 vs 2026-05-27) —
+non-breaking, upgrade scripts/stripe-setup.ts apiVersion when convenient.
+
+---
+
+## SESSION — Login Page Flag Fix (June 10, 2026)
+
+### Completed
+- AuthImageSlider.tsx gradient fix — authFlagFadeLeft opacity corrected.
+  Was: 100% opacity at 0% → transparent at 50% (blackout entire flag).
+  Now: 60% opacity at 0% → transparent at 60% (flag visible, soft edge).
+  Dark overlay reduced from rgba(10,10,10,0.45) → rgba(10,10,10,0.25).
+  Flag colours now read clearly on left panel.
+- Commit: e115caf
+
+### Build
+Clean — zero errors. TypeScript compiled successfully, no missing modules.
+
+---
+
+## SESSION — Route Cleanup (June 9, 2026)
+
+### Completed
+- **Deleted /apply/onboarding** — zero inbound references, fully orphaned
+- **Deleted /apply/outcome** — zero inbound references, fully orphaned
+- **Module3 TABS array trimmed** — removed F, G, H, L (12 → 8 tabs: A B C D E I J K)
+- **Deleted module3/f, g, h, l** — superseded by new case file sections,
+  zero references after TABS array update
+- **Redirected /apply/overview → /apply** — client-side redirect preserving
+  query params (?app= from inactivity emails), wrapped in Suspense for
+  Next.js 14 compliance
+- **Nav.tsx updated** — 3 instances of /apply/overview → /apply
+- **dashboard/page.tsx updated** — /apply/overview → /apply
+- **module4/page.tsx updated** — router.push updated
+- **middleware.ts updated** — added /simulator, /score, /settings,
+  /generate/, /documents/ to both protectedRoutes array and config.matcher
+
+### Route count
+Before: 53 routes
+After: 47 routes (6 deleted)
+/apply/overview retained as redirect shim for old email links
+
+### Build
+Clean — zero errors. 78 static pages + dynamic routes compiled.
+
+---
+
+## SESSION — Document Upload Session B: UI (June 9, 2026)
+
+### Completed
+- **DocumentUploadCard.tsx**: Upload intake card for /apply overview.
+  Shows for partial/near_complete applicants, collapses to text link
+  when dismissed, always available for scratch users via collapsed link.
+- **UploadClient.tsx**: Full upload page — drag-and-drop zone, per-file
+  document type selector, validation (10MB, 8 files, pdf/docx/xlsx/csv),
+  remove buttons, process button.
+- **ProcessingClient.tsx**: SSE consumer for extraction pipeline.
+  Per-document status: Waiting → Classifying → Extracting → Complete/Failed.
+  Auto-navigates to review (if discrepancies) or gaps (if none).
+- **DiscrepancyReviewClient.tsx**: One card per conflicting field.
+  Radio options from source documents + custom value input.
+  Must resolve all before continuing. Hard gate enforced.
+- **GapReportClient.tsx**: Section coverage bars (6 sections),
+  critical gaps list with severity, document summaries with field counts.
+- **/apply/upload** — document type selection + drag-and-drop
+- **/apply/upload/processing** — SSE progress screen
+- **/apply/upload/review** — discrepancy resolution
+- **/apply/upload/gaps** — gap report
+- **PreFillBadge.tsx updated**: Three new amber variants:
+  "From your documents" (high confidence),
+  "From your documents — please verify" (medium),
+  "Your choice" (resolved conflict)
+- **/apply/page.tsx updated**: Loads preparation_status, renders
+  DocumentUploadCard above section grid
+
+### Design
+Full Obsidian Gold compliance — #0a0a0a, #C9A84C, Cormorant Garamond,
+DM Sans, zero border-radius, no glassmorphism.
+
+### Remaining
+Apply migration 004_answers_source_update.sql to Supabase.
+
+### Build
+Clean — zero errors. Committed to dev branch.
 
 ---
 
@@ -621,15 +772,9 @@ All committed to dev branch.
     Exact changes documented in IDEAS.md Section 21.
 
 ### After quiz fixes — document upload feature
-12. **Document upload infrastructure (Session A)** — Quiz Q0-PREP-STATUS,
-    DB migration (application_documents, document_discrepancies tables,
-    preparation_status column), file storage, extraction API route (SSE),
-    discrepancy detection and resolution API.
-    Spec: docs/DOCUMENT_UPLOAD_SPEC.md
-13. **Document upload UI (Session B)** — Upload card, /apply/upload,
-    processing screen, /apply/upload/review (discrepancy resolution),
-    /apply/upload/gaps (gap report), new pre-fill badge variants.
-    Depends on Session A verified with test documents first.
+12. ~~**Document upload Session A**~~ — ✅ COMPLETE June 9
+13. ~~**Document upload Session B**~~ — ✅ COMPLETE June 9
+    ⚠️ Apply migration 004_answers_source_update.sql: npx supabase db push
 
 ### Future sessions (after first paying user)
 15. Admin dashboard — user management, payment history
@@ -645,7 +790,7 @@ All committed to dev branch.
 1. **Payments table not in Supabase** — Migration exists, not applied
 2. **All Stripe Price IDs wrong** — Old founding member pricing ($297–$647).
    Must recreate at new amounts ($550–$1,397) before any live payment
-3. **Login page 500 error** — Unsplash image 404. Fix in SESSION_HANDOFF_JUNE9.md
+3. ~~**Login page 500 error**~~ — ✅ FIXED June 10 (commit e115caf — flag gradient corrected)
 4. ~~**Simulator transcription placeholder**~~ — ✅ FIXED June 9
 5. ~~**Simulator purchase button + env var + useEffect**~~ — ✅ FULLY COMPLETE June 9 (commit 0aca5dc)
 6. ~~**Quiz selected option blue border**~~ — ✅ FIXED June 9
@@ -654,6 +799,8 @@ All committed to dev branch.
 9. ~~**Three+ partner hard stop**~~ — ✅ FIXED June 9 (all 7 legal accuracy fixes complete)
 10. **Quiz nationality selector** — Playwright difficulty, works in browser
 11. **Fast Refresh errors** — Occasional hot reload (non-blocking)
+12. **Migration 004 pending** — docs/migrations/004_answers_source_update.sql
+    not yet applied. Run: npx supabase db push
 
 ---
 
