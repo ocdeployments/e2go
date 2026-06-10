@@ -1,6 +1,6 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 9, 2026 — Landing page redesign complete
+**Last Updated:** June 9, 2026 — All quiz fixes complete (Session 1 + 2), simulator complete, document upload spec written
 **App Name:** E2go.app
 **Stack:** Next.js 14 · TypeScript · Tailwind CSS · Supabase · Claude API
 **Dev URL:** https://e2go-git-dev-ocdeployments-projects.vercel.app
@@ -79,20 +79,30 @@ changed, run npm run build:clean, report summary.
 
 ---
 
-## PRICING — LOCKED
+## PRICING — LOCKED (Updated June 9, 2026)
 
-| Application Type | Price |
-|---|---|
-| Solo individual | $297 |
-| Solo + spouse | $347 |
-| Solo + family (up to 2 kids) | $397 |
-| Solo + family (3-5 kids) | $447 |
-| Partnership no families | $497 |
-| Partnership two couples | $547 |
-| Partnership two full families | $647 |
+| Application Type | Price | Stripe cents |
+|---|---|---|
+| Solo individual | $550 | 55000 |
+| Solo + spouse | $697 | 69700 |
+| Solo + family (up to 2 kids) | $750 | 75000 |
+| Solo + family (3–5 kids) | $797 | 79700 |
+| Partnership (no families) | $997 | 99700 |
+| Partnership two couples | $1,297 | 129700 |
+| Partnership two families | $1,397 | 139700 |
+| Extra child surcharge | +$50 | +5000 (dynamic checkout, no fixed Price ID) |
+| Interview Simulator standalone | $197 | 19700 |
+| Interview Simulator additional sessions | $29.99 | 2999 |
+| Renewal package | $497 | 49700 |
 
-Founding member pricing: first 500 applications.
-14-day money-back guarantee: first 50 founding members.
+**Simulator included in all packages AND available standalone.**
+**Extra child surcharge is dynamic — no fixed Stripe Price ID.**
+
+⚠️ ACTION REQUIRED: All Stripe Price IDs in .env.local and the
+pricing table in Supabase must be recreated at these new amounts.
+Old founding member Price IDs are now incorrect.
+Run scripts/stripe-setup.ts after updating amounts.
+Update STRIPE_PRICE_* env vars with new Price IDs after running.
 
 ---
 
@@ -103,6 +113,7 @@ Founding member pricing: first 500 applications.
 | Landing | / | ✅ COMPLETE |
 | Quiz | /quiz | ✅ COMPLETE |
 | Results | /results | ✅ COMPLETE |
+| Quiz Review | /quiz/review | ✅ COMPLETE |
 | Pricing | /pricing | ✅ COMPLETE |
 | Success | /pricing/success | ✅ COMPLETE |
 | Dashboard | /dashboard | ✅ COMPLETE |
@@ -116,6 +127,13 @@ Founding member pricing: first 500 applications.
 | Module 3 shell | /apply/module3 | ✅ COMPLETE |
 | Module 3 Tab A | /apply/module3/a | ✅ COMPLETE |
 | Module 3 Tabs B-L | /apply/module3/[b-l] | ✅ COMPLETE |
+| Case File Overview | /apply | ✅ COMPLETE |
+| Case File: Your Story | /apply/story | ✅ COMPLETE |
+| Case File: Your Business | /apply/business | ✅ COMPLETE |
+| Case File: Your Investment | /apply/investment | ✅ COMPLETE |
+| Case File: Your Qualifications | /apply/qualifications | ✅ COMPLETE |
+| Case File: Your Family | /apply/family | ✅ COMPLETE |
+| Case File: Your Ties | /apply/ties | ✅ COMPLETE |
 | Score | /score | ✅ COMPLETE |
 | Generate | /generate/[appId] | ✅ COMPLETE |
 | Documents | /documents/[appId] | ✅ COMPLETE |
@@ -127,16 +145,67 @@ Founding member pricing: first 500 applications.
 
 ---
 
-## MODULE 0 — QUIZ v3.0
+## MODULE 0 — QUIZ v4.0 (Updated June 9, 2026)
 
 | Feature | Status |
 |---|---|
-| 26 questions | ✅ COMPLETE |
+| 14 core + 19 total questions (global) | ✅ COMPLETE |
 | Global treaty country selector | ✅ COMPLETE |
 | Scoring logic v3.0 | ✅ COMPLETE |
 | Hard stops PR-01 through PR-08 | ✅ COMPLETE |
 | Results page with outcomes | ✅ COMPLETE |
 | Quiz pre-fills to Module 3 | ✅ COMPLETE |
+| Draft save system (localStorage + Supabase backfill) | ✅ COMPLETE |
+| Back button repositioned top-left, warmer colour | ✅ COMPLETE |
+| Clickable section tab navigation | ✅ COMPLETE |
+| Franchise lead capture (Q0-FRANCHISE-REFERRAL) | ✅ COMPLETE |
+| Q0-13 split — nuclear family (Q0-13a) + extended (Q0-13b) | ✅ COMPLETE |
+| Q0-15 partnership — spousal option + corrected advisory | ✅ COMPLETE |
+| Q0-14b spouse role follow-up question | ✅ COMPLETE |
+| Q0-03a principal applicant sub-question | ✅ COMPLETE |
+| Results timeline — dynamic month names not weeks | ✅ COMPLETE |
+| "Review or change my answers" link on results page | ✅ COMPLETE |
+| /quiz/review — jump-to-question editing page | ✅ COMPLETE |
+| Selected option gold borders confirmed | ✅ COMPLETE |
+| Q0-PREP-STATUS routing question | ⏳ PENDING — DOCUMENT_UPLOAD_SPEC.md |
+
+## MODULE 0 — QUIZ LEGAL ACCURACY (Session 2 — June 9, 2026)
+
+| Fix | Question ID | Status |
+|---|---|---|
+| Multi-partner hard stop per 9 FAM 402.9 | PR-06b updated | ✅ COMPLETE |
+| Holding company / trust ownership chain | Q0-14c | ✅ COMPLETE |
+| Control through management rights below 50% | Q0-14d | ✅ COMPLETE |
+| E-visa nationality for mixed partnerships | Q0-14e | ✅ COMPLETE |
+| Investment commitment timing | Q0-05a | ✅ COMPLETE |
+| Passive investment + non-profit hard stops | Q0-09a | ✅ COMPLETE |
+| Officer discretion advisory on results page | Advisory block | ✅ COMPLETE |
+| DS-156E consulate-specific note on checklist | Checklist | ✅ COMPLETE |
+
+New scoring entries: 2 hard stops (PR-PASSIVE-INVEST, PR-NONPROFIT),
+4 attorney flags, 6 risk flags — all additive, no existing entries modified.
+
+---
+
+## INTERVIEW SIMULATOR — STATUS (Updated June 9, 2026)
+
+| Feature | Status |
+|---|---|
+| /simulator route | ✅ COMPLETE |
+| Start / active / complete screens | ✅ COMPLETE |
+| Text mode — full evaluation flow | ✅ COMPLETE |
+| Voice mode — Groq Whisper transcription wired | ✅ COMPLETE |
+| Groq TTS officer voice (Fritz-PlayAI, server-side) | ✅ COMPLETE |
+| 15-minute session timer with 2-min warning | ✅ COMPLETE |
+| $29.99 purchase flow wired to Stripe | ✅ COMPLETE |
+| Design violations fixed — zero border-radius | ✅ COMPLETE |
+| simulator_sessions + simulator_answers DB tables | ✅ COMPLETE |
+| Session limit tracking (used / purchased on applications) | ✅ COMPLETE |
+| OpenRouter MiniMax evaluation engine | ✅ COMPLETE |
+| Coaching summary + readiness indicator | ✅ COMPLETE |
+
+✅ STRIPE_PRICE_SIMULATOR renamed to STRIPE_PRICE_SIMULATOR_3PACK (commit 0aca5dc)
+✅ useEffect dependency fixed — question?.id → question.text (commit 0aca5dc)
 
 ---
 
@@ -148,6 +217,36 @@ All 12 tabs (A-L) wired with:
 - 800ms debounce autosave
 - Quiz pre-fill (A, F, L)
 - Legal confirmation gates (security history)
+
+---
+
+## MODULE 3 — CASE FILE REDESIGN
+
+Redesigned Module 3 from 12 separate tabs into 6 cohesive document-building sections.
+Old tabs (module3/a-l) remain fully functional as fallback.
+
+**Architecture:**
+- `/apply` — Case file overview with personalized header, section cards, document chips, pre-fill gems
+- `/apply/story` — Section 01: 4 clusters (who you are, your plan, administrative, travel & history)
+- `/apply/business` — Section 02: 7 clusters (entity, what you do, operations, licenses, franchise, startup costs, market)
+- `/apply/investment` — Section 03: 5 clusters (overview, source of funds, paper trail, projections, non-marginality)
+- `/apply/qualifications` — Section 04: 5 clusters (background, business experience, role, visa history, interview prep)
+- `/apply/family` — Section 05: 4 clusters (spouse, children, documents, travel)
+- `/apply/ties` — Section 06: 5 clusters (property, family, financial obligations, return intent, cover letter)
+
+**Components built:**
+- CaseFileHeader, SectionCard, GenerateStrip (overview)
+- SectionSideNav, QuestionPanel (section layout)
+- QuestionLabel, HelperText, PreFillBadge, TextInput, TextArea, OptionButton (question primitives)
+- AdvisoryBlock, RiskFlag, ClusterDivider (context blocks)
+- ProjectionTable, StartupCostTable (interactive tables)
+
+**Data additions:**
+- `answers.source` column (quiz / user_entry / user_edited)
+- `applications.partner_gender` column
+- Migration: `docs/migrations/001_case_file_columns.sql`
+
+**Status:** ✅ COMPLETE — all 6 section pages built, build clean (73 routes), old tabs preserved
 
 ---
 
@@ -226,6 +325,7 @@ Action: Run migration before payment flow will work
 | docs/RENEWAL_MODULE_SPEC.md | ✅ Written |
 | docs/IDEAS.md | ✅ Written |
 | docs/PAYMENT_MANAGEMENT_GUIDE.md | ✅ Written |
+| docs/DOCUMENT_UPLOAD_SPEC.md | ✅ Written — June 9, 2026 |
 
 ---
 
@@ -239,7 +339,180 @@ Action: Run migration before payment flow will work
 
 ---
 
-## SESSION LOG
+## SESSION — June 9, 2026 Planning Session (Claude.ai)
+
+### What was decided and documented
+
+**Pricing update:**
+- Confirmed new pricing tiers replacing founding member pricing
+- Solo $550 → Partnership two families $1,397
+- Simulator standalone $197 / additional sessions $29.99
+- Renewal $497 / Extra child +$50 dynamic
+- All old Stripe Price IDs ($297–$647) now incorrect — must recreate
+
+**Simulator completion:**
+- Confirmed Groq TTS (Option A) over OpenAI TTS — same API key,
+  lower latency, no new key needed
+- Voice: Fritz-PlayAI officer voice
+- Session limit: 2 sessions × 15 minutes each, $29.99 additional
+- Session file written: docs/sessions/SESSION_SIMULATOR.md
+
+**Quiz fixes (Session 1 — UX):**
+- Family question split into nuclear (Q0-13a) and extended (Q0-13b)
+- Spousal partnership handling + ownership split advisory corrected
+- Principal applicant question added (Q0-03a)
+- Timeline: weeks → month names (dynamic calculation)
+- Back button repositioned and more visible
+- Quiz review page: /quiz/review with jump-to-question editing
+- Gold border fix on selected options (currently blue)
+- Session file written: docs/sessions/SESSION_QUIZ_FIXES.md
+
+**Quiz fixes (Session 2 — Legal accuracy per 9 FAM):**
+- Three+ partner hard stop with E-2 employee pathway explanation
+- Holding company ownership chain question
+- Control through management rights (below 50% ownership)
+- E-visa nationality designation for mixed-nationality partnerships
+- Investment timing / "in process of investing" confirmation
+- Passive investment and non-profit hard stops
+- Officer discretion advisory on results page and investment section
+- Session file written: docs/sessions/SESSION_QUIZ_FIXES_2.md
+
+**Module 3 case file redesign:**
+- Six document builders confirmed: story, business, investment,
+  qualifications, family, ties
+- Personalised header with three data states (full/thin/none)
+- Pre-fill badge architecture: source field in answers table
+- Partnership dual-track layout (shared / personal / partner B)
+- Dynamic section manifest for COS, non-Canadian, blended family
+- Projection table: Year 1–5 × Revenue / Net Income / Employees
+- Partner gender: Man / Woman binary, name possessive fallback
+- 34 gaps from adversarial audit fully specified
+- Session file written: docs/sessions/SESSION_MODULE3_CASEFILE.md
+
+**UI decisions locked (IDEAS.md Sections 13–21):**
+- Page title: "Your case file" (not "Your document interview")
+- Section card design system fully specified
+- Section interior layout: 196px sidebar + question panel
+- All three data states documented with exact copy
+- Partnership three-track card layout documented
+- Hero CTA fix: 4 surgical changes documented (IDEAS.md Section 21)
+
+**Research added to knowledge base:**
+- E2_partnerships_non_typical.md — 9 FAM partnership rules
+- E2_essential_questions.md — 27 questions every E-2 case must answer
+- E2_crypto_source_Toronto.md — crypto source of funds at Toronto
+- E2Pathway_RegisteredAccounts_SourceOfFunds.md — RRSP/TFSA/LIRA
+- E2Pathway_NonStandardFamily_Documentation.md — step-children etc.
+- E2Pathway_MaterialChange_Renewal.md — material change at renewal
+- canadian_common_law_E2.md — common-law marriage recognition
+
+**Workflow diagrams rendered and logged in IDEAS.md:**
+- Full branching journey (Section 4) — rebuilt June 9
+- 16-stage document engine pipeline (Section 4) — from earlier session
+
+### Build
+No code changes — planning session only.
+All decisions logged in IDEAS.md Sections 13–21.
+All session files written to docs/sessions/.
+
+---
+
+## SESSION — Interview Simulator Completion (June 9, 2026)
+
+### Completed
+- **Groq transcription wired**: transcribeAudio() called in
+  VoiceInput.onstop — placeholder comment replaced with live call.
+  Voice mode transcription now functional end-to-end.
+- **Groq TTS officer voice**: groq-tts.ts created as server-side
+  API route (/api/simulator/tts). Fritz-PlayAI voice. Speaks each
+  question aloud on load in voice mode. Replay button added.
+  Key stays server-side — better architecture than original spec.
+- **15-minute timer**: sessionTimeLeft, timerRef, timerWarning
+  all wired. 2-minute warning fires in red. Force-complete at zero.
+  Session duration shown on start screen.
+- **$29.99 purchase flow**: handlePurchase wired to Stripe checkout
+  route using simulator_3pack tier. purchaseLoading state. Success
+  return handler refreshes session availability.
+- **Design violations fixed**: All borderRadius values explicitly 0.
+  Record button square. Readiness badges square. Emoji icons removed.
+
+### Remaining
+None. Simulator is fully complete.
+- FIX 1: useEffect dependency line 468 — question?.id → question.text
+- FIX 2: .env.local — STRIPE_PRICE_SIMULATOR → STRIPE_PRICE_SIMULATOR_3PACK
+- Commit: 0aca5dc — dev
+
+### Build
+Clean — zero errors after completion. Committed to dev branch.
+
+---
+
+## SESSION — Quiz Legal Accuracy Fixes Session 2 (June 9, 2026)
+
+### Completed — all 7 fixes per SESSION_QUIZ_FIXES_2.md
+- **Fix 1 — Multi-partner hard stop**: PR-06b updated with full 9 FAM 402.9
+  explanation. Two routing options: restructure to two-party, or apply
+  as E-2 employee. Correct legal position now enforced at quiz level.
+- **Fix 2 — Q0-14c**: Ownership structure question — direct vs holding
+  company vs trust. Trust ownership triggers attorney flag. Holding
+  company triggers chain calculation advisory.
+- **Fix 3 — Q0-14d**: Control rights question fires when ownership
+  indirect/below 50%. Veto rights, board control, special voting shares
+  options. Documents a path to qualification below majority ownership.
+- **Fix 4 — Q0-14e**: E-visa nationality designation for mixed-nationality
+  partnerships. Dynamic options populated from Q0-01. All E-2 beneficiaries
+  must share designated nationality per 9 FAM 402.9-4(B).
+- **Fix 5 — Q0-05a**: Investment commitment timing. Fires when amount
+  below $100k. Risk advisories for partially/uncommitted funds. "In the
+  process of investing" standard now enforced.
+- **Fix 6 — Q0-09a**: Active vs passive business screen. Hard stops for
+  stock portfolio (PR-PASSIVE-INVEST) and non-profit (PR-NONPROFIT).
+  Real estate active operations path preserved.
+- **Fix 7 — Advisory + DS-156E**: Officer discretion advisory added to
+  results page. DS-156E consulate-specific note added to checklist.
+
+### Scoring additions (all additive — nothing modified)
+- 2 new hard stops: PR-PASSIVE-INVEST, PR-NONPROFIT
+- 4 new attorney flags
+- 6 new risk flags
+
+### Build
+Clean — zero errors. All committed to dev branch.
+
+---
+
+## SESSION — Quiz Fixes Session 1 (June 9, 2026)
+
+### Completed
+- **Q0-13 split**: Family ties question split into Q0-13a (nuclear family
+  travel plan) and Q0-13b (extended family ties). Distinct scoring
+  implications for each. Spouse/children vs parents/siblings now
+  properly separated.
+- **Q0-15 partnership fixed**: Spousal partnership option added.
+  Advisory corrected — 50/50 strict rule now clarified as applying
+  to unrelated partners only. Spouse as silent investor vs active
+  co-operator follow-up (Q0-14b) added.
+- **Q0-03a added**: Principal applicant question fires when married
+  and applying solo. Determines whether person filling out form
+  is the principal or completing on spouse's behalf.
+- **Results timeline**: Dynamic month name calculation replaces
+  static "16–22 weeks". Displays e.g. "September — October 2026".
+  Today's formatted date shown in subtitle.
+- **Back button**: Repositioned to top-left of each question screen.
+  Warmer colour (rgba(245,240,232,0.55)). Adequate touch target.
+  "← Review or change my answers" link added to results page.
+- **/quiz/review page**: New page with all answers grouped by category.
+  Jump-to-question editing via localStorage (quiz_jump_to key).
+  Auto-redirects back to results after answering jumped-to question.
+- **Gold borders**: Confirmed already in place — no fix needed.
+
+### Build
+Clean — zero errors, zero warnings after completion.
+All committed to dev branch.
+
+---
+
+## SESSION LOG (Prior sessions)
 
 ### June 5, 2026 — Session: End-to-End Payment Test
 - **Task:** Test complete payment flow from quiz to Module 1
@@ -317,21 +590,84 @@ Action: Run migration before payment flow will work
 
 ---
 
-## NEXT SESSION PRIORITIES
+## NEXT SESSION PRIORITIES (Updated June 9, 2026)
 
-1. **Apply payments table migration to Supabase** — Run `20260605110625_payments_table.sql`
-2. **Run end-to-end payment test with live domain** — After migration applied
-3. **Build admin dashboard basic version** — User management, payment history
-4. **Build support ticket system** — Basic ticket creation and tracking
-5. **Wire lifecycle tracking throughout app** — Application progress stages
+### Blocking first paying user
+1. **Apply payments table migration** — Run `20260605110625_payments_table.sql`
+2. **Recreate all Stripe Price IDs at new amounts** — Run scripts/stripe-setup.ts,
+   update all STRIPE_PRICE_* in .env.local. Old founding member IDs are wrong.
+3. **Run end-to-end payment test** — After migration + price IDs updated
+4. **Login page 500 fix** — Unsplash image 404ing. Session file: SESSION_HANDOFF_JUNE9.md Prompt 1
+5. ~~**Simulator Groq transcription**~~ — ✅ COMPLETE June 9
+6. ~~**Simulator Groq TTS**~~ — ✅ COMPLETE June 9
+7. ~~**Simulator 15-minute timer**~~ — ✅ COMPLETE June 9
+8. ~~**Simulator $29.99 purchase**~~ — ✅ COMPLETE June 9 (env var rename still needed)
+9. ~~**Simulator design violations**~~ — ✅ COMPLETE June 9
+
+### Quiz accuracy (run after simulator)
+10. ~~**Quiz UX fixes**~~ — ✅ COMPLETE June 9 (SESSION_QUIZ_FIXES.md)
+11. ~~**Quiz legal accuracy fixes**~~ — ✅ COMPLETE June 9 (SESSION_QUIZ_FIXES_2.md)
+
+### Module 3 case file (verify and extend)
+12. **Verify 34-gap questions are integrated** — Case file was built but
+    gap questions from June 9 planning may not be in the build.
+    Session file: docs/sessions/SESSION_MODULE3_CASEFILE.md
+13. **Partnership dual-track UI** — Shared + personal + partner B sections.
+    Session file: docs/sessions/SESSION_MODULE3_CASEFILE.md
+
+### UI polish
+14. **Hero CTA buttons and stats strip** — Four surgical fixes.
+    Session file: docs/sessions/SESSION_HANDOFF_JUNE9.md (Prompt 1 area)
+    Exact changes documented in IDEAS.md Section 21.
+
+### After quiz fixes — document upload feature
+12. **Document upload infrastructure (Session A)** — Quiz Q0-PREP-STATUS,
+    DB migration (application_documents, document_discrepancies tables,
+    preparation_status column), file storage, extraction API route (SSE),
+    discrepancy detection and resolution API.
+    Spec: docs/DOCUMENT_UPLOAD_SPEC.md
+13. **Document upload UI (Session B)** — Upload card, /apply/upload,
+    processing screen, /apply/upload/review (discrepancy resolution),
+    /apply/upload/gaps (gap report), new pre-fill badge variants.
+    Depends on Session A verified with test documents first.
+
+### Future sessions (after first paying user)
+15. Admin dashboard — user management, payment history
+16. Support ticket system
+17. Lifecycle tracking throughout app
+18. Compliance calendar — spec written at docs/COMPLIANCE_CALENDAR_SPEC.md
+19. Renewal module — spec written at docs/RENEWAL_MODULE_SPEC.md
 
 ---
 
-## KNOWN ISSUES
+## KNOWN ISSUES (Updated June 9, 2026)
 
-1. **Payments table not in Supabase** — Migration file exists but not applied
-2. **Quiz nationality selector** — Playwright having difficulty, but works in browser
-3. **Fast Refresh errors** — Occasional hot reload issues (non-blocking)
+1. **Payments table not in Supabase** — Migration exists, not applied
+2. **All Stripe Price IDs wrong** — Old founding member pricing ($297–$647).
+   Must recreate at new amounts ($550–$1,397) before any live payment
+3. **Login page 500 error** — Unsplash image 404. Fix in SESSION_HANDOFF_JUNE9.md
+4. ~~**Simulator transcription placeholder**~~ — ✅ FIXED June 9
+5. ~~**Simulator purchase button + env var + useEffect**~~ — ✅ FULLY COMPLETE June 9 (commit 0aca5dc)
+6. ~~**Quiz selected option blue border**~~ — ✅ FIXED June 9
+7. ~~**Quiz family question conflates nuclear and extended family**~~ — ✅ FIXED June 9
+8. ~~**Results page shows weeks not months**~~ — ✅ FIXED June 9
+9. ~~**Three+ partner hard stop**~~ — ✅ FIXED June 9 (all 7 legal accuracy fixes complete)
+10. **Quiz nationality selector** — Playwright difficulty, works in browser
+11. **Fast Refresh errors** — Occasional hot reload (non-blocking)
+
+---
+
+## SESSION FILES INDEX (June 9, 2026)
+
+All session files are in docs/sessions/. Prompt for agent: `cat docs/sessions/[filename]`
+
+| File | Purpose | Priority |
+|---|---|---|
+| SESSION_HANDOFF_JUNE9.md | Login fix, Stripe migration, generation engine fixes, E2E test | 1 — run now |
+| SESSION_SIMULATOR.md | Simulator: Groq TTS, transcription, timer, purchase, design fixes | 2 |
+| SESSION_QUIZ_FIXES.md | Quiz UX: family split, partnership, months, back button, review page | 3 |
+| SESSION_QUIZ_FIXES_2.md | Quiz legal accuracy: 9 FAM partnership rules, hard stops | 4 |
+| SESSION_MODULE3_CASEFILE.md | Case file: gap questions, partnership UI, dynamic manifest | 5 |
 
 ---
 
