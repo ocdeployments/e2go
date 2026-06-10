@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { question_key, answer_value, application_id } = body;
+    const { question_key, answer_value, application_id, source } = body;
 
     // Validate required fields
     if (!question_key || !application_id) {
@@ -41,6 +41,7 @@ export async function POST(request: NextRequest) {
           answer_value,
           user_id: user.id,
           answered_at: new Date().toISOString(),
+          source: source || 'user_entry',
         },
         {
           onConflict: 'application_id,question_key',

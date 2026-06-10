@@ -5,12 +5,15 @@ import { createBrowserSupabaseClient } from '@/lib/supabase';
 
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 
+type AnswerSource = 'quiz' | 'user_entry' | 'user_edited';
+
 interface ApplicationContextType {
   answers: Record<string, string | string[] | number | null>;
+  answerSources: Record<string, AnswerSource>;
   applicationId: string | null;
   saveStatus: SaveStatus;
   navigationBlocked: boolean;
-  setAnswer: (key: string, value: string | string[] | number | null) => void;
+  setAnswer: (key: string, value: string | string[] | number | null, source?: AnswerSource) => void;
   lastSaved: Date | null;
   error: string | null;
 }
@@ -20,6 +23,7 @@ const ApplicationContext = createContext<ApplicationContextType | null>(null);
 export function ApplicationProvider({ children, applicationId }: { children: ReactNode; applicationId: string | null }) {
   const [supabase] = useState(() => createBrowserSupabaseClient());
   const [answers, setAnswers] = useState<Record<string, string | string[] | number | null>>({});
+  const [answerSources, setAnswerSources] = useState<Record<string, AnswerSource>>({});
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -34,7 +38,7 @@ export function ApplicationProvider({ children, applicationId }: { children: Rea
 
       const { data, error: fetchError } = await supabase
         .from('answers')
-        .select('question_key, answer_value')
+        .select('question_key, answer_value, source')
         .eq('application_id', applicationId);
 
       if (fetchError) {
@@ -44,10 +48,13 @@ export function ApplicationProvider({ children, applicationId }: { children: Rea
 
       if (data) {
         const answersMap: Record<string, string | string[] | number | null> = {};
-        data.forEach((row) => {
+        const sourcesMap: Record<string, AnswerSource> = {};
+        data.forEach((row: { question_key: string; answer_value: string | string[] | number | null; source: AnswerSource | null }) => {
           answersMap[row.question_key] = row.answer_value;
+          if (row.source) sourcesMap[row.question_key] = row.source;
         });
         setAnswers(answersMap);
+        setAnswerSources(sourcesMap);
       }
     };
 
@@ -55,7 +62,7 @@ export function ApplicationProvider({ children, applicationId }: { children: Rea
   }, [applicationId, supabase]);
 
   // Save answer to API
-  const saveAnswer = useCallback(async (key: string, value: string | string[] | number | null) => {
+  const saveAnswer = useCallback(async (key: string, value: string | string[] | number | null, source?: AnswerSource) => {
     if (!applicationId) return;
 
     setSaveStatus('saving');
@@ -68,6 +75,7 @@ export function ApplicationProvider({ children, applicationId }: { children: Rea
           question_key: key,
           answer_value: value,
           application_id: applicationId,
+          source: source || 'user_entry',
         }),
       });
 
@@ -92,6 +100,7 @@ export function ApplicationProvider({ children, applicationId }: { children: Rea
               question_key: key,
               answer_value: value,
               application_id: applicationId,
+              source: source || 'user_entry',
             }),
           });
 
@@ -112,9 +121,12 @@ export function ApplicationProvider({ children, applicationId }: { children: Rea
   }, [applicationId]);
 
   // Set answer with debounce
-  const setAnswer = useCallback((key: string, value: string | string[] | number | null) => {
+  const setAnswer = useCallback((key: string, value: string | string[] | number | null, source?: AnswerSource) => {
     // Update local state immediately
     setAnswers((prev) => ({ ...prev, [key]: value }));
+    if (source) {
+      setAnswerSources((prev) => ({ ...prev, [key]: source }));
+    }
     setError(null);
 
     // Clear existing timer
@@ -124,7 +136,7 @@ export function ApplicationProvider({ children, applicationId }: { children: Rea
 
     // Debounce save by 800ms
     const timer = setTimeout(() => {
-      saveAnswer(key, value);
+      saveAnswer(key, value, source);
     }, 800);
 
     setDebounceTimer(timer);
@@ -143,6 +155,7 @@ export function ApplicationProvider({ children, applicationId }: { children: Rea
     <ApplicationContext.Provider
       value={{
         answers,
+        answerSources,
         applicationId,
         saveStatus,
         navigationBlocked,

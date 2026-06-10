@@ -217,7 +217,7 @@ export default function HomeClient() {
             className="font-['Cormorant_Garamond',Georgia,serif] text-4xl md:text-6xl lg:text-7xl font-light text-[#f5f0e8] leading-tight mb-5 md:mb-6"
             style={{textShadow:'0 2px 20px rgba(0,0,0,0.9)'}}
           >
-            Your E-2 Investor Visa —<br />
+            Your E-2 Investor Visa Package—<br />
             Without the <em className="text-[#C9A84C]">$12,000</em><br />
             price tag.
           </h1>
@@ -229,17 +229,21 @@ export default function HomeClient() {
           </p>
           <p className="text-sm md:text-base text-[rgba(245,240,232,0.78)] mb-7 md:mb-8 max-w-xl italic font-['Cormorant_Garamond',Georgia,serif]"
             style={{textShadow:'0 1px 10px rgba(0,0,0,0.95)'}}>
-            &ldquo;Investors who get approved treat document preparation as the first step, not a final step.&rdquo;
+            &ldquo;Investors who get approved treat documentation as a strategy not as a checklist.&rdquo;
           </p>
           <div className="flex flex-col sm:flex-row gap-3 mb-10 md:mb-12">
-            <Link href="/quiz" className="w-full sm:w-auto text-center px-8 py-4 bg-[#C9A84C] text-[#0a0a0a] text-xs font-medium tracking-widest uppercase hover:opacity-85 transition-opacity min-h-[44px] flex items-center justify-center">
+            <Link href="/quiz" className="w-full sm:w-auto text-center px-8 py-4 bg-[#C9A84C] text-[#0a0a0a] text-xs font-medium uppercase hover:opacity-85 transition-opacity min-h-[44px] flex items-center justify-center" style={{ letterSpacing: '0.13em', boxShadow: 'inset 0 1px 0 rgba(255,248,220,0.25)' }}>
               Check my eligibility →
             </Link>
-            <Link href="#how-it-works" className="w-full sm:w-auto text-center px-8 py-4 border border-[rgba(201,168,76,0.3)] text-[rgba(245,240,232,0.65)] text-xs tracking-widest uppercase hover:border-[rgba(201,168,76,0.6)] transition-colors min-h-[44px] flex items-center justify-center">
+            <Link href="#how-it-works" className="w-full sm:w-auto text-center px-8 py-4 border border-[rgba(245,240,232,0.35)] text-[rgba(245,240,232,0.7)] text-xs tracking-widest uppercase hover:border-[rgba(245,240,232,0.6)] hover:text-[rgba(245,240,232,0.95)] transition-colors min-h-[44px] flex items-center justify-center">
               See how it works
             </Link>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-y-4 border-t border-[rgba(201,168,76,0.1)] pt-6 md:pt-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-y-4 pt-6 md:pt-8">
+            <div className="col-span-2 md:col-span-4 flex items-center gap-4 mb-6 md:mb-8">
+              <div className="w-12 h-px bg-[#C9A84C]" />
+              <div className="w-1 h-1 bg-[#C9A84C]" />
+            </div>
             {[
               { num: "82", label: "Treaty countries" },
               { num: "From $550", label: "vs. $12,000+ traditional" },
@@ -247,7 +251,7 @@ export default function HomeClient() {
               { num: "4–6 mo", label: "To interview, not 12+" },
             ].map((s,i) => (
               <div key={i} className="pr-4">
-                <div className="font-['Cormorant_Garamond',Georgia,serif] text-2xl md:text-3xl font-light text-[#C9A84C]">{s.num}</div>
+                <div className={`font-['Cormorant_Garamond',Georgia,serif] font-light text-[#C9A84C] ${s.num === 'From $550' ? 'text-[28px] md:text-[34px]' : 'text-2xl md:text-3xl'}`}>{s.num}</div>
                 <div className="text-xs text-[rgba(245,240,232,0.35)] mt-1 tracking-wide">{s.label}</div>
               </div>
             ))}
@@ -304,7 +308,7 @@ export default function HomeClient() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 md:gap-6 lg:gap-0">
             {[
               { n:"01", t:"Eligibility quiz", d:"14 questions. 4 minutes. Score out of 100, personalised risk flags, and your estimated timeline to interview.", filled:true },
-              { n:"02", t:"E-2 Discovery", d:"A guided conversation across 12 tabs that captures everything the consulate will ask about. Your answers become your documents.", filled:true },
+              { n:"02", t:"E-2 Discovery & Gap Analysis", d:"A guided conversation across 12 tabs that captures everything the consulate will ask about. Your answers become your documents.", filled:true },
               { n:"03", t:"AI document engine", d:"Six documents generated in sequence. Tested against 15 denial patterns. Cross-checked for consistency. Written in your voice.", filled:true },
               { n:"04", t:"Consulate package", d:"A complete formatted binder — every tab, every document, in the exact order your consulate expects. Download and go.", filled:false },
             ].map((s,i) => (

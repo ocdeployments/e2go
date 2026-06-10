@@ -195,7 +195,8 @@ export function generatePreAppChecklist(quizData: QuizData | null): ChecklistIte
     source: "always",
     prefillNote: null,
     required: true,
-    tabReference: "Tab B"
+    tabReference: "Tab B",
+    warning: "Required at some consulates — check your specific post's requirements. Toronto does not require the DS-156E, but other posts may."
   });
 
   return items;
