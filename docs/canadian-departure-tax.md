@@ -1,299 +1,589 @@
-# Canadian Departure Tax — Complete Guide for E-2 Applicants
-**kb/canadian-departure-tax.md**
-*Sources: CRA, Income Tax Act (Canada), BDO Canada, Bremo CPA*
-*Last reviewed: May 2026*
+# E2go — Session: Quiz Fixes
+## Session file for Claude Code
+**Date:** June 9, 2026
+**Branch:** dev
+**Estimated time:** 2–3 hours
+**Status:** Ready to build
 
 ---
 
-## What Is Departure Tax?
+## BEFORE YOU START — READ IN ORDER
 
-Departure tax is not a separate tax. It is the colloquial term for the
-capital gains tax triggered by Canada's **deemed disposition rules** under
-Section 128.1 of the Income Tax Act when an individual ceases to be a
-Canadian resident for tax purposes.
+```bash
+cat CLAUDE_CONTEXT.md
+cat BUILD_TRACKER.md
+cat docs/module0_questions.md
+cat docs/module0_scoring_logic.md
+```
 
-When you leave Canada and become a non-resident, the CRA treats you as
-having **sold all of your property at fair market value on the day before
-your departure date.** Any resulting capital gains are reported on your
-final Canadian tax return and taxed as income for that year.
+Then read the actual quiz source:
+```bash
+cat src/app/quiz/page.tsx
+```
 
-> Source: CRA — Individuals Leaving Canada (canada.ca)
+Find the results page:
+```bash
+find src -name "*.tsx" -path "*/results*" | head -5
+# then cat whichever file contains the timeline / weeks display
+```
 
----
-
-## Step 1 — Establishing Your Departure Date
-
-Your departure date for tax purposes is the date you **sever your
-significant residential ties with Canada** — not necessarily the day
-you physically cross the border.
-
-This distinction matters because the deemed disposition occurs on the day
-before your departure date. Getting this date wrong can have significant
-tax consequences.
-
-### Significant Residential Ties (CRA — S5-F1-C1)
-
-The CRA considers the following the most important residential ties.
-Having **any one** of these may cause the CRA to consider you still
-a Canadian resident:
-
-- **A home in Canada** — owning or leasing a dwelling available for your
-  use is the single most significant tie
-- **A spouse or common-law partner in Canada** — if your spouse remains
-  in Canada, this is a major tie regardless of your physical absence
-- **Dependants in Canada** — children or other dependants remaining in
-  Canada are a significant tie
-
-### Secondary Residential Ties
-
-These are considered collectively — no single secondary tie is
-determinative on its own:
-
-- Personal property in Canada (car, furniture, recreational vehicles)
-- Canadian bank accounts, credit cards, or securities accounts
-- RRSP or TFSA accounts (these alone are not determinative)
-- Canadian driver's licence
-- Canadian passport
-- Provincial health insurance coverage (OHIP, MSP, etc.)
-- Memberships in Canadian recreational, religious, or professional organizations
-- Seasonal or leased dwelling in Canada
-- Canadian provincial or territorial voter registration
-
-### Determining Your Departure Date — Practical Guidance
-
-The CRA does not automatically confirm your departure date. If you need
-a formal determination, file **Form NR73 (Determination of Residency
-Status — Leaving Canada).**
-
-For most E-2 applicants who:
-- Sell or close their Canadian home
-- Move their spouse and dependants to the U.S.
-- Cancel provincial health insurance
-- Establish a U.S. address and primary banking relationship
-
-...the departure date is typically the date the family physically
-relocates and the Canadian home is vacated or sold.
-
-> ⚠️ E-2 APPLICANT WARNING: Do NOT sell your Canadian home prematurely
-> to fund the E-2 investment while your visa is still pending. Selling the
-> home establishes a clear departure date signal to CRA — and may also
-> create immigrant intent concerns with U.S. consular officers. Consult
-> a cross-border CPA before selling any real property.
+Do not write a single line of code until all of the above are read.
+Confirm reading complete before proceeding.
 
 ---
 
-## Step 2 — What Is Subject to Deemed Disposition?
+## GROUND RULES
 
-On your departure date, you are deemed to have disposed of **all property
-you own** — with limited exceptions — at its fair market value.
-
-### Property Subject to Deemed Disposition
-
-- Shares of non-Canadian private corporations
-- Shares of Canadian public companies (listed on stock exchanges)
-- Mutual funds and ETFs
-- Partnership interests
-- U.S. investment real estate (subject to both deemed disposition and
-  U.S. FIRPTA rules — get specialist advice)
-- Personal-use property with FMV over $10,000
-- Crypto assets (as of 2023 CRA guidance)
-- Beneficial interests in trusts
-- Options and warrants
-
-### Property EXEMPT from Deemed Disposition
-
-The following properties are exempt — no deemed disposition applies:
-
-- **Canadian real property** (your home, cottage, rental property in Canada)
-  — these remain taxable in Canada when actually sold, regardless of
-  your residency status
-- **Canadian pension plans** (CPP, QPP, OAS, RPPs)
-- **RRSP and RRIF accounts** — exempt from deemed disposition; taxed
-  only when withdrawn (but withholding tax applies as a non-resident)
-- **TFSA accounts** — exempt from deemed disposition; no deemed sale
-- **Registered pension plan interests**
-- **Stock options** from Canadian employer (special rules apply)
+1. No rounded corners. No glassmorphism. No gradients. No blue borders
+   on selected options — use gold (#C9A84C) border instead.
+2. Read DESIGN_REFERENCE.html before touching any styles.
+3. Do not touch the generation engine, Module 3, or any files outside
+   the quiz and results page.
+4. The scoring logic in module0_scoring_logic.json must be updated
+   to reflect new questions. Do not break existing scoring.
+5. Full output on every modified file. No truncation.
+6. Test at 390px (mobile) and 1440px (desktop).
+7. No Magic MCP.
 
 ---
 
-## Step 3 — Calculating Departure Tax
+## ALSO FIX — BLUE SELECTED BORDER
 
-The formula is:
+Looking at the screenshots: selected options have a BLUE border.
+This violates the design system. Gold only.
 
-  Deemed proceeds = Fair market value on the day before departure
-  Adjusted cost base (ACB) = Original purchase price + adjusted costs
-  Capital gain = Deemed proceeds − ACB
-  Taxable capital gain = Capital gain × 50% (inclusion rate as of 2025)
-  Tax = Taxable capital gain × your marginal tax rate
+Find every instance where the selected option border is blue
+and change to:
+```css
+border: 1px solid #C9A84C;
+```
 
-### Example
-
-You own 500 shares of a Canadian public company.
-  ACB: $12,000 (original cost)
-  FMV on departure date: $45,000
-  Capital gain: $33,000
-  Taxable capital gain (50% inclusion): $16,500
-  Tax at 43.41% marginal rate (Ontario example): ~$7,166
-
-> Note: The capital gains inclusion rate has been subject to proposed
-> legislative changes in recent years. Confirm the current inclusion rate
-> with a CPA at the time of your departure. As of May 2026, the 50%
-> inclusion rate applies for individuals on capital gains below $250,000
-> annually.
+This is a quick find-and-replace but must not be missed.
 
 ---
 
-## Step 4 — Forms to File
+## TASK 1 — SPLIT THE FAMILY TIES QUESTION INTO TWO
 
-### T1 Departure Return (Mandatory)
+### Current state
+One question: "Will close family remain in your home country?"
+One option bundles: "Yes — spouse, children, parents, or siblings staying"
 
-File a **T1 Income Tax Return** for the year of departure. This is a
-part-year return reporting:
-- Worldwide income from January 1 to your departure date (resident period)
-- Canadian-source income only after your departure date (non-resident period)
-- All deemed disposition gains
+### Why this is wrong
+Spouse and children staying behind = they are NOT E-2 dependents.
+That is a completely different situation from parents/siblings staying.
+The scoring and document implications are entirely different.
 
-Check the box on the T1 return: "Date you became a non-resident of Canada"
+### Fix — Replace with two sequential questions
 
-**Due date:** April 30 of the year following your departure (or June 15
-if you had self-employment income in Canada during the year)
+**Remove** the current family ties question entirely.
 
-### Form T1161 — List of Properties by an Emigrant of Canada (Mandatory if applicable)
+**Add Question A — Nuclear family travel plan**
+Question ID: Q0-13a
+Category: HOME TIES
+Question text: "Are your spouse and children moving to the US with you?"
+Helper text: "This determines who will be included in your E-2
+application as dependents."
 
-**Trigger:** You must file T1161 if the **total fair market value of all
-property you owned on departure exceeds CAD $25,000** — this threshold
-applies even if no gain resulted from the deemed disposition.
+Options:
+- Yes — my spouse and children are moving with me
+- My spouse is moving with me, children staying in home country
+- Spouse and children are staying — I am moving alone initially
+- Not applicable — I have no spouse or children
 
-**What to list:** All property owned at departure, including property
-exempt from deemed disposition.
+Scoring impact:
+- "Spouse and children staying" → adds moderate immigrant intent
+  mitigation flag (they have family abroad) but also raises a
+  question about dependent separation
+- "Moving alone initially" → note this in case brief for
+  cover letter: applicant establishing business before family joins
 
-**Penalty for non-filing:** $25 per day, up to a maximum of **$2,500**
-per year. This penalty applies even if no tax is owing.
+**Add Question B — Extended family home country ties**
+Question ID: Q0-13b
+Category: HOME TIES
+Question text: "Do you have parents, siblings, or other close
+family who will remain in [home_country] after you move?"
+Helper text: "The consulate scores ties to your home country.
+Extended family remaining is one of the strongest signals of
+non-immigrant intent."
 
-> Source: CRA T1161 form description (canada.ca/forms/t1161)
+Options:
+- Yes — parents remaining
+- Yes — siblings remaining
+- Yes — parents and siblings remaining
+- Yes — other close family remaining
+- No — no extended family remaining in home country
 
-### Form T1243 — Deemed Disposition of Property by an Emigrant (Mandatory if applicable)
+Scoring impact:
+- Any "Yes" option → strong positive home ties signal
+  (existing scoring logic for home country ties)
+- "No extended family" → flag for stronger ties documentation
+  needed in other categories
 
-**Trigger:** File this form if you had any property subject to deemed
-disposition with an actual or deemed gain.
-
-**What it contains:**
-- Each property subject to deemed disposition
-- Year of acquisition
-- Adjusted cost base
-- Fair market value at departure
-- Resulting gain or loss
-
-### Form T1244 — Election to Defer Payment of Departure Tax (Optional)
-
-**Trigger:** If you owe departure tax but want to defer payment — typically
-because the assets generating the gain are illiquid (e.g., shares in a
-private company you cannot easily sell).
-
-**Mechanics:**
-- File T1244 by the normal filing deadline (April 30)
-- You must post **security with the CRA** (cash, letter of credit, or
-  eligible property) equal to the deferred tax amount
-- Interest accrues on the deferred amount
-- Tax becomes due when the asset is actually sold, or you return to
-  Canada as a resident — whichever comes first
-
-> Source: BDO Canada — Canada Departure Tax and Reporting Requirements (2023)
-
----
-
-## Step 5 — Non-Resident Obligations After Departure
-
-Once you are a non-resident of Canada, different rules apply to
-ongoing Canadian income.
-
-### Part XIII Tax (Withholding Tax)
-
-Non-residents pay Part XIII withholding tax on most Canadian-source
-passive income. The standard rate is **25%** but is reduced under the
-Canada-U.S. Tax Treaty.
-
-Under the Canada-U.S. Tax Convention (current as of May 2026):
-
-| Income Type | Standard Rate | Canada-U.S. Treaty Rate |
-|---|---|---|
-| RRSP / RRIF withdrawals | 25% | 15% (periodic payments) / 25% (lump sum) |
-| CPP / OAS | 25% | 15% |
-| Canadian dividends | 25% | 15% |
-| Canadian interest | 25% | 0% (most interest) |
-| Canadian rental income | 25% | 25% (or net filing — see below) |
-
-> Source: CRA — Rates for Part XIII Tax (canada.ca); Canada-U.S. Tax Convention
-
-### NR4 Slip
-
-Canadian financial institutions and pension administrators issue an NR4
-slip to non-resident recipients of Canadian-source income subject to Part
-XIII withholding tax. The NR4 is the non-resident equivalent of a T4 or T5.
-
-You do not file a Canadian tax return for most NR4 income — the withholding
-tax is the final Canadian tax obligation on that income (unless you elect
-to file under Section 216 for rental income).
-
-### Section 216 Election — Canadian Rental Income
-
-If you own rental property in Canada as a non-resident:
-
-**Default treatment:**
-- Canadian tenant or property manager withholds 25% of gross rent
-- Remit to CRA monthly using Form NR4 or NR6
-
-**Section 216 election:**
-- Allows you to file a Canadian return and pay tax on **net** rental
-  income (after deductions for mortgage interest, property tax, repairs)
-  rather than 25% of gross
-- Often significantly reduces the tax owing on Canadian rental income
-- Must be filed within 2 years of the end of the rental year
-
-### Provincial Health Insurance
-
-Cancel your provincial health insurance on your departure date.
-Continuing to hold provincial health insurance after becoming a
-non-resident can be considered evidence of a remaining residential tie
-to Canada.
-
-Cancellation timing varies by province:
-- Ontario (OHIP): Cancel by contacting Service Ontario; coverage ends
-  on the last day of the third month after you leave the province
-- British Columbia (MSP): Coverage typically ends the last day of the
-  month you leave
-- Alberta (AHCIP): Coverage ends the date you leave Alberta
-
-> ⚠️ E-2 APPLICANT NOTE: Do not cancel provincial health insurance until
-> you have confirmed U.S. health coverage in place. The gap period (OHIP
-> to U.S. coverage) can leave you uninsured. See kb/ohip-health-coverage-transition.md
+### Scoring logic update
+In module0_scoring_logic.json, find the existing family ties
+scoring entry and split it into two separate entries for
+Q0-13a and Q0-13b. Preserve all existing score values —
+just route them to the correct new question IDs.
 
 ---
 
-## Key Deadlines Summary
+## TASK 2 — FIX THE BUSINESS PARTNER QUESTION
 
-| Action | Deadline |
-|---|---|
-| File T1 departure return | April 30 of following year |
-| File T1161 (property list) | With T1 return (April 30) |
-| File T1243 (deemed dispositions) | With T1 return (April 30) |
-| File T1244 (deferral election) | April 30 of following year |
-| Cancel provincial health insurance | Departure date (effective varies by province) |
-| Notify Canadian banks of non-resident status | As soon as possible after departure |
-| Update financial institutions (W-8BEN or NR declaration) | Before receiving first post-departure income |
+### Current problems
+
+**Problem A:** Advisory says "A 49/51 split disqualifies the
+minority partner — the 50/50 requirement is strict."
+This is LEGALLY INCORRECT for spousal partnerships.
+A spouse who is a minority owner in a business operated by
+the principal applicant can still qualify. The 50/50 strict
+requirement applies to unrelated partners, not spouses.
+
+**Problem B:** No question asking whether the partner is
+the applicant's spouse.
+
+**Problem C:** No question asking who is the principal
+applicant when the applicant is married.
+
+### Fix A — Update the existing partnership question
+
+Update the advisory block text from:
+"A 49/51 split or any other unequal ownership disqualifies
+the minority partner. The 50/50 requirement is strict."
+
+To:
+"For unrelated partners: each investor must own exactly 50%
+to qualify independently. For spousal partnerships: the
+principal applicant must be the owner-operator with majority
+or equal control — the spouse's ownership percentage is more
+flexible as long as the applicant clearly develops and directs
+the business."
+
+Update options to be more accurate. Replace:
+- "Yes — one partner, confirmed 50/50 ownership"
+- "Yes — ownership split not yet decided"
+- "Yes — more than one partner"
+
+With:
+- "Yes — one partner, 50/50 ownership"
+- "Yes — one partner, my spouse (any ownership split)"
+- "Yes — one partner, ownership split not yet decided"
+- "Yes — more than one partner (attorney review required)"
+
+### Fix B — Add spousal partner follow-up
+
+After "Yes — one partner, my spouse" is selected, show
+a follow-up question inline (same screen, revealed below
+the selection):
+
+Question ID: Q0-14b
+"What will be your spouse's role in the business?"
+
+Options:
+- Active co-operator — managing the business with me
+- Silent investor — ownership stake, not day-to-day involved
+- Not yet decided
+
+Helper text: "A spouse who is a silent investor can hold a
+minority stake. A spouse who co-operates the business
+alongside you may qualify for their own E-2 status."
+
+Scoring: if "Silent investor" → no attorney flag needed.
+If "Active co-operator" → advisory that spouse may qualify
+independently for E-2 and their qualifications need to be
+documented separately.
+
+### Fix C — Add principal applicant question
+
+This question fires when marital status = married AND
+no partnership selected (solo application with a spouse).
+
+Insert after the marital status question (or after spouse
+dependents confirmation), before business type:
+
+Question ID: Q0-03a
+Category: FAMILY
+Question text: "Who is the primary E-2 applicant?"
+Helper text: "If you are married, one spouse is the principal
+applicant whose qualifications, investment, and business
+experience lead the application. The other spouse applies
+as a dependent — or independently if they are also investing."
+
+Options:
+- I am — I am filling out this form as the principal applicant
+- My spouse is the principal applicant — I am completing
+  this on their behalf
+- We are applying as co-investors (partnership application)
+
+Routing:
+- "I am" → continue normally, spouse added as dependent
+- "My spouse is" → note in application that the person
+  completing the form is doing so on behalf of the principal.
+  All questions should be answered from the principal's
+  perspective. Add advisory: "Answer all questions as
+  they apply to your spouse — their qualifications,
+  their investment, their role in the business."
+- "Co-investors" → route to partnership flow
 
 ---
 
-## Professional Guidance Required
+## TASK 3 — TIMELINE: WEEKS TO MONTHS
 
-Departure tax is one of the most complex areas of Canadian personal
-tax law. The consequences of errors — including incorrect departure dates,
-missed T1161 filings, or improper deemed disposition calculations — can
-result in significant penalties and tax liability.
+### Location
+Find the results page component that renders "16 — 22 weeks".
+This is likely in src/app/results/page.tsx or a component
+it imports.
 
-**Strongly recommended:** Engage a cross-border CPA (one licensed in both
-Canada and the U.S.) at least 6 months before your planned departure date.
+### Fix — Calculate and display month names
 
-> This document is for educational purposes only and does not constitute
-> tax advice. Tax law changes frequently. Confirm all information with a
-> qualified cross-border CPA before acting.
+Replace the static "16 — 22 weeks" display with a dynamic
+calculation:
+
+```typescript
+function getInterviewMonthRange(weeksMin: number, weeksMax: number): string {
+  const today = new Date();
+
+  const earliestDate = new Date(today);
+  earliestDate.setDate(today.getDate() + weeksMin * 7);
+
+  const latestDate = new Date(today);
+  latestDate.setDate(today.getDate() + weeksMax * 7);
+
+  const monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+
+  const earliestMonth = monthNames[earliestDate.getMonth()];
+  const latestMonth = monthNames[latestDate.getMonth()];
+  const earliestYear = earliestDate.getFullYear();
+  const latestYear = latestDate.getFullYear();
+
+  // If same month
+  if (earliestMonth === latestMonth && earliestYear === latestYear) {
+    return `${earliestMonth} ${earliestYear}`;
+  }
+
+  // If same year
+  if (earliestYear === latestYear) {
+    return `${earliestMonth} — ${latestMonth} ${earliestYear}`;
+  }
+
+  // Different years
+  return `${earliestMonth} ${earliestYear} — ${latestMonth} ${latestYear}`;
+}
+```
+
+Replace the display:
+```tsx
+// REMOVE:
+<div>16 — 22 weeks</div>
+
+// REPLACE WITH:
+<div>{getInterviewMonthRange(weeksMin, weeksMax)}</div>
+```
+
+Where `weeksMin` and `weeksMax` come from the scoring output
+(currently hardcoded as 16 and 22 — keep that logic, just
+change the display format).
+
+Update the subtitle text from:
+"Estimated from today to your consulate interview, based on
+your profile and current processing times."
+
+To:
+"Your estimated interview window, based on your profile and
+current Toronto consulate processing times. Calculated from
+today, [formatted today's date]."
+
+Format today's date as: "June 9, 2026"
+
+```typescript
+function formatToday(): string {
+  return new Date().toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric'
+  });
+}
+```
+
+---
+
+## TASK 4 — BACK BUTTON VISIBILITY
+
+### Current state
+Back button exists as "← Back" in small muted grey text,
+positioned between helper text and answer options.
+Difficult to see, especially on mobile.
+
+### Fix — Reposition and restyle
+
+**Position:** Move to TOP LEFT of each question screen,
+above the question text. Not between helper text and options.
+
+**Style:** Keep as text link (not a button shape), but
+increase visibility:
+```typescript
+backButton: {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '6px',
+  fontSize: '13px',
+  fontWeight: 400,
+  letterSpacing: '0.04em',
+  color: 'rgba(245,240,232,0.55)',  // warmer and more visible
+  background: 'transparent',
+  border: 'none',
+  cursor: 'pointer',
+  padding: '0',
+  marginBottom: '24px',  // space before question text
+  fontFamily: "'DM Sans', sans-serif",
+}
+```
+
+Hover state: color bumps to rgba(245,240,232,0.85)
+
+The arrow character stays as ← — no icon library needed.
+
+**Mobile:** Same position. The 13px size is readable at 390px.
+Minimum touch target: wrap in a div with padding-top: 8px,
+padding-bottom: 8px so the tap area is adequate.
+
+### Also — Back button on results page
+
+The results page currently has no visible way to go back
+and change answers. Add a text link above the fold on the
+results page:
+
+```tsx
+<button
+  style={styles.editAnswersLink}
+  onClick={() => router.push('/quiz/review')}
+>
+  ← Review or change my answers
+</button>
+```
+
+Style:
+```typescript
+editAnswersLink: {
+  fontSize: '13px',
+  color: 'rgba(245,240,232,0.45)',
+  background: 'transparent',
+  border: 'none',
+  cursor: 'pointer',
+  letterSpacing: '0.04em',
+  padding: '0',
+  marginBottom: '32px',
+  fontFamily: "'DM Sans', sans-serif",
+  display: 'block',
+}
+```
+
+---
+
+## TASK 5 — QUIZ REVIEW PAGE
+
+### New file
+`src/app/quiz/review/page.tsx`
+
+### What it does
+Shows all quiz questions and the applicant's saved answers
+in a condensed list. The applicant can tap any question to
+jump directly to it, change their answer, and return to the
+results page with recalculated scoring.
+
+### Layout
+
+**Header:**
+```
+← Back to results
+
+Review your answers
+Change any answer below — your results will update automatically.
+```
+
+**Question list:**
+Each answered question shown as a compact card:
+- Category label (small caps, gold, top left)
+- Question text (truncated to one line if long)
+- Current answer (shown in gold)
+- "Change →" link on the right
+
+Cards are grouped by category (ELIGIBILITY, INVESTMENT,
+BUSINESS, FAMILY, HOME TIES) with a section label before
+each group.
+
+**Unanswered questions:**
+Show with a muted "Not answered" label and "Answer →" link.
+
+### Implementation
+
+```typescript
+'use client';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
+
+export default function QuizReview() {
+  const router = useRouter();
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Load saved quiz answers from localStorage or Supabase
+    // Use whichever storage mechanism the quiz currently uses
+    const saved = localStorage.getItem('quiz_answers');
+    if (saved) {
+      setAnswers(JSON.parse(saved));
+    }
+    setLoading(false);
+  }, []);
+
+  const handleJumpToQuestion = (questionIndex: number) => {
+    // Store the target question index
+    localStorage.setItem('quiz_jump_to', String(questionIndex));
+    router.push('/quiz');
+  };
+
+  // ... render question list
+}
+```
+
+**Quiz page modification:**
+When the quiz page loads, check for `quiz_jump_to` in localStorage.
+If present, start at that question index instead of question 0.
+Clear `quiz_jump_to` after reading it.
+When the quiz is completed or the user navigates away from the
+quiz after answering the jumped-to question, return to `/results`
+(not to question 1).
+
+```typescript
+// In quiz page useEffect on mount:
+const jumpTo = localStorage.getItem('quiz_jump_to');
+if (jumpTo) {
+  setCurrentQuestionIndex(parseInt(jumpTo));
+  localStorage.removeItem('quiz_jump_to');
+  setReturnToResults(true); // flag to redirect back to results after answer
+}
+```
+
+After submitting an answer when `returnToResults` is true:
+```typescript
+if (returnToResults) {
+  router.push('/results');
+  return;
+}
+```
+
+### Read the current quiz storage mechanism first
+
+Before implementing, check how the quiz currently saves answers:
+```bash
+grep -n "localStorage\|sessionStorage\|supabase.*answers\|quiz_answers" \
+  src/app/quiz/page.tsx | head -20
+```
+
+Use whatever mechanism is already in place. Do not introduce
+a second storage mechanism.
+
+---
+
+## QUESTION ORDER NOTE
+
+The two new questions (Q0-03a and Q0-13a/b) need to be inserted
+at the correct positions in the quiz flow.
+
+**Q0-03a (principal applicant)** — insert after the marital
+status question. Check what question ID the marital status
+question currently has and insert Q0-03a immediately after it.
+Only show if marital status answer is "Married" or "Common Law".
+
+**Q0-13a and Q0-13b (family split)** — replace the existing
+family ties question entirely. Q0-13a fires first (nuclear family
+travel plan), Q0-13b fires immediately after regardless of Q0-13a
+answer (extended family ties).
+
+Find current question order:
+```bash
+grep -n "id:\|question_id:\|Q0-" src/app/quiz/page.tsx | head -40
+# or
+grep -n "Q0-" docs/module0_questions.md | head -30
+```
+
+Insert at the correct index in the questions array.
+
+---
+
+## PLAYWRIGHT VERIFICATION
+
+After all tasks complete:
+
+```bash
+pkill -f "next dev" || true && sleep 2 && rm -rf .next && npm run dev &
+sleep 15
+```
+
+```
+Use Playwright to screenshot:
+
+1. localhost:3000/quiz — navigate to the family ties question.
+   Confirm: two separate questions, no combined spouse/sibling option.
+   Screenshot both Q0-13a and Q0-13b.
+
+2. Navigate to the business partner question.
+   Confirm: spousal partner option exists, advisory text is corrected,
+   no mention of strict 50/50 for spousal partnerships.
+   Screenshot.
+
+3. Navigate to localhost:3000/results.
+   Confirm: month names displayed (not weeks), "Review or change
+   my answers" link visible, back button visible and warm white.
+   Screenshot at 390px and 1440px.
+
+4. Click "Review or change my answers".
+   Confirm: /quiz/review loads, all answered questions listed,
+   each has a "Change →" link.
+   Screenshot.
+
+5. Click "Change →" on any question.
+   Confirm: quiz loads at the correct question index.
+   Screenshot.
+
+6. Check every question in the quiz for selected option border.
+   Confirm: gold border, not blue. Screenshot a selected option.
+```
+
+---
+
+## COMMITS
+
+One commit per task:
+- `fix: quiz — split family ties into nuclear and extended questions`
+- `fix: quiz — spousal partnership question and principal applicant`
+- `fix: results — timeline displays month names not weeks`
+- `fix: quiz — back button repositioned and visible`
+- `feat: quiz — review page with jump-to-question editing`
+- `fix: quiz — selected option border gold not blue`
+
+---
+
+## ON COMPLETION
+
+Update BUILD_TRACKER.md:
+- Quiz family question fix: ✅
+- Quiz spousal partnership and principal applicant: ✅
+- Results timeline month calculation: ✅
+- Back button visibility: ✅
+- Quiz review / edit page: ✅
+- Selected option border fix: ✅
+
+Run: npm run build — must compile clean with zero errors.
+
+Note any scoring logic changes made to module0_scoring_logic.json
+in the build summary so they can be reviewed.
