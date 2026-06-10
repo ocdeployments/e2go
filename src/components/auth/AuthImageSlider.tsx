@@ -7,9 +7,9 @@ export default function AuthImageSlider() {
       <svg width="100%" height="100%" viewBox="0 0 660 520" preserveAspectRatio="xMinYMid slice" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
         <defs>
           <linearGradient id="authFlagFadeLeft" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" style={{stopColor:'#0a0a0a',stopOpacity:1}}/>
-            <stop offset="25%" style={{stopColor:'#0a0a0a',stopOpacity:0.7}}/>
-            <stop offset="50%" style={{stopColor:'#0a0a0a',stopOpacity:0}}/>
+            <stop offset="0%" style={{stopColor:'#0a0a0a',stopOpacity:0.6}}/>
+            <stop offset="60%" style={{stopColor:'#0a0a0a',stopOpacity:0.15}}/>
+            <stop offset="100%" style={{stopColor:'#0a0a0a',stopOpacity:0}}/>
           </linearGradient>
           <linearGradient id="authFlagFadeBottom" x1="0%" y1="0%" x2="0%" y2="100%">
             <stop offset="85%" style={{stopColor:'#0a0a0a',stopOpacity:0}}/>
@@ -44,7 +44,7 @@ export default function AuthImageSlider() {
       </svg>
 
       {/* Dark overlay */}
-      <div className="absolute inset-0" style={{ background: "rgba(10,10,10,0.45)" }} />
+      <div className="absolute inset-0" style={{ background: "rgba(10,10,10,0.25)" }} />
 
       {/* Gold text — bottom left */}
       <div className="absolute bottom-8 left-8 hidden lg:block">
