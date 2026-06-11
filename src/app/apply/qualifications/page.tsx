@@ -1,10 +1,8 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { useRouter } from 'next/navigation';
 import { createBrowserSupabaseClient } from '@/lib/supabase';
-import SectionSideNav from '@/components/apply/SectionSideNav';
-import QuestionPanel from '@/components/apply/QuestionPanel';
+import CaseFileShell from '@/components/apply/CaseFileShell';
 import QuestionLabel from '@/components/apply/questions/QuestionLabel';
 import HelperText from '@/components/apply/questions/HelperText';
 import TextInput from '@/components/apply/questions/TextInput';
@@ -29,8 +27,8 @@ const CLUSTERS = [
 ];
 
 const DOCUMENTS = [
-  { name: 'Resume', status: 'waiting' as const },
-  { name: 'Credentials', status: 'waiting' as const },
+  { name: 'Investor Biography', status: 'waiting' as const },
+  { name: 'Org Chart', status: 'waiting' as const },
 ];
 
 interface QuestionField {
@@ -177,9 +175,8 @@ const ALL_QUESTION_SETS = [
 ];
 
 export default function QualificationsPage() {
-  const router = useRouter();
   const [loading, setLoading] = useState(true);
-  const [activeCluster, setActiveCluster] = useState(1);
+  const [activeCluster, setActiveCluster] = useState('cluster-1');
   const [answers, setAnswers] = useState<Record<string, QualAnswer>>({});
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [applicationId, setApplicationId] = useState<string | null>(null);
@@ -244,12 +241,10 @@ export default function QualificationsPage() {
     debounceRef.current[key] = setTimeout(() => saveAnswer(key, value), 800);
   }, [saveAnswer]);
 
-  const totalQuestions = ALL_QUESTION_SETS.reduce((sum, s) => sum + s.questions.length, 0);
-  const answeredCount = Object.keys(answers).filter((k) => answers[k]?.value !== '').length;
-
   const clusterStatuses = CLUSTERS.map((cluster) => {
+    const id = `cluster-${cluster.number}`;
     const set = ALL_QUESTION_SETS.find((s) => s.cluster === cluster.number);
-    if (!set) return { number: cluster.number, label: cluster.label, status: 'empty' as const };
+    if (!set) return { id, label: cluster.label, status: 'pending' as const };
     const answered = set.questions.filter((q) => {
       if ('showIf' in q && q.showIf) {
         const depAnswer = answers[q.showIf.key]?.value;
@@ -258,19 +253,11 @@ export default function QualificationsPage() {
       return answers[q.key]?.value !== '';
     }).length;
     const visible = set.questions.filter((q) => !('showIf' in q) || !q.showIf || answers[q.showIf.key]?.value === q.showIf.value).length;
-    const status: 'complete' | 'active' | 'empty' = answered === visible && visible > 0 ? 'complete' : answered > 0 ? 'active' : 'empty';
-    return { number: cluster.number, label: cluster.label, status };
+    const status: 'complete' | 'active' | 'pending' = answered === visible && visible > 0 ? 'complete' : answered > 0 ? 'active' : 'pending';
+    return { id, label: cluster.label, status };
   });
 
-  const handleBack = () => {
-    if (activeCluster > 1) setActiveCluster(activeCluster - 1);
-    else router.push('/apply/investment');
-  };
-
-  const handleNext = () => {
-    if (activeCluster < CLUSTERS.length) setActiveCluster(activeCluster + 1);
-    else router.push('/apply/family');
-  };
+  const isSaving = saveStatus === 'saving';
 
   const renderQuestions = (questions: QuestionField[]) => (
     <div className="space-y-6">
@@ -304,6 +291,8 @@ export default function QualificationsPage() {
     </div>
   );
 
+  const activeClusterNumber = parseInt(activeCluster.replace('cluster-', ''), 10);
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#0a0a0a]">
@@ -312,78 +301,87 @@ export default function QualificationsPage() {
     );
   }
 
-  return (
-    <div className="flex min-h-screen">
-      <aside className="hidden w-[196px] shrink-0 border-r lg:block" style={{ borderColor: 'rgba(201,168,76,0.12)' }}>
-        <SectionSideNav sectionName="Your Qualifications" answeredCount={answeredCount} totalCount={totalQuestions} clusters={clusterStatuses} documents={DOCUMENTS} activeCluster={activeCluster} onClusterClick={setActiveCluster} />
-      </aside>
-
-      <div className="fixed top-12 left-0 right-0 z-30 flex overflow-x-auto border-b lg:hidden" style={{ borderColor: 'rgba(201,168,76,0.12)', backgroundColor: '#0a0a0a' }}>
-        {CLUSTERS.map((c) => (
-          <button key={c.number} onClick={() => setActiveCluster(c.number)} className="shrink-0 border-b px-4 py-2 text-[10px] uppercase tracking-[0.08em]" style={{ borderColor: activeCluster === c.number ? '#C9A84C' : 'transparent', color: activeCluster === c.number ? '#C9A84C' : 'rgba(245,240,232,0.28)', fontFamily: "'DM Sans', sans-serif" }}>
-            {c.number}. {c.label}
-          </button>
-        ))}
-      </div>
-
-      <div className="min-w-0 flex-1 pt-12 lg:pt-0">
-        <QuestionPanel sectionTitle="Your Qualifications" clusterLabel={CLUSTERS[activeCluster - 1]?.label || ''} saveStatus={saveStatus} answeredCount={answeredCount} totalCount={totalQuestions} onBack={handleBack} onNext={handleNext}>
-          {activeCluster === 1 && (
-            <div>
-              <ClusterDivider label="Your background" />
-              {renderQuestions(BACKGROUND_QUESTIONS)}
-            </div>
-          )}
-
-          {activeCluster === 2 && (
-            <div>
-              <ClusterDivider label="Your business experience" />
-              {renderQuestions(BUSINESS_EXPERIENCE_QUESTIONS)}
-
-              {answers['M3-Q-07']?.value === 'no' && (
-                <AdvisoryBlock>As a first-time business owner, your interview preparation is especially important. Officers will scrutinize your preparation more closely. Ensure your business plan is airtight and that you can articulate why this specific business and why now.</AdvisoryBlock>
-              )}
-            </div>
-          )}
-
-          {activeCluster === 3 && (
-            <div>
-              <ClusterDivider label="Your role in the business" />
-              {renderQuestions(ROLE_QUESTIONS)}
-
-              {answers['M3-Q-24']?.value === 'no' && (
-                <RiskFlag label="Critical issue">E-2 visa requires you to be present in the US directing and developing the business. Remote management from outside the US does not qualify and is a near-certain denial.</RiskFlag>
-              )}
-
-              {answers['M3-Q-24']?.value === 'part-time' && (
-                <AdvisoryBlock>E-2 requires you to direct and develop the enterprise. Part-time presence raises questions about whether you are truly directing the business. Your interview preparation should include a detailed explanation of how you will manage remotely while maintaining effective control.</AdvisoryBlock>
-              )}
-            </div>
-          )}
-
-          {activeCluster === 4 && (
-            <div>
-              <ClusterDivider label="Visa history" />
-              {renderQuestions(VISA_HISTORY_QUESTIONS)}
-
-              {answers['M3-V-01']?.value === 'yes' && (
-                <AdvisoryBlock>A prior visa denial does not automatically bar you from E-2, but you must be prepared to explain what changed since the denial. The key question officers will ask: &ldquo;What is materially different about your application now?&rdquo;</AdvisoryBlock>
-              )}
-
-              {answers['M3-V-03']?.value === 'yes' && (
-                <RiskFlag label="Significant risk">Prior overstay or unauthorized presence can trigger bars on re-entry. You need an immigration attorney to assess whether you are subject to a 3-year or 10-year bar before proceeding with your E-2 application.</RiskFlag>
-              )}
-            </div>
-          )}
-
-          {activeCluster === 5 && (
-            <div>
-              <ClusterDivider label="Interview prep" />
-              {renderQuestions(INTERVIEW_PREP_QUESTIONS)}
-            </div>
-          )}
-        </QuestionPanel>
-      </div>
+  const previewContent = (
+    <div className="space-y-4">
+      {DOCUMENTS.map(doc => (
+        <div key={doc.name} className="border p-4" style={{ borderColor: 'rgba(201,168,76,0.12)', backgroundColor: 'rgba(201,168,76,0.01)' }}>
+          <div className="flex items-center justify-between mb-3">
+            <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '10px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'rgba(245,240,232,0.35)' }}>{doc.name}</span>
+            <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '10px', color: 'rgba(245,240,232,0.18)', border: '1px solid rgba(245,240,232,0.08)', padding: '2px 7px' }}>Waiting</span>
+          </div>
+          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '12px', fontWeight: 300, color: 'rgba(245,240,232,0.18)', fontStyle: 'italic', lineHeight: 1.5 }}>[Answer the questions on the left to fill this in]</p>
+        </div>
+      ))}
     </div>
+  );
+
+  return (
+    <CaseFileShell
+      sectionNumber={4}
+      sectionTitle="Your Qualifications"
+      clusters={clusterStatuses}
+      activeClusterId={activeCluster}
+      onClusterChange={setActiveCluster}
+      buildsDocuments={['Investor Biography', 'Org Chart']}
+      nextSectionPath="/apply/family"
+      prevSectionPath="/apply/investment"
+      isSaving={isSaving}
+      previewContent={previewContent}
+    >
+      {activeClusterNumber === 1 && (
+        <div>
+          <ClusterDivider label="Your background" />
+          {renderQuestions(BACKGROUND_QUESTIONS)}
+        </div>
+      )}
+
+      {activeClusterNumber === 2 && (
+        <div>
+          <ClusterDivider label="Your business experience" />
+          {renderQuestions(BUSINESS_EXPERIENCE_QUESTIONS)}
+
+          {answers['M3-Q-07']?.value === 'no' && (
+            <AdvisoryBlock>As a first-time business owner, your interview preparation is especially important. Officers will scrutinize your preparation more closely. Ensure your business plan is airtight and that you can articulate why this specific business and why now.</AdvisoryBlock>
+          )}
+        </div>
+      )}
+
+      {activeClusterNumber === 3 && (
+        <div>
+          <ClusterDivider label="Your role in the business" />
+          {renderQuestions(ROLE_QUESTIONS)}
+
+          {answers['M3-Q-24']?.value === 'no' && (
+            <RiskFlag label="Critical issue">E-2 visa requires you to be present in the US directing and developing the business. Remote management from outside the US does not qualify and is a near-certain denial.</RiskFlag>
+          )}
+
+          {answers['M3-Q-24']?.value === 'part-time' && (
+            <AdvisoryBlock>E-2 requires you to direct and develop the enterprise. Part-time presence raises questions about whether you are truly directing the business. Your interview preparation should include a detailed explanation of how you will manage remotely while maintaining effective control.</AdvisoryBlock>
+          )}
+        </div>
+      )}
+
+      {activeClusterNumber === 4 && (
+        <div>
+          <ClusterDivider label="Visa history" />
+          {renderQuestions(VISA_HISTORY_QUESTIONS)}
+
+          {answers['M3-V-01']?.value === 'yes' && (
+            <AdvisoryBlock>A prior visa denial does not automatically bar you from E-2, but you must be prepared to explain what changed since the denial. The key question officers will ask: &ldquo;What is materially different about your application now?&rdquo;</AdvisoryBlock>
+          )}
+
+          {answers['M3-V-03']?.value === 'yes' && (
+            <RiskFlag label="Significant risk">Prior overstay or unauthorized presence can trigger bars on re-entry. You need an immigration attorney to assess whether you are subject to a 3-year or 10-year bar before proceeding with your E-2 application.</RiskFlag>
+          )}
+        </div>
+      )}
+
+      {activeClusterNumber === 5 && (
+        <div>
+          <ClusterDivider label="Interview prep" />
+          {renderQuestions(INTERVIEW_PREP_QUESTIONS)}
+        </div>
+      )}
+    </CaseFileShell>
   );
 }
