@@ -1,6 +1,6 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 10, 2026 — Case file redesign complete
+**Last Updated:** June 10, 2026 — Auth, quiz, results fixes (Session 1)
 **App Name:** E2go.app
 **Stack:** Next.js 14 · TypeScript · Tailwind CSS · Supabase · Claude API
 **Dev URL:** https://e2go-git-dev-ocdeployments-projects.vercel.app
@@ -907,6 +907,54 @@ Session file: docs/sessions/SESSION_CASEFILE_REDESIGN.md
 
 **Commits:** a9dfcb9, 5d02c15, c56f3a4, db919eb, b20065e, a421108, ddaccac, 7502ea8, fd710fa
 
+---
+
+## SESSION — Auth, Quiz, Results Fixes — Session 1 (June 10, 2026)
+
+### Completed — commit 400d1dc on dev
+
+16 tasks completed across auth, personalisation, quiz questions,
+results page, and build verification.
+
+**Auth & Personalisation (A1–A4):**
+- A1: Login — email+password only, "Remember me" checkbox, removed magic link
+- A2: Smart post-login routing by application state (quiz → results → pricing → apply)
+- A3: Signup — first/last name fields, upsert to profiles table
+- A4: Email verification enforcement in middleware
+
+**Quiz Questions (B1–B4):**
+- B1: Q0-05 reworded — "Where are you currently located?" with 4 location options
+- B2: Q0-06 replaced — fund source type multiselect (6 options), Q0-08c/d franchise sub-questions added
+- B3: Q0-09 reframed — "Do you have anything to disclose?" with 3 options + Q0-09c multiselect sub-question
+- B4: Q0-10 simplified — 5 home ties options, new W-WEAK-TIES scoring code
+
+**Scoring & Results (C1–C3):**
+- C1: Score engine fix — attorney flags now reduce score (was only risk flags)
+- C2: Results page personalisation — logged-in greeting, saved confirmation, email send button with loading/success/error states
+- C3: Franchise referral tracking — franchise_referral_requested state, Supabase column, API notification route
+
+**Navigation & State (D1–D2):**
+- D1: Navbar auth state — "Hi, [first_name]" when logged in
+- D2: Section visit tracking — useTrackSectionVisit hook applied to all 14 case file pages, last_visited_section column on application_lifecycle
+
+**Quiz Draft (E1):**
+- E1: Stale draft fix — expiry reduced from 7 days to 24 hours, franchiseReferralRequested persisted in draft
+
+**Files changed:**
+- src/app/login/page.tsx — smart routing, remember me, removed magic link
+- src/app/signup/page.tsx — first/last name fields
+- src/middleware.ts — email verification enforcement
+- src/components/Nav.tsx — first_name in dropdown
+- src/app/results/page.tsx — personalisation, email send
+- src/app/quiz/page.tsx — score engine, franchise tracking, draft expiry
+- public/data/module0_questions.json — Q0-05, Q0-06, Q0-08c/d, Q0-09, Q0-09c, Q0-10, score weights
+- src/hooks/useTrackSectionVisit.ts — NEW
+- supabase/migrations/20260611000000_add_last_visited_section.sql — NEW
+- All 14 section pages (business, calendar, checklist, family, investment, module1, module2, module3, module4, overview, qualifications, story, ties, upload)
+
+### Build
+Clean — zero errors. Commit: 400d1dc
+
 **What was decided:**
 - Current pages render as plain scrolling forms — do not match
   the quality of the rest of the platform. Client paid $550–$1,397.
@@ -1103,9 +1151,10 @@ All session files are in docs/sessions/. Prompt for agent: `cat docs/sessions/[f
 ## BUILD STATE
 
 - Branch: `dev`
-- Last commit: 63dc9dd (voice-to-text input)
+- Last commit: 400d1dc (auth, quiz, results fixes)
 - `npm run build`: Clean — 47 routes compiled
 - All core features implemented and built
-- Case file UX redesign spec complete — ready to build
+- Case file UX redesign complete ✅
 - Payments migration applied ✅
 - Stripe Price IDs live ✅
+- Auth + quiz scoring foundation solid ✅
