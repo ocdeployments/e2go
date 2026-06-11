@@ -41,7 +41,7 @@ export async function POST(req: Request) {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
   const verifyLink = `${appUrl}/verify?token=${token}`;
 
-  const isQualified = ['qualified', 'qualified_with_risks'].includes(outcome);
+  const isQualified = ['PROCEED', 'PROCEED_RISK'].includes(outcome);
   const subject = isQualified
     ? "Good news — your E-2 eligibility result"
     : "Your E-2 eligibility assessment result";

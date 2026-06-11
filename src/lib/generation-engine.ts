@@ -521,7 +521,6 @@ const FORBIDDEN_LEGAL_PHRASES = [
 const LEGAL_DISCLAIMERS = [
   'does not constitute legal advice',
   'not a law firm',
-  'prepared using E2go',
 ];
 
 const AI_TOOL_NAMES = [

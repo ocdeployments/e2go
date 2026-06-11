@@ -160,6 +160,12 @@ function calculateScore(warningCodes: string[], attorneyFlags: string[]): number
     const deduction = SCORE_WEIGHTS.deductions[code];
     if (deduction) score -= deduction;
   }
+  // Attorney flag caps: any flags cap at 89, 3+ flags cap at 74
+  if (attorneyFlags.length > 2) {
+    score = Math.min(score, 74);
+  } else if (attorneyFlags.length > 0) {
+    score = Math.min(score, 89);
+  }
   // Minimum score of 45 — flags don't eliminate eligibility
   return Math.max(score, 45);
 }

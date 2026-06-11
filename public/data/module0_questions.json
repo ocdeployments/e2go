@@ -447,7 +447,8 @@
       "W-TARGET-URGENT": 3,
       "W-NO-BIZ-IDENTIFIED": 4,
       "W-PROP-SOFT-30": 5,
-      "W-PROP-STRONG-30": 10
+      "W-PROP-STRONG-30": 10,
+      "W-SILENT-PARTNER": 10
     }
   }
 }

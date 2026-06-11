@@ -73,12 +73,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Parse request body
+    // Parse request body — systemPrompt is server-side only
     const body = await request.json();
-    const { systemPrompt, userPrompt, system, prompt } = body;
+    const { userPrompt, prompt } = body;
 
-    // Support both parameter formats for backwards compatibility
-    const finalSystemPrompt = systemPrompt || system || "You are a helpful assistant.";
     const finalUserPrompt = userPrompt || prompt;
 
     if (!finalUserPrompt) {
@@ -89,7 +87,7 @@ export async function POST(request: NextRequest) {
     }
 
     const result = await callAI({
-      systemPrompt: finalSystemPrompt,
+      systemPrompt: "You are a helpful assistant.",
       userPrompt: finalUserPrompt,
     });
 

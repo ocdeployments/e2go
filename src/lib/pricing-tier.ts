@@ -2,6 +2,7 @@ export type TierId =
   | 'solo_none'
   | 'solo_spouse'
   | 'solo_family_small'
+  | 'solo_family_large'
   | 'partnership_none'
   | 'partnership_couples'
   | 'partnership_families';
@@ -53,6 +54,19 @@ export const PRICING_TIERS: Record<TierId, PricingTier> = {
     name: 'Solo + Family',
     price: 750,
     description: 'Document preparation for you, your spouse, and your children.',
+    features: [
+      'Full document package generation',
+      'Spouse and dependent documentation',
+      'Consulate-formatted templates',
+      'Quality gate pipeline review',
+      'Pre-download acknowledgment'
+    ]
+  },
+  solo_family_large: {
+    id: 'solo_family_large',
+    name: 'Solo + Family (3–5 kids)',
+    price: 797,
+    description: 'Document preparation for you, your spouse, and 3–5 children.',
     features: [
       'Full document package generation',
       'Spouse and dependent documentation',
