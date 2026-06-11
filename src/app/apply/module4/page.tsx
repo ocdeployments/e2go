@@ -282,8 +282,19 @@ export default function Module4Page() {
             value={voiceText}
             onChange={(e) => setVoiceText(e.target.value)}
             placeholder="I chose this business because..."
-            className="w-full min-h-[180px] bg-[rgba(255,255,255,0.03)] border border-[rgba(201,168,76,0.20)] text-[#f5f0e8] p-4 text-base resize-none focus:outline-none focus:border-[#C9A84C]"
-            style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 300 }}
+            className="w-full resize-none outline-none transition-colors"
+            style={{
+              minHeight: '180px',
+              backgroundColor: 'rgba(201,168,76,0.02)',
+              border: '1px solid rgba(201,168,76,0.15)',
+              color: '#f5f0e8',
+              fontFamily: "'DM Sans', sans-serif",
+              fontWeight: 300,
+              fontSize: '14px',
+              lineHeight: '1.7',
+              padding: '14px 16px',
+              borderRadius: 0,
+            }}
           />
 
           <div className="flex justify-between items-center mt-3 mb-8">
@@ -393,8 +404,19 @@ export default function Module4Page() {
             value={answers[currentQuestion.question_number] || ''}
             onChange={(e) => setAnswers({ ...answers, [currentQuestion.question_number]: e.target.value })}
             placeholder="Your answer..."
-            className="w-full min-h-[120px] bg-[rgba(255,255,255,0.03)] border border-[rgba(201,168,76,0.20)] text-[#f5f0e8] p-4 text-base resize-none focus:outline-none focus:border-[#C9A84C]"
-            style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 300 }}
+            className="w-full resize-none outline-none transition-colors"
+            style={{
+              minHeight: '120px',
+              backgroundColor: 'rgba(201,168,76,0.02)',
+              border: '1px solid rgba(201,168,76,0.15)',
+              color: '#f5f0e8',
+              fontFamily: "'DM Sans', sans-serif",
+              fontWeight: 300,
+              fontSize: '14px',
+              lineHeight: '1.7',
+              padding: '14px 16px',
+              borderRadius: 0,
+            }}
           />
 
           <div className="flex justify-between items-center mt-6">
