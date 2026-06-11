@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
+import { unstable_batchedUpdates } from "react-dom";
 import { useParams, useRouter } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import { GENERATION_STEP_LABELS, DOCUMENT_TYPE_LABELS } from "@/types/generation";
@@ -124,45 +125,47 @@ export default function GenerateProgressPage() {
     (msg: SSEProgressMessage) => {
       console.log('[SSE msg]', msg.status, msg.awaitingApproval, msg.currentDocument);
 
-      setJobStatus(msg.status);
-      if (msg.error) setErrorMessage(msg.error);
+      unstable_batchedUpdates(() => {
+        setJobStatus(msg.status);
+        if (msg.error) setErrorMessage(msg.error);
 
-      const isAwaitingApproval = msg.status === 'awaiting_approval' || msg.awaitingApproval === true;
-      setAwaitingApproval(isAwaitingApproval);
+        const isAwaitingApproval = msg.status === 'awaiting_approval' || msg.awaitingApproval === true;
+        setAwaitingApproval(isAwaitingApproval);
 
-      if (msg.currentDocument) {
-        setCurrentDocumentType(msg.currentDocument);
-      }
-      if (msg.currentDocumentType) {
-        setCurrentDocumentType(msg.currentDocumentType);
-      }
-      if (msg.currentDocumentText) {
-        setDocumentText(msg.currentDocumentText);
-      }
-      if (msg.currentDocumentPreview) {
-        setDocumentPreview(msg.currentDocumentPreview);
-      }
+        if (msg.currentDocument) {
+          setCurrentDocumentType(msg.currentDocument);
+        }
+        if (msg.currentDocumentType) {
+          setCurrentDocumentType(msg.currentDocumentType);
+        }
+        if (msg.currentDocumentText) {
+          setDocumentText(msg.currentDocumentText);
+        }
+        if (msg.currentDocumentPreview) {
+          setDocumentPreview(msg.currentDocumentPreview);
+        }
 
-      const stepNum = msg.step || 0;
-      if (stepNum >= 7) {
-        setCurrentQualityStep(stepNum);
-      }
+        const stepNum = msg.step || 0;
+        if (stepNum >= 7) {
+          setCurrentQualityStep(stepNum);
+        }
 
-      if (msg.status === "completed") {
-        updateStepStatus(stepNum, "complete");
-        setOverallProgress(100);
-        setAwaitingApproval(false);
-      } else if (msg.status === "failed") {
-        updateStepStatus(stepNum, "failed");
-        setOverallProgress(Math.round((stepNum / 15) * 100));
-        setAwaitingApproval(false);
-      } else if (msg.status === "awaiting_approval") {
-        updateStepStatus(stepNum, "running");
-        setOverallProgress(Math.round((stepNum / 15) * 100));
-      } else {
-        updateStepStatus(stepNum, "running");
-        setOverallProgress(Math.round((stepNum / 15) * 100));
-      }
+        if (msg.status === "completed") {
+          updateStepStatus(stepNum, "complete");
+          setOverallProgress(100);
+          setAwaitingApproval(false);
+        } else if (msg.status === "failed") {
+          updateStepStatus(stepNum, "failed");
+          setOverallProgress(Math.round((stepNum / 15) * 100));
+          setAwaitingApproval(false);
+        } else if (msg.status === "awaiting_approval") {
+          updateStepStatus(stepNum, "running");
+          setOverallProgress(Math.round((stepNum / 15) * 100));
+        } else {
+          updateStepStatus(stepNum, "running");
+          setOverallProgress(Math.round((stepNum / 15) * 100));
+        }
+      });
     },
     [updateStepStatus]
   );
@@ -588,9 +591,9 @@ export default function GenerateProgressPage() {
               </h3>
 
               {/* Animated status cycling */}
+              {approvedDocuments >= 6 && currentQualityStep >= 7 && (
               <div className="relative h-6 overflow-hidden">
                 <div className="flex flex-col items-center animate-pulse" style={{ animationDuration: '3s' }}>
-                  {approvedDocuments >= 6 && currentQualityStep >= 7 && (
                     <span
                       className="text-[13px] text-white/50"
                       style={{ fontFamily: "'DM Sans', sans-serif" }}
@@ -601,9 +604,9 @@ export default function GenerateProgressPage() {
                       {currentQualityStep === 10 && "Sanitizing document metadata..."}
                       {currentQualityStep >= 11 && "Final quality gate..."}
                     </span>
-                  )}
                 </div>
               </div>
+              )}
             </div>
           )}
 

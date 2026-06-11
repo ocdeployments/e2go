@@ -937,8 +937,18 @@ export async function runGenerationPipeline(
   ): Promise<{ approved: boolean; revisionRequested: boolean }> => {
     const startTime = Date.now();
     const pollInterval = 2000; // 2 seconds
+    let warningSent = false;
 
     while (Date.now() - startTime < maxWaitMs) {
+      const elapsedMs = Date.now() - startTime;
+      const elapsedSeconds = Math.floor(elapsedMs / 1000);
+
+      // At 4 minutes, log warning before auto-approve
+      if (elapsedSeconds >= 240 && !warningSent) {
+        console.warn(`[generation-engine] Approval timeout warning for ${docType} — auto-approving in 60s`);
+        warningSent = true;
+      }
+
       const { data: doc } = await supabase
         .from('generated_documents')
         .select('status')
@@ -957,7 +967,8 @@ export async function runGenerationPipeline(
       await new Promise(resolve => setTimeout(resolve, pollInterval));
     }
 
-    // Timeout - treat as approval to not hang forever
+    // Timeout - auto-approve to not hang forever
+    console.warn(`[generation-engine] Auto-approving ${docType} after timeout`);
     return { approved: true, revisionRequested: false };
   };
 
