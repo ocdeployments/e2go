@@ -18,6 +18,24 @@ interface QuizSession {
   spouse_dob?: string | null;
   children?: { name: string; dob: string }[] | null;
   outcome: string;
+  result_json?: { target_date?: string } | null;
+}
+
+/**
+ * Convert quiz target-date range to an approximate working_target_date.
+ * Returns null for "Not sure yet" or missing data.
+ */
+function computeTargetDate(targetDateRange: string | null | undefined): string | null {
+  if (!targetDateRange) return null;
+  const now = new Date();
+  let monthsToAdd = 0;
+  if (targetDateRange.includes("Within 6 months")) monthsToAdd = 6;
+  else if (targetDateRange.includes("6 to 12")) monthsToAdd = 9;
+  else if (targetDateRange.includes("12 to 24")) monthsToAdd = 18;
+  else return null; // "Not sure yet"
+  const target = new Date(now);
+  target.setMonth(target.getMonth() + monthsToAdd);
+  return target.toISOString().split("T")[0];
 }
 
 const REFERRAL_CATEGORIES = [
@@ -187,6 +205,7 @@ export default function Module1Page() {
             application_type: applicationType,
             processing_path: applicationType === "partnership" ? "partnership" : "solo",
             family_composition: familyComposition,
+            working_target_date: computeTargetDate(quizSession?.result_json?.target_date),
             module_1_complete: true,
           })
           .eq("id", existingApp.id);
@@ -198,6 +217,7 @@ export default function Module1Page() {
             application_type: applicationType,
             processing_path: applicationType === "partnership" ? "partnership" : "solo",
             family_composition: familyComposition,
+            working_target_date: computeTargetDate(quizSession?.result_json?.target_date),
             module_1_complete: true,
             status: "in_progress",
           });

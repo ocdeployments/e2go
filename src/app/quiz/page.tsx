@@ -117,6 +117,34 @@ function evaluateShowIf(
 }
 
 // ---------------------------------------------------------------------------
+// Proportionality calculator
+// ---------------------------------------------------------------------------
+
+const INVESTMENT_MIDPOINTS: Record<string, number> = {
+  "Over $150,000": 175000,
+  "$100,000 – $150,000": 125000,
+  "$75,000 – $100,000": 87500,
+  "$50,000 – $75,000": 62500,
+  "Under $50,000": 35000,
+};
+
+function calculateProportionalityFlags(
+  investmentRange: string,
+  businessCost: string
+): { attorney: string[]; risk: string[] } {
+  const attorney: string[] = [];
+  const risk: string[] = [];
+  const investmentMid = INVESTMENT_MIDPOINTS[investmentRange];
+  if (!investmentMid) return { attorney, risk };
+  const cost = parseFloat(businessCost.replace(/[^0-9.]/g, ""));
+  if (!cost || cost <= 0) return { attorney, risk };
+  const pct = (investmentMid / cost) * 100;
+  if (pct < 30) attorney.push("W-PROP-STRONG-30");
+  else if (pct < 50) risk.push("W-PROP-SOFT-30");
+  return { attorney, risk };
+}
+
+// ---------------------------------------------------------------------------
 // Score calculator
 // ---------------------------------------------------------------------------
 
@@ -334,14 +362,21 @@ export default function QuizPage() {
       finalHardStops: string[],
       finalFranchiseReferral: boolean = false
     ) => {
-      const score = calculateScore(finalWarningCodes, finalAttorneyFlags);
-      const outcome = getOutcome(finalHardStops, finalAttorneyFlags, finalWarningCodes);
+      // Calculate proportionality flags
+      const investmentRange = (finalAnswers["Q0-07"] as string) || "";
+      const businessCost = (finalAnswers["Q0-business-cost"] as string) || "";
+      const propFlags = calculateProportionalityFlags(investmentRange, businessCost);
+      const allWarnings = [...new Set([...finalWarningCodes, ...propFlags.risk])];
+      const allAttorney = [...new Set([...finalAttorneyFlags, ...propFlags.attorney])];
+
+      const score = calculateScore(allWarnings, allAttorney);
+      const outcome = getOutcome(finalHardStops, allAttorney, allWarnings);
 
       const resultData = {
         outcome,
         score,
-        warnings: finalWarningCodes,
-        attorney_flags: finalAttorneyFlags,
+        warnings: allWarnings,
+        attorney_flags: allAttorney,
         franchise_interest: finalFranchise,
         answers: finalAnswers,
         country: (finalAnswers["Q0-01"] as string) || "",
@@ -391,6 +426,10 @@ export default function QuizPage() {
           return "just_me";
         })(),
         hard_stops_triggered: finalHardStops,
+        readiness_stage: (finalAnswers["Q0-readiness"] as string) || null,
+        business_type: (finalAnswers["Q0-business-type"] as string) || null,
+        target_date: (finalAnswers["Q0-target-date"] as string) || null,
+        business_cost: (finalAnswers["Q0-business-cost"] as string) || null,
       };
 
       localStorage.setItem("e2go_quiz_result", JSON.stringify(resultData));
@@ -410,11 +449,13 @@ export default function QuizPage() {
             outcome,
             score,
             hard_stop_codes: finalHardStops,
-            attorney_flag_codes: finalAttorneyFlags,
-            risk_flag_codes: finalWarningCodes,
+            attorney_flag_codes: allAttorney,
+            risk_flag_codes: allWarnings,
             application_type: resultData.application_type,
             franchise_interest: finalFranchise,
             franchise_referral_requested: finalFranchiseReferral,
+            readiness_stage: resultData.readiness_stage || null,
+            business_type: resultData.business_type || null,
             result_json: resultData,
             casl_consent: true,
             casl_consent_at: new Date().toISOString(),

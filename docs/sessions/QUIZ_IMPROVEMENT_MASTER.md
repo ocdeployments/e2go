@@ -54,11 +54,11 @@ In rough priority order:
 10. Migration 004 not applied to Supabase
 
 ### What Is Missing (never built)
-1. Business type question (most important missing question)
-2. Total business cost question (proportionality calculation)
-3. Readiness stage question (post-quiz routing)
-4. Target date question (timeline personalisation)
-5. Franchise contact sub-question (referral lead capture)
+1. ~~Business type question (most important missing question)~~ ✅ FIXED — Q0-business-type added (Session 2, June 11)
+2. ~~Total business cost question (proportionality calculation)~~ ✅ FIXED — Q0-business-cost added with proportionality scoring (Session 2, June 11)
+3. ~~Readiness stage question (post-quiz routing)~~ ✅ FIXED — Q0-readiness added, wired to quiz_sessions.readiness_stage (Session 2, June 11)
+4. ~~Target date question (timeline personalisation)~~ ✅ FIXED — Q0-target-date added, wired to working_target_date + results page timeline (Session 2, June 11)
+5. ~~Franchise contact sub-question (referral lead capture)~~ ✅ FIXED — Q0-08c + Q0-08d added, admin email via Resend (Session 2, June 11)
 6. Q0-01 dual citizenship sub-question
 7. Q0-09 ownership % sub-question for not-50/50 path
 8. Q0-17 common-law relationship option

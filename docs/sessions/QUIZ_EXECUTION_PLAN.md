@@ -330,7 +330,7 @@ If major issues are found, flag them and add to QUIZ_IMPROVEMENT_MASTER.md.
 | Session | Scope | Status | Score After |
 |---|---|---|---|
 | SESSION_AUTH_QUIZ_RESULTS_FIXES | Auth, scoring, broken questions, results | ✅ Complete — commit 400d1dc | 7.0 |
-| Session 2: New Questions | 4 missing questions + franchise sub | ⬜ Not started | 7.8 est. |
+| Session 2: New Questions | 4 missing questions + franchise sub | ✅ Complete — June 11, 2026 | 7.8 est. |
 | Session 3: Structural Fixes | Fix existing question problems | ⬜ Not started | 8.3 est. |
 | Session 4: Sequence + Context | Reorder, headings, hard stop content | ⬜ Not started | 8.9 est. |
 | Session 5: Module 3 Gaps | Verify/build denial-prevention questions | ⬜ Not started | 9.0 est. |
@@ -366,4 +366,4 @@ Do not let the agent discover analysis that is already in the master document �
 
 *File location: ~/E2-go/docs/QUIZ_EXECUTION_PLAN.md*
 *Update progress table after every session.*
-*Last updated: June 10, 2026*
+*Last updated: June 11, 2026*

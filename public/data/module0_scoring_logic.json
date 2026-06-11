@@ -217,6 +217,13 @@
       "trigger": ["In the planning stage — I have not yet secured the funds"],
       "level": "attorney_recommended",
       "note": "Applicant not yet in the process of investing under 9 FAM"
+    },
+    {
+      "code": "W-PROP-STRONG-30",
+      "question": "Q0-business-cost",
+      "trigger": "proportionality < 30%",
+      "level": "attorney_recommended",
+      "note": "Investment below 30% of total business cost — substantiality will be heavily scrutinised"
     }
   ],
   "risk_flags": [
@@ -302,6 +309,20 @@
       "level": "risk_flag"
     },
     {
+      "code": "W-TARGET-URGENT",
+      "question": "Q0-target-date",
+      "trigger": ["Within 6 months"],
+      "level": "risk_flag",
+      "note": "Ambitious timeline — applicant needs to start immediately"
+    },
+    {
+      "code": "W-NO-BIZ-IDENTIFIED",
+      "question": "Q0-business-type",
+      "trigger": ["I have not identified a specific business yet"],
+      "level": "risk_flag",
+      "note": "Business must be identified before application can be filed"
+    },
+    {
       "code": "W-HOLDCO-01",
       "question": "Q0-14c",
       "trigger": ["Through a holding company or corporation"],
@@ -342,6 +363,13 @@
       "trigger": ["I am not sure"],
       "level": "risk_flag",
       "note": "Ownership structure unclear — must confirm treaty-national ownership percentage"
+    },
+    {
+      "code": "W-PROP-SOFT-30",
+      "question": "Q0-business-cost",
+      "trigger": "30% <= proportionality < 50%",
+      "level": "risk_flag",
+      "note": "Investment 30-49% of total business cost — proportionality may be questioned"
     }
   ],
   "investment_thresholds_usd": {
@@ -430,8 +458,23 @@
       }
     }
   },
-  "version_notes": [
-    "v3.0 - Updated for global treaty country support",
+  "proportionality_scoring": {
+    "description": "Investment proportionality test — compares Q0-05 investment amount to Q0-business-cost total. Uses midpoint of investment range.",
+    "investment_range_midpoints": {
+      "Over $150,000": 175000,
+      "$100,000 – $150,000": 125000,
+      "$75,000 – $100,000": 87500,
+      "$50,000 – $75,000": 62500,
+      "Under $50,000": 35000
+    },
+    "thresholds": {
+      "clean": { "min_pct": 50, "flag": null, "note": "No flag" },
+      "soft": { "min_pct": 30, "max_pct": 49, "flag": "W-PROP-SOFT-30", "level": "risk_flag", "note": "30-49% — risk flag with advisory" },
+      "strong": { "max_pct": 29, "flag": "W-PROP-STRONG-30", "level": "attorney_recommended", "note": "Below 30% — officer will scrutinise substantiality" }
+    },
+    "skip_if": "Q0-business-type = 'I have not identified a specific business yet'"
+  },
+  "session_record_fields": [
     "Q0-01 now checks against treaty_countries.json instead of static options",
     "Added Q0-E2: Prior E-2 application history (W-E2-DENIED, W-E2-PENDING)",
     "Added Q0-STATE: Target U.S. state selector",

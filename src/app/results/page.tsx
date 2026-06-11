@@ -120,6 +120,30 @@ function formatToday(): string {
   });
 }
 
+function getTargetDateMessage(targetDate: string | null | undefined): string | null {
+  if (!targetDate || targetDate === "Not sure yet") return null;
+  const monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+  const now = new Date();
+  let monthsToAdd = 0;
+  if (targetDate.includes("Within 6 months")) monthsToAdd = 6;
+  else if (targetDate.includes("6 to 12")) monthsToAdd = 9;
+  else if (targetDate.includes("12 to 24")) monthsToAdd = 18;
+  else return null;
+  const target = new Date(now);
+  target.setMonth(target.getMonth() + monthsToAdd);
+  const targetMonth = monthNames[target.getMonth()];
+  const targetYear = target.getFullYear();
+  // Submit ~4 months before target to allow processing time
+  const submitBy = new Date(target);
+  submitBy.setMonth(submitBy.getMonth() - 4);
+  const submitMonth = monthNames[submitBy.getMonth()];
+  const submitYear = submitBy.getFullYear();
+  return `To be in the US by ${targetMonth} ${targetYear}, you need to submit your application by ${submitMonth} ${submitYear}.`;
+}
+
 function getConsulateIntel(country: string): { name: string; intel: string } {
   const map: Record<string, { name: string; intel: string }> = {
     "Canada": {
@@ -253,6 +277,7 @@ export default function ResultsPage() {
   const timelineWeeks = getTimelineWeeks(data);
   const timeline = getInterviewMonthRange(timelineWeeks.weeksMin, timelineWeeks.weeksMax);
   const consulate = getConsulateIntel(data.country);
+  const targetDateMsg = getTargetDateMessage(data.answers?.["Q0-target-date"] as string);
   const scoreLabel = getScoreLabel(score);
   const verdict = getVerdict(outcome, score);
   const verdictSub = getVerdictSub(outcome, data.warnings || []);
@@ -466,6 +491,11 @@ export default function ResultsPage() {
               <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "28px", fontWeight: 300, color: "#C9A84C", marginBottom: "4px" }}>{timeline}</div>
               <div style={{ fontSize: "12px", color: "rgba(245,240,232,0.4)" }}>Your estimated interview window, based on your profile and current processing times. Calculated from today, {formatToday()}.</div>
             </div>
+            {targetDateMsg && (
+              <div style={{ padding: "12px 16px", border: "1px solid rgba(201,168,76,0.15)", background: "rgba(201,168,76,0.03)", marginTop: "8px", marginBottom: "12px" }}>
+                <div style={{ fontSize: "12px", color: "#C9A84C", lineHeight: 1.6 }}>{targetDateMsg}</div>
+              </div>
+            )}
             <div style={{ display: "flex", alignItems: "flex-start" }}>
               {["Eligibility confirmed", "Business selection", "Application package", "DS-160 & booking", "Interview"].map((step, i) => (
                 <div key={step} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: "6px" }}>

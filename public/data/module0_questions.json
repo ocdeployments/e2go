@@ -18,6 +18,41 @@
       "options": []
     },
     {
+      "id": "Q0-readiness",
+      "type": "select",
+      "section": "eligibility",
+      "section_index": 0,
+      "question": "Where are you in your E-2 journey?",
+      "helper_text": "This helps us tailor your results and next steps to where you actually are.",
+      "tooltip": null,
+      "is_sub": false,
+      "parent": null,
+      "show_if": null,
+      "options": [
+        { "text": "I have made the decision — I am ready to apply", "action": "continue", "code": null, "warning_message": null },
+        { "text": "I am seriously researching and getting close", "action": "continue", "code": null, "warning_message": null },
+        { "text": "I am exploring whether this is right for me", "action": "continue", "code": null, "warning_message": null }
+      ]
+    },
+    {
+      "id": "Q0-target-date",
+      "type": "select",
+      "section": "eligibility",
+      "section_index": 0,
+      "question": "When are you hoping to be living in the United States?",
+      "helper_text": "This helps us personalise your timeline and compliance calendar.",
+      "tooltip": null,
+      "is_sub": false,
+      "parent": null,
+      "show_if": null,
+      "options": [
+        { "text": "Within 6 months", "action": "warn:W-TARGET-URGENT", "code": "W-TARGET-URGENT", "warning_message": "This is an ambitious timeline. Starting immediately gives you the best chance of meeting it." },
+        { "text": "6 to 12 months", "action": "continue", "code": null, "warning_message": null },
+        { "text": "12 to 24 months", "action": "continue", "code": null, "warning_message": null },
+        { "text": "Not sure yet", "action": "continue", "code": null, "warning_message": null }
+      ]
+    },
+    {
       "id": "Q0-02",
       "type": "select",
       "section": "eligibility",
@@ -165,6 +200,41 @@
       ]
     },
     {
+      "id": "Q0-business-type",
+      "type": "select",
+      "section": "business",
+      "section_index": 3,
+      "question": "What best describes the business you are investing in?",
+      "helper_text": "Different business types have different compliance profiles and documentation requirements for E-2 purposes.",
+      "tooltip": null,
+      "is_sub": false,
+      "parent": null,
+      "show_if": null,
+      "options": [
+        { "text": "Service business — consulting, staffing, cleaning, or similar", "action": "continue", "code": null, "warning_message": null },
+        { "text": "Franchise — an established brand and system", "action": "sub:Q0-08c", "code": null, "warning_message": null },
+        { "text": "Retail — physical store or e-commerce", "action": "continue", "code": null, "warning_message": null },
+        { "text": "Food and beverage — restaurant, café, or catering", "action": "continue", "code": null, "warning_message": null },
+        { "text": "Healthcare or senior care", "action": "continue", "code": null, "warning_message": null },
+        { "text": "Real estate — with active development or management", "action": "continue", "code": null, "warning_message": null },
+        { "text": "I have not identified a specific business yet", "action": "warn:W-NO-BIZ-IDENTIFIED", "code": "W-NO-BIZ-IDENTIFIED", "warning_message": "Your business must be identified before an E-2 application can be filed. Preparation can begin now — we will help you build a strong profile while you search." },
+        { "text": "Other", "action": "continue", "code": null, "warning_message": null }
+      ]
+    },
+    {
+      "id": "Q0-business-cost",
+      "type": "currency",
+      "section": "investment",
+      "section_index": 1,
+      "question": "What is the approximate total cost to start or acquire this business — including purchase price, startup costs, and working capital?",
+      "helper_text": "This helps us assess the proportionality of your investment relative to the total business cost — a key factor in the substantiality test.",
+      "tooltip": "USCIS evaluates whether your investment is substantial relative to the total cost of the enterprise. A higher investment percentage strengthens your case.",
+      "is_sub": false,
+      "parent": null,
+      "show_if": { "Q0-business-type": ["Service business — consulting, staffing, cleaning, or similar", "Franchise — an established brand and system", "Retail — physical store or e-commerce", "Food and beverage — restaurant, café, or catering", "Healthcare or senior care", "Real estate — with active development or management", "Other"] },
+      "options": []
+    },
+    {
       "id": "Q0-08",
       "type": "select",
       "section": "business",
@@ -224,16 +294,16 @@
       "type": "select",
       "section": "business",
       "section_index": 3,
-      "question": "Have you made contact with the franchisor or business owner yet?",
-      "helper_text": "This helps us understand your stage in the process and what documentation you may already have.",
+      "question": "Have you made contact with the franchisor yet?",
+      "helper_text": "This helps us understand your stage in the franchise process and what documentation you may already have.",
       "tooltip": null,
       "is_sub": true,
-      "parent": "Q0-08",
-      "show_if": { "Q0-08": ["I have a specific business identified and ready to invest in"] },
+      "parent": "Q0-business-type",
+      "show_if": { "Q0-business-type": ["Franchise — an established brand and system"] },
       "options": [
-        { "text": "Yes — I've been in contact and have information", "action": "continue", "code": null, "warning_message": null },
-        { "text": "No — I know which one I want but haven't reached out yet", "action": "sub:Q0-08d", "code": null, "warning_message": null },
-        { "text": "This is a business, not a franchise", "action": "continue", "code": null, "warning_message": null }
+        { "text": "Yes — I have been in contact and have information", "action": "continue", "code": null, "warning_message": null },
+        { "text": "No — I know which franchise I want but have not reached out", "action": "sub:Q0-08d", "code": null, "warning_message": null },
+        { "text": "I am still deciding which franchise", "action": "continue", "code": null, "warning_message": null }
       ]
     },
     {
@@ -246,7 +316,7 @@
       "tooltip": null,
       "is_sub": true,
       "parent": "Q0-08c",
-      "show_if": { "Q0-08c": ["No — I know which one I want but haven't reached out yet"] },
+      "show_if": { "Q0-08c": ["No — I know which franchise I want but have not reached out"] },
       "options": [
         { "text": "Yes, please connect me", "action": "flag_franchise_referral+continue", "code": null, "warning_message": null },
         { "text": "No, I'll reach out myself", "action": "continue", "code": null, "warning_message": null }
@@ -373,7 +443,11 @@
       "W-FAMILY-GIFT": 5,
       "W-LOAN-FUNDED": 8,
       "W-LOW-INVESTMENT": 6,
-      "W-BORDERLINE-INVESTMENT": 10
+      "W-BORDERLINE-INVESTMENT": 10,
+      "W-TARGET-URGENT": 3,
+      "W-NO-BIZ-IDENTIFIED": 4,
+      "W-PROP-SOFT-30": 5,
+      "W-PROP-STRONG-30": 10
     }
   }
 }
