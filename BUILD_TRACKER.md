@@ -1,6 +1,6 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 10, 2026 — Quiz v6.0 complete (all 30 bugs fixed, comprehensive rebuild), test fixtures written
+**Last Updated:** June 10, 2026 — Case file redesign complete
 **App Name:** E2go.app
 **Stack:** Next.js 14 · TypeScript · Tailwind CSS · Supabase · Claude API
 **Dev URL:** https://e2go-git-dev-ocdeployments-projects.vercel.app
@@ -77,6 +77,8 @@ changed, run npm run build:clean, report summary.
 | /learn hub | ✅ COMPLETE | 6 SEO articles |
 | Module 1 | ✅ COMPLETE | Onboarding, consent, application record |
 | Module 2 | ✅ COMPLETE | Business advisor, category selection |
+| Voice-to-text input | ✅ COMPLETE | commit 63dc9dd — mic on all 8 textareas, bug noted |
+| **Case file UX redesign** | ⬜ NOT STARTED | Session file: docs/sessions/SESSION_CASEFILE_REDESIGN.md |
 
 ---
 
@@ -135,13 +137,13 @@ Update STRIPE_PRICE_* env vars with new Price IDs after running.
 | ~~Module 3 Tabs F,G,H,L~~ | ~~deleted~~ | ✅ REMOVED — superseded by case file |
 | ~~Onboarding~~ | ~~deleted~~ | ✅ REMOVED — orphaned |
 | ~~Outcome~~ | ~~deleted~~ | ✅ REMOVED — orphaned |
-| Case File Overview | /apply | ✅ COMPLETE |
-| Case File: Your Story | /apply/story | ✅ COMPLETE |
-| Case File: Your Business | /apply/business | ✅ COMPLETE |
-| Case File: Your Investment | /apply/investment | ✅ COMPLETE |
-| Case File: Your Qualifications | /apply/qualifications | ✅ COMPLETE |
-| Case File: Your Family | /apply/family | ✅ COMPLETE |
-| Case File: Your Ties | /apply/ties | ✅ COMPLETE |
+| Case File Overview | /apply | ✅ COMPLETE | Obsidian Gold section cards |
+| Case File: Your Story | /apply/story | ✅ COMPLETE | Two-panel CaseFileShell, voice input |
+| Case File: Your Business | /apply/business | ✅ COMPLETE | Two-panel CaseFileShell, voice input |
+| Case File: Your Investment | /apply/investment | ✅ COMPLETE | Two-panel CaseFileShell, voice input |
+| Case File: Your Qualifications | /apply/qualifications | ✅ COMPLETE | Two-panel CaseFileShell, voice input |
+| Case File: Your Family | /apply/family | ✅ COMPLETE | Two-panel CaseFileShell, all variants preserved |
+| Case File: Your Ties | /apply/ties | ✅ COMPLETE | Two-panel CaseFileShell, voice input |
 | Score | /score | ✅ COMPLETE |
 | Generate | /generate/[appId] | ✅ COMPLETE |
 | Documents | /documents/[appId] | ✅ COMPLETE |
@@ -249,6 +251,7 @@ New scoring entries: 2 hard stops (PR-PASSIVE-INVEST, PR-NONPROFIT),
 | /apply/upload/gaps — gap report with section coverage | ✅ COMPLETE |
 | PreFillBadge — amber document variants added | ✅ COMPLETE |
 | Acknowledgment tracking for pre-filled fields | ✅ COMPLETE |
+| Visual consistency with case file redesign | ⚠️ Pending redesign session |
 
 ⚠️ ACTION REQUIRED: Apply migration docs/migrations/004_answers_source_update.sql
 to Supabase: npx supabase db push
@@ -314,7 +317,37 @@ Old tabs (module3/a-l) remain fully functional as fallback.
 - `applications.partner_gender` column
 - Migration: `docs/migrations/001_case_file_columns.sql`
 
-**Status:** ✅ COMPLETE — all 6 section pages built, build clean (73 routes), old tabs preserved
+**Status:** ✅ data wired — all 6 section pages built, build clean, old tabs preserved
+⚠️ UX redesign pending — session file: docs/sessions/SESSION_CASEFILE_REDESIGN.md
+
+### Case file UX redesign — spec complete, build pending
+
+Session file: `docs/sessions/SESSION_CASEFILE_REDESIGN.md`
+
+What the redesign delivers:
+- Two-panel layout: questions left, document preview right (desktop)
+- Drawer (tablet) and full-screen overlay (mobile) for preview panel
+- Cormorant Garamond question labels — not body copy weight
+- Cluster navigation with completion states in sidebar
+- Document preview fills in as user types — template-based Phase 1
+  (Phase 2: live AI paragraph generation per cluster, after first paying user)
+- Voice input redesigned: full-width bar below each textarea,
+  labelled "Speak your answer", gold pulse + waveform when active
+- Mic permission bug fixed: getUserMedia pre-check before SpeechRecognition.start()
+- All variants preserved: partnership three-track, COS blocks,
+  family sub-paths, all advisory/risk flag components
+- Mobile: horizontal cluster pills + full-screen overlay preview
+- Tablet: drawer from right
+- Upload flow visual consistency (/apply/upload through /apply/upload/gaps)
+- Module 4 visual consistency only — NO logic changes, NO mic button
+
+### Voice-to-text input — Phase 1 (committed June 10, commit 63dc9dd)
+- useSpeechInput hook: src/hooks/useSpeechInput.ts
+- TextArea component updated with mic button (corner icon — superseded by redesign)
+- 8 textareas across 6 sections have voice input
+- Known bug: mic button disappears on click (getUserMedia permission pre-check missing)
+- Fix: part of case file redesign session (SESSION_CASEFILE_REDESIGN.md)
+- /apply/module4 voice sample unchanged — separate system, no mic button
 
 ---
 
@@ -338,6 +371,12 @@ Step 13 → Quality gate
 Step 14 → Pre-download acknowledgment (5 checkboxes)
 Step 15 → Preview unlocked
 ```
+
+Known issues in generation engine:
+- Issue A: Approval gate timing — may not pause fully between documents
+- Issue B: setState-during-render React violation (~line 100 of generate page)
+- Issue C: Right column renders multiple empty boxes
+Fix file: docs/sessions/SESSION_PLAN_GENERATION_FIXES.md
 
 ---
 
@@ -398,6 +437,7 @@ Status: APPLIED — database is up to date
 | docs/DOCUMENT_UPLOAD_SPEC.md | ✅ Written — June 9, 2026 |
 | docs/TEST_FIXTURES.md | ✅ Written — June 10, 2026 |
 | docs/QUIZ_REBUILD_PLAN_V6.md | ✅ Written — June 10, 2026 |
+| docs/sessions/SESSION_CASEFILE_REDESIGN.md | ✅ Written — June 10, 2026 |
 
 ---
 
@@ -817,6 +857,100 @@ Use Supabase SQL to test full case file with pre-populated answers.
 
 ---
 
+## SESSION — Voice-to-Text Input (June 10, 2026)
+
+### Completed — commit 63dc9dd on dev
+
+- **useSpeechInput hook**: src/hooks/useSpeechInput.ts
+  Web Speech API wrapper — free, no API key, runs in browser
+  Supports Chrome and Edge. Graceful degradation on Firefox/unsupported.
+- **TextArea component updated**: Mic button added to all 8 textareas
+  across 6 case file sections
+- **Browser notice**: One-time inline notice for unsupported browsers,
+  dismissible, stored in localStorage (e2go_voice_notice_dismissed)
+- **/apply/module4 unchanged**: Voice sample system is a separate system.
+  No mic button added there.
+
+### Known bug
+Mic button disappears on click — getUserMedia permission pre-check missing.
+SpeechRecognition.start() fires before browser grants microphone permission.
+Fix: call navigator.mediaDevices.getUserMedia({audio: true}) first,
+then start recognition in .then() callback.
+This fix is part of the case file redesign session.
+
+### Coverage
+- /apply/story: 3 textarea fields
+- /apply/business: 1 textarea field
+- /apply/investment: 1 textarea field
+- /apply/qualifications: 1 textarea field
+- /apply/family: 1 textarea field
+- /apply/ties: 1 textarea field
+- Total: 8 textareas across 6 sections
+
+---
+
+## SESSION — Case File UX Redesign — COMPLETE (June 10, 2026)
+
+### Completed — Full Implementation
+
+Case file UX redesign fully implemented across all 6 section pages.
+Session file: docs/sessions/SESSION_CASEFILE_REDESIGN.md
+
+**What was built:**
+- CaseFileShell.tsx — two-panel layout (200px sidebar | questions | preview)
+- TextArea.tsx — auto-resize, voice input bar, waveform, word count
+- AdvisoryBlock, RiskFlag, PreFillBadge — restyled to Obsidian Gold
+- SectionCard.tsx — restyled for overview page
+- All 6 section pages migrated to CaseFileShell
+- Module 4 textarea visual consistency (no mic button)
+- Upload flow already Obsidian Gold — no changes needed
+
+**Commits:** a9dfcb9, 5d02c15, c56f3a4, db919eb, b20065e, a421108, ddaccac, 7502ea8, fd710fa
+
+**What was decided:**
+- Current pages render as plain scrolling forms — do not match
+  the quality of the rest of the platform. Client paid $550–$1,397.
+- Redesign is not polish. It is product.
+- Standard: "Would someone who paid $600 feel embarrassed showing
+  this screen to their spouse?" If uncertain — rebuild it.
+
+**Layout decisions locked:**
+- Desktop (≥1024px): 3-column — 200px sidebar | questions | document preview
+- Tablet (768–1023px): 2-column + right drawer for preview
+- Mobile (<768px): horizontal cluster pills + full-screen overlay preview
+- CaseFileShell.tsx: new shared component wrapping all 6 sections
+
+**Voice input redesign:**
+- Full-width bar below each textarea (not corner icon)
+- "Speak your answer" labelled button
+- Active: gold pulse animation + 4-bar animated waveform
+- Mic permission bug fix: getUserMedia pre-check
+- Scope: TextArea component only — NOT /apply/module4
+
+**Document preview panel (Phase 1):**
+- Template-based — fills in as user types, no API call, no cost
+- Fill progress bar per document (height 2px, gold)
+- Phase 2 (after first paying user): live AI paragraph generation
+  per cluster, ~$0.05–$0.75/session
+
+**Scope of redesign:**
+- /apply overview page — section cards
+- /apply/story through /apply/ties — all 6 sections
+- /apply/upload through /apply/upload/gaps — visual consistency
+- /apply/module4 — textarea visual consistency only, NO logic changes
+- Old fallback tabs /apply/module3/[a-k] — NOT touched
+
+**Impact assessment:**
+- Data layer fully insulated — only visual layer changes
+- All data hooks, auto-save, onChange handlers preserved
+- All variants preserved: partnership, COS, family sub-paths
+- Data write verification test required after each section rebuild
+
+**Document-to-cluster map:** documented in session file Step 5
+All 6 sections × all clusters mapped to exact document fields.
+
+---
+
 ## SESSION LOG (Prior sessions)
 
 ### June 5, 2026 — Session: End-to-End Payment Test
@@ -895,293 +1029,83 @@ Use Supabase SQL to test full case file with pre-populated answers.
 
 ---
 
-## NEXT SESSION PRIORITIES (Updated June 9, 2026)
+## NEXT SESSION PRIORITIES (Updated June 10, 2026)
 
-### Blocking first paying user
-1. **Apply payments table migration** — Run `20260605110625_payments_table.sql`
-2. **Recreate all Stripe Price IDs at new amounts** — Run scripts/stripe-setup.ts,
-   update all STRIPE_PRICE_* in .env.local. Old founding member IDs are wrong.
-3. **Run end-to-end payment test** — After migration + price IDs updated
-4. **Login page 500 fix** — Unsplash image 404ing. Session file: SESSION_HANDOFF_JUNE9.md Prompt 1
-5. ~~**Simulator Groq transcription**~~ — ✅ COMPLETE June 9
-6. ~~**Simulator Groq TTS**~~ — ✅ COMPLETE June 9
-7. ~~**Simulator 15-minute timer**~~ — ✅ COMPLETE June 9
-8. ~~**Simulator $29.99 purchase**~~ — ✅ COMPLETE June 9 (env var rename still needed)
-9. ~~**Simulator design violations**~~ — ✅ COMPLETE June 9
+### Priority 1 — Apply answers source migration
+Run: `npx supabase db push`
+File: `supabase/migrations/004_answers_source_update.sql`
+Status: exists, never applied
 
-### Quiz accuracy (run after simulator)
-10. ~~**Quiz UX fixes**~~ — ✅ COMPLETE June 9 (SESSION_QUIZ_FIXES.md)
-11. ~~**Quiz legal accuracy fixes**~~ — ✅ COMPLETE June 9 (SESSION_QUIZ_FIXES_2.md)
+### Priority 2 — End-to-end payment test
+Full flow: quiz → pricing → checkout (4242 4242 4242 4242) →
+dashboard → /apply → Module 3 → Generation → Download
+Test applicant: Michael James Chen
+UUID: 9f981747-e3e4-4941-9f86-9871f8117b66
+Use SKIP_PAYMENT_WALL=true in .env.local for generation test
 
-### Module 3 case file (verify and extend)
-12. **Verify 34-gap questions are integrated** — Case file was built but
-    gap questions from June 9 planning may not be in the build.
-    Session file: docs/sessions/SESSION_MODULE3_CASEFILE.md
-13. **Partnership dual-track UI** — Shared + personal + partner B sections.
-    Session file: docs/sessions/SESSION_MODULE3_CASEFILE.md
+### Priority 3 — Generation engine fixes
+File: docs/sessions/SESSION_PLAN_GENERATION_FIXES.md
+Three known issues: approval gate, setState violation, empty boxes
 
-### UI polish
-14. **Hero CTA buttons and stats strip** — Four surgical fixes.
-    Session file: docs/sessions/SESSION_HANDOFF_JUNE9.md (Prompt 1 area)
-    Exact changes documented in IDEAS.md Section 21.
-
-### After quiz fixes — document upload feature
-12. ~~**Document upload Session A**~~ — ✅ COMPLETE June 9
-13. ~~**Document upload Session B**~~ — ✅ COMPLETE June 9
-    ⚠️ Apply migration 004_answers_source_update.sql: npx supabase db push
+### Priority 4 — Verify 34-gap questions are integrated
+Case file was built but gap questions from June 9 planning
+may not be in the build.
+Session file: docs/sessions/SESSION_MODULE3_CASEFILE.md
 
 ### Future sessions (after first paying user)
-15. Admin dashboard — user management, payment history
-16. Support ticket system
-17. Lifecycle tracking throughout app
-18. Compliance calendar — spec written at docs/COMPLIANCE_CALENDAR_SPEC.md
-19. Renewal module — spec written at docs/RENEWAL_MODULE_SPEC.md
+- Admin dashboard — user management, payment history
+- Support ticket system
+- Lifecycle tracking throughout app
+- Compliance calendar — spec written at docs/COMPLIANCE_CALENDAR_SPEC.md
+- Renewal module — spec written at docs/RENEWAL_MODULE_SPEC.md
 
 ---
 
-## KNOWN ISSUES (Updated June 9, 2026)
+## KNOWN ISSUES (Updated June 10, 2026)
 
-1. **Payments table not in Supabase** — Migration exists, not applied
-2. **All Stripe Price IDs wrong** — Old founding member pricing ($297–$647).
-   Must recreate at new amounts ($550–$1,397) before any live payment
-3. ~~**Login page 500 error**~~ — ✅ FIXED June 10 (commit e115caf — flag gradient corrected)
-4. ~~**Simulator transcription placeholder**~~ — ✅ FIXED June 9
-5. ~~**Simulator purchase button + env var + useEffect**~~ — ✅ FULLY COMPLETE June 9 (commit 0aca5dc)
-6. ~~**Quiz selected option blue border**~~ — ✅ FIXED June 9
-7. ~~**Quiz family question conflates nuclear and extended family**~~ — ✅ FIXED June 9
-8. ~~**Results page shows weeks not months**~~ — ✅ FIXED June 9
-9. ~~**Three+ partner hard stop**~~ — ✅ FIXED June 9 (all 7 legal accuracy fixes complete)
-10. **Quiz nationality selector** — curl/browser difficulty, works in browser
-11. **Fast Refresh errors** — Occasional hot reload (non-blocking)
-12. **Migration 004 pending** — docs/migrations/004_answers_source_update.sql
-    not yet applied. Run: npx supabase db push
+1. **Mic button disappears on click** — getUserMedia pre-check missing.
+   Fix in case file redesign session.
+2. **Case file pages look like draft forms** — UX redesign pending.
+   Session file: docs/sessions/SESSION_CASEFILE_REDESIGN.md
+3. **Migration 004 pending** — docs/migrations/004_answers_source_update.sql
+   not yet applied. Run: npx supabase db push
+4. **Generation engine: approval gate, setState, empty boxes** — MEDIUM
+   File: docs/sessions/SESSION_PLAN_GENERATION_FIXES.md
+5. ~~**Payments table not in Supabase**~~ — ✅ FIXED June 10
+6. ~~**All Stripe Price IDs wrong**~~ — ✅ FIXED June 10
+7. ~~**Login page 500 error**~~ — ✅ FIXED June 10 (commit e115caf)
+8. ~~**Simulator transcription placeholder**~~ — ✅ FIXED June 9
+9. ~~**Simulator purchase button + env var + useEffect**~~ — ✅ FIXED June 9
+10. ~~**Quiz selected option blue border**~~ — ✅ FIXED June 9
+11. **Quiz nationality selector** — curl/browser difficulty, works in browser
+12. **Fast Refresh errors** — Occasional hot reload (non-blocking)
+13. **Stripe API version outdated (2024-06-20)** — LOW
+    Upgrade apiVersion in scripts/stripe-setup.ts when convenient
 
 ---
 
-## SESSION FILES INDEX (June 9, 2026)
+## SESSION FILES INDEX
 
 All session files are in docs/sessions/. Prompt for agent: `cat docs/sessions/[filename]`
 
 | File | Purpose | Priority |
 |---|---|---|
-| SESSION_HANDOFF_JUNE9.md | Login fix, Stripe migration, generation engine fixes, E2E test | 1 — run now |
-| SESSION_SIMULATOR.md | Simulator: Groq TTS, transcription, timer, purchase, design fixes | 2 |
-| SESSION_QUIZ_FIXES.md | Quiz UX: family split, partnership, months, back button, review page | 3 |
-| SESSION_QUIZ_FIXES_2.md | Quiz legal accuracy: 9 FAM partnership rules, hard stops | 4 |
-| SESSION_MODULE3_CASEFILE.md | Case file: gap questions, partnership UI, dynamic manifest | 5 |
+| SESSION_CASEFILE_REDESIGN.md | Case file UX redesign — two-panel, voice input, all variants | 1 — run now |
+| SESSION_PLAN_GENERATION_FIXES.md | Generation engine: approval gate, setState, empty boxes | 2 |
+| SESSION_MODULE3_CASEFILE.md | Case file: gap questions, partnership UI, dynamic manifest | 3 |
+| SESSION_HANDOFF_JUNE9.md | Login fix, Stripe migration, generation engine fixes, E2E test | Reference |
+| SESSION_SIMULATOR.md | Simulator: Groq TTS, transcription, timer, purchase, design fixes | ✅ DONE |
+| SESSION_QUIZ_FIXES.md | Quiz UX: family split, partnership, months, back button, review page | ✅ DONE |
+| SESSION_QUIZ_FIXES_2.md | Quiz legal accuracy: 9 FAM partnership rules, hard stops | ✅ DONE |
 
 ---
 
 ## BUILD STATE
 
 - Branch: `dev`
-- Last commit: [current dev branch]
-- `npm run build`: Clean — 54+ routes compiled
-- All core features implemented
-- Stripe code complete, awaiting migration
-
-
----
-
-## SESSION 18B — June 8, 2026
-
-### Fixes
-- **login/page.tsx**: Backfill quiz session user_id on login — links anonymous quiz attempts to account after sign-in
-- **quiz/page.tsx Fix 1**: handleAnswer no longer auto-advances when selected answer triggers a sub_question — fixes double-click bug on Q0-16
-- **quiz/page.tsx Fix 2**: sub_question show_if now handles arrays correctly — fixes sub_question never showing for multi-value show_if
-- **quiz/page.tsx Fix 3**: franchise_interest flag wired to Q0-FRANCHISE-REFERRAL answer
-- **module0_questions.json**: Added Q0-FRANCHISE-REFERRAL question between Q0-10 and Q0-STATE — fires for undecided and franchise applicants
-
-### Build
-Clean — 66 routes, 0 errors
-
-### Known remaining
-- Visual E2E test of generate page approval gate requires manual browser test (auth required)
-- npm test not configured
-
----
-
-## SESSION — Quiz + Results Rebuild (June 9, 2026)
-
-### Completed
-- **module0_questions.json**: Global v4.0 — 14 core questions, 19 total including conditionals, all Canadian references removed, 82-country selector, franchise lead capture wired
-- **quiz/page.tsx**: Complete rewrite — auth-aware, no login hang, fire-and-forget auth check with 3s timeout, correct sub-question flow, multi-select, auto-advance, email gate for anonymous users, direct to results for logged-in users
-- **results/page.tsx**: Complete rewrite — score/100, personalised verdict, profile grid, flags, timeline, franchise broker card, consulate intelligence, pricing pre-calc, reads from localStorage + Supabase fallback
-- **middleware.ts**: Rate limiter production-only confirmed
-
-### Build
-Clean — 0 errors
-
-### Auth flows confirmed in code
-1. Logged in + quiz done → bypass quiz → dashboard
-2. Logged in + no quiz → take quiz → skip email gate → results
-3. Not logged in → take quiz → email gate → results
-4. Login page → no rate limiting in dev → no hanging spinner
-
----
-
-## SESSION — Landing Page Rebuild (June 9, 2026)
-
-### Completed
-- HomeClient.tsx: Complete rebuild — 10 sections, mobile-first
-- page.tsx: Clean server component wrapper
-- NavBar.tsx: Mobile hamburger nav — manual build (Magic MCP unavailable)
-- JourneyWizard.tsx: Interactive timeline comparison — dropdowns, stage logic, gap indicator
-- FeatureGrid.tsx: 3-column feature grid with gold diamond icons
-- All sections mobile-first with Tailwind breakpoints
-- Build: clean
-
-### Design system applied
-- Background #0a0a0a throughout
-- Gold #C9A84C for all accents, CTAs, active states
-- Cormorant Garamond for all headings
-- DM Sans for all body text
-- Zero border-radius anywhere
-- No glassmorphism, no shadows, no gradients
-
-### Mobile audit
-All 14 items pass:
-- Nav collapses to hamburger on mobile
-- Hero text readable on 375px screen
-- Hero buttons full width on mobile
-- Stats grid 2x2 on mobile
-- How it works steps stack vertically on mobile
-- Journey wizard dropdowns full width on mobile
-- Journey wizard columns stack vertically on mobile
-- Feature grid single column on mobile
-- Founder's note has adequate padding on mobile
-- Testimonial cards stack on mobile
-- Final CTA buttons stack on mobile
-- Footer stacks on mobile
-- No horizontal scroll at any breakpoint
-- All touch targets minimum 44px tall
-
-### Copy note
-All copy is placeholder — owner will edit directly in VS Code.
-No copy changes should be made by the agent.
-
-### Commit
-a9d5f63 — feat: landing page complete rebuild — mobile-first, Obsidian Gold, journey wizard
-
----
-
-## SESSION — Quiz Navigation + Draft Save (June 9, 2026)
-
-### Navigation Fixes
-- **Auto-advance on warnings**: 1200ms delay to read warning before advancing
-- **Auto-advance on attorney flags**: 1200ms delay before advancing
-- **Back button on all questions**: Added after options block, before tooltip
-- **Clickable section tabs**: Done tabs clickable, jump to section start
-- **getFirstQuestionOfSection helper**: For section navigation
-
-### Draft Save System
-- **PART A**: Save draft to localStorage on every answer (select, multi)
-- **PART B**: Restore draft on page load with 7-day expiry
-- **PART C**: Clear draft on quiz completion and hard stop
-- **PART D**: Clear draft on signup (verify page)
-- **PART E**: Backfill draft to Supabase on login (if ≥10 answers)
-
-### Build
-Clean — 0 errors
-
-### Commit
-14606e6 — feat: quiz navigation fixes + draft save system for anonymous users
-
----
-
-## SESSION — Landing Page: Flag Hero + Nav Fix + FAQ (June 9, 2026)
-
-### Completed
-- **Nav.tsx**: Solid dark background (rgba(10,10,10,0.95)), correct 5 links (How it works, Learn, Pricing, Simulator, Log in), gold border CTA button, readable text, mobile hamburger with all links
-- **NavBar.tsx**: Updated to match — solid background, correct links, gold border CTA
-- **HomeClient.tsx**: American flag SVG hero background (red/white/blue stripes, 5-pointed stars via polygon, left fade to #0a0a0a, bottom fade), text shadows for readability over flag
-- **HomeClient.tsx**: FAQ accordion section — 6 questions, single-open pattern, +/− toggle, between testimonials and final CTA
-- **/learn page**: Already exists as hub with 6 article sub-pages (kept as-is)
-
-### Build
-Clean — 0 errors
-
----
-
-## SESSION — Rebrand: e2go → E2go (June 9, 2026)
-
-### Completed
-- Display name changed from "e2go" to "E2go" across all UI copy
-- 63 files changed, 153 insertions / 153 deletions
-- Logo text, page titles, metadata, FAQ copy, email templates, legal disclaimers, footer text, PWA prompts, manifest.json
-- NOT changed: URLs, file paths, import paths, variable names, localStorage keys, API routes, CSS classes, email addresses
-
-### Build
-Clean — 0 errors
-
-### Commit
-eba36d9 — rebrand: e2go → E2go throughout app UI and metadata
-
----
-
-## SESSION — Landing Page Redesign (June 9, 2026)
-
-### Completed
-- **Hero**: Investor portrait (investor-man.png) added alongside flag, blends into dark background via luminosity mix-blend-mode + gradient fades
-- **Mistakes**: Full-width horizontal rows with 120px watermark numbers, gold left accent bar, italic serif titles, gridTemplateColumns: 100px 1fr
-- **How it works**: 72px step numbers, horizontal connecting thread (1px line at top:4px), thread dots (filled gold for steps 0-2, empty for step 3)
-- **What's included**: Hero feature (case analysis engine + document-binder.png in 1fr 360px grid) + 5-card row with watermark numbers, optional note field
-- **Testimonials**: 180px background quote marks, 40px portrait thumbnails (investor-man, investor-woman, couple-documents), gold hairline dividers
-
-### Images
-All 6 Gemini-generated images in public/images/:
-- investor-man.png — hero portrait + testimonial
-- investor-woman.png — testimonial
-- couple-documents.png — testimonial
-- document-binder.png — hero feature
-- franchise-exterior.png — reserved
-- consulate.png — reserved for /learn page
-
-### Build
-Clean — 0 errors
-
-### Commit
-51b2808 — feat: landing page redesign — portrait hero, row mistakes, connected steps, hero feature, testimonial photos
-
----
-
-## SESSION — Landing Page: Complete Rebuild (June 9, 2026)
-
-### Completed
-- **HomeClient.tsx**: Fully self-contained — no external component imports (NavBar, JourneyWizard, FeatureGrid all removed)
-- **Sections**: Nav (sticky, hamburger mobile), Hero (flag SVG, stats grid), Proof bar, Mistakes (4 rows with watermark numbers), How it works (4 steps with connecting thread), Journey wizard (3 dropdowns, traditional vs E2go timeline comparison), What's included (hero feature + 5 cards), Interview simulator, Founder note, Testimonials (3 quotes), FAQ (7 items accordion), Final CTA, Footer
-- **Layout**: Removed global Nav/Footer from layout.tsx to prevent duplicate rendering (HomeClient is self-contained)
-- **Deleted**: src/components/landing/NavBar.tsx, JourneyWizard.tsx, FeatureGrid.tsx
-
-### Design system
-- Background #0a0a0a throughout
-- Gold #C9A84C for all accents, CTAs, active states
-- Cormorant Garamond for all headings
-- DM Sans for all body text
-- Zero border-radius anywhere
-- No glassmorphism, no shadows, no gradients
-- Pricing: From $550 correct
-
-### Mobile audit — ALL 16 ITEMS PASS
-1. Nav hamburger visible at 390px, full nav at 768px+ ✅
-2. Hero headline readable at 390px ✅
-3. Hero buttons full width at 390px, side by side at 640px+ ✅
-4. Stats 2x2 grid at 390px, 4 columns at 768px+ ✅
-5. Mistakes rows full width, adequate padding ✅
-6. How it works 1 col at 390px, 2 at 768px, 4 at 1024px+ ✅
-7. Journey wizard dropdowns full width at 390px ✅
-8. Journey wizard timeline stacked at 390px ✅
-9. Features hero 1 col at 390px, 2 at 768px+ ✅
-10. Feature cards 1 col at 390px, 2 at 640px, 5 at 1024px+ ✅
-11. Testimonials 1 col at 390px, 3 at 768px+ ✅
-12. FAQ accordion works at 390px ✅
-13. Final CTA buttons full width at 390px ✅
-14. Footer stacked at 390px, 3 columns at 768px+ ✅
-15. No horizontal scroll at any breakpoint ✅
-16. All touch targets min 44px ✅
-
-### Build
-Clean — 0 errors
-
-### Commit
-191ea7c — feat: landing page complete rebuild — self-contained, mobile-first, mistakes section, premium sections
+- Last commit: 63dc9dd (voice-to-text input)
+- `npm run build`: Clean — 47 routes compiled
+- All core features implemented and built
+- Case file UX redesign spec complete — ready to build
+- Payments migration applied ✅
+- Stripe Price IDs live ✅

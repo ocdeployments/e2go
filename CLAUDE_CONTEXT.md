@@ -1,6 +1,6 @@
 # CLAUDE_CONTEXT.md — E2go
 ## Master Context for Every Claude Code Session
-**Version:** June 10, 2026 — Post route cleanup, all core features complete
+**Version:** June 10, 2026 — Case file redesign complete
 **Read this entire file before doing anything.**
 **Then read BUILD_TRACKER.md.**
 
@@ -220,13 +220,13 @@ Current live Price IDs (June 10, 2026):
 | docs/DESIGN_REFERENCE.html | Canonical UI components | Read before any UI work |
 | docs/DOCUMENT_UPLOAD_SPEC.md | Document upload spec | Read before touching upload |
 | docs/INTERVIEW_SIMULATOR_SPEC.md | Simulator spec | Read before touching simulator |
-| docs/INTERVIEW_SIMULATOR_SPEC.md | Simulator spec | Read before touching simulator |
 | docs/sessions/ | All session files | Reference before building |
 | docs/IDEAS.md | All product decisions | Reference for context |
+| docs/sessions/SESSION_CASEFILE_REDESIGN.md | Case file redesign full spec | Read before touching any /apply/* section |
 
 ---
 
-## STANDING BUILD RULES (10 rules — confirm every session)
+## STANDING BUILD RULES (confirm every session)
 
 ### RULE 0 — VERIFICATION APPROACH
 Do NOT use Playwright. It crashes the agent.
@@ -293,6 +293,17 @@ At end of every session ("end session"):
 - Update next session priorities (top 5)
 - Run npm run build — must be clean
 
+### RULE 11 — CASE FILE DATA PROTECTION
+When rebuilding any /apply/* section page, audit all data hooks
+before touching any code. Document every useEffect, onChange, and
+auto-save call. Verify answers table writes still fire after rebuild.
+Never commit a section page without confirming data writes work.
+
+### RULE 12 — VOICE INPUT SCOPE
+useSpeechInput hook applies to TextArea component in /apply/* sections only.
+Never add mic button to /apply/module4 — that page has its own
+separate voice/writing sample system with AI detection.
+
 ---
 
 ## ARCHITECTURE DECISIONS — LOCKED
@@ -312,6 +323,8 @@ At end of every session ("end session"):
 | Module 3 old tabs | Kept as fallback — never delete a-e, i, j, k |
 | Module 3 new sections | Six case file sections at /apply/* are primary |
 | Quiz questions | module0_questions.json is source of truth — do not hardcode |
+| Case file layout | Two-panel desktop · drawer tablet · overlay mobile |
+| Voice input in case file | Web Speech API — mic on all textareas in /apply/* sections, NOT on /apply/module4 |
 
 ---
 
@@ -333,6 +346,62 @@ remain as fallback. Old tabs F, G, H, L were deleted June 10
 **Module 3 shell (/apply/module3):**
 Now has 8 tabs: A B C D E I J K (router.push dynamic).
 F, G, H, L removed from TABS array June 10.
+
+---
+
+## CASE FILE UX REDESIGN — COMPLETE
+
+**Status:** Fully implemented. All 6 sections rebuilt. Build clean.
+**Session file:** docs/sessions/SESSION_CASEFILE_REDESIGN.md
+
+The six case file sections currently render as plain scrolling forms.
+They do not match the quality of the rest of the platform.
+A client who paid $550–$1,397 must feel that money was obviously
+worth it the moment they open these pages.
+
+**Layout (CaseFileShell.tsx — new shared component):**
+- Desktop (≥1024px): 3-column — 200px sidebar | questions | document preview
+- Tablet (768–1023px): 2-column + right drawer for preview
+- Mobile (<768px): horizontal cluster pills + full-screen overlay preview
+
+**Question panel:**
+- Cluster navigation with completion states (pending/active/complete)
+- Question labels in Cormorant Garamond 300 — not body copy weight
+- Cluster eyebrow, heading, subtitle per cluster group
+- "This section builds: [documents]" in sidebar
+
+**Document preview panel (Phase 1 — template-based, no AI cost):**
+- Fields fill in as user types — no API call, zero cost
+- Fill progress bar per document (2px, gold)
+- Phase 2 (after first paying user): live AI paragraph generation per cluster
+
+**Voice input (redesigned from commit 63dc9dd):**
+- Full-width bar below each textarea — labelled "Speak your answer"
+- Active state: gold pulse animation + 4-bar animated waveform
+- Mic permission bug fixed: getUserMedia pre-check before SpeechRecognition.start()
+- Unsupported browser: mic hidden, one-time localStorage-dismissed notice
+
+**Variants — all preserved, visual layer only:**
+- Partnership: three-track (shared / your info / partner B)
+- COS: conditional question blocks with COS label treatment
+- Family: all sub-paths (stepchildren, common-law, legitimation, age-out)
+- PreFillBadge: all three variants (quiz gold, upload amber, upload amber-orange)
+
+**Scope:**
+- /apply overview page — section cards redesigned
+- /apply/story through /apply/ties — all six sections
+- /apply/upload through /apply/upload/gaps — visual consistency only
+- /apply/module4 — textarea visual consistency only, NO logic changes,
+  NO mic button (voice sample is a separate system — do not touch)
+- Old fallback tabs /apply/module3/[a-k] — NOT touched
+
+**What must NOT change:**
+- Any API route
+- Any useEffect or onChange writing to answers table
+- Auto-save mechanism (800ms debounce)
+- useSpeechInput hook logic
+- Any conditional rendering logic (partnership, COS, family variants)
+- Module 4 page logic, validation, AI detection, word count
 
 ---
 
@@ -390,7 +459,10 @@ Rate limits (production only):
 
 | Issue | Priority | Status |
 |---|---|---|
-| Migration 004 not applied | MEDIUM | Run: npx supabase db push (answers source constraint) |
+| Mic button disappears on click | HIGH | Fix in case file redesign session (getUserMedia pre-check) |
+| Case file pages look like draft forms | HIGH | Case file redesign session — docs/sessions/SESSION_CASEFILE_REDESIGN.md |
+| Migration 004 not applied | MEDIUM | Run: npx supabase db push |
+| Generation engine: approval gate, setState, empty boxes | MEDIUM | docs/sessions/SESSION_PLAN_GENERATION_FIXES.md |
 | Two warnings in generate/page.tsx and quiz/page.tsx | LOW | Fix in next session touching those files |
 | Stripe API version outdated (2024-06-20) | LOW | Upgrade apiVersion in scripts/stripe-setup.ts |
 | Quiz nationality selector curl/browser verification difficulty | LOW | Works in browser |
@@ -418,8 +490,7 @@ Rate limits (production only):
 ## SESSION LOG (summary — see BUILD_TRACKER.md for full log)
 
 **June 9–10, 2026 — Full build session — ALL BLOCKERS RESOLVED:**
-- Quiz v4.0: family split, spousal partnership, principal applicant,
-  legal accuracy fixes (9 FAM), review page, month timeline
+- Quiz v4.0 → v6.0: all 30 bugs fixed, test fixtures written
 - Interview simulator: complete — Groq TTS, transcription, timer,
   $29.99 purchase, design fixes
 - Module 3 case file redesign: 6 sections, all components, pre-fill
@@ -429,16 +500,15 @@ Rate limits (production only):
 - Pricing updated: $550–$1,397 (old founding member pricing retired)
 - E2go rebrand: capital E, lowercase go throughout
 - Stripe Price IDs recreated at new amounts — all 10 tiers live
-- Supabase pricing table updated — all Price IDs correct
+- Payments migration applied ✅
 - Login page flag gradient fixed — left panel now visible
-- Docs cleanup — 54 files deleted, 23,853 lines removed
-- Route cleanup — 53 → 47 routes, dead pages removed
+- Voice-to-text input built (commit 63dc9dd) — mic bug noted
+- Case file UX redesign spec complete — session file written
 
 **Next session priorities:**
-1. End-to-end payment test — all blockers resolved, walk full flow
-   quiz → results → pricing → checkout (4242 4242 4242 4242) → dashboard → /apply
-2. Apply migration 004 (npx supabase db push) — answers source constraint
-3. Verify /apply/upload flow with a real document upload
-4. Fix two warnings in generate/page.tsx and quiz/page.tsx
-5. Docs cleanup commit — route cleanup source files still unstaged
-
+1. Case file UX redesign — READY TO BUILD
+   Session file: docs/sessions/SESSION_CASEFILE_REDESIGN.md
+2. Apply migration 004 (npx supabase db push)
+3. End-to-end payment test
+4. Generation engine fixes
+5. Verify 34-gap questions integrated in case file
