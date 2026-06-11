@@ -631,7 +631,13 @@ export default function ResultsPage() {
           <div style={{ padding: "20px", border: "1px solid rgba(201,168,76,0.12)", background: "rgba(201,168,76,0.02)" }}>
             <div style={{ fontSize: "10px", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(201,168,76,0.5)", marginBottom: "8px" }}>Share this result</div>
             <div style={{ fontSize: "12px", color: "rgba(245,240,232,0.4)", lineHeight: 1.6, marginBottom: "12px" }}>Send your eligibility summary to a spouse, business partner, or immigration attorney.</div>
-            <button style={{ width: "100%", padding: "11px", background: "transparent", border: "1px solid rgba(201,168,76,0.25)", color: "rgba(201,168,76,0.7)", fontSize: "11px", cursor: "pointer", letterSpacing: "0.07em", textTransform: "uppercase", fontFamily: "'DM Sans', sans-serif", borderRadius: 0 }}>Email this result</button>
+            <button
+              onClick={handleEmailResult}
+              disabled={emailStatus === 'loading' || emailStatus === 'success'}
+              style={{ width: "100%", padding: "11px", background: emailStatus === 'success' ? "rgba(34,197,94,0.1)" : "transparent", border: `1px solid ${emailStatus === 'success' ? "rgba(34,197,94,0.3)" : "rgba(201,168,76,0.25)"}`, color: emailStatus === 'success' ? "#22c55e" : emailStatus === 'error' ? "#ef4444" : "rgba(201,168,76,0.7)", fontSize: "11px", cursor: emailStatus === 'loading' || emailStatus === 'success' ? "default" : "pointer", letterSpacing: "0.07em", textTransform: "uppercase", fontFamily: "'DM Sans', sans-serif", borderRadius: 0, opacity: emailStatus === 'loading' ? 0.7 : 1 }}
+            >
+              {emailStatus === 'loading' ? 'Sending...' : emailStatus === 'success' ? '✓ Sent' : emailStatus === 'error' ? 'Failed — try again' : 'Email this result'}
+            </button>
           </div>
 
         </div>

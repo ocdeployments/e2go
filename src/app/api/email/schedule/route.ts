@@ -48,7 +48,7 @@ export async function POST(req: Request) {
   } catch (error) {
     console.error('Email scheduler error:', error);
     return NextResponse.json(
-      { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
+      { success: false, error: 'An error occurred. Please try again.' },
       { status: 500 }
     );
   }

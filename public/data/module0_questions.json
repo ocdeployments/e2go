@@ -367,7 +367,7 @@
       "tooltip": null,
       "is_sub": true,
       "parent": "Q0-09",
-      "show_if": { "Q0-09": ["Yes, I have been refused a US visa"] },
+      "show_if": { "Q0-09c": ["I have been refused a US visa"] },
       "options": [
         { "text": "Within the last 2 years", "action": "warn:W-REFUSAL-RECENT", "code": "W-REFUSAL-RECENT", "warning_message": "Recent refusals require detailed explanation and evidence of changed circumstances." },
         { "text": "2–5 years ago", "action": "warn:W-REFUSAL-RECENT", "code": "W-REFUSAL-RECENT", "warning_message": "Refusals within the last 5 years require careful explanation in your application narrative." },
@@ -385,7 +385,7 @@
       "tooltip": null,
       "is_sub": true,
       "parent": "Q0-09",
-      "show_if": { "Q0-09": ["Yes, I have criminal convictions"] },
+      "show_if": { "Q0-09c": ["I have criminal convictions"] },
       "options": [
         { "text": "Minor offence — resolved more than 10 years ago", "action": "warn:W-CONVICTION-OLD", "code": "W-CONVICTION-OLD", "warning_message": "Older minor convictions are generally less problematic but still require disclosure and documentation." },
         { "text": "Minor offence — resolved within the last 10 years", "action": "attorney:W-CONVICTION-RECENT", "code": "W-CONVICTION-RECENT", "warning_message": "Recent convictions require careful admissibility analysis. Professional legal guidance is recommended." },

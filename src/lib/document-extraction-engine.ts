@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { sanitizeForPrompt, wrapUserContent } from '@/lib/prompt-sanitizer';
 import {
   type ClassificationResult,
   type ExtractionResult,
@@ -53,10 +54,10 @@ Types:
 - franchise_docs: Franchise agreement, FDD, or franchise-related documents
 - unknown: Cannot determine document type`;
 
-  const userPrompt = `User selected type: ${userSelectedType}
+  const userPrompt = `User selected type: ${sanitizeForPrompt(userSelectedType)}
 
 Document text:
-${documentText}`;
+${wrapUserContent(documentText)}`;
 
   const result = await callExtractionAPI(systemPrompt, userPrompt);
 
@@ -168,7 +169,7 @@ Return format:
 Only include fields where you actually find relevant information in the document. Do not fabricate or infer values not supported by the text.`;
 
   const userPrompt = `Document text:
-${documentText}`;
+${wrapUserContent(documentText)}`;
 
   const result = await callExtractionAPI(systemPrompt, userPrompt);
 

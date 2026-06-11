@@ -463,8 +463,8 @@ export default function QuizPage() {
             readiness_stage: resultData.readiness_stage || null,
             business_type: resultData.business_type || null,
             result_json: resultData,
-            casl_consent: true,
-            casl_consent_at: new Date().toISOString(),
+            casl_consent: caslConsent,
+            casl_consent_at: caslConsent ? new Date().toISOString() : null,
             completed_at: new Date().toISOString(),
           });
         } catch {

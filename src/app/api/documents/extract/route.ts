@@ -67,6 +67,18 @@ export async function POST(request: NextRequest) {
 
         const supabase = _getSupabase();
 
+        // Verify application ownership
+        const { data: application } = await supabase
+          .from('applications')
+          .select('user_id')
+          .eq('id', applicationId)
+          .single();
+        if (!application || application.user_id !== user.id) {
+          sendEvent({ event: 'error', data: { message: 'Forbidden' } });
+          controller.close();
+          return;
+        }
+
         // Fetch all document records
         const { data: documents, error: fetchError } = await supabase
           .from('application_documents')
