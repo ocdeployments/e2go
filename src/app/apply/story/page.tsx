@@ -1,10 +1,8 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { useRouter } from 'next/navigation';
 import { createBrowserSupabaseClient } from '@/lib/supabase';
-import SectionSideNav from '@/components/apply/SectionSideNav';
-import QuestionPanel from '@/components/apply/QuestionPanel';
+import CaseFileShell from '@/components/apply/CaseFileShell';
 import QuestionLabel from '@/components/apply/questions/QuestionLabel';
 import HelperText from '@/components/apply/questions/HelperText';
 import TextInput from '@/components/apply/questions/TextInput';
@@ -29,7 +27,7 @@ const CLUSTERS = [
 
 const DOCUMENTS = [
   { name: 'Cover Letter', status: 'waiting' as const },
-  { name: 'Investor Bio', status: 'waiting' as const },
+  { name: 'Investor Biography', status: 'waiting' as const },
 ];
 
 interface QuestionField {
@@ -130,7 +128,6 @@ const CLUSTER_QUESTION_RANGES = [
 ];
 
 export default function StoryPage() {
-  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [activeCluster, setActiveCluster] = useState(1);
   const [answers, setAnswers] = useState<Record<string, StoryAnswer>>({});
@@ -225,25 +222,32 @@ export default function StoryPage() {
     debounceRef.current[key] = setTimeout(() => saveAnswer(key, value), 800);
   }, [saveAnswer]);
 
-  const answeredCount = Object.keys(answers).filter((k) => answers[k].value !== '').length;
-  const totalCount = ALL_QUESTIONS.length;
-
   const clusterStatuses = CLUSTER_QUESTION_RANGES.map((range, idx) => {
     const questions = ALL_QUESTIONS.slice(range.start, range.end);
     const answered = questions.filter((q) => answers[q.key]?.value !== '').length;
-    const status: 'complete' | 'active' | 'empty' = answered === questions.length ? 'complete' : answered > 0 ? 'active' : 'empty';
-    return { number: idx + 1, label: CLUSTERS[idx].label, status };
+    const status: 'complete' | 'active' | 'pending' = answered === questions.length ? 'complete' : answered > 0 ? 'active' : 'pending';
+    return { id: `cluster-${idx + 1}`, label: CLUSTERS[idx].label, status };
   });
 
-  const handleBack = () => {
-    if (activeCluster > 1) setActiveCluster(activeCluster - 1);
-    else router.push('/apply');
-  };
-
-  const handleNext = () => {
-    if (activeCluster < CLUSTERS.length) setActiveCluster(activeCluster + 1);
-    else router.push('/apply/business');
-  };
+  const previewContent = (
+    <div className="space-y-4">
+      {DOCUMENTS.map((doc) => (
+        <div key={doc.name} className="border p-4" style={{ borderColor: 'rgba(201,168,76,0.12)', backgroundColor: 'rgba(201,168,76,0.01)' }}>
+          <div className="flex items-center justify-between mb-3">
+            <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '10px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'rgba(245,240,232,0.35)' }}>
+              {doc.name}
+            </span>
+            <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '10px', color: 'rgba(245,240,232,0.18)', border: '1px solid rgba(245,240,232,0.08)', padding: '2px 7px' }}>
+              Waiting
+            </span>
+          </div>
+          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '12px', fontWeight: 300, color: 'rgba(245,240,232,0.18)', fontStyle: 'italic', lineHeight: 1.5 }}>
+            [Answer the questions on the left to fill this in]
+          </p>
+        </div>
+      ))}
+    </div>
+  );
 
   if (loading) {
     return (
@@ -256,221 +260,179 @@ export default function StoryPage() {
   }
 
   return (
-    <div className="flex min-h-screen">
-      {/* Sidebar — desktop only */}
-      <aside
-        className="hidden w-[196px] shrink-0 border-r lg:block"
-        style={{ borderColor: 'rgba(201,168,76,0.12)' }}
-      >
-        <SectionSideNav
-          sectionName="Your Story"
-          answeredCount={answeredCount}
-          totalCount={totalCount}
-          clusters={clusterStatuses}
-          documents={DOCUMENTS}
-          activeCluster={activeCluster}
-          onClusterClick={setActiveCluster}
-        />
-      </aside>
+    <CaseFileShell
+      sectionNumber={1}
+      sectionTitle="Your Story"
+      clusters={clusterStatuses}
+      activeClusterId={`cluster-${activeCluster}`}
+      onClusterChange={(id) => setActiveCluster(parseInt(id.replace('cluster-', '')))}
+      buildsDocuments={['Cover Letter', 'Investor Biography']}
+      nextSectionPath="/apply/business"
+      prevSectionPath="/apply"
+      isSaving={saveStatus === 'saving'}
+      previewContent={previewContent}
+    >
+      {/* Cluster 1 — Who you are */}
+      {activeCluster === 1 && (
+        <div className="space-y-8">
+          <ClusterDivider label="Who you are" />
+          {CLUSTER_1_QUESTIONS.map((q) => {
+            const answer = answers[q.key];
+            const isOriginal = answer?.source === 'quiz';
+            return (
+              <div key={q.key}>
+                {isOriginal && <PreFillBadge isOriginal={true} />}
+                {answer?.source === 'user_edited' && <PreFillBadge isOriginal={false} />}
+                <QuestionLabel required={q.required}>{q.label}</QuestionLabel>
+                <TextArea
+                  value={answer?.value || ''}
+                  onChange={(val) => handleAnswerChange(q.key, val)}
+                  rows={4}
+                />
+                {q.helperText && <HelperText>{q.helperText}</HelperText>}
+              </div>
+            );
+          })}
+        </div>
+      )}
 
-      {/* Mobile cluster strip */}
-      <div
-        className="fixed top-12 left-0 right-0 z-30 flex overflow-x-auto border-b lg:hidden"
-        style={{ borderColor: 'rgba(201,168,76,0.12)', backgroundColor: '#0a0a0a' }}
-      >
-        {CLUSTERS.map((cluster) => {
-          const status = clusterStatuses.find((c) => c.number === cluster.number)?.status || 'empty';
-          return (
-            <button
-              key={cluster.number}
-              onClick={() => setActiveCluster(cluster.number)}
-              className="shrink-0 border-b px-4 py-2 text-[10px] uppercase tracking-[0.08em] transition-colors"
-              style={{
-                borderColor: activeCluster === cluster.number ? '#C9A84C' : 'transparent',
-                color: activeCluster === cluster.number ? '#C9A84C' : 'rgba(245,240,232,0.28)',
-                fontFamily: "'DM Sans', sans-serif",
-              }}
-            >
-              {status === 'complete' ? '✓' : `${cluster.number}.`} {cluster.label}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Question panel */}
-      <div className="min-w-0 flex-1 pt-12 lg:pt-0">
-        <QuestionPanel
-          sectionTitle="Your Story"
-          clusterLabel={CLUSTERS[activeCluster - 1].label}
-          saveStatus={saveStatus}
-          answeredCount={answeredCount}
-          totalCount={totalCount}
-          onBack={handleBack}
-          onNext={handleNext}
-        >
-          {/* Cluster 1 — Who you are */}
-          {activeCluster === 1 && (
-            <div className="space-y-8">
-              <ClusterDivider label="Who you are" />
-              {CLUSTER_1_QUESTIONS.map((q) => {
-                const answer = answers[q.key];
-                const isOriginal = answer?.source === 'quiz';
-                return (
-                  <div key={q.key}>
-                    {isOriginal && <PreFillBadge isOriginal={true} />}
-                    {answer?.source === 'user_edited' && <PreFillBadge isOriginal={false} />}
-                    <QuestionLabel required={q.required}>{q.label}</QuestionLabel>
-                    <TextArea
-                      value={answer?.value || ''}
-                      onChange={(val) => handleAnswerChange(q.key, val)}
-                      rows={4}
-                    />
-                    {q.helperText && <HelperText>{q.helperText}</HelperText>}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {/* Cluster 2 — Your plan */}
-          {activeCluster === 2 && (
-            <div className="space-y-8">
-              <ClusterDivider label="Your plan" />
-              {CLUSTER_2_QUESTIONS.map((q) => {
-                const answer = answers[q.key];
-                if (q.type === 'single' && q.key === 'M3-S1-05-option') {
-                  return (
-                    <div key={q.key} className="mt-4">
-                      <OptionButton
-                        label="Nothing unusual to address"
-                        selected={answer?.value === 'na'}
-                        onClick={() => handleAnswerChange(q.key, 'na')}
-                      />
-                    </div>
-                  );
-                }
-                const isOriginal = answer?.source === 'quiz';
-                return (
-                  <div key={q.key}>
-                    {isOriginal && <PreFillBadge isOriginal={true} />}
-                    {answer?.source === 'user_edited' && <PreFillBadge isOriginal={false} />}
-                    <QuestionLabel required={q.required}>{q.label}</QuestionLabel>
-                    <TextArea
-                      value={answer?.value || ''}
-                      onChange={(val) => handleAnswerChange(q.key, val)}
-                      rows={4}
-                    />
-                    {q.helperText && <HelperText>{q.helperText}</HelperText>}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {/* Cluster 3 — Administrative */}
-          {activeCluster === 3 && (
-            <div className="space-y-6">
-              <ClusterDivider label="Administrative details — used for your DS-160 reference sheet" />
-              {CLUSTER_3_QUESTIONS.map((q) => {
-                const answer = answers[q.key];
-                const isOriginal = answer?.source === 'quiz';
-                return (
-                  <div key={q.key}>
-                    {isOriginal && <PreFillBadge isOriginal={true} />}
-                    {answer?.source === 'user_edited' && <PreFillBadge isOriginal={false} />}
-                    <QuestionLabel required={q.required}>{q.label}</QuestionLabel>
-                    {q.type === 'single' ? (
-                      <div className="flex flex-col gap-2">
-                        {q.options?.map((opt) => (
-                          <OptionButton
-                            key={opt.value}
-                            label={opt.label}
-                            selected={answer?.value === opt.value}
-                            onClick={() => handleAnswerChange(q.key, opt.value)}
-                          />
-                        ))}
-                      </div>
-                    ) : (
-                      <TextInput
-                        value={answer?.value || ''}
-                        onChange={(val) => handleAnswerChange(q.key, val)}
-                      />
-                    )}
-                    {q.helperText && <HelperText>{q.helperText}</HelperText>}
-                  </div>
-                );
-              })}
-
-              {/* SSN routing question */}
-              <div className="mt-6">
-                <QuestionLabel>Do you currently have a U.S. Social Security Number?</QuestionLabel>
-                <div className="flex flex-col gap-2">
+      {/* Cluster 2 — Your plan */}
+      {activeCluster === 2 && (
+        <div className="space-y-8">
+          <ClusterDivider label="Your plan" />
+          {CLUSTER_2_QUESTIONS.map((q) => {
+            const answer = answers[q.key];
+            if (q.type === 'single' && q.key === 'M3-S1-05-option') {
+              return (
+                <div key={q.key} className="mt-4">
                   <OptionButton
-                    label="Yes — enter it above"
-                    selected={!!answers['M3-A-08']?.value}
-                    onClick={() => {}}
-                  />
-                  <OptionButton
-                    label="No — I'll apply after arrival"
-                    selected={!answers['M3-A-08']?.value}
-                    onClick={() => handleAnswerChange('M3-A-08', '')}
+                    label="Nothing unusual to address"
+                    selected={answer?.value === 'na'}
+                    onClick={() => handleAnswerChange(q.key, 'na')}
                   />
                 </div>
+              );
+            }
+            const isOriginal = answer?.source === 'quiz';
+            return (
+              <div key={q.key}>
+                {isOriginal && <PreFillBadge isOriginal={true} />}
+                {answer?.source === 'user_edited' && <PreFillBadge isOriginal={false} />}
+                <QuestionLabel required={q.required}>{q.label}</QuestionLabel>
+                <TextArea
+                  value={answer?.value || ''}
+                  onChange={(val) => handleAnswerChange(q.key, val)}
+                  rows={4}
+                />
+                {q.helperText && <HelperText>{q.helperText}</HelperText>}
               </div>
-            </div>
-          )}
+            );
+          })}
+        </div>
+      )}
 
-          {/* Cluster 4 — Travel & history */}
-          {activeCluster === 4 && (
-            <div className="space-y-6">
-              <ClusterDivider label="Travel and history" />
-              {CLUSTER_4_QUESTIONS.map((q) => {
-                const answer = answers[q.key];
-                const isOriginal = answer?.source === 'quiz';
-                return (
-                  <div key={q.key}>
-                    {isOriginal && <PreFillBadge isOriginal={true} />}
-                    {answer?.source === 'user_edited' && <PreFillBadge isOriginal={false} />}
-                    <QuestionLabel required={q.required}>{q.label}</QuestionLabel>
-                    {q.type === 'single' ? (
-                      <div className="flex flex-col gap-2">
-                        {q.options?.map((opt) => (
-                          <OptionButton
-                            key={opt.value}
-                            label={opt.label}
-                            selected={answer?.value === opt.value}
-                            onClick={() => handleAnswerChange(q.key, opt.value)}
-                          />
-                        ))}
-                      </div>
-                    ) : q.type === 'textarea' ? (
-                      <TextArea
-                        value={answer?.value || ''}
-                        onChange={(val) => handleAnswerChange(q.key, val)}
-                        rows={3}
+      {/* Cluster 3 — Administrative */}
+      {activeCluster === 3 && (
+        <div className="space-y-6">
+          <ClusterDivider label="Administrative details — used for your DS-160 reference sheet" />
+          {CLUSTER_3_QUESTIONS.map((q) => {
+            const answer = answers[q.key];
+            const isOriginal = answer?.source === 'quiz';
+            return (
+              <div key={q.key}>
+                {isOriginal && <PreFillBadge isOriginal={true} />}
+                {answer?.source === 'user_edited' && <PreFillBadge isOriginal={false} />}
+                <QuestionLabel required={q.required}>{q.label}</QuestionLabel>
+                {q.type === 'single' ? (
+                  <div className="flex flex-col gap-2">
+                    {q.options?.map((opt) => (
+                      <OptionButton
+                        key={opt.value}
+                        label={opt.label}
+                        selected={answer?.value === opt.value}
+                        onClick={() => handleAnswerChange(q.key, opt.value)}
                       />
-                    ) : (
-                      <TextInput
-                        value={answer?.value || ''}
-                        onChange={(val) => handleAnswerChange(q.key, val)}
-                      />
-                    )}
-                    {q.helperText && <HelperText>{q.helperText}</HelperText>}
+                    ))}
                   </div>
-                );
-              })}
+                ) : (
+                  <TextInput
+                    value={answer?.value || ''}
+                    onChange={(val) => handleAnswerChange(q.key, val)}
+                  />
+                )}
+                {q.helperText && <HelperText>{q.helperText}</HelperText>}
+              </div>
+            );
+          })}
 
-              <AdvisoryBlock>
-                E-2 interviews at Toronto are scheduled through the CGI Federal
-                portal at ais.usvisa-info.com/en-ca/niv. You will need your
-                DS-160 confirmation number and MRV fee receipt. Current wait
-                times at Toronto are approximately 4 months — factor this into
-                your timeline.
-              </AdvisoryBlock>
+          {/* SSN routing question */}
+          <div className="mt-6">
+            <QuestionLabel>Do you currently have a U.S. Social Security Number?</QuestionLabel>
+            <div className="flex flex-col gap-2">
+              <OptionButton
+                label="Yes — enter it above"
+                selected={!!answers['M3-A-08']?.value}
+                onClick={() => {}}
+              />
+              <OptionButton
+                label="No — I'll apply after arrival"
+                selected={!answers['M3-A-08']?.value}
+                onClick={() => handleAnswerChange('M3-A-08', '')}
+              />
             </div>
-          )}
-        </QuestionPanel>
-      </div>
-    </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cluster 4 — Travel & history */}
+      {activeCluster === 4 && (
+        <div className="space-y-6">
+          <ClusterDivider label="Travel and history" />
+          {CLUSTER_4_QUESTIONS.map((q) => {
+            const answer = answers[q.key];
+            const isOriginal = answer?.source === 'quiz';
+            return (
+              <div key={q.key}>
+                {isOriginal && <PreFillBadge isOriginal={true} />}
+                {answer?.source === 'user_edited' && <PreFillBadge isOriginal={false} />}
+                <QuestionLabel required={q.required}>{q.label}</QuestionLabel>
+                {q.type === 'single' ? (
+                  <div className="flex flex-col gap-2">
+                    {q.options?.map((opt) => (
+                      <OptionButton
+                        key={opt.value}
+                        label={opt.label}
+                        selected={answer?.value === opt.value}
+                        onClick={() => handleAnswerChange(q.key, opt.value)}
+                      />
+                    ))}
+                  </div>
+                ) : q.type === 'textarea' ? (
+                  <TextArea
+                    value={answer?.value || ''}
+                    onChange={(val) => handleAnswerChange(q.key, val)}
+                    rows={3}
+                  />
+                ) : (
+                  <TextInput
+                    value={answer?.value || ''}
+                    onChange={(val) => handleAnswerChange(q.key, val)}
+                  />
+                )}
+                {q.helperText && <HelperText>{q.helperText}</HelperText>}
+              </div>
+            );
+          })}
+
+          <AdvisoryBlock>
+            E-2 interviews at Toronto are scheduled through the CGI Federal
+            portal at ais.usvisa-info.com/en-ca/niv. You will need your
+            DS-160 confirmation number and MRV fee receipt. Current wait
+            times at Toronto are approximately 4 months — factor this into
+            your timeline.
+          </AdvisoryBlock>
+        </div>
+      )}
+    </CaseFileShell>
   );
 }
