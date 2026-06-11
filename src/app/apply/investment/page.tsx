@@ -1,10 +1,8 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { useRouter } from 'next/navigation';
 import { createBrowserSupabaseClient } from '@/lib/supabase';
-import SectionSideNav from '@/components/apply/SectionSideNav';
-import QuestionPanel from '@/components/apply/QuestionPanel';
+import CaseFileShell from '@/components/apply/CaseFileShell';
 import QuestionLabel from '@/components/apply/questions/QuestionLabel';
 import HelperText from '@/components/apply/questions/HelperText';
 import TextInput from '@/components/apply/questions/TextInput';
@@ -177,9 +175,8 @@ const ALL_QUESTION_SETS = [
 ];
 
 export default function InvestmentPage() {
-  const router = useRouter();
   const [loading, setLoading] = useState(true);
-  const [activeCluster, setActiveCluster] = useState(1);
+  const [activeClusterId, setActiveClusterId] = useState('cluster-1');
   const [answers, setAnswers] = useState<Record<string, InvAnswer>>({});
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [applicationId, setApplicationId] = useState<string | null>(null);
@@ -245,26 +242,13 @@ export default function InvestmentPage() {
     debounceRef.current[key] = setTimeout(() => saveAnswer(key, value), 800);
   }, [saveAnswer]);
 
-  const totalQuestions = ALL_QUESTION_SETS.reduce((sum, s) => sum + s.questions.length, 0) + 1;
-  const answeredCount = Object.keys(answers).filter((k) => answers[k]?.value !== '').length;
-
   const clusterStatuses = CLUSTERS.map((cluster) => {
     const set = ALL_QUESTION_SETS.find((s) => s.cluster === cluster.number);
-    if (!set) return { number: cluster.number, label: cluster.label, status: 'empty' as const };
+    if (!set) return { id: `cluster-${cluster.number}`, label: cluster.label, status: 'pending' as const };
     const answered = set.questions.filter((q) => answers[q.key]?.value !== '').length;
-    const status: 'complete' | 'active' | 'empty' = answered === set.questions.length ? 'complete' : answered > 0 ? 'active' : 'empty';
-    return { number: cluster.number, label: cluster.label, status };
+    const status: 'complete' | 'active' | 'pending' = answered === set.questions.length ? 'complete' : answered > 0 ? 'active' : 'pending';
+    return { id: `cluster-${cluster.number}`, label: cluster.label, status };
   });
-
-  const handleBack = () => {
-    if (activeCluster > 1) setActiveCluster(activeCluster - 1);
-    else router.push('/apply/business');
-  };
-
-  const handleNext = () => {
-    if (activeCluster < CLUSTERS.length) setActiveCluster(activeCluster + 1);
-    else router.push('/apply/qualifications');
-  };
 
   const renderQuestions = (questions: QuestionField[]) => (
     <div className="space-y-6">
@@ -302,126 +286,138 @@ export default function InvestmentPage() {
     );
   }
 
-  return (
-    <div className="flex min-h-screen">
-      <aside className="hidden w-[196px] shrink-0 border-r lg:block" style={{ borderColor: 'rgba(201,168,76,0.12)' }}>
-        <SectionSideNav sectionName="Your Investment" answeredCount={answeredCount} totalCount={totalQuestions} clusters={clusterStatuses} documents={DOCUMENTS} activeCluster={activeCluster} onClusterClick={setActiveCluster} />
-      </aside>
+  const activeNumber = parseInt(activeClusterId.split('-')[1], 10);
+  const isSaving = saveStatus === 'saving';
 
-      <div className="fixed top-12 left-0 right-0 z-30 flex overflow-x-auto border-b lg:hidden" style={{ borderColor: 'rgba(201,168,76,0.12)', backgroundColor: '#0a0a0a' }}>
-        {CLUSTERS.map((c) => (
-          <button key={c.number} onClick={() => setActiveCluster(c.number)} className="shrink-0 border-b px-4 py-2 text-[10px] uppercase tracking-[0.08em]" style={{ borderColor: activeCluster === c.number ? '#C9A84C' : 'transparent', color: activeCluster === c.number ? '#C9A84C' : 'rgba(245,240,232,0.28)', fontFamily: "'DM Sans', sans-serif" }}>
-            {c.number}. {c.label}
-          </button>
-        ))}
-      </div>
-
-      <div className="min-w-0 flex-1 pt-12 lg:pt-0">
-        <QuestionPanel sectionTitle="Your Investment" clusterLabel={CLUSTERS[activeCluster - 1]?.label || ''} saveStatus={saveStatus} answeredCount={answeredCount} totalCount={totalQuestions} onBack={handleBack} onNext={handleNext}>
-          {activeCluster === 1 && (
-            <div>
-              <ClusterDivider label="Investment overview" />
-              {renderQuestions(INVESTMENT_OVERVIEW_QUESTIONS)}
-              {answers['M3-F-02']?.value && Number(answers['M3-F-02'].value) % 1000 === 0 && Number(answers['M3-F-02'].value) > 0 && (
-                <AdvisoryBlock>Round investment amounts can draw officer scrutiny. Officers read exact round numbers as threshold calculations, not real investments. If your actual costs break down to an odd figure, use the exact amount.</AdvisoryBlock>
-              )}
-              {answers['M3-F-02']?.value && answers['M3-F-03']?.value && Number(answers['M3-F-03'].value) > 0 && (Number(answers['M3-F-02'].value) / Number(answers['M3-F-03'].value)) < 0.5 && (
-                <AdvisoryBlock>Your invested amount is less than 50% of the total cost to establish the business. You may need to argue substantiality — explain why the remaining costs will be covered and why your investment is already substantial.</AdvisoryBlock>
-              )}
-            </div>
-          )}
-
-          {activeCluster === 2 && (
-            <div>
-              <ClusterDivider label="Where the money came from" />
-              {renderQuestions(SOURCE_OF_FUNDS_QUESTIONS)}
-
-              {answers['M3-F-05']?.value?.includes('rrsp') && (
-                <AdvisoryBlock>RRSP withdrawals generate a T4RSP slip and are taxable. You need: (1) proof of RRSP account, (2) withdrawal confirmation, (3) T4RSP slip, (4) bank statement showing deposit, (5) wire confirmation to US account. Consult a CPA about withholding tax implications.</AdvisoryBlock>
-              )}
-
-              {answers['M3-F-05']?.value?.includes('tfsa') && (
-                <AdvisoryBlock>TFSA withdrawals have no tax slip. The paper trail is: (1) TFSA account statement, (2) withdrawal confirmation, (3) bank statement showing deposit, (4) wire confirmation. Note in your cover letter that TFSA funds are after-tax savings.</AdvisoryBlock>
-              )}
-
-              {answers['M3-F-05']?.value?.includes('crypto') && (
-                <RiskFlag label="Documentary risk">Cryptocurrency funds require forensic-level tracing: original acquisition method, wallet history, exchange records, conversion to fiat, and wire to US account. Self-custody wallets require additional blockchain trace documentation.</RiskFlag>
-              )}
-
-              {answers['M3-F-05']?.value?.includes('inheritance') && (
-                <AdvisoryBlock>Can the donor provide documentation showing where their gift funds came from — such as their own bank statements, a property sale, or investment account records? Officers require proof not just of the gift itself, but of the donor&apos;s source of wealth.</AdvisoryBlock>
-              )}
-
-              {answers['M3-F-01']?.value === 'acquisition' && (
-                <div className="mt-4">
-                  <QuestionLabel>Is any part of the purchase price being financed by the seller?</QuestionLabel>
-                  <div className="flex flex-col gap-2">
-                    <OptionButton label="Yes" selected={answers['M3-H-SELLER']?.value === 'yes'} onClick={() => handleAnswerChange('M3-H-SELLER', 'yes')} />
-                    <OptionButton label="No" selected={answers['M3-H-SELLER']?.value === 'no'} onClick={() => handleAnswerChange('M3-H-SELLER', 'no')} />
-                  </div>
-                  {answers['M3-H-SELLER']?.value === 'yes' && (
-                    <AdvisoryBlock>The financed portion generally does not count toward your qualifying E-2 investment unless you are personally liable for repayment. The loan must be secured by your personal assets, not just business assets. Consult an attorney on structuring this.</AdvisoryBlock>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-
-          {activeCluster === 3 && (
-            <div>
-              <ClusterDivider label="The paper trail" />
-              {renderQuestions(PAPER_TRAIL_QUESTIONS)}
-
-              {answers['M3-B-BANK']?.value === 'no' && (
-                <AdvisoryBlock>
-                  Opening a US business bank account requires your LLC to be formed and EIN to be obtained first. Options: Mercury (recommended for remote opening), Relay (Mercury backup), TD Bank or RBC cross-border, or traditional US bank requiring in-person visit. Account must be in the business name.
-                </AdvisoryBlock>
-              )}
-
-              {answers['M3-B-WIRE']?.value === 'no' && (
-                <AdvisoryBlock>TD Bank&apos;s online wire limit is approximately $25,000 CAD. Above that requires branch or phone authorization. Some banks automatically freeze accounts on large outgoing international transfers without advance notice. Call your bank before wiring.</AdvisoryBlock>
-              )}
-
-              {answers['M3-H-09']?.value === 'no' && (
-                <RiskFlag>Wire transfer records are critical evidence. Without them, officers have no way to verify the funds actually moved to the US business account. Prioritise obtaining these records before your interview.</RiskFlag>
-              )}
-            </div>
-          )}
-
-          {activeCluster === 4 && (
-            <div>
-              <ClusterDivider label="Financial projections" />
-              {renderQuestions(PROJECTIONS_QUESTIONS)}
-
-              <div className="mt-6">
-                <QuestionLabel>Financial projections — Year 1 through Year 5</QuestionLabel>
-                <ProjectionTable value={projections} onChange={setProjections} />
-              </div>
-
-              <div className="mt-6">
-                <QuestionLabel>When do you project the business to break even?</QuestionLabel>
-                <div className="flex flex-col gap-2">
-                  {[
-                    { value: '3-6', label: 'Month 3–6' },
-                    { value: '7-12', label: 'Month 7–12' },
-                    { value: 'year-2', label: 'Year 2' },
-                    { value: 'year-3+', label: 'Year 3 or later' },
-                  ].map((opt) => (
-                    <OptionButton key={opt.value} label={opt.label} selected={answers['M3-I-BREAKEVEN']?.value === opt.value} onClick={() => handleAnswerChange('M3-I-BREAKEVEN', opt.value)} />
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeCluster === 5 && (
-            <div>
-              <ClusterDivider label="Non-marginality evidence" />
-              {renderQuestions(NON_MARGINALITY_QUESTIONS)}
-            </div>
-          )}
-        </QuestionPanel>
-      </div>
+  const previewContent = (
+    <div className="space-y-4">
+      {DOCUMENTS.map(doc => (
+        <div key={doc.name} className="border p-4" style={{ borderColor: 'rgba(201,168,76,0.12)', backgroundColor: 'rgba(201,168,76,0.01)' }}>
+          <div className="flex items-center justify-between mb-3">
+            <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '10px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'rgba(245,240,232,0.35)' }}>{doc.name}</span>
+            <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '10px', color: 'rgba(245,240,232,0.18)', border: '1px solid rgba(245,240,232,0.08)', padding: '2px 7px' }}>Waiting</span>
+          </div>
+          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '12px', fontWeight: 300, color: 'rgba(245,240,232,0.18)', fontStyle: 'italic', lineHeight: 1.5 }}>[Answer the questions on the left to fill this in]</p>
+        </div>
+      ))}
     </div>
+  );
+
+  return (
+    <CaseFileShell
+      sectionNumber={3}
+      sectionTitle="Your Investment"
+      clusters={clusterStatuses}
+      activeClusterId={activeClusterId}
+      onClusterChange={setActiveClusterId}
+      buildsDocuments={['Source of Funds', 'Investment Proof']}
+      nextSectionPath="/apply/qualifications"
+      prevSectionPath="/apply/business"
+      isSaving={isSaving}
+      previewContent={previewContent}
+    >
+      {activeNumber === 1 && (
+        <div>
+          <ClusterDivider label="Investment overview" />
+          {renderQuestions(INVESTMENT_OVERVIEW_QUESTIONS)}
+          {answers['M3-F-02']?.value && Number(answers['M3-F-02'].value) % 1000 === 0 && Number(answers['M3-F-02'].value) > 0 && (
+            <AdvisoryBlock>Round investment amounts can draw officer scrutiny. Officers read exact round numbers as threshold calculations, not real investments. If your actual costs break down to an odd figure, use the exact amount.</AdvisoryBlock>
+          )}
+          {answers['M3-F-02']?.value && answers['M3-F-03']?.value && Number(answers['M3-F-03'].value) > 0 && (Number(answers['M3-F-02'].value) / Number(answers['M3-F-03'].value)) < 0.5 && (
+            <AdvisoryBlock>Your invested amount is less than 50% of the total cost to establish the business. You may need to argue substantiality — explain why the remaining costs will be covered and why your investment is already substantial.</AdvisoryBlock>
+          )}
+        </div>
+      )}
+
+      {activeNumber === 2 && (
+        <div>
+          <ClusterDivider label="Where the money came from" />
+          {renderQuestions(SOURCE_OF_FUNDS_QUESTIONS)}
+
+          {answers['M3-F-05']?.value?.includes('rrsp') && (
+            <AdvisoryBlock>RRSP withdrawals generate a T4RSP slip and are taxable. You need: (1) proof of RRSP account, (2) withdrawal confirmation, (3) T4RSP slip, (4) bank statement showing deposit, (5) wire confirmation to US account. Consult a CPA about withholding tax implications.</AdvisoryBlock>
+          )}
+
+          {answers['M3-F-05']?.value?.includes('tfsa') && (
+            <AdvisoryBlock>TFSA withdrawals have no tax slip. The paper trail is: (1) TFSA account statement, (2) withdrawal confirmation, (3) bank statement showing deposit, (4) wire confirmation. Note in your cover letter that TFSA funds are after-tax savings.</AdvisoryBlock>
+          )}
+
+          {answers['M3-F-05']?.value?.includes('crypto') && (
+            <RiskFlag label="Documentary risk">Cryptocurrency funds require forensic-level tracing: original acquisition method, wallet history, exchange records, conversion to fiat, and wire to US account. Self-custody wallets require additional blockchain trace documentation.</RiskFlag>
+          )}
+
+          {answers['M3-F-05']?.value?.includes('inheritance') && (
+            <AdvisoryBlock>Can the donor provide documentation showing where their gift funds came from — such as their own bank statements, a property sale, or investment account records? Officers require proof not just of the gift itself, but of the donor&apos;s source of wealth.</AdvisoryBlock>
+          )}
+
+          {answers['M3-F-01']?.value === 'acquisition' && (
+            <div className="mt-4">
+              <QuestionLabel>Is any part of the purchase price being financed by the seller?</QuestionLabel>
+              <div className="flex flex-col gap-2">
+                <OptionButton label="Yes" selected={answers['M3-H-SELLER']?.value === 'yes'} onClick={() => handleAnswerChange('M3-H-SELLER', 'yes')} />
+                <OptionButton label="No" selected={answers['M3-H-SELLER']?.value === 'no'} onClick={() => handleAnswerChange('M3-H-SELLER', 'no')} />
+              </div>
+              {answers['M3-H-SELLER']?.value === 'yes' && (
+                <AdvisoryBlock>The financed portion generally does not count toward your qualifying E-2 investment unless you are personally liable for repayment. The loan must be secured by your personal assets, not just business assets. Consult an attorney on structuring this.</AdvisoryBlock>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeNumber === 3 && (
+        <div>
+          <ClusterDivider label="The paper trail" />
+          {renderQuestions(PAPER_TRAIL_QUESTIONS)}
+
+          {answers['M3-B-BANK']?.value === 'no' && (
+            <AdvisoryBlock>
+              Opening a US business bank account requires your LLC to be formed and EIN to be obtained first. Options: Mercury (recommended for remote opening), Relay (Mercury backup), TD Bank or RBC cross-border, or traditional US bank requiring in-person visit. Account must be in the business name.
+            </AdvisoryBlock>
+          )}
+
+          {answers['M3-B-WIRE']?.value === 'no' && (
+            <AdvisoryBlock>TD Bank&apos;s online wire limit is approximately $25,000 CAD. Above that requires branch or phone authorization. Some banks automatically freeze accounts on large outgoing international transfers without advance notice. Call your bank before wiring.</AdvisoryBlock>
+          )}
+
+          {answers['M3-H-09']?.value === 'no' && (
+            <RiskFlag>Wire transfer records are critical evidence. Without them, officers have no way to verify the funds actually moved to the US business account. Prioritise obtaining these records before your interview.</RiskFlag>
+          )}
+        </div>
+      )}
+
+      {activeNumber === 4 && (
+        <div>
+          <ClusterDivider label="Financial projections" />
+          {renderQuestions(PROJECTIONS_QUESTIONS)}
+
+          <div className="mt-6">
+            <QuestionLabel>Financial projections — Year 1 through Year 5</QuestionLabel>
+            <ProjectionTable value={projections} onChange={setProjections} />
+          </div>
+
+          <div className="mt-6">
+            <QuestionLabel>When do you project the business to break even?</QuestionLabel>
+            <div className="flex flex-col gap-2">
+              {[
+                { value: '3-6', label: 'Month 3–6' },
+                { value: '7-12', label: 'Month 7–12' },
+                { value: 'year-2', label: 'Year 2' },
+                { value: 'year-3+', label: 'Year 3 or later' },
+              ].map((opt) => (
+                <OptionButton key={opt.value} label={opt.label} selected={answers['M3-I-BREAKEVEN']?.value === opt.value} onClick={() => handleAnswerChange('M3-I-BREAKEVEN', opt.value)} />
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeNumber === 5 && (
+        <div>
+          <ClusterDivider label="Non-marginality evidence" />
+          {renderQuestions(NON_MARGINALITY_QUESTIONS)}
+        </div>
+      )}
+    </CaseFileShell>
   );
 }
