@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTrackSectionVisit } from "@/hooks/useTrackSectionVisit";
 import Link from "next/link";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 
@@ -80,6 +81,8 @@ function groupItemsByPhase(items: CalendarItem[]): PhaseGroup[] {
 }
 
 export default function ComplianceCalendarPage() {
+  useTrackSectionVisit("calendar");
+
   const [supabase] = useState(() => createBrowserSupabaseClient());
   const [timeline, setTimeline] = useState<TimelineData | null>(null);
   const [items, setItems] = useState<CalendarItem[]>([]);

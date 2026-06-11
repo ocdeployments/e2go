@@ -154,41 +154,88 @@ export default function ResultsPage() {
   const [supabase] = useState(() => createBrowserSupabaseClient());
   const [data, setData] = useState<ResultData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [userName, setUserName] = useState<string | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [emailStatus, setEmailStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [userEmail, setUserEmail] = useState<string | null>(null);
 
   useEffect(() => {
     const loadResult = async () => {
+      let hasLocalStorageData = false;
       const stored = localStorage.getItem("e2go_quiz_result");
       if (stored) {
         try {
           const parsed = JSON.parse(stored);
           setData(parsed);
-          setLoading(false);
-          return;
+          hasLocalStorageData = true;
         } catch {}
       }
 
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          const { data: session } = await supabase
-            .from("quiz_sessions")
-            .select("result_json, outcome, score")
-            .eq("user_id", user.id)
-            .order("completed_at", { ascending: false })
-            .limit(1)
+          setIsLoggedIn(true);
+          setUserEmail(user.email ?? null);
+
+          // Fetch profile for name
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("first_name")
+            .eq("id", user.id)
             .single();
-          if (session?.result_json) {
-            setData(session.result_json as ResultData);
-            setLoading(false);
-            return;
+          if (profile?.first_name) {
+            setUserName(profile.first_name);
+          }
+
+          // If no localStorage result, try Supabase
+          if (!hasLocalStorageData) {
+            const { data: session } = await supabase
+              .from("quiz_sessions")
+              .select("result_json, outcome, score")
+              .eq("user_id", user.id)
+              .order("completed_at", { ascending: false })
+              .limit(1)
+              .single();
+            if (session?.result_json) {
+              setData(session.result_json as ResultData);
+            }
           }
         }
       } catch {}
 
-      router.push("/quiz");
+      setLoading(false);
     };
     loadResult();
   }, [supabase, router]);
+
+  const handleEmailResult = async () => {
+    if (!data) return;
+    setEmailStatus('loading');
+    try {
+      const emailToSend = userEmail || prompt("Enter your email address to receive your results:");
+      if (!emailToSend) {
+        setEmailStatus('idle');
+        return;
+      }
+      const res = await fetch('/api/email/results', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: emailToSend,
+          outcome: data.outcome,
+          result_json: data,
+          franchise_interest: data.franchise_interest || false,
+        }),
+      });
+      if (res.ok) {
+        setEmailStatus('success');
+      } else {
+        setEmailStatus('error');
+      }
+    } catch {
+      setEmailStatus('error');
+    }
+  };
 
   if (loading) {
     return (
@@ -309,6 +356,21 @@ export default function ResultsPage() {
             <div style={{ flex: "0 0 24px", height: "1px", background: "rgba(201,168,76,0.4)" }} />
             Assessment complete
           </div>
+
+          {isLoggedIn && userName ? (
+            <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "28px", fontWeight: 300, color: "#f5f0e8", marginBottom: "8px" }}>
+              {userName}, here are your results
+            </div>
+          ) : !isLoggedIn ? (
+            <div style={{ marginBottom: "8px" }}>
+              <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "28px", fontWeight: 300, color: "#f5f0e8", marginBottom: "4px" }}>
+                Your eligibility results
+              </div>
+              <Link href="/signup" style={{ fontSize: "13px", color: "#C9A84C", textDecoration: "underline", letterSpacing: "0.02em" }}>
+                Create a free account to save these results
+              </Link>
+            </div>
+          ) : null}
           <div style={{ display: "flex", alignItems: "flex-end", gap: "20px", marginBottom: "16px" }}>
             <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "80px", fontWeight: 300, color: "#C9A84C", lineHeight: 1 }}>{score}</div>
             <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "32px", fontWeight: 300, color: "rgba(201,168,76,0.4)", lineHeight: 1, paddingBottom: "10px" }}>/100</div>
@@ -321,6 +383,11 @@ export default function ResultsPage() {
           </div>
           <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "36px", fontWeight: 300, color: "#f5f0e8", lineHeight: 1.25, marginBottom: "12px", letterSpacing: "-0.01em" }}>{verdict}</div>
           <div style={{ fontSize: "14px", color: "rgba(245,240,232,0.45)", lineHeight: 1.7, maxWidth: "560px" }}>{verdictSub}</div>
+          {isLoggedIn && (
+            <div style={{ marginTop: "16px", padding: "12px 16px", background: "rgba(201,168,76,0.05)", border: "1px solid rgba(201,168,76,0.15)", fontSize: "13px", color: "rgba(245,240,232,0.6)", lineHeight: 1.6 }}>
+              ✓ Your profile has been saved. You can return to these results any time from your dashboard.
+            </div>
+          )}
         </div>
       </div>
 
@@ -455,8 +522,26 @@ export default function ResultsPage() {
                 Start my application →
               </button>
             </Link>
-            <button style={{ width: "100%", padding: "12px 24px", background: "transparent", border: "1px solid rgba(201,168,76,0.25)", color: "rgba(201,168,76,0.7)", fontSize: "12px", cursor: "pointer", letterSpacing: "0.07em", textTransform: "uppercase", fontFamily: "'DM Sans', sans-serif", borderRadius: 0, marginTop: "8px" }}>
-              Email me this result
+            <button
+              onClick={handleEmailResult}
+              disabled={emailStatus === 'loading' || emailStatus === 'success'}
+              style={{
+                width: "100%",
+                padding: "12px 24px",
+                background: emailStatus === 'success' ? "rgba(34,197,94,0.1)" : "transparent",
+                border: `1px solid ${emailStatus === 'success' ? "rgba(34,197,94,0.3)" : "rgba(201,168,76,0.25)"}`,
+                color: emailStatus === 'success' ? "#22c55e" : emailStatus === 'error' ? "#ef4444" : "rgba(201,168,76,0.7)",
+                fontSize: "12px",
+                cursor: emailStatus === 'loading' || emailStatus === 'success' ? "default" : "pointer",
+                letterSpacing: "0.07em",
+                textTransform: "uppercase",
+                fontFamily: "'DM Sans', sans-serif",
+                borderRadius: 0,
+                marginTop: "8px",
+                opacity: emailStatus === 'loading' ? 0.7 : 1,
+              }}
+            >
+              {emailStatus === 'loading' ? 'Sending...' : emailStatus === 'success' ? '✓ Sent' : emailStatus === 'error' ? 'Failed — try again' : 'Email me this result'}
             </button>
           </div>
 

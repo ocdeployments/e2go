@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTrackSectionVisit } from "@/hooks/useTrackSectionVisit";
 import { useRouter } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 
@@ -75,6 +76,8 @@ const BUSINESS_EXAMPLES: Record<string, { name: string; investment: string; empl
 };
 
 export default function Module2Page() {
+  useTrackSectionVisit("module2");
+
   const router = useRouter();
   const [supabase] = useState(() => createBrowserSupabaseClient());
 

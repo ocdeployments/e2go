@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useTrackSectionVisit } from "@/hooks/useTrackSectionVisit";
 import { useRouter } from 'next/navigation';
 
 interface Question {
@@ -12,6 +13,8 @@ interface Question {
 }
 
 export default function Module4Page() {
+  useTrackSectionVisit("module4");
+
   const router = useRouter();
   const [screen, setScreen] = useState(1);
   const [applicationId, setApplicationId] = useState<string | null>(null);

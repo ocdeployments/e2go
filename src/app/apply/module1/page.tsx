@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTrackSectionVisit } from "@/hooks/useTrackSectionVisit";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
@@ -28,6 +29,8 @@ const REFERRAL_CATEGORIES = [
 ];
 
 export default function Module1Page() {
+  useTrackSectionVisit("module1");
+
   const router = useRouter();
   const [supabase] = useState(() => createBrowserSupabaseClient());
 

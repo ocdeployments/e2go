@@ -1,11 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTrackSectionVisit } from "@/hooks/useTrackSectionVisit";
 import { useRouter } from 'next/navigation';
 import { createBrowserSupabaseClient } from '@/lib/supabase';
 import UploadClient from '@/components/apply/UploadClient';
 
 export default function UploadPage() {
+  useTrackSectionVisit("upload");
+
   const router = useRouter();
   const [applicationId, setApplicationId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);

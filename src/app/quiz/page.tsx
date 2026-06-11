@@ -120,13 +120,20 @@ function evaluateShowIf(
 // Score calculator
 // ---------------------------------------------------------------------------
 
-function calculateScore(warningCodes: string[]): number {
+function calculateScore(warningCodes: string[], attorneyFlags: string[]): number {
   let score = SCORE_WEIGHTS.base_score;
+  // Deduct for risk flags
   for (const code of warningCodes) {
     const deduction = SCORE_WEIGHTS.deductions[code];
     if (deduction) score -= deduction;
   }
-  return Math.max(score, 0);
+  // Deduct for attorney flags
+  for (const code of attorneyFlags) {
+    const deduction = SCORE_WEIGHTS.deductions[code];
+    if (deduction) score -= deduction;
+  }
+  // Minimum score of 45 — flags don't eliminate eligibility
+  return Math.max(score, 45);
 }
 
 function getOutcome(
@@ -180,6 +187,7 @@ export default function QuizPage() {
   const [warningCodes, setWarningCodes] = useState<string[]>([]);
   const [attorneyFlags, setAttorneyFlags] = useState<string[]>([]);
   const [franchiseInterest, setFranchiseInterest] = useState(false);
+  const [franchiseReferralRequested, setFranchiseReferralRequested] = useState(false);
   const [countrySearch, setCountrySearch] = useState("");
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
   const [highlightedIdx, setHighlightedIdx] = useState(-1);
@@ -243,12 +251,13 @@ export default function QuizPage() {
             const parsed = JSON.parse(draft);
             const savedAt = new Date(parsed.savedAt);
             const daysSince = (Date.now() - savedAt.getTime()) / (1000 * 60 * 60 * 24);
-            if (daysSince < 7 && parsed.answers && Object.keys(parsed.answers).length > 0) {
+            if (daysSince < 1 && parsed.answers && Object.keys(parsed.answers).length > 0) {
               setAnswers(parsed.answers);
               setCur(parsed.cur || 0);
               setWarningCodes(parsed.warningCodes || []);
               setAttorneyFlags(parsed.attorneyFlags || []);
               setFranchiseInterest(parsed.franchiseInterest || false);
+              setFranchiseReferralRequested(parsed.franchiseReferralRequested || false);
               setHardStopsTriggered(parsed.hardStopsTriggered || []);
             }
           } catch {
@@ -282,7 +291,7 @@ export default function QuizPage() {
 
   // Save draft helper
   const saveDraft = useCallback(
-    (newAnswers: Record<string, Answer>, newCur: number, newWarnings: string[], newAttorney: string[], newFranchise: boolean) => {
+    (newAnswers: Record<string, Answer>, newCur: number, newWarnings: string[], newAttorney: string[], newFranchise: boolean, newFranchiseReferral: boolean = false) => {
       localStorage.setItem(
         "e2go_quiz_draft",
         JSON.stringify({
@@ -291,6 +300,7 @@ export default function QuizPage() {
           warningCodes: newWarnings,
           attorneyFlags: newAttorney,
           franchiseInterest: newFranchise,
+          franchiseReferralRequested: newFranchiseReferral,
           savedAt: new Date().toISOString(),
         })
       );
@@ -321,9 +331,10 @@ export default function QuizPage() {
       finalWarningCodes: string[],
       finalAttorneyFlags: string[],
       finalFranchise: boolean,
-      finalHardStops: string[]
+      finalHardStops: string[],
+      finalFranchiseReferral: boolean = false
     ) => {
-      const score = calculateScore(finalWarningCodes);
+      const score = calculateScore(finalWarningCodes, finalAttorneyFlags);
       const outcome = getOutcome(finalHardStops, finalAttorneyFlags, finalWarningCodes);
 
       const resultData = {
@@ -403,6 +414,7 @@ export default function QuizPage() {
             risk_flag_codes: finalWarningCodes,
             application_type: resultData.application_type,
             franchise_interest: finalFranchise,
+            franchise_referral_requested: finalFranchiseReferral,
             result_json: resultData,
             casl_consent: true,
             casl_consent_at: new Date().toISOString(),
@@ -454,6 +466,7 @@ export default function QuizPage() {
 
       // Flags (franchise, spouse, partnership)
       if (action.includes("flag_franchise_interest")) setFranchiseInterest(true);
+      if (action.includes("flag_franchise_referral")) setFranchiseReferralRequested(true);
       // Other flags are no-ops for now (data is captured in answers)
 
       // Sub-question jump
@@ -507,7 +520,8 @@ export default function QuizPage() {
               warningCodes,
               attorneyFlags,
               franchiseInterest,
-              hardStopsTriggered
+              hardStopsTriggered,
+              franchiseReferralRequested
             );
           } else {
             advance();
@@ -515,7 +529,7 @@ export default function QuizPage() {
         }
       }, result.stopCode ? 280 : 1200);
 
-      saveDraft(newAnswers, cur, warningCodes, attorneyFlags, franchiseInterest);
+      saveDraft(newAnswers, cur, warningCodes, attorneyFlags, franchiseInterest, franchiseReferralRequested);
     },
     [
       q, displayOpts, answers, cur, visibleQuestions, warningCodes, attorneyFlags,
@@ -549,6 +563,7 @@ export default function QuizPage() {
     const newFlags = [...attorneyFlags];
     let newHardStops = [...hardStopsTriggered];
     let newFranchise = franchiseInterest;
+    let newFranchiseReferral = franchiseReferralRequested;
 
     for (const opt of selected) {
       const action = opt.action || "continue";
@@ -558,7 +573,7 @@ export default function QuizPage() {
         newHardStops = [...newHardStops, stopCode];
         setHardStopsTriggered(newHardStops);
         setStopCode(stopCode);
-        saveDraft(newAnswers, cur, newWarnings, newFlags, newFranchise);
+        saveDraft(newAnswers, cur, newWarnings, newFlags, newFranchise, newFranchiseReferral);
         return;
       }
 
@@ -574,16 +589,18 @@ export default function QuizPage() {
       }
 
       if (action.includes("flag_franchise_interest")) newFranchise = true;
+      if (action.includes("flag_franchise_referral")) newFranchiseReferral = true;
     }
 
     setWarningCodes(newWarnings);
     setAttorneyFlags(newFlags);
     setFranchiseInterest(newFranchise);
-    saveDraft(newAnswers, cur, newWarnings, newFlags, newFranchise);
+    setFranchiseReferralRequested(newFranchiseReferral);
+    saveDraft(newAnswers, cur, newWarnings, newFlags, newFranchise, newFranchiseReferral);
 
     const nextIdx = cur + 1;
     if (nextIdx >= visibleQuestions.length) {
-      handleComplete(newAnswers, newWarnings, newFlags, newFranchise, newHardStops);
+      handleComplete(newAnswers, newWarnings, newFlags, newFranchise, newHardStops, newFranchiseReferral);
     } else {
       advance();
     }
@@ -1075,7 +1092,7 @@ export default function QuizPage() {
               onClick={() => {
                 const nextIdx = cur + 1;
                 if (nextIdx >= visibleQuestions.length) {
-                  handleComplete(answers, warningCodes, attorneyFlags, franchiseInterest, hardStopsTriggered);
+                  handleComplete(answers, warningCodes, attorneyFlags, franchiseInterest, hardStopsTriggered, franchiseReferralRequested);
                 } else {
                   advance();
                 }

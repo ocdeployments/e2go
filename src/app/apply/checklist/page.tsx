@@ -1,12 +1,15 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTrackSectionVisit } from "@/hooks/useTrackSectionVisit";
 import Link from "next/link";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import PreAppChecklist, { ChecklistItem } from "@/components/PreAppChecklist";
 import { generatePreAppChecklist } from "@/lib/checklist-generator";
 
 export default function ChecklistPage() {
+  useTrackSectionVisit("checklist");
+
   const [supabase] = useState(() => createBrowserSupabaseClient());
   const [loading, setLoading] = useState(true);
   const [checklistItems, setChecklistItems] = useState<ChecklistItem[]>([]);

@@ -8,6 +8,8 @@ import { createBrowserSupabaseClient } from "@/lib/supabase";
 interface Profile {
   id: string;
   email: string;
+  first_name?: string;
+  last_name?: string;
   full_name?: string;
   tier?: string;
 }
@@ -211,7 +213,7 @@ export default function Nav() {
                   className="flex items-center gap-2 text-sm transition-colors"
                   style={{ color: "rgba(245,240,232,0.75)" }}
                 >
-                  <span>Account</span>
+                  <span>{user?.first_name ? `Hi, ${user.first_name}` : 'Account'}</span>
                   <svg width="12" height="12" viewBox="0 0 12 12" fill="none" className="transition-transform" style={{ transform: dropdownOpen ? "rotate(180deg)" : "rotate(0deg)" }}>
                     <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="square" />
                   </svg>

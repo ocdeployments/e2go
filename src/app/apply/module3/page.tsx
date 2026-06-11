@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTrackSectionVisit } from "@/hooks/useTrackSectionVisit";
 import { useRouter } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 
@@ -24,6 +25,8 @@ const TABS: { letter: string; title: string }[] = [
 ];
 
 export default function Module3Overview() {
+  useTrackSectionVisit("module3");
+
   const router = useRouter();
   const [tabs, setTabs] = useState<TabStatus[]>(
     TABS.map((t) => ({

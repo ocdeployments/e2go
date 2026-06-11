@@ -12,6 +12,8 @@ function SignupForm() {
 
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -20,6 +22,12 @@ function SignupForm() {
     e.preventDefault();
     setStatus('loading');
     setErrorMessage("");
+
+    if (!firstName.trim() || !lastName.trim()) {
+      setStatus('error');
+      setErrorMessage("First name and last name are required");
+      return;
+    }
 
     if (password !== confirmPassword) {
       setStatus('error');
@@ -36,23 +44,42 @@ function SignupForm() {
     try {
       const supabase = createBrowserSupabaseClient();
 
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           emailRedirectTo: `${window.location.origin}${next}`,
+          data: {
+            first_name: firstName.trim(),
+            last_name: lastName.trim(),
+          },
         },
       });
 
       if (error) {
         setStatus('error');
         setErrorMessage(error.message);
-      } else {
-        setStatus('success');
-        setTimeout(() => {
-          window.location.href = next;
-        }, 2000);
+        return;
       }
+
+      // Upsert profile with first_name and last_name
+      if (data.user) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .upsert({
+            id: data.user.id,
+            first_name: firstName.trim(),
+            last_name: lastName.trim(),
+            email: email,
+          }, { onConflict: 'id' });
+
+        if (profileError) {
+          console.error('Profile upsert error:', profileError);
+          // Non-blocking — account is created, profile write is best-effort
+        }
+      }
+
+      setStatus('success');
     } catch {
       setStatus('error');
       setErrorMessage("An unexpected error occurred");
@@ -84,14 +111,14 @@ function SignupForm() {
           <main className="flex-1 flex items-center justify-center px-8 py-12">
             <div className="w-full max-w-md">
               <div className="p-8 text-center" style={{ background: "rgba(201,168,76,0.02)", border: "1px solid rgba(201,168,76,0.12)", borderRadius: 0 }}>
-                <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4" style={{ background: "rgba(201,168,76,0.08)" }}>
+                <div className="w-12 h-12 flex items-center justify-center mx-auto mb-4" style={{ background: "rgba(201,168,76,0.08)" }}>
                   <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" style={{ color: "#C9A84C" }}>
                     <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
                   </svg>
                 </div>
                 <p className="font-medium mb-2" style={{ color: "#f5f0e8" }}>Check your email</p>
                 <p className="text-sm" style={{ color: "rgba(245,240,232,0.6)" }}>We sent a confirmation link to {email}</p>
-                <p className="text-xs mt-4" style={{ color: "rgba(245,240,232,0.6)" }}>Redirecting to dashboard...</p>
+                <p className="text-xs mt-4" style={{ color: "rgba(245,240,232,0.35)" }}>Please verify your email before signing in.</p>
               </div>
             </div>
           </main>
@@ -118,12 +145,43 @@ function SignupForm() {
               <p className="mb-8" style={{ color: "rgba(245,240,232,0.6)" }}>Start your E-2 visa application journey</p>
 
               {status === 'error' && (
-                <div className="p-3 rounded-lg text-sm mb-4" style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.3)", color: "#fca5a5" }}>
+                <div className="p-3 text-sm mb-4" style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.3)", color: "#fca5a5", borderRadius: 0 }}>
                   {errorMessage}
                 </div>
               )}
 
               <form onSubmit={handleSignup} className="space-y-4">
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                  <div>
+                    <label className="block text-sm font-medium mb-1" style={{ color: "rgba(245,240,232,0.6)" }}>
+                      First name
+                    </label>
+                    <input
+                      type="text"
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      required
+                      className="w-full px-4 py-3"
+                      style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(201,168,76,0.2)", borderRadius: 0, color: "#f5f0e8" }}
+                      placeholder="First name"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1" style={{ color: "rgba(245,240,232,0.6)" }}>
+                      Last name
+                    </label>
+                    <input
+                      type="text"
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                      required
+                      className="w-full px-4 py-3"
+                      style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(201,168,76,0.2)", borderRadius: 0, color: "#f5f0e8" }}
+                      placeholder="Last name"
+                    />
+                  </div>
+                </div>
+
                 <div>
                   <label className="block text-sm font-medium mb-1" style={{ color: "rgba(245,240,232,0.6)" }}>
                     Email

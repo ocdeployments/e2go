@@ -112,36 +112,37 @@
       "type": "select",
       "section": "investment",
       "section_index": 1,
-      "question": "Where are you applying from?",
-      "helper_text": "Your application location determines the consulate or embassy that will adjudicate your case and affects processing strategy.",
-      "tooltip": null,
+      "question": "Where are you currently located?",
+      "helper_text": "This determines whether you'll apply through a US consulate abroad (consular processing) or adjust status from within the US. If you're unsure, select 'Not sure — I need guidance' and we'll advise based on your situation.",
+      "tooltip": "Consular processing and change of status have different requirements, timelines, and risks. Your current location is the starting point for determining the best path.",
       "is_sub": false,
       "parent": null,
       "show_if": null,
       "options": [
-        { "text": "From within the US — change of status", "action": "continue", "code": null, "warning_message": null },
-        { "text": "From outside the US — consular processing", "action": "continue", "code": null, "warning_message": null },
-        { "text": "Not sure yet", "action": "continue", "code": null, "warning_message": null }
+        { "text": "Inside the US — I want to change status", "action": "continue", "code": null, "warning_message": null },
+        { "text": "Outside the US — I'll apply at a consulate", "action": "continue", "code": null, "warning_message": null },
+        { "text": "I have a pending COS application", "action": "continue", "code": null, "warning_message": null },
+        { "text": "Not sure — I need guidance", "action": "continue", "code": null, "warning_message": null }
       ]
     },
     {
       "id": "Q0-06",
-      "type": "select",
+      "type": "multiselect",
       "section": "investment",
       "section_index": 1,
-      "question": "How are you funding your investment?",
-      "helper_text": "The source of funds is one of the most scrutinised aspects of an E-2 application. USCIS requires a clear paper trail.",
-      "tooltip": "E-2 funds must be 'irrevocably committed' to the enterprise. Loan-backed investments require the loan to be secured by personal assets, not the business itself.",
+      "question": "What is the primary source of your investment funds?",
+      "helper_text": "Select all that apply. Each source requires specific documentation to prove the funds are lawfully obtained and traceable.",
+      "tooltip": "USCIS requires a clear paper trail for all investment funds. Different sources require different supporting documents — selecting accurately here helps us prepare the right documentation checklist.",
       "is_sub": false,
       "parent": null,
       "show_if": null,
       "options": [
-        { "text": "Personal savings and accumulated wealth", "action": "continue", "code": null, "warning_message": null },
-        { "text": "Selling assets — property, investments, or business", "action": "continue", "code": null, "warning_message": null },
-        { "text": "Inheritance or gift from family", "action": "warn:W-FAMILY-GIFT", "code": "W-FAMILY-GIFT", "warning_message": "Gift-funded investments require additional documentation proving the gift is genuine and not a disguised loan." },
-        { "text": "Business loan or line of credit", "action": "attorney:W-LOAN-FUNDED", "code": "W-LOAN-FUNDED", "warning_message": "Loan-funded investments require careful structuring. The loan must be secured by personal assets, not the business. We recommend attorney guidance." },
-        { "text": "Combination of sources", "action": "continue", "code": null, "warning_message": null },
-        { "text": "Not sure yet", "action": "continue", "code": null, "warning_message": null }
+        { "text": "Personal savings or investments (bank/brokerage accounts)", "action": "continue", "code": null, "warning_message": null },
+        { "text": "Sale of a property or business", "action": "continue", "code": null, "warning_message": null },
+        { "text": "Registered accounts (RRSP, TFSA, LIRA, pension)", "action": "continue", "code": null, "warning_message": null },
+        { "text": "Gift or inheritance", "action": "warn:W-FAMILY-GIFT", "code": "W-FAMILY-GIFT", "warning_message": "Gift-funded investments require additional documentation proving the gift is genuine and not a disguised loan." },
+        { "text": "Loan (personal, home equity, or third-party)", "action": "attorney:W-LOAN-FUNDED", "code": "W-LOAN-FUNDED", "warning_message": "Loan-funded investments require careful structuring. The loan must be secured by personal assets, not the business. We recommend attorney guidance." },
+        { "text": "Multiple sources combined", "action": "continue", "code": null, "warning_message": null }
       ]
     },
     {
@@ -219,22 +220,71 @@
       ]
     },
     {
+      "id": "Q0-08c",
+      "type": "select",
+      "section": "business",
+      "section_index": 3,
+      "question": "Have you made contact with the franchisor or business owner yet?",
+      "helper_text": "This helps us understand your stage in the process and what documentation you may already have.",
+      "tooltip": null,
+      "is_sub": true,
+      "parent": "Q0-08",
+      "show_if": { "Q0-08": ["I have a specific business identified and ready to invest in"] },
+      "options": [
+        { "text": "Yes — I've been in contact and have information", "action": "continue", "code": null, "warning_message": null },
+        { "text": "No — I know which one I want but haven't reached out yet", "action": "sub:Q0-08d", "code": null, "warning_message": null },
+        { "text": "This is a business, not a franchise", "action": "continue", "code": null, "warning_message": null }
+      ]
+    },
+    {
+      "id": "Q0-08d",
+      "type": "select",
+      "section": "business",
+      "section_index": 3,
+      "question": "Would you like us to connect you with this franchisor on your behalf?",
+      "helper_text": "We can facilitate an introduction to help move your application forward.",
+      "tooltip": null,
+      "is_sub": true,
+      "parent": "Q0-08c",
+      "show_if": { "Q0-08c": ["No — I know which one I want but haven't reached out yet"] },
+      "options": [
+        { "text": "Yes, please connect me", "action": "flag_franchise_referral+continue", "code": null, "warning_message": null },
+        { "text": "No, I'll reach out myself", "action": "continue", "code": null, "warning_message": null }
+      ]
+    },
+    {
       "id": "Q0-09",
-      "type": "multiselect",
+      "type": "select",
       "section": "history",
       "section_index": 4,
-      "question": "Do any of the following apply to your immigration history?",
-      "helper_text": "Select all that apply. These factors may affect your admissibility or require additional documentation.",
-      "tooltip": "Immigration history is one of the most sensitive areas of E-2 adjudication. Prior refusals, entry issues, or criminal records require careful preparation.",
+      "question": "Do you have anything to disclose about your immigration or criminal history?",
+      "helper_text": "This includes prior visa refusals, border incidents, deportation orders, or criminal convictions. If you're unsure, select 'Not sure — I may have something' and we'll help you assess.",
+      "tooltip": "Immigration history is one of the most sensitive areas of E-2 adjudication. Full disclosure is essential — undisclosed issues discovered later can result in permanent bars.",
       "is_sub": false,
       "parent": null,
       "show_if": null,
       "options": [
-        { "text": "Yes, I have been refused a US visa", "action": "warn:W-REFUSAL-RECENT", "code": "W-REFUSAL-RECENT", "warning_message": "Prior visa refusals must be addressed in your application. We will prepare a detailed explanation." },
-        { "text": "Yes, I have been refused entry at a US border", "action": "warn:W-ENTRY-REFUSED", "code": "W-ENTRY-REFUSED", "warning_message": "Border refusals are serious and must be thoroughly addressed. Attorney review is recommended." },
-        { "text": "Yes, I have been deported or removed from the US", "action": "attorney:W-DEPORTED", "code": "W-DEPORTED", "warning_message": "Deportation or removal orders create significant legal complexity. This requires professional legal guidance." },
-        { "text": "Yes, I have criminal convictions", "action": "attorney:W-CONVICTION-RECENT", "code": "W-CONVICTION-RECENT", "warning_message": "Criminal history requires careful admissibility analysis. We recommend consulting with an immigration attorney." },
-        { "text": "No, none of these apply to me", "action": "continue", "code": null, "warning_message": null }
+        { "text": "Yes, I have something to disclose", "action": "sub:Q0-09c", "code": null, "warning_message": null },
+        { "text": "No, my history is clear", "action": "continue", "code": null, "warning_message": null },
+        { "text": "Not sure — I may have something", "action": "sub:Q0-09c", "code": null, "warning_message": null }
+      ]
+    },
+    {
+      "id": "Q0-09c",
+      "type": "multiselect",
+      "section": "history",
+      "section_index": 4,
+      "question": "Which of the following apply to your history?",
+      "helper_text": "Select all that apply. This helps us prepare the right documentation and legal strategy.",
+      "tooltip": null,
+      "is_sub": true,
+      "parent": "Q0-09",
+      "show_if": { "Q0-09": ["Yes, I have something to disclose", "Not sure — I may have something"] },
+      "options": [
+        { "text": "I have been refused a US visa", "action": "warn:W-REFUSAL-RECENT", "code": "W-REFUSAL-RECENT", "warning_message": "Prior visa refusals must be addressed in your application. We will prepare a detailed explanation." },
+        { "text": "I have been refused entry at a US border", "action": "warn:W-ENTRY-REFUSED", "code": "W-ENTRY-REFUSED", "warning_message": "Border refusals are serious and must be thoroughly addressed. Attorney review is recommended." },
+        { "text": "I have been deported or removed from the US", "action": "attorney:W-DEPORTED", "code": "W-DEPORTED", "warning_message": "Deportation or removal orders create significant legal complexity. This requires professional legal guidance." },
+        { "text": "I have criminal convictions", "action": "attorney:W-CONVICTION-RECENT", "code": "W-CONVICTION-RECENT", "warning_message": "Criminal history requires careful admissibility analysis. We recommend consulting with an immigration attorney." }
       ]
     },
     {
@@ -285,11 +335,11 @@
       "parent": null,
       "show_if": null,
       "options": [
-        { "text": "I own property in my home country", "action": "warn:W-PROPERTY-UNDISCLOSED", "code": "W-PROPERTY-UNDISCLOSED", "warning_message": "Property ownership is a strong home tie. We will document this thoroughly in your application." },
-        { "text": "I have close family remaining in my home country", "action": "warn:W-NO-EXTENDED-FAMILY", "code": "W-NO-EXTENDED-FAMILY", "warning_message": "Family ties are important evidence of intent to return. We will strengthen this aspect of your case." },
-        { "text": "I maintain active bank accounts or financial investments", "action": "warn:W-CLOSING-ACCOUNTS", "code": "W-CLOSING-ACCOUNTS", "warning_message": "Financial accounts demonstrate ongoing connection to your home country. Closing all accounts before applying weakens this tie." },
-        { "text": "I have ongoing employment or business interests", "action": "continue", "code": null, "warning_message": null },
-        { "text": "I have none of these — limited ties", "action": "warn:W-MOVING-ALONE", "code": "W-MOVING-ALONE", "warning_message": "Limited home ties make non-immigrant intent harder to demonstrate. We will need to build a strong case around available evidence." }
+        { "text": "Property ownership", "action": "continue", "code": null, "warning_message": null },
+        { "text": "Close family still living there", "action": "continue", "code": null, "warning_message": null },
+        { "text": "Active bank accounts or investments", "action": "continue", "code": null, "warning_message": null },
+        { "text": "Ongoing employment or business interests", "action": "continue", "code": null, "warning_message": null },
+        { "text": "Limited or no ties", "action": "warn:W-WEAK-TIES", "code": "W-WEAK-TIES", "warning_message": "Limited home ties make non-immigrant intent harder to demonstrate. We will need to build a strong case around available evidence." }
       ]
     }
   ],
@@ -311,10 +361,7 @@
       "W-AGING-OUT": 5,
       "W-OVER-21": 8,
       "W-PARTNERSHIP-SPLIT": 6,
-      "W-MOVING-ALONE": 4,
-      "W-PROPERTY-UNDISCLOSED": 3,
-      "W-CLOSING-ACCOUNTS": 3,
-      "W-NO-EXTENDED-FAMILY": 4,
+      "W-WEAK-TIES": 5,
       "W-REFUSAL-OLD": 5,
       "W-REFUSAL-RECENT": 10,
       "W-REFUSAL-MULTIPLE": 12,

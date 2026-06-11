@@ -111,6 +111,16 @@ export async function middleware(req: NextRequest) {
     data: { session },
   } = await supabase.auth.getSession();
 
+  // Enforce email verification — redirect to /verify if email not confirmed
+  // Exception: /verify itself and /api/auth/* routes must not redirect (infinite loop)
+  if (session && !session.user.email_confirmed_at) {
+    const isVerifyRoute = pathname === '/verify';
+    const isApiAuthRoute = pathname.startsWith('/api/auth');
+    if (!isVerifyRoute && !isApiAuthRoute) {
+      return NextResponse.redirect(new URL('/verify', req.url));
+    }
+  }
+
   // Protected routes that require authentication
   const protectedRoutes = [
     '/dashboard',

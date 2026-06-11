@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { useTrackSectionVisit } from "@/hooks/useTrackSectionVisit";
 import { createBrowserSupabaseClient } from '@/lib/supabase';
 import CaseFileShell from '@/components/apply/CaseFileShell';
 import QuestionLabel from '@/components/apply/questions/QuestionLabel';
@@ -97,6 +98,8 @@ const ALL_QUESTION_SETS = [
 ];
 
 export default function FamilyPage() {
+  useTrackSectionVisit("family");
+
   const [loading, setLoading] = useState(true);
   const [activeClusterId, setActiveClusterId] = useState('cluster-1');
   const [answers, setAnswers] = useState<Record<string, FamilyAnswer>>({});

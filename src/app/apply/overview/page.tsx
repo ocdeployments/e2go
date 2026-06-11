@@ -1,5 +1,6 @@
 'use client';
 import { Suspense, useEffect } from 'react';
+import { useTrackSectionVisit } from "@/hooks/useTrackSectionVisit";
 import { useRouter, useSearchParams } from 'next/navigation';
 
 function OverviewRedirectInner() {
@@ -15,6 +16,8 @@ function OverviewRedirectInner() {
 }
 
 export default function OverviewRedirect() {
+  useTrackSectionVisit("overview");
+
   return (
     <Suspense>
       <OverviewRedirectInner />
