@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { createSupabaseServerClient } from '@/lib/supabase-server';
 
 function getSupabase() {
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
@@ -13,6 +14,13 @@ function getSupabase() {
 
 export async function POST(request: Request) {
   try {
+    // Session auth — verify caller is logged in
+    const supabaseAuth = await createSupabaseServerClient();
+    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const supabase = getSupabase();
     if (!supabase) {
       return NextResponse.json(
@@ -21,19 +29,19 @@ export async function POST(request: Request) {
       );
     }
     const body = await request.json();
-    const { applicationId, userId } = body;
+    const { applicationId } = body;
 
-    if (!applicationId || !userId) {
+    if (!applicationId) {
       return NextResponse.json(
-        { error: 'applicationId and userId are required' },
+        { error: 'applicationId is required' },
         { status: 400 }
       );
     }
 
-    // Verify application belongs to user
+    // Verify application belongs to authenticated user
     const { data: application, error: appError } = await supabase
       .from('applications')
-      .select('user_id')
+      .select('user_id, payment_status')
       .eq('id', applicationId)
       .single();
 
@@ -44,10 +52,18 @@ export async function POST(request: Request) {
       );
     }
 
-    if (application.user_id !== userId) {
+    if (application.user_id !== user.id) {
       return NextResponse.json(
         { error: 'Forbidden' },
         { status: 403 }
+      );
+    }
+
+    // Payment wall — require paid status
+    if (application.payment_status !== 'paid') {
+      return NextResponse.json(
+        { error: 'Payment required' },
+        { status: 402 }
       );
     }
 
@@ -74,7 +90,7 @@ export async function POST(request: Request) {
       .from('document_generation_jobs')
       .insert({
         application_id: applicationId,
-        user_id: userId,
+        user_id: user.id,
         status: 'queued',
         current_step: 0,
         current_step_label: 'Initializing',
@@ -103,7 +119,7 @@ export async function POST(request: Request) {
       documentTypes.map((docType) => ({
         job_id: jobId,
         application_id: applicationId,
-        user_id: userId,
+        user_id: user.id,
         document_type: docType,
         status: 'queued',
       }))
@@ -111,7 +127,7 @@ export async function POST(request: Request) {
 
     // Create revision credits row (10 credits)
     await supabase.from('revision_credits').insert({
-      user_id: userId,
+      user_id: user.id,
       application_id: applicationId,
       credits_remaining: 10,
       credits_used: 0,

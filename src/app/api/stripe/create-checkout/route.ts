@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { createSupabaseServerClient } from '@/lib/supabase-server';
 import Stripe from 'stripe';
 
 function getSupabase() {
@@ -8,6 +9,12 @@ function getSupabase() {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 }
+
+const VALID_TIER_IDS = [
+  'solo_none', 'solo_spouse', 'solo_family_small', 'solo_family_large',
+  'partnership_none', 'partnership_couples', 'partnership_families',
+  'simulator_3pack', 'renewal', 'child_surcharge',
+];
 
 function getStripe(): Stripe | null {
   const secretKey = process.env.STRIPE_SECRET_KEY;
@@ -55,6 +62,13 @@ async function getStripePriceId(supabase: ReturnType<typeof getSupabase>, tierId
 }
 
 export async function POST(request: NextRequest) {
+  // Session auth
+  const supabaseAuth = await createSupabaseServerClient();
+  const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
+  if (authError || !user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   const stripe = getStripe();
 
   if (!stripe) {
@@ -66,13 +80,18 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { tierId, applicationId, userId, children_count } = body;
+    const { tierId, applicationId, children_count } = body;
 
-    if (!tierId || !applicationId || !userId) {
+    if (!tierId || !applicationId) {
       return NextResponse.json(
-        { error: 'Missing required fields: tierId, applicationId, userId' },
+        { error: 'Missing required fields: tierId, applicationId' },
         { status: 400 }
       );
+    }
+
+    // Validate tierId allowlist
+    if (!VALID_TIER_IDS.includes(tierId)) {
+      return NextResponse.json({ error: 'Invalid tier' }, { status: 400 });
     }
 
     const supabase = getSupabase();
@@ -90,7 +109,7 @@ export async function POST(request: NextRequest) {
     const { data: profile } = await supabase
       .from('profiles')
       .select('email')
-      .eq('id', userId)
+      .eq('id', user.id)
       .single();
 
     const email = profile?.email || '';
@@ -126,7 +145,7 @@ export async function POST(request: NextRequest) {
       customer_email: email,
       metadata: {
         applicationId,
-        userId,
+        userId: user.id,
         tierId,
         children_count: children_count?.toString() || '0',
       },
@@ -135,7 +154,7 @@ export async function POST(request: NextRequest) {
     // Create pending payment record
     await supabase.from('payments').insert({
       application_id: applicationId,
-      user_id: userId,
+      user_id: user.id,
       stripe_session_id: session.id,
       stripe_price_id: priceId,
       amount_paid: 0,

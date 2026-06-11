@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { createSupabaseServerClient } from '@/lib/supabase-server';
 
 function getSupabase() {
   return createClient(
@@ -83,6 +84,13 @@ function detectFormality(text: string): 'formal' | 'warm_formal' | 'conversation
 
 export async function POST(request: NextRequest) {
   try {
+    // Session auth
+    const supabaseAuth = await createSupabaseServerClient();
+    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const supabase = getSupabase();
     const body = await request.json();
     const { applicationId, voiceSampleText } = body;
@@ -120,6 +128,10 @@ ${voiceSampleText}`;
 
     if (appError || !application) {
       return NextResponse.json({ error: 'Application not found' }, { status: 404 });
+    }
+
+    if (application.user_id !== user.id) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     // Upsert voice profile

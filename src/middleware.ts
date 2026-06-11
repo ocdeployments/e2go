@@ -74,11 +74,6 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  // Bypass auth checks during Playwright testing
-  if (req.headers.get('x-playwright-test') === 'true') {
-    return NextResponse.next();
-  }
-
   let supabaseResponse = NextResponse.next({
     request: req,
   });

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { runGenerationPipeline } from '@/lib/generation-engine';
 import type { GenerationStep } from '@/types/generation';
 
@@ -19,17 +20,15 @@ export async function POST(
   { params }: { params: { jobId: string } }
 ) {
   try {
+    // Session auth
+    const supabaseAuth = await createSupabaseServerClient();
+    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const supabase = getSupabase();
     const { jobId } = params;
-    const body = await request.json();
-    const { userId } = body;
-
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'userId is required' },
-        { status: 400 }
-      );
-    }
 
     const { data: job, error: jobError } = await supabase
       .from('document_generation_jobs')
@@ -44,7 +43,7 @@ export async function POST(
       );
     }
 
-    if (job.user_id !== userId) {
+    if (job.user_id !== user.id) {
       return NextResponse.json(
         { error: 'Forbidden' },
         { status: 403 }

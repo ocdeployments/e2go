@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { createSupabaseServerClient } from '@/lib/supabase-server';
 import type { DocumentListResponse } from '@/types/generation';
 
 function getSupabase() {
@@ -10,13 +11,6 @@ function getSupabase() {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
-}
-
-function getUserIdFromAuth(authHeader: string): string | null {
-  if (authHeader.startsWith('Bearer ')) {
-    return authHeader.slice(7);
-  }
-  return authHeader;
 }
 
 export async function GET(
@@ -33,12 +27,12 @@ export async function GET(
     }
     const { applicationId } = params;
 
-    const authHeader = request.headers.get('Authorization');
-    if (!authHeader) {
+    // Session auth
+    const supabaseAuth = await createSupabaseServerClient();
+    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
+    if (authError || !user) {
       return new NextResponse('Unauthorized', { status: 401 });
     }
-
-    const userId = getUserIdFromAuth(authHeader);
 
     const { data: application, error: appError } = await supabase
       .from('applications')
@@ -54,7 +48,7 @@ export async function GET(
     }
 
     // RLS: Ensure user can only access their own documents
-    if (application.user_id !== userId) {
+    if (application.user_id !== user.id) {
       return new NextResponse('Forbidden', { status: 403 });
     }
 
@@ -106,12 +100,12 @@ export async function POST(
     }
     const { applicationId } = params;
 
-    const authHeader = request.headers.get('Authorization');
-    if (!authHeader) {
+    // Session auth
+    const supabaseAuth = await createSupabaseServerClient();
+    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
+    if (authError || !user) {
       return new NextResponse('Unauthorized', { status: 401 });
     }
-
-    const userId = getUserIdFromAuth(authHeader);
 
     const { data: application, error: appError } = await supabase
       .from('applications')
@@ -127,7 +121,7 @@ export async function POST(
     }
 
     // RLS: Ensure user can only trigger generation for their own application
-    if (application.user_id !== userId) {
+    if (application.user_id !== user.id) {
       return new NextResponse('Forbidden', { status: 403 });
     }
 
@@ -160,12 +154,13 @@ export async function PATCH(
     }
     const { applicationId } = params;
 
-    const authHeader = request.headers.get('Authorization');
-    if (!authHeader) {
+    // Session auth
+    const supabaseAuth = await createSupabaseServerClient();
+    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
+    if (authError || !user) {
       return new NextResponse('Unauthorized', { status: 401 });
     }
 
-    const userId = getUserIdFromAuth(authHeader);
     const body = await request.json();
     const { documentId, documentType, action } = body;
 
@@ -191,7 +186,7 @@ export async function PATCH(
     }
 
     // RLS: Ensure user can only update their own documents
-    if (application.user_id !== userId) {
+    if (application.user_id !== user.id) {
       return new NextResponse('Forbidden', { status: 403 });
     }
 

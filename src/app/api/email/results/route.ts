@@ -1,9 +1,17 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { createSupabaseServerClient } from '@/lib/supabase-server';
 import crypto from 'crypto';
 import { Resend } from 'resend';
 
 export async function POST(req: Request) {
+  // Session auth
+  const supabaseAuth = await createSupabaseServerClient();
+  const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
+  if (authError || !user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   const { email, outcome, result_json, quiz_session_id, franchise_interest } = await req.json();
 
   const supabase = createClient(
@@ -72,5 +80,5 @@ export async function POST(req: Request) {
     console.log("TODO: Send email with content:", htmlContent);
   }
 
-  return NextResponse.json({ success: true, token });
+  return NextResponse.json({ success: true });
 }

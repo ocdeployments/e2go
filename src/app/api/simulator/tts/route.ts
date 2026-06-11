@@ -1,9 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createSupabaseServerClient } from '@/lib/supabase-server';
 
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const GROQ_BASE_URL = 'https://api.groq.com/openai/v1';
 
 export async function POST(request: NextRequest) {
+  // Session auth
+  const supabaseAuth = await createSupabaseServerClient();
+  const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
+  if (authError || !user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   if (!GROQ_API_KEY) {
     return NextResponse.json(
       { error: 'TTS service not configured' },
@@ -14,9 +22,9 @@ export async function POST(request: NextRequest) {
   try {
     const { text } = await request.json();
 
-    if (!text) {
+    if (!text || typeof text !== 'string' || text.length > 4000) {
       return NextResponse.json(
-        { error: 'No text provided' },
+        { error: 'Invalid input' },
         { status: 400 }
       );
     }

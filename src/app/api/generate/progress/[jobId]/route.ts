@@ -1,5 +1,6 @@
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { createSupabaseServerClient } from '@/lib/supabase-server';
 import type { SSEProgressMessage } from '@/types/generation';
 
 function getSupabase() {
@@ -16,6 +17,13 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { jobId: string } }
 ) {
+  // Session auth
+  const supabaseAuth = await createSupabaseServerClient();
+  const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
+  if (authError || !user) {
+    return new NextResponse('Unauthorized', { status: 401 });
+  }
+
   const { jobId } = params;
   const supabase = getSupabase();
 

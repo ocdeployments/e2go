@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { callAI } from '@/lib/ai';
 
 function getSupabase() {
@@ -16,12 +17,29 @@ const GENERIC_BULLETS = [
 
 export async function POST(request: NextRequest) {
   try {
+    // Session auth
+    const supabaseAuth = await createSupabaseServerClient();
+    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const supabase = getSupabase();
     const body = await request.json();
     const { applicationId } = body;
 
     if (!applicationId) {
       return NextResponse.json({ error: 'Missing applicationId' }, { status: 400 });
+    }
+
+    // Verify application ownership
+    const { data: application } = await supabase
+      .from('applications')
+      .select('user_id')
+      .eq('id', applicationId)
+      .single();
+    if (!application || application.user_id !== user.id) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     // Load all followup_responses for this application

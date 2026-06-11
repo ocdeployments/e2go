@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
+import { createSupabaseServerClient } from '@/lib/supabase-server';
 
 const resend = process.env.RESEND_API_KEY
   ? new Resend(process.env.RESEND_API_KEY)
   : null;
+
+const sanitize = (str: string) =>
+  str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 
 /**
  * POST /api/notifications/franchise-referral
@@ -12,6 +17,13 @@ const resend = process.env.RESEND_API_KEY
  */
 export async function POST(req: NextRequest) {
   try {
+    // Session auth
+    const supabaseAuth = await createSupabaseServerClient();
+    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { sessionId, userEmail, franchiseName } = await req.json();
 
     if (!resend) {
@@ -30,6 +42,10 @@ export async function POST(req: NextRequest) {
       day: "numeric",
       year: "numeric",
     });
+
+    const safeSessionId = sanitize(sessionId || "N/A");
+    const safeUserEmail = sanitize(userEmail || "Not provided");
+    const safeFranchiseName = franchiseName ? sanitize(franchiseName) : "";
 
     await resend.emails.send({
       from: "E2go <notifications@e2go.app>",
@@ -59,16 +75,16 @@ export async function POST(req: NextRequest) {
                         </tr>
                         <tr>
                           <td style="padding:8px 0;font-size:12px;color:rgba(245,240,232,0.4);">Session ID</td>
-                          <td style="padding:8px 0;font-size:12px;color:#f5f0e8;font-family:monospace;">${sessionId || "N/A"}</td>
+                          <td style="padding:8px 0;font-size:12px;color:#f5f0e8;font-family:monospace;">${safeSessionId}</td>
                         </tr>
                         <tr>
                           <td style="padding:8px 0;font-size:12px;color:rgba(245,240,232,0.4);">Email</td>
-                          <td style="padding:8px 0;font-size:12px;color:#f5f0e8;">${userEmail || "Not provided"}</td>
+                          <td style="padding:8px 0;font-size:12px;color:#f5f0e8;">${safeUserEmail}</td>
                         </tr>
-                        ${franchiseName ? `
+                        ${safeFranchiseName ? `
                         <tr>
                           <td style="padding:8px 0;font-size:12px;color:rgba(245,240,232,0.4);">Franchise</td>
-                          <td style="padding:8px 0;font-size:12px;color:#f5f0e8;">${franchiseName}</td>
+                          <td style="padding:8px 0;font-size:12px;color:#f5f0e8;">${safeFranchiseName}</td>
                         </tr>` : ""}
                       </table>
                       <div style="font-size:11px;color:rgba(245,240,232,0.3);border-top:1px solid rgba(201,168,76,0.1);padding-top:16px;">
