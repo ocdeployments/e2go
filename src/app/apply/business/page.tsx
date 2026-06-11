@@ -1,10 +1,8 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { useRouter } from 'next/navigation';
 import { createBrowserSupabaseClient } from '@/lib/supabase';
-import SectionSideNav from '@/components/apply/SectionSideNav';
-import QuestionPanel from '@/components/apply/QuestionPanel';
+import CaseFileShell from '@/components/apply/CaseFileShell';
 import QuestionLabel from '@/components/apply/questions/QuestionLabel';
 import HelperText from '@/components/apply/questions/HelperText';
 import TextInput from '@/components/apply/questions/TextInput';
@@ -162,7 +160,6 @@ const ALL_QUESTION_SETS = [
 ];
 
 export default function BusinessPage() {
-  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [activeCluster, setActiveCluster] = useState(1);
   const [answers, setAnswers] = useState<Record<string, BizAnswer>>({});
@@ -252,29 +249,22 @@ export default function BusinessPage() {
     debounceRef.current[key] = setTimeout(() => saveAnswer(key, value), 800);
   }, [saveAnswer]);
 
-  const totalQuestions = ALL_QUESTION_SETS.reduce((sum, s) => sum + s.questions.length, 0) + 1; // +1 for startup cost table
-  const answeredCount = Object.keys(answers).filter((k) => answers[k]?.value !== '').length;
+  const clusterStatuses = CLUSTERS
+    .filter((c) => c.number !== 5 || isFranchise)
+    .map((cluster) => {
+      if (cluster.number === 6) {
+        return { id: `cluster-${cluster.number}`, label: cluster.label, status: startupCosts.length > 0 ? 'active' as const : 'pending' as const };
+      }
+      const set = ALL_QUESTION_SETS.find((s) => s.cluster === cluster.number);
+      if (!set) return { id: `cluster-${cluster.number}`, label: cluster.label, status: 'pending' as const };
+      const answered = set.questions.filter((q) => answers[q.key]?.value !== '').length;
+      const status: 'complete' | 'active' | 'pending' = answered === set.questions.length ? 'complete' : answered > 0 ? 'active' : 'pending';
+      return { id: `cluster-${cluster.number}`, label: cluster.label, status };
+    });
 
-  const clusterStatuses = CLUSTERS.map((cluster) => {
-    if (cluster.number === 6) {
-      return { number: 6, label: cluster.label, status: startupCosts.length > 0 ? 'active' as const : 'empty' as const };
-    }
-    const set = ALL_QUESTION_SETS.find((s) => s.cluster === cluster.number);
-    if (!set) return { number: cluster.number, label: cluster.label, status: 'empty' as const };
-    const answered = set.questions.filter((q) => answers[q.key]?.value !== '').length;
-    const status: 'complete' | 'active' | 'empty' = answered === set.questions.length ? 'complete' : answered > 0 ? 'active' : 'empty';
-    return { number: cluster.number, label: cluster.label, status };
-  });
-
-  const handleBack = () => {
-    if (activeCluster > 1) setActiveCluster(activeCluster - 1);
-    else router.push('/apply/story');
-  };
-
-  const handleNext = () => {
-    if (activeCluster < CLUSTERS.length) setActiveCluster(activeCluster + 1);
-    else router.push('/apply/investment');
-  };
+  const handleClusterChange = useCallback((id: string) => {
+    setActiveCluster(parseInt(id.replace('cluster-', ''), 10));
+  }, []);
 
   const renderQuestionCluster = (questions: QuestionField[]) => (
     <div className="space-y-6">
@@ -329,158 +319,146 @@ export default function BusinessPage() {
   }
 
   return (
-    <div className="flex min-h-screen">
-      <aside className="hidden w-[196px] shrink-0 border-r lg:block" style={{ borderColor: 'rgba(201,168,76,0.12)' }}>
-        <SectionSideNav
-          sectionName="Your Business"
-          answeredCount={answeredCount}
-          totalCount={totalQuestions}
-          clusters={clusterStatuses}
-          documents={DOCUMENTS}
-          activeCluster={activeCluster}
-          onClusterClick={setActiveCluster}
-        />
-      </aside>
-
-      <div className="fixed top-12 left-0 right-0 z-30 flex overflow-x-auto border-b lg:hidden" style={{ borderColor: 'rgba(201,168,76,0.12)', backgroundColor: '#0a0a0a' }}>
-        {CLUSTERS.filter((c) => c.number !== 5 || isFranchise).map((cluster) => (
-          <button
-            key={cluster.number}
-            onClick={() => setActiveCluster(cluster.number)}
-            className="shrink-0 border-b px-4 py-2 text-[10px] uppercase tracking-[0.08em]"
-            style={{
-              borderColor: activeCluster === cluster.number ? '#C9A84C' : 'transparent',
-              color: activeCluster === cluster.number ? '#C9A84C' : 'rgba(245,240,232,0.28)',
-              fontFamily: "'DM Sans', sans-serif",
-            }}
-          >
-            {cluster.number}. {cluster.label}
-          </button>
-        ))}
-      </div>
-
-      <div className="min-w-0 flex-1 pt-12 lg:pt-0">
-        <QuestionPanel
-          sectionTitle="Your Business"
-          clusterLabel={CLUSTERS[activeCluster - 1]?.label || ''}
-          saveStatus={saveStatus}
-          answeredCount={answeredCount}
-          totalCount={totalQuestions}
-          onBack={handleBack}
-          onNext={handleNext}
-        >
-          {activeCluster === 1 && (
-            <div>
-              <ClusterDivider label="Entity & registration" />
-              {renderQuestionCluster(ENTITY_QUESTIONS)}
-
-              {answers['M3-E-02']?.value === 'not-formed' && (
-                <AdvisoryBlock>
-                  Your entity should be formed before your interview. Entity formation demonstrates the business is real and in process.
-                </AdvisoryBlock>
-              )}
-
-              {answers['M3-E-10']?.value === 'llc' && (
-                <AdvisoryBlock>
-                  Two separate documents are required. Articles of organization (or certificate of formation) is filed with the state to create the LLC. Your operating agreement is the private internal document governing how the LLC operates. Officers want to see both.
-                </AdvisoryBlock>
-              )}
-
-              <AdvisoryBlock>
-                Every US LLC must have a registered agent in the state of registration — a person or company with a physical US address who can receive legal documents on behalf of the business. Canadian investors cannot serve as their own registered agent before moving. Commercial registered agent services cost $50–$200/year.
-              </AdvisoryBlock>
+    <CaseFileShell
+      sectionNumber={2}
+      sectionTitle="Your Business"
+      clusters={clusterStatuses}
+      activeClusterId={`cluster-${activeCluster}`}
+      onClusterChange={handleClusterChange}
+      buildsDocuments={['Business Plan', 'Visa Category Letter']}
+      nextSectionPath="/apply/investment"
+      prevSectionPath="/apply/story"
+      isSaving={saveStatus === 'saving'}
+      previewContent={
+        <div className="space-y-4">
+          {DOCUMENTS.map(doc => (
+            <div key={doc.name} className="border p-4" style={{ borderColor: 'rgba(201,168,76,0.12)', backgroundColor: 'rgba(201,168,76,0.01)' }}>
+              <div className="flex items-center justify-between mb-3">
+                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '10px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'rgba(245,240,232,0.35)' }}>
+                  {doc.name}
+                </span>
+                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '10px', color: 'rgba(245,240,232,0.18)', border: '1px solid rgba(245,240,232,0.08)', padding: '2px 7px' }}>
+                  Waiting
+                </span>
+              </div>
+              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '12px', fontWeight: 300, color: 'rgba(245,240,232,0.18)', fontStyle: 'italic', lineHeight: 1.5 }}>
+                [Answer the questions on the left to fill this in]
+              </p>
             </div>
+          ))}
+        </div>
+      }
+    >
+      {activeCluster === 1 && (
+        <div>
+          <ClusterDivider label="Entity & registration" />
+          {renderQuestionCluster(ENTITY_QUESTIONS)}
+
+          {answers['M3-E-02']?.value === 'not-formed' && (
+            <AdvisoryBlock>
+              Your entity should be formed before your interview. Entity formation demonstrates the business is real and in process.
+            </AdvisoryBlock>
           )}
 
-          {activeCluster === 2 && (
-            <div>
-              <ClusterDivider label="What you do" />
-              {renderQuestionCluster(WHAT_YOU_DO_QUESTIONS)}
-
-              {(answers['M3-B-02']?.value === '' || !answers['M3-B-02']?.value) && (
-                <AdvisoryBlock>
-                  Local market data — even rough figures — makes your business plan&apos;s market analysis section credible. Generic market analysis with no local reference is one of the signals officers use to identify AI-generated applications.
-                </AdvisoryBlock>
-              )}
-            </div>
+          {answers['M3-E-10']?.value === 'llc' && (
+            <AdvisoryBlock>
+              Two separate documents are required. Articles of organization (or certificate of formation) is filed with the state to create the LLC. Your operating agreement is the private internal document governing how the LLC operates. Officers want to see both.
+            </AdvisoryBlock>
           )}
 
-          {activeCluster === 3 && (
-            <div>
-              <ClusterDivider label="Operations" />
-              {renderQuestionCluster(OPERATIONS_QUESTIONS)}
+          <AdvisoryBlock>
+            Every US LLC must have a registered agent in the state of registration — a person or company with a physical US address who can receive legal documents on behalf of the business. Canadian investors cannot serve as their own registered agent before moving. Commercial registered agent services cost $50–$200/year.
+          </AdvisoryBlock>
+        </div>
+      )}
 
-              {answers['M3-G-04']?.value === 'remote' && (
-                <AdvisoryBlock>
-                  Online or home-based businesses face a higher evidentiary standard. Officers want to see evidence of customer interaction, physical presence, or a plan to establish a physical location.
-                </AdvisoryBlock>
-              )}
+      {activeCluster === 2 && (
+        <div>
+          <ClusterDivider label="What you do" />
+          {renderQuestionCluster(WHAT_YOU_DO_QUESTIONS)}
 
-              {answers['M3-G-08']?.value === 'pre-opening' && (
-                <AdvisoryBlock>
-                  Businesses in pre-opening stage face a higher evidentiary standard. Your cover letter must clearly articulate the timeline to operational status and what has already been committed.
-                </AdvisoryBlock>
-              )}
+          {(answers['M3-B-02']?.value === '' || !answers['M3-B-02']?.value) && (
+            <AdvisoryBlock>
+              Local market data — even rough figures — makes your business plan&apos;s market analysis section credible. Generic market analysis with no local reference is one of the signals officers use to identify AI-generated applications.
+            </AdvisoryBlock>
+          )}
+        </div>
+      )}
 
-              {answers['M3-G-08a']?.value === '1-2' && (
-                <RiskFlag>
-                  Denial risk — remote management. An investor who hires a manager to run day-to-day operations and oversees remotely fails the &apos;develop and direct&apos; requirement under 9 FAM 402.9. Your cover letter must clearly articulate your specific management role. Attorney review recommended.
-                </RiskFlag>
-              )}
-            </div>
+      {activeCluster === 3 && (
+        <div>
+          <ClusterDivider label="Operations" />
+          {renderQuestionCluster(OPERATIONS_QUESTIONS)}
+
+          {answers['M3-G-04']?.value === 'remote' && (
+            <AdvisoryBlock>
+              Online or home-based businesses face a higher evidentiary standard. Officers want to see evidence of customer interaction, physical presence, or a plan to establish a physical location.
+            </AdvisoryBlock>
           )}
 
-          {activeCluster === 4 && (
-            <div>
-              <ClusterDivider label="Licenses & setup" />
-              {renderQuestionCluster(LICENSES_QUESTIONS)}
-
-              {answers['M3-G-11']?.value === 'no' && (
-                <AdvisoryBlock>
-                  Most commercial leases require proof of general liability insurance before you can take possession. Franchise agreements specify minimum coverage levels. Your checklist will include the required policy types for your business category.
-                </AdvisoryBlock>
-              )}
-            </div>
+          {answers['M3-G-08']?.value === 'pre-opening' && (
+            <AdvisoryBlock>
+              Businesses in pre-opening stage face a higher evidentiary standard. Your cover letter must clearly articulate the timeline to operational status and what has already been committed.
+            </AdvisoryBlock>
           )}
 
-          {activeCluster === 5 && isFranchise && (
-            <div>
-              <ClusterDivider label="Franchise details" />
-              {renderQuestionCluster(FRANCHISE_QUESTIONS)}
+          {answers['M3-G-08a']?.value === '1-2' && (
+            <RiskFlag>
+              Denial risk — remote management. An investor who hires a manager to run day-to-day operations and oversees remotely fails the &apos;develop and direct&apos; requirement under 9 FAM 402.9. Your cover letter must clearly articulate your specific management role. Attorney review recommended.
+            </RiskFlag>
+          )}
+        </div>
+      )}
 
-              {answers['M3-F-10']?.value === 'yes' && (
-                <AdvisoryBlock>
-                  Use those figures as the basis for your projections below. We&apos;ll note in your business plan that projections are derived from franchisor-disclosed unit economics.
-                </AdvisoryBlock>
-              )}
+      {activeCluster === 4 && (
+        <div>
+          <ClusterDivider label="Licenses & setup" />
+          {renderQuestionCluster(LICENSES_QUESTIONS)}
 
-              {answers['M3-F-10']?.value === 'no' && (
-                <AdvisoryBlock>
-                  Your projections need supporting evidence — local market research, industry data, or comparable business financials.
-                </AdvisoryBlock>
-              )}
-            </div>
+          {answers['M3-G-11']?.value === 'no' && (
+            <AdvisoryBlock>
+              Most commercial leases require proof of general liability insurance before you can take possession. Franchise agreements specify minimum coverage levels. Your checklist will include the required policy types for your business category.
+            </AdvisoryBlock>
+          )}
+        </div>
+      )}
+
+      {activeCluster === 5 && isFranchise && (
+        <div>
+          <ClusterDivider label="Franchise details" />
+          {renderQuestionCluster(FRANCHISE_QUESTIONS)}
+
+          {answers['M3-F-10']?.value === 'yes' && (
+            <AdvisoryBlock>
+              Use those figures as the basis for your projections below. We&apos;ll note in your business plan that projections are derived from franchisor-disclosed unit economics.
+            </AdvisoryBlock>
           )}
 
-          {activeCluster === 6 && (
-            <div>
-              <ClusterDivider label="Startup costs" />
-              <StartupCostTable
-                value={startupCosts}
-                onChange={setStartupCosts}
-                investmentAmount={answers['M3-F-02'] ? Number(answers['M3-F-02'].value) : undefined}
-              />
-            </div>
+          {answers['M3-F-10']?.value === 'no' && (
+            <AdvisoryBlock>
+              Your projections need supporting evidence — local market research, industry data, or comparable business financials.
+            </AdvisoryBlock>
           )}
+        </div>
+      )}
 
-          {activeCluster === 7 && (
-            <div>
-              <ClusterDivider label="Market & competition" />
-              {renderQuestionCluster(MARKET_QUESTIONS)}
-            </div>
-          )}
-        </QuestionPanel>
-      </div>
-    </div>
+      {activeCluster === 6 && (
+        <div>
+          <ClusterDivider label="Startup costs" />
+          <StartupCostTable
+            value={startupCosts}
+            onChange={setStartupCosts}
+            investmentAmount={answers['M3-F-02'] ? Number(answers['M3-F-02'].value) : undefined}
+          />
+        </div>
+      )}
+
+      {activeCluster === 7 && (
+        <div>
+          <ClusterDivider label="Market & competition" />
+          {renderQuestionCluster(MARKET_QUESTIONS)}
+        </div>
+      )}
+    </CaseFileShell>
   );
 }
