@@ -1,6 +1,6 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 10, 2026 — Quiz v5.0 complete (full rebuild, 17 bugs fixed), Stripe pricing complete
+**Last Updated:** June 10, 2026 — Quiz v6.0 complete (all 30 bugs fixed, comprehensive rebuild), test fixtures written
 **App Name:** E2go.app
 **Stack:** Next.js 14 · TypeScript · Tailwind CSS · Supabase · Claude API
 **Dev URL:** https://e2go-git-dev-ocdeployments-projects.vercel.app
@@ -176,7 +176,7 @@ Update STRIPE_PRICE_* env vars with new Price IDs after running.
 | /quiz/review — jump-to-question editing page | ✅ COMPLETE |
 | Selected option gold borders confirmed | ✅ COMPLETE |
 
-## MODULE 0 — QUIZ v5.0 (Full Rebuild — June 10, 2026)
+## MODULE 0 — QUIZ v6.0 (Final Rebuild — June 10, 2026)
 
 | Feature | Status |
 |---|---|
@@ -194,6 +194,17 @@ Update STRIPE_PRICE_* env vars with new Price IDs after running.
 | Application type from Q0-02/Q0-04 (not Q0-09) | ✅ COMPLETE |
 | Pricing chain correct end to end | ✅ COMPLETE |
 | All 17 confirmed bugs resolved | ✅ COMPLETE |
+| All 30 bugs from full combinatorial audit resolved | ✅ COMPLETE |
+| handleMultiContinue calls processAction — multiselect scores | ✅ COMPLETE |
+| evaluateShowIf handles array answers — subs render correctly | ✅ COMPLETE |
+| Treaty country validation fires PR-NON-TREATY | ✅ COMPLETE |
+| COS flag string match corrected | ✅ COMPLETE |
+| Score weights corrected — positive ties no longer penalised | ✅ COMPLETE |
+| Q0-03 and Q0-04 show_if — no redundant questions | ✅ COMPLETE |
+| Sequential Q0-09 history branching | ✅ COMPLETE |
+| All 9 hard stops wired and reachable | ✅ COMPLETE |
+| Pricing chain correct end to end | ✅ COMPLETE |
+| Test fixtures written — 5 profiles in docs/TEST_FIXTURES.md | ✅ COMPLETE |
 | Q0-PREP-STATUS routing question | ⏳ PENDING — DOCUMENT_UPLOAD_SPEC.md |
 
 ## MODULE 0 — QUIZ LEGAL ACCURACY (Session 2 — June 9, 2026)
@@ -385,6 +396,8 @@ Status: APPLIED — database is up to date
 | docs/IDEAS.md | ✅ Written |
 | docs/PAYMENT_MANAGEMENT_GUIDE.md | ✅ Written |
 | docs/DOCUMENT_UPLOAD_SPEC.md | ✅ Written — June 9, 2026 |
+| docs/TEST_FIXTURES.md | ✅ Written — June 10, 2026 |
+| docs/QUIZ_REBUILD_PLAN_V6.md | ✅ Written — June 10, 2026 |
 
 ---
 
@@ -735,6 +748,72 @@ Clean — zero errors. One pre-existing hook warning in generate/page.tsx
 - npm run build: clean
 - /quiz: 200
 - /results: 200
+
+---
+
+## SESSION — Quiz Rebuild v6.0 (June 10, 2026)
+
+### Completed — commit 6f6bfaa on dev
+
+Full rebuild addressing all 30 confirmed bugs from comprehensive
+combinatorial path audit. 4 files changed, +1559/-242 lines.
+
+**Fix A — handleMultiContinue calls processAction:**
+Warnings, attorney flags, and hard stops now fire for multiselect
+questions (Q0-09 history, Q0-10 ties). Previously all inert.
+
+**Fix B — evaluateShowIf handles array answers:**
+Multiselect sub-questions (Q0-09a, Q0-09b) now render correctly.
+Array vs string comparison fixed.
+
+**Fix C — Treaty country validation:**
+Non-treaty country selection fires PR-NON-TREATY immediately.
+Previously any country passed through.
+
+**Fix D — COS flag string match:**
+Was checking "valid visa" — option text says "valid status". Fixed.
+
+**Fix E — application_type and dependents:**
+Derived from Q0-02 with correct priority logic.
+Spousal partnership, co-investor, and sole applicant paths correct.
+
+**Fix F — show_if conditions:**
+Q0-03 only fires for sole applicant or business partner paths.
+Q0-04 only fires when Q0-02 = business partner.
+Questions no longer fire redundantly after Q0-02 establishes context.
+
+**Fix G — Score weights corrected:**
+Removed incorrect tie deductions (W-PROPERTY-UNDISCLOSED etc).
+Positive ties no longer penalise the score.
+All 16 spec deductions added correctly.
+
+**JSON rebuild — 18 questions:**
+Q0-01 through Q0-10 plus subs Q0-02a, Q0-03a, Q0-04a, Q0-08a,
+Q0-08b, Q0-09a, Q0-09b, Q0-09c. Correct routing throughout.
+Sequential Q0-09 history branching. All hard stops present.
+PR-NON-TREATY, PR-02, PR-03, PR-04, PR-06b, PR-08, PR-09,
+PR-PASSIVE-INVEST, PR-NONPROFIT all wired.
+
+**Pricing chain:**
+pricing-tier.ts tiers match confirmed prices ($550-$1,397).
+Mapping functions updated for new option text.
+Results page uses getPricingTier() for accurate display.
+
+### Build
+Clean — zero errors. Routes verified: /quiz, /results, /pricing.
+
+### Five verification paths (from QUIZ_REBUILD_PLAN_V6.md)
+All must pass on next manual test:
+1. Non-treaty country → PR-NON-TREATY hard stop
+2. Loan secured by business → PR-02 hard stop
+3. Deportation selected → ATTORNEY_RECOMMENDED, score -15
+4. Spouse and children → Solo + Family $750
+5. Business partner 50/50 → Partnership $997
+
+### Test fixtures
+Five complete applicant profiles written to docs/TEST_FIXTURES.md.
+Use localStorage injection to test results/pricing pages instantly.
+Use Supabase SQL to test full case file with pre-populated answers.
 
 ---
 
