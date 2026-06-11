@@ -1,63 +1,11 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
+import { ComparisonSection } from "@/components/landing/ComparisonSection";
 
 export default function HomeClient() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [targetDate, setTargetDate] = useState("6");
-  const [currentStage, setCurrentStage] = useState("business");
-  const [applyingWith, setApplyingWith] = useState("family");
   const [openFaq, setOpenFaq] = useState<number | null>(null);
-
-  const e2goDuration = ({
-    exploring: "16–20 weeks",
-    business: "12–16 weeks",
-    llc: "8–12 weeks",
-    documents: "4–8 weeks",
-  } as Record<string,string>)[currentStage] || "16–20 weeks";
-
-  const tradDuration = ({
-    exploring: "9–14 months",
-    business: "7–11 months",
-    llc: "5–8 months",
-    documents: "3–5 months",
-  } as Record<string,string>)[currentStage] || "9–14 months";
-
-  const targetMonths = parseInt(targetDate);
-  const targetWeeks = targetMonths * 4.3;
-  const e2goMinWeeks = ({
-    exploring: 16, business: 12, llc: 8, documents: 4,
-  } as Record<string,number>)[currentStage] || 16;
-  const tradMinWeeks = ({
-    exploring: 36, business: 28, llc: 20, documents: 12,
-  } as Record<string,number>)[currentStage] || 36;
-
-  const isE2goAchievable = targetWeeks >= e2goMinWeeks;
-  const isTradAchievable = targetWeeks >= tradMinWeeks;
-  const monthsSaved = Math.round(Math.max(0, tradMinWeeks - e2goMinWeeks) / 4.3);
-  const stageOrder = ["exploring", "business", "llc", "documents"];
-  const stageIdx = stageOrder.indexOf(currentStage);
-
-  const tradSteps = [
-    { text: "Research and orientation", week: "Wks 1–4", phase: 0 },
-    { text: "Business search and FDD review", week: "Wks 4–20", phase: 1 },
-    { text: "LLC, EIN, U.S. bank account", week: "Wks 16–24", phase: 1 },
-    { text: "Find immigration consultant", week: "Wks 20–28", phase: 2 },
-    { text: "Document gathering and drafting", week: "Wks 24–34", phase: 2 },
-    { text: "Application submission", week: "Wks 34–40", phase: 3 },
-    { text: "Consulate processing", week: "Wks 40–56+", phase: 3 },
-  ];
-
-  const e2goSteps = [
-    { text: "Eligibility quiz and score", week: "Day 1", phase: 0 },
-    { text: "Franchise broker introduction", week: "Wk 1", phase: 0 },
-    { text: "Business selection and FDD review", week: "Wks 1–6", phase: 1 },
-    { text: "LLC, EIN, U.S. bank account", week: "Wks 4–8", phase: 1 },
-    { text: "Document interview — 12 tabs", week: "Wks 8–10", phase: 2 },
-    { text: "AI document generation", week: "Wks 10–12", phase: 2 },
-    { text: "Interview prep and simulator", week: "Wks 12–16", phase: 3 },
-    { text: "Consulate interview", week: "Wks 16–20", phase: 3 },
-  ];
 
   const faqs = [
     {
@@ -325,78 +273,8 @@ export default function HomeClient() {
         </div>
       </section>
 
-      {/* ── JOURNEY WIZARD ── */}
-      <section className="px-4 md:px-10 lg:px-16 py-16 md:py-24">
-        <p className="text-[10px] tracking-[0.18em] uppercase text-[rgba(201,168,76,0.6)] mb-3">Your journey</p>
-        <h2 className="font-['Cormorant_Garamond',Georgia,serif] text-3xl md:text-5xl font-light text-[#f5f0e8] mb-3 leading-tight">
-          See how long your E-2 journey will take.
-        </h2>
-        <p className="text-sm text-[rgba(245,240,232,0.42)] mb-10 max-w-lg leading-relaxed">
-          Set your target date and where you are now. We show you both paths — and the gap between them.
-        </p>
-        <div className="border border-[rgba(201,168,76,0.2)] p-5 md:p-8 lg:p-10">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-            {[
-              { label:"Target move date", val:targetDate, set:setTargetDate, opts:[["3","In 3 months"],["6","In 6 months"],["9","In 9 months"],["12","In 12 months"],["18","In 18 months"]] },
-              { label:"Where you are now", val:currentStage, set:setCurrentStage, opts:[["exploring","Just exploring"],["business","Business identified"],["llc","LLC formed"],["documents","Documents started"]] },
-              { label:"Applying with", val:applyingWith, set:setApplyingWith, opts:[["solo","Just me"],["spouse","Me + spouse"],["family","Me + spouse + children"]] },
-            ].map(c => (
-              <div key={c.label}>
-                <div className="text-[10px] tracking-[0.1em] uppercase text-[rgba(201,168,76,0.55)] mb-2">{c.label}</div>
-                <select value={c.val} onChange={e => c.set(e.target.value)}
-                  className="w-full px-3 py-3 bg-[rgba(201,168,76,0.03)] border border-[rgba(201,168,76,0.2)] text-[#f5f0e8] text-sm focus:border-[#C9A84C] focus:ring-2 focus:ring-[#C9A84C] focus:ring-offset-2 appearance-none cursor-pointer min-h-[44px]">
-                  {c.opts.map(([v,l]) => <option key={v} value={v} className="bg-[#1a1a1a]">{l}</option>)}
-                </select>
-              </div>
-            ))}
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            <div className="border border-[rgba(245,245,245,0.06)] p-4 md:p-5">
-              <div className="flex items-center justify-between mb-4">
-                <div className="text-[10px] tracking-[0.1em] uppercase text-[rgba(245,240,232,0.3)]">Traditional route</div>
-                <div className="font-['Cormorant_Garamond',Georgia,serif] text-lg font-light text-[rgba(245,240,232,0.35)]">{tradDuration}</div>
-              </div>
-              <div className="flex flex-col gap-2">
-                {tradSteps.map((s,i) => (
-                  <div key={i} className="flex gap-2 items-start">
-                    <div className="w-1.5 h-1.5 rounded-full bg-[rgba(245,240,232,0.2)] flex-shrink-0 mt-1.5" />
-                    <span className={`text-xs text-[rgba(245,240,232,0.45)] leading-relaxed ${s.phase < stageIdx ? "line-through opacity-30" : ""}`}>{s.text}</span>
-                    <span className="text-[10px] text-[rgba(245,240,232,0.2)] ml-1 flex-shrink-0">{s.week}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="border border-[rgba(201,168,76,0.25)] p-4 md:p-5 bg-[rgba(201,168,76,0.02)]">
-              <div className="flex items-center justify-between mb-4">
-                <div className="text-[10px] tracking-[0.1em] uppercase text-[#C9A84C]">E2go route</div>
-                <div className="font-['Cormorant_Garamond',Georgia,serif] text-lg font-light text-[#C9A84C]">{e2goDuration}</div>
-              </div>
-              <div className="flex flex-col gap-2">
-                {e2goSteps.map((s,i) => (
-                  <div key={i} className="flex gap-2 items-start">
-                    <div className="w-1.5 h-1.5 rounded-full bg-[#C9A84C] flex-shrink-0 mt-1.5" />
-                    <span className={`text-xs text-[rgba(245,240,232,0.65)] leading-relaxed ${s.phase < stageIdx ? "line-through opacity-30" : ""}`}>{s.text}</span>
-                    <span className="text-[10px] text-[rgba(201,168,76,0.5)] ml-1 flex-shrink-0">{s.week}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-          <div className={`p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 ${!isE2goAchievable ? "border border-[rgba(220,60,60,0.3)] bg-[rgba(220,60,60,0.04)]" : "border border-[rgba(201,168,76,0.3)] bg-[rgba(201,168,76,0.04)]"}`}>
-            <p className={`text-sm leading-relaxed ${!isE2goAchievable ? "text-[rgba(220,60,60,0.85)]" : "text-[rgba(245,240,232,0.7)]"}`}>
-              {!isE2goAchievable
-                ? `Your ${targetMonths}-month target is tight. Start immediately — every week matters.`
-                : !isTradAchievable
-                ? `The traditional route cannot meet your ${targetMonths}-month target. E2go can — with ${monthsSaved > 0 ? `${monthsSaved} months to spare` : "time to spare"}.`
-                : `E2go gets you to your interview approximately ${monthsSaved} months faster than the traditional route.`
-              }
-            </p>
-            <Link href="/quiz" className="flex-shrink-0 px-5 py-3 bg-[#C9A84C] text-[#0a0a0a] text-xs font-medium tracking-widest uppercase hover:opacity-85 transition-opacity min-h-[44px] flex items-center whitespace-nowrap">
-              Check my eligibility →
-            </Link>
-          </div>
-        </div>
-      </section>
+      {/* ── COMPARISON ── */}
+      <ComparisonSection />
 
       {/* ── WHAT'S INCLUDED ── */}
       <section className="px-4 md:px-10 lg:px-16 py-16 md:py-24 bg-[rgba(201,168,76,0.01)] border-y border-[rgba(201,168,76,0.08)]">
