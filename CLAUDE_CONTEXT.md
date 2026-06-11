@@ -1,6 +1,6 @@
 # CLAUDE_CONTEXT.md — E2go
 ## Master Context for Every Claude Code Session
-**Version:** June 10, 2026 — Case file redesign complete
+**Version:** June 11, 2026 — Security fixes complete (42 fixes, 6 groups)
 **Read this entire file before doing anything.**
 **Then read BUILD_TRACKER.md.**
 
@@ -36,7 +36,77 @@ When the user types "end session":
 
 ---
 
-## PRODUCT OVERVIEW
+## AGENT ACTIVATION — MANDATORY
+
+Agency agents are installed at ~/.claude/agents/.
+208 agents available. Use exact filename minus .md extension to activate.
+Activate by stating the agent name at the very beginning of the prompt.
+
+IMPORTANT: testing-evidence-collector and testing-reality-checker
+both require Playwright screenshots internally. DO NOT use these agents
+— they reintroduce the $1/screenshot cost we eliminated. Use the
+agents listed below instead.
+
+### Every build session — always activate:
+**engineering-code-reviewer**
+Reads code and confirms logic is correct before marking anything done.
+Checks that claimed features are actually implemented, not just compiling.
+Proof it requires: correct code logic + curl 200 + DB write confirmed.
+"Build clean" alone is never sufficient.
+
+### UI sessions (quiz, case file, results, login, any visual component):
+**engineering-frontend-developer**
+Enforces the UI build sequence:
+Lazyweb research → Firecrawl reference → build → verification.
+Reads DESIGN_REFERENCE.html before writing any component.
+Enforces Obsidian Gold — zero border-radius, no glassmorphism.
+
+### Surgical fix sessions (individual question fixes, scoring, API routes):
+**engineering-minimal-change**
+Smallest change that solves the problem. Nothing else touched.
+Does not refactor unrelated code. Does not rename while in there.
+Does not "improve" things that weren't broken.
+Use for: quiz question fixes, scoring changes, bug fixes.
+
+### After major feature additions (new routes, auth changes, DB changes):
+**security-appsec-engineer**
+Exact filename: security-appsec-engineer.md
+Conducts threat modeling, STRIDE analysis, secure code review.
+Checks: auth on every route, RLS on every new DB column,
+input validation, parameterized queries, no secrets in client code.
+Does NOT use Playwright — pure code review and curl verification.
+Run after Sessions 3 and 5 of QUIZ_EXECUTION_PLAN.md.
+Run any time new API routes, auth logic, or DB writes are added.
+
+### Platform audit sessions:
+**security-appsec-engineer** + **engineering-code-reviewer**
+Together these two cover: security gaps + false completions.
+Use for full platform scans. No screenshots required.
+
+### Planning sessions (prioritisation, scope decisions):
+**product-sprint-prioritizer**
+Enforces execution order. Says no to scope that doesn't belong.
+Use when deciding what to build next, not when building.
+
+### Example session start commands:
+
+Standard build session:
+  "Use agents engineering-code-reviewer and
+   engineering-frontend-developer.
+   Read docs/QUIZ_IMPROVEMENT_MASTER.md..."
+
+Surgical fix session:
+  "Use agents engineering-code-reviewer and
+   engineering-minimal-change.
+   Start session..."
+
+Security/audit session:
+  "Use agents security-appsec-engineer and
+   engineering-code-reviewer.
+   No Playwright. No screenshots.
+   Verify everything through code review and curl only..."
+
+---
 
 **App name:** E2go (capital E, lowercase go)
 **Domain:** e2go.app
@@ -229,14 +299,35 @@ Current live Price IDs (June 10, 2026):
 ## STANDING BUILD RULES (confirm every session)
 
 ### RULE 0 — VERIFICATION APPROACH
-Do NOT use Playwright. It crashes the agent.
-Instead verify with:
-  1. npm run build — must be clean, zero errors
-  2. curl to confirm pages return 200:
-     curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/[route]
-  3. open http://localhost:3000/[route] to launch in browser
-     for owner to visually verify
-Never block a session on visual screenshot tooling.
+Never use Playwright for screenshots — it pulls Gemini via OpenRouter
+and costs approximately $1 per screenshot. This is not acceptable.
+
+Verify with these free methods instead:
+
+1. Build check — must be clean, zero errors:
+   npm run build
+
+2. TypeScript check — no type errors:
+   npx tsc --noEmit
+
+3. Page renders — confirms no runtime crash:
+   curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/[route]
+   Must return 200.
+
+4. API route responds:
+   curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/api/[route]
+
+5. Data writes — confirm answer/record saved to Supabase:
+   npx supabase db query "SELECT * FROM [table] ORDER BY created_at DESC LIMIT 3"
+
+6. Open for owner visual check:
+   open http://localhost:3000/[route]
+   Owner confirms visually in Chrome. This is the only step
+   that requires human eyes — agent handles everything else.
+
+The agent must never mark a task complete based only on
+"build clean." Each task requires the appropriate verification
+from the list above before being marked done.
 
 ### RULE 1 — DESIGN SYSTEM COMPLIANCE
 Read docs/DESIGN_REFERENCE.html before writing any component.
@@ -275,7 +366,9 @@ Never truncate file output. Always write the complete file.
 If a file is long, write it in sections — never use "..." or
 "rest of file unchanged."
 
-### RULE 8 — NO MAGIC MCP (currently unavailable)
+### RULE 8 — NO PLAYWRIGHT, NO MAGIC MCP
+Do not use Playwright — costs ~$1 per screenshot via OpenRouter/Gemini.
+Use the free verification stack in Rule 0 instead.
 Do not invoke Magic MCP — out of credits.
 Build components manually using DESIGN_REFERENCE.html.
 
@@ -349,59 +442,15 @@ F, G, H, L removed from TABS array June 10.
 
 ---
 
-## CASE FILE UX REDESIGN — COMPLETE
+## CASE FILE UX REDESIGN — COMPLETE (June 10, 2026)
 
-**Status:** Fully implemented. All 6 sections rebuilt. Build clean.
-**Session file:** docs/sessions/SESSION_CASEFILE_REDESIGN.md
+**Status:** ✅ Built and committed. Commits a9dfcb9–9172b2c.
 
-The six case file sections currently render as plain scrolling forms.
-They do not match the quality of the rest of the platform.
-A client who paid $550–$1,397 must feel that money was obviously
-worth it the moment they open these pages.
-
-**Layout (CaseFileShell.tsx — new shared component):**
-- Desktop (≥1024px): 3-column — 200px sidebar | questions | document preview
-- Tablet (768–1023px): 2-column + right drawer for preview
-- Mobile (<768px): horizontal cluster pills + full-screen overlay preview
-
-**Question panel:**
-- Cluster navigation with completion states (pending/active/complete)
-- Question labels in Cormorant Garamond 300 — not body copy weight
-- Cluster eyebrow, heading, subtitle per cluster group
-- "This section builds: [documents]" in sidebar
-
-**Document preview panel (Phase 1 — template-based, no AI cost):**
-- Fields fill in as user types — no API call, zero cost
-- Fill progress bar per document (2px, gold)
-- Phase 2 (after first paying user): live AI paragraph generation per cluster
-
-**Voice input (redesigned from commit 63dc9dd):**
-- Full-width bar below each textarea — labelled "Speak your answer"
-- Active state: gold pulse animation + 4-bar animated waveform
-- Mic permission bug fixed: getUserMedia pre-check before SpeechRecognition.start()
-- Unsupported browser: mic hidden, one-time localStorage-dismissed notice
-
-**Variants — all preserved, visual layer only:**
-- Partnership: three-track (shared / your info / partner B)
-- COS: conditional question blocks with COS label treatment
-- Family: all sub-paths (stepchildren, common-law, legitimation, age-out)
-- PreFillBadge: all three variants (quiz gold, upload amber, upload amber-orange)
-
-**Scope:**
-- /apply overview page — section cards redesigned
-- /apply/story through /apply/ties — all six sections
-- /apply/upload through /apply/upload/gaps — visual consistency only
-- /apply/module4 — textarea visual consistency only, NO logic changes,
-  NO mic button (voice sample is a separate system — do not touch)
-- Old fallback tabs /apply/module3/[a-k] — NOT touched
-
-**What must NOT change:**
-- Any API route
-- Any useEffect or onChange writing to answers table
-- Auto-save mechanism (800ms debounce)
-- useSpeechInput hook logic
-- Any conditional rendering logic (partnership, COS, family variants)
-- Module 4 page logic, validation, AI detection, word count
+All 6 section pages rebuilt with two-panel layout.
+CaseFileShell.tsx shared component — desktop/tablet/mobile responsive.
+Voice input working. Mic permission bug fixed.
+All variants preserved: partnership, COS, family sub-paths.
+Data writes verified on all 6 sections.
 
 ---
 
@@ -455,18 +504,25 @@ Rate limits (production only):
 
 ---
 
-## KNOWN ISSUES (June 10, 2026)
+## KNOWN ISSUES (Updated June 10, 2026)
 
 | Issue | Priority | Status |
 |---|---|---|
-| Mic button disappears on click | HIGH | Fix in case file redesign session (getUserMedia pre-check) |
-| Case file pages look like draft forms | HIGH | Case file redesign session — docs/sessions/SESSION_CASEFILE_REDESIGN.md |
-| Migration 004 not applied | MEDIUM | Run: npx supabase db push |
 | Generation engine: approval gate, setState, empty boxes | MEDIUM | docs/sessions/SESSION_PLAN_GENERATION_FIXES.md |
-| Two warnings in generate/page.tsx and quiz/page.tsx | LOW | Fix in next session touching those files |
+| Migration 004 not applied | MEDIUM | Run: npx supabase db push |
 | Stripe API version outdated (2024-06-20) | LOW | Upgrade apiVersion in scripts/stripe-setup.ts |
-| Quiz nationality selector curl/browser verification difficulty | LOW | Works in browser |
 | Fast Refresh occasional hot reload errors | LOW | Non-blocking |
+
+**Resolved since last update:**
+- ~~Mic button disappears on click~~ ✅ FIXED — getUserMedia pre-check (commit 1f4e623)
+- ~~Case file pages look like draft forms~~ ✅ FIXED — case file redesign complete (commits a9dfcb9–9172b2c)
+- ~~Score/flags contradiction~~ ✅ FIXED — Session 1 (commit 400d1dc)
+- ~~Magic link on login page~~ ✅ FIXED — Session 1
+- ~~No first/last name at signup~~ ✅ FIXED — Session 1
+- ~~Email results button broken~~ ✅ FIXED — Session 1
+- ~~Post-login routing ignores state~~ ✅ FIXED — Session 1
+- ~~Navbar shows no auth state~~ ✅ FIXED — Session 1
+- ~~Permissions-Policy blocking microphone~~ ✅ FIXED (commit 7087f10)
 
 ---
 
@@ -489,26 +545,39 @@ Rate limits (production only):
 
 ## SESSION LOG (summary — see BUILD_TRACKER.md for full log)
 
-**June 9–10, 2026 — Full build session — ALL BLOCKERS RESOLVED:**
-- Quiz v4.0 → v6.0: all 30 bugs fixed, test fixtures written
-- Interview simulator: complete — Groq TTS, transcription, timer,
-  $29.99 purchase, design fixes
-- Module 3 case file redesign: 6 sections, all components, pre-fill
-- Document upload: Session A (extraction) + Session B (UI) complete
-- Auth image slider: Unsplash URLs removed, flag SVG
-- Route cleanup: 53 → 47 routes, dead pages removed, middleware hardened
-- Pricing updated: $550–$1,397 (old founding member pricing retired)
-- E2go rebrand: capital E, lowercase go throughout
-- Stripe Price IDs recreated at new amounts — all 10 tiers live
-- Payments migration applied ✅
-- Login page flag gradient fixed — left panel now visible
-- Voice-to-text input built (commit 63dc9dd) — mic bug noted
-- Case file UX redesign spec complete — session file written
+**June 10, 2026 — Session 1 of QUIZ_EXECUTION_PLAN.md complete:**
+- Auth: magic link removed, remember me, first/last name at signup
+- Email verification enforced in middleware
+- Navbar shows first name when logged in
+- Results page personalised, score/flags contradiction fixed
+- Smart post-login routing by application state
+- Q0-06 replaced with fund source type (6 options)
+- Q0-09 immigration history reframed
+- Q0-10 home ties simplified to 5 options
+- Q0-08c/d franchise referral sub-questions added
+- Email results button: loading/success/error states
+- Draft expiry: 7 days → 24 hours
+- Commit: 400d1dc
+
+**June 10, 2026 — Session 2 of QUIZ_EXECUTION_PLAN.md (in progress):**
+- Adding 4 missing questions: Q0-readiness, Q0-target-date,
+  Q0-business-type, Q0-business-cost
+- Adding franchise contact sub-questions Q0-08c/d
+- Adding readiness_stage + business_type columns to quiz_sessions
+- Wiring working_target_date from quiz to applications table
+
+**June 10, 2026 — Platform improvements:**
+- Case file UX redesign complete (commits a9dfcb9–9172b2c)
+- Voice input mic bug fixed (commit 1f4e623)
+- Permissions-Policy header fixed (commit 7087f10)
+- Agency agents installed: 208 agents at ~/.claude/agents/
+- Playwright removed from verification stack (cost ~$1/screenshot)
+- CLAUDE_CONTEXT.md updated with correct agent names and free verification stack
 
 **Next session priorities:**
-1. Case file UX redesign — READY TO BUILD
-   Session file: docs/sessions/SESSION_CASEFILE_REDESIGN.md
-2. Apply migration 004 (npx supabase db push)
-3. End-to-end payment test
-4. Generation engine fixes
-5. Verify 34-gap questions integrated in case file
+1. Complete Session 2 — new quiz questions + downstream wiring
+2. Platform audit — security-appsec-engineer + engineering-code-reviewer
+   (no Playwright, code review and curl only)
+3. Session 3 — structural quiz fixes (Q0-01, Q0-03, Q0-09, Q0-17 etc.)
+4. Apply migration 004 (npx supabase db push)
+5. Generation engine fixes (docs/sessions/SESSION_PLAN_GENERATION_FIXES.md)

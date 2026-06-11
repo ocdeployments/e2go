@@ -1,6 +1,6 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 10, 2026 — Auth, quiz, results fixes (Session 1)
+**Last Updated:** June 11, 2026 — Security fixes (42 fixes, 6 groups)
 **App Name:** E2go.app
 **Stack:** Next.js 14 · TypeScript · Tailwind CSS · Supabase · Claude API
 **Dev URL:** https://e2go-git-dev-ocdeployments-projects.vercel.app
@@ -961,6 +961,72 @@ Clean — zero errors. Commit: 400d1dc
 - Redesign is not polish. It is product.
 - Standard: "Would someone who paid $600 feel embarrassed showing
   this screen to their spouse?" If uncertain — rebuild it.
+
+---
+
+## SESSION — Security Fixes (June 11, 2026)
+
+### Completed — 42 fixes across 6 groups, 6 commits on dev
+
+Session file: docs/sessions/SESSION_SECURITY_FIXES.md
+
+**Group 1 — CRITICAL (commit 7741935):**
+- Removed Playwright auth bypass from middleware
+- Removed SKIP_PAYMENT_WALL bypass
+- Added session auth to all 12 unprotected API routes (generate/start, generate/run, generate/progress, generate/documents, email/results, simulator/tts, simulator/transcribe, notifications/franchise-referral, followup/*)
+- Added application ownership checks on generate routes
+- Added payment wall on generate/start
+- Input validation on TTS (text length) and transcribe (file size/type)
+- HTML sanitization on franchise referral notification
+- Stripe tier validation with VALID_TIER_IDS whitelist
+- Removed token leak from email results response
+
+**Group 2 — HIGH (commit 7821b8b):**
+- Admin role column migration + layout.tsx role gate
+- Removed client-prompt injection in ai.ts (hardcoded system prompt)
+- E2go doc branding removed from legal disclaimers
+- Quiz scoring caps for attorney flags (2+ → 74, 1+ → 89)
+- W-SILENT-PARTNER added to scoring deductions (-10)
+- Email outcome string mismatch fixed (qualified → PROCEED)
+- solo_family_large pricing tier added ($797)
+- .env.local duplicate Stripe Price IDs cleaned
+
+**Group 3 — MEDIUM (commit 78f5d26):**
+- Prompt sanitization applied to document-extraction-engine.ts
+- Orphaned Q0-09a/Q0-09b show_if conditions fixed (now reference Q0-09c)
+- Dead email button on results page wired to handleEmailResult
+- CASL consent hardcoded true → uses caslConsent state variable
+- Debug-env and test API routes deleted
+- Error message sanitization on email/schedule route
+- Ownership check added to documents/extract route
+- Profiles first_name/last_name migration created
+- Quiz sessions RLS + UPDATE policy migration
+- Email log RLS migration
+
+**Group 4 — LOW (commit 5bf7623):**
+- .env.example synced with all env vars (added 15 missing keys)
+- RLS enabled on processed_webhook_events table
+- Lifecycle tracking for quiz_completed and generation_triggered events
+- NEXT_PUBLIC_STRIPE_SECRET_KEY usage removed from PricingClient.tsx
+
+**Group 5 — ACCESSIBILITY (commit a6a2d04):**
+- Focus indicators restored: outline:none → gold ring (#C9A84C) on 12 inputs
+- Cookie consent banner: added Reject button
+
+**Group 6 — GENERATION ENGINE (commit f6138bd):**
+- Approval gate: 5-minute warning logged before auto-approve
+- setState batching via unstable_batchedUpdates in generate page
+- Empty quality step span guarded with conditional render
+- Signup page TypeScript type narrowing fix
+
+### Build
+Clean — zero errors after all 6 groups.
+
+### Migrations to apply
+```bash
+npx supabase db push
+# Applies: profiles_role_column, profiles_name_columns, quiz_sessions_rls, email_log_rls
+```
 
 **Layout decisions locked:**
 - Desktop (≥1024px): 3-column — 200px sidebar | questions | document preview
