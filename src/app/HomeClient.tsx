@@ -344,7 +344,7 @@ export default function HomeClient() {
               <div key={c.label}>
                 <div className="text-[10px] tracking-[0.1em] uppercase text-[rgba(201,168,76,0.55)] mb-2">{c.label}</div>
                 <select value={c.val} onChange={e => c.set(e.target.value)}
-                  className="w-full px-3 py-3 bg-[rgba(201,168,76,0.03)] border border-[rgba(201,168,76,0.2)] text-[#f5f0e8] text-sm focus:border-[#C9A84C] outline-none appearance-none cursor-pointer min-h-[44px]">
+                  className="w-full px-3 py-3 bg-[rgba(201,168,76,0.03)] border border-[rgba(201,168,76,0.2)] text-[#f5f0e8] text-sm focus:border-[#C9A84C] focus:ring-2 focus:ring-[#C9A84C] focus:ring-offset-2 appearance-none cursor-pointer min-h-[44px]">
                   {c.opts.map(([v,l]) => <option key={v} value={v} className="bg-[#1a1a1a]">{l}</option>)}
                 </select>
               </div>

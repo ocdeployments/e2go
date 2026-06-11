@@ -168,7 +168,7 @@ export default function QuestionRenderer({
         onChange={(e) => onChange(e.target.value)}
         disabled={disabled}
         rows={4}
-        className="w-full px-4 py-3 border rounded-lg focus:outline-none disabled:opacity-50"
+        className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#C9A84C] focus:ring-offset-2 disabled:opacity-50"
         style={{
           borderColor: "var(--glass-border)",
           background: "var(--glass-bg)",
@@ -188,7 +188,7 @@ export default function QuestionRenderer({
       value={value as number ?? ''}
       onChange={(e) => onChange(e.target.value ? Number(e.target.value) : null)}
       disabled={disabled}
-      className="w-full px-4 py-3 border rounded-lg focus:outline-none disabled:opacity-50"
+      className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#C9A84C] focus:ring-offset-2 disabled:opacity-50"
       style={{
         borderColor: "var(--glass-border)",
         background: "var(--glass-bg)",
@@ -208,7 +208,7 @@ export default function QuestionRenderer({
           value={month}
           onChange={(e) => onChange(`${e.target.value}/${day}/${year}`)}
           disabled={disabled}
-          className="flex-1 px-4 py-3 border rounded-lg focus:outline-none disabled:opacity-50"
+          className="flex-1 px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#C9A84C] focus:ring-offset-2 disabled:opacity-50"
           style={{
             borderColor: "var(--glass-border)",
             background: "var(--glass-bg)",
@@ -226,7 +226,7 @@ export default function QuestionRenderer({
           value={day}
           onChange={(e) => onChange(`${month}/${e.target.value}/${year}`)}
           disabled={disabled}
-          className="w-20 px-4 py-3 border rounded-lg focus:outline-none disabled:opacity-50"
+          className="w-20 px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#C9A84C] focus:ring-offset-2 disabled:opacity-50"
           style={{
             borderColor: "var(--glass-border)",
             background: "var(--glass-bg)",
@@ -244,7 +244,7 @@ export default function QuestionRenderer({
           value={year}
           onChange={(e) => onChange(`${month}/${day}/${e.target.value}`)}
           disabled={disabled}
-          className="w-28 px-4 py-3 border rounded-lg focus:outline-none disabled:opacity-50"
+          className="w-28 px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#C9A84C] focus:ring-offset-2 disabled:opacity-50"
           style={{
             borderColor: "var(--glass-border)",
             background: "var(--glass-bg)",

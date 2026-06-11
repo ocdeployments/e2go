@@ -18,6 +18,11 @@ export default function CookieBanner() {
     setShowBanner(false);
   };
 
+  const handleReject = () => {
+    localStorage.setItem("e2go_cookie_consent", "rejected");
+    setShowBanner(false);
+  };
+
   if (!showBanner) {
     return null;
   }
@@ -42,6 +47,20 @@ export default function CookieBanner() {
         No third-party tracking.
       </p>
       <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+        <button
+          onClick={handleReject}
+          className="w-full sm:w-auto text-center px-5 py-2.5 text-sm font-medium transition-colors duration-200"
+          style={{
+            background: "transparent",
+            color: "rgba(201,168,76,0.7)",
+            border: "1px solid rgba(201,168,76,0.25)",
+            fontFamily: "'DM Sans', sans-serif",
+            fontWeight: 500,
+            fontSize: "13px",
+          }}
+        >
+          Reject
+        </button>
         <button
           onClick={handleAccept}
           className="w-full sm:w-auto text-center px-5 py-2.5 text-sm font-medium transition-colors duration-200"

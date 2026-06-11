@@ -66,9 +66,12 @@ export default function FormField({
             }}
             onFocus={(e) => {
               e.target.style.border = '1px solid #C9A84C';
+              e.target.style.outline = '2px solid #C9A84C';
+              e.target.style.outlineOffset = '2px';
             }}
             onBlur={(e) => {
               e.target.style.border = '1px solid rgba(201,168,76,0.2)';
+              e.target.style.outline = 'none';
             }}
           />
         );
@@ -90,9 +93,12 @@ export default function FormField({
             }}
             onFocus={(e) => {
               e.target.style.border = '1px solid #C9A84C';
+              e.target.style.outline = '2px solid #C9A84C';
+              e.target.style.outlineOffset = '2px';
             }}
             onBlur={(e) => {
               e.target.style.border = '1px solid rgba(201,168,76,0.2)';
+              e.target.style.outline = 'none';
             }}
           />
         );
@@ -112,9 +118,12 @@ export default function FormField({
             }}
             onFocus={(e) => {
               e.target.style.border = '1px solid #C9A84C';
+              e.target.style.outline = '2px solid #C9A84C';
+              e.target.style.outlineOffset = '2px';
             }}
             onBlur={(e) => {
               e.target.style.border = '1px solid rgba(201,168,76,0.2)';
+              e.target.style.outline = 'none';
             }}
           >
             <option value="" style={{ color: '#f5f0e8' }}>Select...</option>
@@ -180,9 +189,12 @@ export default function FormField({
             }}
             onFocus={(e) => {
               e.target.style.border = '1px solid #C9A84C';
+              e.target.style.outline = '2px solid #C9A84C';
+              e.target.style.outlineOffset = '2px';
             }}
             onBlur={(e) => {
               e.target.style.border = '1px solid rgba(201,168,76,0.2)';
+              e.target.style.outline = 'none';
             }}
           />
         );
@@ -205,6 +217,15 @@ export default function FormField({
                 color: '#f5f0e8',
                 outline: 'none',
               }}
+              onFocus={(e) => {
+                e.target.style.border = '1px solid #C9A84C';
+                e.target.style.outline = '2px solid #C9A84C';
+                e.target.style.outlineOffset = '2px';
+              }}
+              onBlur={(e) => {
+                e.target.style.border = '1px solid rgba(201,168,76,0.2)';
+                e.target.style.outline = 'none';
+              }}
             />
             <input
               type="date"
@@ -220,6 +241,15 @@ export default function FormField({
                 border: '1px solid rgba(201,168,76,0.2)',
                 color: '#f5f0e8',
                 outline: 'none',
+              }}
+              onFocus={(e) => {
+                e.target.style.border = '1px solid #C9A84C';
+                e.target.style.outline = '2px solid #C9A84C';
+                e.target.style.outlineOffset = '2px';
+              }}
+              onBlur={(e) => {
+                e.target.style.border = '1px solid rgba(201,168,76,0.2)';
+                e.target.style.outline = 'none';
               }}
             />
           </div>
@@ -242,6 +272,15 @@ export default function FormField({
                 color: '#f5f0e8',
                 outline: 'none',
               }}
+              onFocus={(e) => {
+                e.target.style.border = '1px solid #C9A84C';
+                e.target.style.outline = '2px solid #C9A84C';
+                e.target.style.outlineOffset = '2px';
+              }}
+              onBlur={(e) => {
+                e.target.style.border = '1px solid rgba(201,168,76,0.2)';
+                e.target.style.outline = 'none';
+              }}
             />
           </div>
         );
@@ -262,6 +301,15 @@ export default function FormField({
                 color: '#f5f0e8',
                 outline: 'none',
               }}
+              onFocus={(e) => {
+                e.target.style.border = '1px solid #C9A84C';
+                e.target.style.outline = '2px solid #C9A84C';
+                e.target.style.outlineOffset = '2px';
+              }}
+              onBlur={(e) => {
+                e.target.style.border = '1px solid rgba(201,168,76,0.2)';
+                e.target.style.outline = 'none';
+              }}
             />
             <span className="absolute right-4 top-1/2 -translate-y-1/2" style={{ color: 'rgba(245,240,232,0.5)' }}>%</span>
           </div>
@@ -280,6 +328,15 @@ export default function FormField({
               border: '1px solid rgba(201,168,76,0.2)',
               color: '#f5f0e8',
               outline: 'none',
+            }}
+            onFocus={(e) => {
+              e.target.style.border = '1px solid #C9A84C';
+              e.target.style.outline = '2px solid #C9A84C';
+              e.target.style.outlineOffset = '2px';
+            }}
+            onBlur={(e) => {
+              e.target.style.border = '1px solid rgba(201,168,76,0.2)';
+              e.target.style.outline = 'none';
             }}
           />
         );
