@@ -1,10 +1,8 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { useRouter } from 'next/navigation';
 import { createBrowserSupabaseClient } from '@/lib/supabase';
-import SectionSideNav from '@/components/apply/SectionSideNav';
-import QuestionPanel from '@/components/apply/QuestionPanel';
+import CaseFileShell from '@/components/apply/CaseFileShell';
 import QuestionLabel from '@/components/apply/questions/QuestionLabel';
 import HelperText from '@/components/apply/questions/HelperText';
 import TextInput from '@/components/apply/questions/TextInput';
@@ -99,9 +97,8 @@ const ALL_QUESTION_SETS = [
 ];
 
 export default function FamilyPage() {
-  const router = useRouter();
   const [loading, setLoading] = useState(true);
-  const [activeCluster, setActiveCluster] = useState(1);
+  const [activeClusterId, setActiveClusterId] = useState('cluster-1');
   const [answers, setAnswers] = useState<Record<string, FamilyAnswer>>({});
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [applicationId, setApplicationId] = useState<string | null>(null);
@@ -166,12 +163,10 @@ export default function FamilyPage() {
     debounceRef.current[key] = setTimeout(() => saveAnswer(key, value), 800);
   }, [saveAnswer]);
 
-  const totalQuestions = ALL_QUESTION_SETS.reduce((sum, s) => sum + s.questions.length, 0);
-  const answeredCount = Object.keys(answers).filter((k) => answers[k]?.value !== '').length;
-
   const clusterStatuses = CLUSTERS.map((cluster) => {
     const set = ALL_QUESTION_SETS.find((s) => s.cluster === cluster.number);
-    if (!set) return { number: cluster.number, label: cluster.label, status: 'empty' as const };
+    const id = `cluster-${cluster.number}`;
+    if (!set) return { id, label: cluster.label, status: 'pending' as const };
     const answered = set.questions.filter((q) => {
       if ('showIf' in q && q.showIf) {
         const depAnswer = answers[q.showIf.key]?.value;
@@ -180,19 +175,9 @@ export default function FamilyPage() {
       return answers[q.key]?.value !== '';
     }).length;
     const visible = set.questions.filter((q) => !('showIf' in q) || !q.showIf || answers[q.showIf.key]?.value === q.showIf.value).length;
-    const status: 'complete' | 'active' | 'empty' = answered === visible && visible > 0 ? 'complete' : answered > 0 ? 'active' : 'empty';
-    return { number: cluster.number, label: cluster.label, status };
+    const status: 'complete' | 'active' | 'pending' = answered === visible && visible > 0 ? 'complete' : answered > 0 ? 'active' : 'pending';
+    return { id, label: cluster.label, status };
   });
-
-  const handleBack = () => {
-    if (activeCluster > 1) setActiveCluster(activeCluster - 1);
-    else router.push('/apply/qualifications');
-  };
-
-  const handleNext = () => {
-    if (activeCluster < CLUSTERS.length) setActiveCluster(activeCluster + 1);
-    else router.push('/apply/ties');
-  };
 
   const renderQuestions = (questions: QuestionField[]) => (
     <div className="space-y-6">
@@ -234,63 +219,74 @@ export default function FamilyPage() {
     );
   }
 
-  return (
-    <div className="flex min-h-screen">
-      <aside className="hidden w-[196px] shrink-0 border-r lg:block" style={{ borderColor: 'rgba(201,168,76,0.12)' }}>
-        <SectionSideNav sectionName="Your Family" answeredCount={answeredCount} totalCount={totalQuestions} clusters={clusterStatuses} documents={DOCUMENTS} activeCluster={activeCluster} onClusterClick={setActiveCluster} />
-      </aside>
+  const activeClusterNumber = parseInt(activeClusterId.replace('cluster-', ''), 10);
 
-      <div className="fixed top-12 left-0 right-0 z-30 flex overflow-x-auto border-b lg:hidden" style={{ borderColor: 'rgba(201,168,76,0.12)', backgroundColor: '#0a0a0a' }}>
-        {CLUSTERS.map((c) => (
-          <button key={c.number} onClick={() => setActiveCluster(c.number)} className="shrink-0 border-b px-4 py-2 text-[10px] uppercase tracking-[0.08em]" style={{ borderColor: activeCluster === c.number ? '#C9A84C' : 'transparent', color: activeCluster === c.number ? '#C9A84C' : 'rgba(245,240,232,0.28)', fontFamily: "'DM Sans', sans-serif" }}>
-            {c.number}. {c.label}
-          </button>
-        ))}
-      </div>
-
-      <div className="min-w-0 flex-1 pt-12 lg:pt-0">
-        <QuestionPanel sectionTitle="Your Family" clusterLabel={CLUSTERS[activeCluster - 1]?.label || ''} saveStatus={saveStatus} answeredCount={answeredCount} totalCount={totalQuestions} onBack={handleBack} onNext={handleNext}>
-          {activeCluster === 1 && (
-            <div>
-              <ClusterDivider label="Spouse information" />
-              {renderQuestions(SPOUSE_QUESTIONS)}
-
-              {answers['M3-L-01']?.value === 'undecided' && (
-                <AdvisoryBlock>If you are unsure whether your spouse will apply, you can still complete this section now and update later. Spouse EAD applications can be filed separately or concurrently with your E-2.</AdvisoryBlock>
-              )}
-
-              {answers['M3-L-06']?.value === 'yes' && (
-                <AdvisoryBlock>EAD applications for E-2 dependents can take 3–5 months to process. Your spouse should file Form I-765 concurrently with or after the I-539. Work authorization is not automatic — your spouse must receive the EAD card before starting work.</AdvisoryBlock>
-              )}
-            </div>
-          )}
-
-          {activeCluster === 2 && (
-            <div>
-              <ClusterDivider label="Children" />
-              {renderQuestions(CHILDREN_QUESTIONS)}
-            </div>
-          )}
-
-          {activeCluster === 3 && (
-            <div>
-              <ClusterDivider label="Documents & logistics" />
-              {renderQuestions(DOCUMENTS_QUESTIONS)}
-
-              {answers['M3-L-10']?.value === 'no' && (
-                <AdvisoryBlock>All foreign-language documents must be accompanied by certified English translations. Translation must include a certificate from the translator attesting to accuracy and completeness. Start translations early — some certified translation services take 1–2 weeks.</AdvisoryBlock>
-              )}
-            </div>
-          )}
-
-          {activeCluster === 4 && (
-            <div>
-              <ClusterDivider label="Dependents' travel" />
-              {renderQuestions(TRAVEL_QUESTIONS)}
-            </div>
-          )}
-        </QuestionPanel>
-      </div>
+  const previewContent = (
+    <div className="space-y-4">
+      {DOCUMENTS.map(doc => (
+        <div key={doc.name} className="border p-4" style={{ borderColor: 'rgba(201,168,76,0.12)', backgroundColor: 'rgba(201,168,76,0.01)' }}>
+          <div className="flex items-center justify-between mb-3">
+            <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '10px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'rgba(245,240,232,0.35)' }}>{doc.name}</span>
+            <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '10px', color: 'rgba(245,240,232,0.18)', border: '1px solid rgba(245,240,232,0.08)', padding: '2px 7px' }}>Waiting</span>
+          </div>
+          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '12px', fontWeight: 300, color: 'rgba(245,240,232,0.18)', fontStyle: 'italic', lineHeight: 1.5 }}>[Answer the questions on the left to fill this in]</p>
+        </div>
+      ))}
     </div>
+  );
+
+  return (
+    <CaseFileShell
+      sectionNumber={5}
+      sectionTitle="Your Family"
+      clusters={clusterStatuses}
+      activeClusterId={activeClusterId}
+      onClusterChange={setActiveClusterId}
+      buildsDocuments={['Dependent Documents', 'DS-160 Family']}
+      nextSectionPath="/apply/ties"
+      prevSectionPath="/apply/qualifications"
+      isSaving={saveStatus === 'saving'}
+      previewContent={previewContent}
+    >
+      {activeClusterNumber === 1 && (
+        <div>
+          <ClusterDivider label="Spouse information" />
+          {renderQuestions(SPOUSE_QUESTIONS)}
+
+          {answers['M3-L-01']?.value === 'undecided' && (
+            <AdvisoryBlock>If you are unsure whether your spouse will apply, you can still complete this section now and update later. Spouse EAD applications can be filed separately or concurrently with your E-2.</AdvisoryBlock>
+          )}
+
+          {answers['M3-L-06']?.value === 'yes' && (
+            <AdvisoryBlock>EAD applications for E-2 dependents can take 3–5 months to process. Your spouse should file Form I-765 concurrently with or after the I-539. Work authorization is not automatic — your spouse must receive the EAD card before starting work.</AdvisoryBlock>
+          )}
+        </div>
+      )}
+
+      {activeClusterNumber === 2 && (
+        <div>
+          <ClusterDivider label="Children" />
+          {renderQuestions(CHILDREN_QUESTIONS)}
+        </div>
+      )}
+
+      {activeClusterNumber === 3 && (
+        <div>
+          <ClusterDivider label="Documents & logistics" />
+          {renderQuestions(DOCUMENTS_QUESTIONS)}
+
+          {answers['M3-L-10']?.value === 'no' && (
+            <AdvisoryBlock>All foreign-language documents must be accompanied by certified English translations. Translation must include a certificate from the translator attesting to accuracy and completeness. Start translations early — some certified translation services take 1–2 weeks.</AdvisoryBlock>
+          )}
+        </div>
+      )}
+
+      {activeClusterNumber === 4 && (
+        <div>
+          <ClusterDivider label="Dependents' travel" />
+          {renderQuestions(TRAVEL_QUESTIONS)}
+        </div>
+      )}
+    </CaseFileShell>
   );
 }
