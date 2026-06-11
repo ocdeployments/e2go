@@ -167,11 +167,23 @@ export default function useSpeechInput(
     setTranscript('');
     setListening(true);
 
-    try {
-      recognitionRef.current.start();
-    } catch (err) {
-      console.warn('Failed to start speech recognition:', err);
-      setListening(false);
+    if (typeof window !== 'undefined' && navigator.mediaDevices) {
+      navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(() => {
+          recognitionRef.current?.start();
+        })
+        .catch((err) => {
+          console.error('Microphone permission denied:', err);
+          setSupported(false);
+          setListening(false);
+        });
+    } else {
+      try {
+        recognitionRef.current.start();
+      } catch (err) {
+        console.warn('Failed to start speech recognition:', err);
+        setListening(false);
+      }
     }
   }, []);
 
