@@ -19,21 +19,21 @@ export default function PreFillBadge({
   if (source === 'user_resolved_conflict') {
     return (
       <div
-        className="mb-3 inline-flex items-center gap-2 border px-3 py-1"
-        style={{ borderColor: 'rgba(201,168,76,0.2)' }}
+        className="mb-2 inline-flex items-center gap-1.5 border px-2 py-0.5"
+        style={{
+          borderColor: 'rgba(201,168,76,0.28)',
+        }}
       >
-        <div
-          className="h-1 w-1"
-          style={{ backgroundColor: '#C9A84C' }}
-        />
         <span
-          className="text-[9px] uppercase tracking-[0.08em]"
           style={{
-            color: 'rgba(201,168,76,0.5)',
             fontFamily: "'DM Sans', sans-serif",
+            fontSize: '10px',
+            fontWeight: 300,
+            letterSpacing: '0.06em',
+            color: '#C9A84C',
           }}
         >
-          Your choice
+          ✦ Your choice
         </span>
       </div>
     );
@@ -45,33 +45,27 @@ export default function PreFillBadge({
 
     return (
       <div
-        className="mb-3 inline-flex items-center gap-2 border px-3 py-1"
+        className="mb-2 inline-flex items-center gap-1.5 border px-2 py-0.5"
         style={{
           borderColor: isMediumConfidence
-            ? 'rgba(210,150,50,0.45)'
-            : 'rgba(210,150,50,0.3)',
+            ? 'rgba(251,146,60,0.25)'
+            : 'rgba(251,191,36,0.25)',
         }}
       >
-        <div
-          className="h-1 w-1"
-          style={{
-            backgroundColor: isMediumConfidence
-              ? 'rgba(210,150,50,0.9)'
-              : 'rgba(210,150,50,0.7)',
-          }}
-        />
         <span
-          className="text-[9px] uppercase tracking-[0.08em]"
           style={{
-            color: isMediumConfidence
-              ? 'rgba(210,150,50,0.9)'
-              : 'rgba(210,150,50,0.7)',
             fontFamily: "'DM Sans', sans-serif",
+            fontSize: '10px',
+            fontWeight: 300,
+            letterSpacing: '0.06em',
+            color: isMediumConfidence
+              ? 'rgba(251,146,60,0.80)'
+              : 'rgba(251,191,36,0.80)',
           }}
         >
           {isMediumConfidence
-            ? 'From your documents — please verify'
-            : 'From your documents'}
+            ? '◈ From your documents — please verify'
+            : '◈ From your documents'}
         </span>
       </div>
     );
@@ -81,18 +75,18 @@ export default function PreFillBadge({
   if (source === 'user_edited') {
     return (
       <div
-        className="mb-3 inline-flex items-center gap-2 border px-3 py-1"
-        style={{ borderColor: 'rgba(245,240,232,0.08)' }}
+        className="mb-2 inline-flex items-center gap-1.5 border px-2 py-0.5"
+        style={{
+          borderColor: 'rgba(245,240,232,0.08)',
+        }}
       >
-        <div
-          className="h-1 w-1"
-          style={{ backgroundColor: 'rgba(245,240,232,0.2)' }}
-        />
         <span
-          className="text-[9px] uppercase tracking-[0.08em]"
           style={{
-            color: 'rgba(245,240,232,0.28)',
             fontFamily: "'DM Sans', sans-serif",
+            fontSize: '10px',
+            fontWeight: 300,
+            letterSpacing: '0.06em',
+            color: 'rgba(245,240,232,0.28)',
           }}
         >
           Edited
@@ -104,25 +98,21 @@ export default function PreFillBadge({
   // Default — quiz pre-fill or original
   return (
     <div
-      className="mb-3 inline-flex items-center gap-2 border px-3 py-1"
+      className="mb-2 inline-flex items-center gap-1.5 border px-2 py-0.5"
       style={{
-        borderColor: isOriginal ? 'rgba(201,168,76,0.22)' : 'rgba(245,240,232,0.08)',
+        borderColor: isOriginal ? 'rgba(201,168,76,0.28)' : 'rgba(245,240,232,0.08)',
       }}
     >
-      <div
-        className="h-1 w-1"
-        style={{
-          backgroundColor: isOriginal ? '#C9A84C' : 'rgba(245,240,232,0.2)',
-        }}
-      />
       <span
-        className="text-[9px] uppercase tracking-[0.08em]"
         style={{
-          color: isOriginal ? 'rgba(201,168,76,0.5)' : 'rgba(245,240,232,0.28)',
           fontFamily: "'DM Sans', sans-serif",
+          fontSize: '10px',
+          fontWeight: 300,
+          letterSpacing: '0.06em',
+          color: isOriginal ? '#C9A84C' : 'rgba(245,240,232,0.28)',
         }}
       >
-        {isOriginal ? 'From your eligibility check' : 'Edited'}
+        {isOriginal ? '✦ From your eligibility check' : 'Edited'}
       </span>
     </div>
   );
