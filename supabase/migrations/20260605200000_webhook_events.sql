@@ -14,3 +14,9 @@ CREATE INDEX IF NOT EXISTS idx_webhook_events_processed_at
 -- Auto-cleanup: events older than 30 days can be deleted
 -- This prevents the table from growing indefinitely
 -- Run this periodically: DELETE FROM processed_webhook_events WHERE processed_at < now() - interval '30 days';
+
+-- RLS: only accessible via service role key
+ALTER TABLE processed_webhook_events ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Service role only"
+  ON processed_webhook_events
+  USING (false);

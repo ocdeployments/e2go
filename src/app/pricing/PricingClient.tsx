@@ -70,7 +70,7 @@ export default function PricingPage() {
       }
 
       // Check if we're in test mode
-      setTestMode(process.env.NEXT_PUBLIC_STRIPE_SECRET_KEY?.startsWith('sk_test_') || false);
+      setTestMode(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.startsWith('pk_test_') || false);
 
       setLoading(false);
     };

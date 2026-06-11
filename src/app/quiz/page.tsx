@@ -467,6 +467,14 @@ export default function QuizPage() {
             casl_consent_at: caslConsent ? new Date().toISOString() : null,
             completed_at: new Date().toISOString(),
           });
+
+          // Track quiz completion lifecycle event
+          await supabase.from("application_lifecycle").insert({
+            application_id: null,
+            event: "quiz_completed",
+            user_id: loggedInUser.id,
+            created_at: new Date().toISOString(),
+          });
         } catch {
           // ignore
         } finally {

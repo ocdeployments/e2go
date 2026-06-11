@@ -105,6 +105,14 @@ export async function POST(request: Request) {
 
     const jobId = job.id;
 
+    // Track generation triggered lifecycle event
+    await supabase.from('application_lifecycle').insert({
+      application_id: applicationId,
+      event: 'generation_triggered',
+      user_id: user.id,
+      created_at: new Date().toISOString(),
+    });
+
     // Create 6 document rows
     const documentTypes = [
       'cover_letter',
