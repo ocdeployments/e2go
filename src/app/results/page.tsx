@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import Link from "next/link";
+import { getPricingTier, PRICING_TIERS } from "@/lib/pricing-tier";
 
 interface ResultData {
   outcome: string;
@@ -42,25 +43,40 @@ function getVerdictSub(outcome: string, warnings: string[]): string {
   return "Based on your answers, we recommend speaking with a qualified immigration attorney before proceeding.";
 }
 
-function getPricingFromAnswers(data: ResultData): { tier: string; base: number; spouseAdd: number; childrenAdd: number; total: number } {
-  const isPartnership = data.application_type === "partnership";
-  const dep = data.dependents || "";
-  const hasSpouse = dep.toLowerCase().includes("spouse") || dep.toLowerCase().includes("partner");
-  const hasChildren = dep.toLowerCase().includes("children") || dep.toLowerCase().includes("child");
+function getPricingFromAnswers(data: ResultData): { tier: string; tierId: string; base: number; spouseAdd: number; childrenAdd: number; total: number } {
+  const tierId = getPricingTier({
+    application_type: data.application_type,
+    dependents: data.dependents,
+  });
 
-  const base = isPartnership ? 997 : 550;
-  let spouseAdd = 0;
-  let childrenAdd = 0;
+  if (tierId) {
+    const tierData = PRICING_TIERS[tierId];
+    const dep = (data.dependents || "").toLowerCase();
+    const hasSpouse = dep.includes("spouse");
+    const hasChildren = dep.includes("children");
+    const isPartnership = data.application_type === "partnership" || data.application_type === "spousal_partnership";
 
-  if (hasSpouse && !isPartnership) spouseAdd = 147;
-  if (hasChildren) childrenAdd = 50;
+    // Calculate add-ons for display breakdown
+    let base = 0;
+    let spouseAdd = 0;
+    let childrenAdd = 0;
 
-  if (isPartnership && hasSpouse) spouseAdd = 300;
+    if (isPartnership) {
+      base = 997;
+      if (hasSpouse && hasChildren) { spouseAdd = 300; childrenAdd = 100; }
+      else if (hasSpouse) { spouseAdd = 300; }
+    } else {
+      base = 550;
+      if (hasSpouse && hasChildren) { spouseAdd = 147; childrenAdd = 53; }
+      else if (hasSpouse) { spouseAdd = 147; }
+      else if (hasChildren) { childrenAdd = 200; }
+    }
 
-  const total = base + spouseAdd + childrenAdd;
-  const tier = isPartnership ? "Partnership Application" : "Solo Application — Standard";
+    return { tier: tierData.name, tierId, base, spouseAdd, childrenAdd, total: tierData.price };
+  }
 
-  return { tier, base, spouseAdd, childrenAdd, total };
+  // Fallback
+  return { tier: "Solo Individual", tierId: "solo_none", base: 550, spouseAdd: 0, childrenAdd: 0, total: 550 };
 }
 
 function getTimelineWeeks(data: ResultData): { weeksMin: number; weeksMax: number } {

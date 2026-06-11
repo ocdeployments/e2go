@@ -1,8 +1,8 @@
 {
   "module": "module0",
-  "version": "5.0",
+  "version": "6.0",
   "last_updated": "2026-06-10",
-  "sections": ["Eligibility", "Investment", "Family", "Business", "History", "Home Ties"],
+  "sections": ["Eligibility", "Family", "Business", "Investment", "History", "Home Ties"],
   "questions": [
     {
       "id": "Q0-01",
@@ -23,218 +23,489 @@
       "section": "eligibility",
       "section_index": 0,
       "question": "Who is this application for?",
-      "helper_text": "This determines the scope of your application package and pricing.",
+      "helper_text": "This determines the scope of your application package, who is included, and pricing.",
       "tooltip": null,
       "is_sub": false,
       "parent": null,
       "show_if": null,
       "options": [
-        { "text": "Just me — I am the only applicant", "action": "continue", "code": null, "warning_message": null },
-        { "text": "Me and my spouse or partner — we are applying together", "action": "continue", "code": null, "warning_message": null },
-        { "text": "A group of business partners — multiple applicants", "action": "continue", "code": null, "warning_message": null }
+        {
+          "text": "I am the sole applicant",
+          "action": "continue",
+          "code": null,
+          "warning_message": null
+        },
+        {
+          "text": "I am the principal — my spouse will accompany me as a dependent",
+          "action": "continue",
+          "code": null,
+          "warning_message": null
+        },
+        {
+          "text": "My spouse and I are co-investing in this business together",
+          "action": "continue",
+          "code": null,
+          "warning_message": null
+        },
+        {
+          "text": "I have a business partner (not my spouse)",
+          "action": "continue",
+          "code": null,
+          "warning_message": null
+        }
+      ]
+    },
+    {
+      "id": "Q0-02a",
+      "type": "select",
+      "section": "family",
+      "section_index": 1,
+      "question": "Will your children also be moving with you?",
+      "helper_text": "Your response determines dependent visa strategy and pricing.",
+      "tooltip": null,
+      "is_sub": true,
+      "parent": "Q0-02",
+      "show_if": {
+        "Q0-02": [
+          "I am the principal — my spouse will accompany me as a dependent",
+          "My spouse and I are co-investing in this business together"
+        ]
+      },
+      "options": [
+        {
+          "text": "No children",
+          "action": "continue",
+          "code": null,
+          "warning_message": null
+        },
+        {
+          "text": "Yes — all under 21",
+          "action": "continue",
+          "code": null,
+          "warning_message": null
+        },
+        {
+          "text": "Yes — one or more are 21 or older",
+          "action": "warn:W-AGING-OUT",
+          "code": "W-AGING-OUT",
+          "warning_message": "Children 21 or older cannot be E-2 dependents. They will need their own US visa. Only children under 21 will be included in your application."
+        }
       ]
     },
     {
       "id": "Q0-03",
       "type": "select",
       "section": "family",
-      "section_index": 2,
+      "section_index": 1,
       "question": "Who is moving with you?",
       "helper_text": "Your response determines E-2 dependent visa strategy and pricing.",
       "tooltip": null,
       "is_sub": false,
       "parent": null,
-      "show_if": null,
+      "show_if": {
+        "Q0-02": [
+          "I am the sole applicant",
+          "I have a business partner (not my spouse)"
+        ]
+      },
       "options": [
-        { "text": "Just me — I am moving alone", "action": "continue", "code": null, "warning_message": null },
-        { "text": "My spouse or partner", "action": "continue", "code": null, "warning_message": null },
-        { "text": "My spouse and children", "action": "continue", "code": null, "warning_message": null },
-        { "text": "My children only", "action": "continue", "code": null, "warning_message": null },
-        { "text": "Not decided yet", "action": "continue", "code": null, "warning_message": null }
+        {
+          "text": "Just me — I am moving alone",
+          "action": "continue",
+          "code": null,
+          "warning_message": null
+        },
+        {
+          "text": "Me and my spouse",
+          "action": "continue",
+          "code": null,
+          "warning_message": null
+        },
+        {
+          "text": "Me, my spouse, and our children",
+          "action": "continue",
+          "code": null,
+          "warning_message": null
+        },
+        {
+          "text": "Me and my children only",
+          "action": "continue",
+          "code": null,
+          "warning_message": null
+        }
       ]
     },
     {
       "id": "Q0-03a",
       "type": "select",
       "section": "family",
-      "section_index": 2,
-      "question": "What are your children's ages?",
-      "helper_text": "Dependent status only applies to unmarried children under 21. This affects timeline and compliance planning.",
+      "section_index": 1,
+      "question": "Are all your children under 21?",
+      "helper_text": "Dependent status only applies to unmarried children under 21. Children 21 or older cannot be included as E-2 dependents.",
       "tooltip": null,
       "is_sub": true,
       "parent": "Q0-03",
-      "show_if": { "Q0-03": ["My spouse and children", "My children only"] },
+      "show_if": {
+        "Q0-03": [
+          "Me, my spouse, and our children",
+          "Me and my children only"
+        ]
+      },
       "options": [
-        { "text": "All under 18", "action": "continue", "code": null, "warning_message": null },
-        { "text": "Some between 18–20", "action": "warn:W-AGING-OUT", "code": "W-AGING-OUT", "warning_message": "Children aged 18–20 may age out before visa issuance. This time-sensitive risk should be addressed early." },
-        { "text": "Some 21 or older", "action": "warn:W-OVER-21", "code": "W-OVER-21", "warning_message": "Children 21 or older do not qualify as E-2 dependents. They will need their own visa pathway." },
-        { "text": "Prefer not to say", "action": "continue", "code": null, "warning_message": null }
+        {
+          "text": "No — all my children are under 21",
+          "action": "continue",
+          "code": null,
+          "warning_message": null
+        },
+        {
+          "text": "Yes — one or more are 21 or older",
+          "action": "warn:W-AGING-OUT",
+          "code": "W-AGING-OUT",
+          "warning_message": "Children 21 or older cannot be E-2 dependents. They will need their own US visa. Only children under 21 will be included."
+        }
       ]
     },
     {
       "id": "Q0-04",
       "type": "select",
       "section": "business",
-      "section_index": 3,
+      "section_index": 2,
       "question": "Will you have a business partner or co-investor?",
-      "helper_text": "Partnership structure affects ownership requirements, treaty basis, and pricing. Spousal partnerships and 50/50 partnerships have different compliance implications.",
-      "tooltip": "E-2 principal applicants must own at least 50% of the enterprise. Partnerships require careful structuring.",
+      "helper_text": "Partnership structure affects ownership requirements, treaty basis, and pricing. E-2 principal applicants must own at least 50% of the enterprise.",
+      "tooltip": "Under 9 FAM 402.9, an equal partnership with more than two investors does not give any individual the control required for E-2 investor classification.",
       "is_sub": false,
       "parent": null,
-      "show_if": null,
+      "show_if": {
+        "Q0-02": ["I have a business partner (not my spouse)"]
+      },
       "options": [
-        { "text": "No — I am the sole owner and investor", "action": "continue", "code": null, "warning_message": null },
-        { "text": "Yes — one partner, my spouse", "action": "sub:Q0-04a", "code": null, "warning_message": null },
-        { "text": "Yes — one partner, 50/50 split", "action": "sub:Q0-04a", "code": null, "warning_message": null },
-        { "text": "Yes — multiple partners, unequal splits", "action": "warn:W-PARTNERSHIP-SPLIT", "code": "W-PARTNERSHIP-SPLIT", "warning_message": "Unequal partnership splits require additional documentation of control and ownership. This is flagged for attorney review." }
+        {
+          "text": "No — I am the only investor",
+          "action": "continue",
+          "code": null,
+          "warning_message": null
+        },
+        {
+          "text": "Yes — one partner, we will each own 50%",
+          "action": "sub:Q0-04a",
+          "code": null,
+          "warning_message": null
+        },
+        {
+          "text": "More than one partner",
+          "action": "stop:PR-06b",
+          "code": "PR-06b",
+          "warning_message": null
+        }
       ]
     },
     {
       "id": "Q0-04a",
       "type": "select",
       "section": "business",
-      "section_index": 3,
+      "section_index": 2,
       "question": "What is your partner's role in the business?",
-      "helper_text": "This affects whether your spouse qualifies for independent E-2 status and determines ownership structure documentation.",
+      "helper_text": "Both partners in a 50/50 E-2 application must demonstrate active development and direction of the business.",
       "tooltip": null,
       "is_sub": true,
       "parent": "Q0-04",
-      "show_if": { "Q0-04": ["Yes — one partner, my spouse", "Yes — one partner, 50/50 split"] },
+      "show_if": {
+        "Q0-04": ["Yes — one partner, we will each own 50%"]
+      },
       "options": [
-        { "text": "Spouse — not involved in business operations", "action": "flag_spouse_perspective+continue", "code": null, "warning_message": null },
-        { "text": "Spouse — active co-manager or employee", "action": "flag_spouse_qualifications+continue", "code": null, "warning_message": null },
-        { "text": "Business partner — equal decision-maker", "action": "continue", "code": null, "warning_message": null },
-        { "text": "Business partner — silent investor, no daily role", "action": "warn:W-PARTNERSHIP-SPLIT", "code": "W-PARTNERSHIP-SPLIT", "warning_message": "Silent investors in E-2 partnerships raise questions about active management. This is flagged for review." }
+        {
+          "text": "Yes — my partner will actively manage the business with me",
+          "action": "continue",
+          "code": null,
+          "warning_message": null
+        },
+        {
+          "text": "No — my partner is a silent investor, not day-to-day involved",
+          "action": "attorney:W-SILENT-PARTNER",
+          "code": "W-SILENT-PARTNER",
+          "warning_message": "Both partners in a 50/50 E-2 application must demonstrate active development and direction of the business. A silent investor role may not satisfy this requirement for your partner. We recommend reviewing this structure with an attorney before proceeding."
+        }
       ]
     },
     {
       "id": "Q0-05",
       "type": "select",
       "section": "investment",
-      "section_index": 1,
+      "section_index": 3,
       "question": "Where are you applying from?",
-      "helper_text": "Your application location determines the consulate or embassy that will adjudicate your case and affects processing strategy.",
+      "helper_text": "Your current location determines whether you apply through a US consulate or through USCIS Change of Status.",
       "tooltip": null,
       "is_sub": false,
       "parent": null,
       "show_if": null,
       "options": [
-        { "text": "From within the US — change of status", "action": "continue", "code": null, "warning_message": null },
-        { "text": "From outside the US — consular processing", "action": "continue", "code": null, "warning_message": null },
-        { "text": "Not sure yet", "action": "continue", "code": null, "warning_message": null }
+        {
+          "text": "From outside the US — consular processing at my home country consulate",
+          "action": "continue",
+          "code": null,
+          "warning_message": null
+        },
+        {
+          "text": "From inside the US — I have a valid visa or immigration status",
+          "action": "continue",
+          "code": null,
+          "warning_message": "You may be eligible for Change of Status through USCIS, which avoids a consulate interview. Your case file will include guidance on both pathways."
+        },
+        {
+          "text": "From inside the US — I am not sure if my status is currently valid",
+          "action": "attorney:W-STATUS-UNKNOWN",
+          "code": "W-STATUS-UNKNOWN",
+          "warning_message": "If your status has lapsed, applying while out of status creates serious legal risk. Please confirm your status before proceeding."
+        },
+        {
+          "text": "From inside the US — I do not have valid status",
+          "action": "stop:PR-09",
+          "code": "PR-09",
+          "warning_message": null
+        }
       ]
     },
     {
       "id": "Q0-06",
-      "type": "select",
+      "type": "multiselect",
       "section": "investment",
-      "section_index": 1,
-      "question": "How are you funding your investment?",
-      "helper_text": "The source of funds is one of the most scrutinised aspects of an E-2 application. USCIS requires a clear paper trail.",
-      "tooltip": "E-2 funds must be 'irrevocably committed' to the enterprise. Loan-backed investments require the loan to be secured by personal assets, not the business itself.",
+      "section_index": 3,
+      "question": "What sources will you use to fund your investment?",
+      "helper_text": "Select all that apply. The E-2 requires capital that you own and control. Documentation of your source of funds is a critical part of the application.",
+      "tooltip": "Under 9 FAM 402.9, the investment capital must be at risk and under the investor's control. Loans secured by the business itself do not qualify.",
       "is_sub": false,
       "parent": null,
       "show_if": null,
       "options": [
-        { "text": "Personal savings and accumulated wealth", "action": "continue", "code": null, "warning_message": null },
-        { "text": "Selling assets — property, investments, or business", "action": "continue", "code": null, "warning_message": null },
-        { "text": "Inheritance or gift from family", "action": "warn:W-FAMILY-GIFT", "code": "W-FAMILY-GIFT", "warning_message": "Gift-funded investments require additional documentation proving the gift is genuine and not a disguised loan." },
-        { "text": "Business loan or line of credit", "action": "attorney:W-LOAN-FUNDED", "code": "W-LOAN-FUNDED", "warning_message": "Loan-funded investments require careful structuring. The loan must be secured by personal assets, not the business. We recommend attorney guidance." },
-        { "text": "Combination of sources", "action": "continue", "code": null, "warning_message": null },
-        { "text": "Not sure yet", "action": "continue", "code": null, "warning_message": null }
+        {
+          "text": "Personal savings or accumulated wealth",
+          "action": "continue",
+          "code": null,
+          "warning_message": null
+        },
+        {
+          "text": "Proceeds from selling property",
+          "action": "continue",
+          "code": null,
+          "warning_message": null
+        },
+        {
+          "text": "Proceeds from selling a business or investment",
+          "action": "continue",
+          "code": null,
+          "warning_message": null
+        },
+        {
+          "text": "Inheritance or gift received",
+          "action": "warn:W-FAMILY-GIFT",
+          "code": "W-FAMILY-GIFT",
+          "warning_message": "Gift-funded investments require documentation proving the gift is genuine — not a disguised loan. The donor's source of funds may also be required."
+        },
+        {
+          "text": "Retirement account funds (RRSP, TFSA, pension withdrawal)",
+          "action": "continue",
+          "code": null,
+          "warning_message": null
+        },
+        {
+          "text": "A personal loan secured by my own assets (home equity, personal guarantee)",
+          "action": "warn:W-LOAN-PERSONAL",
+          "code": "W-LOAN-PERSONAL",
+          "warning_message": "Personal-asset-secured loans can qualify if the loan is not secured by the business itself. Documentation of the collateral is required."
+        },
+        {
+          "text": "A loan secured by the business I am investing in",
+          "action": "stop:PR-02",
+          "code": "PR-02",
+          "warning_message": null
+        }
       ]
     },
     {
       "id": "Q0-07",
       "type": "select",
       "section": "investment",
-      "section_index": 1,
-      "question": "What is your estimated total investment?",
-      "helper_text": "E-2 investment must be 'substantial' relative to the total cost of the business. The standard benchmark is $100,000+.",
-      "tooltip": "The substantiality test compares your investment to the total cost of either purchasing an existing business or starting a new one. Amounts under $50,000 rarely qualify.",
+      "section_index": 3,
+      "question": "What is your approximate investment range?",
+      "helper_text": "The E-2 visa requires a substantial investment relative to the total cost of the enterprise. Typical approved investments range from $100,000 to $500,000+.",
+      "tooltip": null,
       "is_sub": false,
       "parent": null,
       "show_if": null,
       "options": [
-        { "text": "Over $150,000", "action": "continue", "code": null, "warning_message": null },
-        { "text": "$100,000 – $150,000", "action": "continue", "code": null, "warning_message": null },
-        { "text": "$75,000 – $100,000", "action": "warn:W-LOW-INVESTMENT", "code": "W-LOW-INVESTMENT", "warning_message": "Investments below $100k face higher scrutiny. The substantiality test becomes more demanding at lower amounts." },
-        { "text": "$50,000 – $75,000", "action": "warn:W-BORDERLINE-INVESTMENT", "code": "W-BORDERLINE-INVESTMENT", "warning_message": "This range is below the typical substantiality threshold. Success requires strong justification of proportionality to total business cost." },
-        { "text": "Under $50,000", "action": "stop:PR-LOW-INVESTMENT", "code": "PR-LOW-INVESTMENT", "warning_message": "Investments under $50,000 rarely meet the substantiality requirement for E-2 classification." }
+        {
+          "text": "Over $150,000",
+          "action": "continue",
+          "code": null,
+          "warning_message": null
+        },
+        {
+          "text": "$100,000 – $150,000",
+          "action": "continue",
+          "code": null,
+          "warning_message": null
+        },
+        {
+          "text": "$75,000 – $100,000",
+          "action": "warn:W-LOW-INVESTMENT",
+          "code": "W-LOW-INVESTMENT",
+          "warning_message": "Investments below $100,000 face additional scrutiny. Your business plan must clearly demonstrate the investment is substantial relative to the enterprise type."
+        },
+        {
+          "text": "$50,000 – $75,000",
+          "action": "warn:W-BORDERLINE-INVESTMENT",
+          "code": "W-BORDERLINE-INVESTMENT",
+          "warning_message": "Investments in this range are borderline for E-2 classification. Consular officers may question whether the investment meets the substantiality requirement."
+        },
+        {
+          "text": "Under $50,000",
+          "action": "stop:PR-LOW-INVESTMENT",
+          "code": "PR-LOW-INVESTMENT",
+          "warning_message": null
+        }
       ]
     },
     {
       "id": "Q0-08",
       "type": "select",
       "section": "business",
-      "section_index": 3,
+      "section_index": 2,
       "question": "What is your current business situation?",
-      "helper_text": "This helps us understand where you are in the E-2 process and tailor your document package accordingly.",
+      "helper_text": "Your answer helps us tailor your application preparation and connect you with the right resources.",
       "tooltip": null,
       "is_sub": false,
       "parent": null,
       "show_if": null,
       "options": [
-        { "text": "I have a specific business identified and ready to invest in", "action": "sub:Q0-08a", "code": null, "warning_message": null },
-        { "text": "I am researching businesses and franchises", "action": "flag_franchise_interest+continue", "code": null, "warning_message": null },
-        { "text": "I want to start a new business from scratch", "action": "continue", "code": null, "warning_message": null },
-        { "text": "A broker or advisor introduced me to a business", "action": "sub:Q0-08b", "code": null, "warning_message": null }
+        {
+          "text": "I have a specific business or franchise identified",
+          "action": "continue",
+          "code": null,
+          "warning_message": null
+        },
+        {
+          "text": "I am still searching — I have not chosen yet",
+          "action": "continue",
+          "code": null,
+          "warning_message": null
+        },
+        {
+          "text": "I want to start a new business from scratch",
+          "action": "continue",
+          "code": null,
+          "warning_message": null
+        }
       ]
     },
     {
       "id": "Q0-08a",
       "type": "select",
       "section": "business",
-      "section_index": 3,
-      "question": "What type of business is it?",
-      "helper_text": "Different business types have different compliance profiles for E-2 purposes.",
+      "section_index": 2,
+      "question": "What type of business are you investing in?",
+      "helper_text": "Different business types have different E-2 compliance requirements. This determines what documentation your case file will include.",
       "tooltip": null,
       "is_sub": true,
       "parent": "Q0-08",
-      "show_if": { "Q0-08": ["I have a specific business identified and ready to invest in"] },
+      "show_if": {
+        "Q0-08": ["I have a specific business or franchise identified"]
+      },
       "options": [
-        { "text": "Franchise — established brand with proven model", "action": "flag_franchise_interest+continue", "code": null, "warning_message": null },
-        { "text": "Independent business — restaurant, retail, service, etc.", "action": "continue", "code": null, "warning_message": null },
-        { "text": "Tech or consulting — low-overhead service business", "action": "continue", "code": null, "warning_message": null },
-        { "text": "Real estate investment or holding company", "action": "stop:PR-PASSIVE-INVEST", "code": "PR-PASSIVE-INVEST", "warning_message": "Passive real estate holdings generally do not qualify as E-2 enterprises. The business must be active and operating." },
-        { "text": "Non-profit organisation", "action": "stop:PR-NONPROFIT", "code": "PR-NONPROFIT", "warning_message": "Non-profit organisations generally do not qualify for E-2 classification. The enterprise must be a for-profit commercial business." }
+        {
+          "text": "A franchise — buying into an established brand",
+          "action": "continue",
+          "code": null,
+          "warning_message": null
+        },
+        {
+          "text": "An existing independent business I am acquiring",
+          "action": "continue",
+          "code": null,
+          "warning_message": null
+        },
+        {
+          "text": "A new business I am starting from scratch",
+          "action": "continue",
+          "code": null,
+          "warning_message": null
+        },
+        {
+          "text": "Professional services or consulting",
+          "action": "warn:W-MARGINALITY",
+          "code": "W-MARGINALITY",
+          "warning_message": "Solo consulting businesses face scrutiny under the marginality test. Your business plan must show capacity to generate income well beyond your household needs and to create employment for others."
+        },
+        {
+          "text": "Real estate holding, rental property, or passive investment",
+          "action": "stop:PR-PASSIVE-INVEST",
+          "code": "PR-PASSIVE-INVEST",
+          "warning_message": null
+        },
+        {
+          "text": "Non-profit or charitable organisation",
+          "action": "stop:PR-NONPROFIT",
+          "code": "PR-NONPROFIT",
+          "warning_message": null
+        }
       ]
     },
     {
       "id": "Q0-08b",
       "type": "select",
       "section": "business",
-      "section_index": 3,
-      "question": "Who introduced you to the business opportunity?",
-      "helper_text": "Broker-introduced deals require additional due diligence documentation for E-2 purposes.",
+      "section_index": 2,
+      "question": "Would you like us to connect you with an E-2 specialist franchise broker?",
+      "helper_text": "They work with investors at your profile level and know which businesses have the strongest approval track records at your consulate.",
       "tooltip": null,
       "is_sub": true,
       "parent": "Q0-08",
-      "show_if": { "Q0-08": ["A broker or advisor introduced me to a business"] },
+      "show_if": {
+        "Q0-08": [
+          "I have a specific business or franchise identified",
+          "I am still searching — I have not chosen yet",
+          "I want to start a new business from scratch"
+        ]
+      },
       "options": [
-        { "text": "Immigration attorney or legal advisor", "action": "continue", "code": null, "warning_message": null },
-        { "text": "Business broker or franchise consultant", "action": "flag_franchise_interest+continue", "code": null, "warning_message": null },
-        { "text": "Personal contact or referral", "action": "continue", "code": null, "warning_message": null },
-        { "text": "Online research — found it myself", "action": "continue", "code": null, "warning_message": null }
+        {
+          "text": "Yes — please connect me",
+          "action": "flag_franchise_interest+continue",
+          "code": null,
+          "warning_message": null
+        },
+        {
+          "text": "No thanks",
+          "action": "continue",
+          "code": null,
+          "warning_message": null
+        }
       ]
     },
     {
       "id": "Q0-09",
-      "type": "multiselect",
+      "type": "select",
       "section": "history",
       "section_index": 4,
-      "question": "Do any of the following apply to your immigration history?",
-      "helper_text": "Select all that apply. These factors may affect your admissibility or require additional documentation.",
-      "tooltip": "Immigration history is one of the most sensitive areas of E-2 adjudication. Prior refusals, entry issues, or criminal records require careful preparation.",
+      "question": "Does any of the following apply to your immigration history?",
+      "helper_text": "We ask about prior immigration issues to ensure your application addresses them proactively. This is not a disqualifier — transparency strengthens your case.",
+      "tooltip": null,
       "is_sub": false,
       "parent": null,
       "show_if": null,
       "options": [
-        { "text": "Yes, I have been refused a US visa", "action": "warn:W-REFUSAL-RECENT", "code": "W-REFUSAL-RECENT", "warning_message": "Prior visa refusals must be addressed in your application. We will prepare a detailed explanation." },
-        { "text": "Yes, I have been refused entry at a US border", "action": "warn:W-ENTRY-REFUSED", "code": "W-ENTRY-REFUSED", "warning_message": "Border refusals are serious and must be thoroughly addressed. Attorney review is recommended." },
-        { "text": "Yes, I have been deported or removed from the US", "action": "attorney:W-DEPORTED", "code": "W-DEPORTED", "warning_message": "Deportation or removal orders create significant legal complexity. This requires professional legal guidance." },
-        { "text": "Yes, I have criminal convictions", "action": "attorney:W-CONVICTION-RECENT", "code": "W-CONVICTION-RECENT", "warning_message": "Criminal history requires careful admissibility analysis. We recommend consulting with an immigration attorney." },
-        { "text": "No, none of these apply to me", "action": "continue", "code": null, "warning_message": null }
+        {
+          "text": "No — clean history",
+          "action": "continue",
+          "code": null,
+          "warning_message": null
+        },
+        {
+          "text": "Yes — I have something to disclose",
+          "action": "continue",
+          "code": null,
+          "warning_message": null
+        }
       ]
     },
     {
@@ -242,17 +513,39 @@
       "type": "select",
       "section": "history",
       "section_index": 4,
-      "question": "When did the visa refusal occur?",
-      "helper_text": "The timing of a prior refusal affects how we address it in your application.",
+      "question": "Have you ever been refused a US visa?",
+      "helper_text": "Prior visa refusals do not automatically disqualify you, but they must be addressed in your application.",
       "tooltip": null,
       "is_sub": true,
       "parent": "Q0-09",
-      "show_if": { "Q0-09": ["Yes, I have been refused a US visa"] },
+      "show_if": {
+        "Q0-09": ["Yes — I have something to disclose"]
+      },
       "options": [
-        { "text": "Within the last 2 years", "action": "warn:W-REFUSAL-RECENT", "code": "W-REFUSAL-RECENT", "warning_message": "Recent refusals require detailed explanation and evidence of changed circumstances." },
-        { "text": "2–5 years ago", "action": "warn:W-REFUSAL-RECENT", "code": "W-REFUSAL-RECENT", "warning_message": "Refusals within the last 5 years require careful explanation in your application narrative." },
-        { "text": "More than 5 years ago", "action": "warn:W-REFUSAL-OLD", "code": "W-REFUSAL-OLD", "warning_message": "Older refusals still need to be disclosed, but carry less weight in adjudication." },
-        { "text": "I have been refused more than once", "action": "warn:W-REFUSAL-MULTIPLE", "code": "W-REFUSAL-MULTIPLE", "warning_message": "Multiple refusals create a pattern that requires strong evidence of eligibility and changed circumstances." }
+        {
+          "text": "No",
+          "action": "continue",
+          "code": null,
+          "warning_message": null
+        },
+        {
+          "text": "Yes, once — more than 5 years ago",
+          "action": "warn:W-REFUSAL-OLD",
+          "code": "W-REFUSAL-OLD",
+          "warning_message": "A prior refusal more than 5 years ago is a manageable risk factor. Your cover letter will address the circumstances of the original refusal."
+        },
+        {
+          "text": "Yes, once — within the last 5 years",
+          "action": "attorney:W-REFUSAL-RECENT",
+          "code": "W-REFUSAL-RECENT",
+          "warning_message": "A recent visa refusal requires careful preparation. Your case file will need to directly address why the prior application was denied and what has changed."
+        },
+        {
+          "text": "Yes, more than once",
+          "action": "attorney:W-REFUSAL-MULTIPLE",
+          "code": "W-REFUSAL-MULTIPLE",
+          "warning_message": "Multiple prior refusals indicate a pattern that must be carefully addressed. We recommend consulting with an attorney to assess your options."
+        }
       ]
     },
     {
@@ -260,17 +553,79 @@
       "type": "select",
       "section": "history",
       "section_index": 4,
-      "question": "Please describe the nature of your criminal conviction.",
-      "helper_text": "The type and recency of a conviction determines admissibility and required legal preparation.",
+      "question": "Have you ever been refused entry at a US border or deported from the US?",
+      "helper_text": "Entry refusals and removals are serious matters that require careful handling in your application.",
       "tooltip": null,
       "is_sub": true,
       "parent": "Q0-09",
-      "show_if": { "Q0-09": ["Yes, I have criminal convictions"] },
+      "show_if": {
+        "Q0-09": ["Yes — I have something to disclose"]
+      },
       "options": [
-        { "text": "Minor offence — resolved more than 10 years ago", "action": "warn:W-CONVICTION-OLD", "code": "W-CONVICTION-OLD", "warning_message": "Older minor convictions are generally less problematic but still require disclosure and documentation." },
-        { "text": "Minor offence — resolved within the last 10 years", "action": "attorney:W-CONVICTION-RECENT", "code": "W-CONVICTION-RECENT", "warning_message": "Recent convictions require careful admissibility analysis. Professional legal guidance is recommended." },
-        { "text": "I am unsure about the exact details or admissibility", "action": "attorney:W-CONVICTION-UNSURE", "code": "W-CONVICTION-UNSURE", "warning_message": "Uncertainty about criminal history requires professional legal review before proceeding." },
-        { "text": "Serious offence — requires legal assessment", "action": "attorney:W-CONVICTION-RECENT", "code": "W-CONVICTION-RECENT", "warning_message": "Serious convictions may create admissibility bars. This requires immediate attorney consultation." }
+        {
+          "text": "No",
+          "action": "continue",
+          "code": null,
+          "warning_message": null
+        },
+        {
+          "text": "Yes — refused entry",
+          "action": "attorney:W-ENTRY-REFUSED",
+          "code": "W-ENTRY-REFUSED",
+          "warning_message": "A prior entry refusal at a US border is a significant factor. We recommend speaking with an immigration attorney to address this before proceeding."
+        },
+        {
+          "text": "Yes — deported or removed",
+          "action": "attorney:W-DEPORTED",
+          "code": "W-DEPORTED",
+          "warning_message": "A prior deportation or removal creates serious legal complexity. You must consult with a qualified immigration attorney before proceeding with any new application."
+        }
+      ]
+    },
+    {
+      "id": "Q0-09c",
+      "type": "select",
+      "section": "history",
+      "section_index": 4,
+      "question": "Do you have any criminal convictions in any country?",
+      "helper_text": "Criminal history does not automatically disqualify you, but it must be disclosed. Certain convictions may require a legal waiver.",
+      "tooltip": null,
+      "is_sub": true,
+      "parent": "Q0-09",
+      "show_if": {
+        "Q0-09": ["Yes — I have something to disclose"]
+      },
+      "options": [
+        {
+          "text": "No",
+          "action": "continue",
+          "code": null,
+          "warning_message": null
+        },
+        {
+          "text": "Minor conviction, resolved more than 10 years ago",
+          "action": "warn:W-CONVICTION-OLD",
+          "code": "W-CONVICTION-OLD",
+          "warning_message": "An older minor conviction is generally manageable. Your case file will address the nature of the conviction and how long ago it was resolved."
+        },
+        {
+          "text": "Minor conviction, within the last 10 years",
+          "action": "attorney:W-CONVICTION-RECENT",
+          "code": "W-CONVICTION-RECENT",
+          "warning_message": "A recent conviction requires careful legal analysis. You should consult with an immigration attorney to determine whether a waiver is needed."
+        },
+        {
+          "text": "Serious conviction",
+          "action": "stop:PR-08",
+          "code": "PR-08",
+          "warning_message": null
+        },
+        {
+          "text": "I am not sure if my record affects US admissibility",
+          "action": "attorney:W-CONVICTION-UNSURE",
+          "code": "W-CONVICTION-UNSURE",
+          "warning_message": "Uncertainty about how a conviction affects US admissibility requires professional legal assessment. We recommend consulting an immigration attorney."
+        }
       ]
     },
     {
@@ -285,17 +640,53 @@
       "parent": null,
       "show_if": null,
       "options": [
-        { "text": "I own property in my home country", "action": "warn:W-PROPERTY-UNDISCLOSED", "code": "W-PROPERTY-UNDISCLOSED", "warning_message": "Property ownership is a strong home tie. We will document this thoroughly in your application." },
-        { "text": "I have close family remaining in my home country", "action": "warn:W-NO-EXTENDED-FAMILY", "code": "W-NO-EXTENDED-FAMILY", "warning_message": "Family ties are important evidence of intent to return. We will strengthen this aspect of your case." },
-        { "text": "I maintain active bank accounts or financial investments", "action": "warn:W-CLOSING-ACCOUNTS", "code": "W-CLOSING-ACCOUNTS", "warning_message": "Financial accounts demonstrate ongoing connection to your home country. Closing all accounts before applying weakens this tie." },
-        { "text": "I have ongoing employment or business interests", "action": "continue", "code": null, "warning_message": null },
-        { "text": "I have none of these — limited ties", "action": "warn:W-MOVING-ALONE", "code": "W-MOVING-ALONE", "warning_message": "Limited home ties make non-immigrant intent harder to demonstrate. We will need to build a strong case around available evidence." }
+        {
+          "text": "Property I own and plan to keep",
+          "action": "continue",
+          "code": null,
+          "warning_message": null
+        },
+        {
+          "text": "Close family remaining in my home country",
+          "action": "continue",
+          "code": null,
+          "warning_message": null
+        },
+        {
+          "text": "Active financial accounts, pension, or investments",
+          "action": "continue",
+          "code": null,
+          "warning_message": null
+        },
+        {
+          "text": "An ongoing business or professional practice",
+          "action": "continue",
+          "code": null,
+          "warning_message": null
+        },
+        {
+          "text": "Professional licences or memberships",
+          "action": "continue",
+          "code": null,
+          "warning_message": null
+        },
+        {
+          "text": "None of these apply",
+          "action": "warn:W-NO-TIES",
+          "code": "W-NO-TIES",
+          "warning_message": "Having no significant ties to your home country is a known risk factor for 214(b) immigrant intent assessment. Your cover letter will need to address this directly and thoroughly. This does not stop your application — it is something we will prepare you for carefully."
+        }
       ]
     }
   ],
   "hard_stops": {
-    "PR-LOW-INVESTMENT": "Your investment amount appears below the typical threshold for E-2 classification. The treaty investor visa requires a 'substantial' investment relative to the total cost of the enterprise. Amounts below $50,000 rarely meet this standard.",
     "PR-NON-TREATY": "Your country of citizenship does not currently have an active E-2 treaty with the United States. Only nationals of treaty countries are eligible for E-2 classification.",
+    "PR-02": "The E-2 requires capital at risk that you own and control. A loan secured by the business itself does not meet this requirement under 9 FAM.",
+    "PR-04": "Your investment amount appears below the typical threshold for E-2 classification. The treaty investor visa requires a substantial investment relative to the total cost of the enterprise.",
+    "PR-LOW-INVESTMENT": "Your investment amount appears below the typical threshold for E-2 classification. The treaty investor visa requires a 'substantial' investment relative to the total cost of the enterprise. Amounts below $50,000 rarely meet this standard.",
+    "PR-06b": "Under 9 FAM 402.9, an equal partnership with more than two investors does not give any individual the control required for E-2 investor classification. Options: restructure to two investors at exactly 50/50 each, or explore the E-2 employee pathway if your company is majority treaty-national owned. E2go prepares investor applications. We recommend consulting an immigration attorney to assess your options.",
+    "PR-08": "A serious criminal conviction may render you inadmissible to the United States. You must consult with a qualified immigration attorney to determine whether a waiver is available for your situation.",
+    "PR-09": "Applying while inside the US without valid immigration status creates serious legal risk that could permanently affect your ability to re-enter. Please consult a qualified immigration attorney immediately.",
     "PR-PASSIVE-INVEST": "Passive investments such as stock portfolios, rental properties held for income, or other non-operational assets do not qualify for E-2 classification. The investment must be in an active, operating commercial enterprise.",
     "PR-NONPROFIT": "Non-profit organisations do not qualify for E-2 treaty investor classification. The E-2 visa requires a for-profit commercial enterprise."
   },
@@ -308,13 +699,8 @@
   "score_weights": {
     "base_score": 100,
     "deductions": {
-      "W-AGING-OUT": 5,
-      "W-OVER-21": 8,
-      "W-PARTNERSHIP-SPLIT": 6,
-      "W-MOVING-ALONE": 4,
-      "W-PROPERTY-UNDISCLOSED": 3,
-      "W-CLOSING-ACCOUNTS": 3,
-      "W-NO-EXTENDED-FAMILY": 4,
+      "W-NO-TIES": 8,
+      "W-STATUS-UNKNOWN": 6,
       "W-REFUSAL-OLD": 5,
       "W-REFUSAL-RECENT": 10,
       "W-REFUSAL-MULTIPLE": 12,
@@ -322,11 +708,13 @@
       "W-DEPORTED": 15,
       "W-CONVICTION-OLD": 5,
       "W-CONVICTION-RECENT": 12,
-      "W-CONVICTION-UNSURE": 10,
-      "W-FAMILY-GIFT": 5,
-      "W-LOAN-FUNDED": 8,
+      "W-CONVICTION-UNSURE": 8,
+      "W-MARGINALITY": 6,
       "W-LOW-INVESTMENT": 6,
-      "W-BORDERLINE-INVESTMENT": 10
+      "W-BORDERLINE-INVESTMENT": 10,
+      "W-AGING-OUT": 3,
+      "W-FAMILY-GIFT": 4,
+      "W-LOAN-PERSONAL": 3
     }
   }
 }

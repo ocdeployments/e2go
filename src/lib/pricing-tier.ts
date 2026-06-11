@@ -2,7 +2,6 @@ export type TierId =
   | 'solo_none'
   | 'solo_spouse'
   | 'solo_family_small'
-  | 'solo_family_large'
   | 'partnership_none'
   | 'partnership_couples'
   | 'partnership_families';
@@ -16,7 +15,9 @@ export interface PricingTier {
 }
 
 export interface QuizData {
-  application_type?: 'solo' | 'partnership';
+  application_type?: string;
+  partner_type?: string;
+  dependents?: string;
   family_status?: string;
   [key: string]: unknown;
 }
@@ -25,7 +26,7 @@ export const PRICING_TIERS: Record<TierId, PricingTier> = {
   solo_none: {
     id: 'solo_none',
     name: 'Solo Individual',
-    price: 297,
+    price: 550,
     description: 'Complete E-2 document preparation for a single applicant.',
     features: [
       'Full document package generation',
@@ -37,7 +38,7 @@ export const PRICING_TIERS: Record<TierId, PricingTier> = {
   solo_spouse: {
     id: 'solo_spouse',
     name: 'Solo + Spouse',
-    price: 347,
+    price: 697,
     description: 'Document preparation for you and your spouse as a dependent.',
     features: [
       'Full document package generation',
@@ -49,22 +50,9 @@ export const PRICING_TIERS: Record<TierId, PricingTier> = {
   },
   solo_family_small: {
     id: 'solo_family_small',
-    name: 'Solo Family (≤2 children)',
-    price: 397,
-    description: 'Document preparation for you, your spouse, and up to two children.',
-    features: [
-      'Full document package generation',
-      'Spouse and dependent documentation',
-      'Consulate-formatted templates',
-      'Quality gate pipeline review',
-      'Pre-download acknowledgment'
-    ]
-  },
-  solo_family_large: {
-    id: 'solo_family_large',
-    name: 'Solo Family (3-5 children)',
-    price: 447,
-    description: 'Document preparation for you, your spouse, and 3-5 children.',
+    name: 'Solo + Family',
+    price: 750,
+    description: 'Document preparation for you, your spouse, and your children.',
     features: [
       'Full document package generation',
       'Spouse and dependent documentation',
@@ -75,8 +63,8 @@ export const PRICING_TIERS: Record<TierId, PricingTier> = {
   },
   partnership_none: {
     id: 'partnership_none',
-    name: 'Partnership (No Dependents)',
-    price: 497,
+    name: 'Partnership',
+    price: 997,
     description: 'Document preparation for two equal 50/50 business owners.',
     features: [
       'Dual applicant document packages',
@@ -89,7 +77,7 @@ export const PRICING_TIERS: Record<TierId, PricingTier> = {
   partnership_couples: {
     id: 'partnership_couples',
     name: 'Partnership + Spouses',
-    price: 547,
+    price: 1297,
     description: 'Document preparation for two owners and their spouses.',
     features: [
       'Dual applicant document packages',
@@ -103,7 +91,7 @@ export const PRICING_TIERS: Record<TierId, PricingTier> = {
   partnership_families: {
     id: 'partnership_families',
     name: 'Partnership + Families',
-    price: 647,
+    price: 1397,
     description: 'Document preparation for two owners and their families.',
     features: [
       'Dual applicant document packages',
@@ -117,88 +105,53 @@ export const PRICING_TIERS: Record<TierId, PricingTier> = {
 };
 
 /**
+ * Maps raw Q0-02 answer text to application type.
+ * Q0-02 = "Who is this application for?"
+ */
+export function mapApplicationType(q002Answer: string | undefined): 'solo' | 'partnership' | 'spousal_partnership' {
+  if (!q002Answer) return 'solo';
+  if (q002Answer.includes('co-invest')) return 'spousal_partnership';
+  if (q002Answer.includes('business partner')) return 'partnership';
+  return 'solo';
+}
+
+/**
  * Maps raw Q0-03 answer text to internal family status key.
  * Q0-03 = "Who is moving with you?"
  */
 export function mapFamilyStatus(q003Answer: string | undefined): string {
   if (!q003Answer) return 'none';
-  if (q003Answer.includes('Just me')) return 'none';
-  if (q003Answer.includes('spouse and children')) return 'spouse_and_children';
-  if (q003Answer.includes('children only')) return 'children_only';
-  if (q003Answer.includes('spouse or partner')) return 'spouse_only';
-  if (q003Answer.includes('Not decided')) return 'not_decided';
-  return 'none';
-}
-
-/**
- * Maps raw Q0-02 / Q0-04 answer text to application type.
- * Q0-02 = "Who is this application for?"
- * Q0-04 = "Will you have a business partner?"
- */
-export function mapApplicationType(quizAnswers: Record<string, string> | undefined): 'solo' | 'partnership' {
-  if (!quizAnswers) return 'solo';
-  const q002 = quizAnswers['Q0-02'];
-  const q004 = quizAnswers['Q0-04'];
-  if (q002 && (q002.includes('partners') || q002.includes('group'))) return 'partnership';
-  if (q004 && (q004.includes('partner') || q004.includes('spouse'))) return 'partnership';
-  return 'solo';
+  if (q003Answer.toLowerCase().includes('just me')) return 'just_me';
+  if (q003Answer.toLowerCase().includes('spouse and children') || q003Answer.toLowerCase().includes('spouse, and our children')) return 'spouse_and_children';
+  if (q003Answer.toLowerCase().includes('children only') || q003Answer.toLowerCase().includes('children only')) return 'children_only';
+  if (q003Answer.toLowerCase().includes('spouse')) return 'spouse_only';
+  return 'just_me';
 }
 
 /**
  * Determines the recommended pricing tier based on quiz session data.
- *
- * Accepts either:
- * 1. A raw quiz result object (with `answers` field) — extracts application_type and family_status automatically
- * 2. A QuizData object with pre-mapped application_type and family_status
  */
 export function getPricingTier(quizData: QuizData | null): TierId | null {
   if (!quizData) return null;
 
-  // If raw answers are present, map them
-  let appType = quizData.application_type;
-  let family: string = (quizData.family_status as string) || 'none';
+  const appType = quizData.application_type || 'solo';
+  const dep = quizData.dependents || quizData.family_status || 'just_me';
 
-  const answers = quizData.answers as Record<string, string> | undefined;
-  if (answers) {
-    // Q0-02 + Q0-04 answer determines application type
-    if (!appType) {
-      appType = mapApplicationType(answers);
-    }
+  const isPartnership = appType === 'partnership' || appType === 'spousal_partnership';
 
-    // Q0-03 answer determines family status
-    if (family === 'none' || !family) {
-      const q003 = answers['Q0-03'];
-      if (q003) {
-        family = mapFamilyStatus(q003);
-      }
-    }
-  }
+  const hasSpouse = dep === 'spouse_only' || dep === 'spouse_and_children';
+  const hasChildren = dep === 'spouse_and_children' || dep === 'children_only';
 
-  if (!appType) appType = 'solo';
-
-  if (appType === 'partnership') {
-    if (family === 'none' || family === 'just_me') {
-      return 'partnership_none';
-    }
-    if (family === 'spouse_only') {
-      return 'partnership_couples';
-    }
-    if (family === 'spouse_and_children' || family === 'children_only') {
-      return 'partnership_families';
-    }
+  if (isPartnership) {
+    if (hasSpouse && hasChildren) return 'partnership_families';
+    if (hasSpouse) return 'partnership_couples';
     return 'partnership_none';
   }
 
-  // solo
-  if (family === 'none' || family === 'just_me' || family === 'not_decided') {
-    return 'solo_none';
-  }
-  if (family === 'spouse_only') {
-    return 'solo_spouse';
-  }
-  if (family === 'spouse_and_children' || family === 'children_only') {
-    return 'solo_family_small';
-  }
+  // Solo
+  if (hasSpouse && hasChildren) return 'solo_family_small';
+  if (hasSpouse) return 'solo_spouse';
+  if (hasChildren) return 'solo_family_small';
   return 'solo_none';
 }
 

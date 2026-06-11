@@ -334,20 +334,49 @@ export default function QuizPage() {
         franchise_interest: finalFranchise,
         answers: finalAnswers,
         country: (finalAnswers["Q0-01"] as string) || "",
-        investment_range: (finalAnswers["Q0-04"] as string) || "",
+        cos_flag: (() => {
+          const q5 = (finalAnswers["Q0-05"] as string || "").toLowerCase();
+          return q5.includes("valid status") || q5.includes("change of status");
+        })(),
+        investment_range: (finalAnswers["Q0-07"] as string) || "",
         application_type: (() => {
-          const a2 = finalAnswers["Q0-02"] as string || "";
-          if (a2.includes("partners") || a2.includes("group")) return "partnership";
-          const a4 = finalAnswers["Q0-04"] as string || "";
-          if (a4.includes("partner")) return "partnership";
+          // Q0-02 takes priority — it establishes the structure first
+          const q2 = (finalAnswers["Q0-02"] as string || "").toLowerCase();
+          if (q2.includes("co-invest")) return "spousal_partnership";
+          if (q2.includes("business partner")) return "partnership";
+          if (q2.includes("spouse will accompany")) return "solo";
+
+          // Q0-04 for cases where Q0-02 = sole applicant
+          const q4 = (finalAnswers["Q0-04"] as string || "").toLowerCase();
+          if (q4.includes("50%") || q4.includes("50/50")) return "partnership";
+
           return "solo";
         })(),
+        partner_type: (() => {
+          const q2 = (finalAnswers["Q0-02"] as string || "").toLowerCase();
+          if (q2.includes("co-invest")) return "spouse";
+          if (q2.includes("business partner")) return "unrelated";
+
+          const q4 = (finalAnswers["Q0-04"] as string || "").toLowerCase();
+          if (q4.includes("50%") || q4.includes("50/50")) return "unrelated";
+
+          return "none";
+        })(),
         dependents: (() => {
-          const a = finalAnswers["Q0-03"] as string || "";
+          // Check Q0-02 established spouse first
+          const q2 = (finalAnswers["Q0-02"] as string || "").toLowerCase();
+          if (q2.includes("spouse will accompany") || q2.includes("co-invest")) {
+            // Check Q0-02a or Q0-03 for children
+            const q2a = (finalAnswers["Q0-02a"] as string || "").toLowerCase();
+            if (q2a.includes("children") && !q2a.includes("no children")) return "spouse_and_children";
+            return "spouse_only";
+          }
+
+          // Q0-03 determines dependents for solo/partner paths
+          const a = (finalAnswers["Q0-03"] as string || "").toLowerCase();
           if (a.includes("spouse and children")) return "spouse_and_children";
           if (a.includes("children only")) return "children_only";
-          if (a.includes("spouse or partner")) return "spouse_only";
-          if (a.includes("Not decided")) return "not_decided";
+          if (a.includes("spouse")) return "spouse_only";
           return "just_me";
         })(),
         hard_stops_triggered: finalHardStops,
@@ -494,17 +523,67 @@ export default function QuizPage() {
     ]
   );
 
-  // Handle multi-select continue
+  // Handle multi-select continue — MUST process action codes for every selected option
   const handleMultiContinue = useCallback(() => {
     if (multiSel.length === 0 || !q) return;
-    const selected = multiSel.map((i) => q.options[i].text);
-    const newAnswers = { ...answers, [q.id]: selected };
+
+    // Mutual exclusion enforcement for Q0-06 and Q0-10
+    let effectiveSel = [...multiSel];
+    if (q.id === "Q0-10") {
+      const noneIdx = q.options.length - 1;
+      if (effectiveSel.includes(noneIdx) && effectiveSel.length > 1) {
+        effectiveSel = [noneIdx]; // "None" wins
+      }
+    } else if (q.id === "Q0-06") {
+      const loanIdx = q.options.length - 1;
+      if (effectiveSel.includes(loanIdx) && effectiveSel.length > 1) {
+        effectiveSel = [loanIdx]; // Business loan = hard stop, alone
+      }
+    }
+
+    const selected = effectiveSel.map((i) => q.options[i]);
+    const newAnswers = { ...answers, [q.id]: selected.map((o) => o.text) };
     setAnswers(newAnswers);
-    saveDraft(newAnswers, cur, warningCodes, attorneyFlags, franchiseInterest);
+
+    const newWarnings = [...warningCodes];
+    const newFlags = [...attorneyFlags];
+    let newHardStops = [...hardStopsTriggered];
+    let newFranchise = franchiseInterest;
+
+    for (const opt of selected) {
+      const action = opt.action || "continue";
+
+      const stopCode = extractStopCode(action);
+      if (stopCode) {
+        newHardStops = [...newHardStops, stopCode];
+        setHardStopsTriggered(newHardStops);
+        setStopCode(stopCode);
+        saveDraft(newAnswers, cur, newWarnings, newFlags, newFranchise);
+        return;
+      }
+
+      const warnCode = extractWarningCode(action);
+      if (warnCode && !newWarnings.includes(warnCode)) {
+        newWarnings.push(warnCode);
+        if (opt.warning_message) setWarnMsg(opt.warning_message);
+      }
+
+      const attorneyCode = extractAttorneyCode(action);
+      if (attorneyCode && !newFlags.includes(attorneyCode)) {
+        newFlags.push(attorneyCode);
+      }
+
+      if (action.includes("flag_franchise_interest")) newFranchise = true;
+    }
+
+    setWarningCodes(newWarnings);
+    setAttorneyFlags(newFlags);
+    setFranchiseInterest(newFranchise);
+    saveDraft(newAnswers, cur, newWarnings, newFlags, newFranchise);
 
     const nextIdx = cur + 1;
     if (nextIdx >= visibleQuestions.length) {
-      handleComplete(newAnswers, warningCodes, attorneyFlags, franchiseInterest, hardStopsTriggered);
+      handleComplete(newAnswers, newWarnings, newFlags, newFranchise, newHardStops);
     } else {
       advance();
     }
@@ -833,6 +912,12 @@ export default function QuizPage() {
                 if (e.key === "Enter" && highlightedIdx >= 0) {
                   e.preventDefault();
                   const country = filteredCountries[highlightedIdx];
+                  // Fix C: Treaty country validation
+                  if (!TREATY_COUNTRIES.includes(country)) {
+                    setHardStopsTriggered((prev) => [...prev, "PR-NON-TREATY"]);
+                    setStopCode("PR-NON-TREATY");
+                    return;
+                  }
                   setSelectedCountry(country);
                   setCountrySearch(country);
                   setAnswers((prev) => ({ ...prev, [q.id]: country }));
@@ -853,6 +938,12 @@ export default function QuizPage() {
                     key={c}
                     id={`country-option-${idx}`}
                     onClick={() => {
+                      // Fix C: Treaty country validation
+                      if (!TREATY_COUNTRIES.includes(c)) {
+                        setHardStopsTriggered((prev) => [...prev, "PR-NON-TREATY"]);
+                        setStopCode("PR-NON-TREATY");
+                        return;
+                      }
                       setSelectedCountry(c);
                       setCountrySearch(c);
                       setAnswers((prev) => ({ ...prev, [q.id]: c }));
@@ -920,7 +1011,34 @@ export default function QuizPage() {
                   <button
                     key={i}
                     onClick={() => {
-                      setMultiSel((prev) => (sel ? prev.filter((x) => x !== i) : [...prev, i]));
+                      // Mutual exclusion logic
+                      if (q.id === "Q0-10") {
+                        const isNoneOption = i === q.options.length - 1; // last option = "None"
+                        if (isNoneOption) {
+                          // Selecting "None" deselects all others
+                          setMultiSel(sel ? [] : [i]);
+                        } else {
+                          // Selecting any tie deselects "None"
+                          setMultiSel((prev) => {
+                            const filtered = prev.filter((x) => x !== q.options.length - 1);
+                            return sel ? filtered.filter((x) => x !== i) : [...filtered, i];
+                          });
+                        }
+                      } else if (q.id === "Q0-06") {
+                        const isLoanOption = i === q.options.length - 1; // last option = business loan
+                        if (isLoanOption) {
+                          // Business loan = hard stop, select only this
+                          setMultiSel([i]);
+                        } else {
+                          // Deselect loan if selecting anything else
+                          setMultiSel((prev) => {
+                            const filtered = prev.filter((x) => x !== q.options.length - 1);
+                            return sel ? filtered.filter((x) => x !== i) : [...filtered, i];
+                          });
+                        }
+                      } else {
+                        setMultiSel((prev) => (sel ? prev.filter((x) => x !== i) : [...prev, i]));
+                      }
                     }}
                     style={{
                       display: "flex",
