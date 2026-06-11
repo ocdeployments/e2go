@@ -1,10 +1,8 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { useRouter } from 'next/navigation';
 import { createBrowserSupabaseClient } from '@/lib/supabase';
-import SectionSideNav from '@/components/apply/SectionSideNav';
-import QuestionPanel from '@/components/apply/QuestionPanel';
+import CaseFileShell from '@/components/apply/CaseFileShell';
 import QuestionLabel from '@/components/apply/questions/QuestionLabel';
 import HelperText from '@/components/apply/questions/HelperText';
 import TextInput from '@/components/apply/questions/TextInput';
@@ -29,8 +27,8 @@ const CLUSTERS = [
 ];
 
 const DOCUMENTS = [
-  { name: 'Property Records', status: 'waiting' as const },
-  { name: 'Cover Letter', status: 'waiting' as const },
+  { name: 'Non-immigrant Intent' },
+  { name: 'Cover Letter Closing' },
 ];
 
 interface QuestionField {
@@ -119,9 +117,8 @@ const ALL_QUESTION_SETS = [
 ];
 
 export default function TiesPage() {
-  const router = useRouter();
   const [loading, setLoading] = useState(true);
-  const [activeCluster, setActiveCluster] = useState(1);
+  const [activeClusterId, setActiveClusterId] = useState('cluster-1');
   const [answers, setAnswers] = useState<Record<string, TiesAnswer>>({});
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [applicationId, setApplicationId] = useState<string | null>(null);
@@ -186,12 +183,9 @@ export default function TiesPage() {
     debounceRef.current[key] = setTimeout(() => saveAnswer(key, value), 800);
   }, [saveAnswer]);
 
-  const totalQuestions = ALL_QUESTION_SETS.reduce((sum, s) => sum + s.questions.length, 0);
-  const answeredCount = Object.keys(answers).filter((k) => answers[k]?.value !== '').length;
-
   const clusterStatuses = CLUSTERS.map((cluster) => {
     const set = ALL_QUESTION_SETS.find((s) => s.cluster === cluster.number);
-    if (!set) return { number: cluster.number, label: cluster.label, status: 'empty' as const };
+    if (!set) return { id: `cluster-${cluster.number}`, label: cluster.label, status: 'pending' as const };
     const answered = set.questions.filter((q) => {
       if ('showIf' in q && q.showIf) {
         const depAnswer = answers[q.showIf.key]?.value;
@@ -200,19 +194,11 @@ export default function TiesPage() {
       return answers[q.key]?.value !== '';
     }).length;
     const visible = set.questions.filter((q) => !('showIf' in q) || !q.showIf || answers[q.showIf.key]?.value === q.showIf.value).length;
-    const status: 'complete' | 'active' | 'empty' = answered === visible && visible > 0 ? 'complete' : answered > 0 ? 'active' : 'empty';
-    return { number: cluster.number, label: cluster.label, status };
+    const status: 'complete' | 'active' | 'pending' = answered === visible && visible > 0 ? 'complete' : answered > 0 ? 'active' : 'pending';
+    return { id: `cluster-${cluster.number}`, label: cluster.label, status };
   });
 
-  const handleBack = () => {
-    if (activeCluster > 1) setActiveCluster(activeCluster - 1);
-    else router.push('/apply/family');
-  };
-
-  const handleNext = () => {
-    if (activeCluster < CLUSTERS.length) setActiveCluster(activeCluster + 1);
-    else router.push('/apply');
-  };
+  const activeNumber = parseInt(activeClusterId.replace('cluster-', ''), 10);
 
   const renderQuestions = (questions: QuestionField[]) => (
     <div className="space-y-6">
@@ -255,71 +241,78 @@ export default function TiesPage() {
   }
 
   return (
-    <div className="flex min-h-screen">
-      <aside className="hidden w-[196px] shrink-0 border-r lg:block" style={{ borderColor: 'rgba(201,168,76,0.12)' }}>
-        <SectionSideNav sectionName="Your Ties" answeredCount={answeredCount} totalCount={totalQuestions} clusters={clusterStatuses} documents={DOCUMENTS} activeCluster={activeCluster} onClusterClick={setActiveCluster} />
-      </aside>
-
-      <div className="fixed top-12 left-0 right-0 z-30 flex overflow-x-auto border-b lg:hidden" style={{ borderColor: 'rgba(201,168,76,0.12)', backgroundColor: '#0a0a0a' }}>
-        {CLUSTERS.map((c) => (
-          <button key={c.number} onClick={() => setActiveCluster(c.number)} className="shrink-0 border-b px-4 py-2 text-[10px] uppercase tracking-[0.08em]" style={{ borderColor: activeCluster === c.number ? '#C9A84C' : 'transparent', color: activeCluster === c.number ? '#C9A84C' : 'rgba(245,240,232,0.28)', fontFamily: "'DM Sans', sans-serif" }}>
-            {c.number}. {c.label}
-          </button>
-        ))}
-      </div>
-
-      <div className="min-w-0 flex-1 pt-12 lg:pt-0">
-        <QuestionPanel sectionTitle="Your Ties" clusterLabel={CLUSTERS[activeCluster - 1]?.label || ''} saveStatus={saveStatus} answeredCount={answeredCount} totalCount={totalQuestions} onBack={handleBack} onNext={handleNext}>
-          {activeCluster === 1 && (
-            <div>
-              <ClusterDivider label="Property & assets" />
-              {renderQuestions(PROPERTY_QUESTIONS)}
-
-              {answers['M3-T-01']?.value?.includes('none') && (
-                <RiskFlag>Lack of property ties is one of the strongest indicators of immigrant intent. If you do not own property in your home country, you need strong ties from other categories — family, financial obligations, community involvement — to counterbalance this.</RiskFlag>
-              )}
+    <CaseFileShell
+      sectionNumber={6}
+      sectionTitle="Your Ties"
+      clusters={clusterStatuses}
+      activeClusterId={activeClusterId}
+      onClusterChange={setActiveClusterId}
+      buildsDocuments={['Non-immigrant Intent', 'Cover Letter Closing']}
+      nextSectionPath="/apply"
+      prevSectionPath="/apply/family"
+      isSaving={saveStatus === 'saving'}
+      previewContent={
+        <div className="space-y-4">
+          {DOCUMENTS.map(doc => (
+            <div key={doc.name} className="border p-4" style={{ borderColor: 'rgba(201,168,76,0.12)', backgroundColor: 'rgba(201,168,76,0.01)' }}>
+              <div className="flex items-center justify-between mb-3">
+                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '10px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'rgba(245,240,232,0.35)' }}>{doc.name}</span>
+                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '10px', color: 'rgba(245,240,232,0.18)', border: '1px solid rgba(245,240,232,0.08)', padding: '2px 7px' }}>Waiting</span>
+              </div>
+              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '12px', fontWeight: 300, color: 'rgba(245,240,232,0.18)', fontStyle: 'italic', lineHeight: 1.5 }}>[Answer the questions on the left to fill this in]</p>
             </div>
+          ))}
+        </div>
+      }
+    >
+      {activeNumber === 1 && (
+        <div>
+          <ClusterDivider label="Property & assets" />
+          {renderQuestions(PROPERTY_QUESTIONS)}
+
+          {answers['M3-T-01']?.value?.includes('none') && (
+            <RiskFlag>Lack of property ties is one of the strongest indicators of immigrant intent. If you do not own property in your home country, you need strong ties from other categories — family, financial obligations, community involvement — to counterbalance this.</RiskFlag>
           )}
+        </div>
+      )}
 
-          {activeCluster === 2 && (
-            <div>
-              <ClusterDivider label="Family & community" />
-              {renderQuestions(FAMILY_QUESTIONS)}
+      {activeNumber === 2 && (
+        <div>
+          <ClusterDivider label="Family & community" />
+          {renderQuestions(FAMILY_QUESTIONS)}
 
-              {answers['M3-T-04']?.value?.includes('none') && (
-                <RiskFlag>No family ties in your home country significantly weakens your nonimmigrant intent argument. Officers may question why you would return.</RiskFlag>
-              )}
-            </div>
+          {answers['M3-T-04']?.value?.includes('none') && (
+            <RiskFlag>No family ties in your home country significantly weakens your nonimmigrant intent argument. Officers may question why you would return.</RiskFlag>
           )}
+        </div>
+      )}
 
-          {activeCluster === 3 && (
-            <div>
-              <ClusterDivider label="Financial obligations" />
-              {renderQuestions(FINANCIAL_QUESTIONS)}
-            </div>
+      {activeNumber === 3 && (
+        <div>
+          <ClusterDivider label="Financial obligations" />
+          {renderQuestions(FINANCIAL_QUESTIONS)}
+        </div>
+      )}
+
+      {activeNumber === 4 && (
+        <div>
+          <ClusterDivider label="Return intent" />
+          {renderQuestions(RETURN_QUESTIONS)}
+
+          {answers['M3-T-09']?.value === 'indefinite' && (
+            <AdvisoryBlock>Saying you intend to stay indefinitely can raise concerns about immigrant intent. E-2 is a nonimmigrant visa — you need to demonstrate intent to return. Consider framing as &ldquo;I plan to build the business to maturity and then decide based on circumstances at that time.&rdquo;</AdvisoryBlock>
           )}
+        </div>
+      )}
 
-          {activeCluster === 4 && (
-            <div>
-              <ClusterDivider label="Return intent" />
-              {renderQuestions(RETURN_QUESTIONS)}
+      {activeNumber === 5 && (
+        <div>
+          <ClusterDivider label="Cover letter narrative" />
+          {renderQuestions(COVER_LETTER_QUESTIONS)}
 
-              {answers['M3-T-09']?.value === 'indefinite' && (
-                <AdvisoryBlock>Saying you intend to stay indefinitely can raise concerns about immigrant intent. E-2 is a nonimmigrant visa — you need to demonstrate intent to return. Consider framing as &ldquo;I plan to build the business to maturity and then decide based on circumstances at that time.&rdquo;</AdvisoryBlock>
-              )}
-            </div>
-          )}
-
-          {activeCluster === 5 && (
-            <div>
-              <ClusterDivider label="Cover letter narrative" />
-              {renderQuestions(COVER_LETTER_QUESTIONS)}
-
-              <AdvisoryBlock>Your cover letter will be drafted from these answers in Step 15. The narrative should flow naturally and address officer concerns proactively. Do not repeat information already in your documents — use the cover letter to connect the dots.</AdvisoryBlock>
-            </div>
-          )}
-        </QuestionPanel>
-      </div>
-    </div>
+          <AdvisoryBlock>Your cover letter will be drafted from these answers in Step 15. The narrative should flow naturally and address officer concerns proactively. Do not repeat information already in your documents — use the cover letter to connect the dots.</AdvisoryBlock>
+        </div>
+      )}
+    </CaseFileShell>
   );
 }
