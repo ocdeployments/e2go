@@ -55,7 +55,17 @@ export async function createAccountFromVerifiedEmail({
     .update({ user_id: userId })
     .eq('id', quizSessionId)
 
-  // 4. Sign in the user (create a session)
+  // 4. Record Terms of Service acceptance (email-verify path skips signup scroll-to-accept)
+  await supabase.from('terms_acceptance').upsert(
+    {
+      user_id: userId,
+      terms_version: '1.0',
+      accepted_at: new Date().toISOString(),
+    },
+    { onConflict: 'user_id,terms_version' }
+  )
+
+  // 5. Sign in the user (create a session)
   const { error: signInError } = await supabase.auth.signInWithPassword({
     email,
     password,

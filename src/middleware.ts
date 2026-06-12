@@ -131,6 +131,23 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(redirectUrl);
   }
 
+  // Gate /apply routes on terms acceptance (must be after auth check)
+  const TERMS_VERSION = '1.0';
+  if (session && pathname.startsWith('/apply')) {
+    const { data: acceptance } = await supabase
+      .from('terms_acceptance')
+      .select('terms_version')
+      .eq('user_id', session.user.id)
+      .eq('terms_version', TERMS_VERSION)
+      .single();
+
+    if (!acceptance) {
+      const termsUrl = new URL('/terms-required', req.url);
+      termsUrl.searchParams.set('next', pathname);
+      return NextResponse.redirect(termsUrl);
+    }
+  }
+
   // Redirect logged-in users away from auth pages
   if (session && authRoutes.includes(pathname)) {
     return NextResponse.redirect(new URL('/dashboard', req.url));
