@@ -108,14 +108,17 @@ export async function POST(req: Request) {
   if (process.env.RESEND_API_KEY) {
     const resend = new Resend(process.env.RESEND_API_KEY);
     try {
-      await resend.emails.send({
-        from: 'results@e2go.app',
+      const { error: resendError } = await resend.emails.send({
+        from: 'onboarding@resend.dev', // TEMP: revert to results@e2go.app once domain verified in Resend
         to: email,
         subject,
         html: htmlContent,
       });
+      if (resendError) {
+        console.error("Resend error:", resendError);
+      }
     } catch (e) {
-      console.error("Resend error:", e);
+      console.error("Resend exception:", e);
     }
   } else {
     console.log("TODO: Send email with content:", htmlContent);
