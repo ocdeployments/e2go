@@ -4,40 +4,81 @@ import { createSupabaseServerClient } from '@/lib/supabase-server';
 import crypto from 'crypto';
 import { Resend } from 'resend';
 
-export async function POST(req: Request) {
-  // Session auth
-  const supabaseAuth = await createSupabaseServerClient();
-  const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-  const { email, outcome, result_json, quiz_session_id, franchise_interest } = await req.json();
+export async function POST(req: Request) {
+  const body = await req.json();
+  const { quiz_session_id } = body;
 
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 
+  // ── Path A: authenticated user (logged-in dashboard flow) ──
+  let email: string;
+  let outcome: string;
+  let result_json: Record<string, unknown>;
+  let franchise_interest: boolean;
+
+  const supabaseAuth = await createSupabaseServerClient();
+  const { data: { user } } = await supabaseAuth.auth.getUser();
+
+  if (user) {
+    // Authenticated — trust the request body
+    email = body.email;
+    outcome = body.outcome;
+    result_json = body.result_json;
+    franchise_interest = body.franchise_interest ?? false;
+  } else {
+    // ── Path B: anonymous quiz-completion flow ──
+    // Validate quiz_session_id: must be valid UUID, exist in DB, and be fresh
+    if (!quiz_session_id || !UUID_RE.test(quiz_session_id)) {
+      return NextResponse.json({ error: 'Missing or invalid quiz_session_id' }, { status: 400 });
+    }
+
+    const { data: session, error: sessionError } = await supabase
+      .from('quiz_sessions')
+      .select('id, email, outcome, result_json, franchise_interest, completed_at')
+      .eq('id', quiz_session_id)
+      .single();
+
+    if (sessionError || !session) {
+      return NextResponse.json({ error: 'Quiz session not found' }, { status: 404 });
+    }
+
+    // Reject if completed more than 10 minutes ago
+    const completedAt = new Date(session.completed_at).getTime();
+    if (Date.now() - completedAt > 10 * 60 * 1000) {
+      return NextResponse.json({ error: 'Quiz session expired — please retake the quiz' }, { status: 410 });
+    }
+
+    // Use DB row as source of truth — do not trust request body
+    email = session.email;
+    outcome = session.outcome;
+    result_json = session.result_json as Record<string, unknown>;
+    franchise_interest = session.franchise_interest ?? false;
+  }
+
+  // ── Generate token and insert verification record ──
   const token = crypto.randomBytes(32).toString('hex');
 
   const { error: dbError } = await supabase
     .from('email_verifications')
-    .insert([
-      {
-        email,
-        token,
-        quiz_session_id,
-        outcome,
-        result_json,
-        franchise_interest
-      }
-    ]);
+    .insert([{
+      email,
+      token,
+      quiz_session_id: quiz_session_id || null,
+      outcome,
+      result_json,
+      franchise_interest,
+    }]);
 
   if (dbError) {
     return NextResponse.json({ success: false, error: dbError.message }, { status: 500 });
   }
 
+  // ── Send email via Resend ──
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
   const verifyLink = `${appUrl}/verify?token=${token}`;
 
@@ -70,8 +111,8 @@ export async function POST(req: Request) {
       await resend.emails.send({
         from: 'results@e2go.app',
         to: email,
-        subject: subject,
-        html: htmlContent
+        subject,
+        html: htmlContent,
       });
     } catch (e) {
       console.error("Resend error:", e);
