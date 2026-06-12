@@ -19,6 +19,12 @@ export async function verifyToken(token: string) {
     return { valid: false, reason: 'expired_or_invalid' }
   }
 
+  // Mark as verified (user clicked the link)
+  await supabase
+    .from('email_verifications')
+    .update({ verified_at: new Date().toISOString() })
+    .eq('token', token)
+
   return {
     valid: true,
     email: data.email,
