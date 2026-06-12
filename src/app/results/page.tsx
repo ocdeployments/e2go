@@ -5,6 +5,7 @@ import { createBrowserSupabaseClient } from "@/lib/supabase";
 import Link from "next/link";
 import { getPricingTier, PRICING_TIERS } from "@/lib/pricing-tier";
 import { createAccountFromVerifiedEmail } from "../actions/create-account";
+import flagExplanations from "../../data/flag_explanations.json";
 
 interface ResultData {
   outcome: string;
@@ -616,8 +617,6 @@ function ResultsPageInner() {
   const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState<string | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [emailStatus, setEmailStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
-  const [userEmail, setUserEmail] = useState<string | null>(null);
 
   // Verification states
   const [verificationState, setVerificationState] = useState<'loading' | 'unverified' | 'verified' | 'authenticated'>('loading');
@@ -632,7 +631,6 @@ function ResultsPageInner() {
 
       if (user) {
         setIsLoggedIn(true);
-        setUserEmail(user.email ?? null);
         setVerificationState('authenticated');
 
         const { data: profile } = await supabase
@@ -708,35 +706,6 @@ function ResultsPageInner() {
     loadResult();
   }, [supabase, searchParams]);
 
-  const handleEmailResult = async () => {
-    if (!data) return;
-    setEmailStatus('loading');
-    try {
-      const emailToSend = userEmail || prompt("Enter your email address to receive your results:");
-      if (!emailToSend) {
-        setEmailStatus('idle');
-        return;
-      }
-      const res = await fetch('/api/email/results', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: emailToSend,
-          outcome: data.outcome,
-          result_json: data,
-          franchise_interest: data.franchise_interest || false,
-        }),
-      });
-      if (res.ok) {
-        setEmailStatus('success');
-      } else {
-        setEmailStatus('error');
-      }
-    } catch {
-      setEmailStatus('error');
-    }
-  };
-
   // Loading state
   if (loading || verificationState === 'loading') {
     return (
@@ -766,7 +735,12 @@ function ResultsPageInner() {
   const verdict = getVerdict(outcome, score);
   const verdictSub = getVerdictSub(outcome, data.warnings || []);
 
-  const flagsToShow = (data.warnings || []).slice(0, 4);
+  const allFlags = [...(data.warnings || []), ...(data.attorney_flags || [])];
+  const flagsToShow = allFlags.map(code => ({
+    code,
+    info: (flagExplanations as Record<string, { question_id: string; plain_language: string; why_it_matters: string; edit_label: string }>)[code],
+    isAttorney: (data.attorney_flags || []).includes(code),
+  })).filter(f => f.info);
   const clearItems = [
     !data.attorney_flags?.length && "No attorney-level risk flags",
     !(data.warnings || []).some(w => w.includes("refusal")) && "No immigration history issues",
@@ -943,7 +917,7 @@ function ResultsPageInner() {
               {[
                 { label: "Treaty country", value: data.country || "—", ok: !!data.country },
                 { label: "Investment range", value: data.investment_range || "—", ok: true },
-                { label: "Application type", value: data.application_type === "partnership" ? "Partnership — consular" : "Solo — consular processing", gold: true },
+                { label: "Application type", value: (() => { const base = data.application_type === "partnership" ? "Partnership — consular processing" : "Solo — consular processing"; const d = (data.dependents || "").toLowerCase(); const family = d === "spouse_and_children" ? " · You + spouse + children" : d === "spouse_only" ? " · You + spouse" : d === "children_only" ? " · You + children" : ""; return base + family; })(), gold: true },
                 { label: "Dependents", value: data.dependents || "Just me", neutral: true },
                 { label: "Business status", value: (data.answers?.["Q0-08"] as string) || "—", neutral: true },
                 { label: "Funds documentation", value: (data.warnings || []).some(w => w.includes("gap") || w.includes("docum")) ? "Needs attention" : "Clear", warn: (data.warnings || []).some(w => w.includes("gap") || w.includes("docum")) },
@@ -962,12 +936,20 @@ function ResultsPageInner() {
             <div>
               <div style={{ fontSize: "10px", letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(201,168,76,0.5)", marginBottom: "14px" }}>Areas requiring attention</div>
               <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                {flagsToShow.map((w, i) => (
-                  <div key={i} style={{ display: "flex", gap: "12px", padding: "14px 16px", border: "1px solid rgba(239,159,39,0.25)", background: "rgba(239,159,39,0.04)" }}>
-                    <div style={{ fontSize: "16px", color: "rgba(239,159,39,0.8)", flexShrink: 0, marginTop: "1px" }}>!</div>
-                    <div>
-                      <div style={{ fontSize: "13px", fontWeight: 500, color: "rgba(239,159,39,0.95)", marginBottom: "3px" }}>Flagged area</div>
-                      <div style={{ fontSize: "12px", color: "rgba(245,240,232,0.45)", lineHeight: 1.6 }}>{w}</div>
+                {flagsToShow.map(({ code, info, isAttorney }) => (
+                  <div key={code} style={{ display: "flex", gap: "12px", padding: "14px 16px", border: `1px solid ${isAttorney ? "rgba(239,100,100,0.25)" : "rgba(239,159,39,0.25)"}`, background: isAttorney ? "rgba(239,100,100,0.04)" : "rgba(239,159,39,0.04)" }}>
+                    <div style={{ fontSize: "16px", color: isAttorney ? "rgba(239,100,100,0.8)" : "rgba(239,159,39,0.8)", flexShrink: 0, marginTop: "1px" }}>{isAttorney ? "⚖" : "!"}</div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: "13px", fontWeight: 500, color: isAttorney ? "rgba(239,100,100,0.95)" : "rgba(239,159,39,0.95)", marginBottom: "3px" }}>{info.plain_language}</div>
+                      <div style={{ fontSize: "12px", color: "rgba(245,240,232,0.45)", lineHeight: 1.6, marginBottom: "8px" }}>{info.why_it_matters}</div>
+                      {data.answers?.[info.question_id] && (
+                        <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.3)", marginBottom: "8px" }}>
+                          Your answer: &ldquo;{Array.isArray(data.answers[info.question_id]) ? (data.answers[info.question_id] as string[]).join(", ") : String(data.answers[info.question_id])}&rdquo;
+                        </div>
+                      )}
+                      <a href={`/quiz?edit=${info.question_id}`} style={{ fontSize: "11px", color: "#C9A84C", textDecoration: "underline" }}>
+                        {info.edit_label} →
+                      </a>
                     </div>
                   </div>
                 ))}
@@ -1069,27 +1051,6 @@ function ResultsPageInner() {
                 Start my application →
               </button>
             </Link>
-            <button
-              onClick={handleEmailResult}
-              disabled={emailStatus === 'loading' || emailStatus === 'success'}
-              style={{
-                width: "100%",
-                padding: "12px 24px",
-                background: emailStatus === 'success' ? "rgba(34,197,94,0.1)" : "transparent",
-                border: `1px solid ${emailStatus === 'success' ? "rgba(34,197,94,0.3)" : "rgba(201,168,76,0.25)"}`,
-                color: emailStatus === 'success' ? "#22c55e" : emailStatus === 'error' ? "#ef4444" : "rgba(201,168,76,0.7)",
-                fontSize: "12px",
-                cursor: emailStatus === 'loading' || emailStatus === 'success' ? "default" : "pointer",
-                letterSpacing: "0.07em",
-                textTransform: "uppercase",
-                fontFamily: "'DM Sans', sans-serif",
-                borderRadius: 0,
-                marginTop: "8px",
-                opacity: emailStatus === 'loading' ? 0.7 : 1,
-              }}
-            >
-              {emailStatus === 'loading' ? 'Sending...' : emailStatus === 'success' ? '✓ Sent' : emailStatus === 'error' ? 'Failed — try again' : 'Email me this result'}
-            </button>
           </div>
 
         </div>
@@ -1143,18 +1104,6 @@ function ResultsPageInner() {
               </div>
             </div>
             <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.2)", marginTop: "6px" }}>Updated June 2026 · Applicant-reported data</div>
-          </div>
-
-          <div style={{ padding: "20px", border: "1px solid rgba(201,168,76,0.12)", background: "rgba(201,168,76,0.02)" }}>
-            <div style={{ fontSize: "10px", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(201,168,76,0.5)", marginBottom: "8px" }}>Share this result</div>
-            <div style={{ fontSize: "12px", color: "rgba(245,240,232,0.4)", lineHeight: 1.6, marginBottom: "12px" }}>Send your eligibility summary to a spouse, business partner, or immigration attorney.</div>
-            <button
-              onClick={handleEmailResult}
-              disabled={emailStatus === 'loading' || emailStatus === 'success'}
-              style={{ width: "100%", padding: "11px", background: emailStatus === 'success' ? "rgba(34,197,94,0.1)" : "transparent", border: `1px solid ${emailStatus === 'success' ? "rgba(34,197,94,0.3)" : "rgba(201,168,76,0.25)"}`, color: emailStatus === 'success' ? "#22c55e" : emailStatus === 'error' ? "#ef4444" : "rgba(201,168,76,0.7)", fontSize: "11px", cursor: emailStatus === 'loading' || emailStatus === 'success' ? "default" : "pointer", letterSpacing: "0.07em", textTransform: "uppercase", fontFamily: "'DM Sans', sans-serif", borderRadius: 0, opacity: emailStatus === 'loading' ? 0.7 : 1 }}
-            >
-              {emailStatus === 'loading' ? 'Sending...' : emailStatus === 'success' ? '✓ Sent' : emailStatus === 'error' ? 'Failed — try again' : 'Email this result'}
-            </button>
           </div>
 
         </div>

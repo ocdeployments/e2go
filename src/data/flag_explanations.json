@@ -1,0 +1,146 @@
+{
+  "W-TARGET-URGENT": {
+    "question_id": "Q0-target-date",
+    "plain_language": "Ambitious timeline — living in the US within 6 months",
+    "why_it_matters": "A 6-month target is achievable but leaves little room for delays. Starting preparation immediately gives you the best chance of meeting it.",
+    "edit_label": "Change your target date"
+  },
+  "W-AGING-OUT": {
+    "question_id": "Q0-03a",
+    "plain_language": "Some children aged 18–20 may age out before visa issuance",
+    "why_it_matters": "Dependent status only applies to unmarried children under 21. Children aged 18–20 risk losing eligibility if the visa process takes longer than expected.",
+    "edit_label": "Update children's ages"
+  },
+  "W-OVER-21": {
+    "question_id": "Q0-03a",
+    "plain_language": "Children 21 or older do not qualify as E-2 dependents",
+    "why_it_matters": "Adult children over 21 cannot be included on your E-2 application. They will need their own visa pathway (such as an independent E-2, H-1B, or student visa).",
+    "edit_label": "Update children's ages"
+  },
+  "W-PARTNERSHIP-SPLIT": {
+    "question_id": "Q0-04",
+    "plain_language": "Partnership structure requires additional documentation",
+    "why_it_matters": "Unequal splits or silent investors raise questions about who controls the business. E-2 requires the principal applicant to own at least 50% and actively manage the enterprise.",
+    "edit_label": "Change partnership structure"
+  },
+  "W-FAMILY-GIFT": {
+    "question_id": "Q0-06",
+    "plain_language": "Investment funded in part by a gift or inheritance",
+    "why_it_matters": "Gift-funded investments require documentation proving the gift is genuine and not a disguised loan. You will need a gift letter and evidence of the donor's ability to give.",
+    "edit_label": "Change funding source"
+  },
+  "W-LOAN-FUNDED": {
+    "question_id": "Q0-06",
+    "plain_language": "Investment funded in part by a loan",
+    "why_it_matters": "Loan-funded investments require careful structuring. The loan must be secured by your personal assets, not the business itself. Attorney guidance is recommended for this path.",
+    "edit_label": "Change funding source"
+  },
+  "W-LOW-INVESTMENT": {
+    "question_id": "Q0-07",
+    "plain_language": "Investment between $75,000 and $100,000 — higher scrutiny expected",
+    "why_it_matters": "The standard substantiality benchmark is $100,000+. Below that, you will need to demonstrate proportionality more aggressively relative to total business cost.",
+    "edit_label": "Update investment amount"
+  },
+  "W-BORDERLINE-INVESTMENT": {
+    "question_id": "Q0-07",
+    "plain_language": "Investment between $50,000 and $75,000 — below typical threshold",
+    "why_it_matters": "This range is below the usual substantiality threshold. Success requires strong justification that your investment is proportionate to the total cost of the business.",
+    "edit_label": "Update investment amount"
+  },
+  "W-NO-BIZ-IDENTIFIED": {
+    "question_id": "Q0-business-type",
+    "plain_language": "No specific business identified yet",
+    "why_it_matters": "A business must be identified before an E-2 application can be filed. Preparation can begin now — building a strong profile while you search will save time later.",
+    "edit_label": "Update business type"
+  },
+  "PR-PASSIVE-INVEST": {
+    "question_id": "Q0-08a",
+    "plain_language": "Passive real estate holdings generally do not qualify for E-2",
+    "why_it_matters": "The E-2 visa requires an active, operating commercial enterprise. Passive rental properties or investment portfolios held for income do not meet this requirement.",
+    "edit_label": "Change business type"
+  },
+  "PR-NONPROFIT": {
+    "question_id": "Q0-08a",
+    "plain_language": "Non-profit organisations do not qualify for E-2 classification",
+    "why_it_matters": "The E-2 Treaty Investor visa requires a for-profit commercial enterprise. Non-profit organisations are not eligible.",
+    "edit_label": "Change business type"
+  },
+  "PR-LOW-INVESTMENT": {
+    "question_id": "Q0-07",
+    "plain_language": "Investment under $50,000 — unlikely to meet substantiality requirement",
+    "why_it_matters": "Investments below $50,000 rarely meet the substantiality requirement for E-2 classification. The treaty investor visa requires an investment that is substantial relative to the total cost of the enterprise.",
+    "edit_label": "Update investment amount"
+  },
+  "W-REFUSAL-RECENT": {
+    "question_id": "Q0-09a",
+    "plain_language": "Prior US visa refusal within the last 5 years",
+    "why_it_matters": "Recent refusals must be addressed in your application narrative. You will need to explain what has changed since the refusal and why your circumstances are now different.",
+    "edit_label": "Update refusal details"
+  },
+  "W-REFUSAL-OLD": {
+    "question_id": "Q0-09a",
+    "plain_language": "US visa refusal more than 5 years ago",
+    "why_it_matters": "Older refusals still need to be disclosed on your application, but they carry less weight. A brief explanation of the circumstances is usually sufficient.",
+    "edit_label": "Update refusal details"
+  },
+  "W-REFUSAL-MULTIPLE": {
+    "question_id": "Q0-09a",
+    "plain_language": "Multiple US visa refusals on record",
+    "why_it_matters": "Multiple refusals create a pattern that requires strong evidence of eligibility and changed circumstances. This will need careful narrative preparation.",
+    "edit_label": "Update refusal details"
+  },
+  "W-ENTRY-REFUSED": {
+    "question_id": "Q0-09c",
+    "plain_language": "Refused entry at a US border",
+    "why_it_matters": "Border refusals are more serious than visa refusals and must be thoroughly addressed. This creates a record with CBP that requires careful legal navigation.",
+    "edit_label": "Update history"
+  },
+  "W-DEPORTED": {
+    "question_id": "Q0-09c",
+    "plain_language": "Prior deportation or removal from the US",
+    "why_it_matters": "Deportation or removal orders create significant legal complexity, including potential bars on re-entry. Professional legal guidance is essential before proceeding.",
+    "edit_label": "Update history"
+  },
+  "W-CONVICTION-RECENT": {
+    "question_id": "Q0-09b",
+    "plain_language": "Criminal conviction within the last 10 years or serious offence",
+    "why_it_matters": "Recent or serious criminal convictions require careful admissibility analysis. Some convictions create automatic bars to entry. Consulting an immigration attorney is strongly recommended.",
+    "edit_label": "Update conviction details"
+  },
+  "W-CONVICTION-OLD": {
+    "question_id": "Q0-09b",
+    "plain_language": "Minor criminal conviction resolved more than 10 years ago",
+    "why_it_matters": "Older minor convictions are generally less problematic but still require disclosure. Documentation of the conviction and evidence of resolution should be prepared.",
+    "edit_label": "Update conviction details"
+  },
+  "W-CONVICTION-UNSURE": {
+    "question_id": "Q0-09b",
+    "plain_language": "Uncertainty about criminal history details",
+    "why_it_matters": "Uncertainty about your criminal record requires professional legal review before filing. An attorney can help obtain records and assess admissibility.",
+    "edit_label": "Update conviction details"
+  },
+  "W-WEAK-TIES": {
+    "question_id": "Q0-10",
+    "plain_language": "Limited ties to your home country",
+    "why_it_matters": "E-2 applicants must demonstrate non-immigrant intent — that they plan to return home. Limited ties make this harder to prove and may require additional supporting evidence.",
+    "edit_label": "Update home ties"
+  },
+  "W-PROP-STRONG-30": {
+    "question_id": "Q0-07",
+    "plain_language": "Investment-to-cost ratio below 30% — proportionality concern",
+    "why_it_matters": "Your investment represents less than 30% of the total business cost. USCIS evaluates whether the investment is substantial relative to the enterprise. A low ratio may weaken the substantiality argument.",
+    "edit_label": "Update investment or cost"
+  },
+  "W-PROP-SOFT-30": {
+    "question_id": "Q0-07",
+    "plain_language": "Investment-to-cost ratio between 30% and 50% — moderate proportionality risk",
+    "why_it_matters": "Your investment represents 30–50% of the total business cost. While not disqualifying, a higher ratio strengthens the substantiality argument. Consider whether increasing the investment is feasible.",
+    "edit_label": "Update investment or cost"
+  },
+  "PR-NON-TREATY": {
+    "question_id": "Q0-01",
+    "plain_language": "Country does not have an active E-2 treaty with the US",
+    "why_it_matters": "Only nationals of countries with a Treaty of Commerce and Navigation with the United States are eligible for E-2 classification. This is a hard eligibility requirement.",
+    "edit_label": "Change citizenship"
+  }
+}
