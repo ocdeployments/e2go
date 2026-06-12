@@ -5,12 +5,6 @@
     "why_it_matters": "A 6-month target is achievable but leaves little room for delays. Starting preparation immediately gives you the best chance of meeting it.",
     "edit_label": "Change your target date"
   },
-  "W-AGING-OUT": {
-    "question_id": "Q0-03a",
-    "plain_language": "Some children aged 18–20 may age out before visa issuance",
-    "why_it_matters": "Dependent status only applies to unmarried children under 21. Children aged 18–20 risk losing eligibility if the visa process takes longer than expected.",
-    "edit_label": "Update children's ages"
-  },
   "W-OVER-21": {
     "question_id": "Q0-03a",
     "plain_language": "Children 21 or older do not qualify as E-2 dependents",

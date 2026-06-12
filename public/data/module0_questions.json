@@ -100,10 +100,9 @@
       "parent": "Q0-03",
       "show_if": { "Q0-03": ["My spouse and children", "My children only"] },
       "options": [
-        { "text": "All under 18", "action": "continue", "code": null, "warning_message": null },
-        { "text": "Some between 18–20", "action": "warn:W-AGING-OUT", "code": "W-AGING-OUT", "warning_message": "Children aged 18–20 may age out before visa issuance. This time-sensitive risk should be addressed early." },
-        { "text": "Some 21 or older", "action": "warn:W-OVER-21", "code": "W-OVER-21", "warning_message": "Children 21 or older do not qualify as E-2 dependents. They will need their own visa pathway." },
-        { "text": "Prefer not to say", "action": "continue", "code": null, "warning_message": null }
+        { "text": "No children", "action": "continue", "code": null, "warning_message": null },
+        { "text": "Yes — all under 21", "action": "continue", "code": null, "warning_message": null },
+        { "text": "Yes — one or more are 21 or older", "action": "warn:W-OVER-21", "code": "W-OVER-21", "warning_message": "Children 21 or older do not qualify as E-2 dependents. They will need their own visa pathway." }
       ]
     },
     {
@@ -428,7 +427,6 @@
   "score_weights": {
     "base_score": 100,
     "deductions": {
-      "W-AGING-OUT": 5,
       "W-OVER-21": 8,
       "W-PARTNERSHIP-SPLIT": 6,
       "W-WEAK-TIES": 5,

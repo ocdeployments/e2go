@@ -86,8 +86,8 @@
         },
         {
           "text": "Yes — one or more are 21 or older",
-          "action": "warn:W-AGING-OUT",
-          "code": "W-AGING-OUT",
+          "action": "warn:W-OVER-21",
+          "code": "W-OVER-21",
           "warning_message": "Children 21 or older cannot be E-2 dependents. They will need their own US visa. Only children under 21 will be included in your application."
         }
       ]
@@ -140,8 +140,8 @@
       "type": "select",
       "section": "family",
       "section_index": 1,
-      "question": "Are all your children under 21?",
-      "helper_text": "Dependent status only applies to unmarried children under 21. Children 21 or older cannot be included as E-2 dependents.",
+      "question": "What are your children's ages?",
+      "helper_text": "Dependent status only applies to unmarried children under 21. This affects timeline and compliance planning.",
       "tooltip": null,
       "is_sub": true,
       "parent": "Q0-03",
@@ -153,16 +153,22 @@
       },
       "options": [
         {
-          "text": "No — all my children are under 21",
+          "text": "No children",
+          "action": "continue",
+          "code": null,
+          "warning_message": null
+        },
+        {
+          "text": "Yes — all under 21",
           "action": "continue",
           "code": null,
           "warning_message": null
         },
         {
           "text": "Yes — one or more are 21 or older",
-          "action": "warn:W-AGING-OUT",
-          "code": "W-AGING-OUT",
-          "warning_message": "Children 21 or older cannot be E-2 dependents. They will need their own US visa. Only children under 21 will be included."
+          "action": "warn:W-OVER-21",
+          "code": "W-OVER-21",
+          "warning_message": "Children 21 or older do not qualify as E-2 dependents. They will need their own visa pathway."
         }
       ]
     },
@@ -712,7 +718,6 @@
       "W-MARGINALITY": 6,
       "W-LOW-INVESTMENT": 6,
       "W-BORDERLINE-INVESTMENT": 10,
-      "W-AGING-OUT": 3,
       "W-FAMILY-GIFT": 4,
       "W-LOAN-PERSONAL": 3
     }
