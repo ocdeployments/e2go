@@ -1,6 +1,6 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 11, 2026 — Security fixes (42 fixes, 6 groups)
+**Last Updated:** June 12, 2026 — Post-verification-wall cleanup (Groups 5-11)
 **App Name:** E2go.app
 **Stack:** Next.js 14 · TypeScript · Tailwind CSS · Supabase · Claude API
 **Dev URL:** https://e2go-git-dev-ocdeployments-projects.vercel.app
@@ -1065,6 +1065,56 @@ All 6 sections × all clusters mapped to exact document fields.
 
 ---
 
+## SESSION — Post-Verification-Wall Cleanup (June 12, 2026)
+
+### Completed — 5 commits on dev, Groups 5-11 from SESSION_RESULTS_CLARITY_FIXES.md
+
+Session file: docs/sessions/SESSION_RESULTS_CLARITY_FIXES (2).md
+
+**Group 11 — Q0-03a simplification (commit 00fdb14):**
+- Collapsed Q0-03a from 4 options to 3: "No children" / "Yes — all under 21" / "Yes — one or more are 21 or older"
+- Removed W-AGING-OUT entirely — no decision impact, just noise
+- Only W-OVER-21 fires now (for 21+ children)
+- Removed W-AGING-OUT from score_weights.deductions and flag_explanations.json (both copies)
+- Fixed src/data/module0_questions.json duplicate (had stale W-AGING-OUT references)
+
+**Group 1 — Post-login session linking (commit 6c72ee0):**
+- Added post-login session linking in quiz/page.tsx auth check
+- When logged-in user has no linked quiz_sessions, queries for unlinked session by email and links it
+- Fixes "existing account sent to quiz instead of dashboard" bug
+- NameCaptureForm rendering confirmed correct (already working after commit 0116378)
+- "Account already exists" handling confirmed working in NameCaptureForm
+
+**Group 6 — Warning timing fix (commit aab6c10):**
+- Changed processAction to return shouldAdvance: false for :warn: actions
+- Warnings now pause and show message + "Continue anyway" button instead of auto-advancing
+- Existing warning UI (lines 1175-1192) already handled this — just needed the flag change
+- Post-Group-11 :warn: actions: 13 unique codes (W-BORDERLINE-INVESTMENT, W-CONVICTION-OLD, W-ENTRY-REFUSED, W-FAMILY-GIFT, W-LOW-INVESTMENT, W-NO-BIZ-IDENTIFIED, W-OVER-21, W-PARTNERSHIP-SPLIT ×2, W-REFUSAL-MULTIPLE, W-REFUSAL-OLD, W-REFUSAL-RECENT ×3, W-TARGET-URGENT, W-WEAK-TIES)
+
+**Group 7 — Double-click debounce (commit 61d8be8):**
+- Added isAdvancing ref guard to handleSelectOpt
+- Prevents double-click from queuing multiple advances (quiz skipping questions)
+- Guard resets after advance animation completes, or immediately for warning pauses
+
+**Group 8 — Email validation (commit 90de0a8):**
+- Replaced email.includes("@") with EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
+- Moved setEmailSent(true) inside success path only (was firing on failure too)
+
+**Investigate-only (no code changes):**
+- Group 5 — Email button: confirmed fully removed in commit 0116378, no remnants
+- Group 9 — Resend sender: e2go.app domain verification status unknown, needs Resend dashboard check
+- Group 10 — RLS: quiz_sessions has RLS enabled, UPDATE policy exists, no INSERT policy found in migrations. Anon inserts succeeding — requires owner verification via SQL Editor
+
+**Action items for owner:**
+1. Run one-time SQL fix: `UPDATE quiz_sessions SET user_id = 'd654c937-d780-4e30-9388-5bfcd080c2d2' WHERE id = '83aa159a-be49-4287-b8eb-e31113dc74b5' AND user_id IS NULL;`
+2. Check Resend dashboard — is e2go.app verified? If yes, revert sender to results@e2go.app
+3. Run Group 10 RLS SQL queries in Supabase SQL Editor
+
+### Build
+Clean — zero errors. 5 commits pushed to dev.
+
+---
+
 ## SESSION LOG (Prior sessions)
 
 ### June 5, 2026 — Session: End-to-End Payment Test
@@ -1143,25 +1193,30 @@ All 6 sections × all clusters mapped to exact document fields.
 
 ---
 
-## NEXT SESSION PRIORITIES (Updated June 10, 2026)
+## NEXT SESSION PRIORITIES (Updated June 12, 2026)
 
-### Priority 1 — Apply answers source migration
+### Priority 1 — Owner action items from this session
+- Run one-time SQL: link orphaned quiz_session for ocdeployments@gmail.com
+- Check Resend dashboard: e2go.app domain verified? If yes, revert sender
+- Run Group 10 RLS SQL queries and share results
+
+### Priority 2 — Apply answers source migration
 Run: `npx supabase db push`
 File: `supabase/migrations/004_answers_source_update.sql`
 Status: exists, never applied
 
-### Priority 2 — End-to-end payment test
+### Priority 3 — End-to-end payment test
 Full flow: quiz → pricing → checkout (4242 4242 4242 4242) →
 dashboard → /apply → Module 3 → Generation → Download
 Test applicant: Michael James Chen
 UUID: 9f981747-e3e4-4941-9f86-9871f8117b66
 Use SKIP_PAYMENT_WALL=true in .env.local for generation test
 
-### Priority 3 — Generation engine fixes
+### Priority 4 — Generation engine fixes
 File: docs/sessions/SESSION_PLAN_GENERATION_FIXES.md
 Three known issues: approval gate, setState violation, empty boxes
 
-### Priority 4 — Verify 34-gap questions are integrated
+### Priority 5 — Verify 34-gap questions are integrated
 Case file was built but gap questions from June 9 planning
 may not be in the build.
 Session file: docs/sessions/SESSION_MODULE3_CASEFILE.md
@@ -1175,7 +1230,7 @@ Session file: docs/sessions/SESSION_MODULE3_CASEFILE.md
 
 ---
 
-## KNOWN ISSUES (Updated June 10, 2026)
+## KNOWN ISSUES (Updated June 12, 2026)
 
 1. **Mic button disappears on click** — getUserMedia pre-check missing.
    Fix in case file redesign session.
@@ -1185,15 +1240,26 @@ Session file: docs/sessions/SESSION_MODULE3_CASEFILE.md
    not yet applied. Run: npx supabase db push
 4. **Generation engine: approval gate, setState, empty boxes** — MEDIUM
    File: docs/sessions/SESSION_PLAN_GENERATION_FIXES.md
-5. ~~**Payments table not in Supabase**~~ — ✅ FIXED June 10
-6. ~~**All Stripe Price IDs wrong**~~ — ✅ FIXED June 10
-7. ~~**Login page 500 error**~~ — ✅ FIXED June 10 (commit e115caf)
-8. ~~**Simulator transcription placeholder**~~ — ✅ FIXED June 9
-9. ~~**Simulator purchase button + env var + useEffect**~~ — ✅ FIXED June 9
-10. ~~**Quiz selected option blue border**~~ — ✅ FIXED June 9
-11. **Quiz nationality selector** — curl/browser difficulty, works in browser
-12. **Fast Refresh errors** — Occasional hot reload (non-blocking)
-13. **Stripe API version outdated (2024-06-20)** — LOW
+5. **Resend sender** — e2go.app domain verification status unknown.
+   Check Resend dashboard. If verified, revert to results@e2go.app.
+6. **RLS investigation pending** — quiz_sessions anon INSERT behavior
+   unexplained. Run SQL queries in Group 10 and share results.
+7. ~~**Payments table not in Supabase**~~ — ✅ FIXED June 10
+8. ~~**All Stripe Price IDs wrong**~~ — ✅ FIXED June 10
+9. ~~**Login page 500 error**~~ — ✅ FIXED June 10 (commit e115caf)
+10. ~~**Simulator transcription placeholder**~~ — ✅ FIXED June 9
+11. ~~**Simulator purchase button + env var + useEffect**~~ — ✅ FIXED June 9
+12. ~~**Quiz selected option blue border**~~ — ✅ FIXED June 9
+13. ~~**Q0-03a 4-option routing bug**~~ — ✅ FIXED June 12 (commit 00fdb14)
+14. ~~**Warning actions auto-advance**~~ — ✅ FIXED June 12 (commit aab6c10)
+15. ~~**Double-click quiz skip**~~ — ✅ FIXED June 12 (commit 61d8be8)
+16. ~~**Email validation too weak**~~ — ✅ FIXED June 12 (commit 90de0a8)
+17. ~~**setEmailSent fires on failure**~~ — ✅ FIXED June 12 (commit 90de0a8)
+18. ~~**Post-login redirect to quiz**~~ — ✅ FIXED June 12 (commit 6c72ee0)
+19. ~~**W-AGING-OUT orphaned code**~~ — ✅ FIXED June 12 (commit 00fdb14)
+20. **Quiz nationality selector** — curl/browser difficulty, works in browser
+21. **Fast Refresh errors** — Occasional hot reload (non-blocking)
+22. **Stripe API version outdated (2024-06-20)** — LOW
     Upgrade apiVersion in scripts/stripe-setup.ts when convenient
 
 ---
@@ -1207,6 +1273,7 @@ All session files are in docs/sessions/. Prompt for agent: `cat docs/sessions/[f
 | SESSION_CASEFILE_REDESIGN.md | Case file UX redesign — two-panel, voice input, all variants | 1 — run now |
 | SESSION_PLAN_GENERATION_FIXES.md | Generation engine: approval gate, setState, empty boxes | 2 |
 | SESSION_MODULE3_CASEFILE.md | Case file: gap questions, partnership UI, dynamic manifest | 3 |
+| SESSION_RESULTS_CLARITY_FIXES (2).md | Post-verification-wall cleanup: Groups 1-11 | ✅ DONE (Groups 5-11) |
 | SESSION_HANDOFF_JUNE9.md | Login fix, Stripe migration, generation engine fixes, E2E test | Reference |
 | SESSION_SIMULATOR.md | Simulator: Groq TTS, transcription, timer, purchase, design fixes | ✅ DONE |
 | SESSION_QUIZ_FIXES.md | Quiz UX: family split, partnership, months, back button, review page | ✅ DONE |
@@ -1217,10 +1284,11 @@ All session files are in docs/sessions/. Prompt for agent: `cat docs/sessions/[f
 ## BUILD STATE
 
 - Branch: `dev`
-- Last commit: 400d1dc (auth, quiz, results fixes)
+- Last commit: 90de0a8 (email validation fix)
 - `npm run build`: Clean — 47 routes compiled
 - All core features implemented and built
 - Case file UX redesign complete ✅
 - Payments migration applied ✅
 - Stripe Price IDs live ✅
 - Auth + quiz scoring foundation solid ✅
+- Post-verification-wall cleanup complete ✅
