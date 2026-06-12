@@ -9,14 +9,7 @@
 
 export function ComparisonSection() {
   return (
-    <>
-      <style>{`
-        @media (max-width: 767px) {
-          .comparison-grid { grid-template-columns: 1fr !important; }
-          .comparison-disclaimers { grid-template-columns: 1fr !important; }
-        }
-      `}</style>
-      <section style={{
+    <section style={{
       background: '#0a0a0a',
       padding: '96px 24px',
       borderTop: '1px solid rgba(201,168,76,0.12)',
@@ -61,7 +54,7 @@ export function ComparisonSection() {
         </div>
 
         {/* Two-column grid */}
-        <div className="comparison-grid" style={{
+        <div style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(420px, 1fr))',
           gap: '2px',
@@ -374,7 +367,7 @@ export function ComparisonSection() {
                   textDecoration: 'line-through',
                   textDecorationColor: 'rgba(245,240,232,0.1)',
                 }}>
-                  $13,000–$28,000+
+                  $8,000–$15,000+
                 </span>
               </div>
               <div style={{
@@ -417,7 +410,7 @@ export function ComparisonSection() {
         </div>
 
         {/* Bottom row — disclaimers + already further along callout */}
-        <div className="comparison-disclaimers" style={{
+        <div style={{
           marginTop: '2px',
           background: 'rgba(201,168,76,0.03)',
           border: '1px solid rgba(201,168,76,0.12)',
@@ -490,7 +483,6 @@ export function ComparisonSection() {
 
       </div>
     </section>
-    </>
   )
 }
 
