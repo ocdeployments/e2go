@@ -1115,6 +1115,34 @@ Clean — zero errors. 5 commits pushed to dev.
 
 ---
 
+### Completed — Groups 12-14 from SESSION_RESULTS_CLARITY_FIXES (3).md
+
+Session file: docs/sessions/SESSION_RESULTS_CLARITY_FIXES (3).md
+
+**Group 14 — Stripe success page "Payment not found" fix:**
+- Root cause: `create-checkout/route.ts` inserted a `metadata` column into `payments` table that doesn't exist in the schema → insert silently failed → no payment row → success page showed "Payment not found"
+- Fix 1: Removed `metadata` field from payments insert (children_count/line_items_count — nothing reads this data)
+- Fix 2: Added error handling on the insert (`const { error } = await ...`)
+- Fix 3: Added Stripe API fallback on success page — when payments row not found, calls `/api/stripe/verify-payment` which retrieves the session from Stripe API and upserts the payment row
+- Updated `/api/stripe/verify-payment/route.ts` with dual-mode: `{ sessionId }` for Stripe fallback, `{ applicationId, userId }` for existing local check
+
+**Group 13 — Post-login UX improvements:**
+- 13a (first/last name fields): Already implemented — NameCaptureForm has both fields, create-account.ts accepts both
+- 13b (personalized greeting): Already implemented — "Welcome back, {userName}" on results page
+- 13c (returning-user banner): Added dashboard link to the "✓ Your profile has been saved" banner on /results for logged-in users
+- 13d (guest option relabeling): Changed "Continue as guest" → "Skip for now"; changed post-dismiss link to "Create an account to save your results and access your dashboard"
+- "YOUR NEXT STEPS" checklist: Logged-in users now skip step 1 "Create your account" (already done), starting from "Select your business"
+
+**Group 12 — CI cleanup (investigate-only, no code changes):**
+- 12a (secret-scanning false positive): Already fixed — current pattern requires 20+ chars after prefix, doesn't match `startsWith('sk_test_')` in source
+- 12b (dependency audit): 5 HIGH vulnerabilities, all 4 fixable require major version bumps (Next.js 15+, ESLint 9+). Deferred to dedicated upgrade session — vulnerabilities are in dev tooling, not production runtime
+  - xlsx: no fix available, not blocking
+
+### Build
+Clean — zero errors. 3 files changed, no commits yet (owner to commit).
+
+---
+
 ## SESSION LOG (Prior sessions)
 
 ### June 5, 2026 — Session: End-to-End Payment Test

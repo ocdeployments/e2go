@@ -479,7 +479,7 @@ function NameCaptureForm({
               borderRadius: 0,
             }}
           >
-            Continue as guest
+            Skip for now
           </button>
         </div>
       </div>
@@ -871,8 +871,11 @@ function ResultsPageInner() {
           <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "36px", fontWeight: 300, color: "#f5f0e8", lineHeight: 1.25, marginBottom: "12px", letterSpacing: "-0.01em" }}>{verdict}</div>
           <div style={{ fontSize: "14px", color: "rgba(245,240,232,0.45)", lineHeight: 1.7, maxWidth: "560px" }}>{verdictSub}</div>
           {isLoggedIn && (
-            <div style={{ marginTop: "16px", padding: "12px 16px", background: "rgba(201,168,76,0.05)", border: "1px solid rgba(201,168,76,0.15)", fontSize: "13px", color: "rgba(245,240,232,0.6)", lineHeight: 1.6 }}>
-              ✓ Your profile has been saved. You can return to these results any time from your dashboard.
+            <div style={{ marginTop: "16px", padding: "12px 16px", background: "rgba(201,168,76,0.05)", border: "1px solid rgba(201,168,76,0.15)", fontSize: "13px", color: "rgba(245,240,232,0.6)", lineHeight: 1.6, display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px" }}>
+              <span>✓ Your profile has been saved. You can return to these results any time.</span>
+              <Link href="/dashboard" style={{ fontSize: "12px", color: "#C9A84C", textDecoration: "underline", whiteSpace: "nowrap", fontFamily: "'DM Sans', sans-serif" }}>
+                Go to dashboard →
+              </Link>
             </div>
           )}
         </div>
@@ -901,7 +904,7 @@ function ResultsPageInner() {
         <div style={{ padding: "20px 40px", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "12px", maxWidth: "720px" }}>
             <Link href="/signup" style={{ fontSize: "13px", color: "#C9A84C", textDecoration: "underline", letterSpacing: "0.02em" }}>
-              Create a free account to save these results
+              Create an account to save your results and access your dashboard
             </Link>
           </div>
         </div>
@@ -1028,12 +1031,16 @@ function ResultsPageInner() {
           <div>
             <div style={{ fontSize: "10px", letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(201,168,76,0.5)", marginBottom: "14px" }}>Your next steps</div>
             <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-              {[
-                { title: "Create your account", desc: isLoggedIn ? "Your result is saved to your account." : "Save this result. Begin your application. Takes 60 seconds." },
+              {(isLoggedIn ? [
                 { title: "Select your business", desc: data.franchise_interest ? "We can connect you with E-2 specialist franchise brokers in your investment range." : "Complete the business type advisor to confirm your business qualifies." },
                 { title: "Complete the document interview", desc: "Our guided engine builds your complete application package — cover letter, source of funds, business plan, and all supporting documents." },
                 { title: "Download your consulate package", desc: "A complete, consulate-formatted binder ready for your interview. Every tab, every document, in the correct order." },
-              ].map((step, i) => (
+              ] : [
+                { title: "Create your account", desc: "Save this result. Begin your application. Takes 60 seconds." },
+                { title: "Select your business", desc: data.franchise_interest ? "We can connect you with E-2 specialist franchise brokers in your investment range." : "Complete the business type advisor to confirm your business qualifies." },
+                { title: "Complete the document interview", desc: "Our guided engine builds your complete application package — cover letter, source of funds, business plan, and all supporting documents." },
+                { title: "Download your consulate package", desc: "A complete, consulate-formatted binder ready for your interview. Every tab, every document, in the correct order." },
+              ]).map((step, i) => (
                 <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
                   <div style={{ width: "24px", height: "24px", border: "1px solid rgba(201,168,76,0.3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px", color: "#C9A84C", flexShrink: 0, fontWeight: 500 }}>{i + 1}</div>
                   <div>

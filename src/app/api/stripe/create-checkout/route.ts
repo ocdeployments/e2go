@@ -152,7 +152,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Create pending payment record
-    await supabase.from('payments').insert({
+    const { error: insertError } = await supabase.from('payments').insert({
       application_id: applicationId,
       user_id: user.id,
       stripe_session_id: session.id,
@@ -161,11 +161,12 @@ export async function POST(request: NextRequest) {
       currency: 'usd',
       status: 'pending',
       payment_type: tierId,
-      metadata: {
-        children_count: children_count || 0,
-        line_items_count: lineItems.length,
-      },
     });
+
+    if (insertError) {
+      console.error('Failed to create pending payment record:', insertError);
+      // Payment session exists on Stripe — success page will recover via Stripe API fallback
+    }
 
     return NextResponse.json({
       url: session.url,

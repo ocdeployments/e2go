@@ -54,7 +54,25 @@ function SuccessContent() {
         .single();
 
       if (paymentError || !paymentData) {
-        setError('Payment not found');
+        // Fallback: verify via Stripe API and create payment row if missing
+        try {
+          const res = await fetch('/api/stripe/verify-payment', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sessionId }),
+          });
+          const result = await res.json();
+
+          if (result.verified && result.payment) {
+            setPayment(result.payment);
+            setLoading(false);
+            return;
+          }
+        } catch {
+          // Stripe fallback failed — fall through to error
+        }
+
+        setError('Payment not found — please contact support if you completed a payment');
         setLoading(false);
         return;
       }
