@@ -275,6 +275,26 @@ export default function QuizPage() {
             router.push("/dashboard");
             return;
           }
+
+          // Post-login session linking: if user has an unlinked completed
+          // session (e.g. from "account already exists" flow), link it now
+          const { data: unlinked } = await supabase
+            .from("quiz_sessions")
+            .select("id, outcome")
+            .eq("email", user.email || "")
+            .is("user_id", null)
+            .not("outcome", "is", null)
+            .order("completed_at", { ascending: false })
+            .limit(1)
+            .single();
+          if (unlinked) {
+            await supabase
+              .from("quiz_sessions")
+              .update({ user_id: user.id })
+              .eq("id", unlinked.id);
+            router.push("/dashboard");
+            return;
+          }
         }
       } catch {
         // ignore
