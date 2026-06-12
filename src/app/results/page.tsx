@@ -1,9 +1,10 @@
 "use client";
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import Link from "next/link";
 import { getPricingTier, PRICING_TIERS } from "@/lib/pricing-tier";
+import { createAccountFromVerifiedEmail } from "../actions/create-account";
 
 interface ResultData {
   outcome: string;
@@ -56,7 +57,6 @@ function getPricingFromAnswers(data: ResultData): { tier: string; tierId: string
     const hasChildren = dep.includes("children");
     const isPartnership = data.application_type === "partnership" || data.application_type === "spousal_partnership";
 
-    // Calculate add-ons for display breakdown
     let base = 0;
     let spouseAdd = 0;
     let childrenAdd = 0;
@@ -75,7 +75,6 @@ function getPricingFromAnswers(data: ResultData): { tier: string; tierId: string
     return { tier: tierData.name, tierId, base, spouseAdd, childrenAdd, total: tierData.price };
   }
 
-  // Fallback
   return { tier: "Solo Individual", tierId: "solo_none", base: 550, spouseAdd: 0, childrenAdd: 0, total: 550 };
 }
 
@@ -136,7 +135,6 @@ function getTargetDateMessage(targetDate: string | null | undefined): string | n
   target.setMonth(target.getMonth() + monthsToAdd);
   const targetMonth = monthNames[target.getMonth()];
   const targetYear = target.getFullYear();
-  // Submit ~4 months before target to allow processing time
   const submitBy = new Date(target);
   submitBy.setMonth(submitBy.getMonth() - 4);
   const submitMonth = monthNames[submitBy.getMonth()];
@@ -173,8 +171,446 @@ function getConsulateIntel(country: string): { name: string; intel: string } {
   };
 }
 
-export default function ResultsPage() {
+function getCookie(name: string): string | null {
+  if (typeof document === 'undefined') return null;
+  const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+  return match ? decodeURIComponent(match[2]) : null;
+}
+
+/* ────────────────────────────────────────────────────
+   Email Gate — shown for anonymous users without verification
+   ──────────────────────────────────────────────────── */
+function EmailGate({
+  onBackToQuiz,
+}: {
+  onBackToQuiz: () => void;
+}) {
+  const [email, setEmail] = useState('');
+  const [caslConsent, setCaslConsent] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const supabase = useState(() => createBrowserSupabaseClient())[0];
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || sending) return;
+
+    setSending(true);
+    setError(null);
+
+    try {
+      // Look up quiz session by email
+      const { data: session } = await supabase
+        .from("quiz_sessions")
+        .select("id, result_json, outcome")
+        .eq("email", email)
+        .order("completed_at", { ascending: false })
+        .limit(1)
+        .single();
+
+      if (!session) {
+        setError("No quiz results found for this email. Take the quiz first.");
+        setSending(false);
+        return;
+      }
+
+      await fetch("/api/email/results", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          outcome: session.outcome,
+          result_json: session.result_json,
+          quiz_session_id: session.id,
+          franchise_interest: session.result_json?.franchise_interest || false,
+        }),
+      });
+
+      setSent(true);
+    } catch {
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex" style={{ background: "#0a0a0a" }}>
+      <div className="w-full flex flex-col items-center justify-center p-8" style={{ maxWidth: "480px", margin: "0 auto" }}>
+        <div style={{ fontSize: "17px", color: "#C9A84C", fontWeight: 300, marginBottom: "48px" }}>E2go<span style={{ color: "rgba(245,240,232,0.9)" }}>.app</span></div>
+
+        {sent ? (
+          <>
+            <div style={{ width: "48px", height: "48px", border: "2px solid #5DCAA5", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "24px" }}>
+              <span style={{ color: "#5DCAA5", fontSize: "20px" }}>✓</span>
+            </div>
+            <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "24px", fontWeight: 300, color: "#f5f0e8", marginBottom: "12px", textAlign: "center" }}>Check your email</h1>
+            <p style={{ color: "rgba(245,240,232,0.5)", fontSize: "14px", textAlign: "center", lineHeight: 1.6, marginBottom: "8px" }}>
+              We sent a verification link to <strong style={{ color: "#f5f0e8" }}>{email}</strong>
+            </p>
+            <p style={{ color: "rgba(245,240,232,0.35)", fontSize: "13px", textAlign: "center", lineHeight: 1.6 }}>
+              Click the link in the email to view your results. The link expires in 24 hours.
+            </p>
+            <button
+              onClick={onBackToQuiz}
+              style={{
+                marginTop: "32px",
+                padding: "12px 24px",
+                background: "transparent",
+                border: "1px solid rgba(201,168,76,0.3)",
+                color: "rgba(201,168,76,0.7)",
+                fontSize: "12px",
+                cursor: "pointer",
+                letterSpacing: "0.08em",
+                textTransform: "uppercase" as const,
+                fontFamily: "'DM Sans', sans-serif",
+                borderRadius: 0,
+              }}
+            >
+              ← Back to quiz
+            </button>
+          </>
+        ) : (
+          <>
+            <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "28px", fontWeight: 300, color: "#f5f0e8", marginBottom: "12px", textAlign: "center" }}>Your results are ready</h1>
+            <p style={{ color: "rgba(245,240,232,0.5)", fontSize: "14px", textAlign: "center", lineHeight: 1.6, marginBottom: "32px" }}>
+              Enter your email and we&apos;ll send you a secure link to view your eligibility results.
+            </p>
+
+            <form onSubmit={handleSubmit} style={{ width: "100%" }}>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                required
+                style={{
+                  width: "100%",
+                  padding: "14px 16px",
+                  background: "rgba(201,168,76,0.04)",
+                  border: "1px solid rgba(201,168,76,0.2)",
+                  color: "#f5f0e8",
+                  fontSize: "14px",
+                  fontFamily: "'DM Sans', sans-serif",
+                  borderRadius: 0,
+                  outline: "none",
+                  marginBottom: "16px",
+                  boxSizing: "border-box",
+                }}
+              />
+
+              <label style={{ display: "flex", alignItems: "flex-start", gap: "10px", marginBottom: "24px", cursor: "pointer" }}>
+                <input
+                  type="checkbox"
+                  checked={caslConsent}
+                  onChange={(e) => setCaslConsent(e.target.checked)}
+                  style={{ marginTop: "3px", accentColor: "#C9A84C", width: "16px", height: "16px" }}
+                />
+                <span style={{ fontSize: "12px", color: "rgba(245,240,232,0.4)", lineHeight: 1.5 }}>
+                  I consent to receiving email from e2go.app. You can unsubscribe at any time. View our{' '}
+                  <a href="/terms" style={{ color: "#C9A84C", textDecoration: "underline" }}>Terms of Service</a>.
+                </span>
+              </label>
+
+              <button
+                type="submit"
+                disabled={sending || !email}
+                style={{
+                  width: "100%",
+                  padding: "14px",
+                  background: "#C9A84C",
+                  border: "none",
+                  color: "#0a0a0a",
+                  fontSize: "13px",
+                  fontWeight: 500,
+                  cursor: sending || !email ? "not-allowed" : "pointer",
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase" as const,
+                  fontFamily: "'DM Sans', sans-serif",
+                  borderRadius: 0,
+                  opacity: sending || !email ? 0.5 : 1,
+                }}
+              >
+                {sending ? "Sending..." : "Send my results"}
+              </button>
+
+              {error && (
+                <div style={{ marginTop: "16px", padding: "12px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", fontSize: "13px", color: "rgba(245,240,232,0.7)", lineHeight: 1.5 }}>
+                  {error}
+                </div>
+              )}
+            </form>
+
+            <button
+              onClick={onBackToQuiz}
+              style={{
+                marginTop: "24px",
+                padding: "8px 16px",
+                background: "transparent",
+                border: "none",
+                color: "rgba(245,240,232,0.3)",
+                fontSize: "12px",
+                cursor: "pointer",
+                textDecoration: "underline",
+                fontFamily: "'DM Sans', sans-serif",
+              }}
+            >
+              Or retake the quiz
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ────────────────────────────────────────────────────
+   Name Capture — shown on first verified visit (no account yet)
+   ──────────────────────────────────────────────────── */
+function NameCaptureForm({
+  email,
+  quizSessionId,
+  onSuccess,
+  onDismiss,
+}: {
+  email: string;
+  quizSessionId: string;
+  onSuccess: () => void;
+  onDismiss: () => void;
+}) {
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [creating, setCreating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [accountExists, setAccountExists] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    if (!firstName || !lastName || !newPassword) {
+      setError("All fields are required.");
+      return;
+    }
+    if (newPassword.length < 8) {
+      setError("Password must be at least 8 characters.");
+      return;
+    }
+    if (newPassword !== confirmNewPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+
+    setCreating(true);
+
+    try {
+      const result = await createAccountFromVerifiedEmail({
+        email,
+        password: newPassword,
+        firstName,
+        lastName,
+        quizSessionId,
+      });
+
+      if (result.error) {
+        if (result.error.includes("already") || result.error.includes("exists") || result.error.includes("registered")) {
+          setAccountExists(true);
+        } else {
+          setError(result.error);
+        }
+      } else {
+        // Account created — reload to pick up auth session
+        onSuccess();
+      }
+    } catch {
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  if (accountExists) {
+    return (
+      <div style={{ padding: "28px", border: "1px solid rgba(201,168,76,0.2)", background: "rgba(201,168,76,0.03)", marginBottom: "24px" }}>
+        <div style={{ fontSize: "10px", letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(201,168,76,0.5)", marginBottom: "14px" }}>Account found</div>
+        <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "22px", fontWeight: 300, color: "#f5f0e8", marginBottom: "8px" }}>
+          We found an account with this email
+        </div>
+        <div style={{ fontSize: "13px", color: "rgba(245,240,232,0.45)", lineHeight: 1.6, marginBottom: "20px" }}>
+          Log in to link this result to your account, or continue viewing as a guest.
+        </div>
+        <div style={{ display: "flex", gap: "12px" }}>
+          <Link
+            href="/login"
+            style={{
+              padding: "12px 24px",
+              background: "#C9A84C",
+              border: "none",
+              color: "#0a0a0a",
+              fontSize: "12px",
+              fontWeight: 500,
+              cursor: "pointer",
+              letterSpacing: "0.08em",
+              textTransform: "uppercase" as const,
+              fontFamily: "'DM Sans', sans-serif",
+              borderRadius: 0,
+              textDecoration: "none",
+              display: "inline-block",
+            }}
+          >
+            Log in
+          </Link>
+          <button
+            onClick={onDismiss}
+            style={{
+              padding: "12px 24px",
+              background: "transparent",
+              border: "1px solid rgba(201,168,76,0.25)",
+              color: "rgba(201,168,76,0.7)",
+              fontSize: "12px",
+              cursor: "pointer",
+              letterSpacing: "0.08em",
+              textTransform: "uppercase" as const,
+              fontFamily: "'DM Sans', sans-serif",
+              borderRadius: 0,
+            }}
+          >
+            Continue as guest
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ padding: "28px", border: "1px solid rgba(201,168,76,0.2)", background: "rgba(201,168,76,0.03)", marginBottom: "24px" }}>
+      <div style={{ fontSize: "10px", letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(201,168,76,0.5)", marginBottom: "14px" }}>One last thing</div>
+      <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "22px", fontWeight: 300, color: "#f5f0e8", marginBottom: "4px" }}>
+        What&apos;s your name?
+      </div>
+      <div style={{ fontSize: "13px", color: "rgba(245,240,232,0.4)", lineHeight: 1.6, marginBottom: "20px" }}>
+        We&apos;ll use this for your application documents.
+      </div>
+
+      <form onSubmit={handleSubmit}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "12px" }}>
+          <input
+            type="text"
+            placeholder="First name"
+            value={firstName}
+            onChange={(e) => setFirstName(e.target.value)}
+            required
+            style={{
+              padding: "12px 14px",
+              background: "rgba(201,168,76,0.04)",
+              border: "1px solid rgba(201,168,76,0.15)",
+              color: "#f5f0e8",
+              fontSize: "14px",
+              fontFamily: "'DM Sans', sans-serif",
+              borderRadius: 0,
+              outline: "none",
+            }}
+          />
+          <input
+            type="text"
+            placeholder="Last name"
+            value={lastName}
+            onChange={(e) => setLastName(e.target.value)}
+            required
+            style={{
+              padding: "12px 14px",
+              background: "rgba(201,168,76,0.04)",
+              border: "1px solid rgba(201,168,76,0.15)",
+              color: "#f5f0e8",
+              fontSize: "14px",
+              fontFamily: "'DM Sans', sans-serif",
+              borderRadius: 0,
+              outline: "none",
+            }}
+          />
+        </div>
+        <input
+          type="password"
+          placeholder="Password (min 8 characters)"
+          value={newPassword}
+          onChange={(e) => setNewPassword(e.target.value)}
+          required
+          style={{
+            width: "100%",
+            padding: "12px 14px",
+            background: "rgba(201,168,76,0.04)",
+            border: "1px solid rgba(201,168,76,0.15)",
+            color: "#f5f0e8",
+            fontSize: "14px",
+            fontFamily: "'DM Sans', sans-serif",
+            borderRadius: 0,
+            outline: "none",
+            marginBottom: "12px",
+            boxSizing: "border-box",
+          }}
+        />
+        <input
+          type="password"
+          placeholder="Confirm password"
+          value={confirmNewPassword}
+          onChange={(e) => setConfirmNewPassword(e.target.value)}
+          required
+          style={{
+            width: "100%",
+            padding: "12px 14px",
+            background: "rgba(201,168,76,0.04)",
+            border: "1px solid rgba(201,168,76,0.15)",
+            color: "#f5f0e8",
+            fontSize: "14px",
+            fontFamily: "'DM Sans', sans-serif",
+            borderRadius: 0,
+            outline: "none",
+            marginBottom: "20px",
+            boxSizing: "border-box",
+          }}
+        />
+
+        {error && (
+          <div style={{ padding: "10px 14px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", fontSize: "13px", color: "rgba(245,240,232,0.7)", marginBottom: "16px", lineHeight: 1.5 }}>
+            {error}
+          </div>
+        )}
+
+        <button
+          type="submit"
+          disabled={creating}
+          style={{
+            width: "100%",
+            padding: "13px",
+            background: "#C9A84C",
+            border: "none",
+            color: "#0a0a0a",
+            fontSize: "13px",
+            fontWeight: 500,
+            cursor: creating ? "not-allowed" : "pointer",
+            letterSpacing: "0.08em",
+            textTransform: "uppercase" as const,
+            fontFamily: "'DM Sans', sans-serif",
+            borderRadius: 0,
+            opacity: creating ? 0.5 : 1,
+          }}
+        >
+          {creating ? "Creating account..." : "Continue"}
+        </button>
+      </form>
+    </div>
+  );
+}
+
+/* ────────────────────────────────────────────────────
+   Results Page — main component
+   ──────────────────────────────────────────────────── */
+function ResultsPageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [supabase] = useState(() => createBrowserSupabaseClient());
   const [data, setData] = useState<ResultData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -183,54 +619,94 @@ export default function ResultsPage() {
   const [emailStatus, setEmailStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [userEmail, setUserEmail] = useState<string | null>(null);
 
+  // Verification states
+  const [verificationState, setVerificationState] = useState<'loading' | 'unverified' | 'verified' | 'authenticated'>('loading');
+  const [quizSessionId, setQuizSessionId] = useState<string | null>(null);
+  const [quizEmail, setQuizEmail] = useState<string | null>(null);
+  const [nameCaptureDismissed, setNameCaptureDismissed] = useState(false);
+
   useEffect(() => {
     const loadResult = async () => {
-      let hasLocalStorageData = false;
-      const stored = localStorage.getItem("e2go_quiz_result");
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored);
-          setData(parsed);
-          hasLocalStorageData = true;
-        } catch {}
+      // 1. Check authentication
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (user) {
+        setIsLoggedIn(true);
+        setUserEmail(user.email ?? null);
+        setVerificationState('authenticated');
+
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("first_name")
+          .eq("id", user.id)
+          .single();
+        if (profile?.first_name) setUserName(profile.first_name);
+
+        // Load results from localStorage then Supabase
+        const stored = localStorage.getItem("e2go_quiz_result");
+        if (stored) {
+          try { setData(JSON.parse(stored)); } catch { /* ignore */ }
+        }
+
+        if (!stored) {
+          const { data: session } = await supabase
+            .from("quiz_sessions")
+            .select("result_json, outcome, score")
+            .eq("user_id", user.id)
+            .order("completed_at", { ascending: false })
+            .limit(1)
+            .single();
+          if (session?.result_json) setData(session.result_json as ResultData);
+        }
+
+        setLoading(false);
+        return;
       }
 
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          setIsLoggedIn(true);
-          setUserEmail(user.email ?? null);
+      // 2. Anonymous: check verification cookie or query param
+      const paramSession = searchParams.get('session');
+      const cookieSession = getCookie('verified_session');
+      const sessionId = paramSession || cookieSession;
 
-          // Fetch profile for name
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("first_name")
-            .eq("id", user.id)
-            .single();
-          if (profile?.first_name) {
-            setUserName(profile.first_name);
-          }
+      if (!sessionId) {
+        setVerificationState('unverified');
+        setLoading(false);
+        return;
+      }
 
-          // If no localStorage result, try Supabase
-          if (!hasLocalStorageData) {
-            const { data: session } = await supabase
-              .from("quiz_sessions")
-              .select("result_json, outcome, score")
-              .eq("user_id", user.id)
-              .order("completed_at", { ascending: false })
-              .limit(1)
-              .single();
-            if (session?.result_json) {
-              setData(session.result_json as ResultData);
-            }
+      // 3. Verified session found — load data
+      setQuizSessionId(sessionId);
+
+      const { data: session } = await supabase
+        .from("quiz_sessions")
+        .select("result_json, outcome, email")
+        .eq("id", sessionId)
+        .single();
+
+      if (session?.result_json) {
+        setData(session.result_json as ResultData);
+        setQuizEmail(session.email);
+        setVerificationState('verified');
+      } else {
+        // Fallback to localStorage
+        const stored = localStorage.getItem("e2go_quiz_result");
+        if (stored) {
+          try {
+            setData(JSON.parse(stored));
+            setVerificationState('verified');
+          } catch {
+            setVerificationState('unverified');
           }
+        } else {
+          setVerificationState('unverified');
         }
-      } catch {}
+      }
 
       setLoading(false);
     };
+
     loadResult();
-  }, [supabase, router]);
+  }, [supabase, searchParams]);
 
   const handleEmailResult = async () => {
     if (!data) return;
@@ -261,11 +737,19 @@ export default function ResultsPage() {
     }
   };
 
-  if (loading) {
+  // Loading state
+  if (loading || verificationState === 'loading') {
     return (
       <div style={{ background: "#0a0a0a", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'DM Sans', sans-serif" }}>
         <div style={{ color: "rgba(201,168,76,0.6)", fontSize: "13px", letterSpacing: "0.08em", textTransform: "uppercase" }}>Loading your result...</div>
       </div>
+    );
+  }
+
+  // Email gate for unverified anonymous users
+  if (verificationState === 'unverified') {
+    return (
+      <EmailGate onBackToQuiz={() => router.push('/quiz')} />
     );
   }
 
@@ -345,6 +829,8 @@ export default function ResultsPage() {
       .slice(0, 4);
   }
 
+  const showNameCapture = verificationState === 'verified' && !isLoggedIn && !nameCaptureDismissed;
+
   return (
     <div style={{ background: "#0a0a0a", minHeight: "100vh", fontFamily: "'DM Sans', system-ui, sans-serif", color: "#f5f0e8" }}>
       <style>{`
@@ -391,9 +877,11 @@ export default function ResultsPage() {
               <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "28px", fontWeight: 300, color: "#f5f0e8", marginBottom: "4px" }}>
                 Your eligibility results
               </div>
-              <Link href="/signup" style={{ fontSize: "13px", color: "#C9A84C", textDecoration: "underline", letterSpacing: "0.02em" }}>
-                Create a free account to save these results
-              </Link>
+              {verificationState === 'verified' && (
+                <div style={{ fontSize: "13px", color: "#5DCAA5", letterSpacing: "0.02em" }}>
+                  ✓ Email verified
+                </div>
+              )}
             </div>
           ) : null}
           <div style={{ display: "flex", alignItems: "flex-end", gap: "20px", marginBottom: "16px" }}>
@@ -415,6 +903,35 @@ export default function ResultsPage() {
           )}
         </div>
       </div>
+
+      {/* Name capture for verified non-authenticated users */}
+      {showNameCapture && quizSessionId && quizEmail && (
+        <div style={{ padding: "40px 40px 0", maxWidth: "720px" }}>
+          <NameCaptureForm
+            email={quizEmail}
+            quizSessionId={quizSessionId}
+            onSuccess={() => {
+              // Account created — reload to pick up new auth session
+              window.location.reload();
+            }}
+            onDismiss={() => {
+              // Guest dismissed — hide the form, keep viewing results
+              setNameCaptureDismissed(true);
+            }}
+          />
+        </div>
+      )}
+
+      {/* Guest: show link to create account */}
+      {verificationState === 'verified' && !isLoggedIn && nameCaptureDismissed && (
+        <div style={{ padding: "20px 40px", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px", maxWidth: "720px" }}>
+            <Link href="/signup" style={{ fontSize: "13px", color: "#C9A84C", textDecoration: "underline", letterSpacing: "0.02em" }}>
+              Create a free account to save these results
+            </Link>
+          </div>
+        </div>
+      )}
 
       <div style={{ padding: "40px", display: "grid", gridTemplateColumns: "1fr 320px", gap: "32px", maxWidth: "1100px" }}>
 
@@ -530,7 +1047,7 @@ export default function ResultsPage() {
             <div style={{ fontSize: "10px", letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(201,168,76,0.5)", marginBottom: "14px" }}>Your next steps</div>
             <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
               {[
-                { title: "Create your account", desc: "Save this result. Begin your application. Takes 60 seconds." },
+                { title: "Create your account", desc: isLoggedIn ? "Your result is saved to your account." : "Save this result. Begin your application. Takes 60 seconds." },
                 { title: "Select your business", desc: data.franchise_interest ? "We can connect you with E-2 specialist franchise brokers in your investment range." : "Complete the business type advisor to confirm your business qualifies." },
                 { title: "Complete the document interview", desc: "Our guided engine builds your complete application package — cover letter, source of funds, business plan, and all supporting documents." },
                 { title: "Download your consulate package", desc: "A complete, consulate-formatted binder ready for your interview. Every tab, every document, in the correct order." },
@@ -650,5 +1167,17 @@ export default function ResultsPage() {
       </div>
 
     </div>
+  );
+}
+
+export default function ResultsPage() {
+  return (
+    <Suspense fallback={
+      <div style={{ background: "#0a0a0a", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'DM Sans', sans-serif" }}>
+        <div style={{ color: "rgba(201,168,76,0.6)", fontSize: "13px", letterSpacing: "0.08em", textTransform: "uppercase" }}>Loading...</div>
+      </div>
+    }>
+      <ResultsPageInner />
+    </Suspense>
   );
 }
