@@ -1,6 +1,6 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 12, 2026 — Post-verification-wall cleanup (Groups 5-11)
+**Last Updated:** June 12, 2026 — Deferred risks documented (Next.js 14→16, xlsx)
 **App Name:** E2go.app
 **Stack:** Next.js 14 · TypeScript · Tailwind CSS · Supabase · Claude API
 **Dev URL:** https://e2go-git-dev-ocdeployments-projects.vercel.app
@@ -1193,6 +1193,35 @@ Clean — zero errors. 5 commits pushed to dev.
 
 ---
 
+## DEFERRED RISKS (Accepted, pending dedicated sessions)
+
+### Next.js 14 → 16 upgrade required
+- **Current version:** `next@14.2.35` (pinned via `^14.0.0` in package.json)
+- **Vulnerability:** HIGH severity — affects `9.3.4-canary.0` through `16.3.0-canary.5`
+  - Includes: DoS via Image Optimizer, HTTP request smuggling, unbounded disk cache,
+    server-side request forgery, cache poisoning, XSS via CSP nonces
+- **Fix available:** `next@16.2.9` — but this is a **major version bump** (14 → 16)
+- **No patch exists in the 14.x line** — `npm update` and `npm audit fix` cannot resolve
+- **Blocking packages:** `eslint-config-next` and `@next/eslint-plugin-next` also stuck at
+  14.2.35 (transitive `glob` vulnerability, fix requires 16.x)
+- **Risk accepted:** June 12, 2026. Upgrade requires dedicated session with full
+  regression testing — breaking changes in Next.js 15+ (Turbopack default, async
+  request APIs, config changes). Not a cleanup-task bundle.
+
+### xlsx (SheetJS) — no fix available
+- **Package:** `xlsx@^0.18.5`
+- **Vulnerability:** HIGH — Prototype Pollution + ReDoS
+- **Fix available:** No. All versions affected, no patched release.
+- **Usage:** `src/lib/text-extraction.ts` — reads uploaded XLSX spreadsheets via
+  `XLSX.read(buffer, { type: 'buffer' })`, converts to CSV via `XLSX.utils.sheet_to_csv(sheet)`.
+  User-facing through document upload flow (`/api/documents/extract`).
+- **Risk accepted:** June 12, 2026. Input is user-uploaded files (not untrusted web content).
+  Prototype pollution requires crafted XLSX with malicious prototype chain.
+  ReDoS requires cell content matching backtracking patterns.
+  Consider replacing with `exceljs` or `openpyxl`-style parser in future session.
+
+---
+
 ## NEXT SESSION PRIORITIES (Updated June 12, 2026)
 
 ### Priority 1 — Owner action items from this session
@@ -1284,7 +1313,7 @@ All session files are in docs/sessions/. Prompt for agent: `cat docs/sessions/[f
 ## BUILD STATE
 
 - Branch: `dev`
-- Last commit: 90de0a8 (email validation fix)
+- Last commit: 85df27a (Resend error handling)
 - `npm run build`: Clean — 47 routes compiled
 - All core features implemented and built
 - Case file UX redesign complete ✅
