@@ -525,12 +525,12 @@ export default function QuizPage() {
         return { shouldAdvance: false, stopCode };
       }
 
-      // Warning
+      // Warning — pause and show message, let user click Continue anyway
       const warnCode = extractWarningCode(action);
       if (warnCode) {
         setWarningCodes((prev) => [...prev, warnCode]);
         setWarnMsg(opt.warning_message || null);
-        return { shouldAdvance: true };
+        return { shouldAdvance: false };
       }
 
       // Attorney flag
