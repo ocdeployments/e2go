@@ -32,7 +32,8 @@ jobs:
           fetch-depth: 0
       - name: Scan for hardcoded secrets
         run: |
-          if grep -rn "sk_live_\|sk_test_\|gsk_\|AKIA" \
+          # Match key prefixes followed by 20+ alphanumeric chars (real key format, not string literals)
+          if grep -rnE "sk_live_[A-Za-z0-9]{20,}|sk_test_[A-Za-z0-9]{20,}|gsk_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|re_[A-Za-z0-9]{20,}" \
             --include="*.ts" --include="*.tsx" --include="*.js" \
             --exclude-dir=".git" --exclude-dir="node_modules" \
             --exclude="*.example" . ; then
