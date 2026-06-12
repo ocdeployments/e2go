@@ -208,6 +208,7 @@ function extractSubTarget(action: string): string | null {
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 export default function QuizPage() {
   const router = useRouter();
@@ -695,7 +696,7 @@ export default function QuizPage() {
 
   // Handle email submit
   const handleEmailSubmit = useCallback(async () => {
-    if (!email || !email.includes("@")) return;
+    if (!email || !EMAIL_RE.test(email)) return;
     setIsSaving(true);
     setSaveError(null);
 
@@ -736,6 +737,7 @@ export default function QuizPage() {
               franchise_interest: resultData.franchise_interest,
             }),
           });
+          setEmailSent(true);
         } catch {
           // ignore
         }
@@ -745,7 +747,6 @@ export default function QuizPage() {
     } finally {
       setIsSaving(false);
     }
-    setEmailSent(true);
   }, [email, caslConsent, supabase]);
 
   // Derived
