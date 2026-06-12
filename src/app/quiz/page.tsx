@@ -231,6 +231,7 @@ export default function QuizPage() {
   const [email, setEmail] = useState("");
   const [caslConsent, setCaslConsent] = useState(false);
   const [showEmailGate, setShowEmailGate] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -713,8 +714,8 @@ export default function QuizPage() {
     } finally {
       setIsSaving(false);
     }
-    router.push("/results?from=quiz");
-  }, [email, caslConsent, supabase, router]);
+    setEmailSent(true);
+  }, [email, caslConsent, supabase]);
 
   // Derived
   const pct = Math.round(((cur + 1) / visibleQuestions.length) * 100);
@@ -815,39 +816,50 @@ export default function QuizPage() {
           <div style={{ fontSize: "17px", color: "#C9A84C", fontWeight: 300 }}>E2go<span style={{ color: "rgba(245,240,232,0.9)" }}>.app</span></div>
         </div>
         <div style={{ padding: "clamp(32px, 5vw, 56px) clamp(16px, 5vw, 40px)", maxWidth: "480px" }}>
-          <div style={{ fontSize: "10px", letterSpacing: "0.18em", textTransform: "uppercase", color: "rgba(201,168,76,0.6)", marginBottom: "16px" }}>Your result is ready</div>
-          <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "32px", fontWeight: 300, color: "#f5f0e8", marginBottom: "8px", lineHeight: 1.3 }}>Where should we send your eligibility summary?</div>
-          <div style={{ fontSize: "14px", color: "rgba(245,240,232,0.45)", marginBottom: "32px", lineHeight: 1.6 }}>We will email you a full copy of your result and your personalised next-step summary.</div>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="your@email.com"
-            style={{ width: "100%", padding: "13px 16px", background: "rgba(201,168,76,0.02)", border: "1px solid rgba(201,168,76,0.2)", color: "#f5f0e8", fontSize: "14px", fontFamily: "'DM Sans', sans-serif", borderRadius: 0, outline: "none", marginBottom: "12px" }}
-          />
-          <div
-            style={{ display: "flex", alignItems: "flex-start", gap: "10px", marginBottom: "24px", cursor: "pointer" }}
-            onClick={() => setCaslConsent(!caslConsent)}
-          >
-            <div style={{ width: "16px", height: "16px", border: `1px solid ${caslConsent ? "#C9A84C" : "rgba(201,168,76,0.3)"}`, background: caslConsent ? "#C9A84C" : "transparent", flexShrink: 0, marginTop: "2px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              {caslConsent && <span style={{ color: "#0a0a0a", fontSize: "11px" }}>✓</span>}
-            </div>
-            <div style={{ fontSize: "12px", color: "rgba(245,240,232,0.4)", lineHeight: 1.6 }}>Send me occasional updates about the E-2 process. You can unsubscribe at any time.</div>
-          </div>
-          {saveError && <div style={{ fontSize: "13px", color: "rgba(220,60,60,0.8)", marginBottom: "12px" }}>{saveError}</div>}
-          <button
-            onClick={handleEmailSubmit}
-            disabled={!email.includes("@") || isSaving}
-            style={{ width: "100%", padding: "14px", background: "#C9A84C", border: "none", color: "#0a0a0a", fontSize: "13px", fontWeight: 500, cursor: email.includes("@") && !isSaving ? "pointer" : "not-allowed", letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: "'DM Sans', sans-serif", borderRadius: 0, opacity: email.includes("@") && !isSaving ? 1 : 0.35 }}
-          >
-            {isSaving ? "Saving..." : "View my result →"}
-          </button>
-          <button
-            onClick={() => router.push("/results?from=quiz")}
-            style={{ width: "100%", padding: "12px", background: "transparent", border: "none", color: "rgba(245,240,232,0.25)", fontSize: "12px", cursor: "pointer", letterSpacing: "0.06em", fontFamily: "'DM Sans', sans-serif", marginTop: "8px" }}
-          >
-            Skip — view result without saving
-          </button>
+          {emailSent ? (
+            /* Confirmation screen after email submitted */
+            <>
+              <div style={{ width: "44px", height: "44px", border: "1px solid rgba(93,202,165,0.3)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "24px", color: "#5DCAA5", fontSize: "20px" }}>✓</div>
+              <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "32px", fontWeight: 300, color: "#f5f0e8", marginBottom: "12px", lineHeight: 1.3 }}>Check your email</div>
+              <div style={{ fontSize: "14px", color: "rgba(245,240,232,0.55)", lineHeight: 1.7, marginBottom: "28px" }}>
+                We sent a link to <span style={{ color: "#C9A84C" }}>{email}</span>. Click it to view your full results.
+              </div>
+              <div style={{ padding: "14px 16px", background: "rgba(201,168,76,0.04)", border: "1px solid rgba(201,168,76,0.12)", fontSize: "12px", color: "rgba(245,240,232,0.4)", lineHeight: 1.6 }}>
+                The link expires in 24 hours. Check your spam folder if you don&apos;t see it.
+              </div>
+            </>
+          ) : (
+            /* Email input form */
+            <>
+              <div style={{ fontSize: "10px", letterSpacing: "0.18em", textTransform: "uppercase", color: "rgba(201,168,76,0.6)", marginBottom: "16px" }}>Your results are ready</div>
+              <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "32px", fontWeight: 300, color: "#f5f0e8", marginBottom: "8px", lineHeight: 1.3 }}>Enter your email and we&apos;ll send you a link to view them.</div>
+              <div style={{ fontSize: "14px", color: "rgba(245,240,232,0.45)", marginBottom: "32px", lineHeight: 1.6 }}>Your full eligibility result is waiting. We&apos;ll email you a secure link.</div>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="your@email.com"
+                style={{ width: "100%", padding: "13px 16px", background: "rgba(201,168,76,0.02)", border: "1px solid rgba(201,168,76,0.2)", color: "#f5f0e8", fontSize: "14px", fontFamily: "'DM Sans', sans-serif", borderRadius: 0, outline: "none", marginBottom: "12px" }}
+              />
+              <div
+                style={{ display: "flex", alignItems: "flex-start", gap: "10px", marginBottom: "24px", cursor: "pointer" }}
+                onClick={() => setCaslConsent(!caslConsent)}
+              >
+                <div style={{ width: "16px", height: "16px", border: `1px solid ${caslConsent ? "#C9A84C" : "rgba(201,168,76,0.3)"}`, background: caslConsent ? "#C9A84C" : "transparent", flexShrink: 0, marginTop: "2px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  {caslConsent && <span style={{ color: "#0a0a0a", fontSize: "11px" }}>✓</span>}
+                </div>
+                <div style={{ fontSize: "12px", color: "rgba(245,240,232,0.4)", lineHeight: 1.6 }}>Send me occasional updates about the E-2 process. You can unsubscribe at any time.</div>
+              </div>
+              {saveError && <div style={{ fontSize: "13px", color: "rgba(220,60,60,0.8)", marginBottom: "12px" }}>{saveError}</div>}
+              <button
+                onClick={handleEmailSubmit}
+                disabled={!email.includes("@") || isSaving}
+                style={{ width: "100%", padding: "14px", background: "#C9A84C", border: "none", color: "#0a0a0a", fontSize: "13px", fontWeight: 500, cursor: email.includes("@") && !isSaving ? "pointer" : "not-allowed", letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: "'DM Sans', sans-serif", borderRadius: 0, opacity: email.includes("@") && !isSaving ? 1 : 0.35 }}
+              >
+                {isSaving ? "Sending..." : "Send my results"}
+              </button>
+            </>
+          )}
         </div>
       </div>
     );
