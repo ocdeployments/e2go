@@ -237,6 +237,7 @@ export default function QuizPage() {
   const [isAnimating, setIsAnimating] = useState(false);
   const [returnToResults, setReturnToResults] = useState(false);
   const [hardStopsTriggered, setHardStopsTriggered] = useState<string[]>([]);
+  const isAdvancing = useRef(false);
 
   // Compute visible questions from JSON + current answers
   const visibleQuestions = useMemo(() => {
@@ -368,6 +369,7 @@ export default function QuizPage() {
     setIsAnimating(true);
     setTimeout(() => {
       setIsAnimating(false);
+      isAdvancing.current = false;
       setCur((prev) => {
         const next = prev + 1;
         if (next >= visibleQuestions.length) return prev;
@@ -576,9 +578,11 @@ export default function QuizPage() {
   const handleSelectOpt = useCallback(
     (idx: number) => {
       if (!q || q.type !== "select") return;
+      if (isAdvancing.current) return;
       const opt = displayOpts[idx];
       if (!opt) return;
 
+      isAdvancing.current = true;
       setSelectedIdx(idx);
       const newAnswers = { ...answers, [q.id]: opt.text };
       setAnswers(newAnswers);
@@ -586,7 +590,10 @@ export default function QuizPage() {
       const result = processAction(opt, newAnswers);
 
       setTimeout(() => {
-        if (result.stopCode) return;
+        if (result.stopCode) {
+          isAdvancing.current = false;
+          return;
+        }
 
         if (result.shouldAdvance) {
           const nextIdx = cur + 1;
@@ -602,6 +609,10 @@ export default function QuizPage() {
           } else {
             advance();
           }
+        }
+        // Reset for warning pause (shouldAdvance=false) so user can click Continue
+        if (!result.shouldAdvance) {
+          isAdvancing.current = false;
         }
       }, result.stopCode ? 280 : 1200);
 
