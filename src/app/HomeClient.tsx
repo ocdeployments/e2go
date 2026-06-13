@@ -5,38 +5,7 @@ import { ComparisonSection } from "@/components/landing/ComparisonSection";
 
 export default function HomeClient() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [openFaq, setOpenFaq] = useState<number | null>(null);
-
-  const faqs = [
-    {
-      q: "Is this a law firm?",
-      a: "No. E2go prepares documents. What you do with your finished package is entirely up to you. If you choose to have an immigration consultant review it at this stage, it is a 2-hour job — not a 20-hour one.",
-    },
-    {
-      q: "What if I am denied?",
-      a: "We test every document against 15 real denial patterns before you ever see them. We cannot guarantee an outcome — no one can. But we can make sure your preparation is not the reason.",
-    },
-    {
-      q: "When should I bring in a consultant or attorney?",
-      a: "Too early means paying fees to prepare documents before you know whether your business structure is E-2 compliant. Too late means arriving at the consulate hoping for the best. The right moment is after the strategy is confirmed and before the application is filed. E2go handles the strategy. A consultant reviews and signs off. That is the sequence.",
-    },
-    {
-      q: "How is this different from hiring a consultant?",
-      a: "A consultant works on one case at a time, in their own way. E2go applies the same preparation discipline to every case, every time — tested against every denial pattern in our knowledge base and reviewed by you before a single document leaves the platform.",
-    },
-    {
-      q: "Is my data secure?",
-      a: "We never store your passports, bank statements, or financial records. Only your answers. Your documents are generated, reviewed by you, and downloaded. They belong to you entirely.",
-    },
-    {
-      q: "What countries are eligible?",
-      a: "The E-2 visa is available to citizens of 82 treaty countries. Our eligibility check confirms your specific country and consulate in the first question — it takes under a minute.",
-    },
-    {
-      q: "How long does the whole process take?",
-      a: "Your documents are typically ready within days of completing your application profile. The overall timeline — business formation, consulate appointment, visa processing — depends on your starting point. Our journey planner shows you a personalised timeline the moment you complete the eligibility check.",
-    },
-  ];
+  // openFaq removed — static FAQ replaced by interactive FaqWidget
 
   const mistakes = [
     {
@@ -425,27 +394,23 @@ export default function HomeClient() {
         </div>
       </section>
 
-      {/* ── FAQ ── */}
-      <section className="px-4 md:px-10 lg:px-16 py-16 md:py-24">
-        <p className="text-[10px] tracking-[0.18em] uppercase text-[rgba(201,168,76,0.6)] mb-3">Common questions</p>
-        <h2 className="font-['Cormorant_Garamond',Georgia,serif] text-3xl md:text-5xl font-light text-[#f5f0e8] mb-10 md:mb-12 leading-tight">
-          Everything you need to know.
-        </h2>
+      {/* ── ASK E2GO CTA (Session 15 — widget moved to /learn) ── */}
+      <section className="px-4 md:px-10 lg:px-16 py-16 md:py-24 border-y border-[rgba(201,168,76,0.08)]">
         <div className="max-w-2xl">
-          {faqs.map((faq,i) => (
-            <div key={i} className="border-b border-[rgba(201,168,76,0.1)]">
-              <button
-                onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                className="w-full flex items-center justify-between py-5 text-left min-h-[44px]"
-              >
-                <span className="text-sm md:text-[15px] font-medium text-[#f5f0e8] pr-8 leading-snug">{faq.q}</span>
-                <span className="text-[#C9A84C] text-xl flex-shrink-0 font-light">{openFaq === i ? '−' : '+'}</span>
-              </button>
-              {openFaq === i && (
-                <div className="pb-5 text-sm text-[rgba(245,240,232,0.55)] leading-relaxed max-w-xl">{faq.a}</div>
-              )}
-            </div>
-          ))}
+          <p className="text-[10px] tracking-[0.18em] uppercase text-[rgba(201,168,76,0.6)] mb-3">Ask E2go</p>
+          <h2 className="font-['Cormorant_Garamond',Georgia,serif] text-3xl md:text-5xl font-light text-[#f5f0e8] mb-3 leading-tight">
+            Got questions about the E-2 visa?
+          </h2>
+          <p className="text-sm text-[rgba(245,240,232,0.42)] mb-8 max-w-lg leading-relaxed">
+            Ask anything — investment requirements, treaty countries, processing times, family visas. Answers drawn from 350+ vetted Q&amp;A pairs.
+          </p>
+          <Link
+            href="/learn#ask"
+            className="inline-flex items-center gap-2 px-6 py-3 text-xs font-medium tracking-widest uppercase text-[#0a0a0a] bg-[#C9A84C] hover:opacity-85 transition-opacity min-h-[44px]"
+          >
+            Ask E2go
+            <span>→</span>
+          </Link>
         </div>
       </section>
 

@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Breadcrumb from "@/components/Breadcrumb";
+import FaqWidget from "@/components/landing/FaqWidget";
 
 export const metadata: Metadata = {
-  title: "Learn About the E-2 Visa | E2go",
-  description: "Comprehensive guide to the E-2 Treaty Investor Visa. Requirements, process, timelines, and how to build a successful application.",
+  title: "Learn About the E-2 Visa — Articles & Answers | E2go",
+  description: "E-2 Treaty Investor Visa guides, answers, and resources. Read articles on requirements, process, and timelines — or ask a question and get an instant answer.",
   openGraph: {
-    title: "Learn About the E-2 Visa | E2go",
-    description: "Comprehensive guide to the E-2 Treaty Investor Visa. Requirements, process, and timelines.",
+    title: "Learn About the E-2 Visa — Articles & Answers | E2go",
+    description: "E-2 Treaty Investor Visa guides, answers, and resources. Articles plus instant AI-powered answers.",
     type: "website",
     url: "https://e2go.app/learn",
     images: [
@@ -70,13 +71,20 @@ export default function Learn() {
       <div className="max-w-4xl mx-auto">
         <Breadcrumb items={[{ label: "Home", href: "/" }, { label: "Learn" }]} />
 
-        <h1 className="text-4xl md:text-5xl mb-4" style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 300, color: "#f5f0e8" }}>
-          Learn About the <em style={{ fontStyle: "italic", color: "#C9A84C" }}>E-2 Visa</em>
+        {/* Ask E2go widget — Session 15/17: moved to top */}
+        <div id="ask" className="-mx-4 md:-mx-10 lg:-mx-16 mb-12 md:mb-16">
+          <FaqWidget />
+        </div>
+
+        {/* Articles section heading */}
+        <h1 className="text-3xl md:text-4xl mb-4" style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 300, color: "#f5f0e8" }}>
+          Or explore our <em style={{ fontStyle: "italic", color: "#C9A84C" }}>guides</em>
         </h1>
-        <p className="mb-12" style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "16px", fontWeight: 300, color: "rgba(245,240,232,0.60)", lineHeight: 1.6 }}>
-          Everything you need to know about the E-2 Treaty Investor visa — requirements, process, timelines, and how to build a successful application. Educational resources designed to clarify, not complicate.
+        <p className="mb-10" style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "15px", fontWeight: 300, color: "rgba(245,240,232,0.60)", lineHeight: 1.6 }}>
+          Deep dives into E-2 requirements, investment, and process.
         </p>
 
+        {/* Articles */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {articles.map((article, i) => (
             <Link
