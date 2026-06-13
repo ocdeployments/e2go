@@ -18,6 +18,15 @@ import {
 } from 'docx';
 import { buildTextRuns } from '@/lib/docx-builder';
 
+/**
+ * Safely coerce a cover-page field to a string.
+ * null / undefined → bracket placeholder matching existing pattern.
+ */
+function safeField(value: string | null | undefined, fallback: string): string {
+  if (value == null || value === '') return fallback;
+  return value;
+}
+
 export interface CoverPageOptions {
   applicantName: string;
   businessName: string;
@@ -31,14 +40,12 @@ export interface CoverPageOptions {
  * Build a formatted Document for the package cover page.
  */
 export function buildCoverPage(options: CoverPageOptions): Document {
-  const {
-    applicantName,
-    businessName,
-    businessState,
-    preparedDate,
-    nationality,
-    passportNumber,
-  } = options;
+  const applicantName = safeField(options.applicantName, '[Applicant Name]');
+  const businessName = safeField(options.businessName, '[Business Name]');
+  const businessState = safeField(options.businessState, '[Business State]');
+  const preparedDate = safeField(options.preparedDate, '[Date]');
+  const nationality = safeField(options.nationality, '[Nationality]');
+  const passportNumber = safeField(options.passportNumber, '[passport number from Tab A]');
 
   const children: Paragraph[] = [];
 
@@ -59,7 +66,7 @@ export function buildCoverPage(options: CoverPageOptions): Document {
       alignment: AlignmentType.CENTER,
       children: [
         new TextRun({
-          text: applicantName.toUpperCase(),
+          text: applicantName.startsWith('[') ? applicantName : applicantName.toUpperCase(),
           bold: true,
           font: 'Century Schoolbook',
           size: 32, // 16pt in half-points
