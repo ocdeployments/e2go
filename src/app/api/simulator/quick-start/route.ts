@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 
 // POST /api/simulator/quick-start — Create a minimal application for standalone simulator
-// Body: { businessCategory, applicantName?, targetConsulate? }
+// Body: { businessCategory, applicantName? }
 // Returns: { applicationId }
 export async function POST(request: NextRequest) {
   try {
@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { businessCategory, applicantName, targetConsulate } = body;
+    const { businessCategory, applicantName } = body;
 
     if (!businessCategory) {
       return NextResponse.json(
@@ -24,23 +24,25 @@ export async function POST(request: NextRequest) {
     }
 
     // Create a minimal application row marked as simulator_standalone
+    // Only insert columns confirmed in the applications table schema:
+    //   user_id, source, status, payment_status, principal_name,
+    //   simulator_sessions_used, simulator_sessions_purchased
+    // business_category and target_state do NOT exist on applications —
+    // the simulator engine falls back to answers map for those values.
     const { data: app, error: appError } = await supabase
       .from('applications')
       .insert({
         user_id: user.id,
         source: 'simulator_standalone',
-        business_category: businessCategory,
         status: 'in_progress',
         payment_status: 'free',
-        // Minimal fields — simulator will read from answers table
         principal_name: applicantName || null,
-        target_state: targetConsulate || 'toronto',
         // Give standalone users 2 free simulator sessions
         simulator_sessions_used: 0,
         simulator_sessions_purchased: 2,
       })
       .select('id')
-      .single();
+      .maybeSingle();
 
     if (appError || !app) {
       console.error('Failed to create quick-start application:', appError);
