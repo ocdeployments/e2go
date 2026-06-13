@@ -6,6 +6,9 @@ import { useParams, useRouter } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import { GENERATION_STEP_LABELS, DOCUMENT_TYPE_LABELS } from "@/types/generation";
 import type { SSEProgressMessage, DocumentType } from "@/types/generation";
+import AcknowledgmentGate from "@/components/AcknowledgmentGate";
+import PreGenerationConfirmation from "@/components/generate/PreGenerationConfirmation";
+import type { PreGenerationValidationResult } from "@/lib/pre-generation-validation";
 
 type StepStatus = "pending" | "running" | "complete" | "failed";
 
@@ -60,7 +63,7 @@ interface ApplicationData {
 
 export default function GenerateProgressPage() {
   const params = useParams();
-  const router = useRouter();
+  const _router = useRouter();
   const applicationId = params.applicationId as string;
 
   const [_jobId, setJobId] = useState<string | null>(null);
@@ -81,8 +84,17 @@ export default function GenerateProgressPage() {
   const [overallProgress, setOverallProgress] = useState(0);
   const [applicationData, setApplicationData] = useState<ApplicationData>({});
   const [currentQualityStep, setCurrentQualityStep] = useState(0);
+  const [acknowledged, setAcknowledged] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const [downloaded, setDownloaded] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
   const generationStarted = useRef(false);
+
+  // Pre-generation confirmation state
+  const [validation, setValidation] = useState<PreGenerationValidationResult | null>(null);
+  const [validationLoading, setValidationLoading] = useState(true);
+  const [validationError, setValidationError] = useState<string>("");
+  const [confirming, setConfirming] = useState(false);
 
   // Map document type to display name
   const mapDocumentType = (type: string): string => {
@@ -104,6 +116,33 @@ export default function GenerateProgressPage() {
     if (stepId < currentQualityStep) return "complete";
     if (stepId === currentQualityStep && approvedDocuments >= 6) return "running";
     return "pending";
+  };
+
+  // Download handler — streams the ZIP from the API
+  const handleDownload = async () => {
+    setDownloading(true);
+    try {
+      const res = await fetch(`/api/generate/download/${applicationId}`);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Download failed' }));
+        throw new Error(err.error || `HTTP ${res.status}`);
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'E2_Application_Package.zip';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      setDownloaded(true);
+    } catch (err) {
+      console.error('[DOWNLOAD] Error:', err);
+      setErrorMessage(err instanceof Error ? err.message : 'Download failed. Please try again.');
+    } finally {
+      setDownloading(false);
+    }
   };
 
   const updateStepStatus = useCallback(
@@ -289,15 +328,73 @@ export default function GenerateProgressPage() {
     }
   }, [applicationId, connectSSE]);
 
-  useEffect(() => {
-    if (generationStarted.current) return;
-    generationStarted.current = true;
-    startGeneration();
+  // Handle confirmation — log to pre_generation_confirmation, then start generation
+  const handleConfirm = useCallback(async (payload: {
+    breakdown: Record<string, number>;
+    fundSources: Record<string, number | null>;
+    edits: Array<{ field: string; oldValue: number | null; newValue: number }>;
+    discrepancyPrompted: boolean;
+    discrepancyResolution: 'total_updated' | 're_entered_line_item' | null;
+  }) => {
+    setConfirming(true);
+    try {
+      // Log the confirmation
+      await fetch('/api/generate/confirm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          applicationId,
+          breakdown: payload.breakdown,
+          fundSources: payload.fundSources,
+          edits: payload.edits,
+          discrepancyPrompted: payload.discrepancyPrompted,
+          discrepancyResolution: payload.discrepancyResolution,
+        }),
+      });
+
+      // Start generation
+      generationStarted.current = true;
+      await startGeneration();
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : 'Failed to confirm');
+      setConfirming(false);
+    }
+  }, [applicationId, startGeneration]);
+
+  // Handle "Something needs fixing" — navigate to the relevant tab
+  const handleNeedsFixing = useCallback((_returnTab: string, _instruction: string) => {
+    _router.push(`/apply/investment`);
   }, []);
+
+  // Fetch validation data on mount — shows confirmation panel instead of auto-starting
+  useEffect(() => {
+    const fetchValidation = async () => {
+      try {
+        const res = await fetch(`/api/generate/validate/${applicationId}`);
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({ error: 'Failed to load validation' }));
+          setValidationError(err.error || 'Failed to load investment data');
+          setValidationLoading(false);
+          return;
+        }
+        const data = await res.json();
+        setValidation(data.validation);
+        setApplicationData((prev) => ({
+          ...prev,
+          businessName: data.businessName || prev.businessName,
+        }));
+      } catch {
+        setValidationError('Failed to load investment data');
+      } finally {
+        setValidationLoading(false);
+      }
+    };
+    fetchValidation();
+  }, [applicationId]);
 
   useEffect(() => {
     if (previewRef.current) {
-      previewRef.current.scrollTop = previewRef.current.scrollHeight;
+      previewRef.current.scrollTop = 0;
     }
   }, [documentText]);
 
@@ -467,10 +564,89 @@ export default function GenerateProgressPage() {
             </div>
           </div>
 
-          {/* IDLE STATE - Before generation starts */}
-          {!isGenerating && !isComplete && !isFailed && (
+          {/* PRE-GENERATION CONFIRMATION STATE */}
+          {!isGenerating && !isComplete && !isFailed && !confirming && (
+            <>
+              {validationLoading && (
+                <div className="flex flex-col items-center justify-center min-h-[400px]">
+                  <div className="relative w-[200px] h-px mb-6">
+                    <div className="absolute inset-0 bg-[#C9A84C]/20" />
+                    <div className="absolute inset-0 bg-[#C9A84C] animate-pulse" style={{ animationDuration: '2s' }} />
+                  </div>
+                  <p
+                    className="text-sm text-white/50"
+                    style={{ fontFamily: "'DM Sans', sans-serif" }}
+                  >
+                    Loading your investment data...
+                  </p>
+                </div>
+              )}
+
+              {validationError && (
+                <div className="flex flex-col items-center justify-center min-h-[400px]">
+                  <p
+                    className="text-sm text-white/50 mb-4"
+                    style={{ fontFamily: "'DM Sans', sans-serif" }}
+                  >
+                    {validationError}
+                  </p>
+                  <button
+                    onClick={() => _router.push('/apply/investment')}
+                    className="border border-[#C9A84C]/40 px-6 py-3 text-sm font-medium uppercase tracking-wider text-[#C9A84C] transition-colors hover:bg-[#C9A84C]/10"
+                    style={{ fontFamily: "'DM Sans', sans-serif" }}
+                  >
+                    Return to Investment Tab
+                  </button>
+                </div>
+              )}
+
+              {validation && !validation.readyForGeneration && !validationError && (
+                <div className="flex flex-col items-center justify-center min-h-[400px]">
+                  <h2
+                    className="text-xl italic text-[#C9A84C] mb-4 text-center"
+                    style={{ fontFamily: "'Cormorant Garamond', serif" }}
+                  >
+                    Before we can generate, we need a few details
+                  </h2>
+                  <div className="mb-6 space-y-2">
+                    {validation.blockingGaps.map((gap) => (
+                      <p
+                        key={gap.id}
+                        className="text-sm text-white/50"
+                        style={{ fontFamily: "'DM Sans', sans-serif" }}
+                      >
+                        · {gap.instruction}
+                      </p>
+                    ))}
+                  </div>
+                  <button
+                    onClick={() => {
+                      const firstGap = validation.blockingGaps[0];
+                      _router.push(firstGap?.returnTab || '/apply/investment');
+                    }}
+                    className="bg-[#C9A84C] px-6 py-3 text-sm font-medium uppercase tracking-wider text-[#0a0a0a] transition-colors hover:bg-[#d4b35c]"
+                    style={{ fontFamily: "'DM Sans', sans-serif" }}
+                  >
+                    Complete Required Fields →
+                  </button>
+                </div>
+              )}
+
+              {validation && validation.readyForGeneration && (
+                <PreGenerationConfirmation
+                  validation={validation}
+                  businessName={applicationData.businessName ?? null}
+                  applicationId={applicationId}
+                  onConfirm={handleConfirm}
+                  onNeedsFixing={handleNeedsFixing}
+                />
+              )}
+            </>
+          )}
+
+          {/* CONFIRMING STATE — generating after confirmation */}
+          {confirming && !isGenerating && (
             <div className="flex flex-col items-center justify-center min-h-[400px]">
-              {/* Animated gold line */}
               <div className="relative w-[200px] h-px mb-6">
                 <div className="absolute inset-0 bg-[#C9A84C]/20" />
                 <div className="absolute inset-0 bg-[#C9A84C] animate-pulse" style={{ animationDuration: '2s' }} />
@@ -479,7 +655,7 @@ export default function GenerateProgressPage() {
                 className="text-sm text-white/50"
                 style={{ fontFamily: "'DM Sans', sans-serif" }}
               >
-                Your documents are being prepared...
+                Starting document generation...
               </p>
             </div>
           )}
@@ -508,8 +684,8 @@ export default function GenerateProgressPage() {
               {/* Streaming text area */}
               <div
                 ref={previewRef}
-                className="overflow-hidden"
-                style={{ maxHeight: '500px' }}
+                className="overflow-y-auto"
+                style={{ maxHeight: 'calc(100vh - 340px)' }}
               >
                 {documentText ? (
                   <pre
@@ -611,28 +787,84 @@ export default function GenerateProgressPage() {
           )}
 
           {/* COMPLETE STATE */}
-          {isComplete && (
+          {isComplete && !acknowledged && (
+            <div className="py-8">
+              <AcknowledgmentGate
+                applicationId={applicationId}
+                onAcknowledged={() => setAcknowledged(true)}
+              />
+            </div>
+          )}
+
+          {/* ACKNOWLEDGED STATE — ready to download */}
+          {isComplete && acknowledged && !downloaded && (
             <div className="flex flex-col items-center justify-center min-h-[400px]">
               <h2
                 className="text-2xl italic text-[#C9A84C] mb-4 text-center"
                 style={{ fontFamily: "'Cormorant Garamond', serif" }}
               >
-                Your application package is ready.
+                Your documents are ready.
               </h2>
 
               <p
-                className="text-sm text-white/50 mb-8"
+                className="text-sm text-white/50 mb-2 text-center max-w-md"
                 style={{ fontFamily: "'DM Sans', sans-serif" }}
               >
-                All documents have passed quality review.
+                All 6 case file documents have passed quality review and your confirmation has been recorded.
+              </p>
+
+              <p
+                className="text-xs text-white/30 mb-8 text-center max-w-md"
+                style={{ fontFamily: "'DM Sans', sans-serif" }}
+              >
+                Your package includes 7 files — 6 application documents plus a completion checklist.
+                Any highlighted fields must be completed locally before submission.
               </p>
 
               <button
-                onClick={() => router.push(`/documents/${applicationId}`)}
-                className="bg-[#C9A84C] px-8 py-3 text-sm font-medium uppercase tracking-wider text-[#0a0a0a] transition-colors hover:bg-[#d4b35c]"
+                onClick={handleDownload}
+                disabled={downloading}
+                className="bg-[#C9A84C] px-8 py-3 text-sm font-medium uppercase tracking-wider text-[#0a0a0a] transition-colors hover:bg-[#d4b35c] disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{ fontFamily: "'DM Sans', sans-serif" }}
               >
-                Review Your Documents →
+                {downloading ? 'Generating Package…' : 'Download Application Package'}
+              </button>
+
+              {downloading && (
+                <p
+                  className="text-xs text-white/30 mt-4"
+                  style={{ fontFamily: "'DM Sans', sans-serif" }}
+                >
+                  Preparing 7 .docx files…
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* DOWNLOADED STATE — confirmation */}
+          {isComplete && acknowledged && downloaded && (
+            <div className="flex flex-col items-center justify-center min-h-[400px]">
+              <h2
+                className="text-2xl italic text-[#C9A84C] mb-4 text-center"
+                style={{ fontFamily: "'Cormorant Garamond', serif" }}
+              >
+                Package downloaded.
+              </h2>
+
+              <p
+                className="text-sm text-white/50 mb-8 text-center max-w-md"
+                style={{ fontFamily: "'DM Sans', sans-serif" }}
+              >
+                Check your downloads folder for E2_Application_Package.zip.
+                Review each document and complete any highlighted fields before submitting to your consulate.
+              </p>
+
+              <button
+                onClick={handleDownload}
+                className="border border-[#C9A84C] px-6 py-3 text-sm font-medium uppercase tracking-wider text-[#C9A84C] transition-colors hover:bg-[#C9A84C]/10"
+                style={{ fontFamily: "'DM Sans', sans-serif" }}
+              >
+                Download Again
               </button>
             </div>
           )}
