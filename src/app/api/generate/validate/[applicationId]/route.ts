@@ -29,7 +29,7 @@ export async function GET(
     // Verify application belongs to user
     const { data: application, error: appError } = await supabase
       .from('applications')
-      .select('id, user_id, investment_amount, business_name')
+      .select('id, user_id, business_name')
       .eq('id', applicationId)
       .single();
 
