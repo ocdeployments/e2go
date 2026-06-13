@@ -3,7 +3,7 @@ import Breadcrumb from "@/components/Breadcrumb";
 
 export default function SettingsPage() {
   return (
-    <main className="pt-8 pb-16 px-4 min-h-screen bg-[#0a0a0a]">
+    <main className="pt-20 pb-16 px-4 min-h-screen bg-[#0a0a0a]">
       <div className="max-w-3xl mx-auto">
         <Breadcrumb items={[{ label: "Dashboard", href: "/dashboard" }, { label: "Settings" }]} />
 

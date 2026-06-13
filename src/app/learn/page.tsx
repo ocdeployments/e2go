@@ -67,7 +67,7 @@ const articles = [
 
 export default function Learn() {
   return (
-    <main className="pt-8 pb-16 px-4 min-h-screen" style={{ background: "#0a0a0a" }}>
+    <main className="pt-20 pb-16 px-4 min-h-screen" style={{ background: "#0a0a0a" }}>
       <div className="max-w-4xl mx-auto">
         <Breadcrumb items={[{ label: "Home", href: "/" }, { label: "Learn" }]} />
 

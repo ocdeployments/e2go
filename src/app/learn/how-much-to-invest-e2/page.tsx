@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 
 export default function HowMuchToInvest() {
   return (
-    <main className="pt-8 pb-16 px-4 min-h-screen" style={{ background: "#0a0a0a" }}>
+    <main className="pt-20 pb-16 px-4 min-h-screen" style={{ background: "#0a0a0a" }}>
       <div className="max-w-3xl mx-auto">
         <Breadcrumb items={[{ label: "Home", href: "/" }, { label: "Learn", href: "/learn" }, { label: "How Much to Invest" }]} />
 
