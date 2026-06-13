@@ -1,6 +1,6 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** May 29, 2026 — End of Session 1
+**Last Updated:** June 13, 2026 — End of Session 10
 **App Name:** e2go.app
 **Stack:** Next.js 14 · TypeScript · Tailwind CSS · Supabase · MiniMax M1 via OpenRouter
 **Dev Server:** localhost:3000
@@ -54,8 +54,8 @@ Claude Code must:
 | Supabase Connection | ✅ COMPLETE | {"connected":true} confirmed |
 | Database Schema | ✅ COMPLETE | 17 tables, RLS policies, profiles trigger |
 | Auth (Login/Signup) | ✅ COMPLETE | Supabase auth wired, middleware protected |
-| Module 1–6 (Core App) | ⬜ NOT STARTED | |
-| AI Features (MiniMax) | ⬜ NOT STARTED | OpenRouter client planned |
+| Module 1–6 (Core App) | 🔄 IN PROGRESS | Module 3 tabs partially built |
+| AI Features (MiniMax) | 🔄 IN PROGRESS | OpenRouter client built, analysis engine live |
 | PDF Export | ⬜ NOT STARTED | |
 | Stripe Integration | ⬜ NOT STARTED | After company incorporated + HST registered |
 | Referral Engine | ⬜ NOT STARTED | Design now, build after core app |
@@ -120,7 +120,8 @@ All files in ~/E2-go/docs/stitch/
 | Confidence Score | /score | ⬜ NOT STARTED | |
 | Interview Simulator | /simulator | ⬜ NOT STARTED | |
 | PDF Export | /export | ⬜ NOT STARTED | |
-| Document Generation | /generating | ⬜ NOT STARTED | Narrative progress screen |
+| Document Generation | /generating | ✅ COMPLETE | Sequential, checkpointed, 15-file ZIP |
+| Package Summary | /documents/[appId] | ✅ COMPLETE | Post-generation score + gaps + disclaimer (Session 9) |
 | Support | /support | ⬜ NOT STARTED | |
 | Support — New Ticket | /support/new | ⬜ NOT STARTED | |
 | Support — My Tickets | /support/tickets | ⬜ NOT STARTED | |
@@ -328,28 +329,28 @@ Step 11 → Package preview unlocked
 
 | Feature | Status | Notes |
 |---|---|---|
-| Sequential generation engine | ⬜ | One doc at a time |
-| Checkpoint DB table | ⬜ | document_generation_jobs |
+| Sequential generation engine | ✅ COMPLETE | One doc at a time, checkpointed |
+| Checkpoint DB table | ✅ COMPLETE | document_generation_jobs |
 | Server-Sent Events progress updates | ⬜ | Real-time step display |
 | Narrative progress screen | ⬜ | Not a spinner — show each step |
 | Conversational gap-fill interface | ⬜ | Chat UI during generation |
-| Gap analysis engine (rule-based) | ⬜ | Requirements matrix per document |
+| Gap analysis engine (rule-based) | ✅ COMPLETE | Requirements matrix per document |
 | Repetition checker (AI) | ⬜ | Flags cross-document repetition |
 | Consistency checker (rule-based) | ⬜ | Same facts stated identically everywhere |
 | Quality gate | ⬜ | Completeness, specificity, tone, length |
 | Re-prompt on quality fail | ⬜ | MiniMax retry with feedback |
 | Human review flag | ⬜ | Admin queue for persistent failures |
-| Cover letter generation | ⬜ | Tab D — AI narrative |
-| Source of funds chronology | ⬜ | Tab H — from Template 1 |
-| Investment proof narrative | ⬜ | Tab F |
-| Business plan | ⬜ | Tab K — full document |
-| Qualifications narrative | ⬜ | Tab J |
-| DS-160 reference sheet | ⬜ | Tab A — pre-filled |
+| Cover letter generation | ✅ COMPLETE | Tab D — AI narrative via generation-engine |
+| Source of funds chronology | ✅ COMPLETE | Tab H — from Template 1 |
+| Investment proof narrative | ✅ COMPLETE | Tab F |
+| Business plan | ✅ COMPLETE | Tab K — full document |
+| Qualifications narrative | ✅ COMPLETE | Tab J |
+| DS-160 reference sheet | ✅ COMPLETE | Tab A — pre-filled |
 | 5-year financial projections | ⬜ | From Template 2 |
 | Capital allocation table | ⬜ | |
 | Job creation narrative + chart | ⬜ | From Template 5 |
 | Organizational chart | ⬜ | From Template 4 |
-| Binder assembly guide | ⬜ | Personalized per-tab |
+| Binder assembly guide | ✅ COMPLETE | Personalized per-tab (Session 4) |
 | PDF export (3 per application) | ⬜ | Anti-sharing |
 | 70-page limit enforcement | ⬜ | Toronto consulate limit |
 | Export log with timestamp | ⬜ | |
@@ -399,8 +400,8 @@ Step 11 → Package preview unlocked
 | Outcome tracking | ⬜ | CEAC verification integration |
 | Consent log (PIPEDA) | ⬜ | Per action with timestamp |
 | CASL compliance | ⬜ | Opt-in logged per category |
-| OpenRouter/MiniMax client | ⬜ | src/lib/ai.ts |
-| AI API route | ⬜ | src/app/api/ai/route.ts |
+| OpenRouter/MiniMax client | ✅ COMPLETE | src/lib/ai.ts + analysis-engine.ts |
+| AI API route | ✅ COMPLETE | src/app/api/ai/route.ts |
 | Email service (Resend) | ⬜ | Transactional + newsletter |
 | Re-engagement email sequence | ⬜ | Days 3, 7, 14, 30 |
 
@@ -1302,14 +1303,10 @@ Full details in CLAUDE_CONTEXT.md. These apply to every task every session:
 
 | Issue | File | Priority | Fix |
 |---|---|---|---|
-| Database schema — users table conflict | Supabase SQL | HIGH | Replace public.users with public.profiles referencing auth.users |
-| Auth not wired to login/signup pages | src/app/login · signup | HIGH | Wire Supabase auth in Session 2 |
-| Quiz scoring engine not connected | src/app/quiz/page.tsx | HIGH | Wire module0_scoring_logic.json |
-| Quiz result not saving to Supabase | src/app/quiz/page.tsx | HIGH | After auth wired |
-| CAD/USD conversion missing on Q0-05 | src/app/quiz/page.tsx | MEDIUM | Add live conversion + W-PROP warning |
-| Dashboard showing static data | src/app/dashboard/page.tsx | MEDIUM | Wire to real user data after auth |
-| application_lifecycle table not yet in schema | docs/schema_complete.sql | HIGH | Add to schema — Session 2 |
-| SEO metadata missing from all pages | src/app/*/page.tsx | HIGH | Add per Rule 1 — Session 2 |
+| Supabase 406/403 errors on Tab A | src/app/apply | HIGH | Fix applications + profiles RLS policies |
+| application_lifecycle table not yet in schema | docs/schema_complete.sql | HIGH | Add to schema |
+| Passport number not collected in Module 3 | Module 3 tabs | LOW | Bracket placeholder is correct — data not yet collected |
+| Year 3 net income vs investment-total consistency check | quality-gate | LOW | May confuse different field semantics — deferred |
 
 ---
 
@@ -1373,28 +1370,102 @@ Full details in CLAUDE_CONTEXT.md. These apply to every task every session:
 
 ---
 
-## Session 9 — May 31, 2026
+## Session 4 — June 8, 2026
 
-**Module 3 Tabs Update (completed from prior session):**
-- Global language fixes applied to all tabs (Canada → home country)
-- Batch assignments added to all tabs (Batch 1: personal, Batch 2: business)
-- 18 new questions added across Tabs B, D, E, F, G, H, I, J, K, L
-- Lead temperature scoring fields added to schema
-- Denial audit gaps D-02 D-03 D-04 D-06 D-07 D-10 D-12 D-13 resolved
-- Referral triggers added: LLC formation, CPA (RRSP/property), FX (large wire), banking (TD/RBC), discovery day, attorney (age-out)
+**Completed:**
+- Package assembly layer: cover page, TOC, tab dividers, 15-file ZIP
+- Shared constants module (`docx-package-constants.ts`)
+- Cover page builder (`docx-cover-builder.ts`) with safeField() fallback
+- TOC builder (`docx-toc-builder.ts`) with dot-leader approach
+- Divider builder (`docx-divider-builder.ts`) for all 6 tabs
+- Download route updated to assemble 15-file ZIP
+- Checklist intro updated
+- Build: clean
 
-**Key decisions made:**
-- Paywall moved to post-Module 3 (before document generation)
-- Interview simulator: 2 sessions included, $9.99/bundle extra
-- Document generation: sequential + checkpointed, never parallel
-- Referral engine: 5 categories including full real estate layer
-- Franchise brokerage: direct broker model identified (no license required)
-- B2B subscription products: attorney + broker portals (Phase 2)
-- /learn education hub: 8 SEO-targeted sub-pages
-- Form standards: 5 standards, DS-160 terminology required
-- Adaptive case-building: 4-layer probe system, 10 gap categories
-- Content library started: "The Preparation Paralysis"
-- Newsletter: "The E-2 Insider" — 4 segments, 2-week cadence
+**Commits:** `9a0ee93`, `d44c2e2`
+
+---
+
+## Session 5 — June 9, 2026
+
+**Completed:**
+- Transferable skills pipeline investigation (diagnostic session)
+- Identified hardcoded skeleton in analysis-engine.ts
+- Found framing-decisions pipeline was a dry-run stub
+- Session 7 spec written based on findings
+
+---
+
+## Session 6 — June 9, 2026
+
+**Completed:**
+- Real ZIP generation tested end-to-end for Chen (15 files)
+- Missing cover-page data variant tested (bracket placeholder fallback)
+- Tab subset variant tested
+- DOC_DISPLAY_NAMES completeness verified
+- Investment_amount column query fix
+- Build: clean
+
+**Commits:** `98fe975`
+
+---
+
+## Session 7 — June 10, 2026
+
+**Completed:**
+- Three-layer experience/framing pipeline built:
+  - Layer 0: Targeted follow-up questions per business category
+  - Layer 1: Real structured pipeline (9 dimension scorers + OpenRouter framing call)
+  - Layer 2: Hardened generation prompt (standing backstop instruction)
+- `calculateExperienceScore()` — real 9-dimension scoring from actual data
+- `generateFramingDecisions()` — real OpenRouter call via deepseek-chat
+- `loadApplicationAnswers()` — loads from Supabase (answers, followup_responses, voice_profile, quiz_sessions)
+- 5-fixture test matrix with dry-run scoring
+- Business-operational-needs reference table (12 categories)
+- Build: clean
+
+**Commits:** `2a41d80`, `f648643`, `6140a43`, `b54be6f`
+
+---
+
+## Session 8 — June 11, 2026
+
+**Completed:**
+- Cover page data source fix (LIVE BUG)
+- Replaced broken `personal_info` JSONB query with real column sources
+- Applicant name, business name, nationality, state now render correctly
+- safeField() bracket placeholder fallback retained for uncollected fields (passport)
+- Build: clean
+
+**Commits:** `6da0f6d`
+
+---
+
+## Session 9 — June 12, 2026
+
+**Completed:**
+- Post-generation package summary (`/documents/[applicationId]`)
+- 5 sections: Package Strength Overview, What's Strong, Where Package May Need More, What Could Help, Mandatory Disclaimer
+- Bonus Section 5.5: Areas Officers May Ask About (WATCH/FLAG/CRITICAL)
+- Zero denial-prediction language confirmed across all sections
+- Chen verified: experience_match correctly shown as STRONG
+- Fixture 5 (worst case) verified: WEAK correctly surfaced with constructive suggestion
+- Build: clean
+
+**Commits:** `086bebf`, `81b2efb`
+
+---
+
+## Session 10 — June 13, 2026
+
+**Completed:**
+- Live framing call test (Fixtures 3 and 5) — both returned well-formed JSON
+  - Fixture 3 (warehouse→cleaning): 4 framing decisions found
+  - Fixture 5 (recent grad→IT): 2 framing decisions found
+- Section 5.5 copy review — zero denial-language issues (all "may" framing)
+- Chen's franchise_training_offset verified — correct per spec (PARTIAL, no offset)
+- TODO/stub grep sweep — no actionable items found
+- Build: clean
 
 ---
 
@@ -1412,7 +1483,7 @@ Full details in CLAUDE_CONTEXT.md. These apply to every task every session:
 
 ---
 
-## Session 10 Priorities
+## Session 11 Priorities
 
 1. Fix Supabase 406/403 errors on Tab A (applications + profiles RLS)
 2. Build /apply/overview orientation page
