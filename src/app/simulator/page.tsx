@@ -57,60 +57,73 @@ export default function InterviewSimulator() {
 
   // Check auth and load session availability
   useEffect(() => {
+    let cancelled = false;
+
     async function checkAuth() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        router.push('/login');
-        return;
-      }
-      setUser(user);
-
-      // Get user's latest application
-      const { data: app } = await supabase
-        .from('applications')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
-
-      if (app) {
-        setApplication(app);
-        const availability = await checkSessionAvailability(app.id);
-        setSessionInfo(availability);
-
-        // Check if the application has sufficient case file data
-        // Module 3: answers + case brief required
-        // Standalone simulator: answers sufficient (no case brief needed)
-        const isStandalone = app.source === 'simulator_standalone';
-
-        const { data: answers } = await supabase
-          .from('answers')
-          .select('question_key')
-          .eq('application_id', app.id)
-          .limit(5);
-
-        if (isStandalone) {
-          // Standalone simulator: answers alone are sufficient
-          setHasCaseFile(Boolean(answers && answers.length > 0));
-        } else {
-          // Full Module 3 path: answers + case brief required
-          const { data: caseBrief } = await supabase
-            .from('case_briefs')
-            .select('id')
-            .eq('application_id', app.id)
-            .limit(1);
-
-          setHasCaseFile(
-            Boolean(answers && answers.length > 0 && caseBrief && caseBrief.length > 0)
-          );
+      console.log('[SIM] checkAuth started');
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        console.log('[SIM] getUser result:', user ? 'authenticated' : 'no user');
+        if (!user) {
+          router.push('/login');
+          return;
         }
-      } else {
-        // No application at all — cannot use simulator
-        setHasCaseFile(false);
+        if (!cancelled) setUser(user);
+
+        // Get user's latest application
+        const { data: app } = await supabase
+          .from('applications')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+
+        console.log('[SIM] application result:', app ? 'found' : 'not found');
+
+        if (app) {
+          if (!cancelled) setApplication(app);
+          const availability = await checkSessionAvailability(app.id);
+          console.log('[SIM] session availability:', availability);
+          if (!cancelled) setSessionInfo(availability);
+
+          // Check if the application has sufficient case file data
+          // Module 3: answers + case brief required
+          // Standalone simulator: answers sufficient (no case brief needed)
+          const isStandalone = app.source === 'simulator_standalone';
+
+          const { data: answers } = await supabase
+            .from('answers')
+            .select('question_key')
+            .eq('application_id', app.id)
+            .limit(5);
+
+          if (isStandalone) {
+            // Standalone simulator: answers alone are sufficient
+            if (!cancelled) setHasCaseFile(Boolean(answers && answers.length > 0));
+          } else {
+            // Full Module 3 path: answers + case brief required
+            const { data: caseBrief } = await supabase
+              .from('case_briefs')
+              .select('id')
+              .eq('application_id', app.id)
+              .limit(1);
+
+            if (!cancelled) setHasCaseFile(
+              Boolean(answers && answers.length > 0 && caseBrief && caseBrief.length > 0)
+            );
+          }
+        } else {
+          // No application at all — cannot use simulator
+          if (!cancelled) setHasCaseFile(false);
+        }
+      } catch (err) {
+        console.error('[SIM] checkAuth failed:', err);
       }
     }
     checkAuth();
+
+    return () => { cancelled = true; };
   }, [router]);
 
   // Clean up timer on unmount

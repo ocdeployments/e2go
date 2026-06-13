@@ -2,7 +2,7 @@
 // The brain of the interview simulator
 // Generated: June 5, 2026
 
-import { createClient } from '@supabase/supabase-js';
+import { createBrowserSupabaseClient } from '@/lib/supabase';
 import type {
   SimulatorContext,
   Question,
@@ -13,10 +13,10 @@ import type {
   FundFlowEvent,
 } from '@/types/simulator';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+// Use the shared browser singleton — avoids creating a second GoTrueClient
+// that would cause "Multiple GoTrueClient instances detected" warnings and
+// hung auth-token refreshes when two clients race on the same storage key.
+const supabase = createBrowserSupabaseClient();
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY!;
 const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
@@ -56,7 +56,7 @@ export async function buildSimulatorContext(applicationId: string): Promise<Simu
   const { data: answers, error: answersError } = await supabase
     .from('answers')
     .select('question_key, answer_value')
-    .eq('application_id', applicationId);
+    .eq('application_id', applicationId) as { data: { question_key: string; answer_value: string }[] | null; error: { message: string } | null };
 
   if (answersError) {
     throw new Error(`Answers fetch error: ${answersError.message}`);
