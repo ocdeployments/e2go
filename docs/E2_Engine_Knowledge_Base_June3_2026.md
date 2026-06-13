@@ -61,9 +61,11 @@ Not a fixed dollar amount. A proportionality test applying a sliding scale:
 - Low-cost (under $500K): higher percentage required; below $100K total 
   investment is extremely difficult at any consulate
 
-The Walsh & Pollard standard: investment as a percentage of the investor's 
-net worth is a secondary substantiality argument. Cite explicitly when 
-investment_pct_of_net_worth >= 0.50.
+Proportionality as a secondary substantiality argument: investment as
+a percentage of the investor's net worth, alongside investment as a
+percentage of total enterprise cost, per 9 FAM 402.9-6(D). No fixed
+dollar amount is required; the Department considers both ratios when
+assessing substantiality.
 
 IMPORTANT: Investment type matters, not just amount:
 - Franchise fee alone (no equipment, no leasehold) is weaker than a 
@@ -772,7 +774,7 @@ Contains:
 - Applicant full name, nationality, consulate, interview date
 - Business: legal name, type, location, planned opening date
 - Investment: total amount, % of business cost, % of net worth, 
-  Walsh & Pollard status, at-risk confirmation
+  9 FAM 402.9-6(D) proportionality context, at-risk confirmation
 - Role: proposed title, authority confirmations (hire/fire/contracts/budget), 
   full-time U.S. presence confirmation
 - Top 4 strongest points with specific supporting facts 

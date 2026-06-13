@@ -232,7 +232,7 @@ must be internally consistent across all models.
 
 ### Substantiality Memorandum
 Legal memorandum tone — the most formal document in the package.
-Citations in standard legal format. Walsh & Pollard cited by name.
+Citations in standard legal format, referencing 9 FAM 402.9-6(D).
 Conclusion stated as a legal finding, not an opinion.
 The reader should feel they are reading an attorney-drafted memo.
 
