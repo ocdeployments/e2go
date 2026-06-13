@@ -55,7 +55,7 @@ export async function buildSimulatorContext(applicationId: string): Promise<Simu
   // Fetch all Module 3 answers for this application
   const { data: answers, error: answersError } = await supabase
     .from('answers')
-    .select('question_id, answer_text')
+    .select('question_key, answer_value')
     .eq('application_id', applicationId);
 
   if (answersError) {
@@ -65,7 +65,7 @@ export async function buildSimulatorContext(applicationId: string): Promise<Simu
   // Convert answers array to map for easy lookup
   const answersMap = new Map<string, string>();
   answers?.forEach((a) => {
-    answersMap.set(a.question_id, a.answer_text);
+    answersMap.set(a.question_key, a.answer_value);
   });
 
   // Fetch analysis engine output (case_briefs)

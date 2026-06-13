@@ -83,22 +83,31 @@ export default function InterviewSimulator() {
         setSessionInfo(availability);
 
         // Check if the application has sufficient case file data
-        // (Module 3 answers + case brief — the minimum the simulator needs)
+        // Module 3: answers + case brief required
+        // Standalone simulator: answers sufficient (no case brief needed)
+        const isStandalone = app.source === 'simulator_standalone';
+
         const { data: answers } = await supabase
           .from('answers')
-          .select('question_id')
+          .select('question_key')
           .eq('application_id', app.id)
           .limit(5);
 
-        const { data: caseBrief } = await supabase
-          .from('case_briefs')
-          .select('id')
-          .eq('application_id', app.id)
-          .limit(1);
+        if (isStandalone) {
+          // Standalone simulator: answers alone are sufficient
+          setHasCaseFile(Boolean(answers && answers.length > 0));
+        } else {
+          // Full Module 3 path: answers + case brief required
+          const { data: caseBrief } = await supabase
+            .from('case_briefs')
+            .select('id')
+            .eq('application_id', app.id)
+            .limit(1);
 
-        setHasCaseFile(
-          Boolean(answers && answers.length > 0 && caseBrief && caseBrief.length > 0)
-        );
+          setHasCaseFile(
+            Boolean(answers && answers.length > 0 && caseBrief && caseBrief.length > 0)
+          );
+        }
       } else {
         // No application at all — cannot use simulator
         setHasCaseFile(false);
@@ -1014,22 +1023,55 @@ function SimulatorTeaser() {
           </p>
         </div>
 
-        {/* CTA */}
-        <a
-          href="/apply"
-          style={{
-            display: 'inline-block',
-            padding: '16px 32px',
-            background: '#C9A84C',
-            color: '#0a0a0a',
-            fontSize: '15px',
-            fontWeight: 500,
-            textDecoration: 'none',
+        {/* Two CTAs */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center' }}>
+          <a
+            href="/apply"
+            style={{
+              display: 'inline-block',
+              padding: '16px 32px',
+              background: '#C9A84C',
+              color: '#0a0a0a',
+              fontSize: '15px',
+              fontWeight: 500,
+              textDecoration: 'none',
+              fontFamily: "'DM Sans', sans-serif",
+              width: '100%',
+              maxWidth: '320px',
+              textAlign: 'center' as const,
+            }}
+          >
+            Complete your case file →
+          </a>
+
+          <span style={{
+            fontSize: '12px',
+            color: 'rgba(245,240,232,0.3)',
             fontFamily: "'DM Sans', sans-serif",
-          }}
-        >
-          Complete your case file →
-        </a>
+          }}>
+            — or —
+          </span>
+
+          <a
+            href="/simulator/quick-start"
+            style={{
+              display: 'inline-block',
+              padding: '14px 32px',
+              background: 'transparent',
+              color: '#C9A84C',
+              fontSize: '14px',
+              fontWeight: 500,
+              textDecoration: 'none',
+              fontFamily: "'DM Sans', sans-serif",
+              border: '1px solid rgba(201,168,76,0.3)',
+              width: '100%',
+              maxWidth: '320px',
+              textAlign: 'center' as const,
+            }}
+          >
+            Upload your documents instead →
+          </a>
+        </div>
 
         <div style={{ marginTop: '24px' }}>
           <a
