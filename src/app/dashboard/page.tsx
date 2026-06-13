@@ -45,33 +45,12 @@ export default function DashboardPage() {
 
     const init = async () => {
       try {
-        // The middleware already validated the session server-side — by the
-        // time this runs, the user IS authenticated. We read the user ID
-        // directly from the JWT cookie to avoid calling supabase.auth
-        // methods, which hang when Nav's onAuthStateChange triggers
-        // concurrent token refresh on the shared GoTrue singleton.
-        const authUser = (() => {
-          try {
-            const cookieName = Object.keys(document.cookie.split('; ').reduce((acc, c) => {
-              const [k, ...v] = c.split('=');
-              acc[k] = v.join('=');
-              return acc;
-            }, {} as Record<string, string>)).find(k => k.startsWith('sb-') && k.endsWith('-auth-token'));
-            if (!cookieName) return null;
-            const raw = document.cookie.split('; ').find(c => c.startsWith(cookieName + '='))?.split('=').slice(1).join('=');
-            if (!raw) return null;
-            const parsed = JSON.parse(decodeURIComponent(raw));
-            const token = parsed?.access_token;
-            if (!token) return null;
-            const payload = JSON.parse(atob(token.split('.')[1]));
-            return { id: payload.sub, email: payload.email } as { id: string; email: string };
-          } catch {
-            return null;
-          }
-        })();
+        // Use the shared singleton — safe now that duplicate GoTrueClient
+        // instances are eliminated (Session 29 singleton fix).
+        const { data: { user: authUser } } = await supabase.auth.getUser();
 
         if (!authUser) {
-          // No session cookie — middleware should have caught this,
+          // No session — middleware should have caught this,
           // but handle gracefully anyway
           window.location.href = '/login';
           return;
