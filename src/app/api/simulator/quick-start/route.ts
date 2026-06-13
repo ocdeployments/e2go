@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
         user_id: user.id,
         source: 'simulator_standalone',
         status: 'in_progress',
-        payment_status: 'free',
+        payment_status: 'unpaid',
         principal_name: applicantName || null,
         // Give standalone users 2 free simulator sessions
         simulator_sessions_used: 0,
