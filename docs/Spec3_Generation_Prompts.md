@@ -348,13 +348,11 @@ THE SUBSTANTIALITY PARAGRAPH:
 "The E-2 investment of [amount] represents [X]% of
 [applicant's] net worth of [net worth amount]. The
 investment further represents [Y]% of the total cost
-of the enterprise. [If Walsh & Pollard satisfied:]
-Under the proportionality standard established in
-Matter of Walsh and Pollard, 8 I&N Dec. 288 (BIA 1958),
-an investment representing
-a substantial portion of the investor's net worth and
-a majority of the enterprise cost reflects the genuine
-financial commitment the E-2 statute contemplates."
+of the enterprise. The proportionality of an investor's
+capital relative to the total cost of the enterprise —
+and relative to the investor's overall net worth — is a
+recognized factor in assessing substantiality under
+9 FAM 402.9-6(D)."
 
 FORBIDDEN:
 Do not say "satisfies the substantiality requirement"
@@ -426,12 +424,11 @@ SECTION I — LEGAL STANDARD:
 "The E-2 visa requires that an investor's capital be
 'substantial' in relation to the total cost of the
 enterprise. 9 FAM 402.9-6(D). The Department of State
-applies the proportionality formula established in
-Matter of Walsh and Pollard, 8 I&N Dec. 288 (BIA 1958),
-under which a higher percentage investment relative to
-business cost evidences greater substantiality, and a
-lower percentage requires a larger absolute investment
-to demonstrate commitment."
+has recognized that no fixed dollar amount constitutes
+'substantial,' and that the proportionality of the
+investment relative to the total cost of the enterprise —
+and relative to the investor's net worth — is among the
+factors considered."
 
 SECTION II — APPLICATION TO FACTS:
 [Generated from substantiality calculations in Case Brief]

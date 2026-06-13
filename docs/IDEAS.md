@@ -1979,3 +1979,192 @@ Test 4: Scanned image PDF → advisory fires, no extraction attempted.
 
 Source: Document upload feature planning, June 9, 2026
 
+
+---
+
+## SECTION 27 — CASE FILE UX REDESIGN (June 10, 2026)
+
+**Status:** [DECIDED — BUILD READY]
+**Session file:** docs/sessions/SESSION_CASEFILE_REDESIGN.md
+**Triggered by:** Screenshot review of /apply/story — pages look like
+  draft forms, not a $550–$1,397 product. Decision made to rebuild.
+
+---
+
+### 27A — The Core Problem [DECIDED]
+
+The six case file sections were built correctly at the data layer
+but were never properly designed at the visual layer. They are
+full-width scrolling forms with question text at body weight,
+raw black textareas, and no document context. They do not belong
+to the same product as the landing page, quiz, or simulator.
+
+The mandatory UI superpower sequence (Lazyweb → Firecrawl →
+design → build → Playwright) was not followed when these pages
+were built. This session corrects that.
+
+The standard: a client opening any of these pages immediately
+understands why they paid what they paid. The experience must
+feel like a private consultation with a serious professional tool.
+
+The reference test for every component:
+"Would someone who paid $600 feel embarrassed showing this
+screen to their spouse?" If uncertain — rebuild it.
+
+---
+
+### 27B — Layout Decision [DECIDED — LOCKED]
+
+**Desktop (≥1024px):** Three-column grid.
+- Column 1 (200px): Cluster navigation sidebar
+- Column 2 (1fr): Question panel
+- Column 3 (1fr): Document preview panel
+
+The document preview panel is the critical addition.
+It shows the document being built as questions are answered.
+The client can see their words becoming something real — not
+just answering a survey into a void.
+
+**Tablet (768–1023px):** Two-column — sidebar + questions.
+Preview as 380px right drawer. Gold left border, close button.
+
+**Mobile (<768px):** Single column.
+Sidebar collapses to horizontal scrolling cluster pills.
+Preview as full-screen overlay — background #0a0a0a, gold close button.
+"See document" button at bottom of each cluster.
+
+Mobile decision rationale: overlay gives the preview panel the
+visual weight it deserves when the user actively requests it,
+vs. a tab or collapsed section which feels incidental.
+
+---
+
+### 27C — Voice Input Design Decision [DECIDED — LOCKED]
+
+**Previous implementation (commit 63dc9dd):**
+Mic icon in the corner of the textarea.
+Invisible, no affordance, disappeared on click.
+Root cause: getUserMedia permission not awaited before
+SpeechRecognition.start().
+
+**New implementation (case file redesign session):**
+Full-width bar below each textarea:
+- "Speak your answer" labelled button — obvious invitation
+- Active: gold pulse animation + 4-bar animated waveform
+- Text: "Stop recording" while listening
+- Word count right-aligned in bar
+
+**The mic bug fix (3 lines):**
+Call navigator.mediaDevices.getUserMedia({audio: true}) first.
+Start recognition in the .then() callback, not before.
+
+**Browser support:**
+Chrome and Edge: full voice input.
+Firefox/unsupported: mic button hidden, one-time notice shown.
+Notice dismissed via ×, stored in localStorage
+(key: e2go_voice_notice_dismissed).
+
+**Scope [LOCKED]:**
+TextArea component only — /apply/* sections.
+NOT on /apply/module4 — that page has its own voice sample
+system with AI detection. These two systems are separate.
+
+**Why all textareas, not just story/qualifications:**
+Spoken answers are authentic. Typed answers are sanitized.
+Someone explaining their source of funds out loud says:
+"I sold my dental practice in 2019 after 12 years and the
+proceeds sat in my RBC account until..."
+That is the paper trail narrative the document needs.
+The generation engine's humanization layer works better
+with authentic source material. All six sections benefit.
+
+---
+
+### 27D — Document Preview Panel [DECIDED]
+
+**Phase 1 (case file redesign session):**
+Template-based preview. No API call. No cost.
+Structured placeholders mapped to real document sections.
+Fill progress bar (2px, gold) moves as answers arrive.
+Status badge: "Building" while cluster active, "Waiting" otherwise.
+Creates the psychological experience of building something real.
+
+**Phase 2 (after first paying user):**
+Live AI paragraph generation per cluster.
+API call after each cluster completes — streams paragraph
+into right panel. Cost ~$0.05–$0.75 per user session.
+Deferred until first paying user confirmed.
+
+**Document-to-cluster mapping:**
+Each section's preview shows only the documents that section feeds.
+Full mapping in docs/sessions/SESSION_CASEFILE_REDESIGN.md Step 5.
+Do not show a document in preview that this section doesn't feed.
+
+---
+
+### 27E — Component Architecture [DECIDED]
+
+**New shared component:** src/components/apply/CaseFileShell.tsx
+Owns: topbar, sidebar nav, three-column grid, responsive behaviour,
+document preview panel structure.
+
+Section pages pass in: cluster list, active cluster, documents
+list, question panel content (children), preview content.
+
+**Preserve exactly:**
+- useSpeechInput hook (logic only — UI wrapping changes)
+- PreFillBadge (all three variants)
+- AdvisoryBlock (restyle to match new system)
+- RiskFlag (restyle to match new system)
+- All conditional rendering logic (partnership, COS, family)
+- All data hooks and auto-save mechanisms
+
+**The non-negotiable rule:**
+Visual layer and data layer are completely separated.
+The redesign only touches what the user sees.
+It does not touch what the database receives.
+
+---
+
+### 27F — Scope Clarification (What Was Almost Missed) [NOTED]
+
+Four surfaces initially overlooked, added after strategic review:
+
+1. **Upload flow** (/apply/upload through /apply/upload/gaps)
+   Self-preparers see these before the six sections.
+   If upload looks like a draft and sections look premium,
+   the client journey breaks at the entry point.
+   Visual consistency required — data logic untouched.
+
+2. **Module 4 textarea** (/apply/module4)
+   Uses raw <textarea> HTML element.
+   Will look out of place after TextArea redesign.
+   Needs matching surface treatment only — no mic, no logic changes.
+
+3. **Mobile strategy** requires a specific decision before build.
+   Decision made: horizontal cluster pills + full-screen overlay.
+   Cannot be improvised during the build.
+
+4. **Partnership, COS, and family variants are not edge cases.**
+   They represent paying clients.
+   The redesign must treat them as first-class, not afterthoughts.
+
+---
+
+### 27G — Why This Is Product, Not Polish [DECIDED]
+
+A client approaching a consular interview is under real pressure.
+The platform they use to prepare must communicate competence
+and seriousness in every interaction.
+
+When the question label is Cormorant Garamond at the right weight,
+the client reads it differently. It carries more authority.
+When the document preview fills in as they type, they understand
+the stakes of their answers differently. The form becomes a document.
+
+This is why the UX redesign is not polish. It is product.
+
+---
+
+*Section 27 added: June 10, 2026*
+*All decisions locked. Build session file at docs/sessions/SESSION_CASEFILE_REDESIGN.md*
