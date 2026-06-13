@@ -25,10 +25,11 @@ export async function POST(request: NextRequest) {
 
     // Create a minimal application row marked as simulator_standalone
     // Only insert columns confirmed in the applications table schema:
-    //   user_id, source, status, payment_status, principal_name,
-    //   simulator_sessions_used, simulator_sessions_purchased
-    // business_category and target_state do NOT exist on applications —
-    // the simulator engine falls back to answers map for those values.
+    //   id, user_id, principal_name, business_name, application_type, tier,
+    //   status, payment_status, simulator_sessions_used,
+    //   simulator_sessions_purchased, source, created_at, etc.
+    // NOTE: business_category, target_state, business_route, operational_status
+    // do NOT exist on applications. Simulator engine falls back to answers map.
     const { data: app, error: appError } = await supabase
       .from('applications')
       .insert({
@@ -51,6 +52,20 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
+
+    // Save business category as answer so simulator engine's fallback chain
+    // picks it up via answersMap.get('Q0-10') — since applications has no
+    // business_category column.
+    await supabase
+      .from('answers')
+      .upsert({
+        application_id: app.id,
+        user_id: user.id,
+        question_key: 'Q0-10',
+        answer_value: businessCategory,
+        source: 'quick_start_form',
+        answered_at: new Date().toISOString(),
+      }, { onConflict: 'application_id,question_key' });
 
     return NextResponse.json({ applicationId: app.id });
   } catch (error) {
