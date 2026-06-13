@@ -77,7 +77,7 @@ export default function InterviewSimulator() {
           .eq('user_id', user.id)
           .order('created_at', { ascending: false })
           .limit(1)
-          .single();
+          .maybeSingle();
 
         console.log('[SIM] application result:', app ? 'found' : 'not found');
 

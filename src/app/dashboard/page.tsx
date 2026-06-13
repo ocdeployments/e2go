@@ -70,7 +70,7 @@ export default function DashboardPage() {
           .eq("user_id", authUser.id)
           .order("completed_at", { ascending: false })
           .limit(1)
-          .single();
+          .maybeSingle();
 
         // Get application lifecycle
         let lifecycleData: LifecycleData | null = null;
@@ -94,7 +94,7 @@ export default function DashboardPage() {
             .eq("user_id", authUser.id)
             .order("created_at", { ascending: false })
             .limit(1)
-            .single();
+            .maybeSingle();
           timelineData = app
             ? {
                 workingTargetDate: app.working_target_date,
