@@ -141,7 +141,10 @@ function LoginForm() {
 
   if (status === 'loading') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0a0a0a]">
+      <div
+        className="flex items-center justify-center bg-[#0a0a0a]"
+        style={{ position: 'fixed', inset: 0, zIndex: 9999 }}
+      >
         <div className="text-center">
           <div className="w-8 h-8 border-2 border-[#C9A84C] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p style={{ color: "rgba(245,240,232,0.6)" }}>Signing you in...</p>

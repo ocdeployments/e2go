@@ -56,6 +56,7 @@ export default function InterviewSimulator() {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const [purchaseLoading, setPurchaseLoading] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [hasCaseFile, setHasCaseFile] = useState<boolean | null>(null);
 
   // Check auth and load session availability
   useEffect(() => {
@@ -80,6 +81,27 @@ export default function InterviewSimulator() {
         setApplication(app);
         const availability = await checkSessionAvailability(app.id);
         setSessionInfo(availability);
+
+        // Check if the application has sufficient case file data
+        // (Module 3 answers + case brief — the minimum the simulator needs)
+        const { data: answers } = await supabase
+          .from('answers')
+          .select('question_id')
+          .eq('application_id', app.id)
+          .limit(5);
+
+        const { data: caseBrief } = await supabase
+          .from('case_briefs')
+          .select('id')
+          .eq('application_id', app.id)
+          .limit(1);
+
+        setHasCaseFile(
+          Boolean(answers && answers.length > 0 && caseBrief && caseBrief.length > 0)
+        );
+      } else {
+        // No application at all — cannot use simulator
+        setHasCaseFile(false);
       }
     }
     checkAuth();
@@ -280,6 +302,15 @@ export default function InterviewSimulator() {
     return (
       <div style={styles.page}>
         <div style={styles.loading}>Loading...</div>
+      </div>
+    );
+  }
+
+  // Teaser: user has an application but no case file data yet
+  if (hasCaseFile === false) {
+    return (
+      <div style={styles.page}>
+        <SimulatorTeaser />
       </div>
     );
   }
@@ -855,6 +886,162 @@ function SessionComplete({
           <button style={styles.secondaryButton} onClick={onBackToDashboard}>
             Back to Dashboard
           </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// =============================================================================
+// SIMULATOR TEASER (shown when case file data is insufficient)
+// =============================================================================
+
+function SimulatorTeaser() {
+  return (
+    <div style={{
+      minHeight: '100vh',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '24px',
+    }}>
+      <div style={{
+        maxWidth: '600px',
+        width: '100%',
+        padding: '48px',
+        background: 'rgba(201,168,76,0.02)',
+        border: '1px solid rgba(201,168,76,0.12)',
+        borderRadius: 0,
+        textAlign: 'center' as const,
+      }}>
+        {/* Icon */}
+        <div style={{
+          width: '56px',
+          height: '56px',
+          margin: '0 auto 24px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: 'rgba(201,168,76,0.08)',
+          border: '1px solid rgba(201,168,76,0.2)',
+        }}>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#C9A84C" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+            <line x1="12" x2="12" y1="19" y2="22" />
+          </svg>
+        </div>
+
+        <div style={styles.eyebrow}>INTERVIEW SIMULATOR</div>
+
+        <h1 style={{
+          fontFamily: "'Cormorant Garamond', serif",
+          fontSize: '36px',
+          fontWeight: 300,
+          color: '#f5f0e8',
+          marginBottom: '16px',
+          lineHeight: 1.1,
+        }}>
+          Pressure-Test Your Interview Readiness
+        </h1>
+
+        <p style={{
+          fontSize: '15px',
+          fontWeight: 300,
+          color: 'rgba(245,240,232,0.65)',
+          lineHeight: 1.7,
+          marginBottom: '32px',
+          maxWidth: '480px',
+          margin: '0 auto 32px',
+        }}>
+          The Interview Simulator uses <strong style={{ color: 'rgba(245,240,232,0.85)' }}>your specific application data</strong> to
+          generate realistic consulate interview questions. It probes weak points in
+          your filed package, checks your answers for consistency with your documents,
+          and gives you a coaching summary after each session.
+        </p>
+
+        {/* Feature bullets */}
+        <div style={{
+          textAlign: 'left' as const,
+          maxWidth: '440px',
+          margin: '0 auto 36px',
+        }}>
+          {[
+            'Personalised questions drawn from YOUR business, investment, and case data',
+            'Consistency checking against your filed documents',
+            'Weak-point probing triggered by low analysis scores',
+            'Text and voice modes with 15-minute timed sessions',
+            'Post-session coaching summary with focus areas',
+          ].map((text, i) => (
+            <div key={i} style={{
+              display: 'flex',
+              gap: '12px',
+              alignItems: 'flex-start',
+              marginBottom: '14px',
+            }}>
+              <span style={{
+                color: '#C9A84C',
+                fontSize: '14px',
+                marginTop: '2px',
+                flexShrink: 0,
+              }}>→</span>
+              <span style={{
+                fontSize: '14px',
+                color: 'rgba(245,240,232,0.6)',
+                lineHeight: 1.5,
+              }}>{text}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Unlock message */}
+        <div style={{
+          padding: '20px 24px',
+          background: 'rgba(201,168,76,0.05)',
+          border: '1px solid rgba(201,168,76,0.15)',
+          marginBottom: '32px',
+        }}>
+          <p style={{
+            fontSize: '14px',
+            color: 'rgba(245,240,232,0.7)',
+            lineHeight: 1.6,
+            margin: 0,
+          }}>
+            To unlock the simulator, complete your case file in Module 3 — your
+            business details, investment data, and supporting information. The more
+            complete your filing, the more realistic and useful your practice sessions
+            will be.
+          </p>
+        </div>
+
+        {/* CTA */}
+        <a
+          href="/apply"
+          style={{
+            display: 'inline-block',
+            padding: '16px 32px',
+            background: '#C9A84C',
+            color: '#0a0a0a',
+            fontSize: '15px',
+            fontWeight: 500,
+            textDecoration: 'none',
+            fontFamily: "'DM Sans', sans-serif",
+          }}
+        >
+          Complete your case file →
+        </a>
+
+        <div style={{ marginTop: '24px' }}>
+          <a
+            href="/dashboard"
+            style={{
+              color: '#C9A84C',
+              fontSize: '14px',
+              textDecoration: 'underline',
+            }}
+          >
+            ← Back to Dashboard
+          </a>
         </div>
       </div>
     </div>
