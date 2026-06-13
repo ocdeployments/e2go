@@ -23,10 +23,12 @@ function LoginForm() {
     try {
       const supabase = createBrowserSupabaseClient();
 
-      const { error } = await supabase.auth.signInWithPassword({
+      console.log("[login] 1/7 calling signInWithPassword");
+      const { data: signInData, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
+      console.log("[login] 2/7 signInWithPassword returned", { hasError: !!error, hasUser: !!signInData?.user });
 
       if (error) {
         setStatus('error');
@@ -34,27 +36,31 @@ function LoginForm() {
         return;
       }
 
+      const user = signInData?.user;
+
       // If "Remember me" is checked, persist session for 30 days
-      if (rememberMe) {
+      if (rememberMe && user) {
+        console.log("[login] 3/7 remember-me: calling getSession");
         const { data: { session } } = await supabase.auth.getSession();
+        console.log("[login] 4/7 remember-me: getSession returned", { hasSession: !!session });
         if (session) {
           await supabase.auth.setSession({
             access_token: session.access_token,
             refresh_token: session.refresh_token,
           });
-          // Set cookie expiry hint for the session
           document.cookie = `sb-remember-me=true; max-age=${30 * 24 * 60 * 60}; path=/; SameSite=Lax`;
         }
       }
 
-      const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        // Fire and forget — link quiz drafts to this user
-        supabase
+        console.log("[login] 5/7 linking quiz sessions for", user.id);
+        // Link any existing quiz sessions (email-matched, no user_id yet) to this account
+        const { error: linkError } = await supabase
           .from("quiz_sessions")
           .update({ user_id: user.id })
           .eq("email", email)
           .is("user_id", null);
+        console.log("[login] 6/7 quiz link result", { linkError: linkError?.message ?? "none" });
 
         // Check for unlinked quiz draft in localStorage
         const draft = localStorage.getItem('e2go_quiz_draft');
@@ -62,7 +68,7 @@ function LoginForm() {
           try {
             const parsed = JSON.parse(draft);
             if (parsed.answers && Object.keys(parsed.answers).length >= 10) {
-              supabase.from('quiz_sessions').insert({
+              const { error: insertError } = await supabase.from('quiz_sessions').insert({
                 user_id: user.id,
                 email: email,
                 outcome: parsed.outcome || 'PROCEED',
@@ -74,9 +80,13 @@ function LoginForm() {
                 franchise_interest: parsed.franchiseInterest || false,
                 result_json: parsed,
                 completed_at: parsed.savedAt || new Date().toISOString(),
-              }).then(() => {
-                localStorage.removeItem('e2go_quiz_draft');
               });
+
+              if (!insertError) {
+                localStorage.removeItem('e2go_quiz_draft');
+              } else {
+                console.error("[login] Failed to insert quiz draft:", insertError.message);
+              }
             }
           } catch {
             // Invalid draft — ignore
@@ -84,6 +94,7 @@ function LoginForm() {
         }
       }
 
+      console.log("[login] 7/7 setting success + routing");
       setStatus('success');
 
       if (user) {
@@ -133,7 +144,8 @@ function LoginForm() {
       } else {
         window.location.href = next ?? '/dashboard';
       }
-    } catch {
+    } catch (err) {
+      console.error("[login] unexpected error:", err);
       setStatus('error');
       setErrorMessage("An unexpected error occurred");
     }
