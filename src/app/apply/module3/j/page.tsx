@@ -153,7 +153,7 @@ export default function TabJPage() {
           .in('question_id', QUESTIONS.map(q => q.key));
 
         const savedAnswers: QJAnswers = {};
-        answersData?.forEach(row => {
+        answersData?.forEach((row: { question_id: string; answer: string }) => {
           (savedAnswers as Record<string, string>)[row.question_id] = row.answer;
         });
         setAnswers(savedAnswers);
@@ -181,7 +181,7 @@ export default function TabJPage() {
           .in('question_id', ['QA-01', 'QA-54', 'QA-55', 'QE-08', 'QE-09', 'QI-04']);
 
         const orgAnswers: Record<string, string> = {};
-        orgData?.forEach(row => {
+        orgData?.forEach((row: { question_id: string; answer: string }) => {
           orgAnswers[row.question_id] = row.answer;
         });
 

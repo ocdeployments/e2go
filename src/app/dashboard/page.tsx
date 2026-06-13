@@ -34,11 +34,6 @@ interface TimelineData {
 
 export default function DashboardPage() {
   const [supabase] = useState(() => createBrowserSupabaseClient());
-
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    window.location.href = "/";
-  };
   const [user, setUser] = useState<UserProfile | null>(null);
   const [quiz, setQuiz] = useState<QuizData | null>(null);
   const [lifecycle, setLifecycle] = useState<LifecycleData | null>(null);
@@ -46,10 +41,42 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const init = async () => {
-      const { data: { user: authUser } } = await supabase.auth.getUser();
+    let cancelled = false;
 
-      if (authUser) {
+    const init = async () => {
+      try {
+        // The middleware already validated the session server-side — by the
+        // time this runs, the user IS authenticated. We read the user ID
+        // directly from the JWT cookie to avoid calling supabase.auth
+        // methods, which hang when Nav's onAuthStateChange triggers
+        // concurrent token refresh on the shared GoTrue singleton.
+        const authUser = (() => {
+          try {
+            const cookieName = Object.keys(document.cookie.split('; ').reduce((acc, c) => {
+              const [k, ...v] = c.split('=');
+              acc[k] = v.join('=');
+              return acc;
+            }, {} as Record<string, string>)).find(k => k.startsWith('sb-') && k.endsWith('-auth-token'));
+            if (!cookieName) return null;
+            const raw = document.cookie.split('; ').find(c => c.startsWith(cookieName + '='))?.split('=').slice(1).join('=');
+            if (!raw) return null;
+            const parsed = JSON.parse(decodeURIComponent(raw));
+            const token = parsed?.access_token;
+            if (!token) return null;
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            return { id: payload.sub, email: payload.email } as { id: string; email: string };
+          } catch {
+            return null;
+          }
+        })();
+
+        if (!authUser) {
+          // No session cookie — middleware should have caught this,
+          // but handle gracefully anyway
+          window.location.href = '/login';
+          return;
+        }
+
         // Get user profile
         const { data: profile } = await supabase
           .from("profiles")
@@ -97,15 +124,24 @@ export default function DashboardPage() {
             : null;
         }
 
-        setUser(profile || null);
-        setQuiz(quizData || null);
-        setLifecycle(lifecycleData);
-        setTimeline(timelineData);
+        if (!cancelled) {
+          setUser(profile || null);
+          setQuiz(quizData || null);
+          setLifecycle(lifecycleData);
+          setTimeline(timelineData);
+        }
+      } catch (err) {
+        console.error("[dashboard] init failed:", err);
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
-      setLoading(false);
     };
 
     init();
+
+    return () => { cancelled = true; };
   }, [supabase]);
 
   // Calculate progress based on lifecycle milestones
@@ -134,25 +170,7 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen" style={{ background: "#0a0a0a" }}>
-      {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50" style={{ background: "#0a0a0a", borderBottom: "1px solid rgba(201,168,76,0.2)" }}>
-        <div className="flex justify-between items-center h-16 px-4 md:px-8 max-w-6xl mx-auto">
-          <Link href="/" className="flex items-center gap-2">
-            <span className="text-xl font-bold" style={{ color: "#C9A84C", fontFamily: "'Cormorant Garamond', serif", fontWeight: 300 }}>E2go<span style={{ color: '#f5f0e8' }}>.app</span></span>
-          </Link>
-          <div className="flex items-center gap-4">
-            <button
-              onClick={handleSignOut}
-              className="text-sm"
-              style={{ color: "rgba(245,240,232,0.6)" }}
-            >
-              Sign Out
-            </button>
-          </div>
-        </div>
-      </header>
-
-      <main className="pt-24 pb-12 px-4 md:px-8 max-w-6xl mx-auto">
+      <main className="pt-20 pb-12 px-4 md:px-8 max-w-6xl mx-auto">
         {/* Welcome */}
         <section className="mb-8">
           <h1 className="text-2xl font-bold mb-2" style={{ color: "#f5f0e8", fontFamily: "'Cormorant Garamond', serif", fontWeight: 300 }}>

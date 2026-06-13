@@ -54,7 +54,7 @@ export default function TabCPage() {
           .eq('application_id', existingApp.id);
 
         const answers: Record<string, string> = {};
-        answersData?.forEach(row => {
+        answersData?.forEach((row: { question_id: string; answer: string }) => {
           answers[row.question_id] = row.answer;
         });
 

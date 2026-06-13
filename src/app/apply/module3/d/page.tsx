@@ -133,7 +133,7 @@ export default function TabDPage() {
           .in('question_id', QUESTIONS.map(q => q.key));
 
         const savedAnswers: QDAnswers = {};
-        answersData?.forEach(row => {
+        answersData?.forEach((row: { question_id: string; answer: string }) => {
           (savedAnswers as Record<string, string>)[row.question_id] = row.answer;
         });
         setAnswers(savedAnswers);
@@ -149,7 +149,7 @@ export default function TabDPage() {
           .in('question_id', ['QA-01', 'Q0-01', 'QA-51', 'QA-53', 'QA-56', 'QA-55']);
 
         const coverAnswers: Record<string, string> = {};
-        coverData?.forEach(row => {
+        coverData?.forEach((row: { question_id: string; answer: string }) => {
           coverAnswers[row.question_id] = row.answer;
         });
 

@@ -39,7 +39,7 @@ export default function ChecklistPage() {
 
           if (answers) {
             const parsedAnswers: Record<string, string | string[]> = {};
-            answers.forEach(a => {
+            answers.forEach((a: { question_key: string; answer_value: string | string[] }) => {
               parsedAnswers[a.question_key] = a.answer_value;
             });
             quizData = { answers: parsedAnswers };

@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { createClient } from '@supabase/supabase-js';
+import { createBrowserSupabaseClient } from '@/lib/supabase';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -19,10 +19,7 @@ import { isGroqConfigured } from '@/lib/groq-transcription';
 import { speakQuestion } from '@/lib/groq-tts';
 import type { SimulatorContext, Question, AnswerEvaluation, CoachingSummary, CompletedSession } from '@/types/simulator';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+const supabase = createBrowserSupabaseClient();
 
 // =============================================================================
 // MAIN COMPONENT
@@ -1097,6 +1094,7 @@ function SimulatorTeaser() {
 const styles: Record<string, React.CSSProperties> = {
   page: {
     minHeight: '100vh',
+    paddingTop: '64px',
     background: '#0a0a0a',
     color: '#f5f0e8',
     fontFamily: "'DM Sans', sans-serif",

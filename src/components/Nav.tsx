@@ -62,7 +62,7 @@ export default function Nav() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event: string, session) => {
+    } = supabase.auth.onAuthStateChange(async (event: string, session: { user?: { id: string } } | null) => {
       if (session?.user) {
         const { data: userData } = await supabase
           .from("profiles")
