@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
         status: 'in_progress',
         payment_status: 'free',
         // Minimal fields — simulator will read from answers table
-        applicant_name: applicantName || null,
+        principal_name: applicantName || null,
         target_state: targetConsulate || 'toronto',
         // Give standalone users 2 free simulator sessions
         simulator_sessions_used: 0,
