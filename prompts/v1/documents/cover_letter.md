@@ -223,7 +223,7 @@ This application documents that investment and the commitment behind it."
 **Section IV — Substantial Investment:**
 - State investment amount relative to total enterprise cost from case_brief_json
 - Calculate the proportionality percentage
-- Reference Walsh and Pollard standard (Matter of Walsh and Pollard, 8 I&N Dec. 288)
+- State the proportionality percentages (investment as % of total enterprise cost, investment as % of net worth) per 9 FAM 402.9-6(D)
 - Never conclude — state figures and let officer assess
 
 **Section V — Investment at Risk:**
