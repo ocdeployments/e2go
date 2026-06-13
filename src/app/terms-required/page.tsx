@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, Suspense } from "react";
+import { useState, useRef, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
@@ -14,6 +14,14 @@ function TermsRequiredContent() {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [accepting, setAccepting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // If content fits without scrolling, nothing to scroll = implicitly "read"
+  useEffect(() => {
+    const el = termsBoxRef.current;
+    if (el && el.scrollHeight <= el.clientHeight) {
+      setHasScrolledTerms(true);
+    }
+  }, []);
 
   const handleTermsScroll = () => {
     const el = termsBoxRef.current;

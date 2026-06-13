@@ -125,19 +125,26 @@ const FUND_SOURCE_LABELS: Record<string, string> = {
  *          and blocking gaps if any
  */
 export function validateForGeneration(
-  answers: Record<string, unknown>
+  answers: Record<string, unknown>,
+  caseBrief?: Record<string, unknown> | null
 ): PreGenerationValidationResult {
   const checks: ValidationCheck[] = [];
 
   // Extract core investment figures
-  const investmentAmountUsd = getNumber(answers['M3-F-02']);
-  const totalBusinessCostUsd = getNumber(answers['M3-F-03']);
-  const netWorthUsd = getNumber(answers['M3-F-NET']);
-  const businessType = getString(answers['business_type']) || getString(answers['qb-type']);
-  const llcName = getString(answers['M3-F-09']) || getString(answers['llc_name']);
+  // Check both M3-F-* keys (form-created apps) and QF-*/QA-* keys (seeded/legacy apps)
+  const investmentAmountUsd = getNumber(answers['M3-F-02']) ?? getNumber(answers['QF-02']);
+  const totalBusinessCostUsd = getNumber(answers['M3-F-03']) ?? getNumber(answers['QF-03']);
+  const netWorthUsd = getNumber(answers['M3-F-NET']) ?? getNumber(answers['QA-56']);
+  // Business type: check answers keys, then case brief business field
+  const businessType = getString(answers['business_type'])
+    || getString(answers['qb-type'])
+    || getString(answers['M3-F-01'])
+    || getString(caseBrief?.['business']);
+  const llcName = getString(answers['M3-F-09']) || getString(answers['llc_name']) || getString(answers['QA-51']);
 
   // Extract fund source types (multi-select)
-  const fundSourceRaw = answers['M3-F-05'];
+  // Check both M3-F-05 (form) and QF-05 (seeded/legacy)
+  const fundSourceRaw = answers['M3-F-05'] ?? answers['QF-05'];
   const fundSourceTypes: string[] = Array.isArray(fundSourceRaw)
     ? fundSourceRaw
     : typeof fundSourceRaw === 'string'

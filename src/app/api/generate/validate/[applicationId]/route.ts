@@ -60,8 +60,23 @@ export async function GET(
       }
     }
 
+    // Fetch latest case brief for business type fallback
+    const { data: caseBrief } = await supabase
+      .from('case_briefs')
+      .select('case_brief_json')
+      .eq('application_id', applicationId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    const caseBriefData = caseBrief?.case_brief_json
+      ? (typeof caseBrief.case_brief_json === 'string'
+          ? JSON.parse(caseBrief.case_brief_json)
+          : caseBrief.case_brief_json)
+      : null;
+
     // Run validation
-    const result = validateForGeneration(answersMap);
+    const result = validateForGeneration(answersMap, caseBriefData);
 
     return NextResponse.json({
       applicationId,
