@@ -1,4 +1,4 @@
-const CACHE_NAME = 'e2go-v1';
+const CACHE_NAME = 'e2go-v2';
 const OFFLINE_URL = '/';
 
 // Install event - cache static assets

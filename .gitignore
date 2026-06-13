@@ -58,5 +58,13 @@ docs/test-applicant-michael-chen.json
 /docx-output/
 /docx-verification-output/
 
+# session build/dev logs
+build.log
+dev.log
+
+# session test/verify scripts
+scripts/test-learn-layout.ts
+scripts/verify-session18.mjs
+
 # supabase local temp
 supabase/.temp/

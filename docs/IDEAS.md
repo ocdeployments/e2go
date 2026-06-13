@@ -375,16 +375,11 @@ Referral trigger points (confirmed):
 Content piece about people who have everything ready but can't start.
 Use for: Day 14 re-engagement email, /learn section, Newsletter Issue 3.
 
-### FAQ section for landing page [PLANNED — June 4, 2026]
-Component sourced (faq-monochrome.md in docs/).
-Questions to answer:
-- "Is this a law firm?" → No. We prepare documents. What you do with them is up to you.
-- "What if I'm denied?" → We address denial patterns before generating. No guarantee, but preparation matters.
-- "How is this different from hiring a consultant?" → [use approved lawyer framing]
-- "Is my data secure?" → We never store your documents. Answers only.
-- "What countries are eligible?" → 82 treaty countries.
-- "How long does it take?" → 4–6 weeks for the documents. Timeline depends on your business formation.
-Dark theme only — remove light/dark toggle. Swap white accent for #C9A84C.
+### FAQ section for landing page [SUPERSEDED — June 13, 2026]
+Static FAQ replaced by interactive AI Q&A widget (Session 11: Ask E2go).
+See: `src/components/landing/FaqWidget.tsx` and `src/app/api/faq/ask/route.ts`.
+368 Q&A pairs seeded via pgvector. Three-layer retrieval: corpus → KB → model knowledge.
+Original static plan in `docs/faq-monochrome.md` — kept for reference only.
 
 ### Substantiality score explanation [DOCUMENTED — June 4, 2026]
 Written explanation of how the substantiality score works.
@@ -405,7 +400,7 @@ Components sourced, code saved in docs/, not yet built into app.
 |---|---|---|---|
 | Animated gradient border | docs/animated-gradient-border.md | Pricing Most Popular card, Landing CTA, Module 3 active sidebar | Polish session |
 | Image slider login | docs/image-slider-login.md | /verify, /login, /signup | Session 15B done — revisit for polish |
-| FAQ monochrome | docs/faq-monochrome.md | Landing page FAQ section | Polish session |
+| ~~FAQ monochrome~~ | ~~docs/faq-monochrome.md~~ | ~~Landing page FAQ section~~ | Superseded by Session 11 (interactive widget) |
 | AI generation reveal | docs/ai-generation-reveal.md | /generate/[applicationId] progress page | Session 16 — wire to SSE progress % |
 
 ### AI generation reveal — implementation note
