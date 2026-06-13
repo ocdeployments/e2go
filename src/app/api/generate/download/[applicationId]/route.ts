@@ -136,49 +136,45 @@ export async function GET(
     }
 
     // 5. Fetch applicant data for cover page and dividers
-    const { data: profile } = await supabase
+    //    Sources confirmed via live schema (Session 8):
+    //    - applicantName: applications.principal_name
+    //    - businessName:  applications.business_name
+    //    - nationality:   quiz_sessions.result_json.country
+    //    - passportNumber: not yet collected → bracket placeholder is correct
+    //    - businessState: not yet collected → bracket placeholder is correct
+    const { data: appProfile } = await supabase
       .from('applications')
-      .select('personal_info, business_name')
+      .select('principal_name, business_name, user_id')
       .eq('id', applicationId)
       .single();
 
-    const personalInfo = (profile?.personal_info || {}) as Record<
-      string,
-      unknown
-    >;
-    const firstName =
-      (personalInfo.firstName as string) ||
-      (personalInfo.first_name as string) ||
-      '';
+    const applicantName =
+      (appProfile?.principal_name as string) || '[Applicant name]';
+    // Derive lastName for buildDocument (used in document footers)
+    const nameParts = applicantName.split(' ');
     const lastName =
-      (personalInfo.lastName as string) ||
-      (personalInfo.last_name as string) ||
-      'Applicant';
-    const applicantName = firstName
-      ? `${firstName} ${lastName}`
-      : lastName;
+      nameParts.length > 1 ? nameParts[nameParts.length - 1] : 'Applicant';
     const businessName =
-      (profile?.business_name as string) || '[Business name]';
-    const nationality =
-      (personalInfo.nationality as string) || '[Nationality]';
-    const passportNumber =
-      (personalInfo.passportNumber as string) ||
-      (personalInfo.passport_number as string) ||
-      '[passport number from Tab A]';
+      (appProfile?.business_name as string) || '[Business name]';
+    const passportNumber = '[passport number from Tab A]';
+    const businessState = '[Business state]';
 
-    // Business state: try target_state column, fallback to bracket placeholder
-    let businessState = '[State]';
-    try {
-      const { data: appDetail } = await supabase
-        .from('applications')
-        .select('target_state')
-        .eq('id', applicationId)
+    // Nationality: query quiz_sessions.result_json.country
+    let nationality = '[Nationality]';
+    if (appProfile?.user_id) {
+      const { data: quizSession } = await supabase
+        .from('quiz_sessions')
+        .select('result_json')
+        .eq('user_id', appProfile.user_id)
+        .limit(1)
         .single();
-      if (appDetail?.target_state) {
-        businessState = appDetail.target_state;
+      const resultJson = (quizSession?.result_json || {}) as Record<
+        string,
+        unknown
+      >;
+      if (resultJson.country) {
+        nationality = resultJson.country as string;
       }
-    } catch {
-      // target_state column may not exist — use fallback
     }
 
     const preparedDate = formatPreparedDate();
