@@ -1,5 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  webpack: (config, { isServer }) => {
+    if (isServer) {
+      config.externals = [...(config.externals || []), 'pdfjs-dist', 'pdf-parse'];
+    }
+    return config;
+  },
   images: {
     remotePatterns: [
       {

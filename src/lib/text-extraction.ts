@@ -1,5 +1,4 @@
 import mammoth from 'mammoth';
-import { PDFParse } from 'pdf-parse';
 import * as XLSX from 'xlsx';
 import Papa from 'papaparse';
 import { type UploadFileType, MAX_TOKENS_PER_DOCUMENT } from '@/types/document-upload';
@@ -35,6 +34,7 @@ export async function extractTextFromBuffer(
 }
 
 async function extractFromPdf(buffer: Buffer): Promise<ExtractionOutput> {
+  const { PDFParse } = await import('pdf-parse');
   const parser = new PDFParse({ data: buffer });
   const result = await parser.getText();
   const text = result.text || '';
