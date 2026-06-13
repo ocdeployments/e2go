@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
+import { createServiceClient } from '@/lib/supabase-service';
 import {
   validateFileBatch,
   getFileTypeFromExtension,
@@ -14,6 +15,10 @@ import {
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createSupabaseServerClient();
+    // Service role client for Storage operations — bypasses RLS which blocks
+    // anon-key uploads. Auth + DB queries still use the cookie-based anon client
+    // so user-level RLS and auth checks remain enforced.
+    const serviceClient = createServiceClient();
 
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
@@ -116,7 +121,7 @@ export async function POST(request: NextRequest) {
       const arrayBuffer = await file.arrayBuffer();
       const buffer = Buffer.from(arrayBuffer);
 
-      const { error: uploadError } = await supabase.storage
+      const { error: uploadError } = await serviceClient.storage
         .from('application-documents')
         .upload(storagePath, buffer, {
           contentType: file.type || ACCEPTED_MIME_TYPES[0],
@@ -150,7 +155,7 @@ export async function POST(request: NextRequest) {
       if (dbError) {
         console.error('DB insert error:', dbError);
         // Clean up uploaded file
-        await supabase.storage
+        await serviceClient.storage
           .from('application-documents')
           .remove([storagePath]);
         return NextResponse.json(
