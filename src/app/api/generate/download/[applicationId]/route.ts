@@ -1,226 +1,310 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
-import JSZip from "jszip";
+/**
+ * GET /api/generate/download/[applicationId]
+ *
+ * Generates and streams a ZIP file containing 15 .docx files:
+ *  - 00_Cover_Page.docx
+ *  - 01_Table_of_Contents.docx
+ *  - For each tab: Tab_[X]_Divider.docx + Tab_[X]_[DocumentName].docx (6 pairs)
+ *  - COMPLETE_BEFORE_SUBMITTING.docx (last)
+ *
+ * Gate: generation_pipeline_log.applicant_acknowledged = true
+ *       AND final_status = 'RELEASED'
+ *
+ * Logs downloaded_at timestamp after successful ZIP creation.
+ *
+ * Session 4 — Package Assembly
+ */
 
-function getSupabase() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-}
+import { NextRequest, NextResponse } from 'next/server';
+import { createSupabaseServerClient } from '@/lib/supabase-server';
+import { Packer } from 'docx';
+import JSZip from 'jszip';
+import { buildDocument } from '@/lib/docx-builder';
+import { buildChecklist } from '@/lib/checklist-builder';
+import { buildCoverPage } from '@/lib/docx-cover-builder';
+import { buildTableOfContents } from '@/lib/docx-toc-builder';
+import { buildTabDivider } from '@/lib/docx-divider-builder';
+import {
+  DOC_TYPE_TAB_MAP,
+  TAB_SECTION_TITLES,
+  TAB_ORDER,
+} from '@/lib/docx-package-constants';
+import type { DocumentType } from '@/types/generation';
 
-const DOCUMENT_ORDER = [
-  { type: "cover_letter", name: "01-Cover-Letter.pdf" },
-  { type: "source_of_funds", name: "02-Source-of-Funds.pdf" },
-  { type: "investment_proof", name: "03-Investment-Proof.pdf" },
-  { type: "business_plan", name: "04-Business-Plan.pdf" },
-  { type: "qualifications", name: "05-Qualifications.pdf" },
-  { type: "ds160_reference", name: "06-DS160-Reference.pdf" },
+const VALID_DOC_TYPES: DocumentType[] = [
+  'cover_letter',
+  'source_of_funds',
+  'investment_proof',
+  'business_plan',
+  'qualifications',
+  'ds160_reference',
 ];
 
+/** Human-readable display names for renamed document files */
+const DOC_DISPLAY_NAMES: Record<DocumentType, string> = {
+  cover_letter: 'Cover_Letter',
+  source_of_funds: 'Source_of_Funds',
+  investment_proof: 'Investment_Proof',
+  business_plan: 'Business_Plan',
+  qualifications: 'Qualifications',
+  ds160_reference: 'DS160_Reference',
+};
+
+/** Format today's date as "Month DD, YYYY" */
+function formatPreparedDate(): string {
+  return new Date().toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+}
+
 export async function GET(
-  request: NextRequest,
-  { params }: { params: { applicationId: string } }
+  req: NextRequest,
+  { params }: { params: Promise<{ applicationId: string }> }
 ) {
-  const applicationId = params.applicationId;
-  const authHeader = request.headers.get("authorization");
-  const userId = authHeader?.replace("Bearer ", "");
+  try {
+    const { applicationId } = await params;
 
-  if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const supabase = getSupabase();
-
-  // 1. Verify auth - user must own this application
-  const { data: application, error: appError } = await supabase
-    .from("applications")
-    .select("user_id, applicant_name")
-    .eq("id", applicationId)
-    .single();
-
-  if (appError || !application || application.user_id !== userId) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-
-  // 2. Verify acknowledgment gate (handled client-side, but we can check a db column if it exists)
-  // For now, we trust the client-side gate as per the current schema,
-  // but we STRICTLY enforce that ALL documents must be 'approved'.
-
-  // 3. Read all approved documents from DB for this application
-  const { data: documents, error: docError } = await supabase
-    .from("generated_documents")
-    .select("document_type, content_text, approved_at")
-    .eq("application_id", applicationId)
-    .eq("status", "approved");
-
-  if (docError || !documents) {
-    return NextResponse.json({ error: "No approved documents found" }, { status: 400 });
-  }
-
-  const approvedDocs = new Map(documents.map((d) => [d.document_type, d.content_text || ""]));
-
-  // Verify all required documents are approved
-  for (const doc of DOCUMENT_ORDER) {
-    if (!approvedDocs.has(doc.type)) {
+    if (!applicationId) {
       return NextResponse.json(
-        { error: `Missing approved document: ${doc.type}` },
+        { error: 'applicationId is required' },
         { status: 400 }
       );
     }
-  }
 
-  // 3b. Fetch data for e2go-application-export.json (Section 13E)
-  const { data: module3Answers } = await supabase
-    .from("answers")
-    .select("question_id, answer_value, question_text")
-    .eq("application_id", applicationId);
+    // 1. Auth check
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
 
-  const { data: caseBrief } = await supabase
-    .from("case_briefs")
-    .select("case_brief_json")
-    .eq("application_id", applicationId)
-    .single();
-
-  const { data: quizData } = await supabase
-    .from("quiz_sessions")
-    .select("quiz_answers, created_at")
-    .eq("application_id", applicationId)
-    .single();
-
-  const applicationMetadata = {
-    application_id: applicationId,
-    applicant_name: application.applicant_name,
-    exported_at: new Date().toISOString(),
-    version: "1.0.0",
-  };
-
-  const exportJson = {
-    metadata: applicationMetadata,
-    module_3_answers: module3Answers || [],
-    generated_documents: documents.map((d) => ({
-      document_type: d.document_type,
-      content: d.content_text,
-    })),
-    tab_i_projections: (caseBrief?.case_brief_json as Record<string, unknown>)?.tab_i_projections || null,
-    quiz_session: quizData || null,
-  };
-
-  // 4. Create ZIP archive using JSZip
-  const zip = new JSZip();
-
-  try {
-    for (const doc of DOCUMENT_ORDER) {
-      const content = approvedDocs.get(doc.type) || "";
-
-      const pdfDoc = await PDFDocument.create();
-
-      pdfDoc.setTitle("");
-      pdfDoc.setAuthor("");
-      pdfDoc.setSubject("");
-      pdfDoc.setCreator("");
-      pdfDoc.setProducer("");
-      pdfDoc.setKeywords([]);
-
-      const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-
-      let page = pdfDoc.addPage([595.28, 841.89]); // A4
-      const { width, height } = page.getSize();
-      const fontSize = 11;
-      const margin = 50;
-      const lineHeight = fontSize * 1.5;
-      const maxLinesPerPage = Math.floor((height - 2 * margin) / lineHeight);
-
-      // Simple word wrap and pagination
-      const lines = content.split("\n");
-      let currentPageLines: string[] = [];
-
-      const addPage = () => {
-        if (currentPageLines.length > 0) {
-          let y = height - margin;
-          for (const line of currentPageLines) {
-            page.drawText(line, {
-              x: margin,
-              y,
-              size: fontSize,
-              font,
-              color: rgb(0, 0, 0),
-            });
-            y -= lineHeight;
-          }
-        }
-      };
-
-      for (const line of lines) {
-        const words = line.split(" ");
-        let currentLine = "";
-
-        for (const word of words) {
-          const testLine = currentLine ? `${currentLine} ${word}` : word;
-          const textWidth = font.widthOfTextAtSize(testLine, fontSize);
-
-          if (textWidth > width - 2 * margin) {
-            currentPageLines.push(currentLine);
-            if (currentPageLines.length >= maxLinesPerPage) {
-              addPage();
-              page = pdfDoc.addPage([595.28, 841.89]);
-              currentPageLines = [];
-            }
-            currentLine = word;
-          } else {
-            currentLine = testLine;
-          }
-        }
-
-        if (currentLine) {
-          currentPageLines.push(currentLine);
-          if (currentPageLines.length >= maxLinesPerPage) {
-            addPage();
-            page = pdfDoc.addPage([595.28, 841.89]);
-            currentPageLines = [];
-          }
-        } else {
-          currentPageLines.push("");
-          if (currentPageLines.length >= maxLinesPerPage) {
-            addPage();
-            page = pdfDoc.addPage([595.28, 841.89]);
-            currentPageLines = [];
-          }
-        }
-      }
-
-      addPage();
-
-      const pdfBytes = await pdfDoc.save();
-      zip.file(doc.name, Buffer.from(pdfBytes));
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Add README
-    const readmeContent = `E-2 Visa Application Package
-Prepared: ${new Date().toLocaleDateString()}
-Applicant: ${application.applicant_name || "Applicant"}
+    // 2. Verify application belongs to user
+    const { data: app, error: appError } = await supabase
+      .from('applications')
+      .select('id, user_id')
+      .eq('id', applicationId)
+      .single();
 
-This package contains ${DOCUMENT_ORDER.length} documents for your E-2 visa application.
-Present documents in the order numbered above unless your consulate specifies otherwise.
+    if (appError || !app) {
+      return NextResponse.json(
+        { error: 'Application not found' },
+        { status: 404 }
+      );
+    }
 
-Documents prepared using e2go.app. All content reviewed and approved by the applicant prior to download.
-This package does not constitute legal advice.
-`;
-    zip.file("README-Binder-Assembly.txt", readmeContent);
-    zip.file("e2go-application-export.json", JSON.stringify(exportJson, null, 2));
+    if (app.user_id !== user.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
 
-    const zipBlob = await zip.generateAsync({ type: "arraybuffer" });
+    // 3. Gate check — must be acknowledged AND released
+    const { data: pipelineLog, error: logError } = await supabase
+      .from('generation_pipeline_log')
+      .select('applicant_acknowledged, final_status')
+      .eq('application_id', applicationId)
+      .eq('applicant_acknowledged', true)
+      .eq('final_status', 'RELEASED')
+      .limit(1)
+      .single();
+
+    if (logError || !pipelineLog) {
+      return NextResponse.json(
+        {
+          error:
+            'Documents not yet released. Please complete the acknowledgment step first.',
+        },
+        { status: 403 }
+      );
+    }
+
+    // 4. Read all 6 documents
+    const { data: documents, error: docsError } = await supabase
+      .from('generated_documents')
+      .select('document_type, content_text')
+      .eq('application_id', applicationId);
+
+    if (docsError || !documents || documents.length === 0) {
+      return NextResponse.json(
+        { error: 'No generated documents found' },
+        { status: 404 }
+      );
+    }
+
+    // 5. Fetch applicant data for cover page and dividers
+    const { data: profile } = await supabase
+      .from('applications')
+      .select('personal_info, business_name')
+      .eq('id', applicationId)
+      .single();
+
+    const personalInfo = (profile?.personal_info || {}) as Record<
+      string,
+      unknown
+    >;
+    const firstName =
+      (personalInfo.firstName as string) ||
+      (personalInfo.first_name as string) ||
+      '';
+    const lastName =
+      (personalInfo.lastName as string) ||
+      (personalInfo.last_name as string) ||
+      'Applicant';
+    const applicantName = firstName
+      ? `${firstName} ${lastName}`
+      : lastName;
+    const businessName =
+      (profile?.business_name as string) || '[Business name]';
+    const nationality =
+      (personalInfo.nationality as string) || '[Nationality]';
+    const passportNumber =
+      (personalInfo.passportNumber as string) ||
+      (personalInfo.passport_number as string) ||
+      '[passport number from Tab A]';
+
+    // Business state: try target_state column, fallback to bracket placeholder
+    let businessState = '[State]';
+    try {
+      const { data: appDetail } = await supabase
+        .from('applications')
+        .select('target_state')
+        .eq('id', applicationId)
+        .single();
+      if (appDetail?.target_state) {
+        businessState = appDetail.target_state;
+      }
+    } catch {
+      // target_state column may not exist — use fallback
+    }
+
+    const preparedDate = formatPreparedDate();
+
+    // 6. Determine which tabs are included (only those with generated documents)
+    const includedDocTypes = documents
+      .filter(
+        (doc) =>
+          VALID_DOC_TYPES.includes(doc.document_type as DocumentType) &&
+          doc.content_text
+      )
+      .map((doc) => doc.document_type as DocumentType);
+
+    const includedTabs = TAB_ORDER.filter((tabLetter) =>
+      includedDocTypes.some(
+        (dt) => DOC_TYPE_TAB_MAP[dt] === tabLetter
+      )
+    );
+
+    // 7. Build ZIP
+    const zip = new JSZip();
+
+    // 7a. Cover page
+    const coverDoc = buildCoverPage({
+      applicantName,
+      businessName,
+      businessState,
+      preparedDate,
+      nationality,
+      passportNumber,
+    });
+    const coverBuffer = await Packer.toBuffer(coverDoc);
+    zip.file('00_Cover_Page.docx', Buffer.from(coverBuffer));
+
+    // 7b. Table of contents
+    const tocDoc = buildTableOfContents({
+      applicantName,
+      preparedDate,
+      includedTabs,
+    });
+    const tocBuffer = await Packer.toBuffer(tocDoc);
+    zip.file('01_Table_of_Contents.docx', Buffer.from(tocBuffer));
+
+    // 7c. For each tab in TAB_ORDER: divider + renamed document
+    for (const tabLetter of TAB_ORDER) {
+      const tabEntry = TAB_SECTION_TITLES[tabLetter];
+      if (!tabEntry) continue;
+
+      // Find the document for this tab
+      const docForTab = includedDocTypes.find(
+        (dt) => DOC_TYPE_TAB_MAP[dt] === tabLetter
+      );
+      if (!docForTab) continue;
+
+      // Build divider
+      const dividerDoc = buildTabDivider({
+        tabLetter,
+        sectionTitle: tabEntry.title,
+        description: tabEntry.description,
+        applicantName,
+      });
+      const dividerBuffer = await Packer.toBuffer(dividerDoc);
+      zip.file(
+        `Tab_${tabLetter}_Divider.docx`,
+        Buffer.from(dividerBuffer)
+      );
+
+      // Build the actual document (reuses existing buildDocument)
+      const docContent = documents.find(
+        (d) => d.document_type === docForTab
+      );
+      if (docContent?.content_text) {
+        const docx = buildDocument({
+          contentText: docContent.content_text,
+          documentType: docForTab,
+          lastName,
+        });
+        const docBuffer = await Packer.toBuffer(docx);
+        const displayName = DOC_DISPLAY_NAMES[docForTab];
+        zip.file(
+          `Tab_${tabLetter}_${displayName}.docx`,
+          Buffer.from(docBuffer)
+        );
+      }
+    }
+
+    // 7d. Checklist (last file)
+    const checklistDoc = buildChecklist({
+      documents: documents.map((d) => ({
+        document_type: d.document_type as DocumentType,
+        content_text: d.content_text,
+      })),
+      applicantName,
+      includedTabs,
+    });
+    const checklistBuffer = await Packer.toBuffer(checklistDoc);
+    zip.file(
+      'COMPLETE_BEFORE_SUBMITTING.docx',
+      Buffer.from(checklistBuffer)
+    );
+
+    // 8. Log the download event
+    const now = new Date().toISOString();
+    await supabase
+      .from('generation_pipeline_log')
+      .update({ downloaded_at: now })
+      .eq('application_id', applicationId)
+      .eq('applicant_acknowledged', true);
+
+    // 9. Generate ZIP as arraybuffer and return
+    const zipBlob = await zip.generateAsync({ type: 'arraybuffer' });
 
     return new NextResponse(zipBlob as ArrayBuffer, {
       status: 200,
       headers: {
-        "Content-Type": "application/zip",
-        "Content-Disposition": `attachment; filename="e2go-embassy-package-${(application.applicant_name || "applicant").replace(/\s+/g, "-")}-${new Date().toISOString().split("T")[0]}.zip"`,
+        'Content-Type': 'application/zip',
+        'Content-Disposition':
+          'attachment; filename="E2_Application_Package.zip"',
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
       },
     });
-  } catch (error) {
-    console.error("PDF/ZIP generation failed:", error);
-    return NextResponse.json({ error: "Failed to generate package" }, { status: 500 });
+  } catch (err) {
+    console.error('[DOWNLOAD] Error:', err);
+    return NextResponse.json(
+      { error: 'Failed to generate download package' },
+      { status: 500 }
+    );
   }
 }
