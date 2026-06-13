@@ -156,9 +156,9 @@ export default function TabBPage() {
         if (applicationId) {
           await supabase.from('answers').upsert({
             application_id: applicationId,
-            question_id: `QB-CHECK-${itemId}`,
-            answer: checked ? 'true' : 'false',
-          });
+            question_key: `QB-CHECK-${itemId}`,
+            answer_value: checked ? 'true' : 'false',
+          }, { onConflict: 'application_id,question_key' });
           setSaveStatus('saved');
           setTimeout(() => setSaveStatus('idle'), 2000);
         }
@@ -234,12 +234,12 @@ export default function TabBPage() {
         // Fetch existing answers
         const { data: answersData } = await supabase
           .from('answers')
-          .select('question_id, answer')
+          .select('question_key, answer_value')
           .eq('application_id', existingApp.id);
 
         const answers: Record<string, string> = {};
-        answersData?.forEach((row: { question_id: string; answer: string }) => {
-          answers[row.question_id] = row.answer;
+        answersData?.forEach((row: { question_key: string; answer_value: string }) => {
+          answers[row.question_key] = row.answer_value;
         });
 
         // Build checklist
@@ -248,12 +248,12 @@ export default function TabBPage() {
         // Load saved check states
         const { data: checkData } = await supabase
           .from('answers')
-          .select('question_id, answer')
+          .select('question_key, answer_value')
           .eq('application_id', existingApp.id)
-          .like('question_id', 'QB-CHECK-%');
+          .like('question_key', 'QB-CHECK-%');
 
         const checkedItems = new Set(
-          checkData?.filter((a: { answer: string; question_id: string }) => a.answer === 'true').map((a: { question_id: string }) => a.question_id.replace('QB-CHECK-', '')) || []
+          checkData?.filter((a: { answer_value: string; question_key: string }) => a.answer_value === 'true').map((a: { question_key: string }) => a.question_key.replace('QB-CHECK-', '')) || []
         );
 
         items.forEach(item => {

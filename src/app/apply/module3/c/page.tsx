@@ -50,12 +50,12 @@ export default function TabCPage() {
         // Fetch answers needed for letter
         const { data: answersData } = await supabase
           .from('answers')
-          .select('question_id, answer')
+          .select('question_key, answer_value')
           .eq('application_id', existingApp.id);
 
         const answers: Record<string, string> = {};
-        answersData?.forEach((row: { question_id: string; answer: string }) => {
-          answers[row.question_id] = row.answer;
+        answersData?.forEach((row: { question_key: string; answer_value: string }) => {
+          answers[row.question_key] = row.answer_value;
         });
 
         // Build letter data from answers
@@ -81,15 +81,15 @@ export default function TabCPage() {
         // Check if letter was already confirmed
         const { data: confirmData } = await supabase
           .from('answers')
-          .select('answer')
+          .select('answer_value')
           .eq('application_id', existingApp.id)
-          .eq('question_id', 'QC-CONFIRMED')
+          .eq('question_key', 'QC-CONFIRMED')
           .single();
 
-        if (confirmData?.answer === 'true') {
+        if (confirmData?.answer_value === 'true') {
           setLetterConfirmed(true);
           setScreenState('completion');
-        } else if (confirmData?.answer === 'false') {
+        } else if (confirmData?.answer_value === 'false') {
           setLetterConfirmed(false);
           setNeedsReview(true);
         }
@@ -107,9 +107,9 @@ export default function TabCPage() {
 
     await supabase.from('answers').upsert({
       application_id: applicationId,
-      question_id: 'QC-CONFIRMED',
-      answer: confirmed ? 'true' : 'false',
-    });
+      question_key: 'QC-CONFIRMED',
+      answer_value: confirmed ? 'true' : 'false',
+    }, { onConflict: 'application_id,question_key' });
 
     setLetterConfirmed(confirmed);
     setNeedsReview(!confirmed);

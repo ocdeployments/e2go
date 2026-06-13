@@ -73,16 +73,16 @@ export default function Module3Overview() {
 
         const { data: answers } = await supabase
           .from("answers")
-          .select("question_id")
+          .select("question_key")
           .eq("application_id", appId);
 
-        const _answeredIds = new Set(answers?.map((a: { question_id: string }) => a.question_id) || []);
+        const _answeredIds = new Set(answers?.map((a: { question_key: string }) => a.question_key) || []);
 
         // Tab prefixes: Tab A answers use a_ prefix, etc.
         const updatedTabs = TABS.map((tab) => {
           const prefix = `${tab.letter.toLowerCase()}_`;
-          const tabAnswers = answers?.filter((a: { question_id: string }) =>
-            a.question_id.startsWith(prefix)
+          const tabAnswers = answers?.filter((a: { question_key: string }) =>
+            a.question_key.startsWith(prefix)
           ) || [];
           return {
             ...tab,

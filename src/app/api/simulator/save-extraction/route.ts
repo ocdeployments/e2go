@@ -38,15 +38,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Save each extracted answer — using question_key/answer_value column names
-    // (consistent with /api/documents/extract and /api/answers)
+    // Save each extracted answer — answers table only has:
+    // id, application_id, question_key, answer_value, answered_at
     const insertData = answers.map((a: { question_id: string; value: string; confidence: string; source_quote?: string }) => ({
       application_id: applicationId,
-      user_id: user.id,
       question_key: a.question_id,
       answer_value: a.value,
-      confidence: a.confidence || 'medium',
-      source: 'document_extraction',
       answered_at: new Date().toISOString(),
     }));
 

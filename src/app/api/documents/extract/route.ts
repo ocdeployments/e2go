@@ -195,6 +195,7 @@ export async function POST(request: NextRequest) {
             );
 
             // Store extracted answers in the answers table
+            // NOTE: answers table only has: id, application_id, question_key, answer_value, answered_at
             for (const field of validFields) {
               if (field.confidence === 'low') continue; // Skip low-confidence extractions
 
@@ -205,12 +206,8 @@ export async function POST(request: NextRequest) {
                     application_id: applicationId,
                     question_key: field.question_id,
                     answer_value: field.value,
-                    user_id: user.id,
-                    source: 'document_upload',
-                    confidence: field.confidence,
-                    source_document_type: classification.detected_type,
                     answered_at: new Date().toISOString(),
-                  } as never,
+                  },
                   { onConflict: 'application_id,question_key' }
                 );
             }
@@ -270,7 +267,7 @@ export async function POST(request: NextRequest) {
               .from('document_discrepancies')
               .insert({
                 application_id: applicationId,
-                question_id: disc.question_id,
+                question_key: disc.question_id,
                 question_label: disc.question_label,
                 conflicting_values: disc.conflicting_values,
               });

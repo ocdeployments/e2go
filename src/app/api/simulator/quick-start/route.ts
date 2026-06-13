@@ -56,14 +56,13 @@ export async function POST(request: NextRequest) {
     // Save business category as answer so simulator engine's fallback chain
     // picks it up via answersMap.get('Q0-10') — since applications has no
     // business_category column.
+    // NOTE: answers table only has: id, application_id, question_key, answer_value, answered_at
     await supabase
       .from('answers')
       .upsert({
         application_id: app.id,
-        user_id: user.id,
         question_key: 'Q0-10',
         answer_value: businessCategory,
-        source: 'quick_start_form',
         answered_at: new Date().toISOString(),
       }, { onConflict: 'application_id,question_key' });
 

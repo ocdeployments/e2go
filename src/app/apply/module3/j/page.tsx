@@ -148,13 +148,13 @@ export default function TabJPage() {
         // Fetch QJ answers
         const { data: answersData } = await supabase
           .from('answers')
-          .select('question_id, answer')
+          .select('question_key, answer_value')
           .eq('application_id', existingApp.id)
-          .in('question_id', QUESTIONS.map(q => q.key));
+          .in('question_key', QUESTIONS.map(q => q.key));
 
         const savedAnswers: QJAnswers = {};
-        answersData?.forEach((row: { question_id: string; answer: string }) => {
-          (savedAnswers as Record<string, string>)[row.question_id] = row.answer;
+        answersData?.forEach((row: { question_key: string; answer_value: string }) => {
+          (savedAnswers as Record<string, string>)[row.question_key] = row.answer_value;
         });
         setAnswers(savedAnswers);
 
@@ -176,23 +176,23 @@ export default function TabJPage() {
         // Fetch org chart data
         const { data: orgData } = await supabase
           .from('answers')
-          .select('question_id, answer')
+          .select('question_key, answer_value')
           .eq('application_id', existingApp.id)
-          .in('question_id', ['QA-01', 'QA-54', 'QA-55', 'QE-08', 'QE-09', 'QI-04']);
+          .in('question_key', ['QA-01', 'QA-54', 'QA-55', 'QE-08', 'QE-09', 'QI-04']);
 
         const orgAnswers: Record<string, string> = {};
-        orgData?.forEach((row: { question_id: string; answer: string }) => {
-          orgAnswers[row.question_id] = row.answer;
+        orgData?.forEach((row: { question_key: string; answer_value: string }) => {
+          orgAnswers[row.question_key] = row.answer_value;
         });
 
         const { data: bizData } = await supabase
           .from('answers')
-          .select('answer')
+          .select('answer_value')
           .eq('application_id', existingApp.id)
-          .eq('question_id', 'QA-51')
+          .eq('question_key', 'QA-51')
           .single();
 
-        setBusinessName(bizData?.answer || 'your business');
+        setBusinessName(bizData?.answer_value || 'your business');
 
         setOrgChartData({
           applicantName: orgAnswers['QA-01'] || 'Applicant',
@@ -207,12 +207,12 @@ export default function TabJPage() {
         // Check if completed
         const { data: confirmData } = await supabase
           .from('answers')
-          .select('answer')
+          .select('answer_value')
           .eq('application_id', existingApp.id)
-          .eq('question_id', 'QJ-ORG-CONFIRMED')
+          .eq('question_key', 'QJ-ORG-CONFIRMED')
           .single();
 
-        if (confirmData?.answer === 'true') {
+        if (confirmData?.answer_value === 'true') {
           setScreenState('completion');
         }
       }
@@ -233,11 +233,10 @@ export default function TabJPage() {
       .upsert(
         {
           application_id: applicationId,
-          question_id: key,
-          answer: value,
-          updated_at: new Date().toISOString(),
+          question_key: key,
+          answer_value: value,
         },
-        { onConflict: 'application_id,question_id' }
+        { onConflict: 'application_id,question_key' }
       );
 
     if (!error) {
@@ -289,11 +288,10 @@ export default function TabJPage() {
     await supabase.from('answers').upsert(
       {
         application_id: applicationId,
-        question_id: 'QJ-ORG-CONFIRMED',
-        answer: 'true',
-        updated_at: new Date().toISOString(),
+        question_key: 'QJ-ORG-CONFIRMED',
+        answer_value: 'true',
       },
-      { onConflict: 'application_id,question_id' }
+      { onConflict: 'application_id,question_key' }
     );
 
     setScreenState('completion');

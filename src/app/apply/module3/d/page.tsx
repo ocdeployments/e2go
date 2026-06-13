@@ -128,13 +128,13 @@ export default function TabDPage() {
         // Fetch answers for QD-01 through QD-06
         const { data: answersData } = await supabase
           .from('answers')
-          .select('question_id, answer')
+          .select('question_key, answer_value')
           .eq('application_id', existingApp.id)
-          .in('question_id', QUESTIONS.map(q => q.key));
+          .in('question_key', QUESTIONS.map(q => q.key));
 
         const savedAnswers: QDAnswers = {};
-        answersData?.forEach((row: { question_id: string; answer: string }) => {
-          (savedAnswers as Record<string, string>)[row.question_id] = row.answer;
+        answersData?.forEach((row: { question_key: string; answer_value: string }) => {
+          (savedAnswers as Record<string, string>)[row.question_key] = row.answer_value;
         });
         setAnswers(savedAnswers);
 
@@ -144,13 +144,13 @@ export default function TabDPage() {
         // Fetch cover letter data (from QA questions)
         const { data: coverData } = await supabase
           .from('answers')
-          .select('question_id, answer')
+          .select('question_key, answer_value')
           .eq('application_id', existingApp.id)
-          .in('question_id', ['QA-01', 'Q0-01', 'QA-51', 'QA-53', 'QA-56', 'QA-55']);
+          .in('question_key', ['QA-01', 'Q0-01', 'QA-51', 'QA-53', 'QA-56', 'QA-55']);
 
         const coverAnswers: Record<string, string> = {};
-        coverData?.forEach((row: { question_id: string; answer: string }) => {
-          coverAnswers[row.question_id] = row.answer;
+        coverData?.forEach((row: { question_key: string; answer_value: string }) => {
+          coverAnswers[row.question_key] = row.answer_value;
         });
 
         const data: CoverLetterData = {
@@ -166,23 +166,23 @@ export default function TabDPage() {
         // Check if letter was already generated and confirmed
         const { data: confirmData } = await supabase
           .from('answers')
-          .select('answer')
+          .select('answer_value')
           .eq('application_id', existingApp.id)
-          .eq('question_id', 'QD-CONFIRMED')
+          .eq('question_key', 'QD-CONFIRMED')
           .single();
 
         const { data: letterData } = await supabase
           .from('answers')
-          .select('answer')
+          .select('answer_value')
           .eq('application_id', existingApp.id)
-          .eq('question_id', 'QD-GENERATED-LETTER')
+          .eq('question_key', 'QD-GENERATED-LETTER')
           .single();
 
-        if (confirmData?.answer === 'true') {
-          setGeneratedLetter(letterData?.answer || null);
+        if (confirmData?.answer_value === 'true') {
+          setGeneratedLetter(letterData?.answer_value || null);
           setScreenState('completion');
-        } else if (answeredCount >= QUESTIONS.length && letterData?.answer) {
-          setGeneratedLetter(letterData.answer);
+        } else if (answeredCount >= QUESTIONS.length && letterData?.answer_value) {
+          setGeneratedLetter(letterData.answer_value);
           setScreenState('generation');
         } else if (answeredCount > 0) {
           setScreenState('question');
@@ -209,11 +209,10 @@ export default function TabDPage() {
       .upsert(
         {
           application_id: applicationId,
-          question_id: key,
-          answer: value,
-          updated_at: new Date().toISOString(),
+          question_key: key,
+          answer_value: value,
         },
-        { onConflict: 'application_id,question_id' }
+        { onConflict: 'application_id,question_key' }
       );
 
     if (!error) {
@@ -307,11 +306,10 @@ export default function TabDPage() {
         await supabase.from('answers').upsert(
           {
             application_id: applicationId,
-            question_id: 'QD-GENERATED-LETTER',
-            answer: letter,
-            updated_at: new Date().toISOString(),
+            question_key: 'QD-GENERATED-LETTER',
+            answer_value: letter,
           },
-          { onConflict: 'application_id,question_id' }
+          { onConflict: 'application_id,question_key' }
         );
       }
 
@@ -332,11 +330,10 @@ export default function TabDPage() {
     await supabase.from('answers').upsert(
       {
         application_id: applicationId,
-        question_id: 'QD-CONFIRMED',
-        answer: 'true',
-        updated_at: new Date().toISOString(),
+        question_key: 'QD-CONFIRMED',
+        answer_value: 'true',
       },
-      { onConflict: 'application_id,question_id' }
+      { onConflict: 'application_id,question_key' }
     );
 
     setScreenState('completion');
