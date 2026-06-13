@@ -1740,6 +1740,7 @@ All session files are in docs/sessions/. Prompt for agent: `cat docs/sessions/[f
 | SESSION_WIPE_RESEED_CHEN.md | Chen application wipe + reseed with clean investment data | ✅ DONE |
 | SESSION_RECOVERY_DOWNLOAD_AND_FIX.md | Content recovery, .docx download test, consistency-checker fix | ✅ DONE (all 3 pieces) |
 | SESSION7_DUAL_LAYER_FRAMING_PIPELINE.md | Three-layer experience/framing pipeline (Layer 0/1/2) | ✅ DONE |
+| SESSION11_ASK_E2GO_FAQ.md | Interactive AI Q&A widget on landing page — pgvector, streaming, 3-layer retrieval | ✅ DONE |
 
 ---
 
@@ -1760,6 +1761,7 @@ All session files are in docs/sessions/. Prompt for agent: `cat docs/sessions/[f
 - S15 (PDF Export + ZIP Download) unblocked ✅
 - Session 4 (Package Assembly) complete ✅ — 15-file ZIP with cover, TOC, dividers, renamed docs
 - Session 7 (Three-Layer Pipeline) complete ✅ — Layer 0/1/2 experience scoring, framing, backstop
+- Session 11 (Ask E2go FAQ) complete ✅ — pgvector 368 Q&A corpus, 3-layer retrieval, streaming widget on landing page
 - Payments migration applied ✅
 - Stripe Price IDs live ✅
 - Auth + quiz scoring foundation solid ✅
