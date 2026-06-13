@@ -1,6 +1,6 @@
 # CLAUDE_CONTEXT.md — E2go
 ## Master Context for Every Claude Code Session
-**Version:** June 12, 2026 — S15 complete (document package download), full pipeline feature-complete
+**Version:** June 13, 2026 — Sessions 7, 8, 9 complete
 **Read this entire file before doing anything.**
 **Then read BUILD_TRACKER.md.**
 
@@ -463,6 +463,8 @@ separate voice/writing sample system with AI detection.
 | Page limit | 50 pages per TAB (not 50 total) — Toronto consulate |
 | AI model | claude-opus-4-8 for document generation (from app_settings) |
 | Voice profile | Raw writing sample text passed directly — no JSON extraction |
+| Experience scoring | 9-dimension keyword-based scoring (pure functions, no LLM) |
+| Experience framing | Three-layer: Layer 0 (targeted follow-up) → Layer 1 (AI framing) → Layer 2 (standing backstop) |
 | AI detection threshold | 0.35 — below this = pass |
 | Prompt storage | /prompts/v1/documents/ |
 | Partnership routing | Two separate independent packages |
@@ -655,6 +657,45 @@ Rate limits (production only):
 - ToS acceptance recorded at email-verify account creation
 - Commit: 6edf6dc
 
+**June 13, 2026 — Session 7: Three-Layer Experience/Framing Pipeline:**
+- Layer 0: Targeted follow-up questions when experience_score = WEAK/CRITICAL
+  - Fixed business-type lookup (Q0-business-type key + quiz_sessions fallback)
+  - Added targeted experience-gap question using operational-needs table
+  - Stays within Spec2's 8-question cap
+- Layer 1: 9-dimension experience scoring + OpenRouter AI framing calls
+  - calculateExperienceScore() — 9 pure dimension scorer functions
+  - generateFramingDecisions() — real OpenRouter call (deepseek/deepseek-chat)
+  - Graceful degradation: empty/failed → proceeds, doesn't block
+- Layer 2: Hardened generation prompt with standing backstop instruction
+  - qualifications.md updated: Layer 1 framing interpolation + standing instruction
+  - Spec3 updated to match
+- business-operational-needs.ts created — 12 franchise categories
+- experience-pipeline-fixtures.ts — 5 synthetic fixtures, all pass
+- Files: analysis-engine.ts, followup/generate-questions/route.ts,
+  business-operational-needs.ts, qualifications.md, Spec3_Generation_Prompts.md
+- Build: clean ✅
+
+**June 13, 2026 — Session 8: Cover Page Data Source Fix:**
+- Fixed personal_info JSONB query (column doesn't exist) → real column sources
+- applicantName: `applications.principal_name`
+- businessName: `applications.business_name`
+- nationality: `quiz_sessions.result_json.country`
+- passportNumber: not collected — bracket placeholder remains correct
+- File: `src/app/api/generate/download/[applicationId]/route.ts`
+- Commit: 6da0f6d
+- Build: clean ✅
+
+**June 13, 2026 — Session 9: Post-Generation Package Summary:**
+- 5-section summary screen on `/documents/[applicationId]` (permanent section, NOT a gate)
+- Sections: strength bars, strengths, gaps, suggestions, mandatory disclaimer
+- Bonus: denial risk awareness section (WATCH/FLAG/CRITICAL only)
+- Zero denial-prediction language — all text uses "may" framing
+- Chen verified: experience STRONG, not flagged
+- Fixture 5 verified: WEAK surfaced gracefully, actionable suggestion given
+- Files created: `PackageSummary.tsx`, `case-brief/[applicationId]/route.ts`, `package-summary-verification.ts`
+- File modified: `documents/[applicationId]/page.tsx`
+- Build: clean ✅
+
 **June 12, 2026 — Walsh & Pollard citation fix:**
 - Removed incorrect "Matter of Walsh and Pollard, 8 I&N Dec. 288"
   from live prompt (cover_letter.md), spec (Spec3), and docs
@@ -664,8 +705,8 @@ Rate limits (production only):
 - Build: clean ✅
 
 **Next session priorities:**
-1. Apply migration 004 (npx supabase db push) — answers source constraint
-2. End-to-end payment test — full flow quiz → checkout → generate → download
-3. Generation engine fixes — docs/sessions/SESSION_PLAN_GENERATION_FIXES.md
-4. Verify 34-gap questions integrated in case file
+1. End-to-end payment test — full flow quiz → checkout → generate → download
+2. Generation engine fixes — docs/sessions/SESSION_PLAN_GENERATION_FIXES.md
+3. Verify 34-gap questions integrated in case file
+4. Check Resend dashboard: e2go.app domain verified?
 5. Fix two warnings in generate/page.tsx and quiz/page.tsx

@@ -1,6 +1,6 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 12, 2026 — Walsh & Pollard citation fix complete, full pipeline feature-complete
+**Last Updated:** June 13, 2026 — Sessions 7, 8, 9 complete
 **App Name:** E2go.app
 **Stack:** Next.js 14 · TypeScript · Tailwind CSS · Supabase · Claude API
 **Dev URL:** https://e2go-git-dev-ocdeployments-projects.vercel.app
@@ -60,7 +60,10 @@ changed, run npm run build:clean, report summary.
 | Stripe integration | ⚠️ PARTIAL | Code complete, payments table needs migration |
 | Email verification funnel | ✅ COMPLETE | |
 | Document generation engine | ✅ COMPLETE | 15-step pipeline, sequential, checkpointed |
-| Analysis engine | ✅ COMPLETE | Types, lib, API, tests |
+| Analysis engine | ✅ COMPLETE | Types, lib, API, tests, 9-dimension scoring |
+| Three-layer experience pipeline | ✅ COMPLETE | Session 7 — Layer 0/1/2: follow-up, scoring, framing, backstop |
+| Cover page data fix | ✅ COMPLETE | Session 8 — personal_info JSONB → real data sources |
+| Post-generation package summary | ✅ COMPLETE | Session 9 — 5-section strength/gaps/disclaimer screen |
 | Follow-up conversation | ✅ COMPLETE | Voice sample, questions, responses, summary |
 | Module 3 Pre-Fill Pass | ✅ COMPLETE | Quiz → Tab A/F/L with legal gates |
 | Security history pre-fill | ✅ COMPLETE | With legal confirmation gate |
@@ -1267,6 +1270,101 @@ Clean — zero errors. TypeScript: zero app-level errors (pre-existing Playwrigh
 
 ---
 
+### June 13, 2026 — Session 7: Three-Layer Experience/Framing Pipeline
+
+Session file: docs/sessions/SESSION7_DUAL_LAYER_FRAMING_PIPELINE.md
+
+**Scope:** Build three-layer reliability model for experience qualification framing:
+Layer 0 (targeted follow-up questions), Layer 1 (structured scoring + AI framing),
+Layer 2 (hardened generation prompt with standing backstop).
+
+**Files Created:**
+- `src/lib/business-operational-needs.ts` — 12 franchise categories with operational demands
+- `src/lib/__tests__/experience-pipeline-fixtures.ts` — 5 synthetic test fixtures
+
+**Files Modified:**
+- `src/lib/analysis-engine.ts` — loadApplicationAnswers() real DB queries, 9 pure dimension scorer functions, calculateExperienceScore() real scoring, generateFramingDecisions() via OpenRouter, assembleCaseBrief() uses real scoring
+- `src/app/api/followup/generate-questions/route.ts` — fixed business-type lookup (Q0-business-type + quiz_sessions fallback), added targeted experience-gap question for WEAK/CRITICAL scores
+- `prompts/v1/documents/qualifications.md` — added Layer 1 framing interpolation + standing backstop instruction
+- `docs/Spec3_Generation_Prompts.md` — updated Document 1 Section II to match prompt changes
+
+**Step 0:** Follow-up question generator now finds business type via Q0-business-type key and quiz_sessions table fallback. Adds one targeted experience-gap question when experience is WEAK or CRITICAL, using operational-needs table. Stays within Spec2's 8-question cap.
+
+**Step 1:** business-operational-needs.ts — 12/12 franchise categories covered. Each has 4-6 operational demands with labels and descriptions. Handles common ID variations.
+
+**Step 2:** loadApplicationAnswers() queries: answers, followup_responses, content_signals_json, quiz_sessions, case_briefs. 9 dimensions scored via pure keyword-matching functions. N/A handling for caregiving/technical by business category.
+
+**Step 3:** generateFramingDecisions() — real OpenRouter call (deepseek/deepseek-chat, temp 0.3). Graceful degradation: empty/failed → proceeds, doesn't block generation.
+
+**Step 4:** framing_decisions.experience persisted in case_briefs JSON.
+
+**Step 5:** Generation prompt hardened — Layer 1 output interpolated into CREATIVE FRAMING INSTRUCTION. Standing backstop instruction always present with operational-needs data. Hardcoded caregiving example removed.
+
+**Step 6:** All 5 fixtures pass:
+- Fixture 1 (retail→retail): ADEQUATE, 3/7 confirmed (direct_industry, management, sales_customer)
+- Fixture 2 (banking→education): WEAK, 1/7 confirmed (management)
+- Fixture 3 (warehouse→cleaning): CRITICAL, 0/7 confirmed
+- Fixture 4 (parent→home care): WEAK, 1/8 confirmed (caregiving)
+- Fixture 5 (recent grad→IT): CRITICAL, 0/8 confirmed — graceful handling confirmed
+
+**Build:** Clean ✅ — zero errors
+**Known limitations:** transferable_skills_identified dimension always ABSENT (intentional — requires framing-decisions output); franchise_training_offset requires CONFIRMED (not PARTIAL); scoring is keyword-based (edge cases with unusual phrasing noted as future work)
+
+---
+
+### June 13, 2026 — Session 8: Cover Page Data Source Fix
+
+Session file: docs/sessions/SESSION8_COVER_PAGE_DATA_FIX.md
+
+**Scope:** Fix cover page rendering bracket placeholders instead of real customer data. The download route queried `applications.personal_info` (JSONB column that doesn't exist), causing every cover page to show `[Applicant name from Tab A]` instead of real data.
+
+**File Modified:**
+- `src/app/api/generate/download/[applicationId]/route.ts` — replaced personal_info JSONB query with real column queries
+
+**Field mapping:**
+| Cover page field | Source |
+|---|---|
+| applicantName | `applications.principal_name` |
+| businessName | `applications.business_name` |
+| nationality | `quiz_sessions.result_json.country` |
+| passportNumber | Not collected — bracket placeholder remains correct |
+| preparedDate | `now()` at generation time |
+
+**Build:** Clean ✅ — commit 6da0f6d
+
+---
+
+### June 13, 2026 — Session 9: Post-Generation Package Summary
+
+Session file: docs/sessions/SESSION9_PACKAGE_SUMMARY_SCORE.md
+
+**Scope:** Post-generation summary screen on `/documents/[applicationId]` showing package strength, gaps, suggestions, and disclaimer. NOT the existing pre-generation `/score` page — a NEW permanent section shown after documents are generated.
+
+**Files Created:**
+- `src/components/PackageSummary.tsx` — 5-section summary component
+- `src/app/api/generate/case-brief/[applicationId]/route.ts` — API route for case brief data
+- `src/lib/__tests__/package-summary-verification.ts` — logic verification (Chen + Fixture 5)
+
+**File Modified:**
+- `src/app/documents/[applicationId]/page.tsx` — integrated PackageSummary
+
+**5 Sections:**
+1. Package Strength Overview — 6-dimension score bars with Obsidian Gold badges
+2. What's Strong — STRONG/ADEQUATE dimensions
+3. Where the Package May Need More — WEAK/CRITICAL with plain-language, experience-specific framing
+4. What Could Help — actionable suggestions with /apply/* edit links
+5. Mandatory Disclaimer — extends Spec1 pattern
+
+**Bonus:** Section 5.5 — Areas Officers May Ask About (denial risk awareness)
+
+**Verification:** 16/16 checks passed — Chen experience NOT flagged, Fixture 5 experience correctly surfaced, zero denial-prediction language
+
+**Decision:** Permanent section (not one-time gate) — revisitable after edits, non-blocking, feedback loop
+
+**Build:** Clean ✅
+
+---
+
 ## SESSION LOG (Prior sessions)
 
 ### June 5, 2026 — Session: End-to-End Payment Test
@@ -1374,7 +1472,7 @@ Clean — zero errors. TypeScript: zero app-level errors (pre-existing Playwrigh
 
 ---
 
-## NEXT SESSION PRIORITIES (Updated June 12, 2026)
+## NEXT SESSION PRIORITIES (Updated June 13, 2026)
 
 ### ~~Priority 1 — S15: Document Package Download~~ ✅ COMPLETE
 - .docx-only output (bracket placeholders remain editable — PDF locked out per decision)
@@ -1392,15 +1490,29 @@ Clean — zero errors. TypeScript: zero app-level errors (pre-existing Playwrigh
 - Playwright screenshot skipped per RULE 0 blanket ban — manual visual check recommended
 - Build: clean ✅ | tsc: clean ✅
 
-### Priority 2 — Owner action items from previous session
-- ~~Run one-time SQL: link orphaned quiz_session for ocdeployments@gmail.com~~ ✅ DONE
-- Check Resend dashboard: e2go.app domain verified? If yes, revert sender
-- Run Group 10 RLS SQL queries and share results
+### ~~Priority 2 — Session 7: Three-layer experience/framing pipeline~~ ✅ COMPLETE
+- Layer 0: Targeted follow-up questions when experience_score = WEAK/CRITICAL
+- Layer 1: 9-dimension experience scoring + OpenRouter AI framing calls
+- Layer 2: Hardened generation prompt with standing backstop instruction
+- Files created: business-operational-needs.ts, experience-pipeline-fixtures.ts
+- Files modified: analysis-engine.ts, qualifications.md, Spec3_Generation_Prompts.md, followup/generate-questions/route.ts
+- All 5 fixtures pass with correct scoring
+- Build: clean ✅
 
-### ~~Priority 2 — Apply answers source migration~~
-Status: ✅ RESOLVED — file never existed, answers table functional
+### ~~Priority 3 — Session 8: Cover page data fix~~ ✅ COMPLETE
+- Fixed personal_info JSONB query → real column sources
+- applicantName from principal_name, businessName from business_name, nationality from quiz_sessions
+- Commit: 6da0f6d
+- Build: clean ✅
 
-### Priority 3 — End-to-end payment test
+### ~~Priority 4 — Session 9: Post-generation package summary~~ ✅ COMPLETE
+- 5-section summary: strength bars, strengths, gaps, suggestions, disclaimer
+- Permanent section on /documents/[applicationId], not a gate
+- Chen verified (experience NOT flagged), Fixture 5 verified (WEAK surfaced gracefully)
+- Zero denial-prediction language
+- Build: clean ✅
+
+### Priority 1 (new) — End-to-end payment test
 Full flow: quiz → pricing → checkout (4242 4242 4242 4242) →
 dashboard → /apply → Module 3 → Generation → Download
 Test applicant: Michael James Chen
@@ -1409,14 +1521,18 @@ Use SKIP_PAYMENT_WALL=true in .env.local for generation test
 Chen data wiped and reseeded (June 12) — clean, internally-consistent
 investment figures ($185K). Ready for fresh generation run.
 
-### Priority 4 — Generation engine fixes
+### Priority 2 — Generation engine fixes
 File: docs/sessions/SESSION_PLAN_GENERATION_FIXES.md
 Three known issues: approval gate, setState violation, empty boxes
 
-### Priority 5 — Verify 34-gap questions are integrated
+### Priority 3 — Verify 34-gap questions are integrated
 Case file was built but gap questions from June 9 planning
 may not be in the build.
 Session file: docs/sessions/SESSION_MODULE3_CASEFILE.md
+
+### Priority 4 — Owner action items
+- Check Resend dashboard: e2go.app domain verified? If yes, revert sender
+- Run Group 10 RLS SQL queries and share results
 
 ### Future sessions (after first paying user)
 - Admin dashboard — user management, payment history
@@ -1623,13 +1739,14 @@ All session files are in docs/sessions/. Prompt for agent: `cat docs/sessions/[f
 | SESSION_RETRY_LOOP_JOB_STATUS_FIX.md | Humanization retry loop + job completion status fix | ✅ DONE |
 | SESSION_WIPE_RESEED_CHEN.md | Chen application wipe + reseed with clean investment data | ✅ DONE |
 | SESSION_RECOVERY_DOWNLOAD_AND_FIX.md | Content recovery, .docx download test, consistency-checker fix | ✅ DONE (all 3 pieces) |
+| SESSION7_DUAL_LAYER_FRAMING_PIPELINE.md | Three-layer experience/framing pipeline (Layer 0/1/2) | ✅ DONE |
 
 ---
 
 ## BUILD STATE
 
 - Branch: `dev`
-- Last commit: pending (Session 4 package assembly)
+- Last commit: pending (Session 7 three-layer pipeline)
 - `npm run build`: Clean — 47 routes compiled
 - Walsh & Pollard citation fix: ✅ COMPLETE — live prompt, spec, docs, dead files cleanup
 - Terms-acceptance backfill: 3 rows inserted (all pre-existing users)
@@ -1642,6 +1759,7 @@ All session files are in docs/sessions/. Prompt for agent: `cat docs/sessions/[f
 - Chen application wiped and reseeded with clean data ✅
 - S15 (PDF Export + ZIP Download) unblocked ✅
 - Session 4 (Package Assembly) complete ✅ — 15-file ZIP with cover, TOC, dividers, renamed docs
+- Session 7 (Three-Layer Pipeline) complete ✅ — Layer 0/1/2 experience scoring, framing, backstop
 - Payments migration applied ✅
 - Stripe Price IDs live ✅
 - Auth + quiz scoring foundation solid ✅
