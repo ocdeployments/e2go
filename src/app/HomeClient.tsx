@@ -5,7 +5,6 @@ import { ComparisonSection } from "@/components/landing/ComparisonSection";
 
 export default function HomeClient() {
   const [menuOpen, setMenuOpen] = useState(false);
-  // openFaq removed — static FAQ replaced by interactive FaqWidget
 
   const mistakes = [
     {
