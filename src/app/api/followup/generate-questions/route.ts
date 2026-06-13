@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { callAI } from '@/lib/ai';
+import { getOperationalNeeds } from '@/lib/business-operational-needs';
 
 function getSupabase() {
   return createClient(
@@ -103,10 +104,25 @@ export async function POST(request: NextRequest) {
     }
 
     // Extract business type from answers (looking for business_type or similar)
-    const businessType = answersMap['business_type'] ||
+    // The quiz stores business_type in quiz_sessions.result_json.business_type
+    // and as Q0-business-type in the answers map. Try multiple sources.
+    let businessType = answersMap['business_type'] ||
+                        answersMap['Q0-business-type'] ||
                         answersMap['qb-type'] ||
                         answersMap['qf-type'] ||
-                        'the selected business type';
+                        null;
+
+    // Fallback: query quiz_sessions table (authoritative source for business type)
+    if (!businessType) {
+      const { data: quizSession } = await supabase
+        .from('quiz_sessions')
+        .select('business_type')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+      businessType = quizSession?.business_type || 'the selected business type';
+    }
 
     // Get applicant background summary - find Tab J answers
     const tabJAnswers = Object.entries(answersMap)
@@ -114,7 +130,7 @@ export async function POST(request: NextRequest) {
       .map(([key, value]) => `${key}: ${value}`)
       .join('\n');
 
-    const experienceScore = caseBrief?.case_brief_json?.substantiality_score || 'unknown';
+    const experienceScore = caseBrief?.case_brief_json?.experience_score || caseBrief?.case_brief_json?.substantiality_score || 'unknown';
     const contentGaps = caseBrief?.case_brief_json?.content_gaps || [];
 
     const systemPrompt = `You are helping prepare an E-2 visa application.
@@ -194,13 +210,77 @@ in this application.`;
           why_it_matters: q.why_it_matters || 'This helps strengthen your application',
           question_number: q.question_number || index + 1,
         }))
-        .slice(0, 8);
+        .slice(0, 7); // Leave room for potential targeted question (max 8 total per Spec2)
 
-      if (validQuestions.length === 0) {
+      // Layer 0: Targeted experience-gap question when experience_score = WEAK
+      // Per Spec1 Category B: experience_score < ADEQUATE and follow_up_not_completed
+      const isWeakExperience = experienceScore === 'WEAK' || experienceScore === 'CRITICAL';
+      if (isWeakExperience) {
+        const categoryNeeds = getOperationalNeeds(businessType || '');
+        if (categoryNeeds) {
+          const demandLabels = categoryNeeds.operational_demands
+            .slice(0, 3)
+            .map(d => d.label)
+            .join(', ');
+
+          const targetedPrompt = `This applicant's background shows little direct connection to ${categoryNeeds.category_name}.
+This business requires people who can handle: ${demandLabels}.
+
+Generate ONE warm, conversational follow-up question (per Spec2's tone — never clinical)
+that asks the applicant about experiences from ANY part of their life — work, family,
+volunteering, hobbies, military, education — that might relate to these specific demands.
+
+Do NOT list the business's operational needs to the applicant verbatim.
+Ask naturally, the way Spec2's existing templates do.
+
+Return ONLY a JSON object with these fields:
+{
+  "id": "q_targeted",
+  "gap_category": "experience_bridge",
+  "question_text": "The question",
+  "why_it_matters": "One sentence why this matters",
+  "question_number": 1
+}`;
+
+          const targetedResult = await callAI({
+            systemPrompt: 'You generate a single follow-up question for an E-2 visa applicant.',
+            userPrompt: targetedPrompt,
+          });
+
+          if (targetedResult.response) {
+            try {
+              const targetedMatch = targetedResult.response.match(/\{[\s\S]*\}/);
+              if (targetedMatch) {
+                const targetedQ = JSON.parse(targetedMatch[0]);
+                if (targetedQ.question_text) {
+                  // Prepend targeted question, keep within 8-question cap
+                  validQuestions.unshift({
+                    id: targetedQ.id || 'q_targeted',
+                    gap_category: targetedQ.gap_category || 'experience_bridge',
+                    question_text: targetedQ.question_text,
+                    why_it_matters: targetedQ.why_it_matters || 'This helps surface transferable experience',
+                    question_number: 1,
+                  });
+                }
+              }
+            } catch (e) {
+              console.warn('[FOLLOWUP] Targeted question parse failed:', e);
+            }
+          }
+        }
+      }
+
+      // Final cap at 8 questions per Spec2
+      const finalQuestions = validQuestions.slice(0, 8);
+
+      // Renumber questions sequentially
+      finalQuestions.forEach((q: { question_number: number }, i: number) => { q.question_number = i + 1; });
+
+      if (finalQuestions.length === 0) {
         return NextResponse.json({ questions: DEFAULT_QUESTIONS });
       }
 
-      return NextResponse.json({ questions: validQuestions });
+      return NextResponse.json({ questions: finalQuestions });
     } catch (parseError) {
       console.error('JSON parse error:', parseError, aiResult.response);
       return NextResponse.json({ questions: DEFAULT_QUESTIONS });

@@ -23,6 +23,26 @@ CREATIVE FRAMING INSTRUCTION), E2_Franchise_Categories_Section5.md
 
 ---
 
+## STEP -1 — CONFIRM CLEAN STARTING STATE (do this first)
+
+`git status` — confirm working tree is clean and branch is up to date
+with `origin/dev` (per the cleanup completed just before this session —
+8 commits ahead of main, all pushed).
+
+`view` the CURRENT, just-pushed state of:
+- `docs/Spec3_Generation_Prompts.md` (Document 1 Section II — recently
+  updated with the 9 FAM 402.9-6(D) citation fix; Step 5 of this session
+  edits this same section, build on top of that update, not a stale
+  cached version)
+- `prompts/v1/documents/cover_letter.md` and
+  `prompts/v1/documents/qualifications.md` (recently renamed from
+  kebab-case; confirm these are the files `generation-engine.ts`'s
+  `loadPrompt()` actually resolves)
+
+Do not proceed until both are confirmed current.
+
+---
+
 ## CONTEXT — THE STRATEGY: THREE LAYERS, NOT TWO
 
 Session 5 found that the LLM, left entirely unguided, STILL produced a

@@ -154,13 +154,23 @@ use their exact framing — not a paraphrase.
 
 CREATIVE FRAMING INSTRUCTION:
 [Generated from Case Brief framing_decisions for experience]
-Example: "The applicant has no direct caregiving employment.
-However they cared for a parent with dementia for six years.
-Frame this as follows: describe the specific management skills
-demonstrated — coordinating multiple care providers, managing
-medications, handling financial affairs, client advocacy.
-Connect each skill explicitly to franchise management needs.
-Do not mention the 'gap'. Present only the strength."
+If the Case Brief contains framing_decisions with experience
+connections, use those as your PRIMARY guide for Section II.
+Each framing_decision contains a specific connection between
+the applicant's actual background and an operational demand
+of the business. Follow the framing_instruction for each.
+
+TRANSFERABLE SKILLS ANALYSIS — STANDING INSTRUCTION:
+Review the applicant's complete background against what this
+business requires day-to-day. Identify the STRONGEST genuine
+connection(s) between the applicant's actual experience and
+these operational demands — even indirect ones. Write at least
+one BRIDGE sentence. If framing instructions were provided
+above, use those as your primary guide but identify ADDITIONAL
+connections. If no framing instructions were provided, perform
+this analysis independently. Never state there is "no relevant
+experience" — find the most honest and specific transferable
+connection.
 
 FORBIDDEN:
 Do not use: "extensive expertise", "wealth of experience",

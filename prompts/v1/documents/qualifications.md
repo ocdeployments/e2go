@@ -168,13 +168,44 @@ prospective qualification evidence.]"
 Adapt this template. Do not copy it verbatim. Make it specific
 to this applicant's actual background and this actual business.
 
-**For applicants with non-traditional backgrounds:**
-Use the Case Brief's framing decisions. If the framing decision
-says "frame caregiving as management experience," describe the
-specific management skills demonstrated — coordinating providers,
-managing medications, handling finances, client advocacy —
-and connect each to franchise management needs. Do not mention
-the "gap." Present only the strength.
+**For applicants with non-traditional backgrounds — Layer 1 Framing:**
+If the Case Brief contains framing_decisions with experience connections,
+use those as your PRIMARY guide for Section II and the Bridge Paragraph.
+Each framing_decision contains a specific connection between the applicant's
+actual background and an operational demand of the business. Follow the
+framing_instruction for each connection — it tells you exactly how to write
+the bridge for that specific skill transfer.
+
+Example of what framing_decisions may contain:
+- operational_demand: "Staff scheduling and dispatch"
+- applicant_evidence: "Managed a team of 12 at previous company"
+- connection: "Demonstrated ability to coordinate workforce logistics"
+- framing_instruction: "Describe the specific scheduling and coordination
+  skills from the prior role and connect them directly to this business's
+  staffing needs."
+
+**TRANSFERABLE SKILLS ANALYSIS — STANDING INSTRUCTION (always perform):**
+Review the applicant's complete background (employment history,
+education, follow-up responses, writing sample) against what this
+business requires day-to-day. Identify the STRONGEST genuine
+connection(s) between the applicant's actual experience and these
+operational demands — even indirect ones (household management,
+volunteer work, parenting, community roles, different-industry
+analogous functions, military service).
+
+Write at least one BRIDGE sentence using the pattern:
+"My experience [X] directly prepares me to [Y] because
+[specific connection]."
+
+If specific framing instructions were provided above in the
+framing_decisions, use those as your primary guide but you may
+identify ADDITIONAL connections. If no framing instructions were
+provided, perform this analysis independently from the applicant
+background data provided.
+
+Never state there is "no relevant experience" — there is always
+SOME transferable connection; find the most honest and specific one.
+Do not mention the "gap." Present only the strength.
 
 **Forbidden language:**
 Do not use: "extensive expertise", "wealth of experience",
