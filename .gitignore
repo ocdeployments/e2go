@@ -53,3 +53,7 @@ node_modules/
 *.png
 scripts/test-applicant-michael-chen.json
 docs/test-applicant-michael-chen.json
+
+# generated docx test artifacts
+/docx-output/
+/docx-verification-output/

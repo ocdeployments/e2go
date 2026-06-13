@@ -1,1231 +1,1475 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 11, 2026 — Quiz new questions: 4 questions + franchise sub-questions added
-**App Name:** E2go.app
-**Stack:** Next.js 14 · TypeScript · Tailwind CSS · Supabase · Claude API
-**Dev URL:** https://e2go-git-dev-ocdeployments-projects.vercel.app
-**Repo:** github.com/ocdeployments/e2go
-**Branch:** dev (never commit to main directly)
+**Last Updated:** May 29, 2026 — End of Session 1
+**App Name:** e2go.app
+**Stack:** Next.js 14 · TypeScript · Tailwind CSS · Supabase · MiniMax M1 via OpenRouter
+**Dev Server:** localhost:3000
 **Project Path:** ~/E2-go
+
+---
+
+## HOW TO USE THIS DOCUMENT
+
+- Read this at the START of every Claude Code session
+- Update STATUS column as features are completed
+- Add new features discovered during the session to the New Features section
+- Save updated version to ~/E2-go/BUILD_TRACKER.md after every session
+- This is the single source of truth for the entire project
 
 ---
 
 ## SESSION COMMANDS
 
-**To start:** type `start session`
-**To end:** type `end session`
+**To start any session:** type `start session`
+**To end any session:** type `end session`
 
-On start: read CLAUDE_CONTEXT.md + BUILD_TRACKER.md +
-docs/DESIGN_REFERENCE.html (if UI work). BEFORE ANYTHING ELSE — READ THIS:
+### "start session" behavior
+Claude Code must:
+1. Read CLAUDE_CONTEXT.md completely
+2. Read BUILD_TRACKER.md completely
+3. Report: what was completed last session, what is broken, next priority task, current app status
+4. Confirm all 10 standing build rules are loaded
+5. Ask: "Ready to confirm and begin?" — do not start work until confirmed
 
-Two API keys are present in .env.local:
-- OPENROUTER_API_KEY — use this for ALL app AI features
-- ANTHROPIC_API_KEY — use this ONLY for document generation
-
-Do NOT switch any existing OpenRouter calls to the Anthropic API.
-Do NOT use ANTHROPIC_API_KEY anywhere except:
-  - src/lib/generation-engine.ts (document generation calls)
-  - The humanization pass in the same file
-
-If Claude Code asks "should I use the Anthropic API key?" — the answer is:
-Only for document generation. Everything else stays on OpenRouter.
-
-Confirm you understand this before proceeding.Report status.
-Ask "Ready to confirm and begin?" before any work.
-
-On end: update this file, update CLAUDE_CONTEXT.md if rules
-changed, run npm run build:clean, report summary.
-
+### "end session" behavior
+Claude Code must:
+1. Update BUILD_TRACKER.md — mark completions ✅, add bugs, add new features, update session log, update Session 2 priorities
+2. Update CLAUDE_CONTEXT.md if any standing rules changed
+3. Run npm run build — confirm clean
+4. Report: "Session complete. Here is what was accomplished: [summary]"
 ---
 
 ## OVERALL PROGRESS
 
 | Phase | Status | Notes |
 |---|---|---|
-| Next.js scaffold | ✅ COMPLETE | |
-| Database schema + RLS | ✅ COMPLETE | 45/45 tests passing |
-| Auth (login/signup) | ✅ COMPLETE | Supabase auth wired |
-| Quiz v3.0 | ✅ COMPLETE | 26 questions, global, treaty countries |
-| Full UI redesign | ✅ COMPLETE | Obsidian Gold |
-| PWA | ✅ COMPLETE | Manifest, service worker, install prompt |
-| Design skills installed | ✅ COMPLETE | |
-| Module 3 Tab A | ✅ COMPLETE | 21 questions, privacy categories, working |
-| Module 3 Tabs B-L | ✅ COMPLETE | All 12 tabs wired |
-| /apply/overview | ✅ COMPLETE | |
-| /apply/checklist | ✅ COMPLETE | Three phases, Supabase connected |
-| Pricing page | ✅ COMPLETE | Founding member pricing, guarantee |
-| Dashboard | ✅ COMPLETE | Needs real data wiring |
-| Landing page | ✅ COMPLETE | 12 sections, Obsidian Gold. Portrait hero, row mistakes, connected steps, hero feature with binder image, testimonial photos |
-| Document generation specs | ✅ COMPLETE | 4 spec files |
-| Stripe integration | ⚠️ PARTIAL | Code complete, payments table needs migration |
-| Email verification funnel | ✅ COMPLETE | |
-| Document generation engine | ✅ COMPLETE | 15-step pipeline, sequential, checkpointed |
-| Analysis engine | ✅ COMPLETE | Types, lib, API, tests |
-| Follow-up conversation | ✅ COMPLETE | Voice sample, questions, responses, summary |
-| Module 3 Pre-Fill Pass | ✅ COMPLETE | Quiz → Tab A/F/L with legal gates |
-| Security history pre-fill | ✅ COMPLETE | With legal confirmation gate |
-| Business data deduplication | ✅ COMPLETE | Tab A as single source |
-| Timeline service | ✅ COMPLETE | Two date concepts separated |
-| Tab B/L cross-tab notes | ✅ COMPLETE | Shared document detection |
-| Contradiction flag component | ✅ COMPLETE | |
-| Auth pages image slider | ✅ COMPLETE | U.S. themed left panel |
-| Navigation & routing | ✅ COMPLETE | All routes connected, mobile nav |
-| Route cleanup | ✅ COMPLETE | 47 routes, dead pages removed, middleware hardened |
-| Breadcrumbs | ✅ COMPLETE | On /apply/*, /score |
-| Cookie consent banner | ✅ COMPLETE | |
-| SEO metadata | ✅ COMPLETE | All pages |
-| /learn hub | ✅ COMPLETE | 6 SEO articles |
-| Module 1 | ✅ COMPLETE | Onboarding, consent, application record |
-| Module 2 | ✅ COMPLETE | Business advisor, category selection |
-| Voice-to-text input | ✅ COMPLETE | commit 63dc9dd — mic bug fixed in redesign session |
-| **Case file UX redesign** | ✅ COMPLETE | commits a9dfcb9–9172b2c — two-panel, voice, all variants |
+| Design Library (Stitch) | ✅ COMPLETE | 10 screens in docs/stitch/ |
+| Next.js Scaffold | ✅ COMPLETE | App Router, TypeScript, Tailwind |
+| Landing Page | ✅ COMPLETE | All sections built and compiling |
+| Quiz (Module 0) | ✅ COMPLETE | JSON-driven, webpack error resolved |
+| Results Page | ✅ COMPLETE | Reads localStorage, all 4 outcomes |
+| Pricing Page | ✅ COMPLETE | 4 tiers, Stripe placeholder |
+| Dashboard | ✅ COMPLETE | Static demo data (Alex, 35%, 74/100) |
+| Nav + Footer Components | ✅ COMPLETE | Shared across all pages |
+| Supabase Connection | ✅ COMPLETE | {"connected":true} confirmed |
+| Database Schema | ✅ COMPLETE | 17 tables, RLS policies, profiles trigger |
+| Auth (Login/Signup) | ✅ COMPLETE | Supabase auth wired, middleware protected |
+| Module 1–6 (Core App) | ⬜ NOT STARTED | |
+| AI Features (MiniMax) | ⬜ NOT STARTED | OpenRouter client planned |
+| PDF Export | ⬜ NOT STARTED | |
+| Stripe Integration | ⬜ NOT STARTED | After company incorporated + HST registered |
+| Referral Engine | ⬜ NOT STARTED | Design now, build after core app |
+| B2B Subscriptions | ⬜ NOT STARTED | Phase 2 |
+| Deployment (Vercel) | ⬜ NOT STARTED | |
 
 ---
 
-## PRICING — LOCKED (Updated June 9, 2026)
+## ARCHITECTURE DECISIONS — LOCKED
 
-| Application Type | Price | Stripe cents |
+| Decision | Detail |
+|---|---|
+| Paywall timing | MOVED — triggers AFTER Module 3 data collection, before document generation. Show 1–2 page preview of real output. Free to collect answers, pay to download. |
+| Interview session limit | 2 sessions included per application (shared for family). Additional: $9.99 per 3-session bundle. |
+| Document generation | Sequential — ONE document at a time. Checkpointed. Crash recovery. Never parallel. |
+| Supabase users | Use auth.users — create public.profiles instead of public.users |
+| AI routing | All MiniMax calls server-side only. API key never in browser. |
+| Document ownership | Each piece of information lives in exactly one document. No repetition across tabs. |
+| Form terminology | All questions use exact DS-160 / government form terminology — no paraphrasing. |
+
+---
+
+## DESIGN LIBRARY — STITCH FILES
+
+All files in ~/E2-go/docs/stitch/
+
+| File | Screen | Status |
 |---|---|---|
-| Solo individual | $550 | 55000 |
-| Solo + spouse | $697 | 69700 |
-| Solo + family (up to 2 kids) | $750 | 75000 |
-| Solo + family (3–5 kids) | $797 | 79700 |
-| Partnership (no families) | $997 | 99700 |
-| Partnership two couples | $1,297 | 129700 |
-| Partnership two families | $1,397 | 139700 |
-| Extra child surcharge | +$50 | +5000 (dynamic checkout, no fixed Price ID) |
-| Interview Simulator standalone | $197 | 19700 |
-| Interview Simulator additional sessions | $29.99 | 2999 |
-| Renewal package | $497 | 49700 |
+| landing.html | Landing page desktop | ✅ Ready |
+| landing-mobile.html | Landing page mobile | ✅ Ready |
+| quiz.html | Module 0 quiz shell | ✅ Ready |
+| results.html | Eligibility results + paywall | ✅ Ready |
+| interview-engine.html | Single question screen | ✅ Ready |
+| dashboard.html | Post-login dashboard | ✅ Ready |
+| pricing.html | Pricing tiers + testimonials | ✅ Ready |
+| sources.html | Official sources section | ✅ Ready |
+| testimonials.html | Testimonials section | ✅ Ready |
+| features.html | Full feature list section | ✅ Ready |
 
-**Simulator included in all packages AND available standalone.**
-**Extra child surcharge is dynamic — no fixed Stripe Price ID.**
-
-⚠️ ACTION REQUIRED: All Stripe Price IDs in .env.local and the
-pricing table in Supabase must be recreated at these new amounts.
-Old founding member Price IDs are now incorrect.
-Run scripts/stripe-setup.ts after updating amounts.
-Update STRIPE_PRICE_* env vars with new Price IDs after running.
+**Stitch screens still needed:**
+- /learn education hub page
+- Module 1 referral consent screen (5 categories)
+- Document generation narrative progress screen
+- Attorney portal dashboard (Phase 2)
+- Franchise broker portal dashboard (Phase 2)
 
 ---
 
 ## PAGES — BUILD STATUS
 
-| Page | Route | Status |
+| Page | Route | Status | Notes |
+|---|---|---|---|
+| Landing Page | / | ✅ COMPLETE | All sections, flag background, features |
+| Quiz | /quiz | ✅ COMPLETE | JSON-driven, all question types |
+| Results | /results | ✅ COMPLETE | All 4 outcomes, 6-pillar display |
+| Pricing | /pricing | ✅ COMPLETE | 4 tiers, Stripe placeholder |
+| Dashboard | /dashboard | ✅ COMPLETE | Static demo, real data after auth |
+| Login | /login | ✅ COMPLETE | Supabase auth, error handling |
+| Sign Up | /signup | ✅ COMPLETE | Supabase auth, profile auto-created |
+| Apply / Tab A | /apply/tab-a | ⬜ NOT STARTED | |
+| Apply / Tabs B–L | /apply/[tab] | ⬜ NOT STARTED | Dynamic route |
+| Confidence Score | /score | ⬜ NOT STARTED | |
+| Interview Simulator | /simulator | ⬜ NOT STARTED | |
+| PDF Export | /export | ⬜ NOT STARTED | |
+| Document Generation | /generating | ⬜ NOT STARTED | Narrative progress screen |
+| Support | /support | ⬜ NOT STARTED | |
+| Support — New Ticket | /support/new | ⬜ NOT STARTED | |
+| Support — My Tickets | /support/tickets | ⬜ NOT STARTED | |
+| Admin Panel | /admin | ⬜ NOT STARTED | Hidden, role-protected |
+| Education Hub | /learn | ⬜ NOT STARTED | SEO foundation |
+| Learn — What is E-2 | /learn/what-is-e2-visa | ⬜ NOT STARTED | |
+| Learn — Requirements | /learn/requirements | ⬜ NOT STARTED | |
+| Learn — Investment | /learn/investment | ⬜ NOT STARTED | |
+| Learn — Businesses | /learn/businesses | ⬜ NOT STARTED | |
+| Learn — Process | /learn/process | ⬜ NOT STARTED | |
+| Learn — Canada | /learn/canada | ⬜ NOT STARTED | |
+| Learn — E-2 vs EB-5 | /learn/e2-vs-eb5 | ⬜ NOT STARTED | |
+| Blog Hub | /blog | ⬜ NOT STARTED | MDX, 26-post calendar |
+| Blog Post | /blog/[slug] | ⬜ NOT STARTED | Dynamic route |
+| Partner Portal — Attorney | /partner/attorney | ⬜ NOT STARTED | Phase 2 |
+| Partner Portal — Broker | /partner/broker | ⬜ NOT STARTED | Phase 2 |
+
+---
+
+## MODULE 0 — FREE ELIGIBILITY QUIZ
+
+| Feature | Status | Notes |
 |---|---|---|
-| Landing | / | ✅ COMPLETE |
-| Quiz | /quiz | ✅ COMPLETE |
-| Results | /results | ✅ COMPLETE |
-| Quiz Review | /quiz/review | ✅ COMPLETE |
-| Document Upload | /apply/upload | ✅ COMPLETE |
-| Upload Processing | /apply/upload/processing | ✅ COMPLETE |
-| Upload Review | /apply/upload/review | ✅ COMPLETE |
-| Upload Gap Report | /apply/upload/gaps | ✅ COMPLETE |
-| Pricing | /pricing | ✅ COMPLETE |
-| Success | /pricing/success | ✅ COMPLETE |
-| Dashboard | /dashboard | ✅ COMPLETE |
-| Login | /login | ✅ COMPLETE |
-| Signup | /signup | ✅ COMPLETE |
-| Verify | /verify | ✅ COMPLETE |
-| Overview | /apply/overview | ✅ REDIRECT → /apply (query-preserving shim) |
-| Checklist | /apply/checklist | ✅ COMPLETE |
-| Module 1 | /apply/module1 | ✅ COMPLETE |
-| Module 2 | /apply/module2 | ✅ COMPLETE |
-| Module 3 shell | /apply/module3 | ✅ COMPLETE (8 tabs: A B C D E I J K) |
-| Module 3 Tab A | /apply/module3/a | ✅ COMPLETE |
-| Module 3 Tabs B,C,D,E,I,J,K | /apply/module3/[b-k] | ✅ COMPLETE |
-| ~~Module 3 Tabs F,G,H,L~~ | ~~deleted~~ | ✅ REMOVED — superseded by case file |
-| ~~Onboarding~~ | ~~deleted~~ | ✅ REMOVED — orphaned |
-| ~~Outcome~~ | ~~deleted~~ | ✅ REMOVED — orphaned |
-| Case File Overview | /apply | ✅ COMPLETE | SectionCard.tsx restyled |
-| Case File: Your Story | /apply/story | ✅ COMPLETE | commit c56f3a4 |
-| Case File: Your Business | /apply/business | ✅ COMPLETE | commit db919eb |
-| Case File: Your Investment | /apply/investment | ✅ COMPLETE | commit b20065e |
-| Case File: Your Qualifications | /apply/qualifications | ✅ COMPLETE | commit a421108 |
-| Case File: Your Family | /apply/family | ✅ COMPLETE | commit ddaccac |
-| Case File: Your Ties | /apply/ties | ✅ COMPLETE | commit 7502ea8 |
-| Score | /score | ✅ COMPLETE |
-| Generate | /generate/[appId] | ✅ COMPLETE |
-| Documents | /documents/[appId] | ✅ COMPLETE |
-| Learn | /learn | ✅ COMPLETE |
-| About | /about | ✅ COMPLETE |
-| Privacy | /privacy | ✅ COMPLETE |
-| Terms | /terms | ✅ COMPLETE |
-| Support | /support | ✅ COMPLETE |
+| Question engine (JSON-driven) | ✅ COMPLETE | Reads module0_questions.json |
+| One question at a time | ✅ COMPLETE | |
+| Auto-advance on select | ✅ COMPLETE | |
+| Back button | ✅ COMPLETE | |
+| Progress bar + section label | ✅ COMPLETE | |
+| Conditional questions (show_if) | ✅ COMPLETE | |
+| Tooltip per question | ✅ COMPLETE | |
+| Hard stop screens (PR-01–PR-09) | ✅ COMPLETE | |
+| Currency question Q0-05 | ✅ COMPLETE | |
+| CAD/USD live conversion | ⬜ NOT STARTED | Real-time with 0.73 rate |
+| Proportionality warning (W-PROP) | ⬜ NOT STARTED | Inline as user types |
+| Multiselect questions | ✅ COMPLETE | |
+| Email capture (Q0-21) | ✅ COMPLETE | |
+| CASL opt-in checkbox | ⬜ NOT STARTED | |
+| Scoring engine | ✅ COMPLETE | module0_scoring_logic.json wired |
+| Non-immigrant intent composite | ✅ COMPLETE | 4 outcomes calculated |
+| Save result to localStorage | ✅ COMPLETE | e2go_quiz_result key |
+| Save quiz_session to Supabase | ✅ COMPLETE | After final Q, saves outcome |
+| Redirect to /results | ✅ COMPLETE | router.push on completion |
 
 ---
 
-## MODULE 0 — QUIZ v4.0 (Updated June 9, 2026)
+## MODULE 1 — ONBOARDING + CONSENT
 
-| Feature | Status |
-|---|---|
-| 14 core + 19 total questions (global) | ✅ COMPLETE |
-| Global treaty country selector | ✅ COMPLETE |
-| Scoring logic v3.0 | ✅ COMPLETE |
-| Hard stops PR-01 through PR-08 | ✅ COMPLETE |
-| Results page with outcomes | ✅ COMPLETE |
-| Quiz pre-fills to Module 3 | ✅ COMPLETE |
-| Draft save system (localStorage + Supabase backfill) | ✅ COMPLETE |
-| Back button repositioned top-left, warmer colour | ✅ COMPLETE |
-| Clickable section tab navigation | ✅ COMPLETE |
-| Franchise lead capture (Q0-FRANCHISE-REFERRAL) | ✅ COMPLETE |
-| Q0-13 split — nuclear family (Q0-13a) + extended (Q0-13b) | ✅ COMPLETE |
-| Q0-15 partnership — spousal option + corrected advisory | ✅ COMPLETE |
-| Q0-14b spouse role follow-up question | ✅ COMPLETE |
-| Q0-03a principal applicant sub-question | ✅ COMPLETE |
-| Results timeline — dynamic month names not weeks | ✅ COMPLETE |
-| "Review or change my answers" link on results page | ✅ COMPLETE |
-| /quiz/review — jump-to-question editing page | ✅ COMPLETE |
-| Selected option gold borders confirmed | ✅ COMPLETE |
-
-## MODULE 0 — QUIZ v6.0 (Final Rebuild — June 10, 2026)
-
-| Feature | Status |
-|---|---|
-| 16 questions (10 core + 6 subs) | ✅ COMPLETE |
-| Q0-01 treaty country hard stop works | ✅ COMPLETE |
-| Q0-02 principal applicant question | ✅ COMPLETE |
-| Q0-03 family composition (merged Q0-13a + Q0-16) | ✅ COMPLETE |
-| Q0-04 business partner (merged Q0-07 + Q0-15) | ✅ COMPLETE |
-| Q0-09 history as one multiselect | ✅ COMPLETE |
-| Q0-10 home ties as one multiselect | ✅ COMPLETE |
-| Dynamic question counter (never exceeds visible total) | ✅ COMPLETE |
-| Back button at bottom left | ✅ COMPLETE |
-| handleComplete reads correct question IDs | ✅ COMPLETE |
-| Dependents from Q0-03 (not Q0-16) | ✅ COMPLETE |
-| Application type from Q0-02/Q0-04 (not Q0-09) | ✅ COMPLETE |
-| Pricing chain correct end to end | ✅ COMPLETE |
-| All 17 confirmed bugs resolved | ✅ COMPLETE |
-| All 30 bugs from full combinatorial audit resolved | ✅ COMPLETE |
-| handleMultiContinue calls processAction — multiselect scores | ✅ COMPLETE |
-| evaluateShowIf handles array answers — subs render correctly | ✅ COMPLETE |
-| Treaty country validation fires PR-NON-TREATY | ✅ COMPLETE |
-| COS flag string match corrected | ✅ COMPLETE |
-| Score weights corrected — positive ties no longer penalised | ✅ COMPLETE |
-| Q0-03 and Q0-04 show_if — no redundant questions | ✅ COMPLETE |
-| Sequential Q0-09 history branching | ✅ COMPLETE |
-| All 9 hard stops wired and reachable | ✅ COMPLETE |
-| Pricing chain correct end to end | ✅ COMPLETE |
-| Test fixtures written — 5 profiles in docs/TEST_FIXTURES.md | ✅ COMPLETE |
-| Q0-PREP-STATUS routing question | ⏳ PENDING — DOCUMENT_UPLOAD_SPEC.md |
-
-## MODULE 0 — QUIZ NEW QUESTIONS (Session 2 — June 11, 2026)
-
-| Feature | Status |
-|---|---|
-| Q0-readiness — readiness stage question | ✅ COMPLETE |
-| Q0-target-date — target date range question | ✅ COMPLETE |
-| Q0-business-type — business type selector | ✅ COMPLETE |
-| Q0-business-cost — total cost + currency | ✅ COMPLETE |
-| Q0-08c — franchise broker sub-question | ✅ COMPLETE |
-| Q0-08d — franchise referral connection | ✅ COMPLETE |
-| Proportionality scoring (investment / business cost) | ✅ COMPLETE |
-| W-TARGET-URGENT, W-NO-BIZ-IDENTIFIED, W-PROP-SOFT-30, W-PROP-STRONG-30 | ✅ COMPLETE |
-| DB columns: quiz_sessions.readiness_stage, quiz_sessions.business_type | ✅ COMPLETE |
-| working_target_date wiring: quiz → module1 → applications | ✅ COMPLETE |
-| Results page personalised timeline ("To be in the US by…") | ✅ COMPLETE |
-| Franchise referral admin email via Resend | ✅ COMPLETE |
-| Migration: 20260611120000_quiz_new_columns.sql | ✅ COMPLETE |
-
-## MODULE 0 — QUIZ LEGAL ACCURACY (Session 2 — June 9, 2026)
-
-| Fix | Question ID | Status |
+| Feature | Status | Notes |
 |---|---|---|
-| Multi-partner hard stop per 9 FAM 402.9 | PR-06b updated | ✅ COMPLETE |
-| Holding company / trust ownership chain | Q0-14c | ✅ COMPLETE |
-| Control through management rights below 50% | Q0-14d | ✅ COMPLETE |
-| E-visa nationality for mixed partnerships | Q0-14e | ✅ COMPLETE |
-| Investment commitment timing | Q0-05a | ✅ COMPLETE |
-| Passive investment + non-profit hard stops | Q0-09a | ✅ COMPLETE |
-| Officer discretion advisory on results page | Advisory block | ✅ COMPLETE |
-| DS-156E consulate-specific note on checklist | Checklist | ✅ COMPLETE |
-
-New scoring entries: 2 hard stops (PR-PASSIVE-INVEST, PR-NONPROFIT),
-4 attorney flags, 6 risk flags — all additive, no existing entries modified.
+| Account creation flow | ⬜ | Requires Supabase auth |
+| Application type routing (solo/partnership) | ⬜ | |
+| ToS acceptance + consent log | ⬜ | PIPEDA compliant |
+| CASL marketing consent | ⬜ | Separate from ToS, logged |
+| Family composition setup | ⬜ | |
+| Referral consent screen (5 categories) | ⬜ | See Referral Engine section |
+| Application record creation in DB | ⬜ | |
 
 ---
 
-## DOCUMENT UPLOAD FEATURE — STATUS (Updated June 9, 2026)
+## MODULE 2 — BUSINESS TYPE ADVISOR
 
-| Feature | Status |
-|---|---|
-| Q0-PREP-STATUS quiz routing question | ✅ COMPLETE |
-| DB migration — application_documents table | ✅ COMPLETE |
-| DB migration — document_discrepancies table | ✅ COMPLETE |
-| DB migration — answers.confidence + source_document_type | ✅ COMPLETE |
-| DB migration — applications.preparation_status | ✅ COMPLETE |
-| Supabase Storage bucket: application-documents | ✅ COMPLETE |
-| POST /api/documents — file upload route | ✅ COMPLETE |
-| POST /api/documents/extract — SSE extraction pipeline | ✅ COMPLETE |
-| POST /api/documents/resolve-discrepancy | ✅ COMPLETE |
-| GET /api/documents/gap-report | ✅ COMPLETE |
-| src/lib/text-extraction.ts — PDF/DOCX/XLSX/CSV parsing | ✅ COMPLETE |
-| src/lib/document-validation.ts — file validation | ✅ COMPLETE |
-| src/lib/document-extraction-engine.ts — AI extraction | ✅ COMPLETE |
-| DocumentUploadCard — intake card on /apply overview | ✅ COMPLETE |
-| /apply/upload — document type selection + drag-and-drop | ✅ COMPLETE |
-| /apply/upload/processing — SSE progress screen | ✅ COMPLETE |
-| /apply/upload/review — discrepancy resolution | ✅ COMPLETE |
-| /apply/upload/gaps — gap report with section coverage | ✅ COMPLETE |
-| PreFillBadge — amber document variants added | ✅ COMPLETE |
-| Acknowledgment tracking for pre-filled fields | ✅ COMPLETE |
-| Visual consistency with case file redesign | ✅ COMPLETE | Already Obsidian Gold — no changes needed |
-
-⚠️ ACTION REQUIRED: Apply migration docs/migrations/004_answers_source_update.sql
-to Supabase: npx supabase db push
+| Feature | Status | Notes |
+|---|---|---|
+| Background questionnaire | ⬜ | Experience, budget, state preference |
+| Business category cards | ⬜ | Complexity badges (green/amber/red) |
+| Incompatible business detection | ⬜ | Cannabis, passive RE, marginal |
+| Investment amount warning | ⬜ | Business-type-specific minimums |
+| Business shortlist (save up to 5) | ⬜ | |
+| Franchise/broker referral trigger | ⬜ | Consent-based, see Referral Engine |
+| Experience gap detection trigger | ⬜ | Feeds into Module 3 probe questions |
 
 ---
 
-## INTERVIEW SIMULATOR — STATUS (Updated June 9, 2026)
+## MODULE 3 — DOCUMENT INTERVIEW ENGINE
 
-| Feature | Status |
-|---|---|
-| /simulator route | ✅ COMPLETE |
-| Start / active / complete screens | ✅ COMPLETE |
-| Text mode — full evaluation flow | ✅ COMPLETE |
-| Voice mode — Groq Whisper transcription wired | ✅ COMPLETE |
-| Groq TTS officer voice (Fritz-PlayAI, server-side) | ✅ COMPLETE |
-| 15-minute session timer with 2-min warning | ✅ COMPLETE |
-| $29.99 purchase flow wired to Stripe | ✅ COMPLETE |
-| Design violations fixed — zero border-radius | ✅ COMPLETE |
-| simulator_sessions + simulator_answers DB tables | ✅ COMPLETE |
-| Session limit tracking (used / purchased on applications) | ✅ COMPLETE |
-| OpenRouter MiniMax evaluation engine | ✅ COMPLETE |
-| Coaching summary + readiness indicator | ✅ COMPLETE |
+**Rule:** All questions must use DS-160 terminology. All questions must be descriptive (see Form Standards section).
 
-✅ STRIPE_PRICE_SIMULATOR renamed to STRIPE_PRICE_SIMULATOR_3PACK (commit 0aca5dc)
-✅ useEffect dependency fixed — question?.id → question.text (commit 0aca5dc)
+| Tab | Questions | Status | Spec File |
+|---|---|---|---|
+| Tab A: DS-160 Reference | ~25–30 | ⬜ | module3_tab_a.md |
+| Tab B: Personal Information | ~15–20 | ⬜ | module3_tabs_b_e.md |
+| Tab C: Visa Category Confirmation | ~5–8 | ⬜ | Auto-generated |
+| Tab D: Cover Letter | ~20–25 | ⬜ | AI-generated narrative |
+| Tab E: Ownership Structure | ~10–15 | ⬜ | module3_tabs_b_e.md |
+| Tab F: Investment Proof | ~25–35 | ⬜ | module3_tabs_f_i.md + Template 1 |
+| Tab G: Real Business Evidence | ~15–20 | ⬜ | module3_tabs_f_i.md |
+| Tab H: Funds Flow | ~20–30 | ⬜ | module3_tabs_f_i.md + Template 1 |
+| Tab I: Non-Marginality Evidence | ~20–25 | ⬜ | module3_tabs_f_i.md |
+| Tab J: Qualifications + Org Chart | ~20–25 | ⬜ | module3_tabs_j_l.md + Template 4 |
+| Tab K: Business Plan | ~30–40 | ⬜ | module3_tabs_j_l.md + Template 2 |
+| Tab L: Family Dependents | ~15–20 | ⬜ | module3_tabs_j_l.md |
+| **TOTAL** | **~220–270** | ⬜ | |
 
----
+**Spreadsheet Templates:**
 
-## MODULE 3 — TABS
+| Template | Purpose | Status |
+|---|---|---|
+| Template 1 | Source & Path of Funds | ⬜ |
+| Template 2 | Business Financial Projections | ⬜ |
+| Template 3 | Business Asset & Expense Register | ⬜ |
+| Template 4 | Organizational Chart Data | ⬜ |
+| Template 5 | Employment & Hiring Plan | ⬜ |
 
-All 12 tabs (A-L) wired with:
-- Privacy categories
-- Skip toggles with advisories
-- 800ms debounce autosave
-- Quiz pre-fill (A, F, L)
-- Legal confirmation gates (security history)
+**Adaptive Case-Building Features:**
 
----
-
-## MODULE 3 — CASE FILE REDESIGN
-
-Redesigned Module 3 from 12 separate tabs into 6 cohesive document-building sections.
-Old tabs (module3/a-l) remain fully functional as fallback.
-
-**Architecture:**
-- `/apply` — Case file overview with personalized header, section cards, document chips, pre-fill gems
-- `/apply/story` — Section 01: 4 clusters (who you are, your plan, administrative, travel & history)
-- `/apply/business` — Section 02: 7 clusters (entity, what you do, operations, licenses, franchise, startup costs, market)
-- `/apply/investment` — Section 03: 5 clusters (overview, source of funds, paper trail, projections, non-marginality)
-- `/apply/qualifications` — Section 04: 5 clusters (background, business experience, role, visa history, interview prep)
-- `/apply/family` — Section 05: 4 clusters (spouse, children, documents, travel)
-- `/apply/ties` — Section 06: 5 clusters (property, family, financial obligations, return intent, cover letter)
-
-**Components built:**
-- CaseFileHeader, SectionCard, GenerateStrip (overview)
-- SectionSideNav, QuestionPanel (section layout)
-- QuestionLabel, HelperText, PreFillBadge, TextInput, TextArea, OptionButton (question primitives)
-- AdvisoryBlock, RiskFlag, ClusterDivider (context blocks)
-- ProjectionTable, StartupCostTable (interactive tables)
-
-**Data additions:**
-- `answers.source` column (quiz / user_entry / user_edited)
-- `applications.partner_gender` column
-- Migration: `docs/migrations/001_case_file_columns.sql`
-
-**Status:** ✅ COMPLETE — all 6 section pages redesigned, build clean, data writes verified
-Commits: a9dfcb9 (CaseFileShell), 5d02c15 (overview), c56f3a4–7502ea8 (sections), fd710fa (module4)
-
-### Case file UX redesign — COMPLETE (June 10, 2026)
-
-**What was built:**
-- CaseFileShell.tsx — shared layout component: two-panel desktop,
-  drawer tablet, overlay mobile, cluster sidebar, document preview panel
-- All 6 section pages rebuilt with premium two-panel layout
-- SectionCard.tsx restyled — overview page updated
-- /apply/module4 — textarea visual consistency only, no logic change
-- /apply/upload flow — already Obsidian Gold, no changes needed
-- Voice input: getUserMedia pre-check added — mic bug fixed
-- All variants preserved: partnership three-track, COS blocks,
-  family sub-paths, AdvisoryBlock, RiskFlag, PreFillBadge (all 3)
-- Data write verification: all 6 sections use identical architecture
-  (applicationId, answers state, saveAnswer callback,
-  handleAnswerChange with debounce, auto-save POST to /api/answers)
-  — unchanged and verified
-
-**Document preview panel (Phase 1 — template-based):**
-Fields fill in as user types. No API call. No cost.
-Phase 2 (after first paying user): live AI paragraph generation
-per cluster, ~$0.05–$0.75/session. Deferred.
-
-**Voice input:**
-- Full-width bar below each textarea — labelled "Speak your answer"
-- Active: gold pulse + 4-bar animated waveform
-- Mic permission bug fixed: getUserMedia pre-check added
-- Web Speech API — free, no API key
-- /apply/module4 untouched — separate voice sample system
+| Feature | Status | Notes |
+|---|---|---|
+| Experience gap detection engine | ⬜ | Per business type |
+| Probe question bank (8 categories) | ⬜ | See Adaptive System section |
+| Probe cascade per gap type | ⬜ | 5–7 questions, obvious → non-obvious |
+| Case-building context object builder | ⬜ | Feeds document generation |
+| Answer auto-save (every question, 2s) | ⬜ | Critical — never lose progress |
+| Session resume on return | ⬜ | "Welcome back. You left off at..." |
 
 ---
 
-## MODULE 6 — DOCUMENT GENERATION
+## MODULE 4 — APPLICATION CONFIDENCE SCORE
 
-15-step sequential pipeline:
+| Feature | Status | Notes |
+|---|---|---|
+| 8-dimension scoring engine | ⬜ | Spec: Vol3 Section 7.5 |
+| Investment Substantiality (0–25pts) | ⬜ | |
+| Source & Path of Funds (0–20pts) | ⬜ | |
+| Non-Marginality (0–20pts) | ⬜ | |
+| Active Direction & Development (0–15pts) | ⬜ | |
+| Business Plan Quality (0–10pts) | ⬜ | |
+| Investor Qualifications (0–5pts) | ⬜ | |
+| Real & Operating Enterprise (0–5pts) | ⬜ | |
+| Immigrant Intent Risk (modifier) | ⬜ | |
+| Traffic light dashboard UI | ⬜ | |
+| Per-dimension fix recommendations | ⬜ | |
+| Score recalculation on answer edit | ⬜ | |
+| Score history tracking | ⬜ | |
+| Cross-tab consistency checker | ⬜ | |
+
+---
+
+## MODULE 5 — INTERVIEW SIMULATOR
+
+**Key rules:**
+- 10–12 questions per session, max 15 minutes (mirrors real Toronto consulate interview)
+- Questions personalized to user's specific application — never generic
+- 2 sessions included per application (shared for family)
+- Additional sessions: $9.99 per 3-session bundle
+- Score framing: always constructive — never lead with a number
+
+| Feature | Status | Notes |
+|---|---|---|
+| Spec file | ⬜ | Create docs/INTERVIEW_SIMULATOR_SPEC.md |
+| User context object builder | ⬜ | Built from Module 3 answers |
+| Universal questions (9) | ⬜ | Injected with user's actual data |
+| Business-type conditional questions | ⬜ | Per category — see spec |
+| Profile-flag conditional questions | ⬜ | Prior denial, sold home, etc. |
+| Question personalization injection | ⬜ | Business name, amount, sources in question text |
+| Session randomization | ⬜ | Mix changes per session |
+| MiniMax answer evaluation | ⬜ | Per-answer feedback |
+| Completeness scoring | ⬜ | Yes / Partial / No |
+| Consistency check vs. filed application | ⬜ | Key differentiator |
+| Strength rating | ⬜ | Strong / Acceptable / Weak / Concerning |
+| Stronger answer framework | ⬜ | Uses user's specific details |
+| E-2 principle being tested | ⬜ | Per question footnote |
+| End-of-session readiness report | ⬜ | |
+| Score trend across sessions | ⬜ | Visible improvement tracking |
+| "Interview Ready" achievement | ⬜ | All questions = Strong |
+| Session limit enforcement | ⬜ | 2 included, block + upsell after |
+| Additional session purchase | ⬜ | $9.99 / 3-session bundle via Stripe |
+| Voice mode (Whisper API) | ⬜ | Post-MVP |
+| Filler word detection | ⬜ | Post-MVP |
+
+---
+
+## MODULE 6 — DOCUMENT GENERATION PIPELINE
+
+**Key rules:**
+- Generate ONE document at a time — never parallel
+- Save to database immediately after each document completes
+- Never regenerate a document already saved and complete
+- User never sees a document below quality threshold
+
+### Generation Order
+
 ```
-Step 1  → Cover Letter (Tab D) — FIRST
-Step 2  → Source of Funds (Tab H)
-Step 3  → Investment Proof (Tab F)
-Step 4  → Business Plan (Tab K)
-Step 5  → Qualifications (Tab J)
-Step 6  → DS-160 Reference (Tab A)
-Step 7  → Gap analysis
-Step 8  → Repetition checker
-Step 9  → Consistency checker
-Step 10 → AI detection audit
-Step 11 → Humanization pass
-Step 12 → Metadata sanitization
-Step 13 → Quality gate
-Step 14 → Pre-download acknowledgment (5 checkboxes)
-Step 15 → Preview unlocked
+Step 1  → Cover Letter (Tab D)        → save → continue
+Step 2  → Source of Funds (Tab H)     → save → continue
+Step 3  → Investment Proof (Tab F)    → save → continue
+Step 4  → Business Plan (Tab K)       → save → continue
+Step 5  → Qualifications (Tab J)      → save → continue
+Step 6  → DS-160 Reference (Tab A)    → save → continue
+Step 7  → Gap analysis (all docs)     → save gap report
+Step 8  → Repetition checker          → save clean versions
+Step 9  → Consistency checker         → lock final versions
+Step 10 → Quality gate                → pass/fail per document
+Step 11 → Package preview unlocked
 ```
 
-Known issues in generation engine:
-- Issue A: Approval gate timing — may not pause fully between documents
-- Issue B: setState-during-render React violation (~line 100 of generate page)
-- Issue C: Right column renders multiple empty boxes
-Fix file: docs/sessions/SESSION_PLAN_GENERATION_FIXES.md
+### Crash Recovery
 
----
-
-## DESIGN SYSTEM — LOCKED
-
-| Token | Value |
+| Scenario | Behavior |
 |---|---|
-| Background | #0a0a0a (obsidian) |
-| Primary accent | #C9A84C (aged gold) |
-| Text primary | #f5f0e8 |
-| Surface card | rgba(201,168,76,0.02) + border |
-| Heading font | Cormorant Garamond Light (300) |
-| Body font | DM Sans 300/400/500 |
-| Border radius | 0 — no rounded corners |
+| A — Transient (timeout, network blip) | Auto-retry 3x: 30s → 2min → 5min. User sees nothing. |
+| B — One document fails persistently | Others complete. Failed doc retries every 15min for 24hrs. Email user when recovered. |
+| C — Complete failure | All completed docs preserved. User sees: "We'll email you when ready." Support ticket auto-created. Human review if not recovered in 2 hours. |
 
----
+### Feature Build Status
 
-## STRIPE INTEGRATION STATUS
-
-### Code Complete ✅
-- `src/app/api/stripe/create-checkout/route.ts` — creates sessions, reads price_id from DB
-- `src/app/api/stripe/webhook/route.ts` — handles completed/expired/refunded
-- `src/app/pricing/PricingClient.tsx` — tier selection, pre-fill, checkout trigger
-- `src/app/pricing/success/page.tsx` — confirmation page
-
-### Pricing Table ✅ (Updated June 10, 2026)
-All 10 tiers have live Stripe Price IDs at confirmed pricing:
-- solo_none: price_1TgewyF7Ggk3LUEyIkxlp1ry ($550)
-- solo_spouse: price_1TgewyF7Ggk3LUEybTTTUG95 ($697)
-- solo_family_small: price_1TgewzF7Ggk3LUEym0UKbRa0 ($750)
-- solo_family_large: price_1TgewzF7Ggk3LUEyjErIbBO8 ($797)
-- partnership_none: price_1TgewzF7Ggk3LUEyUbjuK8R4 ($997)
-- partnership_couples: price_1Tgex0F7Ggk3LUEyPEleDScH ($1,297)
-- partnership_families: price_1Tgex0F7Ggk3LUEyJJD6U7ot ($1,397)
-- simulator_3pack: price_1Tgex0F7Ggk3LUEyhOhKvmKz ($29.99)
-- renewal: price_1Tgex1F7Ggk3LUEykVcoLswI ($497)
-- child_surcharge: price_1Tgex1F7Ggk3LUEymMJnQQH5 (+$50 dynamic)
-
-### Migration Status ✅
-File: `supabase/migrations/20260605110625_payments_table.sql`
-Status: APPLIED — database is up to date
-
----
-
-## SPEC FILES — STATUS
-
-| File | Status |
-|---|---|
-| docs/Spec1_Analysis_Engine.md | ✅ Written |
-| docs/Spec2_Followup_Conversation.md | ✅ Written |
-| docs/Spec3_Generation_Prompts.md | ✅ Written |
-| docs/Spec4_Quality_Gate_Pipeline.md | ✅ Written |
-| docs/INTERVIEW_SIMULATOR_SPEC.md | ✅ Written |
-| docs/COMPLIANCE_CALENDAR_SPEC.md | ✅ Written |
-| docs/RENEWAL_MODULE_SPEC.md | ✅ Written |
-| docs/IDEAS.md | ✅ Written |
-| docs/PAYMENT_MANAGEMENT_GUIDE.md | ✅ Written |
-| docs/DOCUMENT_UPLOAD_SPEC.md | ✅ Written — June 9, 2026 |
-| docs/TEST_FIXTURES.md | ✅ Written — June 10, 2026 |
-| docs/QUIZ_REBUILD_PLAN_V6.md | ✅ Written — June 10, 2026 |
-| docs/sessions/SESSION_CASEFILE_REDESIGN.md | ✅ Written + executed — June 10, 2026 |
-
----
-
-## AGENT PROGRESS (June 5, 2026)
-
-| Agent | Status | Notes |
+| Feature | Status | Notes |
 |---|---|---|
-| Agent 2 (Email Sequences) | 🔄 IN PROGRESS | Email sequence tables created |
-| Agent 3 (Outcome Capture) | 🔄 IN PROGRESS | Outcome capture tables, compliance calendar spec |
-| Agent 4 (Interview Simulator) | 🔄 IN PROGRESS | Simulator spec, tables created |
+| Sequential generation engine | ⬜ | One doc at a time |
+| Checkpoint DB table | ⬜ | document_generation_jobs |
+| Server-Sent Events progress updates | ⬜ | Real-time step display |
+| Narrative progress screen | ⬜ | Not a spinner — show each step |
+| Conversational gap-fill interface | ⬜ | Chat UI during generation |
+| Gap analysis engine (rule-based) | ⬜ | Requirements matrix per document |
+| Repetition checker (AI) | ⬜ | Flags cross-document repetition |
+| Consistency checker (rule-based) | ⬜ | Same facts stated identically everywhere |
+| Quality gate | ⬜ | Completeness, specificity, tone, length |
+| Re-prompt on quality fail | ⬜ | MiniMax retry with feedback |
+| Human review flag | ⬜ | Admin queue for persistent failures |
+| Cover letter generation | ⬜ | Tab D — AI narrative |
+| Source of funds chronology | ⬜ | Tab H — from Template 1 |
+| Investment proof narrative | ⬜ | Tab F |
+| Business plan | ⬜ | Tab K — full document |
+| Qualifications narrative | ⬜ | Tab J |
+| DS-160 reference sheet | ⬜ | Tab A — pre-filled |
+| 5-year financial projections | ⬜ | From Template 2 |
+| Capital allocation table | ⬜ | |
+| Job creation narrative + chart | ⬜ | From Template 5 |
+| Organizational chart | ⬜ | From Template 4 |
+| Binder assembly guide | ⬜ | Personalized per-tab |
+| PDF export (3 per application) | ⬜ | Anti-sharing |
+| 70-page limit enforcement | ⬜ | Toronto consulate limit |
+| Export log with timestamp | ⬜ | |
+| Preview — strongest sections first | ⬜ | Cover Letter → Qualifications → Plan |
+| "Help me improve this" section button | ⬜ | Triggers targeted re-ask |
 
 ---
 
-## SESSION — June 9, 2026 Planning Session (Claude.ai)
+## COMPLETE TIER MODULES
 
-### What was decided and documented
-
-**Pricing update:**
-- Confirmed new pricing tiers replacing founding member pricing
-- Solo $550 → Partnership two families $1,397
-- Simulator standalone $197 / additional sessions $29.99
-- Renewal $497 / Extra child +$50 dynamic
-- All old Stripe Price IDs ($297–$647) now incorrect — must recreate
-
-**Simulator completion:**
-- Confirmed Groq TTS (Option A) over OpenAI TTS — same API key,
-  lower latency, no new key needed
-- Voice: Fritz-PlayAI officer voice
-- Session limit: 2 sessions × 15 minutes each, $29.99 additional
-- Session file written: docs/sessions/SESSION_SIMULATOR.md
-
-**Quiz fixes (Session 1 — UX):**
-- Family question split into nuclear (Q0-13a) and extended (Q0-13b)
-- Spousal partnership handling + ownership split advisory corrected
-- Principal applicant question added (Q0-03a)
-- Timeline: weeks → month names (dynamic calculation)
-- Back button repositioned and more visible
-- Quiz review page: /quiz/review with jump-to-question editing
-- Gold border fix on selected options (currently blue)
-- Session file written: docs/sessions/SESSION_QUIZ_FIXES.md
-
-**Quiz fixes (Session 2 — Legal accuracy per 9 FAM):**
-- Three+ partner hard stop with E-2 employee pathway explanation
-- Holding company ownership chain question
-- Control through management rights (below 50% ownership)
-- E-visa nationality designation for mixed-nationality partnerships
-- Investment timing / "in process of investing" confirmation
-- Passive investment and non-profit hard stops
-- Officer discretion advisory on results page and investment section
-- Session file written: docs/sessions/SESSION_QUIZ_FIXES_2.md
-
-**Module 3 case file redesign:**
-- Six document builders confirmed: story, business, investment,
-  qualifications, family, ties
-- Personalised header with three data states (full/thin/none)
-- Pre-fill badge architecture: source field in answers table
-- Partnership dual-track layout (shared / personal / partner B)
-- Dynamic section manifest for COS, non-Canadian, blended family
-- Projection table: Year 1–5 × Revenue / Net Income / Employees
-- Partner gender: Man / Woman binary, name possessive fallback
-- 34 gaps from adversarial audit fully specified
-- Session file written: docs/sessions/SESSION_MODULE3_CASEFILE.md
-
-**UI decisions locked (IDEAS.md Sections 13–21):**
-- Page title: "Your case file" (not "Your document interview")
-- Section card design system fully specified
-- Section interior layout: 196px sidebar + question panel
-- All three data states documented with exact copy
-- Partnership three-track card layout documented
-- Hero CTA fix: 4 surgical changes documented (IDEAS.md Section 21)
-
-**Research added to knowledge base:**
-- E2_partnerships_non_typical.md — 9 FAM partnership rules
-- E2_essential_questions.md — 27 questions every E-2 case must answer
-- E2_crypto_source_Toronto.md — crypto source of funds at Toronto
-- E2Pathway_RegisteredAccounts_SourceOfFunds.md — RRSP/TFSA/LIRA
-- E2Pathway_NonStandardFamily_Documentation.md — step-children etc.
-- E2Pathway_MaterialChange_Renewal.md — material change at renewal
-- canadian_common_law_E2.md — common-law marriage recognition
-
-**Workflow diagrams rendered and logged in IDEAS.md:**
-- Full branching journey (Section 4) — rebuilt June 9
-- 16-stage document engine pipeline (Section 4) — from earlier session
-
-### Build
-No code changes — planning session only.
-All decisions logged in IDEAS.md Sections 13–21.
-All session files written to docs/sessions/.
+| Module | Feature | Status | Notes |
+|---|---|---|---|
+| Module 7 | LLC Formation Wizard (50-state) | ⬜ | |
+| Module 8 | U.S. Banking Setup Guide | ⬜ | Cross-border specialists |
+| Module 9 | Canadian Departure Tax Planner | ⬜ | RRSP, departure returns, FBAR |
+| Module 10 | Interview Simulator Voice Mode | ⬜ | Whisper API |
+| Module 11 | Full Referral Engine UI | ⬜ | All 5 categories with consent flow |
 
 ---
 
-## SESSION — Stripe Price IDs Updated (June 10, 2026)
+## POST-APPROVAL MODULES
 
-### Completed
-- npx tsx scripts/stripe-setup.ts — all 10 Price IDs created at
-  new confirmed pricing ($550–$1,397 + simulator + renewal + child)
-- .env.local updated automatically by setup script
-- Supabase pricing table updated via SQL Editor:
-  all 10 rows have correct tier_id, amount (cents), and stripe_price_id
-- child_surcharge amount corrected: 50 → 5000 cents
-
-### New Price IDs
-| Tier | Price ID |
-|---|---|
-| solo_none | price_1TgewyF7Ggk3LUEyIkxlp1ry |
-| solo_spouse | price_1TgewyF7Ggk3LUEybTTTUG95 |
-| solo_family_small | price_1TgewzF7Ggk3LUEym0UKbRa0 |
-| solo_family_large | price_1TgewzF7Ggk3LUEyjErIbBO8 |
-| partnership_none | price_1TgewzF7Ggk3LUEyUbjuK8R4 |
-| partnership_couples | price_1Tgex0F7Ggk3LUEyPEleDScH |
-| partnership_families | price_1Tgex0F7Ggk3LUEyJJD6U7ot |
-| simulator_3pack | price_1Tgex0F7Ggk3LUEyhOhKvmKz |
-| renewal | price_1Tgex1F7Ggk3LUEykVcoLswI |
-| child_surcharge | price_1Tgex1F7Ggk3LUEymMJnQQH5 |
-
-Note: Stripe API version warning (2024-06-20 vs 2026-05-27) —
-non-breaking, upgrade scripts/stripe-setup.ts apiVersion when convenient.
+| Module | Feature | Status | Price |
+|---|---|---|---|
+| Module 12 | Compliance Calendar | ⬜ | $29/year — auto-enroll on approval |
+| Module 13 | Renewal Module | ⬜ | $97–$147 |
+| Module 14 | Green Card Pathway Roadmap | ⬜ | TBD |
+| Module 15 | Community Forum | ⬜ | TBD |
 
 ---
 
-## SESSION — Login Page Flag Fix (June 10, 2026)
+## INFRASTRUCTURE & BACKEND
 
-### Completed
-- AuthImageSlider.tsx gradient fix — authFlagFadeLeft opacity corrected.
-  Was: 100% opacity at 0% → transparent at 50% (blackout entire flag).
-  Now: 60% opacity at 0% → transparent at 60% (flag visible, soft edge).
-  Dark overlay reduced from rgba(10,10,10,0.45) → rgba(10,10,10,0.25).
-  Flag colours now read clearly on left panel.
-- Commit: e115caf
-
-### Build
-Clean — zero errors. TypeScript compiled successfully, no missing modules.
-
----
-
-## SESSION — Route Cleanup (June 9, 2026)
-
-### Completed
-- **Deleted /apply/onboarding** — zero inbound references, fully orphaned
-- **Deleted /apply/outcome** — zero inbound references, fully orphaned
-- **Module3 TABS array trimmed** — removed F, G, H, L (12 → 8 tabs: A B C D E I J K)
-- **Deleted module3/f, g, h, l** — superseded by new case file sections,
-  zero references after TABS array update
-- **Redirected /apply/overview → /apply** — client-side redirect preserving
-  query params (?app= from inactivity emails), wrapped in Suspense for
-  Next.js 14 compliance
-- **Nav.tsx updated** — 3 instances of /apply/overview → /apply
-- **dashboard/page.tsx updated** — /apply/overview → /apply
-- **module4/page.tsx updated** — router.push updated
-- **middleware.ts updated** — added /simulator, /score, /settings,
-  /generate/, /documents/ to both protectedRoutes array and config.matcher
-
-### Route count
-Before: 53 routes
-After: 47 routes (6 deleted)
-/apply/overview retained as redirect shim for old email links
-
-### Build
-Clean — zero errors. 78 static pages + dynamic routes compiled.
-
----
-
-## SESSION — Document Upload Session B: UI (June 9, 2026)
-
-### Completed
-- **DocumentUploadCard.tsx**: Upload intake card for /apply overview.
-  Shows for partial/near_complete applicants, collapses to text link
-  when dismissed, always available for scratch users via collapsed link.
-- **UploadClient.tsx**: Full upload page — drag-and-drop zone, per-file
-  document type selector, validation (10MB, 8 files, pdf/docx/xlsx/csv),
-  remove buttons, process button.
-- **ProcessingClient.tsx**: SSE consumer for extraction pipeline.
-  Per-document status: Waiting → Classifying → Extracting → Complete/Failed.
-  Auto-navigates to review (if discrepancies) or gaps (if none).
-- **DiscrepancyReviewClient.tsx**: One card per conflicting field.
-  Radio options from source documents + custom value input.
-  Must resolve all before continuing. Hard gate enforced.
-- **GapReportClient.tsx**: Section coverage bars (6 sections),
-  critical gaps list with severity, document summaries with field counts.
-- **/apply/upload** — document type selection + drag-and-drop
-- **/apply/upload/processing** — SSE progress screen
-- **/apply/upload/review** — discrepancy resolution
-- **/apply/upload/gaps** — gap report
-- **PreFillBadge.tsx updated**: Three new amber variants:
-  "From your documents" (high confidence),
-  "From your documents — please verify" (medium),
-  "Your choice" (resolved conflict)
-- **/apply/page.tsx updated**: Loads preparation_status, renders
-  DocumentUploadCard above section grid
-
-### Design
-Full Obsidian Gold compliance — #0a0a0a, #C9A84C, Cormorant Garamond,
-DM Sans, zero border-radius, no glassmorphism.
-
-### Remaining
-Apply migration 004_answers_source_update.sql to Supabase.
-
-### Build
-Clean — zero errors. Committed to dev branch.
-
----
-
-## SESSION — Interview Simulator Completion (June 9, 2026)
-
-### Completed
-- **Groq transcription wired**: transcribeAudio() called in
-  VoiceInput.onstop — placeholder comment replaced with live call.
-  Voice mode transcription now functional end-to-end.
-- **Groq TTS officer voice**: groq-tts.ts created as server-side
-  API route (/api/simulator/tts). Fritz-PlayAI voice. Speaks each
-  question aloud on load in voice mode. Replay button added.
-  Key stays server-side — better architecture than original spec.
-- **15-minute timer**: sessionTimeLeft, timerRef, timerWarning
-  all wired. 2-minute warning fires in red. Force-complete at zero.
-  Session duration shown on start screen.
-- **$29.99 purchase flow**: handlePurchase wired to Stripe checkout
-  route using simulator_3pack tier. purchaseLoading state. Success
-  return handler refreshes session availability.
-- **Design violations fixed**: All borderRadius values explicitly 0.
-  Record button square. Readiness badges square. Emoji icons removed.
-
-### Remaining
-None. Simulator is fully complete.
-- FIX 1: useEffect dependency line 468 — question?.id → question.text
-- FIX 2: .env.local — STRIPE_PRICE_SIMULATOR → STRIPE_PRICE_SIMULATOR_3PACK
-- Commit: 0aca5dc — dev
-
-### Build
-Clean — zero errors after completion. Committed to dev branch.
-
----
-
-## SESSION — Quiz Legal Accuracy Fixes Session 2 (June 9, 2026)
-
-### Completed — all 7 fixes per SESSION_QUIZ_FIXES_2.md
-- **Fix 1 — Multi-partner hard stop**: PR-06b updated with full 9 FAM 402.9
-  explanation. Two routing options: restructure to two-party, or apply
-  as E-2 employee. Correct legal position now enforced at quiz level.
-- **Fix 2 — Q0-14c**: Ownership structure question — direct vs holding
-  company vs trust. Trust ownership triggers attorney flag. Holding
-  company triggers chain calculation advisory.
-- **Fix 3 — Q0-14d**: Control rights question fires when ownership
-  indirect/below 50%. Veto rights, board control, special voting shares
-  options. Documents a path to qualification below majority ownership.
-- **Fix 4 — Q0-14e**: E-visa nationality designation for mixed-nationality
-  partnerships. Dynamic options populated from Q0-01. All E-2 beneficiaries
-  must share designated nationality per 9 FAM 402.9-4(B).
-- **Fix 5 — Q0-05a**: Investment commitment timing. Fires when amount
-  below $100k. Risk advisories for partially/uncommitted funds. "In the
-  process of investing" standard now enforced.
-- **Fix 6 — Q0-09a**: Active vs passive business screen. Hard stops for
-  stock portfolio (PR-PASSIVE-INVEST) and non-profit (PR-NONPROFIT).
-  Real estate active operations path preserved.
-- **Fix 7 — Advisory + DS-156E**: Officer discretion advisory added to
-  results page. DS-156E consulate-specific note added to checklist.
-
-### Scoring additions (all additive — nothing modified)
-- 2 new hard stops: PR-PASSIVE-INVEST, PR-NONPROFIT
-- 4 new attorney flags
-- 6 new risk flags
-
-### Build
-Clean — zero errors. All committed to dev branch.
-
----
-
-## SESSION — Quiz Fixes Session 1 (June 9, 2026)
-
-### Completed
-- **Q0-13 split**: Family ties question split into Q0-13a (nuclear family
-  travel plan) and Q0-13b (extended family ties). Distinct scoring
-  implications for each. Spouse/children vs parents/siblings now
-  properly separated.
-- **Q0-15 partnership fixed**: Spousal partnership option added.
-  Advisory corrected — 50/50 strict rule now clarified as applying
-  to unrelated partners only. Spouse as silent investor vs active
-  co-operator follow-up (Q0-14b) added.
-- **Q0-03a added**: Principal applicant question fires when married
-  and applying solo. Determines whether person filling out form
-  is the principal or completing on spouse's behalf.
-- **Results timeline**: Dynamic month name calculation replaces
-  static "16–22 weeks". Displays e.g. "September — October 2026".
-  Today's formatted date shown in subtitle.
-- **Back button**: Repositioned to top-left of each question screen.
-  Warmer colour (rgba(245,240,232,0.55)). Adequate touch target.
-  "← Review or change my answers" link added to results page.
-- **/quiz/review page**: New page with all answers grouped by category.
-  Jump-to-question editing via localStorage (quiz_jump_to key).
-  Auto-redirects back to results after answering jumped-to question.
-- **Gold borders**: Confirmed already in place — no fix needed.
-
-### Build
-Clean — zero errors, zero warnings after completion.
-All committed to dev branch.
-
----
-
-## SESSION — Quiz Rebuild v5.0 (June 10, 2026)
-
-### Completed
-Full rebuild of the eligibility quiz — not a patch, a complete replacement.
-17 confirmed bugs resolved. Commit: 8a64682
-
-**16 questions in exact spec order:**
-Q0-01 citizenship → Q0-02 who is this for → Q0-03 who is moving →
-Q0-03a children ages (sub) → Q0-04 business partner → Q0-04a spouse
-role (sub) → Q0-05 where applying from → Q0-06 funding → Q0-07
-investment amount → Q0-08 business situation → Q0-08a business type
-(sub) → Q0-08b broker (sub) → Q0-09 history multiselect → Q0-09a
-refusal detail (sub) → Q0-09b conviction detail (sub) → Q0-10 home
-ties multiselect
-
-**New questions added from scratch:**
-Q0-02, Q0-03, Q0-03a, Q0-04, Q0-04a, Q0-10
-
-**Files updated (10 files):**
-- src/data/module0_questions.json — full rebuild
-- src/app/quiz/page.tsx — new QUESTIONS array, handleComplete fixed
-- src/lib/pricing-tier.ts — reads Q0-03 for family, Q0-02/Q0-04 for type
-- src/app/quiz/review/page.tsx — QUESTION_MAP rebuilt with new IDs
-- src/app/apply/page.tsx — Q0-16 → Q0-03
-- src/app/apply/module3/b/page.tsx — Q0-16 → Q0-03
-- src/lib/checklist-generator.ts — Q0-16 → Q0-03, Q0-09 → Q0-04
-- src/lib/prefill.ts — old history IDs → Q0-09a/Q0-09b
-- src/app/results/page.tsx — pricing fixed ($247→$550, $447→$997)
-- src/app/pricing/PricingClient.tsx — partnership detection fixed
-
-**Bugs resolved:**
-- Q0-01 treaty country hard stop now works
-- Q0-16 duplicate removed
-- Dependents reads from Q0-03 (not Q0-16)
-- Application type reads from Q0-02/Q0-04 (not Q0-09)
-- Pricing uses confirmed amounts ($550–$1,397)
-- Question counter is dynamic (never exceeds visible total)
-- Back button is at bottom left
-- History is one multiselect (not three separate questions)
-- Home ties is one multiselect
-- Q0-03a parent/show_if corrected
-- COS flag wired from Q0-05
-- PR-06b hard stop fires for 3+ partners
-- All old question IDs (Q0-13a, Q0-13b, Q0-14, Q0-15, Q0-16) removed
-
-### Build
-Clean — zero errors. One pre-existing hook warning in generate/page.tsx
-(non-blocking, outside scope).
-
-### Verification
-- npm run build: clean
-- /quiz: 200
-- /results: 200
-
----
-
-## SESSION — Quiz Rebuild v6.0 (June 10, 2026)
-
-### Completed — commit 6f6bfaa on dev
-
-Full rebuild addressing all 30 confirmed bugs from comprehensive
-combinatorial path audit. 4 files changed, +1559/-242 lines.
-
-**Fix A — handleMultiContinue calls processAction:**
-Warnings, attorney flags, and hard stops now fire for multiselect
-questions (Q0-09 history, Q0-10 ties). Previously all inert.
-
-**Fix B — evaluateShowIf handles array answers:**
-Multiselect sub-questions (Q0-09a, Q0-09b) now render correctly.
-Array vs string comparison fixed.
-
-**Fix C — Treaty country validation:**
-Non-treaty country selection fires PR-NON-TREATY immediately.
-Previously any country passed through.
-
-**Fix D — COS flag string match:**
-Was checking "valid visa" — option text says "valid status". Fixed.
-
-**Fix E — application_type and dependents:**
-Derived from Q0-02 with correct priority logic.
-Spousal partnership, co-investor, and sole applicant paths correct.
-
-**Fix F — show_if conditions:**
-Q0-03 only fires for sole applicant or business partner paths.
-Q0-04 only fires when Q0-02 = business partner.
-Questions no longer fire redundantly after Q0-02 establishes context.
-
-**Fix G — Score weights corrected:**
-Removed incorrect tie deductions (W-PROPERTY-UNDISCLOSED etc).
-Positive ties no longer penalise the score.
-All 16 spec deductions added correctly.
-
-**JSON rebuild — 18 questions:**
-Q0-01 through Q0-10 plus subs Q0-02a, Q0-03a, Q0-04a, Q0-08a,
-Q0-08b, Q0-09a, Q0-09b, Q0-09c. Correct routing throughout.
-Sequential Q0-09 history branching. All hard stops present.
-PR-NON-TREATY, PR-02, PR-03, PR-04, PR-06b, PR-08, PR-09,
-PR-PASSIVE-INVEST, PR-NONPROFIT all wired.
-
-**Pricing chain:**
-pricing-tier.ts tiers match confirmed prices ($550-$1,397).
-Mapping functions updated for new option text.
-Results page uses getPricingTier() for accurate display.
-
-### Build
-Clean — zero errors. Routes verified: /quiz, /results, /pricing.
-
-### Five verification paths (from QUIZ_REBUILD_PLAN_V6.md)
-All must pass on next manual test:
-1. Non-treaty country → PR-NON-TREATY hard stop
-2. Loan secured by business → PR-02 hard stop
-3. Deportation selected → ATTORNEY_RECOMMENDED, score -15
-4. Spouse and children → Solo + Family $750
-5. Business partner 50/50 → Partnership $997
-
-### Test fixtures
-Five complete applicant profiles written to docs/TEST_FIXTURES.md.
-Use localStorage injection to test results/pricing pages instantly.
-Use Supabase SQL to test full case file with pre-populated answers.
-
----
-
-## SESSION — Case File UX Redesign Complete (June 10, 2026)
-
-### Completed — commits a9dfcb9 through 9172b2c
-
-**CaseFileShell.tsx (a9dfcb9):**
-Shared layout wrapper for all 6 sections. Two-panel desktop
-(200px sidebar + questions + document preview), drawer tablet,
-full-screen overlay mobile. Cluster sidebar with completion states.
-Document preview panel — template-based, no API call.
-useSpeechInput hook wired — getUserMedia pre-check added (mic bug fixed).
-AdvisoryBlock, RiskFlag, PreFillBadge all restyled.
-
-**Overview page (5d02c15):**
-SectionCard.tsx restyled — Obsidian Gold, cluster completion chips,
-document chips, pre-fill gem indicator, hover states.
-
-**Six sections (c56f3a4, db919eb, b20065e, a421108, ddaccac, 7502ea8):**
-Each section page rebuilt using CaseFileShell.
-All data architecture preserved unchanged:
-  applicationId, answers state, saveAnswer callback,
-  handleAnswerChange with 800ms debounce, auto-save POST to /api/answers.
-All variants preserved:
-  Partnership three-track (shared / your info / partner B)
-  COS conditional question blocks
-  Family sub-paths (stepchildren, common-law, legitimation, age-out)
-
-**Module 4 (fd710fa):**
-Textarea visual consistency only — surface treatment applied.
-No mic button. No logic changes. AI detection untouched.
-
-**Upload flow:**
-Already Obsidian Gold — no changes needed.
-
-### Data write verification
-All 6 sections use identical data architecture. Auto-save POST
-to /api/answers confirmed unchanged by code review.
-
-### Build
-Clean — all routes compiled, 0 new errors.
-
----
-
-## SESSION — Voice-to-Text Input (June 10, 2026)
-
-### Completed — commit 63dc9dd on dev
-
-- **useSpeechInput hook**: src/hooks/useSpeechInput.ts
-  Web Speech API wrapper — free, no API key, runs in browser.
-  Supports Chrome and Edge. Graceful degradation on Firefox.
-- **TextArea component updated**: Mic button added (superseded by
-  full redesign in CaseFileShell — final implementation is the
-  full-width bar with labelled button and waveform animation)
-- **/apply/module4 unchanged**: Voice sample system is separate.
-  No mic button added there.
-- **Mic bug fixed** in redesign session: getUserMedia pre-check
-  added before SpeechRecognition.start()
-
----
-
-### Completed — commit 63dc9dd on dev
-
-- **useSpeechInput hook**: src/hooks/useSpeechInput.ts
-  Web Speech API wrapper — free, no API key, runs in browser
-  Supports Chrome and Edge. Graceful degradation on Firefox/unsupported.
-- **TextArea component updated**: Mic button added to all 8 textareas
-  across 6 case file sections
-- **Browser notice**: One-time inline notice for unsupported browsers,
-  dismissible, stored in localStorage (e2go_voice_notice_dismissed)
-- **/apply/module4 unchanged**: Voice sample system is a separate system.
-  No mic button added there.
-
-### Known bug
-Mic button disappears on click — getUserMedia permission pre-check missing.
-SpeechRecognition.start() fires before browser grants microphone permission.
-Fix: call navigator.mediaDevices.getUserMedia({audio: true}) first,
-then start recognition in .then() callback.
-This fix is part of the case file redesign session.
-
-### Coverage
-- /apply/story: 3 textarea fields
-- /apply/business: 1 textarea field
-- /apply/investment: 1 textarea field
-- /apply/qualifications: 1 textarea field
-- /apply/family: 1 textarea field
-- /apply/ties: 1 textarea field
-- Total: 8 textareas across 6 sections
-
----
-
-## SESSION — Case File UX Redesign — Spec Written (June 10, 2026)
-
-### Completed (planning only — no code)
-
-Full specification written for the case file UX redesign.
-Session file: docs/sessions/SESSION_CASEFILE_REDESIGN.md
-
-**What was decided:**
-- Current pages render as plain scrolling forms — do not match
-  the quality of the rest of the platform. Client paid $550–$1,397.
-- Redesign is not polish. It is product.
-- Standard: "Would someone who paid $600 feel embarrassed showing
-  this screen to their spouse?" If uncertain — rebuild it.
-
-**Layout decisions locked:**
-- Desktop (≥1024px): 3-column — 200px sidebar | questions | document preview
-- Tablet (768–1023px): 2-column + right drawer for preview
-- Mobile (<768px): horizontal cluster pills + full-screen overlay preview
-- CaseFileShell.tsx: new shared component wrapping all 6 sections
-
-**Voice input redesign:**
-- Full-width bar below each textarea (not corner icon)
-- "Speak your answer" labelled button
-- Active: gold pulse animation + 4-bar animated waveform
-- Mic permission bug fix: getUserMedia pre-check
-- Scope: TextArea component only — NOT /apply/module4
-
-**Document preview panel (Phase 1):**
-- Template-based — fills in as user types, no API call, no cost
-- Fill progress bar per document (height 2px, gold)
-- Phase 2 (after first paying user): live AI paragraph generation
-  per cluster, ~$0.05–$0.75/session
-
-**Scope of redesign:**
-- /apply overview page — section cards
-- /apply/story through /apply/ties — all 6 sections
-- /apply/upload through /apply/upload/gaps — visual consistency
-- /apply/module4 — textarea visual consistency only, NO logic changes
-- Old fallback tabs /apply/module3/[a-k] — NOT touched
-
-**Impact assessment:**
-- Data layer fully insulated — only visual layer changes
-- All data hooks, auto-save, onChange handlers preserved
-- All variants preserved: partnership, COS, family sub-paths
-- Data write verification test required after each section rebuild
-
-**Document-to-cluster map:** documented in session file Step 5
-All 6 sections × all clusters mapped to exact document fields.
-
----
-
-## SESSION LOG (Prior sessions)
-
-### June 5, 2026 — Session: End-to-End Payment Test
-- **Task:** Test complete payment flow from quiz to Module 1
-- **Finding:** Stripe integration code is complete and correct
-- **Issue:** payments table migration exists but not applied to Supabase
-- **Action needed:** Apply `20260605110625_payments_table.sql` migration
-- **Result:** Code ready, infrastructure needs migration run
-
-### June 8, 2026 — Session S28
-- **updateJob() error handling**: Added const { error } = ... with console.error in generation-engine.ts
-- **keystatic/ folder removed**: Was causing build failure (route conflict)
-- **Backend verification**: Approval gate works correctly on fresh jobs
-- **Visual E2E test**: Blocked by auth requirement — generate page requires authenticated Supabase session; needs manual browser test
-- **Build**: Clean — 66 routes compiled, 0 errors
-
-### June 6, 2026 — Session S27
-- **Completed Module 1**: Onboarding, consent, application record creation
-- **Completed Module 2**: Business advisor, category selection, referral trigger
-- **Database migrations**: consent_log, referral_consents, experience_gap_flag, business_shortlist
-- **Design**: Strict Obsidian Gold compliance
-- **E2E test**: Module 1 → Module 2 → Module 3 verified
-
-### June 6, 2026 — Session S26
-- Cookie consent banner with localStorage persistence
-- Route-level SEO metadata across all pages
-- Created /about page with 3-section copy
-- Replaced /learn stub with 6-card grid to educational sub-pages
-- Fixed Next.js runtime and ESLint errors
-- Added curl/browser tests, production build clean (53 routes)
-
-### June 6, 2026 — Session S24
-- Complete site navigation audit (33 routes)
-- Rewrote Nav.tsx and Footer.tsx
-- Implemented mobile hamburger menu with gold accents
-- Fixed orphaned pages with CTAs
-- Created Breadcrumb component
-- Built stub pages: /privacy, /terms, /about, /settings
-
-### June 6, 2026 — Session S23
-- U.S.-themed image slider on /login, /signup, /verify
-- 4 images, 5s auto-advance, 1000ms crossfade
-- Split-screen layout with Obsidian Gold styling
-- curl/browser verified
-
-### June 5, 2026 — Session S22
-- Document generation blur-lift reveal animation
-- Installed motion library (v12.40.0)
-- curl/browser test verifies 6 document cards render with blur overlays
-
-### June 5, 2026 — Session S16-S18
-- Interview Simulator spec
-- Compliance Calendar spec
-- Renewal Module spec
-
-### June 5, 2026 — Session S11
-- Analysis Engine + Confidence Score Integration
-- Score sync reads from case_briefs table
-
-### June 5, 2026 — Session S10
-- Tab B / Tab L shared document overlap fix with CrossTabNote component
-
-### June 5, 2026 — Session S9
-- Timeline service with two date concepts (working_target_date vs confirmed_interview_date)
-
-### June 5, 2026 — Sessions S6-S8
-- Business data deduplication between tabs
-- Security history pre-fill with legal confirmation gate
-
-### June 9, 2026 — Results Page Benefits Section
-- Personalised E-2 benefits section added to results page (between flags and timeline)
-- getBenefits() prioritises spouse/children based on quiz dependents answer
-- 2x2 grid desktop, 1 column mobile via CSS media query
-- Design: Obsidian Gold tokens, ◈ diamond icon, no rounded corners
-- Commit: 6b8057c
-
----
-
-## NEXT SESSION PRIORITIES (Updated June 11, 2026)
-
-### Priority 1 — Session 3: Fix Structural Question Issues
-File: docs/sessions/QUIZ_EXECUTION_PLAN.md → Session 3
-Scope: Q0-01 dual citizenship, Q0-03 split, Q0-08 option fix,
-Q0-09 ownership %, Q0-14/Q0-15 show_if, Q0-17 common-law, Q0-21 auth gate
-
-### Priority 2 — Apply answers source migration
-Run: `npx supabase db push`
-File: `supabase/migrations/004_answers_source_update.sql`
-Status: exists, never applied
-
-### Priority 3 — End-to-end payment test
-Full flow: quiz → pricing → checkout (4242 4242 4242 4242) →
-dashboard → /apply → Module 3 → Generation → Download
-Test applicant: Michael James Chen
-UUID: 9f981747-e3e4-4941-9f86-9871f8117b66
-Use SKIP_PAYMENT_WALL=true in .env.local for generation test
-
-### Priority 4 — Generation engine fixes
-File: docs/sessions/SESSION_PLAN_GENERATION_FIXES.md
-Three known issues: approval gate, setState violation, empty boxes
-
-### Priority 5 — Verify 34-gap questions are integrated
-Case file was built but gap questions from June 9 planning
-may not be in the build.
-Session file: docs/sessions/SESSION_MODULE3_CASEFILE.md
-
-### Priority 6 — Fix two warnings
-generate/page.tsx and quiz/page.tsx — non-blocking but clean up
-when next touching those files.
-
-### Future sessions (after first paying user)
-- Admin dashboard — user management, payment history
-- Support ticket system
-- Lifecycle tracking throughout app
-- Compliance calendar — spec written at docs/COMPLIANCE_CALENDAR_SPEC.md
-- Renewal module — spec written at docs/RENEWAL_MODULE_SPEC.md
-
----
-
-## KNOWN ISSUES (Updated June 10, 2026)
-
-1. **Migration 004 pending** — docs/migrations/004_answers_source_update.sql
-   not yet applied. Run: npx supabase db push
-2. **Generation engine: approval gate, setState, empty boxes** — MEDIUM
-   File: docs/sessions/SESSION_PLAN_GENERATION_FIXES.md
-3. **Quiz nationality selector** — curl/browser difficulty, works in browser
-4. **Fast Refresh errors** — Occasional hot reload (non-blocking)
-5. **Stripe API version outdated (2024-06-20)** — LOW
-   Upgrade apiVersion in scripts/stripe-setup.ts when convenient
-6. ~~**Mic button disappears on click**~~ — ✅ FIXED — getUserMedia pre-check added
-7. ~~**Case file pages look like draft forms**~~ — ✅ FIXED — UX redesign complete
-8. ~~**Payments table not in Supabase**~~ — ✅ FIXED June 10
-9. ~~**All Stripe Price IDs wrong**~~ — ✅ FIXED June 10
-10. ~~**Login page 500 error**~~ — ✅ FIXED June 10 (commit e115caf)
-11. ~~**Simulator transcription placeholder**~~ — ✅ FIXED June 9
-12. ~~**Simulator purchase button + env var + useEffect**~~ — ✅ FIXED June 9
-
----
-
-## SESSION — Quiz New Questions + Franchise Referral (June 11, 2026)
-
-### Completed — Session 2 from QUIZ_EXECUTION_PLAN.md
-
-**6 questions added to quiz (23 total):**
-- Q0-readiness: 3 options (ready_to_apply, researching, exploring)
-- Q0-target-date: 4 options, "Within 6 months" triggers W-TARGET-URGENT
-- Q0-business-type: 8 options including franchise, "not identified yet" triggers W-NO-BIZ-IDENTIFIED
-- Q0-business-cost: currency type, show_if fires for all business types except "not identified yet"
-- Q0-08c: franchise broker sub-question (parent changed to Q0-business-type)
-- Q0-08d: franchise referral connection ("Yes, please connect me" → admin email)
-
-**Scoring additions:**
-- W-TARGET-URGENT: risk_flag (target date < 6 months)
-- W-NO-BIZ-IDENTIFIED: risk_flag (no business type selected)
-- W-PROP-SOFT-30: risk_flag (investment 30–49% of total business cost)
-- W-PROP-STRONG-30: attorney_recommended (investment < 30% of total cost)
-- Proportionality scoring: investment midpoint / total business cost percentage
-
-**Database:**
-- Migration: supabase/migrations/20260611120000_quiz_new_columns.sql
-- quiz_sessions.readiness_stage (text)
-- quiz_sessions.business_type (text)
-
-**Downstream wiring:**
-- working_target_date: quiz → module1 → applications table
-- Results page: personalised timeline ("To be in the US by [month]…")
-- Franchise referral: POST /api/notifications/franchise-referral → Resend admin email
-
-**Files changed (7):**
-- public/data/module0_questions.json — 6 questions added
-- public/data/module0_scoring_logic.json — 4 flags + proportionality section
-- src/app/quiz/page.tsx — proportionality function + new result fields
-- src/app/apply/module1/page.tsx — working_target_date wiring
-- src/app/results/page.tsx — personalised timeline
-- src/app/api/notifications/franchise-referral/route.ts — NEW
-- supabase/migrations/20260611120000_quiz_new_columns.sql — NEW
-
-### Verification
-- Quiz page: HTTP 200 ✓
-- All 6 question IDs confirmed in JSON ✓
-- readiness_stage + business_type columns in migration ✓
-- working_target_date wired in quiz + module1 ✓
-- Proportionality scoring in JSON + quiz page ✓
-- npm run build: clean — 0 errors ✓
-
----
-
-## SESSION FILES INDEX
-
-All session files are in docs/sessions/. Prompt for agent: `cat docs/sessions/[filename]`
-
-| File | Purpose | Priority |
+| Feature | Status | Notes |
 |---|---|---|
-| SESSION_PLAN_GENERATION_FIXES.md | Generation engine: approval gate, setState, empty boxes | 1 — run next |
-| SESSION_MODULE3_CASEFILE.md | Case file: verify 34-gap questions, partnership UI | 2 |
-| SESSION_CASEFILE_REDESIGN.md | Case file UX redesign — spec + execution record | ✅ DONE |
-| SESSION_HANDOFF_JUNE9.md | Login fix, Stripe migration, generation engine fixes, E2E test | Reference |
-| SESSION_SIMULATOR.md | Simulator: Groq TTS, transcription, timer, purchase, design fixes | ✅ DONE |
-| SESSION_QUIZ_FIXES.md | Quiz UX: family split, partnership, months, back button, review page | ✅ DONE |
-| SESSION_QUIZ_FIXES_2.md | Quiz legal accuracy: 9 FAM partnership rules, hard stops | ✅ DONE |
+| Supabase project setup | ✅ COMPLETE | Connected, keys in .env.local |
+| Database schema | 🔄 IN PROGRESS | users → profiles fix needed |
+| Auth (email + magic link) | ⬜ | |
+| Row-level security (RLS) | ⬜ | All tables |
+| RLS policies | ⬜ | Users access own rows only |
+| Admin role bypasses RLS | ⬜ | |
+| Answer auto-save | ⬜ | Every question, 2s delay |
+| Session resume | ⬜ | Return to last answered question |
+| Session persistence (cross-device) | ⬜ | |
+| Device fingerprinting | ⬜ | 3+ devices → alert |
+| PDF export logging | ⬜ | Timestamp per export |
+| Outcome tracking | ⬜ | CEAC verification integration |
+| Consent log (PIPEDA) | ⬜ | Per action with timestamp |
+| CASL compliance | ⬜ | Opt-in logged per category |
+| OpenRouter/MiniMax client | ⬜ | src/lib/ai.ts |
+| AI API route | ⬜ | src/app/api/ai/route.ts |
+| Email service (Resend) | ⬜ | Transactional + newsletter |
+| Re-engagement email sequence | ⬜ | Days 3, 7, 14, 30 |
+
+### Database Tables
+
+| Table | Status | Notes |
+|---|---|---|
+| profiles | ⬜ | Replaces public.users — extends auth.users |
+| applications | ⬜ | |
+| answers | ⬜ | Every answer, auto-saved |
+| quiz_sessions | ⬜ | Module 0 results |
+| consent_log | ⬜ | PIPEDA + CASL |
+| pdf_exports | ⬜ | 3 per application limit |
+| ai_usage_log | ⬜ | Token tracking per feature |
+| document_generation_jobs | ⬜ | Checkpoint table |
+| simulation_sessions | ⬜ | |
+| simulation_answers | ⬜ | With feedback JSON |
+| tickets | ⬜ | Support ticketing |
+| ticket_replies | ⬜ | |
+| admin_users | ⬜ | Separate from regular users |
+| feature_flags | ⬜ | Module on/off without deploy |
+| referral_consents | ⬜ | Per category, per user |
+| referral_leads | ⬜ | Lead sent to which partner |
+| referral_partners | ⬜ | Attorney/broker/banking/CPA/RE |
+| partner_subscriptions | ⬜ | B2B subscription billing |
+| partner_leads | ⬜ | Which lead went to which subscriber |
+| partner_agreements | ⬜ | Signed DPA per subscriber |
 
 ---
 
-## BUILD STATE
+## PAYMENTS — STRIPE
 
-- Branch: `dev`
-- Last session: Quiz new questions + franchise referral (June 11, 2026)
-- `npm run build`: Clean — all routes compiled, 0 new errors
-- Quiz: 23 questions, 4 new scoring flags, proportionality scoring
-- Case file UX redesign: ✅ COMPLETE
-- Payments migration: ✅ APPLIED
-- Stripe Price IDs: ✅ LIVE
-- Voice input: ✅ COMPLETE (mic bug fixed)
-- Blocking first paying user: migration 004 + end-to-end payment test
+| Feature | Status | Notes |
+|---|---|---|
+| Stripe account setup | ⬜ | After company incorporated |
+| HST/GST registration | ⬜ | Canadian tax requirement |
+| B2C pricing tiers wired | ⬜ | $247–$647 |
+| Payment success → unlock modules | ⬜ | |
+| Add-on: extra dependents | ⬜ | +$25/dependent |
+| Add-on: extra export bundle | ⬜ | +$19/3 exports |
+| Add-on: extra simulator sessions | ⬜ | $9.99/3-session bundle |
+| Renewal module purchase | ⬜ | $97–$147 |
+| Compliance calendar subscription | ⬜ | $29/year |
+| B2B attorney subscriptions | ⬜ | $299–$799/month |
+| B2B broker subscriptions | ⬜ | $399–$999/month |
+| Payment failure handling | ⬜ | Calm message + retry + recovery email |
+| Failed payment admin notification | ⬜ | |
+
+---
+
+## SECURITY & COMPLIANCE
+
+| Feature | Status | Notes |
+|---|---|---|
+| Security headers (next.config.mjs) | ⬜ | CSP, X-Frame-Options, etc. — Session 2 |
+| Rate limiting — login | ⬜ | 5 attempts → 15min lockout |
+| Rate limiting — AI API | ⬜ | 50 calls/user/day |
+| Rate limiting — quiz | ⬜ | 3 attempts/IP/hour |
+| Input sanitization | ⬜ | All text fields |
+| Session timeout | ⬜ | 24hr inactivity |
+| Concurrent session detection | ⬜ | Alert on 2+ active sessions |
+| Device fingerprinting | ⬜ | 3+ devices in 7 days → alert |
+| PII encryption at rest | ⬜ | Supabase encryption |
+| IP address hashing | ⬜ | PIPEDA — never store raw IPs |
+| Admin 2FA | ⬜ | Required for /admin access |
+| Admin audit log | ⬜ | Every admin action timestamped |
+| Sentry error monitoring | ⬜ | |
+| Dependency scanning | ⬜ | npm audit in CI |
+| HTTPS enforced | ⬜ | Vercel handles this |
+| CORS restricted | ⬜ | App domain only |
+| PIPEDA compliance | ⬜ | Answers only, no raw documents |
+| CASL compliance | ⬜ | Opt-in logged, unsubscribe on every email |
+| Cookie consent banner | ⬜ | Minimal cookies only |
+| Privacy Policy | ⬜ | Vol3 Section 8.2 |
+| Terms of Service | ⬜ | Vol3 Section 8.1 |
+| In-app disclaimer variants (7) | ⬜ | Vol3 Section 8.3 |
+
+---
+
+## SEO
+
+| Feature | Status | Notes |
+|---|---|---|
+| Meta title + description (all pages) | ⬜ | Session 2 |
+| Open Graph tags | ⬜ | Session 2 |
+| Canonical URLs | ⬜ | Session 2 |
+| Sitemap.xml (auto-generated) | ⬜ | Session 2 |
+| Robots.txt | ⬜ | Session 2 |
+| JSON-LD — Organization schema | ⬜ | Session 2 |
+| JSON-LD — FAQ schema | ⬜ | Session 2 |
+| JSON-LD — Article schema (blog) | ⬜ | Session 3 |
+| JSON-LD — BreadcrumbList | ⬜ | Session 2 |
+| Blog infrastructure (MDX) | ⬜ | Session 3 |
+| Blog post dynamic route | ⬜ | /blog/[slug] |
+| 26-post content calendar | ⬜ | Vol3 Section 10.4 |
+| Google Search Console setup | ⬜ | After deployment |
+| Google Analytics 4 (privacy) | ⬜ | After deployment |
+| Core Web Vitals optimization | ⬜ | Session 4 |
+
+**Primary keyword targets:**
+- "E-2 visa Canada"
+- "E-2 visa for Canadians"
+- "how much to invest E-2 visa"
+- "E-2 visa requirements Canada"
+- "Toronto consulate E-2 visa"
+- "E-2 visa businesses that qualify"
+
+---
+
+## SUPPORT TICKETING
+
+Routes: /support · /support/new · /support/tickets
+Priority: MEDIUM — build after core app complete (Session 4–5)
+
+| Feature | Status | Notes |
+|---|---|---|
+| "Get Help" button (fixed position, all pages) | ⬜ | |
+| Ticket submission form | ⬜ | Subject, description, category, screenshot |
+| Category options | ⬜ | Technical / Application Question / Billing / Other |
+| Email confirmation on submission | ⬜ | Via Resend |
+| Ticket status tracking | ⬜ | Open / In Review / Resolved |
+| User ticket history | ⬜ | /support/tickets |
+| Admin reply (triggers email to user) | ⬜ | From admin panel |
+| Auto-ticket on generation failure | ⬜ | Scenario C crash behavior |
+
+---
+
+## ADMIN PANEL
+
+Route: /admin — hidden, admin-role protected, not linked anywhere public
+Priority: MEDIUM — build after core app complete (Session 4–5)
+
+| Feature | Status | Notes |
+|---|---|---|
+| Admin role in Supabase | ⬜ | Separate from user auth |
+| Route protection middleware | ⬜ | Role check, not just auth |
+| Admin audit log | ⬜ | Every action timestamped |
+| 2FA required for admin | ⬜ | |
+| **Dashboard / Overview** | | |
+| Total users (all time, 30d, 7d) | ⬜ | |
+| Total paid applications by tier | ⬜ | |
+| Revenue (total + MRR equivalent) | ⬜ | |
+| Conversion rate (quiz → paid) | ⬜ | |
+| Quiz completion rate | ⬜ | Started vs finished |
+| Hard stop frequency by PR code | ⬜ | Which codes hitting most |
+| Attorney referral rate | ⬜ | |
+| Active sessions today | ⬜ | |
+| **Applications** | | |
+| Full searchable list with filters | ⬜ | Tier, status, date, route |
+| Per-application detail view | ⬜ | All answers, flags, score |
+| CSV export | ⬜ | |
+| **Users** | | |
+| Full user list with search | ⬜ | |
+| Per-user detail view | ⬜ | Account, application, tickets |
+| Manual tier / module unlock | ⬜ | For support cases |
+| **Tickets** | | |
+| All open tickets by priority | ⬜ | |
+| Reply to ticket (sends email) | ⬜ | |
+| Status change | ⬜ | |
+| **API Credit Monitoring** | | |
+| Total MiniMax tokens (all time, 30d, today) | ⬜ | |
+| Average tokens per user session | ⬜ | |
+| Average tokens per module | ⬜ | Which modules cost most |
+| Cost estimate in USD | ⬜ | Tokens × OpenRouter rate |
+| Daily burn rate chart (30 days) | ⬜ | |
+| Projected monthly cost | ⬜ | At current usage |
+| Alert threshold | ⬜ | Flag if daily spend > $X |
+| Per-user token usage | ⬜ | Identify heavy users |
+| Token breakdown by feature | ⬜ | Generation vs simulator vs education |
+| **Revenue** | | |
+| Transaction list (post-Stripe) | ⬜ | |
+| Revenue by tier breakdown | ⬜ | |
+| B2B subscription revenue | ⬜ | |
+| **Analytics** | | |
+| Attorney flag frequency by question | ⬜ | Which questions cause most flags |
+| Confidence score distribution | ⬜ | All applications |
+| **App Health** | | |
+| Error log (Sentry) | ⬜ | |
+| PDF export count | ⬜ | |
+| Database size | ⬜ | |
+| **Settings** | | |
+| Manage admin users | ⬜ | Add/remove |
+| Maintenance mode toggle | ⬜ | |
+| Feature flags per module | ⬜ | On/off without deploy |
+
+---
+
+## REFERRAL ENGINE
+
+Priority: MEDIUM — design now, build after core app
+CASL: Explicit opt-in per category. One introduction per category per applicant.
+Consent: Module 1 consent screen — 5 categories. Logged in referral_consents.
+Double opt-in: Contact details released only after applicant responds to intro email.
+
+### 5 Referral Categories
+
+| Category | Trigger | Fee Structure | Partner Type |
+|---|---|---|---|
+| Business Opportunity | Module 2 — no business selected | $150–$300/intro or 10–15% revenue share | Franchise/business brokers |
+| Immigration Attorney | Attorney flag in quiz | $200–$400/intro | E-2 specialist law firms |
+| Cross-Border Banking | Module 8 or no US account | $100–$200/opened account | RBC, TD, East West Bank |
+| Cross-Border CPA | Module 9 or post-approval | $150–$250/intro | MNP, BDO, boutique firms |
+| Real Estate | Tab G (commercial) / Post-approval (residential) | See below | Commercial + residential brokers |
+
+### Real Estate Sub-Categories
+
+| Type | Trigger | Fee | Notes |
+|---|---|---|---|
+| Commercial premises | Tab G — no location secured | $300–$500/intro or 15% commission | State-specific brokers |
+| Residential rental | Post-approval Day 1 | $150–$300/intro | Flag: Canadian / no US credit |
+| Residential purchase | Post-approval Month 12 | $500–$1,000/intro or 20% commission | Buyer's agents in target markets |
+
+### Relocation Layer (post-approval)
+
+| Service | Fee | Notes |
+|---|---|---|
+| Cross-border moving | $150–$300/lead | Canada → U.S. specialists |
+| U.S. vehicle purchase | $200–$400/lead | Dealers working with new arrivals |
+| Health insurance | $200–$500/lead | Needs legal review per state before building |
+| U.S. phone plan | Co-marketing only | Google Fi, T-Mobile new arrival plans |
+
+### Lead Package (sent to partner)
+```
+First name only (until double opt-in confirmed)
+Province, Canada
+Investment range (from quiz)
+Business category (from Module 2)
+Business stage: Exploring / Specific opportunity / Ready
+Timeline: 3mo / 6mo / 12mo / Not sure
+Eligibility: Strong / Moderate
+Canadian flag: No U.S. credit history (RE referrals)
+Contact: Released only after applicant responds to intro email
+```
+
+### Lifetime Referral Value Per Applicant
+```
+Franchise broker (if closed):      $1,500–$3,000
+Attorney review:                    $200–$400
+Banking setup:                      $100–$200
+CPA engagement:                     $150–$250
+Commercial lease (if closed):       $650–$970
+Residential purchase (Year 2):      $2,000–$2,400
+Total per fully-referred applicant: $4,600–$7,220
+```
+Plus: $247–$647 application + $29/year compliance + $97 renewal
+
+---
+
+## FRANCHISE BROKERAGE — DIRECT REVENUE
+
+e2go can operate as a franchise broker/consultant directly.
+**No license required** in most U.S. states and Canadian provinces.
+Fee paid by FRANCHISOR — not client — typically $12,000–$25,000 per closed deal.
+
+### Two Paths
+
+| Path | Description | Margin | Speed |
+|---|---|---|---|
+| Path A | Join broker network (FranChoice, Frannet, etc.) | 50% fee split | Fast to start |
+| Path B | Direct franchisor agreements | 100% fee kept | Slower to build |
+
+**Recommendation:** Start Path A, move high-value brands to Path B as volume grows.
+
+### Legal Requirements
+- No franchise broker license required federally or most states
+- Avoid passive investment / securities-adjacent franchises (securities law)
+- FTC Franchise Rule: FDD disclosure is franchisor's obligation — understand it, never push to sign before 14-day window
+- Canadian provincial franchise laws (AB, ON, PEI, NB, MB, BC): franchisor's disclosure obligation
+- PIPEDA: Module 1 consent covers franchise brand data sharing
+- Required per deal: written referral agreement with exclusivity clause (protects fee on delayed closings)
+
+### Action Items
+- ⬜ Decide: Path A or Path B to start
+- ⬜ If Path A: research FranChoice, Frannet, Franchise Consulting Company
+- ⬜ If Path B: identify top 10 franchise brands relevant to E-2 investors
+- ⬜ Draft standard referral agreement template with exclusivity clause
+- ⬜ Update Module 1 consent to explicitly cover franchise brand data sharing
+
+---
+
+## B2B SUBSCRIPTION PRODUCTS
+
+Priority: PHASE 2 — after core app stable and first 50 applicants through.
+Consent architecture changes required: IMMEDIATE — update Module 1 before launch.
+
+### Product 1 — e2go Legal (Attorney Subscriptions)
+
+Pre-qualified E-2 leads with structured case summaries. Attorney flag triggered → lead enters feed. Matching: specialty + jurisdiction + capacity + performance score.
+
+| Tier | Price | Leads/Month |
+|---|---|---|
+| Starter | $299/month | 10 leads |
+| Growth | $499/month | 25 leads |
+| Practice | $799/month | Unlimited + API access |
+
+### Product 2 — e2go Broker (Franchise Broker Subscriptions)
+
+Pre-qualified investor profiles with investment + preference data. Module 2 exploring trigger → profile enters feed. Matching: territory + category + investment range + capacity.
+
+| Tier | Price | Profiles/Month |
+|---|---|---|
+| Starter | $399/month | 15 profiles |
+| Growth | $699/month | 40 profiles |
+| Agency | $999/month | Unlimited + territory exclusivity |
+
+### Key Design Rules
+- One lead → one subscriber (never broadcast to all)
+- 48-hour response window before lead rotates to next match
+- Double opt-in before contact details released to subscriber
+- Partner agreement (DPA) required before dashboard access
+- Territory exclusivity available as premium upsell (2–3x base rate)
+
+### What Subscribers See
+
+**Attorney sees:**
+```
+LEAD #4721 — Attorney Review Flagged
+Flag reason: Prior visa refusal (B-2, 2019)
+Investment: $175,000–$200,000 USD
+Business type: Senior care franchise
+Fund sources: Employment savings + property sale
+Timeline: 6 months — Ontario → Florida
+Risk profile: Moderate — addressable with counsel
+Consented: Yes
+[Reveal Contact Details →] (triggers double opt-in)
+```
+
+**Broker sees:**
+```
+INVESTOR PROFILE #2847
+Investment range: $150,000–$200,000 USD
+Business preference: Senior care / Healthcare
+Target state: Texas or Florida
+Timeline: 4–6 months
+Background: Management, healthcare adjacent
+Family: Couple — spouse EAD eligible
+Consented: Yes
+[Reveal Contact Details →] (triggers double opt-in)
+```
+
+### Revenue Projections
+```
+Year 1 target:
+  20 attorney × $499/month = $9,980/month
+  15 broker × $699/month  = $10,485/month
+  Total B2B MRR: ~$20,000/month = $240,000/year
+
+Year 2 target:
+  50 attorney × $499/month = $24,950/month
+  40 broker × $699/month  = $27,960/month
+  Total B2B MRR: ~$53,000/month = $636,000/year
+```
+
+### Database Tables Needed
+- partner_subscriptions
+- partner_leads (which lead → which subscriber)
+- partner_agreements (signed DPA)
+- lead_responses (response rate tracking per partner)
+
+### Build Status
+- ⬜ Update Module 1 consent language (one intro per category)
+- ⬜ Attorney portal (/partner/attorney)
+- ⬜ Broker portal (/partner/broker)
+- ⬜ Lead matching algorithm
+- ⬜ Partner onboarding + agreement signing
+- ⬜ Partner billing (Stripe subscriptions)
+- ⬜ Partner admin management
+
+---
+
+## UX RESILIENCE — CRITICAL EXPERIENCE MOMENTS
+
+### 1. Answer Auto-Save
+- Every answer saved to Supabase within 2 seconds of advancing
+- Never rely on end-of-tab or end-of-session saves
+- On return: "Welcome back. You left off at Tab F, Question 8. Ready to continue?"
+- One button — immediately back in
+
+### 2. Payment Failure Handling
+- Stripe failure: calm message + retry (not generic error)
+- Stripe down: "Payment temporarily unavailable. Your application is saved."
+- Card decline: specific message + alternative payment prompt
+- Recovery email within 15 minutes: "Your package is ready. Complete your purchase here."
+- Admin notified of all failed payments
+
+### 3. Hard Stop Experience (redesign from cold error)
+- Explain in plain English what the issue is and WHY it matters
+- Tell them exactly what type of attorney to look for and what to say
+- Offer attorney referral immediately
+- With consent: send quiz results summary to partner attorney as warm lead
+- Follow-up email at 48 hours: "Did you find the right help?"
+- If situation changes: they can restart — app welcomes them back
+
+### 4. Document Preview Quality
+- Quality gate must pass before ANY preview shown
+- Show strongest sections first: Cover Letter → Qualifications → Business Plan
+- "Help me improve this" button per section (subtle — not a complaint button)
+- Flag triggers: re-ask relevant questions → regenerate that section only
+- User never sees generic output — if it's generic, regenerate first
+
+### 5. Post-Payment Experience
+- Celebration screen — not just a download button
+- Shows everything unlocked (all documents + features checklist)
+- Clear first action: "Here's what to do next — in order"
+- Welcome email within 2 minutes with complete next steps
+- Dashboard immediately reflects paid status + all modules unlocked
+
+### 6. Interview Simulator Score Framing
+- Never lead with a number — lead with what was strong
+- "You've identified 4 areas to strengthen" not "You scored 40%"
+- First simulation score private — not shown on dashboard
+- Feedback: what was good FIRST, then what was missing
+- Always end with specific action: "Practice these 3 questions next"
+- Score trend shown across sessions — improvement visible
+
+### 7. Post-Submission Waiting Period
+- Compliance calendar active with interview date
+- Weekly email: "Your interview is in X days. Here's one thing to review."
+- Interview simulator available for practice (within limits)
+- "What to expect on interview day" guide unlocked after payment
+- Extra sessions: frictionless purchase
+
+### 8. Outcome Recording
+User records result after interview:
+- ✅ Approved → celebration + share prompt + renewal reminder (18 months) + compliance calendar enrollment
+- ⏳ Administrative Processing → check-in email in 30 days
+- ❌ Refused → compassionate response + attorney referral + "what to tell your attorney" summary
+
+### 9. Re-Engagement Email Sequence
+Triggered: account created but Module 1 not completed
+```
+Day 3:  "Your eligibility results are saved. Here's what's waiting."
+Day 7:  "Three things you can do this week to prepare."
+Day 14: [Use "The Preparation Paralysis" copy — see Content Library]
+Day 30: "Your saved application expires in 7 days. Log in to continue."
+```
+
+---
+
+## NEWSLETTER — "THE E-2 INSIDER"
+
+**Cadence:** Every 2 weeks
+**Format:** Max 400 words · One genuine value item · One soft CTA
+**Platform:** Resend (recommended — developer-friendly, CASL compliant)
+**CASL:** Opt-in only · Unsubscribe on every email · Consent logged with timestamp
+
+### Segments
+
+| Segment | Audience | Content Focus |
+|---|---|---|
+| Pre-Application | Signed up, not yet paid | E-2 news, tips, processing times, business spotlights |
+| In Application | Paid, building package | Progress encouragement, document tips, consulate updates |
+| Post-Approval | Visa approved | Tax deadlines, renewal prep, FBAR, hiring rules, expansion |
+| Referred Out | Hit hard stop | Immigration news, "when you're ready", attorney Q&A |
+
+### 5 Content Pillars
+1. **Consulate Intelligence** — Processing time updates, officer behavior, document request trends at Toronto
+2. **Regulatory Updates** — State Dept policy changes, treaty updates, USCIS guidance changes
+3. **Business Intelligence** — Sector spotlights, franchise opportunities, market trends in target states
+4. **Applicant Stories** — Anonymized success stories, lessons learned, "what I wish I'd known"
+5. **Compliance Reminders** (post-approval only) — FBAR deadlines, renewal windows, employment rules, tax dates
+
+### Infrastructure Needed
+- ⬜ Resend integration
+- ⬜ Subscriber table with segment field
+- ⬜ Auto-segment assignment based on application status
+- ⬜ Segment transition automation (pre-app → in-app on payment)
+- ⬜ Unsubscribe handler (DB + Resend)
+- ⬜ CASL consent timestamp per subscriber
+- ⬜ Admin newsletter management in admin panel
+- ⬜ Analytics: open rate, click rate, unsubscribe per segment
+
+---
+
+## EDUCATION HUB — /learn
+
+Purpose: Top-of-funnel SEO. Captures researchers not yet ready to apply.
+Tone: Educational, calm, trustworthy. No sales language.
+Priority: MEDIUM — build after core app stable.
+
+### Pages
+
+| Route | Topic | SEO Target Keyword |
+|---|---|---|
+| /learn | E-2 information hub | "E-2 visa Canada" |
+| /learn/what-is-e2-visa | Plain English explanation | "what is E-2 visa" |
+| /learn/requirements | 5 eligibility requirements | "E-2 visa requirements Canada" |
+| /learn/investment | How much to invest | "how much to invest E-2 visa" |
+| /learn/businesses | What businesses qualify | "E-2 visa businesses that qualify" |
+| /learn/process | Timeline step by step | "E-2 visa process Canada" |
+| /learn/canada | Canada-specific guidance | "E-2 visa for Canadians" |
+| /learn/e2-vs-eb5 | Visa comparison | "E-2 vs EB-5" |
+
+### /learn Hub Page Structure
+1. Hero: "Everything you need to know about the U.S. E-2 Treaty Investor Visa" — no hard CTA
+2. What is E-2 — plain English, 2 paragraphs
+3. The 5 Requirements — 5 cards, plain English titles
+4. Investment amounts — table by business type
+5. Timeline — visual 6-step from decision to approval
+6. Current trends — 3 stat cards (real government data only)
+7. Soft CTA: "Ready to check your eligibility? 10 minutes. It's free."
+
+### Stitch Screen Needed
+- /learn hub page design (same design system, educational tone)
+
+---
+
+## ADAPTIVE CASE-BUILDING QUESTION SYSTEM
+
+Purpose: Surface hidden relevant experience to strengthen investor qualifications.
+Rule: Every question must have a "why does this help the case?" answer. If it doesn't — cut it.
+
+### 4-Layer Architecture
+```
+Layer 1 — Business Category Matrix
+  Maps each business type to its known consular concerns
+  Defines which gap categories matter most per type
+
+Layer 2 — Experience Gap Detection
+  After basic profile questions, identifies gaps between
+  required business strengths and investor's actual profile
+  Triggers targeted probe cascades for each gap found
+
+Layer 3 — Probe Question Bank
+  5–7 questions per gap type: obvious → non-obvious
+  Each "yes" answer feeds directly into document generation
+  No generic questions — every probe has a specific case purpose
+
+Layer 4 — Document Generation Prompt
+  Structured context object built from all probe answers
+  MiniMax generates specific narrative using actual details
+  Never uses templates — always personalized
+```
+
+### 10 Gap Categories (universal)
+1. Industry / sector knowledge
+2. Management & operations experience
+3. Sales & client acquisition experience
+4. Financial management experience
+5. Regulatory & compliance awareness
+6. Technical / trade skills (trade businesses)
+7. Population-specific experience (care businesses)
+8. Business ownership history
+9. Relevant education & training
+10. Personal motivation & commitment narrative
+
+### Business Type Matrix
+
+| Business Type | Priority Gap Categories |
+|---|---|
+| Senior Care | 7, 2, 1, 9 |
+| Franchise (any) | 2, 4, 3, 6 |
+| Daycare | 7, 1, 5, 9 |
+| Cleaning Service | 2, 3, 8, 4 |
+| HVAC / Duct | 6, 5, 4, 8 |
+| Restaurant | 1, 2, 3, 4 |
+| Retail | 3, 2, 4, 8 |
+
+### Probe Cascade Example — Senior Care, Gap: Vulnerable Population Experience
+```
+Q1: Direct experience with elderly/disabled in any context?
+    → Yes: describe nature and duration
+    → No: Q2
+Q2: Cared for elderly parent, relative, or family friend?
+    → Yes: how long, what level of care, what did you manage?
+    → No: Q3
+Q3: Child or dependent with special needs or medical condition?
+    → Yes: what has that involvement looked like over time?
+    → No: Q4
+Q4: Volunteered with elderly, disabled, or vulnerable populations?
+    → Yes: which org, how long, what did you do?
+    → No: Q5
+Q5: Professional work with populations needing extra support?
+    → Yes: describe that work
+    → No: flag weak investor qualifications
+         recommend: personal statement explaining
+         motivation and commitment
+```
+
+### Build Status
+- ⬜ Probe question bank — write for top 8 business categories
+- ⬜ Gap detection engine — Module 3
+- ⬜ Document generation prompts — one per document type
+- ⬜ Context object builder — from all Module 3 answers
+
+---
+
+## FORM & TERMINOLOGY STANDARDS
+
+*Apply to every question, form, and document in the app.*
+*Must be enforced before any Module 3 tab is built.*
+*Reference: module3_tab_a.md is the gold standard.*
+
+### Standard 1 — Official U.S. Government Terminology
+
+| Use in e2go | Source |
+|---|---|
+| "E-2 Treaty Investor" | DS-160 / 9 FAM 402.9 |
+| "Nonimmigrant status" (not "visa status") | DS-160 |
+| "Admitted" (not "entered") | DS-160 |
+| "Departed" (not "left") | DS-160 |
+| "Refused" (not "denied") | DS-160 uses "refused" |
+| Exact security question text | DS-160 verbatim |
+| Marital status: Single / Married / Common Law Marriage / Civil Union / Divorced / Legally Separated / Widowed | DS-160 exact options |
+| "Date of most recent visit" | DS-160 travel section |
+
+### Standard 2 — Every Question Must Be Descriptive
+
+Every question requires all 5 elements:
+```
+1. Question text — plain English, specific
+   ❌ "Marital status:"
+   ✅ "What is your current marital status?"
+
+2. Tooltip — why we're asking, what it feeds
+   ✅ "The DS-160 requires your marital status. Select 
+      the option that exactly matches your legal status."
+
+3. Option labels — descriptive, not just values
+   ❌ [ ] Yes  [ ] No
+   ✅ [ ] Yes — I have previously been refused a U.S. visa
+      [ ] No  — I have never been refused a U.S. visa
+
+4. Helper text — what the officer looks for
+   ✅ "Social media used in last 5 years is mandatory 
+      on the DS-160 — do not omit accounts intentionally."
+
+5. Inline warning — where answer has risk implications
+   ✅ "A prior refusal must be disclosed. Failure to 
+      disclose is treated as misrepresentation."
+```
+
+### Standard 3 — Forms Must Look Like Official Forms
+
+```
+Section headers: Use DS-160 labels exactly
+  ❌ "About You"   ✅ "Personal Information"
+  ❌ "Your Trip"   ✅ "Travel Information"
+  ❌ "Background"  ✅ "Security Questions"
+
+Date format:     DD/MMM/YYYY (DS-160 standard)
+Required:        Asterisk (*) — same as DS-160
+Optional:        "(Optional)" label — same as DS-160
+N/A:             "Does Not Apply" option where DS-160 has it
+Question order:  Match DS-160 page/section groupings exactly
+```
+
+### Standard 4 — No Information Repeated Across Documents
+
+```
+Investment amount:        Full in Tab F → reference only in Cover Letter
+Fund source narrative:    Full in Tab H → one sentence in Cover Letter
+Investor qualifications:  Full in Tab J → one paragraph in Cover Letter
+Business description:     Full in Tab K → summary in Cover Letter
+Non-immigrant intent:     Full in Cover Letter → not repeated elsewhere
+Revenue projections:      Full in Tab K → brief reference in Cover Letter
+```
+
+### Standard 5 — Professional Document Formatting
+
+```
+Font:         Times New Roman 12pt
+Margins:      1 inch all sides
+Line spacing: 1.5 for narrative · single for tables
+Sections:     Roman numerals (I, II, III...)
+Dates:        January 15, 2026 (never 01/15/26)
+Dollars:      $187,500 USD (always commas + USD)
+Header:       Tab reference | Applicant name | Date prepared
+Footer:       "Prepared with e2go.app | Not legal advice | 
+               For consulate submission purposes only"
+Pages:        Numbered bottom center
+Letterhead:   No e2go logo on consulate submission documents
+```
+
+---
+
+## CONTENT LIBRARY
+
+Reusable pieces for newsletter, landing page, re-engagement emails, and social media.
+
+### PIECE 001 — "The Preparation Paralysis"
+**Type:** Emotional / psychological
+**Tone:** Warm, honest, non-judgmental
+**Core insight:** "The people who are most prepared are often the ones most paralyzed."
+
+**Full text:**
+> Something I've been noticing across my DMs this month: The people who are most prepared are often the ones most paralyzed. I've spoken this week with people who have their funds sourced, their business model outlined, a state shortlisted, and a lawyer's number saved in their phone. Everything except the one thing that actually moves things forward — starting. It's not laziness; it's a form of fear that hides within preparation. One more question, one more piece of research, one more person to ask. I'm not judging it. I see it in every case type, every nationality, every income level. The research phase can quietly become a place to live.
+
+**Use in:**
+- /learn page — "Are you ready to start?" section
+- Day 14 re-engagement email (primary copy)
+- Newsletter Issue 3 — Pre-Application segment
+- LinkedIn · Reddit r/expats · Twitter/X
+
+**CTA that fits this piece:**
+- "Your application is exactly where you left it."
+- "The quiz takes 10 minutes."
+- "One click to continue."
+
+---
+
+## LIFECYCLE TRACKING SYSTEM
+
+**Purpose:** Track every applicant milestone from first visit to visa approval and beyond. Generates real product statistics, outcome database, and long-term valuation asset.
+
+**Critical rule:** Start collecting from day one. Timestamps you don't capture cannot be recovered.
+
+### Database Table: application_lifecycle
+
+```sql
+-- Stage 0: Discovery
+first_visit_at, utm_source, utm_medium, utm_campaign
+
+-- Stage 1: Qualification
+quiz_started_at, quiz_completed_at, quiz_duration_minutes,
+quiz_outcome, hard_stop_code
+
+-- Stage 2: Account & Payment
+account_created_at, quiz_to_account_hours,
+payment_completed_at, account_to_payment_days, tier_purchased
+
+-- Stage 3: Application Build
+module1_started_at, module1_completed_at,
+module2_started_at, module2_completed_at,
+module3_started_at, module3_completed_at, module3_duration_days,
+generation_triggered_at, generation_completed_at,
+generation_duration_minutes, preview_viewed_at
+
+-- Stage 4: Interview Prep
+simulator_first_run_at, simulator_sessions_total,
+simulator_best_score, interview_ready_at
+
+-- Stage 5: Consulate
+interview_scheduled_at, interview_date,
+app_to_interview_days, outcome_recorded_at,
+outcome (approved/refused/processing), refusal_reason
+
+-- Stage 6: Post-Approval
+approval_date, total_journey_days,
+renewal_reminder_set_at, compliance_enrolled_at,
+renewal_started_at
+```
+
+### Key Computed Metrics (auto-calculated)
+- quiz_to_account_hours
+- account_to_payment_days
+- module3_duration_days
+- generation_duration_minutes
+- app_to_interview_days
+- total_journey_days (first_visit_at → approval_date)
+
+### User-Facing Timeline (dashboard)
+Visual milestone tracker showing all completed stages with dates, current stage with progress bar, estimated days to interview-ready, total days in system.
+
+### Admin Pipeline View
+Count of applicants per stage, average days in each stage, conversion rate between stages, drop-off identification, approval rate once data sufficient.
+
+### Outcome Database (long-term moat)
+Links confidence score + simulator score to actual visa outcome. After 200+ outcomes: publish approval rate by score range. Use to recalibrate confidence scoring engine.
+
+### Publishable Statistics (after 50+ outcomes)
+- Average days from starting app to interview-ready
+- Average days from start to visa approval
+- Approval rate for e2go applicants
+- Average confidence score at interview
+- Average simulator sessions before interview
+
+### Build Status
+| Feature | Status | Notes |
+|---|---|---|
+| application_lifecycle table in schema | ⬜ | Add to schema_complete.sql |
+| Auto-populate on quiz complete | ⬜ | Session 2 |
+| Auto-populate on account create | ⬜ | Session 2 |
+| Auto-populate on payment | ⬜ | Session 3 |
+| Auto-populate on each module | ⬜ | Session 3 |
+| Auto-populate on generation events | ⬜ | Session 4 |
+| Auto-populate on simulator events | ⬜ | Session 4 |
+| User-facing timeline on dashboard | ⬜ | Session 3 |
+| Admin pipeline view | ⬜ | Session 4–5 |
+| Outcome recording UI | ⬜ | Session 4 |
+| Published statistics page | ⬜ | After 50+ outcomes |
+
+---
+
+## SMART LEAD ROUTING
+
+Business opportunity referrals use two-path routing based on Module 2 outcome.
+
+### Path A — Direct to Franchisor (hot leads)
+**Trigger:** business_selected = YES AND business_name known
+**Who gets the lead:** Franchise development rep at that specific brand — no broker
+**Fee:** Direct referral agreement — $5,000–$15,000 per closed franchise deal
+**Advantage:** No broker split, faster for applicant, higher value relationship
+
+### Path B — To Franchise Broker (warm leads)
+**Trigger:** business_selected = NO — still exploring category or undecided
+**Who gets the lead:** Franchise broker to help them decide
+**Fee:** $150–$300 intro OR revenue share on close
+
+### Module 2 Routing Question (dual-purpose)
+```
+"What is the current stage of your business opportunity?"
+
+○ I have identified a specific business and am ready to invest
+  → PATH A — direct to franchisor
+
+○ I have identified a business category and am evaluating options
+  → PATH B — to franchise broker
+
+○ I am still researching what type of business to invest in
+  → PATH B — to franchise broker
+```
+Visa purpose: Determines which Tab G documents are required
+Commercial byproduct: Routes referral correctly
+
+### Direct Franchisor Partnership Targets
+Priority brands for direct referral agreements:
+- Jan-Pro (commercial cleaning)
+- Anago (commercial cleaning)
+- Home Instead (senior care)
+- Right at Home (senior care)
+- Visiting Angels (senior care)
+- Molly Maid (residential cleaning)
+- Coverall (commercial cleaning)
+- Kumon (education)
+- Snap-on Tools (trade)
+
+### Action Items
+| Task | Status |
+|---|---|
+| Add routing question to Module 2 | ⬜ |
+| Build routing logic (business_selected flag) | ⬜ |
+| Add franchisor_id field to referral_leads table | ⬜ |
+| Create direct franchisor outreach email template | ⬜ |
+| Establish first 3 direct franchisor agreements | ⬜ Business dev — parallel to build |
+| Separate lead package format for direct vs broker routing | ⬜ |
+
+---
+
+## DUAL-PURPOSE QUESTION PRINCIPLE
+
+Every question in Module 2 and Module 3 must pass both tests:
+- **Test 1:** Does this strengthen the visa application?
+- **Test 2:** Does this also qualify, segment, or route the lead?
+
+If Test 1 only → ask it (visa first, always)
+If Test 2 only → do NOT ask it
+Commercial insight is always a byproduct of good visa preparation — never the driver.
+
+### Question Documentation Standard
+Every question must be documented with:
+```
+Question: [text]
+Visa purpose: [which document/requirement this feeds]
+DS-160/consulate reference: [where this appears in official guidance]
+Commercial byproduct: [routing/segmentation this enables, if any]
+Tooltip: [what the applicant is told about why we're asking]
+```
+
+### Module 2 Questions to Add (all dual-purpose)
+
+| Question | Visa Purpose | Commercial Byproduct |
+|---|---|---|
+| Business stage (4 options) | Determines Tab G document requirements | Routes direct vs broker |
+| Franchise brand name | Required on DS-156E, Tab G, Tab K, Cover Letter | Identifies direct franchisor contact |
+| FDD review status | Consular officers probe this at interview | Signals lead readiness level |
+| Why this specific franchise | Interview prep — most common Toronto question | Answer depth = lead quality signal |
+| Target state and city | DS-160, DS-156E, business plan, licensing | Routes commercial RE referral by state |
+| Business premises status | Tab G real enterprise evidence | Triggers commercial RE referral if none |
+| US business bank account status | Tab G real enterprise evidence | Triggers banking referral if none |
+
+### Module 3 Reviews Required
+- Tab G: add commercial RE referral branch when no premises secured
+- Tab F: add banking referral branch when no US account
+- All tabs: cross-reference against dual-purpose principle before build
+
+---
+
+## STANDING BUILD RULES — SUMMARY
+
+Full details in CLAUDE_CONTEXT.md. These apply to every task every session:
+
+| Rule | Summary |
+|---|---|
+| 1 — SEO on every page | Metadata + OG tags + JSON-LD added when page is built. Never retrofit. |
+| 2 — Database safety | Never DROP TABLE. Never TRUNCATE. Always IF NOT EXISTS. Show SQL before running. |
+| 3 — Answer auto-save | Every Module 3 answer saved to Supabase within 2 seconds. Never end-of-tab saves. |
+| 4 — No AI keys in browser | All MiniMax calls via /api/ai/route.ts server-side only. |
+| 5 — DS-160 terminology | All Module 3 questions use exact government form language. |
+| 6 — Descriptive questions | Every question: text + tooltip + descriptive options + helper text + inline warning. |
+| 7 — Dual-purpose questions | Visa purpose must justify every question. Commercial byproduct is secondary. |
+| 8 — Document generation safety | One at a time. Checkpoint every doc. Quality gate before any preview. |
+| 9 — Lifecycle tracking | Every significant user action updates application_lifecycle with timestamp. |
+| 10 — Build tracker update | "end session" command updates BUILD_TRACKER.md and CLAUDE_CONTEXT.md. |
+
+---
+
+## KNOWN ISSUES / BUGS
+
+| Issue | File | Priority | Fix |
+|---|---|---|---|
+| Database schema — users table conflict | Supabase SQL | HIGH | Replace public.users with public.profiles referencing auth.users |
+| Auth not wired to login/signup pages | src/app/login · signup | HIGH | Wire Supabase auth in Session 2 |
+| Quiz scoring engine not connected | src/app/quiz/page.tsx | HIGH | Wire module0_scoring_logic.json |
+| Quiz result not saving to Supabase | src/app/quiz/page.tsx | HIGH | After auth wired |
+| CAD/USD conversion missing on Q0-05 | src/app/quiz/page.tsx | MEDIUM | Add live conversion + W-PROP warning |
+| Dashboard showing static data | src/app/dashboard/page.tsx | MEDIUM | Wire to real user data after auth |
+| application_lifecycle table not yet in schema | docs/schema_complete.sql | HIGH | Add to schema — Session 2 |
+| SEO metadata missing from all pages | src/app/*/page.tsx | HIGH | Add per Rule 1 — Session 2 |
+
+---
+
+## SESSION LOG
+
+### Session 1 — May 29, 2026
+
+**Completed:**
+- Full product architecture designed and documented
+- Module 0 questions V2.1 finalized — JSON file locked
+- Module 0 scoring logic V1.1 finalized — JSON file locked
+- Stitch design library completed — 10 screens in docs/stitch/
+- Next.js scaffold — App Router, TypeScript, Tailwind
+- All 5 core pages built: Landing, Quiz, Results, Pricing, Dashboard
+- Nav + Footer shared components
+- Supabase connected — {"connected":true} confirmed
+- Database schema script generated and run (idempotent — DROP TABLE removed)
+- CLAUDE_CONTEXT.md consolidated — single complete file
+- BUILD_TRACKER.md consolidated — single complete file
+- "start session" / "end session" commands established
+- 10 standing build rules documented in CLAUDE_CONTEXT.md
+
+**Key decisions made:**
+- Paywall moved to post-Module 3 — free to collect, pay to download
+- Interview simulator: 2 sessions included per application, $9.99/bundle extra
+- Document generation: sequential + checkpointed, never parallel
+- Referral engine: 5 categories — business opportunity, attorney, banking, CPA, real estate
+- Smart lead routing: hot leads (business known) → direct to franchisor ($5K–$15K/deal)
+- Warm leads (exploring) → to franchise broker ($150–$300/intro)
+- Franchise brokerage: e2go can operate as direct broker — no license required in most states
+- B2B subscription products: attorney portal + broker portal (Phase 2)
+- /learn education hub: 8 SEO-targeted sub-pages
+- Form standards: 5 standards, DS-160 terminology alignment required
+- Adaptive case-building: 4-layer probe system, 10 gap categories, business type matrix
+- Dual-purpose question principle: visa purpose justifies every question, commercial is byproduct
+- Lifecycle tracking: application_lifecycle table — collect every milestone from day one
+- SEO built into every page at time of build — standing Rule 1, never retrofit
+- Newsletter: "The E-2 Insider" — 4 segments, every 2 weeks, Resend platform
+- Content library started: "The Preparation Paralysis"
+- Support ticketing: /support, /support/new, /support/tickets
+- Admin panel: /admin, role-protected, full stats + API credit monitoring
+- Cybersecurity plan: rate limiting, device fingerprinting, session management, PIPEDA
+- Real estate referral layer: commercial premises + residential rental + residential purchase
+- Relocation layer: moving, vehicle, health insurance, phone
+- B2B revenue projections: $20K MRR Year 1 → $53K MRR Year 2
+- Database safety rule: never DROP TABLE — always IF NOT EXISTS — idempotent scripts only
+
+**Claude Code priorities for Session 2:**
+1. Add application_lifecycle table to schema_complete.sql and run in Supabase
+2. Fix database schema — confirm all tables created with RLS
+3. Wire auth — login/signup pages to Supabase auth
+4. Wire middleware — protect /dashboard, /apply/*, /score, /simulator, /export
+5. Wire quiz scoring engine to results page (module0_scoring_logic.json)
+6. Wire quiz save to Supabase (quiz_sessions + application_lifecycle)
+7. Wire answer auto-save on every Module 3 question (2-second delay)
+8. Add SEO metadata to all existing pages — Rule 1
+9. Add security headers to next.config.mjs
+10. Build OpenRouter/MiniMax client (src/lib/ai.ts + /api/ai/route.ts)
+11. Test full flow: signup → quiz → results → pricing → dashboard
+12. Run npm run build — confirm zero errors
+
+---
+
+## Session 9 — May 31, 2026
+
+**Module 3 Tabs Update (completed from prior session):**
+- Global language fixes applied to all tabs (Canada → home country)
+- Batch assignments added to all tabs (Batch 1: personal, Batch 2: business)
+- 18 new questions added across Tabs B, D, E, F, G, H, I, J, K, L
+- Lead temperature scoring fields added to schema
+- Denial audit gaps D-02 D-03 D-04 D-06 D-07 D-10 D-12 D-13 resolved
+- Referral triggers added: LLC formation, CPA (RRSP/property), FX (large wire), banking (TD/RBC), discovery day, attorney (age-out)
+
+**Key decisions made:**
+- Paywall moved to post-Module 3 (before document generation)
+- Interview simulator: 2 sessions included, $9.99/bundle extra
+- Document generation: sequential + checkpointed, never parallel
+- Referral engine: 5 categories including full real estate layer
+- Franchise brokerage: direct broker model identified (no license required)
+- B2B subscription products: attorney + broker portals (Phase 2)
+- /learn education hub: 8 SEO-targeted sub-pages
+- Form standards: 5 standards, DS-160 terminology required
+- Adaptive case-building: 4-layer probe system, 10 gap categories
+- Content library started: "The Preparation Paralysis"
+- Newsletter: "The E-2 Insider" — 4 segments, 2-week cadence
+
+---
+
+## Session 11 — June 1, 2026
+
+**Completed:**
+- Picked up from crashed session (Tasks 6-10)
+- apply/checklist/page.tsx: redesign with glassmorphism
+- login/signup: redesign with glassmorphism, preserve auth logic
+- module3: TabShell and QuestionRenderer redesign with glassmorphism, preserve all question logic
+
+**Build:** Clean (minor themeColor warnings, non-blocking)
+**Tests:** 45/45 passed
+**Pushed:** 5 commits to dev
+
+---
+
+## Session 10 Priorities
+
+1. Fix Supabase 406/403 errors on Tab A (applications + profiles RLS)
+2. Build /apply/overview orientation page
+3. Build /apply/checklist three-phase checklist
+4. Wire Tab B-L question configs from updated specs
+5. Generate Sarah Mitchell prototype documents (4 Word docs)
+
+---
+
+**Claude Code priorities for Session 2:**
+1. Fix database schema (profiles table, all tables with RLS)
+2. Wire auth — login/signup pages to Supabase
+3. Wire auth middleware — protect /dashboard, /apply/*
+4. Wire quiz scoring engine to results page
+5. Wire quiz save to Supabase (quiz_sessions table)
+6. Wire answer auto-save (every question)
+7. Add security headers to next.config.mjs
+8. Build OpenRouter/MiniMax client (src/lib/ai.ts)
+9. Test full flow: signup → quiz → results → pricing
+10. Update this BUILD_TRACKER.md
+
+---
+
+## PRICING REFERENCE
+
+### B2C Application Pricing
+
+| Tier | Coverage | Price |
+|---|---|---|
+| Solo Individual | 1 investor | $247 |
+| Solo Couple | 1 investor + spouse | $297 |
+| Solo Family (≤2 kids) | 1 investor + spouse + up to 2 children | $347 |
+| Solo Extended (3–5 kids) | 1 investor + spouse + 3–5 children | $397 |
+| Partnership — No Families | 2 investors only | $447 |
+| Partnership — Two Couples | 2 investors + 2 spouses | $547 |
+| Partnership — Two Full Families | 2 investors + 2 spouses + up to 4 kids | $647 |
+
+**Add-ons:**
+- +$25 per extra dependent
+- +$19 per 3-export bundle (extra PDF exports)
+- +$9.99 per 3 additional simulator sessions
+- $97–$147 renewal module
+- $29/year compliance calendar
+
+### B2B Subscription Pricing
+
+| Product | Tier | Price | Volume |
+|---|---|---|---|
+| e2go Legal (Attorneys) | Starter | $299/month | 10 leads |
+| e2go Legal (Attorneys) | Growth | $499/month | 25 leads |
+| e2go Legal (Attorneys) | Practice | $799/month | Unlimited + API |
+| e2go Broker (Franchise) | Starter | $399/month | 15 profiles |
+| e2go Broker (Franchise) | Growth | $699/month | 40 profiles |
+| e2go Broker (Franchise) | Agency | $999/month | Unlimited + territory exclusivity |
+
+---
+
+*This document is the single source of truth for build status.*
+*Update it at the end of every session.*
+*File location: ~/E2-go/BUILD_TRACKER.md*
