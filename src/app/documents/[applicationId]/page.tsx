@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
+import PackageSummary from "@/components/PackageSummary";
 import {
   DOCUMENT_TYPE_LABELS,
   DOCUMENT_TYPE_TABS,
@@ -286,6 +287,13 @@ export default function DocumentsReviewPage() {
             >
               No documents have been generated yet.
             </p>
+          </div>
+        )}
+
+        {/* Package Summary — post-generation strength overview */}
+        {documents.length > 0 && (
+          <div className="mb-12">
+            <PackageSummary applicationId={applicationId} />
           </div>
         )}
 
