@@ -218,6 +218,27 @@ User is returned to the relevant tab with specific instruction.
 - business_type = null
 - net_worth_usd = null
 - LLC_name = null (for Batch 2 documents)
+- total_business_cost_usd = null (Tab K) — without this,
+  investment_pct_of_business_cost cannot be computed and the
+  9 FAM 402.9-6(D) proportionality framing (Section IV of every
+  generated document) has nothing to be proportional TO
+- investment_breakdown does not sum to investment_amount_usd
+  (within $1 rounding tolerance) — the itemized costs the
+  applicant entered for Tab F do not add up to the total they
+  stated
+- fund_sources total does not sum to investment_amount_usd
+  (within $1 rounding tolerance) — the sources of funds (Tab H)
+  do not add up to the total investment
+
+Note on the three new bullets above: unlike the original five
+Category A items (which check for MISSING data), these three check
+for INTERNAL CONSISTENCY of data that IS present. An applicant who has
+entered a total, a breakdown, and fund sources that don't agree with
+each other has not left anything blank — but generation cannot
+proceed safely until the disagreement is resolved, because every
+downstream document will state these figures as fact. See "Display to
+User" below for how this is surfaced — NOT as a generic error, but as
+part of the pre-generation confirmation step.
 
 ### Category B — Content Gaps (require follow-up conversation)
 These are filled through the follow-up conversation before generation.
@@ -300,6 +321,42 @@ The engine produces a structured JSON case brief:
 
 ---
 
+## Pre-Generation Confirmation Log
+
+```sql
+table: pre_generation_confirmation
+  application_id            UUID
+  case_brief_generated_at    TIMESTAMPTZ  -- which case brief version
+                                            -- this confirmation applies to
+  shown_breakdown_json       JSONB  -- investment_breakdown as DISPLAYED
+                                      -- to the applicant on this screen
+  shown_fund_sources_json    JSONB  -- fund_sources as DISPLAYED
+  edits_made                  JSONB  -- [] if none, else list of
+                                      -- {field, old_value, new_value}
+  discrepancy_prompted        BOOLEAN DEFAULT false
+  discrepancy_resolution      TEXT  -- null if discrepancy_prompted=false;
+                                      -- otherwise: 'total_updated' |
+                                      -- 're-entered_line_item'
+  confirmed_at                TIMESTAMPTZ
+  created_at                  TIMESTAMPTZ DEFAULT now()
+```
+
+This record answers, for any future application, the question "was
+the data the applicant explicitly confirmed at THIS point, or did it
+change after confirmation?" — without needing to manually reconstruct
+timestamps and server logs.
+
+If a document generated LATER contains figures that don't match
+`shown_breakdown_json` / `shown_fund_sources_json` from this table for
+the same `application_id` — that is a SYSTEM-side discrepancy (data
+changed after confirmation, or generation read from a different
+source than what was confirmed). If a document matches this table but
+the applicant later says a figure is wrong — that is a CLIENT-side
+correction needed, handled through the normal revision flow, not a
+sign of a system bug.
+
+---
+
 ## Display to User
 
 The case brief is never shown to the user in raw form.
@@ -320,6 +377,81 @@ stronger. This takes about 10 minutes.
 
 [Continue to questions →]
 ```
+
+### Investment Figures Confirmation Panel
+
+If `ready_for_generation` is otherwise true (no Category A blocking
+gaps from the original five checks), but this is the applicant's
+FIRST time reaching this screen for this application — OR if any of
+the three new consistency checks from Category A fired — show this
+panel ABOVE the strength bars, before anything else:
+
+---
+"Before we draft anything, let's make sure we have your investment
+exactly right — because every document we write will use these
+exact figures.
+
+[Investment breakdown table, rendered from investment_breakdown,
+ each line shown with its purpose in plain language, e.g.:
+   $1,000 — Franchise fee
+   $48,000 — Build-out of your space
+   ...
+   TOTAL: $185,000]
+
+[Fund sources, similarly narrated:
+   $110,000 — from your personal savings
+   $75,000 — from the sale of your Muskoka property]
+
+Does this match your records? If anything here is off — even by a
+small amount — fixing it now is much easier than fixing it across
+six documents later."
+
+[Each dollar figure is an editable inline field. Editing recalculates
+the displayed total live.]
+
+[Confirm — this is correct →]   [Something needs fixing]
+---
+
+If the applicant edits a figure and the edit causes the breakdown to
+no longer sum to the total (or fund sources to no longer sum to the
+total), show a SINGLE follow-up prompt — do not silently accept the
+edit and do not silently reject it:
+
+---
+"That would put [edited line item] at [new value] — but your total
+investment was $[total]. Did you mean [new value], or has your total
+investment changed too?"
+
+[Yes, [new value] is correct — update my total to $[recalculated]]
+[No, I meant to enter a different number]
+---
+
+This is ONE round only. Whichever path the applicant takes, the
+result must be internally consistent (breakdown sums to total, fund
+sources sum to total) before the Confirm button becomes available
+again. There is no second round of pushback on the same field in the
+same session — if the applicant re-confirms an unusual figure after
+this one prompt, the system accepts it.
+
+On confirmation (or after a successful one-round resolution), write a
+row to `pre_generation_confirmation` (see above) capturing what was
+shown, any edits made, and how any discrepancy was resolved. Then
+proceed to the strength-bars display below.
+
+### Tone Principle — Governs All Copy On This Screen
+
+The person on the other side of this screen may be doing this late at
+night, may be tired, may have made a typo, may genuinely not remember
+an exact figure offhand. Every prompt on this screen is a consultant
+double-checking before drafting — never an error message, never an
+accusation, never phrased in a way that implies the applicant did
+something wrong. "Did you mean X, or has Y changed?" — never "Invalid
+input" or "These numbers don't match." If the applicant confirms an
+unusual figure, the system records the confirmation and proceeds — it
+does not insist a second time, and it does not require the applicant
+to justify or explain their own finances to its satisfaction.
+
+---
 
 The strength bars are informational only.
 They do not constitute a legal assessment of eligibility.

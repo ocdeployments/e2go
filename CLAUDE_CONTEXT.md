@@ -1,6 +1,6 @@
 # CLAUDE_CONTEXT.md — E2go
 ## Master Context for Every Claude Code Session
-**Version:** June 11, 2026 — Security fixes complete (42 fixes, 6 groups)
+**Version:** June 12, 2026 — S15 complete (document package download), full pipeline feature-complete
 **Read this entire file before doing anything.**
 **Then read BUILD_TRACKER.md.**
 
@@ -107,6 +107,8 @@ Security/audit session:
    Verify everything through code review and curl only..."
 
 ---
+
+## PRODUCT OVERVIEW
 
 **App name:** E2go (capital E, lowercase go)
 **Domain:** e2go.app
@@ -345,6 +347,57 @@ Generate ONE document at a time. Never parallel.
 Checkpointed — save to DB before next document starts.
 15-step pipeline in exact order (see BUILD_TRACKER.md).
 Cover Letter always first (Step 1) and finalised last (Step 15).
+Steps 11-14 enhanced per Spec4: humanization retry loop (3 attempts, threshold 0.35),
+REQUIRED_ELEMENTS completeness check, CONSISTENCY_FIELDS cross-doc validation,
+metadata sanitization logging, 5-checkbox acknowledgment gate before download.
+Pipeline audit trail written to generation_pipeline_log table.
+S15 (Document Package Download) — ✅ COMPLETE. Full pipeline feature-complete.
+
+### RULE 3A — QUALITY-GATE FAILURE HANDLING (added June 13, 2026)
+
+A check that fails on EVERY run regardless of input quality is not a
+check — it's a bug. Before any quality-gate check is added or
+modified, confirm it can distinguish a genuinely bad document from a
+correct one. If a "failure" cannot be explained in terms of what's
+WRONG with the document (only in terms of "this number isn't equal to
+that other number"), the check is measuring the wrong thing.
+
+When a check DOES fail for real reasons, failures fall into three
+types — handle each differently, never with silent overwrite:
+
+- TYPE 0 (the check itself is wrong) — fix the check. Never "fix" the
+  document to satisfy a bad check.
+- TYPE 1 (data exists elsewhere in the case file, just not in this
+  prompt's context) — fix the prompt-builder to include it. No
+  applicant involvement.
+- TYPE 2 (data genuinely doesn't exist yet — only the applicant has
+  it) — becomes a `[bracketed placeholder]` in the output (existing
+  mechanism), or a ONE-ROUND applicant clarification if the gap
+  blocks generation entirely (Category A, Spec1). One round only,
+  then resolve to bracket — never loop indefinitely.
+
+If a re-prompted document comes back with the LLM declining to
+proceed / asking for clarification rather than producing corrected
+content — that response is a SIGNAL the check fired on a TYPE 0 case,
+or a real gap needs human/applicant input. NEVER treat that response
+as if it were a finished replacement document and overwrite
+`content_text` with it. The previous good `content_text` stays unless
+a genuinely improved version is produced.
+
+**Tone, whenever the system surfaces ANY question to the applicant**
+(pre-generation confirmation, clarification, revision): the person on
+the other side may be tired, doing this late at night, or simply not
+recall an exact figure. Every prompt is a consultant double-checking
+before drafting — never an error message, never implying the
+applicant did something wrong. State the consequence honestly (e.g.
+"every document will use this exact figure") rather than manufacturing
+urgency. If the applicant confirms an unusual answer once, accept it
+and move on — do not ask again.
+
+See `Spec1_Analysis_Engine.md` (Category A + "Display to User") for
+the pre-generation application of this rule, and
+`Spec4_Quality_Gate_Pipeline.md` Stage 4 for the post-generation
+application.
 
 ### RULE 4 — DATABASE SAFETY
 Never DROP TABLE. Always CREATE TABLE IF NOT EXISTS.
@@ -504,13 +557,15 @@ Rate limits (production only):
 
 ---
 
-## KNOWN ISSUES (Updated June 10, 2026)
+## KNOWN ISSUES (Updated June 12, 2026)
 
 | Issue | Priority | Status |
 |---|---|---|
-| Generation engine: approval gate, setState, empty boxes | MEDIUM | docs/sessions/SESSION_PLAN_GENERATION_FIXES.md |
 | Migration 004 not applied | MEDIUM | Run: npx supabase db push |
+| Generation engine: approval gate, setState, empty boxes | MEDIUM | docs/sessions/SESSION_PLAN_GENERATION_FIXES.md |
+| Two warnings in generate/page.tsx and quiz/page.tsx | LOW | Fix in next session touching those files |
 | Stripe API version outdated (2024-06-20) | LOW | Upgrade apiVersion in scripts/stripe-setup.ts |
+| Quiz nationality selector curl/browser verification difficulty | LOW | Works in browser |
 | Fast Refresh occasional hot reload errors | LOW | Non-blocking |
 
 **Resolved since last update:**
@@ -523,6 +578,15 @@ Rate limits (production only):
 - ~~Post-login routing ignores state~~ ✅ FIXED — Session 1
 - ~~Navbar shows no auth state~~ ✅ FIXED — Session 1
 - ~~Permissions-Policy blocking microphone~~ ✅ FIXED (commit 7087f10)
+- ~~Terms-required dead-end~~ ✅ FIXED — Group 15 (commit 6edf6dc)
+- ~~Warning actions auto-advance~~ ✅ FIXED — Group 6 (commit aab6c10)
+- ~~Double-click quiz skip~~ ✅ FIXED — Group 7 (commit 61d8be8)
+- ~~Email validation too weak~~ ✅ FIXED — Group 8 (commit 90de0a8)
+- ~~setEmailSent fires on failure~~ ✅ FIXED — Group 8 (commit 90de0a8)
+- ~~Post-login redirect to quiz~~ ✅ FIXED — Group 1 (commit 6c72ee0)
+- ~~Q0-03a 4-option routing bug~~ ✅ FIXED — Group 11 (commit 00fdb14)
+- ~~W-AGING-OUT orphaned code~~ ✅ FIXED — Group 11 (commit 00fdb14)
+- ~~Stripe success "Payment not found"~~ ✅ FIXED — Group 14
 
 ---
 
@@ -545,39 +609,63 @@ Rate limits (production only):
 
 ## SESSION LOG (summary — see BUILD_TRACKER.md for full log)
 
-**June 10, 2026 — Session 1 of QUIZ_EXECUTION_PLAN.md complete:**
+**June 9–10, 2026 — Full build session — ALL BLOCKERS RESOLVED:**
+- Quiz v4.0 → v6.0: all 30 bugs fixed, test fixtures written
+- Interview simulator: complete — Groq TTS, transcription, timer,
+  $29.99 purchase, design fixes
+- Module 3 case file redesign: 6 sections, all components, pre-fill
+- Document upload: Session A (extraction) + Session B (UI) complete
+- Auth image slider: Unsplash URLs removed, flag SVG
+- Route cleanup: 53 → 47 routes, dead pages removed, middleware hardened
+- Pricing updated: $550–$1,397 (old founding member pricing retired)
+- E2go rebrand: capital E, lowercase go throughout
+- Stripe Price IDs recreated at new amounts — all 10 tiers live
+- Payments migration applied ✅
+- Login page flag gradient fixed — left panel now visible
+- Voice-to-text input built + mic bug fixed (getUserMedia pre-check)
+- Case file UX redesign COMPLETE — two-panel layout, voice input,
+  all variants preserved, data writes verified, build clean
+  Commits: a9dfcb9 → 9172b2c
+
+**June 10, 2026 — Auth, Quiz, Results — Session 1 (commit 400d1dc):**
 - Auth: magic link removed, remember me, first/last name at signup
 - Email verification enforced in middleware
 - Navbar shows first name when logged in
 - Results page personalised, score/flags contradiction fixed
 - Smart post-login routing by application state
-- Q0-06 replaced with fund source type (6 options)
-- Q0-09 immigration history reframed
-- Q0-10 home ties simplified to 5 options
-- Q0-08c/d franchise referral sub-questions added
+- Quiz questions: Q0-05, Q0-06, Q0-08c/d, Q0-09, Q0-10 updated
 - Email results button: loading/success/error states
 - Draft expiry: 7 days → 24 hours
-- Commit: 400d1dc
 
-**June 10, 2026 — Session 2 of QUIZ_EXECUTION_PLAN.md (in progress):**
-- Adding 4 missing questions: Q0-readiness, Q0-target-date,
-  Q0-business-type, Q0-business-cost
-- Adding franchise contact sub-questions Q0-08c/d
-- Adding readiness_stage + business_type columns to quiz_sessions
-- Wiring working_target_date from quiz to applications table
+**June 12, 2026 — Security fixes (42 fixes, 6 groups):**
+- Groups 1-6: Auth bypass removed, API auth added, admin gating,
+  input validation, Stripe tier validation, accessibility,
+  generation engine fixes, email/RLS/scoring fixes
+- Commits: 7741935, 7821b8b, 78f5d26, 5bf7623, a6a2d04, f6138bd
 
-**June 10, 2026 — Platform improvements:**
-- Case file UX redesign complete (commits a9dfcb9–9172b2c)
-- Voice input mic bug fixed (commit 1f4e623)
-- Permissions-Policy header fixed (commit 7087f10)
-- Agency agents installed: 208 agents at ~/.claude/agents/
-- Playwright removed from verification stack (cost ~$1/screenshot)
-- CLAUDE_CONTEXT.md updated with correct agent names and free verification stack
+**June 12, 2026 — Post-verification-wall cleanup (Groups 5-14):**
+- Warning timing, double-click debounce, email validation,
+  session linking, Q0-03a simplification, Stripe success fix,
+  post-login UX improvements, CI cleanup
+- Commits: 6c72ee0, aab6c10, 61d8be8, 90de0a8, 00fdb14
+
+**June 12, 2026 — Group 15: Terms-required dead-end fixed:**
+- Rewrote /terms-required with scroll-to-accept UI
+- Middleware now passes ?next param through terms gate
+- ToS acceptance recorded at email-verify account creation
+- Commit: 6edf6dc
+
+**June 12, 2026 — Walsh & Pollard citation fix:**
+- Removed incorrect "Matter of Walsh and Pollard, 8 I&N Dec. 288"
+  from live prompt (cover_letter.md), spec (Spec3), and docs
+- Replaced with 9 FAM 402.9-6(D) proportionality standard
+- Deleted 6 dead hyphenated prompt files
+- Grep sweep: zero remaining incorrect citations in live files
+- Build: clean ✅
 
 **Next session priorities:**
-1. Complete Session 2 — new quiz questions + downstream wiring
-2. Platform audit — security-appsec-engineer + engineering-code-reviewer
-   (no Playwright, code review and curl only)
-3. Session 3 — structural quiz fixes (Q0-01, Q0-03, Q0-09, Q0-17 etc.)
-4. Apply migration 004 (npx supabase db push)
-5. Generation engine fixes (docs/sessions/SESSION_PLAN_GENERATION_FIXES.md)
+1. Apply migration 004 (npx supabase db push) — answers source constraint
+2. End-to-end payment test — full flow quiz → checkout → generate → download
+3. Generation engine fixes — docs/sessions/SESSION_PLAN_GENERATION_FIXES.md
+4. Verify 34-gap questions integrated in case file
+5. Fix two warnings in generate/page.tsx and quiz/page.tsx

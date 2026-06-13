@@ -319,6 +319,108 @@ If any inconsistency found:
 - Flag for review where correction requires judgment
 - Log the correction
 
+### Scope — What This Check Does NOT Do
+
+The consistency check verifies that factual claims appear identically
+across documents. It does NOT:
+
+- **Validate pre-generation data.** Whether the investment breakdown
+  sums to the total, whether fund sources match the total, whether
+  required fields are present — these are Category A checks in
+  `Spec1_Analysis_Engine.md`, run BEFORE generation starts.
+  See the pre-generation confirmation panel for the applicant-facing
+  version of these checks.
+
+- **Assess business logic.** Whether the investment is substantial
+  enough, whether the business plan is credible, whether the
+  projections are realistic — these are scoring and framing decisions
+  made by the Analysis Engine and the generation prompts, not by
+  the consistency checker.
+
+- **Catch fabricated or invented data.** If the applicant stated
+  $185,000 in Module 3 and the generated documents all consistently
+  state $185,000, the consistency check passes — even if the actual
+  correct figure is different. The consistency checker cannot know
+  what the "right" answer is; it can only verify internal agreement.
+
+- **Replace the pre-generation confirmation panel.** That panel
+  catches data the applicant entered incorrectly. This stage catches
+  data the generation engine reproduced inconsistently. Both are
+  needed; neither replaces the other.
+
+### Timeline Validator
+
+A specialized consistency check for date-related fields. Dates are
+higher-risk than dollar amounts because they appear in legal
+declarations, DS-160 references, and exhibit indices — and a date
+mismatch across documents is an immediate red flag for a consular
+officer.
+
+```python
+TIMELINE_FIELDS = {
+    "llc_formation_date": "exact date match required",
+    "franchise_agreement_date": "exact date match required",
+    "wire_transfer_date": "exact date match required",
+    "lease_execution_date": "exact date match required",
+    "interview_target_date": "reasonable range match (±30 days)",
+}
+
+def check_timeline_consistency(all_documents: list) -> dict:
+    issues = []
+    for field, rule in TIMELINE_FIELDS.items():
+        values = extract_field_from_all_docs(field, all_documents)
+        if rule.startswith("exact"):
+            if not all_identical(values):
+                issues.append({
+                    "field": field,
+                    "type": "date_mismatch",
+                    "values_found": values,
+                    "documents_affected": identify_documents(values),
+                    "severity": "HIGH"
+                })
+        elif "range" in rule:
+            # Allow ±30 days for interview target (may differ
+            # between cover letter and DS-160 reference)
+            dates = [parse_date(v) for v in values if v]
+            if dates and (max(dates) - min(dates)).days > 30:
+                issues.append({
+                    "field": field,
+                    "type": "date_range_exceeded",
+                    "values_found": values,
+                    "documents_affected": identify_documents(values),
+                    "severity": "MEDIUM"
+                })
+    return {"passed": len(issues) == 0, "issues": issues}
+```
+
+### Specific-Document Correction Handling
+
+When an inconsistency is found between documents, the correction
+approach depends on the type of mismatch:
+
+1. **Whitespace / formatting differences** (e.g., "LLC" vs "L.L.C.",
+   extra spaces, comma placement) — auto-correct to the most common
+   form. Log the correction. No applicant involvement needed.
+
+2. **Same data, different precision** (e.g., "$185,000" vs "$185K") —
+   auto-correct to the more specific form. Log.
+
+3. **Genuinely different values** (e.g., one document says $185,000
+   and another says $180,000) — do NOT auto-correct. This indicates
+   the generation engine used different source data for different
+   documents. Flag for review. The resolution depends on which
+   document's source data is correct — this requires examining the
+   case brief and Module 3 answers, not automated heuristic.
+
+4. **Date mismatches** — see Timeline Validator above. Always flagged,
+   never auto-corrected. Date errors in legal documents have
+   outsized consequences.
+
+For cases 3 and 4, the document is returned to Stage 1 with the
+specific inconsistency included in the regeneration prompt. The
+regeneration prompt includes: the field name, the values found in
+each affected document, and the correct value from the case brief.
+
 ---
 
 ## Stage 5 — Quality Gate
