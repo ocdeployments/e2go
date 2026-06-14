@@ -442,6 +442,9 @@ Evaluate this answer and return your assessment in JSON format:
   "documentReference": "Which document(s) in their filed application should they reference? (e.g., 'Cover Letter', 'Business Plan', 'Tab F - Investment Proof')"
 }`;
 
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15_000);
+
   try {
     const response = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
       method: 'POST',
@@ -452,7 +455,7 @@ Evaluate this answer and return your assessment in JSON format:
         'X-Title': 'E2go Interview Simulator',
       },
       body: JSON.stringify({
-        model: 'minimax/minimax-text-01',
+        model: 'xiaomi/mimo-v2.5',
         messages: [
           {
             role: 'system',
@@ -466,14 +469,15 @@ Evaluate this answer and return your assessment in JSON format:
         temperature: 0.3,
         max_tokens: 1000,
       }),
+      signal: controller.signal,
     });
 
     if (!response.ok) {
-      console.error('OpenRouter error:', response.status, await response.text());
-      // Return a safe fallback
+      const errorBody = await response.text();
+      console.error(`[simulator] OpenRouter HTTP ${response.status} for question ${question.id}:`, errorBody);
       return {
         rating: 'weak',
-        feedback: 'Unable to evaluate this answer. Please provide more detail about your experience and qualifications.',
+        feedback: `Evaluation service error (HTTP ${response.status}). Please provide more detail about your experience and qualifications.`,
         specificSuggestion: 'Include specific examples of your experience and how it relates to running this business.',
         documentReference: 'Tab J - Qualifications',
       };
@@ -496,7 +500,7 @@ Evaluate this answer and return your assessment in JSON format:
         };
       }
     } catch (parseError) {
-      console.error('Failed to parse evaluation:', parseError);
+      console.error(`[simulator] JSON parse failed for question ${question.id}. Raw content:`, content.substring(0, 500), parseError);
     }
 
     // Fallback if JSON parsing fails
@@ -508,13 +512,18 @@ Evaluate this answer and return your assessment in JSON format:
     };
 
   } catch (error) {
-    console.error('Evaluation error:', error);
+    const isAbort = error instanceof DOMException && error.name === 'AbortError';
+    console.error(`[simulator] Evaluation ${isAbort ? 'timed out' : 'failed'} for question ${question.id}:`, error);
     return {
       rating: 'weak',
-      feedback: 'There was an error evaluating your answer. Please try again.',
+      feedback: isAbort
+        ? 'Evaluation timed out. Please try again.'
+        : 'There was an error evaluating your answer. Please try again.',
       specificSuggestion: 'Ensure your answer is specific and relates to your filed documents.',
       documentReference: null,
     };
+  } finally {
+    clearTimeout(timeout);
   }
 }
 
