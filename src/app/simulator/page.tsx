@@ -8,7 +8,6 @@ import { useRouter } from 'next/navigation';
 import {
   buildSimulatorContext,
   generateQuestions,
-  evaluateAnswer,
   generateCoachingSummary,
   createSimulatorSession,
   saveSimulatorAnswer,
@@ -236,7 +235,20 @@ export default function InterviewSimulator() {
     const question = questions[currentQuestionIndex];
 
     try {
-      const evaluation = await evaluateAnswer(question, currentAnswer, context);
+      const evalRes = await fetch('/api/simulator/evaluate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          questionId: question.id,
+          questionText: question.text,
+          answer: currentAnswer,
+          context,
+        }),
+      });
+      if (!evalRes.ok) {
+        throw new Error(`Evaluation failed: ${evalRes.status}`);
+      }
+      const evaluation = await evalRes.json();
       setCurrentEvaluation(evaluation);
 
       // Save to database
