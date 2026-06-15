@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
 
     const { data: application, error: appError } = await supabase
       .from('applications')
-      .select('id, principal_name, business_name, application_type, tier, source')
+      .select('id, principal_name, business_name, application_type, tier, source, target_state, business_category')
       .eq('id', applicationId)
       .eq('user_id', user.id)
       .single();
@@ -130,12 +130,22 @@ export async function GET(request: NextRequest) {
 
     const totalFields = sections.reduce((sum, s) => sum + s.fields.length, 0);
 
+    const answersMap = new Map((answers || []).map(a => [a.question_key, a.answer_value]));
+    const operatingName = answersMap.get('QF-09') || answersMap.get('M3-F-09') || null;
+    const investmentAmount = answersMap.get('QF-02') || answersMap.get('M3-F-02') || null;
+
     return NextResponse.json({
       application: {
         principalName: application.principal_name,
         businessName: application.business_name,
+        operatingName,
         applicationType: application.application_type,
         tier: application.tier,
+        targetState: application.target_state || null,
+        businessCategory: application.business_category
+          ? getBusinessCategoryLabel(application.business_category)
+          : null,
+        investmentAmount,
       },
       sections,
       documents: documentSummaries,
