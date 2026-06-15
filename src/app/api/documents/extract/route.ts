@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { extractTextFromBuffer } from '@/lib/text-extraction';
 import {
   classifyDocument,
@@ -20,21 +21,14 @@ function _getSupabase() {
   );
 }
 
-function getSupabaseAuth(cookieHeader: string | null) {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      global: {
-        headers: cookieHeader ? { Cookie: cookieHeader } : {},
-      },
-    }
-  );
-}
-
 // POST /api/documents/extract — SSE extraction pipeline
 export async function POST(request: NextRequest) {
   const encoder = new TextEncoder();
+
+  // Resolve the authenticated user before opening the stream — cookies()
+  // must be read in the request context, not inside ReadableStream.start.
+  const authSupabase = await createSupabaseServerClient();
+  const { data: { user }, error: authError } = await authSupabase.auth.getUser();
 
   const stream = new ReadableStream({
     async start(controller) {
@@ -45,10 +39,6 @@ export async function POST(request: NextRequest) {
       }
 
       try {
-        // Authenticate via cookie header
-        const cookieHeader = request.headers.get('cookie');
-        const authSupabase = getSupabaseAuth(cookieHeader);
-        const { data: { user }, error: authError } = await authSupabase.auth.getUser();
 
         if (authError || !user) {
           sendEvent({ event: 'error', data: { message: 'Unauthorized' } });
