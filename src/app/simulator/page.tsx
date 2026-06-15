@@ -69,14 +69,38 @@ export default function InterviewSimulator() {
         }
         if (!cancelled) setUser(user);
 
-        // Get user's latest application
-        const { data: app } = await supabase
+        // Get the user's application with the most case file data.
+        // Users can accumulate multiple application rows (e.g. repeated
+        // /simulator/quick-start runs each create a new 'simulator_standalone'
+        // row). Picking the most RECENTLY CREATED one can surface an empty
+        // duplicate instead of the real case file, so pick by answer count.
+        const { data: apps } = await supabase
           .from('applications')
           .select('*')
           .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
+          .order('created_at', { ascending: false });
+
+        let app: any = null;
+        if (apps && apps.length > 0) {
+          if (apps.length === 1) {
+            app = apps[0];
+          } else {
+            let bestCount = -1;
+            for (const candidate of apps) {
+              const { count } = await supabase
+                .from('answers')
+                .select('question_key', { count: 'exact', head: true })
+                .eq('application_id', candidate.id);
+              const c = count || 0;
+              const candidateIsStandalone = candidate.source === 'simulator_standalone';
+              const betterOnTie = c === bestCount && app && candidateIsStandalone === false && app.source === 'simulator_standalone';
+              if (c > bestCount || betterOnTie) {
+                bestCount = c;
+                app = candidate;
+              }
+            }
+          }
+        }
 
         console.log('[SIM] application result:', app ? 'found' : 'not found');
 
