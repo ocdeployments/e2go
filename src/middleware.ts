@@ -148,6 +148,25 @@ export async function middleware(req: NextRequest) {
     }
   }
 
+  // Block standalone simulator subscribers from case-building / document-
+  // generation routes. They only purchased the interview simulator, not a
+  // package — these routes (and the documents it would produce) aren't theirs.
+  const CASE_BUILDING_ROUTES = ['/apply', '/generate/', '/documents/'];
+  if (session && CASE_BUILDING_ROUTES.some((route) => pathname.startsWith(route))) {
+    const { data: apps } = await supabase
+      .from('applications')
+      .select('source')
+      .eq('user_id', session.user.id);
+
+    const simulatorOnly = Boolean(
+      apps && apps.length > 0 && apps.every((a) => a.source === 'simulator_standalone')
+    );
+
+    if (simulatorOnly) {
+      return NextResponse.redirect(new URL('/dashboard', req.url));
+    }
+  }
+
   // Redirect logged-in users away from auth pages
   if (session && authRoutes.includes(pathname)) {
     return NextResponse.redirect(new URL('/dashboard', req.url));

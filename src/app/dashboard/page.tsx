@@ -32,12 +32,19 @@ interface TimelineData {
   confirmedInterviewDate: string | null;
 }
 
+interface SimulatorData {
+  sessionsUsed: number;
+  sessionsPurchased: number;
+}
+
 export default function DashboardPage() {
   const [supabase] = useState(() => createBrowserSupabaseClient());
   const [user, setUser] = useState<UserProfile | null>(null);
   const [quiz, setQuiz] = useState<QuizData | null>(null);
   const [lifecycle, setLifecycle] = useState<LifecycleData | null>(null);
   const [timeline, setTimeline] = useState<TimelineData | null>(null);
+  const [isSimulatorOnly, setIsSimulatorOnly] = useState(false);
+  const [simulatorData, setSimulatorData] = useState<SimulatorData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -103,11 +110,36 @@ export default function DashboardPage() {
             : null;
         }
 
+        // Determine whether this user has any "build my case" application,
+        // or only ever purchased the standalone interview simulator. Simulator-only
+        // subscribers should not see case-building / document-generation UI.
+        const { data: allApps } = await supabase
+          .from("applications")
+          .select("source, simulator_sessions_used, simulator_sessions_purchased")
+          .eq("user_id", authUser.id);
+
+        const simulatorOnly = Boolean(
+          allApps && allApps.length > 0 && allApps.every((a: { source: string | null }) => a.source === "simulator_standalone")
+        );
+
+        let simData: SimulatorData | null = null;
+        if (simulatorOnly && allApps) {
+          simData = allApps.reduce(
+            (acc: SimulatorData, a: { simulator_sessions_used: number | null; simulator_sessions_purchased: number | null }) => ({
+              sessionsUsed: acc.sessionsUsed + (a.simulator_sessions_used || 0),
+              sessionsPurchased: acc.sessionsPurchased + (a.simulator_sessions_purchased || 0),
+            }),
+            { sessionsUsed: 0, sessionsPurchased: 0 }
+          );
+        }
+
         if (!cancelled) {
           setUser(profile || null);
           setQuiz(quizData || null);
           setLifecycle(lifecycleData);
           setTimeline(timelineData);
+          setIsSimulatorOnly(simulatorOnly);
+          setSimulatorData(simData);
         }
       } catch (err) {
         console.error("[dashboard] init failed:", err);
@@ -160,7 +192,62 @@ export default function DashboardPage() {
           </p>
         </section>
 
-        {quiz ? (
+        {isSimulatorOnly ? (
+          <>
+            {/* Simulator-only subscriber dashboard */}
+            <section className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+              <div style={{ padding: "24px", background: "rgba(201,168,76,0.02)", border: "1px solid rgba(201,168,76,0.12)", borderRadius: 0 }}>
+                <h3 className="text-sm font-medium mb-2" style={{ color: "rgba(245,240,232,0.6)" }}>Interview Simulator</h3>
+                <p className="text-2xl font-bold" style={{ color: "#f5f0e8", fontFamily: "'Cormorant Garamond', serif", fontWeight: 300 }}>
+                  {simulatorData ? `${Math.max(simulatorData.sessionsPurchased - simulatorData.sessionsUsed, 0)} session${Math.max(simulatorData.sessionsPurchased - simulatorData.sessionsUsed, 0) === 1 ? '' : 's'} remaining` : 'Ready to practice'}
+                </p>
+                {simulatorData && (
+                  <p className="text-sm mt-1" style={{ color: "rgba(245,240,232,0.45)" }}>
+                    {simulatorData.sessionsUsed} of {simulatorData.sessionsPurchased} used
+                  </p>
+                )}
+                <Link
+                  href="/simulator"
+                  className="inline-block mt-3 text-sm font-medium px-4 py-2 bg-[#C9A84C] text-[#0a0a0a] transition-colors hover:bg-[#D4BC6A]"
+                  style={{ borderRadius: 0 }}
+                >
+                  Go to practice interview →
+                </Link>
+              </div>
+
+              <div style={{ padding: "24px", background: "rgba(201,168,76,0.02)", border: "1px solid rgba(201,168,76,0.12)", borderRadius: 0 }}>
+                <h3 className="text-sm font-medium mb-2" style={{ color: "rgba(245,240,232,0.6)" }}>About your plan</h3>
+                <p className="text-sm" style={{ color: "rgba(245,240,232,0.6)", lineHeight: 1.7 }}>
+                  You&rsquo;re on the standalone Interview Simulator. Each practice session draws on the
+                  documents you&rsquo;ve uploaded to ask the kind of questions a consular officer would.
+                </p>
+              </div>
+            </section>
+
+            {/* Quick Actions */}
+            <section style={{ padding: "24px", background: "rgba(201,168,76,0.02)", border: "1px solid rgba(201,168,76,0.12)", borderRadius: 0 }}>
+              <h2 className="text-lg font-semibold mb-4" style={{ color: "#f5f0e8", fontFamily: "'Cormorant Garamond', serif", fontWeight: 300 }}>Quick Actions</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Link
+                  href="/simulator"
+                  className="p-4 transition-colors"
+                  style={{ border: "1px solid rgba(201,168,76,0.2)", borderRadius: 0, color: "#f5f0e8" }}
+                >
+                  <p className="font-medium" style={{ color: "#f5f0e8" }}>Practice interview</p>
+                  <p className="text-sm" style={{ color: "rgba(245,240,232,0.45)" }}>Run a simulated consular interview</p>
+                </Link>
+                <Link
+                  href="/support"
+                  className="p-4 transition-colors"
+                  style={{ border: "1px solid rgba(201,168,76,0.2)", borderRadius: 0, color: "#f5f0e8" }}
+                >
+                  <p className="font-medium" style={{ color: "#f5f0e8" }}>Get Help</p>
+                  <p className="text-sm" style={{ color: "rgba(245,240,232,0.45)" }}>Contact support</p>
+                </Link>
+              </div>
+            </section>
+          </>
+        ) : quiz ? (
           <>
             {/* Status Cards */}
             <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
