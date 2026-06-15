@@ -45,14 +45,20 @@ export async function POST(request: NextRequest) {
   }
 
   // Build the evaluation prompt
+  const businessLine = context.operatingName
+    ? `${context.businessName}, operating under the trade/franchise name "${context.operatingName}"`
+    : context.businessName;
+
   const prompt = `You are a U.S. consular officer evaluating an E-2 visa interview answer.
 The applicant's profile:
-- Business: ${context.businessName} (${context.businessCategory}) in ${context.targetState}
+- Business: ${businessLine} (${context.businessCategory})${context.targetState ? ` in ${context.targetState}` : ''}
 - Investment: $${context.investmentAmount.toLocaleString()}
 - Operational status: ${context.operationalStatus}
 - Year 1 revenue projection: $${context.revenueYear1.toLocaleString()}
 - Employees: ${context.employeeCountCurrent} current, ${context.employeeCountYear1} planned
 - Prior visa denial: ${context.priorVisaDenial ? 'Yes' : 'No'}
+
+Note: If the applicant refers to their business by a trade name, brand name, or franchise banner that differs from the legal entity name above, do NOT treat that alone as an inconsistency — businesses commonly operate under a "doing business as" or franchise name distinct from their legal name. Only flag a genuine inconsistency if the substance of the answer (investment amount, role, location, business activities, etc.) contradicts the filed application.
 
 The question asked was: "${questionText}"
 
