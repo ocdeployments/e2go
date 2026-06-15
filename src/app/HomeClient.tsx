@@ -133,15 +133,16 @@ export default function HomeClient() {
             className="font-['Cormorant_Garamond',Georgia,serif] text-4xl md:text-6xl lg:text-7xl font-light text-[#f5f0e8] leading-tight mb-5 md:mb-6"
             style={{textShadow:'0 2px 20px rgba(0,0,0,0.9)'}}
           >
-            Your E-2 Investor Visa Package—<br />
+            Your E-2 Investor Business Plan & Full Application Package—<br />
             Without the <em className="text-[#C9A84C]">$12,000</em><br />
             price tag.
           </h1>
           <p className="text-sm md:text-base text-[rgba(245,240,232,0.5)] leading-relaxed max-w-xl mb-3"
             style={{textShadow:'0 1px 10px rgba(0,0,0,0.95)'}}>
-            Most E-2 investors spend $150,000 on a business and $12,000 on a consultant.
-            They spend $0 understanding what the embassy actually needs to see.
-            That is the gap E2go closes.
+                Consultants give you Zoom calls. Lawyers give you invoices.
+E2Go gets you Visa Ready.
+
+Instant answers. Eligibility confirmation. Business matching. EIN & LLC formation guidance. Offshore account setup. Complete application package. AI-powered interview simulation. One platform. No middlemen. At a fraction of the cost..
           </p>
           <p className="text-sm md:text-base text-[rgba(245,240,232,0.78)] mb-7 md:mb-8 max-w-xl italic font-['Cormorant_Garamond',Georgia,serif]"
             style={{textShadow:'0 1px 10px rgba(0,0,0,0.95)'}}>
