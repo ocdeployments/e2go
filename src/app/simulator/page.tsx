@@ -14,7 +14,6 @@ import {
   completeSimulatorSession,
   checkSessionAvailability,
 } from '@/lib/simulator-engine';
-import { isGroqConfigured } from '@/lib/groq-transcription';
 import { speakQuestion } from '@/lib/groq-tts';
 import CaseFileSummary from '@/components/simulator/CaseFileSummary';
 import type { SimulatorContext, Question, AnswerEvaluation, CoachingSummary, CompletedSession } from '@/types/simulator';
@@ -55,6 +54,7 @@ export default function InterviewSimulator() {
   const [isMobile, setIsMobile] = useState(false);
   const [hasCaseFile, setHasCaseFile] = useState<boolean | null>(null);
   const [caseFileReviewed, setCaseFileReviewed] = useState(false);
+  const [voiceAvailable, setVoiceAvailable] = useState(false);
 
   // Check auth and load session availability
   useEffect(() => {
@@ -140,10 +140,18 @@ export default function InterviewSimulator() {
           }
         } else {
           // No application at all — cannot use simulator
-          if (!cancelled) setHasCaseFile(false);
+          if (!cancelled) {
+            setHasCaseFile(false);
+            setSessionInfo({ available: false, sessionsUsed: 0, sessionsPurchased: 2, sessionsRemaining: 0 });
+          }
         }
       } catch (err) {
         console.error('[SIM] checkAuth failed:', err);
+        if (!cancelled) {
+          setError('We had trouble loading your simulator data. Please refresh the page.');
+          setHasCaseFile(false);
+          setSessionInfo({ available: false, sessionsUsed: 0, sessionsPurchased: 2, sessionsRemaining: 0 });
+        }
       }
     }
     checkAuth();
@@ -164,6 +172,16 @@ export default function InterviewSimulator() {
     check();
     window.addEventListener('resize', check);
     return () => window.removeEventListener('resize', check);
+  }, []);
+
+  // Check whether voice mode is configured on the server
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/simulator/voice-status')
+      .then(res => res.ok ? res.json() : { available: false })
+      .then(data => { if (!cancelled) setVoiceAvailable(Boolean(data.available)); })
+      .catch(() => { if (!cancelled) setVoiceAvailable(false); });
+    return () => { cancelled = true; };
   }, []);
 
   // Handle successful purchase return
@@ -395,7 +413,7 @@ export default function InterviewSimulator() {
           loading={loading}
           onStartText={() => startSession('text')}
           onStartVoice={() => startSession('voice')}
-          voiceDisabled={!isGroqConfigured()}
+          voiceDisabled={!voiceAvailable}
           error={error}
           onPurchase={handlePurchase}
           purchaseLoading={purchaseLoading}
@@ -580,19 +598,21 @@ function ActiveSession({
           <div style={styles.questionHeader}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
               <span style={styles.questionCounter}>Question {questionNumber} of {totalQuestions}</span>
-              <span style={{
-                ...styles.timerDisplay,
-                color: timerWarning ? 'rgba(239,68,68,0.9)' : 'rgba(245,240,232,0.4)',
-              }}>
-                {formatTime(sessionTimeLeft)}
-              </span>
+              {mode === 'voice' && (
+                <span style={{
+                  ...styles.timerDisplay,
+                  color: timerWarning ? 'rgba(239,68,68,0.9)' : 'rgba(245,240,232,0.4)',
+                }}>
+                  {formatTime(sessionTimeLeft)}
+                </span>
+              )}
             </div>
             <div style={styles.progressBar}>
               <div style={{...styles.progressFill, width: `${(questionNumber / totalQuestions) * 100}%`}} />
             </div>
           </div>
 
-          {timerWarning && (
+          {mode === 'voice' && timerWarning && (
             <div style={styles.timerWarning}>
               2 minutes remaining — complete your current answer
             </div>
