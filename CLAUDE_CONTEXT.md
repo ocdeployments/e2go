@@ -1,6 +1,6 @@
 # CLAUDE_CONTEXT.md — E2go
 ## Master Context for Every Claude Code Session
-**Version:** June 13, 2026 — Sessions 7, 8, 9 complete
+**Version:** June 13, 2026 — Sessions 4-19 complete
 **Read this entire file before doing anything.**
 **Then read BUILD_TRACKER.md.**
 
@@ -137,8 +137,11 @@ Security/audit session:
 | AI — App features | OpenRouter (MiniMax M1 via OPENROUTER_API_KEY) |
 | AI — Document generation | Anthropic API direct (ANTHROPIC_API_KEY) |
 | AI — Simulator evaluation | OpenRouter (MiniMax via OPENROUTER_API_KEY) |
+| AI — FAQ Q&A | OpenRouter (xiaomi/mimo-v2.5 via OPENROUTER_API_KEY) |
 | Voice transcription | Groq Whisper (GROQ_API_KEY) |
 | Voice TTS | Groq PlayAI TTS (GROQ_API_KEY — same key) |
+| FAQ vector search | Supabase pgvector (faq_qa_corpus, faq_kb_chunks) |
+| Rate limiting | Upstash Redis (UPSTASH_REDIS_REST_URL/TOKEN) |
 | Email | Resend |
 | Payments | Stripe (integrated, all 7 tiers live) |
 | Hosting | Vercel |
@@ -171,31 +174,33 @@ Repo: github.com/ocdeployments/e2go
 
 ---
 
-## ROUTE MAP (47 routes as of June 10, 2026)
+## ROUTE MAP (50 routes as of June 13, 2026)
 
 ### Public routes
-- / — Landing page (self-contained HomeClient.tsx)
+- / — Landing page (self-contained HomeClient.tsx, FAQ CTA section)
 - /quiz — Eligibility quiz v4.0
 - /quiz/review — Edit quiz answers (jump-to-question)
 - /results — Quiz results with score, flags, timeline
 - /pricing — Pricing tiers
 - /pricing/success — Post-payment confirmation
-- /login — Auth (flag SVG left panel, no external images)
+- /login — Auth (flag SVG left panel, loading state on submit)
 - /signup — Auth
 - /forgot-password — Auth
 - /verify — Email verification
-- /learn — Education hub (6 SEO articles)
+- /learn — Education hub + Ask E2go FAQ widget (6 SEO articles)
 - /learn/[6 sub-pages] — E-2 educational articles
 - /about — About page
 - /support — Support
 - /privacy — Privacy policy
 - /terms — Terms of service
+- /terms-required — Scroll-to-accept ToS page
 
 ### Authenticated routes
 - /dashboard — Application dashboard
 - /settings — Account settings
 - /score — Application confidence score
-- /simulator — Interview simulator (text + voice)
+- /simulator — Interview simulator (text + voice, teaser if no case file)
+- /simulator/quick-start — Standalone simulator document upload intake
 - /apply — Case file overview (personalised header, 6 section cards)
 - /apply/overview — Redirects to /apply (query-preserving shim)
 - /apply/story — Section 01: Your story
@@ -544,6 +549,11 @@ Timer: 15 minutes per session, warning at 2 minutes.
 Evaluation: OpenRouter MiniMax rates answers strong/weak/inconsistent.
 Debrief: readiness indicator + strong answers + needs-work + inconsistencies.
 
+**Standalone path:** /simulator/quick-start — for users without a completed
+case file. Upload documents (cover letter, business plan) → extraction
+engine populates answers → simulator generates questions from those answers.
+Uses source='simulator_standalone' on applications table.
+
 ---
 
 ## MIDDLEWARE AUTH PROTECTION
@@ -559,36 +569,17 @@ Rate limits (production only):
 
 ---
 
-## KNOWN ISSUES (Updated June 12, 2026)
+## KNOWN ISSUES (Updated June 15, 2026)
 
 | Issue | Priority | Status |
 |---|---|---|
-| Migration 004 not applied | MEDIUM | Run: npx supabase db push |
 | Generation engine: approval gate, setState, empty boxes | MEDIUM | docs/sessions/SESSION_PLAN_GENERATION_FIXES.md |
-| Two warnings in generate/page.tsx and quiz/page.tsx | LOW | Fix in next session touching those files |
+| Bracket highlighting regex + checklist builder | MEDIUM | Regex only matches [BRACKET FORMAT] tags, not descriptive brackets |
 | Stripe API version outdated (2024-06-20) | LOW | Upgrade apiVersion in scripts/stripe-setup.ts |
-| Quiz nationality selector curl/browser verification difficulty | LOW | Works in browser |
+| Quiz nationality selector curl/browser verification | LOW | Works in browser |
 | Fast Refresh occasional hot reload errors | LOW | Non-blocking |
-
-**Resolved since last update:**
-- ~~Mic button disappears on click~~ ✅ FIXED — getUserMedia pre-check (commit 1f4e623)
-- ~~Case file pages look like draft forms~~ ✅ FIXED — case file redesign complete (commits a9dfcb9–9172b2c)
-- ~~Score/flags contradiction~~ ✅ FIXED — Session 1 (commit 400d1dc)
-- ~~Magic link on login page~~ ✅ FIXED — Session 1
-- ~~No first/last name at signup~~ ✅ FIXED — Session 1
-- ~~Email results button broken~~ ✅ FIXED — Session 1
-- ~~Post-login routing ignores state~~ ✅ FIXED — Session 1
-- ~~Navbar shows no auth state~~ ✅ FIXED — Session 1
-- ~~Permissions-Policy blocking microphone~~ ✅ FIXED (commit 7087f10)
-- ~~Terms-required dead-end~~ ✅ FIXED — Group 15 (commit 6edf6dc)
-- ~~Warning actions auto-advance~~ ✅ FIXED — Group 6 (commit aab6c10)
-- ~~Double-click quiz skip~~ ✅ FIXED — Group 7 (commit 61d8be8)
-- ~~Email validation too weak~~ ✅ FIXED — Group 8 (commit 90de0a8)
-- ~~setEmailSent fires on failure~~ ✅ FIXED — Group 8 (commit 90de0a8)
-- ~~Post-login redirect to quiz~~ ✅ FIXED — Group 1 (commit 6c72ee0)
-- ~~Q0-03a 4-option routing bug~~ ✅ FIXED — Group 11 (commit 00fdb14)
-- ~~W-AGING-OUT orphaned code~~ ✅ FIXED — Group 11 (commit 00fdb14)
-- ~~Stripe success "Payment not found"~~ ✅ FIXED — Group 14
+| Supabase CLI migration history out of sync | MEDIUM | ~22 migrations applied manually, CLI shows 2 |
+| **Groq TTS voice mode blocked** | **HIGH** | `canopylabs/orpheus-v1-english` returns 400 model_terms_required — org admin must accept at console.groq.com/playground?model=canopylabs%2Forpheus-v1-english |
 
 ---
 
@@ -704,9 +695,75 @@ Rate limits (production only):
 - Grep sweep: zero remaining incorrect citations in live files
 - Build: clean ✅
 
-**Next session priorities:**
-1. End-to-end payment test — full flow quiz → checkout → generate → download
-2. Generation engine fixes — docs/sessions/SESSION_PLAN_GENERATION_FIXES.md
-3. Verify 34-gap questions integrated in case file
-4. Check Resend dashboard: e2go.app domain verified?
-5. Fix two warnings in generate/page.tsx and quiz/page.tsx
+**June 13, 2026 — Session 10: Closeout gaps from Sessions 7-9:**
+- Live framing call test (Fixture 3, Fixture 5) — Layer 1 verified
+- Section 5.5 denial-language audit confirmed clean
+- Chen franchise_training_offset verified correct per spec
+- TODO/placeholder scan across Sessions 4-9 code
+- Build: clean ✅
+
+**June 13, 2026 — Session 11: Ask E2go FAQ Widget:**
+- 355 Q&A pairs embedded via pgvector (faq_qa_corpus table)
+- 3-layer retrieval: corpus cosine similarity → KB → model fallback
+- Streaming responses via xiaomi/mimo-v2.5 via OpenRouter
+- Rate limiting: 10 req/min per IP via Upstash Redis
+- FaqWidget.tsx on homepage (later moved to /learn)
+- API route: /api/faq/ask
+- Build: clean ✅
+
+**June 13, 2026 — Session 12: Login + Simulator UX:**
+- Login submit flicker fixed — full-panel loading state from click to redirect
+- Simulator teaser page — "complete case file" or "upload documents" paths
+- IDEAS.md 12G gating logic unchanged
+- Build: clean ✅
+
+**June 13, 2026 — Session 13: Account Linkage Investigation:**
+- Investigated account ↔ Chen application linkage
+- Application ownership via user_id confirmed working
+- Build: clean ✅
+
+**June 13, 2026 — Session 14: Standalone Simulator Upload:**
+- Quick-start route: /simulator/quick-start
+- Document upload → extraction → answers → simulator question generation
+- Reuses existing extraction engine (no rebuild)
+- source='simulator_standalone' on applications table
+- application_documents + document_discrepancies tables created
+- Migration: 20260613240000_simulator_quick_start_tables.sql
+- Build: clean ✅
+
+**June 13, 2026 — Sessions 15-18: FAQ Widget Polish:**
+- Session 15: Widget moved from homepage to /learn, homepage gets CTA
+- Session 16: Animated gradient border at idle, thinking indicator during stream
+- Session 17: Widget moved to top of /learn page
+- Session 18: Scrollable answer container (max-height + overflow)
+- Build: clean ✅
+
+**June 13, 2026 — Session 19: Commit Audit:**
+- All Sessions 14-18 changes committed and pushed
+- Migration filename collision check confirmed distinct
+- Build: clean ✅
+
+**June 13, 2026 — Sessions 25-30: UX fixes:**
+- Session 25: Nav on authenticated layouts
+- Session 26: Login quiz-session linkage fix
+- Sessions 27-29: Dashboard loading state, Supabase singleton fix
+- Sessions 28-30: Simulator loading state, duplicate GoTrueClient resolved
+- Build: clean ✅
+
+**June 15, 2026 — Session 20: Simulator Enhancement:**
+- DBA/franchise naming: `operatingName` added to SimulatorContext (types + engine); `targetState` null-safe
+- Evaluate route: DBA-aware `businessLine` in prompt; explicit instruction not to flag trade-name divergence
+- Case-summary route: enriched with `operatingName`, `targetState`, `businessCategory`, `investmentAmount`
+- CaseFileSummary.tsx: full dossier redesign — cover page (file ref, classification grid), lettered Exhibits, Roman-numeral sections
+- Gap-resolution flow: `simulator-gaps.ts`, `CaseGapsForm.tsx`, `case-gaps/` route; case-file page shows gap form first
+- TTS migration: `playai-tts` (decommissioned) → `canopylabs/orpheus-v1-english` (Orpheus) with 200-char chunking; `groq-transcription.ts` deleted; voice-status endpoint added; timer/warning display restricted to voice mode only
+- Tier separation: simulator-only dashboard + middleware block on /apply, /generate/, /documents/
+- Homepage copy updated; simulator scored 4/10 — Tier 1/2/3 roadmap delivered
+- Build: clean ✅ | ⚠️ TTS voice mode blocked — see KNOWN ISSUES
+
+**Next session priorities (as of June 15, 2026):**
+1. [USER ACTION] Accept Groq Orpheus TTS terms — `https://console.groq.com/playground?model=canopylabs%2Forpheus-v1-english`
+2. Tier 1 simulator improvements (pending approval): conversational follow-ups + document-grounded evaluation
+3. End-to-end simulator test after Groq terms accepted
+4. Generation engine fixes — docs/sessions/SESSION_PLAN_GENERATION_FIXES.md
+5. Bracket highlighting regex + checklist builder fix

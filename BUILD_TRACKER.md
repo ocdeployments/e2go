@@ -1,6 +1,6 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 13, 2026 — Sessions 7, 8, 9 complete
+**Last Updated:** June 13, 2026 — Sessions 4-19 complete
 **App Name:** E2go.app
 **Stack:** Next.js 14 · TypeScript · Tailwind CSS · Supabase · Claude API
 **Dev URL:** https://e2go-git-dev-ocdeployments-projects.vercel.app
@@ -77,11 +77,25 @@ changed, run npm run build:clean, report summary.
 | Breadcrumbs | ✅ COMPLETE | On /apply/*, /score |
 | Cookie consent banner | ✅ COMPLETE | |
 | SEO metadata | ✅ COMPLETE | All pages |
-| /learn hub | ✅ COMPLETE | 6 SEO articles |
+| /learn hub | ✅ COMPLETE | 6 SEO articles + Ask E2go widget |
 | Module 1 | ✅ COMPLETE | Onboarding, consent, application record |
 | Module 2 | ✅ COMPLETE | Business advisor, category selection |
-| Voice-to-text input | ✅ COMPLETE | commit 63dc9dd — mic on all 8 textareas, bug noted |
-| **Case file UX redesign** | ⬜ NOT STARTED | Session file: docs/sessions/SESSION_CASEFILE_REDESIGN.md |
+| Voice-to-text input | ✅ COMPLETE | commit 63dc9dd — mic on all 8 textareas |
+| Case file UX redesign | ✅ COMPLETE | Two-panel layout, CaseFileShell, voice input |
+| Ask E2go FAQ widget | ✅ COMPLETE | Session 11 — pgvector 368 Q&A, streaming, 3-layer retrieval |
+| Standalone simulator upload | ✅ COMPLETE | Session 14 — quick-start route, extraction → answers |
+| Login transition flicker fix | ✅ COMPLETE | Session 12 — full-panel loading state on submit |
+| Simulator teaser page | ✅ COMPLETE | Session 12 — "complete case file" or "upload docs" paths |
+| FAQ widget → /learn merge | ✅ COMPLETE | Session 15 — widget on /learn, CTA on homepage |
+| FAQ widget ambient states | ✅ COMPLETE | Session 16 — animated gradient border, thinking indicator |
+| FAQ widget scrollable container | ✅ COMPLETE | Sessions 17-18 — fixed height, no layout jump |
+| Supabase singleton fix | ✅ COMPLETE | Sessions 28-30 — duplicate GoTrueClient resolved |
+| Dashboard loading state | ✅ COMPLETE | Sessions 27-29 — try/catch/finally, singleton client |
+| Simulator loading state | ✅ COMPLETE | Sessions 28-30 — singleton, column name fixes |
+| Login quiz-session linkage | ✅ COMPLETE | Session 26 — await signInWithPassword, remove redundant getSession |
+| Nav on authenticated layouts | ✅ COMPLETE | Session 25 — Nav added to authenticated page layouts |
+| Quick-start flow hardening | ✅ COMPLETE | Sessions — missing tables, wrong columns, RLS fixes |
+| Package assembly (cover, TOC, dividers) | ✅ COMPLETE | Session 4 — 15-file ZIP with cover, TOC, dividers, renamed docs |
 
 ---
 
@@ -1365,6 +1379,171 @@ Session file: docs/sessions/SESSION9_PACKAGE_SUMMARY_SCORE.md
 
 ---
 
+### Session 10 — Closeout: Remaining Minor Gaps from Sessions 7-9
+
+**Scope:** Cleanup items surfaced during Sessions 7-9 reviews. Live framing call test, denial language review, Chen franchise_training_offset verification, TODO/placeholder scan.
+Session file: docs/sessions/SESSION10_CLOSEOUT.md
+
+**Items completed:**
+- Live end-to-end test of Layer 1's framing call (Fixture 3, Fixture 5)
+- Section 5.5 denial-language audit confirmed clean
+- Chen franchise_training_offset verified correct per spec
+- TODO/placeholder scan across Sessions 4-9 code
+
+**Build:** Clean ✅
+
+---
+
+### Session 11 — Ask E2go: Public AI Q&A Widget
+
+**Scope:** Public, unauthenticated AI-powered Q&A widget. 355 Q&A pairs embedded via pgvector, 3-layer retrieval (corpus → KB → model), streaming responses, rate limiting.
+Session file: docs/sessions/SESSION11_ASK_E2GO_FAQ.md
+
+**Files Created:**
+- `src/components/landing/FaqWidget.tsx` — streaming Q&A widget component
+- `src/app/api/faq/ask/route.ts` — API route with 3-layer retrieval
+- `supabase/migrations/20260613200000_faq_pgvector_tables.sql` — pgvector tables
+- `scripts/seed-faq-corpus.ts` — 355 Q&A pairs seed script
+- `scripts/seed-faq-kb-chunks.ts` — KB chunks seed script
+- `src/lib/faq-system-prompt.ts` — system prompt for FAQ generation
+- `src/lib/rate-limit.ts` — Upstash rate limiting for FAQ endpoint
+
+**Key decisions:**
+- Model: `xiaomi/mimo-v2.5` via OpenRouter (OPENROUTER_API_KEY)
+- 3-layer retrieval: pgvector cosine similarity → broader KB → model fallback
+- Rate limit: 10 requests/minute per IP (Upstash Redis)
+- Landing page placement: bottom section, soft quiz CTA after each answer
+
+**Build:** Clean ✅
+
+---
+
+### Session 12 — Login Transition Flicker + Simulator Gating UX
+
+**Scope:** Two independent UX fixes — login submit flicker and simulator nav link gating explanation.
+Session file: docs/sessions/SESSION12_LOGIN_AND_SIMULATOR_UX.md
+
+**Item 1 — Login flicker fix:**
+- Full-panel loading state replaces slider + form immediately on submit
+- Loading persists through auth call → redirect
+- Error state reverts to form with error message
+
+**Item 2 — Simulator teaser page:**
+- `/simulator` without case file data shows teaser with two paths
+- "Complete your case file" → /apply
+- "Upload your documents instead" → /simulator/quick-start
+- Gating logic per IDEAS.md 12G unchanged
+
+**Files Modified:**
+- `src/app/login/page.tsx` — loading state on submit
+- `src/app/simulator/page.tsx` — teaser screen for no-data state
+
+**Build:** Clean ✅
+
+---
+
+### Session 13 — Account ↔ Chen Application Linkage Investigation
+
+**Scope:** Investigation into why owner's logged-in account couldn't see Chen's application data.
+Session file: docs/sessions/SESSION13_ACCOUNT_LINKAGE_INVESTIGATION.md
+
+**Finding:** Account linkage issue identified and investigated. Application ownership via `applications.user_id` confirmed working correctly. Issue traced to account/email mismatch.
+
+**Build:** Clean ✅
+
+---
+
+### Session 14 — Standalone Simulator: Document Upload → Parse → Interview
+
+**Scope:** Extend standalone simulator ($197) to work WITHOUT completed case file by reusing existing document extraction engine.
+Session file: docs/sessions/SESSION14_STANDALONE_SIMULATOR_UPLOAD.md
+
+**Files Created:**
+- `src/app/simulator/quick-start/page.tsx` — standalone intake UI
+- `src/app/api/simulator/quick-start/route.ts` — creates minimal application + saves business category
+- `src/app/api/simulator/save-extraction/route.ts` — saves extracted fields as answers
+- `supabase/migrations/20260613240000_simulator_quick_start_tables.sql` — application_documents + document_discrepancies tables
+
+**Files Modified:**
+- `src/lib/simulator-engine.ts` — fallback chain: application columns → answers map → defaults
+- `src/app/simulator/page.tsx` — standalone app detection, teaser CTA
+
+**Key decisions:**
+- Reuses existing extraction engine (POST /api/documents/extract) — no rebuild
+- `source='simulator_standalone'` on applications table
+- Business category saved as Q0-10 answer for simulator to read from answers map
+- `.maybeSingle()` used instead of `.single()` to prevent 406 on empty results
+
+**Build:** Clean ✅
+
+---
+
+### Session 15 — Merge Ask E2go Widget into /learn Page
+
+**Scope:** Move FAQ widget from homepage bottom (too easy to miss) to /learn page (education hub — natural home).
+Session file: docs/sessions/SESSION15_MERGE_FAQ_INTO_LEARN.md
+
+**Files Modified:**
+- `src/app/learn/page.tsx` — widget added above article grid
+- `src/app/HomeClient.tsx` — widget replaced with soft CTA section
+
+**Build:** Clean ✅
+
+---
+
+### Session 16 — FAQ Widget: Ambient/Active Feel + Thinking Indicator
+
+**Scope:** Two visual fixes — widget looks static/inert at rest, no feedback during streaming wait.
+Session file: docs/sessions/SESSION16_FAQ_WIDGET_ACTIVE_STATE.md
+
+**Files Modified:**
+- `src/components/landing/FaqWidget.tsx` — animated gradient border at idle, thinking indicator during stream
+
+**Key decisions:**
+- Reuse existing animated gradient border component (pricing card pattern)
+- Slow ambient speed (12-15 range) for idle state
+- Thinking state uses same gold pulse, not generic chatbot dots
+
+**Build:** Clean ✅
+
+---
+
+### Session 17 — /learn Page Order Fix + Widget Streaming Layout Jump
+
+**Scope:** Widget must be first thing on /learn; streaming answer causes container jump.
+Session file: docs/sessions/SESSION17_LEARN_ORDER_AND_LAYOUT_JUMP.md
+
+**Files Modified:**
+- `src/app/learn/page.tsx` — widget moved above hero heading
+- `src/components/landing/FaqWidget.tsx` — min-height reservation for streaming
+
+**Build:** Clean ✅
+
+---
+
+### Session 18 — FAQ Widget: Scrollable Answer Container
+
+**Scope:** Session 17's min-height approach didn't fully resolve jumping. Owner requested fixed-height scrollable container.
+Session file: docs/sessions/SESSION18_SCROLLABLE_ANSWER_CONTAINER.md
+
+**Files Modified:**
+- `src/components/landing/FaqWidget.tsx` — max-height with overflow-y-auto, auto-scroll to bottom during streaming
+
+**Build:** Clean ✅
+
+---
+
+### Session 19 — Commit Audit & Push Cleanup
+
+**Scope:** Audit uncommitted work from Sessions 14-18, organize into logical commits, push to origin/dev.
+Session file: docs/sessions/SESSION19_COMMIT_AUDIT_AND_PUSH.md
+
+**Outcome:** All Sessions 14-18 changes committed and pushed. Migration filename collision check (Session 11/14) — distinct filenames confirmed, no overwrite.
+
+**Build:** Clean ✅
+
+---
+
 ## SESSION LOG (Prior sessions)
 
 ### June 5, 2026 — Session: End-to-End Payment Test
@@ -1475,44 +1654,11 @@ Session file: docs/sessions/SESSION9_PACKAGE_SUMMARY_SCORE.md
 ## NEXT SESSION PRIORITIES (Updated June 13, 2026)
 
 ### ~~Priority 1 — S15: Document Package Download~~ ✅ COMPLETE
-- .docx-only output (bracket placeholders remain editable — PDF locked out per decision)
-- 7 files in ZIP: 6 case file docs + COMPLETE_BEFORE_SUBMITTING.docx checklist
-- Format: Times New Roman 12pt, 1-inch margins, 1.5 spacing, Roman numeral headers
-- Header: "[LastName] E-2 Application | [Doc Name] | [Date]"
-- Footer: plain page number
-- [BRACKET FORMAT] highlighted yellow in .docx
-- Gate: `generation_pipeline_log.applicant_acknowledged = true AND final_status = 'RELEASED'`
-- Logs `downloaded_at` timestamp after download
-- Migration: `20260612180000_add_downloaded_at.sql`
-- Files: `src/lib/docx-builder.ts`, `src/lib/checklist-builder.ts`, `src/app/api/generate/download/[applicationId]/route.ts`
-- Modified: `src/app/generate/[applicationId]/page.tsx` (download CTA + confirmation state)
-- Spec4 conflict resolved: locked .docx-only decision wins over Spec4's PDF mention — flagged for future Spec4 cleanup
-- Playwright screenshot skipped per RULE 0 blanket ban — manual visual check recommended
-- Build: clean ✅ | tsc: clean ✅
-
 ### ~~Priority 2 — Session 7: Three-layer experience/framing pipeline~~ ✅ COMPLETE
-- Layer 0: Targeted follow-up questions when experience_score = WEAK/CRITICAL
-- Layer 1: 9-dimension experience scoring + OpenRouter AI framing calls
-- Layer 2: Hardened generation prompt with standing backstop instruction
-- Files created: business-operational-needs.ts, experience-pipeline-fixtures.ts
-- Files modified: analysis-engine.ts, qualifications.md, Spec3_Generation_Prompts.md, followup/generate-questions/route.ts
-- All 5 fixtures pass with correct scoring
-- Build: clean ✅
-
 ### ~~Priority 3 — Session 8: Cover page data fix~~ ✅ COMPLETE
-- Fixed personal_info JSONB query → real column sources
-- applicantName from principal_name, businessName from business_name, nationality from quiz_sessions
-- Commit: 6da0f6d
-- Build: clean ✅
-
 ### ~~Priority 4 — Session 9: Post-generation package summary~~ ✅ COMPLETE
-- 5-section summary: strength bars, strengths, gaps, suggestions, disclaimer
-- Permanent section on /documents/[applicationId], not a gate
-- Chen verified (experience NOT flagged), Fixture 5 verified (WEAK surfaced gracefully)
-- Zero denial-prediction language
-- Build: clean ✅
 
-### Priority 1 (new) — End-to-end payment test
+### Priority 1 — End-to-end payment test
 Full flow: quiz → pricing → checkout (4242 4242 4242 4242) →
 dashboard → /apply → Module 3 → Generation → Download
 Test applicant: Michael James Chen
@@ -1525,10 +1671,10 @@ investment figures ($185K). Ready for fresh generation run.
 File: docs/sessions/SESSION_PLAN_GENERATION_FIXES.md
 Three known issues: approval gate, setState violation, empty boxes
 
-### Priority 3 — Verify 34-gap questions are integrated
-Case file was built but gap questions from June 9 planning
-may not be in the build.
-Session file: docs/sessions/SESSION_MODULE3_CASEFILE.md
+### Priority 3 — Bracket highlighting regex + checklist builder
+Regex currently only matches `[BRACKET FORMAT]...[/BRACKET FORMAT]`
+but documents use descriptive brackets like `[passport number]`.
+Checklist builder has same regex mismatch (shows 0 items).
 
 ### Priority 4 — Owner action items
 - Check Resend dashboard: e2go.app domain verified? If yes, revert sender
@@ -1543,43 +1689,27 @@ Session file: docs/sessions/SESSION_MODULE3_CASEFILE.md
 
 ---
 
-## KNOWN ISSUES (Updated June 12, 2026)
+## KNOWN ISSUES (Updated June 13, 2026)
 
-1. ~~**Mic button disappears on click**~~ — ✅ RESOLVED (commit 1f4e623, getUserMedia pre-check present in all 3 files — stale entry removed)
-2. **Case file pages look like draft forms** — UX redesign pending.
-   Session file: docs/sessions/SESSION_CASEFILE_REDESIGN.md
-3. ~~**Migration 004 pending**~~ — ✅ RESOLVED (file never existed, answers table functional with 64 rows)
-4. **Generation engine: approval gate, setState, empty boxes** — MEDIUM
+1. **Generation engine: approval gate, setState, empty boxes** — MEDIUM
    File: docs/sessions/SESSION_PLAN_GENERATION_FIXES.md
-5. ~~**Humanization retry loop exits after 1 attempt**~~ — ✅ FIXED (June 12, session: RETRY_LOOP_JOB_STATUS_FIX)
-6. ~~**Job never transitions to completed status**~~ — ✅ FIXED (June 12, session: RETRY_LOOP_JOB_STATUS_FIX — uses 'completed' or 'partial')
-5. **Resend sender** — e2go.app domain verification status unknown.
+2. **Resend sender** — e2go.app domain verification status unknown.
    Check Resend dashboard. If verified, revert to results@e2go.app.
-6. **RLS investigation pending** — quiz_sessions anon INSERT behavior
+3. **RLS investigation pending** — quiz_sessions anon INSERT behavior
    unexplained. Run SQL queries in Group 10 and share results.
-7. ~~**Payments table not in Supabase**~~ — ✅ FIXED June 10
-8. ~~**All Stripe Price IDs wrong**~~ — ✅ FIXED June 10
-9. ~~**Login page 500 error**~~ — ✅ FIXED June 10 (commit e115caf)
-10. ~~**Simulator transcription placeholder**~~ — ✅ FIXED June 9
-11. ~~**Simulator purchase button + env var + useEffect**~~ — ✅ FIXED June 9
-12. ~~**Quiz selected option blue border**~~ — ✅ FIXED June 9
-13. ~~**Q0-03a 4-option routing bug**~~ — ✅ FIXED June 12 (commit 00fdb14)
-14. ~~**Warning actions auto-advance**~~ — ✅ FIXED June 12 (commit aab6c10)
-15. ~~**Double-click quiz skip**~~ — ✅ FIXED June 12 (commit 61d8be8)
-16. ~~**Email validation too weak**~~ — ✅ FIXED June 12 (commit 90de0a8)
-17. ~~**setEmailSent fires on failure**~~ — ✅ FIXED June 12 (commit 90de0a8)
-18. ~~**Post-login redirect to quiz**~~ — ✅ FIXED June 12 (commit 6c72ee0)
-19. ~~**W-AGING-OUT orphaned code**~~ — ✅ FIXED June 12 (commit 00fdb14)
-20. **Quiz nationality selector** — curl/browser difficulty, works in browser
-21. **Fast Refresh errors** — Occasional hot reload (non-blocking)
-22. **Stripe API version outdated (2024-06-20)** — LOW
-    Upgrade apiVersion in scripts/stripe-setup.ts when convenient
-23. ~~**generation_pipeline_log table not applied**~~ — ✅ FIXED June 12 (applied via SQL Editor)
-24. **Supabase CLI migration history out of sync with remote** — MEDIUM
-    `supabase migration list` shows only 2 of 24 migrations as applied, while ~22 were applied
-    manually via SQL Editor over the past week. `npx supabase db push` reports 'up to date'
-    even when new migration files exist. Reconcile in a dedicated session before relying on
-    db push again — do not assume db push has applied anything without verifying via REST/SQL Editor.
+4. **Bracket highlighting regex + checklist builder** — MEDIUM
+   Regex only matches `[BRACKET FORMAT]...[/BRACKET FORMAT]` but
+   documents use descriptive brackets like `[passport number from Tab A]`.
+   Checklist builder shows 0 items due to same mismatch.
+5. **Quiz nationality selector** — curl/browser difficulty, works in browser
+6. **Fast Refresh errors** — Occasional hot reload (non-blocking)
+7. **Stripe API version outdated (2024-06-20)** — LOW
+   Upgrade apiVersion in scripts/stripe-setup.ts when convenient
+8. **Supabase CLI migration history out of sync with remote** — MEDIUM
+   `supabase migration list` shows only 2 of 24 migrations as applied, while ~22 were applied
+   manually via SQL Editor over the past week. `npx supabase db push` reports 'up to date'
+   even when new migration files exist. Reconcile in a dedicated session before relying on
+   db push again — do not assume db push has applied anything without verifying via REST/SQL Editor.
 
 ---
 
@@ -1720,6 +1850,60 @@ Session file: docs/sessions/SESSION_RECOVERY_DOWNLOAD_AND_FIX.md
 
 ---
 
+### June 15, 2026 — Session 20: Simulator Enhancement (DBA Naming, Dossier Redesign, TTS Migration, Tier Separation)
+
+**Scope:** Deep simulator work across eight concerns — all build-verified.
+
+**1. DBA/Franchise naming fix**
+- `src/types/simulator.ts` — added `operatingName: string | null` to `SimulatorContext`; made `targetState: string | null` (was non-nullable)
+- `src/lib/simulator-engine.ts` — populates `operatingName` from QF-09/M3-F-09; `targetState` falls back to QE-03/M3-E-03 (null if still missing); UQ-01 context string null-guarded
+
+**2. Evaluation prompt DBA clarification**
+- `src/app/api/simulator/evaluate/route.ts` — evaluator prompt now includes `businessLine` (legal entity + trade name if they differ) and an explicit instruction not to flag trade-name vs. entity-name divergence as an inconsistency
+
+**3. Case-summary API enrichment**
+- `src/app/api/simulator/case-summary/route.ts` — response now includes `operatingName`, `targetState`, `businessCategory` (human-readable label), `investmentAmount` from answers map
+
+**4. Dossier redesign — CaseFileSummary**
+- `src/components/simulator/CaseFileSummary.tsx` — full rewrite:
+  - Cover page: eyebrow "E-2 CASE FILE", file reference (first 8 hex chars of applicationId), large serif principal name, business line with DBA if different, classification grid (filing type / business category / target state / investment), stat row
+  - Documents section renamed "Exhibits — Documents on File"; each document gets a lettered badge (A, B, C...)
+  - Information sections prefixed with Roman numerals (I, II, III...) and wrapped in bordered section cards
+
+**5. Gap-resolution flow (new files — untracked)**
+- `src/lib/simulator-gaps.ts` — `detectGaps()` identifies missing high-value answers from an application; `submitGapAnswers()` persists them
+- `src/components/simulator/CaseGapsForm.tsx` — UI that asks the user for any critical missing fields before proceeding to the interview
+- `src/app/api/simulator/case-gaps/route.ts` — GET: returns missing fields for applicationId; POST: saves gap answers
+- `src/app/simulator/case-file/page.tsx` — integrated CaseGapsForm as a pre-step before CaseFileSummary
+
+**6. TTS migration — playai-tts → canopylabs/orpheus-v1-english (Orpheus)**
+- `src/app/api/simulator/tts/route.ts` — full rewrite; text chunked to ≤200 chars on sentence boundaries (Orpheus limit); each chunk calls Groq `/audio/speech`; returns `{ audioChunks: string[] }` (base64 mp3 per chunk)
+- `src/lib/groq-tts.ts` — `speakQuestion()` now fetches `/api/simulator/tts`, receives chunk array, plays each sequentially via `playAudioChunk()` (resolves on `audio.onended`)
+- `src/lib/groq-transcription.ts` — DELETED (obsolete; replaced by server-side voice-status check)
+- **Blocker (user action required):** `canopylabs/orpheus-v1-english` returns `400 model_terms_required` until org admin accepts model terms at `https://console.groq.com/playground?model=canopylabs%2Forpheus-v1-english`
+
+**7. Voice-status endpoint + timer/warning display fix**
+- `src/app/api/simulator/voice-status/route.ts` — returns `{ available: true/false }` based on whether `GROQ_API_KEY` is set; simulator page fetches this on load
+- `src/app/simulator/page.tsx` — voice availability now checked server-side (not from deleted `isGroqConfigured()` client fn); timer countdown and 2-minute warning now only rendered in voice mode (not text mode); error handling added for null application edge case
+
+**8. Tier separation — simulator-only subscribers**
+- `src/app/dashboard/page.tsx` — detects `simulatorOnly` (all applications have `source = 'simulator_standalone'`); shows dedicated "Interview Simulator" dashboard (sessions remaining/used, quick actions) instead of the full case-building dashboard
+- `src/middleware.ts` — blocks simulator-only users from `/apply`, `/generate/`, `/documents/` routes (redirects to `/dashboard`)
+
+**9. Homepage copy update**
+- `src/app/HomeClient.tsx` — headline updated to "Your E-2 Investor Business Plan & Full Application Package"; subhead rewritten to "Consultants give you Zoom calls. Lawyers give you invoices. E2Go gets you Visa Ready."
+
+**Strategic assessment delivered (no code):**
+- Simulator scored **4/10** as a $200-300 product; roadmap delivered:
+  - Tier 1 (highest value/lowest effort): conversational follow-up questions + document-grounded evaluation
+  - Tier 2: objection-practice mode, timing analysis, officer persona variants
+  - Tier 3: collaborative prep toolkit, visual aids, comparison reports
+- Tier 1 items not yet approved or started — pending user go-ahead
+
+**Build:** Clean ✅ — all 16 changed/new files build without errors
+
+---
+
 ## SESSION FILES INDEX
 
 All session files are in docs/sessions/. Prompt for agent: `cat docs/sessions/[filename]`
@@ -1740,30 +1924,58 @@ All session files are in docs/sessions/. Prompt for agent: `cat docs/sessions/[f
 | SESSION_WIPE_RESEED_CHEN.md | Chen application wipe + reseed with clean investment data | ✅ DONE |
 | SESSION_RECOVERY_DOWNLOAD_AND_FIX.md | Content recovery, .docx download test, consistency-checker fix | ✅ DONE (all 3 pieces) |
 | SESSION7_DUAL_LAYER_FRAMING_PIPELINE.md | Three-layer experience/framing pipeline (Layer 0/1/2) | ✅ DONE |
-| SESSION11_ASK_E2GO_FAQ.md | Interactive AI Q&A widget on landing page — pgvector, streaming, 3-layer retrieval | ✅ DONE |
+| SESSION10_CLOSEOUT.md | Remaining minor gaps from Sessions 7-9 (live framing call, denial language, Chen flags) | ✅ DONE |
+| SESSION11_ASK_E2GO_FAQ.md | Interactive AI Q&A widget — pgvector, streaming, 3-layer retrieval | ✅ DONE |
+| SESSION12_LOGIN_AND_SIMULATOR_UX.md | Login transition flicker fix + simulator gating UX teaser | ✅ DONE |
+| SESSION13_ACCOUNT_LINKAGE_INVESTIGATION.md | Account ↔ Chen application linkage investigation | ✅ DONE |
+| SESSION14_STANDALONE_SIMULATOR_UPLOAD.md | Standalone simulator document upload → parse → interview | ✅ DONE |
+| SESSION15_MERGE_FAQ_INTO_LEARN.md | Merge Ask E2go widget into /learn page | ✅ DONE |
+| SESSION16_FAQ_WIDGET_ACTIVE_STATE.md | FAQ widget ambient/thinking states + animated border | ✅ DONE |
+| SESSION17_LEARN_ORDER_AND_LAYOUT_JUMP.md | /learn page order fix + widget streaming layout jump | ✅ DONE |
+| SESSION18_SCROLLABLE_ANSWER_CONTAINER.md | FAQ widget scrollable answer container | ✅ DONE |
+| SESSION19_COMMIT_AUDIT_AND_PUSH.md | Commit audit & push cleanup for Sessions 14-18 | ✅ DONE |
+| SESSION20_SIMULATOR_ENHANCEMENT.md | DBA naming, dossier redesign, TTS migration, tier separation | ✅ DONE |
 
 ---
 
 ## BUILD STATE
 
 - Branch: `dev`
-- Last commit: pending (Session 7 three-layer pipeline)
-- `npm run build`: Clean — 47 routes compiled
-- Walsh & Pollard citation fix: ✅ COMPLETE — live prompt, spec, docs, dead files cleanup
-- Terms-acceptance backfill: 3 rows inserted (all pre-existing users)
-- Scroll detection fix: useEffect added to terms-required/page.tsx
+- Last commit: `5122540` — feat: show case file summary on every simulator entry (Session 19 tail)
+- `npm run build`: Clean — 49 routes compiled (2 new simulator routes added in Session 20)
 - All core features implemented and built
+- **Session 20 (June 15, 2026) complete ✅** — DBA naming, dossier redesign, TTS migration, tier separation, gap-resolution flow
+  - ⚠️ TTS voice mode blocked pending Groq terms acceptance — see KNOWN ISSUES #9
 - Case file UX redesign complete ✅
 - Generation pipeline Steps 11-14 enhanced per Spec4 ✅
 - generation_pipeline_log table applied via SQL Editor ✅
 - Acknowledgment gate E2E test passed ✅
 - Chen application wiped and reseeded with clean data ✅
-- S15 (PDF Export + ZIP Download) unblocked ✅
 - Session 4 (Package Assembly) complete ✅ — 15-file ZIP with cover, TOC, dividers, renamed docs
 - Session 7 (Three-Layer Pipeline) complete ✅ — Layer 0/1/2 experience scoring, framing, backstop
-- Session 11 (Ask E2go FAQ) complete ✅ — pgvector 368 Q&A corpus, 3-layer retrieval, streaming widget on landing page
+- Session 11 (Ask E2go FAQ) complete ✅ — pgvector 368 Q&A corpus, 3-layer retrieval, streaming widget
+- Session 12 (Login + Simulator UX) complete ✅ — flicker fix, simulator teaser
+- Session 14 (Standalone Simulator Upload) complete ✅ — quick-start route, document extraction
+- Session 15 (FAQ → /learn merge) complete ✅ — widget on /learn, CTA on homepage
+- Sessions 16-18 (FAQ widget polish) complete ✅ — ambient states, thinking indicator, scrollable container
+- Session 19 (Commit Audit) complete ✅ — all Sessions 14-18 committed and pushed
+- Supabase singleton fix complete ✅ — duplicate GoTrueClient resolved (Sessions 28-30)
+- Dashboard + simulator loading states fixed ✅
+- Login quiz-session linkage fixed ✅
+- Nav on authenticated layouts complete ✅
+- Quick-start flow hardened ✅ — missing tables, wrong columns, RLS fixes
 - Payments migration applied ✅
 - Stripe Price IDs live ✅
 - Auth + quiz scoring foundation solid ✅
 - Post-verification-wall cleanup complete ✅
 - Terms-required dead-end fixed ✅
+
+## NEXT SESSION PRIORITIES (as of June 15, 2026)
+
+1. **[USER ACTION FIRST]** Accept Groq Orpheus TTS model terms at `https://console.groq.com/playground?model=canopylabs%2Forpheus-v1-english` — required before voice mode works
+2. **Tier 1 simulator improvements** (pending user approval):
+   - Conversational follow-up questions based on weak/vague answers
+   - Document-grounded evaluation (cross-reference answers against uploaded docs)
+3. **End-to-end simulator test** with a test account after Groq terms accepted
+4. **Generation engine fixes** — docs/sessions/SESSION_PLAN_GENERATION_FIXES.md
+5. **Bracket highlighting regex + checklist builder** — fix to match descriptive `[text]` brackets
