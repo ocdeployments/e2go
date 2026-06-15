@@ -289,7 +289,8 @@ function extractNumber(text: string): number {
 // Gap Report Generation
 // ============================================================================
 
-const SECTION_MAP: Record<string, string> = {
+export const SECTION_MAP: Record<string, string> = {
+  Q0: 'section_2_business',
   QA: 'section_1_story',
   QD: 'section_1_story',
   QE: 'section_2_business',
@@ -302,7 +303,7 @@ const SECTION_MAP: Record<string, string> = {
   QL: 'section_5_family',
 };
 
-const SECTION_LABELS: Record<string, string> = {
+export const SECTION_LABELS: Record<string, string> = {
   section_1_story: 'Your story',
   section_2_business: 'Your business',
   section_3_investment: 'Your investment',
@@ -470,7 +471,7 @@ function validateConfidence(value: string): Confidence {
   return 'low';
 }
 
-const QUESTION_LABELS: Record<string, string> = {
+export const QUESTION_LABELS: Record<string, string> = {
   'QA-01': 'Full legal name',
   'QA-05': 'Nationality/citizenship',
   'QA-09': 'Current address',
