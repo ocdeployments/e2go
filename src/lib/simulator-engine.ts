@@ -105,9 +105,13 @@ export async function buildSimulatorContext(applicationId: string): Promise<Simu
       answersMap.get('QA-51') ||
       answersMap.get('M3-A-51') ||
       'My Business',
+    operatingName: answersMap.get('QF-09') || answersMap.get('M3-F-09') || null,
     businessCategory,
     businessRoute: application.business_route || answersMap.get('M2-ROUTE') || 'new',
-    targetState: application.target_state || 'California',
+    targetState: application.target_state ||
+      answersMap.get('QE-03') ||
+      answersMap.get('M3-E-03') ||
+      null,
     operationalStatus: (application.operational_status as 'operational' | 'pre_start' | 'not_yet_formed') ||
       'pre_start',
     investmentAmount,
@@ -151,7 +155,9 @@ export function generateQuestions(context: SimulatorContext): Question[] {
       id: 'UQ-01',
       text: 'Tell me about your business.',
       category: 'universal',
-      context: `Your ${context.businessName} in ${context.targetState}`,
+      context: context.targetState
+        ? `Your ${context.businessName} in ${context.targetState}`
+        : `Your ${context.businessName}`,
     },
     {
       id: 'UQ-02',

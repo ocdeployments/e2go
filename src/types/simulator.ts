@@ -6,9 +6,10 @@ export interface SimulatorContext {
   userId: string;
   // Business details
   businessName: string;
+  operatingName: string | null;
   businessCategory: string;
   businessRoute: string;
-  targetState: string;
+  targetState: string | null;
   operationalStatus: 'operational' | 'pre_start' | 'not_yet_formed';
   // Investment details
   investmentAmount: number;
