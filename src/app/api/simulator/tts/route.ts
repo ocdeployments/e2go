@@ -4,6 +4,25 @@ import { createSupabaseServerClient } from '@/lib/supabase-server';
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const GROQ_BASE_URL = 'https://api.groq.com/openai/v1';
 
+// Orpheus requires <=200 chars per request — split on sentence boundaries.
+function chunkText(text: string, maxLen = 200): string[] {
+  const sentences = text.match(/[^.!?]+[.!?]*\s*/g) || [text];
+  const chunks: string[] = [];
+  let current = '';
+
+  for (const sentence of sentences) {
+    if ((current + sentence).length > maxLen) {
+      if (current.trim()) chunks.push(current.trim());
+      current = sentence;
+    } else {
+      current += sentence;
+    }
+  }
+  if (current.trim()) chunks.push(current.trim());
+
+  return chunks.length > 0 ? chunks : [text.substring(0, maxLen)];
+}
+
 export async function POST(request: NextRequest) {
   // Session auth
   const supabaseAuth = await createSupabaseServerClient();
@@ -29,37 +48,38 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const response = await fetch(`${GROQ_BASE_URL}/audio/speech`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${GROQ_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'playai-tts',
-        input: text,
-        voice: 'Fritz-PlayAI',
-        response_format: 'mp3',
-      }),
-    });
+    const chunks = chunkText(text);
+    const audioChunks: string[] = [];
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Groq TTS error:', response.status, errorText);
-      return NextResponse.json(
-        { error: 'TTS generation failed' },
-        { status: 502 }
-      );
+    for (const chunk of chunks) {
+      const response = await fetch(`${GROQ_BASE_URL}/audio/speech`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${GROQ_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'canopylabs/orpheus-v1-english',
+          input: chunk,
+          voice: 'daniel',
+          response_format: 'mp3',
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Groq TTS error:', response.status, errorText);
+        return NextResponse.json(
+          { error: 'TTS generation failed' },
+          { status: 502 }
+        );
+      }
+
+      const audioBuffer = await response.arrayBuffer();
+      audioChunks.push(Buffer.from(audioBuffer).toString('base64'));
     }
 
-    const audioBuffer = await response.arrayBuffer();
-
-    return new NextResponse(audioBuffer, {
-      headers: {
-        'Content-Type': 'audio/mpeg',
-        'Content-Length': audioBuffer.byteLength.toString(),
-      },
-    });
+    return NextResponse.json({ audioChunks });
   } catch (error) {
     console.error('TTS API error:', error);
     return NextResponse.json(
