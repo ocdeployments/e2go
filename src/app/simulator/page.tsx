@@ -16,6 +16,7 @@ import {
 } from '@/lib/simulator-engine';
 import { isGroqConfigured } from '@/lib/groq-transcription';
 import { speakQuestion } from '@/lib/groq-tts';
+import CaseFileSummary from '@/components/simulator/CaseFileSummary';
 import type { SimulatorContext, Question, AnswerEvaluation, CoachingSummary, CompletedSession } from '@/types/simulator';
 
 const supabase = createBrowserSupabaseClient();
@@ -53,6 +54,7 @@ export default function InterviewSimulator() {
   const [purchaseLoading, setPurchaseLoading] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [hasCaseFile, setHasCaseFile] = useState<boolean | null>(null);
+  const [caseFileReviewed, setCaseFileReviewed] = useState(false);
 
   // Check auth and load session availability
   useEffect(() => {
@@ -367,6 +369,19 @@ export default function InterviewSimulator() {
       <div style={styles.page}>
         <SimulatorTeaser />
       </div>
+    );
+  }
+
+  // Show the case file summary before letting returning users jump straight
+  // into mode selection — gives them confidence in what the app extracted.
+  if (screen === 'start' && hasCaseFile && !caseFileReviewed && application?.id) {
+    return (
+      <CaseFileSummary
+        applicationId={application.id}
+        continueLabel="Continue to practice modes →"
+        onContinue={() => setCaseFileReviewed(true)}
+        secondaryAction={{ label: 'Upload more documents first', href: '/simulator/quick-start' }}
+      />
     );
   }
 
