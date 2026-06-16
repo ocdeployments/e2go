@@ -1970,12 +1970,195 @@ All session files are in docs/sessions/. Prompt for agent: `cat docs/sessions/[f
 - Post-verification-wall cleanup complete ✅
 - Terms-required dead-end fixed ✅
 
-## NEXT SESSION PRIORITIES (as of June 15, 2026)
+---
 
-1. **[USER ACTION FIRST]** Accept Groq Orpheus TTS model terms at `https://console.groq.com/playground?model=canopylabs%2Forpheus-v1-english` — required before voice mode works
-2. **Tier 1 simulator improvements** (pending user approval):
-   - Conversational follow-up questions based on weak/vague answers
-   - Document-grounded evaluation (cross-reference answers against uploaded docs)
-3. **End-to-end simulator test** with a test account after Groq terms accepted
-4. **Generation engine fixes** — docs/sessions/SESSION_PLAN_GENERATION_FIXES.md
-5. **Bracket highlighting regex + checklist builder** — fix to match descriptive `[text]` brackets
+### June 15, 2026 — Bug Fixes: Stripe Price + Dashboard Block + Checkout Redirect
+
+**Scope:** Three bugs surfaced by the June 14 audit and confirmed in test.
+
+**Bug 1 — simulator_3pack charged $197 instead of $29.99:**
+- Root cause: `scripts/stripe-setup.ts` had `simulator_3pack` amount as `19700` ($197) — same as standalone simulator. Price ID created at wrong amount.
+- Fix 1: `scripts/stripe-setup.ts` — amount corrected to `2999` ($29.99)
+- Fix 2: `scripts/fix-simulator-price.ts` created — new Stripe price `price_1Tim5fF7Ggk3LUEy2JGRRKrB` created at $29.99; `.env.local` updated
+- ⚠️ OWNER ACTION REQUIRED: Run SQL `UPDATE pricing SET stripe_price_id = 'price_1Tim5fF7Ggk3LUEy2JGRRKrB', amount_cents = 2999 WHERE tier_id = 'simulator_3pack';` in Supabase SQL Editor; update `STRIPE_PRICE_SIMULATOR_3PACK` in Vercel env vars; refund the $197 test charge in Stripe dashboard.
+
+**Bug 2 — Simulator-only users could access /dashboard:**
+- Root cause: Middleware blocked `/apply`, `/generate/`, `/documents/` but not `/dashboard`. Worse, the block redirected to `/dashboard` — the very page they should be excluded from.
+- Fix: `src/middleware.ts` — added `/dashboard` to blocked routes; all simulator-only blocks now redirect to `/simulator` (not `/dashboard`)
+
+**Bug 3 — Simulator purchases redirected to /pricing/success instead of /simulator:**
+- Root cause: `create-checkout/route.ts` ignored `successUrl`/`cancelUrl` from the request body; always used hardcoded `/pricing/success`.
+- Fix: `src/app/api/stripe/create-checkout/route.ts` — accepts `successUrl` and `cancelUrl` from body with same-origin validation; simulator purchase now returns to `/simulator?purchase=success`
+
+**Files Modified:**
+- `scripts/stripe-setup.ts` — simulator_3pack amount: 19700 → 2999
+- `scripts/fix-simulator-price.ts` — NEW: one-shot Stripe price creation script
+- `src/middleware.ts` — SIMULATOR_BLOCKED_ROUTES now includes /dashboard; redirect → /simulator
+- `src/app/api/stripe/create-checkout/route.ts` — successUrl/cancelUrl accepted from body
+
+**Build:** Clean ✅
+
+---
+
+## UNEXECUTED SESSIONS (referenced in June 14 audit but never built)
+
+These sessions were planned and named in the June 14 audit's "SPECCED BUT NOT YET BUILT" table. The session files were never written and the features were never built.
+
+| Session | Feature | Priority |
+|---|---|---|
+| SESSION21_INTERVIEW_PREP_KIT | 10-15 interview Q+A pairs with example answers, downloadable PDF | HIGH — product value |
+| SESSION22_SENTRY_ERROR_TRACKING | Sentry error tracking + source maps | HIGH — pre-launch ops |
+| SESSION23_UPTIME_MONITORING | Uptime monitoring (BetterUptime or similar) | MEDIUM — ops |
+| MODULE4_FOLLOWUP_UI | Module 4 follow-up conversation UI — spec at docs/Spec2_Followup_Conversation.md | MEDIUM |
+
+These must be written as session files before building.
+
+---
+
+## OWNER MANUAL ACTIONS — PENDING
+
+These cannot be done by code — require owner access to Supabase, Stripe, or console.
+
+| Action | Priority | Notes |
+|---|---|---|
+| Accept Groq Orpheus TTS terms | 🔴 HIGH | `https://console.groq.com/playground?model=canopylabs%2Forpheus-v1-english` — voice mode is completely blocked until this is done |
+| Update Supabase pricing table: simulator_3pack | 🔴 HIGH | `UPDATE pricing SET stripe_price_id = 'price_1Tim5fF7Ggk3LUEy2JGRRKrB', amount_cents = 2999 WHERE tier_id = 'simulator_3pack';` |
+| Update Vercel env: STRIPE_PRICE_SIMULATOR_3PACK | 🔴 HIGH | New value: `price_1Tim5fF7Ggk3LUEy2JGRRKrB` |
+| Refund $197 test charge | 🔴 HIGH | In Stripe dashboard — was a test but was a real charge |
+| Check Resend domain verification | 🟡 MEDIUM | Is e2go.app verified? If yes, revert email sender to results@e2go.app |
+| Apply migration 004_answers_source_update.sql | 🟡 MEDIUM | Needed for document upload source tracking |
+| Run FAQ seed scripts | 🟡 MEDIUM | `npx tsx scripts/seed-faq-corpus.ts` and `npx tsx scripts/seed-faq-kb-chunks.ts` — FAQ widget falls back to LLM-only until done |
+| Clean up Chen duplicate applications | 🟡 MEDIUM | `DELETE FROM applications WHERE user_id = 'a2b8f8c3-...' AND id != '9f981747-...'` |
+| Clean up ocdeployments blank duplicates | 🟡 MEDIUM | `DELETE FROM applications WHERE id IN ('bd8a9c1a-...', '49afc548-...')` |
+| Configure Stripe webhook for production URL | 🟡 MEDIUM | Required before any real customers can pay; production URL: `https://e2go.app/api/stripe/webhook` |
+| Configure Upstash Redis in Vercel env vars | 🟡 MEDIUM | Rate limiting only works locally; needs `UPSTASH_REDIS_REST_URL` + `TOKEN` in Vercel |
+
+---
+
+## KNOWN ISSUES (Updated June 15, 2026)
+
+1. **Groq TTS voice mode blocked** — 🔴 HIGH. `canopylabs/orpheus-v1-english` returns 400 model_terms_required. Owner must accept at console.groq.com.
+2. **Generation engine: approval gate, setState, empty boxes** — MEDIUM. File: docs/sessions/SESSION_PLAN_GENERATION_FIXES.md
+3. **Bracket highlighting regex + checklist builder** — MEDIUM. Regex only matches `[BRACKET FORMAT]...[/BRACKET FORMAT]`, not descriptive brackets like `[passport number from Tab A]`. Checklist shows 0 items.
+4. **getSession() security warnings** — MEDIUM. Multiple files use Supabase `.getSession()` — Supabase now recommends `.getUser()` instead. Flag in console; not a hard failure but should be swept.
+5. **seed-test-applicant.ts grabs current auth user** — HIGH risk if run again. The seed script uses the currently-logged-in user's ID rather than an explicit `user_id` param. Running it again will re-break account linkage. Needs a `--user-id` flag added before next use.
+6. **004_answers_source_update.sql not applied** — MEDIUM. Document upload source tracking won't work until this migration is applied.
+7. **Supabase CLI migration history out of sync** — MEDIUM. `supabase migration list` shows 2 of 24; ~22 applied manually via SQL Editor. Do not rely on `db push` without verifying via SQL Editor first.
+8. **Stripe API version outdated (2024-06-20)** — LOW. Upgrade `apiVersion` in `scripts/stripe-setup.ts` when convenient.
+9. **Resend domain verification unknown** — MEDIUM. If `e2go.app` is verified in Resend dashboard, revert sender to `results@e2go.app`.
+10. **FAQ corpus not confirmed seeded** — MEDIUM. Session 11 built the scripts and tables; seeds may not have been run. Until run, all FAQ queries hit LLM fallback (Layer 3 only — most expensive, least accurate).
+11. **RLS investigation pending** — LOW. quiz_sessions anon INSERT behavior unexplained. Run Group 10 SQL queries in Supabase SQL Editor.
+12. **Fast Refresh occasional hot reload errors** — LOW. Non-blocking.
+
+---
+
+## LAUNCH READINESS CHECKLIST
+
+- [ ] Simulator works end-to-end (voice mode unblocked — Groq TTS terms)
+- [ ] Payment flow verified end-to-end (Stripe CLI + test card 4242 4242 4242 4242)
+- [ ] Sentry error tracking live (Session 22 — not yet built)
+- [ ] FAQ widget seeded (run seed-faq-corpus.ts and seed-faq-kb-chunks.ts)
+- [ ] Chen's account clean (SQL actions in OWNER MANUAL ACTIONS)
+- [ ] All pending migrations applied (004_answers_source_update.sql)
+- [ ] npm run build clean on final commit
+- [ ] Deploy to production (Vercel, main branch PR)
+- [ ] Stripe webhook configured for production URL
+- [ ] Upstash Redis env vars in Vercel
+- [ ] Attorney review of 3 generated sample packages (not a code task)
+
+---
+
+---
+
+### June 16, 2026 — Session 21: Simulator Audio Fix + Ready Screen + Gap Analysis Architecture
+
+**Scope:** Three immediate simulator fixes + full Gap Analysis architecture planning. No pricing work — deferred to a dedicated session.
+
+#### TTS Audio Fixes (root cause resolved)
+
+**Bug 1 — Complete audio silence (MIME type mismatch):**
+- Root cause: `src/lib/groq-tts.ts` presented WAV audio as `data:audio/mp3;base64,` — browsers silently failed to decode
+- Fix: Changed to `data:audio/wav;base64,` in `groq-tts.ts`
+
+**Bug 2 — TTS format mismatch:**
+- Root cause: `src/app/api/simulator/tts/route.ts` sent `response_format: 'mp3'` but Groq Orpheus only accepts `'wav'`
+- Fix: Changed `response_format` to `'wav'`
+
+**Bug 3 — Browser autoplay policy blocking TTS:**
+- Root cause: By the time `ConversationalSession` mounted and `useEffect` fired `runIntro()`, multiple async API calls had elapsed since the "Start Voice Interview" click — expiring the browser's gesture trust window for audio
+- Fix: Added 'ready' phase. Playing a silent 44-byte WAV synchronously during the "Begin interview" button click permanently unlocks audio for the page session via `document.userActivation.hasBeenActive`
+
+#### Simulator Loading Flicker Fix
+
+- Root cause: Loading guard `if (!sessionInfo)` allowed render to proceed when `hasCaseFile === null` (still resolving), causing StartScreen (voice/text mode buttons) to flash briefly
+- Fix: `src/app/simulator/page.tsx` line 430 — guard changed to `if (!sessionInfo || hasCaseFile === null)`
+
+#### Pre-Interview Ready Screen (new phase)
+
+**Files Modified:**
+- `src/components/simulator/ConversationalSession.tsx` — complete rewrite adding 'ready' phase:
+  - `type Phase = 'ready' | 'intro' | 'questions'` (was `'intro' | 'questions'`)
+  - Initial state now `'ready'` (was `'intro'` with auto-start on mount)
+  - Pre-session screen: Officer Williams card, "Before we begin" heading, speaker test button, mic test button
+  - `handleTestSpeaker()` — calls speakQuestion with test audio + plays silent WAV unlock
+  - `handleTestMic()` — requests getUserMedia, sets micTested / micTestError
+  - `handleBeginInterview()` — plays silent WAV unlock synchronously, starts session timer, transitions to 'intro' and calls runIntro()
+  - Session timer moved OUT of mount useEffect INTO handleBeginInterview (timer now starts when interview actually begins, not when component mounts)
+  - Top bar pill: PRE-SESSION / INTRODUCTION / Q N/N — reflects current phase
+  - Timer hidden during 'ready' phase (doesn't start eating into 15 minutes on the wait screen)
+  - Device check buttons: transparent → gold active → green done states
+
+**Files Modified:**
+- `src/app/simulator/page.tsx` — loading guard fix (`hasCaseFile === null`)
+- `src/app/api/simulator/tts/route.ts` — `response_format: 'wav'`
+- `src/lib/groq-tts.ts` — MIME type `data:audio/wav;base64,`
+
+**Build:** Clean ✅
+
+#### Architecture Planning (no code — decisions logged)
+
+**Gap Analysis module:**
+- Three purchasable modules: Simulator | Gap Analysis | Document Generation (standalone or bundled)
+- Six E-2 evidence categories with scoring weights: Source of Funds (25%), Management Role (25%), Business Plan (20%), Investment Amount (15%), Employment (10%), Operations (5%)
+- Gap Analysis must: score existing evidence → identify gaps → ask for documents before questions → recalculate after remediation
+- Goal: bridge case from current state to a state with a reasonable chance of approval
+
+**Case Intelligence Profile (CIP) — shared data model:**
+- Single unified data object fed by: document extraction + quiz answers + follow-up Q&A + case file answers
+- Consumed by ALL three modules — gap analysis scores against it, simulator questions reference it, document generation is aware of weaknesses
+- Not yet built — architectural concept agreed and locked
+
+**Adaptive intake pattern:**
+1. Accept any format (formal docs, rough drafts, notes — LLM normalizes)
+2. Extract what can be extracted → show pre-filled confirmation card
+3. For missing fields: "Do you have a document for X?" before asking directly
+4. Only ask bare questions for data that can't be extracted or documented
+5. Never duplicate questions already answered in uploaded documents
+
+**Simulator-only intake:**
+- Standalone simulator users receive Adaptive Quick Intake (~10 questions, adaptive based on what documents already answer)
+- Not yet built
+
+**Process flow widget:**
+- Interactive end-to-end workflow diagram for landing page showing full client journey
+- Designed as HTML/JS interactive widget in this session
+- To be converted to React `<ProcessFlow />` component in a future session
+
+---
+
+## NEXT SESSION PRIORITIES (Updated June 16, 2026)
+
+**Owner actions first (unblock testing):**
+1. Accept Groq TTS terms (30 seconds) → unblocks voice mode: `https://console.groq.com/playground?model=canopylabs%2Forpheus-v1-english`
+2. Run the Supabase SQL for simulator_3pack pricing update
+3. Update Vercel env: STRIPE_PRICE_SIMULATOR_3PACK → price_1Tim5fF7Ggk3LUEy2JGRRKrB
+4. Refund $197 test charge in Stripe dashboard
+
+**Code sessions — in priority order:**
+1. End-to-end simulator test — voice mode, text mode, purchase flow, coaching summary (verify audio now works)
+2. Adaptive Quick Intake for standalone simulator users — document-first extraction → pre-filled confirmation → "do you have a document for X?" pattern → CIP data model in Supabase
+3. Gap Analysis page — `/gap-analysis` route, 6-category scoring UI, priority action list
+4. Process Flow widget → React `<ProcessFlow />` component on landing page
+5. Generation engine fixes — docs/sessions/SESSION_PLAN_GENERATION_FIXES.md
+6. Bracket highlighting regex + checklist builder fix
+7. Pricing/packaging consolidation — all tiers need review (deferred from Session 21 per user direction)

@@ -539,15 +539,71 @@ and shows a gap report.
 
 ---
 
+## THREE-MODULE PRODUCT ARCHITECTURE (Locked June 16, 2026)
+
+Three purchasable modules — each standalone or bundled:
+
+| Module | Route | Status |
+|---|---|---|
+| Interview Simulator | /simulator | Built |
+| Gap Analysis | /gap-analysis | Designed — not yet built |
+| Document Generation | /generate/[appId] | Built |
+
+### Case Intelligence Profile (CIP) — shared data model
+
+A single unified data object fed by all intake sources and consumed by all
+three modules. Ensures gap analysis intelligence benefits document generation
+and simulator question quality.
+
+**CIP data sources:** document extraction (any format) + quiz answers + follow-up Q&A + case file answers
+
+**Not yet built** — this is the target architecture. Current state: data lives in separate tables (answers, quiz_sessions, followup_responses, case_briefs).
+
+### Adaptive Intake Pattern (locked June 16, 2026)
+
+1. Accept any document format (formal docs, rough drafts, notes — LLM normalizes)
+2. Extract all extractable fields → show pre-filled confirmation card
+3. For missing fields: "Do you have a document for X?" before asking the question directly
+4. Ask bare questions ONLY for data that can't be extracted or documented
+5. Never duplicate questions already answered in uploaded documents
+
+### Gap Analysis — planned architecture (not yet built)
+
+Six E-2 evidence categories with scoring weights:
+- Source of Funds — 25%
+- Management Role — 25%
+- Business Plan & Viability — 20%
+- Investment Amount — 15%
+- Employment Creation — 10%
+- Business Operations — 5%
+
+Goal: bridge the case from current state to a state with a reasonable
+chance of approval. Scores existing evidence → identifies gaps → prompts
+for documents first → asks questions if no document → recalculates.
+
+---
+
 ## INTERVIEW SIMULATOR
 
 Route: /simulator
 Two modes: text and voice.
-Voice: Groq Whisper transcription + Fritz-PlayAI TTS officer voice.
+Voice: Groq Whisper transcription + Orpheus (canopylabs/orpheus-v1-english) TTS.
+⚠️ Voice blocked until owner accepts Groq terms at console.groq.com
 Session limit: 2 included, $29.99 additional sessions.
-Timer: 15 minutes per session, warning at 2 minutes.
+Timer: 15 minutes per session, warning at 2 minutes. Timer starts when user clicks "Begin interview" — NOT on mount.
 Evaluation: OpenRouter MiniMax rates answers strong/weak/inconsistent.
 Debrief: readiness indicator + strong answers + needs-work + inconsistencies.
+
+**Phase flow (Session 21 — locked):**
+'ready' → 'intro' → 'questions'
+- ready: Pre-session screen with speaker/mic test, "Begin interview" button
+- intro: Officer Williams warm welcome, "please introduce yourself"
+- questions: Formal E-2 interview questions with VAD recording
+
+**TTS audio (fixed Session 21):**
+- `groq-tts.ts`: MIME type is `data:audio/wav;base64,` (was mp3 — silent failure)
+- `tts/route.ts`: `response_format: 'wav'` (Orpheus only accepts wav)
+- Browser autoplay unlock: silent 44-byte WAV played synchronously during "Begin interview" click
 
 **Standalone path:** /simulator/quick-start — for users without a completed
 case file. Upload documents (cover letter, business plan) → extraction
@@ -569,17 +625,25 @@ Rate limits (production only):
 
 ---
 
-## KNOWN ISSUES (Updated June 15, 2026)
+## KNOWN ISSUES (Updated June 16, 2026)
 
 | Issue | Priority | Status |
 |---|---|---|
+| **Groq TTS audio MIME + format** | **FIXED** | Session 21 — groq-tts.ts now uses `data:audio/wav;base64,`, tts/route.ts uses `response_format: 'wav'` |
+| **Browser autoplay blocking TTS** | **FIXED** | Session 21 — silent WAV unlock on "Begin interview" click; ready phase gates auto-start |
+| **Simulator loading flicker** | **FIXED** | Session 21 — loading guard now `!sessionInfo \|\| hasCaseFile === null` |
+| **Groq TTS voice mode still blocked (owner action)** | **HIGH** | `canopylabs/orpheus-v1-english` returns 400 model_terms_required — org admin must accept at console.groq.com/playground?model=canopylabs%2Forpheus-v1-english |
+| **seed-test-applicant.ts grabs current auth user** | **HIGH** | Do NOT run until a `--user-id` param is added — will re-break account linkage |
+| **004_answers_source_update.sql not applied** | **MEDIUM** | Document upload source tracking broken until migration applied in Supabase SQL Editor |
+| **FAQ corpus not confirmed seeded** | **MEDIUM** | Run `npx tsx scripts/seed-faq-corpus.ts` + `seed-faq-kb-chunks.ts`; until done, all FAQ queries hit LLM fallback only |
+| **getSession() security warnings** | MEDIUM | Multiple files use `.getSession()` — Supabase recommends `.getUser()`; sweep needed |
 | Generation engine: approval gate, setState, empty boxes | MEDIUM | docs/sessions/SESSION_PLAN_GENERATION_FIXES.md |
-| Bracket highlighting regex + checklist builder | MEDIUM | Regex only matches [BRACKET FORMAT] tags, not descriptive brackets |
+| Bracket highlighting regex + checklist builder | MEDIUM | Regex only matches [BRACKET FORMAT] tags, not descriptive brackets like [passport number] |
+| Supabase CLI migration history out of sync | MEDIUM | ~22 migrations applied manually, CLI shows 2 — never use db push without SQL Editor verification |
+| Resend domain verification unknown | MEDIUM | Check Resend dashboard; if e2go.app verified, revert sender to results@e2go.app |
 | Stripe API version outdated (2024-06-20) | LOW | Upgrade apiVersion in scripts/stripe-setup.ts |
 | Quiz nationality selector curl/browser verification | LOW | Works in browser |
 | Fast Refresh occasional hot reload errors | LOW | Non-blocking |
-| Supabase CLI migration history out of sync | MEDIUM | ~22 migrations applied manually, CLI shows 2 |
-| **Groq TTS voice mode blocked** | **HIGH** | `canopylabs/orpheus-v1-english` returns 400 model_terms_required — org admin must accept at console.groq.com/playground?model=canopylabs%2Forpheus-v1-english |
 
 ---
 
@@ -761,9 +825,37 @@ Rate limits (production only):
 - Homepage copy updated; simulator scored 4/10 — Tier 1/2/3 roadmap delivered
 - Build: clean ✅ | ⚠️ TTS voice mode blocked — see KNOWN ISSUES
 
-**Next session priorities (as of June 15, 2026):**
-1. [USER ACTION] Accept Groq Orpheus TTS terms — `https://console.groq.com/playground?model=canopylabs%2Forpheus-v1-english`
-2. Tier 1 simulator improvements (pending approval): conversational follow-ups + document-grounded evaluation
-3. End-to-end simulator test after Groq terms accepted
-4. Generation engine fixes — docs/sessions/SESSION_PLAN_GENERATION_FIXES.md
-5. Bracket highlighting regex + checklist builder fix
+**June 16, 2026 — Session 21: Audio Fix + Ready Screen + Architecture:**
+- TTS audio FIXED: `groq-tts.ts` MIME type changed to `data:audio/wav;base64,`; `tts/route.ts` `response_format` changed to `'wav'` (Orpheus only accepts wav)
+- Browser autoplay policy FIXED: added 'ready' phase to ConversationalSession; silent 44-byte WAV unlock on "Begin interview" click permanently unlocks audio for the page session
+- Simulator loading flicker FIXED: loading guard in page.tsx now `!sessionInfo || hasCaseFile === null`
+- Pre-interview ready screen: speaker test, mic test, "Begin interview" button; session timer now starts on button click (not on mount)
+- Three-module product architecture locked: Simulator | Gap Analysis | Document Generation
+- Case Intelligence Profile (CIP) concept locked: shared data model fed by all intake sources, consumed by all modules
+- Adaptive intake pattern locked: document-first extraction → pre-filled confirmation → "do you have a document for X?" → bare questions last
+- Gap Analysis architecture planned: 6 evidence categories, scoring weights, remediation loop
+- Process flow widget designed (HTML/JS); React component conversion pending
+- Build: clean ✅
+
+**Next session priorities (as of June 15, 2026 — post audit cross-reference):**
+
+**Owner actions (do first — unblock everything else):**
+1. [USER ACTION] Accept Groq TTS terms at console.groq.com — voice mode blocked
+2. [USER ACTION] Run SQL: `UPDATE pricing SET stripe_price_id = 'price_1Tim5fF7Ggk3LUEy2JGRRKrB', amount_cents = 2999 WHERE tier_id = 'simulator_3pack';`
+3. [USER ACTION] Update Vercel env STRIPE_PRICE_SIMULATOR_3PACK → price_1Tim5fF7Ggk3LUEy2JGRRKrB
+4. [USER ACTION] Refund $197 test charge in Stripe dashboard
+5. [USER ACTION] Run FAQ seed scripts: `npx tsx scripts/seed-faq-corpus.ts` + `seed-faq-kb-chunks.ts`
+
+**Code sessions:**
+1. End-to-end simulator test (voice + text + purchase flow + coaching summary)
+2. Generation engine fixes — docs/sessions/SESSION_PLAN_GENERATION_FIXES.md
+3. Bracket highlighting regex + checklist builder fix
+4. Write + build SESSION22_SENTRY_ERROR_TRACKING (pre-launch blocker — no error visibility)
+5. Write + build SESSION21_INTERVIEW_PREP_KIT (high product value, named in June 14 audit but never built)
+6. End-to-end payment test: quiz → checkout → apply → generate → download
+
+**Unexecuted sessions from prior audit (never built, no session files yet):**
+- SESSION21_INTERVIEW_PREP_KIT — 10-15 interview Q+A pairs with example answers
+- SESSION22_SENTRY_ERROR_TRACKING — error monitoring, pre-launch requirement
+- SESSION23_UPTIME_MONITORING — uptime monitoring
+- MODULE4_FOLLOWUP_UI — Module 4 follow-up conversation UI (Spec2_Followup_Conversation.md)
