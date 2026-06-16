@@ -62,6 +62,11 @@ export interface Question {
   relatesToField?: string;
 }
 
+export interface DeliveryNote {
+  type: 'fillers' | 'brevity' | 'hedging';
+  detail: string;
+}
+
 export interface AnswerEvaluation {
   rating: 'strong' | 'weak' | 'inconsistent';
   feedback: string;
@@ -88,6 +93,7 @@ export interface SessionQuestion {
   rating: 'strong' | 'weak' | 'inconsistent';
   feedback: string;
   specificSuggestion: string;
+  deliveryNotes?: DeliveryNote[];
 }
 
 export interface QuestionCoaching {
@@ -106,6 +112,7 @@ export interface CoachingSummary {
   weakPointsAtRisk: string[];
   readinessIndicator: 'ready' | 'nearly_ready' | 'needs_work';
   detailedCoaching?: QuestionCoaching[];
+  deliveryFlags?: { questionId: string; questionText: string; notes: DeliveryNote[] }[];
 }
 
 export interface SimulatorSession {

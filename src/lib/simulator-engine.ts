@@ -10,6 +10,7 @@ import type {
   CompletedSession,
   InvestmentSource,
   FundFlowEvent,
+  DeliveryNote,
 } from '@/types/simulator';
 
 // Use the shared browser singleton — avoids creating a second GoTrueClient
@@ -470,6 +471,46 @@ function getBusinessTypeQuestions(category: string, context: SimulatorContext): 
 /**
  * Generates a post-session coaching summary.
  */
+// =============================================================================
+// DELIVERY CONFIDENCE ANALYSIS
+// Pure text analysis — no LLM call, no API cost.
+// =============================================================================
+
+const FILLER_PATTERN = /\b(um+|uh+|like|you know|kinda|kind of|sort of)\b/gi;
+const HEDGE_PATTERN = /\b(i think|maybe|probably|i believe|i guess|might be|not sure|i'm not sure|i suppose|i mean)\b/gi;
+
+export function analyzeDelivery(answerText: string): DeliveryNote[] {
+  const notes: DeliveryNote[] = [];
+  const trimmed = answerText.trim();
+  if (!trimmed) return notes;
+
+  const wordCount = trimmed.split(/\s+/).filter(Boolean).length;
+  const fillerMatches = [...trimmed.matchAll(new RegExp(FILLER_PATTERN.source, 'gi'))];
+  const hedgeMatches = [...trimmed.matchAll(new RegExp(HEDGE_PATTERN.source, 'gi'))];
+
+  if (wordCount < 30) {
+    notes.push({
+      type: 'brevity',
+      detail: `${wordCount} words — officers expect 50–100 words for substantive answers. Expand with specific facts about your investment or role.`,
+    });
+  }
+  if (fillerMatches.length >= 2) {
+    const examples = [...new Set(fillerMatches.map(m => m[0].toLowerCase()))].slice(0, 3).join('", "');
+    notes.push({
+      type: 'fillers',
+      detail: `${fillerMatches.length} filler words detected ("${examples}"). These signal uncertainty to the officer. Pause instead of filling silence.`,
+    });
+  }
+  if (hedgeMatches.length >= 2) {
+    const examples = [...new Set(hedgeMatches.map(m => m[0].toLowerCase()))].slice(0, 2).join('", "');
+    notes.push({
+      type: 'hedging',
+      detail: `Hedging language detected ("${examples}"). State investment facts directly — "I invested $180,000" not "I think it was around $180,000."`,
+    });
+  }
+  return notes;
+}
+
 export function generateCoachingSummary(
   session: CompletedSession,
   _context: SimulatorContext
@@ -529,12 +570,17 @@ export function generateCoachingSummary(
     readinessIndicator = 'ready';
   }
 
+  const deliveryFlags = session.questions
+    .filter(q => q.deliveryNotes && q.deliveryNotes.length > 0)
+    .map(q => ({ questionId: q.questionId, questionText: q.questionText, notes: q.deliveryNotes! }));
+
   return {
     strongAnswers,
     needsWork,
     inconsistencies,
     weakPointsAtRisk,
     readinessIndicator,
+    deliveryFlags: deliveryFlags.length > 0 ? deliveryFlags : undefined,
   };
 }
 
