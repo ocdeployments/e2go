@@ -117,7 +117,7 @@ function LoginForm() {
             // 2. Quiz exists but no application → /results
             const { data: application } = await supabase
               .from("applications")
-              .select("id, payment_completed_at")
+              .select("id, payment_status, source")
               .eq("user_id", user.id)
               .order("created_at", { ascending: false })
               .limit(1)
@@ -125,7 +125,10 @@ function LoginForm() {
 
             if (!application) {
               window.location.href = '/results';
-            } else if (!application.payment_completed_at) {
+            } else if (application.source === 'simulator_standalone') {
+              // Simulator-only purchase → simulator home
+              window.location.href = '/simulator';
+            } else if (application.payment_status !== 'paid') {
               // 3. Application exists, payment not complete → /pricing
               window.location.href = '/pricing';
             } else {

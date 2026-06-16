@@ -105,13 +105,20 @@ export default function InterviewSimulator() {
           if (apps.length === 1) {
             app = apps[0];
           } else {
+            // Fetch answer counts for all apps in a single query instead of N sequential calls
+            const { data: answerRows } = await supabase
+              .from('answers')
+              .select('application_id')
+              .in('application_id', apps.map((a: any) => a.id));
+
+            const countMap = new Map<string, number>();
+            answerRows?.forEach((row: { application_id: string }) => {
+              countMap.set(row.application_id, (countMap.get(row.application_id) ?? 0) + 1);
+            });
+
             let bestCount = -1;
             for (const candidate of apps) {
-              const { count } = await supabase
-                .from('answers')
-                .select('question_key', { count: 'exact', head: true })
-                .eq('application_id', candidate.id);
-              const c = count || 0;
+              const c = countMap.get(candidate.id) ?? 0;
               const candidateIsStandalone = candidate.source === 'simulator_standalone';
               const betterOnTie = c === bestCount && app && candidateIsStandalone === false && app.source === 'simulator_standalone';
               if (c > bestCount || betterOnTie) {
