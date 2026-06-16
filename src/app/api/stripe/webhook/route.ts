@@ -84,6 +84,8 @@ export async function POST(request: NextRequest) {
       const paymentIntentId = session.payment_intent as string;
 
       if (applicationId && userId) {
+        const tierId = session.metadata?.tierId || '';
+
         // Update payment record
         await supabase
           .from('payments')
@@ -95,21 +97,31 @@ export async function POST(request: NextRequest) {
           })
           .eq('stripe_session_id', session.id);
 
-        // Update application payment status
-        await supabase
-          .from('applications')
-          .update({
-            payment_status: 'paid',
-          })
-          .eq('id', applicationId);
+        if (tierId === 'simulator_3pack') {
+          // Grant 3 additional simulator sessions
+          const { data: currentApp } = await supabase
+            .from('applications')
+            .select('simulator_sessions_purchased')
+            .eq('id', applicationId)
+            .single();
+          if (currentApp) {
+            await supabase
+              .from('applications')
+              .update({ simulator_sessions_purchased: (currentApp.simulator_sessions_purchased ?? 2) + 3 })
+              .eq('id', applicationId);
+          }
+        } else {
+          // Update application payment status for full application tiers
+          await supabase
+            .from('applications')
+            .update({ payment_status: 'paid' })
+            .eq('id', applicationId);
 
-        // Update lifecycle
-        await supabase
-          .from('application_lifecycle')
-          .update({
-            payment_completed_at: new Date().toISOString(),
-          })
-          .eq('application_id', applicationId);
+          await supabase
+            .from('application_lifecycle')
+            .update({ payment_completed_at: new Date().toISOString() })
+            .eq('application_id', applicationId);
+        }
       }
       break;
     }
