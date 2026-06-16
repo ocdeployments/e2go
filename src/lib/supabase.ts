@@ -10,15 +10,21 @@ if (!supabaseAnonKey) {
   throw new Error('Missing NEXT_PUBLIC_SUPABASE_ANON_KEY environment variable');
 }
 
-// Singleton: one GoTrueClient instance per browser tab.
-// Without this, every component that calls createBrowserSupabaseClient()
-// spawns a separate GoTrueClient on the same storage key, triggering
-// "Multiple GoTrueClient instances detected" and causing hung awaits
-// when two clients race to refresh the auth token.
-let browserClient: ReturnType<typeof createBrowserClient> | null = null;
+// Singleton stored on `window` so it survives Next.js Fast Refresh module
+// re-evaluations. A module-level `let` resets to null on every hot reload,
+// spawning a new GoTrueClient each time while the old ones remain alive —
+// all competing for the same navigator.locks lock and causing hung awaits
+// on signInWithPassword / getSession.
+const SINGLETON_KEY = '__e2go_supabase__';
 
 export function createBrowserSupabaseClient() {
-  if (browserClient) return browserClient;
-  browserClient = createBrowserClient(supabaseUrl!, supabaseAnonKey!);
-  return browserClient;
+  if (typeof window === 'undefined') {
+    // SSR path: never cache on the server
+    return createBrowserClient(supabaseUrl!, supabaseAnonKey!);
+  }
+  const w = window as typeof window & { [SINGLETON_KEY]?: ReturnType<typeof createBrowserClient> };
+  if (!w[SINGLETON_KEY]) {
+    w[SINGLETON_KEY] = createBrowserClient(supabaseUrl!, supabaseAnonKey!);
+  }
+  return w[SINGLETON_KEY]!;
 }
