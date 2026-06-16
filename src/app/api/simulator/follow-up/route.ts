@@ -58,7 +58,7 @@ Your assessment: ${evaluation.rating.toUpperCase()} — ${weaknessSummary}
 Generate exactly ONE targeted follow-up question to probe the specific weakness or inconsistency in their answer. Make it direct, specific to what they said, and realistic for a consulate interview. One sentence only. Output the question and nothing else.`;
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 10_000);
+  const timeout = setTimeout(() => controller.abort(), 20_000);
 
   try {
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -70,7 +70,7 @@ Generate exactly ONE targeted follow-up question to probe the specific weakness 
         'X-Title': 'E2go Interview Simulator',
       },
       body: JSON.stringify({
-        model: 'xiaomi/mimo-v2.5',
+        model: 'minimax/minimax-m2.5',
         messages: [
           {
             role: 'system',
