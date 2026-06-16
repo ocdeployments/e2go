@@ -60,6 +60,12 @@ export default function InterviewSimulator() {
   const [isInFollowUp, setIsInFollowUp] = useState(false);
   const [followUpLoading, setFollowUpLoading] = useState(false);
   const [coachingLoading, setCoachingLoading] = useState(false);
+  // Captures ?session_id from Stripe redirect before URL is cleaned — processed once application loads
+  const [pendingGrantSessionId, setPendingGrantSessionId] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null;
+    const p = new URLSearchParams(window.location.search);
+    return p.get('purchase') === 'success' ? (p.get('session_id') ?? null) : null;
+  });
 
   // Check auth and load session availability
   useEffect(() => {
@@ -189,29 +195,34 @@ export default function InterviewSimulator() {
     return () => { cancelled = true; };
   }, []);
 
-  // Handle successful purchase return — verify payment with Stripe and grant sessions
+  // Clean the ?purchase=success URL params on mount — before application loads —
+  // so they're never re-read on subsequent renders.
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const searchParams = new URLSearchParams(window.location.search);
-    if (searchParams.get('purchase') === 'success' && application) {
-      const sessionId = searchParams.get('session_id');
+    if (searchParams.get('purchase') === 'success') {
       window.history.replaceState({}, '', '/simulator');
-
-      if (sessionId) {
-        fetch('/api/stripe/grant-simulator-sessions', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sessionId }),
-        })
-          .then(res => res.json())
-          .then(() => checkSessionAvailability(application.id))
-          .then(avail => setSessionInfo(avail))
-          .catch(() => checkSessionAvailability(application.id).then(avail => setSessionInfo(avail)));
-      } else {
-        checkSessionAvailability(application.id).then(avail => setSessionInfo(avail));
-      }
     }
-  }, [application]);
+  }, []);
+
+  // Once application loads, process any pending Stripe session grant.
+  // pendingGrantSessionId was captured synchronously from the URL before cleanup.
+  useEffect(() => {
+    if (!application || !pendingGrantSessionId) return;
+
+    const sessionId = pendingGrantSessionId;
+    setPendingGrantSessionId(null);
+
+    fetch('/api/stripe/grant-simulator-sessions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionId }),
+    })
+      .then(res => res.json())
+      .then(() => checkSessionAvailability(application.id))
+      .then(avail => setSessionInfo(avail))
+      .catch(() => checkSessionAvailability(application.id).then(avail => setSessionInfo(avail)));
+  }, [application, pendingGrantSessionId]);
 
   // Purchase handler
   const handlePurchase = async () => {

@@ -16,6 +16,27 @@ function getStripe(): Stripe | null {
   return new Stripe(secretKey, { apiVersion: '2026-05-27.dahlia' });
 }
 
+// Stripe async settle: success_url fires before payment_status is always 'paid'.
+// Retry up to 3x with 800ms gaps before giving up.
+async function retrieveStripeSessionWithRetry(
+  stripe: Stripe,
+  sessionId: string,
+  maxAttempts = 3
+): Promise<Stripe.Checkout.Session> {
+  let lastSession: Stripe.Checkout.Session | null = null;
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    if (attempt > 0) {
+      await new Promise(r => setTimeout(r, 800));
+    }
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    lastSession = session;
+    if (session.payment_status === 'paid' || session.status === 'complete') {
+      return session;
+    }
+  }
+  return lastSession!;
+}
+
 /**
  * POST /api/stripe/grant-simulator-sessions
  *
@@ -42,9 +63,36 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing sessionId' }, { status: 400 });
     }
 
-    const stripeSession = await stripe.checkout.sessions.retrieve(sessionId);
+    const supabase = getSupabase();
 
-    if (stripeSession.payment_status !== 'paid' && stripeSession.status !== 'complete') {
+    // Idempotency: check if this session was already processed
+    const { data: existingPayment } = await supabase
+      .from('payments')
+      .select('id, status, application_id')
+      .eq('stripe_session_id', sessionId)
+      .single();
+
+    if (existingPayment?.status === 'completed') {
+      // Already granted by webhook or prior client call — just return current DB state
+      const { data: existingApp } = await supabase
+        .from('applications')
+        .select('simulator_sessions_used, simulator_sessions_purchased')
+        .eq('id', existingPayment.application_id ?? '')
+        .single();
+      return NextResponse.json({
+        granted: false,
+        alreadyProcessed: true,
+        sessionsUsed: existingApp?.simulator_sessions_used ?? 0,
+        sessionsPurchased: existingApp?.simulator_sessions_purchased ?? 2,
+      });
+    }
+
+    // Retrieve Stripe session with retry to handle async payment status lag
+    const stripeSession = await retrieveStripeSessionWithRetry(stripe, sessionId);
+
+    const isPaid = stripeSession.payment_status === 'paid' || stripeSession.status === 'complete';
+    if (!isPaid) {
+      console.warn(`grant-simulator-sessions: payment not confirmed after retries. session=${sessionId} payment_status=${stripeSession.payment_status} status=${stripeSession.status}`);
       return NextResponse.json({ granted: false, reason: 'Payment not completed' });
     }
 
@@ -58,30 +106,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ granted: false, reason: 'No applicationId in metadata' });
     }
 
-    const supabase = getSupabase();
-
-    // Idempotency: check if this session was already processed
-    const { data: existingPayment } = await supabase
-      .from('payments')
-      .select('id, status')
-      .eq('stripe_session_id', sessionId)
-      .single();
-
-    if (existingPayment?.status === 'completed') {
-      // Already granted — just return current availability
-      const { data: app } = await supabase
-        .from('applications')
-        .select('simulator_sessions_used, simulator_sessions_purchased')
-        .eq('id', applicationId)
-        .single();
-      return NextResponse.json({
-        granted: false,
-        alreadyProcessed: true,
-        sessionsUsed: app?.simulator_sessions_used ?? 0,
-        sessionsPurchased: app?.simulator_sessions_purchased ?? 2,
-      });
-    }
-
     // Grant 3 sessions: increment simulator_sessions_purchased
     const { data: app, error: fetchErr } = await supabase
       .from('applications')
@@ -91,6 +115,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (fetchErr || !app) {
+      console.error(`grant-simulator-sessions: application not found. appId=${applicationId} userId=${user.id} err=${fetchErr?.message}`);
       return NextResponse.json({ error: 'Application not found' }, { status: 404 });
     }
 
@@ -102,15 +127,30 @@ export async function POST(request: NextRequest) {
       .eq('id', applicationId)
       .eq('user_id', user.id);
 
-    // Mark payment as completed
-    await supabase
-      .from('payments')
-      .update({
-        status: 'completed',
+    // Mark payment as completed (upsert-style: update if exists, or insert if missing)
+    if (existingPayment) {
+      await supabase
+        .from('payments')
+        .update({
+          status: 'completed',
+          amount_paid: stripeSession.amount_total ?? 0,
+          completed_at: new Date().toISOString(),
+        })
+        .eq('stripe_session_id', sessionId);
+    } else {
+      // Payment record was never created (create-checkout insert failed silently) — create it now
+      await supabase.from('payments').insert({
+        application_id: applicationId,
+        user_id: user.id,
+        stripe_session_id: sessionId,
+        stripe_price_id: stripeSession.metadata?.priceId ?? '',
         amount_paid: stripeSession.amount_total ?? 0,
+        currency: stripeSession.currency ?? 'usd',
+        status: 'completed',
+        payment_type: tierId,
         completed_at: new Date().toISOString(),
-      })
-      .eq('stripe_session_id', sessionId);
+      });
+    }
 
     const { data: updated } = await supabase
       .from('applications')
