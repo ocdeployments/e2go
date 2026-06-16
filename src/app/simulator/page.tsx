@@ -119,9 +119,16 @@ export default function InterviewSimulator() {
 
         if (app) {
           if (!cancelled) setApplication(app);
-          const availability = await checkSessionAvailability(app.id);
-          console.log('[SIM] session availability:', availability);
-          if (!cancelled) setSessionInfo(availability);
+          // Skip the initial availability check when returning from a Stripe purchase —
+          // the grant useEffect will call checkSessionAvailability after granting sessions,
+          // and if checkAuth runs it concurrently it overwrites the updated value with stale data.
+          const hasPendingGrant = typeof window !== 'undefined' &&
+            new URLSearchParams(window.location.search).get('purchase') === 'success';
+          if (!hasPendingGrant) {
+            const availability = await checkSessionAvailability(app.id);
+            console.log('[SIM] session availability:', availability);
+            if (!cancelled) setSessionInfo(availability);
+          }
 
           // Check if the application has sufficient case file data
           // Module 3: answers + case brief required
