@@ -135,9 +135,15 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Accept caller-supplied redirect URLs only if they are same-origin
+    // Accept caller-supplied redirect URLs only if they are same-origin.
+    // In development, any localhost port is trusted (port varies with autoPort).
     const isSameOrigin = (url: string) => {
-      try { return new URL(url).origin === new URL(appUrl).origin; } catch { return false; }
+      try {
+        const parsed = new URL(url);
+        const base = new URL(appUrl);
+        if (parsed.hostname === 'localhost' && base.hostname === 'localhost') return true;
+        return parsed.origin === base.origin;
+      } catch { return false; }
     };
     const successUrl = rawSuccessUrl && isSameOrigin(rawSuccessUrl)
       ? rawSuccessUrl

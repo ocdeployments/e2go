@@ -64,6 +64,11 @@ function SuccessContent() {
           const result = await res.json();
 
           if (result.verified && result.payment) {
+            // Simulator session pack — route back to simulator to grant sessions
+            if (result.payment.payment_type === 'simulator_3pack') {
+              router.replace(`/simulator?purchase=success&session_id=${sessionId}`);
+              return;
+            }
             setPayment(result.payment);
             setLoading(false);
             return;
@@ -74,6 +79,12 @@ function SuccessContent() {
 
         setError('Payment not found — please contact support if you completed a payment');
         setLoading(false);
+        return;
+      }
+
+      // Simulator session pack landed here by mistake — send to simulator grant flow
+      if (paymentData.payment_type === 'simulator_3pack') {
+        router.replace(`/simulator?purchase=success&session_id=${sessionId}`);
         return;
       }
 
