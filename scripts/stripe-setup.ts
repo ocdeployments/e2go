@@ -17,7 +17,7 @@ const tiers = [
   { id: 'partnership_none', name: 'e2go — Partnership', amount: 99700 },
   { id: 'partnership_couples', name: 'e2go — Partnership Two Couples', amount: 129700 },
   { id: 'partnership_families', name: 'e2go — Partnership Two Families', amount: 139700 },
-  { id: 'simulator_3pack', name: 'e2go — Interview Simulator 3 Sessions', amount: 19700 },
+  { id: 'simulator_3pack', name: 'e2go — Interview Simulator Additional Sessions', amount: 2999 },
   { id: 'renewal', name: 'e2go — Renewal Package', amount: 49700 },
   { id: 'child_surcharge', name: 'e2go — Additional Child', amount: 5000 },
 ]
