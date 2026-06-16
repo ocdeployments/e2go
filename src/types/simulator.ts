@@ -90,12 +90,22 @@ export interface SessionQuestion {
   specificSuggestion: string;
 }
 
+export interface QuestionCoaching {
+  questionId: string;
+  whatOfficerExpected: string;
+  whatWasMissing: string;
+  keyPoints: string[];
+  modelAnswer: string;
+  documentReference: string | null;
+}
+
 export interface CoachingSummary {
   strongAnswers: { question: string; note: string }[];
-  needsWork: { question: string; suggestion: string }[];
-  inconsistencies: { question: string; filed: string; spoken: string }[];
+  needsWork: { questionId: string; question: string; suggestion: string; originalAnswer: string }[];
+  inconsistencies: { questionId: string; question: string; filed: string; spoken: string; originalAnswer: string }[];
   weakPointsAtRisk: string[];
   readinessIndicator: 'ready' | 'nearly_ready' | 'needs_work';
+  detailedCoaching?: QuestionCoaching[];
 }
 
 export interface SimulatorSession {

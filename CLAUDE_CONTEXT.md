@@ -1,6 +1,6 @@
 # CLAUDE_CONTEXT.md — E2go
 ## Master Context for Every Claude Code Session
-**Version:** June 13, 2026 — Sessions 4-19 complete
+**Version:** June 16, 2026 — Sessions 4-22 complete
 **Read this entire file before doing anything.**
 **Then read BUILD_TRACKER.md.**
 
@@ -134,9 +134,9 @@ Security/audit session:
 |---|---|
 | Frontend | Next.js 14 App Router · TypeScript · Tailwind CSS |
 | Database + Auth | Supabase (PostgreSQL + Auth + Storage) |
-| AI — App features | OpenRouter (MiniMax M1 via OPENROUTER_API_KEY) |
+| AI — App features | OpenRouter (xiaomi/mimo-v2.5 via OPENROUTER_API_KEY) |
 | AI — Document generation | Anthropic API direct (ANTHROPIC_API_KEY) |
-| AI — Simulator evaluation | OpenRouter (MiniMax via OPENROUTER_API_KEY) |
+| AI — Simulator evaluation | OpenRouter (xiaomi/mimo-v2.5 or mimo-v2.5-pro ONLY via OPENROUTER_API_KEY) |
 | AI — FAQ Q&A | OpenRouter (xiaomi/mimo-v2.5 via OPENROUTER_API_KEY) |
 | Voice transcription | Groq Whisper (GROQ_API_KEY) |
 | Voice TTS | Groq PlayAI TTS (GROQ_API_KEY — same key) |
@@ -160,6 +160,12 @@ Security/audit session:
 DO NOT use ANTHROPIC_API_KEY anywhere except generation-engine.ts.
 DO NOT switch OpenRouter calls to Anthropic.
 DO NOT expose any API key in browser/client code.
+
+**SIMULATOR MODEL CONSTRAINT — LOCKED (June 16, 2026):**
+ALL simulator routes (evaluate, follow-up, coaching-report, case-summary)
+MUST use ONLY: `xiaomi/mimo-v2.5` or `xiaomi/mimo-v2.5-pro`
+NEVER use minimax, deepseek, or any other model for simulator routes.
+This was explicitly corrected by the user and is non-negotiable.
 
 ---
 
@@ -590,9 +596,12 @@ Two modes: text and voice.
 Voice: Groq Whisper transcription + Orpheus (canopylabs/orpheus-v1-english) TTS.
 ⚠️ Voice blocked until owner accepts Groq terms at console.groq.com
 Session limit: 2 included, $29.99 additional sessions.
-Timer: 15 minutes per session, warning at 2 minutes. Timer starts when user clicks "Begin interview" — NOT on mount.
-Evaluation: OpenRouter MiniMax rates answers strong/weak/inconsistent.
+Timer: 15 minutes per session. Fixed bottom bar with depleting progress bar.
+Turns red with pulse animation at < 2 minutes. Applies to BOTH voice and text modes.
+Timer starts when user clicks "Begin interview" — NOT on mount.
+Evaluation: OpenRouter xiaomi/mimo-v2.5 rates answers strong/weak/inconsistent.
 Debrief: readiness indicator + strong answers + needs-work + inconsistencies.
+Post-session coaching report: deep analysis via xiaomi/mimo-v2.5-pro (Session 22).
 
 **Phase flow (Session 21 — locked):**
 'ready' → 'intro' → 'questions'
@@ -605,10 +614,47 @@ Debrief: readiness indicator + strong answers + needs-work + inconsistencies.
 - `tts/route.ts`: `response_format: 'wav'` (Orpheus only accepts wav)
 - Browser autoplay unlock: silent 44-byte WAV played synchronously during "Begin interview" click
 
+**Question generation (Session 22 — locked):**
+- 9 universal questions (UQ-01 → UQ-09) each have a pool of 3-4 alternative phrasings
+- `pick<T>()` randomly selects one phrasing per session → questions never feel identical
+- `shuffle<T>()` Fisher-Yates shuffles business-type pools; caller takes first 3 of 5-6
+- Business type categories: food/beverage, healthcare, retail, franchise, cleaning,
+  IT/consulting, transport/logistics, construction + generic fallback
+- New WP-05 probe added for immigrant intent risk (fires when flag = moderate/high)
+- Business type questions personalized with context vars (investment amount, business name)
+
+**Post-session coaching report (Session 22):**
+- Route: POST `/api/simulator/coaching-report`
+- Model: `xiaomi/mimo-v2.5-pro`, max_tokens: 2400, timeout: 90s
+- Fires non-blocking after session completes; updates coaching cards progressively
+- Returns `QuestionCoaching[]`: `questionId`, `whatOfficerExpected`, `whatWasMissing`,
+  `keyPoints[]`, `modelAnswer` (first-person, uses real business details), `documentReference`
+- Model answer disclaimer: "This is a guide to the level of detail and structure expected
+  — not a script. Officers can tell when answers are memorized."
+- Falls back to original `specificSuggestion` silently if API fails
+
+**Evaluate route prompt (Session 22 fix):**
+- Previously had "2 sentences max" / "1 sentence" constraints → shallow generic feedback
+- Now: 3-sentence feedback (officer expectation + answer quality + specific gap)
+- Suggestion: 2 sentences (exactly what to say differently + how to frame correctly)
+- max_tokens raised to 400
+
 **Standalone path:** /simulator/quick-start — for users without a completed
 case file. Upload documents (cover letter, business plan) → extraction
 engine populates answers → simulator generates questions from those answers.
 Uses source='simulator_standalone' on applications table.
+
+**Nervousness/delivery detection (Session 22 — conceptual, not yet built):**
+- Can flag: filler words (um/uh/like/you know), very short answers (<30 words),
+  hedging language (I think/maybe/probably) from existing transcripts
+- Frame as "delivery confidence coaching" — NOT lie detection (pseudoscience)
+- Would add `deliveryNotes` field to `AnswerEvaluation` type and evaluate route
+- No new API cost (uses existing transcript text)
+
+**TTS in Module 3 intake (Session 22 — conceptual, feasibility confirmed):**
+- Technically reusable from existing Groq pipeline
+- Uses Groq tokens (TTS + STT) — not free; daily TPD limit is 3,600/day on free tier
+- Worth adding if intake completion rate is a problem; defer until post-launch
 
 ---
 
@@ -825,6 +871,27 @@ Rate limits (production only):
 - Homepage copy updated; simulator scored 4/10 — Tier 1/2/3 roadmap delivered
 - Build: clean ✅ | ⚠️ TTS voice mode blocked — see KNOWN ISSUES
 
+**June 16, 2026 — Session 22: Simulator Coaching System + Question Variety:**
+- Evaluate route prompt rewritten: removed "2 sentences max" → 3-sentence coaching-quality
+  feedback; 2-sentence suggestions with specific E-2 framing direction; max_tokens → 400
+- New `/api/simulator/coaching-report` route: POST, xiaomi/mimo-v2.5-pro, 2400 tokens,
+  90s timeout; processes all weak/inconsistent answers together; returns `QuestionCoaching[]`
+  with `whatOfficerExpected`, `whatWasMissing`, `keyPoints[]`, `modelAnswer`, `documentReference`
+- Model answer added to coaching cards: first-person, uses real business details, disclaimer
+  shown: "guide to level of detail — not a script"
+- Question variety: `pick()` + `shuffle()` helpers; 9 universal questions now have pools of
+  3-4 phrasings; business type pools expanded to 5-6 per category, randomly sampled to 3
+- New WP-05 probe for immigrant intent risk; 8 business type categories with personalized vars
+- Timer redesign: both voice (ConversationalSession.tsx) and text (page.tsx) now show
+  `position: fixed, bottom: 0` bar with depleting gold progress bar + 22px digital countdown;
+  turns red + pulses at < 2 minutes; paddingBottom: 56px added to page containers
+- `CoachingSummary` type: `needsWork[]` and `inconsistencies[]` now include `questionId` and
+  `originalAnswer`; `QuestionCoaching` type now includes `modelAnswer: string`
+- `fetchCoachingReport()` added to page.tsx: non-blocking async, fires after session complete,
+  progressively updates via setCoachingSummary; coachingLoading state threads to SessionComplete
+- `generateCoachingSummary()` type declarations fixed to match enriched interface
+- Build: clean ✅
+
 **June 16, 2026 — Session 21: Audio Fix + Ready Screen + Architecture:**
 - TTS audio FIXED: `groq-tts.ts` MIME type changed to `data:audio/wav;base64,`; `tts/route.ts` `response_format` changed to `'wav'` (Orpheus only accepts wav)
 - Browser autoplay policy FIXED: added 'ready' phase to ConversationalSession; silent 44-byte WAV unlock on "Begin interview" click permanently unlocks audio for the page session
@@ -837,7 +904,7 @@ Rate limits (production only):
 - Process flow widget designed (HTML/JS); React component conversion pending
 - Build: clean ✅
 
-**Next session priorities (as of June 15, 2026 — post audit cross-reference):**
+**Next session priorities (as of June 16, 2026 — post Session 22):**
 
 **Owner actions (do first — unblock everything else):**
 1. [USER ACTION] Accept Groq TTS terms at console.groq.com — voice mode blocked
@@ -846,16 +913,18 @@ Rate limits (production only):
 4. [USER ACTION] Refund $197 test charge in Stripe dashboard
 5. [USER ACTION] Run FAQ seed scripts: `npx tsx scripts/seed-faq-corpus.ts` + `seed-faq-kb-chunks.ts`
 
-**Code sessions:**
-1. End-to-end simulator test (voice + text + purchase flow + coaching summary)
-2. Generation engine fixes — docs/sessions/SESSION_PLAN_GENERATION_FIXES.md
-3. Bracket highlighting regex + checklist builder fix
-4. Write + build SESSION22_SENTRY_ERROR_TRACKING (pre-launch blocker — no error visibility)
-5. Write + build SESSION21_INTERVIEW_PREP_KIT (high product value, named in June 14 audit but never built)
-6. End-to-end payment test: quiz → checkout → apply → generate → download
+**Code sessions (in order):**
+1. End-to-end simulator test (voice + text + coaching cards + model answers verify correctly)
+2. Delivery confidence analysis: add `deliveryNotes` to `AnswerEvaluation` + evaluate route;
+   flag filler words, short answers (<30w), hedging language; frame as "delivery coaching"
+3. Gap Analysis page — `/gap-analysis` route, 6-category scoring UI, priority action list
+4. Generation engine fixes — docs/sessions/SESSION_PLAN_GENERATION_FIXES.md
+5. Bracket highlighting regex + checklist builder fix
+6. Write + build SESSION22_SENTRY_ERROR_TRACKING (pre-launch blocker — no error visibility)
+7. End-to-end payment test: quiz → checkout → apply → generate → download
 
 **Unexecuted sessions from prior audit (never built, no session files yet):**
-- SESSION21_INTERVIEW_PREP_KIT — 10-15 interview Q+A pairs with example answers
+- SESSION21_INTERVIEW_PREP_KIT — now REPLACED by the coaching report system (Session 22)
 - SESSION22_SENTRY_ERROR_TRACKING — error monitoring, pre-launch requirement
 - SESSION23_UPTIME_MONITORING — uptime monitoring
 - MODULE4_FOLLOWUP_UI — Module 4 follow-up conversation UI (Spec2_Followup_Conversation.md)

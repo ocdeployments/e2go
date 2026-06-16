@@ -17,7 +17,7 @@ import {
 import { speakQuestion } from '@/lib/groq-tts';
 import CaseFileSummary from '@/components/simulator/CaseFileSummary';
 import ConversationalSession from '@/components/simulator/ConversationalSession';
-import type { SimulatorContext, Question, AnswerEvaluation, CoachingSummary, CompletedSession } from '@/types/simulator';
+import type { SimulatorContext, Question, AnswerEvaluation, CoachingSummary, CompletedSession, QuestionCoaching } from '@/types/simulator';
 
 const supabase = createBrowserSupabaseClient();
 
@@ -59,6 +59,7 @@ export default function InterviewSimulator() {
   const [followUpQuestion, setFollowUpQuestion] = useState<string | null>(null);
   const [isInFollowUp, setIsInFollowUp] = useState(false);
   const [followUpLoading, setFollowUpLoading] = useState(false);
+  const [coachingLoading, setCoachingLoading] = useState(false);
 
   // Check auth and load session availability
   useEffect(() => {
@@ -419,12 +420,54 @@ export default function InterviewSimulator() {
 
       await completeSimulatorSession(currentSession.id, summary.readinessIndicator);
       setScreen('complete');
+      fetchCoachingReport(summary, context);
     } catch (err: any) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
   };
+
+  // Fetch deep coaching report after session ends (async, non-blocking)
+  async function fetchCoachingReport(summary: CoachingSummary, ctx: SimulatorContext) {
+    const toCoach = [
+      ...summary.needsWork.map(w => ({
+        questionId: w.questionId,
+        questionText: w.question,
+        originalAnswer: w.originalAnswer,
+        rating: 'weak' as const,
+        currentFeedback: w.suggestion,
+      })),
+      ...summary.inconsistencies.map(inc => ({
+        questionId: inc.questionId,
+        questionText: inc.question,
+        originalAnswer: inc.originalAnswer,
+        rating: 'inconsistent' as const,
+        currentFeedback: inc.filed,
+      })),
+    ];
+
+    if (toCoach.length === 0) return;
+
+    setCoachingLoading(true);
+    try {
+      const res = await fetch('/api/simulator/coaching-report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ context: ctx, weakAnswers: toCoach }),
+      });
+      if (res.ok) {
+        const { coaching } = await res.json();
+        if (Array.isArray(coaching) && coaching.length > 0) {
+          setCoachingSummary(prev => prev ? { ...prev, detailedCoaching: coaching } : prev);
+        }
+      }
+    } catch {
+      // Non-fatal — coaching cards just won't appear
+    } finally {
+      setCoachingLoading(false);
+    }
+  }
 
   // Render based on screen state
   if (!sessionInfo || hasCaseFile === null) {
@@ -485,6 +528,7 @@ export default function InterviewSimulator() {
             setCoachingSummary(summary);
             setCurrentSession((prev: any) => prev ? { ...prev, sessionNumber } : prev);
             setScreen('complete');
+            if (context) fetchCoachingReport(summary, context);
           }}
           onExit={() => {
             if (timerRef.current) clearInterval(timerRef.current);
@@ -528,6 +572,7 @@ export default function InterviewSimulator() {
         <SessionComplete
           summary={coachingSummary}
           sessionNumber={currentSession?.sessionNumber}
+          coachingLoading={coachingLoading}
           onStartNew={() => {
             setScreen('start');
             window.location.reload();
@@ -689,25 +734,11 @@ function ActiveSession({
           <div style={styles.questionHeader}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
               <span style={styles.questionCounter}>Question {questionNumber} of {totalQuestions}</span>
-              {mode === 'voice' && (
-                <span style={{
-                  ...styles.timerDisplay,
-                  color: timerWarning ? 'rgba(239,68,68,0.9)' : 'rgba(245,240,232,0.4)',
-                }}>
-                  {formatTime(sessionTimeLeft)}
-                </span>
-              )}
             </div>
             <div style={styles.progressBar}>
               <div style={{...styles.progressFill, width: `${(questionNumber / totalQuestions) * 100}%`}} />
             </div>
           </div>
-
-          {mode === 'voice' && timerWarning && (
-            <div style={styles.timerWarning}>
-              2 minutes remaining — complete your current answer
-            </div>
-          )}
 
           {isInFollowUp && (
             <div style={styles.followUpLabel}>FOLLOW-UP QUESTION</div>
@@ -816,6 +847,56 @@ function ActiveSession({
             />
           )}
         </div>
+      </div>
+
+      {/* Session countdown timer — fixed bottom bar */}
+      <div style={{
+        position: 'fixed',
+        bottom: 0, left: 0, right: 0,
+        height: '56px',
+        background: timerWarning ? 'rgba(30,5,5,0.97)' : 'rgba(10,10,10,0.97)',
+        borderTop: timerWarning ? '1px solid rgba(239,68,68,0.35)' : '1px solid rgba(201,168,76,0.12)',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '16px',
+        padding: '0 28px',
+        backdropFilter: 'blur(12px)',
+        zIndex: 200,
+        transition: 'background 0.8s ease, border-color 0.8s ease',
+      }}>
+        <span style={{
+          fontSize: '10px',
+          letterSpacing: '0.14em',
+          textTransform: 'uppercase' as const,
+          color: timerWarning ? 'rgba(239,68,68,0.55)' : 'rgba(245,240,232,0.3)',
+          whiteSpace: 'nowrap',
+        }}>
+          {timerWarning ? 'Time running out' : 'Session time'}
+        </span>
+        <div style={{
+          flex: 1,
+          height: '3px',
+          background: timerWarning ? 'rgba(239,68,68,0.12)' : 'rgba(245,240,232,0.07)',
+          position: 'relative',
+        }}>
+          <div style={{
+            position: 'absolute', left: 0, top: 0, bottom: 0,
+            width: `${(sessionTimeLeft / (15 * 60)) * 100}%`,
+            background: timerWarning ? '#ef4444' : '#C9A84C',
+            transition: 'width 1s linear, background 0.8s ease',
+          }} />
+        </div>
+        <span style={{
+          fontSize: '22px',
+          fontVariantNumeric: 'tabular-nums',
+          letterSpacing: '0.04em',
+          fontWeight: 500,
+          color: timerWarning ? 'rgba(239,68,68,0.95)' : '#C9A84C',
+          minWidth: '58px',
+          textAlign: 'right' as const,
+        }}>
+          {formatTime(sessionTimeLeft)}
+        </span>
       </div>
     </div>
   );
@@ -992,17 +1073,151 @@ function VoiceInput({
   );
 }
 
+function CoachingCard({ item, coaching }: {
+  item: { questionId: string; question: string; suggestion: string; originalAnswer: string } | { questionId: string; question: string; filed: string; spoken: string; originalAnswer: string };
+  coaching: QuestionCoaching | undefined;
+  isInconsistency?: boolean;
+}) {
+  const isInconsistency = 'spoken' in item;
+  const accentColor = isInconsistency ? '#ef4444' : '#f59e0b';
+
+  return (
+    <div style={{
+      border: `1px solid ${accentColor}30`,
+      background: `${accentColor}06`,
+      marginBottom: '20px',
+      padding: '24px',
+    }}>
+      <div style={{
+        display: 'inline-block',
+        fontSize: '10px',
+        fontWeight: 600,
+        letterSpacing: '0.1em',
+        color: accentColor,
+        marginBottom: '12px',
+        padding: '3px 8px',
+        border: `1px solid ${accentColor}50`,
+      }}>
+        {isInconsistency ? 'INCONSISTENCY' : 'NEEDS WORK'}
+      </div>
+
+      <div style={{ fontSize: '15px', color: '#f5f0e8', fontWeight: 500, marginBottom: '16px', lineHeight: 1.4 }}>
+        {item.question}
+      </div>
+
+      {item.originalAnswer && (
+        <div style={{
+          fontSize: '13px',
+          color: 'rgba(245,240,232,0.45)',
+          fontStyle: 'italic',
+          borderLeft: '2px solid rgba(255,255,255,0.1)',
+          paddingLeft: '12px',
+          marginBottom: '20px',
+          lineHeight: 1.5,
+        }}>
+          Your answer: "{item.originalAnswer.substring(0, 180)}{item.originalAnswer.length > 180 ? '...' : ''}"
+        </div>
+      )}
+
+      {coaching ? (
+        <>
+          <div style={{ marginBottom: '16px' }}>
+            <div style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.08em', color: 'rgba(201,168,76,0.7)', marginBottom: '6px' }}>
+              WHAT THE OFFICER EXPECTS
+            </div>
+            <div style={{ fontSize: '13px', color: 'rgba(245,240,232,0.8)', lineHeight: 1.6 }}>
+              {coaching.whatOfficerExpected}
+            </div>
+          </div>
+
+          <div style={{ marginBottom: '16px' }}>
+            <div style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.08em', color: accentColor + 'aa', marginBottom: '6px' }}>
+              WHAT WAS MISSING FROM YOUR ANSWER
+            </div>
+            <div style={{ fontSize: '13px', color: 'rgba(245,240,232,0.8)', lineHeight: 1.6 }}>
+              {coaching.whatWasMissing}
+            </div>
+          </div>
+
+          {coaching.keyPoints.length > 0 && (
+            <div style={{ marginBottom: coaching.documentReference ? '16px' : '0' }}>
+              <div style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.08em', color: '#22c55eaa', marginBottom: '10px' }}>
+                WHAT TO SAY IN YOUR INTERVIEW
+              </div>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                {coaching.keyPoints.map((point, i) => (
+                  <li key={i} style={{
+                    fontSize: '13px',
+                    color: 'rgba(245,240,232,0.85)',
+                    lineHeight: 1.5,
+                    paddingLeft: '16px',
+                    borderLeft: '2px solid #22c55e60',
+                    marginBottom: '8px',
+                  }}>
+                    {point}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {coaching.modelAnswer && (
+            <div style={{
+              marginTop: '16px',
+              padding: '16px',
+              background: 'rgba(34,197,94,0.04)',
+              border: '1px solid rgba(34,197,94,0.15)',
+            }}>
+              <div style={{ fontSize: '10px', fontWeight: 600, letterSpacing: '0.12em', color: 'rgba(34,197,94,0.6)', marginBottom: '10px' }}>
+                WHAT A STRONG ANSWER LOOKS LIKE
+              </div>
+              <div style={{ fontSize: '13px', color: 'rgba(245,240,232,0.75)', lineHeight: 1.65, fontStyle: 'italic' }}>
+                "{coaching.modelAnswer}"
+              </div>
+              <div style={{ fontSize: '11px', color: 'rgba(245,240,232,0.3)', marginTop: '10px', lineHeight: 1.5 }}>
+                This is a guide to the level of detail and structure expected — not a script. Officers can tell when answers are memorized. Use this to understand what to cover, then answer in your own words based on your actual situation.
+              </div>
+            </div>
+          )}
+
+          {coaching.documentReference && (
+            <div style={{
+              marginTop: '12px',
+              padding: '10px 14px',
+              background: 'rgba(201,168,76,0.08)',
+              border: '1px solid rgba(201,168,76,0.2)',
+              fontSize: '12px',
+              color: '#C9A84C',
+            }}>
+              <span style={{ opacity: 0.7, marginRight: '6px' }}>DOCUMENT:</span>
+              {coaching.documentReference}
+            </div>
+          )}
+        </>
+      ) : (
+        <div style={{ fontSize: '13px', color: `${accentColor}cc`, lineHeight: 1.6 }}>
+          {'suggestion' in item ? item.suggestion : `Your answer conflicts with your filed documents. Filed: ${item.filed}`}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function SessionComplete({
   summary,
   sessionNumber,
+  coachingLoading,
   onStartNew,
   onBackToDashboard,
 }: {
   summary: CoachingSummary;
   sessionNumber?: number;
+  coachingLoading: boolean;
   onStartNew: () => void;
   onBackToDashboard: () => void;
 }) {
+  const hasWeakItems = summary.needsWork.length > 0 || summary.inconsistencies.length > 0;
+
   return (
     <div style={styles.completeContainer}>
       <div style={styles.completeCard}>
@@ -1030,7 +1245,7 @@ function SessionComplete({
         {summary.strongAnswers.length > 0 && (
           <div style={styles.resultSection}>
             <h3 style={styles.resultTitle}>
-              <span style={styles.resultIcon}>✓</span> Strong answers
+              <span style={styles.resultIcon}>✓</span> Strong answers ({summary.strongAnswers.length})
             </h3>
             <ul style={styles.resultList}>
               {summary.strongAnswers.map((item, i) => (
@@ -1043,50 +1258,58 @@ function SessionComplete({
           </div>
         )}
 
-        {/* Needs Work */}
-        {summary.needsWork.length > 0 && (
-          <div style={styles.resultSection}>
-            <h3 style={{...styles.resultTitle, color: '#f59e0b'}}>
-              <span style={styles.resultIcon}>⚠</span> Needs more detail
+        {/* Coaching Report Section */}
+        {hasWeakItems && (
+          <div style={{ marginBottom: '32px' }}>
+            <h3 style={{ fontSize: '14px', fontWeight: 500, color: '#f5f0e8', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              Your interview coaching report
+              {coachingLoading && (
+                <span style={{ fontSize: '11px', color: 'rgba(201,168,76,0.7)', fontWeight: 400, letterSpacing: '0.06em' }}>
+                  — generating...
+                </span>
+              )}
             </h3>
-            <ul style={styles.resultList}>
-              {summary.needsWork.map((item, i) => (
-                <li key={i} style={styles.resultItem}>
-                  <div style={styles.resultQuestion}>{item.question}</div>
-                  <div style={styles.resultSuggestion}>{item.suggestion}</div>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
+            <p style={{ fontSize: '12px', color: 'rgba(245,240,232,0.4)', marginBottom: '20px', marginTop: 0 }}>
+              Questions where your answer needs strengthening before the real interview.
+            </p>
 
-        {/* Inconsistencies */}
-        {summary.inconsistencies.length > 0 && (
-          <div style={styles.resultSection}>
-            <h3 style={{...styles.resultTitle, color: '#ef4444'}}>
-              <span style={styles.resultIcon}>✗</span> Inconsistencies to resolve
-            </h3>
-            <ul style={styles.resultList}>
-              {summary.inconsistencies.map((item, i) => (
-                <li key={i} style={styles.resultItem}>
-                  <div style={styles.resultQuestion}>{item.question}</div>
-                  <div style={styles.resultInconsistent}>
-                    Your answer: "{item.spoken}"
-                    <br />
-                    Filed: {item.filed}
-                  </div>
-                </li>
-              ))}
-            </ul>
+            {coachingLoading && !summary.detailedCoaching && (
+              <div style={{
+                padding: '32px',
+                textAlign: 'center' as const,
+                border: '1px solid rgba(201,168,76,0.12)',
+                color: 'rgba(245,240,232,0.4)',
+                fontSize: '13px',
+              }}>
+                <div style={{ marginBottom: '8px', fontSize: '20px' }}>⟳</div>
+                Analyzing your answers with E-2 expertise...
+              </div>
+            )}
+
+            {summary.needsWork.map((item) => (
+              <CoachingCard
+                key={item.questionId}
+                item={item}
+                coaching={summary.detailedCoaching?.find(c => c.questionId === item.questionId)}
+              />
+            ))}
+
+            {summary.inconsistencies.map((item) => (
+              <CoachingCard
+                key={item.questionId}
+                item={item}
+                coaching={summary.detailedCoaching?.find(c => c.questionId === item.questionId)}
+              />
+            ))}
           </div>
         )}
 
         {/* Practice Next */}
         {summary.weakPointsAtRisk.length > 0 && (
           <div style={styles.practiceSection}>
-            <h4 style={styles.practiceTitle}>Practice these questions next</h4>
+            <h4 style={styles.practiceTitle}>Focus on these questions in your next session</h4>
             <ul style={styles.practiceList}>
-              {summary.weakPointsAtRisk.slice(0, 3).map((q, i) => (
+              {summary.weakPointsAtRisk.slice(0, 4).map((q, i) => (
                 <li key={i} style={styles.practiceItem}>{q}</li>
               ))}
             </ul>

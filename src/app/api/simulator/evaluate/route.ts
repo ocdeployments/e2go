@@ -99,19 +99,14 @@ The question asked was: "${questionText}"
 
 The applicant's live answer was: "${answer}"
 
-Evaluate this answer and return your assessment in JSON format:
-{
-  "rating": "strong" | "weak" | "inconsistent",
-  "feedback": "A brief paragraph explaining your rating",
-  "specificSuggestion": "If rating is weak or inconsistent, what specific improvement is needed?",
-  "documentReference": "Which document(s) in their filed application should they reference? (e.g., 'Cover Letter', 'Business Plan', 'Tab F - Investment Proof')"
-}`;
+Evaluate this answer. Reply with ONLY valid JSON — no prose before or after:
+{"rating":"strong"|"weak"|"inconsistent","feedback":"3 sentences: what an officer expects on this question, whether this answer meets that bar, and what specific gap or risk you identified","specificSuggestion":"If weak or inconsistent: 2 sentences telling the applicant exactly what to say differently and how to frame it correctly for an E-2 approval. If strong: null","documentReference":"Name of the most relevant tab in the application package (e.g. Tab B - Business Plan, Tab D - Investment Evidence) or null"}`;
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 45_000);
+  const timeout = setTimeout(() => controller.abort(), 60_000);
 
   const evalStart = Date.now();
-  console.log(`[simulator-evaluate] Calling deepseek for question ${questionId}`);
+  console.log(`[simulator-evaluate] Calling mimo-v2.5 for question ${questionId}`);
 
   try {
     const response = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
@@ -135,7 +130,8 @@ Evaluate this answer and return your assessment in JSON format:
           },
         ],
         temperature: 0.3,
-        max_tokens: 1000,
+        max_tokens: 400,
+        stream: false,
       }),
       signal: controller.signal,
     });

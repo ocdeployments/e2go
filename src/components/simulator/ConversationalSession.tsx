@@ -584,7 +584,7 @@ export default function ConversationalSession({
   // =============================================================================
   return (
     <div style={styles.page}>
-      <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } } @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }`}</style>
+      <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } } @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } } @keyframes timerPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }`}</style>
 
       {/* ── Top bar ── */}
       <div style={styles.topBar}>
@@ -602,11 +602,6 @@ export default function ConversationalSession({
           <button style={styles.muteButton} onClick={() => setMuted(m => !m)} title={muted ? 'Unmute officer voice' : 'Mute officer voice'}>
             {muted ? '🔇' : '🔊'}
           </button>
-          {phase !== 'ready' && (
-            <span style={{ ...styles.timerLabel, color: timerWarning ? 'rgba(239,68,68,0.9)' : 'rgba(245,240,232,0.4)' }}>
-              {fmt(sessionTimeLeft)}
-            </span>
-          )}
           <button style={styles.endButton} onClick={() => { stopMic(); onExit(); }}>
             End session
           </button>
@@ -620,9 +615,6 @@ export default function ConversationalSession({
         )}
       </div>
 
-      {timerWarning && (
-        <div style={styles.timerBanner}>2 minutes remaining — wrap up your current answer</div>
-      )}
 
       {/* ── Main content ── */}
       <div style={styles.main}>
@@ -869,6 +861,63 @@ export default function ConversationalSession({
           </>
         )}
       </div>
+
+      {/* ── Session countdown timer — fixed bottom bar ── */}
+      {phase !== 'ready' && (
+        <div style={{
+          position: 'fixed',
+          bottom: 0, left: 0, right: 0,
+          height: '56px',
+          background: timerWarning ? 'rgba(30,5,5,0.97)' : 'rgba(10,10,10,0.97)',
+          borderTop: timerWarning ? '1px solid rgba(239,68,68,0.35)' : '1px solid rgba(201,168,76,0.12)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '16px',
+          padding: '0 28px',
+          backdropFilter: 'blur(12px)',
+          zIndex: 200,
+          transition: 'background 0.8s ease, border-color 0.8s ease',
+        }}>
+          <span style={{
+            fontSize: '10px',
+            letterSpacing: '0.14em',
+            textTransform: 'uppercase' as const,
+            color: timerWarning ? 'rgba(239,68,68,0.55)' : 'rgba(245,240,232,0.3)',
+            whiteSpace: 'nowrap',
+          }}>
+            {timerWarning ? 'Time running out' : 'Session time'}
+          </span>
+
+          {/* Depleting progress bar */}
+          <div style={{
+            flex: 1,
+            height: '3px',
+            background: timerWarning ? 'rgba(239,68,68,0.12)' : 'rgba(245,240,232,0.07)',
+            position: 'relative',
+          }}>
+            <div style={{
+              position: 'absolute', left: 0, top: 0, bottom: 0,
+              width: `${(sessionTimeLeft / (15 * 60)) * 100}%`,
+              background: timerWarning ? '#ef4444' : '#C9A84C',
+              transition: 'width 1s linear, background 0.8s ease',
+            }} />
+          </div>
+
+          {/* Digital countdown */}
+          <span style={{
+            fontSize: '22px',
+            fontVariantNumeric: 'tabular-nums',
+            letterSpacing: '0.04em',
+            fontWeight: 500,
+            color: timerWarning ? 'rgba(239,68,68,0.95)' : '#C9A84C',
+            minWidth: '58px',
+            textAlign: 'right' as const,
+            animation: timerWarning ? 'timerPulse 1.5s ease-in-out infinite' : 'none',
+          }}>
+            {fmt(sessionTimeLeft)}
+          </span>
+        </div>
+      )}
     </div>
   );
 }
@@ -886,6 +935,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     flexDirection: 'column',
     paddingTop: '64px',
+    paddingBottom: '56px',
   },
   topBar: {
     display: 'flex',

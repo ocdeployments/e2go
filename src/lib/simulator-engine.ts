@@ -142,270 +142,324 @@ export async function buildSimulatorContext(applicationId: string): Promise<Simu
 // QUESTION GENERATION
 // =============================================================================
 
+function pick<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
 /**
  * Generates 10-12 personalized questions based on the simulator context.
- * Questions are ordered: universal first, then weak point probes, then business type.
+ * Each session randomly selects from question pools so repeat users get variety.
+ * Order: universal questions first, then weak point probes, then business type.
  */
 export function generateQuestions(context: SimulatorContext): Question[] {
   const questions: Question[] = [];
 
-  // === UNIVERSAL QUESTIONS (always asked) ===
-  questions.push(
-    {
-      id: 'UQ-01',
-      text: 'Tell me about your business.',
-      category: 'universal',
-      context: context.targetState
-        ? `Your ${context.businessName} in ${context.targetState}`
-        : `Your ${context.businessName}`,
-    },
-    {
-      id: 'UQ-02',
-      text: 'What is your role in the business?',
-      category: 'universal',
-    },
-    {
-      id: 'UQ-03',
-      text: `How much have you invested and in what form?`,
-      category: 'universal',
-      context: `Your investment: $${context.investmentAmount.toLocaleString()}`,
-    },
-    {
-      id: 'UQ-04',
-      text: 'Where did your investment funds come from?',
-      category: 'universal',
-    },
-    {
-      id: 'UQ-05',
-      text: 'How will this business support you financially?',
-      category: 'universal',
-      context: context.revenueYear1 > 0 ?
-        `Your Year 1 projection: $${context.revenueYear1.toLocaleString()}` : undefined,
-    },
-    {
-      id: 'UQ-06',
-      text: 'How many people will you employ?',
-      category: 'universal',
-      context: `Current: ${context.employeeCountCurrent}, Year 1: ${context.employeeCountYear1}`,
-    },
-    {
-      id: 'UQ-07',
-      text: 'What experience do you have to run this business?',
-      category: 'universal',
-    },
-    {
-      id: 'UQ-08',
-      text: 'What are your plans if your visa is not approved?',
-      category: 'universal',
-    },
-    {
-      id: 'UQ-09',
-      text: 'Do you intend to remain in the U.S. permanently?',
-      category: 'universal',
-    }
-  );
+  const businessCtx = context.targetState
+    ? `${context.businessName} in ${context.targetState}`
+    : context.businessName;
 
-  // === WEAK POINT PROBE QUESTIONS ===
-  // Generate 1-3 probe questions based on analysis engine flags
+  // === UNIVERSAL QUESTIONS — pool of alternatives per topic ===
+  // Each session randomly picks one phrasing per topic.
+
+  questions.push({
+    id: 'UQ-01',
+    category: 'universal',
+    context: businessCtx,
+    text: pick([
+      'Tell me about your business.',
+      'Describe your business to me in your own words.',
+      'Give me an overview of what this company does.',
+      'What does your business actually do?',
+    ]),
+  });
+
+  questions.push({
+    id: 'UQ-02',
+    category: 'universal',
+    text: pick([
+      'What is your role in the business?',
+      'What will you be doing on a day-to-day basis?',
+      'How are you involved in the management of this business?',
+      'Describe your responsibilities as the investor-operator.',
+    ]),
+  });
+
+  questions.push({
+    id: 'UQ-03',
+    category: 'universal',
+    context: `Your investment: $${context.investmentAmount.toLocaleString()}`,
+    text: pick([
+      'How much have you invested and in what form?',
+      `Walk me through your $${context.investmentAmount.toLocaleString()} investment — what form did it take?`,
+      'What is the total amount committed to this business, and how was it deployed?',
+      'Describe the nature and form of your investment in this business.',
+    ]),
+  });
+
+  questions.push({
+    id: 'UQ-04',
+    category: 'universal',
+    text: pick([
+      'Where did your investment funds come from?',
+      'How did you accumulate the funds to make this investment?',
+      'Walk me through the source of your investment capital.',
+      'Explain the origin of the money you invested in this business.',
+    ]),
+  });
+
+  questions.push({
+    id: 'UQ-05',
+    category: 'universal',
+    context: context.revenueYear1 > 0 ? `Year 1 projection: $${context.revenueYear1.toLocaleString()}` : undefined,
+    text: pick([
+      'How will this business support you financially?',
+      'What income do you expect to draw from this business?',
+      'At what point will the business generate enough revenue to support your household?',
+      'How do you plan to compensate yourself from this business?',
+    ]),
+  });
+
+  questions.push({
+    id: 'UQ-06',
+    category: 'universal',
+    context: `Current: ${context.employeeCountCurrent}, Year 1 plan: ${context.employeeCountYear1}`,
+    text: pick([
+      'How many people will you employ?',
+      'What is your hiring plan for this business?',
+      'Describe the jobs you will create for U.S. workers.',
+      'Tell me about your staffing plans — who have you hired or plan to hire?',
+    ]),
+  });
+
+  questions.push({
+    id: 'UQ-07',
+    category: 'universal',
+    text: pick([
+      'What experience do you have to run this business?',
+      'What qualifications do you bring to this venture?',
+      'Why are you the right person to operate this particular business?',
+      'Tell me about your professional background and how it relates to this business.',
+    ]),
+  });
+
+  questions.push({
+    id: 'UQ-08',
+    category: 'universal',
+    text: pick([
+      'What are your plans if your visa is not approved?',
+      'What will you do if this E-2 application is denied?',
+      'Do you have a contingency plan if you cannot operate this business from the United States?',
+      'If your visa is not approved, what happens to this business?',
+    ]),
+  });
+
+  questions.push({
+    id: 'UQ-09',
+    category: 'universal',
+    text: pick([
+      'Do you intend to remain in the U.S. permanently?',
+      'Is it your intention to remain in the United States indefinitely?',
+      'Do you understand that the E-2 requires you to maintain non-immigrant intent?',
+      'Do you have plans to apply for a green card or permanent residence?',
+    ]),
+  });
+
+  // === WEAK POINT PROBE QUESTIONS — flagged by the analysis engine ===
 
   if (context.substantialityScore !== null && context.substantialityScore < 70) {
     questions.push({
       id: 'WP-01',
-      text: `Walk me through exactly how your $${context.investmentAmount.toLocaleString()} investment was allocated across the business.`,
       category: 'weak_point_probe',
       context: `Substantiality score: ${context.substantialityScore}/100`,
       relatesToField: 'investment_allocation',
+      text: pick([
+        `Walk me through exactly how your $${context.investmentAmount.toLocaleString()} investment was allocated across the business.`,
+        `Your investment is $${context.investmentAmount.toLocaleString()}. Break that down for me — where did every dollar go?`,
+        `Give me a line-by-line account of how you deployed your $${context.investmentAmount.toLocaleString()} investment.`,
+      ]),
     });
   }
 
   if (context.marginalityScore !== null && context.marginalityScore < 70) {
     questions.push({
       id: 'WP-02',
-      text: `Your business projects $${context.revenueYear1.toLocaleString()} in Year 1. How does this compare to what you need to support your household?`,
       category: 'weak_point_probe',
       context: `Marginality score: ${context.marginalityScore}/100`,
       relatesToField: 'marginality',
+      text: pick([
+        `Your business projects $${context.revenueYear1.toLocaleString()} in Year 1. How does this compare to what you need to support your household?`,
+        `Will this business generate enough income for you to live on? Walk me through the numbers.`,
+        `At $${context.revenueYear1.toLocaleString()} projected Year 1 revenue, how do you plan to pay your personal living expenses?`,
+      ]),
     });
   }
 
   if (context.developDirectScore !== null && context.developDirectScore < 70) {
     questions.push({
       id: 'WP-03',
-      text: 'Describe your day-to-day management activities. Who reports to you and how do you direct their work?',
       category: 'weak_point_probe',
       context: `Develop & Direct score: ${context.developDirectScore}/100`,
       relatesToField: 'management',
+      text: pick([
+        'Describe your day-to-day management activities. Who reports to you and how do you direct their work?',
+        'How do you actively develop and direct this enterprise on a daily basis?',
+        'Give me a specific example of a management decision you make in this business on a typical week.',
+      ]),
     });
   }
 
   if (context.priorVisaDenial) {
     questions.push({
       id: 'WP-04',
-      text: 'You were previously refused a U.S. visa. Can you explain what has changed since then?',
       category: 'weak_point_probe',
       context: 'Prior denial on record',
       relatesToField: 'prior_denial',
+      text: pick([
+        'You were previously refused a U.S. visa. Can you explain what has changed since then?',
+        'Your record shows a prior visa refusal. What is different about your situation today?',
+        'Tell me about your prior visa denial and why this application should be viewed differently.',
+      ]),
     });
   }
 
-  // === BUSINESS TYPE QUESTIONS ===
-  // Generate 2-3 questions based on business category
-  const businessTypeQuestions = getBusinessTypeQuestions(context.businessCategory);
-  questions.push(...businessTypeQuestions.slice(0, 3));
+  // Flag: immigrant intent risk
+  if (context.immigrantIntentRisk === 'high' || context.immigrantIntentRisk === 'moderate') {
+    questions.push({
+      id: 'WP-05',
+      category: 'weak_point_probe',
+      context: `Intent risk: ${context.immigrantIntentRisk}`,
+      relatesToField: 'immigrant_intent',
+      text: pick([
+        'What ties do you maintain to your home country?',
+        'Tell me about your family, property, and other connections to your country of residence.',
+        'What is keeping you connected to your home country during your time in the United States?',
+      ]),
+    });
+  }
 
-  // Limit to 12 questions total
+  // === BUSINESS TYPE QUESTIONS — shuffled pool, pick 3 ===
+  const businessTypePool = getBusinessTypeQuestions(context.businessCategory, context);
+  const selected = shuffle(businessTypePool).slice(0, 3);
+  selected.forEach((q, i) => {
+    questions.push({ ...q, id: `BT-0${i + 1}` });
+  });
+
   return questions.slice(0, 12);
 }
 
 /**
- * Returns business-type-specific questions based on category.
+ * Returns a shuffleable pool of business-type questions (5-6 per category).
+ * The caller randomly samples 3.
  */
-function getBusinessTypeQuestions(category: string): Question[] {
-  const categoryLower = category.toLowerCase();
+function getBusinessTypeQuestions(category: string, context: SimulatorContext): Question[] {
+  const cat = category.toLowerCase();
+  const bt = (text: string): Question => ({ id: 'BT-X', text, category: 'business_type' });
 
-  // Food & Beverage
-  if (categoryLower.includes('food') || categoryLower.includes('restaurant') || categoryLower.includes('cafe')) {
+  if (cat.includes('food') || cat.includes('restaurant') || cat.includes('cafe') || cat.includes('bakery')) {
     return [
-      {
-        id: 'BT-01',
-        text: 'What health permits have you obtained or need to obtain?',
-        category: 'business_type',
-      },
-      {
-        id: 'BT-02',
-        text: 'How will you staff this restaurant? What is your hiring plan?',
-        category: 'business_type',
-      },
-      {
-        id: 'BT-03',
-        text: 'Is this a franchise? If so, what does the franchisor provide?',
-        category: 'business_type',
-      },
+      bt('What health and food-handler permits have you obtained or applied for?'),
+      bt('How will you staff this restaurant — what positions and what is your hiring timeline?'),
+      bt('Is this a franchise? If so, what training and support does the franchisor provide?'),
+      bt('How will you handle food safety compliance and inspections?'),
+      bt('Describe your target customer and how you plan to market to them.'),
+      bt('What is your plan for managing food costs and supplier relationships?'),
     ];
   }
 
-  // Healthcare / Senior Care
-  if (categoryLower.includes('health') || categoryLower.includes('senior') || categoryLower.includes('care')) {
+  if (cat.includes('health') || cat.includes('senior') || cat.includes('care') || cat.includes('medical')) {
     return [
-      {
-        id: 'BT-01',
-        text: 'What license have you applied for and what is the status?',
-        category: 'business_type',
-      },
-      {
-        id: 'BT-02',
-        text: 'How do you plan to find and retain qualified caregivers?',
-        category: 'business_type',
-      },
-      {
-        id: 'BT-03',
-        text: 'Who is your Director of Care and what are their qualifications?',
-        category: 'business_type',
-      },
+      bt('What license or certification have you applied for, and what is the current status?'),
+      bt('How do you plan to find and retain qualified caregivers or clinical staff?'),
+      bt('Who is your Director of Care or clinical supervisor, and what are their qualifications?'),
+      bt('How do you ensure compliance with state health and safety regulations?'),
+      bt('How will you handle liability and what insurance coverage have you arranged?'),
+      bt('Who are your referral sources — hospitals, social workers, doctors?'),
     ];
   }
 
-  // Retail
-  if (categoryLower.includes('retail') || categoryLower.includes('store') || categoryLower.includes('shop')) {
+  if (cat.includes('retail') || cat.includes('store') || cat.includes('shop') || cat.includes('boutique')) {
     return [
-      {
-        id: 'BT-01',
-        text: 'How did you select this location? What analysis did you do?',
-        category: 'business_type',
-      },
-      {
-        id: 'BT-02',
-        text: 'How do you manage inventory? What suppliers will you use?',
-        category: 'business_type',
-      },
-      {
-        id: 'BT-03',
-        text: 'Who are your main competitors and how do you differentiate?',
-        category: 'business_type',
-      },
+      bt('How did you select this location? What market analysis did you conduct?'),
+      bt('How do you manage inventory and who are your main suppliers?'),
+      bt('Who are your main competitors and how will you differentiate?'),
+      bt('What is your plan for attracting customers — foot traffic, online, marketing?'),
+      bt('How will you handle seasonal fluctuations in sales?'),
+      bt('Have you signed a lease? What are the key terms?'),
     ];
   }
 
-  // Franchise (generic)
-  if (categoryLower.includes('franchise')) {
+  if (cat.includes('franchise')) {
     return [
-      {
-        id: 'BT-01',
-        text: `What attracted you to this franchise system specifically?`,
-        category: 'business_type',
-      },
-      {
-        id: 'BT-02',
-        text: 'Have you reviewed the Franchise Disclosure Document?',
-        category: 'business_type',
-      },
-      {
-        id: 'BT-03',
-        text: 'What does the franchisor provide in terms of training and support?',
-        category: 'business_type',
-      },
+      bt('What attracted you to this franchise system specifically — why this brand?'),
+      bt('Have you reviewed the Franchise Disclosure Document? What stood out to you?'),
+      bt('What does the franchisor provide in terms of training, marketing, and ongoing support?'),
+      bt('How long is your franchise agreement and what are the renewal terms?'),
+      bt('Are there other franchisees in this system you have spoken with?'),
+      bt('What territory rights do you have under your franchise agreement?'),
     ];
   }
 
-  // Cleaning / Commercial Services
-  if (categoryLower.includes('cleaning') || categoryLower.includes('service')) {
+  if (cat.includes('cleaning') || cat.includes('janitorial') || cat.includes('maintenance')) {
     return [
-      {
-        id: 'BT-01',
-        text: 'How will you acquire your first commercial clients?',
-        category: 'business_type',
-      },
-      {
-        id: 'BT-02',
-        text: 'What equipment have you purchased and what is its current location?',
-        category: 'business_type',
-      },
-      {
-        id: 'BT-03',
-        text: 'Are your workers W-2 employees or 1099 contractors and why?',
-        category: 'business_type',
-      },
+      bt('How will you acquire your first commercial clients?'),
+      bt('What equipment have you purchased and where is it currently located?'),
+      bt('Will your workers be W-2 employees or 1099 contractors, and why?'),
+      bt('How will you ensure quality control across multiple job sites?'),
+      bt('What contracts or letters of intent do you currently have?'),
+      bt('How do you plan to scale — adding trucks, crews, territories?'),
     ];
   }
 
-  // IT / Consulting
-  if (categoryLower.includes('it') || categoryLower.includes('consulting') || categoryLower.includes('tech')) {
+  if (cat.includes('it') || cat.includes('consulting') || cat.includes('tech') || cat.includes('software')) {
     return [
-      {
-        id: 'BT-01',
-        text: 'Who are your current or committed clients?',
-        category: 'business_type',
-      },
-      {
-        id: 'BT-02',
-        text: 'What technology stack or services does your company specialize in?',
-        category: 'business_type',
-      },
-      {
-        id: 'BT-03',
-        text: 'How many technical staff do you employ or plan to hire by year-end?',
-        category: 'business_type',
-      },
+      bt('Who are your current clients or committed contracts?'),
+      bt('What specific services or technology does your company specialize in?'),
+      bt('How many technical staff do you employ or plan to hire in Year 1?'),
+      bt('How do you protect client data and maintain cybersecurity compliance?'),
+      bt('How do you price your services and what is your typical contract size?'),
+      bt('Who are your competitors and how do clients find you?'),
     ];
   }
 
-  // Default generic business questions
+  if (cat.includes('transport') || cat.includes('logistics') || cat.includes('trucking') || cat.includes('delivery')) {
+    return [
+      bt('What operating authority, DOT number, or commercial licenses have you obtained?'),
+      bt('How many vehicles do you own or lease and what routes do you run?'),
+      bt('How do you find freight — brokers, direct shippers, load boards?'),
+      bt('How do you manage driver recruitment, compliance, and safety?'),
+      bt('What insurance coverage does your fleet carry?'),
+      bt('How do you handle regulatory compliance like ELD mandates and hours of service?'),
+    ];
+  }
+
+  if (cat.includes('construction') || cat.includes('contractor') || cat.includes('renovation')) {
+    return [
+      bt('What contractor license do you hold and in which state?'),
+      bt('What type of projects do you take — residential, commercial, specialty?'),
+      bt('How do you source subcontractors and manage project timelines?'),
+      bt('What bonding and insurance do you carry?'),
+      bt('Describe your current project pipeline or bids outstanding.'),
+      bt('How do you handle permitting and compliance on job sites?'),
+    ];
+  }
+
+  // Default pool — general business questions
   return [
-    {
-      id: 'BT-01',
-      text: 'Why did you choose this business in this location?',
-      category: 'business_type',
-    },
-    {
-      id: 'BT-02',
-      text: 'What is your competitive advantage?',
-      category: 'business_type',
-    },
-    {
-      id: 'BT-03',
-      text: 'How will you market your services?',
-      category: 'business_type',
-    },
+    bt('Why did you choose this particular business in this location?'),
+    bt('What is your competitive advantage over existing businesses in this market?'),
+    bt('How will you market your services and acquire your first customers?'),
+    bt(`How did you determine that $${context.investmentAmount.toLocaleString()} was the right amount to invest?`),
+    bt('What is your exit plan — how long do you plan to operate this business?'),
+    bt('What are the biggest risks to this business and how do you plan to address them?'),
   ];
 }
 
@@ -421,8 +475,8 @@ export function generateCoachingSummary(
   _context: SimulatorContext
 ): CoachingSummary {
   const strongAnswers: { question: string; note: string }[] = [];
-  const needsWork: { question: string; suggestion: string }[] = [];
-  const inconsistencies: { question: string; filed: string; spoken: string }[] = [];
+  const needsWork: { questionId: string; question: string; suggestion: string; originalAnswer: string }[] = [];
+  const inconsistencies: { questionId: string; question: string; filed: string; spoken: string; originalAnswer: string }[] = [];
   const weakPointsAtRisk: string[] = [];
 
   session.questions.forEach((q) => {
@@ -435,19 +489,22 @@ export function generateCoachingSummary(
         break;
       case 'weak':
         needsWork.push({
+          questionId: q.questionId,
           question: q.questionText,
           suggestion: q.specificSuggestion || q.feedback,
+          originalAnswer: q.answerText,
         });
-        // Also track as weak point if it was a probe question
         if (q.questionId.startsWith('WP-')) {
           weakPointsAtRisk.push(q.questionText);
         }
         break;
       case 'inconsistent':
         inconsistencies.push({
+          questionId: q.questionId,
           question: q.questionText,
           filed: q.specificSuggestion || 'See filed documents',
-          spoken: q.answerText.substring(0, 100) + '...',
+          spoken: q.answerText.substring(0, 120),
+          originalAnswer: q.answerText,
         });
         weakPointsAtRisk.push(q.questionText);
         break;

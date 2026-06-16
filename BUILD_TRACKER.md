@@ -1,6 +1,6 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 13, 2026 — Sessions 4-19 complete
+**Last Updated:** June 16, 2026 — Session 22 complete
 **App Name:** E2go.app
 **Stack:** Next.js 14 · TypeScript · Tailwind CSS · Supabase · Claude API
 **Dev URL:** https://e2go-git-dev-ocdeployments-projects.vercel.app
@@ -289,8 +289,11 @@ to Supabase: npx supabase db push
 | Design violations fixed — zero border-radius | ✅ COMPLETE |
 | simulator_sessions + simulator_answers DB tables | ✅ COMPLETE |
 | Session limit tracking (used / purchased on applications) | ✅ COMPLETE |
-| OpenRouter MiniMax evaluation engine | ✅ COMPLETE |
+| OpenRouter MiMo evaluation engine (coaching-quality prompts) | ✅ COMPLETE |
 | Coaching summary + readiness indicator | ✅ COMPLETE |
+| Per-session question variety (pool-based random selection) | ✅ COMPLETE |
+| Prominent session countdown timer (fixed bottom bar) | ✅ COMPLETE |
+| Post-session coaching report (what officer expected, model answer) | ✅ COMPLETE |
 
 ✅ STRIPE_PRICE_SIMULATOR renamed to STRIPE_PRICE_SIMULATOR_3PACK (commit 0aca5dc)
 ✅ useEffect dependency fixed — question?.id → question.text (commit 0aca5dc)
@@ -2009,6 +2012,7 @@ These sessions were planned and named in the June 14 audit's "SPECCED BUT NOT YE
 | SESSION21_INTERVIEW_PREP_KIT | 10-15 interview Q+A pairs with example answers, downloadable PDF | HIGH — product value |
 | SESSION22_SENTRY_ERROR_TRACKING | Sentry error tracking + source maps | HIGH — pre-launch ops |
 | SESSION23_UPTIME_MONITORING | Uptime monitoring (BetterUptime or similar) | MEDIUM — ops |
+| SESSION_INVOICING | Enable Stripe invoice generation on checkout completion — business name, address, tax ID, line item descriptions per tier, PDF emailed to client | HIGH — pre-launch, every paying client needs one |
 | MODULE4_FOLLOWUP_UI | Module 4 follow-up conversation UI — spec at docs/Spec2_Followup_Conversation.md | MEDIUM |
 
 These must be written as session files before building.
@@ -2021,8 +2025,8 @@ These cannot be done by code — require owner access to Supabase, Stripe, or co
 
 | Action | Priority | Notes |
 |---|---|---|
-| Accept Groq Orpheus TTS terms | 🔴 HIGH | `https://console.groq.com/playground?model=canopylabs%2Forpheus-v1-english` — voice mode is completely blocked until this is done |
-| Update Supabase pricing table: simulator_3pack | 🔴 HIGH | `UPDATE pricing SET stripe_price_id = 'price_1Tim5fF7Ggk3LUEy2JGRRKrB', amount_cents = 2999 WHERE tier_id = 'simulator_3pack';` |
+| ~~Accept Groq Orpheus TTS terms~~ | ~~🔴 HIGH~~ | ✅ DONE June 16, 2026 |
+| ~~Update Supabase pricing table: simulator_3pack~~ | ~~🔴 HIGH~~ | ✅ DONE June 16, 2026 — price_1Tim5fF7Ggk3LUEy2JGRRKrB / 2999 cents |
 | Update Vercel env: STRIPE_PRICE_SIMULATOR_3PACK | 🔴 HIGH | New value: `price_1Tim5fF7Ggk3LUEy2JGRRKrB` |
 | Refund $197 test charge | 🔴 HIGH | In Stripe dashboard — was a test but was a real charge |
 | Check Resend domain verification | 🟡 MEDIUM | Is e2go.app verified? If yes, revert email sender to results@e2go.app |
@@ -2031,13 +2035,13 @@ These cannot be done by code — require owner access to Supabase, Stripe, or co
 | Clean up Chen duplicate applications | 🟡 MEDIUM | `DELETE FROM applications WHERE user_id = 'a2b8f8c3-...' AND id != '9f981747-...'` |
 | Clean up ocdeployments blank duplicates | 🟡 MEDIUM | `DELETE FROM applications WHERE id IN ('bd8a9c1a-...', '49afc548-...')` |
 | Configure Stripe webhook for production URL | 🟡 MEDIUM | Required before any real customers can pay; production URL: `https://e2go.app/api/stripe/webhook` |
-| Configure Upstash Redis in Vercel env vars | 🟡 MEDIUM | Rate limiting only works locally; needs `UPSTASH_REDIS_REST_URL` + `TOKEN` in Vercel |
+| ~~Configure Upstash Redis in Vercel env vars~~ | ~~🟡 MEDIUM~~ | ✅ DONE — both UPSTASH_REDIS_REST_URL and TOKEN confirmed set June 16, 2026 |
 
 ---
 
 ## KNOWN ISSUES (Updated June 15, 2026)
 
-1. **Groq TTS voice mode blocked** — 🔴 HIGH. `canopylabs/orpheus-v1-english` returns 400 model_terms_required. Owner must accept at console.groq.com.
+1. ~~**Groq TTS voice mode blocked**~~ — ✅ RESOLVED June 16, 2026. Groq Orpheus terms accepted; audio MIME/format fixed in Session 21.
 2. **Generation engine: approval gate, setState, empty boxes** — MEDIUM. File: docs/sessions/SESSION_PLAN_GENERATION_FIXES.md
 3. **Bracket highlighting regex + checklist builder** — MEDIUM. Regex only matches `[BRACKET FORMAT]...[/BRACKET FORMAT]`, not descriptive brackets like `[passport number from Tab A]`. Checklist shows 0 items.
 4. **getSession() security warnings** — MEDIUM. Multiple files use Supabase `.getSession()` — Supabase now recommends `.getUser()` instead. Flag in console; not a hard failure but should be swept.
@@ -2146,19 +2150,111 @@ These cannot be done by code — require owner access to Supabase, Stripe, or co
 
 ---
 
+### June 16, 2026 — Session 22: Simulator Evaluation Quality + Question Variety + Timer Redesign
+
+**Scope:** Four simulator improvements — evaluation quality, per-session question variety, prominent session timer, comprehensive post-session coaching report with model answers.
+
+#### 1. Evaluate prompt — coaching quality fix
+
+**Problem:** Previous session introduced "2 sentences max" / "1 sentence" constraints to reduce tokens, which made evaluation feedback shallow and unhelpful.
+
+- `src/app/api/simulator/evaluate/route.ts` — prompt rewritten:
+  - `feedback`: now asks for 3 sentences — what the officer expects, whether the answer meets the bar, and the specific gap identified
+  - `specificSuggestion`: now asks for 2 sentences — exactly what to say differently and how to frame it correctly for E-2
+  - `documentReference`: now specifies the full tab name (e.g. "Tab B - Business Plan, Section 3") not just a tab letter
+  - `max_tokens`: bumped from 300 → 400 to accommodate richer feedback
+
+#### 2. Question variety — pool-based random selection
+
+**Problem:** All 9 universal questions were hardcoded with identical phrasing every session. A client doing 4 sessions gets the same 9 questions every time.
+
+- `src/lib/simulator-engine.ts` — complete rewrite of `generateQuestions()`:
+  - Added `pick<T>()` and `shuffle<T>()` helpers
+  - Each universal question (UQ-01 through UQ-09) now draws from a pool of 3-4 alternative phrasings per topic, randomly selected each session
+  - Weak point probe questions (WP-01 through WP-04) also have 2-3 phrasings per probe
+  - New WP-05 probe for immigrant intent risk (moderate or high flag)
+  - `getBusinessTypeQuestions()` now returns expanded pools of 5-6 questions per category; caller shuffles and takes 3
+  - Business type pools expanded — added 3 new categories: transport/logistics, construction/contractor, plus enriched generic pool
+  - Business type pool questions now personalized with context variables (investment amount etc.)
+  - Total variety: 9 topic pools × ~4 phrasings = 36 universal variants; 7+ category pools × 5-6 questions each
+
+#### 3. Session timer — prominent visual countdown
+
+**Problem:** Timer was a 13px text label in the top-right corner of the voice interview; text mode had no visible timer at all.
+
+- `src/components/simulator/ConversationalSession.tsx` (voice mode):
+  - Removed timer text from top bar
+  - Removed text-only `timerBanner` warning
+  - Added `@keyframes timerPulse` animation
+  - Added fixed bottom bar (56px, `z-index: 200`, `backdrop-filter: blur(12px)`)
+  - Bar contains: "Session time" label + depleting gold progress bar + 22px digital countdown
+  - At < 2 minutes: background turns red tint, bar turns red, countdown pulses, label → "Time running out"
+  - `page` style: added `paddingBottom: '56px'` so content doesn't hide behind bar
+- `src/app/simulator/page.tsx` (text mode `ActiveSession`):
+  - Removed non-functional `{mode === 'voice' && timer}` guards (mode is always 'text' in ActiveSession)
+  - Added identical fixed bottom bar to text mode as well
+  - Text mode now has a visible session timer for the first time
+
+#### 4. Comprehensive post-session coaching report
+
+**Problem:** Session complete screen showed one-line suggestions per weak answer. User request: full coaching cards with what the officer expected, what was missing, and what a strong answer looks like.
+
+**Types updated (`src/types/simulator.ts`):**
+- `QuestionCoaching` — added `modelAnswer: string` field
+- `CoachingSummary.needsWork` — enriched with `questionId` and `originalAnswer`
+- `CoachingSummary.inconsistencies` — enriched with `questionId` and `originalAnswer`
+
+**Engine updated (`src/lib/simulator-engine.ts`):**
+- `generateCoachingSummary()` local array type declarations updated to match new interface
+- Now correctly populates `questionId` and `originalAnswer` in both `needsWork` and `inconsistencies`
+
+**New route (`src/app/api/simulator/coaching-report/route.ts`):**
+- POST endpoint, model: `xiaomi/mimo-v2.5-pro`, timeout: 90s, max_tokens: 2400
+- Takes all weak/inconsistent Q&A pairs in one call
+- Returns `QuestionCoaching[]` per question with: `whatOfficerExpected`, `whatWasMissing`, `keyPoints[]` (3-5 bullets), `modelAnswer` (first-person example answer), `documentReference`
+- Non-fatal: returns `[]` on timeout or parse failure — coaching cards simply don't appear
+
+**Simulator page (`src/app/simulator/page.tsx`):**
+- Added `QuestionCoaching` to type imports
+- Added `coachingLoading` state
+- Added `fetchCoachingReport(summary, ctx)` async helper — fires post-completion, non-blocking
+- Hooked into both completion paths: text mode (after `setScreen('complete')`) and voice mode (`onComplete` callback)
+- Passes `coachingLoading` to `SessionComplete`
+
+**`SessionComplete` component — full redesign:**
+- New `CoachingCard` sub-component (appears once per weak/inconsistent question):
+  - Badge: WEAK / INCONSISTENCY (color-coded)
+  - Question text + truncated original answer (italicized, 180-char limit)
+  - "WHAT THE OFFICER EXPECTS" — 2-3 sentence explanation
+  - "WHAT WAS MISSING" — gap analysis
+  - "WHAT TO SAY IN YOUR INTERVIEW" — bulleted key points (green bordered)
+  - Model answer block (green tint, first-person, with disclaimer: "This is a guide… not a script. Officers can tell when answers are memorized.")
+  - Document reference chip (gold tint)
+  - Falls back to original one-liner suggestion if coaching API didn't return data
+- Loading state: "Analyzing your answers with E-2 expertise..." spinner while coaching loads
+- "generating..." inline label next to section heading while loading but after cards appear
+- Strong answers section condensed (count in title)
+- Practice section updated: "Focus on these questions in your next session"
+
+**Build:** Clean ✅ — `npm run build` zero errors, 93 static pages
+
+---
+
 ## NEXT SESSION PRIORITIES (Updated June 16, 2026)
 
-**Owner actions first (unblock testing):**
-1. Accept Groq TTS terms (30 seconds) → unblocks voice mode: `https://console.groq.com/playground?model=canopylabs%2Forpheus-v1-english`
-2. Run the Supabase SQL for simulator_3pack pricing update
+**Owner actions (already complete or still pending):**
+1. ~~Accept Groq TTS terms~~ ✅ DONE
+2. ~~Update Supabase pricing: simulator_3pack~~ ✅ DONE
 3. Update Vercel env: STRIPE_PRICE_SIMULATOR_3PACK → price_1Tim5fF7Ggk3LUEy2JGRRKrB
 4. Refund $197 test charge in Stripe dashboard
 
 **Code sessions — in priority order:**
-1. End-to-end simulator test — voice mode, text mode, purchase flow, coaching summary (verify audio now works)
-2. Adaptive Quick Intake for standalone simulator users — document-first extraction → pre-filled confirmation → "do you have a document for X?" pattern → CIP data model in Supabase
-3. Gap Analysis page — `/gap-analysis` route, 6-category scoring UI, priority action list
-4. Process Flow widget → React `<ProcessFlow />` component on landing page
-5. Generation engine fixes — docs/sessions/SESSION_PLAN_GENERATION_FIXES.md
-6. Bracket highlighting regex + checklist builder fix
-7. Pricing/packaging consolidation — all tiers need review (deferred from Session 21 per user direction)
+1. End-to-end simulator test — voice mode, text mode, coaching report (verify evaluation depth improved)
+2. Nervousness / delivery analysis — add `deliveryNotes` field to evaluation; flag filler words, very short answers, hedging language from transcript. Frame as "delivery confidence coaching" not lie detection.
+3. Adaptive Quick Intake for standalone simulator users — document-first extraction → pre-filled confirmation → "do you have a document for X?" pattern → CIP data model
+4. Gap Analysis page — `/gap-analysis` route, 6-category scoring UI, priority action list
+5. Process Flow widget → React `<ProcessFlow />` component on landing page
+6. Generation engine fixes — docs/sessions/SESSION_PLAN_GENERATION_FIXES.md
+7. Bracket highlighting regex + checklist builder fix
+8. Pricing/packaging consolidation — all tiers need review (deferred from Session 21 per user direction)
+9. SESSION_INVOICING — Stripe invoice generation on checkout

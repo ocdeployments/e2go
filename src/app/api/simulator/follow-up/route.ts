@@ -82,7 +82,8 @@ Generate exactly ONE targeted follow-up question to probe the specific weakness 
           },
         ],
         temperature: 0.5,
-        max_tokens: 120,
+        max_tokens: 80,
+        stream: false,
       }),
       signal: controller.signal,
     });
