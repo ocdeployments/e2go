@@ -108,7 +108,10 @@ Evaluate this answer and return your assessment in JSON format:
 }`;
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 25_000);
+  const timeout = setTimeout(() => controller.abort(), 30_000);
+
+  const evalStart = Date.now();
+  console.log(`[simulator-evaluate] Calling deepseek for question ${questionId}`);
 
   try {
     const response = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
@@ -120,7 +123,7 @@ Evaluate this answer and return your assessment in JSON format:
         'X-Title': 'E2go Interview Simulator',
       },
       body: JSON.stringify({
-        model: 'minimax/minimax-m2.5',
+        model: 'deepseek/deepseek-chat',
         messages: [
           {
             role: 'system',
@@ -136,6 +139,8 @@ Evaluate this answer and return your assessment in JSON format:
       }),
       signal: controller.signal,
     });
+
+    console.log(`[simulator-evaluate] OpenRouter responded in ${Date.now() - evalStart}ms — HTTP ${response.status}`);
 
     if (!response.ok) {
       const errorBody = await response.text();
@@ -177,7 +182,7 @@ Evaluate this answer and return your assessment in JSON format:
 
   } catch (error) {
     const isAbort = error instanceof DOMException && error.name === 'AbortError';
-    console.error(`[simulator-evaluate] Evaluation ${isAbort ? 'timed out' : 'failed'} for question ${questionId}:`, error);
+    console.error(`[simulator-evaluate] Evaluation ${isAbort ? `TIMED OUT after ${Date.now() - evalStart}ms` : 'FAILED'} for question ${questionId}:`, error);
     return NextResponse.json({
       rating: 'weak',
       feedback: isAbort
