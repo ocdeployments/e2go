@@ -149,10 +149,10 @@ export async function middleware(req: NextRequest) {
   }
 
   // Block standalone simulator subscribers from case-building / document-
-  // generation routes. They only purchased the interview simulator, not a
-  // package — these routes (and the documents it would produce) aren't theirs.
-  const CASE_BUILDING_ROUTES = ['/apply', '/generate/', '/documents/'];
-  if (session && CASE_BUILDING_ROUTES.some((route) => pathname.startsWith(route))) {
+  // generation routes and the main application dashboard. They only purchased
+  // the interview simulator — /simulator is their home.
+  const SIMULATOR_BLOCKED_ROUTES = ['/apply', '/generate/', '/documents/', '/dashboard'];
+  if (session && SIMULATOR_BLOCKED_ROUTES.some((route) => pathname.startsWith(route))) {
     const { data: apps } = await supabase
       .from('applications')
       .select('source')
@@ -163,7 +163,7 @@ export async function middleware(req: NextRequest) {
     );
 
     if (simulatorOnly) {
-      return NextResponse.redirect(new URL('/dashboard', req.url));
+      return NextResponse.redirect(new URL('/simulator', req.url));
     }
   }
 

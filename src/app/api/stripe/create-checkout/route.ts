@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { tierId, applicationId, children_count } = body;
+    const { tierId, applicationId, children_count, successUrl: rawSuccessUrl, cancelUrl: rawCancelUrl } = body;
 
     if (!tierId || !applicationId) {
       return NextResponse.json(
@@ -135,13 +135,26 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Accept caller-supplied redirect URLs only if they are same-origin
+    const isSameOrigin = (url: string) => {
+      try { return new URL(url).origin === new URL(appUrl).origin; } catch { return false; }
+    };
+    const successUrl = rawSuccessUrl && isSameOrigin(rawSuccessUrl)
+      ? rawSuccessUrl
+      : `${appUrl}/pricing/success?session_id={CHECKOUT_SESSION_ID}`;
+    const cancelUrl = rawCancelUrl && isSameOrigin(rawCancelUrl)
+      ? rawCancelUrl
+      : `${appUrl}/pricing`;
+
     // Create Stripe checkout session
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: lineItems,
       mode: 'payment',
-      success_url: `${appUrl}/pricing/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${appUrl}/pricing`,
+      success_url: successUrl.includes('{CHECKOUT_SESSION_ID}')
+        ? successUrl
+        : `${successUrl}${successUrl.includes('?') ? '&' : '?'}session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: cancelUrl,
       customer_email: email,
       metadata: {
         applicationId,
