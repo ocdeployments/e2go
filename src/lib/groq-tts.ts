@@ -4,7 +4,7 @@
 
 function playAudioChunk(base64: string): Promise<void> {
   return new Promise((resolve) => {
-    const audioUrl = `data:audio/mp3;base64,${base64}`;
+    const audioUrl = `data:audio/wav;base64,${base64}`;
     const audio = new Audio(audioUrl);
     audio.onended = () => resolve();
     audio.onerror = () => resolve();

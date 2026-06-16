@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
           model: 'canopylabs/orpheus-v1-english',
           input: chunk,
           voice: 'daniel',
-          response_format: 'mp3',
+          response_format: 'wav',
         }),
       });
 
