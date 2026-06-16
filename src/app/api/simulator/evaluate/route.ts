@@ -108,7 +108,7 @@ Evaluate this answer and return your assessment in JSON format:
 }`;
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 30_000);
+  const timeout = setTimeout(() => controller.abort(), 45_000);
 
   const evalStart = Date.now();
   console.log(`[simulator-evaluate] Calling deepseek for question ${questionId}`);
@@ -123,7 +123,7 @@ Evaluate this answer and return your assessment in JSON format:
         'X-Title': 'E2go Interview Simulator',
       },
       body: JSON.stringify({
-        model: 'deepseek/deepseek-chat',
+        model: 'xiaomi/mimo-v2.5',
         messages: [
           {
             role: 'system',
