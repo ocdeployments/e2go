@@ -9,6 +9,7 @@ import {
   buildSimulatorContext,
   generateQuestions,
   generateCoachingSummary,
+  analyzeDelivery,
   createSimulatorSession,
   saveSimulatorAnswer,
   completeSimulatorSession,
@@ -17,7 +18,7 @@ import {
 import { speakQuestion } from '@/lib/groq-tts';
 import CaseFileSummary from '@/components/simulator/CaseFileSummary';
 import ConversationalSession from '@/components/simulator/ConversationalSession';
-import type { SimulatorContext, Question, AnswerEvaluation, CoachingSummary, CompletedSession, QuestionCoaching } from '@/types/simulator';
+import type { SimulatorContext, Question, AnswerEvaluation, CoachingSummary, CompletedSession, QuestionCoaching, DeliveryNote } from '@/types/simulator';
 
 const supabase = createBrowserSupabaseClient();
 
@@ -72,7 +73,13 @@ export default function InterviewSimulator() {
     let cancelled = false;
 
     async function checkAuth() {
-      console.log('[SIM] checkAuth started');
+      // Capture BEFORE the first await — the URL cleanup effect fires after the
+      // first async yield and strips ?purchase=success, so reading window.location
+      // after any await always returns false even on a genuine Stripe redirect.
+      const hasPendingGrant = typeof window !== 'undefined' &&
+        new URLSearchParams(window.location.search).get('purchase') === 'success';
+
+      console.log('[SIM] checkAuth started, hasPendingGrant:', hasPendingGrant);
       try {
         const { data: { user } } = await supabase.auth.getUser();
         console.log('[SIM] getUser result:', user ? 'authenticated' : 'no user');
@@ -119,11 +126,6 @@ export default function InterviewSimulator() {
 
         if (app) {
           if (!cancelled) setApplication(app);
-          // Skip the initial availability check when returning from a Stripe purchase —
-          // the grant useEffect will call checkSessionAvailability after granting sessions,
-          // and if checkAuth runs it concurrently it overwrites the updated value with stale data.
-          const hasPendingGrant = typeof window !== 'undefined' &&
-            new URLSearchParams(window.location.search).get('purchase') === 'success';
           if (!hasPendingGrant) {
             const availability = await checkSessionAvailability(app.id);
             console.log('[SIM] session availability:', availability);
@@ -220,15 +222,36 @@ export default function InterviewSimulator() {
     const sessionId = pendingGrantSessionId;
     setPendingGrantSessionId(null);
 
-    fetch('/api/stripe/grant-simulator-sessions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sessionId }),
-    })
-      .then(res => res.json())
-      .then(() => checkSessionAvailability(application.id))
-      .then(avail => setSessionInfo(avail))
-      .catch(() => checkSessionAvailability(application.id).then(avail => setSessionInfo(avail)));
+    async function grantWithRetry() {
+      // Retry up to 3 times with 1.5s gaps — covers transient Vercel/Supabase blips.
+      // By the time all retries are exhausted the Stripe webhook has very likely
+      // fired independently and granted the sessions, so the fallback
+      // checkSessionAvailability call will see the correct state.
+      const MAX_ATTEMPTS = 3;
+      for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+        if (attempt > 0) await new Promise(r => setTimeout(r, 1500));
+        try {
+          const res = await fetch('/api/stripe/grant-simulator-sessions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sessionId }),
+          });
+          if (res.ok) {
+            const avail = await checkSessionAvailability(application.id);
+            setSessionInfo(avail);
+            return;
+          }
+        } catch {
+          // network error — retry
+        }
+      }
+      // All attempts failed — fall back to reading DB state directly.
+      // The Stripe webhook may have already granted the sessions server-side.
+      const avail = await checkSessionAvailability(application.id);
+      setSessionInfo(avail);
+    }
+
+    grantWithRetry();
   }, [application, pendingGrantSessionId]);
 
   // Purchase handler
@@ -379,6 +402,7 @@ export default function InterviewSimulator() {
         evaluation.documentReference
       );
 
+      const deliveryNotes = analyzeDelivery(currentAnswer);
       setSubmittedAnswers(prev => [...prev, {
         questionId: question.id,
         questionText: question.text,
@@ -386,6 +410,7 @@ export default function InterviewSimulator() {
         rating: evaluation.rating,
         feedback: evaluation.feedback,
         specificSuggestion: evaluation.specificSuggestion,
+        deliveryNotes: deliveryNotes.length > 0 ? deliveryNotes : undefined,
       }]);
     } catch (err: any) {
       setError(err.message);
@@ -1221,6 +1246,52 @@ function CoachingCard({ item, coaching }: {
   );
 }
 
+const DELIVERY_LABELS: Record<DeliveryNote['type'], { label: string; color: string }> = {
+  brevity: { label: 'TOO BRIEF', color: '#60a5fa' },
+  fillers: { label: 'FILLER WORDS', color: '#a78bfa' },
+  hedging: { label: 'HEDGING LANGUAGE', color: '#fb923c' },
+};
+
+function DeliveryFlagCard({ flag }: { flag: { questionId: string; questionText: string; notes: DeliveryNote[] } }) {
+  return (
+    <div style={{
+      border: '1px solid rgba(148,163,184,0.15)',
+      background: 'rgba(148,163,184,0.03)',
+      marginBottom: '16px',
+      padding: '20px 24px',
+    }}>
+      <div style={{ fontSize: '13px', color: 'rgba(245,240,232,0.7)', fontWeight: 500, marginBottom: '14px', lineHeight: 1.4 }}>
+        {flag.questionText}
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '10px' }}>
+        {flag.notes.map((note, i) => {
+          const { label, color } = DELIVERY_LABELS[note.type];
+          return (
+            <div key={i} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+              <div style={{
+                fontSize: '9px',
+                fontWeight: 700,
+                letterSpacing: '0.12em',
+                color,
+                padding: '3px 7px',
+                border: `1px solid ${color}40`,
+                whiteSpace: 'nowrap' as const,
+                marginTop: '1px',
+                flexShrink: 0,
+              }}>
+                {label}
+              </div>
+              <div style={{ fontSize: '12px', color: 'rgba(245,240,232,0.55)', lineHeight: 1.55 }}>
+                {note.detail}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function SessionComplete({
   summary,
   sessionNumber,
@@ -1318,6 +1389,21 @@ function SessionComplete({
                 item={item}
                 coaching={summary.detailedCoaching?.find(c => c.questionId === item.questionId)}
               />
+            ))}
+          </div>
+        )}
+
+        {/* Delivery Coaching */}
+        {summary.deliveryFlags && summary.deliveryFlags.length > 0 && (
+          <div style={{ marginBottom: '32px' }}>
+            <h3 style={{ fontSize: '14px', fontWeight: 500, color: '#f5f0e8', marginBottom: '6px' }}>
+              Delivery coaching
+            </h3>
+            <p style={{ fontSize: '12px', color: 'rgba(245,240,232,0.4)', marginBottom: '20px', marginTop: 0 }}>
+              These are presentation patterns detected in your spoken answers — independent of content quality.
+            </p>
+            {summary.deliveryFlags.map((flag) => (
+              <DeliveryFlagCard key={flag.questionId} flag={flag} />
             ))}
           </div>
         )}
