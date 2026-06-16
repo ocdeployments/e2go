@@ -55,6 +55,9 @@ export default function InterviewSimulator() {
   const [hasCaseFile, setHasCaseFile] = useState<boolean | null>(null);
   const [caseFileReviewed, setCaseFileReviewed] = useState(false);
   const [voiceAvailable, setVoiceAvailable] = useState(false);
+  const [followUpQuestion, setFollowUpQuestion] = useState<string | null>(null);
+  const [isInFollowUp, setIsInFollowUp] = useState(false);
+  const [followUpLoading, setFollowUpLoading] = useState(false);
 
   // Check auth and load session availability
   useEffect(() => {
@@ -271,12 +274,45 @@ export default function InterviewSimulator() {
     }
   };
 
+  // Fetch a targeted follow-up question after a weak/inconsistent answer
+  const fetchFollowUp = async () => {
+    if (!context || !questions[currentQuestionIndex] || !currentEvaluation) return;
+    setFollowUpLoading(true);
+    try {
+      const res = await fetch('/api/simulator/follow-up', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          questionId: questions[currentQuestionIndex].id,
+          questionText: questions[currentQuestionIndex].text,
+          originalAnswer: currentAnswer,
+          evaluation: currentEvaluation,
+          context,
+        }),
+      });
+      const data = await res.json();
+      if (data.followUpQuestion) {
+        setFollowUpQuestion(data.followUpQuestion);
+        setIsInFollowUp(true);
+        setCurrentAnswer('');
+        setCurrentEvaluation(null);
+      }
+    } catch (err) {
+      console.error('[SIM] Follow-up generation failed:', err);
+    } finally {
+      setFollowUpLoading(false);
+    }
+  };
+
   // Submit an answer
   const submitAnswer = async () => {
     if (!currentSession || !context || !currentAnswer.trim()) return;
 
     setLoading(true);
-    const question = questions[currentQuestionIndex];
+    // When in follow-up mode, evaluate against the follow-up question, not the original
+    const question = isInFollowUp && followUpQuestion
+      ? { id: `FU-${currentQuestionIndex}`, text: followUpQuestion, category: 'universal' as const }
+      : questions[currentQuestionIndex];
 
     try {
       const evalRes = await fetch('/api/simulator/evaluate', {
@@ -324,8 +360,9 @@ export default function InterviewSimulator() {
 
   // Move to next question
   const nextQuestion = () => {
+    setFollowUpQuestion(null);
+    setIsInFollowUp(false);
     if (currentQuestionIndex >= questions.length - 1) {
-      // Session complete
       completeSession();
     } else {
       setCurrentQuestionIndex(prev => prev + 1);
@@ -425,7 +462,16 @@ export default function InterviewSimulator() {
           mode={mode}
           questionNumber={currentQuestionIndex + 1}
           totalQuestions={questions.length}
-          question={questions[currentQuestionIndex]}
+          question={
+            isInFollowUp && followUpQuestion
+              ? {
+                  id: `FU-${currentQuestionIndex}`,
+                  text: followUpQuestion,
+                  category: 'universal' as const,
+                  context: `Follow-up to: "${questions[currentQuestionIndex]?.text.substring(0, 70)}${questions[currentQuestionIndex]?.text.length > 70 ? '...' : ''}"`,
+                }
+              : questions[currentQuestionIndex]
+          }
           answer={currentAnswer}
           onAnswerChange={setCurrentAnswer}
           evaluation={currentEvaluation}
@@ -436,6 +482,9 @@ export default function InterviewSimulator() {
           sessionTimeLeft={sessionTimeLeft}
           timerWarning={timerWarning}
           isMobile={isMobile}
+          isInFollowUp={isInFollowUp}
+          followUpLoading={followUpLoading}
+          onGetFollowUp={fetchFollowUp}
         />
       )}
 
@@ -555,6 +604,9 @@ function ActiveSession({
   sessionTimeLeft,
   timerWarning,
   isMobile,
+  isInFollowUp,
+  followUpLoading,
+  onGetFollowUp,
 }: {
   mode: 'text' | 'voice';
   questionNumber: number;
@@ -570,6 +622,9 @@ function ActiveSession({
   sessionTimeLeft: number;
   timerWarning: boolean;
   isMobile: boolean;
+  isInFollowUp: boolean;
+  followUpLoading: boolean;
+  onGetFollowUp: () => void;
 }) {
   const wordCount = answer.trim().split(/\s+/).filter(Boolean).length;
 
@@ -616,6 +671,10 @@ function ActiveSession({
             <div style={styles.timerWarning}>
               2 minutes remaining — complete your current answer
             </div>
+          )}
+
+          {isInFollowUp && (
+            <div style={styles.followUpLabel}>FOLLOW-UP QUESTION</div>
           )}
 
           <div style={styles.questionText}>{question.text}</div>
@@ -688,6 +747,16 @@ function ActiveSession({
                     )}
                   </div>
 
+                  {!isInFollowUp && (evaluation.rating === 'weak' || evaluation.rating === 'inconsistent') && (
+                    <button
+                      style={styles.followUpButton}
+                      onClick={onGetFollowUp}
+                      disabled={followUpLoading}
+                    >
+                      {followUpLoading ? 'Generating follow-up...' : '+ Get a follow-up question'}
+                    </button>
+                  )}
+
                   <button style={styles.nextButton} onClick={onNext}>
                     {isLastQuestion ? 'Complete session →' : 'Next question →'}
                   </button>
@@ -705,6 +774,9 @@ function ActiveSession({
               onNext={onNext}
               loading={loading}
               isLastQuestion={isLastQuestion}
+              isInFollowUp={isInFollowUp}
+              followUpLoading={followUpLoading}
+              onGetFollowUp={onGetFollowUp}
             />
           )}
         </div>
@@ -721,6 +793,9 @@ function VoiceInput({
   onNext,
   loading,
   isLastQuestion,
+  isInFollowUp,
+  followUpLoading,
+  onGetFollowUp,
 }: {
   answer: string;
   onAnswerChange: (v: string) => void;
@@ -729,6 +804,9 @@ function VoiceInput({
   onNext: () => void;
   loading: boolean;
   isLastQuestion: boolean;
+  isInFollowUp: boolean;
+  followUpLoading: boolean;
+  onGetFollowUp: () => void;
 }) {
   const [recording, setRecording] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
@@ -858,6 +936,16 @@ function VoiceInput({
             </div>
             <p style={styles.evaluationFeedback}>{evaluation.feedback}</p>
           </div>
+
+          {!isInFollowUp && (evaluation.rating === 'weak' || evaluation.rating === 'inconsistent') && (
+            <button
+              style={styles.followUpButton}
+              onClick={onGetFollowUp}
+              disabled={followUpLoading}
+            >
+              {followUpLoading ? 'Generating follow-up...' : '+ Get a follow-up question'}
+            </button>
+          )}
 
           <button style={styles.nextButton} onClick={onNext}>
             {isLastQuestion ? 'Complete session →' : 'Next question →'}
@@ -1468,7 +1556,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontStyle: 'italic' as const,
   },
   nextButton: {
-    marginTop: '24px',
+    marginTop: '12px',
     width: '100%',
     padding: '16px 32px',
     background: 'transparent',
@@ -1478,6 +1566,32 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 500,
     cursor: 'pointer',
     transition: 'all 0.2s ease',
+  },
+  followUpButton: {
+    marginTop: '16px',
+    width: '100%',
+    padding: '12px 24px',
+    background: 'rgba(201,168,76,0.08)',
+    color: 'rgba(201,168,76,0.9)',
+    border: '1px solid rgba(201,168,76,0.25)',
+    fontSize: '13px',
+    fontWeight: 500,
+    letterSpacing: '0.04em',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    fontFamily: "'DM Sans', sans-serif",
+  },
+  followUpLabel: {
+    fontSize: '9px',
+    fontWeight: 600,
+    letterSpacing: '0.2em',
+    textTransform: 'uppercase' as const,
+    color: '#C9A84C',
+    marginBottom: '12px',
+    padding: '4px 8px',
+    background: 'rgba(201,168,76,0.1)',
+    border: '1px solid rgba(201,168,76,0.2)',
+    display: 'inline-block',
   },
 
   // Voice Input
