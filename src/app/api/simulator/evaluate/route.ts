@@ -5,6 +5,17 @@ import type { SimulatorContext, AnswerEvaluation } from '@/types/simulator';
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
 
+const DOC_TYPE_LABELS: Record<string, string> = {
+  cover_letter: 'Cover letter',
+  business_plan: 'Business plan',
+  source_of_funds: 'Source of funds',
+  biography: 'Investor biography',
+  ds160: 'DS-160 form',
+  projections: 'Financial projections',
+  operating_agreement: 'Operating agreement',
+  franchise_docs: 'Franchise documents',
+};
+
 interface EvaluateRequest {
   questionId: string;
   questionText: string;
@@ -44,6 +55,30 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // Fetch filed document summaries for grounded evaluation (non-fatal if absent)
+  let documentEvidence = '';
+  try {
+    const { data: docs } = await supabase
+      .from('application_documents')
+      .select('detected_document_type, document_summary')
+      .eq('application_id', context.applicationId)
+      .not('document_summary', 'is', null);
+
+    if (docs && docs.length > 0) {
+      const lines = docs
+        .filter(d => d.document_summary)
+        .map(d => {
+          const label = DOC_TYPE_LABELS[d.detected_document_type ?? 'unknown'] ?? 'Document';
+          return `- ${label}: ${(d.document_summary as string).substring(0, 220)}`;
+        });
+      if (lines.length > 0) {
+        documentEvidence = `\n\nFiled documents on record (use these to detect real inconsistencies):\n${lines.join('\n')}`;
+      }
+    }
+  } catch {
+    // Non-fatal — proceed without document evidence
+  }
+
   // Build the evaluation prompt
   const businessLine = context.operatingName
     ? `${context.businessName}, operating under the trade/franchise name "${context.operatingName}"`
@@ -56,7 +91,7 @@ The applicant's profile:
 - Operational status: ${context.operationalStatus}
 - Year 1 revenue projection: $${context.revenueYear1.toLocaleString()}
 - Employees: ${context.employeeCountCurrent} current, ${context.employeeCountYear1} planned
-- Prior visa denial: ${context.priorVisaDenial ? 'Yes' : 'No'}
+- Prior visa denial: ${context.priorVisaDenial ? 'Yes' : 'No'}${documentEvidence}
 
 Note: If the applicant refers to their business by a trade name, brand name, or franchise banner that differs from the legal entity name above, do NOT treat that alone as an inconsistency — businesses commonly operate under a "doing business as" or franchise name distinct from their legal name. Only flag a genuine inconsistency if the substance of the answer (investment amount, role, location, business activities, etc.) contradicts the filed application.
 
@@ -89,12 +124,12 @@ Evaluate this answer and return your assessment in JSON format:
         messages: [
           {
             role: 'system',
-            content: 'You are an experienced U.S. consular officer evaluating E-2 visa interview answers. Be strict but fair. Focus on whether the answer addresses what a real officer would want to hear, and whether it is consistent with the filed application documents.'
+            content: 'You are an experienced U.S. consular officer evaluating E-2 visa interview answers. Be strict but fair. Focus on whether the answer addresses what a real officer would want to hear, and whether it is consistent with the filed application documents. When filed documents are provided, cross-reference the answer against them and flag real contradictions.',
           },
           {
             role: 'user',
-            content: prompt
-          }
+            content: prompt,
+          },
         ],
         temperature: 0.3,
         max_tokens: 1000,
