@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { speakQuestion } from '@/lib/groq-tts';
+import { speakQuestion, resumeAudioContext } from '@/lib/groq-tts';
 import { saveSimulatorAnswer, completeSimulatorSession, generateCoachingSummary } from '@/lib/simulator-engine';
 import type { SimulatorContext, Question, AnswerEvaluation, CoachingSummary, CompletedSession } from '@/types/simulator';
 
@@ -92,6 +92,10 @@ export default function ConversationalSession({
   const [speakerTesting, setSpeakerTesting] = useState(false);
   const [micTested, setMicTested] = useState(false);
   const [micTestError, setMicTestError] = useState(false);
+  const [speakerConfirmPending, setSpeakerConfirmPending] = useState(false);
+  const [micTesting, setMicTesting] = useState(false);
+  const [micTestLevel, setMicTestLevel] = useState(0);
+  const [micTestPeakDetected, setMicTestPeakDetected] = useState(false);
 
   // What the officer is currently saying (displayed as subtitles in intro phase)
   const [introOfficerText, setIntroOfficerText] = useState('');
@@ -105,6 +109,9 @@ export default function ConversationalSession({
   const silenceStartRef = useRef<number | null>(null);
   const hasSpeechRef = useRef(false);
   const recordingStartRef = useRef<number>(0);
+  const mtStreamRef = useRef<MediaStream | null>(null);
+  const mtCtxRef = useRef<AudioContext | null>(null);
+  const mtAnimRef = useRef<number | null>(null);
 
   // Timer refs
   const sessionTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -124,6 +131,7 @@ export default function ConversationalSession({
     return () => {
       deadRef.current = true;
       stopMic();
+      stopMicTest();
       if (sessionTimerRef.current) clearInterval(sessionTimerRef.current);
       if (autoAdvanceRef.current) clearInterval(autoAdvanceRef.current);
     };
@@ -180,35 +188,85 @@ export default function ConversationalSession({
 
   async function handleTestSpeaker() {
     setSpeakerTesting(true);
-    // Unlock browser autoplay before the async TTS call
-    const s = new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=');
-    s.play().catch(() => {});
+    setSpeakerConfirmPending(false);
     try {
-      await speakQuestion('Audio test. Your speakers are working correctly.');
-      setSpeakerTested(true);
-    } catch {
-      setSpeakerTested(true);
-    } finally {
+      // Resume the shared TTS AudioContext during this user gesture — unlocks it for the session
+      await resumeAudioContext();
+      // Play a local 440 Hz tone: instant, no network call, proves speakers work
+      const ctx = new AudioContext();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = 440;
+      gain.gain.setValueAtTime(0.35, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.8);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.8);
+      await new Promise<void>(resolve => {
+        osc.onended = () => { ctx.close().catch(() => {}); resolve(); };
+      });
+    } catch { /* silent */ } finally {
       setSpeakerTesting(false);
+      setSpeakerConfirmPending(true);
     }
   }
 
   async function handleTestMic() {
     setMicTestError(false);
+    setMicTestPeakDetected(false);
+    setMicTestLevel(0);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      stream.getTracks().forEach(t => t.stop());
-      setMicTested(true);
+      mtStreamRef.current = stream;
+      setMicTesting(true);
+
+      const ctx = new AudioContext();
+      mtCtxRef.current = ctx;
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 256;
+      ctx.createMediaStreamSource(stream).connect(analyser);
+
+      const dataArr = new Uint8Array(analyser.frequencyBinCount);
+      let peakDetected = false;
+
+      function mtTick() {
+        if (!mtStreamRef.current) return;
+        analyser.getByteFrequencyData(dataArr);
+        const rms = Math.sqrt(dataArr.reduce((s, v) => s + v * v, 0) / dataArr.length);
+        const level = Math.min(1, rms / 80);
+        setMicTestLevel(level);
+        if (rms > SPEECH_THRESHOLD && !peakDetected) {
+          peakDetected = true;
+          setMicTestPeakDetected(true);
+        }
+        mtAnimRef.current = requestAnimationFrame(mtTick);
+      }
+
+      mtAnimRef.current = requestAnimationFrame(mtTick);
     } catch {
       setMicTestError(true);
     }
   }
 
+  function stopMicTest() {
+    if (mtAnimRef.current) { cancelAnimationFrame(mtAnimRef.current); mtAnimRef.current = null; }
+    if (mtStreamRef.current) { mtStreamRef.current.getTracks().forEach(t => t.stop()); mtStreamRef.current = null; }
+    if (mtCtxRef.current) { try { mtCtxRef.current.close(); } catch { /* ignore */ } mtCtxRef.current = null; }
+    setMicTestLevel(0);
+  }
+
+  function handleMicTestDone() {
+    stopMicTest();
+    setMicTesting(false);
+    setMicTested(true);
+  }
+
   function handleBeginInterview() {
-    // Play silent WAV synchronously — sets document.userActivation.hasBeenActive = true,
-    // which allows all subsequent audio.play() calls even after async API operations.
-    const s = new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=');
-    s.play().catch(() => {});
+    // Resume the shared TTS AudioContext during this user gesture.
+    // Once resumed, it stays 'running' regardless of async gaps — bypasses Chrome autoplay policy.
+    resumeAudioContext().catch(() => {});
     // Start the 15-minute timer now (not on mount)
     sessionTimerRef.current = setInterval(() => {
       setSessionTimeLeft(prev => {
@@ -501,6 +559,26 @@ export default function ConversationalSession({
     );
   }
 
+  const MIC_BAR_COUNT = 7;
+  function MicMeter({ level }: { level: number }) {
+    return (
+      <div style={bars.container}>
+        {Array.from({ length: MIC_BAR_COUNT }).map((_, i) => {
+          const phaseV = i / MIC_BAR_COUNT;
+          const amplitude = Math.max(0.08, level * (0.5 + 0.5 * Math.sin(phaseV * Math.PI)));
+          return (
+            <div key={i} style={{
+              ...bars.bar,
+              height: `${8 + amplitude * 56}px`,
+              background: `rgba(201,168,76,${0.3 + amplitude * 0.7})`,
+              transition: 'height 0.08s ease, background 0.08s ease',
+            }} />
+          );
+        })}
+      </div>
+    );
+  }
+
   // =============================================================================
   // RENDER
   // =============================================================================
@@ -573,27 +651,54 @@ export default function ConversationalSession({
             </div>
 
             <div style={styles.deviceChecks}>
-              <button
-                style={
-                  speakerTested ? styles.checkButtonDone :
-                  speakerTesting ? styles.checkButtonActive :
-                  styles.checkButton
-                }
-                onClick={handleTestSpeaker}
-                disabled={speakerTesting}
-              >
-                {speakerTesting ? '♪  Testing speakers…' :
-                 speakerTested ? '✓  Speaker confirmed' :
-                 '♪  Test speakers'}
-              </button>
-              <div>
-                <button
-                  style={micTested ? styles.checkButtonDone : styles.checkButton}
-                  onClick={handleTestMic}
-                >
-                  {micTested ? '✓  Microphone ready' : '🎙  Test microphone'}
+              {/* Speaker: idle → playing → confirm → done */}
+              {!speakerTesting && !speakerTested && !speakerConfirmPending && (
+                <button style={styles.checkButton} onClick={handleTestSpeaker}>
+                  ♪  Test speakers
                 </button>
-                {micTestError && (
+              )}
+              {speakerTesting && (
+                <div style={styles.checkButtonActive}>♪  Playing tone…</div>
+              )}
+              {speakerConfirmPending && !speakerTested && (
+                <div style={styles.confirmCard}>
+                  <p style={styles.confirmPrompt}>Did you hear the tone?</p>
+                  <div style={styles.confirmRow}>
+                    <button style={styles.confirmYes} onClick={() => { setSpeakerConfirmPending(false); setSpeakerTested(true); }}>
+                      Yes, heard it
+                    </button>
+                    <button style={styles.confirmNo} onClick={() => setSpeakerConfirmPending(false)}>
+                      No — try again
+                    </button>
+                  </div>
+                </div>
+              )}
+              {speakerTested && (
+                <div style={styles.checkButtonDone}>✓  Speaker confirmed</div>
+              )}
+
+              {/* Mic: idle → testing (live meter) → done */}
+              <div>
+                {!micTesting && !micTested && (
+                  <button style={styles.checkButton} onClick={handleTestMic}>
+                    🎙  Test microphone
+                  </button>
+                )}
+                {micTesting && (
+                  <div style={styles.micTestCard}>
+                    <div style={styles.micTestLabel}>
+                      {micTestPeakDetected ? '✓  Voice detected' : 'Speak a few words…'}
+                    </div>
+                    <MicMeter level={micTestLevel} />
+                    <button style={styles.micDoneButton} onClick={handleMicTestDone}>
+                      Done →
+                    </button>
+                  </div>
+                )}
+                {micTested && (
+                  <div style={styles.checkButtonDone}>✓  Microphone ready</div>
+                )}
+                {micTestError && !micTesting && !micTested && (
                   <p style={styles.micError}>
                     Microphone access denied. Allow mic access in your browser
                     settings, then try again.
@@ -857,6 +962,42 @@ const styles: Record<string, React.CSSProperties> = {
   micError: {
     fontSize: '12px', color: 'rgba(239,68,68,0.75)',
     margin: '6px 0 0', lineHeight: 1.5,
+  },
+  confirmCard: {
+    padding: '16px 20px',
+    background: 'rgba(201,168,76,0.04)',
+    border: '1px solid rgba(201,168,76,0.2)',
+  },
+  confirmPrompt: {
+    fontSize: '13px', color: 'rgba(245,240,232,0.6)',
+    margin: '0 0 12px', letterSpacing: '0.04em',
+  },
+  confirmRow: { display: 'flex', gap: '10px' },
+  confirmYes: {
+    background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.3)',
+    color: 'rgba(34,197,94,0.85)', fontSize: '13px', padding: '8px 18px',
+    cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", letterSpacing: '0.04em',
+  },
+  confirmNo: {
+    background: 'transparent', border: '1px solid rgba(201,168,76,0.2)',
+    color: 'rgba(245,240,232,0.4)', fontSize: '13px', padding: '8px 18px',
+    cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", letterSpacing: '0.04em',
+  },
+  micTestCard: {
+    padding: '16px 20px',
+    background: 'rgba(201,168,76,0.03)',
+    border: '1px solid rgba(201,168,76,0.15)',
+    display: 'flex', flexDirection: 'column' as const, gap: '12px',
+  },
+  micTestLabel: {
+    fontSize: '12px', color: 'rgba(245,240,232,0.5)', letterSpacing: '0.08em',
+    textTransform: 'uppercase' as const,
+  },
+  micDoneButton: {
+    alignSelf: 'flex-start' as const,
+    background: 'transparent', border: '1px solid rgba(201,168,76,0.3)',
+    color: '#C9A84C', fontSize: '12px', letterSpacing: '0.06em',
+    padding: '8px 16px', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif",
   },
   readyActions: {
     display: 'flex', flexDirection: 'column', gap: '12px',
