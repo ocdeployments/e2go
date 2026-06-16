@@ -16,6 +16,7 @@ import {
 } from '@/lib/simulator-engine';
 import { speakQuestion } from '@/lib/groq-tts';
 import CaseFileSummary from '@/components/simulator/CaseFileSummary';
+import ConversationalSession from '@/components/simulator/ConversationalSession';
 import type { SimulatorContext, Question, AnswerEvaluation, CoachingSummary, CompletedSession } from '@/types/simulator';
 
 const supabase = createBrowserSupabaseClient();
@@ -187,13 +188,27 @@ export default function InterviewSimulator() {
     return () => { cancelled = true; };
   }, []);
 
-  // Handle successful purchase return
+  // Handle successful purchase return — verify payment with Stripe and grant sessions
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const searchParams = new URLSearchParams(window.location.search);
     if (searchParams.get('purchase') === 'success' && application) {
-      checkSessionAvailability(application.id).then(avail => setSessionInfo(avail));
+      const sessionId = searchParams.get('session_id');
       window.history.replaceState({}, '', '/simulator');
+
+      if (sessionId) {
+        fetch('/api/stripe/grant-simulator-sessions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId }),
+        })
+          .then(res => res.json())
+          .then(() => checkSessionAvailability(application.id))
+          .then(avail => setSessionInfo(avail))
+          .catch(() => checkSessionAvailability(application.id).then(avail => setSessionInfo(avail)));
+      } else {
+        checkSessionAvailability(application.id).then(avail => setSessionInfo(avail));
+      }
     }
   }, [application]);
 
@@ -247,22 +262,24 @@ export default function InterviewSimulator() {
       setSubmittedAnswers([]);
       setScreen('active');
 
-      // Start 15-minute session timer
-      setSessionTimeLeft(15 * 60);
-      setTimerWarning(false);
-      timerRef.current = setInterval(() => {
-        setSessionTimeLeft(prev => {
-          if (prev <= 120 && !timerWarning) {
-            setTimerWarning(true);
-          }
-          if (prev <= 1) {
-            if (timerRef.current) clearInterval(timerRef.current);
-            completeSession();
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
+      // Voice mode: ConversationalSession manages its own timer
+      if (selectedMode === 'text') {
+        setSessionTimeLeft(15 * 60);
+        setTimerWarning(false);
+        timerRef.current = setInterval(() => {
+          setSessionTimeLeft(prev => {
+            if (prev <= 120 && !timerWarning) {
+              setTimerWarning(true);
+            }
+            if (prev <= 1) {
+              if (timerRef.current) clearInterval(timerRef.current);
+              completeSession();
+              return 0;
+            }
+            return prev - 1;
+          });
+        }, 1000);
+      }
     } catch (err: any) {
       if (err.message === 'SESSION_LIMIT_EXCEEDED') {
         setError('You have used all your simulator sessions. Purchase more to continue practicing.');
@@ -410,7 +427,7 @@ export default function InterviewSimulator() {
   };
 
   // Render based on screen state
-  if (!sessionInfo) {
+  if (!sessionInfo || hasCaseFile === null) {
     return (
       <div style={styles.page}>
         <div style={styles.loading}>Loading...</div>
@@ -457,7 +474,26 @@ export default function InterviewSimulator() {
         />
       )}
 
-      {screen === 'active' && (
+      {screen === 'active' && mode === 'voice' && context && currentSession && user && (
+        <ConversationalSession
+          context={context}
+          session={currentSession}
+          questions={questions}
+          userId={user.id}
+          applicationId={application!.id}
+          onComplete={(summary, sessionNumber) => {
+            setCoachingSummary(summary);
+            setCurrentSession((prev: any) => prev ? { ...prev, sessionNumber } : prev);
+            setScreen('complete');
+          }}
+          onExit={() => {
+            if (timerRef.current) clearInterval(timerRef.current);
+            setScreen('start');
+          }}
+        />
+      )}
+
+      {screen === 'active' && mode === 'text' && (
         <ActiveSession
           mode={mode}
           questionNumber={currentQuestionIndex + 1}
