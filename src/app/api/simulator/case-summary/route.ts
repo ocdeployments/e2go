@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
 
     const { data: application, error: appError } = await supabase
       .from('applications')
-      .select('id, principal_name, business_name, application_type, tier, source, target_state, business_category')
+      .select('id, principal_name, business_name, application_type, tier, source')
       .eq('id', applicationId)
       .eq('user_id', user.id)
       .single();
@@ -80,8 +80,8 @@ export async function GET(request: NextRequest) {
       .eq('application_id', applicationId);
 
     if (ansError) {
-      console.error('Answer query error:', ansError);
-      return NextResponse.json({ error: 'Query failed' }, { status: 500 });
+      // Non-fatal — continue with empty answers.
+      console.warn('Answer query error (non-fatal):', ansError.message);
     }
 
     const { data: documents, error: docError } = await supabase
@@ -91,8 +91,8 @@ export async function GET(request: NextRequest) {
       .order('created_at', { ascending: true });
 
     if (docError) {
-      console.error('Document query error:', docError);
-      return NextResponse.json({ error: 'Query failed' }, { status: 500 });
+      // Non-fatal — table may not exist yet if migration is pending. Continue with empty list.
+      console.warn('Document query error (non-fatal):', docError.message);
     }
 
     // Group filled answers by section
@@ -133,6 +133,7 @@ export async function GET(request: NextRequest) {
     const answersMap = new Map((answers || []).map(a => [a.question_key, a.answer_value]));
     const operatingName = answersMap.get('QF-09') || answersMap.get('M3-F-09') || null;
     const investmentAmount = answersMap.get('QF-02') || answersMap.get('M3-F-02') || null;
+    const rawBusinessCategory = answersMap.get('Q0-10') || null;
 
     return NextResponse.json({
       application: {
@@ -141,10 +142,8 @@ export async function GET(request: NextRequest) {
         operatingName,
         applicationType: application.application_type,
         tier: application.tier,
-        targetState: application.target_state || null,
-        businessCategory: application.business_category
-          ? getBusinessCategoryLabel(application.business_category)
-          : null,
+        targetState: null,
+        businessCategory: rawBusinessCategory ? getBusinessCategoryLabel(rawBusinessCategory) : null,
         investmentAmount,
       },
       sections,
