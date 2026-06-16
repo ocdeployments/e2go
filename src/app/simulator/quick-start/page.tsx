@@ -26,7 +26,15 @@ interface PendingFile {
   error?: string;
 }
 
-type Step = 'form' | 'upload' | 'processing' | 'complete';
+type Step = 'form' | 'processing' | 'confirm';
+
+interface ExtractedFields {
+  businessName: string | null;
+  investmentAmount: number | null;
+  applicantName: string | null;
+  targetState: string | null;
+  employeeCountYear1: number | null;
+}
 
 // =============================================================================
 // MAIN COMPONENT
@@ -60,6 +68,12 @@ export default function SimulatorQuickStart() {
   const [overallStatus, setOverallStatus] = useState<'processing' | 'complete' | 'error'>('processing');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const hasStartedExtraction = useRef(false);
+
+  // Confirm step state
+  const [confirmedAppId, setConfirmedAppId] = useState<string | null>(null);
+  const [extractedFields, setExtractedFields] = useState<ExtractedFields | null>(null);
+  const [confirmEdits, setConfirmEdits] = useState<Partial<ExtractedFields>>({});
+  const [confirming, setConfirming] = useState(false);
 
   // Auth check
   useEffect(() => {
@@ -223,6 +237,84 @@ export default function SimulatorQuickStart() {
   };
 
   // ===========================================================================
+  // CONFIRM STEP HELPERS
+  // ===========================================================================
+
+  async function fetchExtractedFields(appId: string): Promise<ExtractedFields> {
+    const [{ data: app }, { data: answers }] = await Promise.all([
+      supabase
+        .from('applications')
+        .select('business_name, principal_name, target_state')
+        .eq('id', appId)
+        .single(),
+      supabase
+        .from('answers')
+        .select('question_key, answer_value')
+        .eq('application_id', appId)
+        .in('question_key', ['QF-02', 'M3-F-02', 'QI-03', 'M3-I-03', 'QA-51', 'M3-A-51']),
+    ]);
+
+    const aMap = new Map<string, string>();
+    answers?.forEach((a: { question_key: string; answer_value: string }) => aMap.set(a.question_key, a.answer_value));
+
+    const rawAmount = aMap.get('QF-02') || aMap.get('M3-F-02') || null;
+    const investmentAmount = rawAmount
+      ? parseFloat(rawAmount.replace(/[^0-9.]/g, '')) || null
+      : null;
+    const rawEmployees = aMap.get('QI-03') || aMap.get('M3-I-03') || null;
+    const employeeCountYear1 = rawEmployees ? parseInt(rawEmployees) || null : null;
+
+    return {
+      businessName: app?.business_name || aMap.get('QA-51') || aMap.get('M3-A-51') || null,
+      investmentAmount,
+      applicantName: app?.principal_name || null,
+      targetState: app?.target_state || null,
+      employeeCountYear1,
+    };
+  }
+
+  async function handleConfirm() {
+    if (!confirmedAppId) return;
+    setConfirming(true);
+
+    // If user filled in missing fields, patch them to the DB
+    const patches: Record<string, string> = {};
+    const merged = { ...extractedFields, ...confirmEdits };
+
+    if (confirmEdits.businessName) {
+      await supabase
+        .from('applications')
+        .update({ business_name: confirmEdits.businessName })
+        .eq('id', confirmedAppId);
+    }
+    if (confirmEdits.applicantName) {
+      await supabase
+        .from('applications')
+        .update({ principal_name: confirmEdits.applicantName })
+        .eq('id', confirmedAppId);
+    }
+    if (confirmEdits.targetState) {
+      await supabase
+        .from('applications')
+        .update({ target_state: confirmEdits.targetState })
+        .eq('id', confirmedAppId);
+    }
+    if (confirmEdits.investmentAmount !== undefined && confirmEdits.investmentAmount !== null) {
+      // Save as an answer
+      await supabase.from('answers').upsert({
+        application_id: confirmedAppId,
+        question_key: 'QF-02',
+        answer_value: String(confirmEdits.investmentAmount),
+        source: 'user_input',
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'application_id,question_key' });
+    }
+
+    void patches; void merged; // suppress unused warnings
+    router.push(`/simulator/case-file?applicationId=${confirmedAppId}`);
+  }
+
+  // ===========================================================================
   // SSE EXTRACTION
   // ===========================================================================
 
@@ -308,9 +400,13 @@ export default function SimulatorQuickStart() {
 
             case 'extraction_complete':
               setOverallStatus('complete');
-              setTimeout(() => {
-                router.push(`/simulator/case-file?applicationId=${appId}`);
-              }, 1500);
+              // Fetch extracted fields for confirm step, then transition
+              setTimeout(async () => {
+                const fields = await fetchExtractedFields(appId);
+                setExtractedFields(fields);
+                setConfirmedAppId(appId);
+                setStep('confirm');
+              }, 800);
               break;
 
             case 'error':
@@ -860,6 +956,210 @@ export default function SimulatorQuickStart() {
               </div>
             </div>
           )}
+        </div>
+      </div>
+    );
+  }
+
+  // ===========================================================================
+  // RENDER — CONFIRM STEP
+  // ===========================================================================
+
+  if (step === 'confirm' && extractedFields) {
+    const merged = { ...extractedFields, ...confirmEdits };
+
+    const fieldDefs: { key: keyof ExtractedFields; label: string; hint: string; format: (v: ExtractedFields[keyof ExtractedFields]) => string }[] = [
+      {
+        key: 'businessName',
+        label: 'Business name',
+        hint: 'Enter your business name',
+        format: (v) => String(v || ''),
+      },
+      {
+        key: 'investmentAmount',
+        label: 'Investment amount (USD)',
+        hint: 'e.g. 150000',
+        format: (v) => v ? `$${Number(v).toLocaleString()}` : '',
+      },
+      {
+        key: 'applicantName',
+        label: 'Applicant name',
+        hint: 'Your full name',
+        format: (v) => String(v || ''),
+      },
+      {
+        key: 'targetState',
+        label: 'Target state',
+        hint: 'e.g. Texas, Florida',
+        format: (v) => String(v || ''),
+      },
+      {
+        key: 'employeeCountYear1',
+        label: 'Employees (year 1)',
+        hint: 'e.g. 3',
+        format: (v) => v ? String(v) : '',
+      },
+    ];
+
+    const foundCount = fieldDefs.filter(f => merged[f.key] !== null && merged[f.key] !== undefined).length;
+    const missingCount = fieldDefs.length - foundCount;
+
+    return (
+      <div style={{
+        minHeight: '100vh',
+        background: '#0a0a0a',
+        color: '#f5f0e8',
+        fontFamily: "'DM Sans', sans-serif",
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '24px',
+      }}>
+        <div style={{ maxWidth: '560px', width: '100%' }}>
+          <div style={{ marginBottom: '32px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+              <span style={{ color: '#C9A84C', fontSize: '12px' }}>&#9670;</span>
+              <span style={{
+                color: '#C9A84C',
+                fontSize: '11px',
+                letterSpacing: '0.1em',
+                textTransform: 'uppercase' as const,
+                fontWeight: 500,
+              }}>
+                CONFIRM YOUR DETAILS
+              </span>
+            </div>
+            <h1 style={{
+              fontFamily: "'Cormorant Garamond', serif",
+              fontSize: '32px',
+              fontWeight: 300,
+              color: '#f5f0e8',
+              lineHeight: 1.1,
+              marginBottom: '10px',
+            }}>
+              Here&apos;s what we found
+            </h1>
+            <p style={{ fontSize: '14px', color: 'rgba(245,240,232,0.5)', lineHeight: 1.6 }}>
+              We extracted {foundCount} field{foundCount !== 1 ? 's' : ''} from your documents.
+              {missingCount > 0 && ` Fill in the ${missingCount} missing field${missingCount !== 1 ? 's' : ''} below.`}
+            </p>
+          </div>
+
+          <div style={{
+            padding: '28px 32px',
+            background: 'rgba(201,168,76,0.02)',
+            border: '1px solid rgba(201,168,76,0.12)',
+            marginBottom: '20px',
+          }}>
+            {fieldDefs.map(({ key, label, hint, format }) => {
+              const value = merged[key];
+              const isMissing = value === null || value === undefined;
+              const editValue = confirmEdits[key];
+
+              return (
+                <div key={key} style={{ marginBottom: '20px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                    <label style={{
+                      fontSize: '11px',
+                      fontWeight: 600,
+                      letterSpacing: '0.08em',
+                      color: isMissing ? 'rgba(251,146,60,0.8)' : 'rgba(201,168,76,0.7)',
+                    }}>
+                      {label.toUpperCase()}
+                    </label>
+                    {!isMissing && (
+                      <span style={{
+                        fontSize: '10px',
+                        color: 'rgba(34,197,94,0.6)',
+                        letterSpacing: '0.05em',
+                      }}>
+                        EXTRACTED
+                      </span>
+                    )}
+                    {isMissing && (
+                      <span style={{
+                        fontSize: '10px',
+                        color: 'rgba(251,146,60,0.5)',
+                        letterSpacing: '0.05em',
+                      }}>
+                        NOT FOUND
+                      </span>
+                    )}
+                  </div>
+
+                  {isMissing ? (
+                    <input
+                      type={key === 'investmentAmount' || key === 'employeeCountYear1' ? 'number' : 'text'}
+                      placeholder={hint}
+                      value={editValue !== undefined ? String(editValue ?? '') : ''}
+                      onChange={(e) => {
+                        const raw = e.target.value;
+                        setConfirmEdits(prev => ({
+                          ...prev,
+                          [key]: key === 'investmentAmount' || key === 'employeeCountYear1'
+                            ? (raw === '' ? undefined : Number(raw))
+                            : raw || undefined,
+                        }));
+                      }}
+                      style={{
+                        width: '100%',
+                        padding: '10px 14px',
+                        background: 'rgba(255,255,255,0.04)',
+                        border: '1px solid rgba(251,146,60,0.3)',
+                        color: '#f5f0e8',
+                        fontSize: '14px',
+                        fontFamily: "'DM Sans', sans-serif",
+                      }}
+                    />
+                  ) : (
+                    <div style={{
+                      fontSize: '15px',
+                      color: '#f5f0e8',
+                      padding: '10px 0',
+                      borderBottom: '1px solid rgba(245,240,232,0.06)',
+                    }}>
+                      {format(value)}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          <button
+            onClick={handleConfirm}
+            disabled={confirming}
+            style={{
+              width: '100%',
+              padding: '14px 24px',
+              background: confirming ? 'rgba(201,168,76,0.3)' : '#C9A84C',
+              color: '#0a0a0a',
+              fontSize: '15px',
+              fontWeight: 500,
+              fontFamily: "'DM Sans', sans-serif",
+              cursor: confirming ? 'not-allowed' : 'pointer',
+              border: 'none',
+              marginBottom: '16px',
+            }}
+          >
+            {confirming ? 'Saving...' : 'Confirm & start simulator'}
+          </button>
+
+          <div style={{ textAlign: 'center' as const }}>
+            <button
+              onClick={() => confirmedAppId && router.push(`/simulator/case-file?applicationId=${confirmedAppId}`)}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'rgba(245,240,232,0.4)',
+                fontSize: '13px',
+                cursor: 'pointer',
+                textDecoration: 'underline',
+              }}
+            >
+              Skip and go to case file
+            </button>
+          </div>
         </div>
       </div>
     );
