@@ -11,7 +11,7 @@ import Anthropic from '@anthropic-ai/sdk';
 
 const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
 
-type TaskType = 'evaluate' | 'coaching' | 'faq';
+type TaskType = 'evaluate' | 'coaching' | 'faq' | 'prep';
 
 interface LLMMessage {
   role: 'system' | 'user' | 'assistant';
@@ -31,6 +31,7 @@ const OPENROUTER_MODELS: Record<TaskType, string[]> = {
   evaluate: ['xiaomi/mimo-v2.5', 'google/gemini-2.5-flash', 'google/gemini-2.5-pro'],
   coaching: ['xiaomi/mimo-v2.5-pro', 'google/gemini-2.5-pro'],
   faq:      ['xiaomi/mimo-v2.5', 'google/gemini-2.5-flash'],
+  prep:     ['xiaomi/mimo-v2.5', 'xiaomi/mimo-v2.5-pro'],
 };
 
 // Anthropic fallback models per task
@@ -38,6 +39,7 @@ const ANTHROPIC_MODELS: Record<TaskType, string> = {
   evaluate: 'claude-haiku-4-5-20251001',
   coaching: 'claude-sonnet-4-6',
   faq:      'claude-haiku-4-5-20251001',
+  prep:     'claude-haiku-4-5-20251001',
 };
 
 async function callOpenRouter(options: LLMOptions): Promise<string> {
