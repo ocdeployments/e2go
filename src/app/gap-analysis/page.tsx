@@ -50,6 +50,8 @@ function GapAnalysisInner() {
   const [hasAIAnalysis, setHasAIAnalysis] = useState<boolean | null>(null);
   const [analysisRunning, setAnalysisRunning] = useState(false);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
+  const [enrichments, setEnrichments] = useState<Record<string, string>>({});
+  const [enrichingIds, setEnrichingIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     async function load() {
@@ -100,7 +102,44 @@ function GapAnalysisInner() {
           latestInconsistencyCount: simSessions?.[0]?.inconsistency_count ?? 0,
         };
 
-        setResult(scoreCase(app, answers || [], docs || [], brief || undefined, simData));
+        const scored = scoreCase(app, answers || [], docs || [], brief || undefined, simData);
+        setResult(scored);
+
+        // Fire LLM enrichment for weak categories (score < 70) — async, non-blocking
+        const weakCategories = scored.categories.filter(c => c.score < 70);
+        if (weakCategories.length > 0) {
+          setEnrichingIds(new Set(weakCategories.map(c => c.id)));
+          Promise.all(
+            weakCategories.map(async (cat) => {
+              try {
+                const res = await fetch('/api/gap-analysis/enrich', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    categoryId: cat.id,
+                    categoryName: cat.name,
+                    gaps: cat.gaps || [],
+                    evidence: cat.evidence || [],
+                    score: cat.score,
+                    businessName: app.business_name,
+                    businessCategory: app.business_category,
+                    operationalStatus: app.operational_status,
+                  }),
+                });
+                if (res.ok) {
+                  const { categoryId, enrichment } = await res.json();
+                  if (enrichment) {
+                    setEnrichments(prev => ({ ...prev, [categoryId]: enrichment }));
+                  }
+                }
+              } catch {
+                // Non-fatal — enrichment failure doesn't break the page
+              } finally {
+                setEnrichingIds(prev => { const next = new Set(prev); next.delete(cat.id); return next; });
+              }
+            })
+          );
+        }
       } catch (err: any) {
         setError(err.message || 'Failed to load gap analysis');
       } finally {
@@ -311,7 +350,13 @@ function GapAnalysisInner() {
           <h2 style={{ ...styles.sectionTitle, marginBottom: '20px' }}>Evidence categories</h2>
           <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '12px' }}>
             {result.categories.map(cat => (
-              <CategoryCard key={cat.id} category={cat} factors={result.denialFactors} />
+              <CategoryCard
+                key={cat.id}
+                category={cat}
+                factors={result.denialFactors}
+                enrichment={enrichments[cat.id] || null}
+                enriching={enrichingIds.has(cat.id)}
+              />
             ))}
           </div>
         </div>
@@ -505,7 +550,7 @@ function DenialRiskRadar({ factors }: { factors: DenialRiskFactor[] }) {
 // CATEGORY CARD
 // =============================================================================
 
-function CategoryCard({ category, factors }: { category: GapCategory; factors: DenialRiskFactor[] }) {
+function CategoryCard({ category, factors, enrichment, enriching }: { category: GapCategory; factors: DenialRiskFactor[]; enrichment: string | null; enriching: boolean }) {
   const [expanded, setExpanded] = useState(false);
 
   const priorityCfg: Record<GapCategory['priority'], { color: string; label: string }> = {
@@ -579,6 +624,19 @@ function CategoryCard({ category, factors }: { category: GapCategory; factors: D
       {/* Expanded body */}
       {expanded && (
         <div style={{ padding: '0 24px 24px' }}>
+
+          {/* LLM enrichment — personalized advisory for needs_work categories */}
+          {(enriching || enrichment) && (
+            <div style={{ marginBottom: '16px', padding: '14px 16px', background: 'rgba(201,168,76,0.03)', border: '1px solid rgba(201,168,76,0.15)', borderLeft: '3px solid rgba(201,168,76,0.4)' }}>
+              <div style={styles.subLabel('rgba(201,168,76,0.5)')}>E2GO ADVISOR</div>
+              {enriching && !enrichment ? (
+                <div style={{ fontSize: '12px', color: 'rgba(245,240,232,0.3)', fontStyle: 'italic' }}>Generating personalised guidance…</div>
+              ) : (
+                <p style={{ fontSize: '13px', color: 'rgba(245,240,232,0.65)', lineHeight: 1.6, margin: 0 }}>{enrichment}</p>
+              )}
+            </div>
+          )}
+
           {category.evidence.length > 0 && (
             <div style={{ marginBottom: '16px' }}>
               <div style={styles.subLabel('rgba(34,197,94,0.6)')}>EVIDENCE FOUND</div>
