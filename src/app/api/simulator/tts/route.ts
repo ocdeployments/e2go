@@ -7,53 +7,26 @@ const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const GROQ_BASE_URL = 'https://api.groq.com/openai/v1';
 const OPENAI_BASE_URL = 'https://api.openai.com/v1';
 
-// Orpheus requires <=200 chars per request — split on sentence boundaries.
-function chunkText(text: string, maxLen = 200): string[] {
-  const sentences = text.match(/[^.!?]+[.!?]*\s*/g) || [text];
-  const chunks: string[] = [];
-  let current = '';
-
-  for (const sentence of sentences) {
-    if ((current + sentence).length > maxLen) {
-      if (current.trim()) chunks.push(current.trim());
-      current = sentence;
-    } else {
-      current += sentence;
-    }
-  }
-  if (current.trim()) chunks.push(current.trim());
-
-  return chunks.length > 0 ? chunks : [text.substring(0, maxLen)];
-}
-
 async function callGroqTTS(text: string): Promise<string[]> {
-  const chunks = chunkText(text);
-  const audioChunks: string[] = [];
+  const response = await fetch(`${GROQ_BASE_URL}/audio/speech`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${GROQ_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'playai-tts',
+      input: text,
+      voice: 'Fritz-PlayAI',
+    }),
+  });
 
-  for (const chunk of chunks) {
-    const response = await fetch(`${GROQ_BASE_URL}/audio/speech`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${GROQ_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'canopylabs/orpheus-v1-english',
-        input: chunk,
-        voice: 'daniel',
-        response_format: 'wav',
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Groq TTS HTTP ${response.status}`);
-    }
-
-    const audioBuffer = await response.arrayBuffer();
-    audioChunks.push(Buffer.from(audioBuffer).toString('base64'));
+  if (!response.ok) {
+    throw new Error(`Groq TTS HTTP ${response.status}`);
   }
 
-  return audioChunks;
+  const audioBuffer = await response.arrayBuffer();
+  return [Buffer.from(audioBuffer).toString('base64')];
 }
 
 async function callOpenAITTS(text: string): Promise<string[]> {
@@ -101,7 +74,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid input' }, { status: 400 });
     }
 
-    // Primary: Groq Orpheus
+    // Primary: Groq PlayAI TTS (no chunk limit)
     if (GROQ_API_KEY) {
       try {
         const audioChunks = await callGroqTTS(text);
