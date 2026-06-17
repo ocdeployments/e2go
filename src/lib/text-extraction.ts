@@ -1,5 +1,4 @@
 import mammoth from 'mammoth';
-import * as XLSX from 'xlsx';
 import Papa from 'papaparse';
 import { type UploadFileType, MAX_TOKENS_PER_DOCUMENT } from '@/types/document-upload';
 import { isScannedPdf } from './document-validation';
@@ -24,8 +23,6 @@ export async function extractTextFromBuffer(
       return extractFromPdf(buffer);
     case 'docx':
       return extractFromDocx(buffer);
-    case 'xlsx':
-      return extractFromXlsx(buffer);
     case 'csv':
       return extractFromCsv(buffer, filename);
     default:
@@ -60,31 +57,6 @@ async function extractFromDocx(buffer: Buffer): Promise<ExtractionOutput> {
   return {
     text: truncateText(text),
     isScanned: false,
-  };
-}
-
-function extractFromXlsx(buffer: Buffer): ExtractionOutput {
-  const workbook = XLSX.read(buffer, { type: 'buffer' });
-  const allText: string[] = [];
-
-  for (const sheetName of workbook.SheetNames) {
-    const sheet = workbook.Sheets[sheetName];
-    // Try CSV output first (most readable for AI extraction)
-    const csv = XLSX.utils.sheet_to_csv(sheet);
-    if (csv.trim()) {
-      allText.push(`--- Sheet: ${sheetName} ---\n${csv}`);
-    }
-  }
-
-  const text = allText.join('\n\n');
-
-  return {
-    text: truncateText(text),
-    isScanned: false,
-    metadata: {
-      sheetCount: workbook.SheetNames.length,
-      sheetNames: workbook.SheetNames,
-    },
   };
 }
 
