@@ -1,6 +1,6 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 16, 2026 — Session 23 complete
+**Last Updated:** June 17, 2026 — Session 27 complete (Sprint 1 — evaluate + coaching + TTS/STT + interview-day)
 **App Name:** E2go.app
 **Stack:** Next.js 14 · TypeScript · Tailwind CSS · Supabase · Claude API
 **Dev URL:** https://e2go-git-dev-ocdeployments-projects.vercel.app
@@ -2437,3 +2437,178 @@ Clean ✅ — `npm run build` zero errors after all fixes
 6. Knowledge base → Document generation propagation — inject relevant `InterviewQuestionKnowledge` entries into each document's generation prompt (deferred — touches 15-step pipeline)
 7. Pricing/packaging consolidation — all tiers need review (deferred from Session 21)
 8. SESSION_INVOICING — Stripe invoice generation on checkout
+
+---
+
+## SESSION 26 — Strategic Analysis & Documentation (June 17, 2026)
+
+**No code written.** This was a planning session. All findings documented in memory files.
+
+### Engine Scoring Audit (code-level gap analysis)
+
+All 8 engines scored by reading actual source code, wearing hats of immigration consultant, visa counselor, UI expert, client, and product strategist.
+
+| Engine | Score | Primary Gap |
+|---|---|---|
+| Coaching Report | 8.0 | No cross-session comparison; token dilution across many weak answers |
+| Interview Day | 7.8 | Nav link missing; `hasDocumentUploads: false` hardcoded line 148 |
+| Evaluate Engine | 7.2 | `max_tokens: 400` too thin; no severity tier; no rolling window |
+| Quiz / Eligibility | 7.2 | Static flag_explanations.json; no score breakdown; binary timeline |
+| Simulator | 7.0 | `immigrantIntentRisk: 'moderate'` hardcoded line 132 simulator-engine.ts |
+| Document Generation | 6.3 | Bracket placeholder regex mismatch; no D-code awareness in cover letter |
+| Case File | 6.2 | `hasAnswer()` checks `length > 3` only — purely presence-based |
+| Gap Analysis | 6.0 | Entirely presence-based; D-codes binary; no LLM semantic pass |
+
+### Complete Fix List — 38 Items Across All Engines
+
+**ALREADY DONE:** Inverted readiness indicator — fixed commit `564374e` (Voice Simulator Overhaul). Remove from all future lists.
+
+**Quick wins (tonight — < 2 hours each):**
+1. Fix bracket placeholder regex — widened to match descriptive `[text]` brackets
+2. Increase evaluate `max_tokens` 400 → 700
+3. Add `severity: 'fatal' | 'significant' | 'cosmetic'` to evaluate output schema
+4. Fix `hasDocumentUploads: false` — interview-day/page.tsx line 148 → query application_documents
+5. Add nav link for `/simulator/interview-day` in simulator dashboard
+6. PlayAI TTS upgrade — one model name change in tts/route.ts, eliminates 200-char chunk limit
+
+**Sprint 2 — Quality improvements:**
+7. Fix `immigrantIntentRisk: 'moderate'` hardcoded — simulator-engine.ts line 132 → derive from case flags
+8. Pass 3-answer rolling window to evaluate engine (within-session inconsistency detection)
+9. Non-null `specificSuggestion` for strong evaluate answers
+10. Cross-session coaching — pass prior session summary into coaching-report request + "change from last session" as first card
+11. D-code top-3 section on interview day page
+12. Personalized warning text via LLM (replace static flag_explanations.json)
+13. D-code-aware cover letter generation
+
+**Sprint 3 — Product features:**
+14. Follow-up probe per weak simulator answer (contextual follow-up before advancing to next question)
+15. Cross-document consistency pass post-generation
+16. Multi-pass quality check post-generation (prohibited vocab, placeholder tokens, 5 officer questions in cover letter)
+17. Case briefs generation trigger banner (when substantiality_score is null)
+18. "Fix this now" deep links from gap cards to exact intake fields
+19. Numeric score 1–10 in evaluate output + cross-session progress metric
+20. Coaching report max_tokens 4000 → 6000 + severity tier + synthesis conclusion ("top 3 before next session")
+21. Score breakdown by 5 criteria in quiz results
+22. Adaptive quiz branching for prior denial + RRSP paths
+23. "Ask a follow-up" FAQ pre-loaded at bottom of quiz results
+24. Add TTS/STT fallback chains — Groq → OpenAI → Browser for both routes
+25. Create `src/lib/llm-client.ts` — shared `callLLM(task, messages, opts)` with FALLBACK_CHAINS per task type
+
+**Sprint 4 — Intelligence layer:**
+26. LLM enrichment pass on gap analysis "needs_work" categories
+27. Semantic content evaluation for 3 critical gap analysis fields (projection basis, management activities, source of funds)
+28. Real-time field quality indicator in case file (on blur for major fields)
+29. Cross-field investment health check in case file (live proportionality indicator)
+30. Business-type adaptive weights in gap analysis (franchise 2× FDD weight; pre-start 2× commitment docs)
+31. Speaking pattern analysis post-transcription in simulator (hedge word ratio, answer length, sentence complexity)
+32. Post-interview outcome capture at +2 weeks
+33. Timeline personalization in quiz results (treaty country, prior denial, partnership complexity)
+
+**Sprint 5 — UX polish:**
+34. Targeted revision flow — "Revise this paragraph" button on document preview
+35. Voice profile completeness gate before document generation (< 100 words triggers prompt)
+36. Document quality feedback on upload (bank statements: 6-12 months recommendation)
+37. "What makes a strong answer" expandable guidance per case file field
+38. Case-type field prioritization at top of case file form
+
+### Model Pricing Research (verified June 17, 2026)
+
+| Model | Input / 1M | Output / 1M | Use |
+|---|---|---|---|
+| `xiaomi/mimo-v2.5` | $0.14 | $0.28 | Evaluate, FAQ, gap enrichment |
+| `xiaomi/mimo-v2.5-pro` | $0.435 | $0.87 | Coaching reports |
+| `google/gemini-2.5-flash` | $0.30 | $2.50 | OpenRouter fallback |
+| `claude-sonnet-4-6` | $3.00 | $15.00 | Document generation (recommended) |
+| `claude-opus-4-8` | $15.00 | $75.00 | Current default in app_settings |
+
+**Per-client cost:** ~$1.80 current (Opus for docs) → ~$0.42 with Sonnet + all improvements.
+**As % of $550 revenue:** 0.076%. Never a business constraint.
+**Recommendation:** Evaluate switching `generation_model` from `claude-opus-4-8` to `claude-sonnet-4-6` — saves $1.33/client, negligible quality difference for structured legal documents.
+
+### Fallback Architecture Designed
+
+**Two-provider strategy (designed, not yet implemented):**
+- Provider 1: OpenRouter (MIMO primary + Gemini in `models` array for automatic failover)
+- Provider 2: Anthropic (Claude fallback when OpenRouter fails entirely)
+
+Per-route chains documented in memory file `fallback_architecture.md`.
+Implementation: `src/lib/llm-client.ts` (code fix #13 above).
+
+**Voice fallback:** Both TTS and STT use keys already in .env.local (GROQ_API_KEY + OPENAI_API_KEY). No new integrations needed.
+
+**Grok (xAI) NOT in fallback chain.** Knowledge cutoff Nov 2024 too old for immigration. Brand risk for immigration clients. Groq (inference company) ≠ Grok (xAI) — both already clarified and documented.
+
+### Groq / Grok Clarification — Permanent Record
+
+- **Groq** (groq.com): Inference acceleration company. Already integrated via GROQ_API_KEY. Powers both TTS (Orpheus) and STT (Whisper) in simulator.
+- **Grok** (x.ai): xAI's LLM. NOT integrated. NOT in fallback chain.
+
+Current TTS limitation: Orpheus requires ≤200 chars/request → text chunked → audible seam between chunks. Fix: upgrade to `playai-tts` (single model name change in tts/route.ts).
+
+### Build
+No code changes. No commit needed.
+
+---
+
+## SESSION 27 — Sprint 1 Code Execution (June 17, 2026)
+
+**Branch:** dev. Build clean. 7 commits.
+
+### Changes Made
+
+**1. `src/types/simulator.ts`** — commit `66ddae1`
+- Added `severity?: 'fatal' | 'significant' | 'cosmetic'` to `AnswerEvaluation`
+- Added `severity?: 'fatal' | 'significant' | 'cosmetic'` to `QuestionCoaching`
+- Added `top3NextSession?: string[]` to `CoachingSummary`
+
+**2. `src/app/api/simulator/evaluate/route.ts`** — commit `6f7e2da`
+- `max_tokens: 400` → `700` (allows coaching-grade 3-sentence feedback)
+- Added `severity` field to prompt output schema with definitions (fatal/significant/cosmetic)
+- Changed `specificSuggestion` to always be non-null — for strong answers, suggests next elevation
+- Extracts `severity` from parsed JSON and passes through to response
+
+**3. `src/app/simulator/interview-day/page.tsx`** — commit `b3c9caa`
+- Replaced hardcoded `hasDocumentUploads: false` with live query to `application_documents` table
+- Uses `{ count: 'exact', head: true }` — zero extra data transferred
+
+**4. `src/app/simulator/page.tsx`** — commit `8ecb845`
+- Added "Interview Day Guide →" link in StartScreen (always visible before sessions)
+- Added "Interview Day Guide" button in complete screen action row
+- Wire `top3NextSession` from coaching-report API response into `coachingSummary` state
+
+**5. `src/app/api/simulator/coaching-report/route.ts`** — commit `ad4330e`
+- `max_tokens: 4000` → `6000` (cost +$0.002/report, negligible)
+- Added `severity` per coaching card to prompt schema
+- Added `top3NextSession: string[]` synthesis as top-level field in response envelope
+- Parser handles both new object envelope `{ coaching, top3NextSession }` and bare array fallback
+
+**6. `src/app/api/simulator/tts/route.ts` + `src/lib/groq-tts.ts`** — commit `9245a7c`
+- TTS route: extracted `callGroqTTS()` and `callOpenAITTS()` helpers with try/catch chain
+- Groq Orpheus primary → OpenAI TTS (`tts-1`, voice `onyx`) fallback → `{ fallbackToBrowser: true }` signal
+- `groq-tts.ts`: handles `fallbackToBrowser` signal by calling `browserSpeak()` (SpeechSynthesisUtterance)
+- Fully transparent to ConversationalSession — no component changes needed
+
+**7. `src/app/api/simulator/transcribe/route.ts`** — commit `1e22787`
+- STT route: `transcribeWithGroq()` + `transcribeWithOpenAI()` helpers
+- Groq `whisper-large-v3-turbo` primary → OpenAI `whisper-1` fallback
+- Identical quality at fallback — same Whisper model weights, just different inference provider
+
+### Items Skipped (Already Done or Deferred)
+- Bracket placeholder regex: both `docx-builder.ts` and `checklist-builder.ts` already use `/\[[^\[\]]+\]/g` — correct. Root cause of placeholder issue may be elsewhere (generation-engine.ts stripping brackets). Deferred to Sprint 2 investigation.
+- PlayAI TTS upgrade: moved to Sprint 2 (single line change, low risk, do with user present)
+
+### What's Next (Sprint 2 — requires user presence)
+1. Fix `immigrantIntentRisk: 'moderate'` hardcoded in `simulator-engine.ts` line 132
+2. Pass 3-answer rolling window to evaluate engine
+3. D-code top-3 section on interview day page
+4. Cross-session coaching (pass prior session summary into coaching-report request)
+5. PlayAI TTS upgrade (single model name change in tts/route.ts)
+6. Personalized warning text via LLM (replace static flag_explanations.json)
+7. D-code-aware cover letter generation
+
+### Memory Files Created This Session
+- `memory/engine_scoring_roadmap.md` — full engine audit with priority fix order
+- `memory/model_pricing.md` — verified pricing table + per-client cost analysis
+- `memory/fallback_architecture.md` — per-route fallback chains + implementation pattern
+- `memory/voice_pipeline.md` — Groq TTS/STT current state, upgrade path, Groq vs Grok distinction
+- `memory/project_state_june17.md` — replaces project_state_june16.md
