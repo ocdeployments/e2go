@@ -19,6 +19,31 @@ import type {
 const supabase = createBrowserSupabaseClient();
 
 // =============================================================================
+// HELPERS
+// =============================================================================
+
+function deriveImmigrantIntentRisk(
+  priorVisaDenial: boolean,
+  answersMap: Map<string, string>
+): 'low' | 'moderate' | 'high' {
+  if (priorVisaDenial) return 'high';
+
+  // Q0-09 is the visa history multiselect — entry refusals are a direct intent signal
+  const history = (answersMap.get('Q0-09') || '').toLowerCase();
+  if (history.includes('refused') || history.includes('denial') || history.includes('refusal')) {
+    return 'high';
+  }
+
+  // Q0-10 is home ties — no ties on file means the officer will probe intent hard
+  const ties = answersMap.get('Q0-10') || '';
+  if (!ties || ties === '[]' || ties.toLowerCase().includes('none')) {
+    return 'moderate';
+  }
+
+  return 'low';
+}
+
+// =============================================================================
 // CONTEXT BUILDING
 // =============================================================================
 
@@ -129,7 +154,7 @@ export async function buildSimulatorContext(applicationId: string): Promise<Simu
     priorVisaDenial,
     priorDenialDetails: priorVisaDenial ?
       (answersMap.get('QA-24') || answersMap.get('M3-A-24') || null) : null,
-    immigrantIntentRisk: 'moderate', // Would come from analysis
+    immigrantIntentRisk: deriveImmigrantIntentRisk(priorVisaDenial, answersMap),
     substantialityScore: caseBrief?.substantiality_score ?? null,
     marginalityScore: caseBrief?.marginality_score ?? null,
     developDirectScore: caseBrief?.develop_direct_score ?? null,
@@ -741,6 +766,13 @@ export async function completeSimulatorSession(
   if (error) {
     throw new Error(`Failed to complete session: ${error.message}`);
   }
+}
+
+export async function saveCoachingNotes(sessionId: string, top3NextSession: string[]) {
+  await supabase
+    .from('simulator_sessions')
+    .update({ coaching_notes: { top3NextSession } })
+    .eq('id', sessionId);
 }
 
 /**
