@@ -57,14 +57,14 @@ export const GENERATION_STEP_LABELS: Record<number, string> = {
 export const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {
   cover_letter: 'Cover Letter',
   source_of_funds: 'Source of Funds Statement',
-  investment_proof: 'Investment Proof',
+  investment_proof: 'Investment Evidence',
   business_plan: 'Business Plan',
-  qualifications: 'Qualifications Summary',
-  ds160_reference: 'DS-160 Reference',
+  qualifications: 'Investor Biography & Qualifications',
+  ds160_reference: 'DS-156E / DS-160 Reference',
 };
 
 export const DOCUMENT_TYPE_TABS: Record<DocumentType, string> = {
-  cover_letter: 'Tab D',
+  cover_letter: 'Tab B',
   source_of_funds: 'Tab H',
   investment_proof: 'Tab F',
   business_plan: 'Tab K',
