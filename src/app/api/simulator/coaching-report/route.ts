@@ -15,9 +15,16 @@ interface WeakAnswer {
   deliveryNotes?: { type: string; detail: string }[];
 }
 
+interface PriorSession {
+  sessionNumber: number;
+  readinessIndicator: string;
+  top3NextSession: string[];
+}
+
 interface CoachingReportRequest {
   context: SimulatorContext;
   weakAnswers: WeakAnswer[];
+  priorSession?: PriorSession | null;
 }
 
 function buildInvestmentSourcesBlock(context: SimulatorContext): string {
@@ -62,7 +69,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
   }
 
-  const { context, weakAnswers } = body;
+  const { context, weakAnswers, priorSession } = body;
 
   if (!context || !weakAnswers || weakAnswers.length === 0) {
     return NextResponse.json({ coaching: [] });
@@ -93,8 +100,21 @@ Initial assessment: ${a.currentFeedback}${deliveryBlock}${knowledgeBlock}`;
     ? `Known denial risk flags for this case: ${context.denialRiskFlags.join(', ')}`
     : '';
 
-  const prompt = `You are a senior E-2 visa immigration consultant with 20 years of experience at the Toronto consulate. You have just watched your client conduct a mock interview and are now preparing their personal coaching report. You have read their entire case file.
+  const priorSessionBlock = priorSession
+    ? `PRIOR SESSION CONTEXT (Session ${priorSession.sessionNumber}):
+Readiness status after last session: ${priorSession.readinessIndicator === 'ready' ? 'Interview ready' : 'Needs more preparation'}
+Top 3 priorities they were given after Session ${priorSession.sessionNumber}:
+${priorSession.top3NextSession.length > 0
+  ? priorSession.top3NextSession.map((item, i) => `  ${i + 1}. ${item}`).join('\n')
+  : '  (No prior coaching notes available)'}
 
+Use this context to add a brief "Progress since Session ${priorSession.sessionNumber}" observation at the start of your top3NextSession synthesis. Note what has improved and what remains to work on.
+
+`
+    : '';
+
+  const prompt = `You are a senior E-2 visa immigration consultant with 20 years of experience at the Toronto consulate. You have just watched your client conduct a mock interview and are now preparing their personal coaching report. You have read their entire case file.
+${priorSessionBlock}
 APPLICANT CASE PROFILE:
 - Business: ${businessLine} (${context.businessCategory})${context.targetState ? ` in ${context.targetState}` : ''}
 - Investment amount: $${context.investmentAmount.toLocaleString()} USD

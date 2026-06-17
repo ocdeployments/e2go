@@ -500,12 +500,37 @@ export default function InterviewSimulator() {
 
     if (toCoach.length === 0) return;
 
+    // Fetch prior session data for cross-session coaching (non-fatal if absent)
+    let priorSession: { sessionNumber: number; readinessIndicator: string; top3NextSession: string[] } | null = null;
+    if (currentSession && user) {
+      try {
+        const { data: prev } = await supabase
+          .from('simulator_sessions')
+          .select('session_number, readiness_indicator, coaching_notes')
+          .eq('user_id', user.id)
+          .lt('session_number', currentSession.sessionNumber)
+          .order('session_number', { ascending: false })
+          .limit(1)
+          .single();
+        if (prev) {
+          const notes = prev.coaching_notes as { top3NextSession?: string[] } | null;
+          priorSession = {
+            sessionNumber: prev.session_number,
+            readinessIndicator: prev.readiness_indicator || 'needs_work',
+            top3NextSession: notes?.top3NextSession || [],
+          };
+        }
+      } catch {
+        // Non-fatal — proceed without prior session context
+      }
+    }
+
     setCoachingLoading(true);
     try {
       const res = await fetch('/api/simulator/coaching-report', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ context: ctx, weakAnswers: toCoach }),
+        body: JSON.stringify({ context: ctx, weakAnswers: toCoach, priorSession }),
       });
       if (res.ok) {
         const { coaching, top3NextSession } = await res.json();
