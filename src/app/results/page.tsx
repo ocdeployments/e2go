@@ -6,6 +6,7 @@ import Link from "next/link";
 import { getPricingTier, PRICING_TIERS } from "@/lib/pricing-tier";
 import { createAccountFromVerifiedEmail } from "../actions/create-account";
 import flagExplanations from "../../data/flag_explanations.json";
+import FaqWidget from "@/components/landing/FaqWidget";
 
 interface ResultData {
   outcome: string;
@@ -1203,6 +1204,22 @@ function ResultsPageInner() {
             <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.2)", marginTop: "6px" }}>Updated June 2026 · Applicant-reported data</div>
           </div>
 
+        </div>
+      </div>
+
+      {/* Ask E2go FAQ — pre-loaded at bottom of results */}
+      <div style={{ padding: "48px 40px", borderTop: "1px solid rgba(201,168,76,0.08)" }}>
+        <div style={{ maxWidth: "720px" }}>
+          <div style={{ fontSize: "10px", letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(201,168,76,0.5)", marginBottom: "8px" }}>
+            Ask E2go
+          </div>
+          <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "22px", fontWeight: 300, color: "#f5f0e8", marginBottom: "6px" }}>
+            Questions about your results?
+          </div>
+          <div style={{ fontSize: "13px", color: "rgba(245,240,232,0.4)", marginBottom: "24px" }}>
+            Ask anything about the E-2 visa — eligibility, investment thresholds, the application process, or what your flags mean.
+          </div>
+          <FaqWidget />
         </div>
       </div>
 
