@@ -18,6 +18,11 @@ import { wrapUserContent } from './prompt-sanitizer';
 
 const PROMPTS_DIR = join(process.cwd(), 'prompts', 'v1', 'documents');
 
+// Brackets the LLM generates instead of filling in actual data.
+// Matches patterns like [passport number from Tab A], [see Tab H], [insert here], [your name here].
+// Does NOT strip intentional client fill-ins like [Date] or [Consulate address] — those are <= 2 words.
+const LLM_REFERENCE_BRACKET_REGEX = /\[(?:[^\[\]]*\b(?:from Tab|see Tab|Tab [A-Z]|refer to|insert|enter here|fill in|your [a-z ]{3,30} here)\b[^\[\]]*)\]/gi;
+
 function getSupabase() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -637,6 +642,13 @@ export function runQualityGate(
   const hasTemplatePlaceholders = /\{\{.*?\}\}/.test(content) || /\[\[.*?\]\]/.test(content);
   if (hasTemplatePlaceholders) {
     failures.push('Contains template placeholders ({{ }} or [[ ]])');
+  }
+
+  LLM_REFERENCE_BRACKET_REGEX.lastIndex = 0;
+  const hasLLMReferenceBrackets = LLM_REFERENCE_BRACKET_REGEX.test(content);
+  LLM_REFERENCE_BRACKET_REGEX.lastIndex = 0;
+  if (hasLLMReferenceBrackets) {
+    failures.push('Contains LLM reference placeholders (e.g. [from Tab ...], [insert here]) — use actual data values');
   }
 
   let hasLegalConclusions = false;
@@ -1531,6 +1543,8 @@ export async function runGenerationPipeline(
         clean = clean.replace(/\[\[.*?\]\]/g, '');
         clean = clean.replace(/\[UNVERIFIED\]/gi, '');
         clean = clean.replace(/\[TODO.*?\]/gi, '');
+        LLM_REFERENCE_BRACKET_REGEX.lastIndex = 0;
+        clean = clean.replace(LLM_REFERENCE_BRACKET_REGEX, '');
 
         // Remove AI tool names and references
         for (const toolName of AI_TOOL_NAMES) {
@@ -1554,9 +1568,11 @@ export async function runGenerationPipeline(
         clean = clean.replace(/\n{3,}/g, '\n\n');
 
         // Detect remaining placeholders as metadata not clean
-        if (/\{\{.*?\}\}/.test(clean) || /\[\[.*?\]\]/.test(clean) || /\[UNVERIFIED\]/i.test(clean)) {
+        LLM_REFERENCE_BRACKET_REGEX.lastIndex = 0;
+        if (/\{\{.*?\}\}/.test(clean) || /\[\[.*?\]\]/.test(clean) || /\[UNVERIFIED\]/i.test(clean) || LLM_REFERENCE_BRACKET_REGEX.test(clean)) {
           metadataClean = false;
         }
+        LLM_REFERENCE_BRACKET_REGEX.lastIndex = 0;
 
         if (clean !== doc.content_text) {
           await supabase

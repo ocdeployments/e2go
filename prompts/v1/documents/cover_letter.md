@@ -94,6 +94,8 @@ The following variables are available in the generation payload:
 Extract all relevant facts from these variables. Reference them explicitly
 in the document. Never leave placeholder text — use the actual values.
 
+BRACKET RULE: The ONLY permitted bracket placeholders are `[Date]` (letter submission date, client fills before mailing) and `[Consulate address]` (depends on interview appointment). Every other field that has data in the variables above MUST use the actual value — never write `[passport number from Tab A]`, `[see Tab H]`, `[insert amount here]`, or any similar reference. If a value is genuinely not available, write "not yet confirmed" in plain text.
+
 ## INVESTMENT DATA — CRITICAL
 
 The investment breakdown is provided as a structured table with EXACT dollar amounts.
