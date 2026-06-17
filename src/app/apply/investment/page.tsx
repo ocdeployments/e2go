@@ -329,6 +329,54 @@ export default function InvestmentPage() {
           {answers['M3-F-02']?.value && answers['M3-F-03']?.value && Number(answers['M3-F-03'].value) > 0 && (Number(answers['M3-F-02'].value) / Number(answers['M3-F-03'].value)) < 0.5 && (
             <AdvisoryBlock>Your invested amount is less than 50% of the total cost to establish the business. You may need to argue substantiality — explain why the remaining costs will be covered and why your investment is already substantial.</AdvisoryBlock>
           )}
+
+          {/* Investment health check — live proportionality indicator */}
+          {(() => {
+            const invested = Number(answers['M3-F-02']?.value) || 0;
+            const totalCost = Number(answers['M3-F-03']?.value) || 0;
+            if (invested <= 0 || totalCost <= 0) return null;
+            const ratio = invested / totalCost;
+            const pct = Math.round(ratio * 100);
+            const isStrong = ratio >= 0.75;
+            const isAdequate = ratio >= 0.50;
+            const isBorderline = ratio >= 0.30;
+            const statusColor = isStrong ? '#22c55e' : isAdequate ? '#86efac' : isBorderline ? '#f59e0b' : '#ef4444';
+            const statusLabel = isStrong ? 'STRONG' : isAdequate ? 'ADEQUATE' : isBorderline ? 'BORDERLINE' : 'WEAK';
+            const statusNote = isStrong
+              ? 'Your investment covers ≥75% of startup costs — this is a strong proportionality position.'
+              : isAdequate
+              ? 'Your investment covers ≥50% of startup costs. This meets the standard threshold but leave room for a substantiality argument.'
+              : isBorderline
+              ? 'Your investment covers less than 50% of startup costs. Your cover letter will need to make a detailed substantiality argument.'
+              : 'Your investment is less than 30% of startup costs. This is a significant proportionality risk — consider increasing the invested amount or reducing the stated total cost.';
+            const belowMinimum = invested < 100000;
+            return (
+              <div style={{ marginTop: '16px', padding: '16px', border: `1px solid ${statusColor}20`, background: `${statusColor}06` }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+                  <span style={{ fontSize: '10px', letterSpacing: '0.12em', textTransform: 'uppercase' as const, color: 'rgba(245,240,232,0.4)' }}>Investment health</span>
+                  <span style={{ fontSize: '10px', letterSpacing: '0.1em', color: statusColor, fontWeight: 500 }}>{statusLabel}</span>
+                </div>
+                <div style={{ marginBottom: '8px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                    <span style={{ fontSize: '12px', color: 'rgba(245,240,232,0.5)' }}>Proportionality</span>
+                    <span style={{ fontSize: '12px', color: statusColor, fontWeight: 500 }}>{pct}%</span>
+                  </div>
+                  <div style={{ height: '4px', background: 'rgba(245,240,232,0.08)', position: 'relative' as const, overflow: 'hidden' }}>
+                    <div style={{ position: 'absolute' as const, left: 0, top: 0, bottom: 0, width: `${Math.min(pct, 100)}%`, background: statusColor, transition: 'width 0.4s ease' }} />
+                    {/* Threshold markers */}
+                    <div style={{ position: 'absolute' as const, left: '50%', top: 0, bottom: 0, width: '1px', background: 'rgba(245,240,232,0.2)' }} />
+                    <div style={{ position: 'absolute' as const, left: '75%', top: 0, bottom: 0, width: '1px', background: 'rgba(245,240,232,0.12)' }} />
+                  </div>
+                </div>
+                <p style={{ fontSize: '12px', color: 'rgba(245,240,232,0.5)', lineHeight: 1.5, margin: '0 0 8px' }}>{statusNote}</p>
+                {belowMinimum && (
+                  <p style={{ fontSize: '11px', color: '#f59e0b', lineHeight: 1.5, margin: 0 }}>
+                    Note: Most consulates expect at least $100,000 invested for substantiality. Below this threshold, your case file must include a detailed written substantiality argument.
+                  </p>
+                )}
+              </div>
+            );
+          })()}
         </div>
       )}
 
