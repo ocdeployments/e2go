@@ -33,6 +33,7 @@ export default function DocumentsReviewPage() {
     documentId: "",
     description: "",
   });
+  const [hoveredParagraph, setHoveredParagraph] = useState<number | null>(null);
   const [acknowledgments, setAcknowledgments] = useState({
     genuine: false,
     nolawyer: false,
@@ -91,10 +92,17 @@ export default function DocumentsReviewPage() {
   const closeModal = () => {
     setModal({ open: false, document: null });
     setRevisionForm({ open: false, documentId: "", description: "" });
+    setHoveredParagraph(null);
   };
 
-  const openRevisionForm = (documentId: string) => {
-    setRevisionForm({ open: true, documentId, description: "" });
+  const openRevisionForm = (documentId: string, prefill?: string) => {
+    setRevisionForm({
+      open: true,
+      documentId,
+      description: prefill
+        ? `Please revise this paragraph:\n\n"${prefill.trim()}"\n\nChange: `
+        : "",
+    });
   };
 
   const submitRevision = async () => {
@@ -570,12 +578,58 @@ export default function DocumentsReviewPage() {
                   </div>
                 </div>
               ) : (
-                <pre
-                  className="whitespace-pre-wrap text-sm leading-relaxed text-white/70"
-                  style={{ fontFamily: "'DM Sans', sans-serif" }}
-                >
-                  {modal.document.content_text || "No content generated yet."}
-                </pre>
+                <div style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                  {(modal.document.content_text || "No content generated yet.")
+                    .split(/\n\n+/)
+                    .filter(Boolean)
+                    .map((para, idx) => (
+                      <div
+                        key={idx}
+                        onMouseEnter={() => setHoveredParagraph(idx)}
+                        onMouseLeave={() => setHoveredParagraph(null)}
+                        style={{
+                          position: 'relative',
+                          marginBottom: '16px',
+                          padding: '8px 10px',
+                          borderLeft: hoveredParagraph === idx
+                            ? '2px solid rgba(201,168,76,0.4)'
+                            : '2px solid transparent',
+                          transition: 'border-color 0.15s',
+                          background: hoveredParagraph === idx
+                            ? 'rgba(201,168,76,0.03)'
+                            : 'transparent',
+                        }}
+                      >
+                        <p
+                          className="whitespace-pre-wrap text-sm leading-relaxed"
+                          style={{ color: 'rgba(245,240,232,0.7)', margin: 0 }}
+                        >
+                          {para}
+                        </p>
+                        {hoveredParagraph === idx && credits && credits.credits_remaining > 0 && (
+                          <button
+                            onClick={() => openRevisionForm(modal.document?.id || "", para)}
+                            style={{
+                              position: 'absolute',
+                              top: '6px',
+                              right: '6px',
+                              padding: '3px 10px',
+                              fontSize: '10px',
+                              letterSpacing: '0.06em',
+                              textTransform: 'uppercase',
+                              border: '1px solid rgba(201,168,76,0.35)',
+                              color: '#C9A84C',
+                              background: 'rgba(10,10,10,0.95)',
+                              cursor: 'pointer',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            Revise this ↗
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                </div>
               )}
             </div>
 
