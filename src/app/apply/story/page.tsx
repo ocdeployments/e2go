@@ -129,6 +129,34 @@ const CLUSTER_QUESTION_RANGES = [
   { start: CLUSTER_1_QUESTIONS.length + CLUSTER_2_QUESTIONS.length + CLUSTER_3_QUESTIONS.length, end: ALL_QUESTIONS.length },
 ];
 
+const FIELD_GUIDANCE: Record<string, string[]> = {
+  'M3-S1-01': [
+    'Name specific industries, companies, or roles — not job categories. "I managed 14 staff at a Subway franchise" beats "I have management experience."',
+    'Connect your background directly to this business. Show why your career history makes this investment logical.',
+    'Avoid: "I have always been passionate about business." Include: specific results, revenues, or team sizes.',
+  ],
+  'M3-S1-02': [
+    'Officers are skilled at detecting boilerplate motivation. The more specific and personal your reason, the more credible it reads.',
+    'Include timing: why now, not three years ago? A concrete trigger (market opportunity, family reason, business readiness) is far stronger than a general statement.',
+    'Do not confuse motivation with business opportunity. This paragraph is about you and your decision — not about market size.',
+  ],
+  'M3-S1-03': [
+    'The officer asks: "Will this person actually be able to run this business?" Answer that question directly with evidence, not assertions.',
+    'If you have directly operated this type of business before, say so explicitly and include any measurable outcomes.',
+    'If your background is adjacent, bridge the gap: "My 8 years managing logistics operations translates directly to the operational demands of this distribution business."',
+  ],
+  'M3-S1-04': [
+    'Avoid vague phrases like "begin operations" or "establish the brand." Name specific hires, revenue targets, customer acquisition milestones, or location opens.',
+    'Officers look for evidence that you have thought through the business reality, not just the visa opportunity.',
+    'Show a sequence: month 1–3 (setup), month 4–6 (launch), month 7–12 (growth). Concrete phases are far more credible than a single paragraph.',
+  ],
+  'M3-S1-05': [
+    'This is the most underused part of an E-2 application. A weak area acknowledged and explained is far less damaging than one an officer finds on their own.',
+    'Common addressable issues: investment below $100K, no prior U.S. business experience, recently self-employed, no direct industry experience.',
+    'For each issue: acknowledge it, explain the context, then give a mitigating factor. Three sentences per concern is enough.',
+  ],
+};
+
 export default function StoryPage() {
   useTrackSectionVisit("story");
 
@@ -137,8 +165,21 @@ export default function StoryPage() {
   const [answers, setAnswers] = useState<Record<string, StoryAnswer>>({});
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [applicationId, setApplicationId] = useState<string | null>(null);
+  const [expandedGuidance, setExpandedGuidance] = useState<Set<string>>(new Set());
   const debounceRef = useRef<Record<string, NodeJS.Timeout>>({});
   const { qualityMap, checkFieldQuality } = useFieldQuality();
+
+  const toggleGuidance = useCallback((key: string) => {
+    setExpandedGuidance(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  }, []);
 
   useEffect(() => {
     const loadData = async () => {
@@ -308,6 +349,26 @@ export default function StoryPage() {
                   </div>
                 )}
                 {q.helperText && <HelperText>{q.helperText}</HelperText>}
+                {FIELD_GUIDANCE[q.key] && (
+                  <div style={{ marginTop: '8px' }}>
+                    <button
+                      onClick={() => toggleGuidance(q.key)}
+                      style={{ fontSize: '11px', color: 'rgba(201,168,76,0.55)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, letterSpacing: '0.03em', display: 'flex', alignItems: 'center', gap: '4px' }}
+                    >
+                      <span style={{ transition: 'transform 0.15s', display: 'inline-block', transform: expandedGuidance.has(q.key) ? 'rotate(90deg)' : 'rotate(0deg)' }}>▶</span>
+                      What makes a strong answer?
+                    </button>
+                    {expandedGuidance.has(q.key) && (
+                      <ul style={{ marginTop: '8px', paddingLeft: '0', listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        {FIELD_GUIDANCE[q.key].map((tip, i) => (
+                          <li key={i} style={{ fontSize: '12px', color: 'rgba(245,240,232,0.5)', lineHeight: 1.6, paddingLeft: '12px', borderLeft: '1px solid rgba(201,168,76,0.2)' }}>
+                            {tip}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                )}
               </div>
             );
           })}
@@ -343,6 +404,26 @@ export default function StoryPage() {
                   rows={4}
                 />
                 {q.helperText && <HelperText>{q.helperText}</HelperText>}
+                {FIELD_GUIDANCE[q.key] && (
+                  <div style={{ marginTop: '8px' }}>
+                    <button
+                      onClick={() => toggleGuidance(q.key)}
+                      style={{ fontSize: '11px', color: 'rgba(201,168,76,0.55)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, letterSpacing: '0.03em', display: 'flex', alignItems: 'center', gap: '4px' }}
+                    >
+                      <span style={{ transition: 'transform 0.15s', display: 'inline-block', transform: expandedGuidance.has(q.key) ? 'rotate(90deg)' : 'rotate(0deg)' }}>▶</span>
+                      What makes a strong answer?
+                    </button>
+                    {expandedGuidance.has(q.key) && (
+                      <ul style={{ marginTop: '8px', paddingLeft: '0', listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        {FIELD_GUIDANCE[q.key].map((tip, i) => (
+                          <li key={i} style={{ fontSize: '12px', color: 'rgba(245,240,232,0.5)', lineHeight: 1.6, paddingLeft: '12px', borderLeft: '1px solid rgba(201,168,76,0.2)' }}>
+                            {tip}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                )}
               </div>
             );
           })}
