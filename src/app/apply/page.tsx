@@ -110,6 +110,7 @@ export default function ApplyPage() {
 
   const [answerCounts, setAnswerCounts] = useState<Record<string, number>>({});
   const [prefillCounts, setPrefillCounts] = useState<Record<string, number>>({});
+  const [priorityDismissed, setPriorityDismissed] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
@@ -372,6 +373,66 @@ export default function ApplyPage() {
 
         {/* Document upload card */}
         <DocumentUploadCard preparationStatus={preparationStatus} />
+
+        {/* Case-type field prioritization banner */}
+        {!priorityDismissed && !allComplete && (() => {
+          const IMPORTANCE_ORDER: Record<string, string[]> = {
+            solo: ['story', 'investment', 'business', 'qualifications', 'ties', 'family'],
+            partnership: ['story', 'investment', 'business', 'qualifications', 'ties', 'family'],
+            cos: ['ties', 'story', 'investment', 'business', 'qualifications', 'family'],
+          };
+          const order = IMPORTANCE_ORDER[applicationType] || IMPORTANCE_ORDER.solo;
+          const topPriority = order
+            .map(route => sections.find(s => s.href === `/apply/${route}`))
+            .filter((s): s is SectionManifest => !!s && s.status !== 'complete')
+            .slice(0, 3);
+          if (topPriority.length === 0) return null;
+          const typeLabel: Record<string, string> = {
+            solo: 'Solo E-2 investor',
+            partnership: 'Partnership application',
+            cos: 'Change of Status',
+          };
+          return (
+            <div className="mb-6 border p-5" style={{ borderColor: 'rgba(201,168,76,0.15)', background: 'rgba(201,168,76,0.02)' }}>
+              <div className="flex items-start justify-between gap-4 mb-3">
+                <div>
+                  <span style={{ fontSize: '10px', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(201,168,76,0.55)', fontFamily: "'DM Sans', sans-serif" }}>
+                    {typeLabel[applicationType] || 'E-2 application'} · Focus here first
+                  </span>
+                </div>
+                <button
+                  onClick={() => setPriorityDismissed(true)}
+                  style={{ color: 'rgba(245,240,232,0.2)', background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px', flexShrink: 0, lineHeight: 1 }}
+                  aria-label="Dismiss"
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="flex flex-col gap-2">
+                {topPriority.map((s, i) => (
+                  <a
+                    key={s.href}
+                    href={s.href}
+                    style={{ display: 'flex', alignItems: 'center', gap: '12px', textDecoration: 'none', padding: '10px 12px', border: '1px solid rgba(245,240,232,0.05)', background: 'rgba(245,240,232,0.01)' }}
+                  >
+                    <span style={{ fontSize: '11px', color: 'rgba(201,168,76,0.4)', fontFamily: "'DM Sans', sans-serif", flexShrink: 0, width: '14px' }}>
+                      {i + 1}.
+                    </span>
+                    <div style={{ flex: 1 }}>
+                      <span style={{ fontSize: '12px', color: 'rgba(245,240,232,0.75)', fontFamily: "'DM Sans', sans-serif", fontWeight: 500 }}>
+                        {s.title}
+                      </span>
+                      <span style={{ fontSize: '11px', color: 'rgba(245,240,232,0.3)', fontFamily: "'DM Sans', sans-serif", marginLeft: '8px' }}>
+                        {s.completionPct}% complete
+                      </span>
+                    </div>
+                    <span style={{ fontSize: '11px', color: 'rgba(201,168,76,0.45)', fontFamily: "'DM Sans', sans-serif" }}>→</span>
+                  </a>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Section grid */}
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
