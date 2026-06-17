@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 
 // POST /api/simulator/quick-start — Create a minimal application for standalone simulator
-// Body: { businessCategory, applicantName? }
+// Body: { businessCategory, applicantName?, treatyCountry?, businessType?,
+//         investmentAmount?, jobsYear1?, targetConsulate? }
 // Returns: { applicationId }
 export async function POST(request: NextRequest) {
   try {
@@ -14,7 +15,15 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { businessCategory, applicantName } = body;
+    const {
+      businessCategory,
+      applicantName,
+      treatyCountry,
+      businessType,
+      investmentAmount,
+      jobsYear1,
+      targetConsulate,
+    } = body;
 
     if (!businessCategory) {
       return NextResponse.json(
@@ -24,12 +33,6 @@ export async function POST(request: NextRequest) {
     }
 
     // Create a minimal application row marked as simulator_standalone
-    // Only insert columns confirmed in the applications table schema:
-    //   id, user_id, principal_name, business_name, application_type, tier,
-    //   status, payment_status, simulator_sessions_used,
-    //   simulator_sessions_purchased, source, created_at, etc.
-    // NOTE: business_category, target_state, business_route, operational_status
-    // do NOT exist on applications. Simulator engine falls back to answers map.
     const { data: app, error: appError } = await supabase
       .from('applications')
       .insert({
@@ -38,7 +41,6 @@ export async function POST(request: NextRequest) {
         status: 'in_progress',
         payment_status: 'unpaid',
         principal_name: applicantName || null,
-        // Give standalone users 2 free simulator sessions
         simulator_sessions_used: 0,
         simulator_sessions_purchased: 2,
       })
@@ -53,18 +55,75 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Save business category as answer so simulator engine's fallback chain
-    // picks it up via answersMap.get('Q0-10') — since applications has no
-    // business_category column.
-    // NOTE: answers table only has: id, application_id, question_key, answer_value, answered_at
-    await supabase
-      .from('answers')
-      .upsert({
+    // Build answers to upsert — all the intake fields the simulator engine needs
+    const answersToSave: Array<{ application_id: string; question_key: string; answer_value: string; answered_at: string }> = [];
+
+    const now = new Date().toISOString();
+
+    // Business category → Q0-10 (used by simulator engine's category fallback)
+    answersToSave.push({
+      application_id: app.id,
+      question_key: 'Q0-10',
+      answer_value: businessCategory,
+      answered_at: now,
+    });
+
+    // Treaty country → Q0-TC (used by interview-prep to personalise questions)
+    if (treatyCountry) {
+      answersToSave.push({
         application_id: app.id,
-        question_key: 'Q0-10',
-        answer_value: businessCategory,
-        answered_at: new Date().toISOString(),
-      }, { onConflict: 'application_id,question_key' });
+        question_key: 'Q0-TC',
+        answer_value: treatyCountry,
+        answered_at: now,
+      });
+    }
+
+    // Business type: new / franchise / acquisition → Q0-BT
+    if (businessType) {
+      answersToSave.push({
+        application_id: app.id,
+        question_key: 'Q0-BT',
+        answer_value: businessType,
+        answered_at: now,
+      });
+    }
+
+    // Investment amount estimate → QF-02 (same key the confirm step uses;
+    // document extraction may overwrite this with a more precise value)
+    if (investmentAmount != null && investmentAmount !== '') {
+      answersToSave.push({
+        application_id: app.id,
+        question_key: 'QF-02',
+        answer_value: String(investmentAmount),
+        answered_at: now,
+      });
+    }
+
+    // Jobs year 1 → QI-03 (same key the confirm step uses)
+    if (jobsYear1 != null && jobsYear1 !== '') {
+      answersToSave.push({
+        application_id: app.id,
+        question_key: 'QI-03',
+        answer_value: String(jobsYear1),
+        answered_at: now,
+      });
+    }
+
+    // Target consulate → Q0-CO (previously collected but never saved)
+    if (targetConsulate) {
+      answersToSave.push({
+        application_id: app.id,
+        question_key: 'Q0-CO',
+        answer_value: targetConsulate,
+        answered_at: now,
+      });
+    }
+
+    if (answersToSave.length > 0) {
+      await supabase
+        .from('answers')
+        .upsert(answersToSave, { onConflict: 'application_id,question_key' });
+    }
 
     return NextResponse.json({ applicationId: app.id });
   } catch (error) {
