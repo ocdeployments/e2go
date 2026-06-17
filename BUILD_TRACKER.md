@@ -2344,12 +2344,80 @@ Clean ✅ — `npm run build` zero errors after all fixes
 
 ---
 
-## NEXT SESSION PRIORITIES (Updated June 17, 2026)
+---
+
+### June 16, 2026 — Session 25: Interview Knowledge Base + Day of Interview Page + FAQ Guards
+
+**Scope:** Build the intelligence layer for the interview preparation system — knowledge base, coaching engine upgrade, consulate data, interview day page, and FAQ inappropriate content hardening.
+
+#### 1. Interview Question Knowledge Base
+
+**Files Created:**
+- `docs/E2_Interview_Questions_Master_Bank.md` — 20 gold-standard questions (IQ-01 to IQ-20) with full frameworks, officer tests, key principles, red flags, gold-standard answer structures, Toronto notes. Appendices: frequency reference table + Toronto consulate intelligence.
+- `src/lib/interview-knowledge-base.ts` — TypeScript typed knowledge base with `getQuestionKnowledge(simulatorQuestionId)` and `buildKnowledgeBlock()` exports. 20 entries covering Core Opening, Business Viability, Investment Drill-Downs, Qualifications, Nonimmigrant Intent, 2026 Updates.
+
+#### 2. Coaching Engine Upgrade
+
+**Files Modified:**
+- `src/app/api/simulator/evaluate/route.ts` — injects gold-standard framework block per question type using `getQuestionKnowledge()`. Officer now evaluates against doctrine-specific criteria, not generic AI guesses.
+- `src/app/api/simulator/coaching-report/route.ts` — major upgrade:
+  - Per-question gold-standard framework injected into prompt
+  - Real case data injected: investment sources, fund flow chronology, projections, management activities, employee roles
+  - System prompt changed to "senior E-2 visa immigration consultant" persona
+  - Instruction: "USE THEIR ACTUAL NUMBERS AND FACTS — not placeholders"
+  - `max_tokens` 3200 → 4000, `temperature` 0.4 → 0.35
+  - Commit: `8f92843`
+
+#### 3. FAQ Inappropriate Content Guard (two-layer)
+
+**Files Modified:**
+- `src/app/api/faq/ask/route.ts` — regex keyword guard runs BEFORE scope check and BEFORE any API call. Zero cost for harmful queries. Returns `layer: "inappropriate_guard"`. Commit: `384b4af`
+- `src/lib/faq-system-prompt.ts` — HIGHEST PRIORITY RULE added: model refuses harmful content even if regex misses edge cases. Commit: `c25bb0b`
+
+#### 4. Consulate Data Library
+
+**File Created:**
+- `src/lib/consulate-data.ts` — verified addresses for 13 treaty countries (14 Canadian posts: Toronto, Vancouver, Calgary, Ottawa, Montreal). Full logistics for Canadian posts: exact addresses, phone, transit directions, parking, electronics policy ("Cell phones, smartphones, tablets, laptops, smartwatches, and all other electronic devices are NOT permitted inside the consulate building"), security notes. Helper functions: `getConsulateData()`, `getPrimaryPost()`, `getEmbassyFinderUrl()`, `getVerifiedCountries()`. Commit: `7011824`
+
+**Key decision:** E-2 consulate determined by treaty nationality (from quiz Q0-01), NOT physical location. Third-country national processing eliminated September 2025.
+
+#### 5. Document Checklist Generator
+
+**File Created:**
+- `src/lib/document-checklist.ts` — `buildDocumentChecklist(CaseFlags)` generates 4 sections:
+  1. Personal Documents (passport, DS-160, appointment, MRV receipt, photo)
+  2. Application Binder — all required tabs (Tab A through Tab L)
+  3. Case-Specific Additions — dynamic based on: isFranchise (FDD, franchise agreement), investment sources (RRSP statement, property sale docs, gift letter, loan agreement), priorVisaDenial, hasSpouseApplying (marriage cert, spouse passport/DS-160), dependentChildCount (birth certs, children passports), hasPartner, pre-operational status (lease agreement, vendor contracts)
+  4. Do Not Bring — phone, laptop/tablet, large bags, non-applying companions, food/drinks
+  Commit: `2eb58ad`
+
+#### 6. Interview Day Page
+
+**File Created:**
+- `src/app/simulator/interview-day/page.tsx` — full `/simulator/interview-day` page:
+  - Fetches client's treaty country from their application, looks up consulate from `consulate-data.ts`
+  - Multi-post selector for Canada (5 posts shown, switchable)
+  - Electronics warning banner (red, prominent)
+  - Consulate address card with: address, phone, transit, parking, website link, appointment link
+  - Day-of timeline: 6 steps from arrival to decision
+  - "10 Things to Know Before You Walk In" — tips including social media warning (May 2026 policy), 221(g) explanation, standing window format, key numbers to memorise
+  - Personalised document checklist from `buildDocumentChecklist()` with interactive checkboxes + progress bar
+  - "Do Not Bring" section with ✕ indicators
+  - Print button
+  - Fallback for unverified countries: link to usembassy.gov
+  Commit: `380b7bc`
+
+**Build:** Clean ✅ — 50 routes compiled, zero errors
+
+---
+
+## NEXT SESSION PRIORITIES (Updated June 16, 2026 — Session 25)
 
 **Owner actions pending:**
 1. Refund $197 test charge in Stripe dashboard
 2. Apply migration `docs/migrations/004_answers_source_update.sql` via `npx supabase db push`
 3. Run FAQ seed scripts (pgvector 368 Q&A)
+4. Add `/simulator/interview-day` link in the simulator dashboard/nav so clients can reach it
 
 **Code sessions — in priority order:**
 1. End-to-end voice simulator test — run a full session as Michael Chen, verify:
@@ -2358,8 +2426,14 @@ Clean ✅ — `npm run build` zero errors after all fixes
    - Post-session evaluating spinner fires, then coaching cards show real content
    - Readiness badge correctly says "More preparation needed" when answers are weak
    - Officer transitions consistent throughout session
-2. Process Flow widget → React `<ProcessFlow />` component on landing page
-3. Generation engine fixes — docs/sessions/SESSION_PLAN_GENERATION_FIXES.md
-4. Bracket highlighting regex + checklist builder fix
-5. Pricing/packaging consolidation — all tiers need review (deferred from Session 21)
-6. SESSION_INVOICING — Stripe invoice generation on checkout
+2. Interview Preparation Kit (SESSION21_INTERVIEW_PREP_KIT) — full build:
+   - 10-section PDF/downloadable document, generated post-session
+   - Delivery analysis (filler words, pauses, hedging) already captured — inject into kit
+   - Per-question sections: score, what officer expected, what was missing, model answer (using real case data)
+   - Success measurement touchpoint: invite client back to report interview outcome
+3. Process Flow widget → React `<ProcessFlow />` component on landing page
+4. Generation engine fixes — docs/sessions/SESSION_PLAN_GENERATION_FIXES.md
+5. Bracket highlighting regex + checklist builder fix
+6. Knowledge base → Document generation propagation — inject relevant `InterviewQuestionKnowledge` entries into each document's generation prompt (deferred — touches 15-step pipeline)
+7. Pricing/packaging consolidation — all tiers need review (deferred from Session 21)
+8. SESSION_INVOICING — Stripe invoice generation on checkout
