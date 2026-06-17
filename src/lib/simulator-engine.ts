@@ -606,13 +606,10 @@ export async function createSimulatorSession(
     throw new Error('Application not found');
   }
 
-  // Check session limits
   const sessionsUsed = application.simulator_sessions_used || 0;
-  const sessionsPurchased = application.simulator_sessions_purchased || 2;
-
-  if (sessionsUsed >= sessionsPurchased) {
-    throw new Error('SESSION_LIMIT_EXCEEDED');
-  }
+  // Session limit check disabled — re-enable when purchase flow is verified
+  // const sessionsPurchased = application.simulator_sessions_purchased || 2;
+  // if (sessionsUsed >= sessionsPurchased) throw new Error('SESSION_LIMIT_EXCEEDED');
 
   const sessionNumber = sessionsUsed + 1;
 
