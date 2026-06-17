@@ -533,6 +533,37 @@ export function analyzeDelivery(answerText: string): DeliveryNote[] {
       detail: `Hedging language detected ("${examples}"). State investment facts directly — "I invested $180,000" not "I think it was around $180,000."`,
     });
   }
+
+  // Hedge ratio: >8% of words are hedges → pattern worth flagging separately from count
+  if (wordCount >= 40 && hedgeMatches.length / wordCount > 0.08) {
+    const ratio = Math.round((hedgeMatches.length / wordCount) * 100);
+    notes.push({
+      type: 'high_hedge_ratio',
+      detail: `${ratio}% of words are hedges or qualifiers. Officers interpret this as low confidence in your own case. Practise stating facts without softening language.`,
+    });
+  }
+
+  // Sentence complexity: any sentence >35 words is hard to deliver fluently under stress
+  const sentences = trimmed.split(/[.!?]+/).filter(s => s.trim().length > 0);
+  const longSentences = sentences.filter(s => s.trim().split(/\s+/).length > 35);
+  if (longSentences.length > 0) {
+    notes.push({
+      type: 'complex_sentences',
+      detail: `${longSentences.length} sentence${longSentences.length > 1 ? 's are' : ' is'} over 35 words. Long sentences are harder to deliver clearly and easier for an officer to interrupt. Break them into two shorter statements.`,
+    });
+  }
+
+  // Choppy delivery: many very short sentences (<6 words average) in a long answer
+  if (sentences.length >= 5) {
+    const avgSentenceLength = wordCount / sentences.length;
+    if (avgSentenceLength < 6) {
+      notes.push({
+        type: 'choppy',
+        detail: `Average sentence length is ${Math.round(avgSentenceLength)} words — very short sentences can sound rehearsed or stilted. Connect related ideas into fuller sentences for a more natural flow.`,
+      });
+    }
+  }
+
   return notes;
 }
 

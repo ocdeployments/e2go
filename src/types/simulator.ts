@@ -63,7 +63,7 @@ export interface Question {
 }
 
 export interface DeliveryNote {
-  type: 'fillers' | 'brevity' | 'hedging';
+  type: 'fillers' | 'brevity' | 'hedging' | 'complex_sentences' | 'high_hedge_ratio' | 'choppy';
   detail: string;
 }
 
