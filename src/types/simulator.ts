@@ -69,6 +69,7 @@ export interface DeliveryNote {
 
 export interface AnswerEvaluation {
   rating: 'strong' | 'weak' | 'inconsistent';
+  severity?: 'fatal' | 'significant' | 'cosmetic';
   feedback: string;
   specificSuggestion: string;
   documentReference: string | null;
@@ -98,6 +99,7 @@ export interface SessionQuestion {
 
 export interface QuestionCoaching {
   questionId: string;
+  severity?: 'fatal' | 'significant' | 'cosmetic';
   whatOfficerExpected: string;
   whatWasMissing: string;
   keyPoints: string[];
@@ -113,6 +115,7 @@ export interface CoachingSummary {
   readinessIndicator: 'ready' | 'nearly_ready' | 'needs_work';
   detailedCoaching?: QuestionCoaching[];
   deliveryFlags?: { questionId: string; questionText: string; notes: DeliveryNote[] }[];
+  top3NextSession?: string[];
 }
 
 export interface SimulatorSession {
