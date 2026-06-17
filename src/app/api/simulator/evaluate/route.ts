@@ -2,10 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { getQuestionKnowledge } from '@/lib/interview-knowledge-base';
 import { checkRateLimit } from '@/lib/rate-limit';
+import { callLLM } from '@/lib/llm-client';
 import type { SimulatorContext, AnswerEvaluation } from '@/types/simulator';
-
-const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
-const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
 
 const DOC_TYPE_LABELS: Record<string, string> = {
   cover_letter: 'Cover letter',
@@ -47,8 +45,8 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  if (!OPENROUTER_API_KEY) {
-    console.error('[simulator-evaluate] OPENROUTER_API_KEY not configured');
+  if (!process.env.OPENROUTER_API_KEY && !process.env.ANTHROPIC_API_KEY) {
+    console.error('[simulator-evaluate] No LLM provider configured');
     return NextResponse.json(
       { error: 'Evaluation service not configured' },
       { status: 503 }
@@ -139,53 +137,34 @@ Evaluate this answer. Reply with ONLY valid JSON — no prose before or after:
   const timeout = setTimeout(() => controller.abort(), 60_000);
 
   const evalStart = Date.now();
-  console.log(`[simulator-evaluate] Calling mimo-v2.5 for question ${questionId}`);
+  console.log(`[simulator-evaluate] Evaluating question ${questionId} (with fallback chain)`);
 
   try {
-    const response = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-        'HTTP-Referer': 'https://e2go.app',
-        'X-Title': 'E2go Interview Simulator',
-      },
-      body: JSON.stringify({
-        model: 'xiaomi/mimo-v2.5',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are an experienced U.S. consular officer evaluating E-2 visa interview answers. Be strict but fair. Focus on whether the answer addresses what a real officer would want to hear, and whether it is consistent with the filed application documents. When filed documents are provided, cross-reference the answer against them and flag real contradictions.',
-          },
-          {
-            role: 'user',
-            content: prompt,
-          },
-        ],
-        temperature: 0.3,
-        max_tokens: 700,
-        stream: false,
-      }),
+    const content = await callLLM({
+      task: 'evaluate',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are an experienced U.S. consular officer evaluating E-2 visa interview answers. Be strict but fair. Focus on whether the answer addresses what a real officer would want to hear, and whether it is consistent with the filed application documents. When filed documents are provided, cross-reference the answer against them and flag real contradictions.',
+        },
+        { role: 'user', content: prompt },
+      ],
+      temperature: 0.3,
+      max_tokens: 700,
       signal: controller.signal,
     });
 
-    console.log(`[simulator-evaluate] OpenRouter responded in ${Date.now() - evalStart}ms — HTTP ${response.status}`);
+    console.log(`[simulator-evaluate] Completed in ${Date.now() - evalStart}ms for question ${questionId}`);
 
-    if (!response.ok) {
-      const errorBody = await response.text();
-      console.error(`[simulator-evaluate] OpenRouter HTTP ${response.status} for question ${questionId}:`, errorBody);
+    if (!content) {
       return NextResponse.json({
         rating: 'weak',
-        feedback: `Evaluation service error (HTTP ${response.status}). Please provide more detail about your experience and qualifications.`,
-        specificSuggestion: 'Include specific examples of your experience and how it relates to running this business.',
-        documentReference: 'Tab J - Qualifications',
+        feedback: 'Evaluation service unavailable. Your answer has been recorded.',
+        specificSuggestion: 'Review your answer and ensure it covers specific details about your business and investment.',
+        documentReference: null,
       } satisfies AnswerEvaluation);
     }
 
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content || '';
-
-    // Parse JSON from the response
     try {
       const jsonMatch = content.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
@@ -202,7 +181,6 @@ Evaluate this answer. Reply with ONLY valid JSON — no prose before or after:
       console.error(`[simulator-evaluate] JSON parse failed for question ${questionId}. Raw content:`, content.substring(0, 500), parseError);
     }
 
-    // Fallback if JSON parsing fails
     return NextResponse.json({
       rating: 'weak',
       feedback: content.substring(0, 200) || 'Answer recorded.',
@@ -212,12 +190,10 @@ Evaluate this answer. Reply with ONLY valid JSON — no prose before or after:
 
   } catch (error) {
     const isAbort = error instanceof DOMException && error.name === 'AbortError';
-    console.error(`[simulator-evaluate] Evaluation ${isAbort ? `TIMED OUT after ${Date.now() - evalStart}ms` : 'FAILED'} for question ${questionId}:`, error);
+    console.error(`[simulator-evaluate] ${isAbort ? 'TIMED OUT' : 'FAILED'} for question ${questionId}:`, error);
     return NextResponse.json({
       rating: 'weak',
-      feedback: isAbort
-        ? 'Evaluation timed out. Please try again.'
-        : 'There was an error evaluating your answer. Please try again.',
+      feedback: 'Evaluation timed out. Your answer has been recorded.',
       specificSuggestion: 'Ensure your answer is specific and relates to your filed documents.',
       documentReference: null,
     } satisfies AnswerEvaluation);
