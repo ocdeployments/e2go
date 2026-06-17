@@ -1417,6 +1417,9 @@ const DELIVERY_LABELS: Record<DeliveryNote['type'], { label: string; color: stri
   brevity: { label: 'TOO BRIEF', color: '#60a5fa' },
   fillers: { label: 'FILLER WORDS', color: '#a78bfa' },
   hedging: { label: 'HEDGING LANGUAGE', color: '#fb923c' },
+  high_hedge_ratio: { label: 'HIGH HEDGE RATIO', color: '#f97316' },
+  complex_sentences: { label: 'COMPLEX SENTENCES', color: '#facc15' },
+  choppy: { label: 'CHOPPY DELIVERY', color: '#94a3b8' },
 };
 
 function DeliveryFlagCard({ flag }: { flag: { questionId: string; questionText: string; notes: DeliveryNote[] } }) {
