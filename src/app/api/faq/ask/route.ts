@@ -14,6 +14,7 @@ import { NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { buildFaqPrompt } from "@/lib/faq-system-prompt";
+import Anthropic from "@anthropic-ai/sdk";
 
 // ---------------------------------------------------------------------------
 // Config
@@ -154,9 +155,9 @@ async function searchKB(
 }
 
 /**
- * Stream generation via OpenRouter
+ * Stream generation via OpenRouter (primary)
  */
-async function streamGeneration(
+async function streamViaOpenRouter(
   systemPrompt: string,
   userPrompt: string
 ): Promise<ReadableStream> {
@@ -220,6 +221,61 @@ async function streamGeneration(
       }
     },
   });
+}
+
+/**
+ * Stream generation via Anthropic SDK (fallback)
+ */
+async function streamViaAnthropic(
+  systemPrompt: string,
+  userPrompt: string
+): Promise<ReadableStream> {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) throw new Error("ANTHROPIC_API_KEY not set");
+
+  const encoder = new TextEncoder();
+  const anthropic = new Anthropic({ apiKey });
+
+  const stream = anthropic.messages.stream({
+    model: "claude-haiku-4-5-20251001",
+    max_tokens: 500,
+    system: systemPrompt,
+    messages: [{ role: "user", content: userPrompt }],
+  });
+
+  return new ReadableStream({
+    async start(controller) {
+      try {
+        for await (const event of stream) {
+          if (
+            event.type === "content_block_delta" &&
+            event.delta.type === "text_delta"
+          ) {
+            controller.enqueue(encoder.encode(event.delta.text));
+          }
+        }
+      } finally {
+        controller.close();
+      }
+    },
+  });
+}
+
+/**
+ * Stream generation with provider fallback
+ */
+async function streamGeneration(
+  systemPrompt: string,
+  userPrompt: string
+): Promise<ReadableStream> {
+  if (OPENROUTER_API_KEY) {
+    try {
+      return await streamViaOpenRouter(systemPrompt, userPrompt);
+    } catch (err) {
+      console.warn("[faq/ask] OpenRouter streaming failed, falling back to Anthropic:", err instanceof Error ? err.message : err);
+    }
+  }
+  return streamViaAnthropic(systemPrompt, userPrompt);
 }
 
 // ---------------------------------------------------------------------------
