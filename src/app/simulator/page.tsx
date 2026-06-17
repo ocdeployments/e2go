@@ -783,9 +783,14 @@ function StartScreen({
             </button>
           </div>
 
-        <Link href="/dashboard" style={styles.backLink}>
-          ← Back to Dashboard
-        </Link>
+        <div style={{ display: 'flex', flexDirection: 'column' as const, alignItems: 'center', gap: 12 }}>
+          <Link href="/simulator/interview-day" style={{ ...styles.backLink, color: '#C9A84C' }}>
+            Interview Day Guide →
+          </Link>
+          <Link href="/dashboard" style={styles.backLink}>
+            ← Back to Dashboard
+          </Link>
+        </div>
       </div>
     </div>
   );
@@ -1502,6 +1507,9 @@ function SessionComplete({
           <button style={styles.primaryButton} onClick={onStartNew}>
             Start another session
           </button>
+          <Link href="/simulator/interview-day" style={{ ...styles.secondaryButton, textDecoration: 'none', display: 'inline-block', textAlign: 'center' as const }}>
+            Interview Day Guide
+          </Link>
           <button style={styles.secondaryButton} onClick={onBackToDashboard}>
             Back to Dashboard
           </button>
