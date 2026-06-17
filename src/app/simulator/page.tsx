@@ -341,19 +341,27 @@ export default function InterviewSimulator() {
     }
   };
 
-  // Fetch a targeted follow-up question after a weak/inconsistent answer
-  const fetchFollowUp = async () => {
-    if (!context || !questions[currentQuestionIndex] || !currentEvaluation) return;
+  // Fetch a targeted follow-up question after a weak/inconsistent answer.
+  // Accepts explicit args to avoid stale-closure issues when called from submitAnswer.
+  const fetchFollowUp = async (
+    question?: { id: string; text: string; category: string },
+    answer?: string,
+    evaluation?: AnswerEvaluation | null,
+  ) => {
+    const q = question ?? questions[currentQuestionIndex];
+    const a = answer ?? currentAnswer;
+    const ev = evaluation ?? currentEvaluation;
+    if (!context || !q || !ev) return;
     setFollowUpLoading(true);
     try {
       const res = await fetch('/api/simulator/follow-up', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          questionId: questions[currentQuestionIndex].id,
-          questionText: questions[currentQuestionIndex].text,
-          originalAnswer: currentAnswer,
-          evaluation: currentEvaluation,
+          questionId: q.id,
+          questionText: q.text,
+          originalAnswer: a,
+          evaluation: ev,
           context,
         }),
       });
@@ -420,6 +428,11 @@ export default function InterviewSimulator() {
         specificSuggestion: evaluation.specificSuggestion,
         deliveryNotes: deliveryNotes.length > 0 ? deliveryNotes : undefined,
       }]);
+
+      // Auto-generate follow-up on weak/inconsistent ratings (one level deep — not in follow-up already)
+      if ((evaluation.rating === 'weak' || evaluation.rating === 'inconsistent') && !isInFollowUp) {
+        fetchFollowUp(question, currentAnswer, evaluation);
+      }
     } catch (err: any) {
       setError(err.message);
     } finally {
