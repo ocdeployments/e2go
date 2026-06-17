@@ -6,6 +6,7 @@ import { createBrowserSupabaseClient } from '@/lib/supabase';
 import { useEffect, useState } from 'react';
 import CaseFileSummary from '@/components/simulator/CaseFileSummary';
 import CaseGapsForm from '@/components/simulator/CaseGapsForm';
+import InterviewBrief from '@/components/simulator/InterviewBrief';
 
 const supabase = createBrowserSupabaseClient();
 
@@ -56,12 +57,26 @@ function CaseFileContent() {
     );
   }
 
+  const briefAndDivider = (
+    <>
+      <InterviewBrief applicationId={applicationId} />
+      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '32px' }}>
+        <div style={{ flex: 1, height: '1px', background: 'rgba(201,168,76,0.1)' }} />
+        <span style={{ fontSize: '10px', letterSpacing: '0.14em', textTransform: 'uppercase' as const, color: 'rgba(245,240,232,0.25)', fontFamily: "'DM Sans', sans-serif" }}>
+          CASE DETAILS
+        </span>
+        <div style={{ flex: 1, height: '1px', background: 'rgba(201,168,76,0.1)' }} />
+      </div>
+    </>
+  );
+
   return (
     <CaseFileSummary
       applicationId={applicationId}
       continueLabel="Begin practice interview →"
       onContinue={() => router.push('/simulator')}
-      secondaryAction={{ label: 'Upload more documents first', href: '/simulator/quick-start' }}
+      secondaryAction={{ label: 'Upload more documents', href: '/simulator/quick-start' }}
+      headerContent={briefAndDivider}
     />
   );
 }

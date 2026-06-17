@@ -45,6 +45,7 @@ interface CaseFileSummaryProps {
   continueLabel: string;
   onContinue: () => void;
   secondaryAction?: { label: string; href: string };
+  headerContent?: React.ReactNode;
 }
 
 const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
@@ -55,7 +56,7 @@ const TIER_LABELS: Record<string, string> = {
   partnership: 'Partnership',
 };
 
-export default function CaseFileSummary({ applicationId, continueLabel, onContinue, secondaryAction }: CaseFileSummaryProps) {
+export default function CaseFileSummary({ applicationId, continueLabel, onContinue, secondaryAction, headerContent }: CaseFileSummaryProps) {
   const [summary, setSummary] = useState<CaseSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -120,6 +121,8 @@ export default function CaseFileSummary({ applicationId, continueLabel, onContin
   return (
     <div style={styles.page}>
       <div style={styles.container}>
+        {headerContent}
+
         {/* Cover */}
         <div style={styles.cover}>
           <div style={styles.coverTopRow}>
