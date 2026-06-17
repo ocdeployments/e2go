@@ -839,14 +839,39 @@ export function scoreCase(
   const denialFactors = scoreDenialFactors(am, documents, application, caseBrief, simulator);
 
   // Category definitions with D-code mappings
-  const categoryDefs: Array<{ id: string; name: string; weight: number; dCodes: string[] }> = [
-    { id: 'source_of_funds',      name: 'Source of Funds',           weight: 25, dCodes: ['D-02', 'D-03', 'D-12'] },
-    { id: 'management_role',      name: 'Management Role',            weight: 25, dCodes: ['D-08', 'D-09', 'D-11'] },
-    { id: 'business_plan',        name: 'Business Plan & Viability',  weight: 20, dCodes: ['D-04', 'D-05', 'D-06', 'D-14', 'D-15'] },
-    { id: 'investment_amount',    name: 'Investment Amount',          weight: 15, dCodes: ['D-01'] },
-    { id: 'employment_creation',  name: 'Employment Creation',        weight: 10, dCodes: ['D-07'] },
-    { id: 'business_operations',  name: 'Business Operations',        weight:  5, dCodes: ['D-10', 'D-13'] },
-  ];
+  // Weights are adaptive: franchise and pre-start cases shift priorities
+  const isFranchise = (application.business_category || '').toLowerCase().includes('franchise');
+  const isPreStart = (application.operational_status || '') === 'pre_start';
+
+  const categoryDefs: Array<{ id: string; name: string; weight: number; dCodes: string[] }> = isFranchise
+    ? [
+        // Franchise: FDD (business_plan) is the critical evidence; weights shifted accordingly
+        { id: 'business_plan',        name: 'Business Plan & FDD',         weight: 35, dCodes: ['D-04', 'D-05', 'D-06', 'D-14', 'D-15'] },
+        { id: 'source_of_funds',      name: 'Source of Funds',             weight: 20, dCodes: ['D-02', 'D-03', 'D-12'] },
+        { id: 'management_role',      name: 'Management Role',              weight: 20, dCodes: ['D-08', 'D-09', 'D-11'] },
+        { id: 'investment_amount',    name: 'Investment Amount',            weight: 15, dCodes: ['D-01'] },
+        { id: 'employment_creation',  name: 'Employment Creation',          weight:  5, dCodes: ['D-07'] },
+        { id: 'business_operations',  name: 'Business Operations',          weight:  5, dCodes: ['D-10', 'D-13'] },
+      ]
+    : isPreStart
+    ? [
+        // Pre-start: commitment documentation (investment_amount) is the defining evidence
+        { id: 'investment_amount',    name: 'Investment Commitment',        weight: 30, dCodes: ['D-01'] },
+        { id: 'source_of_funds',      name: 'Source of Funds',             weight: 20, dCodes: ['D-02', 'D-03', 'D-12'] },
+        { id: 'business_plan',        name: 'Business Plan & Viability',   weight: 25, dCodes: ['D-04', 'D-05', 'D-06', 'D-14', 'D-15'] },
+        { id: 'management_role',      name: 'Management Role',              weight: 15, dCodes: ['D-08', 'D-09', 'D-11'] },
+        { id: 'employment_creation',  name: 'Employment Creation',          weight:  5, dCodes: ['D-07'] },
+        { id: 'business_operations',  name: 'Business Operations',          weight:  5, dCodes: ['D-10', 'D-13'] },
+      ]
+    : [
+        // Standard weights
+        { id: 'source_of_funds',      name: 'Source of Funds',             weight: 25, dCodes: ['D-02', 'D-03', 'D-12'] },
+        { id: 'management_role',      name: 'Management Role',              weight: 25, dCodes: ['D-08', 'D-09', 'D-11'] },
+        { id: 'business_plan',        name: 'Business Plan & Viability',   weight: 20, dCodes: ['D-04', 'D-05', 'D-06', 'D-14', 'D-15'] },
+        { id: 'investment_amount',    name: 'Investment Amount',            weight: 15, dCodes: ['D-01'] },
+        { id: 'employment_creation',  name: 'Employment Creation',          weight: 10, dCodes: ['D-07'] },
+        { id: 'business_operations',  name: 'Business Operations',          weight:  5, dCodes: ['D-10', 'D-13'] },
+      ];
 
   const categories = categoryDefs.map(def =>
     scoreCategory(def.id, def.name, def.weight, def.dCodes, denialFactors, am, documents, application, caseBrief)
