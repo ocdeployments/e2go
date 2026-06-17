@@ -4,9 +4,9 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const SIMULATOR_SECTIONS = [
-  { label: 'Practice', href: '/simulator', exact: true },
   { label: 'Quick Start', href: '/simulator/quick-start', exact: false },
-  { label: 'Case File', href: '/simulator/case-file', exact: false },
+  { label: 'Prepare', href: '/simulator/case-file', exact: false },
+  { label: 'Practice', href: '/simulator', exact: true },
   { label: 'Interview Day', href: '/simulator/interview-day', exact: false },
   { label: 'My Outcome', href: '/simulator/outcome', exact: false },
 ];
