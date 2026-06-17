@@ -239,7 +239,7 @@ export default function UploadClient({ applicationId }: { applicationId: string 
               fontFamily: "'DM Sans', sans-serif",
             }}
           >
-            .pdf, .docx, .xlsx, .csv &mdash; max 10MB each, up to {MAX_FILES_PER_SESSION} files
+            .pdf, .docx, .csv &mdash; max 10MB each, up to {MAX_FILES_PER_SESSION} files
           </p>
         </div>
 
