@@ -1,39 +1,68 @@
 /**
- * Rate limiting for public API routes — Upstash Redis
- * Session 11: Ask E2go FAQ
+ * Rate limiting for API routes — Upstash Redis (sliding window)
  *
- * Config: UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN in .env.local
+ * Config: UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN in .env.local / Vercel env vars
+ * Without Upstash configured, all limits fail open (allow) — add Upstash to enable enforcement.
+ *
+ * Profiles:
+ *   faq        — 10 req / 10 min   (public search widget)
+ *   evaluate   — 30 req / 10 min   (simulator: ~10 questions × 3 retries)
+ *   coaching   — 6 req / 60 min    (one report per session, small buffer)
+ *   tts        — 60 req / 10 min   (voice: question audio per interview)
+ *   transcribe — 60 req / 10 min   (voice: answer audio per interview)
+ *   generate   — 4 req / 60 min    (doc gen: expensive Anthropic call)
  */
 
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 
-let ratelimit: Ratelimit | null = null;
+export type RateLimitProfile = 'faq' | 'evaluate' | 'coaching' | 'tts' | 'transcribe' | 'generate';
 
-function getRatelimit(): Ratelimit | null {
-  if (ratelimit) return ratelimit;
+const PROFILES: Record<RateLimitProfile, { requests: number; window: string }> = {
+  faq:        { requests: 10,  window: '10 m' },
+  evaluate:   { requests: 30,  window: '10 m' },
+  coaching:   { requests: 6,   window: '60 m' },
+  tts:        { requests: 60,  window: '10 m' },
+  transcribe: { requests: 60,  window: '10 m' },
+  generate:   { requests: 4,   window: '60 m' },
+};
 
+const limiters = new Map<RateLimitProfile, Ratelimit>();
+
+function getRedis(): Redis | null {
   const url = process.env.UPSTASH_REDIS_REST_URL;
   const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (!url || !token) return null;
+  return new Redis({ url, token });
+}
 
-  if (!url || !token) {
-    console.warn(
-      "⚠️  Upstash Redis not configured — rate limiting disabled. " +
-        "Add UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN to .env.local"
-    );
-    return null;
+let redis: Redis | null | undefined = undefined;
+
+function getLimiter(profile: RateLimitProfile): Ratelimit | null {
+  if (limiters.has(profile)) return limiters.get(profile)!;
+
+  if (redis === undefined) {
+    redis = getRedis();
+    if (!redis) {
+      console.warn(
+        '⚠️  Upstash Redis not configured — rate limiting disabled. ' +
+        'Add UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN to enable.'
+      );
+    }
   }
 
-  const redis = new Redis({ url, token });
+  if (!redis) return null;
 
-  ratelimit = new Ratelimit({
+  const { requests, window } = PROFILES[profile];
+  const limiter = new Ratelimit({
     redis,
-    limiter: Ratelimit.slidingWindow(10, "10 m"), // 10 requests per 10 minutes
+    limiter: Ratelimit.slidingWindow(requests, window as Parameters<typeof Ratelimit.slidingWindow>[1]),
     analytics: true,
-    prefix: "e2go:faq",
+    prefix: `e2go:${profile}`,
   });
 
-  return ratelimit;
+  limiters.set(profile, limiter);
+  return limiter;
 }
 
 export interface RateLimitResult {
@@ -42,15 +71,17 @@ export interface RateLimitResult {
   reset: number; // seconds until reset
 }
 
-export async function checkRateLimit(identifier: string): Promise<RateLimitResult> {
-  const limit = getRatelimit();
+export async function checkRateLimit(
+  identifier: string,
+  profile: RateLimitProfile = 'faq'
+): Promise<RateLimitResult> {
+  const limiter = getLimiter(profile);
 
-  if (!limit) {
-    // No Redis configured — allow all requests (fail open)
+  if (!limiter) {
     return { allowed: true, remaining: 999, reset: 0 };
   }
 
-  const result = await limit.limit(identifier);
+  const result = await limiter.limit(identifier);
 
   return {
     allowed: result.success,

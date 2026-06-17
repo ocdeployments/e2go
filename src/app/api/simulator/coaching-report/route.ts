@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { getQuestionKnowledge, buildKnowledgeBlock } from '@/lib/interview-knowledge-base';
+import { checkRateLimit } from '@/lib/rate-limit';
 import type { SimulatorContext, QuestionCoaching } from '@/types/simulator';
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
@@ -40,6 +41,14 @@ export async function POST(request: NextRequest) {
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const rl = await checkRateLimit(user.id, 'coaching');
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: 'Too many requests. Please wait before generating another coaching report.' },
+      { status: 429, headers: { 'Retry-After': String(rl.reset) } }
+    );
   }
 
   if (!OPENROUTER_API_KEY) {

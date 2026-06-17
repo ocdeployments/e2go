@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
@@ -82,6 +83,11 @@ export async function POST(request: NextRequest) {
   const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
   if (authError || !user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const rl = await checkRateLimit(user.id, 'tts');
+  if (!rl.allowed) {
+    return NextResponse.json({ audioChunks: [], fallbackToBrowser: true });
   }
 
   if (!GROQ_API_KEY && !OPENAI_API_KEY) {
