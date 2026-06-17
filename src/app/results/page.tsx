@@ -756,6 +756,48 @@ function ResultsPageInner() {
   const verdictSub = getVerdictSub(outcome, data.warnings || []);
 
   const allFlags = [...(data.warnings || []), ...(data.attorney_flags || [])];
+
+  // 5-criteria breakdown derived from fired flags
+  function computeCriteriaBreakdown(d: ResultData): Array<{ label: string; score: number; note: string }> {
+    const warns = new Set(d.warnings || []);
+    const atty  = new Set(d.attorney_flags || []);
+    const hard  = d.outcome === 'DO_NOT_PROCEED';
+
+    const has = (...codes: string[]) => codes.some(c => warns.has(c) || atty.has(c));
+
+    // Treaty nationality
+    const nationalityScore = hard ? 0 : 100;
+    const nationalityNote  = hard ? 'Hard stop — eligibility blocked' : 'Treaty country confirmed';
+
+    // Investment amount — W-PROP-STRONG → 40, W-PROP-SOFT / W-05 → 70, else 100
+    const investScore = has('W-PROP-STRONG') ? 40 : has('W-PROP-SOFT', 'W-05') ? 70 : 100;
+    const investNote  = has('W-PROP-STRONG') ? 'Below $75K — strong concern' : has('W-PROP-SOFT', 'W-05') ? 'Below $150K — advisory flag' : 'Investment level clear';
+
+    // Source of funds — W-06/07/08/PR-04 → progressive penalty
+    const fundsFlags = [has('W-06'), has('W-07'), has('W-08')].filter(Boolean).length;
+    const fundsScore = fundsFlags >= 2 ? 45 : fundsFlags === 1 ? 65 : 100;
+    const fundsNote  = fundsFlags >= 2 ? 'Multiple documentation gaps' : fundsFlags === 1 ? 'Paper trail needs attention' : 'Source of funds clear';
+
+    // Business & management role — W-09/10/15, PR-05/07/08/09
+    const bizFlags = [has('W-09'), has('W-10'), has('W-15')].filter(Boolean).length;
+    const bizScore  = has('PR-05', 'PR-07', 'PR-08', 'PR-09') ? 20 : bizFlags >= 2 ? 50 : bizFlags === 1 ? 75 : 100;
+    const bizNote   = has('PR-05', 'PR-07', 'PR-08', 'PR-09') ? 'Role or business type concern' : bizFlags >= 1 ? 'Role / structure needs clarification' : 'Active management role confirmed';
+
+    // Non-immigrant intent — W-NI-NONE → 30, W-NI-WEAK → 55, advisory → 80, else 100
+    const intentScore = has('W-NI-NONE') ? 30 : has('W-NI-WEAK') ? 55 : has('W-NI-01', 'W-NI-02', 'W-NI-03') ? 80 : 100;
+    const intentNote  = has('W-NI-NONE') ? 'Weak ties to home country' : has('W-NI-WEAK') ? 'Limited ties — needs attention' : has('W-NI-01', 'W-NI-02', 'W-NI-03') ? 'Ties documented — strengthen further' : 'Strong home-country ties';
+
+    return [
+      { label: 'Treaty nationality',   score: nationalityScore, note: nationalityNote },
+      { label: 'Investment amount',     score: investScore,      note: investNote },
+      { label: 'Source of funds',       score: fundsScore,       note: fundsNote },
+      { label: 'Business & role',       score: bizScore,         note: bizNote },
+      { label: 'Non-immigrant intent',  score: intentScore,      note: intentNote },
+    ];
+  }
+
+  const criteriaBreakdown = computeCriteriaBreakdown(data);
+
   const flagsToShow = allFlags.map(code => ({
     code,
     info: (flagExplanations as Record<string, { question_id: string; plain_language: string; why_it_matters: string; edit_label: string }>)[code],
@@ -929,6 +971,34 @@ function ResultsPageInner() {
           </div>
         </div>
       )}
+
+      {/* 5-criteria breakdown */}
+      <div style={{ padding: "32px 40px", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
+        <div style={{ maxWidth: "720px" }}>
+          <div style={{ fontSize: "10px", letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(201,168,76,0.5)", marginBottom: "20px" }}>
+            E-2 criteria breakdown
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+            {criteriaBreakdown.map(({ label, score: cScore, note }) => {
+              const color = cScore >= 85 ? "#22c55e" : cScore >= 60 ? "#f59e0b" : "#ef4444";
+              return (
+                <div key={label}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "5px" }}>
+                    <span style={{ fontSize: "12px", color: "rgba(245,240,232,0.7)", letterSpacing: "0.02em" }}>{label}</span>
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                      <span style={{ fontSize: "11px", color: "rgba(245,240,232,0.35)" }}>{note}</span>
+                      <span style={{ fontSize: "12px", fontWeight: 600, color, minWidth: "36px", textAlign: "right" as const }}>{cScore}</span>
+                    </div>
+                  </div>
+                  <div style={{ height: "3px", background: "rgba(245,240,232,0.07)" }}>
+                    <div style={{ height: "100%", background: color, width: `${cScore}%`, transition: "width 0.8s cubic-bezier(.4,0,.2,1)" }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
 
       <div style={{ padding: "40px", display: "grid", gridTemplateColumns: "1fr 320px", gap: "32px", maxWidth: "1100px" }}>
 
