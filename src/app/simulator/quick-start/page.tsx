@@ -8,6 +8,48 @@ import { BUSINESS_CATEGORIES } from '@/lib/business-categories';
 
 const supabase = createBrowserSupabaseClient();
 
+// ─── Treaty Countries ────────────────────────────────────────────────────────
+const TREATY_COUNTRIES = [
+  { value: 'canada', label: 'Canada' },
+  { value: 'united_kingdom', label: 'United Kingdom' },
+  { value: 'australia', label: 'Australia' },
+  { value: 'japan', label: 'Japan' },
+  { value: 'south_korea', label: 'South Korea' },
+  { value: 'germany', label: 'Germany' },
+  { value: 'france', label: 'France' },
+  { value: 'italy', label: 'Italy' },
+  { value: 'spain', label: 'Spain' },
+  { value: 'netherlands', label: 'Netherlands' },
+  { value: 'switzerland', label: 'Switzerland' },
+  { value: 'sweden', label: 'Sweden' },
+  { value: 'belgium', label: 'Belgium' },
+  { value: 'norway', label: 'Norway' },
+  { value: 'denmark', label: 'Denmark' },
+  { value: 'finland', label: 'Finland' },
+  { value: 'ireland', label: 'Ireland' },
+  { value: 'austria', label: 'Austria' },
+  { value: 'poland', label: 'Poland' },
+  { value: 'czech_republic', label: 'Czech Republic' },
+  { value: 'hungary', label: 'Hungary' },
+  { value: 'romania', label: 'Romania' },
+  { value: 'mexico', label: 'Mexico' },
+  { value: 'colombia', label: 'Colombia' },
+  { value: 'argentina', label: 'Argentina' },
+  { value: 'chile', label: 'Chile' },
+  { value: 'turkey', label: 'Turkey' },
+  { value: 'israel', label: 'Israel' },
+  { value: 'jordan', label: 'Jordan' },
+  { value: 'thailand', label: 'Thailand' },
+  { value: 'pakistan', label: 'Pakistan' },
+  { value: 'other', label: 'Other E-2 treaty country' },
+];
+
+const BUSINESS_TYPES = [
+  { value: 'new', label: 'New business — starting from scratch' },
+  { value: 'franchise', label: 'Franchise — licensed brand or system' },
+  { value: 'acquisition', label: 'Acquisition — buying an existing business' },
+];
+
 const TARGET_CONSULATES = [
   { value: 'toronto', label: 'Toronto, Canada' },
   { value: 'london', label: 'London, UK' },
@@ -45,12 +87,20 @@ export default function SimulatorQuickStart() {
   const [step, setStep] = useState<Step>('form');
   const [authReady, setAuthReady] = useState(false);
 
-  // Form state
-  const [businessCategory, setBusinessCategory] = useState('');
+  // ── About you ──────────────────────────────────────────────────────────────
   const [applicantName, setApplicantName] = useState('');
+  const [treatyCountry, setTreatyCountry] = useState('');
+
+  // ── Your business ──────────────────────────────────────────────────────────
+  const [businessCategory, setBusinessCategory] = useState('');
+  const [businessType, setBusinessType] = useState('');
+  const [investmentAmount, setInvestmentAmount] = useState('');
+  const [jobsYear1, setJobsYear1] = useState('');
+
+  // ── Interview location ─────────────────────────────────────────────────────
   const [targetConsulate, setTargetConsulate] = useState('toronto');
 
-  // Upload state
+  // ── Upload ─────────────────────────────────────────────────────────────────
   const [files, setFiles] = useState<PendingFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -75,7 +125,6 @@ export default function SimulatorQuickStart() {
   const [confirmEdits, setConfirmEdits] = useState<Partial<ExtractedFields>>({});
   const [confirming, setConfirming] = useState(false);
 
-  // Auth check
   useEffect(() => {
     async function checkAuth() {
       const { data: { user: authUser } } = await supabase.auth.getUser();
@@ -108,7 +157,6 @@ export default function SimulatorQuickStart() {
         });
         continue;
       }
-      // Auto-detect type from filename
       let detectedType: PendingFile['type'] = 'other';
       const lower = file.name.toLowerCase();
       if (lower.includes('cover') || lower.includes('letter')) {
@@ -164,29 +212,41 @@ export default function SimulatorQuickStart() {
   }, [addFiles]);
 
   // ===========================================================================
-  // FORM SUBMISSION → CREATE APPLICATION → UPLOAD → EXTRACT
+  // FORM VALIDATION
+  // ===========================================================================
+
+  const validFiles = files.filter(f => !f.error);
+  const canSubmit =
+    applicantName.trim().length > 0 &&
+    treatyCountry.length > 0 &&
+    businessCategory.length > 0 &&
+    businessType.length > 0 &&
+    investmentAmount.trim().length > 0 &&
+    validFiles.length > 0 &&
+    !uploading;
+
+  // ===========================================================================
+  // FORM SUBMISSION
   // ===========================================================================
 
   const handleStart = async () => {
-    if (!businessCategory) return;
-
-    const validFiles = files.filter(f => !f.error);
-    if (validFiles.length === 0) {
-      setUploadError('Please upload at least one document (cover letter or business plan).');
-      return;
-    }
+    if (!canSubmit) return;
 
     setUploading(true);
     setUploadError(null);
 
     try {
-      // 1. Create minimal application
+      // 1. Create application with all intake fields
       const appRes = await fetch('/api/simulator/quick-start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           businessCategory,
-          applicantName: applicantName || undefined,
+          applicantName: applicantName.trim(),
+          treatyCountry,
+          businessType,
+          investmentAmount: investmentAmount ? parseFloat(investmentAmount.replace(/[^0-9.]/g, '')) : undefined,
+          jobsYear1: jobsYear1 ? parseInt(jobsYear1) : undefined,
           targetConsulate,
         }),
       });
@@ -201,7 +261,6 @@ export default function SimulatorQuickStart() {
       // 2. Upload documents
       const formData = new FormData();
       formData.append('applicationId', appId);
-
       validFiles.forEach((f, idx) => {
         formData.append(`file_${idx}`, f.file);
         formData.append(`type_${idx}`, f.type);
@@ -237,7 +296,7 @@ export default function SimulatorQuickStart() {
   };
 
   // ===========================================================================
-  // CONFIRM STEP HELPERS
+  // CONFIRM STEP
   // ===========================================================================
 
   async function fetchExtractedFields(appId: string): Promise<ExtractedFields> {
@@ -258,28 +317,22 @@ export default function SimulatorQuickStart() {
     answers?.forEach((a: { question_key: string; answer_value: string }) => aMap.set(a.question_key, a.answer_value));
 
     const rawAmount = aMap.get('QF-02') || aMap.get('M3-F-02') || null;
-    const investmentAmount = rawAmount
-      ? parseFloat(rawAmount.replace(/[^0-9.]/g, '')) || null
-      : null;
+    const amount = rawAmount ? parseFloat(rawAmount.replace(/[^0-9.]/g, '')) || null : null;
     const rawEmployees = aMap.get('QI-03') || aMap.get('M3-I-03') || null;
-    const employeeCountYear1 = rawEmployees ? parseInt(rawEmployees) || null : null;
+    const employees = rawEmployees ? parseInt(rawEmployees) || null : null;
 
     return {
       businessName: app?.business_name || aMap.get('QA-51') || aMap.get('M3-A-51') || null,
-      investmentAmount,
+      investmentAmount: amount,
       applicantName: app?.principal_name || null,
       targetState: app?.target_state || null,
-      employeeCountYear1,
+      employeeCountYear1: employees,
     };
   }
 
   async function handleConfirm() {
     if (!confirmedAppId) return;
     setConfirming(true);
-
-    // If user filled in missing fields, patch them to the DB
-    const patches: Record<string, string> = {};
-    const merged = { ...extractedFields, ...confirmEdits };
 
     if (confirmEdits.businessName) {
       await supabase
@@ -300,17 +353,14 @@ export default function SimulatorQuickStart() {
         .eq('id', confirmedAppId);
     }
     if (confirmEdits.investmentAmount !== undefined && confirmEdits.investmentAmount !== null) {
-      // Save as an answer
       await supabase.from('answers').upsert({
         application_id: confirmedAppId,
         question_key: 'QF-02',
         answer_value: String(confirmEdits.investmentAmount),
-        source: 'user_input',
-        updated_at: new Date().toISOString(),
+        answered_at: new Date().toISOString(),
       }, { onConflict: 'application_id,question_key' });
     }
 
-    void patches; void merged; // suppress unused warnings
     router.push(`/simulator/case-file?applicationId=${confirmedAppId}`);
   }
 
@@ -329,9 +379,7 @@ export default function SimulatorQuickStart() {
         body: JSON.stringify({ applicationId: appId, documentIds: docIds }),
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to start extraction');
-      }
+      if (!response.ok) throw new Error('Failed to start extraction');
 
       const reader = response.body?.getReader();
       if (!reader) throw new Error('No response stream');
@@ -349,7 +397,6 @@ export default function SimulatorQuickStart() {
 
         for (const message of messages) {
           if (!message.trim()) continue;
-
           const eventMatch = message.match(/^event: (.+)$/m);
           const dataMatch = message.match(/^data: (.+)$/m);
           if (!eventMatch || !dataMatch) continue;
@@ -360,47 +407,31 @@ export default function SimulatorQuickStart() {
           switch (event) {
             case 'document_start':
               setDocuments(prev => prev.map(d =>
-                d.documentId === data.documentId
-                  ? { ...d, filename: data.filename, status: 'waiting' }
-                  : d
+                d.documentId === data.documentId ? { ...d, filename: data.filename, status: 'waiting' } : d
               ));
               break;
-
             case 'document_classified':
               setDocuments(prev => prev.map(d =>
-                d.documentId === data.documentId
-                  ? { ...d, status: 'classified' }
-                  : d
+                d.documentId === data.documentId ? { ...d, status: 'classified' } : d
               ));
               break;
-
             case 'document_extracted':
               setDocuments(prev => prev.map(d =>
-                d.documentId === data.documentId
-                  ? { ...d, status: 'extracting', fieldsFound: data.fieldsFound }
-                  : d
+                d.documentId === data.documentId ? { ...d, status: 'extracting', fieldsFound: data.fieldsFound } : d
               ));
               break;
-
             case 'document_complete':
               setDocuments(prev => prev.map(d =>
-                d.documentId === data.documentId
-                  ? { ...d, status: 'complete' }
-                  : d
+                d.documentId === data.documentId ? { ...d, status: 'complete' } : d
               ));
               break;
-
             case 'document_error':
               setDocuments(prev => prev.map(d =>
-                d.documentId === data.documentId
-                  ? { ...d, status: 'failed', error: data.message }
-                  : d
+                d.documentId === data.documentId ? { ...d, status: 'failed', error: data.message } : d
               ));
               break;
-
             case 'extraction_complete':
               setOverallStatus('complete');
-              // Fetch extracted fields for confirm step, then transition
               setTimeout(async () => {
                 const fields = await fetchExtractedFields(appId);
                 setExtractedFields(fields);
@@ -408,7 +439,6 @@ export default function SimulatorQuickStart() {
                 setStep('confirm');
               }, 800);
               break;
-
             case 'error':
               setOverallStatus('error');
               setErrorMessage(data.message);
@@ -420,19 +450,23 @@ export default function SimulatorQuickStart() {
       setOverallStatus('error');
       setErrorMessage(err instanceof Error ? err.message : 'Extraction failed');
     }
-  }, [router]);
+  }, []);
 
   // ===========================================================================
-  // RENDER — FORM STEP
+  // RENDER GUARDS
   // ===========================================================================
 
   if (!authReady) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0a0a0a]">
-        <div className="w-8 h-8 border-2 border-[#C9A84C] border-t-transparent rounded-full animate-spin" />
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0a0a0a' }}>
+        <div style={{ width: '28px', height: '28px', border: '2px solid #C9A84C', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
       </div>
     );
   }
+
+  // ===========================================================================
+  // RENDER — FORM STEP
+  // ===========================================================================
 
   if (step === 'form') {
     return (
@@ -441,202 +475,122 @@ export default function SimulatorQuickStart() {
         background: '#0a0a0a',
         color: '#f5f0e8',
         fontFamily: "'DM Sans', sans-serif",
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '24px',
+        padding: '48px 24px 80px',
       }}>
-        <div style={{ maxWidth: '560px', width: '100%' }}>
+        <div style={{ maxWidth: '600px', margin: '0 auto' }}>
+
           {/* Header */}
-          <div style={{ marginBottom: '32px' }}>
+          <div style={{ marginBottom: '40px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
               <span style={{ color: '#C9A84C', fontSize: '12px' }}>&#9670;</span>
-              <span style={{
-                color: '#C9A84C',
-                fontSize: '11px',
-                letterSpacing: '0.1em',
-                textTransform: 'uppercase' as const,
-                fontWeight: 500,
-              }}>
+              <span style={{ color: '#C9A84C', fontSize: '11px', letterSpacing: '0.1em', textTransform: 'uppercase' as const, fontWeight: 500 }}>
                 SIMULATOR QUICK START
               </span>
             </div>
-            <h1 style={{
-              fontFamily: "'Cormorant Garamond', serif",
-              fontSize: '36px',
-              fontWeight: 300,
-              color: '#f5f0e8',
-              lineHeight: 1.1,
-              marginBottom: '12px',
-            }}>
-              Upload &amp; Start Practicing
+            <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '36px', fontWeight: 300, color: '#f5f0e8', lineHeight: 1.1, marginBottom: '12px' }}>
+              Tell us about your case
             </h1>
-            <p style={{
-              fontSize: '15px',
-              fontWeight: 300,
-              color: 'rgba(245,240,232,0.6)',
-              lineHeight: 1.7,
-            }}>
-              Upload your cover letter and/or business plan. We&apos;ll extract your key details
-              and generate personalised interview questions.
+            <p style={{ fontSize: '14px', fontWeight: 300, color: 'rgba(245,240,232,0.55)', lineHeight: 1.7 }}>
+              The more context you give us, the more realistic and targeted your practice interview will be.
+              This takes about two minutes.
             </p>
           </div>
 
-          {/* Form card */}
-          <div style={{
-            padding: '32px',
-            background: 'rgba(201,168,76,0.02)',
-            border: '1px solid rgba(201,168,76,0.12)',
-          }}>
-            {/* Business Category */}
-            <div style={{ marginBottom: '20px' }}>
-              <label style={{
-                display: 'block',
-                fontSize: '13px',
-                fontWeight: 500,
-                color: 'rgba(245,240,232,0.7)',
-                marginBottom: '8px',
-              }}>
-                Business category <span style={{ color: '#C9A84C' }}>*</span>
-              </label>
-              <select
-                value={businessCategory}
-                onChange={(e) => setBusinessCategory(e.target.value)}
-                required
-                style={{
-                  width: '100%',
-                  padding: '12px 16px',
-                  background: 'rgba(255,255,255,0.04)',
-                  border: '1px solid rgba(201,168,76,0.2)',
-                  color: '#f5f0e8',
-                  fontSize: '14px',
-                  fontFamily: "'DM Sans', sans-serif",
-                  appearance: 'none' as const,
-                  cursor: 'pointer',
-                }}
-              >
-                <option value="" style={{ background: '#0a0a0a' }}>Select your business type...</option>
-                {BUSINESS_CATEGORIES.map(cat => (
-                  <option key={cat.value} value={cat.value} style={{ background: '#0a0a0a' }}>
-                    {cat.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Applicant Name */}
-            <div style={{ marginBottom: '20px' }}>
-              <label style={{
-                display: 'block',
-                fontSize: '13px',
-                fontWeight: 500,
-                color: 'rgba(245,240,232,0.7)',
-                marginBottom: '8px',
-              }}>
-                Your name <span style={{ color: 'rgba(245,240,232,0.3)', fontSize: '12px' }}>(optional)</span>
-              </label>
-              <input
-                type="text"
-                value={applicantName}
-                onChange={(e) => setApplicantName(e.target.value)}
-                placeholder="e.g. Michael Chen"
-                style={{
-                  width: '100%',
-                  padding: '12px 16px',
-                  background: 'rgba(255,255,255,0.04)',
-                  border: '1px solid rgba(201,168,76,0.2)',
-                  color: '#f5f0e8',
-                  fontSize: '14px',
-                  fontFamily: "'DM Sans', sans-serif",
-                }}
+          {/* ── Section 1: About You ──────────────────────────────────────── */}
+          <SectionHeading label="About you" />
+          <FormCard>
+            <FormField label="Your full name" required hint="As it appears on your application">
+              <TextInput value={applicantName} onChange={setApplicantName} placeholder="e.g. Michael Chen" />
+            </FormField>
+            <FormField
+              label="Treaty country"
+              required
+              hint="The country of which you are a citizen that has an E-2 treaty with the US"
+            >
+              <SelectInput
+                value={treatyCountry}
+                onChange={setTreatyCountry}
+                placeholder="Select your country..."
+                options={TREATY_COUNTRIES}
               />
-            </div>
+            </FormField>
+          </FormCard>
 
-            {/* Target Consulate */}
-            <div style={{ marginBottom: '28px' }}>
-              <label style={{
-                display: 'block',
-                fontSize: '13px',
-                fontWeight: 500,
-                color: 'rgba(245,240,232,0.7)',
-                marginBottom: '8px',
-              }}>
-                Target consulate
-              </label>
-              <select
+          {/* ── Section 2: Your Business ──────────────────────────────────── */}
+          <SectionHeading label="Your business" />
+          <FormCard>
+            <FormField label="Business category" required>
+              <SelectInput
+                value={businessCategory}
+                onChange={setBusinessCategory}
+                placeholder="Select your business type..."
+                options={BUSINESS_CATEGORIES}
+              />
+            </FormField>
+
+            <FormField
+              label="Business type"
+              required
+              hint="Starting fresh, buying a franchise, or acquiring an existing business?"
+            >
+              <SelectInput
+                value={businessType}
+                onChange={setBusinessType}
+                placeholder="Select..."
+                options={BUSINESS_TYPES}
+              />
+            </FormField>
+
+            <FormField
+              label="Total investment (USD)"
+              required
+              hint="Your committed investment amount — an estimate is fine"
+            >
+              <TextInput
+                value={investmentAmount}
+                onChange={setInvestmentAmount}
+                placeholder="e.g. 150000"
+                type="number"
+              />
+            </FormField>
+
+            <FormField
+              label="Jobs to create — Year 1"
+              hint="How many employees (other than yourself) in the first year?"
+            >
+              <TextInput
+                value={jobsYear1}
+                onChange={setJobsYear1}
+                placeholder="e.g. 3"
+                type="number"
+              />
+            </FormField>
+          </FormCard>
+
+          {/* ── Section 3: Interview Location ─────────────────────────────── */}
+          <SectionHeading label="Interview location" />
+          <FormCard>
+            <FormField label="Target consulate">
+              <SelectInput
                 value={targetConsulate}
-                onChange={(e) => setTargetConsulate(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '12px 16px',
-                  background: 'rgba(255,255,255,0.04)',
-                  border: '1px solid rgba(201,168,76,0.2)',
-                  color: '#f5f0e8',
-                  fontSize: '14px',
-                  fontFamily: "'DM Sans', sans-serif",
-                  appearance: 'none' as const,
-                  cursor: 'pointer',
-                }}
-              >
-                {TARGET_CONSULATES.map(c => (
-                  <option key={c.value} value={c.value} style={{ background: '#0a0a0a' }}>
-                    {c.label}
-                  </option>
-                ))}
-              </select>
-            </div>
+                onChange={setTargetConsulate}
+                placeholder=""
+                options={TARGET_CONSULATES}
+              />
+            </FormField>
+          </FormCard>
 
-            {/* Document Upload Section */}
-            <div style={{ marginBottom: '28px' }}>
-              <label style={{
-                display: 'block',
-                fontSize: '13px',
-                fontWeight: 500,
-                color: 'rgba(245,240,232,0.7)',
-                marginBottom: '8px',
-              }}>
-                Documents <span style={{ color: '#C9A84C' }}>*</span>
-                <span style={{ color: 'rgba(245,240,232,0.3)', fontSize: '12px', marginLeft: '8px' }}>
-                  Cover letter and/or business plan (PDF or DOCX)
-                </span>
-              </label>
-
-              {/* Drop zone */}
-              <div
+          {/* ── Section 4: Documents ──────────────────────────────────────── */}
+          <SectionHeading label="Your documents" />
+          <FormCard>
+            <FormField label="Upload documents" required hint="Cover letter and/or business plan — PDF or DOCX">
+              <DropZone
+                isDragging={isDragging}
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
                 onClick={() => fileInputRef.current?.click()}
-                style={{
-                  padding: '32px 24px',
-                  border: `1px dashed ${isDragging ? '#C9A84C' : 'rgba(201,168,76,0.2)'}`,
-                  background: isDragging ? 'rgba(201,168,76,0.04)' : 'transparent',
-                  cursor: 'pointer',
-                  textAlign: 'center' as const,
-                  transition: 'border-color 0.15s, background 0.15s',
-                }}
-              >
-                <svg
-                  width="24" height="24" viewBox="0 0 24 24" fill="none"
-                  stroke="rgba(201,168,76,0.4)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
-                  style={{ margin: '0 auto 12px' }}
-                >
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                  <polyline points="17 8 12 3 7 8" />
-                  <line x1="12" y1="3" x2="12" y2="15" />
-                </svg>
-                <p style={{
-                  fontSize: '14px',
-                  color: 'rgba(245,240,232,0.6)',
-                  marginBottom: '4px',
-                }}>
-                  Drop files here or <span style={{ color: '#C9A84C' }}>browse</span>
-                </p>
-                <p style={{ fontSize: '12px', color: 'rgba(245,240,232,0.3)' }}>
-                  PDF or DOCX — at least one document required
-                </p>
-              </div>
-
+              />
               <input
                 ref={fileInputRef}
                 type="file"
@@ -645,129 +599,53 @@ export default function SimulatorQuickStart() {
                 onChange={handleFileInput}
                 style={{ display: 'none' }}
               />
-
-              {/* File list */}
               {files.length > 0 && (
-                <div style={{ marginTop: '16px' }}>
+                <div style={{ marginTop: '12px' }}>
                   {files.map((f) => (
-                    <div
-                      key={f.id}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '12px',
-                        padding: '10px 12px',
-                        border: `1px solid ${f.error ? 'rgba(200,80,80,0.2)' : 'rgba(201,168,76,0.08)'}`,
-                        marginBottom: '8px',
-                      }}
-                    >
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <p style={{
-                          fontSize: '13px',
-                          color: f.error ? 'rgba(200,120,120,0.8)' : '#f5f0e8',
-                          whiteSpace: 'nowrap' as const,
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                        }}>
-                          {f.name}
-                        </p>
-                        {f.error && (
-                          <p style={{ fontSize: '11px', color: 'rgba(200,120,120,0.6)', marginTop: '2px' }}>
-                            {f.error}
-                          </p>
-                        )}
-                      </div>
-
-                      {!f.error && (
-                        <select
-                          value={f.type}
-                          onChange={(e) => updateFileType(f.id, e.target.value as PendingFile['type'])}
-                          style={{
-                            padding: '4px 8px',
-                            background: 'rgba(255,255,255,0.04)',
-                            border: '1px solid rgba(201,168,76,0.15)',
-                            color: 'rgba(245,240,232,0.6)',
-                            fontSize: '11px',
-                            fontFamily: "'DM Sans', sans-serif",
-                            cursor: 'pointer',
-                          }}
-                        >
-                          <option value="cover_letter" style={{ background: '#0a0a0a' }}>Cover letter</option>
-                          <option value="business_plan" style={{ background: '#0a0a0a' }}>Business plan</option>
-                          <option value="other" style={{ background: '#0a0a0a' }}>Other</option>
-                        </select>
-                      )}
-
-                      <button
-                        onClick={(e) => { e.stopPropagation(); removeFile(f.id); }}
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          color: 'rgba(245,240,232,0.3)',
-                          cursor: 'pointer',
-                          padding: '4px',
-                          fontSize: '16px',
-                          lineHeight: 1,
-                        }}
-                      >
-                        ×
-                      </button>
-                    </div>
+                    <FileRow key={f.id} file={f} onUpdateType={updateFileType} onRemove={removeFile} />
                   ))}
                 </div>
               )}
+            </FormField>
+          </FormCard>
+
+          {/* Error */}
+          {uploadError && (
+            <div style={{
+              padding: '12px 16px',
+              background: 'rgba(239,68,68,0.08)',
+              border: '1px solid rgba(239,68,68,0.3)',
+              color: '#fca5a5',
+              fontSize: '13px',
+              marginBottom: '20px',
+            }}>
+              {uploadError}
             </div>
+          )}
 
-            {/* Error */}
-            {uploadError && (
-              <div style={{
-                padding: '12px 16px',
-                background: 'rgba(239,68,68,0.08)',
-                border: '1px solid rgba(239,68,68,0.3)',
-                color: '#fca5a5',
-                fontSize: '13px',
-                marginBottom: '20px',
-              }}>
-                {uploadError}
-              </div>
-            )}
+          {/* Submit */}
+          <button
+            onClick={handleStart}
+            disabled={!canSubmit}
+            style={{
+              width: '100%',
+              padding: '16px 24px',
+              background: canSubmit ? '#C9A84C' : 'rgba(201,168,76,0.25)',
+              color: '#0a0a0a',
+              fontSize: '15px',
+              fontWeight: 500,
+              fontFamily: "'DM Sans', sans-serif",
+              cursor: canSubmit ? 'pointer' : 'not-allowed',
+              border: 'none',
+              letterSpacing: '0.02em',
+            }}
+          >
+            {uploading ? 'Creating your case…' : 'Upload & analyse documents →'}
+          </button>
 
-            {/* Submit */}
-            <button
-              onClick={handleStart}
-              disabled={!businessCategory || files.filter(f => !f.error).length === 0 || uploading}
-              style={{
-                width: '100%',
-                padding: '14px 24px',
-                background: (!businessCategory || files.filter(f => !f.error).length === 0 || uploading)
-                  ? 'rgba(201,168,76,0.3)'
-                  : '#C9A84C',
-                color: '#0a0a0a',
-                fontSize: '15px',
-                fontWeight: 500,
-                fontFamily: "'DM Sans', sans-serif",
-                cursor: (!businessCategory || files.filter(f => !f.error).length === 0 || uploading)
-                  ? 'not-allowed'
-                  : 'pointer',
-                border: 'none',
-                opacity: uploading ? 0.7 : 1,
-              }}
-            >
-              {uploading ? 'Creating...' : 'Create & Upload'}
-            </button>
-          </div>
-
-          {/* Back link */}
-          <div style={{ marginTop: '20px', textAlign: 'center' as const }}>
-            <a
-              href="/simulator"
-              style={{
-                color: '#C9A84C',
-                fontSize: '14px',
-                textDecoration: 'underline',
-              }}
-            >
-              ← Back to Simulator
+          <div style={{ marginTop: '16px', textAlign: 'center' as const }}>
+            <a href="/simulator" style={{ color: 'rgba(201,168,76,0.6)', fontSize: '13px', textDecoration: 'underline' }}>
+              ← Back to simulator
             </a>
           </div>
         </div>
@@ -795,164 +673,66 @@ export default function SimulatorQuickStart() {
         padding: '24px',
       }}>
         <div style={{ maxWidth: '560px', width: '100%' }}>
-          {/* Header */}
           <div style={{ marginBottom: '32px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
               <span style={{ color: '#C9A84C', fontSize: '12px' }}>&#9670;</span>
-              <span style={{
-                color: '#C9A84C',
-                fontSize: '11px',
-                letterSpacing: '0.1em',
-                textTransform: 'uppercase' as const,
-                fontWeight: 500,
-              }}>
+              <span style={{ color: '#C9A84C', fontSize: '11px', letterSpacing: '0.1em', textTransform: 'uppercase' as const, fontWeight: 500 }}>
                 READING DOCUMENTS
               </span>
             </div>
-            <h1 style={{
-              fontFamily: "'Cormorant Garamond', serif",
-              fontSize: '32px',
-              fontWeight: 300,
-              color: '#f5f0e8',
-              lineHeight: 1.1,
-              marginBottom: '8px',
-            }}>
-              {overallStatus === 'complete'
-                ? 'Extraction complete'
-                : overallStatus === 'error'
-                ? 'Something went wrong'
-                : 'Reading your documents...'}
+            <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '32px', fontWeight: 300, color: '#f5f0e8', lineHeight: 1.1, marginBottom: '8px' }}>
+              {overallStatus === 'complete' ? 'Extraction complete' : overallStatus === 'error' ? 'Something went wrong' : 'Reading your documents…'}
             </h1>
             {overallStatus === 'processing' && (
-              <p style={{ fontSize: '13px', color: 'rgba(245,240,232,0.4)' }}>
-                This takes about 30&ndash;60 seconds per document.
-              </p>
+              <p style={{ fontSize: '13px', color: 'rgba(245,240,232,0.4)' }}>This takes about 30–60 seconds per document.</p>
             )}
             {overallStatus === 'complete' && (
               <p style={{ fontSize: '13px', color: 'rgba(245,240,232,0.4)' }}>
-                {completedCount} document{completedCount !== 1 ? 's' : ''} processed.
-                Redirecting to simulator...
+                {completedCount} document{completedCount !== 1 ? 's' : ''} processed. Redirecting…
               </p>
             )}
           </div>
 
-          {/* Error */}
           {errorMessage && (
-            <div style={{
-              padding: '16px',
-              border: '1px solid rgba(200,80,80,0.3)',
-              color: 'rgba(200,120,120,0.9)',
-              fontSize: '13px',
-              marginBottom: '24px',
-            }}>
+            <div style={{ padding: '16px', border: '1px solid rgba(200,80,80,0.3)', color: 'rgba(200,120,120,0.9)', fontSize: '13px', marginBottom: '24px' }}>
               {errorMessage}
               <button
                 onClick={() => router.push('/simulator')}
-                style={{
-                  display: 'block',
-                  marginTop: '12px',
-                  background: 'none',
-                  border: 'none',
-                  color: '#C9A84C',
-                  fontSize: '11px',
-                  textTransform: 'uppercase' as const,
-                  letterSpacing: '0.05em',
-                  cursor: 'pointer',
-                  padding: 0,
-                }}
+                style={{ display: 'block', marginTop: '12px', background: 'none', border: 'none', color: '#C9A84C', fontSize: '11px', textTransform: 'uppercase' as const, letterSpacing: '0.05em', cursor: 'pointer', padding: 0 }}
               >
                 Return to simulator
               </button>
             </div>
           )}
 
-          {/* Document progress */}
           <div>
             {documents.map((doc) => (
-              <div
-                key={doc.documentId}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '14px 16px',
-                  border: `1px solid ${
-                    doc.status === 'failed' ? 'rgba(200,80,80,0.2)'
-                    : doc.status === 'complete' ? 'rgba(201,168,76,0.15)'
-                    : 'rgba(201,168,76,0.06)'
-                  }`,
-                  marginBottom: '8px',
-                }}
-              >
+              <div key={doc.documentId} style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '14px 16px',
+                border: `1px solid ${doc.status === 'failed' ? 'rgba(200,80,80,0.2)' : doc.status === 'complete' ? 'rgba(201,168,76,0.15)' : 'rgba(201,168,76,0.06)'}`,
+                marginBottom: '8px',
+              }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
-                  <div style={{
-                    width: '8px',
-                    height: '8px',
-                    flexShrink: 0,
-                    background: doc.status === 'complete' ? '#C9A84C'
-                      : doc.status === 'failed' ? 'rgba(200,80,80,0.7)'
-                      : doc.status === 'waiting' ? 'rgba(245,240,232,0.15)'
-                      : 'rgba(201,168,76,0.5)',
-                  }} />
+                  <div style={{ width: '8px', height: '8px', flexShrink: 0, background: doc.status === 'complete' ? '#C9A84C' : doc.status === 'failed' ? 'rgba(200,80,80,0.7)' : doc.status === 'waiting' ? 'rgba(245,240,232,0.15)' : 'rgba(201,168,76,0.5)' }} />
                   <div style={{ minWidth: 0 }}>
-                    <p style={{
-                      fontSize: '13px',
-                      color: doc.status === 'failed' ? 'rgba(200,120,120,0.8)' : '#f5f0e8',
-                      whiteSpace: 'nowrap' as const,
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                    }}>
-                      {doc.filename}
-                    </p>
-                    {doc.error && (
-                      <p style={{ fontSize: '11px', color: 'rgba(200,120,120,0.6)', marginTop: '2px' }}>
-                        {doc.error}
-                      </p>
-                    )}
+                    <p style={{ fontSize: '13px', color: doc.status === 'failed' ? 'rgba(200,120,120,0.8)' : '#f5f0e8', whiteSpace: 'nowrap' as const, overflow: 'hidden', textOverflow: 'ellipsis' }}>{doc.filename}</p>
+                    {doc.error && <p style={{ fontSize: '11px', color: 'rgba(200,120,120,0.6)', marginTop: '2px' }}>{doc.error}</p>}
                   </div>
                 </div>
-
                 <div style={{ flexShrink: 0, marginLeft: '12px' }}>
-                  {doc.status === 'waiting' && (
-                    <span style={{ fontSize: '11px', color: 'rgba(245,240,232,0.25)', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>
-                      Waiting...
-                    </span>
-                  )}
-                  {doc.status === 'classified' && (
-                    <span style={{ fontSize: '11px', color: 'rgba(201,168,76,0.5)', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>
-                      Classifying...
-                    </span>
-                  )}
-                  {doc.status === 'extracting' && (
-                    <span style={{ fontSize: '11px', color: 'rgba(201,168,76,0.5)', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>
-                      Extracting...
-                    </span>
-                  )}
-                  {doc.status === 'complete' && (
-                    <span style={{ fontSize: '11px', color: 'rgba(201,168,76,0.6)', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>
-                      {doc.fieldsFound !== undefined ? `${doc.fieldsFound} fields` : 'Complete'}
-                    </span>
-                  )}
-                  {doc.status === 'failed' && (
-                    <span style={{ fontSize: '11px', color: 'rgba(200,120,120,0.6)', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>
-                      Failed
-                    </span>
-                  )}
+                  <span style={{ fontSize: '11px', textTransform: 'uppercase' as const, letterSpacing: '0.05em', color: doc.status === 'complete' ? 'rgba(201,168,76,0.6)' : doc.status === 'failed' ? 'rgba(200,120,120,0.6)' : 'rgba(245,240,232,0.25)' }}>
+                    {doc.status === 'waiting' ? 'Waiting…' : doc.status === 'classified' ? 'Classifying…' : doc.status === 'extracting' ? 'Extracting…' : doc.status === 'complete' ? (doc.fieldsFound !== undefined ? `${doc.fieldsFound} fields` : 'Complete') : 'Failed'}
+                  </span>
                 </div>
               </div>
             ))}
           </div>
 
-          {/* Progress bar */}
           {overallStatus === 'processing' && documents.length > 0 && (
             <div style={{ marginTop: '24px' }}>
               <div style={{ height: '1px', width: '100%', background: 'rgba(201,168,76,0.1)' }}>
-                <div style={{
-                  height: '1px',
-                  width: `${((completedCount + failedCount) / documents.length) * 100}%`,
-                  background: '#C9A84C',
-                  transition: 'width 0.5s',
-                }} />
+                <div style={{ height: '1px', width: `${((completedCount + failedCount) / documents.length) * 100}%`, background: '#C9A84C', transition: 'width 0.5s' }} />
               </div>
             </div>
           )}
@@ -969,36 +749,11 @@ export default function SimulatorQuickStart() {
     const merged = { ...extractedFields, ...confirmEdits };
 
     const fieldDefs: { key: keyof ExtractedFields; label: string; hint: string; format: (v: ExtractedFields[keyof ExtractedFields]) => string }[] = [
-      {
-        key: 'businessName',
-        label: 'Business name',
-        hint: 'Enter your business name',
-        format: (v) => String(v || ''),
-      },
-      {
-        key: 'investmentAmount',
-        label: 'Investment amount (USD)',
-        hint: 'e.g. 150000',
-        format: (v) => v ? `$${Number(v).toLocaleString()}` : '',
-      },
-      {
-        key: 'applicantName',
-        label: 'Applicant name',
-        hint: 'Your full name',
-        format: (v) => String(v || ''),
-      },
-      {
-        key: 'targetState',
-        label: 'Target state',
-        hint: 'e.g. Texas, Florida',
-        format: (v) => String(v || ''),
-      },
-      {
-        key: 'employeeCountYear1',
-        label: 'Employees (year 1)',
-        hint: 'e.g. 3',
-        format: (v) => v ? String(v) : '',
-      },
+      { key: 'businessName', label: 'Business name', hint: 'Enter your business name', format: (v) => String(v || '') },
+      { key: 'investmentAmount', label: 'Investment amount (USD)', hint: 'e.g. 150000', format: (v) => v ? `$${Number(v).toLocaleString()}` : '' },
+      { key: 'applicantName', label: 'Applicant name', hint: 'Your full name', format: (v) => String(v || '') },
+      { key: 'targetState', label: 'Target state', hint: 'e.g. Texas, Florida', format: (v) => String(v || '') },
+      { key: 'employeeCountYear1', label: 'Employees (year 1)', hint: 'e.g. 3', format: (v) => v ? String(v) : '' },
     ];
 
     const foundCount = fieldDefs.filter(f => merged[f.key] !== null && merged[f.key] !== undefined).length;
@@ -1019,24 +774,9 @@ export default function SimulatorQuickStart() {
           <div style={{ marginBottom: '32px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
               <span style={{ color: '#C9A84C', fontSize: '12px' }}>&#9670;</span>
-              <span style={{
-                color: '#C9A84C',
-                fontSize: '11px',
-                letterSpacing: '0.1em',
-                textTransform: 'uppercase' as const,
-                fontWeight: 500,
-              }}>
-                CONFIRM YOUR DETAILS
-              </span>
+              <span style={{ color: '#C9A84C', fontSize: '11px', letterSpacing: '0.1em', textTransform: 'uppercase' as const, fontWeight: 500 }}>CONFIRM YOUR DETAILS</span>
             </div>
-            <h1 style={{
-              fontFamily: "'Cormorant Garamond', serif",
-              fontSize: '32px',
-              fontWeight: 300,
-              color: '#f5f0e8',
-              lineHeight: 1.1,
-              marginBottom: '10px',
-            }}>
+            <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '32px', fontWeight: 300, color: '#f5f0e8', lineHeight: 1.1, marginBottom: '10px' }}>
               Here&apos;s what we found
             </h1>
             <p style={{ fontSize: '14px', color: 'rgba(245,240,232,0.5)', lineHeight: 1.6 }}>
@@ -1045,12 +785,7 @@ export default function SimulatorQuickStart() {
             </p>
           </div>
 
-          <div style={{
-            padding: '28px 32px',
-            background: 'rgba(201,168,76,0.02)',
-            border: '1px solid rgba(201,168,76,0.12)',
-            marginBottom: '20px',
-          }}>
+          <div style={{ padding: '28px 32px', background: 'rgba(201,168,76,0.02)', border: '1px solid rgba(201,168,76,0.12)', marginBottom: '20px' }}>
             {fieldDefs.map(({ key, label, hint, format }) => {
               const value = merged[key];
               const isMissing = value === null || value === undefined;
@@ -1059,34 +794,12 @@ export default function SimulatorQuickStart() {
               return (
                 <div key={key} style={{ marginBottom: '20px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-                    <label style={{
-                      fontSize: '11px',
-                      fontWeight: 600,
-                      letterSpacing: '0.08em',
-                      color: isMissing ? 'rgba(251,146,60,0.8)' : 'rgba(201,168,76,0.7)',
-                    }}>
+                    <label style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.08em', color: isMissing ? 'rgba(251,146,60,0.8)' : 'rgba(201,168,76,0.7)' }}>
                       {label.toUpperCase()}
                     </label>
-                    {!isMissing && (
-                      <span style={{
-                        fontSize: '10px',
-                        color: 'rgba(34,197,94,0.6)',
-                        letterSpacing: '0.05em',
-                      }}>
-                        EXTRACTED
-                      </span>
-                    )}
-                    {isMissing && (
-                      <span style={{
-                        fontSize: '10px',
-                        color: 'rgba(251,146,60,0.5)',
-                        letterSpacing: '0.05em',
-                      }}>
-                        NOT FOUND
-                      </span>
-                    )}
+                    {!isMissing && <span style={{ fontSize: '10px', color: 'rgba(34,197,94,0.6)', letterSpacing: '0.05em' }}>EXTRACTED</span>}
+                    {isMissing && <span style={{ fontSize: '10px', color: 'rgba(251,146,60,0.5)', letterSpacing: '0.05em' }}>NOT FOUND</span>}
                   </div>
-
                   {isMissing ? (
                     <input
                       type={key === 'investmentAmount' || key === 'employeeCountYear1' ? 'number' : 'text'}
@@ -1101,23 +814,10 @@ export default function SimulatorQuickStart() {
                             : raw || undefined,
                         }));
                       }}
-                      style={{
-                        width: '100%',
-                        padding: '10px 14px',
-                        background: 'rgba(255,255,255,0.04)',
-                        border: '1px solid rgba(251,146,60,0.3)',
-                        color: '#f5f0e8',
-                        fontSize: '14px',
-                        fontFamily: "'DM Sans', sans-serif",
-                      }}
+                      style={{ width: '100%', padding: '10px 14px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(251,146,60,0.3)', color: '#f5f0e8', fontSize: '14px', fontFamily: "'DM Sans', sans-serif" }}
                     />
                   ) : (
-                    <div style={{
-                      fontSize: '15px',
-                      color: '#f5f0e8',
-                      padding: '10px 0',
-                      borderBottom: '1px solid rgba(245,240,232,0.06)',
-                    }}>
+                    <div style={{ fontSize: '15px', color: '#f5f0e8', padding: '10px 0', borderBottom: '1px solid rgba(245,240,232,0.06)' }}>
                       {format(value)}
                     </div>
                   )}
@@ -1129,35 +829,17 @@ export default function SimulatorQuickStart() {
           <button
             onClick={handleConfirm}
             disabled={confirming}
-            style={{
-              width: '100%',
-              padding: '14px 24px',
-              background: confirming ? 'rgba(201,168,76,0.3)' : '#C9A84C',
-              color: '#0a0a0a',
-              fontSize: '15px',
-              fontWeight: 500,
-              fontFamily: "'DM Sans', sans-serif",
-              cursor: confirming ? 'not-allowed' : 'pointer',
-              border: 'none',
-              marginBottom: '16px',
-            }}
+            style={{ width: '100%', padding: '14px 24px', background: confirming ? 'rgba(201,168,76,0.3)' : '#C9A84C', color: '#0a0a0a', fontSize: '15px', fontWeight: 500, fontFamily: "'DM Sans', sans-serif", cursor: confirming ? 'not-allowed' : 'pointer', border: 'none', marginBottom: '16px' }}
           >
-            {confirming ? 'Saving...' : 'Confirm & start simulator'}
+            {confirming ? 'Saving…' : 'Confirm & view preparation guide →'}
           </button>
 
           <div style={{ textAlign: 'center' as const }}>
             <button
               onClick={() => confirmedAppId && router.push(`/simulator/case-file?applicationId=${confirmedAppId}`)}
-              style={{
-                background: 'none',
-                border: 'none',
-                color: 'rgba(245,240,232,0.4)',
-                fontSize: '13px',
-                cursor: 'pointer',
-                textDecoration: 'underline',
-              }}
+              style={{ background: 'none', border: 'none', color: 'rgba(245,240,232,0.4)', fontSize: '13px', cursor: 'pointer', textDecoration: 'underline' }}
             >
-              Skip and go to case file
+              Skip and go to prepare
             </button>
           </div>
         </div>
@@ -1166,4 +848,146 @@ export default function SimulatorQuickStart() {
   }
 
   return null;
+}
+
+// =============================================================================
+// FORM SUB-COMPONENTS
+// =============================================================================
+
+function SectionHeading({ label }: { label: string }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px', marginTop: '32px' }}>
+      <span style={{ color: '#C9A84C', fontSize: '10px' }}>&#9670;</span>
+      <span style={{
+        fontSize: '10px',
+        fontWeight: 600,
+        letterSpacing: '0.14em',
+        textTransform: 'uppercase' as const,
+        color: 'rgba(201,168,76,0.7)',
+        fontFamily: "'DM Sans', sans-serif",
+      }}>
+        {label}
+      </span>
+    </div>
+  );
+}
+
+function FormCard({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{ background: 'rgba(201,168,76,0.02)', border: '1px solid rgba(201,168,76,0.1)', padding: '24px 28px', marginBottom: '4px' }}>
+      {children}
+    </div>
+  );
+}
+
+function FormField({
+  label,
+  required,
+  hint,
+  children,
+}: {
+  label: string;
+  required?: boolean;
+  hint?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div style={{ marginBottom: '20px' }}>
+      <label style={{ display: 'block', fontSize: '12px', fontWeight: 500, color: 'rgba(245,240,232,0.65)', marginBottom: hint ? '4px' : '8px', letterSpacing: '0.02em' }}>
+        {label}
+        {required && <span style={{ color: '#C9A84C', marginLeft: '4px' }}>*</span>}
+      </label>
+      {hint && (
+        <p style={{ fontSize: '11px', color: 'rgba(245,240,232,0.3)', marginBottom: '8px', lineHeight: 1.4 }}>
+          {hint}
+        </p>
+      )}
+      {children}
+    </div>
+  );
+}
+
+function TextInput({ value, onChange, placeholder, type = 'text' }: { value: string; onChange: (v: string) => void; placeholder: string; type?: string }) {
+  return (
+    <input
+      type={type}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      style={{ width: '100%', padding: '11px 14px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(201,168,76,0.18)', color: '#f5f0e8', fontSize: '14px', fontFamily: "'DM Sans', sans-serif", outline: 'none', boxSizing: 'border-box' as const }}
+    />
+  );
+}
+
+function SelectInput({ value, onChange, placeholder, options }: { value: string; onChange: (v: string) => void; placeholder: string; options: ReadonlyArray<{ value: string; label: string }> }) {
+  return (
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      style={{ width: '100%', padding: '11px 14px', background: 'rgba(10,10,10,0.95)', border: '1px solid rgba(201,168,76,0.18)', color: value ? '#f5f0e8' : 'rgba(245,240,232,0.35)', fontSize: '14px', fontFamily: "'DM Sans', sans-serif", appearance: 'none' as const, cursor: 'pointer', boxSizing: 'border-box' as const }}
+    >
+      {placeholder && (
+        <option value="" style={{ background: '#0a0a0a', color: 'rgba(245,240,232,0.35)' }}>
+          {placeholder}
+        </option>
+      )}
+      {options.map(opt => (
+        <option key={opt.value} value={opt.value} style={{ background: '#0a0a0a', color: '#f5f0e8' }}>
+          {opt.label}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+function DropZone({ isDragging, onDragOver, onDragLeave, onDrop, onClick }: { isDragging: boolean; onDragOver: (e: React.DragEvent) => void; onDragLeave: (e: React.DragEvent) => void; onDrop: (e: React.DragEvent) => void; onClick: () => void }) {
+  return (
+    <div
+      onDragOver={onDragOver}
+      onDragLeave={onDragLeave}
+      onDrop={onDrop}
+      onClick={onClick}
+      style={{ padding: '28px 20px', border: `1px dashed ${isDragging ? '#C9A84C' : 'rgba(201,168,76,0.2)'}`, background: isDragging ? 'rgba(201,168,76,0.04)' : 'transparent', cursor: 'pointer', textAlign: 'center' as const, transition: 'border-color 0.15s, background 0.15s' }}
+    >
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(201,168,76,0.4)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ margin: '0 auto 10px', display: 'block' }}>
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+        <polyline points="17 8 12 3 7 8" />
+        <line x1="12" y1="3" x2="12" y2="15" />
+      </svg>
+      <p style={{ fontSize: '13px', color: 'rgba(245,240,232,0.55)', marginBottom: '3px' }}>
+        Drop files here or <span style={{ color: '#C9A84C' }}>browse</span>
+      </p>
+      <p style={{ fontSize: '11px', color: 'rgba(245,240,232,0.25)' }}>
+        PDF or DOCX — cover letter and/or business plan
+      </p>
+    </div>
+  );
+}
+
+function FileRow({ file, onUpdateType, onRemove }: { file: { id: string; name: string; error?: string; type: 'cover_letter' | 'business_plan' | 'other' }; onUpdateType: (id: string, type: 'cover_letter' | 'business_plan' | 'other') => void; onRemove: (id: string) => void }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '9px 12px', border: `1px solid ${file.error ? 'rgba(200,80,80,0.2)' : 'rgba(201,168,76,0.08)'}`, marginBottom: '6px' }}>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{ fontSize: '12px', color: file.error ? 'rgba(200,120,120,0.8)' : '#f5f0e8', whiteSpace: 'nowrap' as const, overflow: 'hidden', textOverflow: 'ellipsis' }}>{file.name}</p>
+        {file.error && <p style={{ fontSize: '11px', color: 'rgba(200,120,120,0.6)', marginTop: '2px' }}>{file.error}</p>}
+      </div>
+      {!file.error && (
+        <select
+          value={file.type}
+          onChange={(e) => onUpdateType(file.id, e.target.value as 'cover_letter' | 'business_plan' | 'other')}
+          style={{ padding: '3px 8px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(201,168,76,0.15)', color: 'rgba(245,240,232,0.6)', fontSize: '11px', fontFamily: "'DM Sans', sans-serif", cursor: 'pointer' }}
+        >
+          <option value="cover_letter" style={{ background: '#0a0a0a' }}>Cover letter</option>
+          <option value="business_plan" style={{ background: '#0a0a0a' }}>Business plan</option>
+          <option value="other" style={{ background: '#0a0a0a' }}>Other</option>
+        </select>
+      )}
+      <button
+        onClick={(e) => { e.stopPropagation(); onRemove(file.id); }}
+        style={{ background: 'none', border: 'none', color: 'rgba(245,240,232,0.3)', cursor: 'pointer', padding: '2px', fontSize: '16px', lineHeight: 1 }}
+      >
+        ×
+      </button>
+    </div>
+  );
 }
