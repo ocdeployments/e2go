@@ -2859,9 +2859,60 @@ Clean — zero errors. 12 commits on dev branch this session.
 - Run FAQ seed scripts (`npx tsx scripts/seed-faq-corpus.ts`)
 - **NEW:** Apply migration `supabase/migrations/20260617100000_simulator_outcomes.sql` via Supabase SQL Editor
 
-### What's Next (Sprint 5 — UX polish)
-- Item 34: Targeted revision flow — "Revise this paragraph" button on document preview
-- Item 35: Voice profile completeness gate before document generation (< 100 words triggers prompt)
-- Item 36: Document quality feedback on upload (bank statements: 6-12 months recommendation)
-- Item 37: "What makes a strong answer" expandable guidance per case file field
-- Item 38: Case-type field prioritization at top of case file form
+---
+
+## SESSION 31 — Sprint 5 Execution (June 17, 2026)
+
+**Branch:** dev. Build clean. 7 commits.
+
+### Sprint 5 — All 5 Items Complete
+
+**Item 34: Paragraph-level revision buttons in document review modal** — commit `4544d70`
+- `documents/[applicationId]/page.tsx`: replaced `<pre>` block with paragraph-by-paragraph render
+- Each paragraph gets a hover state (gold left border + subtle bg)
+- "Revise this ↗" button appears on hover only when credits remain
+- Clicking pre-populates revision form with: `"Please revise this paragraph:\n\n"[text]"\n\nChange: "`
+- Footer "Request a Change" button still works for document-level revisions
+
+**Item 35: Voice profile completeness gate** — commit `7b59964`
+- `generate/[applicationId]/page.tsx`: fetches `applicant_voice_profile.voice_sample_raw` on mount
+- Counts words; if < 100 (or 0), shows dismissable banner above PreGenerationConfirmation
+- Banner shows word count, links to `/apply/story#voice` to add/extend sample
+- Non-blocking: failure to fetch silently suppresses the gate
+
+**Item 36: Document quality tips on upload** — commit `a48be3c`
+- `UploadClient.tsx`: `DOCUMENT_TIPS` map for 4 type keys
+- `source_of_funds`: 6–12 months bank statement guidance
+- `projections`: CSV format, 2-year month-by-month requirement
+- `franchise_docs`: full FDD all 23 items requirement
+- `business_plan`: what a strong business plan includes
+- Tips render as gold left-border annotation below type select, only when tip exists
+
+**Item 37: Expandable strong-answer guidance per field** — commit `bec7e51`
+- `story/page.tsx`: `FIELD_GUIDANCE` map with 3 specific bullet points for 5 key fields
+- Fields: M3-S1-01 (background), M3-S1-02 (motivation), M3-S1-03 (qualifications), M3-S1-04 (plan), M3-S1-05 (weaknesses)
+- Collapsible toggle "▶ What makes a strong answer?" renders below each TextArea with guidance
+- Guidance is field-specific, not generic — 12px subdued text with gold left border
+
+**Item 38: Case-type field prioritization banner** — commit `1bff186`
+- `apply/page.tsx`: "Focus here first" banner above section grid
+- Shows top 3 incomplete sections ordered by type-specific importance weights
+- `solo/partnership`: Story → Investment → Business → Qualifications → Ties → Family
+- `cos` (Change of Status): Ties → Story → Investment → Business → Qualifications → Family
+- Links directly to each section; dismissable with ✕; disappears when all complete
+
+### Sprint 5 — All Items Status
+
+| Item | Description | Status |
+|---|---|---|
+| 34 | Paragraph-level revision buttons in document modal | ✅ Session 31 |
+| 35 | Voice profile completeness gate on generate page | ✅ Session 31 |
+| 36 | Document quality tips on upload type selection | ✅ Session 31 |
+| 37 | Expandable strong-answer guidance per case file field | ✅ Session 31 |
+| 38 | Case-type field prioritization banner on case file overview | ✅ Session 31 |
+
+### Build
+Clean — zero errors. 7 commits on dev branch this session.
+
+### What's Next (Sprint 6 — Intelligence deepening)
+No Sprint 6 items defined yet. Awaiting user direction.
