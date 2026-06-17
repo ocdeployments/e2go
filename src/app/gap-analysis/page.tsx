@@ -52,6 +52,7 @@ function GapAnalysisInner() {
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [enrichments, setEnrichments] = useState<Record<string, string>>({});
   const [enrichingIds, setEnrichingIds] = useState<Set<string>>(new Set());
+  const [semanticResults, setSemanticResults] = useState<Record<string, { rating: string; finding: string; risk: string } | null> | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -140,6 +141,17 @@ function GapAnalysisInner() {
             })
           );
         }
+
+        // Fire semantic eval for 3 critical fields — async, non-blocking
+        fetch('/api/gap-analysis/semantic-eval', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ applicationId: resolvedId }),
+        })
+          .then(r => r.ok ? r.json() : null)
+          .then(data => { if (data?.results) setSemanticResults(data.results); })
+          .catch(() => {});
+
       } catch (err: any) {
         setError(err.message || 'Failed to load gap analysis');
       } finally {
@@ -338,6 +350,46 @@ function GapAnalysisInner() {
                   <span style={{ fontSize: '13px', color: 'rgba(245,240,232,0.75)', lineHeight: 1.6 }}>{p}</span>
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── CRITICAL FIELD SEMANTIC EVALUATION ─────────────────────────── */}
+        {semanticResults && Object.keys(semanticResults).length > 0 && (
+          <div style={{ marginBottom: '40px' }}>
+            <h2 style={{ ...styles.sectionTitle, marginBottom: '6px' }}>Critical field review</h2>
+            <p style={{ fontSize: '12px', color: 'rgba(245,240,232,0.35)', marginBottom: '16px' }}>
+              Three fields that officers scrutinise most closely — assessed against what they need to see.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '8px' }}>
+              {Object.entries(semanticResults).map(([fieldId, sem]) => {
+                if (!sem) return null;
+                const FIELD_LABELS: Record<string, { label: string; href: string }> = {
+                  projection_basis:    { label: 'Revenue projection basis', href: '/apply/investment' },
+                  management_activities: { label: 'Management activities',  href: '/apply/story' },
+                  source_of_funds:     { label: 'Source of funds narrative', href: '/apply/investment' },
+                };
+                const def = FIELD_LABELS[fieldId];
+                if (!def) return null;
+                const riskColor = sem.risk === 'high' ? '#ef4444' : sem.risk === 'moderate' ? '#f59e0b' : '#22c55e';
+                return (
+                  <div key={fieldId} style={{ display: 'flex', alignItems: 'flex-start', gap: '16px', padding: '14px 18px', border: `1px solid ${riskColor}18`, background: `${riskColor}04` }}>
+                    <div style={{ flexShrink: 0, marginTop: '2px' }}>
+                      <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: riskColor }} />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
+                        <span style={{ fontSize: '12px', fontWeight: 500, color: '#f5f0e8' }}>{def.label}</span>
+                        <span style={{ fontSize: '10px', color: riskColor, letterSpacing: '0.08em' }}>{sem.rating.replace('_', ' ').toUpperCase()}</span>
+                      </div>
+                      <p style={{ fontSize: '12px', color: 'rgba(245,240,232,0.5)', lineHeight: 1.5, margin: '0 0 6px' }}>{sem.finding}</p>
+                      {sem.risk !== 'low' && (
+                        <a href={def.href} style={{ fontSize: '11px', color: 'rgba(201,168,76,0.7)', textDecoration: 'none' }}>Update this field →</a>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
