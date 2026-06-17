@@ -288,7 +288,7 @@ export default function InterviewSimulator() {
 
   // Start a new session
   const startSession = async (selectedMode: 'text' | 'voice') => {
-    if (!application || !sessionInfo?.available) return;
+    if (!application) return;
 
     setLoading(true);
     setError(null);
@@ -670,27 +670,9 @@ function StartScreen({
           Each session is 15 minutes. Your simulator has been personalised to your specific application and business type.
         </p>
 
-        <div style={styles.sessionCount}>
-          Sessions used: <strong>{sessionsPurchased - sessionsRemaining}</strong> of <strong>{sessionsPurchased}</strong> included
-        </div>
-
-        {!available && (
-          <div style={styles.purchaseBanner}>
-            <p style={styles.purchaseText}>You have used all your simulator sessions.</p>
-            <button
-              style={purchaseLoading ? {...styles.purchaseButton, cursor: 'wait'} : styles.purchaseButton}
-              onClick={onPurchase}
-              disabled={purchaseLoading}
-            >
-              {purchaseLoading ? 'Redirecting...' : 'Purchase additional sessions — $29.99'}
-            </button>
-          </div>
-        )}
-
         {error && <div style={styles.error}>{error}</div>}
 
-        {available && (
-          <div style={styles.modeButtons}>
+        <div style={styles.modeButtons}>
             <button
               style={styles.modeButton}
               onClick={onStartText}
@@ -710,7 +692,6 @@ function StartScreen({
               {voiceDisabled && <span style={styles.modeTooltip}>Voice mode requires configuration</span>}
             </button>
           </div>
-        )}
 
         <Link href="/dashboard" style={styles.backLink}>
           ← Back to Dashboard
