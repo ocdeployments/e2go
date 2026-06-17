@@ -85,6 +85,12 @@ export default function InterviewSimulator() {
         const { data: { user } } = await supabase.auth.getUser();
         console.log('[SIM] getUser result:', user ? 'authenticated' : 'no user');
         if (!user) {
+          // Set fallback state before redirecting so the loading screen doesn't
+          // stay permanently while Next.js processes the navigation.
+          if (!cancelled) {
+            setHasCaseFile(false);
+            setSessionInfo({ available: false, sessionsUsed: 0, sessionsPurchased: 2, sessionsRemaining: 0 });
+          }
           router.push('/login');
           return;
         }
@@ -185,7 +191,7 @@ export default function InterviewSimulator() {
     checkAuth();
 
     return () => { cancelled = true; };
-  }, [router]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Clean up timer on unmount
   useEffect(() => {
