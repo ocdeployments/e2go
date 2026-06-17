@@ -10,9 +10,57 @@ import {
 const EXTENSION_MAP: Record<string, UploadFileType> = {
   '.pdf': 'pdf',
   '.docx': 'docx',
-  '.xlsx': 'xlsx',
   '.csv': 'csv',
 };
+
+// Known file signatures (magic bytes) for each accepted type
+const MAGIC_BYTES: Record<string, number[]> = {
+  pdf:  [0x25, 0x50, 0x44, 0x46], // %PDF
+  docx: [0x50, 0x4B, 0x03, 0x04], // PK (ZIP — OOXML container)
+};
+
+// Verify actual file content matches the declared type.
+// Client-supplied MIME type and extension can both be forged.
+export function validateMagicBytes(buffer: Buffer, fileType: UploadFileType): boolean {
+  if (buffer.length < 4) return false;
+
+  switch (fileType) {
+    case 'pdf': {
+      return MAGIC_BYTES.pdf.every((byte, i) => buffer[i] === byte);
+    }
+    case 'docx': {
+      return MAGIC_BYTES.docx.every((byte, i) => buffer[i] === byte);
+    }
+    case 'csv': {
+      // No universal CSV magic bytes — check for absence of binary content.
+      // Allow UTF-8 BOM (EF BB BF) at start.
+      const offset = (buffer[0] === 0xEF && buffer[1] === 0xBB && buffer[2] === 0xBF) ? 3 : 0;
+      if (buffer[offset] === 0x00) return false; // null byte = binary
+      const sample = buffer.slice(offset, Math.min(buffer.length, 512));
+      for (let i = 0; i < sample.length; i++) {
+        const b = sample[i];
+        // Reject binary control chars except tab (0x09), LF (0x0A), CR (0x0D)
+        if (b < 0x09 || (b > 0x0D && b < 0x20)) return false;
+      }
+      return true;
+    }
+    default:
+      return false;
+  }
+}
+
+// Strip path traversal characters and limit length before using filename
+// in Supabase Storage paths or DB records.
+export function sanitizeFilename(name: string): string {
+  return (
+    name
+      .replace(/[^a-zA-Z0-9._\- ]/g, '_') // keep only safe chars
+      .replace(/\.{2,}/g, '_')             // collapse .. sequences
+      .replace(/^[./\\]+/, '')             // strip leading dots / slashes
+      .substring(0, 100)
+      .trim() || 'upload'
+  );
+}
 
 export function validateFile(file: File): FileValidation {
   const ext = '.' + file.name.split('.').pop()?.toLowerCase();
