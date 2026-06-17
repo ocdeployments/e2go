@@ -97,6 +97,13 @@ export default function UploadClient({ applicationId }: { applicationId: string 
     setFiles(prev => prev.map(f => f.id === id ? { ...f, selectedType: type } : f));
   }, []);
 
+  const DOCUMENT_TIPS: Record<string, string> = {
+    source_of_funds: 'Bank statements should cover 6–12 months before the investment date. This is the most common reason source of funds packages get flagged.',
+    projections: 'CSV format preferred. Include month-by-month projections for at least 2 years, with clearly labelled revenue, expense, and headcount columns.',
+    franchise_docs: 'Include the full FDD (all 23 items). A summary or excerpts alone is not sufficient — officers expect the complete disclosure document.',
+    business_plan: 'A strong business plan includes market analysis, financial projections, organisational chart, and a clear description of the E-2 qualifying investment activity.',
+  };
+
   const removeFile = useCallback((id: string) => {
     setFiles(prev => prev.filter(f => f.id !== id));
   }, []);
@@ -383,6 +390,19 @@ export default function UploadClient({ applicationId }: { applicationId: string 
                           </option>
                         ))}
                       </select>
+                      {DOCUMENT_TIPS[f.selectedType] && (
+                        <p
+                          className="mt-2 text-[10px] leading-relaxed"
+                          style={{
+                            color: 'rgba(201,168,76,0.65)',
+                            fontFamily: "'DM Sans', sans-serif",
+                            borderLeft: '2px solid rgba(201,168,76,0.2)',
+                            paddingLeft: '8px',
+                          }}
+                        >
+                          {DOCUMENT_TIPS[f.selectedType]}
+                        </p>
+                      )}
                     </div>
                   )}
                 </div>
