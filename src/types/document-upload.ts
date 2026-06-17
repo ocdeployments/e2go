@@ -2,7 +2,7 @@
 // Document Upload & Extraction Types
 // ============================================================================
 
-export type UploadFileType = 'pdf' | 'docx' | 'xlsx' | 'csv';
+export type UploadFileType = 'pdf' | 'docx' | 'csv';
 
 export type DetectedDocumentType =
   | 'cover_letter'
@@ -28,7 +28,7 @@ export const DOCUMENT_TYPE_OPTIONS = [
   { value: 'source_of_funds', label: 'Source of funds narrative' },
   { value: 'biography', label: 'Investor biography' },
   { value: 'ds160', label: 'DS-160 or prior visa form' },
-  { value: 'projections', label: 'Financial projections (Excel/CSV)' },
+  { value: 'projections', label: 'Financial projections (CSV)' },
   { value: 'operating_agreement', label: 'Operating agreement' },
   { value: 'franchise_docs', label: 'Franchise agreement or FDD' },
   { value: 'unknown', label: 'Other' },
@@ -185,10 +185,9 @@ export interface FileValidation {
 export const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
 export const MAX_FILES_PER_SESSION = 8;
 export const MAX_TOKENS_PER_DOCUMENT = 8000;
-export const ACCEPTED_EXTENSIONS = ['.pdf', '.docx', '.xlsx', '.csv'] as const;
+export const ACCEPTED_EXTENSIONS = ['.pdf', '.docx', '.csv'] as const;
 export const ACCEPTED_MIME_TYPES = [
   'application/pdf',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   'text/csv',
 ] as const;
