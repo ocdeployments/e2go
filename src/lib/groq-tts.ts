@@ -55,13 +55,32 @@ export async function speakQuestion(text: string): Promise<void> {
 
     if (!response.ok) return;
 
-    const { audioChunks } = await response.json();
-    if (!Array.isArray(audioChunks)) return;
+    const data = await response.json();
+
+    if (data.fallbackToBrowser) {
+      browserSpeak(text);
+      return;
+    }
+
+    const { audioChunks } = data;
+    if (!Array.isArray(audioChunks) || audioChunks.length === 0) return;
 
     for (const chunk of audioChunks) {
       await playAudioChunk(chunk);
     }
   } catch {
     // Fail silently — text is still shown on screen
+  }
+}
+
+function browserSpeak(text: string): void {
+  try {
+    if (typeof window === 'undefined' || !window.speechSynthesis) return;
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 0.95;
+    utterance.pitch = 0.9;
+    window.speechSynthesis.speak(utterance);
+  } catch {
+    // Truly last resort — silent failure
   }
 }

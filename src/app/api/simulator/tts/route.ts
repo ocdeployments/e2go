@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const GROQ_BASE_URL = 'https://api.groq.com/openai/v1';
+const OPENAI_BASE_URL = 'https://api.openai.com/v1';
 
 // Orpheus requires <=200 chars per request — split on sentence boundaries.
 function chunkText(text: string, maxLen = 200): string[] {
@@ -23,68 +25,100 @@ function chunkText(text: string, maxLen = 200): string[] {
   return chunks.length > 0 ? chunks : [text.substring(0, maxLen)];
 }
 
+async function callGroqTTS(text: string): Promise<string[]> {
+  const chunks = chunkText(text);
+  const audioChunks: string[] = [];
+
+  for (const chunk of chunks) {
+    const response = await fetch(`${GROQ_BASE_URL}/audio/speech`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${GROQ_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'canopylabs/orpheus-v1-english',
+        input: chunk,
+        voice: 'daniel',
+        response_format: 'wav',
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Groq TTS HTTP ${response.status}`);
+    }
+
+    const audioBuffer = await response.arrayBuffer();
+    audioChunks.push(Buffer.from(audioBuffer).toString('base64'));
+  }
+
+  return audioChunks;
+}
+
+async function callOpenAITTS(text: string): Promise<string[]> {
+  const response = await fetch(`${OPENAI_BASE_URL}/audio/speech`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${OPENAI_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'tts-1',
+      input: text,
+      voice: 'onyx',
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`OpenAI TTS HTTP ${response.status}`);
+  }
+
+  const audioBuffer = await response.arrayBuffer();
+  return [Buffer.from(audioBuffer).toString('base64')];
+}
+
 export async function POST(request: NextRequest) {
-  // Session auth
   const supabaseAuth = await createSupabaseServerClient();
   const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
   if (authError || !user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  if (!GROQ_API_KEY) {
-    return NextResponse.json(
-      { error: 'TTS service not configured' },
-      { status: 503 }
-    );
+  if (!GROQ_API_KEY && !OPENAI_API_KEY) {
+    return NextResponse.json({ error: 'TTS service not configured' }, { status: 503 });
   }
 
   try {
     const { text } = await request.json();
 
     if (!text || typeof text !== 'string' || text.length > 4000) {
-      return NextResponse.json(
-        { error: 'Invalid input' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Invalid input' }, { status: 400 });
     }
 
-    const chunks = chunkText(text);
-    const audioChunks: string[] = [];
-
-    for (const chunk of chunks) {
-      const response = await fetch(`${GROQ_BASE_URL}/audio/speech`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${GROQ_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'canopylabs/orpheus-v1-english',
-          input: chunk,
-          voice: 'daniel',
-          response_format: 'wav',
-        }),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Groq TTS error:', response.status, errorText);
-        return NextResponse.json(
-          { error: 'TTS generation failed' },
-          { status: 502 }
-        );
+    // Primary: Groq Orpheus
+    if (GROQ_API_KEY) {
+      try {
+        const audioChunks = await callGroqTTS(text);
+        return NextResponse.json({ audioChunks });
+      } catch (groqError) {
+        console.warn('[tts] Groq failed, falling back to OpenAI TTS:', groqError);
       }
-
-      const audioBuffer = await response.arrayBuffer();
-      audioChunks.push(Buffer.from(audioBuffer).toString('base64'));
     }
 
-    return NextResponse.json({ audioChunks });
+    // Fallback: OpenAI TTS
+    if (OPENAI_API_KEY) {
+      try {
+        const audioChunks = await callOpenAITTS(text);
+        return NextResponse.json({ audioChunks });
+      } catch (openaiError) {
+        console.warn('[tts] OpenAI TTS failed:', openaiError);
+      }
+    }
+
+    // Emergency: signal client to use browser SpeechSynthesis
+    return NextResponse.json({ audioChunks: [], fallbackToBrowser: true });
   } catch (error) {
-    console.error('TTS API error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    console.error('[tts] Unexpected error:', error);
+    return NextResponse.json({ audioChunks: [], fallbackToBrowser: true });
   }
 }
