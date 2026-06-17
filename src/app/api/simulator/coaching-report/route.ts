@@ -2,9 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { getQuestionKnowledge, buildKnowledgeBlock } from '@/lib/interview-knowledge-base';
 import { checkRateLimit } from '@/lib/rate-limit';
+import { callLLM } from '@/lib/llm-client';
 import type { SimulatorContext, QuestionCoaching } from '@/types/simulator';
-
-const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 
 interface WeakAnswer {
   questionId: string;
@@ -58,7 +57,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  if (!OPENROUTER_API_KEY) {
+  if (!process.env.OPENROUTER_API_KEY && !process.env.ANTHROPIC_API_KEY) {
     return NextResponse.json({ coaching: [] }, { status: 200 });
   }
 
@@ -166,46 +165,28 @@ Return ONLY a valid JSON object (no markdown, no prose) with this exact structur
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 90_000);
 
-  console.log(`[coaching-report] Requesting coaching for ${weakAnswers.length} answers with knowledge-base injection`);
+  console.log(`[coaching-report] Requesting coaching for ${weakAnswers.length} answers (with fallback chain)`);
 
   try {
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-        'HTTP-Referer': 'https://e2go.app',
-        'X-Title': 'E2go Interview Simulator',
-      },
-      body: JSON.stringify({
-        model: 'xiaomi/mimo-v2.5-pro',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a senior E-2 visa immigration consultant producing a personalized coaching report. Every coaching item must reference the client\'s actual case data — never use placeholders. Return only valid JSON arrays.',
-          },
-          {
-            role: 'user',
-            content: prompt,
-          },
-        ],
-        temperature: 0.35,
-        max_tokens: 6000,
-        stream: false,
-      }),
+    const content = await callLLM({
+      task: 'coaching',
+      messages: [
+        {
+          role: 'system',
+          content: "You are a senior E-2 visa immigration consultant producing a personalized coaching report. Every coaching item must reference the client's actual case data — never use placeholders. Return only valid JSON arrays.",
+        },
+        { role: 'user', content: prompt },
+      ],
+      temperature: 0.35,
+      max_tokens: 6000,
       signal: controller.signal,
     });
 
-    if (!response.ok) {
-      console.error(`[coaching-report] OpenRouter HTTP ${response.status}`);
+    if (!content) {
       return NextResponse.json({ coaching: [] });
     }
 
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content?.trim() ?? '';
-
     try {
-      // Try object envelope first (new format), fall back to bare array (old format)
       const objMatch = content.match(/\{[\s\S]*\}/);
       if (objMatch) {
         const parsed = JSON.parse(objMatch[0]);
@@ -217,7 +198,6 @@ Return ONLY a valid JSON object (no markdown, no prose) with this exact structur
           });
         }
       }
-      // Bare array fallback
       const arrMatch = content.match(/\[[\s\S]*\]/);
       if (arrMatch) {
         const parsed: QuestionCoaching[] = JSON.parse(arrMatch[0]);
