@@ -12,6 +12,7 @@ import OptionButton from '@/components/apply/questions/OptionButton';
 import PreFillBadge from '@/components/apply/questions/PreFillBadge';
 import AdvisoryBlock from '@/components/apply/questions/AdvisoryBlock';
 import ClusterDivider from '@/components/apply/questions/ClusterDivider';
+import { useFieldQuality, getQualityBadgeStyle } from '@/hooks/useFieldQuality';
 
 interface StoryAnswer {
   value: string;
@@ -137,6 +138,7 @@ export default function StoryPage() {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [applicationId, setApplicationId] = useState<string | null>(null);
   const debounceRef = useRef<Record<string, NodeJS.Timeout>>({});
+  const { qualityMap, checkFieldQuality } = useFieldQuality();
 
   useEffect(() => {
     const loadData = async () => {
@@ -282,16 +284,29 @@ export default function StoryPage() {
           {CLUSTER_1_QUESTIONS.map((q) => {
             const answer = answers[q.key];
             const isOriginal = answer?.source === 'quiz';
+            const qResult = qualityMap[q.key];
+            const badge = qResult ? getQualityBadgeStyle(qResult.quality) : null;
             return (
               <div key={q.key}>
                 {isOriginal && <PreFillBadge isOriginal={true} />}
                 {answer?.source === 'user_edited' && <PreFillBadge isOriginal={false} />}
-                <QuestionLabel required={q.required}>{q.label}</QuestionLabel>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                  <QuestionLabel required={q.required}>{q.label}</QuestionLabel>
+                  {badge && (
+                    <span style={{ fontSize: '10px', letterSpacing: '0.1em', color: badge.color, flexShrink: 0, marginLeft: '12px' }}>{badge.label.toUpperCase()}</span>
+                  )}
+                </div>
                 <TextArea
                   value={answer?.value || ''}
                   onChange={(val) => handleAnswerChange(q.key, val)}
+                  onBlur={(val) => checkFieldQuality(q.key, val)}
                   rows={4}
                 />
+                {qResult?.feedback && qResult.quality !== 'strong' && (
+                  <div style={{ fontSize: '12px', color: 'rgba(245,240,232,0.45)', lineHeight: 1.5, marginTop: '6px', paddingLeft: '2px' }}>
+                    {qResult.feedback}
+                  </div>
+                )}
                 {q.helperText && <HelperText>{q.helperText}</HelperText>}
               </div>
             );

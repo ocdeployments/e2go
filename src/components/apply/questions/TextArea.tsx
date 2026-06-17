@@ -6,6 +6,7 @@ import useSpeechInput from '@/hooks/useSpeechInput';
 interface TextAreaProps {
   value: string;
   onChange: (value: string) => void;
+  onBlur?: (value: string) => void;
   placeholder?: string;
   rows?: number;
   disabled?: boolean;
@@ -14,7 +15,7 @@ interface TextAreaProps {
 // Module-level: track whether the unsupported browser notice has been shown this page load
 let noticeShownThisPageLoad = false;
 
-export default function TextArea({ value, onChange, placeholder, disabled }: TextAreaProps) {
+export default function TextArea({ value, onChange, onBlur, placeholder, disabled }: TextAreaProps) {
   const [focused, setFocused] = useState(false);
   const [showVoiceNotice, setShowVoiceNotice] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -95,7 +96,7 @@ export default function TextArea({ value, onChange, placeholder, disabled }: Tex
         placeholder={placeholder}
         disabled={disabled}
         onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
+        onBlur={() => { setFocused(false); onBlur?.(value); }}
         className="w-full resize-none outline-none transition-colors disabled:opacity-50"
         style={{
           minHeight: '110px',
