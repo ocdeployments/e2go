@@ -14,6 +14,7 @@ import {
   saveSimulatorAnswer,
   completeSimulatorSession,
   checkSessionAvailability,
+  saveCoachingNotes,
 } from '@/lib/simulator-engine';
 import { speakQuestion } from '@/lib/groq-tts';
 import CaseFileSummary from '@/components/simulator/CaseFileSummary';
@@ -521,6 +522,9 @@ export default function InterviewSimulator() {
               detailedCoaching: aligned,
               ...(top3NextSession?.length ? { top3NextSession } : {}),
             } : prev);
+            if (top3NextSession?.length && currentSession?.id) {
+              saveCoachingNotes(currentSession.id, top3NextSession).catch(() => {});
+            }
           }
         }
       }
@@ -537,7 +541,12 @@ export default function InterviewSimulator() {
     setScreen('evaluating');
 
     const evaluated = await Promise.all(
-      rawAnswers.map(async (a) => {
+      rawAnswers.map(async (a, idx) => {
+        // Pass up to 3 preceding raw answers so the model can flag cross-question contradictions
+        const priorAnswers = rawAnswers
+          .slice(Math.max(0, idx - 3), idx)
+          .map(p => ({ questionText: p.questionText, answerText: p.answerText }));
+
         try {
           const res = await fetch('/api/simulator/evaluate', {
             method: 'POST',
@@ -547,6 +556,7 @@ export default function InterviewSimulator() {
               questionText: a.questionText,
               answer: a.answerText,
               context,
+              priorAnswers,
             }),
           });
           const ev = await res.json();
