@@ -18,11 +18,17 @@ const DOC_TYPE_LABELS: Record<string, string> = {
   franchise_docs: 'Franchise documents',
 };
 
+interface PriorAnswer {
+  questionText: string;
+  answerText: string;
+}
+
 interface EvaluateRequest {
   questionId: string;
   questionText: string;
   answer: string;
   context: SimulatorContext;
+  priorAnswers?: PriorAnswer[];
 }
 
 export async function POST(request: NextRequest) {
@@ -56,7 +62,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
   }
 
-  const { questionId, questionText, answer, context } = body;
+  const { questionId, questionText, answer, context, priorAnswers } = body;
 
   if (!questionId || !questionText || !answer || !context) {
     return NextResponse.json(
@@ -119,7 +125,9 @@ The question asked was: "${questionText}"
 The applicant's live answer was: "${answer}"
 ${knowledgeSection}
 
-Severity definitions — choose exactly one:
+${priorAnswers && priorAnswers.length > 0
+  ? `The applicant's previous answers this session — check for factual consistency against this answer:\n${priorAnswers.map((p, i) => `Prior Q${i + 1}: "${p.questionText}"\nPrior A${i + 1}: "${p.answerText}"`).join('\n\n')}\n\n`
+  : ''}Severity definitions — choose exactly one:
 - "fatal": answer contradicts filed documents OR fails a core E-2 criterion outright (e.g. denies managerial control, claims investment not yet committed)
 - "significant": answer fails an important officer expectation but is not fatal to the case
 - "cosmetic": answer is adequate but lacks specificity, confidence, or structure
