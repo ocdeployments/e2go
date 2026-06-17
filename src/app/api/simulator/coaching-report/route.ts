@@ -109,17 +109,30 @@ ${qaBlock}
 YOUR TASK:
 For EACH question above, produce a detailed coaching analysis. This is what the client will study before their real consulate interview. Be direct, specific, and expert. Use the client's actual business details, investment amounts, and sources of funds in the model answer — not placeholders.
 
-Return ONLY a valid JSON array (no markdown, no prose). Preserve the exact questionId from each [ID: ...] tag:
-[
-  {
-    "questionId": "<exact ID from the [ID: ...] tag, e.g. UQ-01>",
-    "whatOfficerExpected": "2-3 sentences stating exactly what a well-prepared applicant says for this specific question type, and the specific legal or credibility signal the officer is listening for",
-    "whatWasMissing": "2 sentences identifying the precise gap between what this applicant said and what the officer needed to hear — be specific to their answer, not generic",
-    "keyPoints": ["3-5 specific points this applicant must make in their answer, using their actual case data — amounts, dates, roles, employee counts from their profile above"],
-    "modelAnswer": "3-4 sentences written in first person as if the applicant is speaking. USE THEIR ACTUAL NUMBERS AND FACTS from the case profile — not placeholders. This shows them the structure and level of specificity required. Note at the end: This is the structure — adapt it to your natural voice.",
-    "documentReference": "The specific tab and section they should reference or have ready at the interview window, e.g. 'Tab H — Source of Funds chronology, page 3' — or null if no document applies"
-  }
-]`;
+Severity definitions for each coaching card:
+- "fatal": the answer contradicts filed documents or fails a core E-2 criterion (would likely result in refusal)
+- "significant": fails an important officer expectation but not fatal to the case
+- "cosmetic": adequate content but lacking specificity or confidence
+
+Return ONLY a valid JSON object (no markdown, no prose) with this exact structure:
+{
+  "coaching": [
+    {
+      "questionId": "<exact ID from the [ID: ...] tag, e.g. UQ-01>",
+      "severity": "fatal"|"significant"|"cosmetic",
+      "whatOfficerExpected": "2-3 sentences stating exactly what a well-prepared applicant says for this specific question type, and the specific legal or credibility signal the officer is listening for",
+      "whatWasMissing": "2 sentences identifying the precise gap between what this applicant said and what the officer needed to hear — be specific to their answer, not generic",
+      "keyPoints": ["3-5 specific points this applicant must make in their answer, using their actual case data — amounts, dates, roles, employee counts from their profile above"],
+      "modelAnswer": "3-4 sentences written in first person as if the applicant is speaking. Structure for spoken delivery: short opening sentence, 2-3 supporting points, strong closing. USE THEIR ACTUAL NUMBERS AND FACTS from the case profile — not placeholders. Note at the end: This is the structure — adapt it to your natural voice.",
+      "documentReference": "The specific tab and section they should reference or have ready at the interview window, e.g. 'Tab H — Source of Funds chronology, page 3' — or null if no document applies"
+    }
+  ],
+  "top3NextSession": [
+    "Action 1: specific, actionable thing to prepare before session N+1 (using their real case data)",
+    "Action 2: ...",
+    "Action 3: ..."
+  ]
+}`;
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 90_000);
@@ -148,7 +161,7 @@ Return ONLY a valid JSON array (no markdown, no prose). Preserve the exact quest
           },
         ],
         temperature: 0.35,
-        max_tokens: 4000,
+        max_tokens: 6000,
         stream: false,
       }),
       signal: controller.signal,
@@ -163,10 +176,23 @@ Return ONLY a valid JSON array (no markdown, no prose). Preserve the exact quest
     const content = data.choices?.[0]?.message?.content?.trim() ?? '';
 
     try {
-      const jsonMatch = content.match(/\[[\s\S]*\]/);
-      if (jsonMatch) {
-        const parsed: QuestionCoaching[] = JSON.parse(jsonMatch[0]);
-        console.log(`[coaching-report] Generated coaching for ${parsed.length} questions`);
+      // Try object envelope first (new format), fall back to bare array (old format)
+      const objMatch = content.match(/\{[\s\S]*\}/);
+      if (objMatch) {
+        const parsed = JSON.parse(objMatch[0]);
+        if (parsed.coaching && Array.isArray(parsed.coaching)) {
+          console.log(`[coaching-report] Generated coaching for ${parsed.coaching.length} questions`);
+          return NextResponse.json({
+            coaching: parsed.coaching as QuestionCoaching[],
+            top3NextSession: parsed.top3NextSession || [],
+          });
+        }
+      }
+      // Bare array fallback
+      const arrMatch = content.match(/\[[\s\S]*\]/);
+      if (arrMatch) {
+        const parsed: QuestionCoaching[] = JSON.parse(arrMatch[0]);
+        console.log(`[coaching-report] Generated coaching for ${parsed.length} questions (bare array)`);
         return NextResponse.json({ coaching: parsed });
       }
     } catch (parseError) {

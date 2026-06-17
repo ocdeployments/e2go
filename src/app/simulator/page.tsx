@@ -507,7 +507,7 @@ export default function InterviewSimulator() {
         body: JSON.stringify({ context: ctx, weakAnswers: toCoach }),
       });
       if (res.ok) {
-        const { coaching } = await res.json();
+        const { coaching, top3NextSession } = await res.json();
         if (Array.isArray(coaching) && coaching.length > 0) {
           // Build a map by questionId for O(1) lookup; also keep array for index fallback
           const byId = new Map(coaching.map((c: any) => [c.questionId, c]));
@@ -516,7 +516,11 @@ export default function InterviewSimulator() {
           if (remapped.length > 0) {
             // Ensure questionIds match so the UI lookup (find by questionId) works
             const aligned = remapped.map((c: any, i: number) => ({ ...c, questionId: toCoach[i]?.questionId ?? c.questionId }));
-            setCoachingSummary(prev => prev ? { ...prev, detailedCoaching: aligned } : prev);
+            setCoachingSummary(prev => prev ? {
+              ...prev,
+              detailedCoaching: aligned,
+              ...(top3NextSession?.length ? { top3NextSession } : {}),
+            } : prev);
           }
         }
       }
