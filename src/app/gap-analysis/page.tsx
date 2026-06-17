@@ -47,6 +47,9 @@ function GapAnalysisInner() {
   const [result, setResult] = useState<GapAnalysisResult | null>(null);
   const [businessName, setBusinessName] = useState<string | null>(null);
   const [appId, setAppId] = useState<string | null>(null);
+  const [hasAIAnalysis, setHasAIAnalysis] = useState<boolean | null>(null);
+  const [analysisRunning, setAnalysisRunning] = useState(false);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -90,6 +93,8 @@ function GapAnalysisInner() {
         if (!app) { setError('Application not found or access denied.'); setLoading(false); return; }
         setBusinessName(app.business_name || 'Your Business');
 
+        setHasAIAnalysis(brief?.substantiality_score != null);
+
         const simData = {
           sessionsUsed: simApp?.simulator_sessions_used ?? 0,
           latestInconsistencyCount: simSessions?.[0]?.inconsistency_count ?? 0,
@@ -123,6 +128,28 @@ function GapAnalysisInner() {
   }
 
   if (!result) return null;
+
+  async function runAIAnalysis() {
+    if (!appId || analysisRunning) return;
+    setAnalysisRunning(true);
+    setAnalysisError(null);
+    try {
+      const res = await fetch(`/api/analysis/run`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ applicationId: appId }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || `Analysis failed (${res.status})`);
+      }
+      // Reload the page to pick up the new case brief
+      window.location.reload();
+    } catch (err: any) {
+      setAnalysisError(err.message || 'Analysis failed. Please try again.');
+      setAnalysisRunning(false);
+    }
+  }
 
   // ── Readiness config ───────────────────────────────────────────────────────
 
@@ -158,6 +185,48 @@ function GapAnalysisInner() {
             Scored against 6 evidence categories and 15 real E-2 denial risk factors.
           </p>
         </div>
+
+        {/* AI analysis banner — shown when no case brief exists yet */}
+        {hasAIAnalysis === false && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: '20px',
+            padding: '18px 24px',
+            background: 'rgba(201,168,76,0.07)',
+            border: '1px solid rgba(201,168,76,0.25)',
+            marginBottom: '32px',
+            flexWrap: 'wrap' as const,
+          }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.12em', color: '#C9A84C', marginBottom: '4px' }}>
+                AI CASE ANALYSIS AVAILABLE
+              </div>
+              <div style={{ fontSize: '13px', color: 'rgba(245,240,232,0.75)', lineHeight: 1.5 }}>
+                Run a full AI analysis to unlock D-code risk scores, investment substantiality assessment, and a personalized denial risk briefing for your case.
+              </div>
+              {analysisError && (
+                <div style={{ fontSize: '12px', color: '#ef4444', marginTop: '6px' }}>{analysisError}</div>
+              )}
+            </div>
+            <button
+              onClick={runAIAnalysis}
+              disabled={analysisRunning}
+              style={{
+                padding: '10px 20px',
+                background: analysisRunning ? 'rgba(201,168,76,0.2)' : '#C9A84C',
+                color: analysisRunning ? '#C9A84C' : '#0a0a0a',
+                border: '1px solid rgba(201,168,76,0.4)',
+                fontSize: '13px',
+                fontWeight: 600,
+                cursor: analysisRunning ? 'not-allowed' : 'pointer',
+                letterSpacing: '0.04em',
+                whiteSpace: 'nowrap' as const,
+                transition: 'opacity 0.2s',
+              }}
+            >
+              {analysisRunning ? 'Running analysis…' : 'Run AI analysis →'}
+            </button>
+          </div>
+        )}
 
         {/* Overall readiness */}
         <div style={{
