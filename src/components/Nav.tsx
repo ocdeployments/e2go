@@ -16,11 +16,13 @@ interface Profile {
 
 interface Application {
   id: string;
+  source: string | null;
 }
 
 export default function Nav() {
   const [user, setUser] = useState<Profile | null>(null);
   const [application, setApplication] = useState<Application | null>(null);
+  const [isSimulatorOnly, setIsSimulatorOnly] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -44,20 +46,35 @@ export default function Nav() {
 
         setUser(userData);
 
-        const { data: appData } = await supabase
+        // Fetch all applications to detect simulator-only accounts.
+        // Simulator-only users (source = 'simulator_standalone') must not see
+        // Dashboard, My Application, or Documents — they haven't paid for those.
+        const { data: allApps } = await supabase
           .from("applications")
-          .select("id")
+          .select("id, source")
           .eq("user_id", session.user.id)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .single();
+          .order("created_at", { ascending: false });
 
-        if (appData) {
-          setApplication(appData);
+        if (allApps && allApps.length > 0) {
+          const simOnly = allApps.every(
+            (a: Application) => a.source === "simulator_standalone"
+          );
+          setIsSimulatorOnly(simOnly);
+
+          if (!simOnly) {
+            // Use the most recent non-simulator app for the Documents link
+            const regularApp = allApps.find(
+              (a: Application) => a.source !== "simulator_standalone"
+            );
+            if (regularApp) setApplication(regularApp);
+          }
+        } else {
+          setIsSimulatorOnly(false);
         }
       } else {
         setUser(null);
         setApplication(null);
+        setIsSimulatorOnly(false);
       }
       setLoading(false);
     });
@@ -164,19 +181,23 @@ export default function Nav() {
             </>
           ) : (
             <>
-              <Link href="/dashboard" className="text-sm transition-colors" style={{ color: isActive("/dashboard") ? "#C9A84C" : "rgba(245,240,232,0.75)" }}
-                onMouseEnter={e => e.currentTarget.style.color = "#f5f0e8"}
-                onMouseLeave={e => e.currentTarget.style.color = isActive("/dashboard") ? "#C9A84C" : "rgba(245,240,232,0.75)"}
-              >
-                Dashboard
-              </Link>
-              <Link href="/apply" className="text-sm transition-colors" style={{ color: pathname.startsWith("/apply") ? "#C9A84C" : "rgba(245,240,232,0.75)" }}
-                onMouseEnter={e => e.currentTarget.style.color = "#f5f0e8"}
-                onMouseLeave={e => e.currentTarget.style.color = pathname.startsWith("/apply") ? "#C9A84C" : "rgba(245,240,232,0.75)"}
-              >
-                My Application
-              </Link>
-              {application && (
+              {!isSimulatorOnly && (
+                <Link href="/dashboard" className="text-sm transition-colors" style={{ color: isActive("/dashboard") ? "#C9A84C" : "rgba(245,240,232,0.75)" }}
+                  onMouseEnter={e => e.currentTarget.style.color = "#f5f0e8"}
+                  onMouseLeave={e => e.currentTarget.style.color = isActive("/dashboard") ? "#C9A84C" : "rgba(245,240,232,0.75)"}
+                >
+                  Dashboard
+                </Link>
+              )}
+              {!isSimulatorOnly && (
+                <Link href="/apply" className="text-sm transition-colors" style={{ color: pathname.startsWith("/apply") ? "#C9A84C" : "rgba(245,240,232,0.75)" }}
+                  onMouseEnter={e => e.currentTarget.style.color = "#f5f0e8"}
+                  onMouseLeave={e => e.currentTarget.style.color = pathname.startsWith("/apply") ? "#C9A84C" : "rgba(245,240,232,0.75)"}
+                >
+                  My Application
+                </Link>
+              )}
+              {!isSimulatorOnly && application && (
                 <Link href={`/documents/${application.id}`} className="text-sm transition-colors" style={{ color: pathname.startsWith("/documents") ? "#C9A84C" : "rgba(245,240,232,0.75)" }}
                   onMouseEnter={e => e.currentTarget.style.color = "#f5f0e8"}
                   onMouseLeave={e => e.currentTarget.style.color = pathname.startsWith("/documents") ? "#C9A84C" : "rgba(245,240,232,0.75)"}
@@ -278,13 +299,17 @@ export default function Nav() {
             </div>
           ) : (
             <div className="flex flex-col gap-4">
-              <Link href="/dashboard" className="text-sm py-2" style={{ color: pathname === "/dashboard" ? "#C9A84C" : "rgba(245,240,232,0.75)" }} onClick={() => setMobileMenuOpen(false)}>
-                Dashboard
-              </Link>
-              <Link href="/apply" className="text-sm py-2" style={{ color: pathname.startsWith("/apply") ? "#C9A84C" : "rgba(245,240,232,0.75)" }} onClick={() => setMobileMenuOpen(false)}>
-                My Application
-              </Link>
-              {application && (
+              {!isSimulatorOnly && (
+                <Link href="/dashboard" className="text-sm py-2" style={{ color: pathname === "/dashboard" ? "#C9A84C" : "rgba(245,240,232,0.75)" }} onClick={() => setMobileMenuOpen(false)}>
+                  Dashboard
+                </Link>
+              )}
+              {!isSimulatorOnly && (
+                <Link href="/apply" className="text-sm py-2" style={{ color: pathname.startsWith("/apply") ? "#C9A84C" : "rgba(245,240,232,0.75)" }} onClick={() => setMobileMenuOpen(false)}>
+                  My Application
+                </Link>
+              )}
+              {!isSimulatorOnly && application && (
                 <Link href={`/documents/${application.id}`} className="text-sm py-2" style={{ color: pathname.startsWith("/documents") ? "#C9A84C" : "rgba(245,240,232,0.75)" }} onClick={() => setMobileMenuOpen(false)}>
                   Documents
                 </Link>
