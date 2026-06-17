@@ -31,6 +31,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Verify application belongs to the authenticated user
+    const { data: app, error: appError } = await supabase
+      .from('applications')
+      .select('id')
+      .eq('id', application_id)
+      .eq('user_id', user.id)
+      .single();
+
+    if (appError || !app) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     // Upsert to answers table
     const { data, error } = await supabase
       .from('answers')
