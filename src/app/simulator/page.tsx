@@ -1802,7 +1802,6 @@ function SimulatorTeaser() {
 const styles: Record<string, React.CSSProperties> = {
   page: {
     minHeight: '100vh',
-    paddingTop: '64px',
     background: '#0a0a0a',
     color: '#f5f0e8',
     fontFamily: "'DM Sans', sans-serif",
