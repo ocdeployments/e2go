@@ -2748,3 +2748,120 @@ Clean — zero errors. 7 commits on dev branch.
 - Rotate OpenAI API key (shared in chat plaintext in Session 28)
 - Refund $197 test charge in Stripe dashboard
 - Run FAQ seed scripts (`npx tsx scripts/seed-faq-corpus.ts`)
+
+---
+
+## SESSION 30 — Sprint 3 Complete + Sprint 4 In Progress (June 17, 2026)
+
+**Branch:** dev. Build clean.
+
+### Sprint 3 — Remaining 4 Items Completed
+
+**Item 23: FAQ widget at bottom of quiz results** — commit `8e192f0`
+- `src/app/results/page.tsx` — imported FaqWidget, inserted above disclaimer footer
+- Section header "Questions about your results?" with subtitle
+- Users can ask E2go about their flags without leaving the results screen
+
+**Item 15: Cross-document consistency pass** — commit `e38acc5`
+- `src/lib/generation-engine.ts` — added 3 new CONSISTENCY_FIELDS:
+  `treaty_nationality`, `applicant_role`, `target_state`
+- These run in step 9 of the generation pipeline alongside existing 7 fields
+
+**Item 16: Multi-pass quality check** — commit `e38acc5`
+- Added `PROHIBITED_VOCAB` list (17 phrases: overclaiming, AI disclosure, boss/employee misuse)
+- Added `COVER_LETTER_OFFICER_PILLARS` (5 checks): substantiality, non-marginality, at-risk capital, managerial control, active enterprise
+- Cover letter fails quality gate if any pillar is missing from the text
+
+**Item 22: Adaptive quiz branching** — commit `4bad404`
+- `src/data/module0_questions.json`:
+  - Q0-06: RRSP option now triggers `W-RRSP` warning with documentation guidance
+  - Q0-06a (NEW): sub-question for RRSP withdrawal status (already withdrawn / still in account / partial) with appropriate advisories
+  - Q0-09d (NEW): sub-question for E-2-specific prior denial — shown when any visa refusal disclosed; triggers `W-E2-PRIOR-DENIAL` attorney flag (+15 score deduction)
+- Score weights added: W-RRSP (-3), W-RRSP-PENDING (-5), W-RRSP-PARTIAL (-4), W-E2-PRIOR-DENIAL (-15)
+
+### Sprint 3 — All Items Status
+
+| Item | Description | Status |
+|---|---|---|
+| 14 | Follow-up probe per weak simulator answer | ✅ Session 29 |
+| 15 | Cross-document consistency pass | ✅ Session 30 |
+| 16 | Multi-pass quality check (prohibited vocab + 5 pillars) | ✅ Session 30 |
+| 17 | Case briefs trigger banner | ✅ Session 29 |
+| 18 | D-code deep links from gap cards | ✅ Session 29 |
+| 19 | Numeric score 1–10 on evaluate output | ✅ Session 29 |
+| 20 | Coaching report 6000 tokens + severity + top3 | ✅ Session 27 |
+| 21 | Score breakdown by 5 criteria in quiz results | ✅ Session 29 |
+| 22 | Adaptive quiz branching (RRSP + prior denial) | ✅ Session 30 |
+| 23 | FAQ widget at bottom of quiz results | ✅ Session 30 |
+| 24 | TTS/STT fallback chains | ✅ Session 28 |
+| 25 | llm-client.ts shared callLLM() | ✅ Session 29 |
+
+### Sprint 4 — All 8 Items Complete
+
+**Item 26: LLM enrichment for needs_work gap categories** — commit `d5c6783`
+- NEW `/api/gap-analysis/enrich` — callLLM generates 3-sentence advisory (why it matters, key gap, next 7-day action) for any category scoring < 70
+- `gap-analysis/page.tsx` — fires parallel async enrichment after scoreCase(); CategoryCard shows "E2GO ADVISOR" block with loading state
+
+**Item 27: Semantic content evaluation for 3 critical fields** — commit `09eeb18`
+- NEW `/api/gap-analysis/semantic-eval` — evaluates projection_basis, management_activities, source_of_funds via callLLM in parallel; reads actual answer content from DB
+- "Critical field review" panel above denial radar with per-field rating, finding, and fix link
+
+**Item 28: Real-time field quality indicator on blur** — commit `4a90a16`
+- NEW `/api/case-file/field-quality` — length gate + LLM quality check (strong/adequate/needs_work/too_short) for 8 defined fields
+- NEW `src/hooks/useFieldQuality.ts` — useFieldQuality() hook, fires on blur, non-blocking
+- TextArea: added optional `onBlur` prop; wired in story page cluster 1 (M3-S1-01/02/03)
+
+**Item 29: Cross-field investment health check** — commit `a49f9bd`
+- Inline proportionality indicator in /apply/investment cluster 1
+- Animated progress bar with 50%/75% threshold markers
+- Status: STRONG (≥75%) / ADEQUATE (50-74%) / BORDERLINE (30-49%) / WEAK (<30%)
+- Extra note when invested amount < $100,000
+
+**Item 30: Business-type adaptive weights in gap analysis** — commit `cd235d3`
+- Franchise: business_plan weight 20%→35%, employment_creation 10%→5%
+- Pre-start: investment_amount weight 15%→30%, management_role 25%→15%
+- Detection: isFranchise / isPreStart flags from application data
+
+**Item 31: Speaking pattern analysis** — commit `5d8a54d`
+- `analyzeDelivery()` extended: high hedge ratio (>8% of words), complex sentences (>35 words), choppy delivery (<6 word average sentence)
+- DeliveryNote type extended with 3 new types
+
+**Item 32: Post-interview outcome capture** — commit `6fd2f1d`
+- NEW `simulator_outcomes` DB table (with RLS)
+- NEW `/api/simulator/outcome` (GET + POST)
+- NEW `/simulator/outcome` page — outcome selection, date, consulate, denial reason picker (8 categories), notes; approved/denied post-save flows
+
+**Item 33: Timeline personalization in quiz results** — commit `4441114`
+- getTimelineWeeks() returns adjustments[] with reasons
+- Canada: faster processing; prior denial: +4-8w; partnership: +2-4w
+- Adjustment reasons rendered below timeline date
+
+### Sprint 4 — All Items Status
+
+| Item | Description | Status |
+|---|---|---|
+| 26 | LLM enrichment for needs_work gap categories | ✅ Session 30 |
+| 27 | Semantic evaluation for 3 critical fields | ✅ Session 30 |
+| 28 | Real-time field quality indicator on blur | ✅ Session 30 |
+| 29 | Cross-field investment health check | ✅ Session 30 |
+| 30 | Business-type adaptive weights in gap analysis | ✅ Session 30 |
+| 31 | Speaking pattern analysis (hedge ratio + sentence complexity) | ✅ Session 30 |
+| 32 | Post-interview outcome capture | ✅ Session 30 |
+| 33 | Timeline personalization in quiz results | ✅ Session 30 |
+
+### Build
+Clean — zero errors. 12 commits on dev branch this session.
+
+### Post-Sprint Owner Actions (unchanged)
+- Test PlayAI audio quality (needs user present)
+- Rotate OpenAI API key (shared in chat plaintext in Session 28)
+- Refund $197 test charge in Stripe dashboard
+- Run FAQ seed scripts (`npx tsx scripts/seed-faq-corpus.ts`)
+- **NEW:** Apply migration `supabase/migrations/20260617100000_simulator_outcomes.sql` via Supabase SQL Editor
+
+### What's Next (Sprint 5 — UX polish)
+- Item 34: Targeted revision flow — "Revise this paragraph" button on document preview
+- Item 35: Voice profile completeness gate before document generation (< 100 words triggers prompt)
+- Item 36: Document quality feedback on upload (bank statements: 6-12 months recommendation)
+- Item 37: "What makes a strong answer" expandable guidance per case file field
+- Item 38: Case-type field prioritization at top of case file form
