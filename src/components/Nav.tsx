@@ -29,37 +29,9 @@ export default function Nav() {
   const supabase = createBrowserSupabaseClient();
 
   useEffect(() => {
-    const checkSession = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      if (session?.user) {
-        const { data: userData } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", session.user.id)
-          .single();
-
-        setUser(userData);
-
-        const { data: appData } = await supabase
-          .from("applications")
-          .select("id")
-          .eq("user_id", session.user.id)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .single();
-
-        if (appData) {
-          setApplication(appData);
-        }
-      }
-      setLoading(false);
-    };
-
-    checkSession();
-
+    // onAuthStateChange fires INITIAL_SESSION on mount with the current auth
+    // state — no need for an explicit getSession() call, which would acquire
+    // the GoTrueClient navigator.locks lock and race with page-level auth checks.
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event: string, session: { user?: { id: string } } | null) => {
