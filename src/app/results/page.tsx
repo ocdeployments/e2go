@@ -80,10 +80,42 @@ function getPricingFromAnswers(data: ResultData): { tier: string; tierId: string
   return { tier: "Solo Individual", tierId: "solo_none", base: 550, spouseAdd: 0, childrenAdd: 0, total: 550 };
 }
 
-function getTimelineWeeks(data: ResultData): { weeksMin: number; weeksMax: number } {
+function getTimelineWeeks(data: ResultData): { weeksMin: number; weeksMax: number; adjustments: string[] } {
   const hasBusiness = (data.answers["Q0-08"] as string || "").includes("specific business");
-  if (hasBusiness) return { weeksMin: 10, weeksMax: 14 };
-  return { weeksMin: 16, weeksMax: 22 };
+  const country = (data.country || '').toLowerCase();
+  const warnings = data.warnings || [];
+  const appType = data.application_type || 'solo';
+  const adjustments: string[] = [];
+
+  // Base: business identified vs. still searching
+  let weeksMin = hasBusiness ? 10 : 16;
+  let weeksMax = hasBusiness ? 14 : 22;
+
+  // Canada: fastest processing due to treaty standing and dedicated post familiarity
+  if (country.includes('canada')) {
+    weeksMin = Math.max(8, weeksMin - 2);
+    weeksMax = Math.max(11, weeksMax - 3);
+    adjustments.push('Canadian applicants typically benefit from faster processing');
+  }
+
+  // Prior denial adds preparation and processing time
+  const hasPriorDenial = warnings.some(w =>
+    w === 'W-REFUSAL-RECENT' || w === 'W-E2-PRIOR-DENIAL' || w === 'W-REFUSAL-MULTIPLE'
+  );
+  if (hasPriorDenial) {
+    weeksMin += 4;
+    weeksMax += 8;
+    adjustments.push('Prior visa refusal adds preparation depth and may extend processing');
+  }
+
+  // Partnership complexity
+  if (appType === 'partnership' || appType === 'spousal_partnership') {
+    weeksMin += 2;
+    weeksMax += 4;
+    adjustments.push('Partnership applications require additional documentation for both investors');
+  }
+
+  return { weeksMin, weeksMax, adjustments };
 }
 
 function getInterviewMonthRange(weeksMin: number, weeksMax: number): string {
@@ -1082,7 +1114,17 @@ function ResultsPageInner() {
             <div style={{ fontSize: "10px", letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(201,168,76,0.5)", marginBottom: "14px" }}>Estimated path to your interview</div>
             <div style={{ padding: "16px", border: "1px solid rgba(201,168,76,0.1)", background: "rgba(201,168,76,0.02)", marginBottom: "12px" }}>
               <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "28px", fontWeight: 300, color: "#C9A84C", marginBottom: "4px" }}>{timeline}</div>
-              <div style={{ fontSize: "12px", color: "rgba(245,240,232,0.4)" }}>Your estimated interview window, based on your profile and current processing times. Calculated from today, {formatToday()}.</div>
+              <div style={{ fontSize: "12px", color: "rgba(245,240,232,0.4)", marginBottom: timelineWeeks.adjustments.length > 0 ? "10px" : 0 }}>Your estimated interview window, based on your profile and current processing times. Calculated from today, {formatToday()}.</div>
+              {timelineWeeks.adjustments.length > 0 && (
+                <div style={{ borderTop: "1px solid rgba(201,168,76,0.08)", paddingTop: "10px", display: "flex", flexDirection: "column", gap: "4px" }}>
+                  {timelineWeeks.adjustments.map((adj, i) => (
+                    <div key={i} style={{ fontSize: "11px", color: "rgba(245,240,232,0.35)", display: "flex", gap: "6px", alignItems: "flex-start" }}>
+                      <span style={{ color: "rgba(201,168,76,0.4)", flexShrink: 0 }}>◈</span>
+                      <span>{adj}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
             {targetDateMsg && (
               <div style={{ padding: "12px 16px", border: "1px solid rgba(201,168,76,0.15)", background: "rgba(201,168,76,0.03)", marginTop: "8px", marginBottom: "12px" }}>
