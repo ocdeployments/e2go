@@ -110,8 +110,13 @@ The question asked was: "${questionText}"
 The applicant's live answer was: "${answer}"
 ${knowledgeSection}
 
+Severity definitions — choose exactly one:
+- "fatal": answer contradicts filed documents OR fails a core E-2 criterion outright (e.g. denies managerial control, claims investment not yet committed)
+- "significant": answer fails an important officer expectation but is not fatal to the case
+- "cosmetic": answer is adequate but lacks specificity, confidence, or structure
+
 Evaluate this answer. Reply with ONLY valid JSON — no prose before or after:
-{"rating":"strong"|"weak"|"inconsistent","feedback":"3 sentences: what an officer expects on this question, whether this answer meets that bar, and what specific gap or risk you identified","specificSuggestion":"If weak or inconsistent: 2 sentences telling the applicant exactly what to say differently and how to frame it correctly for an E-2 approval. If strong: null","documentReference":"Name of the most relevant tab in the application package (e.g. Tab B - Business Plan, Tab D - Investment Evidence) or null"}`;
+{"rating":"strong"|"weak"|"inconsistent","severity":"fatal"|"significant"|"cosmetic","feedback":"3 sentences: what an officer expects on this question, whether this answer meets that bar, and what specific gap or risk you identified","specificSuggestion":"2 sentences always required. If weak or inconsistent: exactly what to say differently and how to frame it correctly for an E-2 approval. If strong: what the applicant can do to elevate the answer further and pre-empt follow-up questions.","documentReference":"Name of the most relevant tab in the application package (e.g. Tab B - Business Plan, Tab D - Investment Evidence) or null"}`;
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 60_000);
@@ -141,7 +146,7 @@ Evaluate this answer. Reply with ONLY valid JSON — no prose before or after:
           },
         ],
         temperature: 0.3,
-        max_tokens: 400,
+        max_tokens: 700,
         stream: false,
       }),
       signal: controller.signal,
@@ -170,8 +175,9 @@ Evaluate this answer. Reply with ONLY valid JSON — no prose before or after:
         const parsed = JSON.parse(jsonMatch[0]);
         return NextResponse.json({
           rating: parsed.rating || 'weak',
+          severity: parsed.severity || undefined,
           feedback: parsed.feedback || 'Evaluation complete.',
-          specificSuggestion: parsed.specificSuggestion || '',
+          specificSuggestion: parsed.specificSuggestion || 'Review your answer and add more specific details.',
           documentReference: parsed.documentReference || null,
         } satisfies AnswerEvaluation);
       }
