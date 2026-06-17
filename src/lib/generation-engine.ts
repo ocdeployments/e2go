@@ -538,6 +538,27 @@ const CONSISTENCY_FIELDS: { field: string; patterns: RegExp[] }[] = [
       /(\d+)\s+(?:family|household)\s+members/i,
     ],
   },
+  {
+    field: 'treaty_nationality',
+    patterns: [
+      /(?:citizen|national|citizenship)\s+of\s+([A-Z][a-zA-Z\s]+?)(?:\s*,|\s*\.|\s+who)/i,
+      /([A-Z][a-zA-Z]+)\s+(?:citizen|national|passport\s+holder)/i,
+    ],
+  },
+  {
+    field: 'applicant_role',
+    patterns: [
+      /(?:will\s+serve|serves|serving|role\s+of|position\s+of)\s+as\s+(?:the\s+)?([A-Za-z\s]+?(?:Manager|Director|President|Officer|Principal|Partner|Operator))/i,
+      /(?:Managing\s+Member|General\s+Manager|President|Director|Chief\s+Executive)/i,
+    ],
+  },
+  {
+    field: 'target_state',
+    patterns: [
+      /located\s+in\s+([A-Z][a-zA-Z\s]+),\s*(?:the\s+)?United\s+States/i,
+      /in\s+(?:the\s+state\s+of\s+)?([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?),?\s+(?:USA|US|United\s+States)/i,
+    ],
+  },
 ];
 
 function extractFieldValue(text: string, patterns: RegExp[]): string | null {
@@ -615,6 +636,49 @@ const FORBIDDEN_LEGAL_PHRASES = [
   'eligible',
   'meets the standard',
   'is substantial',
+];
+
+const PROHIBITED_VOCAB = [
+  'guaranteed',
+  'certainly will',
+  'definitely will',
+  'impossible to deny',
+  'cannot be refused',
+  'promise',
+  'my boss',
+  'my employer',
+  'i work for',
+  'i am an employee of',
+  'ai generated',
+  'as an ai',
+  'as a language model',
+  'chatgpt',
+  'openai',
+  'certainly approve',
+];
+
+// Cover letter must address all 5 E-2 officer pillars
+const COVER_LETTER_OFFICER_PILLARS: { name: string; patterns: RegExp[] }[] = [
+  {
+    name: 'Substantiality (investment amount stated)',
+    patterns: [/\$[0-9,]+/, /USD\s+[0-9,]+/i, /hundred thousand|million/i],
+  },
+  {
+    name: 'Non-marginality (job creation or economic contribution)',
+    patterns: [/employ|job|hire|worker|staff/i, /economic\s+(impact|contribution|benefit)/i, /creat(?:e|ing)\s+(?:\d+|jobs)/i],
+  },
+  {
+    name: 'At-risk capital (committed/deployed funds)',
+    patterns: [/at\s+risk/i, /commit(?:ted|ment)/i, /(?:wire\s+)?transfer(?:red)?/i, /deployed/i, /invested/i],
+  },
+  {
+    name: 'Managerial control (applicant directs operations)',
+    patterns: [/manag(?:e|er|ing|ement)/i, /direct(?:or|ing|s)/i, /oversee|supervise|control/i, /day-to-day/i],
+  },
+  {
+    name: 'Active enterprise (business is real and operating)',
+    patterns: [/operat(?:e|ing|ion)/i, /business is|company is|enterprise is/i, /open(?:ed|ing)|launch(?:ed|ing)/i, /locat(?:ed|ion)/i],
+  },
 ];
 
 const LEGAL_DISCLAIMERS = [
@@ -729,6 +793,23 @@ export function runQualityGate(
         if (!hasFirstName || !hasLastName) {
           failures.push(`Applicant name "${applicantName}" not consistently referenced`);
         }
+      }
+    }
+  }
+
+  // CHECK 4: Prohibited vocabulary
+  for (const phrase of PROHIBITED_VOCAB) {
+    if (lowerContent.includes(phrase)) {
+      failures.push(`Contains prohibited language: "${phrase}"`);
+    }
+  }
+
+  // CHECK 5: Cover letter must address all 5 E-2 officer pillars
+  if (documentType === 'cover_letter') {
+    for (const pillar of COVER_LETTER_OFFICER_PILLARS) {
+      const covered = pillar.patterns.some(p => p.test(content));
+      if (!covered) {
+        failures.push(`Cover letter missing officer pillar: ${pillar.name}`);
       }
     }
   }
