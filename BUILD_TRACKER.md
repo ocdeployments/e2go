@@ -2914,5 +2914,64 @@ Clean — zero errors. 12 commits on dev branch this session.
 ### Build
 Clean — zero errors. 7 commits on dev branch this session.
 
-### What's Next (Sprint 6 — Intelligence deepening)
+### Post-Sprint Owner Actions
+- Test PlayAI audio quality (needs user present)
+- Rotate OpenAI API key (shared in chat plaintext in Session 28)
+- Refund $197 test charge in Stripe dashboard
+- Run FAQ seed scripts (`npx tsx scripts/seed-faq-corpus.ts`)
+- Apply migration `supabase/migrations/20260617100000_simulator_outcomes.sql` via Supabase SQL Editor
+
+---
+
+## SESSION 32 — Navigation Overhaul + Document Tab Labels (June 17, 2026)
+
+**Branch:** dev. Build clean. 4 commits.
+
+### Changes Made
+
+**Fix: Missing DELIVERY_LABELS entries (TypeScript build error)** — commit `b1fc335`
+- `src/app/simulator/page.tsx`: Sprint 4 Item 31 extended `DeliveryNote` type union with
+  `high_hedge_ratio | complex_sentences | choppy` but `DELIVERY_LABELS` was not updated
+- Added 3 missing entries: `HIGH HEDGE RATIO` (orange), `COMPLEX SENTENCES` (yellow), `CHOPPY DELIVERY` (slate)
+
+**Fix: Document binder tab labels** — commit `6785c7c`
+- `src/types/generation.ts`: corrected 3 tab/label mismatches found by comparing Interview Day binder against app:
+  - `cover_letter`: `'Tab D'` → `'Tab B'` (cover letter is always Tab B, not Tab D)
+  - `investment_proof` label: `'Investment Proof'` → `'Investment Evidence'`
+  - `qualifications` label: `'Qualifications'` → `'Investor Biography & Qualifications'`
+  - `ds160_reference` label: `'DS-160 Reference'` → `'DS-156E / DS-160 Reference'`
+    (DS-156E is the E-visa specific paper form; DS-160 is the standard online form)
+
+**Authenticated Nav overhaul** — commit `3489936`
+- `src/components/Nav.tsx`: desktop authenticated nav now shows top-level links:
+  Dashboard | My Application | Documents | Simulator | [Name dropdown (Settings, Log out)]
+- Documents link conditionally shown when `application` is loaded (avoids broken href)
+- Active state uses `pathname.startsWith()` for section routes
+- Simulator link highlights for all `/simulator/*` subroutes
+- Mobile: Dashboard → My Application → Documents → Simulator → separator → Settings → Log out
+- Dashboard removed from account dropdown (now top-level) — dropdown contains Settings + Log out only
+
+**SimulatorNav sub-navigation + layout** — commit `1ca39b3`
+- NEW `src/components/simulator/SimulatorNav.tsx`:
+  - 5 sections: Practice (`/simulator`) | Quick Start | Case File | Interview Day | My Outcome
+  - `position: sticky; top: 64px` — sticks below the fixed global Nav during scroll
+  - Gold underline on active section; `exact: true` for Practice (prevents `/simulator/*` from matching)
+- `src/app/simulator/layout.tsx`: added `SimulatorNav` inside `paddingTop: '64px'` spacer div
+  - Spacer pushes content below fixed Nav; SimulatorNav sticks at `top: 64px`
+- `src/app/simulator/page.tsx`: removed `paddingTop: '64px'` from `styles.page` (layout handles it)
+
+### Navigation Coverage
+
+| Section | Route | Nav bar |
+|---|---|---|
+| Practice (main simulator) | /simulator | ✅ SimulatorNav: "Practice" (active) |
+| Quick Start | /simulator/quick-start | ✅ SimulatorNav: "Quick Start" |
+| Case File | /simulator/case-file | ✅ SimulatorNav: "Case File" |
+| Interview Day | /simulator/interview-day | ✅ SimulatorNav: "Interview Day" |
+| My Outcome | /simulator/outcome | ✅ SimulatorNav: "My Outcome" |
+
+### Build
+Clean — zero errors. 4 commits on dev branch.
+
+### What's Next
 No Sprint 6 items defined yet. Awaiting user direction.
