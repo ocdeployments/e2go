@@ -1,6 +1,6 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 17, 2026 — Session 27 complete (Sprint 1 — evaluate + coaching + TTS/STT + interview-day)
+**Last Updated:** June 17, 2026 — Session 29 complete (Sprint 3 — LLM fallbacks + follow-up probe + score + case brief banner)
 **App Name:** E2go.app
 **Stack:** Next.js 14 · TypeScript · Tailwind CSS · Supabase · Claude API
 **Dev URL:** https://e2go-git-dev-ocdeployments-projects.vercel.app
@@ -2682,3 +2682,69 @@ No code changes. No commit needed.
 6. Personalized warning text via LLM (replace static `flag_explanations.json`)
 7. D-code-aware cover letter generation
 8. Migrate login + quiz rate limits from in-memory Map to Upstash Redis
+
+---
+
+## SESSION 29 — Sprint 2 + Sprint 3 Complete (June 17, 2026)
+
+**Branch:** dev. Build clean. 7 commits.
+
+### Sprint 2 — Carried-Over Items (completed this session)
+
+All Sprint 2 items from Session 28 were already committed before this session:
+- Bracket regex fix (generation-engine.ts) — ✅ committed
+- Supabase `coaching_notes` column migration — ✅ applied via SQL Editor
+- PlayAI TTS upgrade (tts/route.ts, `playai-tts` model + `Fritz-PlayAI`) — ✅ committed
+- Upstash Redis rate limits in middleware — ✅ committed
+- `priorAnswers` rolling window to evaluate — ✅ committed
+- Cross-session coaching (prior session query + coaching-report injection) — ✅ committed
+- Interview-day D-code section — ✅ committed
+- Personalized quiz flag warnings — ✅ committed
+- D-code-aware cover letter generation — ✅ committed
+
+### Sprint 3 — All 4 Items Complete
+
+**1. LLM fallback chains** — commits `7f40cbc`, `09170a8`, `8c43ea5`
+- `src/lib/llm-client.ts` (NEW) — shared `callLLM(task, messages, opts)` with two-provider fallback:
+  - Layer 1: OpenRouter with `models` array (MIMO primary → Gemini 2.5 Flash → Gemini 2.5 Pro)
+  - Layer 2: Anthropic SDK direct (claude-haiku for evaluate/faq, claude-sonnet for coaching)
+- `evaluate/route.ts` — replaced direct fetch with `callLLM`
+- `coaching-report/route.ts` — replaced direct fetch with `callLLM`
+- `faq/ask/route.ts` — added `streamViaAnthropic()` fallback alongside existing `streamViaOpenRouter()`
+- `follow-up/route.ts` — wired through `callLLM` (also done as part of item 2)
+
+**2. Follow-up probe per weak simulator answer** — commit `6390b17`
+- `follow-up/route.ts` — wired through `callLLM` fallback chain
+- `simulator/page.tsx` — auto-triggers `fetchFollowUp()` when evaluation returns weak/inconsistent
+  - One level deep only (no recursive follow-ups when already in follow-up)
+  - Text mode only (voice mode evaluates post-session — no mid-session weak detection)
+- `fetchFollowUp()` updated to accept explicit args to avoid stale-closure issues
+
+**3. Numeric score 1–10 on evaluate output** — commit `2afdd9a`
+- `src/types/simulator.ts` — `score?: number` added to `AnswerEvaluation` + `SessionQuestion`
+- `evaluate/route.ts` — prompt updated to request score with 1-10 guide; parse/validate on return
+- `simulator/page.tsx` — score badge renders in both text and voice evaluation cards
+  - Green ≥7, amber 5-6, red 1-4
+
+**4. Case briefs trigger banner** — commit `316dd78`
+- `gap-analysis/page.tsx`:
+  - Added `hasAIAnalysis`, `analysisRunning`, `analysisError` state
+  - Detects when `brief?.substantiality_score` is null → shows "Run AI Analysis" banner
+  - Banner calls `POST /api/analysis/run` → reloads page on success
+  - Inline error display on failure
+
+### Build
+Clean — zero errors. 7 commits on dev branch.
+
+### What's Next (Sprint 4 — next session)
+- LLM enrichment pass on gap analysis "needs_work" categories
+- Semantic content evaluation for 3 critical gap analysis fields
+- Real-time field quality indicator in case file (on blur)
+- Cross-field investment health check (live proportionality indicator)
+- Speaking pattern analysis post-transcription in simulator
+
+### Post-Sprint Owner Actions (unchanged)
+- Test PlayAI audio quality (needs user present)
+- Rotate OpenAI API key (shared in chat plaintext in Session 28)
+- Refund $197 test charge in Stripe dashboard
+- Run FAQ seed scripts (`npx tsx scripts/seed-faq-corpus.ts`)
