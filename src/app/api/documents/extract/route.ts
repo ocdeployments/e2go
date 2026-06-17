@@ -124,7 +124,7 @@ export async function POST(request: NextRequest) {
 
             const extraction = await extractTextFromBuffer(
               buffer,
-              doc.file_type as 'pdf' | 'docx' | 'xlsx' | 'csv',
+              doc.file_type as 'pdf' | 'docx' | 'csv',
               doc.original_filename
             );
 
