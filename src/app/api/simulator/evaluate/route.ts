@@ -131,7 +131,9 @@ ${priorAnswers && priorAnswers.length > 0
 - "cosmetic": answer is adequate but lacks specificity, confidence, or structure
 
 Evaluate this answer. Reply with ONLY valid JSON — no prose before or after:
-{"rating":"strong"|"weak"|"inconsistent","severity":"fatal"|"significant"|"cosmetic","feedback":"3 sentences: what an officer expects on this question, whether this answer meets that bar, and what specific gap or risk you identified","specificSuggestion":"2 sentences always required. If weak or inconsistent: exactly what to say differently and how to frame it correctly for an E-2 approval. If strong: what the applicant can do to elevate the answer further and pre-empt follow-up questions.","documentReference":"Name of the most relevant tab in the application package (e.g. Tab B - Business Plan, Tab D - Investment Evidence) or null"}`;
+{"rating":"strong"|"weak"|"inconsistent","severity":"fatal"|"significant"|"cosmetic","score":1-10,"feedback":"3 sentences: what an officer expects on this question, whether this answer meets that bar, and what specific gap or risk you identified","specificSuggestion":"2 sentences always required. If weak or inconsistent: exactly what to say differently and how to frame it correctly for an E-2 approval. If strong: what the applicant can do to elevate the answer further and pre-empt follow-up questions.","documentReference":"Name of the most relevant tab in the application package (e.g. Tab B - Business Plan, Tab D - Investment Evidence) or null"}
+
+Score guide: 1-3 = fails core E-2 criteria or contradicts documents; 4-5 = meets basic threshold but weak on specifics; 6-7 = solid answer with minor gaps; 8-9 = strong, specific, credible; 10 = exceptional, proactively addresses officer concerns.`;
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 60_000);
@@ -169,9 +171,12 @@ Evaluate this answer. Reply with ONLY valid JSON — no prose before or after:
       const jsonMatch = content.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0]);
+        const score = typeof parsed.score === 'number' && parsed.score >= 1 && parsed.score <= 10
+          ? Math.round(parsed.score) : undefined;
         return NextResponse.json({
           rating: parsed.rating || 'weak',
           severity: parsed.severity || undefined,
+          score,
           feedback: parsed.feedback || 'Evaluation complete.',
           specificSuggestion: parsed.specificSuggestion || 'Review your answer and add more specific details.',
           documentReference: parsed.documentReference || null,

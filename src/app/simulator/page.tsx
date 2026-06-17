@@ -424,6 +424,7 @@ export default function InterviewSimulator() {
         questionText: question.text,
         answerText: currentAnswer,
         rating: evaluation.rating,
+        score: evaluation.score,
         feedback: evaluation.feedback,
         specificSuggestion: evaluation.specificSuggestion,
         deliveryNotes: deliveryNotes.length > 0 ? deliveryNotes : undefined,
@@ -972,10 +973,26 @@ function ActiveSession({
                     borderLeftColor: evaluation.rating === 'strong' ? '#22c55e' :
                       evaluation.rating === 'weak' ? '#f59e0b' : '#ef4444'
                   }}>
-                    <div style={styles.evaluationHeader}>
-                      {evaluation.rating === 'strong' && '✓ Strong answer'}
-                      {evaluation.rating === 'weak' && '⚠ Needs more detail'}
-                      {evaluation.rating === 'inconsistent' && '✗ Inconsistency detected'}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                      <div style={styles.evaluationHeader}>
+                        {evaluation.rating === 'strong' && '✓ Strong answer'}
+                        {evaluation.rating === 'weak' && '⚠ Needs more detail'}
+                        {evaluation.rating === 'inconsistent' && '✗ Inconsistency detected'}
+                      </div>
+                      {evaluation.score != null && (
+                        <div style={{
+                          fontSize: '13px',
+                          fontWeight: 600,
+                          color: evaluation.score >= 7 ? '#22c55e' : evaluation.score >= 5 ? '#f59e0b' : '#ef4444',
+                          background: 'rgba(255,255,255,0.06)',
+                          border: '1px solid rgba(255,255,255,0.1)',
+                          borderRadius: '6px',
+                          padding: '2px 10px',
+                          letterSpacing: '0.02em',
+                        }}>
+                          {evaluation.score}/10
+                        </div>
+                      )}
                     </div>
                     <p style={styles.evaluationFeedback}>{evaluation.feedback}</p>
 
@@ -1224,10 +1241,25 @@ function VoiceInput({
             borderLeftColor: evaluation.rating === 'strong' ? '#22c55e' :
               evaluation.rating === 'weak' ? '#f59e0b' : '#ef4444'
           }}>
-            <div style={styles.evaluationHeader}>
-              {evaluation.rating === 'strong' && '✓ Strong answer'}
-              {evaluation.rating === 'weak' && '⚠ Needs more detail'}
-              {evaluation.rating === 'inconsistent' && '✗ Inconsistency detected'}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+              <div style={styles.evaluationHeader}>
+                {evaluation.rating === 'strong' && '✓ Strong answer'}
+                {evaluation.rating === 'weak' && '⚠ Needs more detail'}
+                {evaluation.rating === 'inconsistent' && '✗ Inconsistency detected'}
+              </div>
+              {evaluation.score != null && (
+                <div style={{
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  color: evaluation.score >= 7 ? '#22c55e' : evaluation.score >= 5 ? '#f59e0b' : '#ef4444',
+                  background: 'rgba(255,255,255,0.06)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: '6px',
+                  padding: '2px 10px',
+                }}>
+                  {evaluation.score}/10
+                </div>
+              )}
             </div>
             <p style={styles.evaluationFeedback}>{evaluation.feedback}</p>
           </div>

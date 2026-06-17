@@ -70,6 +70,7 @@ export interface DeliveryNote {
 export interface AnswerEvaluation {
   rating: 'strong' | 'weak' | 'inconsistent';
   severity?: 'fatal' | 'significant' | 'cosmetic';
+  score?: number;
   feedback: string;
   specificSuggestion: string;
   documentReference: string | null;
@@ -92,6 +93,7 @@ export interface SessionQuestion {
   questionText: string;
   answerText: string;
   rating: 'strong' | 'weak' | 'inconsistent';
+  score?: number;
   feedback: string;
   specificSuggestion: string;
   deliveryNotes?: DeliveryNote[];
