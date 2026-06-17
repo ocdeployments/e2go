@@ -1,6 +1,6 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 17, 2026 — Session 29 complete (Sprint 3 — LLM fallbacks + follow-up probe + score + case brief banner)
+**Last Updated:** June 17, 2026 — Session 32 complete (Sprint 5 + Navigation overhaul — all 84 commits pushed to origin/dev)
 **App Name:** E2go.app
 **Stack:** Next.js 14 · TypeScript · Tailwind CSS · Supabase · Claude API
 **Dev URL:** https://e2go-git-dev-ocdeployments-projects.vercel.app
