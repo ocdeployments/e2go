@@ -1,6 +1,6 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 16, 2026 — Session 22 complete
+**Last Updated:** June 16, 2026 — Session 23 complete
 **App Name:** E2go.app
 **Stack:** Next.js 14 · TypeScript · Tailwind CSS · Supabase · Claude API
 **Dev URL:** https://e2go-git-dev-ocdeployments-projects.vercel.app
@@ -169,6 +169,7 @@ Update STRIPE_PRICE_* env vars with new Price IDs after running.
 | Privacy | /privacy | ✅ COMPLETE |
 | Terms | /terms | ✅ COMPLETE |
 | Support | /support | ✅ COMPLETE |
+| Gap Analysis | /gap-analysis | ✅ COMPLETE — 6 categories + 15 D-code radar |
 
 ---
 
@@ -297,6 +298,41 @@ to Supabase: npx supabase db push
 
 ✅ STRIPE_PRICE_SIMULATOR renamed to STRIPE_PRICE_SIMULATOR_3PACK (commit 0aca5dc)
 ✅ useEffect dependency fixed — question?.id → question.text (commit 0aca5dc)
+
+---
+
+## SIMULATOR INTELLIGENCE — Session 23 (June 16, 2026)
+
+| Feature | Status | Commit |
+|---|---|---|
+| Delivery confidence analysis | ✅ COMPLETE | 0e30c95, 326ecc9 |
+| Adaptive Quick Intake confirm step | ✅ COMPLETE | 11cca98 |
+| /gap-analysis page (6 categories) | ✅ COMPLETE | b10c7d4 |
+| Denial Risk Radar (D-01 to D-15) | ✅ COMPLETE | b28de69 |
+
+**Delivery confidence** (`analyzeDelivery()` in simulator-engine.ts):
+- Pure regex, zero LLM cost
+- Flags: filler words (≥2 occurrences), brevity (<30 words), hedging language (≥2 phrases)
+- Stored in `SessionQuestion.deliveryNotes`, aggregated into `CoachingSummary.deliveryFlags`
+- `DeliveryFlagCard` renders TOO BRIEF / FILLER WORDS / HEDGING LANGUAGE on session-complete screen
+
+**Adaptive Quick Intake** (`/simulator/quick-start`):
+- After extraction_complete, new `confirm` step replaces immediate redirect
+- Shows 5 extracted fields (business name, investment amount, applicant name, target state, Y1 employees)
+- EXTRACTED / NOT FOUND labels; missing fields get inline inputs
+- Patches edits back to DB before routing to case file
+
+**Gap Analysis** (`/gap-analysis`, `src/lib/gap-analysis-engine.ts`):
+- Accepts ?applicationId= or defaults to most recent application
+- `scoreCase()` reads answers, documents, case_briefs, simulator session data
+- 6 weighted categories: Source of Funds 25%, Management Role 25%, Business Plan 20%, Investment Amount 15%, Employment Creation 10%, Business Operations 5%
+- **Denial Risk Radar**: all 15 D-codes from module3_denial_audit.md scored individually
+  - D-01 to D-15 each read specific answer keys (QF-NEW-01, QH-NEW-01, QE-NEW-01, etc.)
+  - D-08 uses `simulator_sessions_used`; D-09 uses `inconsistency_count` from latest session
+  - Risk: low / moderate / high — click-to-expand finding + mitigation per D-code
+- Overall readiness driven by high-risk D-code count, not just answer coverage
+- Expandable category cards show D-code chips with colour-coded risk state
+- Links to simulator for targeted practice
 
 ---
 
@@ -2027,14 +2063,14 @@ These cannot be done by code — require owner access to Supabase, Stripe, or co
 |---|---|---|
 | ~~Accept Groq Orpheus TTS terms~~ | ~~🔴 HIGH~~ | ✅ DONE June 16, 2026 |
 | ~~Update Supabase pricing table: simulator_3pack~~ | ~~🔴 HIGH~~ | ✅ DONE June 16, 2026 — price_1Tim5fF7Ggk3LUEy2JGRRKrB / 2999 cents |
-| Update Vercel env: STRIPE_PRICE_SIMULATOR_3PACK | 🔴 HIGH | New value: `price_1Tim5fF7Ggk3LUEy2JGRRKrB` |
+| ~~Update Vercel env: STRIPE_PRICE_SIMULATOR_3PACK~~ | ~~🔴 HIGH~~ | ✅ DONE June 16, 2026 |
 | Refund $197 test charge | 🔴 HIGH | In Stripe dashboard — was a test but was a real charge |
 | Check Resend domain verification | 🟡 MEDIUM | Is e2go.app verified? If yes, revert email sender to results@e2go.app |
 | Apply migration 004_answers_source_update.sql | 🟡 MEDIUM | Needed for document upload source tracking |
 | Run FAQ seed scripts | 🟡 MEDIUM | `npx tsx scripts/seed-faq-corpus.ts` and `npx tsx scripts/seed-faq-kb-chunks.ts` — FAQ widget falls back to LLM-only until done |
 | Clean up Chen duplicate applications | 🟡 MEDIUM | `DELETE FROM applications WHERE user_id = 'a2b8f8c3-...' AND id != '9f981747-...'` |
 | Clean up ocdeployments blank duplicates | 🟡 MEDIUM | `DELETE FROM applications WHERE id IN ('bd8a9c1a-...', '49afc548-...')` |
-| Configure Stripe webhook for production URL | 🟡 MEDIUM | Required before any real customers can pay; production URL: `https://e2go.app/api/stripe/webhook` |
+| ~~Configure Stripe webhook for production URL~~ | ~~🟡 MEDIUM~~ | ✅ DONE June 16, 2026 |
 | ~~Configure Upstash Redis in Vercel env vars~~ | ~~🟡 MEDIUM~~ | ✅ DONE — both UPSTASH_REDIS_REST_URL and TOKEN confirmed set June 16, 2026 |
 
 ---
@@ -2240,21 +2276,90 @@ These cannot be done by code — require owner access to Supabase, Stripe, or co
 
 ---
 
-## NEXT SESSION PRIORITIES (Updated June 16, 2026)
+## SESSION — Voice Simulator Overhaul (June 17, 2026)
 
-**Owner actions (already complete or still pending):**
-1. ~~Accept Groq TTS terms~~ ✅ DONE
-2. ~~Update Supabase pricing: simulator_3pack~~ ✅ DONE
-3. Update Vercel env: STRIPE_PRICE_SIMULATOR_3PACK → price_1Tim5fF7Ggk3LUEy2JGRRKrB
-4. Refund $197 test charge in Stripe dashboard
+### Completed
+
+**Bug: stuck on "Signing in" (Michael Chen account)**
+- Root cause: Fast Refresh resets `let browserClient = null` → multiple GoTrueClient
+  instances compete for `navigator.locks` Web Lock → `signInWithPassword` hangs forever
+- Fix: store singleton on `window.__e2go_supabase__` in `src/lib/supabase.ts` so it
+  survives every Hot Reload rebuild
+- Commits: 3a05708 (singleton), 3404ec8
+
+**Bug: stuck on "Verifying payment…" after simulator purchase**
+- Root cause 1: `create-checkout` `isSameOrigin()` compared dev autoPort vs `localhost:3000`
+  → `successUrl` silently replaced → wrong redirect after Stripe
+- Root cause 2: `/pricing/success` didn't handle `simulator_3pack` tier → no redirect to `/simulator`
+- Root cause 3: login page queried `payment_completed_at` (non-existent column) → should be `payment_status`
+- Fixes: `src/app/api/stripe/create-checkout/route.ts`, `src/app/pricing/success/page.tsx`,
+  `src/app/login/page.tsx`
+- Commit: 93d5708
+
+**Bug: service worker intercepting login redirect**
+- SW intercepted `mode === 'navigate'` requests → "Failed to fetch" dropped post-login redirect
+- Fix: `public/sw.js` — early return for `navigate` mode and `/_next/` paths
+- Commit: 1233067
+
+**Feature: disable sessions-exhausted paywall gate (temporary)**
+- Removed UI gate from `StartScreen` and `SESSION_LIMIT_EXCEEDED` throw in simulator-engine.ts
+- Commits: 5eb14dd, 1d4b627
+
+**Bug: VAD cuts off answers mid-thought**
+- `SILENCE_AFTER_SPEECH_MS`: 2000 → 3500ms
+- Commit: 564374e
+
+**Bug: evaluation delay breaks voice flow + "unable to evaluate" shown mid-session**
+- Moved all evaluation from sequential per-question to parallel post-session batch
+- During session: transcribe → store raw answer → show "✓ Answer recorded" → 2s auto-advance
+- After last question: parallel `Promise.all` across all evaluate API calls (~20s total vs 10×20s)
+- `ConversationalSession.tsx` now passes `RawVoiceAnswer[]` up via `onComplete`
+- `simulator/page.tsx` runs `evaluateAndComplete()` with evaluating spinner, then coaching
+- Commit: 564374e
+
+**Bug: officer voice/tone inconsistent between questions**
+- Added `officerSpeech(text, idx)` wrapper with 11 transition phrases array
+- Questions prefixed with `"Thank you.", "Good.", "I see."` etc. — consistent persona
+- Commit: 564374e
+
+**Bug: readiness indicator inverted — showed "Interview Ready" for all-NEEDS WORK sessions**
+- `generateCoachingSummary` had `else { readinessIndicator = 'ready' }` when `weakOrInconsistentCount > 2`
+- Fixed to `'needs_work'` in the branch where it belongs
+- Commit: 564374e
+
+**Fix: coaching-report API hardened**
+- `max_tokens`: 2400 → 3200
+- Prompt updated: explicit `[ID: ${a.questionId}]` format, instructs model to preserve exact IDs
+- Added index-based fallback matching in `fetchCoachingReport` for coaching card lookup
+- Commit: 564374e
+
+**Fix: ESLint build errors from ConversationalSession refactor**
+- Removed unused `saveSimulatorAnswer` import
+- Made `userId`/`applicationId` optional in interface; destructured as `_userId`/`_applicationId`
+- Deleted unused `ratingColor`, `ratingLabel` assignments
+- Commit: 27a55f7
+
+### Build
+Clean ✅ — `npm run build` zero errors after all fixes
+
+---
+
+## NEXT SESSION PRIORITIES (Updated June 17, 2026)
+
+**Owner actions pending:**
+1. Refund $197 test charge in Stripe dashboard
+2. Apply migration `docs/migrations/004_answers_source_update.sql` via `npx supabase db push`
+3. Run FAQ seed scripts (pgvector 368 Q&A)
 
 **Code sessions — in priority order:**
-1. End-to-end simulator test — voice mode, text mode, coaching report (verify evaluation depth improved)
-2. Nervousness / delivery analysis — add `deliveryNotes` field to evaluation; flag filler words, very short answers, hedging language from transcript. Frame as "delivery confidence coaching" not lie detection.
-3. Adaptive Quick Intake for standalone simulator users — document-first extraction → pre-filled confirmation → "do you have a document for X?" pattern → CIP data model
-4. Gap Analysis page — `/gap-analysis` route, 6-category scoring UI, priority action list
-5. Process Flow widget → React `<ProcessFlow />` component on landing page
-6. Generation engine fixes — docs/sessions/SESSION_PLAN_GENERATION_FIXES.md
-7. Bracket highlighting regex + checklist builder fix
-8. Pricing/packaging consolidation — all tiers need review (deferred from Session 21 per user direction)
-9. SESSION_INVOICING — Stripe invoice generation on checkout
+1. End-to-end voice simulator test — run a full session as Michael Chen, verify:
+   - VAD doesn't jump mid-answer (3.5s threshold)
+   - No evaluation delay between questions ("✓ Answer recorded" only)
+   - Post-session evaluating spinner fires, then coaching cards show real content
+   - Readiness badge correctly says "More preparation needed" when answers are weak
+   - Officer transitions consistent throughout session
+2. Process Flow widget → React `<ProcessFlow />` component on landing page
+3. Generation engine fixes — docs/sessions/SESSION_PLAN_GENERATION_FIXES.md
+4. Bracket highlighting regex + checklist builder fix
+5. Pricing/packaging consolidation — all tiers need review (deferred from Session 21)
+6. SESSION_INVOICING — Stripe invoice generation on checkout
