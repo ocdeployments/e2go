@@ -136,6 +136,15 @@ export default function InterviewDayPage() {
         setConsulateData(data);
       }
 
+      let hasDocumentUploads = false;
+      if (app) {
+        const { count } = await supabase
+          .from('application_documents')
+          .select('id', { count: 'exact', head: true })
+          .eq('application_id', app.id);
+        hasDocumentUploads = (count ?? 0) > 0;
+      }
+
       const flags: CaseFlags = {
         applicationType: app?.application_type || 'solo',
         hasSpouseApplying: hasSpouse,
@@ -145,7 +154,7 @@ export default function InterviewDayPage() {
         priorVisaDenial: app?.prior_visa_denial === true,
         operationalStatus: app?.operational_status || 'pre_start',
         businessCategory: app?.business_category || '',
-        hasDocumentUploads: false,
+        hasDocumentUploads,
         hasPartner: app?.has_partner === true || (app?.application_type || '').includes('partnership'),
       };
 
