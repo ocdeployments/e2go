@@ -25,6 +25,15 @@ const EMBEDDING_MODEL = "text-embedding-3-small";
 const LAYER1_THRESHOLD = 0.80; // cosine similarity threshold for corpus match
 const MAX_QUERY_LENGTH = 500;
 
+// Inappropriate content guard — checked before any API call
+const INAPPROPRIATE_PATTERNS = [
+  /\b(sex|porn|nude|naked|fuck|shit|ass|bitch|cunt|dick|cock|pussy|rape|kill|murder|suicide|bomb|terrorist|drug|cocaine|heroin|meth|launder|money.?launder)\b/i,
+];
+
+function isInappropriate(query: string): boolean {
+  return INAPPROPRIATE_PATTERNS.some((p) => p.test(query));
+}
+
 // E-2/immigration keyword heuristic for scope guard
 const E2_KEYWORDS = [
   "e-2", "e2", "e visa", "e-visa", "treaty investor", "investor visa",
@@ -253,6 +262,14 @@ export async function POST(req: NextRequest) {
         { error: "query_too_long", max: MAX_QUERY_LENGTH },
         { status: 400 }
       );
+    }
+
+    // ---- Inappropriate content guard (checked first, before scope check) ----
+    if (isInappropriate(query)) {
+      return Response.json({
+        answer: "I'm only able to help with E-2 visa questions.",
+        layer: "inappropriate_guard",
+      });
     }
 
     // ---- Scope guard ----
