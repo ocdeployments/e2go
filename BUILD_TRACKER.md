@@ -1,6 +1,6 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 17, 2026 — Session 32 complete (Sprint 5 + Navigation overhaul — all 84 commits pushed to origin/dev)
+**Last Updated:** June 17, 2026 — Session 33 complete (Issue audit + FAQ seed scripts fixed + BUILD_TRACKER accurate state)
 **App Name:** E2go.app
 **Stack:** Next.js 14 · TypeScript · Tailwind CSS · Supabase · Claude API
 **Dev URL:** https://e2go-git-dev-ocdeployments-projects.vercel.app
@@ -2064,46 +2064,155 @@ These cannot be done by code — require owner access to Supabase, Stripe, or co
 | ~~Accept Groq Orpheus TTS terms~~ | ~~🔴 HIGH~~ | ✅ DONE June 16, 2026 |
 | ~~Update Supabase pricing table: simulator_3pack~~ | ~~🔴 HIGH~~ | ✅ DONE June 16, 2026 — price_1Tim5fF7Ggk3LUEy2JGRRKrB / 2999 cents |
 | ~~Update Vercel env: STRIPE_PRICE_SIMULATOR_3PACK~~ | ~~🔴 HIGH~~ | ✅ DONE June 16, 2026 |
+| **Apply FAQ pgvector migration** | 🔴 HIGH | Paste COMBINED SQL BLOCK below into Supabase SQL Editor → Run. Then run seed scripts. |
+| **Run FAQ seed scripts** | 🔴 HIGH | After applying FAQ migration: `npx tsx scripts/seed-faq-corpus.ts` then `npx tsx scripts/seed-faq-kb-chunks.ts` |
+| **Rotate OpenAI API key** | 🔴 HIGH | platform.openai.com → API keys → delete old key → create new → update `.env.local` OPENAI_API_KEY + Vercel env var |
 | Refund $197 test charge | 🔴 HIGH | In Stripe dashboard — was a test but was a real charge |
 | Check Resend domain verification | 🟡 MEDIUM | Is e2go.app verified? If yes, revert email sender to results@e2go.app |
-| Apply migration 004_answers_source_update.sql | 🟡 MEDIUM | Needed for document upload source tracking |
-| Run FAQ seed scripts | 🟡 MEDIUM | `npx tsx scripts/seed-faq-corpus.ts` and `npx tsx scripts/seed-faq-kb-chunks.ts` — FAQ widget falls back to LLM-only until done |
 | Clean up Chen duplicate applications | 🟡 MEDIUM | `DELETE FROM applications WHERE user_id = 'a2b8f8c3-...' AND id != '9f981747-...'` |
 | Clean up ocdeployments blank duplicates | 🟡 MEDIUM | `DELETE FROM applications WHERE id IN ('bd8a9c1a-...', '49afc548-...')` |
+| ~~Apply migration 004_answers_source_update.sql~~ | ~~🟡 MEDIUM~~ | ✅ CLOSED — file never existed; code doesn't write that value to DB. No action needed. |
 | ~~Configure Stripe webhook for production URL~~ | ~~🟡 MEDIUM~~ | ✅ DONE June 16, 2026 |
 | ~~Configure Upstash Redis in Vercel env vars~~ | ~~🟡 MEDIUM~~ | ✅ DONE — both UPSTASH_REDIS_REST_URL and TOKEN confirmed set June 16, 2026 |
 
+### COMBINED SQL BLOCK — Apply in Supabase SQL Editor
+
+**Step 1:** Go to https://supabase.com/dashboard/project/cziphinlzfnlqlvynwnm/sql/new  
+**Step 2:** Paste the following, click Run:
+
+```sql
+-- =====================================================================
+-- FAQ pgvector tables + search functions (Session 11)
+-- Apply once — all statements are idempotent (CREATE IF NOT EXISTS)
+-- =====================================================================
+
+-- Enable pgvector extension
+CREATE EXTENSION IF NOT EXISTS vector;
+
+-- Layer 1: Pre-answered Q&A corpus
+CREATE TABLE IF NOT EXISTS faq_qa_corpus (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  source_file TEXT NOT NULL,
+  question_number INT,
+  question TEXT NOT NULL,
+  answer TEXT NOT NULL,
+  sources TEXT,
+  question_embedding vector(1536),
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Layer 2: Broader knowledge base chunks
+CREATE TABLE IF NOT EXISTS faq_kb_chunks (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  source_file TEXT NOT NULL,
+  chunk_text TEXT NOT NULL,
+  chunk_embedding vector(1536),
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Query log
+CREATE TABLE IF NOT EXISTS faq_query_log (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  query_text TEXT NOT NULL,
+  matched_layer TEXT,
+  matched_question_id UUID REFERENCES faq_qa_corpus(id),
+  similarity_score FLOAT,
+  response_text TEXT,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- HNSW indexes
+CREATE INDEX IF NOT EXISTS faq_qa_corpus_embedding_idx
+  ON faq_qa_corpus USING hnsw (question_embedding vector_cosine_ops);
+CREATE INDEX IF NOT EXISTS faq_kb_chunks_embedding_idx
+  ON faq_kb_chunks USING hnsw (chunk_embedding vector_cosine_ops);
+
+-- RLS
+ALTER TABLE faq_qa_corpus ENABLE ROW LEVEL SECURITY;
+ALTER TABLE faq_kb_chunks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE faq_query_log ENABLE ROW LEVEL SECURITY;
+
+-- Search functions
+CREATE OR REPLACE FUNCTION match_faq_corpus(
+  query_embedding vector(1536),
+  match_threshold float DEFAULT 0.80,
+  match_count int DEFAULT 1
+)
+RETURNS TABLE (
+  id uuid, question text, answer text, sources text, similarity float
+)
+LANGUAGE plpgsql STABLE AS $$
+BEGIN
+  RETURN QUERY
+  SELECT fc.id, fc.question, fc.answer, fc.sources,
+    1 - (fc.question_embedding <=> query_embedding) AS similarity
+  FROM faq_qa_corpus fc
+  WHERE 1 - (fc.question_embedding <=> query_embedding) > match_threshold
+  ORDER BY fc.question_embedding <=> query_embedding
+  LIMIT match_count;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION match_faq_kb(
+  query_embedding vector(1536),
+  match_threshold float DEFAULT 0.65,
+  match_count int DEFAULT 3
+)
+RETURNS TABLE (
+  id uuid, source_file text, chunk_text text, similarity float
+)
+LANGUAGE plpgsql STABLE AS $$
+BEGIN
+  RETURN QUERY
+  SELECT fk.id, fk.source_file, fk.chunk_text,
+    1 - (fk.chunk_embedding <=> query_embedding) AS similarity
+  FROM faq_kb_chunks fk
+  WHERE 1 - (fk.chunk_embedding <=> query_embedding) > match_threshold
+  ORDER BY fk.chunk_embedding <=> query_embedding
+  LIMIT match_count;
+END;
+$$;
+```
+
+**Step 3:** After Run succeeds, come back here and run:
+```bash
+npx tsx scripts/seed-faq-corpus.ts && npx tsx scripts/seed-faq-kb-chunks.ts
+```
+
 ---
 
-## KNOWN ISSUES (Updated June 15, 2026)
+## KNOWN ISSUES (Updated June 17, 2026 — Session 33 audit)
 
 1. ~~**Groq TTS voice mode blocked**~~ — ✅ RESOLVED June 16, 2026. Groq Orpheus terms accepted; audio MIME/format fixed in Session 21.
 2. **Generation engine: approval gate, setState, empty boxes** — MEDIUM. File: docs/sessions/SESSION_PLAN_GENERATION_FIXES.md
-3. **Bracket highlighting regex + checklist builder** — MEDIUM. Regex only matches `[BRACKET FORMAT]...[/BRACKET FORMAT]`, not descriptive brackets like `[passport number from Tab A]`. Checklist shows 0 items.
+3. ~~**Bracket highlighting regex + checklist builder**~~ — ✅ RESOLVED Sprint 1 (Session 27, commit 653c066). `docx-builder.ts` and `checklist-builder.ts` both use `/\[[^\[\]]+\]/g` which matches any `[descriptive bracket]`. LLM reference brackets (`[from Tab X]`, `[insert here]`) stripped in Step 12 via `LLM_REFERENCE_BRACKET_REGEX`. No further action needed.
 4. **getSession() security warnings** — MEDIUM. Multiple files use Supabase `.getSession()` — Supabase now recommends `.getUser()` instead. Flag in console; not a hard failure but should be swept.
 5. **seed-test-applicant.ts grabs current auth user** — HIGH risk if run again. The seed script uses the currently-logged-in user's ID rather than an explicit `user_id` param. Running it again will re-break account linkage. Needs a `--user-id` flag added before next use.
-6. **004_answers_source_update.sql not applied** — MEDIUM. Document upload source tracking won't work until this migration is applied.
+6. ~~**004_answers_source_update.sql not applied**~~ — ✅ CLOSED. File never existed (incorrect reference in BUILD_TRACKER). Investigation confirms the document upload code does NOT write `'document_upload'` to `answers.source` — uses default `'user_entry'`. PreFillBadge uses it only in UI display layer, not DB. No DB error is occurring. Low-priority if code starts writing that value in future.
 7. **Supabase CLI migration history out of sync** — MEDIUM. `supabase migration list` shows 2 of 24; ~22 applied manually via SQL Editor. Do not rely on `db push` without verifying via SQL Editor first.
 8. **Stripe API version outdated (2024-06-20)** — LOW. Upgrade `apiVersion` in `scripts/stripe-setup.ts` when convenient.
 9. **Resend domain verification unknown** — MEDIUM. If `e2go.app` is verified in Resend dashboard, revert sender to `results@e2go.app`.
-10. **FAQ corpus not confirmed seeded** — MEDIUM. Session 11 built the scripts and tables; seeds may not have been run. Until run, all FAQ queries hit LLM fallback (Layer 3 only — most expensive, least accurate).
-11. **RLS investigation pending** — LOW. quiz_sessions anon INSERT behavior unexplained. Run Group 10 SQL queries in Supabase SQL Editor.
-12. **Fast Refresh occasional hot reload errors** — LOW. Non-blocking.
+10. **FAQ pgvector tables missing — seed scripts BLOCKED** — HIGH. `faq_qa_corpus`, `faq_kb_chunks`, `faq_query_log` tables confirmed missing via REST API. `20260613200000_faq_pgvector_tables.sql` and `20260613210000_faq_search_functions.sql` were never applied. Apply both via SQL Editor, then run seed scripts. Combined SQL: see OWNER MANUAL ACTIONS below.
+11. **OpenAI API key needs rotation** — MEDIUM. Key was exposed in chat transcript in Session 28. Go to platform.openai.com → API keys → revoke + recreate → update in `.env.local` and Vercel env vars.
+12. ~~**simulator_outcomes table missing**~~ — ✅ EXISTS. Confirmed via REST API — table is present and empty (migration was applied). Session 32 note was stale.
+13. **RLS investigation pending** — LOW. quiz_sessions anon INSERT behavior unexplained. Run Group 10 SQL queries in Supabase SQL Editor.
+14. **Fast Refresh occasional hot reload errors** — LOW. Non-blocking.
 
 ---
 
-## LAUNCH READINESS CHECKLIST
+## LAUNCH READINESS CHECKLIST (Updated June 17, 2026)
 
-- [ ] Simulator works end-to-end (voice mode unblocked — Groq TTS terms)
+- [x] ~~Simulator voice mode unblocked~~ — ✅ Groq TTS terms accepted June 16
+- [x] ~~Stripe webhook configured for production URL~~ — ✅ Done June 16
+- [x] ~~Upstash Redis env vars in Vercel~~ — ✅ Done June 16
+- [ ] **Apply FAQ pgvector migration + seed** (SQL Editor → run seed scripts) — BLOCKER
+- [ ] **Rotate OpenAI API key** (platform.openai.com) — SECURITY
 - [ ] Payment flow verified end-to-end (Stripe CLI + test card 4242 4242 4242 4242)
-- [ ] Sentry error tracking live (Session 22 — not yet built)
-- [ ] FAQ widget seeded (run seed-faq-corpus.ts and seed-faq-kb-chunks.ts)
-- [ ] Chen's account clean (SQL actions in OWNER MANUAL ACTIONS)
-- [ ] All pending migrations applied (004_answers_source_update.sql)
-- [ ] npm run build clean on final commit
+- [ ] Sentry error tracking live (SESSION22_SENTRY_ERROR_TRACKING — not yet built)
+- [ ] Refund $197 test Stripe charge
+- [ ] Chen's account clean (duplicate application SQL)
+- [ ] npm run build clean on final commit before deploy
 - [ ] Deploy to production (Vercel, main branch PR)
-- [ ] Stripe webhook configured for production URL
-- [ ] Upstash Redis env vars in Vercel
 - [ ] Attorney review of 3 generated sample packages (not a code task)
 
 ---

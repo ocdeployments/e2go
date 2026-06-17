@@ -12,6 +12,9 @@
 import { createClient } from "@supabase/supabase-js";
 import { readFileSync, readdirSync } from "fs";
 import { join } from "path";
+// Node 20 lacks native WebSocket — polyfill for Supabase realtime client
+import { WebSocket as WSPolyfill } from "ws";
+if (!globalThis.WebSocket) (globalThis as unknown as Record<string, unknown>).WebSocket = WSPolyfill;
 
 // ---------------------------------------------------------------------------
 // Config
