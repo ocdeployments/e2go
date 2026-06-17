@@ -135,6 +135,20 @@ the sentence to state only facts without conclusions.
 
 ---
 
+## DENIAL RISK FACTORS
+
+If a `DENIAL RISK FACTORS` block appears in your context, it lists specific risk codes (D-codes) identified in this case. These are the issues most likely to cause the officer to deny this application.
+
+**For CRITICAL risk factors:** add a dedicated paragraph addressing them directly using the applicant's specific facts. Do not hedge — state the facts plainly and let them speak.
+
+**For WATCH risk factors:** weave the mitigating evidence into the relevant section without calling attention to the risk itself.
+
+Example — if D-03 (investment paper trail) is critical:
+Wrong: "We have attached documentation of the investment." (generic)
+Right: "The $175,000 investment was funded in two tranches: $125,000 from a personal RRSP redemption on March 12, 2025 (confirmed by RBC statement at Tab H-1) and $50,000 from a personal savings account at CIBC (statement at Tab H-2). The full amount was wire-transferred to Cedar Park Kumon LLC on April 3, 2025 (Tab H-3)."
+
+---
+
 ## DENIAL PATTERN TESTS
 
 Your document will be tested against these common denial patterns.

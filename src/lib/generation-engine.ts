@@ -272,11 +272,30 @@ export async function callClaudeAPI(payload: GenerationPayload): Promise<string>
     `If a figure is marked "NOT PROVIDED", state it is not yet confirmed — NEVER invent a number.`,
   ].filter(Boolean).join('\n') : '';
 
+  // Extract denial risk flags for D-code-aware documents (cover letter + source of funds)
+  const brief = payload.case_brief as { critical_risks?: { code: string; reason: string }[]; watch_risks?: { code: string; reason: string }[] } | null;
+  const criticalRisks = brief?.critical_risks?.filter(r => r.code && r.reason) ?? [];
+  const watchRisks = brief?.watch_risks?.filter(r => r.code && r.reason) ?? [];
+  const dCodeBlock = (criticalRisks.length > 0 || watchRisks.length > 0) && (
+    payload.document_type === 'cover_letter' || payload.document_type === 'source_of_funds'
+  )
+    ? [
+        'DENIAL RISK FACTORS — MUST ADDRESS IN THIS DOCUMENT:',
+        'These are the top risk factors identified in this case. The document must proactively address each one.',
+        ...(criticalRisks.map(r => `  [CRITICAL] ${r.code}: ${r.reason}`)),
+        ...(watchRisks.slice(0, 3).map(r => `  [WATCH] ${r.code}: ${r.reason}`)),
+        'For each CRITICAL factor: devote a paragraph to directly addressing it with specific facts.',
+        'For each WATCH factor: weave the mitigating facts into the relevant section.',
+        '',
+      ].join('\n')
+    : '';
+
   const userMessage = [
     `KNOWLEDGE CONTEXT:`,
     `Consulate post: ${payload.consulate_post}`,
     `Document type: ${docLabel}`,
     '',
+    dCodeBlock,
     investmentBreakdownText,
     `APPLICANT CASE BRIEF:`,
     wrapUserContent(JSON.stringify(payload.case_brief, null, 2)),
