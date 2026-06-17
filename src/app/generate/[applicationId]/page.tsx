@@ -96,6 +96,10 @@ export default function GenerateProgressPage() {
   const [validationError, setValidationError] = useState<string>("");
   const [confirming, setConfirming] = useState(false);
 
+  // Voice profile completeness gate
+  const [voiceWordCount, setVoiceWordCount] = useState<number | null>(null);
+  const [voiceWarningDismissed, setVoiceWarningDismissed] = useState(false);
+
   // Map document type to display name
   const mapDocumentType = (type: string): string => {
     const key = type as DocumentType;
@@ -366,6 +370,31 @@ export default function GenerateProgressPage() {
     _router.push(`/apply/investment`);
   }, []);
 
+  // Fetch voice profile word count on mount
+  useEffect(() => {
+    const fetchVoiceWordCount = async () => {
+      try {
+        const supabase = createBrowserSupabaseClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        const { data } = await supabase
+          .from('applicant_voice_profile')
+          .select('voice_sample_raw')
+          .eq('user_id', user.id)
+          .single();
+        if (data?.voice_sample_raw) {
+          const words = data.voice_sample_raw.trim().split(/\s+/).filter(Boolean).length;
+          setVoiceWordCount(words);
+        } else {
+          setVoiceWordCount(0);
+        }
+      } catch {
+        // Non-blocking — if it fails, no warning shown
+      }
+    };
+    fetchVoiceWordCount();
+  }, [applicationId]);
+
   // Fetch validation data on mount — shows confirmation panel instead of auto-starting
   useEffect(() => {
     const fetchValidation = async () => {
@@ -633,13 +662,51 @@ export default function GenerateProgressPage() {
               )}
 
               {validation && validation.readyForGeneration && (
-                <PreGenerationConfirmation
-                  validation={validation}
-                  businessName={applicationData.businessName ?? null}
-                  applicationId={applicationId}
-                  onConfirm={handleConfirm}
-                  onNeedsFixing={handleNeedsFixing}
-                />
+                <>
+                  {/* Voice profile completeness gate */}
+                  {voiceWordCount !== null && voiceWordCount < 100 && !voiceWarningDismissed && (
+                    <div style={{
+                      maxWidth: '672px',
+                      margin: '0 auto 24px',
+                      padding: '16px 20px',
+                      border: '1px solid rgba(201,168,76,0.25)',
+                      background: 'rgba(201,168,76,0.04)',
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      justifyContent: 'space-between',
+                      gap: '16px',
+                    }}>
+                      <div>
+                        <div style={{ fontSize: '10px', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#C9A84C', marginBottom: '6px', fontFamily: "'DM Sans', sans-serif" }}>
+                          Voice profile is short
+                        </div>
+                        <p style={{ fontSize: '13px', color: 'rgba(245,240,232,0.6)', lineHeight: 1.6, fontFamily: "'DM Sans', sans-serif", margin: 0 }}>
+                          {voiceWordCount === 0
+                            ? 'You haven\'t added a writing sample yet. Adding one lets us match your voice across all documents.'
+                            : `Your writing sample is only ${voiceWordCount} words. Longer samples (100+ words) produce more personalised documents.`}
+                          {' '}
+                          <a href="/apply/story#voice" style={{ color: '#C9A84C', textDecoration: 'none' }}>
+                            Add a sample →
+                          </a>
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => setVoiceWarningDismissed(true)}
+                        style={{ flexShrink: 0, color: 'rgba(245,240,232,0.25)', background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px', lineHeight: 1 }}
+                        aria-label="Dismiss"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  )}
+                  <PreGenerationConfirmation
+                    validation={validation}
+                    businessName={applicationData.businessName ?? null}
+                    applicationId={applicationId}
+                    onConfirm={handleConfirm}
+                    onNeedsFixing={handleNeedsFixing}
+                  />
+                </>
               )}
             </>
           )}
