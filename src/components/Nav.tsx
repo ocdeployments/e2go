@@ -192,42 +192,47 @@ export default function Nav() {
             </>
           ) : (
             <>
-              <Link href="/apply" className="text-sm transition-colors" style={{ color: isActive("/apply") ? "#C9A84C" : "rgba(245,240,232,0.75)" }}
+              <Link href="/dashboard" className="text-sm transition-colors" style={{ color: isActive("/dashboard") ? "#C9A84C" : "rgba(245,240,232,0.75)" }}
                 onMouseEnter={e => e.currentTarget.style.color = "#f5f0e8"}
-                onMouseLeave={e => e.currentTarget.style.color = isActive("/apply") ? "#C9A84C" : "rgba(245,240,232,0.75)"}
+                onMouseLeave={e => e.currentTarget.style.color = isActive("/dashboard") ? "#C9A84C" : "rgba(245,240,232,0.75)"}
+              >
+                Dashboard
+              </Link>
+              <Link href="/apply" className="text-sm transition-colors" style={{ color: pathname.startsWith("/apply") ? "#C9A84C" : "rgba(245,240,232,0.75)" }}
+                onMouseEnter={e => e.currentTarget.style.color = "#f5f0e8"}
+                onMouseLeave={e => e.currentTarget.style.color = pathname.startsWith("/apply") ? "#C9A84C" : "rgba(245,240,232,0.75)"}
               >
                 My Application
               </Link>
               {application && (
-                <Link href={`/documents/${application.id}`} className="text-sm transition-colors" style={{ color: "rgba(245,240,232,0.75)" }}
+                <Link href={`/documents/${application.id}`} className="text-sm transition-colors" style={{ color: pathname.startsWith("/documents") ? "#C9A84C" : "rgba(245,240,232,0.75)" }}
                   onMouseEnter={e => e.currentTarget.style.color = "#f5f0e8"}
-                  onMouseLeave={e => e.currentTarget.style.color = "rgba(245,240,232,0.75)"}
+                  onMouseLeave={e => e.currentTarget.style.color = pathname.startsWith("/documents") ? "#C9A84C" : "rgba(245,240,232,0.75)"}
                 >
                   Documents
                 </Link>
               )}
+              <Link href="/simulator" className="text-sm transition-colors" style={{ color: pathname.startsWith("/simulator") ? "#C9A84C" : "rgba(245,240,232,0.75)" }}
+                onMouseEnter={e => e.currentTarget.style.color = "#f5f0e8"}
+                onMouseLeave={e => e.currentTarget.style.color = pathname.startsWith("/simulator") ? "#C9A84C" : "rgba(245,240,232,0.75)"}
+              >
+                Simulator
+              </Link>
 
               <div className="relative">
                 <button
                   onClick={() => setDropdownOpen(!dropdownOpen)}
                   className="flex items-center gap-2 text-sm transition-colors"
-                  style={{ color: "rgba(245,240,232,0.75)" }}
+                  style={{ color: "rgba(245,240,232,0.55)" }}
                 >
-                  <span>{user?.first_name ? `Hi, ${user.first_name}` : 'Account'}</span>
+                  <span>{user?.first_name ? user.first_name : 'Account'}</span>
                   <svg width="12" height="12" viewBox="0 0 12 12" fill="none" className="transition-transform" style={{ transform: dropdownOpen ? "rotate(180deg)" : "rotate(0deg)" }}>
                     <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="square" />
                   </svg>
                 </button>
 
                 {dropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-[#0a0a0a] border border-[rgba(201,168,76,0.2)] shadow-lg z-50">
-                    <Link
-                      href="/dashboard"
-                      className="block px-4 py-3 text-sm text-[rgba(245,240,232,0.65)] hover:bg-[rgba(201,168,76,0.06)] hover:text-[#f5f0e8] transition-colors"
-                      onClick={() => setDropdownOpen(false)}
-                    >
-                      Dashboard
-                    </Link>
+                  <div className="absolute right-0 mt-2 w-44 bg-[#0a0a0a] border border-[rgba(201,168,76,0.2)] shadow-lg z-50">
                     <Link
                       href="/settings"
                       className="block px-4 py-3 text-sm text-[rgba(245,240,232,0.65)] hover:bg-[rgba(201,168,76,0.06)] hover:text-[#f5f0e8] transition-colors"
@@ -235,7 +240,7 @@ export default function Nav() {
                     >
                       Settings
                     </Link>
-                    <div className="border-t border-[rgba(201,168,76,0.2)]" />
+                    <div className="border-t border-[rgba(201,168,76,0.1)]" />
                     <button
                       onClick={handleSignOut}
                       className="w-full text-left px-4 py-3 text-sm text-[rgba(245,240,232,0.65)] hover:bg-[rgba(201,168,76,0.06)] hover:text-[#f5f0e8] transition-colors"
@@ -301,23 +306,28 @@ export default function Nav() {
             </div>
           ) : (
             <div className="flex flex-col gap-4">
-              <Link href="/apply" className="text-sm py-2" style={{ color: "rgba(245,240,232,0.75)" }} onClick={() => setMobileMenuOpen(false)}>
+              <Link href="/dashboard" className="text-sm py-2" style={{ color: pathname === "/dashboard" ? "#C9A84C" : "rgba(245,240,232,0.75)" }} onClick={() => setMobileMenuOpen(false)}>
+                Dashboard
+              </Link>
+              <Link href="/apply" className="text-sm py-2" style={{ color: pathname.startsWith("/apply") ? "#C9A84C" : "rgba(245,240,232,0.75)" }} onClick={() => setMobileMenuOpen(false)}>
                 My Application
               </Link>
               {application && (
-                <Link href={`/documents/${application.id}`} className="text-sm py-2" style={{ color: "rgba(245,240,232,0.75)" }} onClick={() => setMobileMenuOpen(false)}>
+                <Link href={`/documents/${application.id}`} className="text-sm py-2" style={{ color: pathname.startsWith("/documents") ? "#C9A84C" : "rgba(245,240,232,0.75)" }} onClick={() => setMobileMenuOpen(false)}>
                   Documents
                 </Link>
               )}
-              <Link href="/dashboard" className="text-sm py-2" style={{ color: "rgba(245,240,232,0.75)" }} onClick={() => setMobileMenuOpen(false)}>
-                Dashboard
+              <Link href="/simulator" className="text-sm py-2" style={{ color: pathname.startsWith("/simulator") ? "#C9A84C" : "rgba(245,240,232,0.75)" }} onClick={() => setMobileMenuOpen(false)}>
+                Simulator
               </Link>
-              <Link href="/settings" className="text-sm py-2" style={{ color: "rgba(245,240,232,0.75)" }} onClick={() => setMobileMenuOpen(false)}>
+              <div style={{ height: '1px', background: 'rgba(201,168,76,0.1)' }} />
+              <Link href="/settings" className="text-sm py-2" style={{ color: "rgba(245,240,232,0.5)" }} onClick={() => setMobileMenuOpen(false)}>
                 Settings
               </Link>
               <button
                 onClick={handleSignOut}
-                className="text-left text-sm text-[rgba(245,240,232,0.65)] hover:text-[#f5f0e8] transition-colors py-2"
+                className="text-left text-sm py-2 transition-colors"
+                style={{ color: "rgba(245,240,232,0.5)" }}
               >
                 Log out
               </button>
