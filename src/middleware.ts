@@ -114,14 +114,16 @@ export async function middleware(req: NextRequest) {
     }
   );
 
-  // Refresh the session if expired
+  // getUser() validates the JWT against the Supabase Auth server on every
+  // request — unlike getSession() which trusts the cookie without verification
+  // and lets expired/forged tokens through to protected pages.
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user },
+  } = await supabase.auth.getUser();
 
   // Enforce email verification — redirect to /verify if email not confirmed
   // Exception: /verify itself and /api/auth/* routes must not redirect (infinite loop)
-  if (session && !session.user.email_confirmed_at) {
+  if (user && !user.email_confirmed_at) {
     const isVerifyRoute = pathname === '/verify';
     const isApiAuthRoute = pathname.startsWith('/api/auth');
     if (!isVerifyRoute && !isApiAuthRoute) {
@@ -144,8 +146,8 @@ export async function middleware(req: NextRequest) {
   // Auth routes - redirect to dashboard if already logged in
   const authRoutes = ['/login', '/signup'];
 
-  // Check if accessing a protected route without session
-  if (!session && protectedRoutes.some((route) => pathname.startsWith(route))) {
+  // Check if accessing a protected route without a verified user
+  if (!user && protectedRoutes.some((route) => pathname.startsWith(route))) {
     const redirectUrl = new URL('/login', req.url);
     redirectUrl.searchParams.set('next', pathname);
     return NextResponse.redirect(redirectUrl);
@@ -153,11 +155,11 @@ export async function middleware(req: NextRequest) {
 
   // Gate /apply routes on terms acceptance (must be after auth check)
   const TERMS_VERSION = '1.0';
-  if (session && pathname.startsWith('/apply')) {
+  if (user && pathname.startsWith('/apply')) {
     const { data: acceptance } = await supabase
       .from('terms_acceptance')
       .select('terms_version')
-      .eq('user_id', session.user.id)
+      .eq('user_id', user.id)
       .eq('terms_version', TERMS_VERSION)
       .single();
 
@@ -172,11 +174,11 @@ export async function middleware(req: NextRequest) {
   // generation routes and the main application dashboard. They only purchased
   // the interview simulator — /simulator is their home.
   const SIMULATOR_BLOCKED_ROUTES = ['/apply', '/generate/', '/documents/', '/dashboard'];
-  if (session && SIMULATOR_BLOCKED_ROUTES.some((route) => pathname.startsWith(route))) {
+  if (user && SIMULATOR_BLOCKED_ROUTES.some((route) => pathname.startsWith(route))) {
     const { data: apps } = await supabase
       .from('applications')
       .select('source')
-      .eq('user_id', session.user.id);
+      .eq('user_id', user.id);
 
     const simulatorOnly = Boolean(
       apps && apps.length > 0 && apps.every((a) => a.source === 'simulator_standalone')
@@ -187,8 +189,8 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  // Redirect logged-in users away from auth pages
-  if (session && authRoutes.includes(pathname)) {
+  // Redirect verified users away from auth pages
+  if (user && authRoutes.includes(pathname)) {
     return NextResponse.redirect(new URL('/dashboard', req.url));
   }
 
