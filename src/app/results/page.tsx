@@ -623,6 +623,26 @@ function ResultsPageInner() {
   const [quizSessionId, setQuizSessionId] = useState<string | null>(null);
   const [quizEmail, setQuizEmail] = useState<string | null>(null);
   const [nameCaptureDismissed, setNameCaptureDismissed] = useState(false);
+  const [personalizedExplanations, setPersonalizedExplanations] = useState<Record<string, string>>({});
+
+  // Fire personalized flag explanations after data loads — replaces static text with client-specific context
+  useEffect(() => {
+    if (!data) return;
+    const allFlags = [...(data.warnings || []), ...(data.attorney_flags || [])];
+    if (allFlags.length === 0) return;
+    fetch('/api/quiz/personalized-flags', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ flags: allFlags, answers: data.answers || {} }),
+    })
+      .then(r => r.ok ? r.json() : { explanations: {} })
+      .then(({ explanations }) => {
+        if (explanations && typeof explanations === 'object') {
+          setPersonalizedExplanations(explanations);
+        }
+      })
+      .catch(() => {});
+  }, [data]);
 
   useEffect(() => {
     const loadResult = async () => {
@@ -944,7 +964,7 @@ function ResultsPageInner() {
                     <div style={{ fontSize: "16px", color: isAttorney ? "rgba(239,100,100,0.8)" : "rgba(239,159,39,0.8)", flexShrink: 0, marginTop: "1px" }}>{isAttorney ? "⚖" : "!"}</div>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: "13px", fontWeight: 500, color: isAttorney ? "rgba(239,100,100,0.95)" : "rgba(239,159,39,0.95)", marginBottom: "3px" }}>{info.plain_language}</div>
-                      <div style={{ fontSize: "12px", color: "rgba(245,240,232,0.45)", lineHeight: 1.6, marginBottom: "8px" }}>{info.why_it_matters}</div>
+                      <div style={{ fontSize: "12px", color: "rgba(245,240,232,0.45)", lineHeight: 1.6, marginBottom: "8px" }}>{personalizedExplanations[code] || info.why_it_matters}</div>
                       {data.answers?.[info.question_id] && (
                         <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.3)", marginBottom: "8px" }}>
                           Your answer: &ldquo;{Array.isArray(data.answers[info.question_id]) ? (data.answers[info.question_id] as string[]).join(", ") : String(data.answers[info.question_id])}&rdquo;
