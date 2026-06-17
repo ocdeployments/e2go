@@ -2612,3 +2612,73 @@ No code changes. No commit needed.
 - `memory/fallback_architecture.md` — per-route fallback chains + implementation pattern
 - `memory/voice_pipeline.md` — Groq TTS/STT current state, upgrade path, Groq vs Grok distinction
 - `memory/project_state_june17.md` — replaces project_state_june16.md
+
+---
+
+## SESSION 28 — Security Audit + Infrastructure (June 17, 2026)
+
+**Branch:** dev. Build clean. 4 commits.
+
+### OpenAI API Key
+- `OPENAI_API_KEY` added to `.env.local` — enables TTS/STT fallback chains built in Session 27
+- `OPENAI_API_KEY` added to Vercel (All Environments) — production fallback now active
+- ⚠️ Key was shared in chat plaintext — should be rotated at platform.openai.com
+
+### Security Fixes (4 commits)
+
+**1. `src/app/api/analysis/run/route.ts`** — commit `6582334` — CRITICAL
+- Was: auth based on `Authorization` header existence + `userId` from request body (attacker-controlled)
+- Now: proper session auth via `createSupabaseServerClient().auth.getUser()`, userId NOT taken from body
+- Ownership check compares against `user.id` from verified session token
+
+**2. `src/app/api/answers/route.ts`** — commit `0362063`
+- Added application ownership verification before upsert
+- Queries `applications` filtered by both `id` and `user_id` — prevents writing answers to another user's case file
+
+**3. `src/middleware.ts`** — commit `7061b22`
+- Removed spoofable `x-user-id` header rate limit block for `/api/generate` and `/api/analysis`
+- These routes now rely on Upstash Redis rate limits keyed to verified `user.id` inside each route handler
+
+**4. `src/lib/rate-limit.ts`** — commit `c20d9d8`
+- Expanded from 1 route (FAQ) to 6 per-route profiles
+- Profiles: `faq` (10/10m), `evaluate` (30/10m), `coaching` (6/60m), `tts` (60/10m), `transcribe` (60/10m), `generate` (4/60m)
+- `checkRateLimit()` now accepts `profile: RateLimitProfile` parameter
+
+### Security Audit — Full Findings
+
+**FIXED this session:**
+| Issue | Severity | Status |
+|---|---|---|
+| Auth bypass in `/api/analysis/run` (header + body userId) | Critical | ✅ Fixed commit 6582334 |
+| Cross-user write in `/api/answers` | High | ✅ Fixed commit 0362063 |
+| Spoofable `x-user-id` middleware rate limit | High | ✅ Fixed commit 7061b22 |
+| Rate limiting missing on 5 AI routes | Medium | ✅ Fixed commit c20d9d8 |
+
+**CONFIRMED CLEAN:**
+| Item | Finding |
+|---|---|
+| Stripe webhook | `constructEvent()` + signature + 5-min freshness ✅ |
+| Document download route | Ownership verified before signed URL ✅ |
+| Followup routes | Application ownership verified ✅ |
+| Email anonymous path | DB as source of truth ✅ |
+| Security headers | CSP, X-Frame-Options DENY, nosniff, Referrer-Policy ✅ |
+| NEXT_PUBLIC vars | Only safe vars exposed (anon key, publishable key, Price IDs, URL) ✅ |
+| Supabase Storage bucket | **Private** — confirmed via dashboard toggle ✅ |
+| Documents in bucket | Business prep docs only (cover letters, business plans, DS-160 copies, projections) — NOT passports or bank statements |
+
+**KNOWN ISSUES (not yet fixed):**
+| Issue | Priority | Notes |
+|---|---|---|
+| Login + quiz in-memory rate limits reset on Vercel cold-start | Medium | Map resets per function instance; needs Upstash migration |
+| CSP `unsafe-eval` | Low | Complex nonce refactor; not urgent |
+| HSTS header missing | Low | Vercel likely handles at CDN level |
+
+### What's Next (Sprint 2 — requires user presence)
+1. Fix `immigrantIntentRisk: 'moderate'` hardcoded in `simulator-engine.ts` line 132
+2. Pass 3-answer rolling window to evaluate engine
+3. D-code top-3 section on interview day page
+4. Cross-session coaching (pass prior session summary into coaching-report request)
+5. PlayAI TTS upgrade (single model name change in `tts/route.ts`)
+6. Personalized warning text via LLM (replace static `flag_explanations.json`)
+7. D-code-aware cover letter generation
+8. Migrate login + quiz rate limits from in-memory Map to Upstash Redis
