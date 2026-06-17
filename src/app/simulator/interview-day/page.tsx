@@ -78,12 +78,27 @@ export default function InterviewDayPage() {
   const [checklist, setChecklist] = useState<ChecklistSection[]>([]);
   const [checked, setChecked] = useState<Record<string, boolean>>({});
   const [selectedPost, setSelectedPost] = useState<number>(0); // index into all posts
+  const [top3NextSession, setTop3NextSession] = useState<string[]>([]);
 
   useEffect(() => {
     async function load() {
       const supabase = createBrowserSupabaseClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setLoading(false); return; }
+
+      // Load top-3 coaching priorities from most recent simulator session
+      const { data: latestSession } = await supabase
+        .from('simulator_sessions')
+        .select('coaching_notes')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      const coachingNotes = latestSession?.coaching_notes as { top3NextSession?: string[] } | null;
+      if (coachingNotes?.top3NextSession?.length) {
+        setTop3NextSession(coachingNotes.top3NextSession);
+      }
 
       // Fetch the most recent application
       const { data: app } = await supabase
@@ -196,6 +211,29 @@ export default function InterviewDayPage() {
           Everything you need for the day of your consulate interview —
           your consulate details, what to bring, what to expect, and a personalised document checklist.
         </p>
+
+        {/* ----------------------------------------------------------------
+            D-code coaching priorities (only shown if a simulator session exists)
+        ---------------------------------------------------------------- */}
+        {top3NextSession.length > 0 && (
+          <>
+            <h2 style={S.sectionTitle}>Focus Before Your Interview</h2>
+            <div style={{ ...S.card, borderColor: `${gold}40`, marginBottom: 32 }}>
+              <div style={S.cardTitle}>Your 3 Highest-Priority Preparation Areas</div>
+              <div style={{ fontSize: 13, color: muted, marginBottom: 24, lineHeight: 1.55 }}>
+                Based on your most recent simulator session, these are the areas where focused preparation will have the most impact.
+              </div>
+              {top3NextSession.map((item, i) => (
+                <div key={i} style={{ display: 'flex', gap: 16, alignItems: 'flex-start', marginBottom: i < top3NextSession.length - 1 ? 20 : 0 }}>
+                  <div style={{ width: 28, height: 28, flexShrink: 0, background: `${gold}20`, border: `1px solid ${gold}50`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: gold, fontWeight: 700, marginTop: 1 }}>
+                    {i + 1}
+                  </div>
+                  <div style={{ fontSize: 14, color: text, lineHeight: 1.65, paddingTop: 4 }}>{item}</div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
 
         {/* ----------------------------------------------------------------
             Consulate Information
