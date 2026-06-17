@@ -348,6 +348,25 @@ function GapAnalysisInner() {
 // DENIAL RISK RADAR — all 15 D-codes in a grid
 // =============================================================================
 
+// Maps each D-code to the most relevant case file section to fix it
+const D_CODE_FIX_LINKS: Record<string, { label: string; href: string }> = {
+  'D-01': { label: 'Investment overview',     href: '/apply/investment#investment-overview' },
+  'D-02': { label: 'Investment paper trail',  href: '/apply/investment#paper-trail' },
+  'D-03': { label: 'Source of funds',         href: '/apply/investment#source-of-funds' },
+  'D-04': { label: 'Business financials',     href: '/apply/investment#projections' },
+  'D-05': { label: 'Business plan',           href: '/apply/business#market' },
+  'D-06': { label: 'Revenue projections',     href: '/apply/investment#projections' },
+  'D-07': { label: 'Hiring plan',             href: '/apply/business#operations' },
+  'D-08': { label: 'Practice interview',      href: '/simulator' },
+  'D-09': { label: 'Practice interview',      href: '/simulator' },
+  'D-10': { label: 'Business operations',     href: '/apply/business#operations' },
+  'D-11': { label: 'Your role',               href: '/apply/qualifications#role' },
+  'D-12': { label: 'Investment source',       href: '/apply/investment#source-of-funds' },
+  'D-13': { label: 'Business entity',         href: '/apply/business#entity' },
+  'D-14': { label: 'Business type',           href: '/apply/business' },
+  'D-15': { label: 'Ties to home country',    href: '/apply/ties' },
+};
+
 function DenialRiskRadar({ factors }: { factors: DenialRiskFactor[] }) {
   const [expanded, setExpanded] = useState<string | null>(null);
 
@@ -444,6 +463,7 @@ function DenialRiskRadar({ factors }: { factors: DenialRiskFactor[] }) {
                       padding: '10px 12px',
                       background: 'rgba(201,168,76,0.06)',
                       border: '1px solid rgba(201,168,76,0.15)',
+                      marginBottom: '10px',
                     }}>
                       <div style={{ fontSize: '9px', fontWeight: 700, letterSpacing: '0.1em', color: 'rgba(201,168,76,0.6)', marginBottom: '6px' }}>
                         WHAT TO DO
@@ -452,6 +472,24 @@ function DenialRiskRadar({ factors }: { factors: DenialRiskFactor[] }) {
                         {f.mitigation}
                       </p>
                     </div>
+                  )}
+                  {D_CODE_FIX_LINKS[f.code] && (
+                    <a
+                      href={D_CODE_FIX_LINKS[f.code].href}
+                      onClick={e => e.stopPropagation()}
+                      style={{
+                        display: 'inline-block',
+                        fontSize: '11px',
+                        fontWeight: 600,
+                        color: cfg.color,
+                        textDecoration: 'none',
+                        letterSpacing: '0.04em',
+                        borderBottom: `1px solid ${cfg.color}50`,
+                        paddingBottom: '1px',
+                      }}
+                    >
+                      Fix this → {D_CODE_FIX_LINKS[f.code].label}
+                    </a>
                   )}
                 </div>
               )}
