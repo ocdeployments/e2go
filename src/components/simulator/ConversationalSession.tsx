@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { speakQuestion, resumeAudioContext } from '@/lib/groq-tts';
+import { speakQuestion, resumeAudioContext, cancelTTS } from '@/lib/groq-tts';
 // saveSimulatorAnswer called by parent post-session (after parallel evaluation)
 import type { SimulatorContext, Question } from '@/types/simulator';
 
@@ -92,6 +92,10 @@ export default function ConversationalSession({
   const [muted, setMuted] = useState(false);
   const [micBlocked, setMicBlocked] = useState(false);
 
+  // Typewriter effect state — reveals question text word-by-word as officer speaks
+  const [typedText, setTypedText] = useState('');
+  const typewriterRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   // Ready screen state
   const [speakerTested, setSpeakerTested] = useState(false);
   const [speakerTesting, setSpeakerTesting] = useState(false);
@@ -165,11 +169,42 @@ export default function ConversationalSession({
     return t ? `${t} ${text}` : text;
   }
 
+  // ─── Typewriter: reveal question text word-by-word as officer speaks ────────
+  useEffect(() => {
+    if (phase !== 'questions' || !question) return;
+    if (typewriterRef.current) clearInterval(typewriterRef.current);
+    setTypedText('');
+    const words = question.text.split(' ');
+    let idx = 0;
+    typewriterRef.current = setInterval(() => {
+      idx++;
+      setTypedText(words.slice(0, idx).join(' '));
+      if (idx >= words.length) {
+        clearInterval(typewriterRef.current!);
+        typewriterRef.current = null;
+      }
+    }, 90);
+    return () => {
+      if (typewriterRef.current) { clearInterval(typewriterRef.current); typewriterRef.current = null; }
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [questionIdx, phase]);
+
+  // Show full text immediately when mic opens (muted mode or fast TTS)
+  useEffect(() => {
+    if (convState === 'listening' && phase === 'questions' && question) {
+      if (typewriterRef.current) { clearInterval(typewriterRef.current); typewriterRef.current = null; }
+      setTypedText(question.text);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [convState]);
+
   // ─── Question phase driver — fires when questionIdx or phase changes ────────
   useEffect(() => {
     if (phaseRef.current !== 'questions') return;
     if (deadRef.current) return;
 
+    cancelTTS(); // Stop any audio still playing from the previous question
     setConvState('speaking');
     setTranscript('');
     setErrorMsg(null);
@@ -186,7 +221,10 @@ export default function ConversationalSession({
     }
 
     run();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+      cancelTTS(); // Cancel audio when moving to a new question
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [questionIdx, phase]);
 
@@ -487,7 +525,11 @@ export default function ConversationalSession({
   }
 
   function handleReplay() {
+    cancelTTS(); // Stop current question audio before replaying
     if (autoAdvanceRef.current) { clearInterval(autoAdvanceRef.current); autoAdvanceRef.current = null; }
+    // Null out onstop before stopping — prevents handleRecordingComplete
+    // from firing on a partial recording captured before the replay
+    if (mediaRecorderRef.current) mediaRecorderRef.current.onstop = null;
     stopMic();
     setTranscript('');
     setConvState('speaking');
@@ -497,7 +539,11 @@ export default function ConversationalSession({
   }
 
   function handleSkip() {
+    cancelTTS(); // Stop current question audio immediately
     if (autoAdvanceRef.current) { clearInterval(autoAdvanceRef.current); autoAdvanceRef.current = null; }
+    // Null out onstop before stopping — prevents handleRecordingComplete
+    // from firing on any partial in-progress recording when skip is pressed
+    if (mediaRecorderRef.current) mediaRecorderRef.current.onstop = null;
     stopMic();
     advance();
   }
@@ -761,7 +807,7 @@ export default function ConversationalSession({
                  question.category === 'investment_source' ? 'INVESTMENT' :
                  question.category === 'profile_flag' ? 'FLAG' : 'GENERAL'}
               </div>
-              <p style={styles.questionText}>{question.text}</p>
+              <p style={styles.questionText}>{typedText || ' '}</p>
               {question.context && (
                 <p style={styles.questionContext}>{question.context}</p>
               )}
