@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { speakQuestion, resumeAudioContext } from '@/lib/groq-tts';
-import { saveSimulatorAnswer } from '@/lib/simulator-engine';
+// saveSimulatorAnswer called by parent post-session (after parallel evaluation)
 import type { SimulatorContext, Question } from '@/types/simulator';
 
 // =============================================================================
@@ -29,8 +29,8 @@ interface ConversationalSessionProps {
   context: SimulatorContext;
   session: { id: string; sessionNumber: number };
   questions: Question[];
-  userId: string;
-  applicationId: string;
+  userId?: string;
+  applicationId?: string;
   // Receives raw (unevaluated) answers — parent evaluates them post-session in parallel
   onComplete: (rawAnswers: RawVoiceAnswer[], sessionNumber: number) => void;
   onExit: () => void;
@@ -67,8 +67,8 @@ export default function ConversationalSession({
   context,
   session,
   questions,
-  userId,
-  applicationId,
+  userId: _userId,
+  applicationId: _applicationId,
   onComplete,
   onExit,
 }: ConversationalSessionProps) {
@@ -518,12 +518,6 @@ export default function ConversationalSession({
     error: '',
   };
 
-  const ratingColor: Record<string, string> = {
-    strong: '#22c55e', weak: '#f59e0b', inconsistent: '#ef4444',
-  };
-  const ratingLabel: Record<string, string> = {
-    strong: '✓ Strong answer', weak: '⚠ Needs more detail', inconsistent: '✗ Inconsistency detected',
-  };
 
   // ─── Listening bars ─────────────────────────────────────────────────────────
   const BAR_COUNT = 7;
