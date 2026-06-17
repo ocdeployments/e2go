@@ -557,16 +557,12 @@ export function generateCoachingSummary(
   const weakOrInconsistentCount = needsWork.length + inconsistencies.length;
   let readinessIndicator: 'ready' | 'nearly_ready' | 'needs_work';
 
-  if (inconsistencies.length > 0) {
+  if (inconsistencies.length > 0 || weakOrInconsistentCount > 2) {
     readinessIndicator = 'needs_work';
-  } else if (weakOrInconsistentCount <= 2) {
+  } else if (weakOrInconsistentCount > 0) {
     readinessIndicator = 'nearly_ready';
   } else {
-    readinessIndicator = 'ready';
-  }
-
-  // If all strong
-  if (needsWork.length === 0 && inconsistencies.length === 0) {
+    // All answers rated strong
     readinessIndicator = 'ready';
   }
 

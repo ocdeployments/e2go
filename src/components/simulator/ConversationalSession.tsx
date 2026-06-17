@@ -3,8 +3,8 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { speakQuestion, resumeAudioContext } from '@/lib/groq-tts';
-import { saveSimulatorAnswer, completeSimulatorSession, generateCoachingSummary } from '@/lib/simulator-engine';
-import type { SimulatorContext, Question, AnswerEvaluation, CoachingSummary, CompletedSession } from '@/types/simulator';
+import { saveSimulatorAnswer } from '@/lib/simulator-engine';
+import type { SimulatorContext, Question } from '@/types/simulator';
 
 // =============================================================================
 // TYPES
@@ -16,9 +16,14 @@ type ConvState =
   | 'speaking'     // AI is speaking
   | 'listening'    // Mic is open, VAD active
   | 'processing'   // Audio captured, transcribing
-  | 'evaluating'   // Transcript received, evaluating (questions phase only)
-  | 'feedback'     // Evaluation returned (questions phase only)
+  | 'feedback'     // Answer recorded, brief pause before advancing
   | 'error';
+
+export interface RawVoiceAnswer {
+  questionId: string;
+  questionText: string;
+  answerText: string;
+}
 
 interface ConversationalSessionProps {
   context: SimulatorContext;
@@ -26,14 +31,15 @@ interface ConversationalSessionProps {
   questions: Question[];
   userId: string;
   applicationId: string;
-  onComplete: (summary: CoachingSummary, sessionNumber: number) => void;
+  // Receives raw (unevaluated) answers — parent evaluates them post-session in parallel
+  onComplete: (rawAnswers: RawVoiceAnswer[], sessionNumber: number) => void;
   onExit: () => void;
 }
 
 // VAD tuning
 const SILENCE_THRESHOLD = 16;
 const SPEECH_THRESHOLD = 22;
-const SILENCE_AFTER_SPEECH_MS = 2000;
+const SILENCE_AFTER_SPEECH_MS = 3500;
 const MIN_RECORDING_BYTES = 2000;
 const MAX_RECORDING_MS = 180_000;
 
@@ -77,8 +83,7 @@ export default function ConversationalSession({
   const [convState, setConvState] = useState<ConvState>('speaking');
   const [questionIdx, setQuestionIdx] = useState(0);
   const [transcript, setTranscript] = useState('');
-  const [evaluation, setEvaluation] = useState<AnswerEvaluation | null>(null);
-  const submittedAnswersRef = useRef<any[]>([]);
+  const submittedAnswersRef = useRef<RawVoiceAnswer[]>([]);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [autoAdvanceSec, setAutoAdvanceSec] = useState<number | null>(null);
   const [sessionTimeLeft, setSessionTimeLeft] = useState(15 * 60);
@@ -138,6 +143,28 @@ export default function ConversationalSession({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Officer transition phrases — added before each question to maintain
+  // a consistent formal persona throughout the session.
+  const OFFICER_TRANSITIONS = [
+    '',                   // Q1 flows directly from the intro acknowledgment
+    'Thank you.',
+    'Good.',
+    'I see.',
+    'Alright.',
+    'Thank you for that.',
+    'Moving on.',
+    'I appreciate that.',
+    'Thank you.',
+    'Good.',
+    'Alright.',
+    'Thank you.',
+  ];
+
+  function officerSpeech(text: string, idx: number): string {
+    const t = OFFICER_TRANSITIONS[idx] ?? 'Thank you.';
+    return t ? `${t} ${text}` : text;
+  }
+
   // ─── Question phase driver — fires when questionIdx or phase changes ────────
   useEffect(() => {
     if (phaseRef.current !== 'questions') return;
@@ -145,7 +172,6 @@ export default function ConversationalSession({
 
     setConvState('speaking');
     setTranscript('');
-    setEvaluation(null);
     setErrorMsg(null);
     setAutoAdvanceSec(null);
 
@@ -153,7 +179,7 @@ export default function ConversationalSession({
 
     async function run() {
       if (!mutableMuted.current) {
-        try { await speakQuestion(question.text); } catch { /* silent */ }
+        try { await speakQuestion(officerSpeech(question.text, questionIdx)); } catch { /* silent */ }
       }
       if (cancelled || deadRef.current) return;
       await openMic();
@@ -417,44 +443,16 @@ export default function ConversationalSession({
     setTranscript(answerText);
     if (deadRef.current) return;
 
-    setConvState('evaluating');
-    let evalData: AnswerEvaluation;
-    try {
-      const res = await fetch('/api/simulator/evaluate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          questionId: question.id,
-          questionText: question.text,
-          answer: answerText,
-          context,
-        }),
-      });
-      if (!res.ok) throw new Error('evaluation failed');
-      evalData = await res.json();
-    } catch {
-      setErrorMsg('Evaluation failed. Tap "Try again" to re-record.');
-      setConvState('error');
-      return;
-    }
+    // Store raw answer — evaluation runs post-session in parallel (no mid-session delay)
+    submittedAnswersRef.current = [
+      ...submittedAnswersRef.current,
+      { questionId: question.id, questionText: question.text, answerText },
+    ];
 
-    try {
-      await saveSimulatorAnswer(
-        session.id, question.id, question.text, answerText,
-        evalData.rating, evalData.feedback, evalData.specificSuggestion, evalData.documentReference,
-      );
-    } catch { /* non-fatal */ }
-
-    submittedAnswersRef.current = [...submittedAnswersRef.current, {
-      questionId: question.id, questionText: question.text, answerText,
-      rating: evalData.rating, feedback: evalData.feedback, specificSuggestion: evalData.specificSuggestion,
-    }];
-
-    if (deadRef.current) return;
-    setEvaluation(evalData);
     setConvState('feedback');
 
-    let sec = 6;
+    // Auto-advance after 2s — enough to confirm answer was recorded
+    let sec = 2;
     setAutoAdvanceSec(sec);
     autoAdvanceRef.current = setInterval(() => {
       sec -= 1;
@@ -476,16 +474,8 @@ export default function ConversationalSession({
     if (sessionTimerRef.current) clearInterval(sessionTimerRef.current);
     if (autoAdvanceRef.current) clearInterval(autoAdvanceRef.current);
     stopMic();
-
-    const completedSession: CompletedSession = {
-      id: session.id, applicationId, userId,
-      startedAt: new Date().toISOString(), completedAt: new Date().toISOString(),
-      sessionNumber: session.sessionNumber, mode: 'voice',
-      readinessIndicator: 'nearly_ready', questions: submittedAnswersRef.current,
-    };
-    const summary = generateCoachingSummary(completedSession, context);
-    completeSimulatorSession(session.id, summary.readinessIndicator).catch(() => {});
-    setTimeout(() => onComplete(summary, session.sessionNumber), 50);
+    // Pass raw answers to parent — it evaluates them in parallel and builds the summary
+    setTimeout(() => onComplete(submittedAnswersRef.current, session.sessionNumber), 50);
   }
 
   // ─── Manual controls ────────────────────────────────────────────────────────
@@ -499,10 +489,9 @@ export default function ConversationalSession({
   function handleReplay() {
     if (autoAdvanceRef.current) { clearInterval(autoAdvanceRef.current); autoAdvanceRef.current = null; }
     stopMic();
-    setEvaluation(null);
     setTranscript('');
     setConvState('speaking');
-    speakQuestion(question.text)
+    speakQuestion(officerSpeech(question.text, questionIdx))
       .catch(() => {})
       .finally(() => { if (!deadRef.current) openMic(); });
   }
@@ -525,7 +514,6 @@ export default function ConversationalSession({
     speaking: 'Officer is speaking…',
     listening: 'Listening…',
     processing: 'Transcribing…',
-    evaluating: 'Evaluating your answer…',
     feedback: '',
     error: '',
   };
@@ -793,31 +781,21 @@ export default function ConversationalSession({
 
               {(convState === 'listening' || convState === 'speaking') && <ListeningBars />}
 
-              {(convState === 'processing' || convState === 'evaluating') && (
+              {convState === 'processing' && (
                 <div style={styles.spinnerRow}><div style={styles.spinner} /></div>
               )}
 
-              {transcript && (convState === 'evaluating' || convState === 'feedback') && (
+              {transcript && convState === 'feedback' && (
                 <div style={styles.transcriptBox}>
                   <div style={styles.transcriptLabel}>YOUR ANSWER</div>
                   <p style={styles.transcriptText}>{transcript}</p>
                 </div>
               )}
 
-              {convState === 'feedback' && evaluation && (
-                <div style={{ ...styles.feedbackCard, borderLeftColor: ratingColor[evaluation.rating] }}>
-                  <div style={{ ...styles.feedbackRating, color: ratingColor[evaluation.rating] }}>
-                    {ratingLabel[evaluation.rating]}
-                  </div>
-                  <p style={styles.feedbackText}>{evaluation.feedback}</p>
-                  {evaluation.specificSuggestion && (
-                    <div style={styles.suggestionBox}>
-                      <strong>Suggestion:</strong> {evaluation.specificSuggestion}
-                    </div>
-                  )}
-                  {evaluation.documentReference && (
-                    <p style={styles.docRef}>Reference: {evaluation.documentReference}</p>
-                  )}
+              {convState === 'feedback' && (
+                <div style={styles.recordedCard}>
+                  <span style={styles.recordedCheck}>✓</span>
+                  <span style={styles.recordedLabel}>Answer recorded</span>
                 </div>
               )}
 
@@ -836,7 +814,9 @@ export default function ConversationalSession({
               {convState === 'feedback' && (
                 <div style={styles.autoAdvanceRow}>
                   {autoAdvanceSec !== null && autoAdvanceSec > 0 && (
-                    <span style={styles.autoAdvanceHint}>Next question in {autoAdvanceSec}s</span>
+                    <span style={styles.autoAdvanceHint}>
+                      {isLastQuestion ? `Finishing in ${autoAdvanceSec}s` : `Next question in ${autoAdvanceSec}s`}
+                    </span>
                   )}
                   <button style={styles.nextNowButton} onClick={advance}>
                     {isLastQuestion ? 'Complete session →' : 'Next question →'}
@@ -962,6 +942,15 @@ const styles: Record<string, React.CSSProperties> = {
     color: 'rgba(245,240,232,0.5)', fontSize: '11px', letterSpacing: '0.06em',
     padding: '6px 12px', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif",
   },
+  recordedCard: {
+    display: 'flex', alignItems: 'center', gap: '10px',
+    padding: '14px 20px',
+    background: 'rgba(34,197,94,0.06)',
+    border: '1px solid rgba(34,197,94,0.2)',
+    marginTop: '8px',
+  },
+  recordedCheck: { fontSize: '18px', color: '#22c55e' },
+  recordedLabel: { fontSize: '14px', color: 'rgba(245,240,232,0.75)', letterSpacing: '0.04em' },
   progressTrack: { height: '2px', background: 'rgba(245,240,232,0.06)' },
   progressFill: { height: '100%', background: '#C9A84C', transition: 'width 0.4s ease' },
   timerBanner: {

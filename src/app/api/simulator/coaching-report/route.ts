@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
 
   // Build the Q&A block
   const qaBlock = weakAnswers.map((a, i) =>
-    `--- Question ${i + 1} [${a.questionId}] (${a.rating.toUpperCase()}) ---
+    `--- Question ${i + 1} [ID: ${a.questionId}] (${a.rating.toUpperCase()}) ---
 Question: ${a.questionText}
 Applicant answered: "${a.originalAnswer}"
 Initial assessment: ${a.currentFeedback}`
@@ -70,10 +70,10 @@ ${qaBlock}
 
 For EACH question above, return a coaching object in this JSON array. Be specific, expert, and actionable — this is a preparation document the client will study before their real interview.
 
-Return ONLY a JSON array (no prose, no markdown):
+Return ONLY a JSON array (no prose, no markdown). Preserve the exact questionId string from each question header — do not invent or shorten it:
 [
   {
-    "questionId": "<the question ID from above>",
+    "questionId": "<exact ID string from the [ID: ...] tag above, e.g. UQ-01>",
     "whatOfficerExpected": "2-3 sentences: what a well-prepared applicant says on this question, and the specific signals an officer is looking for to approve an E-2",
     "whatWasMissing": "2 sentences: the precise gap between what the applicant said and what the officer needed to hear, and why this creates a risk of denial",
     "keyPoints": ["3-5 specific bullet points the applicant should make in their revised answer — concrete, factual, tied to their specific business profile"],
@@ -109,7 +109,7 @@ Return ONLY a JSON array (no prose, no markdown):
           },
         ],
         temperature: 0.4,
-        max_tokens: 2400,
+        max_tokens: 3200,
         stream: false,
       }),
       signal: controller.signal,

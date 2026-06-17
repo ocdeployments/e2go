@@ -17,7 +17,7 @@ import {
 } from '@/lib/simulator-engine';
 import { speakQuestion } from '@/lib/groq-tts';
 import CaseFileSummary from '@/components/simulator/CaseFileSummary';
-import ConversationalSession from '@/components/simulator/ConversationalSession';
+import ConversationalSession, { type RawVoiceAnswer } from '@/components/simulator/ConversationalSession';
 import type { SimulatorContext, Question, AnswerEvaluation, CoachingSummary, CompletedSession, QuestionCoaching, DeliveryNote } from '@/types/simulator';
 
 const supabase = createBrowserSupabaseClient();
@@ -37,7 +37,7 @@ export default function InterviewSimulator() {
     sessionsRemaining: number;
   } | null>(null);
 
-  const [screen, setScreen] = useState<'start' | 'active' | 'complete'>('start');
+  const [screen, setScreen] = useState<'start' | 'active' | 'evaluating' | 'complete'>('start');
   const [mode, setMode] = useState<'text' | 'voice'>('text');
   const [currentSession, setCurrentSession] = useState<any>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -509,7 +509,15 @@ export default function InterviewSimulator() {
       if (res.ok) {
         const { coaching } = await res.json();
         if (Array.isArray(coaching) && coaching.length > 0) {
-          setCoachingSummary(prev => prev ? { ...prev, detailedCoaching: coaching } : prev);
+          // Build a map by questionId for O(1) lookup; also keep array for index fallback
+          const byId = new Map(coaching.map((c: any) => [c.questionId, c]));
+          // Remap: if model returned a different key for some item, fall back to array index
+          const remapped = toCoach.map((q, i) => byId.get(q.questionId) ?? coaching[i] ?? null).filter(Boolean);
+          if (remapped.length > 0) {
+            // Ensure questionIds match so the UI lookup (find by questionId) works
+            const aligned = remapped.map((c: any, i: number) => ({ ...c, questionId: toCoach[i]?.questionId ?? c.questionId }));
+            setCoachingSummary(prev => prev ? { ...prev, detailedCoaching: aligned } : prev);
+          }
         }
       }
     } catch {
@@ -517,6 +525,79 @@ export default function InterviewSimulator() {
     } finally {
       setCoachingLoading(false);
     }
+  }
+
+  // Evaluate all voice answers in parallel post-session, then build summary
+  async function evaluateAndComplete(rawAnswers: RawVoiceAnswer[], sessionNumber: number) {
+    if (!context || !currentSession || !application || !user) return;
+    setScreen('evaluating');
+
+    const evaluated = await Promise.all(
+      rawAnswers.map(async (a) => {
+        try {
+          const res = await fetch('/api/simulator/evaluate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              questionId: a.questionId,
+              questionText: a.questionText,
+              answer: a.answerText,
+              context,
+            }),
+          });
+          const ev = await res.json();
+          return {
+            questionId: a.questionId,
+            questionText: a.questionText,
+            answerText: a.answerText,
+            rating: (ev.rating || 'weak') as 'strong' | 'weak' | 'inconsistent',
+            feedback: ev.feedback || 'Answer recorded.',
+            specificSuggestion: ev.specificSuggestion || '',
+            deliveryNotes: analyzeDelivery(a.answerText),
+          };
+        } catch {
+          return {
+            questionId: a.questionId,
+            questionText: a.questionText,
+            answerText: a.answerText,
+            rating: 'weak' as const,
+            feedback: 'Answer recorded.',
+            specificSuggestion: '',
+          };
+        }
+      })
+    );
+
+    // Save all evaluated answers to DB
+    await Promise.allSettled(
+      evaluated.map(a =>
+        saveSimulatorAnswer(
+          currentSession.id, a.questionId, a.questionText, a.answerText,
+          a.rating, a.feedback, a.specificSuggestion, null
+        )
+      )
+    );
+
+    setSubmittedAnswers(evaluated);
+    setCurrentSession((prev: any) => prev ? { ...prev, sessionNumber } : prev);
+
+    const completedSession: CompletedSession = {
+      id: currentSession.id,
+      applicationId: application.id,
+      userId: user.id,
+      startedAt: new Date().toISOString(),
+      completedAt: new Date().toISOString(),
+      sessionNumber,
+      mode: 'voice',
+      readinessIndicator: 'nearly_ready',
+      questions: evaluated,
+    };
+
+    const summary = generateCoachingSummary(completedSession, context);
+    setCoachingSummary(summary);
+    await completeSimulatorSession(currentSession.id, summary.readinessIndicator).catch(() => {});
+    setScreen('complete');
+    fetchCoachingReport(summary, context);
   }
 
   // Render based on screen state
@@ -567,6 +648,18 @@ export default function InterviewSimulator() {
         />
       )}
 
+      {screen === 'evaluating' && (
+        <div style={{ ...styles.page, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ textAlign: 'center' as const }}>
+            <div style={{ width: '36px', height: '36px', border: '2px solid #C9A84C', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.9s linear infinite', margin: '0 auto 20px' }} />
+            <p style={{ color: 'rgba(245,240,232,0.6)', fontFamily: "'DM Sans', sans-serif", fontSize: '14px', letterSpacing: '0.06em' }}>
+              Analysing your session…
+            </p>
+          </div>
+          <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+        </div>
+      )}
+
       {screen === 'active' && mode === 'voice' && context && currentSession && user && (
         <ConversationalSession
           context={context}
@@ -574,11 +667,8 @@ export default function InterviewSimulator() {
           questions={questions}
           userId={user.id}
           applicationId={application!.id}
-          onComplete={(summary, sessionNumber) => {
-            setCoachingSummary(summary);
-            setCurrentSession((prev: any) => prev ? { ...prev, sessionNumber } : prev);
-            setScreen('complete');
-            if (context) fetchCoachingReport(summary, context);
+          onComplete={(rawAnswers, sessionNumber) => {
+            evaluateAndComplete(rawAnswers, sessionNumber);
           }}
           onExit={() => {
             if (timerRef.current) clearInterval(timerRef.current);
