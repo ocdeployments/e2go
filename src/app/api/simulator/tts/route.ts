@@ -17,7 +17,7 @@ async function callGroqTTS(text: string): Promise<string[]> {
     body: JSON.stringify({
       model: 'playai-tts',
       input: text,
-      voice: 'Fritz-PlayAI',
+      voice: 'Mason-PlayAI',
     }),
   });
 
