@@ -54,18 +54,9 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  // Rate limit AI API route: 50 calls per user per day
-  if ((pathname.startsWith('/api/generate') && !pathname.includes('/progress')) || pathname.startsWith('/api/analysis')) {
-    const userId = req.headers.get('x-user-id') || ip;
-    const key = `ai:${userId}`;
-    const allowed = checkRateLimit(key, 50, 24 * 60 * 60 * 1000);
-    if (!allowed) {
-      return NextResponse.json(
-        { error: 'Too many attempts. Please wait a few minutes and try again.' },
-        { status: 429 }
-      );
-    }
-  }
+  // Note: /api/generate and /api/analysis rate limiting is enforced inside each route
+  // using Upstash Redis keyed on the verified session user.id — not here.
+  // A header-based limit here was bypassable by spoofing x-user-id.
 
   let supabaseResponse = NextResponse.next({
     request: req,
