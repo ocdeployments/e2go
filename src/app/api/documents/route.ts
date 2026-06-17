@@ -4,6 +4,8 @@ import { createServiceClient } from '@/lib/supabase-service';
 import {
   validateFileBatch,
   getFileTypeFromExtension,
+  validateMagicBytes,
+  sanitizeFilename,
 } from '@/lib/document-validation';
 import {
   type ApplicationDocument,
@@ -114,12 +116,20 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
-      const timestamp = Date.now();
-      const storagePath = `${user.id}/${applicationId}/${timestamp}_${file.name}`;
-
-      // Upload to Supabase Storage
+      // Read buffer before building the storage path so we can validate content
       const arrayBuffer = await file.arrayBuffer();
       const buffer = Buffer.from(arrayBuffer);
+
+      if (!validateMagicBytes(buffer, fileType)) {
+        return NextResponse.json(
+          { error: `${file.name}: file content does not match its declared type. Please upload the original file without renaming.` },
+          { status: 400 }
+        );
+      }
+
+      const safeFilename = sanitizeFilename(file.name);
+      const timestamp = Date.now();
+      const storagePath = `${user.id}/${applicationId}/${timestamp}_${safeFilename}`;
 
       const { error: uploadError } = await serviceClient.storage
         .from('application-documents')
@@ -131,7 +141,7 @@ export async function POST(request: NextRequest) {
       if (uploadError) {
         console.error('Storage upload error:', uploadError);
         return NextResponse.json(
-          { error: `Failed to upload ${file.name}: ${uploadError.message}` },
+          { error: `Failed to upload ${safeFilename}: ${uploadError.message}` },
           { status: 500 }
         );
       }
@@ -142,7 +152,7 @@ export async function POST(request: NextRequest) {
         .insert({
           application_id: applicationId,
           user_id: user.id,
-          original_filename: file.name,
+          original_filename: safeFilename,
           file_type: fileType,
           file_size_bytes: file.size,
           user_selected_document_type: documentTypes[file.name] || 'unknown',
@@ -159,7 +169,7 @@ export async function POST(request: NextRequest) {
           .from('application-documents')
           .remove([storagePath]);
         return NextResponse.json(
-          { error: `Failed to record ${file.name}` },
+          { error: `Failed to record ${safeFilename}` },
           { status: 500 }
         );
       }
