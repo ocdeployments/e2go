@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
+import { getQuestionKnowledge, buildKnowledgeBlock } from '@/lib/interview-knowledge-base';
 import type { SimulatorContext, QuestionCoaching } from '@/types/simulator';
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
@@ -10,11 +11,28 @@ interface WeakAnswer {
   originalAnswer: string;
   rating: 'weak' | 'inconsistent';
   currentFeedback: string;
+  deliveryNotes?: { type: string; detail: string }[];
 }
 
 interface CoachingReportRequest {
   context: SimulatorContext;
   weakAnswers: WeakAnswer[];
+}
+
+function buildInvestmentSourcesBlock(context: SimulatorContext): string {
+  if (!context.investmentSources || context.investmentSources.length === 0) return '';
+  const lines = context.investmentSources.map(
+    (s) => `  - ${s.sourceType}: $${s.amount.toLocaleString()} — ${s.description}`
+  );
+  return `Investment sources on file:\n${lines.join('\n')}`;
+}
+
+function buildFundFlowBlock(context: SimulatorContext): string {
+  if (!context.fundFlowEvents || context.fundFlowEvents.length === 0) return '';
+  const lines = context.fundFlowEvents.map(
+    (e) => `  - ${e.date}: $${e.amount.toLocaleString()} from ${e.fromAccount} → ${e.toAccount} (${e.description})`
+  );
+  return `Fund flow chronology on file:\n${lines.join('\n')}`;
 }
 
 export async function POST(request: NextRequest) {
@@ -45,47 +63,68 @@ export async function POST(request: NextRequest) {
     ? `${context.businessName} (operating as "${context.operatingName}")`
     : context.businessName;
 
-  // Build the Q&A block
-  const qaBlock = weakAnswers.map((a, i) =>
-    `--- Question ${i + 1} [ID: ${a.questionId}] (${a.rating.toUpperCase()}) ---
+  // Build per-question blocks with gold-standard knowledge injected
+  const qaBlock = weakAnswers.map((a, i) => {
+    const knowledge = getQuestionKnowledge(a.questionId);
+    const knowledgeBlock = knowledge ? `\n\nGOLD-STANDARD FRAMEWORK FOR THIS QUESTION TYPE:\n${buildKnowledgeBlock(knowledge)}` : '';
+    const deliveryBlock = (a.deliveryNotes && a.deliveryNotes.length > 0)
+      ? `\nDelivery issues in this answer: ${a.deliveryNotes.map(n => n.detail).join('; ')}`
+      : '';
+
+    return `--- Question ${i + 1} [ID: ${a.questionId}] (${a.rating.toUpperCase()}) ---
 Question: ${a.questionText}
 Applicant answered: "${a.originalAnswer}"
-Initial assessment: ${a.currentFeedback}`
-  ).join('\n\n');
+Initial assessment: ${a.currentFeedback}${deliveryBlock}${knowledgeBlock}`;
+  }).join('\n\n');
 
-  const prompt = `You are an elite E-2 visa preparation coach with 20 years of experience preparing investors for U.S. consulate interviews. You have reviewed thousands of cases and know exactly what officers are looking for.
+  // Case-specific data blocks so model answers use real client facts
+  const sourcesBlock = buildInvestmentSourcesBlock(context);
+  const fundFlowBlock = buildFundFlowBlock(context);
+  const denialFlags = context.denialRiskFlags && context.denialRiskFlags.length > 0
+    ? `Known denial risk flags for this case: ${context.denialRiskFlags.join(', ')}`
+    : '';
 
-Applicant profile:
+  const prompt = `You are a senior E-2 visa immigration consultant with 20 years of experience at the Toronto consulate. You have just watched your client conduct a mock interview and are now preparing their personal coaching report. You have read their entire case file.
+
+APPLICANT CASE PROFILE:
 - Business: ${businessLine} (${context.businessCategory})${context.targetState ? ` in ${context.targetState}` : ''}
-- Investment: $${context.investmentAmount.toLocaleString()}
+- Investment amount: $${context.investmentAmount.toLocaleString()} USD
 - Operational status: ${context.operationalStatus}
 - Year 1 revenue projection: $${context.revenueYear1.toLocaleString()}
-- Employees: ${context.employeeCountCurrent} current, ${context.employeeCountYear1} planned by Year 1
+- Year 3 revenue projection: $${context.revenueYear3.toLocaleString()}
+- Employees: ${context.employeeCountCurrent} current, ${context.employeeCountYear1} projected by Year 1
+- Employee roles planned: ${context.employeeRoles?.join(', ') || 'not specified'}
 - Investor role: ${context.investorRole || 'Active manager/director'}
-- Prior visa denial: ${context.priorVisaDenial ? 'Yes — this is a re-application, officer will be watching for changes' : 'No'}
+- Management activities: ${context.managementActivities?.join('; ') || 'not specified'}
+- Household income need: $${context.householdIncomeNeed.toLocaleString()}
+- Prior visa denial: ${context.priorVisaDenial ? `Yes — ${context.priorDenialDetails || 'details on file'}` : 'No'}
+- Immigrant intent risk level: ${context.immigrantIntentRisk}
+${sourcesBlock ? `\n${sourcesBlock}` : ''}${fundFlowBlock ? `\n${fundFlowBlock}` : ''}${denialFlags ? `\n${denialFlags}` : ''}
 
-The following questions received WEAK or INCONSISTENT ratings during a mock interview. For each one, produce a detailed coaching analysis.
+INTERVIEW PERFORMANCE — QUESTIONS REQUIRING COACHING:
+These questions were rated WEAK or INCONSISTENT. Each includes the gold-standard answer framework for that question type, derived from documented consulate experience and 9 FAM 402.9. Use the client's actual case data above to produce model answers that are specific to their situation — not generic templates.
 
 ${qaBlock}
 
-For EACH question above, return a coaching object in this JSON array. Be specific, expert, and actionable — this is a preparation document the client will study before their real interview.
+YOUR TASK:
+For EACH question above, produce a detailed coaching analysis. This is what the client will study before their real consulate interview. Be direct, specific, and expert. Use the client's actual business details, investment amounts, and sources of funds in the model answer — not placeholders.
 
-Return ONLY a JSON array (no prose, no markdown). Preserve the exact questionId string from each question header — do not invent or shorten it:
+Return ONLY a valid JSON array (no markdown, no prose). Preserve the exact questionId from each [ID: ...] tag:
 [
   {
-    "questionId": "<exact ID string from the [ID: ...] tag above, e.g. UQ-01>",
-    "whatOfficerExpected": "2-3 sentences: what a well-prepared applicant says on this question, and the specific signals an officer is looking for to approve an E-2",
-    "whatWasMissing": "2 sentences: the precise gap between what the applicant said and what the officer needed to hear, and why this creates a risk of denial",
-    "keyPoints": ["3-5 specific bullet points the applicant should make in their revised answer — concrete, factual, tied to their specific business profile"],
-    "modelAnswer": "A 3-4 sentence example of what a strong answer sounds like for THIS specific applicant, incorporating their actual business details. Write it in first-person as if the applicant is speaking. This is a guide to the structure and level of detail expected — not a script to memorize.",
-    "documentReference": "The most relevant document tab or exhibit the applicant should reference or have ready (e.g. 'Tab B - Business Plan, Section 3' or 'Tab D - Investment Evidence, bank wire records') — or null if no specific document applies"
+    "questionId": "<exact ID from the [ID: ...] tag, e.g. UQ-01>",
+    "whatOfficerExpected": "2-3 sentences stating exactly what a well-prepared applicant says for this specific question type, and the specific legal or credibility signal the officer is listening for",
+    "whatWasMissing": "2 sentences identifying the precise gap between what this applicant said and what the officer needed to hear — be specific to their answer, not generic",
+    "keyPoints": ["3-5 specific points this applicant must make in their answer, using their actual case data — amounts, dates, roles, employee counts from their profile above"],
+    "modelAnswer": "3-4 sentences written in first person as if the applicant is speaking. USE THEIR ACTUAL NUMBERS AND FACTS from the case profile — not placeholders. This shows them the structure and level of specificity required. Note at the end: This is the structure — adapt it to your natural voice.",
+    "documentReference": "The specific tab and section they should reference or have ready at the interview window, e.g. 'Tab H — Source of Funds chronology, page 3' — or null if no document applies"
   }
 ]`;
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 90_000);
 
-  console.log(`[coaching-report] Requesting deep coaching for ${weakAnswers.length} weak/inconsistent answers`);
+  console.log(`[coaching-report] Requesting coaching for ${weakAnswers.length} answers with knowledge-base injection`);
 
   try {
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -101,15 +140,15 @@ Return ONLY a JSON array (no prose, no markdown). Preserve the exact questionId 
         messages: [
           {
             role: 'system',
-            content: 'You are an elite E-2 visa preparation coach. Produce specific, expert coaching that tells the client exactly what to say and why. Return only valid JSON arrays — no markdown, no prose.',
+            content: 'You are a senior E-2 visa immigration consultant producing a personalized coaching report. Every coaching item must reference the client\'s actual case data — never use placeholders. Return only valid JSON arrays.',
           },
           {
             role: 'user',
             content: prompt,
           },
         ],
-        temperature: 0.4,
-        max_tokens: 3200,
+        temperature: 0.35,
+        max_tokens: 4000,
         stream: false,
       }),
       signal: controller.signal,

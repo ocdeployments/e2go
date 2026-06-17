@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
+import { getQuestionKnowledge } from '@/lib/interview-knowledge-base';
 import type { SimulatorContext, AnswerEvaluation } from '@/types/simulator';
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
@@ -79,6 +80,15 @@ export async function POST(request: NextRequest) {
     // Non-fatal — proceed without document evidence
   }
 
+  // Inject gold-standard knowledge for this question type
+  const knowledge = getQuestionKnowledge(questionId);
+  const knowledgeSection = knowledge
+    ? `\n\nGOLD-STANDARD CRITERIA FOR THIS QUESTION TYPE ("${knowledge.topic}"):
+Officer is testing: ${knowledge.officerTests}
+A strong answer must cover: ${knowledge.keyPrinciples.map((p, i) => `(${i + 1}) ${p}`).join('; ')}
+Red flags that indicate a weak answer: ${knowledge.redFlags.join('; ')}`
+    : '';
+
   // Build the evaluation prompt
   const businessLine = context.operatingName
     ? `${context.businessName}, operating under the trade/franchise name "${context.operatingName}"`
@@ -98,6 +108,7 @@ Note: If the applicant refers to their business by a trade name, brand name, or 
 The question asked was: "${questionText}"
 
 The applicant's live answer was: "${answer}"
+${knowledgeSection}
 
 Evaluate this answer. Reply with ONLY valid JSON — no prose before or after:
 {"rating":"strong"|"weak"|"inconsistent","feedback":"3 sentences: what an officer expects on this question, whether this answer meets that bar, and what specific gap or risk you identified","specificSuggestion":"If weak or inconsistent: 2 sentences telling the applicant exactly what to say differently and how to frame it correctly for an E-2 approval. If strong: null","documentReference":"Name of the most relevant tab in the application package (e.g. Tab B - Business Plan, Tab D - Investment Evidence) or null"}`;
