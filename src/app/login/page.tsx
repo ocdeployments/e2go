@@ -20,14 +20,25 @@ function LoginForm() {
     setStatus('loading');
     setErrorMessage("");
 
+    // Safety net: if anything in the auth flow hangs (e.g. GoTrueClient lock held
+    // by a stale token-refresh from a prior navigation), surface a useful error.
+    let timedOut = false;
+    const outerTimer = setTimeout(() => {
+      timedOut = true;
+      setStatus('error');
+      setErrorMessage("Connection timed out — please refresh the page and try again");
+    }, 20000);
+
     try {
       const supabase = createBrowserSupabaseClient();
 
+      // Clear any stale GoTrueClient state (expired session / stuck lock from prior navigation)
+      await supabase.auth.signOut({ scope: 'local' });
+      if (timedOut) return;
+
       console.log("[login] 1/7 calling signInWithPassword");
-      const { data: signInData, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      const { data: signInData, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (timedOut) return;
       console.log("[login] 2/7 signInWithPassword returned", { hasError: !!error, hasUser: !!signInData?.user });
 
       if (error) {
@@ -148,9 +159,13 @@ function LoginForm() {
         window.location.href = next ?? '/dashboard';
       }
     } catch (err) {
-      console.error("[login] unexpected error:", err);
-      setStatus('error');
-      setErrorMessage("An unexpected error occurred");
+      if (!timedOut) {
+        console.error("[login] unexpected error:", err);
+        setStatus('error');
+        setErrorMessage("An unexpected error occurred");
+      }
+    } finally {
+      clearTimeout(outerTimer);
     }
   };
 
