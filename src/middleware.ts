@@ -1,56 +1,85 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { Ratelimit } from '@upstash/ratelimit';
+import { Redis } from '@upstash/redis';
 
-// Simple in-memory rate limiter
-const rateLimits = new Map<string, { count: number; resetAt: number }>();
+// ---------------------------------------------------------------------------
+// Rate limiting — Upstash Redis in production, in-memory fallback for dev
+// ---------------------------------------------------------------------------
+const redis = process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
+  ? new Redis({
+      url: process.env.UPSTASH_REDIS_REST_URL,
+      token: process.env.UPSTASH_REDIS_REST_TOKEN,
+    })
+  : null;
 
-function checkRateLimit(key: string, limit: number, windowMs: number): boolean {
+const loginLimiter = redis
+  ? new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(5, '15 m'), prefix: 'rl:login' })
+  : null;
+
+const quizLimiter = redis
+  ? new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(3, '60 m'), prefix: 'rl:quiz' })
+  : null;
+
+// In-memory fallback (single-instance dev only)
+const devLimits = new Map<string, { count: number; resetAt: number }>();
+
+function devCheckRateLimit(key: string, limit: number, windowMs: number): boolean {
   const now = Date.now();
-  const record = rateLimits.get(key);
-
+  const record = devLimits.get(key);
   if (!record || now > record.resetAt) {
-    // First request or window expired
-    rateLimits.set(key, { count: 1, resetAt: now + windowMs });
+    devLimits.set(key, { count: 1, resetAt: now + windowMs });
     return true;
   }
-
-  if (record.count >= limit) {
-    // Over limit
-    return false;
-  }
-
-  // Within limit
+  if (record.count >= limit) return false;
   record.count += 1;
   return true;
 }
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
-  const ip = req.headers.get('x-forwarded-for') || 'unknown-ip';
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() || 'unknown-ip';
 
-  // Rate limit login route: 5 attempts per IP per 15 minutes
-  // Disabled in development to avoid blocking during testing
+  // Rate limit login route: 5 attempts per IP per 15 minutes (production only)
   if ((pathname === '/login' || pathname === '/api/auth/v1/token') && process.env.NODE_ENV === 'production') {
-    const key = `login:${ip}`;
-    const allowed = checkRateLimit(key, 5, 15 * 60 * 1000);
-    if (!allowed) {
-      return NextResponse.json(
-        { error: 'Too many attempts. Please wait a few minutes and try again.' },
-        { status: 429 }
-      );
+    if (loginLimiter) {
+      const { success } = await loginLimiter.limit(ip);
+      if (!success) {
+        return NextResponse.json(
+          { error: 'Too many attempts. Please wait a few minutes and try again.' },
+          { status: 429 }
+        );
+      }
+    } else {
+      const allowed = devCheckRateLimit(`login:${ip}`, 5, 15 * 60 * 1000);
+      if (!allowed) {
+        return NextResponse.json(
+          { error: 'Too many attempts. Please wait a few minutes and try again.' },
+          { status: 429 }
+        );
+      }
     }
   }
 
   // Rate limit quiz route completions: 3 completions per IP per hour
   if (pathname === '/api/quiz/submit' || pathname === '/api/email/results') {
-    const key = `quiz:${ip}`;
-    const allowed = checkRateLimit(key, 3, 60 * 60 * 1000);
-    if (!allowed) {
-      return NextResponse.json(
-        { error: 'Too many attempts. Please wait a few minutes and try again.' },
-        { status: 429 }
-      );
+    if (quizLimiter) {
+      const { success } = await quizLimiter.limit(ip);
+      if (!success) {
+        return NextResponse.json(
+          { error: 'Too many attempts. Please wait a few minutes and try again.' },
+          { status: 429 }
+        );
+      }
+    } else {
+      const allowed = devCheckRateLimit(`quiz:${ip}`, 3, 60 * 60 * 1000);
+      if (!allowed) {
+        return NextResponse.json(
+          { error: 'Too many attempts. Please wait a few minutes and try again.' },
+          { status: 429 }
+        );
+      }
     }
   }
 
