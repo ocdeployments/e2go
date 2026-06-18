@@ -816,22 +816,40 @@ export default function SimulatorQuickStart() {
   }
 
   // ===========================================================================
-  // RENDER — CONFIRM STEP
+  // RENDER — PROFILE STEP (replaces old "confirm" step)
   // ===========================================================================
 
-  if (step === 'confirm' && extractedFields) {
-    const merged = { ...extractedFields, ...confirmEdits };
+  if (step === 'confirm') {
+    // Merge Quick Start form values with document-extracted values.
+    // Quick Start answers always take priority for fields the user explicitly typed.
+    // Extraction adds new values (especially businessName, targetState) not in the form.
+    const profileName = applicantName || extractedFields?.applicantName || '';
+    const profileBusiness = (confirmEdits.businessName !== undefined
+      ? confirmEdits.businessName
+      : extractedFields?.businessName) ?? '';
+    const rawInvestment = investmentAmount || (extractedFields?.investmentAmount != null
+      ? String(Math.round(extractedFields.investmentAmount))
+      : '');
+    const rawJobs = jobsYear1 || (extractedFields?.employeeCountYear1 != null
+      ? String(extractedFields.employeeCountYear1)
+      : '');
+    const profileTargetState = (confirmEdits.targetState !== undefined
+      ? confirmEdits.targetState
+      : extractedFields?.targetState) ?? '';
 
-    const fieldDefs: { key: keyof ExtractedFields; label: string; hint: string; format: (v: ExtractedFields[keyof ExtractedFields]) => string }[] = [
-      { key: 'businessName', label: 'Business name', hint: 'Enter your business name', format: (v) => String(v || '') },
-      { key: 'investmentAmount', label: 'Investment amount (USD)', hint: 'e.g. 150000', format: (v) => v ? `$${Number(v).toLocaleString()}` : '' },
-      { key: 'applicantName', label: 'Applicant name', hint: 'Your full name', format: (v) => String(v || '') },
-      { key: 'targetState', label: 'Target state', hint: 'e.g. Texas, Florida', format: (v) => String(v || '') },
-      { key: 'employeeCountYear1', label: 'Employees (year 1)', hint: 'e.g. 3', format: (v) => v ? String(v) : '' },
-    ];
+    const categoryLabel = BUSINESS_CATEGORIES.find(c => c.value === businessCategory)?.label ?? businessCategory;
+    const typeLabel = BUSINESS_TYPES.find(t => t.value === businessType)?.label ?? businessType;
+    const consulateLabel = TARGET_CONSULATES.find(c => c.value === targetConsulate)?.label ?? targetConsulate;
+    const countryLabel = TREATY_COUNTRIES.find(c => c.value === treatyCountry)?.label ?? treatyCountry;
 
-    const foundCount = fieldDefs.filter(f => merged[f.key] !== null && merged[f.key] !== undefined).length;
-    const missingCount = fieldDefs.length - foundCount;
+    const investmentDisplay = rawInvestment
+      ? `$${Number(rawInvestment.replace(/[^0-9.]/g, '')).toLocaleString()}`
+      : '';
+
+    const docsExtracted = [
+      extractedFields?.businessName,
+      extractedFields?.targetState,
+    ].filter(Boolean).length;
 
     return (
       <div style={{
@@ -839,81 +857,92 @@ export default function SimulatorQuickStart() {
         background: '#0a0a0a',
         color: '#f5f0e8',
         fontFamily: "'DM Sans', sans-serif",
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '24px',
+        padding: '48px 24px 80px',
       }}>
-        <div style={{ maxWidth: '560px', width: '100%' }}>
-          <div style={{ marginBottom: '32px' }}>
+        <div style={{ maxWidth: '600px', margin: '0 auto' }}>
+
+          {/* Header */}
+          <div style={{ marginBottom: '40px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
               <span style={{ color: '#C9A84C', fontSize: '12px' }}>&#9670;</span>
-              <span style={{ color: '#C9A84C', fontSize: '11px', letterSpacing: '0.1em', textTransform: 'uppercase' as const, fontWeight: 500 }}>CONFIRM YOUR DETAILS</span>
+              <span style={{ color: '#C9A84C', fontSize: '11px', letterSpacing: '0.1em', textTransform: 'uppercase' as const, fontWeight: 500 }}>
+                YOUR PROFILE
+              </span>
             </div>
-            <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '32px', fontWeight: 300, color: '#f5f0e8', lineHeight: 1.1, marginBottom: '10px' }}>
-              Here&apos;s what we found
+            <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '36px', fontWeight: 300, color: '#f5f0e8', lineHeight: 1.1, marginBottom: '12px' }}>
+              Let&apos;s build a profile
             </h1>
-            <p style={{ fontSize: '14px', color: 'rgba(245,240,232,0.5)', lineHeight: 1.6 }}>
-              We extracted {foundCount} field{foundCount !== 1 ? 's' : ''} from your documents.
-              {missingCount > 0 && ` Fill in the ${missingCount} missing field${missingCount !== 1 ? 's' : ''} below.`}
+            <p style={{ fontSize: '14px', fontWeight: 300, color: 'rgba(245,240,232,0.5)', lineHeight: 1.7 }}>
+              {docsExtracted > 0
+                ? `Documents processed — ${docsExtracted} additional field${docsExtracted > 1 ? 's' : ''} found. Review your profile below.`
+                : 'Your profile is ready. Review the details below before moving to interview preparation.'}
             </p>
           </div>
 
-          <div style={{ padding: '28px 32px', background: 'rgba(201,168,76,0.02)', border: '1px solid rgba(201,168,76,0.12)', marginBottom: '20px' }}>
-            {fieldDefs.map(({ key, label, hint, format }) => {
-              const value = merged[key];
-              const isMissing = value === null || value === undefined;
-              const editValue = confirmEdits[key];
+          {/* Section: About You */}
+          <ProfileSection label="About You">
+            <ProfileRow label="Full Name" value={profileName} />
+            <ProfileRow label="Treaty Country" value={countryLabel} />
+          </ProfileSection>
 
-              return (
-                <div key={key} style={{ marginBottom: '20px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-                    <label style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.08em', color: isMissing ? 'rgba(251,146,60,0.8)' : 'rgba(201,168,76,0.7)' }}>
-                      {label.toUpperCase()}
-                    </label>
-                    {!isMissing && <span style={{ fontSize: '10px', color: 'rgba(34,197,94,0.6)', letterSpacing: '0.05em' }}>EXTRACTED</span>}
-                    {isMissing && <span style={{ fontSize: '10px', color: 'rgba(251,146,60,0.5)', letterSpacing: '0.05em' }}>NOT FOUND</span>}
-                  </div>
-                  {isMissing ? (
-                    <input
-                      type={key === 'investmentAmount' || key === 'employeeCountYear1' ? 'number' : 'text'}
-                      placeholder={hint}
-                      value={editValue !== undefined ? String(editValue ?? '') : ''}
-                      onChange={(e) => {
-                        const raw = e.target.value;
-                        setConfirmEdits(prev => ({
-                          ...prev,
-                          [key]: key === 'investmentAmount' || key === 'employeeCountYear1'
-                            ? (raw === '' ? undefined : Number(raw))
-                            : raw || undefined,
-                        }));
-                      }}
-                      style={{ width: '100%', padding: '10px 14px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(251,146,60,0.3)', color: '#f5f0e8', fontSize: '14px', fontFamily: "'DM Sans', sans-serif" }}
-                    />
-                  ) : (
-                    <div style={{ fontSize: '15px', color: '#f5f0e8', padding: '10px 0', borderBottom: '1px solid rgba(245,240,232,0.06)' }}>
-                      {format(value)}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+          {/* Section: Your Business */}
+          <ProfileSection label="Your Business">
+            <ProfileRow
+              label="Business Name"
+              value={profileBusiness}
+              placeholder="Enter your business name"
+              editable={!extractedFields?.businessName && !confirmEdits.businessName}
+              onChange={(v) => setConfirmEdits(prev => ({ ...prev, businessName: v || null }))}
+            />
+            <ProfileRow label="Category" value={categoryLabel} />
+            <ProfileRow label="Business Type" value={typeLabel} />
+          </ProfileSection>
 
+          {/* Section: Investment & Employment */}
+          <ProfileSection label="Investment &amp; Employment">
+            <ProfileRow label="Total Investment" value={investmentDisplay} />
+            <ProfileRow label="Jobs to Create — Year 1" value={rawJobs} />
+          </ProfileSection>
+
+          {/* Section: Interview Location */}
+          <ProfileSection label="Interview Location">
+            <ProfileRow label="Target Consulate" value={consulateLabel} />
+            <ProfileRow
+              label="Target State"
+              value={profileTargetState}
+              placeholder="e.g. Texas"
+              editable={!extractedFields?.targetState && !confirmEdits.targetState}
+              onChange={(v) => setConfirmEdits(prev => ({ ...prev, targetState: v || null }))}
+            />
+          </ProfileSection>
+
+          {/* CTA */}
           <button
             onClick={handleConfirm}
             disabled={confirming}
-            style={{ width: '100%', padding: '14px 24px', background: confirming ? 'rgba(201,168,76,0.3)' : '#C9A84C', color: '#0a0a0a', fontSize: '15px', fontWeight: 500, fontFamily: "'DM Sans', sans-serif", cursor: confirming ? 'not-allowed' : 'pointer', border: 'none', marginBottom: '16px' }}
+            style={{
+              width: '100%',
+              padding: '16px 24px',
+              background: confirming ? 'rgba(201,168,76,0.3)' : '#C9A84C',
+              color: '#0a0a0a',
+              fontSize: '15px',
+              fontWeight: 500,
+              fontFamily: "'DM Sans', sans-serif",
+              cursor: confirming ? 'not-allowed' : 'pointer',
+              border: 'none',
+              marginTop: '32px',
+              letterSpacing: '0.02em',
+            }}
           >
-            {confirming ? 'Saving…' : 'Confirm & view preparation guide →'}
+            {confirming ? 'Preparing your case…' : 'Continue to Interview Preparation →'}
           </button>
 
-          <div style={{ textAlign: 'center' as const }}>
+          <div style={{ marginTop: '16px', textAlign: 'center' as const }}>
             <button
               onClick={() => confirmedAppId && router.push(`/simulator/case-file?applicationId=${confirmedAppId}`)}
-              style={{ background: 'none', border: 'none', color: 'rgba(245,240,232,0.4)', fontSize: '13px', cursor: 'pointer', textDecoration: 'underline' }}
+              style={{ background: 'none', border: 'none', color: 'rgba(245,240,232,0.3)', fontSize: '12px', cursor: 'pointer', textDecoration: 'underline' }}
             >
-              Skip and go to prepare
+              Skip to preparation guide
             </button>
           </div>
         </div>
@@ -1062,6 +1091,103 @@ function FileRow({ file, onUpdateType, onRemove }: { file: { id: string; name: s
       >
         ×
       </button>
+    </div>
+  );
+}
+
+// =============================================================================
+// PROFILE SUB-COMPONENTS (used in the Your Profile / confirm step)
+// =============================================================================
+
+function ProfileSection({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div style={{ marginBottom: '6px' }}>
+      <div style={{
+        padding: '9px 20px',
+        background: 'rgba(201,168,76,0.06)',
+        borderTop: '1px solid rgba(201,168,76,0.15)',
+        borderLeft: '1px solid rgba(201,168,76,0.15)',
+        borderRight: '1px solid rgba(201,168,76,0.15)',
+        borderBottom: 'none',
+      }}>
+        <span style={{
+          fontSize: '10px',
+          fontWeight: 600,
+          letterSpacing: '0.14em',
+          textTransform: 'uppercase' as const,
+          color: 'rgba(201,168,76,0.75)',
+          fontFamily: "'DM Sans', sans-serif",
+        }}>
+          {label}
+        </span>
+      </div>
+      <div style={{
+        border: '1px solid rgba(201,168,76,0.12)',
+        borderTop: 'none',
+      }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+interface ProfileRowProps {
+  label: string;
+  value: string;
+  placeholder?: string;
+  editable?: boolean;
+  onChange?: (v: string) => void;
+}
+
+function ProfileRow({ label, value, placeholder, editable = false, onChange }: ProfileRowProps) {
+  const hasValue = value && value.length > 0;
+  return (
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      padding: '13px 20px',
+      borderBottom: '1px solid rgba(245,240,232,0.04)',
+      gap: '20px',
+      minHeight: '48px',
+    }}>
+      <span style={{
+        fontSize: '11px',
+        fontWeight: 500,
+        letterSpacing: '0.05em',
+        color: 'rgba(245,240,232,0.35)',
+        textTransform: 'uppercase' as const,
+        width: '160px',
+        flexShrink: 0,
+        fontFamily: "'DM Sans', sans-serif",
+      }}>
+        {label}
+      </span>
+      {editable && !hasValue ? (
+        <input
+          type="text"
+          placeholder={placeholder ?? '—'}
+          onChange={(e) => onChange?.(e.target.value)}
+          style={{
+            flex: 1,
+            background: 'transparent',
+            border: 'none',
+            borderBottom: '1px solid rgba(201,168,76,0.2)',
+            color: '#f5f0e8',
+            fontSize: '14px',
+            fontFamily: "'DM Sans', sans-serif",
+            padding: '2px 0',
+            outline: 'none',
+          }}
+        />
+      ) : (
+        <span style={{
+          fontSize: '14px',
+          color: hasValue ? '#f5f0e8' : 'rgba(245,240,232,0.18)',
+          fontFamily: "'DM Sans', sans-serif",
+        }}>
+          {hasValue ? value : '—'}
+        </span>
+      )}
     </div>
   );
 }
