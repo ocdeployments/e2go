@@ -2,20 +2,80 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { createBrowserSupabaseClient } from '@/lib/supabase';
 
-const SIMULATOR_SECTIONS = [
-  { label: 'Quick Start', href: '/simulator/quick-start', exact: false },
-  { label: 'Prepare', href: '/simulator/case-file', exact: false },
-  { label: 'Practice', href: '/simulator', exact: true },
-  { label: 'Interview Day', href: '/simulator/interview-day', exact: false },
-  { label: 'My Outcome', href: '/simulator/outcome', exact: false },
-];
+const supabase = createBrowserSupabaseClient();
+
+interface NavSection {
+  label: string;
+  basePath: string;
+  href: string;
+  exact: boolean;
+}
 
 export default function SimulatorNav() {
   const pathname = usePathname();
+  const [applicationId, setApplicationId] = useState<string | null>(null);
 
-  const isActive = (href: string, exact: boolean) =>
-    exact ? pathname === href : pathname.startsWith(href);
+  useEffect(() => {
+    async function loadApp() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: apps } = await supabase
+        .from('applications')
+        .select('id, source')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (!apps || apps.length === 0) return;
+
+      // Prefer simulator_standalone; fall back to any application
+      const simApp = apps.find((a: { id: string; source: string | null }) => a.source === 'simulator_standalone') ?? apps[0];
+      setApplicationId(simApp.id);
+    }
+    loadApp();
+  }, []);
+
+  const sections: NavSection[] = [
+    {
+      label: 'Quick Start',
+      basePath: '/simulator/quick-start',
+      href: '/simulator/quick-start',
+      exact: false,
+    },
+    {
+      label: 'Prepare',
+      basePath: '/simulator/case-file',
+      href: applicationId
+        ? `/simulator/case-file?applicationId=${applicationId}`
+        : '/simulator/case-file',
+      exact: false,
+    },
+    {
+      label: 'Practice',
+      basePath: '/simulator',
+      href: '/simulator',
+      exact: true,
+    },
+    {
+      label: 'Interview Day',
+      basePath: '/simulator/interview-day',
+      href: '/simulator/interview-day',
+      exact: false,
+    },
+    {
+      label: 'My Outcome',
+      basePath: '/simulator/outcome',
+      href: '/simulator/outcome',
+      exact: false,
+    },
+  ];
+
+  const isActive = (basePath: string, exact: boolean) =>
+    exact ? pathname === basePath : pathname.startsWith(basePath);
 
   return (
     <div
@@ -39,7 +99,6 @@ export default function SimulatorNav() {
           scrollbarWidth: 'none',
         }}
       >
-        {/* Section label */}
         <span
           style={{
             fontSize: '9px',
@@ -54,11 +113,11 @@ export default function SimulatorNav() {
           Simulator
         </span>
 
-        {SIMULATOR_SECTIONS.map((section) => {
-          const active = isActive(section.href, section.exact);
+        {sections.map((section) => {
+          const active = isActive(section.basePath, section.exact);
           return (
             <Link
-              key={section.href}
+              key={section.basePath}
               href={section.href}
               style={{
                 display: 'inline-flex',
