@@ -125,6 +125,10 @@ export default function SimulatorQuickStart() {
   const [confirmEdits, setConfirmEdits] = useState<Partial<ExtractedFields>>({});
   const [confirming, setConfirming] = useState(false);
 
+  // Returning user state — set when an existing application is found on load
+  const [existingApplicationId, setExistingApplicationId] = useState<string | null>(null);
+  const [isReturningUser, setIsReturningUser] = useState(false);
+
   useEffect(() => {
     async function checkAuth() {
       const { data: { user: authUser } } = await supabase.auth.getUser();
@@ -132,6 +136,44 @@ export default function SimulatorQuickStart() {
         router.push('/login?next=/simulator/quick-start');
         return;
       }
+
+      // Check for an existing simulator application to pre-populate fields
+      const { data: apps } = await supabase
+        .from('applications')
+        .select('id, source, principal_name, business_category')
+        .eq('user_id', authUser.id)
+        .eq('source', 'simulator_standalone')
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (apps && apps.length > 0) {
+        const simApp = apps[0];
+        setExistingApplicationId(simApp.id);
+        setIsReturningUser(true);
+
+        if (simApp.principal_name) setApplicantName(simApp.principal_name);
+        if (simApp.business_category) setBusinessCategory(simApp.business_category);
+
+        const { data: answers } = await supabase
+          .from('answers')
+          .select('question_key, answer_value')
+          .eq('application_id', simApp.id)
+          .in('question_key', ['Q0-10', 'Q0-TC', 'Q0-BT', 'QF-02', 'QI-03', 'Q0-CO']);
+
+        if (answers) {
+          const aMap: Record<string, string> = {};
+          answers.forEach((a: { question_key: string; answer_value: string }) => {
+            if (a.answer_value) aMap[a.question_key] = a.answer_value;
+          });
+          if (aMap['Q0-10']) setBusinessCategory(aMap['Q0-10']);
+          if (aMap['Q0-TC']) setTreatyCountry(aMap['Q0-TC']);
+          if (aMap['Q0-BT']) setBusinessType(aMap['Q0-BT']);
+          if (aMap['QF-02']) setInvestmentAmount(aMap['QF-02']);
+          if (aMap['QI-03']) setJobsYear1(aMap['QI-03']);
+          if (aMap['Q0-CO']) setTargetConsulate(aMap['Q0-CO']);
+        }
+      }
+
       setAuthReady(true);
     }
     checkAuth();
@@ -222,7 +264,7 @@ export default function SimulatorQuickStart() {
     businessCategory.length > 0 &&
     businessType.length > 0 &&
     investmentAmount.trim().length > 0 &&
-    validFiles.length > 0 &&
+    (validFiles.length > 0 || isReturningUser) &&
     !uploading;
 
   // ===========================================================================
@@ -236,7 +278,7 @@ export default function SimulatorQuickStart() {
     setUploadError(null);
 
     try {
-      // 1. Create application with all intake fields
+      // 1. Create or update application with all intake fields
       const appRes = await fetch('/api/simulator/quick-start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -248,6 +290,7 @@ export default function SimulatorQuickStart() {
           investmentAmount: investmentAmount ? parseFloat(investmentAmount.replace(/[^0-9.]/g, '')) : undefined,
           jobsYear1: jobsYear1 ? parseInt(jobsYear1) : undefined,
           targetConsulate,
+          existingApplicationId: existingApplicationId || undefined,
         }),
       });
 
@@ -257,6 +300,12 @@ export default function SimulatorQuickStart() {
       }
 
       const { applicationId: appId } = await appRes.json();
+
+      // Returning users with no new documents skip directly to Prepare
+      if (isReturningUser && validFiles.length === 0) {
+        router.push(`/simulator/case-file?applicationId=${appId}`);
+        return;
+      }
 
       // 2. Upload documents
       const formData = new FormData();
@@ -496,6 +545,25 @@ export default function SimulatorQuickStart() {
             </p>
           </div>
 
+          {isReturningUser && existingApplicationId && (
+            <div style={{
+              padding: '14px 18px',
+              background: 'rgba(201,168,76,0.05)',
+              border: '1px solid rgba(201,168,76,0.2)',
+              marginBottom: '28px',
+            }}>
+              <p style={{ fontSize: '13px', color: 'rgba(201,168,76,0.85)', margin: '0 0 8px 0', lineHeight: 1.5 }}>
+                We found your existing case — fields are pre-filled from your last session. Update anything below or add more documents.
+              </p>
+              <a
+                href={`/simulator/case-file?applicationId=${existingApplicationId}`}
+                style={{ fontSize: '12px', color: '#C9A84C', textDecoration: 'underline' }}
+              >
+                Skip straight to your Prepare guide →
+              </a>
+            </div>
+          )}
+
           {/* ── Section 1: About You ──────────────────────────────────────── */}
           <SectionHeading label="About you" />
           <FormCard>
@@ -640,7 +708,13 @@ export default function SimulatorQuickStart() {
               letterSpacing: '0.02em',
             }}
           >
-            {uploading ? 'Creating your case…' : 'Upload & analyse documents →'}
+            {uploading
+              ? (isReturningUser ? 'Updating your case…' : 'Creating your case…')
+              : isReturningUser && validFiles.length === 0
+                ? 'Update & go to Prepare →'
+                : isReturningUser
+                  ? 'Update & process documents →'
+                  : 'Upload & analyse documents →'}
           </button>
 
           <div style={{ marginTop: '16px', textAlign: 'center' as const }}>
