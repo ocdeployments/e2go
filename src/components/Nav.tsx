@@ -181,7 +181,7 @@ export default function Nav() {
             </>
           ) : (
             <>
-              {!isSimulatorOnly && (
+              {!isSimulatorOnly && !pathname.startsWith('/simulator') && (
                 <Link href="/dashboard" className="text-sm transition-colors" style={{ color: isActive("/dashboard") ? "#C9A84C" : "rgba(245,240,232,0.75)" }}
                   onMouseEnter={e => e.currentTarget.style.color = "#f5f0e8"}
                   onMouseLeave={e => e.currentTarget.style.color = isActive("/dashboard") ? "#C9A84C" : "rgba(245,240,232,0.75)"}
@@ -189,7 +189,7 @@ export default function Nav() {
                   Dashboard
                 </Link>
               )}
-              {!isSimulatorOnly && (
+              {!isSimulatorOnly && !pathname.startsWith('/simulator') && (
                 <Link href="/apply" className="text-sm transition-colors" style={{ color: pathname.startsWith("/apply") ? "#C9A84C" : "rgba(245,240,232,0.75)" }}
                   onMouseEnter={e => e.currentTarget.style.color = "#f5f0e8"}
                   onMouseLeave={e => e.currentTarget.style.color = pathname.startsWith("/apply") ? "#C9A84C" : "rgba(245,240,232,0.75)"}
@@ -197,7 +197,7 @@ export default function Nav() {
                   My Application
                 </Link>
               )}
-              {!isSimulatorOnly && application && (
+              {!isSimulatorOnly && !pathname.startsWith('/simulator') && application && (
                 <Link href={`/documents/${application.id}`} className="text-sm transition-colors" style={{ color: pathname.startsWith("/documents") ? "#C9A84C" : "rgba(245,240,232,0.75)" }}
                   onMouseEnter={e => e.currentTarget.style.color = "#f5f0e8"}
                   onMouseLeave={e => e.currentTarget.style.color = pathname.startsWith("/documents") ? "#C9A84C" : "rgba(245,240,232,0.75)"}
@@ -299,17 +299,17 @@ export default function Nav() {
             </div>
           ) : (
             <div className="flex flex-col gap-4">
-              {!isSimulatorOnly && (
+              {!isSimulatorOnly && !pathname.startsWith('/simulator') && (
                 <Link href="/dashboard" className="text-sm py-2" style={{ color: pathname === "/dashboard" ? "#C9A84C" : "rgba(245,240,232,0.75)" }} onClick={() => setMobileMenuOpen(false)}>
                   Dashboard
                 </Link>
               )}
-              {!isSimulatorOnly && (
+              {!isSimulatorOnly && !pathname.startsWith('/simulator') && (
                 <Link href="/apply" className="text-sm py-2" style={{ color: pathname.startsWith("/apply") ? "#C9A84C" : "rgba(245,240,232,0.75)" }} onClick={() => setMobileMenuOpen(false)}>
                   My Application
                 </Link>
               )}
-              {!isSimulatorOnly && application && (
+              {!isSimulatorOnly && !pathname.startsWith('/simulator') && application && (
                 <Link href={`/documents/${application.id}`} className="text-sm py-2" style={{ color: pathname.startsWith("/documents") ? "#C9A84C" : "rgba(245,240,232,0.75)" }} onClick={() => setMobileMenuOpen(false)}>
                   Documents
                 </Link>
