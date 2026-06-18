@@ -1,6 +1,6 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 17, 2026 — Session 33 complete (Issue audit + FAQ seed scripts fixed + BUILD_TRACKER accurate state)
+**Last Updated:** June 17, 2026 — Session 35 complete (Simulator UX overhaul: pre-population, nav fix, Profile page, InterviewBrief unblocked)
 **App Name:** E2go.app
 **Stack:** Next.js 14 · TypeScript · Tailwind CSS · Supabase · Claude API
 **Dev URL:** https://e2go-git-dev-ocdeployments-projects.vercel.app
@@ -3084,3 +3084,151 @@ Clean — zero errors. 4 commits on dev branch.
 
 ### What's Next
 No Sprint 6 items defined yet. Awaiting user direction.
+
+---
+
+## SESSION 33 — June 17, 2026
+### Simulator UX Overhaul
+
+**Focus:** Navigation reorder, Quick Start expansion, Prepare section AI brief, session hygiene
+
+### Commits
+| Commit | File | Description |
+|---|---|---|
+| (nav-order) | `SimulatorNav.tsx` | Reorder nav: Quick Start moved to position 1 |
+| (nav-visibility) | Simulator nav | Fix: authenticated users without active application no longer see broken nav items |
+| (quickstart-expand) | `quick-start/page.tsx` | Expand Quick Start to 7 fields in 4 sections (business info, investment, location, status) |
+| (prep-task-type) | `src/lib/llm-client.ts` | Add 'prep' to TaskType union; OpenRouter models for prep: xiaomi/mimo-v2.5 + mimo-v2.5-pro |
+| (prep-route-v1) | `api/simulator/interview-prep/route.ts` | Initial Prepare section route with LLM-generated interview brief |
+| (interview-brief-v1) | `src/components/simulator/InterviewBrief.tsx` | Initial InterviewBrief component rendering applicationSummary, highlights, topics, tips |
+
+### Features Delivered
+- SimulatorNav order: Quick Start → Practice → Case Gaps → Outcomes → Prepare
+- Nav visibility: simulator-only users see clean nav without broken states
+- Quick Start form: Business Name, Category, Investment Amount, Source of Funds, Employment Goal, Target State, Operational Status
+- Prepare tab: AI-generated interview brief pulling from application answers
+
+### Build
+Clean — zero errors. 6 commits on dev branch.
+
+---
+
+## SESSION 34 — June 17, 2026
+### Engine-Powered Interview Brief
+
+**Focus:** Upgrade Prepare section to use full gap-analysis-engine.ts intelligence — 15 denial factors, 6 evidence categories, deterministic scoring + LLM narrative
+
+### Problem
+Prior Prepare section sent 6 raw answer values to LLM → generic advice by business category. No engine intelligence. No denial risk analysis. No scoring.
+
+### Solution
+Full `scoreCase()` integration. Deterministic engine provides all risk data; LLM generates narrative calibrated to actual findings.
+
+### Commits
+| Commit | File | Description |
+|---|---|---|
+| d58bd9a | `src/app/api/simulator/interview-prep/route.ts` | Complete rewrite: full engine integration with scoreCase(), 15 denial factors, 6 categories, gap actions, knowledge base, LLM narrative |
+| d94bc19 | `src/components/simulator/InterviewBrief.tsx` | Complete rebuild: score gauge SVG, CategoryCard, DenialRiskCard (collapsible), ActionItem, 8 rendering sections |
+
+### Architecture
+- `scoreCase(application, answers, documents, caseBrief, simulatorData)` → `GapAnalysisResult`
+- `buildGapActions(result)` → prioritized actions (critical/important/recommended, max 12)
+- `buildKnowledgeSummary(isFranchise, isTorontoConsulate, highRiskCategoryIds)` → knowledge base coaching
+- LLM receives: overallScore, highRiskCount, 15 D-codes with findings, 6 category scores with gaps, gold-standard coaching reference
+- LLM generates: applicationSummary, highlights, leadWithThese, interviewTopics (with officerTests), businessTips, pressurePoints
+- Fallback: `buildFallback()` uses deterministic engine data alone if LLM fails
+- Cache key bumped: `ib-` → `ib2-` to force refresh of cached data
+- Model: xiaomi/mimo-v2.5 (OpenRouter), temperature 0.3, max_tokens 1800
+
+### New Interfaces (exported from route.ts)
+- `CategoryScore` — id, name, score, weight, priority, gaps[], actions[], evidence[]
+- `DenialRisk` — code, name, risk, finding, mitigation
+- `GapAction` — gap, action, urgency, category
+- `InterviewBriefData` — full report shape with all sections
+
+### UI Sections (InterviewBrief.tsx)
+1. Score header with readiness badge
+2. Score row: SVG arc gauge + readiness label + applicationSummary
+3. Strengths + lead-with highlights
+4. Category grid (2-col, 6 cards with priority color coding)
+5. Denial Risk Assessment (15 D-codes, collapsible, high expanded by default)
+6. Interview Topics (likelihood badges, officerTests coaching)
+7. Priority Action Plan (numbered, critical/important/recommended urgency)
+8. Business Coaching Tips
+
+### Product Positioning
+This is the premium teaser product: simulator-only users get real 15-factor denial risk breakdown as part of their Quick Start → Prepare flow. Full Gap Analysis (Module 2) unlocks deeper document-by-document analysis. Conversion driver for full platform.
+
+### Build
+Clean — zero errors. 2 commits on dev branch.
+
+### Owner Actions Pending
+- [ ] Rotate OpenAI API key at platform.openai.com
+- [ ] Refund $197 test Stripe charge in Stripe dashboard
+- [ ] Apply migration `supabase/migrations/20260617100000_simulator_outcomes.sql` via Supabase SQL Editor
+- [ ] Apply pgvector migration SQL in Supabase SQL Editor (for FAQ)
+- [ ] Run FAQ seed scripts after applying pgvector migration
+
+### What's Next
+Sprint 6 not yet defined. Awaiting user direction.
+
+---
+
+## SESSION 35 — June 17, 2026
+### Simulator UX Overhaul — Pre-population, Nav Fix, Profile Page, InterviewBrief Unblocked
+
+**Focus:** Fix 6 user-reported bugs in simulator flow: empty Quick Start fields, broken Prepare link, Dashboard/Documents visible inside simulator, typing bug on confirm step, and engine brief never rendering.
+
+### Problems Fixed
+
+1. **Quick Start fields empty for returning users** — form loaded blank even though user had an existing application with all answers saved. Fix: `checkAuth` fetches existing simulator_standalone app and pre-populates all 7 fields; returning user banner added with skip link.
+
+2. **"Missing application reference" on Prepare tab** — SimulatorNav hardcoded `/simulator/case-file` with no applicationId. The Prepare page required `?applicationId=...` as a URL param with no fallback. Fix (two layers): SimulatorNav fetches user's simulator app on mount and injects applicationId into the Prepare href; case-file page auto-resolves from DB if URL param is missing.
+
+3. **Dashboard / Documents visible on simulator pages** — Nav checked `isSimulatorOnly` (based on application source) but users with both a simulator AND a full application still saw both nav items inside the simulator. Fix: added `!pathname.startsWith('/simulator')` to all three links (Dashboard, My Application, Documents) in both desktop and mobile Nav.
+
+4. **Engine-powered InterviewBrief never rendered** — `CaseGapsForm` was a hard mandatory gate (`if (!gapsResolved)`) that blocked rendering. The gaps API was failing for most users, locking the screen at "We could not check your case file for missing details". Fix: removed CaseGapsForm from the flow entirely. InterviewBrief now renders immediately after auth.
+
+5. **Confirm step typing bug** — fields showed a static `<div>` once extraction loaded, making it impossible to edit. Extraction data overwrote Quick Start data. Fix: redesigned confirm step as a proper "Your Profile" page that clearly separates Quick Start data (always available from state) from extraction data (business name + target state added as new rows).
+
+6. **Quick Start API created duplicate applications** — each submit created a new `simulator_standalone` row. Fix: added `existingApplicationId` parameter to route; if provided, verifies ownership and upserts answers instead of inserting.
+
+### Commits
+| Commit | File | Description |
+|---|---|---|
+| 3a8d1e8 | `SimulatorNav.tsx` | Fetch applicationId on mount; inject into Prepare href; separate basePath/href for active detection |
+| c1d7b48 | `simulator/case-file/page.tsx` | Auto-resolve applicationId from DB when not in URL; redirect to Quick Start if none |
+| d9d9d30 | `Nav.tsx` | Hide Dashboard, My Application, Documents on all /simulator paths |
+| 32cdddc | `api/simulator/quick-start/route.ts` | Add existingApplicationId param — update mode vs create mode |
+| bed9acb | `simulator/quick-start/page.tsx` | Pre-populate 7 fields from existing application; returning user banner + skip link |
+| cd429af | `simulator/case-file/page.tsx` | Remove CaseGapsForm gate — InterviewBrief shows immediately |
+| ffdb8e1 | `simulator/quick-start/page.tsx` | Replace broken confirm step with "Your Profile / Let's build a profile" page |
+
+### Your Profile Page (new confirm step)
+- Header: diamond icon + "YOUR PROFILE" / "Let's build a profile" H1
+- 4 sections with gold-tinted headers: About You, Your Business, Investment & Employment, Interview Location
+- `ProfileSection` — gold border card with section label bar
+- `ProfileRow` — 160px label column + value; editable only for fields not yet extracted (business name, target state)
+- Merges Quick Start state + extraction data without duplication or overwrite conflicts
+- CTA: "Continue to Interview Preparation →" → navigates to `/simulator/case-file?applicationId=...`
+
+### TypeScript fixes
+- `apps.find((a: { id: string; source: string | null }) => ...)` — explicit inline type on both case-file and SimulatorNav
+- `Record<string, string>` with `forEach` instead of `new Map()` — resolves `{}` type inference error on answers mapping
+- Removed unused `notFound` state, unused `CaseGapsForm` import, unused `gapsResolved` state
+
+### Build
+Clean — zero errors. 7 commits on dev branch.
+
+### Owner Actions Pending (carry-forward from Session 34)
+- [ ] Rotate OpenAI API key at platform.openai.com
+- [ ] Refund $197 test Stripe charge in Stripe dashboard
+- [ ] Apply migration `supabase/migrations/20260617100000_simulator_outcomes.sql` via Supabase SQL Editor
+- [ ] Apply pgvector migration SQL in Supabase SQL Editor (for FAQ)
+- [ ] Run FAQ seed scripts after applying pgvector migration
+
+### What's Next
+- Verify engine-powered InterviewBrief renders for Anupama's application (visual confirmation needed)
+- Practice tab profile data: user requested better organization of the profile card on `/simulator`
+- Engine brief should also appear on Practice tab after profile data
+- Session 36 scope pending user testing feedback
