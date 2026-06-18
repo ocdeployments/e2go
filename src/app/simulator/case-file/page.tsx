@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { createBrowserSupabaseClient } from '@/lib/supabase';
 import { useEffect, useState } from 'react';
 import CaseFileSummary from '@/components/simulator/CaseFileSummary';
-import CaseGapsForm from '@/components/simulator/CaseGapsForm';
 import InterviewBrief from '@/components/simulator/InterviewBrief';
 
 const supabase = createBrowserSupabaseClient();
@@ -17,7 +16,6 @@ function CaseFileContent() {
 
   const [applicationId, setApplicationId] = useState<string | null>(rawApplicationId);
   const [authChecked, setAuthChecked] = useState(false);
-  const [gapsResolved, setGapsResolved] = useState(false);
 
   useEffect(() => {
     const check = async () => {
@@ -70,14 +68,6 @@ function CaseFileContent() {
     );
   }
 
-  if (!gapsResolved) {
-    return (
-      <CaseGapsForm
-        applicationId={applicationId}
-        onComplete={() => setGapsResolved(true)}
-      />
-    );
-  }
 
   const briefAndDivider = (
     <>
