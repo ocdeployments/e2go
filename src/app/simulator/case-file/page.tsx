@@ -13,7 +13,9 @@ const supabase = createBrowserSupabaseClient();
 function CaseFileContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const applicationId = searchParams.get('applicationId');
+  const rawApplicationId = searchParams.get('applicationId');
+
+  const [applicationId, setApplicationId] = useState<string | null>(rawApplicationId);
   const [authChecked, setAuthChecked] = useState(false);
   const [gapsResolved, setGapsResolved] = useState(false);
 
@@ -24,10 +26,30 @@ function CaseFileContent() {
         router.push('/login?next=/simulator');
         return;
       }
+
+      if (!rawApplicationId) {
+        // Auto-resolve: find the user's most recent simulator application
+        const { data: apps } = await supabase
+          .from('applications')
+          .select('id, source')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(10);
+
+        if (apps && apps.length > 0) {
+          const simApp = apps.find((a: { id: string; source: string | null }) => a.source === 'simulator_standalone') ?? apps[0];
+          setApplicationId(simApp.id);
+        } else {
+          // No application at all — send to Quick Start
+          router.push('/simulator/quick-start');
+          return;
+        }
+      }
+
       setAuthChecked(true);
     };
     check();
-  }, [router]);
+  }, [router, rawApplicationId]);
 
   if (!authChecked) {
     return <div style={{ minHeight: '100vh', background: '#0a0a0a' }} />;
@@ -38,10 +60,10 @@ function CaseFileContent() {
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0a0a0a' }}>
         <div style={{ textAlign: 'center' }}>
           <p style={{ color: 'rgba(245,240,232,0.5)', fontFamily: "'DM Sans', sans-serif", fontSize: '14px', marginBottom: '20px' }}>
-            Missing application reference.
+            No application found. Complete Quick Start first.
           </p>
-          <a href="/simulator" style={{ color: '#C9A84C', fontSize: '13px', textDecoration: 'underline', fontFamily: "'DM Sans', sans-serif" }}>
-            ← Back to simulator
+          <a href="/simulator/quick-start" style={{ color: '#C9A84C', fontSize: '13px', textDecoration: 'underline', fontFamily: "'DM Sans', sans-serif" }}>
+            Go to Quick Start →
           </a>
         </div>
       </div>
