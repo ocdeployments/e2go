@@ -30,6 +30,11 @@ const DOC_TYPE_QUESTION_MAP: Record<string, string[]> = {
   cover_letter: ['IQ-01', 'IQ-02', 'IQ-03', 'IQ-04', 'IQ-05', 'IQ-06', 'IQ-07'],
   source_of_funds: ['IQ-08', 'IQ-09', 'IQ-10'],
   business_plan: ['IQ-01', 'IQ-02', 'IQ-03', 'IQ-11', 'IQ-12'],
+  qualifications: ['IQ-14', 'IQ-15', 'IQ-16'],
+  nonimmigrant_intent: ['IQ-17', 'IQ-18', 'IQ-19'],
+  investment_proof: ['IQ-08', 'IQ-09', 'IQ-10', 'IQ-13'],
+  ds160_reference: ['IQ-20'],
+  visa_category: ['IQ-01', 'IQ-02', 'IQ-04'],
   exhibit_list: [],
 };
 
@@ -46,6 +51,16 @@ Emphasise: the franchisor's proven business model, E-2 approval track record if 
 The investment is a lump-sum franchise fee plus build-out/equipment costs. Trace funds to their origin — savings, business sale proceeds, or property equity — in clear chronological steps. Reference the FDD Item 7 minimum investment figure as the benchmark against which this amount is measured.`,
     business_plan: `ARCHETYPE: FRANCHISE BUYER
 Structure the business plan around the franchisor's proven system. Reference Item 19 (Financial Performance Representations) if available. The staffing model, revenue ramp, and break-even analysis should align with the franchisor's disclosed system-wide averages. The applicant's role: owner-operator directing training, staff, and customer relations.`,
+    qualifications: `ARCHETYPE: FRANCHISE BUYER
+Lead with evidence of management capacity and operational readiness — not just professional credentials. Key emphasis: (1) any prior business ownership or management P&L responsibility, (2) franchise-specific training completed or scheduled (Discovery Day, initial training programme), (3) conversations with existing franchisees or industry research. Directly map prior experience to the specific franchise model (e.g., "My 8 years managing customer service operations translates directly to [FRANCHISE] because…"). If the investor lacks direct industry experience, the franchisor's training programme is the compensating factor — describe it in detail.`,
+    investment_proof: `ARCHETYPE: FRANCHISE BUYER
+Investment proof must document the full franchise investment trail: (1) the franchise fee wire transfer to the franchisor's account, (2) build-out and equipment costs with contractor invoices, (3) working capital deposited into the U.S. business account. Reference FDD Item 7 as the benchmark investment range that this amount meets or exceeds. Every dollar must be traceable from the Canadian source account to its deployed destination.`,
+    nonimmigrant_intent: `ARCHETYPE: FRANCHISE BUYER
+Franchise buyers have a strong structural advantage: they have invested a substantial, irrevocable sum — the franchise fee — which demonstrates commitment to the E-2 enterprise, not permanent U.S. residency. Lead with this. Then document Canadian ties: property retained in Canada, family remaining there, Canadian bank accounts and registered savings (RRSP, TFSA). The framing: the investor is running a U.S. franchise under the E-2 status; if status ends, the investor would return to Canada and manage the business remotely or sell it.`,
+    visa_category: `ARCHETYPE: FRANCHISE BUYER
+The visa category letter must establish the applicant as a Treaty National of Canada (or qualifying country) making a substantial, at-risk investment in a qualifying enterprise. Franchise investments are well-suited here: (1) the franchise agreement evidences a bona fide commercial enterprise, (2) FDD Item 7 substantiates the investment amount, (3) the applicant's owner-operator role satisfies develop-and-direct. Cite the USCIS Policy Manual Chapter 14.3 standard and map this case to each element explicitly.`,
+    ds160_reference: `ARCHETYPE: FRANCHISE BUYER
+The DS-156E/DS-160 reference must be precise: franchise name, legal entity name, EIN, business address, investment amount matching Item 7, and applicant's title (Owner/Operator or President). All social media accounts disclosed on the DS-160 must match what the applicant will state at the interview window. Ensure the franchise trade name matches the FDD exactly.`,
   },
   builder: {
     cover_letter: `ARCHETYPE: ENTREPRENEUR / BUILDER
@@ -54,6 +69,16 @@ Emphasise: the investor's proprietary concept, management credentials, and speci
 Funds often come from a combination of savings, prior business equity, or professional compensation. Trace every source with supporting documentation. If business sale proceeds are involved, reference the sale agreement and tax treatment. Emphasise that funds are irrevocably committed to the specific enterprise.`,
     business_plan: `ARCHETYPE: ENTREPRENEUR / BUILDER
 The business plan carries significant weight — this is a new concept without a franchisor's track record. Emphasise: detailed market analysis specific to the target location, differentiated value proposition, realistic revenue model with assumptions stated, and a hiring plan that demonstrates non-marginality. The investor's prior experience should be directly mapped to each operational responsibility.`,
+    qualifications: `ARCHETYPE: ENTREPRENEUR / BUILDER
+The qualifications document must make a direct, explicit case for why this investor — specifically — is the right person to operate this business. Builders typically have strong professional or entrepreneurial backgrounds; the task is drawing a clear line from past achievements to the specific demands of this venture. Quantify everything: revenue managed, staff directed, clients served, operations led. If the investor has founded or sold prior businesses, this is the place to feature those outcomes prominently.`,
+    investment_proof: `ARCHETYPE: ENTREPRENEUR / BUILDER
+For a new concept business, investment proof should show the full capital deployment: (1) initial corporate registration and legal fees, (2) lease deposit and fit-out expenses, (3) equipment and inventory purchase, (4) working capital in the U.S. operating account. Provide a schedule showing all categories deployed. The funds must be irrevocably committed — not contingent on visa approval. Bank wires, contractor invoices, and lease agreements together form the investment proof package.`,
+    nonimmigrant_intent: `ARCHETYPE: ENTREPRENEUR / BUILDER
+Builders often have weaker home-country ties because they are starting fresh — address this proactively. Emphasise: (1) retained Canadian property (strongest single tie), (2) family members remaining in Canada, (3) Canadian registered savings and bank accounts left open, (4) provincial health coverage maintained. Frame the E-2 business as a venture with a defined business horizon — the investor built this; if E-2 status ends, they would return to Canada to pursue the next venture there, or manage this one remotely.`,
+    visa_category: `ARCHETYPE: ENTREPRENEUR / BUILDER
+The visa category letter must establish that the investor is developing and directing the enterprise — not just funding it. For a new concept business, the officer will scrutinise non-marginality most closely (since there is no franchisor's track record). Lead with job creation projections and revenue ramp. Establish that the investor has operational control: authority to hire, fire, set strategy, and commit capital.`,
+    ds160_reference: `ARCHETYPE: ENTREPRENEUR / BUILDER
+The DS-156E/DS-160 reference must include: legal business name, EIN, business address, investment amount, and the applicant's title (Founder/Owner or President). If the business is a startup, use the projections from the business plan for revenue figures. Confirm social media accounts match what will be disclosed at the interview. All application figures must be internally consistent — the DS-160 investment amount must match the source of funds statement exactly.`,
   },
   investor: {
     cover_letter: `ARCHETYPE: PASSIVE / ACTIVE INVESTOR
@@ -62,6 +87,16 @@ If the investor will not be actively managing day-to-day operations, clearly est
 Investment capital may come from a portfolio, business interests, or liquidated assets. Trace the entire chain from origin to the receiving US account. If funds came from investment returns or dividends, document the source of those earnings. Ensure all currency conversion steps are documented with exchange rate references.`,
     business_plan: `ARCHETYPE: INVESTOR
 Emphasise the management structure and governance model — the investor's authority over hiring, strategy, and capital allocation. Revenue and job creation projections should be conservative and supported by market data. If the investor has prior US business experience, reference it.`,
+    qualifications: `ARCHETYPE: INVESTOR
+The qualifications document for an investor archetype must establish three things: (1) the investor's capacity to direct the enterprise at a strategic level — board authority, capital allocation, hiring decisions, (2) relevant financial or sector experience that makes the investment credible, (3) the investor's track record in similar investments or business oversight roles. The officer will scrutinise whether this is genuine develop-and-direct or a passive financial stake — every sentence must reinforce active governance.`,
+    investment_proof: `ARCHETYPE: INVESTOR
+Investment proof for an investor archetype must document: (1) the capital injection into the U.S. business (wire confirmation), (2) any shareholding structure confirming majority control (corporate resolutions, shareholder register), (3) evidence of capital deployment on business assets (equipment, lease, licenses). If the investor made staged investments, show each tranche with its date and purpose. All amounts must reconcile to the investment figure stated in the cover letter.`,
+    nonimmigrant_intent: `ARCHETYPE: INVESTOR
+Investor archetype applicants must demonstrate that the E-2 is a business opportunity, not a permanent residency strategy. Key: (1) Canadian domicile maintained — home, bank accounts, registered plans, (2) clear statement that E-2 status is held for the duration of the business venture, not indefinitely, (3) explicit acknowledgment of E-2's nonimmigrant nature. If the investor has previously held U.S. nonimmigrant visas without overstay, reference this as evidence of compliance.`,
+    visa_category: `ARCHETYPE: INVESTOR
+The visa category letter must address the develop-and-direct element directly — this is the most common challenge for investor-archetype applicants. Establish: (1) the investor holds majority ownership (50%+), (2) the investor has authority to hire and fire key personnel, (3) the investor sets strategy and approves capital expenditures. Reference any evidence of active governance: board resolutions, signed agreements in the investor's name, correspondence with management team.`,
+    ds160_reference: `ARCHETYPE: INVESTOR
+The DS-156E/DS-160 reference must match the legal ownership structure: investor's title (Managing Partner / President / Director), the business's legal name and EIN, the full investment amount, and the business address. If the investor holds a board or governance role rather than an operational title, note that explicitly and ensure it aligns with the develop-and-direct evidence in the cover letter.`,
   },
   career_switcher: {
     cover_letter: `ARCHETYPE: CAREER SWITCHER
@@ -70,6 +105,16 @@ This investor is moving from employment or a different sector into entrepreneurs
 Funds commonly come from savings accumulated during a professional career. Document the income history that generated these savings (employment income, tax returns). If any offshore accounts or international transfers are involved, document each step in full.`,
     business_plan: `ARCHETYPE: CAREER SWITCHER
 Justify the sector choice explicitly — why this business, why this investor. Reference any relevant training, certifications, or advisory relationships that compensate for the lack of direct industry experience. The business plan should be especially detailed on operations (since the investor is learning the industry) and especially clear on the investor's management role.`,
+    qualifications: `ARCHETYPE: CAREER SWITCHER
+The most critical document for this archetype. Officers will immediately notice the disconnect between the investor's career background and the business sector. The qualifications document must pre-empt this by: (1) identifying the transferable skills explicitly (people management, budget oversight, client operations, logistics), (2) mapping each transferable skill to a specific function in the target business, (3) documenting any sector-specific training, certification, or mentorship since the career switch decision was made. For franchise buyers, the franchisor's initial training programme is a legitimate compensating credential — describe it with specific hours and curriculum.`,
+    investment_proof: `ARCHETYPE: CAREER SWITCHER
+Career switchers often invest career savings or severance proceeds. Document clearly: (1) the source account (employment savings, RRSP drawdown, property sale), (2) any foreign currency conversion with exchange rate documentation, (3) the receiving U.S. business account, (4) all downstream deployment (lease, equipment, working capital). If RRSP funds were used, document the withholding tax and net proceeds calculation explicitly.`,
+    nonimmigrant_intent: `ARCHETYPE: CAREER SWITCHER
+Career switchers who are leaving employment may appear to have weaker home-country ties (no employer to return to). Address this directly: (1) retained Canadian property — owned home or long-term lease, (2) family ties — parents, siblings, extended family remaining in Canada, (3) Canadian financial ties — registered plans (RRSP, TFSA), bank accounts, investments, (4) the fact that the prior career was in Canada demonstrates a long-standing connection. Frame the E-2 as a venture with defined business milestones; when complete or if status ends, the investor has a home, family, and financial life to return to in Canada.`,
+    visa_category: `ARCHETYPE: CAREER SWITCHER
+The visa category letter must compensate for the cross-sector transition. Emphasise: (1) the investor's management credentials from the prior career that transfer to this enterprise, (2) any sector-specific preparation taken (training, consulting relationships, market research), (3) the business plan's credibility despite the career shift — cite market data and third-party projections. For franchise career switchers, lean on the franchisor's training programme and support system as institutional backing that reduces execution risk.`,
+    ds160_reference: `ARCHETYPE: CAREER SWITCHER
+The DS-156E/DS-160 reference should reflect the investor's intended title in the new business (President / Owner-Operator / Managing Member), not their prior employment title. All social media accounts must be disclosed — career switchers often have LinkedIn profiles referencing their prior career; ensure that content does not contradict the E-2 application narrative. Confirm investment amounts are consistent across all documents.`,
   },
 };
 
