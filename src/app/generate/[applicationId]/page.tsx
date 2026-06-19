@@ -287,8 +287,8 @@ export default function GenerateProgressPage() {
   const startGeneration = useCallback(async () => {
     try {
       const supabase = createBrowserSupabaseClient();
-      const { data: { session } } = await supabase.auth.getSession();
-      const userId = session?.user?.id ?? null;
+      const { data: { user } } = await supabase.auth.getUser();
+      const userId = user?.id ?? null;
       if (!userId) {
         setErrorMessage("Please log in to continue");
         return;
