@@ -33,6 +33,52 @@ const DOC_TYPE_QUESTION_MAP: Record<string, string[]> = {
   exhibit_list: [],
 };
 
+// ---------------------------------------------------------------------------
+// Archetype-specific guidance injected into the system prompt
+// Each archetype has different emphasis, risk patterns, and strengths to feature.
+// ---------------------------------------------------------------------------
+
+const ARCHETYPE_DOC_GUIDANCE: Record<string, Record<string, string>> = {
+  buyer: {
+    cover_letter: `ARCHETYPE: FRANCHISE BUYER
+Emphasise: the franchisor's proven business model, E-2 approval track record if known, and the investor's role as the active operator directing day-to-day functions. The franchise fee and build-out costs are at-risk capital — state this explicitly. Reference the Franchise Disclosure Document (FDD) Item 7 as investment substantiation. Non-marginality proof: cite the FDD's AUV (Average Unit Volume) projections and staffing models. Develop-and-direct: the investor must run the location, not be a passive royalty recipient.`,
+    source_of_funds: `ARCHETYPE: FRANCHISE BUYER
+The investment is a lump-sum franchise fee plus build-out/equipment costs. Trace funds to their origin — savings, business sale proceeds, or property equity — in clear chronological steps. Reference the FDD Item 7 minimum investment figure as the benchmark against which this amount is measured.`,
+    business_plan: `ARCHETYPE: FRANCHISE BUYER
+Structure the business plan around the franchisor's proven system. Reference Item 19 (Financial Performance Representations) if available. The staffing model, revenue ramp, and break-even analysis should align with the franchisor's disclosed system-wide averages. The applicant's role: owner-operator directing training, staff, and customer relations.`,
+  },
+  builder: {
+    cover_letter: `ARCHETYPE: ENTREPRENEUR / BUILDER
+Emphasise: the investor's proprietary concept, management credentials, and specific operational expertise. The business plan is the primary evidence of the enterprise's non-marginal potential — reference projected revenue, hiring timeline, and scalability. Develop-and-direct: the investor must have active day-to-day control, not a passive investor role. If transitioning from a prior business or corporate career, bridge that experience directly to this venture.`,
+    source_of_funds: `ARCHETYPE: ENTREPRENEUR / BUILDER
+Funds often come from a combination of savings, prior business equity, or professional compensation. Trace every source with supporting documentation. If business sale proceeds are involved, reference the sale agreement and tax treatment. Emphasise that funds are irrevocably committed to the specific enterprise.`,
+    business_plan: `ARCHETYPE: ENTREPRENEUR / BUILDER
+The business plan carries significant weight — this is a new concept without a franchisor's track record. Emphasise: detailed market analysis specific to the target location, differentiated value proposition, realistic revenue model with assumptions stated, and a hiring plan that demonstrates non-marginality. The investor's prior experience should be directly mapped to each operational responsibility.`,
+  },
+  investor: {
+    cover_letter: `ARCHETYPE: PASSIVE / ACTIVE INVESTOR
+If the investor will not be actively managing day-to-day operations, clearly establish the develop-and-direct element through board authority, strategic decision-making, and hiring/firing power — not hands-on operations. Reference the management team structure. Investment substantiality: the proportionality test applies — state the total enterprise value clearly. Non-marginality: job creation numbers are the primary evidence; revenue projections are secondary.`,
+    source_of_funds: `ARCHETYPE: INVESTOR
+Investment capital may come from a portfolio, business interests, or liquidated assets. Trace the entire chain from origin to the receiving US account. If funds came from investment returns or dividends, document the source of those earnings. Ensure all currency conversion steps are documented with exchange rate references.`,
+    business_plan: `ARCHETYPE: INVESTOR
+Emphasise the management structure and governance model — the investor's authority over hiring, strategy, and capital allocation. Revenue and job creation projections should be conservative and supported by market data. If the investor has prior US business experience, reference it.`,
+  },
+  career_switcher: {
+    cover_letter: `ARCHETYPE: CAREER SWITCHER
+This investor is moving from employment or a different sector into entrepreneurship. The most common challenge: establishing the develop-and-direct element when prior experience is not directly in this industry. Address this proactively: the investor's transferable skills (management, client relations, financial acumen) must be mapped explicitly to the specific responsibilities of this business. Non-immigrant intent ties are often strong — home country career history, family, property — feature these prominently.`,
+    source_of_funds: `ARCHETYPE: CAREER SWITCHER
+Funds commonly come from savings accumulated during a professional career. Document the income history that generated these savings (employment income, tax returns). If any offshore accounts or international transfers are involved, document each step in full.`,
+    business_plan: `ARCHETYPE: CAREER SWITCHER
+Justify the sector choice explicitly — why this business, why this investor. Reference any relevant training, certifications, or advisory relationships that compensate for the lack of direct industry experience. The business plan should be especially detailed on operations (since the investor is learning the industry) and especially clear on the investor's management role.`,
+  },
+};
+
+function buildArchetypeGuidance(archetype: string, documentType: string): string {
+  const archetypeMap = ARCHETYPE_DOC_GUIDANCE[archetype];
+  if (!archetypeMap) return '';
+  return archetypeMap[documentType] ?? '';
+}
+
 function buildKBContext(documentType: string, consulatePost: string): string {
   const relevantIds = DOC_TYPE_QUESTION_MAP[documentType] ?? [];
   if (relevantIds.length === 0) return '';
@@ -403,12 +449,17 @@ export async function callClaudeAPI(payload: GenerationPayload): Promise<string>
     'Output the document text only.',
   ].join('\n');
 
+  const archetypeGuidance = buildArchetypeGuidance(archetype, payload.document_type);
+  const enrichedSystemPrompt = archetypeGuidance
+    ? `${payload.system_prompt}\n\n---\n\n${archetypeGuidance}`
+    : payload.system_prompt;
+
   async function attempt(): Promise<string> {
     const model = await getGenerationModel();
     const response = await anthropic.messages.create({
       model,
       max_tokens: 4000,
-      system: payload.system_prompt,
+      system: enrichedSystemPrompt,
       messages: [{ role: 'user', content: userMessage }],
     });
 
@@ -1837,10 +1888,15 @@ export async function runGenerationPipeline(
           ].join('\n');
 
           const model = await getGenerationModel();
+          const retryArchetype = (caseBrief as unknown as Record<string, unknown>)?.archetype as string ?? 'unknown';
+          const retryArchetypeGuidance = buildArchetypeGuidance(retryArchetype, doc.document_type);
+          const retrySystemPrompt = retryArchetypeGuidance
+            ? `${payload.system_prompt}\n\n---\n\n${retryArchetypeGuidance}\n\n${failureInstructions}`
+            : `${payload.system_prompt}\n\n${failureInstructions}`;
           const retryResponse = await getAnthropic().messages.create({
             model,
             max_tokens: 4000,
-            system: payload.system_prompt + '\n\n' + failureInstructions,
+            system: retrySystemPrompt,
             messages: [{ role: 'user', content: 'Regenerate the document now.' }],
           });
 
