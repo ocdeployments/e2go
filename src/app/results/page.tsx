@@ -176,6 +176,15 @@ function getCookie(name: string): string | null {
 
 /* ─── New helpers for 9-section layout ────────────────────────────────── */
 
+function getConfidenceTier(dataState: string): { label: string; color: string } {
+  switch (dataState) {
+    case 'full':       return { label: 'Fully verified',       color: '#22c55e' };
+    case 'documents':  return { label: 'Document-confirmed',   color: '#C9A84C' };
+    case 'case_file':  return { label: 'Case file reported',   color: '#f59e0b' };
+    default:           return { label: 'Quiz-derived',         color: 'rgba(245,240,232,0.35)' };
+  }
+}
+
 function getOutcomeLabel(score: number): string {
   if (score >= 80) return "Strong Foundation";
   if (score >= 70) return "Good Foundation";
@@ -617,6 +626,26 @@ function ResultsPageInner() {
               <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.35)", letterSpacing: "0.08em", textTransform: "uppercase" }}>{scoreLabel}</div>
             </div>
           </div>
+
+          {/* Profile completeness bar — only shown when case profile exists */}
+          {caseProfile && (() => {
+            const tier = getConfidenceTier(caseProfile.dataState);
+            return (
+              <div style={{ marginBottom: '24px', maxWidth: '440px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                  <span style={{ fontSize: '11px', color: 'rgba(245,240,232,0.4)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                    Profile completeness
+                  </span>
+                  <span style={{ fontSize: '11px', color: tier.color, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                    {tier.label} · {caseProfile.completenessScore}%
+                  </span>
+                </div>
+                <div style={{ height: '3px', background: 'rgba(245,240,232,0.08)', overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${caseProfile.completenessScore}%`, background: tier.color, transition: 'width 0.6s ease' }} />
+                </div>
+              </div>
+            );
+          })()}
 
           <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "32px", fontWeight: 300, color: "#f5f0e8", lineHeight: 1.25, marginBottom: "10px", letterSpacing: "-0.01em" }}>{verdict}</div>
           <div style={{ fontSize: "14px", color: "rgba(245,240,232,0.45)", lineHeight: 1.7, maxWidth: "560px" }}>{verdictSub}</div>
