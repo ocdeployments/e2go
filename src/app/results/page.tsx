@@ -174,24 +174,6 @@ function getCookie(name: string): string | null {
   return match ? decodeURIComponent(match[2]) : null;
 }
 
-/* ─── New helpers for 9-section layout ────────────────────────────────── */
-
-function getConfidenceTier(dataState: string): { label: string; color: string } {
-  switch (dataState) {
-    case 'full':       return { label: 'Fully verified',       color: '#22c55e' };
-    case 'documents':  return { label: 'Document-confirmed',   color: '#C9A84C' };
-    case 'case_file':  return { label: 'Case file reported',   color: '#f59e0b' };
-    default:           return { label: 'Quiz-derived',         color: 'rgba(245,240,232,0.35)' };
-  }
-}
-
-function getOutcomeLabel(score: number): string {
-  if (score >= 80) return "Strong Foundation";
-  if (score >= 70) return "Good Foundation";
-  if (score >= 50) return "Moderate Profile";
-  return "Needs Attention";
-}
-
 function getCountryFlag(country: string): string {
   const flags: Record<string, string> = {
     'Canada': '🇨🇦', 'United Kingdom': '🇬🇧', 'Germany': '🇩🇪',
@@ -493,7 +475,6 @@ function ResultsPageInner() {
   const scoreLabel = getScoreLabel(score);
   const verdict = getVerdict(outcome, score);
   const verdictSub = getVerdictSub(outcome, data.warnings || []);
-  const outcomeLabel = getOutcomeLabel(score);
   const scoreColor = score >= 70 ? '#C9A84C' : score >= 40 ? '#f59e0b' : 'rgba(245,240,232,0.3)';
 
   const allFlags = [...(data.warnings || []), ...(data.attorney_flags || [])];
@@ -538,52 +519,25 @@ function ResultsPageInner() {
     isAttorney: (data.attorney_flags || []).includes(code),
   })).filter(f => f.info);
 
-  const clearItems = [
-    !data.attorney_flags?.length && "No attorney-level risk flags",
-    !(data.warnings || []).some(w => w.includes("refusal")) && "No immigration history issues",
-    !(data.warnings || []).some(w => w.includes("documentation")) && "Investment source — clear",
-  ].filter(Boolean) as string[];
-
-  function getBenefits(d: ResultData) {
-    const dep = (d.dependents || '').toLowerCase();
-    const hasSpouse = dep.includes('spouse') || dep.includes('partner');
-    const hasChildren = dep.includes('children') || dep.includes('child');
-    const all = [
-      { key: 'spouse',   show: hasSpouse,  priority: true,                     title: 'Your spouse can work anywhere in the U.S.', desc: 'Your spouse receives work authorisation and can work for any U.S. employer in any role — not just your business.' },
-      { key: 'children', show: hasChildren, priority: true,                     title: 'Your children attend U.S. schools',         desc: 'Your children receive dependent status and can attend U.S. public and private schools as legal residents.' },
-      { key: 'freedom',  show: true,        priority: !hasSpouse && !hasChildren, title: 'No employer. No sponsorship. No queue.',    desc: 'You move to the U.S. on your own terms — by building something. No waiting for an employer to file on your behalf.' },
-      { key: 'renewable',show: true,        priority: false,                    title: 'Renewable with no expiry date',              desc: 'The E-2 renews indefinitely as long as your business operates. There is no fixed end to your time in the U.S.' },
-      { key: 'nocap',    show: true,        priority: false,                    title: 'No cap, no lottery, no waiting list',        desc: 'Unlike the H-1B, there is no annual quota. If you qualify, you apply. Your eligibility is not subject to chance.' },
-      { key: 'country',  show: true,        priority: false,                    title: `${d.country || 'Your country'} has an active E-2 treaty`, desc: `Citizens of ${d.country || 'your country'} have full access to the E-2 programme. Your treaty standing is confirmed.` },
-    ];
-    return all.filter(b => b.show).sort((a, b) => (b.priority ? 1 : 0) - (a.priority ? 1 : 0)).slice(0, 4);
-  }
-
   const showNameCapture = verificationState === 'verified' && !isLoggedIn && !nameCaptureDismissed;
 
   // Archetype for section 6 — use case profile if available, fall back to quiz-derived
   const archetype = caseProfile?.archetype ?? (data.franchise_interest ? 'buyer' : 'career_switcher');
   const archetypeSteps = ARCHETYPE_STEPS[archetype] ?? ARCHETYPE_STEPS.career_switcher;
 
-  // Section 3 investment fit
-  const investCriteria = criteriaBreakdown[1];
-  const investColor = investCriteria.score >= 85 ? '#22c55e' : investCriteria.score >= 60 ? '#f59e0b' : '#ef4444';
-
-  // Section 4 business fit
-  const bizCriteria = criteriaBreakdown[3];
-  const bizColor = bizCriteria.score >= 85 ? '#22c55e' : bizCriteria.score >= 60 ? '#f59e0b' : '#ef4444';
-
-  // Section 8 franchise trigger
+  // Franchise trigger
   const showFranchiseTeaser = caseProfile?.franchiseTrigger ?? data.franchise_interest;
 
   return (
     <div style={{ background: "#0a0a0a", minHeight: "100vh", fontFamily: "'DM Sans', system-ui, sans-serif", color: "#f5f0e8" }}>
       <style>{`
         @media (max-width: 640px) {
-          .benefits-grid { grid-template-columns: 1fr !important; }
-          .assessment-row { grid-template-columns: 1fr !important; }
           .profile-snap { grid-template-columns: 1fr 1fr !important; }
-          .results-sidebar { display: none !important; }
+          .roadmap-step { flex-direction: column !important; gap: 8px !important; }
+          .cta-intel-row { flex-direction: column !important; }
+          .results-page-inner { padding: 0 20px !important; }
+          .results-hero { padding: 36px 20px 28px !important; }
+          .cta-block { padding: 24px 20px !important; }
         }
       `}</style>
 
@@ -593,65 +547,58 @@ function ResultsPageInner() {
         <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.25)", letterSpacing: "0.08em", textTransform: "uppercase" }}>Eligibility result</div>
       </div>
 
-      {/* ── Section 1: Outcome header ─────────────────────────────────────────── */}
+      {/* ─── ZONE 1: Hero — compact verdict ───────────────────────────────────── */}
       <div style={{ borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
-        <div style={{ maxWidth: "760px", margin: "0 auto", padding: "56px 40px 40px" }}>
-          <button onClick={() => router.push('/quiz/review')} style={{ fontSize: '13px', color: 'rgba(245,240,232,0.45)', background: 'transparent', border: 'none', cursor: 'pointer', letterSpacing: '0.04em', padding: '0', marginBottom: '32px', fontFamily: "'DM Sans', sans-serif", display: 'block' }}>
+        <div className="results-hero" style={{ maxWidth: "760px", margin: "0 auto", padding: "48px 40px 36px" }}>
+          <button onClick={() => router.push('/quiz/review')} style={{ fontSize: '13px', color: 'rgba(245,240,232,0.35)', background: 'transparent', border: 'none', cursor: 'pointer', padding: '0', marginBottom: '28px', fontFamily: "'DM Sans', sans-serif", display: 'block' }}>
             ← Review or change my answers
           </button>
 
-          <div style={{ fontSize: "10px", letterSpacing: "0.18em", textTransform: "uppercase", color: "rgba(201,168,76,0.6)", marginBottom: "16px", display: "flex", alignItems: "center", gap: "8px" }}>
+          <div style={{ fontSize: "10px", letterSpacing: "0.18em", textTransform: "uppercase", color: "rgba(201,168,76,0.6)", marginBottom: "20px", display: "flex", alignItems: "center", gap: "8px" }}>
             <div style={{ flex: "0 0 24px", height: "1px", background: "rgba(201,168,76,0.4)" }} />
-            Assessment complete
+            Assessment complete · {formatToday()}
           </div>
 
-          {isLoggedIn && userName && (
-            <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "28px", fontWeight: 300, color: "#f5f0e8", marginBottom: "8px" }}>{userName}, here are your results</div>
-          )}
-          {!isLoggedIn && (
-            <div style={{ marginBottom: "8px" }}>
-              <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "28px", fontWeight: 300, color: "#f5f0e8", marginBottom: "4px" }}>Your eligibility results</div>
-              {verificationState === 'verified' && <div style={{ fontSize: "13px", color: "#5DCAA5", letterSpacing: "0.02em" }}>✓ Email verified</div>}
-            </div>
-          )}
-
-          {/* Score circle + label */}
-          <div style={{ display: "flex", alignItems: "center", gap: "28px", marginBottom: "24px" }}>
-            <div style={{ width: "100px", height: "100px", border: `3px solid ${scoreColor}`, borderRadius: "50%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "36px", fontWeight: 300, color: scoreColor, lineHeight: 1 }}>{score}</div>
+          {/* Score circle + verdict side by side */}
+          <div style={{ display: "flex", alignItems: "flex-start", gap: "24px", marginBottom: "20px" }}>
+            <div style={{ width: "88px", height: "88px", border: `3px solid ${scoreColor}`, borderRadius: "50%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "32px", fontWeight: 300, color: scoreColor, lineHeight: 1 }}>{score}</div>
               <div style={{ fontSize: "10px", color: "rgba(245,240,232,0.3)", letterSpacing: "0.06em" }}>/100</div>
             </div>
-            <div>
-              <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "28px", fontWeight: 300, color: scoreColor, lineHeight: 1.1, marginBottom: "4px" }}>{outcomeLabel}</div>
-              <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.35)", letterSpacing: "0.08em", textTransform: "uppercase" }}>{scoreLabel}</div>
+            <div style={{ paddingTop: "4px" }}>
+              {isLoggedIn && userName ? (
+                <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "30px", fontWeight: 300, color: "#f5f0e8", lineHeight: 1.15, marginBottom: "6px" }}>{userName}, {verdict.charAt(0).toLowerCase() + verdict.slice(1)}</div>
+              ) : (
+                <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "30px", fontWeight: 300, color: "#f5f0e8", lineHeight: 1.15, marginBottom: "6px" }}>{verdict}</div>
+              )}
+              <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.25)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: "8px" }}>{scoreLabel}</div>
+              <div style={{ fontSize: "13px", color: "rgba(245,240,232,0.45)", lineHeight: 1.65, maxWidth: "480px" }}>{verdictSub}</div>
             </div>
           </div>
 
-          {/* Profile completeness bar — only shown when case profile exists */}
-          {caseProfile && (() => {
-            const tier = getConfidenceTier(caseProfile.dataState);
-            return (
-              <div style={{ marginBottom: '24px', maxWidth: '440px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-                  <span style={{ fontSize: '11px', color: 'rgba(245,240,232,0.4)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                    Profile completeness
-                  </span>
-                  <span style={{ fontSize: '11px', color: tier.color, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-                    {tier.label} · {caseProfile.completenessScore}%
-                  </span>
-                </div>
-                <div style={{ height: '3px', background: 'rgba(245,240,232,0.08)', overflow: 'hidden' }}>
-                  <div style={{ height: '100%', width: `${caseProfile.completenessScore}%`, background: tier.color, transition: 'width 0.6s ease' }} />
-                </div>
+          {/* Passing criteria chips */}
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "16px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "6px", padding: "5px 12px", background: "rgba(93,202,165,0.06)", border: "1px solid rgba(93,202,165,0.25)", fontSize: "12px", color: "#5DCAA5" }}>
+              {getCountryFlag(data.country)} {data.country} — E-2 treaty confirmed
+            </div>
+            {criteriaBreakdown[1].score >= 70 && (
+              <div style={{ display: "flex", alignItems: "center", gap: "6px", padding: "5px 12px", background: "rgba(93,202,165,0.06)", border: "1px solid rgba(93,202,165,0.25)", fontSize: "12px", color: "#5DCAA5" }}>
+                ✓ {data.investment_range} — investment level clear
               </div>
-            );
-          })()}
+            )}
+            {criteriaBreakdown[3].score >= 70 && (
+              <div style={{ display: "flex", alignItems: "center", gap: "6px", padding: "5px 12px", background: "rgba(93,202,165,0.06)", border: "1px solid rgba(93,202,165,0.25)", fontSize: "12px", color: "#5DCAA5" }}>
+                ✓ {data.application_type === "partnership" ? "Partnership investors" : "Solo investor"} — management role confirmed
+              </div>
+            )}
+          </div>
 
-          <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "32px", fontWeight: 300, color: "#f5f0e8", lineHeight: 1.25, marginBottom: "10px", letterSpacing: "-0.01em" }}>{verdict}</div>
-          <div style={{ fontSize: "14px", color: "rgba(245,240,232,0.45)", lineHeight: 1.7, maxWidth: "560px" }}>{verdictSub}</div>
+          {verificationState === 'verified' && !isLoggedIn && (
+            <div style={{ fontSize: "12px", color: "#5DCAA5", marginBottom: "12px" }}>✓ Email verified</div>
+          )}
 
           {isLoggedIn && (
-            <div style={{ marginTop: "16px", padding: "12px 16px", background: "rgba(201,168,76,0.05)", border: "1px solid rgba(201,168,76,0.15)", fontSize: "13px", color: "rgba(245,240,232,0.6)", lineHeight: 1.6, display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px" }}>
+            <div style={{ padding: "12px 16px", background: "rgba(201,168,76,0.05)", border: "1px solid rgba(201,168,76,0.15)", fontSize: "13px", color: "rgba(245,240,232,0.6)", lineHeight: 1.6, display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px" }}>
               <span>✓ Your profile has been saved. You can return to these results any time.</span>
               <Link href="/dashboard" style={{ fontSize: "12px", color: "#C9A84C", textDecoration: "underline", whiteSpace: "nowrap", fontFamily: "'DM Sans', sans-serif" }}>Go to dashboard →</Link>
             </div>
@@ -659,115 +606,63 @@ function ResultsPageInner() {
         </div>
       </div>
 
-      {/* Name capture for verified non-auth users */}
+      {/* Name capture */}
       {showNameCapture && quizSessionId && quizEmail && (
-        <div style={{ maxWidth: "760px", margin: "0 auto", padding: "40px 40px 0" }}>
+        <div style={{ maxWidth: "760px", margin: "0 auto", padding: "32px 40px 0" }}>
           <NameCaptureForm email={quizEmail} quizSessionId={quizSessionId} onSuccess={() => window.location.reload()} onDismiss={() => setNameCaptureDismissed(true)} />
         </div>
       )}
       {verificationState === 'verified' && !isLoggedIn && nameCaptureDismissed && (
-        <div style={{ padding: "20px 40px", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "12px", maxWidth: "720px" }}>
-            <Link href="/signup" style={{ fontSize: "13px", color: "#C9A84C", textDecoration: "underline", letterSpacing: "0.02em" }}>Create an account to save your results and access your dashboard</Link>
+        <div style={{ padding: "16px 40px" }}>
+          <div style={{ maxWidth: "760px", margin: "0 auto" }}>
+            <Link href="/signup" style={{ fontSize: "13px", color: "#C9A84C", textDecoration: "underline" }}>Create an account to save your results and access your dashboard</Link>
           </div>
         </div>
       )}
 
-      {/* ── Sections 2–9: single-column, max 760px ──────────────────────────── */}
-      <div style={{ maxWidth: "760px", margin: "0 auto", padding: "0 40px" }}>
+      <div className="results-page-inner" style={{ maxWidth: "760px", margin: "0 auto", padding: "0 40px" }}>
 
-        {/* Section 2: Treaty nationality */}
-        <div style={{ padding: "28px 0", borderBottom: "1px solid rgba(201,168,76,0.08)", display: "flex", alignItems: "center", gap: "14px" }}>
-          <div style={{ fontSize: "32px", lineHeight: 1 }}>{getCountryFlag(data.country)}</div>
-          <div>
-            <div style={{ fontSize: "10px", letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(201,168,76,0.5)", marginBottom: "4px" }}>Treaty nationality</div>
-            <div style={{ fontSize: "16px", color: "#f5f0e8", fontWeight: 400 }}>
-              {data.country || "—"}
-              <span style={{ marginLeft: "12px", fontSize: "12px", color: "#5DCAA5" }}>✓ E-2 treaty country confirmed</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Sections 3 & 4: Investment + Business (side by side) */}
-        <div className="assessment-row" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", padding: "28px 0", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
-
-          {/* Section 3: Investment assessment */}
-          <div style={{ padding: "16px", border: `1px solid ${investColor}33`, background: `${investColor}08` }}>
-            <div style={{ fontSize: "10px", letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(201,168,76,0.5)", marginBottom: "8px" }}>Investment assessment</div>
-            <div style={{ fontSize: "15px", color: "#f5f0e8", fontWeight: 400, marginBottom: "4px" }}>{data.investment_range || "—"}</div>
-            <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.35)", marginBottom: "8px" }}>E-2 practical minimum: $100,000+</div>
-            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-              <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: investColor }} />
-              <span style={{ fontSize: "11px", color: investColor }}>{investCriteria.note}</span>
-            </div>
-          </div>
-
-          {/* Section 4: Business assessment */}
-          <div style={{ padding: "16px", border: `1px solid ${bizColor}33`, background: `${bizColor}08` }}>
-            <div style={{ fontSize: "10px", letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(201,168,76,0.5)", marginBottom: "8px" }}>Business assessment</div>
-            <div style={{ fontSize: "15px", color: "#f5f0e8", fontWeight: 400, marginBottom: "4px" }}>
-              {data.application_type === "partnership" ? "Partnership investment" : "Solo investor"}
-            </div>
-            <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.35)", marginBottom: "8px" }}>Active management role required</div>
-            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-              <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: bizColor }} />
-              <span style={{ fontSize: "11px", color: bizColor }}>{bizCriteria.note}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Section 5: Case gaps — top 3 */}
+        {/* ─── ZONE 2: Flags — all material flags, compact ───────────────────── */}
         {flagsToShow.length > 0 && (
-          <div style={{ padding: "28px 0", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
-            <div style={{ fontSize: "10px", letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(201,168,76,0.5)", marginBottom: "14px" }}>Case gaps to address</div>
+          <div style={{ padding: "36px 0", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
+            <div style={{ fontSize: "10px", letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(201,168,76,0.5)", marginBottom: "6px" }}>
+              {flagsToShow.length === 1 ? "One area to address" : `${flagsToShow.length} areas to address`}
+            </div>
+            <div style={{ fontSize: "13px", color: "rgba(245,240,232,0.35)", marginBottom: "16px", lineHeight: 1.5 }}>
+              Your application is still viable — these are preparation priorities, not disqualifiers.
+            </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-              {flagsToShow.slice(0, 3).map(({ code, info, isAttorney }) => (
+              {flagsToShow.map(({ code, info, isAttorney }) => (
                 <div key={code} style={{ display: "flex", gap: "12px", padding: "14px 16px", border: `1px solid ${isAttorney ? "rgba(239,100,100,0.25)" : "rgba(239,159,39,0.25)"}`, background: isAttorney ? "rgba(239,100,100,0.04)" : "rgba(239,159,39,0.04)" }}>
                   <div style={{ fontSize: "16px", color: isAttorney ? "rgba(239,100,100,0.8)" : "rgba(239,159,39,0.8)", flexShrink: 0, marginTop: "1px" }}>{isAttorney ? "⚖" : "!"}</div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: "13px", fontWeight: 500, color: isAttorney ? "rgba(239,100,100,0.95)" : "rgba(239,159,39,0.95)", marginBottom: "3px" }}>{info.plain_language}</div>
                     <div style={{ fontSize: "12px", color: "rgba(245,240,232,0.45)", lineHeight: 1.6, marginBottom: "6px" }}>{personalizedExplanations[code] || info.why_it_matters}</div>
+                    {data.answers?.[info.question_id] && (
+                      <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.3)", marginBottom: "6px" }}>Your answer: &ldquo;{Array.isArray(data.answers[info.question_id]) ? (data.answers[info.question_id] as string[]).join(", ") : String(data.answers[info.question_id])}&rdquo;</div>
+                    )}
                     <a href={`/quiz?edit=${info.question_id}`} style={{ fontSize: "11px", color: "#C9A84C", textDecoration: "underline" }}>{info.edit_label} →</a>
                   </div>
-                </div>
-              ))}
-              {flagsToShow.length === 0 && clearItems.slice(0, 2).map((item, i) => (
-                <div key={i} style={{ display: "flex", gap: "12px", padding: "14px 16px", border: "1px solid rgba(93,202,165,0.2)", background: "rgba(93,202,165,0.03)" }}>
-                  <div style={{ fontSize: "16px", color: "#5DCAA5", flexShrink: 0 }}>✓</div>
-                  <div><div style={{ fontSize: "13px", fontWeight: 500, color: "#5DCAA5" }}>{item}</div></div>
                 </div>
               ))}
             </div>
           </div>
         )}
 
-        {/* Section 6: Next steps by archetype */}
-        <div style={{ padding: "28px 0", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
-          <div style={{ fontSize: "10px", letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(201,168,76,0.5)", marginBottom: "4px" }}>Your next steps</div>
-          {caseProfile && (
-            <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.25)", marginBottom: "14px", letterSpacing: "0.04em" }}>
-              Tailored to your profile: {archetype === 'buyer' ? 'Franchise Buyer' : archetype === 'builder' ? 'Business Builder' : archetype === 'investor' ? 'Treaty Investor' : 'Career Switcher'}
-            </div>
-          )}
-          {!caseProfile && <div style={{ marginBottom: "14px" }} />}
-          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-            {archetypeSteps.map((step, i) => (
-              <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
-                <div style={{ width: "24px", height: "24px", border: "1px solid rgba(201,168,76,0.3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px", color: "#C9A84C", flexShrink: 0, fontWeight: 500 }}>{i + 1}</div>
-                <div>
-                  <div style={{ fontSize: "13px", fontWeight: 500, color: "#f5f0e8", marginBottom: "2px" }}>{step.title}</div>
-                  <div style={{ fontSize: "12px", color: "rgba(245,240,232,0.4)", lineHeight: 1.5 }}>{step.desc}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        {/* ─── ZONE 3: Roadmap — visual hero of the page ─────────────────────── */}
+        <div style={{ padding: "56px 0", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
 
-        {/* Section 7: Profile snapshot — only if post-quiz profile data exists */}
-        {caseProfile && (caseProfile.netWorthRange || caseProfile.priorBusiness || caseProfile.industryInterest || caseProfile.timelineGoal) && (
-          <div style={{ padding: "28px 0", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
-            <div style={{ fontSize: "10px", letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(201,168,76,0.5)", marginBottom: "14px" }}>Your profile snapshot</div>
-            <div className="profile-snap" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+          {/* Archetype intelligence label */}
+          <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", padding: "4px 14px", border: "1px solid rgba(201,168,76,0.25)", background: "rgba(201,168,76,0.04)", marginBottom: "32px" }}>
+            <div style={{ width: "5px", height: "5px", borderRadius: "50%", background: "#C9A84C" }} />
+            <span style={{ fontSize: "10px", letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(201,168,76,0.8)" }}>
+              Profile-derived · {archetype === 'buyer' ? 'Franchise Buyer' : archetype === 'builder' ? 'Business Builder' : archetype === 'investor' ? 'Treaty Investor' : 'Career Switcher'}
+            </span>
+          </div>
+
+          {/* Profile snapshot tiles — inside roadmap for context */}
+          {caseProfile && (caseProfile.netWorthRange || caseProfile.priorBusiness || caseProfile.industryInterest || caseProfile.timelineGoal) && (
+            <div className="profile-snap" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginBottom: "40px" }}>
               {[
                 { label: "Net worth", value: NET_WORTH_LABELS[caseProfile.netWorthRange] || caseProfile.netWorthRange || "—" },
                 { label: "Business background", value: PRIOR_BUSINESS_LABELS[caseProfile.priorBusiness] || caseProfile.priorBusiness || "—" },
@@ -780,13 +675,86 @@ function ResultsPageInner() {
                 </div>
               ))}
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Section 8: Franchise match teaser — conditional */}
+          <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "26px", fontWeight: 300, color: "#f5f0e8", marginBottom: "44px", letterSpacing: "-0.01em" }}>
+            Your personalised roadmap
+          </div>
+
+          {/* Steps — large, breathing, dominant */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "44px" }}>
+            {archetypeSteps.map((step, i) => (
+              <div key={i} className="roadmap-step" style={{ display: "flex", alignItems: "flex-start", gap: "32px" }}>
+                <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "80px", fontWeight: 300, color: "rgba(201,168,76,0.22)", lineHeight: 0.85, flexShrink: 0, minWidth: "64px", userSelect: "none" }}>{i + 1}</div>
+                <div style={{ paddingTop: "12px" }}>
+                  <div style={{ fontSize: "18px", fontWeight: 500, color: "#f5f0e8", marginBottom: "10px", lineHeight: 1.3 }}>{step.title}</div>
+                  <div style={{ fontSize: "14px", color: "rgba(245,240,232,0.5)", lineHeight: 1.75 }}>{step.desc}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ marginTop: "36px", fontSize: "11px", color: "rgba(245,240,232,0.18)", letterSpacing: "0.04em" }}>
+            Steps derived from your quiz answers and investor profile
+          </div>
+        </div>
+
+        {/* ─── ZONE 4: Package CTA — full-width conversion block ─────────────── */}
+        <div style={{ padding: "40px 0", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
+          <div className="cta-block" style={{ padding: "36px", border: "1px solid rgba(201,168,76,0.4)", background: "rgba(201,168,76,0.03)" }}>
+
+            <div style={{ fontSize: "10px", letterSpacing: "0.16em", textTransform: "uppercase", color: "rgba(201,168,76,0.65)", marginBottom: "20px" }}>Recommended for your case</div>
+
+            <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: "24px", flexWrap: "wrap", gap: "16px" }}>
+              <div>
+                <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "24px", fontWeight: 300, color: "#f5f0e8", marginBottom: "8px" }}>{pricing.tier}</div>
+                <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
+                  <span style={{ fontSize: "13px", color: "rgba(245,240,232,0.45)" }}>
+                    {pricing.tier.includes("Partnership") ? "Partnership base" : "Solo applicant"}: <span style={{ color: "#f5f0e8" }}>${pricing.base}</span>
+                  </span>
+                  {pricing.spouseAdd > 0 && <span style={{ fontSize: "13px", color: "rgba(245,240,232,0.45)" }}>+ Spouse: <span style={{ color: "#f5f0e8" }}>${pricing.spouseAdd}</span></span>}
+                  {pricing.childrenAdd > 0 && <span style={{ fontSize: "13px", color: "rgba(245,240,232,0.45)" }}>+ Children: <span style={{ color: "#f5f0e8" }}>${pricing.childrenAdd}</span></span>}
+                </div>
+              </div>
+              <div style={{ textAlign: "right" as const }}>
+                <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.3)", marginBottom: "2px", letterSpacing: "0.08em", textTransform: "uppercase" }}>Total</div>
+                <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "44px", fontWeight: 300, color: "#C9A84C", lineHeight: 1 }}>${pricing.total}</div>
+              </div>
+            </div>
+
+            {/* Timeline + Consulate intel — inside CTA block */}
+            <div className="cta-intel-row" style={{ display: "flex", borderTop: "1px solid rgba(201,168,76,0.12)", borderBottom: "1px solid rgba(201,168,76,0.12)", margin: "0 0 24px" }}>
+              <div style={{ flex: 1, padding: "16px 20px 16px 0" }}>
+                <div style={{ fontSize: "10px", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(245,240,232,0.22)", marginBottom: "6px" }}>Estimated interview window</div>
+                <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "22px", fontWeight: 300, color: "#C9A84C", marginBottom: "4px" }}>{timeline}</div>
+                {targetDateMsg && <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.35)", lineHeight: 1.5 }}>{targetDateMsg}</div>}
+              </div>
+              <div style={{ width: "1px", background: "rgba(201,168,76,0.12)", flexShrink: 0 }} />
+              <div style={{ flex: 1, padding: "16px 0 16px 20px" }}>
+                <div style={{ fontSize: "10px", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(245,240,232,0.22)", marginBottom: "6px" }}>Consulate data · {consulate.name}</div>
+                <div style={{ fontSize: "13px", color: "rgba(245,240,232,0.55)", lineHeight: 1.6 }}>{consulate.intel}</div>
+              </div>
+            </div>
+
+            <div style={{ fontSize: "12px", color: "rgba(245,240,232,0.3)", marginBottom: "24px", lineHeight: 1.6 }}>
+              Applications submitted this summer are best positioned for the {timeline} interview window at {consulate.name}.
+            </div>
+
+            <Link href={isLoggedIn ? "/apply" : `/pricing?tier=${data.application_type}`} style={{ display: "block", padding: "18px 24px", background: "#C9A84C", color: "#0a0a0a", fontSize: "13px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", fontFamily: "'DM Sans', sans-serif", textDecoration: "none", textAlign: "center" as const }}>
+              {isLoggedIn ? `Start your case file — $${pricing.total} →` : `Get started — $${pricing.total} →`}
+            </Link>
+            {!isLoggedIn && (
+              <div style={{ marginTop: "10px", fontSize: "12px", color: "rgba(245,240,232,0.28)", textAlign: "center" as const }}>
+                Free to start — no credit card required
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ─── ZONE 5: Franchise Teaser ──────────────────────────────────────── */}
         {showFranchiseTeaser && (
-          <div style={{ padding: "28px 0", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
-            <div style={{ padding: "20px 24px", border: "1px solid rgba(201,168,76,0.35)", background: "rgba(201,168,76,0.04)" }}>
+          <div style={{ padding: "32px 0", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
+            <div style={{ padding: "20px 24px", border: "1px solid rgba(201,168,76,0.25)", background: "rgba(201,168,76,0.03)" }}>
               <div style={{ fontSize: "10px", letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(201,168,76,0.6)", marginBottom: "10px" }}>Franchise opportunity</div>
               <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "20px", fontWeight: 300, color: "#f5f0e8", marginBottom: "8px" }}>
                 Your profile matches franchise investment opportunities
@@ -794,208 +762,95 @@ function ResultsPageInner() {
               <div style={{ fontSize: "13px", color: "rgba(245,240,232,0.45)", lineHeight: 1.6, marginBottom: "16px" }}>
                 Based on your industry interest and investment profile, we have identified E-2-proven franchise brands in your range. Introductions are made only with your consent.
               </div>
-              <Link href="/fdd" style={{ display: "inline-block", padding: "11px 24px", background: "rgba(201,168,76,0.12)", border: "1px solid rgba(201,168,76,0.4)", color: "#C9A84C", fontSize: "12px", fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: "'DM Sans', sans-serif", textDecoration: "none" }}>
+              <Link href="/fdd" style={{ display: "inline-block", padding: "11px 24px", background: "rgba(201,168,76,0.08)", border: "1px solid rgba(201,168,76,0.35)", color: "#C9A84C", fontSize: "12px", fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: "'DM Sans', sans-serif", textDecoration: "none" }}>
                 Analyse an FDD →
               </Link>
             </div>
           </div>
         )}
 
-        {/* Section 9: CTA bar */}
-        <div style={{ padding: "28px 0 40px" }}>
-          <Link href={isLoggedIn ? "/apply" : "/signup"} style={{ display: "block", padding: "15px 24px", background: "#C9A84C", border: "none", color: "#0a0a0a", fontSize: "13px", fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: "'DM Sans', sans-serif", textDecoration: "none", textAlign: "center" }}>
-            {isLoggedIn ? "Start your case file →" : "Create your account →"}
-          </Link>
-          {!isLoggedIn && (
-            <p style={{ marginTop: "10px", fontSize: "12px", color: "rgba(245,240,232,0.3)", textAlign: "center", fontFamily: "'DM Sans', sans-serif" }}>
-              Free to start — no credit card required
-            </p>
+        {/* ─── ZONE 6: Why you qualify — criteria table ──────────────────────── */}
+        <div style={{ padding: "48px 0", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
+          <div style={{ fontSize: "10px", letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(201,168,76,0.5)", marginBottom: "6px" }}>Why you qualify</div>
+          <div style={{ fontSize: "13px", color: "rgba(245,240,232,0.3)", marginBottom: "24px" }}>E-2 eligibility across all five criteria</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+            {criteriaBreakdown.map(({ label, score: cScore, note }) => {
+              const color = cScore >= 85 ? "#22c55e" : cScore >= 60 ? "#f59e0b" : "#ef4444";
+              return (
+                <div key={label}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px" }}>
+                    <span style={{ fontSize: "13px", color: "rgba(245,240,232,0.7)" }}>{label}</span>
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                      <span style={{ fontSize: "11px", color: "rgba(245,240,232,0.35)" }}>{note}</span>
+                      <span style={{ fontSize: "13px", fontWeight: 600, color, minWidth: "36px", textAlign: "right" as const }}>{cScore}</span>
+                    </div>
+                  </div>
+                  <div style={{ height: "3px", background: "rgba(245,240,232,0.07)" }}>
+                    <div style={{ height: "100%", background: color, width: `${cScore}%`, transition: "width 0.8s cubic-bezier(.4,0,.2,1)" }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ─── ZONE 7: Timeline path ──────────────────────────────────────────── */}
+        <div style={{ padding: "48px 0", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
+          <div style={{ fontSize: "10px", letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(201,168,76,0.5)", marginBottom: "20px" }}>Estimated path to your interview</div>
+          <div style={{ display: "flex", alignItems: "flex-start" }}>
+            {["Eligibility confirmed", "Business selection", "Application package", "DS-160 & booking", "Interview"].map((step, i) => (
+              <div key={step} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: "6px" }}>
+                <div style={{ display: "flex", alignItems: "center", width: "100%" }}>
+                  <div style={{ width: "10px", height: "10px", borderRadius: "50%", background: i === 0 ? "rgba(93,202,165,0.6)" : i === 1 ? "#C9A84C" : "rgba(201,168,76,0.2)", border: `1px solid ${i === 0 ? "#5DCAA5" : i === 1 ? "#C9A84C" : "rgba(201,168,76,0.3)"}`, flexShrink: 0 }} />
+                  {i < 4 && <div style={{ flex: 1, height: "1px", background: "rgba(201,168,76,0.15)" }} />}
+                </div>
+                <div style={{ fontSize: "10px", color: i === 0 ? "rgba(93,202,165,0.7)" : i === 1 ? "#C9A84C" : "rgba(245,240,232,0.35)", textAlign: "center", letterSpacing: "0.04em", lineHeight: 1.4, maxWidth: "60px" }}>{step}</div>
+              </div>
+            ))}
+          </div>
+          {timelineWeeks.adjustments.length > 0 && (
+            <div style={{ marginTop: "20px", display: "flex", flexDirection: "column", gap: "4px" }}>
+              {timelineWeeks.adjustments.map((adj, i) => (
+                <div key={i} style={{ fontSize: "11px", color: "rgba(245,240,232,0.35)", display: "flex", gap: "6px", alignItems: "flex-start" }}>
+                  <span style={{ color: "rgba(201,168,76,0.4)", flexShrink: 0 }}>◈</span>
+                  <span>{adj}</span>
+                </div>
+              ))}
+            </div>
           )}
         </div>
-      </div>
 
-      {/* ── Supplementary: detailed breakdown + sidebar ──────────────────────── */}
-      <div style={{ borderTop: "1px solid rgba(201,168,76,0.08)", maxWidth: "1100px", margin: "0 auto", padding: "40px", display: "grid", gridTemplateColumns: "1fr 320px", gap: "32px" }}>
-
-        <div style={{ display: "flex", flexDirection: "column", gap: "28px" }}>
-
-          {/* 5-criteria breakdown */}
-          <div>
-            <div style={{ fontSize: "10px", letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(201,168,76,0.5)", marginBottom: "20px" }}>E-2 criteria breakdown</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-              {criteriaBreakdown.map(({ label, score: cScore, note }) => {
-                const color = cScore >= 85 ? "#22c55e" : cScore >= 60 ? "#f59e0b" : "#ef4444";
-                return (
-                  <div key={label}>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "5px" }}>
-                      <span style={{ fontSize: "12px", color: "rgba(245,240,232,0.7)", letterSpacing: "0.02em" }}>{label}</span>
-                      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                        <span style={{ fontSize: "11px", color: "rgba(245,240,232,0.35)" }}>{note}</span>
-                        <span style={{ fontSize: "12px", fontWeight: 600, color, minWidth: "36px", textAlign: "right" as const }}>{cScore}</span>
-                      </div>
-                    </div>
-                    <div style={{ height: "3px", background: "rgba(245,240,232,0.07)" }}>
-                      <div style={{ height: "100%", background: color, width: `${cScore}%`, transition: "width 0.8s cubic-bezier(.4,0,.2,1)" }} />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* All flags (full list) */}
-          {(flagsToShow.length > 3 || clearItems.length > 0) && (
-            <div>
-              <div style={{ fontSize: "10px", letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(201,168,76,0.5)", marginBottom: "14px" }}>Full assessment details</div>
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                {flagsToShow.slice(3).map(({ code, info, isAttorney }) => (
-                  <div key={code} style={{ display: "flex", gap: "12px", padding: "14px 16px", border: `1px solid ${isAttorney ? "rgba(239,100,100,0.25)" : "rgba(239,159,39,0.25)"}`, background: isAttorney ? "rgba(239,100,100,0.04)" : "rgba(239,159,39,0.04)" }}>
-                    <div style={{ fontSize: "16px", color: isAttorney ? "rgba(239,100,100,0.8)" : "rgba(239,159,39,0.8)", flexShrink: 0, marginTop: "1px" }}>{isAttorney ? "⚖" : "!"}</div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: "13px", fontWeight: 500, color: isAttorney ? "rgba(239,100,100,0.95)" : "rgba(239,159,39,0.95)", marginBottom: "3px" }}>{info.plain_language}</div>
-                      <div style={{ fontSize: "12px", color: "rgba(245,240,232,0.45)", lineHeight: 1.6, marginBottom: "8px" }}>{personalizedExplanations[code] || info.why_it_matters}</div>
-                      {data.answers?.[info.question_id] && (
-                        <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.3)", marginBottom: "8px" }}>Your answer: &ldquo;{Array.isArray(data.answers[info.question_id]) ? (data.answers[info.question_id] as string[]).join(", ") : String(data.answers[info.question_id])}&rdquo;</div>
-                      )}
-                      <a href={`/quiz?edit=${info.question_id}`} style={{ fontSize: "11px", color: "#C9A84C", textDecoration: "underline" }}>{info.edit_label} →</a>
-                    </div>
-                  </div>
-                ))}
-                {clearItems.slice(0, 2).map((item, i) => (
-                  <div key={i} style={{ display: "flex", gap: "12px", padding: "14px 16px", border: "1px solid rgba(93,202,165,0.2)", background: "rgba(93,202,165,0.03)" }}>
-                    <div style={{ fontSize: "16px", color: "#5DCAA5", flexShrink: 0, marginTop: "1px" }}>✓</div>
-                    <div>
-                      <div style={{ fontSize: "13px", fontWeight: 500, color: "#5DCAA5", marginBottom: "3px" }}>{item}</div>
-                      <div style={{ fontSize: "12px", color: "rgba(245,240,232,0.45)", lineHeight: 1.6 }}>No issues detected in this area of your profile.</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* E-2 Benefits */}
-          <div>
-            <div style={{ fontSize: "10px", letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(201,168,76,0.5)", marginBottom: "14px" }}>What this visa gives you</div>
-            <div className="benefits-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
-              {getBenefits(data).map((benefit) => (
-                <div key={benefit.key} style={{ padding: "14px 16px", border: "1px solid rgba(201,168,76,0.1)", background: "rgba(201,168,76,0.02)" }}>
-                  <div style={{ color: "#C9A84C", fontSize: "16px", marginBottom: "8px" }}>◈</div>
-                  <div style={{ fontSize: "13px", fontWeight: 500, color: "#f5f0e8", marginBottom: "4px", lineHeight: 1.4 }}>{benefit.title}</div>
-                  <div style={{ fontSize: "12px", color: "rgba(245,240,232,0.45)", lineHeight: 1.6 }}>{benefit.desc}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Timeline */}
-          <div>
-            <div style={{ fontSize: "10px", letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(201,168,76,0.5)", marginBottom: "14px" }}>Estimated path to your interview</div>
-            <div style={{ padding: "16px", border: "1px solid rgba(201,168,76,0.1)", background: "rgba(201,168,76,0.02)", marginBottom: "12px" }}>
-              <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "28px", fontWeight: 300, color: "#C9A84C", marginBottom: "4px" }}>{timeline}</div>
-              <div style={{ fontSize: "12px", color: "rgba(245,240,232,0.4)", marginBottom: timelineWeeks.adjustments.length > 0 ? "10px" : 0 }}>Your estimated interview window, based on your profile and current processing times. Calculated from today, {formatToday()}.</div>
-              {timelineWeeks.adjustments.length > 0 && (
-                <div style={{ borderTop: "1px solid rgba(201,168,76,0.08)", paddingTop: "10px", display: "flex", flexDirection: "column", gap: "4px" }}>
-                  {timelineWeeks.adjustments.map((adj, i) => (
-                    <div key={i} style={{ fontSize: "11px", color: "rgba(245,240,232,0.35)", display: "flex", gap: "6px", alignItems: "flex-start" }}>
-                      <span style={{ color: "rgba(201,168,76,0.4)", flexShrink: 0 }}>◈</span>
-                      <span>{adj}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-            {targetDateMsg && (
-              <div style={{ padding: "12px 16px", border: "1px solid rgba(201,168,76,0.15)", background: "rgba(201,168,76,0.03)", marginBottom: "12px" }}>
-                <div style={{ fontSize: "12px", color: "#C9A84C", lineHeight: 1.6 }}>{targetDateMsg}</div>
-              </div>
-            )}
-            <div style={{ display: "flex", alignItems: "flex-start" }}>
-              {["Eligibility confirmed", "Business selection", "Application package", "DS-160 & booking", "Interview"].map((step, i) => (
-                <div key={step} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: "6px" }}>
-                  <div style={{ display: "flex", alignItems: "center", width: "100%" }}>
-                    <div style={{ width: "10px", height: "10px", borderRadius: "50%", background: i === 0 ? "rgba(93,202,165,0.6)" : i === 1 ? "#C9A84C" : "rgba(201,168,76,0.2)", border: `1px solid ${i === 0 ? "#5DCAA5" : i === 1 ? "#C9A84C" : "rgba(201,168,76,0.3)"}`, flexShrink: 0 }} />
-                    {i < 4 && <div style={{ flex: 1, height: "1px", background: "rgba(201,168,76,0.15)" }} />}
-                  </div>
-                  <div style={{ fontSize: "10px", color: i === 0 ? "rgba(93,202,165,0.7)" : i === 1 ? "#C9A84C" : "rgba(245,240,232,0.35)", textAlign: "center", letterSpacing: "0.04em", lineHeight: 1.4, maxWidth: "60px" }}>{step}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Officer discretion note */}
-          <div style={{ padding: "16px", border: "1px solid rgba(201,168,76,0.15)", background: "rgba(201,168,76,0.03)" }}>
+        {/* ─── ZONE 8: Officer discretion ─────────────────────────────────────── */}
+        <div style={{ padding: "40px 0", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
+          <div style={{ padding: "20px 24px", border: "1px solid rgba(201,168,76,0.12)", background: "rgba(201,168,76,0.02)" }}>
             <div style={{ fontSize: "10px", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(201,168,76,0.5)", marginBottom: "8px" }}>Important: Officer discretion</div>
-            <div style={{ fontSize: "12px", color: "rgba(245,240,232,0.45)", lineHeight: 1.65 }}>Consular officers have discretion under 9 FAM to request additional documentation beyond what is listed in standard checklists. The most common additional requests are:</div>
-            <div style={{ fontSize: "12px", color: "rgba(245,240,232,0.45)", lineHeight: 1.65, marginTop: "8px", paddingLeft: "12px" }}>
+            <div style={{ fontSize: "13px", color: "rgba(245,240,232,0.45)", lineHeight: 1.65 }}>Consular officers have discretion under 9 FAM to request additional documentation beyond what is listed in standard checklists. The most common additional requests are:</div>
+            <div style={{ fontSize: "13px", color: "rgba(245,240,232,0.45)", lineHeight: 1.65, marginTop: "8px", paddingLeft: "12px" }}>
               — Bank statements extending beyond 12 months<br />
               — Tax returns for years not initially requested<br />
               — Third-party business valuations<br />
               — Additional evidence of operational status<br />
               — Further source-of-funds documentation
             </div>
-            <div style={{ fontSize: "12px", color: "rgba(245,240,232,0.45)", lineHeight: 1.65, marginTop: "8px" }}>
+            <div style={{ fontSize: "13px", color: "rgba(245,240,232,0.45)", lineHeight: 1.65, marginTop: "8px" }}>
               The best defense against a 221(g) request is preparation depth — having documents ready that weren&apos;t specifically asked for. Your case file will note where additional preparation is recommended based on your profile.
             </div>
           </div>
-
         </div>
 
-        {/* Sidebar */}
-        <div className="results-sidebar" style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-
-          {/* Pricing card */}
-          <div style={{ padding: "20px", border: "1px solid rgba(201,168,76,0.35)", background: "rgba(201,168,76,0.04)" }}>
-            <div style={{ fontSize: "10px", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(201,168,76,0.5)", marginBottom: "10px" }}>Your recommended package</div>
-            <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontWeight: 300, fontSize: "18px", color: "#f5f0e8", marginBottom: "14px" }}>{pricing.tier}</div>
-            {[
-              { label: pricing.tier.includes("Partnership") ? "Partnership base" : "Solo applicant", price: `$${pricing.base}` },
-              pricing.spouseAdd > 0 && { label: "Add spouse", price: `+$${pricing.spouseAdd}` },
-              pricing.childrenAdd > 0 && { label: "Add children", price: `+$${pricing.childrenAdd}` },
-            ].filter(Boolean).map((row: { label: string; price: string } | false, i) => row && (
-              <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
-                <div style={{ fontSize: "13px", color: "#f5f0e8" }}>{row.label}</div>
-                <div style={{ fontSize: "14px", color: "#C9A84C", fontWeight: 500 }}>{row.price}</div>
-              </div>
-            ))}
-            <div style={{ height: "1px", background: "rgba(201,168,76,0.12)", margin: "10px 0" }} />
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
-              <div style={{ fontSize: "12px", color: "rgba(245,240,232,0.4)" }}>Total</div>
-              <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "24px", color: "#C9A84C", fontWeight: 300 }}>${pricing.total}</div>
-            </div>
-            <Link href={`/pricing?tier=${data.application_type}`}>
-              <button style={{ width: "100%", padding: "12px", background: "#C9A84C", border: "none", color: "#0a0a0a", fontSize: "12px", fontWeight: 500, cursor: "pointer", letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: "'DM Sans', sans-serif", borderRadius: 0 }}>Start for ${pricing.total} →</button>
-            </Link>
-          </div>
-
-          {/* Consulate intel */}
-          <div style={{ padding: "20px", border: "1px solid rgba(201,168,76,0.12)", background: "rgba(201,168,76,0.02)" }}>
-            <div style={{ fontSize: "10px", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(201,168,76,0.5)", marginBottom: "10px" }}>Consulate intelligence</div>
-            <div style={{ display: "flex", alignItems: "flex-start", gap: "10px", marginBottom: "10px" }}>
-              <div style={{ fontSize: "18px", color: "rgba(201,168,76,0.6)", flexShrink: 0, marginTop: "1px" }}>⊞</div>
-              <div style={{ fontSize: "12px", color: "rgba(245,240,232,0.45)", lineHeight: 1.6 }}>
-                <strong style={{ color: "rgba(245,240,232,0.8)", fontWeight: 500 }}>{consulate.name}</strong> — {consulate.intel}
-              </div>
-            </div>
-            <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.2)", marginTop: "6px" }}>Updated June 2026 · Applicant-reported data</div>
-          </div>
-
-        </div>
-      </div>
-
-      {/* Ask E2go FAQ */}
-      <div style={{ padding: "48px 40px", borderTop: "1px solid rgba(201,168,76,0.08)" }}>
-        <div style={{ maxWidth: "720px" }}>
+        {/* ─── ZONE 9: FAQ ────────────────────────────────────────────────────── */}
+        <div style={{ padding: "56px 0" }}>
           <div style={{ fontSize: "10px", letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(201,168,76,0.5)", marginBottom: "8px" }}>Ask E2go</div>
           <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "22px", fontWeight: 300, color: "#f5f0e8", marginBottom: "6px" }}>Questions about your results?</div>
           <div style={{ fontSize: "13px", color: "rgba(245,240,232,0.4)", marginBottom: "24px" }}>Ask anything about the E-2 visa — eligibility, investment thresholds, the application process, or what your flags mean.</div>
           <FaqWidget />
         </div>
+
       </div>
 
       {/* Disclaimer */}
       <div style={{ padding: "20px 40px", borderTop: "1px solid rgba(201,168,76,0.06)" }}>
-        <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.18)", lineHeight: 1.6, maxWidth: "720px" }}>
+        <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.18)", lineHeight: 1.6, maxWidth: "720px", margin: "0 auto" }}>
           This assessment is based solely on the answers you provided and does not constitute legal advice. e2go.app is a self-service preparation tool, not a law firm. Consular decisions involve factors beyond the scope of any preparation tool. For legal advice, consult a qualified U.S. immigration attorney.
         </div>
       </div>
