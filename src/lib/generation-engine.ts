@@ -15,8 +15,90 @@ import {
 } from '@/types/generation';
 import { type CaseBrief } from '@/types/analysis';
 import { wrapUserContent } from './prompt-sanitizer';
+import { INTERVIEW_KNOWLEDGE_BASE } from './interview-knowledge-base';
 
 const PROMPTS_DIR = join(process.cwd(), 'prompts', 'v1', 'documents');
+
+// ---------------------------------------------------------------------------
+// Knowledge Base context injection
+// Selects relevant interview KB entries based on document type and injects
+// them as expert officer-perspective guidance into the generation prompt.
+// Zero-dependency — reads from the static INTERVIEW_KNOWLEDGE_BASE.
+// ---------------------------------------------------------------------------
+
+const DOC_TYPE_QUESTION_MAP: Record<string, string[]> = {
+  cover_letter: ['IQ-01', 'IQ-02', 'IQ-03', 'IQ-04', 'IQ-05', 'IQ-06', 'IQ-07'],
+  source_of_funds: ['IQ-08', 'IQ-09', 'IQ-10'],
+  business_plan: ['IQ-01', 'IQ-02', 'IQ-03', 'IQ-11', 'IQ-12'],
+  exhibit_list: [],
+};
+
+function buildKBContext(documentType: string, consulatePost: string): string {
+  const relevantIds = DOC_TYPE_QUESTION_MAP[documentType] ?? [];
+  if (relevantIds.length === 0) return '';
+
+  const entries = INTERVIEW_KNOWLEDGE_BASE.filter(e => relevantIds.includes(e.id));
+  if (entries.length === 0) return '';
+
+  const lines: string[] = [
+    'E-2 OFFICER PERSPECTIVE — KNOWLEDGE BASE:',
+    `The following reflects what a ${consulatePost.toUpperCase()} consular officer tests for each topic this document must address.`,
+    'Use these frameworks to ensure the document proactively satisfies the officer\'s scrutiny criteria.',
+    '',
+  ];
+
+  for (const entry of entries) {
+    lines.push(`[${entry.id}] ${entry.topic.toUpperCase()} (${entry.frequency})`);
+    lines.push(`Officer tests: ${entry.officerTests}`);
+    lines.push(`Must cover: ${entry.keyPrinciples.join(' | ')}`);
+    lines.push(`Red flags to avoid: ${entry.redFlags.slice(0, 3).join(' | ')}`);
+    if (entry.torontoNote && consulatePost.toLowerCase().includes('toronto')) {
+      lines.push(`Toronto-specific: ${entry.torontoNote}`);
+    }
+    lines.push('');
+  }
+
+  return lines.join('\n');
+}
+
+// Attempt to fetch relevant FAQ KB chunks from Supabase pgvector.
+// Gracefully returns empty string if OPENAI_API_KEY is absent or table is empty.
+async function fetchFAQKBContext(
+  documentType: string,
+  consulatePost: string,
+  archetype: string
+): Promise<string> {
+  const openaiKey = process.env.OPENAI_API_KEY;
+  if (!openaiKey) return '';
+
+  try {
+    const query = `E-2 visa ${documentType.replace(/_/g, ' ')} ${consulatePost} ${archetype} requirements and officer concerns`;
+    const embedRes = await fetch('https://api.openai.com/v1/embeddings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${openaiKey}` },
+      body: JSON.stringify({ model: 'text-embedding-3-small', input: query }),
+    });
+    if (!embedRes.ok) return '';
+    const embedJson = await embedRes.json() as { data: { embedding: number[] }[] };
+    const embedding = embedJson.data?.[0]?.embedding;
+    if (!embedding) return '';
+
+    const supabase = getSupabase();
+    const { data, error } = await (supabase as ReturnType<typeof getSupabase> & {
+      rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: { chunk_text: string }[] | null; error: unknown }>
+    }).rpc('match_faq_kb', {
+      query_embedding: JSON.stringify(embedding),
+      match_threshold: 0.65,
+      match_count: 3,
+    });
+    if (error || !data || data.length === 0) return '';
+
+    const chunks = data.map((r: { chunk_text: string }) => r.chunk_text).join('\n\n');
+    return `FAQ KNOWLEDGE BASE — RETRIEVED CONTEXT:\n${chunks}\n`;
+  } catch {
+    return '';
+  }
+}
 
 // Brackets the LLM generates instead of filling in actual data.
 // Matches patterns like [passport number from Tab A], [see Tab H], [insert here], [your name here].
@@ -290,11 +372,18 @@ export async function callClaudeAPI(payload: GenerationPayload): Promise<string>
       ].join('\n')
     : '';
 
+  const caseBriefObj = payload.case_brief as Record<string, unknown>;
+  const archetype = (caseBriefObj?.archetype as string) ?? 'unknown';
+  const staticKBContext = buildKBContext(payload.document_type, payload.consulate_post);
+  const dynamicKBContext = await fetchFAQKBContext(payload.document_type, payload.consulate_post, archetype);
+
   const userMessage = [
     `KNOWLEDGE CONTEXT:`,
     `Consulate post: ${payload.consulate_post}`,
     `Document type: ${docLabel}`,
     '',
+    staticKBContext,
+    dynamicKBContext,
     dCodeBlock,
     investmentBreakdownText,
     `APPLICANT CASE BRIEF:`,

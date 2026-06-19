@@ -173,6 +173,30 @@ export default function PrivacyPolicyPage() {
 
           <h2 className="text-2xl mb-4 mt-8" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#f5f0e8", fontWeight: 400 }}>11. VOICE TRANSCRIPTION</h2>
           <p className="mb-4">If you use the interview simulator in voice mode, your audio is transcribed by Groq Inc. (groq.com), a third-party service located in the United States. Audio is sent to Groq solely for the purpose of converting speech to text. Groq does not retain audio or transcription data after processing — Zero Data Retention is enabled on our account. By using voice mode, you consent to this processing. You may use text mode at any time as an alternative that does not involve audio transmission.</p>
+
+          <h2 className="text-2xl mb-4 mt-8" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#f5f0e8", fontWeight: 400 }}>12. AI PROCESSING — NO TRAINING USE</h2>
+          <p className="mb-4"><strong>Your data is never used to train AI models.</strong> When you use E2go, your information is processed by AI systems (large language models) solely to generate your specific output — a coaching report, gap analysis, interview script, or application document. Your inputs are not stored by these AI providers beyond the duration of the API call, and they are not used as training data for any AI model, including ours. This applies to all AI features: the eligibility quiz, simulator, gap analysis, FDD analysis, and document generation.</p>
+          <p className="mb-4">AI providers used and their data practices:</p>
+          <ul className="list-disc pl-6 mb-4 space-y-1" style={{ color: "rgba(245,240,232,0.75)" }}>
+            <li><strong>Anthropic (Claude):</strong> Used for document generation. Anthropic&apos;s API does not use submitted prompts for model training. Zero Data Retention (ZDR) applies.</li>
+            <li><strong>OpenRouter:</strong> Routes requests to underlying models for analysis and coaching features. Inputs are not retained or used for training.</li>
+            <li><strong>Groq:</strong> Used for voice transcription and text-to-speech. Zero Data Retention is enabled. Audio is not stored.</li>
+            <li><strong>XAI / MiMo:</strong> Used for interview simulation. Inputs processed transiently and not retained.</li>
+          </ul>
+
+          <h2 className="text-2xl mb-4 mt-8" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#f5f0e8", fontWeight: 400 }}>13. NOTICE FOR EU TREATY COUNTRY USERS (GDPR)</h2>
+          <p className="mb-4">The E-2 visa programme is open to nationals of approximately 82 treaty countries, many of which are European Union member states (including France, Germany, Italy, the Netherlands, Spain, and others). If you are a resident of the European Economic Area (EEA) or United Kingdom, you may have additional rights under the General Data Protection Regulation (GDPR) or UK GDPR.</p>
+          <p className="mb-4">These rights include:</p>
+          <ul className="list-disc pl-6 mb-4 space-y-1" style={{ color: "rgba(245,240,232,0.75)" }}>
+            <li><strong>Right of access:</strong> Obtain a copy of your personal data.</li>
+            <li><strong>Right to rectification:</strong> Correct inaccurate data.</li>
+            <li><strong>Right to erasure (&apos;right to be forgotten&apos;):</strong> Request deletion of your personal data. You can exercise this immediately from Settings → Delete My Account.</li>
+            <li><strong>Right to data portability:</strong> Receive your data in a structured, machine-readable format. Contact privacy@e2go.app to request an export.</li>
+            <li><strong>Right to object:</strong> Object to processing for direct marketing or on grounds relating to your particular situation.</li>
+            <li><strong>Right to restrict processing:</strong> Request that we limit processing of your data in certain circumstances.</li>
+          </ul>
+          <p className="mb-4">Our lawful basis for processing is <strong>contract performance</strong> (to provide you with the service you signed up for) and, where applicable, <strong>legitimate interests</strong> (fraud prevention, security, platform improvement). We do not rely on consent as the sole basis for processing application data — you have the right to withdraw consent for any optional processing at any time.</p>
+          <p className="mb-4">International transfers: Your data may be processed by third-party service providers located in the United States and Canada. Where EU data is transferred outside the EEA, we rely on Standard Contractual Clauses (SCCs) or the provider&apos;s adequacy certification. To exercise any GDPR rights, contact privacy@e2go.app.</p>
         </div>
 
         <div className="mt-12 pt-8" style={{ borderTop: "1px solid rgba(201,168,76,0.2)" }}>
