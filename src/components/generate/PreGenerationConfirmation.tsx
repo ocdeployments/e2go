@@ -47,7 +47,7 @@ interface Props {
 
 const INTRO_COPY = {
   heading: "Let’s make sure we have your investment exactly right",
-  subtext: "Every document we write will use these exact figures. If anything here is off — even by a small amount — fixing it now is much easier than fixing it across six documents later.",
+  subtext: "Every document we write will use these exact figures. If anything here is off — even by a small amount — fixing it now is much easier than fixing it across eight documents later.",
 };
 
 const CONFIRM_LABEL = "Confirm — this is correct →";
