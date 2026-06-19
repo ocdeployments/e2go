@@ -55,6 +55,7 @@ function GapAnalysisInner() {
   const [semanticResults, setSemanticResults] = useState<Record<string, { rating: string; finding: string; risk: string } | null> | null>(null);
   const [rebuilding, setRebuilding] = useState(false);
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
+  const [liveUpdated, setLiveUpdated] = useState(false);
 
   // Rebuild case profile then re-score — used by the Recalculate button
   const recalculate = async () => {
@@ -75,6 +76,42 @@ function GapAnalysisInner() {
       setRebuilding(false);
     }
   };
+
+  // Supabase realtime subscription — auto-refresh when case_profiles row updates
+  useEffect(() => {
+    let userId: string | null = null;
+
+    supabase.auth.getUser().then(({ data }: { data: { user: { id: string } | null } }) => {
+      userId = data.user?.id ?? null;
+      if (!userId) return;
+
+      const channel = supabase
+        .channel(`case_profiles:${userId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'case_profiles',
+            filter: `user_id=eq.${userId}`,
+          },
+          () => {
+            setLastRefreshed(new Date());
+            setLiveUpdated(true);
+            setLoading(true);
+            setResult(null);
+            setEnrichments({});
+            setSemanticResults(null);
+            // Clear the "live updated" badge after 5s
+            setTimeout(() => setLiveUpdated(false), 5000);
+          }
+        )
+        .subscribe();
+
+      return () => { supabase.removeChannel(channel); };
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     async function load() {
@@ -254,7 +291,12 @@ function GapAnalysisInner() {
             </>
           )}
           <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '12px' }}>
-            {lastRefreshed && (
+            {liveUpdated && (
+              <span style={{ fontSize: '10px', letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#5DCAA5', padding: '3px 8px', border: '1px solid rgba(93,202,165,0.35)', background: 'rgba(93,202,165,0.06)' }}>
+                ● Live update
+              </span>
+            )}
+            {lastRefreshed && !liveUpdated && (
               <span style={{ fontSize: '11px', color: 'rgba(245,240,232,0.35)' }}>
                 Updated {lastRefreshed.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </span>
