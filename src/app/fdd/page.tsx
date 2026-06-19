@@ -115,7 +115,7 @@ export default function FddIndexPage() {
     <main className="min-h-screen bg-[#0a0a0a] text-white">
       <div className="max-w-2xl mx-auto px-6 py-16">
 
-        <div className="flex items-end justify-between mb-10">
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-10">
           <div>
             <p className="text-[#C9A84C] text-xs tracking-widest uppercase mb-3">FDD Intelligence</p>
             <h1 className="font-['Cormorant_Garamond'] text-4xl font-light text-white">
@@ -124,7 +124,7 @@ export default function FddIndexPage() {
           </div>
           <button
             onClick={() => router.push('/fdd/upload')}
-            className="bg-[#C9A84C] text-[#0a0a0a] font-semibold px-5 py-2.5 rounded-xl text-sm hover:bg-[#d4b55a] transition-colors shrink-0"
+            className="bg-[#C9A84C] text-[#0a0a0a] font-semibold px-5 py-2.5 rounded-xl text-sm hover:bg-[#d4b55a] transition-colors shrink-0 self-start sm:self-auto"
           >
             + New analysis
           </button>
