@@ -52,16 +52,16 @@ export async function POST(request: NextRequest) {
     // Create server-side Supabase client to verify authentication
     const supabase = await createSupabaseServerClient();
 
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    const { data: { user }, error: sessionError } = await supabase.auth.getUser();
 
-    if (sessionError || !session?.user) {
+    if (sessionError || !user) {
       return NextResponse.json(
         { error: "Authentication required" },
         { status: 401 }
       );
     }
 
-    const userId = session.user.id;
+    const userId = user.id;
 
     // Check rate limit with Redis
     const allowed = await checkRateLimitWithRedis(userId);
