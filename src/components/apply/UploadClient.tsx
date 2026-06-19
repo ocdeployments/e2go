@@ -200,6 +200,25 @@ export default function UploadClient({ applicationId }: { applicationId: string 
           </p>
         </div>
 
+        {/* Privacy trust notice */}
+        <div
+          style={{
+            marginBottom: '24px',
+            padding: '14px 16px',
+            border: '1px solid rgba(201,168,76,0.15)',
+            background: 'rgba(201,168,76,0.03)',
+            fontFamily: "'DM Sans', sans-serif",
+          }}
+        >
+          <p style={{ fontSize: '11px', color: 'rgba(245,240,232,0.5)', lineHeight: 1.7 }}>
+            <span style={{ color: 'rgba(201,168,76,0.7)', fontWeight: 500 }}>Your documents are private.</span>{' '}
+            We use them only to fill in your case file and check for gaps — never to train AI models,
+            never shared with third parties. Documents are encrypted at rest and deleted when you close your account.
+            You can request deletion at any time from{' '}
+            <a href="/settings" style={{ color: 'rgba(201,168,76,0.6)', textDecoration: 'none' }}>Settings</a>.
+          </p>
+        </div>
+
         {/* Drop zone */}
         <div
           onDragOver={handleDragOver}

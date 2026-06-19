@@ -324,6 +324,26 @@ export default function ApplyPage() {
           isReturning={isReturning}
         />
 
+        {/* Privacy trust notice — shown once on first visit (no answers yet) */}
+        {!applicantName && !quizCompleted && (
+          <div
+            style={{
+              marginBottom: '24px',
+              padding: '14px 16px',
+              border: '1px solid rgba(201,168,76,0.12)',
+              background: 'rgba(201,168,76,0.02)',
+              fontFamily: "'DM Sans', sans-serif",
+            }}
+          >
+            <p style={{ fontSize: '11px', color: 'rgba(245,240,232,0.45)', lineHeight: 1.7 }}>
+              <span style={{ color: 'rgba(201,168,76,0.65)', fontWeight: 500 }}>Your answers stay private.</span>{' '}
+              Everything you enter here is used only to prepare your E-2 application — never to train AI models,
+              never sold, never shared with third parties. You can delete your account and all data at any time
+              from <a href="/settings" style={{ color: 'rgba(201,168,76,0.55)', textDecoration: 'none' }}>Settings</a>.
+            </p>
+          </div>
+        )}
+
         {/* Quiz banner for no-data state */}
         {!quizCompleted && !applicantName && (
           <div
