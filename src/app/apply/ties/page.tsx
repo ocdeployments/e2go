@@ -24,12 +24,10 @@ const CLUSTERS = [
   { number: 2, label: 'Family & community' },
   { number: 3, label: 'Financial obligations' },
   { number: 4, label: 'Return intent' },
-  { number: 5, label: 'Cover letter narrative' },
 ];
 
 const DOCUMENTS = [
   { name: 'Non-immigrant Intent' },
-  { name: 'Cover Letter Closing' },
 ];
 
 interface QuestionField {
@@ -101,20 +99,11 @@ const RETURN_QUESTIONS: QuestionField[] = [
   { key: 'M3-T-11', type: 'textarea', label: 'Describe your long-term plans. What is your exit strategy from the U.S.?', helperText: 'E-2 is a nonimmigrant visa — officers want to see that you understand this is temporary and have a plan to return.' },
 ];
 
-const COVER_LETTER_QUESTIONS: QuestionField[] = [
-  { key: 'M3-T-12', type: 'textarea', label: 'Draft your opening paragraph — introduce yourself and your business.', helperText: 'Who you are, your nationality, what business you are starting, where, and how much you invested.' },
-  { key: 'M3-T-13', type: 'textarea', label: 'Explain why you chose this specific business and this location.', helperText: 'Market research, personal connection, industry knowledge.' },
-  { key: 'M3-T-14', type: 'textarea', label: 'Describe how the business will be marginal or non-marginal.', helperText: 'Job creation, economic contribution, market demand.' },
-  { key: 'M3-T-15', type: 'textarea', label: 'Explain your ties to your home country and your intent to return.', helperText: 'Property, family, financial obligations, long-term plans.' },
-  { key: 'M3-T-16', type: 'textarea', label: 'Anything else the officer should know — address potential concerns proactively.' },
-];
-
 const ALL_QUESTION_SETS = [
   { questions: PROPERTY_QUESTIONS, cluster: 1 },
   { questions: FAMILY_QUESTIONS, cluster: 2 },
   { questions: FINANCIAL_QUESTIONS, cluster: 3 },
   { questions: RETURN_QUESTIONS, cluster: 4 },
-  { questions: COVER_LETTER_QUESTIONS, cluster: 5 },
 ];
 
 export default function TiesPage() {
@@ -250,7 +239,7 @@ export default function TiesPage() {
       clusters={clusterStatuses}
       activeClusterId={activeClusterId}
       onClusterChange={setActiveClusterId}
-      buildsDocuments={['Non-immigrant Intent', 'Cover Letter Closing']}
+      buildsDocuments={['Non-immigrant Intent']}
       nextSectionPath="/apply"
       prevSectionPath="/apply/family"
       isSaving={saveStatus === 'saving'}
@@ -308,14 +297,6 @@ export default function TiesPage() {
         </div>
       )}
 
-      {activeNumber === 5 && (
-        <div>
-          <ClusterDivider label="Cover letter narrative" />
-          {renderQuestions(COVER_LETTER_QUESTIONS)}
-
-          <AdvisoryBlock>Your cover letter will be drafted from these answers in Step 15. The narrative should flow naturally and address officer concerns proactively. Do not repeat information already in your documents — use the cover letter to connect the dots.</AdvisoryBlock>
-        </div>
-      )}
     </CaseFileShell>
   );
 }
