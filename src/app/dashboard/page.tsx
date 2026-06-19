@@ -39,6 +39,15 @@ interface SimulatorData {
   sessionsPurchased: number;
 }
 
+interface CaseProfileData {
+  archetype?: string | null;
+  completeness_score?: number | null;
+  net_worth_range?: string | null;
+  industry_interest?: string | null;
+  timeline_goal?: string | null;
+  data_state?: string | null;
+}
+
 export default function DashboardPage() {
   const [supabase] = useState(() => createBrowserSupabaseClient());
   const [user, setUser] = useState<UserProfile | null>(null);
@@ -47,6 +56,7 @@ export default function DashboardPage() {
   const [timeline, setTimeline] = useState<TimelineData | null>(null);
   const [isSimulatorOnly, setIsSimulatorOnly] = useState(false);
   const [simulatorData, setSimulatorData] = useState<SimulatorData | null>(null);
+  const [caseProfile, setCaseProfile] = useState<CaseProfileData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -135,6 +145,13 @@ export default function DashboardPage() {
           );
         }
 
+        // Get case profile (archetype, completeness, snapshot fields)
+        const { data: cpData } = await supabase
+          .from('case_profiles')
+          .select('archetype, completeness_score, net_worth_range, industry_interest, timeline_goal, data_state')
+          .eq('user_id', authUser.id)
+          .maybeSingle();
+
         if (!cancelled) {
           setUser(profile || null);
           setQuiz(quizData || null);
@@ -142,6 +159,7 @@ export default function DashboardPage() {
           setTimeline(timelineData);
           setIsSimulatorOnly(simulatorOnly);
           setSimulatorData(simData);
+          setCaseProfile(cpData || null);
         }
       } catch (err) {
         console.error("[dashboard] init failed:", err);
@@ -339,28 +357,82 @@ export default function DashboardPage() {
               </div>
             </section>
 
-            {/* Progress Bar */}
+            {/* Module Checklist — replaces confusing progress bar */}
             <section style={{ padding: "24px", background: "rgba(201,168,76,0.02)", border: "1px solid rgba(201,168,76,0.12)", borderRadius: 0, marginBottom: "32px" }}>
-              <h2 className="text-lg font-semibold mb-4" style={{ color: "#f5f0e8", fontFamily: "'Cormorant Garamond', serif", fontWeight: 300 }}>Module Progress</h2>
-              <div className="grid grid-cols-6 gap-2 text-center">
-                {['Quiz', 'Onboarding', 'Business', 'Documents', 'Score', 'Simulator'].map((mod, i) => {
-                  const completed = [
-                    lifecycle?.module0_completed_at,
-                    lifecycle?.module1_completed_at,
-                    lifecycle?.module2_completed_at,
-                    lifecycle?.module3_completed_at,
-                    lifecycle?.module4_completed_at,
-                    lifecycle?.module5_completed_at,
-                  ][i];
-                  return (
-                    <div key={i} className="p-3" style={{ background: completed ? "rgba(201,168,76,0.08)" : "rgba(201,168,76,0.02)", color: completed ? "#C9A84C" : "rgba(245,240,232,0.45)" }}>
-                      <p className="text-xs font-medium">{mod}</p>
-                      <p className="text-lg">{completed ? '✓' : '○'}</p>
+              <h2 className="text-lg font-semibold mb-4" style={{ color: "#f5f0e8", fontFamily: "'Cormorant Garamond', serif", fontWeight: 300 }}>Your Application Checklist</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {[
+                  { label: 'Eligibility Quiz', href: '/quiz', done: !!lifecycle?.module0_completed_at, desc: 'Confirm E-2 eligibility' },
+                  { label: 'Onboarding', href: '/apply', done: !!lifecycle?.module1_completed_at, desc: 'Personal info & timeline' },
+                  { label: 'Business Information', href: '/apply/business', done: !!lifecycle?.module2_completed_at, desc: 'Business description & structure' },
+                  { label: 'Investment & Documents', href: '/apply/upload', done: !!lifecycle?.module3_completed_at, desc: 'Source of funds & supporting docs' },
+                  { label: 'Gap Analysis', href: '/gap-analysis', done: !!lifecycle?.module4_completed_at, desc: 'Identify case weaknesses' },
+                  { label: 'Interview Simulator', href: '/simulator', done: !!lifecycle?.module5_completed_at, desc: 'Practice your consular interview' },
+                ].map((step) => (
+                  <Link
+                    key={step.label}
+                    href={step.href}
+                    className="flex items-start gap-3 p-3 transition-colors"
+                    style={{ background: step.done ? "rgba(201,168,76,0.06)" : "transparent", border: `1px solid ${step.done ? "rgba(201,168,76,0.3)" : "rgba(201,168,76,0.12)"}`, borderRadius: 0, textDecoration: 'none' }}
+                  >
+                    <span style={{ minWidth: 20, height: 20, borderRadius: '50%', background: step.done ? '#C9A84C' : 'transparent', border: `1.5px solid ${step.done ? '#C9A84C' : 'rgba(201,168,76,0.4)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 2 }}>
+                      {step.done && <span style={{ color: '#0a0a0a', fontSize: 11, fontWeight: 700 }}>✓</span>}
+                    </span>
+                    <div>
+                      <p className="text-sm font-medium" style={{ color: step.done ? '#C9A84C' : '#f5f0e8' }}>{step.label}</p>
+                      <p className="text-xs" style={{ color: 'rgba(245,240,232,0.45)' }}>{step.desc}</p>
                     </div>
-                  );
-                })}
+                  </Link>
+                ))}
               </div>
             </section>
+
+            {/* Profile Snapshot — from case_profiles */}
+            {caseProfile && (
+              <section style={{ padding: "24px", background: "rgba(201,168,76,0.02)", border: "1px solid rgba(201,168,76,0.12)", borderRadius: 0, marginBottom: "32px" }}>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold" style={{ color: "#f5f0e8", fontFamily: "'Cormorant Garamond', serif", fontWeight: 300 }}>Your Investor Profile</h2>
+                  {caseProfile.completeness_score != null && (
+                    <span className="text-sm px-3 py-1" style={{ background: 'rgba(201,168,76,0.12)', border: '1px solid rgba(201,168,76,0.3)', color: '#C9A84C' }}>
+                      {Math.round(caseProfile.completeness_score)}% complete
+                    </span>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {caseProfile.archetype && (
+                    <div>
+                      <p className="text-xs mb-1" style={{ color: 'rgba(245,240,232,0.45)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Investor type</p>
+                      <p className="text-sm font-medium capitalize" style={{ color: '#f5f0e8' }}>{caseProfile.archetype.replace(/_/g, ' ')}</p>
+                    </div>
+                  )}
+                  {caseProfile.industry_interest && (
+                    <div>
+                      <p className="text-xs mb-1" style={{ color: 'rgba(245,240,232,0.45)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Industry</p>
+                      <p className="text-sm font-medium capitalize" style={{ color: '#f5f0e8' }}>{caseProfile.industry_interest.replace(/_/g, ' ')}</p>
+                    </div>
+                  )}
+                  {caseProfile.net_worth_range && (
+                    <div>
+                      <p className="text-xs mb-1" style={{ color: 'rgba(245,240,232,0.45)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Net worth range</p>
+                      <p className="text-sm font-medium" style={{ color: '#f5f0e8' }}>{caseProfile.net_worth_range}</p>
+                    </div>
+                  )}
+                  {caseProfile.timeline_goal && (
+                    <div>
+                      <p className="text-xs mb-1" style={{ color: 'rgba(245,240,232,0.45)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Target timeline</p>
+                      <p className="text-sm font-medium capitalize" style={{ color: '#f5f0e8' }}>{caseProfile.timeline_goal.replace(/_/g, ' ')}</p>
+                    </div>
+                  )}
+                </div>
+                {caseProfile.completeness_score != null && caseProfile.completeness_score < 80 && (
+                  <div className="mt-4 pt-4" style={{ borderTop: '1px solid rgba(201,168,76,0.1)' }}>
+                    <Link href="/gap-analysis" className="text-sm" style={{ color: '#C9A84C' }}>
+                      View your gap analysis to strengthen this profile →
+                    </Link>
+                  </div>
+                )}
+              </section>
+            )}
 
             {/* Quick Actions */}
             <section style={{ padding: "24px", background: "rgba(201,168,76,0.02)", border: "1px solid rgba(201,168,76,0.12)", borderRadius: 0 }}>
