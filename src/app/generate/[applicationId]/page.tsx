@@ -18,7 +18,7 @@ interface StepState {
   status: StepStatus;
 }
 
-const TOTAL_DOCUMENTS = 6;
+const TOTAL_DOCUMENTS = 8;
 
 const DOCUMENT_LIST = [
   { id: "cover_letter", label: "Cover Letter", status: "pending" as StepStatus },
@@ -27,18 +27,20 @@ const DOCUMENT_LIST = [
   { id: "business_plan", label: "Business Plan", status: "pending" as StepStatus },
   { id: "qualifications", label: "Qualifications", status: "pending" as StepStatus },
   { id: "ds160_reference", label: "DS-160 Reference", status: "pending" as StepStatus },
+  { id: "visa_category", label: "Visa Category Letter", status: "pending" as StepStatus },
+  { id: "nonimmigrant_intent", label: "Non-immigrant Intent", status: "pending" as StepStatus },
 ];
 
 const QUALITY_STEPS = [
-  { id: 7, label: "Gap Analysis" },
-  { id: 8, label: "Repetition Check" },
-  { id: 9, label: "Consistency Check" },
-  { id: 10, label: "AI Detection Audit" },
-  { id: 11, label: "Humanization Pass" },
-  { id: 12, label: "Metadata Sanitization" },
-  { id: 13, label: "Quality Gate" },
-  { id: 14, label: "Pre-download Ack" },
-  { id: 15, label: "Preview Unlock" },
+  { id: 9, label: "Gap Analysis" },
+  { id: 10, label: "Repetition Check" },
+  { id: 11, label: "Consistency Check" },
+  { id: 12, label: "AI Detection Audit" },
+  { id: 13, label: "Humanization Pass" },
+  { id: 14, label: "Metadata Sanitization" },
+  { id: 15, label: "Quality Gate" },
+  { id: 16, label: "Pre-download Ack" },
+  { id: 17, label: "Preview Unlock" },
 ];
 
 const STATUS_MESSAGES: Record<string, string> = {
@@ -48,6 +50,8 @@ const STATUS_MESSAGES: Record<string, string> = {
   business_plan: "Building your financial projections and staffing plan...",
   qualifications: "Presenting your professional qualifications and management experience...",
   ds160_reference: "Preparing your DS-160 form reference guide...",
+  visa_category: "Building your E-2 visa category analysis across five treaty requirements...",
+  nonimmigrant_intent: "Writing your non-immigrant intent statement from your ties data...",
   quality_steps: "Applying final quality checks before your package is ready...",
 };
 
@@ -68,7 +72,7 @@ export default function GenerateProgressPage() {
 
   const [_jobId, setJobId] = useState<string | null>(null);
   const [_steps, setSteps] = useState<StepState[]>(() =>
-    Array.from({ length: 15 }, (_, i) => ({
+    Array.from({ length: 17 }, (_, i) => ({
       id: i + 1,
       label: GENERATION_STEP_LABELS[i + 1] || `Step ${i + 1}`,
       status: "pending" as StepStatus,
@@ -118,7 +122,7 @@ export default function GenerateProgressPage() {
   // Get quality step state
   const getQualityStepState = (stepId: number): StepStatus => {
     if (stepId < currentQualityStep) return "complete";
-    if (stepId === currentQualityStep && approvedDocuments >= 6) return "running";
+    if (stepId === currentQualityStep && approvedDocuments >= 8) return "running";
     return "pending";
   };
 
@@ -189,7 +193,7 @@ export default function GenerateProgressPage() {
         }
 
         const stepNum = msg.step || 0;
-        if (stepNum >= 7) {
+        if (stepNum >= 9) {
           setCurrentQualityStep(stepNum);
         }
 
@@ -199,14 +203,14 @@ export default function GenerateProgressPage() {
           setAwaitingApproval(false);
         } else if (msg.status === "failed") {
           updateStepStatus(stepNum, "failed");
-          setOverallProgress(Math.round((stepNum / 15) * 100));
+          setOverallProgress(Math.round((stepNum / 17) * 100));
           setAwaitingApproval(false);
         } else if (msg.status === "awaiting_approval") {
           updateStepStatus(stepNum, "running");
-          setOverallProgress(Math.round((stepNum / 15) * 100));
+          setOverallProgress(Math.round((stepNum / 17) * 100));
         } else {
           updateStepStatus(stepNum, "running");
-          setOverallProgress(Math.round((stepNum / 15) * 100));
+          setOverallProgress(Math.round((stepNum / 17) * 100));
         }
       });
     },
@@ -430,7 +434,7 @@ export default function GenerateProgressPage() {
   const isComplete = jobStatus === "completed";
   const isFailed = jobStatus === "failed" && !errorMessage.includes("retry");
   const isGenerating = jobStatus === "running" || jobStatus === "awaiting_approval";
-  const isQualityPhase = approvedDocuments >= 6 && !isComplete;
+  const isQualityPhase = approvedDocuments >= 8 && !isComplete;
 
   // Get active document for status message
   const activeDoc = currentDocumentType || "cover_letter";
@@ -529,7 +533,7 @@ export default function GenerateProgressPage() {
             </div>
 
             {/* Quality Steps */}
-            {approvedDocuments >= 6 && (
+            {approvedDocuments >= 8 && (
               <>
                 <div className="my-6 h-px bg-[#C9A84C]/20" />
 
@@ -834,18 +838,20 @@ export default function GenerateProgressPage() {
               </h3>
 
               {/* Animated status cycling */}
-              {approvedDocuments >= 6 && currentQualityStep >= 7 && (
+              {approvedDocuments >= 8 && currentQualityStep >= 9 && (
               <div className="relative h-6 overflow-hidden">
                 <div className="flex flex-col items-center animate-pulse" style={{ animationDuration: '3s' }}>
                     <span
                       className="text-[13px] text-white/50"
                       style={{ fontFamily: "'DM Sans', sans-serif" }}
                     >
-                      {currentQualityStep === 7 && "Reviewing document consistency..."}
-                      {currentQualityStep === 8 && "Running AI detection audit..."}
-                      {currentQualityStep === 9 && "Applying humanization pass..."}
-                      {currentQualityStep === 10 && "Sanitizing document metadata..."}
-                      {currentQualityStep >= 11 && "Final quality gate..."}
+                      {currentQualityStep === 9 && "Running gap analysis..."}
+                      {currentQualityStep === 10 && "Checking for repetition across documents..."}
+                      {currentQualityStep === 11 && "Reviewing document consistency..."}
+                      {currentQualityStep === 12 && "Running AI detection audit..."}
+                      {currentQualityStep === 13 && "Applying humanization pass..."}
+                      {currentQualityStep === 14 && "Sanitizing document metadata..."}
+                      {currentQualityStep >= 15 && "Final quality gate..."}
                     </span>
                 </div>
               </div>
@@ -877,14 +883,14 @@ export default function GenerateProgressPage() {
                 className="text-sm text-white/50 mb-2 text-center max-w-md"
                 style={{ fontFamily: "'DM Sans', sans-serif" }}
               >
-                All 6 case file documents have passed quality review and your confirmation has been recorded.
+                All 8 case file documents have passed quality review and your confirmation has been recorded.
               </p>
 
               <p
                 className="text-xs text-white/30 mb-8 text-center max-w-md"
                 style={{ fontFamily: "'DM Sans', sans-serif" }}
               >
-                Your package includes 7 files — 6 application documents plus a completion checklist.
+                Your package includes 8 application documents plus a completion checklist.
                 Any highlighted fields must be completed locally before submission.
               </p>
 
@@ -902,7 +908,7 @@ export default function GenerateProgressPage() {
                   className="text-xs text-white/30 mt-4"
                   style={{ fontFamily: "'DM Sans', sans-serif" }}
                 >
-                  Preparing 7 .docx files…
+                  Preparing application package…
                 </p>
               )}
             </div>
