@@ -28,6 +28,7 @@ const CLUSTERS = [
   { number: 5, label: 'Franchise (if applicable)' },
   { number: 6, label: 'Startup costs' },
   { number: 7, label: 'Market & competition' },
+  { number: 8, label: 'Growth plan' },
 ];
 
 const DOCUMENTS = [
@@ -58,6 +59,13 @@ const ENTITY_QUESTIONS: QuestionField[] = [
   { key: 'M3-E-04', type: 'text', label: 'EIN (Employer Identification Number)', helperText: 'Canadian applicants can get an EIN without a US Social Security Number by calling the IRS International Line: +1 (267) 941-1099. Have your LLC formation documents ready.' },
   { key: 'M3-E-05', type: 'text', label: 'Date entity formed' },
   { key: 'M3-E-06', type: 'text', label: 'Ownership percentage (%)', required: true },
+  { key: 'M3-E-13', type: 'single', label: 'How is your ownership stake documented?', required: true, options: [
+    { value: 'operating-agreement', label: 'LLC operating agreement' },
+    { value: 'stock-cert', label: 'Stock certificate' },
+    { value: 'cap-table', label: 'Cap table or shareholder register' },
+    { value: 'articles', label: 'Articles of incorporation' },
+    { value: 'not-yet', label: 'Not yet documented' },
+  ]},
   { key: 'M3-E-07', type: 'single', label: 'Operating agreement in place?', required: true, options: [
     { value: 'yes', label: 'Yes' },
     { value: 'in-progress', label: 'In progress' },
@@ -144,6 +152,16 @@ const MARKET_QUESTIONS: QuestionField[] = [
   { key: 'M3-K-12', type: 'textarea', label: 'What market trends support your business?' },
 ];
 
+const GROWTH_QUESTIONS: QuestionField[] = [
+  { key: 'QK-06', type: 'textarea', label: 'What equipment, inventory, or technology does this business require to operate?', helperText: 'List the key assets the business needs. This feeds your startup cost breakdown and business plan narrative.' },
+  { key: 'QK-13', type: 'textarea', label: 'What does growth look like in years 2 and 3?', helperText: 'Revenue targets, headcount additions, location expansion. Officers weight multi-year plans heavily in the viability assessment.' },
+  { key: 'QK-14', type: 'single', label: 'Do you plan to open additional locations beyond the initial one?', options: [
+    { value: 'yes', label: 'Yes — expansion is part of the plan' },
+    { value: 'possibly', label: 'Possibly — depends on performance' },
+    { value: 'no', label: 'No — single location' },
+  ]},
+];
+
 const ALL_QUESTION_SETS = [
   { questions: ENTITY_QUESTIONS, cluster: 1 },
   { questions: WHAT_YOU_DO_QUESTIONS, cluster: 2 },
@@ -151,6 +169,7 @@ const ALL_QUESTION_SETS = [
   { questions: LICENSES_QUESTIONS, cluster: 4 },
   { questions: FRANCHISE_QUESTIONS, cluster: 5 },
   { questions: MARKET_QUESTIONS, cluster: 7 },
+  { questions: GROWTH_QUESTIONS, cluster: 8 },
 ];
 
 export default function BusinessPage() {
@@ -356,7 +375,7 @@ export default function BusinessPage() {
             </AdvisoryBlock>
           )}
 
-          {answers['M3-E-10']?.value === 'llc' && (
+          {answers['M3-E-02']?.value === 'llc' && (
             <AdvisoryBlock>
               Two separate documents are required. Articles of organization (or certificate of formation) is filed with the state to create the LLC. Your operating agreement is the private internal document governing how the LLC operates. Officers want to see both.
             </AdvisoryBlock>
@@ -453,6 +472,19 @@ export default function BusinessPage() {
         <div>
           <ClusterDivider label="Market & competition" />
           {renderQuestionCluster(MARKET_QUESTIONS)}
+        </div>
+      )}
+
+      {activeCluster === 8 && (
+        <div>
+          <ClusterDivider label="Growth plan" />
+          {renderQuestionCluster(GROWTH_QUESTIONS)}
+
+          {answers['QK-14']?.value === 'yes' && (
+            <AdvisoryBlock>
+              Multi-location expansion plans strengthen viability — include your Year 2–3 targets in your business plan financial projections.
+            </AdvisoryBlock>
+          )}
         </div>
       )}
     </CaseFileShell>
