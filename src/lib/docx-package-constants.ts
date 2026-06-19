@@ -11,10 +11,12 @@
 export const DOC_TYPE_TAB_MAP: Record<string, string> = {
   ds160_reference: 'A',
   cover_letter: 'D',
+  visa_category: 'E',
   investment_proof: 'F',
   source_of_funds: 'H',
   business_plan: 'I',
   qualifications: 'J',
+  nonimmigrant_intent: 'K',
 };
 
 /** Full section titles and 1-line descriptions per Tab letter (Toronto index template) */
@@ -31,6 +33,11 @@ export const TAB_SECTION_TITLES: Record<
     title: 'Cover Letter',
     description:
       'Narrative addressing all E-2 eligibility requirements under 9 FAM 402.9',
+  },
+  E: {
+    title: 'Visa Category Letter',
+    description:
+      'Analytical memorandum addressing each E-2 treaty investor requirement in sequence',
   },
   F: {
     title: 'Investment Evidence — Funds Committed',
@@ -52,7 +59,12 @@ export const TAB_SECTION_TITLES: Record<
     description:
       'CV/résumé, employment history, educational credentials, professional references',
   },
+  K: {
+    title: 'Non-immigrant Intent Statement',
+    description:
+      'First-person statement of home country ties and intent to depart at conclusion of E-2 status',
+  },
 };
 
 /** Fixed order for index/dividers — only include tabs for documents actually generated */
-export const TAB_ORDER: string[] = ['A', 'D', 'F', 'H', 'I', 'J'];
+export const TAB_ORDER: string[] = ['A', 'D', 'E', 'F', 'H', 'I', 'J', 'K'];
