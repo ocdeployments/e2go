@@ -1,10 +1,10 @@
 /**
  * GET /api/generate/download/[applicationId]
  *
- * Generates and streams a ZIP file containing 15 .docx files:
+ * Generates and streams a ZIP file containing .docx files:
  *  - 00_Cover_Page.docx
  *  - 01_Table_of_Contents.docx
- *  - For each tab: Tab_[X]_Divider.docx + Tab_[X]_[DocumentName].docx (6 pairs)
+ *  - For each tab: Tab_[X]_Divider.docx + Tab_[X]_[DocumentName].docx (8 pairs)
  *  - COMPLETE_BEFORE_SUBMITTING.docx (last)
  *
  * Gate: generation_pipeline_log.applicant_acknowledged = true
@@ -38,6 +38,8 @@ const VALID_DOC_TYPES: DocumentType[] = [
   'business_plan',
   'qualifications',
   'ds160_reference',
+  'visa_category',
+  'nonimmigrant_intent',
 ];
 
 /** Human-readable display names for renamed document files */
