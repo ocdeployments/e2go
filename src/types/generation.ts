@@ -4,7 +4,9 @@ export type DocumentType =
   | 'investment_proof'
   | 'business_plan'
   | 'qualifications'
-  | 'ds160_reference';
+  | 'ds160_reference'
+  | 'visa_category'
+  | 'nonimmigrant_intent';
 
 export type GenerationJobStatus =
   | 'queued'
@@ -43,15 +45,17 @@ export const GENERATION_STEP_LABELS: Record<number, string> = {
   4: 'Business Plan',
   5: 'Qualifications',
   6: 'DS-160 Reference',
-  7: 'Gap Analysis',
-  8: 'Repetition Check',
-  9: 'Consistency Check',
-  10: 'AI Detection Audit',
-  11: 'Humanization Pass',
-  12: 'Metadata Sanitization',
-  13: 'Quality Gate',
-  14: 'Acknowledgment Gate',
-  15: 'Preview Unlocked',
+  7: 'Visa Category Letter',
+  8: 'Non-immigrant Intent',
+  9: 'Gap Analysis',
+  10: 'Repetition Check',
+  11: 'Consistency Check',
+  12: 'AI Detection Audit',
+  13: 'Humanization Pass',
+  14: 'Metadata Sanitization',
+  15: 'Quality Gate',
+  16: 'Acknowledgment Gate',
+  17: 'Preview Unlocked',
 } as const;
 
 export const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {
@@ -61,6 +65,8 @@ export const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {
   business_plan: 'Business Plan',
   qualifications: 'Investor Biography & Qualifications',
   ds160_reference: 'DS-156E / DS-160 Reference',
+  visa_category: 'Visa Category Letter',
+  nonimmigrant_intent: 'Non-immigrant Intent Statement',
 };
 
 export const DOCUMENT_TYPE_TABS: Record<DocumentType, string> = {
@@ -70,6 +76,8 @@ export const DOCUMENT_TYPE_TABS: Record<DocumentType, string> = {
   business_plan: 'Tab K',
   qualifications: 'Tab J',
   ds160_reference: 'Tab A',
+  visa_category: 'Business + Investment',
+  nonimmigrant_intent: 'Your Ties',
 };
 
 export interface GenerationStep {

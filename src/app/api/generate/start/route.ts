@@ -103,7 +103,7 @@ export async function POST(request: Request) {
         status: 'queued',
         current_step: 0,
         current_step_label: 'Initializing',
-        total_steps: 15,
+        total_steps: 17,
       })
       .select('id')
       .single();
@@ -122,7 +122,7 @@ export async function POST(request: Request) {
       created_at: new Date().toISOString(),
     });
 
-    // Create 6 document rows
+    // Create 8 document rows
     const documentTypes = [
       'cover_letter',
       'source_of_funds',
@@ -130,6 +130,8 @@ export async function POST(request: Request) {
       'business_plan',
       'qualifications',
       'ds160_reference',
+      'visa_category',
+      'nonimmigrant_intent',
     ];
 
     await supabase.from('generated_documents').insert(

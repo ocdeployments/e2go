@@ -48,6 +48,8 @@ const DOC_DISPLAY_NAMES: Record<DocumentType, string> = {
   business_plan: 'Business_Plan',
   qualifications: 'Qualifications',
   ds160_reference: 'DS160_Reference',
+  visa_category: 'Visa_Category_Letter',
+  nonimmigrant_intent: 'Nonimmigrant_Intent_Statement',
 };
 
 /** Format today's date as "Month DD, YYYY" */
