@@ -35,6 +35,11 @@ export interface SimulatorContext {
   marginalityScore: number | null;
   developDirectScore: number | null;
   denialRiskFlags: string[];
+  // EU-2: archetype + dimension scores from case_profiles (null when profile not yet built)
+  archetype: string | null;
+  sourceOfFundsScore: number | null;
+  managementRoleScore: number | null;
+  businessPlanScore: number | null;
   // Application metadata
   applicationType: string;
   createdAt: string;
@@ -57,7 +62,7 @@ export interface FundFlowEvent {
 export interface Question {
   id: string;
   text: string;
-  category: 'universal' | 'weak_point_probe' | 'business_type' | 'investment_source' | 'profile_flag';
+  category: 'universal' | 'weak_point_probe' | 'business_type' | 'investment_source' | 'profile_flag' | 'archetype_probe' | 'gap_probe';
   context?: string;
   relatesToField?: string;
 }

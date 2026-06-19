@@ -99,6 +99,13 @@ export async function buildSimulatorContext(applicationId: string): Promise<Simu
     .limit(1)
     .single();
 
+  // Fetch case profile for archetype + EU-1 dimension scores (non-blocking)
+  const { data: caseProfile } = await supabase
+    .from('case_profiles')
+    .select('archetype, source_of_funds_score, management_role_score, business_plan_score')
+    .eq('user_id', application.user_id)
+    .maybeSingle();
+
   // Fetch investment sources from Tab F
   const investmentSources: InvestmentSource[] = [];
   const fundFlowEvents: FundFlowEvent[] = [];
@@ -159,6 +166,10 @@ export async function buildSimulatorContext(applicationId: string): Promise<Simu
     marginalityScore: caseBrief?.marginality_score ?? null,
     developDirectScore: caseBrief?.develop_direct_score ?? null,
     denialRiskFlags: caseBrief?.risk_flags || [],
+    archetype: caseProfile?.archetype ?? null,
+    sourceOfFundsScore: caseProfile?.source_of_funds_score ?? null,
+    managementRoleScore: caseProfile?.management_role_score ?? null,
+    businessPlanScore: caseProfile?.business_plan_score ?? null,
     applicationType: application.application_type || 'solo',
     createdAt: application.created_at,
   };
@@ -372,9 +383,64 @@ export function generateQuestions(context: SimulatorContext): Question[] {
     });
   }
 
-  // === BUSINESS TYPE QUESTIONS — shuffled pool, pick 3 ===
+  // === GAP PROBES — dimension scores from EU-1 case profile (threshold: <60) ===
+  // These fire when the scoring engine found a specific weakness and we have a score.
+  // Scores of 0 with no data are treated as "no score yet" and skipped.
+
+  if (context.sourceOfFundsScore !== null && context.sourceOfFundsScore > 0 && context.sourceOfFundsScore < 60) {
+    questions.push({
+      id: 'GP-01',
+      category: 'gap_probe',
+      context: `Source of funds score: ${context.sourceOfFundsScore}/100`,
+      relatesToField: 'source_of_funds',
+      text: pick([
+        'Walk me through the complete paper trail of your investment — every account, every transfer, from origin to this business.',
+        'Your source of funds documentation needs to trace the full history of this capital. Where did this money originate, and how did it reach the business?',
+        `You invested $${context.investmentAmount.toLocaleString()}. Trace that money backward for me — where was it before it entered the business account?`,
+      ]),
+    });
+  }
+
+  if (context.managementRoleScore !== null && context.managementRoleScore > 0 && context.managementRoleScore < 60) {
+    questions.push({
+      id: 'GP-02',
+      category: 'gap_probe',
+      context: `Management role score: ${context.managementRoleScore}/100`,
+      relatesToField: 'management_role',
+      text: pick([
+        'Describe a specific management decision you would make on a typical Tuesday morning in this business.',
+        'How many hours per week will you personally devote to running this business, and what does that time look like?',
+        'Who reports to you, and what decisions require your direct approval before they can be made?',
+      ]),
+    });
+  }
+
+  if (context.businessPlanScore !== null && context.businessPlanScore > 0 && context.businessPlanScore < 60) {
+    questions.push({
+      id: 'GP-03',
+      category: 'gap_probe',
+      context: `Business plan score: ${context.businessPlanScore}/100`,
+      relatesToField: 'business_plan',
+      text: pick([
+        context.revenueYear1 > 0
+          ? `Your business plan projects $${context.revenueYear1.toLocaleString()} in Year 1. Walk me through the specific assumptions that support that number.`
+          : 'Walk me through the financial assumptions in your business plan — how did you arrive at your revenue projections?',
+        'What market research did you conduct to validate demand for this business in this location?',
+        'What specific milestones has your business plan set for the first 6, 12, and 24 months of operation?',
+      ]),
+    });
+  }
+
+  // === ARCHETYPE QUESTIONS — 2 picked from archetype-specific pool ===
+  const archetypePool = getArchetypeQuestions(context.archetype, context);
+  const archetypeSelected = shuffle(archetypePool).slice(0, 2);
+  archetypeSelected.forEach((q, i) => {
+    questions.push({ ...q, id: `AQ-0${i + 1}` });
+  });
+
+  // === BUSINESS TYPE QUESTIONS — shuffled pool, pick 2 (reduced from 3 to make room) ===
   const businessTypePool = getBusinessTypeQuestions(context.businessCategory, context);
-  const selected = shuffle(businessTypePool).slice(0, 3);
+  const selected = shuffle(businessTypePool).slice(0, 2);
   selected.forEach((q, i) => {
     questions.push({ ...q, id: `BT-0${i + 1}` });
   });
@@ -383,8 +449,77 @@ export function generateQuestions(context: SimulatorContext): Question[] {
 }
 
 /**
+ * Returns archetype-specific questions (5-6 per archetype).
+ * Falls back to a general investor pool when archetype is null or unrecognised.
+ * The caller randomly samples 2.
+ */
+function getArchetypeQuestions(archetype: string | null, context: SimulatorContext): Question[] {
+  const aq = (text: string): Question => ({ id: 'AQ-X', text, category: 'archetype_probe' });
+
+  const biz = context.businessName;
+  const inv = context.investmentAmount > 0 ? `$${context.investmentAmount.toLocaleString()}` : 'your investment';
+
+  // buyer — franchise or established-brand operator, prior business owner background
+  if (archetype === 'buyer') {
+    return [
+      aq(`What attracted you to this franchise system specifically — why this brand for ${biz}?`),
+      aq('Have you reviewed the Franchise Disclosure Document in full? What stood out to you as the strongest evidence of business viability?'),
+      aq('What territory rights do you hold under your franchise agreement, and how does that protect your investment?'),
+      aq('How does your prior experience as a business owner prepare you to operate within a franchise system?'),
+      aq('What does the franchisor provide in terms of training, marketing, and ongoing operational support?'),
+      aq('Have you spoken with other franchisees in this system? What did they tell you about their experience?'),
+    ];
+  }
+
+  // builder — technology or professional services, manager/owner with domain expertise
+  if (archetype === 'builder') {
+    return [
+      aq(`Who are your first clients or committed contracts for ${biz}, and how did you secure them?`),
+      aq('How does this business specifically leverage your professional expertise in a way that requires your physical presence in the United States?'),
+      aq('What is your go-to-market strategy for the first 90 days of operation?'),
+      aq('How will you differentiate your services from established competitors already operating in this market?'),
+      aq('What does your team structure look like — who have you hired or plan to hire in Year 1?'),
+      aq('How do you plan to scale revenue as you grow — additional staff, new service lines, or geographic expansion?'),
+    ];
+  }
+
+  // investor — capital-focus, portfolio mindset, risks appearing passive
+  if (archetype === 'investor') {
+    return [
+      aq('Describe your day-to-day management activities in concrete terms — what decisions do you personally make each week?'),
+      aq('Who else works in this business and who do they report to on a daily basis?'),
+      aq(`You committed ${inv} to this business. How does that qualify as active management rather than passive investment?`),
+      aq('What percentage of your working hours will this business require, and what will the remaining time involve?'),
+      aq('What would happen to the operations of this business if you were absent for two weeks?'),
+      aq(`Walk me through specifically how you develop and direct ${biz} on a day-to-day basis — not at a high level, but concretely.`),
+    ];
+  }
+
+  // career_switcher — new industry, professional transitioning, no direct sector experience
+  if (archetype === 'career_switcher') {
+    return [
+      aq(`You are entering a new industry with ${biz}. What specific preparation or training have you completed to operate this type of business?`),
+      aq('How does your previous career background translate to the day-to-day demands of running this specific business?'),
+      aq('Who in this industry have you spoken with, shadowed, or consulted to understand what operations actually look like?'),
+      aq('What does the first 30 days of running this business look like for you — walk me through it concretely.'),
+      aq('What knowledge gaps have you identified, and what is your plan to close them before or after opening?'),
+      aq('Why this industry, given that you have direct professional experience in a different field?'),
+    ];
+  }
+
+  // fallback — archetype unknown or profile not yet built
+  return [
+    aq(`Why did you choose ${biz} as your E-2 investment?`),
+    aq('What specific experience or background makes you the right person to operate this business?'),
+    aq(`How did you research this opportunity — what validated your confidence in committing ${inv}?`),
+    aq('What is your long-term plan for this business beyond the initial E-2 period?'),
+    aq('What are the two or three biggest risks to this business and how are you mitigating them?'),
+  ];
+}
+
+/**
  * Returns a shuffleable pool of business-type questions (5-6 per category).
- * The caller randomly samples 3.
+ * The caller randomly samples 2.
  */
 function getBusinessTypeQuestions(category: string, context: SimulatorContext): Question[] {
   const cat = category.toLowerCase();
