@@ -1,6 +1,6 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 19, 2026 (Session 38) — Engine Audit #3 complete (8.1/10, +0.5 from #2). Phase F in progress: archetype doc gen expanded to all 8 doc types, live gap score subscription (Supabase realtime), FDD mobile layout fixed. Build clean (119 pages).
+**Last Updated:** June 19, 2026 (Session 39) — Phase F continued: cross-session coaching memory depth (last 2 sessions, trend analysis), evaluator pattern tracking in text-mode live evals, scheduled nightly CaseProfile rebuild (Vercel Cron 02:00 UTC). Build clean (119 pages). Requires CRON_SECRET env var on Vercel.
 **App Name:** E2go.app
 **Stack:** Next.js 14 · TypeScript · Tailwind CSS · Supabase · Claude API
 **Dev URL:** https://e2go-git-dev-ocdeployments-projects.vercel.app
@@ -3940,19 +3940,22 @@ Resolved all ESLint errors to achieve clean build (119 pages, zero errors):
 6. Add GOOGLE_PLACES_API_KEY to .env.local — enables real competitor data in FDD territory
 7. Confirm FDD pricing ($297 placeholder) — unblocks `hasAccess` gate wiring in `/fdd/report/[id]`
 
-### Phase F — Engine Improvements (Session 38)
+### Phase F — Engine Improvements (Sessions 38–39)
 
-| Item | Status | Notes |
-|---|---|---|
-| Engine Audit #3 | ✅ COMPLETE | 8.1/10 (+0.5 from audit #2). FDD +2.5pts, doc gen +1.2pts |
-| Archetype doc gen — all 8 doc types | ✅ COMPLETE | qualifications, nonimmigrant_intent, investment_proof, visa_category, ds160_reference now have 4-archetype guidance. KB entries IQ-13–IQ-20 mapped |
-| Live gap score subscription | ✅ COMPLETE | Supabase realtime on case_profiles row. Green "Live update" badge on auto-refresh. Manual Recalculate preserved |
-| Quiz conditional branching | ✅ ALREADY DONE | show_if + evaluateShowIf already fully implemented — this was not a gap |
-| FDD mobile layout fix | ✅ COMPLETE | Heading + New analysis button overlap at 390px — fixed with flex-col sm:flex-row |
-| FDD freemium payment gate | ⏳ DEFERRED | hasAccess hardcoded true. Needs Romy to confirm price first |
+| Item | Status | Commit | Notes |
+|---|---|---|---|
+| Engine Audit #3 | ✅ COMPLETE | — | 8.1/10 (+0.5 from audit #2). FDD +2.5pts, doc gen +1.2pts |
+| Archetype doc gen — all 8 doc types | ✅ COMPLETE | 3246dc1 | qualifications, nonimmigrant_intent, investment_proof, visa_category, ds160_reference now have 4-archetype guidance. KB entries IQ-13–IQ-20 mapped |
+| Live gap score subscription | ✅ COMPLETE | 90b8bfd | Supabase realtime on case_profiles row. Green "Live update" badge on auto-refresh. Manual Recalculate preserved |
+| Quiz conditional branching | ✅ ALREADY DONE | — | show_if + evaluateShowIf already fully implemented |
+| FDD mobile layout fix | ✅ COMPLETE | fa141fb | Heading + New analysis button overlap at 390px — fixed with flex-col sm:flex-row |
+| Cross-session coaching memory depth | ✅ COMPLETE | 7f3090b | Last 2 sessions fetched; coaching-report LLM names trajectory (improving vs stagnating) |
+| Evaluator pattern tracking (text-mode) | ✅ COMPLETE | 7f3090b | Last 3 session answers passed as priorAnswers to live text-mode evaluate calls — matches voice batch flow |
+| Scheduled CaseProfile nightly rebuild | ✅ COMPLETE | cf60e19 | Vercel Cron 02:00 UTC → /api/cron/rebuild-profiles. Requires CRON_SECRET env var on Vercel |
+| FDD freemium payment gate | ⏳ DEFERRED | — | hasAccess hardcoded true. Needs Romy to confirm price first |
 
 ### Next priorities (Phase F — remaining)
 1. FDD freemium payment gate — wire `hasAccess` to Stripe (owner must confirm price)
-2. Cross-session simulator memory depth — currently passes last 1 session; pass last 2 for trend analysis (+0.2 pts)
-3. Doc gen for qualifications/nonimmigrant_intent doc types — add to DOC_TYPE_QUESTION_MAP (done) and verify prompt files exist
+2. Add CRON_SECRET to Vercel env — activates nightly profile rebuild
+3. FAQ seeds — add OPENAI_API_KEY to .env.local and run scripts (unblocks dynamic KB for 2 engines)
 
