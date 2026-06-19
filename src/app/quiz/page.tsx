@@ -504,6 +504,8 @@ export default function QuizPage() {
         } finally {
           setIsSaving(false);
         }
+        // Trigger profile rebuild fire-and-forget
+        fetch('/api/profile/rebuild', { method: 'POST' }).catch(() => {});
         router.push("/quiz/profile");
       } else {
         setShowEmailGate(true);

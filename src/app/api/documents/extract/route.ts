@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
+import { buildCaseProfile } from '@/lib/case-profile';
 import { extractTextFromBuffer } from '@/lib/text-extraction';
 import {
   classifyDocument,
@@ -185,7 +186,6 @@ export async function POST(request: NextRequest) {
             );
 
             // Store extracted answers in the answers table
-            // NOTE: answers table only has: id, application_id, question_key, answer_value, answered_at
             for (const field of validFields) {
               if (field.confidence === 'low') continue; // Skip low-confidence extractions
 
@@ -197,6 +197,9 @@ export async function POST(request: NextRequest) {
                     question_key: field.question_id,
                     answer_value: field.value,
                     answered_at: new Date().toISOString(),
+                    confidence: field.confidence,
+                    source_document_type: doc.document_type,
+                    source: 'user_entry',
                   },
                   { onConflict: 'application_id,question_key' }
                 );
@@ -297,6 +300,9 @@ export async function POST(request: NextRequest) {
           event: 'extraction_complete',
           data: { gapReport },
         });
+
+        // Trigger profile rebuild fire-and-forget (documents change dimension scores)
+        buildCaseProfile(user.id).catch(() => {});
       } catch (error) {
         console.error('Extraction pipeline error:', error);
         sendEvent({

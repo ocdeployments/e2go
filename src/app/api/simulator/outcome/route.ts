@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
+import { buildCaseProfile } from '@/lib/case-profile';
 
 export async function POST(request: NextRequest) {
   const supabase = await createSupabaseServerClient();
@@ -47,6 +48,9 @@ export async function POST(request: NextRequest) {
     console.error('[simulator-outcome] Insert failed:', error);
     return NextResponse.json({ error: 'Failed to save outcome' }, { status: 500 });
   }
+
+  // Trigger profile rebuild fire-and-forget (simulator session adds data confidence)
+  buildCaseProfile(user.id).catch(() => {});
 
   return NextResponse.json({ id: data.id });
 }

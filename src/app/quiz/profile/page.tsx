@@ -151,6 +151,8 @@ export default function QuizProfilePage() {
       // Non-blocking — profile data is in localStorage regardless
     } finally {
       setSaving(false);
+      // Trigger profile rebuild fire-and-forget
+      fetch('/api/profile/rebuild', { method: 'POST' }).catch(() => {});
       router.push("/results?from=quiz");
     }
   }, [current, totalQuestions, answers, question?.id, router]);
