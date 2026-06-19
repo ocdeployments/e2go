@@ -1,5 +1,5 @@
 ---
-name: E2GO Design System
+name: E2go Design System
 colors:
   surface: '#f8f9ff'
   surface-dim: '#cbdbf5'

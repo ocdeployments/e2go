@@ -1,4 +1,4 @@
-# E2GO.APP — RENEWAL MODULE SPECIFICATION
+# E2go.app — RENEWAL MODULE SPECIFICATION
 ## Comprehensive spec combining existing design with latest IDEAS.md decisions
 **Created:** June 5, 2026
 **Status:** Spec Complete, Ready for Build
@@ -23,7 +23,7 @@ The renewal module is accessible from:
 
 Entry screen routing quiz:
 ```
-WELCOME TO THE E2GO RENEWAL MODULE
+WELCOME TO THE E2go RENEWAL MODULE
 
 Your visa expires: [date] — [X months] from today
 

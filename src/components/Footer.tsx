@@ -83,11 +83,11 @@ export default function Footer() {
         <div className="border-t border-[rgba(201,168,76,0.2)] pt-8 text-center">
           <p className="text-xs text-[rgba(245,240,232,0.45)] max-w-2xl mx-auto mb-4 leading-relaxed">
             This tool is a self-service preparation guide and does not constitute legal advice.
-            e2go.app is not a law firm and does not provide legal representation or immigration
+            E2go.app is not a law firm and does not provide legal representation or immigration
             services. For legal advice, consult a qualified U.S. immigration attorney.
           </p>
           <p className="text-xs text-[rgba(245,240,232,0.25)]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-            © {currentYear} e2go.app. All rights reserved.
+            © {currentYear} E2go.app. All rights reserved.
           </p>
         </div>
       </div>

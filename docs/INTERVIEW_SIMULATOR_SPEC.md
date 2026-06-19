@@ -1,4 +1,4 @@
-# E2GO.APP — INTERVIEW SIMULATOR SPECIFICATION
+# E2go.app — INTERVIEW SIMULATOR SPECIFICATION
 ## Comprehensive spec combining existing design with latest IDEAS.md decisions
 **Created:** June 5, 2026
 **Status:** Spec Complete, Ready for Build

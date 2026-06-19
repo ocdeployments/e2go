@@ -183,7 +183,7 @@ async function sendEmail(to: string, subject: string, html: string): Promise<boo
 
   try {
     await resend.emails.send({
-      from: 'e2go <notifications@e2go.app>',
+      from: 'E2go <notifications@e2go.app>',
       to: to,
       subject: subject,
       html: html
