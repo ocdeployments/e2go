@@ -81,6 +81,7 @@ function GapAnalysisInner() {
           { data: brief },
           { data: simApp },
           { data: simSessions },
+          { data: profile },
         ] = await Promise.all([
           supabase
             .from('applications')
@@ -91,6 +92,7 @@ function GapAnalysisInner() {
           supabase.from('case_briefs').select('substantiality_score, marginality_score').eq('application_id', resolvedId).order('created_at', { ascending: false }).limit(1).maybeSingle(),
           supabase.from('applications').select('simulator_sessions_used').eq('id', resolvedId).single(),
           supabase.from('simulator_sessions').select('inconsistency_count').eq('application_id', resolvedId).order('started_at', { ascending: false }).limit(1),
+          supabase.from('case_profiles').select('archetype').eq('user_id', user.id).maybeSingle(),
         ]);
 
         if (!app) { setError('Application not found or access denied.'); setLoading(false); return; }
@@ -98,12 +100,14 @@ function GapAnalysisInner() {
 
         setHasAIAnalysis(brief?.substantiality_score != null);
 
+        const resolvedArchetype = profile?.archetype ?? null;
+
         const simData = {
           sessionsUsed: simApp?.simulator_sessions_used ?? 0,
           latestInconsistencyCount: simSessions?.[0]?.inconsistency_count ?? 0,
         };
 
-        const scored = scoreCase(app, answers || [], docs || [], brief || undefined, simData);
+        const scored = scoreCase(app, answers || [], docs || [], brief || undefined, simData, resolvedArchetype);
         setResult(scored);
 
         // Fire LLM enrichment for weak categories (score < 70) — async, non-blocking

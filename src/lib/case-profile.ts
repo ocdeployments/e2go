@@ -193,7 +193,7 @@ export async function buildCaseProfile(userId: string): Promise<CaseProfile> {
         ? { sessionsUsed: completedSims.length, latestInconsistencyCount: latestSim?.inconsistency_count ?? 0 }
         : undefined;
 
-      const gapResult = scoreCase(appRow, answers, documents, caseBrief, simData);
+      const gapResult = scoreCase(appRow, answers, documents, caseBrief, simData, archetype);
 
       for (const cat of gapResult.categories) {
         if (cat.id === 'source_of_funds')  sourceOfFundsScore  = cat.score;

@@ -823,6 +823,52 @@ function scoreCategory(
 }
 
 // =============================================================================
+// ARCHETYPE WEIGHTS
+// Weight profiles per applicant archetype — applied when operational-type
+// overrides (franchise / pre-start) are not active.
+//
+// buyer          — franchise/established business buyer; qualifications proven, FDD drives case
+// builder        — tech/professional services; management credentials are the case
+// investor       — capital-first background; must prove active daily management role
+// career_switcher— no prior business; management viability is the highest question
+// =============================================================================
+
+const ARCHETYPE_WEIGHTS: Record<string, Array<{ id: string; weight: number }>> = {
+  buyer: [
+    { id: 'business_plan',       weight: 30 }, // FDD + market research is the primary document
+    { id: 'source_of_funds',     weight: 25 }, // Capital deployment must be traced
+    { id: 'management_role',     weight: 20 }, // Owner background helps but active role still required
+    { id: 'investment_amount',   weight: 15 }, // Franchise prices are usually substantive
+    { id: 'employment_creation', weight:  5 },
+    { id: 'business_operations', weight:  5 },
+  ],
+  builder: [
+    { id: 'management_role',     weight: 30 }, // Professional credentials justify the role
+    { id: 'business_plan',       weight: 25 }, // Tech/service viability must be argued
+    { id: 'source_of_funds',     weight: 20 },
+    { id: 'investment_amount',   weight: 10 }, // Tech businesses can be capital-lean
+    { id: 'employment_creation', weight: 10 }, // Scaling is expected in this archetype
+    { id: 'business_operations', weight:  5 },
+  ],
+  investor: [
+    { id: 'management_role',     weight: 35 }, // Investors default to passive — active role is the hard question
+    { id: 'source_of_funds',     weight: 25 }, // Capital is usually strong; paper trail still required
+    { id: 'business_plan',       weight: 20 },
+    { id: 'investment_amount',   weight: 10 }, // Net worth is usually not the constraint
+    { id: 'employment_creation', weight:  5 },
+    { id: 'business_operations', weight:  5 },
+  ],
+  career_switcher: [
+    { id: 'management_role',     weight: 30 }, // No prior business — this is the credibility question
+    { id: 'source_of_funds',     weight: 25 },
+    { id: 'business_plan',       weight: 20 }, // Shows they've researched the business thoroughly
+    { id: 'investment_amount',   weight: 15 },
+    { id: 'employment_creation', weight:  5 },
+    { id: 'business_operations', weight:  5 },
+  ],
+};
+
+// =============================================================================
 // MAIN EXPORT
 // =============================================================================
 
@@ -831,46 +877,57 @@ export function scoreCase(
   answers: AnswerRow[],
   documents: DocumentRow[],
   caseBrief?: CaseBriefRow,
-  simulator?: SimulatorData
+  simulator?: SimulatorData,
+  archetype?: string | null
 ): GapAnalysisResult {
   const am = buildAnswerMap(answers);
 
   // Score all 15 denial factors first
   const denialFactors = scoreDenialFactors(am, documents, application, caseBrief, simulator);
 
-  // Category definitions with D-code mappings
-  // Weights are adaptive: franchise and pre-start cases shift priorities
+  // Weight selection — priority order:
+  // 1. isFranchise  — operational fact; FDD is the primary document regardless of archetype
+  // 2. isPreStart   — operational fact; investment commitment is the defining evidence
+  // 3. archetype    — applicant background profile, applied when no operational override
+  // 4. standard     — default when profile is unknown or sparse
   const isFranchise = (application.business_category || '').toLowerCase().includes('franchise');
   const isPreStart = (application.operational_status || '') === 'pre_start';
+
+  // Base weight set: id → weight (merged onto D-code category defs below)
+  const archetypeWeightMap: Map<string, number> = new Map(
+    (archetype && !isFranchise && !isPreStart && ARCHETYPE_WEIGHTS[archetype])
+      ? ARCHETYPE_WEIGHTS[archetype].map(w => [w.id, w.weight])
+      : []
+  );
 
   const categoryDefs: Array<{ id: string; name: string; weight: number; dCodes: string[] }> = isFranchise
     ? [
         // Franchise: FDD (business_plan) is the critical evidence; weights shifted accordingly
         { id: 'business_plan',        name: 'Business Plan & FDD',         weight: 35, dCodes: ['D-04', 'D-05', 'D-06', 'D-14', 'D-15'] },
         { id: 'source_of_funds',      name: 'Source of Funds',             weight: 20, dCodes: ['D-02', 'D-03', 'D-12'] },
-        { id: 'management_role',      name: 'Management Role',              weight: 20, dCodes: ['D-08', 'D-09', 'D-11'] },
-        { id: 'investment_amount',    name: 'Investment Amount',            weight: 15, dCodes: ['D-01'] },
-        { id: 'employment_creation',  name: 'Employment Creation',          weight:  5, dCodes: ['D-07'] },
-        { id: 'business_operations',  name: 'Business Operations',          weight:  5, dCodes: ['D-10', 'D-13'] },
+        { id: 'management_role',      name: 'Management Role',             weight: 20, dCodes: ['D-08', 'D-09', 'D-11'] },
+        { id: 'investment_amount',    name: 'Investment Amount',           weight: 15, dCodes: ['D-01'] },
+        { id: 'employment_creation',  name: 'Employment Creation',         weight:  5, dCodes: ['D-07'] },
+        { id: 'business_operations',  name: 'Business Operations',         weight:  5, dCodes: ['D-10', 'D-13'] },
       ]
     : isPreStart
     ? [
         // Pre-start: commitment documentation (investment_amount) is the defining evidence
-        { id: 'investment_amount',    name: 'Investment Commitment',        weight: 30, dCodes: ['D-01'] },
+        { id: 'investment_amount',    name: 'Investment Commitment',       weight: 30, dCodes: ['D-01'] },
         { id: 'source_of_funds',      name: 'Source of Funds',             weight: 20, dCodes: ['D-02', 'D-03', 'D-12'] },
         { id: 'business_plan',        name: 'Business Plan & Viability',   weight: 25, dCodes: ['D-04', 'D-05', 'D-06', 'D-14', 'D-15'] },
-        { id: 'management_role',      name: 'Management Role',              weight: 15, dCodes: ['D-08', 'D-09', 'D-11'] },
-        { id: 'employment_creation',  name: 'Employment Creation',          weight:  5, dCodes: ['D-07'] },
-        { id: 'business_operations',  name: 'Business Operations',          weight:  5, dCodes: ['D-10', 'D-13'] },
+        { id: 'management_role',      name: 'Management Role',             weight: 15, dCodes: ['D-08', 'D-09', 'D-11'] },
+        { id: 'employment_creation',  name: 'Employment Creation',         weight:  5, dCodes: ['D-07'] },
+        { id: 'business_operations',  name: 'Business Operations',         weight:  5, dCodes: ['D-10', 'D-13'] },
       ]
     : [
-        // Standard weights
-        { id: 'source_of_funds',      name: 'Source of Funds',             weight: 25, dCodes: ['D-02', 'D-03', 'D-12'] },
-        { id: 'management_role',      name: 'Management Role',              weight: 25, dCodes: ['D-08', 'D-09', 'D-11'] },
-        { id: 'business_plan',        name: 'Business Plan & Viability',   weight: 20, dCodes: ['D-04', 'D-05', 'D-06', 'D-14', 'D-15'] },
-        { id: 'investment_amount',    name: 'Investment Amount',            weight: 15, dCodes: ['D-01'] },
-        { id: 'employment_creation',  name: 'Employment Creation',          weight: 10, dCodes: ['D-07'] },
-        { id: 'business_operations',  name: 'Business Operations',          weight:  5, dCodes: ['D-10', 'D-13'] },
+        // Archetype-aware or standard weights
+        { id: 'source_of_funds',      name: 'Source of Funds',             weight: archetypeWeightMap.get('source_of_funds')     ?? 25, dCodes: ['D-02', 'D-03', 'D-12'] },
+        { id: 'management_role',      name: 'Management Role',             weight: archetypeWeightMap.get('management_role')     ?? 25, dCodes: ['D-08', 'D-09', 'D-11'] },
+        { id: 'business_plan',        name: 'Business Plan & Viability',   weight: archetypeWeightMap.get('business_plan')       ?? 20, dCodes: ['D-04', 'D-05', 'D-06', 'D-14', 'D-15'] },
+        { id: 'investment_amount',    name: 'Investment Amount',           weight: archetypeWeightMap.get('investment_amount')   ?? 15, dCodes: ['D-01'] },
+        { id: 'employment_creation',  name: 'Employment Creation',         weight: archetypeWeightMap.get('employment_creation') ?? 10, dCodes: ['D-07'] },
+        { id: 'business_operations',  name: 'Business Operations',         weight: archetypeWeightMap.get('business_operations') ??  5, dCodes: ['D-10', 'D-13'] },
       ];
 
   const categories = categoryDefs.map(def =>

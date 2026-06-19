@@ -220,16 +220,18 @@ export async function GET(request: NextRequest) {
 
     if (appError || !app) return NextResponse.json({ error: 'Application not found' }, { status: 404 });
 
-    // All answers + documents + case brief in parallel
-    const [answersRes, documentsRes, caseBriefRes] = await Promise.all([
+    // All answers + documents + case brief + archetype in parallel
+    const [answersRes, documentsRes, caseBriefRes, profileRes] = await Promise.all([
       supabase.from('answers').select('question_key, answer_value').eq('application_id', applicationId),
       supabase.from('application_documents').select('detected_document_type, user_selected_document_type, document_summary').eq('application_id', applicationId),
       supabase.from('case_briefs').select('substantiality_score, marginality_score').eq('application_id', applicationId).order('created_at', { ascending: false }).limit(1).single(),
+      supabase.from('case_profiles').select('archetype').eq('user_id', user.id).maybeSingle(),
     ]);
 
     const answerRows = answersRes.data || [];
     const docRows = documentsRes.data || [];
     const caseBrief = caseBriefRes.data ?? undefined;
+    const archetype = profileRes.data?.archetype ?? null;
 
     const aMap = new Map<string, string>();
     answerRows.forEach(a => { if (a.answer_value) aMap.set(a.question_key, a.answer_value); });
@@ -248,6 +250,7 @@ export async function GET(request: NextRequest) {
       docRows,
       caseBrief,
       { sessionsUsed: app.simulator_sessions_used ?? 0, latestInconsistencyCount: 0 },
+      archetype,
     );
 
     // Context labels
