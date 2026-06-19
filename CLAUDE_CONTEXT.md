@@ -1,6 +1,6 @@
 # CLAUDE_CONTEXT.md — E2go
 ## Master Context for Every Claude Code Session
-**Version:** June 17, 2026 — Sessions 4-34 complete
+**Version:** June 19, 2026 — Sessions 4-36 complete (Phase A + B + C complete: EU-1–EU-6, PT-1–PT-2, FDD-1–FDD-5)
 **Read this entire file before doing anything.**
 **Then read BUILD_TRACKER.md.**
 
@@ -150,15 +150,18 @@ Security/audit session:
 **CRITICAL API KEY RULE — READ EVERY SESSION:**
 - OPENROUTER_API_KEY → ALL app AI features (simulator, analysis,
   follow-up, extraction engine, classification)
-- ANTHROPIC_API_KEY → document generation ONLY
-  (src/lib/generation-engine.ts exclusively)
+- ANTHROPIC_API_KEY → document generation AND FDD extraction/scoring
+  (src/lib/generation-engine.ts AND src/lib/fdd-extraction-engine.ts,
+  src/lib/fdd-scoring-engine.ts, src/app/api/fdd/* routes)
+  FDD routes use claude-sonnet-4-6 via Anthropic SDK directly — this is
+  a deliberate exception for large-context reliability.
 - GROQ_API_KEY → voice transcription + TTS only
   (src/lib/groq-transcription.ts, src/lib/groq-tts.ts,
   src/app/api/simulator/tts/route.ts,
   src/app/api/simulator/transcribe/route.ts)
 
-DO NOT use ANTHROPIC_API_KEY anywhere except generation-engine.ts.
-DO NOT switch OpenRouter calls to Anthropic.
+DO NOT switch any existing OpenRouter calls to the Anthropic API.
+FDD routes ARE an approved exception — they already use Anthropic directly.
 DO NOT expose any API key in browser/client code.
 
 **SIMULATOR MODEL CONSTRAINT — LOCKED (June 16, 2026):**
@@ -180,7 +183,7 @@ Repo: github.com/ocdeployments/e2go
 
 ---
 
-## ROUTE MAP (50 routes as of June 13, 2026)
+## ROUTE MAP (60 routes as of June 19, 2026)
 
 ### Public routes
 - / — Landing page (self-contained HomeClient.tsx, FAQ CTA section)
@@ -203,7 +206,7 @@ Repo: github.com/ocdeployments/e2go
 
 ### Authenticated routes
 - /dashboard — Application dashboard
-- /settings — Account settings
+- /settings — Account settings (data deletion, 2-step confirmation + type-to-confirm)
 - /score — Application confidence score
 - /simulator — Interview simulator (text + voice, teaser if no case file)
 - /simulator/quick-start — Standalone simulator document upload intake
@@ -228,6 +231,15 @@ Repo: github.com/ocdeployments/e2go
 - /apply/calendar — Compliance calendar
 - /generate/[applicationId] — Document generation (SSE pipeline)
 - /documents/[applicationId] — Document download
+
+### FDD Intelligence (authenticated, protected by middleware)
+- /fdd — FDD index (all analyses, 5-stage progress bars, smart navigation)
+- /fdd/upload — PDF upload intake (transaction type, location, drag-and-drop)
+- /fdd/review/[fddId] — Extraction review (9 collapsible sections, confidence badges)
+- /fdd/score/[fddId] — E-2 scoring dashboard (5 dimensions, ODE model, flags, narrative)
+- /fdd/territory/[fddId] — Territory market analysis (Census ACS, category weights, narrative)
+- /fdd/questions/[fddId] — Questions generator (flag→question map, profile match, filter by audience)
+- /fdd/report/[fddId] — Final report + freemium teaser (hasAccess gate, platform integration)
 
 ### Admin
 - /admin — Admin panel (never linked publicly)
@@ -662,7 +674,7 @@ Uses source='simulator_standalone' on applications table.
 
 Protected routes (require Supabase session):
 /dashboard, /apply/, /admin, /simulator, /score,
-/settings, /generate/, /documents/
+/settings, /generate/, /documents/, /fdd/
 
 Rate limits (production only):
 - /login: 5 per 15 min per IP
@@ -892,6 +904,25 @@ Rate limits (production only):
 - `generateCoachingSummary()` type declarations fixed to match enriched interface
 - Build: clean ✅
 
+**June 19, 2026 — Session 36: Phase C complete (FDD-1 through FDD-5):**
+- FDD-1: FDD upload + SSE extraction pipeline + review UI (commit 6441f5e)
+- FDD-2: 5-dimension E-2 scoring engine (pure TS) + ODE model + LLM narrative + score dashboard (commit 59faec6)
+- FDD-3: Territory market analysis — Census ACS 5-year ZCTA API, category-specific weights and radii, Google Places graceful degradation, LLM narrative (commit e16043b)
+- FDD-4: Questions generator — 15 flag→question templates, 8 standard, data-gap triggers, 5 LLM bespoke, CaseProfile match score (0-100), filter tabs by audience, copy-all (commit 1d8e0a5)
+- FDD-5: Final report (6 sections LLM), freemium teaser (hasAccess gate + 3 locked questions), 8 answer keys written to user's application, FDD index page with 5-stage progress bars (commit 4d58970)
+- Lint/middleware: all ESLint errors resolved, /fdd/ added to middleware, clean build 119 pages (commit ec37352)
+- BUILD_TRACKER updated: FDD-3/4/5 marked complete with full session log (commit 144ec48)
+- Branch: dev. Build clean ✅.
+
+**June 19, 2026 — Session 35: Phase A + B complete (EU-3 through PT-2):**
+- EU-3: ARCHETYPE_WEIGHTS in scoreCase(); 4 archetypes × 6 categories; franchise/pre-start override priority; all 3 callers updated — Commits 5d083a5
+- EU-4: Fire-and-forget buildCaseProfile() at 5 events + POST /api/profile/rebuild route — Commit e4a5281
+- EU-5: PartialProfileTeaser component — 4 locked score cards + upgrade CTA on simulator-only dashboard — Commit c4f5729
+- EU-6: Results completeness bar + confidence tier labels (quiz-derived / case-file-reported / document-confirmed / fully-verified) — Commit 74b5194
+- PT-1: /settings rebuilt with 2-step confirmation + type-to-confirm; POST /api/account/delete wipes 16 tables + Supabase Auth user + Resend confirmation email — Commit 55a7c1b
+- PT-2: Inline privacy notices at document upload (UploadClient) and case file first visit (apply/page.tsx) — Commit 835987e
+- All builds clean. Branch: dev. Phase D (QA) is next.
+
 **June 16, 2026 — Session 21: Audio Fix + Ready Screen + Architecture:**
 - TTS audio FIXED: `groq-tts.ts` MIME type changed to `data:audio/wav;base64,`; `tts/route.ts` `response_format` changed to `'wav'` (Orpheus only accepts wav)
 - Browser autoplay policy FIXED: added 'ready' phase to ConversationalSession; silent 44-byte WAV unlock on "Begin interview" click permanently unlocks audio for the page session
@@ -904,27 +935,89 @@ Rate limits (production only):
 - Process flow widget designed (HTML/JS); React component conversion pending
 - Build: clean ✅
 
-**Next session priorities (as of June 16, 2026 — post Session 22):**
+**Next session priorities (as of June 19, 2026 — Phase A + B + C complete):**
 
-**Owner actions (do first — unblock everything else):**
+**Owner actions (pending — unblock these before launch):**
 1. [USER ACTION] Accept Groq TTS terms at console.groq.com — voice mode blocked
 2. [USER ACTION] Run SQL: `UPDATE pricing SET stripe_price_id = 'price_1Tim5fF7Ggk3LUEy2JGRRKrB', amount_cents = 2999 WHERE tier_id = 'simulator_3pack';`
 3. [USER ACTION] Update Vercel env STRIPE_PRICE_SIMULATOR_3PACK → price_1Tim5fF7Ggk3LUEy2JGRRKrB
 4. [USER ACTION] Refund $197 test charge in Stripe dashboard
 5. [USER ACTION] Run FAQ seed scripts: `npx tsx scripts/seed-faq-corpus.ts` + `seed-faq-kb-chunks.ts`
+6. [USER ACTION] Confirm FDD pricing (placeholder $297 in teaser) — unblocks FDD freemium gate wiring
+7. [USER ACTION] Add GOOGLE_PLACES_API_KEY to .env.local — enables real competitor data in territory analysis
 
 **Code sessions (in order):**
-1. End-to-end simulator test (voice + text + coaching cards + model answers verify correctly)
-2. Delivery confidence analysis: add `deliveryNotes` to `AnswerEvaluation` + evaluate route;
-   flag filler words, short answers (<30w), hedging language; frame as "delivery coaching"
-3. Gap Analysis page — `/gap-analysis` route, 6-category scoring UI, priority action list
-4. Generation engine fixes — docs/sessions/SESSION_PLAN_GENERATION_FIXES.md
-5. Bracket highlighting regex + checklist builder fix
-6. Write + build SESSION22_SENTRY_ERROR_TRACKING (pre-launch blocker — no error visibility)
-7. End-to-end payment test: quiz → checkout → apply → generate → download
+1. Phase D — QA-A: Public pages audit (/, /quiz, /results, /pricing, /learn, auth pages)
+2. Phase D — QA-B: Authenticated case file audit (dashboard, /apply/*, /settings, /score)
+3. Phase D — QA-C: Simulator + generation + API routes audit
+4. FDD freemium gate: wire hasAccess in /fdd/report/[fddId]/page.tsx to payment check
+5. Generation engine fixes — docs/sessions/SESSION_PLAN_GENERATION_FIXES.md
+6. SESSION22_SENTRY_ERROR_TRACKING (pre-launch blocker — no error visibility)
 
 **Unexecuted sessions from prior audit (never built, no session files yet):**
 - SESSION21_INTERVIEW_PREP_KIT — now REPLACED by the coaching report system (Session 22)
 - SESSION22_SENTRY_ERROR_TRACKING — error monitoring, pre-launch requirement
 - SESSION23_UPTIME_MONITORING — uptime monitoring
 - MODULE4_FOLLOWUP_UI — Module 4 follow-up conversation UI (Spec2_Followup_Conversation.md)
+
+---
+
+## MASTER SPRINT PLAN (Approved June 19, 2026)
+
+See BUILD_TRACKER.md section "MASTER SPRINT PLAN" for full detail.
+
+### Phase A — Engine Unification — ✅ COMPLETE (June 19, 2026)
+
+| ID | Status | What it does |
+|---|---|---|
+| EU-1 | ✅ | Expanded `buildCaseProfile()` — reads answers + docs + sim sessions; completeness_score, data_state, dimension scores |
+| EU-2 | ✅ | Archetype-aware question pools + gap-targeted probes in interview-prep |
+| EU-3 | ✅ | `ARCHETYPE_WEIGHTS` per archetype in `scoreCase()`; franchise/pre-start overrides take priority |
+| EU-4 | ✅ | Fire-and-forget `buildCaseProfile()` triggers at 5 events + `POST /api/profile/rebuild` route |
+| EU-5 | ✅ | `PartialProfileTeaser` — 4 locked score cards + upgrade CTA on simulator-only dashboard |
+| EU-6 | ✅ | Completeness bar + confidence tier labels on results page (quiz-derived → fully verified) |
+
+**Rule:** All connections fall back gracefully to current behavior if profile is sparse.
+
+### Phase B — Privacy & Trust — ✅ COMPLETE (June 19, 2026)
+
+| ID | Status | What it does |
+|---|---|---|
+| PT-1 | ✅ | `/settings` rebuilt with 2-step deletion UI (type-to-confirm); `POST /api/account/delete` wipes 16 tables + Auth user; Resend confirmation email |
+| PT-2 | ✅ | Inline privacy notices at document upload (`UploadClient`) and case file first visit (`apply/page.tsx`) |
+
+### Phase C — FDD Intelligence — ✅ COMPLETE (June 19, 2026)
+
+Separate paid add-on. Franchise clients upload FDD (Franchise Disclosure Document) for AI-powered E-2 analysis.
+
+| ID | Status | What it does |
+|---|---|---|
+| FDD-DESIGN | ✅ | 50-field extraction schema, 5-dimension scoring rubric, ODE model, territory spec, questions spec |
+| FDD-1 | ✅ | PDF ingestion + 4-pass chunked extraction + SSE stream + staleness/registration gate + DB schema + upload/review UI |
+| FDD-2 | ✅ | 5-dimension E-2 scoring engine (pure TS, no LLM for numerics) + ODE model + LLM narrative + score dashboard |
+| FDD-3 | ✅ | Territory market analysis: Census ACS 5-year + Google Places (graceful degradation) + category weights + narrative |
+| FDD-4 | ✅ | Questions generator: 15 flag→question templates + 8 standard + data-gap triggers + 5 LLM bespoke + CaseProfile match |
+| FDD-5 | ✅ | Final report + freemium teaser (hasAccess gate) + 8 answer keys written back to user's application |
+
+**Freemium gate:** `hasAccess` in `/fdd/report/[fddId]/page.tsx` is currently `true` for all auth users. Wire to payment check when FDD pricing is confirmed ($297 placeholder in teaser). Gate structure is built.
+**Google Places:** `GOOGLE_PLACES_API_KEY` not in .env.local — competition scoring uses neutral fallback (score 50). Add key to enable real competitor data.
+**Multi-FDD comparison:** deprioritized, not built.
+
+### Phase D — QA (3 sprints, run AFTER EU-1 through EU-6 are complete)
+
+Agent writes expected behavior spec from BUILD_TRACKER + spec files before executing — no separate doc from owner needed.
+
+| ID | What it covers |
+|---|---|
+| QA-A | All public routes (/, /quiz, /results, /pricing, /learn, /about, /login, /signup, etc.) — render, links, form submissions, hard stops, copy quality, mobile 390px, console errors |
+| QA-B | All authenticated case file routes (/dashboard, /apply/*, /score, /settings) — auth gates, data display, autosave, pre-fill, empty states. Requires seeded test account. |
+| QA-C | Simulator + generation + API routes (/simulator, /gap-analysis, /generate/*, /documents/*, all /api/*) — voice/text modes, document pipeline, ZIP download, payment gating, API auth on every route |
+
+Deliverable per sprint: report listing ✅ pass / ⚠️ issue / ❌ broken per page and item with reproduction steps.
+
+### Phase E — Legal & Compliance
+
+| ID | What it is | Priority |
+|---|---|---|
+| LC-1 | PIPEDA compliance review — audit /privacy against Canadian law; add explicit "no AI training on your data" statement; GDPR awareness for EU treaty country users. Build with PT-2. | BEFORE LAUNCH |
+| LC-SOC2 | SOC 2 — DEFERRED. Not needed until first enterprise client (law firm, corporate immigration dept, franchise broker network) asks for it. Cost: $15K–$50K. Tool when ready: Vanta or Drata. Revisit 12-18 months post-launch. | DEFERRED |
