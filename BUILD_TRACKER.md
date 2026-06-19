@@ -1,6 +1,6 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 19, 2026 — FDD-1 through FDD-5 complete. Full FDD Intelligence feature set shipped. Commits 6441f5e, 59faec6, e16043b, 1d8e0a5, 4d58970, b93c2dd, ec37352. Build clean (119 pages). Next: FDD pricing integration (wire upgrade CTA to payment) or next sprint.
+**Last Updated:** June 19, 2026 (Session 37) — Phase D (QA-A/B/C) complete. Phase E LC-1 complete. Dashboard Command Centre built. KB wired into doc gen. FDD + Gap Analysis wired into nav. All immediate navigation fixes done. Build clean (119 pages).
 **App Name:** E2go.app
 **Stack:** Next.js 14 · TypeScript · Tailwind CSS · Supabase · Claude API
 **Dev URL:** https://e2go-git-dev-ocdeployments-projects.vercel.app
@@ -135,7 +135,7 @@ Update STRIPE_PRICE_* env vars with new Price IDs after running.
 |---|---|---|
 | Landing | / | ✅ COMPLETE |
 | Quiz | /quiz | ✅ COMPLETE |
-| Results | /results | ✅ COMPLETE |
+| Results | /results | ✅ COMPLETE — layout unified, CTA fixed (/apply), attorney button removed |
 | Quiz Review | /quiz/review | ✅ COMPLETE |
 | Document Upload | /apply/upload | ✅ COMPLETE |
 | Upload Processing | /apply/upload/processing | ✅ COMPLETE |
@@ -143,7 +143,7 @@ Update STRIPE_PRICE_* env vars with new Price IDs after running.
 | Upload Gap Report | /apply/upload/gaps | ✅ COMPLETE |
 | Pricing | /pricing | ✅ COMPLETE |
 | Success | /pricing/success | ✅ COMPLETE |
-| Dashboard | /dashboard | ✅ COMPLETE |
+| Dashboard | /dashboard | ✅ COMPLETE — first_name fix, module0 progress wired; needs Command Centre upgrade |
 | Login | /login | ✅ COMPLETE |
 | Signup | /signup | ✅ COMPLETE |
 | Verify | /verify | ✅ COMPLETE |
@@ -1632,6 +1632,38 @@ Session file: docs/sessions/SESSION19_COMMIT_AUDIT_AND_PUSH.md
 ---
 
 ## SESSION LOG (Prior sessions)
+
+### June 19, 2026 — Session 36 (continued): Site Architecture Audit + Navigation Bug Fixes
+
+**Engine audit #2 completed — overall 7.6/10 (+0.7):**
+- Full 10-engine audit produced as interactive HTML report
+- Dual evaluator roles: immigration attorney + product strategist
+- Improvement log created at `docs/CONTINUOUS_IMPROVEMENT.md`
+- Top gap confirmed: knowledge base not wired into doc gen (+1.4 pts when fixed)
+
+**Bugs fixed (5):**
+- `results/page.tsx`: CTA "Start your case file" was linking logged-in users to `/applications` (404) → now `/apply`; guests → `/signup`
+- `results/page.tsx`: "Talk to an attorney" CTA removed; single focused action only
+- `results/page.tsx`: Layout alignment unified — Section 1, sections 2–9, and supplementary now all use the same centred `maxWidth` wrapper
+- `dashboard/page.tsx`: Welcome heading read `user?.full_name` (column doesn't exist) → fixed to `user?.first_name`; subtitle no longer shows raw email
+- `quiz/page.tsx`: Quiz completion was inserting an event row instead of upserting `module0_completed_at` → progress bar now correctly shows 1/6 after quiz
+
+**Site architecture audit (70 routes, 10 zones):**
+- `/score` — orphaned, purpose unclear, not linked from nav → redirect to /results recommended
+- `/franchise` linked from results Section 8 → 404 (route doesn't exist) → needs fix
+- `/gap-analysis` not in authenticated nav → hidden from returning users
+- Dashboard missing profile snapshot tile and gap analysis card — siloed
+- FDD pages (6 routes) orphaned until Phase C ships
+- `apply/business`, `apply/investment`, etc. may overlap with module pages — audit needed
+
+**Navigation plan agreed:**
+- Authenticated nav should be: Dashboard · Case File · Gap Analysis · Simulator · Documents
+- Dashboard → Command Centre: add profile snapshot, gap score card, "continue where you left off"
+- `/gap-analysis` to be added to auth nav next session
+
+**Build:** Clean — 119 pages, zero errors.
+
+---
 
 ### June 18, 2026 — Session 38: Platform Question Audit + Structural Fixes
 
@@ -3860,3 +3892,58 @@ Resolved all ESLint errors to achieve clean build (119 pages, zero errors):
 - **Freemium gate**: wire `hasAccess` in `report/[fddId]/page.tsx` to a payment check when pricing is defined ($297 placeholder in teaser). Gate structure is fully built.
 - **Google Places**: `GOOGLE_PLACES_API_KEY` not in .env.local — competition scoring uses neutral fallback. Add key to enable real competitor data.
 - **Multi-FDD comparison**: deprioritized, not built.
+
+---
+
+## SESSION 37 — Phase D QA + Phase E LC-1 + Engine KB + Command Centre (June 19, 2026)
+
+### Navigation & Wiring (commit f56230a)
+- Gap Analysis + FDD Analysis added to authenticated nav (desktop + mobile) in `Nav.tsx`
+- Gap Analysis + FDD Analysis tiles added to dashboard Quick Actions
+- `/franchise` 404 in results Section 8 → now points to `/fdd` ("Analyse an FDD →")
+- `/score` orphan → redirect to `/results` via `next/navigation redirect()`
+
+### Phase E — LC-1: Privacy + GDPR (commit 9d5869a)
+- **Section 12 added** to `PrivacyClient.tsx`: "AI Processing — No AI Training" — explicit statement covering Anthropic, OpenRouter, Groq, XAI/MiMo with zero-data-retention notes
+- **Section 13 added**: EU/GDPR notice for treaty country users (French, German, Italian, Dutch, Spanish nationals etc.) — 6 GDPR rights, lawful basis (contract + legitimate interests), SCCs for international transfers
+
+### Engine KB Wiring into Doc Gen (commit 9d5869a)
+- `INTERVIEW_KNOWLEDGE_BASE` imported into `generation-engine.ts`
+- `buildKBContext(documentType, consulatePost)` — selects relevant KB entries by doc type (cover_letter: IQ-01–07, source_of_funds: IQ-08–10, business_plan: IQ-01–03/11–12), formats officer-perspective guidance
+- `fetchFAQKBContext()` — pgvector lookup against `faq_kb_chunks` table; graceful fallback if OPENAI_API_KEY absent or table empty (seeds not yet run)
+- Both injected into `callClaudeAPI` user message before case brief — +1.4 pts expected score improvement
+
+### Dashboard → Command Centre (commit a03624c)
+- Added `CaseProfileData` interface + `caseProfile` state
+- Fetch `case_profiles` (archetype, completeness_score, net_worth_range, industry_interest, timeline_goal) in init
+- **Module Checklist** replaces confusing 0% progress bar — 6 clickable steps with gold ✓ when complete, links to correct page
+- **Investor Profile snapshot** — shows archetype, industry, net worth range, timeline; completeness % badge; CTA to gap-analysis if < 80% complete
+- Quick Actions grid expanded: Checklist / Gap Analysis / FDD Analysis / Support
+
+### QA-A + QA-B + QA-C Sweep (commits ba25f6e, 6d37a9a)
+- Created `src/app/gap-analysis/layout.tsx` — metadata, Nav, robots noindex
+- `/gap-analysis` added to `middleware.ts` protectedRoutes + config.matcher — closes auth bypass
+- No other broken hrefs, 404 routes, or missing error states found in systematic audit
+- All 119 pages confirmed building clean
+- Dynamic API routes (cookies) confirmed behaving correctly — not static rendering issues
+
+### Build Status
+- 119 pages, zero TypeScript errors, zero ESLint errors
+- All commits on `dev` branch
+
+### Pending (owner actions still required)
+1. Accept Groq TTS terms at console.groq.com — voice mode blocked
+2. Run SQL: UPDATE pricing SET stripe_price_id = 'price_1Tim5fF7Ggk3LUEy2JGRRKrB', amount_cents = 2999 WHERE tier_id = 'simulator_3pack'
+3. Update Vercel env STRIPE_PRICE_SIMULATOR_3PACK
+4. Refund $197 test Stripe charge
+5. Run FAQ seed scripts (unblocks dynamic KB in doc gen): `npx tsx scripts/seed-faq-corpus.ts` + `seed-faq-kb-chunks.ts`
+6. Add GOOGLE_PLACES_API_KEY to .env.local — enables real competitor data in FDD territory
+7. Confirm FDD pricing ($297 placeholder) — unblocks `hasAccess` gate wiring in `/fdd/report/[id]`
+
+### Next priorities (Phase F)
+1. Live gap score recalculation — 30s polling / subscription after profile rebuild (+0.5 pts)
+2. Doc gen template variants per archetype — one template currently serves all archetypes
+3. Quiz conditional branch paths — currently linear, no conditional routing
+4. FDD freemium payment gate — wire `hasAccess` to Stripe check (owner must confirm price first)
+5. Engine audit #3 — target 8.5+ after KB wiring proves out
+
