@@ -24,6 +24,7 @@ interface CoachingReportRequest {
   context: SimulatorContext;
   weakAnswers: WeakAnswer[];
   priorSession?: PriorSession | null;
+  priorSessions?: PriorSession[];
 }
 
 function buildInvestmentSourcesBlock(context: SimulatorContext): string {
@@ -68,7 +69,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
   }
 
-  const { context, weakAnswers, priorSession } = body;
+  const { context, weakAnswers, priorSessions, priorSession } = body;
+
+  // Normalise: prefer priorSessions array; fall back to legacy single priorSession
+  const sessions: PriorSession[] = priorSessions?.length
+    ? priorSessions
+    : priorSession
+    ? [priorSession]
+    : [];
 
   if (!context || !weakAnswers || weakAnswers.length === 0) {
     return NextResponse.json({ coaching: [] });
@@ -99,17 +107,23 @@ Initial assessment: ${a.currentFeedback}${deliveryBlock}${knowledgeBlock}`;
     ? `Known denial risk flags for this case: ${context.denialRiskFlags.join(', ')}`
     : '';
 
-  const priorSessionBlock = priorSession
-    ? `PRIOR SESSION CONTEXT (Session ${priorSession.sessionNumber}):
-Readiness status after last session: ${priorSession.readinessIndicator === 'ready' ? 'Interview ready' : 'Needs more preparation'}
-Top 3 priorities they were given after Session ${priorSession.sessionNumber}:
-${priorSession.top3NextSession.length > 0
-  ? priorSession.top3NextSession.map((item, i) => `  ${i + 1}. ${item}`).join('\n')
-  : '  (No prior coaching notes available)'}
+  const priorSessionBlock = sessions.length > 0
+    ? (() => {
+        const sorted = [...sessions].sort((a, b) => b.sessionNumber - a.sessionNumber);
+        const historyLines = sorted.map(s => {
+          const readiness = s.readinessIndicator === 'ready' ? 'Interview ready' : 'Needs more preparation';
+          const priorities = s.top3NextSession.length > 0
+            ? s.top3NextSession.map((item, i) => `    ${i + 1}. ${item}`).join('\n')
+            : '    (No priorities recorded)';
+          return `  Session ${s.sessionNumber} (${readiness}):\n${priorities}`;
+        }).join('\n\n');
 
-Use this context to add a brief "Progress since Session ${priorSession.sessionNumber}" observation at the start of your top3NextSession synthesis. Note what has improved and what remains to work on.
+        const trendNote = sorted.length >= 2
+          ? `\nTREND ANALYSIS: You have data from ${sorted.length} prior sessions. In your top3NextSession synthesis, explicitly note the trajectory — are the same weaknesses recurring (stagnating), or are prior priorities now stronger (improving)? Name the specific pattern.`
+          : `\nUse this context to add a brief "Progress since Session ${sorted[0].sessionNumber}" observation at the start of your top3NextSession synthesis.`;
 
-`
+        return `PRIOR SESSION HISTORY (${sorted.length} session${sorted.length > 1 ? 's' : ''}):\n${historyLines}\n${trendNote}\n\n`;
+      })()
     : '';
 
   const prompt = `You are a senior E-2 visa immigration consultant with 20 years of experience at the Toronto consulate. You have just watched your client conduct a mock interview and are now preparing their personal coaching report. You have read their entire case file.

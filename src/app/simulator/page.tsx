@@ -396,6 +396,11 @@ export default function InterviewSimulator() {
       : questions[currentQuestionIndex];
 
     try {
+      // Pass up to 3 preceding answers so the evaluator can flag cross-question contradictions
+      const priorAnswers = submittedAnswers
+        .slice(-3)
+        .map(a => ({ questionText: a.questionText, answerText: a.answerText }));
+
       const evalRes = await fetch('/api/simulator/evaluate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -404,6 +409,7 @@ export default function InterviewSimulator() {
           questionText: question.text,
           answer: currentAnswer,
           context,
+          priorAnswers: priorAnswers.length > 0 ? priorAnswers : undefined,
         }),
       });
       if (!evalRes.ok) {
@@ -520,25 +526,27 @@ export default function InterviewSimulator() {
 
     if (toCoach.length === 0) return;
 
-    // Fetch prior session data for cross-session coaching (non-fatal if absent)
-    let priorSession: { sessionNumber: number; readinessIndicator: string; top3NextSession: string[] } | null = null;
+    // Fetch last 2 prior sessions for trend-aware coaching (non-fatal if absent)
+    type PriorSessionData = { sessionNumber: number; readinessIndicator: string; top3NextSession: string[] };
+    const priorSessions: PriorSessionData[] = [];
     if (currentSession && user) {
       try {
-        const { data: prev } = await supabase
+        const { data: prevRows } = await supabase
           .from('simulator_sessions')
           .select('session_number, readiness_indicator, coaching_notes')
           .eq('user_id', user.id)
           .lt('session_number', currentSession.sessionNumber)
           .order('session_number', { ascending: false })
-          .limit(1)
-          .single();
-        if (prev) {
-          const notes = prev.coaching_notes as { top3NextSession?: string[] } | null;
-          priorSession = {
-            sessionNumber: prev.session_number,
-            readinessIndicator: prev.readiness_indicator || 'needs_work',
-            top3NextSession: notes?.top3NextSession || [],
-          };
+          .limit(2);
+        if (prevRows) {
+          for (const prev of prevRows) {
+            const notes = prev.coaching_notes as { top3NextSession?: string[] } | null;
+            priorSessions.push({
+              sessionNumber: prev.session_number,
+              readinessIndicator: prev.readiness_indicator || 'needs_work',
+              top3NextSession: notes?.top3NextSession || [],
+            });
+          }
         }
       } catch {
         // Non-fatal — proceed without prior session context
@@ -550,7 +558,7 @@ export default function InterviewSimulator() {
       const res = await fetch('/api/simulator/coaching-report', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ context: ctx, weakAnswers: toCoach, priorSession }),
+        body: JSON.stringify({ context: ctx, weakAnswers: toCoach, priorSessions }),
       });
       if (res.ok) {
         const { coaching, top3NextSession } = await res.json();
