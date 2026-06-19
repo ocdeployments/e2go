@@ -141,6 +141,7 @@ export async function middleware(req: NextRequest) {
     '/settings',
     '/generate/',
     '/documents/',
+    '/fdd/',
   ];
 
   // Auth routes - redirect to dashboard if already logged in
@@ -214,5 +215,7 @@ export const config = {
     '/api/email/results',
     '/api/generate/:path*',
     '/api/analysis/:path*',
+    '/fdd/:path*',
+    '/api/fdd/:path*',
   ],
 };

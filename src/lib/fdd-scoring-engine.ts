@@ -68,10 +68,6 @@ export interface ScoringResult {
 // Helpers
 // ============================================================================
 
-function val<T>(meta: FddFieldMeta | undefined): T | null {
-  return (meta?.value as T) ?? null;
-}
-
 function num(meta: FddFieldMeta | undefined): number | null {
   const v = meta?.value;
   return typeof v === 'number' ? v : null;
@@ -219,7 +215,6 @@ function scoreDimension2(
   const checks: CheckResult[] = [];
 
   const totalMin = num(fields.total_investment_min);
-  const totalMax = num(fields.total_investment_max);
 
   // Investment floor
   const floorResult: DimensionResult =

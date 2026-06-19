@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { createBrowserSupabaseClient } from '@/lib/supabase';
 import type { FddAnalysis, FddCompatibility } from '@/types/fdd';
-import type { ScoringResult, DimensionScore, OdeAssessment, TimingAssessment, FddFlag } from '@/lib/fdd-scoring-engine';
+import type { DimensionScore, OdeAssessment, TimingAssessment } from '@/lib/fdd-scoring-engine';
 
 // ============================================================================
 // Types for persisted e2_score shape

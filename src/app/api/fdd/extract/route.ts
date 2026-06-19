@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { createServiceClient } from '@/lib/supabase-service';
-import { extractFddText, extractFdd, assessStaleness, assessRegistration } from '@/lib/fdd-extraction-engine';
+import { extractFddText, extractFdd } from '@/lib/fdd-extraction-engine';
 import type { FddSSEEvent } from '@/types/fdd';
 
 // POST /api/fdd/extract — SSE stream

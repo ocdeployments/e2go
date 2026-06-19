@@ -51,19 +51,8 @@ export async function POST(request: NextRequest) {
     const registrationStatus = analysis.state_registration_status ?? 'unknown';
     const investorLiquidCapital = analysis.investor_liquid_capital as number | null;
 
-    // Re-run scoring if no e2_score yet, otherwise use cached
-    let scoring: ScoringResult;
-    if (analysis.e2_score) {
-      // Reconstruct minimal scoring from persisted data
-      const cached = analysis.e2_score as {
-        flags: string[];
-        overall: string;
-      };
-      // We need the full flag objects — re-score rather than trying to reconstruct
-      scoring = scoreFdd(fields, staleStatus, registrationStatus, investorLiquidCapital);
-    } else {
-      scoring = scoreFdd(fields, staleStatus, registrationStatus, investorLiquidCapital);
-    }
+    // Always re-score to get full flag objects (persisted e2_score lacks flag detail)
+    const scoring: ScoringResult = scoreFdd(fields, staleStatus, registrationStatus, investorLiquidCapital);
 
     const profileSubset = caseProfile ? {
       investor_liquid_capital: investorLiquidCapital,

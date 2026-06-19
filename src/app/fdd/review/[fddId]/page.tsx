@@ -222,7 +222,7 @@ export default function FddReviewPage() {
   function toggleSection(id: string) {
     setOpenSections(prev => {
       const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      if (next.has(id)) { next.delete(id); } else { next.add(id); }
       return next;
     });
   }
@@ -361,7 +361,7 @@ export default function FddReviewPage() {
                               </div>
                               {meta._quote && meta._conf !== 'not_disclosed' && (
                                 <p className="text-[10px] text-white/25 mt-1 text-left italic leading-relaxed">
-                                  "{meta._quote}"
+                                  &quot;{meta._quote}&quot;
                                 </p>
                               )}
                             </div>

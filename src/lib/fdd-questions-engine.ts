@@ -9,7 +9,7 @@
 
 import Anthropic from '@anthropic-ai/sdk';
 import type { FddExtractedFields } from '@/types/fdd';
-import type { ScoringResult, FddFlag } from '@/lib/fdd-scoring-engine';
+import type { ScoringResult } from '@/lib/fdd-scoring-engine';
 
 const anthropic = new Anthropic();
 
@@ -261,7 +261,6 @@ function computeProfileMatch(
 
   // Investment match
   const totalMin = fields.total_investment_min?.value as number | null;
-  const totalMax = fields.total_investment_max?.value as number | null;
   const liquid = profile.investor_liquid_capital;
 
   let investmentMatch = true;
@@ -481,7 +480,6 @@ async function generateBespokeQuestions(
   scoring: ScoringResult
 ): Promise<Omit<GeneratedQuestion, 'id'>[]> {
   const franchiseName = (fields.franchisor_legal_name?.value as string) ?? 'the franchise';
-  const category = (fields.investor_role?.value as string) ?? 'this business';
   const totalMin = fields.total_investment_min?.value as number | null;
   const auv = fields.item19_median?.value as number | null ?? fields.item19_auv?.value as number | null;
   const royalty = fields.royalty_rate_pct?.value as number | null;
