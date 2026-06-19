@@ -200,8 +200,8 @@ export interface FddExtractedFields {
 export interface FddE2Score {
   overall: FddCompatibility;
   dimensions: Record<string, unknown>;
-  timing_assessment: Record<string, unknown>;
-  ode_assessment: Record<string, unknown>;
+  timing_assessment: unknown;
+  ode_assessment: unknown;
   narrative: Record<string, string>;
   flags: string[];
 }
