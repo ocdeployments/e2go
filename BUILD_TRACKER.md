@@ -1,6 +1,6 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 19, 2026 — Sprints 1 & 2 complete (8-doc pipeline, getUser fix, quiz/profile page, Q0-09e/f, DB migration)
+**Last Updated:** June 19, 2026 — Sprints 3, 4, 5 complete (CaseProfile engine, results page rebuild, franchise matching)
 **App Name:** E2go.app
 **Stack:** Next.js 14 · TypeScript · Tailwind CSS · Supabase · Claude API
 **Dev URL:** https://e2go-git-dev-ocdeployments-projects.vercel.app
@@ -622,6 +622,43 @@ All session files written to docs/sessions/.
 
 Note: Stripe API version warning (2024-06-20 vs 2026-05-27) —
 non-breaking, upgrade scripts/stripe-setup.ts apiVersion when convenient.
+
+---
+
+## SESSION — Sprints 3, 4, 5 (June 19, 2026 — overnight autonomous)
+
+### Sprint 3: CaseProfile type system (commits 26815e4)
+- `src/types/case-profile.ts` — Archetype union + CaseProfile interface
+- `src/lib/case-profile.ts` — buildCaseProfile(), classifyArchetype(), scoreQuizEligibility(), detectFranchiseTrigger()
+  - Reads quiz_sessions (post_quiz_profile, score, outcome, result_json) + applications
+  - Archetype logic: buyer (owner + franchise industry), builder (owner/manager + tech/professional), investor, career_switcher
+  - Select-then-update/insert pattern (no unique constraint on user_id at time of writing)
+- `src/app/api/case-profile/build/route.ts` — GET endpoint, auth-gated, returns CaseProfile JSON
+
+### Sprint 5: Franchise matching (commit f2485ab)
+- `supabase/migrations/20260619100000_franchise_brands.sql`:
+  - Adds UNIQUE INDEX on case_profiles(user_id) — enables future upserts
+  - Creates franchise_brands table with RLS (public read on active=true)
+  - Seeds 6 home-care brands (1Heart, Assisting Hands, BrightSpring, FirstLight, Comfort Keepers, Visiting Angels)
+- `src/lib/franchise-matcher.ts` — matchFranchises(): filters by investment/net worth, scores industry(40)+investment(30)+netWorth(30), returns top 5
+- `src/app/api/franchise/matches/route.ts` — GET endpoint, auth-gated
+
+### Sprint 4: Results page rebuild (commit ec6472e)
+- Rebuilt `/results` from 1289-line monolith to 9-section layout
+- Section 1: Score circle (color-coded ≥70 gold / 40-69 amber / <40 muted), outcome label, verdict
+- Section 2: Country flag emoji + treaty confirmation
+- Sections 3+4: Investment assessment card + Business assessment card (color-coded by criteria score)
+- Section 5: Top-3 case gaps with edit links
+- Section 6: Archetype next steps (3 steps tailored to buyer/builder/investor/career_switcher)
+- Section 7: Profile snapshot 2×2 grid (net_worth / prior_business / industry / timeline) — conditional on caseProfile data
+- Section 8: Franchise teaser card (gold border) — conditional on franchiseTrigger
+- Section 9: CTA bar ("Start your case file" + "Talk to an attorney")
+- Below fold: preserved detailed criteria breakdown, benefits, timeline, pricing sidebar, consulate intel, FAQ widget
+- caseProfile fetched via /api/case-profile/build with graceful fallback to quiz session data
+
+### Build
+- npm run build: ✅ clean — 109 pages generated, no TS errors
+- Committed 3 separate sprint commits + pushed to dev
 
 ---
 
