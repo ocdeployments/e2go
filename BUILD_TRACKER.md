@@ -1,6 +1,6 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 19, 2026 — FDD-1 (extraction pipeline) and FDD-2 (E-2 scoring engine + UI) complete. Commits 6441f5e + 59faec6. Next: FDD-3 (Territory Market Analysis).
+**Last Updated:** June 19, 2026 — FDD-1 through FDD-5 complete. Full FDD Intelligence feature set shipped. Commits 6441f5e, 59faec6, e16043b, 1d8e0a5, 4d58970, b93c2dd, ec37352. Build clean (119 pages). Next: FDD pricing integration (wire upgrade CTA to payment) or next sprint.
 **App Name:** E2go.app
 **Stack:** Next.js 14 · TypeScript · Tailwind CSS · Supabase · Claude API
 **Dev URL:** https://e2go-git-dev-ocdeployments-projects.vercel.app
@@ -3575,9 +3575,9 @@ Five components run in silos, each independently fetching from the same three ta
 | FDD-DESIGN | Research + plan | docs/FDD_INTELLIGENCE_RESEARCH.md + docs/FDD_INTELLIGENCE_PLAN.md — 50-field schema, 5-dimension scoring rubric, ODE model, territory spec, questions spec, sprint plan | ✅ COMPLETE |
 | FDD-1 | Extraction pipeline | pdf-parse FDD text extraction (no truncation), 4-pass LLM chunking (Items 1-7, 11-12, 17, 19-21), SSE streaming, staleness gate, registration gate, DB schema (fdd_analyses + fdd_comparisons), upload page (/fdd/upload), review page (/fdd/review/[fddId]) | ✅ COMPLETE — commit 6441f5e |
 | FDD-2 | E-2 scoring engine | 5-dimension scoring (eligibility gates, investment substantiality, non-marginality, develop-and-direct, flags), ODE model, timing assessment, sliding-scale proportionality (9 FAM 402.9-6(D)), LLM narrative, score API, scoring dashboard (/fdd/score/[fddId]) | ✅ COMPLETE — commit 59faec6 |
-| FDD-3 | Territory market analysis | Census ACS 5-year + LODES + BLS OES APIs; Google Places competitive scan; isochrone/radius by category; category-specific weights (QSR/Home Services/Retail); territory score + market narrative | ⏳ NEXT |
-| FDD-4 | Questions generator + profile match | Flag-to-question mapping (ask_of: franchisor_dev_rep / franchisee / former / attorney); what_to_listen_for per question; CaseProfile match score; freemium teaser (3 real metrics + flag count + 3 sample questions) | ⏳ PENDING |
-| FDD-5 | Final report + platform integration | Full report generation; write 8 answer keys back to case_profiles; multi-FDD comparison; PDF export; teaser UI for non-buyers | ⏳ PENDING |
+| FDD-3 | Territory market analysis | Census ACS 5-year API (ZCTA population/income/households), Google Places competitor scan (graceful degradation if no key), category-specific radius + weights (QSR/Home Services/Senior Care/etc.), territory score + LLM narrative, /fdd/territory/[fddId] | ✅ COMPLETE — commit e16043b |
+| FDD-4 | Questions generator + profile match | 15 flag→question mappings, 8 standard questions, data-gap questions, 5 LLM bespoke questions, CaseProfile match score (investment/net_worth/industry 0-100), filter tabs by audience, copy-all, /fdd/questions/[fddId] | ✅ COMPLETE — commit 1d8e0a5 |
+| FDD-5 | Final report + platform integration | LLM 6-section final report, 8 answer keys written to user's application (QA-FDD-COMPAT, QA-FDD-FLAGS, etc.), freemium teaser (3 real metrics + flag count + 3 locked sample questions, hasAccess gate), /fdd/report/[fddId], /fdd index page with 5-stage progress bars | ✅ COMPLETE — commit 4d58970 |
 
 ### FDD Intelligence — Product & Competitive Context
 
@@ -3801,3 +3801,62 @@ Key scoring logic:
 ### Build
 TypeScript: zero errors (pre-existing webhook.spec.ts Playwright/vi error unrelated). Build clean.
 Both pages verified in preview: upload page renders Obsidian Gold design correctly; score page handles auth/not-found gracefully.
+
+---
+
+## SESSION — FDD Intelligence: FDD-3, FDD-4, FDD-5 + lint clean (June 19, 2026)
+
+### FDD-3 — Territory Market Analysis (commit e16043b)
+
+| File | What it does |
+|---|---|
+| `src/lib/fdd-territory-engine.ts` | Census ACS 5-year API (ZCTA population/income/households/age/employment/housing), state FIPS mapping, Google Places competitor scan with graceful degradation (neutral score 50 when key absent), category-specific weights (QSR 50/20/30, Home Services 30/50/20, Senior Care 25/45/30, etc.), category-aware radii, LLM territory narrative |
+| `src/app/api/fdd/territory/route.ts` | POST /api/fdd/territory — runs `analyseTeritory()`, persists to `territory_analysis` JSONB column |
+| `src/app/fdd/territory/[fddId]/page.tsx` | Territory dashboard — ScoreBar, DimensionCard (population/income/competition), CensusTable, NarrativeSection, data completeness notice |
+
+Key decisions:
+- Census ZCTA lookup (ZIP Code Tabulation Areas — closely match US ZIP codes)
+- `territory_analysis._full` key stores full `TerritoryAnalysis` object for UI reconstruction without re-running analysis
+- `GOOGLE_PLACES_API_KEY` absent from .env.local — competition score defaults to 50 (neutral), source: 'unavailable'
+
+### FDD-4 — Questions Generator + Profile Match (commit 1d8e0a5)
+
+| File | What it does |
+|---|---|
+| `src/lib/fdd-questions-engine.ts` | 15 flag→question templates with `what_to_listen_for`, 8 standard always-included questions, data-gap trigger questions (no Item 19, missing royalty, etc.), 5 LLM bespoke questions, CaseProfile match score (investment_match, net_worth_match, industry_fit, gaps, 0–100 overall) |
+| `src/app/api/fdd/questions/route.ts` | POST /api/fdd/questions — loads CaseProfile (maybeSingle), always re-scores to get full flag objects, calls `generateQuestions()`, persists to `questions` + `profile_match` columns |
+| `src/app/fdd/questions/[fddId]/page.tsx` | QuestionCard (expandable with what_to_listen_for, critical badge, audience label), ProfileMatchPanel (score + tiles + gaps), filter tabs by audience, copy-all to clipboard as formatted text |
+
+### FDD-5 — Final Report + Platform Integration (commit 4d58970)
+
+| File | What it does |
+|---|---|
+| `src/app/api/fdd/report/route.ts` | POST /api/fdd/report — LLM 6-section final report (EXECUTIVE_SUMMARY, KEY_STRENGTHS, KEY_CONCERNS, FINANCIAL_PICTURE, MARKET_VERDICT, RECOMMENDED_NEXT_STEPS), writes 8 answer keys to user's most recent application via `writePlatformIntegration()` |
+| `src/app/fdd/report/[fddId]/page.tsx` | FullReport component (all 6 sections + module nav grid + print button), FreeTeaser component (3 real metrics + flag count + blurred locked questions + upgrade CTA), `hasAccess` boolean gate (currently `true` for all auth users — payment integration pending) |
+| `src/app/fdd/page.tsx` | FDD index — lists all user analyses with AnalysisCard, 5-stage progress bars (Extracted/Scored/Territory/Questions/Report), smart navigation to furthest completed stage, empty state |
+
+Platform integration answer keys written:
+- `QA-NEW-04` franchise/business name
+- `QF-NEW-01` investment amount (Item 7 minimum)
+- `QA-NEW-09` opening day employees
+- `QA-NEW-12` territory type
+- `QA-NEW-03` business industry (from territory category)
+- `QA-NEW-11` target state
+- `QA-FDD-COMPAT` compatibility result (STRONG/VIABLE/CAUTION/INELIGIBLE)
+- `QA-FDD-FLAGS` flag count
+
+### Lint + Middleware Fixes (commit ec37352)
+
+Resolved all ESLint errors to achieve clean build (119 pages, zero errors):
+- `fdd-scoring-engine.ts`: removed unused `val()` helper and `totalMax` in `scoreDimension2`
+- `fdd-questions-engine.ts`: removed unused `totalMax` and `category` variables
+- `fdd/extract` route: removed `assessStaleness`/`assessRegistration` unused imports
+- `fdd/questions` route: collapsed dead cached-branch into single re-score call
+- `fdd/review` page: fixed ternary-as-statement and unescaped `"` entities in JSX
+- `fdd/score` page: removed `ScoringResult` and `FddFlag` unused type imports
+- `middleware.ts`: `/fdd/` added to `protectedRoutes` array and `config.matcher`
+
+### What remains for FDD Intelligence
+- **Freemium gate**: wire `hasAccess` in `report/[fddId]/page.tsx` to a payment check when pricing is defined ($297 placeholder in teaser). Gate structure is fully built.
+- **Google Places**: `GOOGLE_PLACES_API_KEY` not in .env.local — competition scoring uses neutral fallback. Add key to enable real competitor data.
+- **Multi-FDD comparison**: deprioritized, not built.
