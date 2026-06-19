@@ -17,7 +17,7 @@ export function ComparisonSection() {
       <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
 
         {/* Heading */}
-        <div style={{ textAlign: 'center', marginBottom: '64px' }}>
+        <div style={{ textAlign: 'left', marginBottom: '64px' }}>
           <p style={{
             fontFamily: 'DM Sans, sans-serif',
             fontSize: '11px',
@@ -44,8 +44,8 @@ export function ComparisonSection() {
             fontSize: '16px',
             fontWeight: 300,
             color: 'rgba(245,240,232,0.55)',
-            maxWidth: '560px',
-            margin: '0 auto',
+            maxWidth: '620px',
+            margin: 0,
             lineHeight: 1.7,
           }}>
             Most people spend months asking the wrong people the wrong questions.
@@ -409,76 +409,119 @@ export function ComparisonSection() {
           </div>
         </div>
 
-        {/* Bottom row — disclaimers + already further along callout */}
+        {/* Everything included — every feature named once, grouped to stay
+            scannable. This is what makes the "one platform / complete journey"
+            promise concrete: the comparison above tells the story, this lists
+            the receipts. */}
+        <div style={{
+          marginTop: '2px',
+          background: '#0a0a0a',
+          border: '1px solid rgba(201,168,76,0.12)',
+          borderTop: 'none',
+          padding: '40px',
+        }}>
+          <span style={{
+            fontFamily: 'DM Sans, sans-serif',
+            fontSize: '10px',
+            fontWeight: 500,
+            letterSpacing: '0.16em',
+            textTransform: 'uppercase',
+            color: '#C9A84C',
+            background: 'rgba(201,168,76,0.08)',
+            border: '1px solid rgba(201,168,76,0.2)',
+            padding: '4px 12px',
+            display: 'inline-block',
+            marginBottom: '28px',
+          }}>
+            Everything included
+          </span>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+            gap: '36px',
+          }}>
+            {featureGroups.map((group) => (
+              <div key={group.heading}>
+                <div style={{
+                  fontFamily: 'DM Sans, sans-serif',
+                  fontSize: '11px',
+                  fontWeight: 500,
+                  letterSpacing: '0.12em',
+                  textTransform: 'uppercase',
+                  color: 'rgba(201,168,76,0.7)',
+                  paddingBottom: '14px',
+                  marginBottom: '18px',
+                  borderBottom: '1px solid rgba(201,168,76,0.12)',
+                }}>
+                  {group.heading}
+                </div>
+                <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+                  {group.items.map((item) => (
+                    <li key={item.name} style={{
+                      display: 'flex',
+                      gap: '12px',
+                      marginBottom: '14px',
+                    }}>
+                      <span aria-hidden="true" style={{
+                        width: '5px',
+                        height: '5px',
+                        flexShrink: 0,
+                        marginTop: '7px',
+                        background: '#C9A84C',
+                      }} />
+                      <span style={{
+                        fontFamily: 'DM Sans, sans-serif',
+                        fontSize: '13px',
+                        fontWeight: 300,
+                        color: 'rgba(245,240,232,0.5)',
+                        lineHeight: 1.5,
+                      }}>
+                        <span style={{ fontWeight: 500, color: '#f5f0e8' }}>{item.name}</span>
+                        {item.note ? ` — ${item.note}` : ''}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Bottom row — "already further along?" callout. The legal disclaimers
+            that used to live here now sit in the page footer, so they read as
+            the final word instead of interrupting the comparison. */}
         <div style={{
           marginTop: '2px',
           background: 'rgba(201,168,76,0.03)',
           border: '1px solid rgba(201,168,76,0.12)',
           borderTop: 'none',
+          borderLeft: '2px solid rgba(201,168,76,0.5)',
           padding: '28px 32px',
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-          gap: '24px',
-          alignItems: 'start',
         }}>
           <p style={{
-            fontFamily: 'DM Sans, sans-serif',
-            fontSize: '12px',
+            fontFamily: '"Cormorant Garamond", serif',
+            fontSize: '18px',
             fontWeight: 300,
-            color: 'rgba(245,240,232,0.4)',
-            margin: 0,
-            lineHeight: 1.7,
-            borderLeft: '2px solid rgba(201,168,76,0.25)',
-            paddingLeft: '14px',
+            fontStyle: 'italic',
+            color: '#C9A84C',
+            margin: '0 0 6px',
+            lineHeight: 1.4,
           }}>
-            E2go is a document preparation platform — not a law firm.
-            We do not provide legal advice. All documents are drafts
-            you must review before submission. If you would like an
-            attorney recommendation, we can point you in the right
-            direction — that decision is entirely yours.
+            Already further along?
           </p>
           <p style={{
             fontFamily: 'DM Sans, sans-serif',
-            fontSize: '12px',
+            fontSize: '13px',
             fontWeight: 300,
-            color: 'rgba(245,240,232,0.4)',
+            color: 'rgba(245,240,232,0.5)',
             margin: 0,
+            maxWidth: '640px',
             lineHeight: 1.7,
-            borderLeft: '2px solid rgba(201,168,76,0.25)',
-            paddingLeft: '14px',
           }}>
-            Franchise brokers in the E2go network are compensated by
-            the franchisor — not you. There is no client fee for a
-            broker introduction.
+            Business identified, LLC formed, or documents already started — your
+            timeline is shorter than the numbers above. Check your eligibility to
+            see exactly where you stand.
           </p>
-          <div style={{
-            borderLeft: '2px solid rgba(201,168,76,0.5)',
-            paddingLeft: '14px',
-          }}>
-            <p style={{
-              fontFamily: '"Cormorant Garamond", serif',
-              fontSize: '15px',
-              fontWeight: 300,
-              fontStyle: 'italic',
-              color: '#C9A84C',
-              margin: '0 0 6px',
-              lineHeight: 1.4,
-            }}>
-              Already further along?
-            </p>
-            <p style={{
-              fontFamily: 'DM Sans, sans-serif',
-              fontSize: '12px',
-              fontWeight: 300,
-              color: 'rgba(245,240,232,0.45)',
-              margin: 0,
-              lineHeight: 1.7,
-            }}>
-              Business identified, LLC formed, or documents already
-              started — your timeline is shorter than the numbers above.
-              Check your eligibility to see exactly where you stand.
-            </p>
-          </div>
         </div>
 
       </div>
@@ -491,37 +534,37 @@ export function ComparisonSection() {
 const e2goSteps = [
   {
     title: 'Clarity from day one',
-    description: 'The eligibility quiz replaces weeks of research. The built-in knowledge base answers any question based on real E-2 rules — not forums, not friends of friends. You know where you stand before spending a dollar.',
+    description: 'A free quiz and built-in knowledge base replace weeks of research — you know where you stand before spending a dollar.',
     cost: 'Free — no account required',
   },
   {
     title: 'Franchise introduction within 24 hours',
-    description: 'Connected to a broker who works specifically with E-2 investors. Brokers in our network are compensated by the franchisor — not you. Most people spend weeks searching, or thousands of dollars to access one.',
+    description: 'Matched to an E-2 broker paid by the franchisor, not you — within a day, not weeks of searching.',
     cost: 'No client fee — ever',
   },
   {
     title: 'Business formation — guided and parallel',
-    description: 'LLC formation, EIN, and US business banking handled through specialist referrals. Each specialist is pre-briefed on your situation. Steps run in parallel where possible — 2–3 weeks instead of 4–6.',
+    description: 'LLC, EIN, and US banking through pre-briefed specialists, run in parallel — 2–3 weeks instead of 4–6.',
     cost: 'Specialist referrals included',
   },
   {
     title: 'Your entire application in one place',
-    description: 'Every document, every answer, every piece of supporting information — organised, saved, and accessible. Nothing lost. Nothing repeated. Your case file builds as you go.',
+    description: 'Every answer and document in one organised case file that builds as you go. Nothing lost, nothing repeated.',
     cost: 'Included in platform',
   },
   {
     title: 'AI-generated documents, quality-gated',
-    description: 'Cover letter, source of funds, business plan, qualifications — built from your answers. Every document passes a 15-step pipeline: gap analysis, consistency checks, AI detection audit, and humanization before you see it.',
+    description: 'Cover letter, source of funds, business plan and more — built from your answers, gap-analysed and quality-checked before you see them.',
     cost: 'Included in platform',
   },
   {
     title: 'Interview preparation',
-    description: 'Simulated consular officer session with questions drawn from your specific case. Real-time feedback on strong answers, inconsistencies, and what to address before you walk in.',
+    description: 'A simulated consular session on your specific case, with feedback and notes on what to fix before you go.',
     cost: 'Included in platform',
   },
   {
     title: 'Submission-ready or attorney-ready',
-    description: 'Download a complete, organised package. Submit directly or hand to an attorney for final review. When documents are already prepared, the attorney reviews rather than rebuilds — significantly reducing their scope and fee.',
+    description: 'Download a complete package — submit it directly, or hand a lawyer finished work to review rather than rebuild.',
     cost: 'Attorney review optional',
   },
 ]
@@ -531,37 +574,83 @@ const e2goSteps = [
 const traditionalSteps = [
   {
     title: 'Weeks of confused research',
-    description: 'Google, Reddit, Facebook groups, friends of friends. Conflicting information, outdated posts, no single source of truth. The research phase alone takes 2–4 weeks before most people know where to start.',
+    description: 'Google, Reddit, and conflicting advice with no single source of truth — 2–4 weeks before you even know where to start.',
     cost: '2–4 weeks',
   },
   {
     title: 'Franchise broker — if you can find one',
-    description: 'Some brokers charge consulting fees just to begin. Others take weeks to respond. No advance briefing on your E-2 budget or eligibility requirements. Repeated conversations to cover the same ground.',
+    description: 'Some charge just to begin; others take weeks to reply — with no briefing on your budget or eligibility.',
     cost: '$0–$5,000 depending on broker',
   },
   {
     title: 'Business formation — coordinated alone',
-    description: 'LLC formation, EIN, US business banking — three separate processes with three separate professionals. No one connects the dots. Typical timeline: 4–6 weeks of back-and-forth coordination.',
+    description: 'LLC, EIN, and banking as three separate processes nobody connects — 4–6 weeks of back-and-forth.',
     cost: '$1,500–$4,000 in formation fees',
   },
   {
     title: 'Immigration consultant — separate fee',
-    description: 'A regulated consultant coordinates the process but cannot give legal advice or represent you at appeals. Charged per engagement. The immigration lawyer is an additional cost on top.',
+    description: 'Coordinates the process but cannot give legal advice or represent you — the immigration lawyer is extra.',
     cost: '$3,000–$8,000 CAD — lawyer not included',
   },
   {
     title: 'Document gathering — on your own',
-    description: 'Each professional gives you a checklist. You gather documents separately for each. No system connects them. The same information is provided multiple times to people who do not coordinate.',
+    description: 'A separate checklist from each professional, the same information gathered and repeated over and over.',
     cost: '4–6 weeks of coordination',
   },
   {
     title: 'No structured interview preparation',
-    description: 'Typically a single attorney prep session if included at all. No question bank tied to your specific case. No feedback scoring. No way to know how ready you actually are.',
+    description: 'At most one attorney prep session — no question bank, no feedback, no way to know if you are ready.',
     cost: 'Often not included',
   },
   {
     title: 'Immigration attorney — full preparation',
-    description: 'Drafts all documents from scratch. Without any prior preparation, the full scope of work falls entirely to the attorney — billed at their full rate for every hour.',
+    description: 'Drafts everything from scratch at full hourly rate, because nothing was prepared in advance.',
     cost: '$8,000–$15,000+ USD',
+  },
+]
+
+// ─── EVERYTHING INCLUDED — every feature, named once, grouped for scanning ────
+// Spells out the full platform (the owner's "spell out each and every feature")
+// in a compact, skimmable grid rather than more prose.
+
+interface FeatureItem {
+  name: string
+  note?: string
+}
+
+interface FeatureGroup {
+  heading: string
+  items: FeatureItem[]
+}
+
+const featureGroups: FeatureGroup[] = [
+  {
+    heading: 'Assess — free',
+    items: [
+      { name: 'Eligibility quiz', note: 'score out of 100' },
+      { name: 'Risk flags + timeline estimate' },
+      { name: 'Denial-risk engine', note: '15 factors across 6 categories' },
+      { name: 'Ask E2go knowledge base', note: 'instant answers from real E-2 rules' },
+    ],
+  },
+  {
+    heading: 'Build',
+    items: [
+      { name: 'Franchise introduction', note: 'no client fee' },
+      { name: 'Business formation', note: 'LLC, EIN, US banking' },
+      { name: 'Unified case file', note: 'saved as you go' },
+      { name: 'AI documents', note: 'cover letter, source of funds, business plan, qualifications' },
+      { name: 'Written in your voice', note: 'matched to your own writing' },
+      { name: 'Gap analysis + 15-step quality pipeline' },
+    ],
+  },
+  {
+    heading: 'Prepare & submit',
+    items: [
+      { name: 'Interview simulator', note: 'consular session on your case' },
+      { name: 'Prep kit + notes', note: 'what to fix before you go' },
+      { name: 'Submission-ready package', note: 'every tab in order' },
+      { name: 'Attorney-ready', note: 'hand a lawyer finished work' },
+    ],
   },
 ]

@@ -95,6 +95,45 @@ body {
   animation: goldPulseGlow 3s ease-in-out infinite;
 }
 
+/* ── Ask E2go "alive" panel — hero centerpiece ── */
+/* Ambient glow: a static gold halo whose opacity breathes. Animating opacity
+   only keeps it on the compositor (no layout/paint thrash). Sits behind the
+   panel as a sibling layer so the panel's own borders stay crisp. */
+@keyframes e2AskBreathe {
+  0%, 100% { opacity: 0.38; }
+  50% { opacity: 1; }
+}
+.e2-ask-glow {
+  box-shadow:
+    0 0 34px 2px rgba(201, 168, 76, 0.28),
+    0 0 0 1px rgba(201, 168, 76, 0.22);
+  animation: e2AskBreathe 3.4s ease-in-out infinite;
+}
+
+/* Live "we're online" dot — a presence pulse (scale + opacity, GPU-safe). */
+@keyframes e2LiveDot {
+  0%, 100% { opacity: 0.5; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.18); }
+}
+.e2-livedot {
+  animation: e2LiveDot 1.7s ease-in-out infinite;
+}
+
+/* Blinking caret for the self-typing teaser prompt. */
+@keyframes e2Caret {
+  0%, 45% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+.e2-caret {
+  animation: e2Caret 1.05s step-end infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .e2-ask-glow { animation: none; opacity: 0.65; }
+  .e2-livedot { animation: none; opacity: 0.95; transform: none; }
+  .e2-caret { animation: none; opacity: 1; }
+}
+
 /* ── Count-up animation ── */
 @keyframes countUp {
   from { opacity: 0; transform: translateY(10px); }
@@ -129,6 +168,15 @@ body {
   .mobile-hidden {
     display: none;
   }
+}
+
+/* ── Hidden scrollbar — horizontal chip rows (SectionNav mobile) ── */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }
 
 @layer utilities {
