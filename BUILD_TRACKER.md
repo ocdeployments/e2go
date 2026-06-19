@@ -1,6 +1,6 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 19, 2026 — EU-1 complete (buildCaseProfile expanded: answers + docs + simulator + dimension scores)
+**Last Updated:** June 19, 2026 — FDD-1 (extraction pipeline) and FDD-2 (E-2 scoring engine + UI) complete. Commits 6441f5e + 59faec6. Next: FDD-3 (Territory Market Analysis).
 **App Name:** E2go.app
 **Stack:** Next.js 14 · TypeScript · Tailwind CSS · Supabase · Claude API
 **Dev URL:** https://e2go-git-dev-ocdeployments-projects.vercel.app
@@ -3553,11 +3553,11 @@ Five components run in silos, each independently fetching from the same three ta
 | ID | Sprint | Key Work | Files |
 |---|---|---|---|
 | ✅ EU-1 | Expand buildCaseProfile() | Read answers + documents + simulator sessions; add completeness_score (0–100), data_state enum, source_of_funds_score, management_role_score, business_plan_score; update CaseProfile type; migration | Commits 451af05, dbdf0a4, af2efa0 — June 19, 2026 |
-| EU-2 | Connect interview-prep | Archetype-aware question pools (buyer/builder/investor/career_switcher); gap-targeted probe injection based on low scores; graceful fallback to current behavior | src/lib/simulator-engine.ts, src/app/api/simulator/evaluate/route.ts |
-| EU-3 | Archetype-aware gap analysis | ARCHETYPE_WEIGHTS map per archetype; optional archetype param in scoreCase(); callers pass archetype from profile | src/lib/gap-analysis-engine.ts |
-| EU-4 | Rebuild triggers | Fire-and-forget profile rebuild at 5 events: quiz/page.tsx completion, quiz/profile/page.tsx save, Module 3 section save, upload processing complete, simulator outcome | quiz/page.tsx, quiz/profile/page.tsx, apply/*/page.tsx, upload routes |
-| EU-5 | PartialProfileTeaser | Standalone simulator buyers post-session: locked profile sections + upgrade CTA showing what a full profile contains | src/components/PartialProfileTeaser.tsx |
-| EU-6 | Results completeness | Completeness bar + confidence tier labels (quiz-derived → profile-confirmed → case-file-reported → document-confirmed); score updates when Module 3 data exists | src/app/results/page.tsx |
+| ✅ EU-2 | Connect interview-prep | Archetype-aware question pools (buyer/builder/investor/career_switcher); gap-targeted probe injection based on low scores; graceful fallback to current behavior | Commit b9721f5 — June 19, 2026 |
+| ✅ EU-3 | Archetype-aware gap analysis | ARCHETYPE_WEIGHTS map per archetype; optional archetype param in scoreCase(); callers pass archetype from profile; franchise/pre-start overrides take priority | Commit 5d083a5 — June 19, 2026 |
+| ✅ EU-4 | Rebuild triggers | Fire-and-forget buildCaseProfile() at 5 events: quiz complete, profile save, answer save (Module 3), document extraction complete, simulator outcome | Commit e4a5281 — June 19, 2026 |
+| ✅ EU-5 | PartialProfileTeaser | Standalone simulator buyers post-session: locked profile sections + upgrade CTA showing what a full profile contains | Commit c4f5729 — June 19, 2026 |
+| ✅ EU-6 | Results completeness | Completeness bar + confidence tier labels (quiz-derived → case-file-reported → document-confirmed → fully-verified); renders only when caseProfile exists | Commit 74b5194 — June 19, 2026 |
 
 **Rule:** All connections have graceful fallbacks to current behavior. Nothing breaks if profile is incomplete.
 
@@ -3565,18 +3565,19 @@ Five components run in silos, each independently fetching from the same three ta
 
 | ID | Sprint | Key Work |
 |---|---|---|
-| PT-1 | Data deletion — right to erasure | /settings: "Delete my account and all data" with confirmation dialog; backend deletes all rows in answers, applications, application_documents, quiz_sessions, case_profiles, payments, simulator_sessions, simulator_answers, followup_responses, case_briefs, generated_documents, generation_pipeline_log, profiles; Supabase Auth user deletion; Resend confirmation email listing what was deleted and when. Legal requirement (GDPR/CCPA/Canadian PIPEDA). |
-| PT-2 | Privacy/trust messaging | Inline copy at document upload and case file entry points: why each data type is collected, what is shared with AI systems, retention period, destruction method. "What we do with your data" panel — honest, plain-English. No hidden training use. Must not bury this in /privacy — must surface at the moment the user is about to share something sensitive. |
+| ✅ PT-1 | Data deletion — right to erasure | /settings rebuilt with 2-step confirmation dialog + type-to-confirm; POST /api/account/delete wipes 16 tables + Supabase Auth user; Resend confirmation email sent on deletion. Commit 55a7c1b — June 19, 2026 |
+| ✅ PT-2 | Privacy/trust messaging | Inline notices at document upload (UploadClient) and case file entry (apply/page.tsx first visit): "never used to train AI, never shared, delete anytime from Settings." Commit 835987e — June 19, 2026 |
 
-### Phase C — FDD Intelligence (design-gated, cannot start until owner defines schema)
+### Phase C — FDD Intelligence
 
-| ID | Sprint | Key Work |
-|---|---|---|
-| FDD-DESIGN | Owner defines schema + scoring | 40-50 fixed extraction fields; scoring rubric per field (red/yellow/green); E-2 compatibility criteria and weights; territory data source stack. BLOCKED until complete. |
-| FDD-1 | FDD upload + extraction | PDF ingestion; extraction to fixed schema; E-2 compatibility score (Items 7, 15, 19 — investment substantiality, management obligation, non-marginality evidence) |
-| FDD-2 | Territory market analysis | Census Bureau API + BLS API for demographics/economics; Google Places for competitive landscape; market report output |
-| FDD-3 | Profile matching | Score extracted FDD against user's CaseProfile; match score per brand based on investment capacity, net worth, industry, archetype |
-| FDD-4 | Multi-FDD comparison | Compare 2-5 FDDs head-to-head; recommendation matrix with explicit disclaimers; scores calibrated to the user's specific background |
+| ID | Sprint | Key Work | Status |
+|---|---|---|---|
+| FDD-DESIGN | Research + plan | docs/FDD_INTELLIGENCE_RESEARCH.md + docs/FDD_INTELLIGENCE_PLAN.md — 50-field schema, 5-dimension scoring rubric, ODE model, territory spec, questions spec, sprint plan | ✅ COMPLETE |
+| FDD-1 | Extraction pipeline | pdf-parse FDD text extraction (no truncation), 4-pass LLM chunking (Items 1-7, 11-12, 17, 19-21), SSE streaming, staleness gate, registration gate, DB schema (fdd_analyses + fdd_comparisons), upload page (/fdd/upload), review page (/fdd/review/[fddId]) | ✅ COMPLETE — commit 6441f5e |
+| FDD-2 | E-2 scoring engine | 5-dimension scoring (eligibility gates, investment substantiality, non-marginality, develop-and-direct, flags), ODE model, timing assessment, sliding-scale proportionality (9 FAM 402.9-6(D)), LLM narrative, score API, scoring dashboard (/fdd/score/[fddId]) | ✅ COMPLETE — commit 59faec6 |
+| FDD-3 | Territory market analysis | Census ACS 5-year + LODES + BLS OES APIs; Google Places competitive scan; isochrone/radius by category; category-specific weights (QSR/Home Services/Retail); territory score + market narrative | ⏳ NEXT |
+| FDD-4 | Questions generator + profile match | Flag-to-question mapping (ask_of: franchisor_dev_rep / franchisee / former / attorney); what_to_listen_for per question; CaseProfile match score; freemium teaser (3 real metrics + flag count + 3 sample questions) | ⏳ PENDING |
+| FDD-5 | Final report + platform integration | Full report generation; write 8 answer keys back to case_profiles; multi-FDD comparison; PDF export; teaser UI for non-buyers | ⏳ PENDING |
 
 ### FDD Intelligence — Product & Competitive Context
 
@@ -3703,3 +3704,100 @@ Clean — 109 pages, zero TypeScript errors. Same pre-existing hook warnings (no
 
 ### Next
 EU-2: Connect interview-prep to archetype-aware question pools + gap-targeted probes in `src/lib/simulator-engine.ts`.
+
+---
+
+## SESSION 35 — Phase A + B Complete (June 19, 2026)
+
+### Completed — 6 commits on dev
+
+**EU-3** (`5d083a5`) — Archetype-aware gap analysis weights in `scoreCase()`
+- `ARCHETYPE_WEIGHTS` constant added to `gap-analysis-engine.ts`: 4 archetypes × 6 categories
+- `scoreCase()` extended with optional `archetype?: string | null` parameter
+- Franchise and pre-start operational overrides take priority over archetype weights
+- All 3 callers updated: `case-profile.ts`, `gap-analysis/page.tsx`, `interview-prep/route.ts`
+- Unused `archetype` state removed from gap-analysis/page.tsx (lint fix)
+
+**EU-4** (`e4a5281`) — Fire-and-forget profile rebuild triggers at 5 events
+- New route: `POST /api/profile/rebuild` — auth-gated, fires `buildCaseProfile()` without awaiting, returns `{triggered: true}` immediately
+- Client triggers: `quiz/page.tsx` (after quiz completion), `quiz/profile/page.tsx` (after profile save)
+- Server triggers: `api/answers/route.ts` (every Module 3 answer save), `api/documents/extract/route.ts` (after extraction_complete event), `api/simulator/outcome/route.ts` (after outcome insert)
+- All server triggers: `buildCaseProfile(user.id).catch(() => {})` — non-blocking, never errors to caller
+
+**EU-5** (`c4f5729`) — `PartialProfileTeaser` component for simulator-only buyers
+- New file: `src/components/PartialProfileTeaser.tsx`
+- 4 locked score cards (Archetype, Source of Funds, Management, Business Plan) with blur + lock overlay
+- Upgrade CTA: "Start your case file →" → `/quiz`
+- Added to dashboard's `isSimulatorOnly` branch after Quick Actions section
+
+**EU-6** (`74b5194`) — Results completeness bar + confidence tier labels
+- `getConfidenceTier(dataState)` helper: quiz_only / case_file / documents / full → label + color
+- Completeness bar renders below score circle on `/results` when `caseProfile` exists (logged-in users only)
+- Width animates to `caseProfile.completenessScore%`; tier label shows right-aligned
+
+**PT-1** (`55a7c1b`) — Data deletion (right to erasure)
+- `/settings` page rebuilt from placeholder: 2-step confirmation dialog + `type-to-confirm` ("delete my account")
+- `POST /api/account/delete`: wipes 16 tables in dependency order, deletes Supabase Auth user, sends Resend confirmation email listing deleted data
+- Post-deletion state: full-screen confirmation with "Return to homepage" — session already invalidated
+- Error state with "Try again" and support contact
+
+**PT-2** (`835987e`) — Privacy/trust inline messaging
+- `UploadClient.tsx`: gold-bordered notice above drop zone — "never used to train AI, never shared, delete anytime from Settings"
+- `apply/page.tsx`: same notice shown on first visit (no applicant name + no quiz data yet) above quiz banner
+
+### Build
+Clean — 110 pages, zero TypeScript errors.
+
+### Next Session
+Phase D — QA sprints (QA-A public pages, QA-B authenticated case file, QA-C simulator + API routes).
+
+---
+
+## SESSION — FDD Intelligence: FDD-1 + FDD-2 (June 19, 2026)
+
+### Research Phase (pre-build)
+
+7 Firecrawl sources: FTC Franchise Rule structure, NASAA Item 19 disclosure rules, E-2 proportionality doctrine (9 FAM 402.9-6(D)), territory analysis methodology, SBA franchise data cross-reference. Gap analysis from 15-year veteran persona yielded 15 improvements. All research saved to `docs/FDD_INTELLIGENCE_RESEARCH.md`.
+
+Full implementation plan in `docs/FDD_INTELLIGENCE_PLAN.md` (10 parts: schema, scoring spec, ODE model, territory weights, questions module, platform integration, sprint plan, LLM prompts, limitations, DB schema).
+
+### FDD-1 — Extraction Pipeline (commit 6441f5e)
+
+| File | Purpose |
+|---|---|
+| `supabase/migrations/20260619300000_fdd_analyses.sql` | fdd_analyses + fdd_comparisons tables, RLS, indexes |
+| `src/types/fdd.ts` | All FDD types — FddExtractedFields (~90 fields), FddSSEEvent, FddFieldMeta, compatibility types |
+| `src/lib/fdd-extraction-engine.ts` | pdf-parse no-truncation extractor, section splitter, 4 chunked LLM passes, staleness/registration assessment |
+| `src/app/api/fdd/upload/route.ts` | POST /api/fdd/upload — PDF to Supabase Storage |
+| `src/app/api/fdd/extract/route.ts` | POST /api/fdd/extract — SSE streaming extraction pipeline |
+| `src/app/fdd/layout.tsx` | FDD section layout with Nav |
+| `src/app/fdd/upload/page.tsx` | Upload intake UI — transaction type, location, drag-and-drop, SSE progress |
+| `src/app/fdd/review/[fddId]/page.tsx` | Extraction review — 9 collapsible sections, confidence badges, page refs, source quotes |
+
+Key technical decisions:
+- `pdf-parse` used directly (not via existing `extractTextFromBuffer` which truncates) — FDDs are 200-300 pages
+- 4 targeted LLM passes with section-split text (max 80K chars each) — stays within Sonnet 4.6 200K context
+- `claude-sonnet-4-6` via Anthropic SDK directly (not OpenRouter) — large-context reliability requirement
+- Each field wrapped in `FddFieldMeta { value, _page, _quote, _conf }` — full audit trail
+
+### FDD-2 — E-2 Scoring Engine (commit 59faec6)
+
+| File | Purpose |
+|---|---|
+| `src/lib/fdd-scoring-engine.ts` | Pure TS scoring: 4 dimensions + ODE model + timing + flag collector. No LLM for numerics. |
+| `src/app/api/fdd/score/route.ts` | POST /api/fdd/score — runs scoring, generates LLM narrative (4 sections), persists to DB |
+| `src/app/fdd/score/[fddId]/page.tsx` | Scoring dashboard — overall badge, narrative, flags, collapsible dimension cards, ODE panel, timing panel |
+| `src/types/fdd.ts` | FddE2Score type updated |
+
+Key scoring logic:
+- Eligibility gates (Dim 1): FDD staleness, state registration, active business model, staffing, fee at-risk, visa acceptance
+- Investment substantiality (Dim 2): floor check + proportionality on 9 FAM sliding scale (<$100K = 90%, $100K-$500K = 75%, $500K-$2M = 50%, >$2M = 30%)
+- Non-marginality (Dim 3): Item 19 quality, ODE model, churn rate, royalty trend, audit opinion
+- Develop and direct (Dim 4): training hours, territory protection, term vs renewal horizon
+- 15 flags: staleness, registration, litigation, bankruptcy, cherry-pick, COVID data, working capital, cure period, non-compete, fee escalation, e-commerce carve-out, entity transfer block, ROFR
+- ODE formula: AUV × (1-COGS%) - fees - estimated rent - estimated labor - debt service (low/mid/high cases)
+- LLM narrative: 4 sections (OVERALL_VERDICT, STRENGTHS, CONCERNS, ATTORNEY_NOTE), written as senior attorney + franchise director
+
+### Build
+TypeScript: zero errors (pre-existing webhook.spec.ts Playwright/vi error unrelated). Build clean.
+Both pages verified in preview: upload page renders Obsidian Gold design correctly; score page handles auth/not-found gracefully.
