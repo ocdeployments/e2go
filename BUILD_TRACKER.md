@@ -1,6 +1,6 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 19, 2026 (Session 37) — Phase D (QA-A/B/C) complete. Phase E LC-1 complete. Dashboard Command Centre built. KB wired into doc gen. FDD + Gap Analysis wired into nav. All immediate navigation fixes done. Build clean (119 pages).
+**Last Updated:** June 19, 2026 (Session 38) — Engine Audit #3 complete (8.1/10, +0.5 from #2). Phase F in progress: archetype doc gen expanded to all 8 doc types, live gap score subscription (Supabase realtime), FDD mobile layout fixed. Build clean (119 pages).
 **App Name:** E2go.app
 **Stack:** Next.js 14 · TypeScript · Tailwind CSS · Supabase · Claude API
 **Dev URL:** https://e2go-git-dev-ocdeployments-projects.vercel.app
@@ -3940,10 +3940,19 @@ Resolved all ESLint errors to achieve clean build (119 pages, zero errors):
 6. Add GOOGLE_PLACES_API_KEY to .env.local — enables real competitor data in FDD territory
 7. Confirm FDD pricing ($297 placeholder) — unblocks `hasAccess` gate wiring in `/fdd/report/[id]`
 
-### Next priorities (Phase F)
-1. Live gap score recalculation — 30s polling / subscription after profile rebuild (+0.5 pts)
-2. Doc gen template variants per archetype — one template currently serves all archetypes
-3. Quiz conditional branch paths — currently linear, no conditional routing
-4. FDD freemium payment gate — wire `hasAccess` to Stripe check (owner must confirm price first)
-5. Engine audit #3 — target 8.5+ after KB wiring proves out
+### Phase F — Engine Improvements (Session 38)
+
+| Item | Status | Notes |
+|---|---|---|
+| Engine Audit #3 | ✅ COMPLETE | 8.1/10 (+0.5 from audit #2). FDD +2.5pts, doc gen +1.2pts |
+| Archetype doc gen — all 8 doc types | ✅ COMPLETE | qualifications, nonimmigrant_intent, investment_proof, visa_category, ds160_reference now have 4-archetype guidance. KB entries IQ-13–IQ-20 mapped |
+| Live gap score subscription | ✅ COMPLETE | Supabase realtime on case_profiles row. Green "Live update" badge on auto-refresh. Manual Recalculate preserved |
+| Quiz conditional branching | ✅ ALREADY DONE | show_if + evaluateShowIf already fully implemented — this was not a gap |
+| FDD mobile layout fix | ✅ COMPLETE | Heading + New analysis button overlap at 390px — fixed with flex-col sm:flex-row |
+| FDD freemium payment gate | ⏳ DEFERRED | hasAccess hardcoded true. Needs Romy to confirm price first |
+
+### Next priorities (Phase F — remaining)
+1. FDD freemium payment gate — wire `hasAccess` to Stripe (owner must confirm price)
+2. Cross-session simulator memory depth — currently passes last 1 session; pass last 2 for trend analysis (+0.2 pts)
+3. Doc gen for qualifications/nonimmigrant_intent doc types — add to DOC_TYPE_QUESTION_MAP (done) and verify prompt files exist
 
