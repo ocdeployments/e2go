@@ -594,8 +594,8 @@ function ResultsPageInner() {
       </div>
 
       {/* ── Section 1: Outcome header ─────────────────────────────────────────── */}
-      <div style={{ padding: "56px 40px 40px", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
-        <div style={{ maxWidth: "720px" }}>
+      <div style={{ borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
+        <div style={{ maxWidth: "760px", margin: "0 auto", padding: "56px 40px 40px" }}>
           <button onClick={() => router.push('/quiz/review')} style={{ fontSize: '13px', color: 'rgba(245,240,232,0.45)', background: 'transparent', border: 'none', cursor: 'pointer', letterSpacing: '0.04em', padding: '0', marginBottom: '32px', fontFamily: "'DM Sans', sans-serif", display: 'block' }}>
             ← Review or change my answers
           </button>
@@ -661,7 +661,7 @@ function ResultsPageInner() {
 
       {/* Name capture for verified non-auth users */}
       {showNameCapture && quizSessionId && quizEmail && (
-        <div style={{ padding: "40px 40px 0", maxWidth: "720px" }}>
+        <div style={{ maxWidth: "760px", margin: "0 auto", padding: "40px 40px 0" }}>
           <NameCaptureForm email={quizEmail} quizSessionId={quizSessionId} onSuccess={() => window.location.reload()} onDismiss={() => setNameCaptureDismissed(true)} />
         </div>
       )}
@@ -794,26 +794,28 @@ function ResultsPageInner() {
               <div style={{ fontSize: "13px", color: "rgba(245,240,232,0.45)", lineHeight: 1.6, marginBottom: "16px" }}>
                 Based on your industry interest and investment profile, we have identified E-2-proven franchise brands in your range. Introductions are made only with your consent.
               </div>
-              <Link href="/franchise" style={{ display: "inline-block", padding: "11px 24px", background: "rgba(201,168,76,0.12)", border: "1px solid rgba(201,168,76,0.4)", color: "#C9A84C", fontSize: "12px", fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: "'DM Sans', sans-serif", textDecoration: "none" }}>
-                View matches →
+              <Link href="/fdd" style={{ display: "inline-block", padding: "11px 24px", background: "rgba(201,168,76,0.12)", border: "1px solid rgba(201,168,76,0.4)", color: "#C9A84C", fontSize: "12px", fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: "'DM Sans', sans-serif", textDecoration: "none" }}>
+                Analyse an FDD →
               </Link>
             </div>
           </div>
         )}
 
         {/* Section 9: CTA bar */}
-        <div style={{ padding: "28px 0 40px", display: "flex", gap: "12px", flexWrap: "wrap" }}>
-          <Link href={isLoggedIn ? "/applications" : "/apply"} style={{ flex: "1 1 200px", display: "block", padding: "15px 24px", background: "#C9A84C", border: "none", color: "#0a0a0a", fontSize: "13px", fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: "'DM Sans', sans-serif", textDecoration: "none", textAlign: "center" }}>
-            Start your case file →
+        <div style={{ padding: "28px 0 40px" }}>
+          <Link href={isLoggedIn ? "/apply" : "/signup"} style={{ display: "block", padding: "15px 24px", background: "#C9A84C", border: "none", color: "#0a0a0a", fontSize: "13px", fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: "'DM Sans', sans-serif", textDecoration: "none", textAlign: "center" }}>
+            {isLoggedIn ? "Start your case file →" : "Create your account →"}
           </Link>
-          <a href="mailto:hello@e2go.app" style={{ flex: "1 1 200px", display: "block", padding: "15px 24px", background: "transparent", border: "1px solid rgba(201,168,76,0.3)", color: "rgba(201,168,76,0.8)", fontSize: "13px", fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: "'DM Sans', sans-serif", textDecoration: "none", textAlign: "center" }}>
-            Talk to an attorney
-          </a>
+          {!isLoggedIn && (
+            <p style={{ marginTop: "10px", fontSize: "12px", color: "rgba(245,240,232,0.3)", textAlign: "center", fontFamily: "'DM Sans', sans-serif" }}>
+              Free to start — no credit card required
+            </p>
+          )}
         </div>
       </div>
 
       {/* ── Supplementary: detailed breakdown + sidebar ──────────────────────── */}
-      <div style={{ borderTop: "1px solid rgba(201,168,76,0.08)", padding: "40px", display: "grid", gridTemplateColumns: "1fr 320px", gap: "32px", maxWidth: "1100px" }}>
+      <div style={{ borderTop: "1px solid rgba(201,168,76,0.08)", maxWidth: "1100px", margin: "0 auto", padding: "40px", display: "grid", gridTemplateColumns: "1fr 320px", gap: "32px" }}>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "28px" }}>
 

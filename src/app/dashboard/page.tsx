@@ -7,7 +7,8 @@ import { PartialProfileTeaser } from "@/components/PartialProfileTeaser";
 
 interface UserProfile {
   email?: string;
-  full_name?: string;
+  first_name?: string;
+  last_name?: string;
   tier?: string;
 }
 
@@ -186,10 +187,10 @@ export default function DashboardPage() {
         {/* Welcome */}
         <section className="mb-8">
           <h1 className="text-2xl font-bold mb-2" style={{ color: "#f5f0e8", fontFamily: "'Cormorant Garamond', serif", fontWeight: 300 }}>
-            Welcome back{user?.full_name ? `, ${user.full_name}` : ""}
+            Welcome back{user?.first_name ? `, ${user.first_name}` : ""}
           </h1>
           <p style={{ color: "rgba(245,240,232,0.6)" }}>
-            {user?.email || "Manage your E-2 visa application"}
+            Manage your E-2 visa application
           </p>
         </section>
 
@@ -364,7 +365,7 @@ export default function DashboardPage() {
             {/* Quick Actions */}
             <section style={{ padding: "24px", background: "rgba(201,168,76,0.02)", border: "1px solid rgba(201,168,76,0.12)", borderRadius: 0 }}>
               <h2 className="text-lg font-semibold mb-4" style={{ color: "#f5f0e8", fontFamily: "'Cormorant Garamond', serif", fontWeight: 300 }}>Quick Actions</h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <Link
                   href="/apply/checklist"
                   className="p-4 transition-colors"
@@ -374,12 +375,20 @@ export default function DashboardPage() {
                   <p className="text-sm" style={{ color: "rgba(245,240,232,0.45)" }}>View required documents</p>
                 </Link>
                 <Link
-                  href="/score"
+                  href="/gap-analysis"
                   className="p-4 transition-colors"
                   style={{ border: "1px solid rgba(201,168,76,0.2)", borderRadius: 0, color: "#f5f0e8" }}
                 >
-                  <p className="font-medium" style={{ color: "#f5f0e8" }}>View my confidence score</p>
-                  <p className="text-sm" style={{ color: "rgba(245,240,232,0.45)" }}>Assess application strength</p>
+                  <p className="font-medium" style={{ color: "#f5f0e8" }}>Gap Analysis</p>
+                  <p className="text-sm" style={{ color: "rgba(245,240,232,0.45)" }}>See what&apos;s missing in your case</p>
+                </Link>
+                <Link
+                  href="/fdd"
+                  className="p-4 transition-colors"
+                  style={{ border: "1px solid rgba(201,168,76,0.2)", borderRadius: 0, color: "#f5f0e8" }}
+                >
+                  <p className="font-medium" style={{ color: "#f5f0e8" }}>FDD Analysis</p>
+                  <p className="text-sm" style={{ color: "rgba(245,240,232,0.45)" }}>Analyse your franchise disclosure</p>
                 </Link>
                 <Link
                   href="/support"

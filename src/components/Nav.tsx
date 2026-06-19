@@ -197,6 +197,22 @@ export default function Nav() {
                   My Application
                 </Link>
               )}
+              {!isSimulatorOnly && !pathname.startsWith('/simulator') && (
+                <Link href="/gap-analysis" className="text-sm transition-colors" style={{ color: pathname.startsWith("/gap-analysis") ? "#C9A84C" : "rgba(245,240,232,0.75)" }}
+                  onMouseEnter={e => e.currentTarget.style.color = "#f5f0e8"}
+                  onMouseLeave={e => e.currentTarget.style.color = pathname.startsWith("/gap-analysis") ? "#C9A84C" : "rgba(245,240,232,0.75)"}
+                >
+                  Gap Analysis
+                </Link>
+              )}
+              {!isSimulatorOnly && !pathname.startsWith('/simulator') && (
+                <Link href="/fdd" className="text-sm transition-colors" style={{ color: pathname.startsWith("/fdd") ? "#C9A84C" : "rgba(245,240,232,0.75)" }}
+                  onMouseEnter={e => e.currentTarget.style.color = "#f5f0e8"}
+                  onMouseLeave={e => e.currentTarget.style.color = pathname.startsWith("/fdd") ? "#C9A84C" : "rgba(245,240,232,0.75)"}
+                >
+                  FDD Analysis
+                </Link>
+              )}
               {!isSimulatorOnly && !pathname.startsWith('/simulator') && application && (
                 <Link href={`/documents/${application.id}`} className="text-sm transition-colors" style={{ color: pathname.startsWith("/documents") ? "#C9A84C" : "rgba(245,240,232,0.75)" }}
                   onMouseEnter={e => e.currentTarget.style.color = "#f5f0e8"}
@@ -307,6 +323,16 @@ export default function Nav() {
               {!isSimulatorOnly && !pathname.startsWith('/simulator') && (
                 <Link href="/apply" className="text-sm py-2" style={{ color: pathname.startsWith("/apply") ? "#C9A84C" : "rgba(245,240,232,0.75)" }} onClick={() => setMobileMenuOpen(false)}>
                   My Application
+                </Link>
+              )}
+              {!isSimulatorOnly && !pathname.startsWith('/simulator') && (
+                <Link href="/gap-analysis" className="text-sm py-2" style={{ color: pathname.startsWith("/gap-analysis") ? "#C9A84C" : "rgba(245,240,232,0.75)" }} onClick={() => setMobileMenuOpen(false)}>
+                  Gap Analysis
+                </Link>
+              )}
+              {!isSimulatorOnly && !pathname.startsWith('/simulator') && (
+                <Link href="/fdd" className="text-sm py-2" style={{ color: pathname.startsWith("/fdd") ? "#C9A84C" : "rgba(245,240,232,0.75)" }} onClick={() => setMobileMenuOpen(false)}>
+                  FDD Analysis
                 </Link>
               )}
               {!isSimulatorOnly && !pathname.startsWith('/simulator') && application && (
