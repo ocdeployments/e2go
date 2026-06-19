@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
+import { PartialProfileTeaser } from "@/components/PartialProfileTeaser";
 
 interface UserProfile {
   email?: string;
@@ -246,6 +247,9 @@ export default function DashboardPage() {
                 </Link>
               </div>
             </section>
+
+            {/* Profile teaser — drives conversion from simulator-only to full platform */}
+            <PartialProfileTeaser />
           </>
         ) : quiz ? (
           <>
