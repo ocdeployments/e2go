@@ -504,7 +504,7 @@ export default function QuizPage() {
         } finally {
           setIsSaving(false);
         }
-        router.push("/results?from=quiz");
+        router.push("/quiz/profile");
       } else {
         setShowEmailGate(true);
       }
