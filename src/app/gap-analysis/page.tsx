@@ -53,6 +53,28 @@ function GapAnalysisInner() {
   const [enrichments, setEnrichments] = useState<Record<string, string>>({});
   const [enrichingIds, setEnrichingIds] = useState<Set<string>>(new Set());
   const [semanticResults, setSemanticResults] = useState<Record<string, { rating: string; finding: string; risk: string } | null> | null>(null);
+  const [rebuilding, setRebuilding] = useState(false);
+  const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
+
+  // Rebuild case profile then re-score — used by the Recalculate button
+  const recalculate = async () => {
+    setRebuilding(true);
+    try {
+      await fetch('/api/case-profile/build', { method: 'POST' });
+      // Small delay to let the DB write settle before re-fetching
+      await new Promise(r => setTimeout(r, 800));
+      setLastRefreshed(new Date());
+      // Re-trigger the load effect by forcing a state bump
+      setLoading(true);
+      setResult(null);
+      setEnrichments({});
+      setSemanticResults(null);
+    } catch {
+      // Non-fatal
+    } finally {
+      setRebuilding(false);
+    }
+  };
 
   useEffect(() => {
     async function load() {
@@ -163,7 +185,8 @@ function GapAnalysisInner() {
       }
     }
     load();
-  }, [router, searchParams]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router, searchParams, lastRefreshed]);
 
   // ── Loading / Error ────────────────────────────────────────────────────────
 
@@ -222,7 +245,7 @@ function GapAnalysisInner() {
       <div style={styles.inner}>
 
         {/* Nav */}
-        <div style={{ marginBottom: '40px', display: 'flex', gap: '16px', alignItems: 'center' }}>
+        <div style={{ marginBottom: '40px', display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' as const }}>
           <Link href="/dashboard" style={styles.navLink}>← Dashboard</Link>
           {appId && (
             <>
@@ -230,6 +253,28 @@ function GapAnalysisInner() {
               <Link href={`/simulator?applicationId=${appId}`} style={styles.navLink}>Simulator →</Link>
             </>
           )}
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '12px' }}>
+            {lastRefreshed && (
+              <span style={{ fontSize: '11px', color: 'rgba(245,240,232,0.35)' }}>
+                Updated {lastRefreshed.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </span>
+            )}
+            <button
+              onClick={recalculate}
+              disabled={rebuilding}
+              style={{
+                padding: '7px 16px', fontSize: '11px', fontWeight: 600,
+                letterSpacing: '0.08em', textTransform: 'uppercase' as const,
+                background: rebuilding ? 'rgba(201,168,76,0.05)' : 'rgba(201,168,76,0.1)',
+                border: '1px solid rgba(201,168,76,0.3)',
+                color: rebuilding ? 'rgba(201,168,76,0.4)' : '#C9A84C',
+                cursor: rebuilding ? 'not-allowed' : 'pointer',
+                fontFamily: "'DM Sans', sans-serif",
+              }}
+            >
+              {rebuilding ? 'Recalculating…' : '↻ Recalculate'}
+            </button>
+          </div>
         </div>
 
         {/* Header */}

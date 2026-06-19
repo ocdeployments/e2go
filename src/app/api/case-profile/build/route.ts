@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { buildCaseProfile } from '@/lib/case-profile';
 
-export async function GET() {
+async function rebuild() {
   const supabase = await createSupabaseServerClient();
   const { data: { user }, error } = await supabase.auth.getUser();
 
@@ -17,3 +17,6 @@ export async function GET() {
     return NextResponse.json({ error: 'Profile build failed' }, { status: 500 });
   }
 }
+
+export const GET = rebuild;
+export const POST = rebuild;
