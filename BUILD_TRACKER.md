@@ -1,6 +1,6 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 18, 2026 — Session 38 complete (Platform question audit, Tab F built, orphaned G/H/L resolved, business page duplicates fixed)
+**Last Updated:** June 19, 2026 — Sprints 1 & 2 complete (8-doc pipeline, getUser fix, quiz/profile page, Q0-09e/f, DB migration)
 **App Name:** E2go.app
 **Stack:** Next.js 14 · TypeScript · Tailwind CSS · Supabase · Claude API
 **Dev URL:** https://e2go-git-dev-ocdeployments-projects.vercel.app
@@ -59,7 +59,7 @@ changed, run npm run build:clean, report summary.
 | Document generation specs | ✅ COMPLETE | 4 spec files |
 | Stripe integration | ⚠️ PARTIAL | Code complete, payments table needs migration |
 | Email verification funnel | ✅ COMPLETE | |
-| Document generation engine | ✅ COMPLETE | 15-step pipeline, sequential, checkpointed |
+| Document generation engine | ✅ COMPLETE | 17-step pipeline, 8 documents, sequential, checkpointed |
 | Analysis engine | ✅ COMPLETE | Types, lib, API, tests, 9-dimension scoring |
 | Three-layer experience pipeline | ✅ COMPLETE | Session 7 — Layer 0/1/2: follow-up, scoring, framing, backstop |
 | Cover page data fix | ✅ COMPLETE | Session 8 — personal_info JSONB → real data sources |
@@ -95,7 +95,10 @@ changed, run npm run build:clean, report summary.
 | Login quiz-session linkage | ✅ COMPLETE | Session 26 — await signInWithPassword, remove redundant getSession |
 | Nav on authenticated layouts | ✅ COMPLETE | Session 25 — Nav added to authenticated page layouts |
 | Quick-start flow hardening | ✅ COMPLETE | Sessions — missing tables, wrong columns, RLS fixes |
-| Package assembly (cover, TOC, dividers) | ✅ COMPLETE | Session 4 — 15-file ZIP with cover, TOC, dividers, renamed docs |
+| Package assembly (cover, TOC, dividers) | ✅ COMPLETE | 8-doc ZIP — Tab E (visa_category), Tab K (nonimmigrant_intent) added |
+| Post-quiz profile capture | ✅ COMPLETE | /quiz/profile — 4 questions, saves to quiz_sessions.post_quiz_profile |
+| Quiz history expansion | ✅ COMPLETE | Q0-09e (bankruptcy) + Q0-09f (civil action) added to module0 |
+| case_profiles table stub | ✅ COMPLETE | Migration 20260619 — populated by Sprint 3 buildCaseProfile() |
 
 ---
 
@@ -410,29 +413,36 @@ What the redesign delivers:
 
 ## MODULE 6 — DOCUMENT GENERATION
 
-15-step sequential pipeline:
+17-step sequential pipeline (Sprint 1 update — 8 documents):
 ```
-Step 1  → Cover Letter (Tab D) — FIRST
-Step 2  → Source of Funds (Tab H)
-Step 3  → Investment Proof (Tab F)
-Step 4  → Business Plan (Tab K)
-Step 5  → Qualifications (Tab J)
-Step 6  → DS-160 Reference (Tab A)
-Step 7  → Gap analysis
-Step 8  → Repetition checker
-Step 9  → Consistency checker
-Step 10 → AI detection audit
-Step 11 → Humanization pass
-Step 12 → Metadata sanitization
-Step 13 → Quality gate
-Step 14 → Pre-download acknowledgment (5 checkboxes)
-Step 15 → Preview unlocked
+Step 1  → Case brief load
+Step 2  → Cover Letter (Tab D)
+Step 3  → Source of Funds (Tab H)
+Step 4  → Investment Proof (Tab F)
+Step 5  → Business Plan (Tab K)
+Step 6  → Qualifications (Tab J)
+Step 7  → DS-160 Reference (Tab A)
+Step 8  → Visa Category Letter (Tab E) ← NEW
+Step 9  → Non-immigrant Intent Statement (Tab K) ← NEW
+Step 10 → Gap analysis
+Step 11 → Repetition checker
+Step 12 → Consistency checker
+Step 13 → AI detection audit
+Step 14 → Humanization pass
+Step 15 → Metadata sanitization
+Step 16 → Quality gate + acknowledgment
+Step 17 → Preview unlocked
 ```
 
-Known issues in generation engine:
+Sprint 1 fixes applied (June 19):
+- ✅ getUser() in /api/ai/route.ts (was getSession())
+- ✅ generate/page.tsx: DOCUMENT_LIST, QUALITY_STEPS, step IDs, progress % all updated for 8 docs
+- ✅ download/route.ts: VALID_DOC_TYPES includes visa_category + nonimmigrant_intent
+- ✅ docx-package-constants.ts: Tab E (Visa Category Letter) + Tab K (Non-immigrant Intent) added
+
+Remaining known issues:
 - Issue A: Approval gate timing — may not pause fully between documents
-- Issue B: setState-during-render React violation (~line 100 of generate page)
-- Issue C: Right column renders multiple empty boxes
+- Issue B: setState-during-render React violation in generate page (batched updates help but not fully fixed)
 Fix file: docs/sessions/SESSION_PLAN_GENERATION_FIXES.md
 
 ---
@@ -3437,3 +3447,40 @@ Clean — zero errors. `npm run build` passes.
 1. Build Tab F (Investment Evidence) — create `tab-f.json` + `/apply/module3/f/page.tsx`
 2. Wire orphaned tabs G, H, L with page routes (or audit and remove)
 3. Confirm pricing → update Stripe Price IDs + pricing page
+
+---
+
+## SESSION — Sprints 1 & 2 (June 18-19, 2026 — Automated overnight)
+
+### Sprint 1: Production Gate
+
+**Files changed:**
+- `src/app/api/ai/route.ts` — getSession() → getUser() (server-side auth fix)
+- `src/lib/docx-package-constants.ts` — Tab E (visa_category) + Tab K (nonimmigrant_intent) added
+- `src/app/api/generate/download/[applicationId]/route.ts` — new doc types in VALID_DOC_TYPES
+- `src/app/generate/[applicationId]/page.tsx` — all 6→8, steps 7-15→9-17, new STATUS_MESSAGES
+
+**Commits:** 3e02ed6, 30493eb, 2407074, 2e57cfb
+
+### Sprint 2: Post-Quiz Intelligence Capture
+
+**Files changed:**
+- `supabase/migrations/20260619000000_post_quiz_profile.sql` — post_quiz_profile JSONB, franchise_triggered bool, archetype text; case_profiles table stub
+- `public/data/module0_questions.json` — Q0-09e (bankruptcy type) + Q0-09f (civil judgment status) added; two new options in Q0-09c multiselect
+- `src/app/quiz/profile/page.tsx` — NEW: 4 post-quiz profile questions (net worth, background, industry, timeline)
+- `src/app/quiz/page.tsx` — route post-quiz to /quiz/profile instead of /results for logged-in users
+
+**Commits:** 500a508, 2417fe2, ff40919, 71bf5e5
+
+### Build
+Clean — `npm run build` passes, zero TypeScript errors after all Sprint 1+2 changes.
+
+### Pending: Sprint 3, 4, 5 (scheduled for 4 AM June 19)
+- Sprint 3: buildCaseProfile(), classifyArchetype(), scoreQuizEligibility(), detectFranchiseTrigger()
+- Sprint 4: Results page 9-section rebuild, gap analysis UI, coaching archetype split
+- Sprint 5: franchise_brands table + matchFranchises() + lead event stub
+
+### Owner Actions Required (do not block code)
+- [ ] Apply migration `supabase/migrations/20260619000000_post_quiz_profile.sql` via Supabase SQL Editor
+- [ ] Review franchise brand list before activating lead notifications
+- [ ] Confirm pricing before Sprint 6 (go-to-market polish)
