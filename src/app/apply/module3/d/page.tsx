@@ -87,6 +87,17 @@ const GENERATION_STEPS = [
   'Assembling final cover letter...',
 ];
 
+// Maps Tab D keys to their Story section equivalents so we can pre-fill
+// without asking the user to repeat themselves. QD-05 has no equivalent —
+// it's the only genuinely new question on this tab.
+const PREFILL_MAP: Record<string, string> = {
+  'QD-01': 'M3-S1-01',
+  'QD-02': 'M3-S1-02',
+  'QD-03': 'M3-S1-03',
+  'QD-04': 'M3-S1-04',
+  'QD-06': 'M3-S1-05',
+};
+
 export default function TabDPage() {
   const router = useRouter();
   const [supabase] = useState(() => createBrowserSupabaseClient());
@@ -100,6 +111,7 @@ export default function TabDPage() {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [generationStep, setGenerationStep] = useState(0);
   const [hasComplexCase, setHasComplexCase] = useState(false);
+  const [prefilledKeys, setPrefilledKeys] = useState<Set<string>>(new Set());
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const currentQuestion = QUESTIONS[currentIndex];
@@ -136,6 +148,40 @@ export default function TabDPage() {
         answersData?.forEach((row: { question_key: string; answer_value: string }) => {
           (savedAnswers as Record<string, string>)[row.question_key] = row.answer_value;
         });
+        // Pre-fill from story section for any QD keys the user hasn't answered yet
+        const missingPrefills = Object.entries(PREFILL_MAP)
+          .filter(([qdKey]) => !(savedAnswers as Record<string, string>)[qdKey]);
+
+        if (missingPrefills.length > 0) {
+          const { data: storyData } = await supabase
+            .from('answers')
+            .select('question_key, answer_value')
+            .eq('application_id', existingApp.id)
+            .in('question_key', missingPrefills.map(([, m3Key]) => m3Key));
+
+          const storyMap: Record<string, string> = {};
+          storyData?.forEach((row: { question_key: string; answer_value: string }) => {
+            storyMap[row.question_key] = row.answer_value;
+          });
+
+          const upserts: { application_id: string; question_key: string; answer_value: string }[] = [];
+          const newPrefilledKeys = new Set<string>();
+
+          missingPrefills.forEach(([qdKey, m3Key]) => {
+            const value = storyMap[m3Key];
+            if (value) {
+              (savedAnswers as Record<string, string>)[qdKey] = value;
+              upserts.push({ application_id: existingApp.id, question_key: qdKey, answer_value: value });
+              newPrefilledKeys.add(qdKey);
+            }
+          });
+
+          if (upserts.length > 0) {
+            await supabase.from('answers').upsert(upserts, { onConflict: 'application_id,question_key' });
+            setPrefilledKeys(newPrefilledKeys);
+          }
+        }
+
         setAnswers(savedAnswers);
 
         // Check if all questions answered to determine screen state
@@ -226,6 +272,7 @@ export default function TabDPage() {
   // Handle answer change with debounce
   const handleAnswerChange = (key: string, value: string) => {
     setAnswers(prev => ({ ...prev, [key]: value }));
+    setPrefilledKeys(prev => { const next = new Set(prev); next.delete(key); return next; });
 
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
@@ -392,6 +439,7 @@ export default function TabDPage() {
               <span style={{ padding: '4px 10px', borderRadius: '4px', fontSize: '11px', background: 'rgba(201,168,76,0.15)', color: 'var(--gold)', border: '1px solid rgba(201,168,76,0.3)' }}>AI-generated from your answers</span>
               <span style={{ padding: '4px 10px', borderRadius: '4px', fontSize: '11px', background: 'rgba(201,168,76,0.15)', color: 'var(--gold)', border: '1px solid rgba(201,168,76,0.3)' }}>Structured to answer every officer concern</span>
               <span style={{ padding: '4px 10px', borderRadius: '4px', fontSize: '11px', background: 'rgba(201,168,76,0.15)', color: 'var(--gold)', border: '1px solid rgba(201,168,76,0.3)' }}>Review and confirm before it&apos;s locked</span>
+              <span style={{ padding: '4px 10px', borderRadius: '4px', fontSize: '11px', background: 'rgba(201,168,76,0.15)', color: 'var(--gold)', border: '1px solid rgba(201,168,76,0.3)' }}>Synced from your story section</span>
             </div>
 
             {/* Question count */}
@@ -650,6 +698,17 @@ export default function TabDPage() {
             <p className="mb-4" style={{ color: 'rgba(240,237,230,0.65)', fontSize: '14px', lineHeight: '1.6' }}>
               {currentQuestion.helperText}
             </p>
+
+            {/* Pre-fill badge — shown when answer came from the story section */}
+            {prefilledKeys.has(currentQuestion.key) && (
+              <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-lg text-xs"
+                   style={{ background: 'rgba(201,168,76,0.1)', border: '1px solid rgba(201,168,76,0.25)', color: 'var(--gold)' }}>
+                <svg className="w-3.5 h-3.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+                Pre-filled from your story section — review and edit freely, or continue as-is
+              </div>
+            )}
 
             {/* Example (for QD-01 only) */}
             {currentQuestion.example && (
