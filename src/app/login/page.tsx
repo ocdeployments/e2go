@@ -32,8 +32,11 @@ function LoginForm() {
     try {
       const supabase = createBrowserSupabaseClient();
 
-      // Clear any stale GoTrueClient state (expired session / stuck lock from prior navigation)
-      await supabase.auth.signOut({ scope: 'local' });
+      // Clear any stale GoTrueClient state — race against 2s timeout to avoid deadlock on a held lock
+      await Promise.race([
+        supabase.auth.signOut({ scope: 'local' }),
+        new Promise<void>(resolve => setTimeout(resolve, 2000)),
+      ]);
       if (timedOut) return;
 
       console.log("[login] 1/7 calling signInWithPassword");

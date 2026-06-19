@@ -1,0 +1,149 @@
+{
+  "QF-01": {
+    "type": "currency",
+    "question": "Total investment committed to the U.S. business (USD)",
+    "section": "Investment Summary",
+    "helperText": "Pre-filled from your investment overview — confirm or update if this has changed.",
+    "tooltip": "The total capital you have committed, whether already spent or irrevocably committed. Must be at risk in the enterprise."
+  },
+  "QF-02": {
+    "type": "select",
+    "question": "Has a purchase agreement, franchise agreement, or similar commitment document been signed?",
+    "section": "Commitment Documentation",
+    "options": [
+      "Yes — signed and dated",
+      "Yes — letter of intent signed",
+      "In negotiation — not yet signed",
+      "No — pre-commitment stage"
+    ],
+    "tooltip": "Officers treat signed commitment documents as strong evidence that investment capital is irrevocably committed — a core E-2 requirement."
+  },
+  "QF-03": {
+    "type": "select",
+    "question": "Do you have the signed agreement available to include in your submission?",
+    "section": "Commitment Documentation",
+    "options": [
+      "Yes — have the signed document",
+      "Yes — but it needs to be obtained from counsel",
+      "No — not yet signed"
+    ],
+    "show_if": { "QF-02": ["Yes — signed and dated", "Yes — letter of intent signed"] }
+  },
+  "QF-04": {
+    "type": "multiselect",
+    "question": "Which of the following wire transfer or payment records do you currently have?",
+    "section": "Wire Transfer Evidence",
+    "options": [
+      "Wire transfer confirmation from Canadian bank",
+      "Wire transfer confirmation received by U.S. recipient",
+      "Franchise fee payment receipt",
+      "Attorney trust account receipt",
+      "Direct asset purchase receipt",
+      "Down payment receipt",
+      "None yet — transfers pending"
+    ],
+    "tooltip": "Wire records are among the most important documents in an E-2 submission. Officers want to see the money physically move."
+  },
+  "QF-05": {
+    "type": "select",
+    "question": "Do the wire records show the full invested amount — or only a portion?",
+    "section": "Wire Transfer Evidence",
+    "options": [
+      "Yes — full amount confirmed in records",
+      "Partial — some transfers not yet documented",
+      "Transfers not yet made"
+    ]
+  },
+  "QF-06": {
+    "type": "select",
+    "question": "Do you have bank statements showing the investment funds leaving your Canadian account?",
+    "section": "Bank Statement Chain",
+    "options": [
+      "Yes — 12+ months of statements covering the full timeline",
+      "Yes — 6–12 months available",
+      "Partial — less than 6 months",
+      "No — need to compile"
+    ],
+    "tooltip": "The bank statement chain should show funds accumulating over time, then leaving for the U.S. investment. Gaps in this chain raise officer questions."
+  },
+  "QF-07": {
+    "type": "select",
+    "question": "Do you have bank statements for the U.S. business account showing funds received?",
+    "section": "Bank Statement Chain",
+    "options": [
+      "Yes — account statement available showing receipt",
+      "Account is open but no statement yet",
+      "U.S. business account not yet opened"
+    ]
+  },
+  "QF-08": {
+    "type": "multiselect",
+    "question": "What source-of-wealth documentation do you have available?",
+    "section": "Source of Wealth",
+    "options": [
+      "Personal bank statements (12+ months)",
+      "T4 or employment income records",
+      "Business financial statements (if self-employed)",
+      "Property sale closing statement",
+      "Investment account statements",
+      "RRSP/TFSA withdrawal records and T4RSP slip",
+      "Inheritance or gift documentation",
+      "Foreign exchange conversion records",
+      "Loan agreement (if funds include a loan)"
+    ],
+    "tooltip": "Source of wealth documentation traces how you accumulated the investment capital — not just where it came from immediately before the wire."
+  },
+  "QF-09": {
+    "type": "select",
+    "question": "If any funds were received as a gift or inheritance, do you have a signed gift letter?",
+    "section": "Source of Wealth",
+    "options": [
+      "Yes — signed gift letter with donor details",
+      "In preparation",
+      "Not applicable — no gift funds"
+    ],
+    "tooltip": "Gift letters must include the donor's relationship to you, the amount, a statement that no repayment is required, and ideally the donor's source of funds."
+  },
+  "QF-10": {
+    "type": "select",
+    "question": "Have funds been deployed — actually spent on business assets or expenses?",
+    "section": "At-Risk Confirmation",
+    "options": [
+      "Yes — fully deployed and at risk",
+      "Partially deployed — balance committed but not yet spent",
+      "Committed but not yet deployed"
+    ],
+    "tooltip": "Under 9 FAM 402.9, investment capital must be 'at risk' — irrevocably committed, not sitting in an account that could be recalled without consequence."
+  },
+  "QF-11": {
+    "type": "multiselect",
+    "question": "What evidence confirms that funds are at risk in the enterprise?",
+    "section": "At-Risk Confirmation",
+    "options": [
+      "Franchise fee paid — non-refundable",
+      "Equipment or inventory purchased",
+      "Leasehold improvements paid",
+      "Lease signed with personal guarantee",
+      "Business assets purchased and received",
+      "Attorney trust account holding funds for pending purchase",
+      "Escrow account for business acquisition"
+    ]
+  },
+  "QF-12": {
+    "type": "select",
+    "question": "Are there any gaps or complications in your investment paper trail that you are aware of?",
+    "section": "Documentary Gaps",
+    "options": [
+      "No — trail is clean and complete",
+      "Minor gaps — some records need to be obtained",
+      "Significant gaps — need guidance on how to document"
+    ]
+  },
+  "QF-13": {
+    "type": "textarea",
+    "question": "Describe any gaps in your paper trail and what steps you have taken or plan to take to address them.",
+    "section": "Documentary Gaps",
+    "show_if": { "QF-12": ["Minor gaps — some records need to be obtained", "Significant gaps — need guidance on how to document"] },
+    "tooltip": "This answer will help structure the documentary gap section of your case file guidance."
+  }
+}

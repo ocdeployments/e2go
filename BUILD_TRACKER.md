@@ -1,6 +1,6 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 17, 2026 — Session 35 complete (Simulator UX overhaul: pre-population, nav fix, Profile page, InterviewBrief unblocked)
+**Last Updated:** June 18, 2026 — Session 38 complete (Platform question audit, Tab F built, orphaned G/H/L resolved, business page duplicates fixed)
 **App Name:** E2go.app
 **Stack:** Next.js 14 · TypeScript · Tailwind CSS · Supabase · Claude API
 **Dev URL:** https://e2go-git-dev-ocdeployments-projects.vercel.app
@@ -151,7 +151,8 @@ Update STRIPE_PRICE_* env vars with new Price IDs after running.
 | Module 3 shell | /apply/module3 | ✅ COMPLETE (8 tabs: A B C D E I J K) |
 | Module 3 Tab A | /apply/module3/a | ✅ COMPLETE |
 | Module 3 Tabs B,C,D,E,I,J,K | /apply/module3/[b-k] | ✅ COMPLETE |
-| ~~Module 3 Tabs F,G,H,L~~ | ~~deleted~~ | ✅ REMOVED — superseded by case file |
+| Module 3 Tab F | /apply/module3/f | ✅ COMPLETE — Investment Evidence document checklist (13 questions) |
+| Module 3 Tabs G,H,L | /apply/module3/g|h|l | ✅ COMPLETE — redirect to /apply/business, /investment, /family |
 | ~~Onboarding~~ | ~~deleted~~ | ✅ REMOVED — orphaned |
 | ~~Outcome~~ | ~~deleted~~ | ✅ REMOVED — orphaned |
 | Case File Overview | /apply | ✅ COMPLETE | Obsidian Gold section cards |
@@ -1584,6 +1585,36 @@ Session file: docs/sessions/SESSION19_COMMIT_AUDIT_AND_PUSH.md
 ---
 
 ## SESSION LOG (Prior sessions)
+
+### June 18, 2026 — Session 38: Platform Question Audit + Structural Fixes
+
+**Question cleanup (prior work this context):**
+- Question labels rewritten across story/page.tsx, tab-a.json, tab-i.json, j/page.tsx
+- M3-S1-01 through M3-S1-05: trimmed from 143–182 char labels to clean 40–80 char questions
+- M3-A-07 (Canadian SIN number): REMOVED — DS-160 does not require SIN
+- Login deadlock (GoTrueClient signOut): Fixed with Promise.race + 2s timeout
+- Tab K: All 11 long-form questions changed from type:text to type:textarea
+
+**This session:**
+- **Comprehensive platform question audit**: Every question across all sections cataloged, valued, and cross-referenced → `docs/QUESTION_AUDIT.md`
+- **Tab F built**: `src/data/module3/tab-f.json` (13 questions) + `src/app/apply/module3/f/page.tsx` — Investment Evidence document readiness checklist
+- **Orphaned G/H/L resolved**: Deleted `tab-g.json`, `tab-h.json`, `tab-l.json` (content superseded by business/investment/family case file pages). Created redirect pages at `/apply/module3/g`, `/h`, `/l` pointing to canonical case file sections.
+- **Business page internal duplicates removed**: M3-E-10 (duplicate of M3-E-02 entity type) and M3-E-11 (duplicate of M3-E-03 state of registration) removed from `business/page.tsx`
+- **Build**: Clean — 106 routes, zero errors
+
+**Audit findings (see docs/QUESTION_AUDIT.md for full detail):**
+- 155 unique questions in primary case file path
+- ~85 additional duplicate/orphaned question instances identified
+- Major duplicate chains: professional background asked 4× (M3-S1-01, QD-01, M3-Q-04, QJ-03)
+- Pre-fillable fields: M3-A-12 (email), M3-A-05 (citizenship) should not be re-asked
+- Ties section Cluster 5 (M3-T-12 to M3-T-16): cover letter drafts don't feed the generation engine — questionable value
+
+**Outstanding decisions for next session:**
+- Pre-fill bridge: QD-01/02/03/04/06 should read from M3-S1-* on Tab D load (QD-05 is the only unique question)
+- Ties cover letter drafts (M3-T-12 to M3-T-16): retire or wire to generation engine?
+- QK-06 (equipment/inventory), QK-13 (3-year growth), QK-14 (expansion plans): add to case file Business section
+- QE-02 ("How is ownership documented?"): add to Business Cluster 1 as M3-E-13
+- Email pre-fill: auto-populate M3-A-12 from authenticated user account
 
 ### June 5, 2026 — Session: End-to-End Payment Test
 - **Task:** Test complete payment flow from quiz to Module 1
@@ -3232,3 +3263,177 @@ Clean — zero errors. 7 commits on dev branch.
 - Practice tab profile data: user requested better organization of the profile card on `/simulator`
 - Engine brief should also appear on Practice tab after profile data
 - Session 36 scope pending user testing feedback
+
+---
+
+## SESSION 36 — Landing Page Overhaul + Pricing Strategy (June 18, 2026)
+
+**Last Updated:** June 18, 2026
+
+### Landing Page — Completed
+
+All 7 user-reported issues addressed and verified:
+
+1. **Widget scroll containment** — FaqWidgetHome now lives inside the hero as the right column of a 2-column grid. Fixed-height card (`h-[460px] flex flex-col`), `flex-1 min-h-0` fill, `overflow-y-auto overscroll-contain h-full` on messages pane. Page background no longer scrolls when user scrolls inside the widget.
+
+2. **Hero highlights updated** — Stats bar now shows: Free (eligibility + Ask) / 6 (documents in your voice) / 15 (denial-risk checks) / From $550. More meaningful than prior 82/Treaty/etc.
+
+3. **How-it-works numerals** — Now `WebkitTextStroke: "1px rgba(201,168,76,0.5)"` + `color: "rgba(201,168,76,0.32)"`. Gold outline, legible.
+
+4. **Section alignment** — Content sections confirmed intentionally left-aligned; CTA/founder sections centered. Intentional design decision, not a bug.
+
+5. **ComparisonSection tightened** — 6 edits: heading to left, dek de-indented, 7-step descriptions compressed to one punchy line each (both e2go and traditional columns), disclaimer removed from comparison and relocated to footer, "Everything included" 14-feature grid added in 3 columns (Assess free / Build / Prepare & submit).
+
+6. **Disclaimer relocated to footer** — Legal disclaimer is now the last thing on the page, below copyright and footer links. Removed from ComparisonSection.
+
+7. **404 diagnosis** — All routes return 200. The 404s were caused by stale `.next` cache on local dev server. Fix: `rm -rf .next && npm run dev`.
+
+8. **Widget in hero** — FaqWidgetHome moved from bottom of page (section 11/13) to the hero's right column — the first interactive moment on the page. Mobile: single collapsed teaser bar → bottom sheet. Desktop: full inline chat panel alongside the headline.
+
+### Page structure (after)
+Nav → Hero (with Ask panel) → SectionNav → Proof bar → Mistakes (3) → How it works → Comparison (full) → Interview simulator (compact callout) → Founder note → Testimonials → Final CTA → Footer (with legal)
+
+### Strategy Research — Completed
+
+Full competitive landscape mapped:
+
+| Competitor | Focus | Pricing | E2-specific? |
+|---|---|---|---|
+| E2 Visa Coach | Done-with-you SaaS | $2,400 full / $249–$947 à la carte | Yes — built on Lovable.app, 106 members |
+| Visas 101 | Interview coaching | ~$200 masterclass, consultations | Partial (covers E2 among others) |
+| Tukki | Multi-visa tech + attorney | Hidden | No |
+| Lighthouse | Multi-visa tech + attorney | Hidden | No |
+
+Visas 101 identified as potential **partner** (not competitor) — former consular officers, interview coaching only, no documents.
+
+### Master Strategy Prompt
+Written to: `docs/E2GO_MASTER_STRATEGY_PROMPT.md`
+Covers: pricing decisions, competitor landscape, document audit scope, multi-applicant architecture questions, messaging gaps, nav recommendations, priority build list.
+
+### Pricing — UNDER DEBATE (no code changes yet)
+
+| Tier | Proposed | Notes |
+|---|---|---|
+| Full package (single applicant, any family size) | $1,295 | 46% cheaper than E2 Coach; no per-kid surcharge |
+| Joint venture (2 principals) | $1,795 | Phase 2 — architecture audit required first |
+| Simulator standalone | $347 | Case-specific vs E2 Coach generic $249 |
+| Gap analysis standalone | $197 | No comparable product |
+| Prep kit standalone | $97 | Entry point |
+
+**CRITICAL:** Joint venture tier cannot launch until multi-applicant architecture is audited. System is built for single applicant only.
+
+**Pricing page and all existing Stripe Price IDs must be updated once pricing decision is confirmed.** Do not update until owner signs off.
+
+### Pending Owner Decisions
+- [ ] Confirm final pricing: $1,295 base? Standalone modules at launch?
+- [ ] Joint venture Phase 2 build scope — approve architecture audit session
+- [ ] Document audit: review `docs/E2GO_MASTER_STRATEGY_PROMPT.md` Section 3 for full scope
+
+### Carry-Forward Owner Actions (from prior sessions)
+- [ ] Rotate OpenAI API key at platform.openai.com
+- [ ] Refund $197 test Stripe charge in Stripe dashboard
+- [ ] Apply migration `supabase/migrations/20260617100000_simulator_outcomes.sql` via Supabase SQL Editor
+- [ ] Apply pgvector migration SQL in Supabase SQL Editor (for FAQ)
+- [ ] Run FAQ seed scripts after applying pgvector migration
+
+### Build
+Clean — zero errors. No commits this session (landing page changes are on dev, not yet committed).
+
+### What's Next
+1. Owner confirms pricing → update all pricing references + Stripe IDs + pricing page
+2. Document audit → read generation engine to confirm exactly which 6 documents are produced and what's missing
+3. Messaging refresh → update hero to add stakes line + voice differentiator
+4. Nav restructure → rename "Simulator" → "Interview Prep", add "What's included", add "About"
+
+---
+
+## SESSION 37/38 — Module 3 Document Audit + Question Cleanup (June 18, 2026)
+
+### Login Deadlock Bug — Fixed
+
+**Root cause:** `signOut({ scope: 'local' })` at the top of `handleLogin` in `src/app/login/page.tsx` deadlocks the GoTrueClient lock when a prior navigation still holds it. This caused the login page to hang indefinitely at "Signing in..."
+
+**Fix:** Wrapped `signOut()` in `Promise.race()` with a 2-second timeout so login proceeds even if signOut hangs.
+
+---
+
+### Document Audit — Tabs A–L
+
+Complete audit of all Module 3 tabs:
+
+| Tab | JSON file | Page route | Status |
+|---|---|---|---|
+| A (DS-160 Reference) | `tab-a.json` ✅ | `/apply/module3/a` ✅ | Complete |
+| B | None | `/apply/module3/b` ✅ | Hardcoded in page |
+| C | None | `/apply/module3/c` ✅ | Hardcoded in page |
+| D (Cover Letter) | None | `/apply/module3/d` ✅ | Wizard, hardcoded |
+| E (Ownership) | `tab-e.json` (stub) | `/apply/module3/e` ✅ | Hardcoded in page |
+| F (Investment Evidence) | None | None | ❌ MISSING |
+| G | `tab-g.json` | None | Orphaned JSON |
+| H | `tab-h.json` | None | Orphaned JSON |
+| I (Financial Projections) | `tab-i.json` ✅ | `/apply/module3/i` ✅ | Complete |
+| J (Qualifications) | None | `/apply/module3/j` ✅ | Wizard, hardcoded |
+| K (Business Plan) | `tab-k.json` (stub) | `/apply/module3/k` ✅ | Hardcoded in page |
+| L | `tab-l.json` | None | Orphaned JSON |
+
+**Key findings:**
+- `tab-e.json` and `tab-k.json` are outdated stubs — all live questions are hardcoded in page.tsx
+- Tab F (Investment Evidence) is completely missing and most critical
+- Tabs G, H, L have JSON data files but no page routes — users never reach them
+- The case file sections (`/apply/qualifications/`, `/apply/business/`, etc.) parallel the module3 system
+
+---
+
+### Question Quality Cleanup — All Files
+
+**Principle established:** Form layout (tabs A, E, K, I) needs short noun-phrase labels. Wizard layout (tabs D, J) suits sentence-format questions since one question shows at a time.
+
+**Files changed:**
+
+#### `/apply/qualifications/page.tsx`
+7 label/helperText rewrites: M3-Q-04 ("What is your professional background..."), M3-Q-05, M3-Q-11, M3-Q-25, M3-V-02, M3-V-04, M3-I-15.
+
+#### `/apply/module3/d/page.tsx` (Tab D — Cover Letter wizard)
+4 rewrites: QD-01 (question, label, helperText), QD-03 (question, helperText), QD-06 (question, label).
+
+#### `/apply/module3/j/page.tsx` (Tab J — Qualifications wizard)
+4 rewrites: QJ-01 (question), QJ-03 (question, helperText), QJ-04 (question, helperText).
+
+#### `/apply/module3/e/page.tsx` (Tab E — Ownership)
+4 rewrites: QE-01 (label, helperText), QE-06 (label, helperText), QE-09 (label), QE-11 (label).
+
+#### `/apply/module3/k/page.tsx` (Tab K — Business Plan)
+**Critical bug fixed:** All 11 long-form question fields had `type: "text"` (single-line) — changed to `type: "textarea"`.
+QK-03 compound question SPLIT into QK-03 ("Who are your main competitors?") + QK-03b ("What is your competitive advantage over them?") as separate fields.
+13 label/helperText rewrites across the entire section.
+
+#### `src/data/module3/tab-a.json`
+Complete pass — all 23 question/tooltip fields rewritten.
+- Text input fields: question → short noun-phrase label (e.g. "Full legal name (as on passport)", "Date of birth", "Current home address in Canada")
+- Tooltips trimmed to one to two lines removing "if you prefer not to share this" padding
+- Select/multi fields: question format retained where appropriate
+
+#### `src/data/module3/tab-i.json`
+All 10 question fields rewritten:
+- Currency/number fields: noun-phrase format ("Projected gross revenue — Year 1", "Full-time U.S. hires — Year 1")
+- Select fields: question format retained
+
+### Build
+Clean — zero errors. `npm run build` passes.
+
+### Structural Gaps (not fixed — flagged for next session)
+- **Tab F** (Investment Evidence): No JSON file, no page route. Should have 12–15 questions on investment source, wire transfers, bank statements. Feeds the Investment Proof document in the generation pipeline.
+- **Tabs G, H, L**: JSON files exist but no page routes — users can never reach them. Need page routes or deletion.
+
+### Owner Actions (carry-forward)
+- [ ] Rotate OpenAI API key at platform.openai.com
+- [ ] Refund $197 test Stripe charge in Stripe dashboard
+- [ ] Apply migration `supabase/migrations/20260617100000_simulator_outcomes.sql` via Supabase SQL Editor
+- [ ] Apply pgvector migration SQL in Supabase SQL Editor (for FAQ)
+- [ ] Run FAQ seed scripts after applying pgvector migration
+- [ ] Confirm final pricing (from Session 36)
+
+### What's Next
+1. Build Tab F (Investment Evidence) — create `tab-f.json` + `/apply/module3/f/page.tsx`
+2. Wire orphaned tabs G, H, L with page routes (or audit and remove)
+3. Confirm pricing → update Stripe Price IDs + pricing page

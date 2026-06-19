@@ -28,9 +28,9 @@ const QUESTIONS = [
   {
     key: 'QD-01',
     type: 'textarea' as const,
-    question: 'How would you describe your professional background in 2–3 sentences?',
-    label: 'Tell us about yourself professionally',
-    helperText: 'Describe your industry, years of experience, and key achievements. This feeds the opening paragraph of your cover letter — be specific.',
+    question: 'Describe your professional background in 2–3 sentences.',
+    label: 'Your professional background',
+    helperText: 'Industry, years of experience, and key achievements. Opens your cover letter — be specific.',
     example: 'I am a 15-year veteran of the food service industry, having managed three successful restaurant locations across Ontario. I have direct experience in operations, staff management, and franchise compliance.',
     required: true,
   },
@@ -45,9 +45,9 @@ const QUESTIONS = [
   {
     key: 'QD-03',
     type: 'textarea' as const,
-    question: 'What specific skills and experience do you bring that make you qualified to run this business?',
+    question: 'What qualifies you to run this specific business?',
     label: 'Your qualifications',
-    helperText: 'Be specific. Reference your work history, any relevant certifications, industry knowledge, and management experience. Generic answers produce weak cover letters.',
+    helperText: 'Reference work history, certifications, industry knowledge, and management experience. Specific answers produce strong cover letters.',
     required: true,
   },
   {
@@ -69,8 +69,8 @@ const QUESTIONS = [
   {
     key: 'QD-06',
     type: 'textarea' as const,
-    question: 'Is there anything unusual or complex about your case that the cover letter should address directly?',
-    label: 'Anything unusual?',
+    question: 'Anything unusual in your case the cover letter should address?',
+    label: 'Unusual circumstances',
     helperText: 'Examples: a prior visa refusal, an unusual source of funds, a business that changed from the original plan, a gap in employment. Better to address it proactively.',
     hasNAOption: true,
     naLabel: 'No — nothing unusual',

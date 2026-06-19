@@ -63,13 +63,6 @@ const ENTITY_QUESTIONS: QuestionField[] = [
     { value: 'in-progress', label: 'In progress' },
     { value: 'no', label: 'No' },
   ]},
-  { key: 'M3-E-10', type: 'single', label: 'Legal structure', required: true, options: [
-    { value: 'llc', label: 'LLC' },
-    { value: 'c-corp', label: 'C-Corporation' },
-    { value: 's-corp', label: 'S-Corporation' },
-    { value: 'sole', label: 'Sole Proprietorship' },
-  ]},
-  { key: 'M3-E-11', type: 'text', label: 'State of registration' },
   { key: 'M3-E-12', type: 'single', label: 'Has the entity been formed?', required: true, options: [
     { value: 'yes', label: 'Yes — already formed and registered' },
     { value: 'in-progress', label: 'No — formation is in progress' },

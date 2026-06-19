@@ -59,8 +59,8 @@ const BACKGROUND_QUESTIONS: QuestionField[] = [
     { value: 'conversational', label: 'Conversational' },
     { value: 'limited', label: 'Limited proficiency' },
   ]},
-  { key: 'M3-Q-04', type: 'textarea', label: 'What is your professional background — what do you know how to do?' },
-  { key: 'M3-Q-05', type: 'text', label: 'How many years of industry experience do you have in the business you are opening?' },
+  { key: 'M3-Q-04', type: 'textarea', label: 'Describe your professional background.' },
+  { key: 'M3-Q-05', type: 'text', label: 'Years of relevant industry experience' },
   { key: 'M3-Q-06', type: 'multi', label: 'What relevant skills or experience do you bring to this business?', options: [
     { value: 'management', label: 'Management / leadership' },
     { value: 'sales', label: 'Sales / business development' },
@@ -87,7 +87,7 @@ const BUSINESS_EXPERIENCE_QUESTIONS: QuestionField[] = [
     { value: 'opportunity', label: 'Specific opportunity presented itself' },
     { value: 'other', label: 'Other' },
   ]},
-  { key: 'M3-Q-11', type: 'textarea', label: 'Describe the market research or due diligence you conducted before choosing this business.' },
+  { key: 'M3-Q-11', type: 'textarea', label: 'What research or due diligence did you do before choosing this business?' },
   { key: 'M3-Q-12', type: 'single', label: 'Have you visited the business location or franchise in person?', options: [
     { value: 'yes', label: 'Yes' },
     { value: 'no-planned', label: 'No — planning to visit' },
@@ -123,7 +123,7 @@ const ROLE_QUESTIONS: QuestionField[] = [
     { value: 'part-time', label: 'Part-time presence, remote management' },
     { value: 'no', label: 'No — remote from outside the U.S.' },
   ]},
-  { key: 'M3-Q-25', type: 'textarea', label: 'How many hours per week will you spend on the business? What will a typical week look like?' },
+  { key: 'M3-Q-25', type: 'textarea', label: 'How will you structure your time in this business?', helperText: 'Include hours per week and what a typical week looks like.' },
 ];
 
 const VISA_HISTORY_QUESTIONS: QuestionField[] = [
@@ -131,12 +131,12 @@ const VISA_HISTORY_QUESTIONS: QuestionField[] = [
     { value: 'no', label: 'No' },
     { value: 'yes', label: 'Yes' },
   ]},
-  { key: 'M3-V-02', type: 'textarea', label: 'If denied, when and what type of visa? What reason was given?', helperText: 'Be specific. Officers will have access to your prior records.', showIf: { key: 'M3-V-01', value: 'yes' } },
+  { key: 'M3-V-02', type: 'textarea', label: 'Visa type, date of denial, and reason given.', helperText: 'Be specific — officers have access to your prior records.', showIf: { key: 'M3-V-01', value: 'yes' } },
   { key: 'M3-V-03', type: 'single', label: 'Have you ever overstayed a U.S. visa or been in the U.S. without authorization?', options: [
     { value: 'no', label: 'No' },
     { value: 'yes', label: 'Yes' },
   ]},
-  { key: 'M3-V-04', type: 'textarea', label: 'If yes, provide details: dates, circumstances, how you resolved it.', showIf: { key: 'M3-V-03', value: 'yes' } },
+  { key: 'M3-V-04', type: 'textarea', label: 'Dates, circumstances, and how it was resolved.', showIf: { key: 'M3-V-03', value: 'yes' } },
   { key: 'M3-V-05', type: 'single', label: 'Have you ever been in removal or deportation proceedings?', options: [
     { value: 'no', label: 'No' },
     { value: 'yes', label: 'Yes' },
@@ -164,7 +164,7 @@ const INTERVIEW_PREP_QUESTIONS: QuestionField[] = [
     { value: 'somewhat', label: 'Somewhat — need to review' },
     { value: 'no', label: 'No — need coaching' },
   ]},
-  { key: 'M3-I-15', type: 'textarea', label: 'What concerns you most about the E-2 interview? What questions are you worried about?' },
+  { key: 'M3-I-15', type: 'textarea', label: 'What concerns you most about the E-2 interview?' },
 ];
 
 const ALL_QUESTION_SETS = [

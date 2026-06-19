@@ -31,7 +31,7 @@ const QUESTIONS = [
   {
     key: 'QJ-01',
     type: 'education' as const,
-    question: 'Please list your educational qualifications, starting with your most recent.',
+    question: 'List your educational qualifications, most recent first.',
     label: 'Your education',
     helperText: 'Add each degree or certification you have earned.',
     minEntries: 1,
@@ -49,18 +49,18 @@ const QUESTIONS = [
   {
     key: 'QJ-03',
     type: 'workhistory' as const,
-    question: 'Please describe your work history for the past 10 years, most recent first.',
+    question: 'Describe your work history for the past 10 years, most recent first.',
     label: 'Your work history',
-    helperText: 'Focus on management responsibilities — budgeting, staff oversight, client relationships, operations. These are what the officer looks for.',
+    helperText: 'Focus on management responsibilities — budgeting, staff oversight, client relationships, operations.',
     minEntries: 1,
     maxEntries: 7,
   },
   {
     key: 'QJ-04',
     type: 'textarea' as const,
-    question: 'What specific experience do you have that directly prepares you to run this type of business?',
+    question: 'What experience qualifies you to run this business?',
     label: 'Your relevant experience',
-    helperText: 'This is the most important question in Tab J. Connect your history directly to this specific business. If you are opening a restaurant, describe your food service management experience. If buying a cleaning franchise, describe operations and service delivery experience.',
+    helperText: 'The most important question in this section. Connect your history directly to this specific business — be concrete, not generic.',
   },
   {
     key: 'QJ-05',
