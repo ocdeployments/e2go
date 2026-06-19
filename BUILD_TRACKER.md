@@ -1,6 +1,6 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 19, 2026 — Sprints 3, 4, 5 complete (CaseProfile engine, results page rebuild, franchise matching)
+**Last Updated:** June 19, 2026 — EU-1 complete (buildCaseProfile expanded: answers + docs + simulator + dimension scores)
 **App Name:** E2go.app
 **Stack:** Next.js 14 · TypeScript · Tailwind CSS · Supabase · Claude API
 **Dev URL:** https://e2go-git-dev-ocdeployments-projects.vercel.app
@@ -3519,5 +3519,187 @@ Clean — `npm run build` passes, zero TypeScript errors after all Sprint 1+2 ch
 
 ### Owner Actions Required (do not block code)
 - [ ] Apply migration `supabase/migrations/20260619000000_post_quiz_profile.sql` via Supabase SQL Editor
+- [ ] Apply migration `supabase/migrations/20260619100000_franchise_brands.sql` via Supabase SQL Editor
 - [ ] Review franchise brand list before activating lead notifications
 - [ ] Confirm pricing before Sprint 6 (go-to-market polish)
+
+---
+
+## SESSION — Engine Audit, FDD Strategy & Sprint Planning (June 19, 2026)
+
+### Engine Silo Audit — Findings
+
+`buildCaseProfile()` is the declared single source of truth but currently reads ONLY:
+- `quiz_sessions` (score, outcome, result_json, post_quiz_profile, franchise_triggered)
+- `applications.investment_amount`
+
+Five components run in silos, each independently fetching from the same three tables (answers, applications, documents) without using the central profile:
+- `src/lib/gap-analysis-engine.ts` — reads answers + documents + simulator data directly
+- `src/app/api/simulator/evaluate/route.ts` — reads answers directly
+- `src/app/api/simulator/case-summary/route.ts` — reads answers directly
+- `src/app/api/generate/case-brief/[applicationId]/route.ts` — reads answers directly
+- `src/app/apply/gaps/page.tsx` — fetches from answers directly
+
+`case_profiles` table is write-only — `buildCaseProfile()` writes to it but nothing reads from it downstream. Zero cost savings, zero intelligence sharing.
+
+**Profile data state at quiz-only stage:** Sparse. `post_quiz_profile` captures net_worth_range, prior_business, industry_interest, timeline_goal (4 fields). Everything else is null. Sections that depend on answers/documents return empty — this is the correct behavior, to be surfaced as a completeness driver, not treated as broken UI.
+
+---
+
+## MASTER SPRINT PLAN (Approved June 19, 2026)
+
+### Phase A — Engine Unification (6 sprints, pre-approved, start next session)
+
+| ID | Sprint | Key Work | Files |
+|---|---|---|---|
+| ✅ EU-1 | Expand buildCaseProfile() | Read answers + documents + simulator sessions; add completeness_score (0–100), data_state enum, source_of_funds_score, management_role_score, business_plan_score; update CaseProfile type; migration | Commits 451af05, dbdf0a4, af2efa0 — June 19, 2026 |
+| EU-2 | Connect interview-prep | Archetype-aware question pools (buyer/builder/investor/career_switcher); gap-targeted probe injection based on low scores; graceful fallback to current behavior | src/lib/simulator-engine.ts, src/app/api/simulator/evaluate/route.ts |
+| EU-3 | Archetype-aware gap analysis | ARCHETYPE_WEIGHTS map per archetype; optional archetype param in scoreCase(); callers pass archetype from profile | src/lib/gap-analysis-engine.ts |
+| EU-4 | Rebuild triggers | Fire-and-forget profile rebuild at 5 events: quiz/page.tsx completion, quiz/profile/page.tsx save, Module 3 section save, upload processing complete, simulator outcome | quiz/page.tsx, quiz/profile/page.tsx, apply/*/page.tsx, upload routes |
+| EU-5 | PartialProfileTeaser | Standalone simulator buyers post-session: locked profile sections + upgrade CTA showing what a full profile contains | src/components/PartialProfileTeaser.tsx |
+| EU-6 | Results completeness | Completeness bar + confidence tier labels (quiz-derived → profile-confirmed → case-file-reported → document-confirmed); score updates when Module 3 data exists | src/app/results/page.tsx |
+
+**Rule:** All connections have graceful fallbacks to current behavior. Nothing breaks if profile is incomplete.
+
+### Phase B — Privacy & Trust (2 sprints, approved June 19)
+
+| ID | Sprint | Key Work |
+|---|---|---|
+| PT-1 | Data deletion — right to erasure | /settings: "Delete my account and all data" with confirmation dialog; backend deletes all rows in answers, applications, application_documents, quiz_sessions, case_profiles, payments, simulator_sessions, simulator_answers, followup_responses, case_briefs, generated_documents, generation_pipeline_log, profiles; Supabase Auth user deletion; Resend confirmation email listing what was deleted and when. Legal requirement (GDPR/CCPA/Canadian PIPEDA). |
+| PT-2 | Privacy/trust messaging | Inline copy at document upload and case file entry points: why each data type is collected, what is shared with AI systems, retention period, destruction method. "What we do with your data" panel — honest, plain-English. No hidden training use. Must not bury this in /privacy — must surface at the moment the user is about to share something sensitive. |
+
+### Phase C — FDD Intelligence (design-gated, cannot start until owner defines schema)
+
+| ID | Sprint | Key Work |
+|---|---|---|
+| FDD-DESIGN | Owner defines schema + scoring | 40-50 fixed extraction fields; scoring rubric per field (red/yellow/green); E-2 compatibility criteria and weights; territory data source stack. BLOCKED until complete. |
+| FDD-1 | FDD upload + extraction | PDF ingestion; extraction to fixed schema; E-2 compatibility score (Items 7, 15, 19 — investment substantiality, management obligation, non-marginality evidence) |
+| FDD-2 | Territory market analysis | Census Bureau API + BLS API for demographics/economics; Google Places for competitive landscape; market report output |
+| FDD-3 | Profile matching | Score extracted FDD against user's CaseProfile; match score per brand based on investment capacity, net worth, industry, archetype |
+| FDD-4 | Multi-FDD comparison | Compare 2-5 FDDs head-to-head; recommendation matrix with explicit disclaimers; scores calibrated to the user's specific background |
+
+### FDD Intelligence — Product & Competitive Context
+
+**What it does:** Ingests a Franchise Disclosure Document (PDF, up to 200 pages), extracts 40-50 predetermined data points across all 23 FDD items, scores for E-2 visa readiness, matches against the user's CaseProfile, and optionally layers territory market analysis.
+
+**Competitive landscape confirmed:**
+| Product | Price | What it does | Gap |
+|---|---|---|---|
+| FranchiseStack FDD Risk Analyzer | $149 | 23-item analysis, red/yellow/green flags, 30 sec | Generic, no profile matching |
+| FranchiseIQ | $49 | 23-item extraction + 89K SBA loan cross-reference | Generic, no territory analysis |
+| Franchise Caliber | $197 | 50+ risk patterns from real franchise failures | Generic, no E-2 context |
+| Maptitude / FranConnect | Subscription | Territory mapping | Franchisor-facing, not franchisee |
+
+**The unclaimed position:** No platform combines FDD analysis + territory market analysis + personal profile matching + E-2 visa readiness scoring. The integrated product is genuinely unclaimed competitive territory.
+
+**Pricing direction:** $297–$397 for single FDD + territory report. Multi-FDD comparison ($797–$997 for 3-5 FDDs). Separate add-on to E-2go package OR standalone entry point that cross-sells the full package.
+
+**Honest capability assessment:**
+- FDD extraction: HIGH confidence — fixed schema + LLM extraction is reliable
+- Demographic/economic analysis: HIGH confidence — Census Bureau API + BLS are authoritative
+- Competitive landscape: DIRECTIONAL — competitor count/proximity from Google Places, not market share
+- Market projections: MODELLED SCENARIOS only — scenario-based (conservative/base/optimistic), not point forecasts
+- NOT capable of: legal clause interpretation, predicting economic conditions, site-specific factors unknown to public data
+
+**Pre-build requirements (owner must define before FDD-1):**
+1. The 40-50 fixed extraction fields (the schema — without this, extraction is unstructured AI improvisation)
+2. Scoring rubric per extracted point (what constitutes red/yellow/green for each FDD item)
+3. E-2 compatibility criteria: which FDD items gate E-2 eligibility and how they're weighted
+4. Territory data source stack: which APIs are primary, which are fallback, and what the system does when data is unavailable
+
+### Phase D — QA (3 sprints, run AFTER EU-1 through EU-6 are complete)
+
+Expected behavior spec is written by the agent from BUILD_TRACKER + spec files before each sprint. No separate spec document needed from owner.
+
+| ID | Sprint | Pages | Notes |
+|---|---|---|---|
+| QA-A | Public pages QA | /, /quiz, /results, /pricing, /learn, /about, /privacy, /terms, /support, /login, /signup, /signup, /verify, /forgot-password | No auth required. Tests: render, links, form submissions, hard stops, copy quality, mobile 390px, console errors |
+| QA-B | Authenticated case file QA | /dashboard, /apply, /apply/story, /apply/business, /apply/investment, /apply/qualifications, /apply/family, /apply/ties, /apply/upload (+ /processing, /review, /gaps), /score, /settings, /apply/checklist, /apply/module1, /apply/module2, /apply/module3/* | Requires seeded test account (Michael Chen). Tests: auth gates, data display, autosave, pre-fill, voice input, section navigation, empty states |
+| QA-C | Simulator + generation + API routes QA | /simulator, /simulator/quick-start, /gap-analysis, /generate/[id], /documents/[id], /admin, all /api/* routes | Tests: voice/text modes, coaching cards, document generation pipeline, ZIP download, payment gating, API auth on all routes |
+
+**QA scope per page:**
+- Page renders without JS console errors
+- All buttons are clickable and lead somewhere (no orphaned clicks)
+- All links resolve to existing pages (no 404s)
+- Forms submit and surface correct success/error responses
+- Auth gates redirect correctly when logged out
+- Empty states, loading states, error states render correctly
+- Copy and messaging quality — tone appropriate, no placeholder text in shipped UI
+- Mobile layout at 390px (no horizontal scroll, tap targets ≥44px)
+- Expected data-driven content matches what the seed data should produce
+
+**QA deliverable:** A report per sprint listing ✅ pass / ⚠️ issue / ❌ broken per page and item, with specific reproduction steps for every issue found.
+
+---
+
+### Phase E — Legal & Compliance (2 items — not optional)
+
+| ID | Item | What it is | Priority |
+|---|---|---|---|
+| LC-1 | PIPEDA compliance review | Audit /privacy against Canadian PIPEDA requirements. Add explicit "no AI training on your data" statement. GDPR awareness note for EU treaty country users (Germans, French, Italians etc.). Update PT-2 messaging to address these specifically. | BEFORE LAUNCH |
+| LC-SOC2 | SOC 2 — deferred | Not required now. Becomes relevant when first enterprise client (law firm, corporate immigration dept, franchise broker network) asks for it. Estimated cost: $15K–$50K. Recommended tool when ready: Vanta or Drata (automated evidence collection). Revisit 12-18 months post-launch or at first enterprise conversation. | DEFERRED |
+
+**Why LC-1 matters before launch:**
+- Primary market is Canadian applicants — PIPEDA applies
+- Users are entering criminal history, passport details, financial records, and family data
+- The fear is not breach — the fear is AI training, government sharing, or misuse
+- One honest paragraph at the point of data entry ("We do not use your case data to train AI models. Your information is stored encrypted and deleted on request.") builds more trust than any certification
+- This connects directly to PT-2 — they should be built together
+
+---
+
+### Build
+No code changes in strategy session — planning only.
+
+### Owner Actions Added
+- [ ] Define FDD extraction schema (40-50 fields) when ready to proceed with Phase C
+- [ ] Review and confirm the PT-1 data deletion scope before building (especially retention grace period — 30 days vs immediate)
+- [x] ~~EU-1 complete~~ — foundation done; EU-2 is next
+- [ ] Revisit SOC 2 when first enterprise client (law firm, franchise broker network) asks for it
+
+---
+
+## SESSION — EU-1: Engine Unification Sprint 1 (June 19, 2026)
+
+### Completed — 3 commits, af2efa0 on dev
+
+**Goal:** Make `buildCaseProfile()` a true aggregation layer that reads all available data sources, computes intelligence from them, and persists it to `case_profiles` so downstream components can read it instead of making independent raw queries.
+
+**Files created/modified:**
+
+1. `supabase/migrations/20260619200000_case_profiles_scores.sql` — 5 new columns on `case_profiles`:
+   - `completeness_score INTEGER DEFAULT 0`
+   - `data_state TEXT DEFAULT 'quiz_only'`
+   - `source_of_funds_score INTEGER DEFAULT 0`
+   - `management_role_score INTEGER DEFAULT 0`
+   - `business_plan_score INTEGER DEFAULT 0`
+
+2. `src/types/case-profile.ts` — added `DataState` union type + 6 new fields to `CaseProfile` interface: `sourceOfFundsScore`, `managementRoleScore`, `businessPlanScore`, `completenessScore`, `dataState`, `simulatorReadiness`
+
+3. `src/lib/case-profile.ts` — full expansion of `buildCaseProfile()`:
+   - Now fetches: quiz_sessions, applications (expanded columns), answers, application_documents, simulator_sessions, case_briefs
+   - Calls `scoreCase()` from gap-analysis-engine when application + answers exist
+   - Extracts source_of_funds, management_role, business_plan category scores (0–100 each)
+   - Computes `completenessScore`: quiz(+20), postProfile(+15), application(+10), answers≥5(+20), answers≥15(+10), documents(+15), sim session(+10) → max 100
+   - Computes `dataState`: quiz_only → case_file (answers≥3) → documents → full (docs+sim)
+   - `simulatorReadiness = true` when ≥1 completed simulator session
+   - Gap analysis is non-blocking — profile builds cleanly even when data absent
+   - Upsert pattern (update if exists, insert if not)
+
+### Owner Action Required
+Apply migration via Supabase SQL Editor:
+```sql
+ALTER TABLE case_profiles
+  ADD COLUMN IF NOT EXISTS completeness_score  INTEGER DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS data_state          TEXT    DEFAULT 'quiz_only',
+  ADD COLUMN IF NOT EXISTS source_of_funds_score INTEGER DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS management_role_score INTEGER DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS business_plan_score   INTEGER DEFAULT 0;
+```
+(Or run `npx supabase db push` — but verify migration tracking is in sync first; see KNOWN ISSUES #8.)
+
+### Build
+Clean — 109 pages, zero TypeScript errors. Same pre-existing hook warnings (non-blocking).
+
+### Next
+EU-2: Connect interview-prep to archetype-aware question pools + gap-targeted probes in `src/lib/simulator-engine.ts`.
