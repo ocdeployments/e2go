@@ -33,9 +33,9 @@ function getScoreLabel(score: number): string {
 }
 
 function getVerdict(outcome: string, score: number): string {
-  if (outcome === "PROCEED" && score >= 90) return "You are strongly positioned for the E-2 Treaty Investor visa.";
-  if (outcome === "PROCEED" || outcome === "PROCEED_RISK") return "You appear to qualify for the E-2 Treaty Investor visa.";
-  if (outcome === "ATTORNEY_RECOMMENDED") return "You may qualify — with legal guidance recommended for your situation.";
+  if (outcome === "PROCEED" && score >= 90) return `${score}/100. Strong case. Here's what comes next.`;
+  if (outcome === "PROCEED" || outcome === "PROCEED_RISK") return `${score}/100. You qualify. Here's what comes next.`;
+  if (outcome === "ATTORNEY_RECOMMENDED") return "You may qualify — legal guidance recommended for your situation.";
   return "Your eligibility requires further review.";
 }
 
@@ -137,8 +137,19 @@ function getInterviewMonthRange(weeksMin: number, weeksMax: number): string {
   return `${earliestMonth} ${earliestYear} — ${latestMonth} ${latestYear}`;
 }
 
-function formatToday(): string {
-  return new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+function getJourneyStepMonths(): string[] {
+  const today = new Date();
+  const addM = (n: number): string => {
+    const d = new Date(today);
+    d.setMonth(d.getMonth() + n);
+    return d.toLocaleString('default', { month: 'short', year: 'numeric' });
+  };
+  const addW = (n: number): string => {
+    const d = new Date(today);
+    d.setDate(d.getDate() + n * 7);
+    return d.toLocaleString('default', { month: 'short', year: 'numeric' });
+  };
+  return [addM(0), addM(1), addM(2), addM(3), addM(4), addW(22), addM(7)];
 }
 
 function getTargetDateMessage(targetDate: string | null | undefined): string | null {
@@ -188,46 +199,7 @@ function getCountryFlag(country: string): string {
   return flags[country] || '🌍';
 }
 
-const ARCHETYPE_STEPS: Record<string, Array<{ title: string; desc: string }>> = {
-  buyer: [
-    { title: "Review your franchise matches", desc: "Your profile fits several E-2-proven franchise models with documented approval histories. See matches below." },
-    { title: "Document your source of funds", desc: "Franchise investments require clean, traceable capital. Start assembling your paper trail now." },
-    { title: "Engage an E-2 franchise specialist", desc: "Specialist consultants match buyers with brands that have strong E-2 consular approval records." },
-  ],
-  builder: [
-    { title: "Define your business model precisely", desc: "E-2 officers expect specificity — document your product, market, and differentiation clearly." },
-    { title: "Establish your management role", desc: "You must fill a directing, executive, or supervisory role. Confirm this is explicit in all documentation." },
-    { title: "Draft your business plan", desc: "A credible business plan is the centrepiece of an E-2 application. Begin your narrative now." },
-  ],
-  investor: [
-    { title: "Identify your investment vehicle", desc: "E-2 requires direct investment in an active U.S. business. Passive holdings do not qualify." },
-    { title: "Engage a U.S. business broker", desc: "Look for established businesses with verified financials and an active, documented customer base." },
-    { title: "Prepare your investment documentation", desc: "Every dollar must be traced to a legitimate source. Begin assembling investment records now." },
-  ],
-  career_switcher: [
-    { title: "Choose your business direction", desc: "E-2 requires a real, actively operating U.S. business. Define your sector and operating model first." },
-    { title: "Research the franchise path", desc: "Franchises provide established models, brand infrastructure, and documented E-2 approval histories." },
-    { title: "Document your management capability", desc: "Show you can operate and manage the business. Highlight relevant professional experience and skills." },
-  ],
-};
 
-const NET_WORTH_LABELS: Record<string, string> = {
-  under_250k: 'Under $250k', '250k_500k': '$250k – $500k',
-  '500k_1m': '$500k – $1M', '1m_2_5m': '$1M – $2.5M', over_2_5m: 'Over $2.5M',
-};
-const PRIOR_BUSINESS_LABELS: Record<string, string> = {
-  owner: 'Business owner', manager: 'Business manager',
-  career_switcher: 'Career transition', investor: 'Investor',
-};
-const INDUSTRY_LABELS: Record<string, string> = {
-  home_care: 'Home / senior care', food_beverage: 'Food & beverage',
-  retail_services: 'Retail / consumer', professional_services: 'Professional services',
-  technology: 'Technology / SaaS', existing_business: 'Specific business', exploring: 'Still exploring',
-};
-const TIMELINE_LABELS: Record<string, string> = {
-  urgent: 'Within 6 months', '6_12mo': '6 – 12 months',
-  '12_24mo': '12 – 24 months', planning: '2+ years',
-};
 
 /* ─── Email Gate ────────────────────────────────────────────────────────── */
 function EmailGate({ onBackToQuiz }: { onBackToQuiz: () => void }) {
@@ -521,10 +493,6 @@ function ResultsPageInner() {
 
   const showNameCapture = verificationState === 'verified' && !isLoggedIn && !nameCaptureDismissed;
 
-  // Archetype for section 6 — use case profile if available, fall back to quiz-derived
-  const archetype = caseProfile?.archetype ?? (data.franchise_interest ? 'buyer' : 'career_switcher');
-  const archetypeSteps = ARCHETYPE_STEPS[archetype] ?? ARCHETYPE_STEPS.career_switcher;
-
   // Franchise trigger
   const showFranchiseTeaser = caseProfile?.franchiseTrigger ?? data.franchise_interest;
 
@@ -544,7 +512,12 @@ function ResultsPageInner() {
       {/* Nav */}
       <div style={{ padding: "18px 40px", borderBottom: "1px solid rgba(201,168,76,0.1)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div style={{ fontSize: "17px", color: "#C9A84C", fontWeight: 300 }}>E2go<span style={{ color: "rgba(245,240,232,0.9)" }}>.app</span></div>
-        <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.25)", letterSpacing: "0.08em", textTransform: "uppercase" }}>Eligibility result</div>
+        <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
+          {isLoggedIn && (
+            <Link href="/dashboard" style={{ fontSize: "11px", color: "rgba(201,168,76,0.55)", letterSpacing: "0.08em", textTransform: "uppercase", textDecoration: "none" }}>Dashboard</Link>
+          )}
+          <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.25)", letterSpacing: "0.08em", textTransform: "uppercase" }}>Eligibility result</div>
+        </div>
       </div>
 
       {/* ─── ZONE 1: Hero — compact verdict ───────────────────────────────────── */}
@@ -554,13 +527,8 @@ function ResultsPageInner() {
             ← Review or change my answers
           </button>
 
-          <div style={{ fontSize: "10px", letterSpacing: "0.18em", textTransform: "uppercase", color: "rgba(201,168,76,0.6)", marginBottom: "20px", display: "flex", alignItems: "center", gap: "8px" }}>
-            <div style={{ flex: "0 0 24px", height: "1px", background: "rgba(201,168,76,0.4)" }} />
-            Assessment complete · {formatToday()}
-          </div>
-
-          {/* Score circle + verdict side by side */}
-          <div style={{ display: "flex", alignItems: "flex-start", gap: "24px", marginBottom: "20px" }}>
+          {/* Score circle + verdict */}
+          <div style={{ display: "flex", alignItems: "flex-start", gap: "24px", marginBottom: "28px" }}>
             <div style={{ width: "88px", height: "88px", border: `3px solid ${scoreColor}`, borderRadius: "50%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
               <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "32px", fontWeight: 300, color: scoreColor, lineHeight: 1 }}>{score}</div>
               <div style={{ fontSize: "10px", color: "rgba(245,240,232,0.3)", letterSpacing: "0.06em" }}>/100</div>
@@ -576,32 +544,95 @@ function ResultsPageInner() {
             </div>
           </div>
 
-          {/* Passing criteria chips */}
+          {/* ─── 7-step Journey Strip ──────────────────────────────────────────── */}
+          {(() => {
+            const sm = getJourneyStepMonths();
+            const steps = [
+              { label: "Eligibility confirmed", sub: `Quiz complete · ${score}/100`, month: sm[0], state: "done" as const },
+              { label: "Business selection", sub: "Franchise matching · FDD & Market Analysis", month: sm[1], state: "active" as const },
+              { label: "Application package", sub: "Business plan · All docs · Funds narrative", month: sm[2], state: "upcoming" as const },
+              { label: "Interview preparation", sub: "Consulate coaching · AI Simulator · Prep Kit", month: sm[3], state: "upcoming" as const },
+              { label: "Application submission", sub: "DS-160 · Fees · Booking", month: sm[4], state: "upcoming" as const },
+              { label: "Consular interview", sub: consulate.name, month: sm[5], state: "upcoming" as const },
+              { label: "Arrive in USA", sub: "Own your business", month: sm[6], state: "goal" as const },
+            ];
+            return (
+              <div style={{ marginBottom: "24px", padding: "18px 20px 20px", background: "rgba(201,168,76,0.02)", border: "1px solid rgba(201,168,76,0.08)", marginLeft: "-20px", marginRight: "-20px" }}>
+                <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: "3px", flexWrap: "wrap", gap: "4px" }}>
+                  <div style={{ fontSize: "12px", fontWeight: 500, color: "#f5f0e8" }}>Your E-2 Journey to the USA</div>
+                  <div style={{ fontSize: "10px", color: "rgba(201,168,76,0.65)", fontStyle: "italic" }}>Start now — you could be in the US by {sm[6]}</div>
+                </div>
+                <div style={{ fontSize: "10px", color: "rgba(245,240,232,0.2)", marginBottom: "16px" }}>7 milestones · {consulate.name}</div>
+                <div style={{ overflowX: "auto" as const }}>
+                  <div style={{ display: "flex", minWidth: "660px" }}>
+                    {steps.map((step, i) => (
+                      <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", position: "relative" }}>
+                        {i > 0 && <div style={{ position: "absolute", top: "5px", left: 0, width: "50%", height: "1px", background: "rgba(201,168,76,0.12)" }} />}
+                        {i < steps.length - 1 && <div style={{ position: "absolute", top: "5px", left: "50%", width: "50%", height: "1px", background: "rgba(201,168,76,0.12)" }} />}
+                        <div style={{
+                          width: step.state === "goal" ? "14px" : "11px",
+                          height: step.state === "goal" ? "14px" : "11px",
+                          borderRadius: "50%",
+                          background: step.state === "done" ? "#5DCAA5" : step.state === "active" || step.state === "goal" ? "#C9A84C" : "transparent",
+                          border: `1.5px solid ${step.state === "done" ? "#5DCAA5" : step.state === "active" || step.state === "goal" ? "#C9A84C" : "rgba(201,168,76,0.2)"}`,
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          position: "relative", zIndex: 1, flexShrink: 0,
+                        }}>
+                          {step.state === "done" && <span style={{ fontSize: "7px", color: "#0a0a0a", fontWeight: 700 }}>✓</span>}
+                          {step.state === "goal" && <span style={{ fontSize: "7px", color: "#0a0a0a", fontWeight: 700 }}>★</span>}
+                        </div>
+                        <div style={{ marginTop: "7px", textAlign: "center", padding: "0 2px" }}>
+                          <div style={{ fontSize: "8px", fontWeight: 600, lineHeight: 1.3, marginBottom: "2px", color: step.state === "done" ? "#5DCAA5" : step.state === "active" || step.state === "goal" ? "#C9A84C" : "rgba(245,240,232,0.28)" }}>{step.label}</div>
+                          <div style={{ fontSize: "7px", lineHeight: 1.4, marginBottom: "3px", color: step.state === "done" ? "rgba(93,202,165,0.45)" : step.state === "active" || step.state === "goal" ? "rgba(201,168,76,0.5)" : "rgba(245,240,232,0.13)" }}>{step.sub}</div>
+                          {step.state === "done" && <div style={{ display: "inline-block", fontSize: "6px", background: "rgba(93,202,165,0.1)", border: "1px solid rgba(93,202,165,0.3)", color: "#5DCAA5", padding: "1px 4px", letterSpacing: "0.08em", textTransform: "uppercase" as const, marginBottom: "2px" }}>YOU ARE HERE</div>}
+                          <div style={{ fontSize: "7px", fontWeight: step.state === "goal" ? 600 : 400, color: step.state === "done" ? "rgba(245,240,232,0.4)" : step.state === "goal" ? "#C9A84C" : "rgba(245,240,232,0.3)" }}>{step.month}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* All qualifying criteria chips */}
           <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "16px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "6px", padding: "5px 12px", background: "rgba(93,202,165,0.06)", border: "1px solid rgba(93,202,165,0.25)", fontSize: "12px", color: "#5DCAA5" }}>
               {getCountryFlag(data.country)} {data.country} — E-2 treaty confirmed
             </div>
             {criteriaBreakdown[1].score >= 70 && (
               <div style={{ display: "flex", alignItems: "center", gap: "6px", padding: "5px 12px", background: "rgba(93,202,165,0.06)", border: "1px solid rgba(93,202,165,0.25)", fontSize: "12px", color: "#5DCAA5" }}>
-                ✓ {data.investment_range} — investment level clear
+                ✓ {data.investment_range} — {criteriaBreakdown[1].note.charAt(0).toLowerCase() + criteriaBreakdown[1].note.slice(1)}
+              </div>
+            )}
+            {criteriaBreakdown[2].score >= 70 && (
+              <div style={{ display: "flex", alignItems: "center", gap: "6px", padding: "5px 12px", background: "rgba(93,202,165,0.06)", border: "1px solid rgba(93,202,165,0.25)", fontSize: "12px", color: "#5DCAA5" }}>
+                ✓ {criteriaBreakdown[2].note}
               </div>
             )}
             {criteriaBreakdown[3].score >= 70 && (
               <div style={{ display: "flex", alignItems: "center", gap: "6px", padding: "5px 12px", background: "rgba(93,202,165,0.06)", border: "1px solid rgba(93,202,165,0.25)", fontSize: "12px", color: "#5DCAA5" }}>
-                ✓ {data.application_type === "partnership" ? "Partnership investors" : "Solo investor"} — management role confirmed
+                ✓ {data.application_type === "partnership" ? "Partnership investors" : "Solo investor"} — {criteriaBreakdown[3].note.charAt(0).toLowerCase() + criteriaBreakdown[3].note.slice(1)}
+              </div>
+            )}
+            {criteriaBreakdown[4].score >= 70 && (
+              <div style={{ display: "flex", alignItems: "center", gap: "6px", padding: "5px 12px", background: "rgba(93,202,165,0.06)", border: "1px solid rgba(93,202,165,0.25)", fontSize: "12px", color: "#5DCAA5" }}>
+                ✓ Non-immigrant intent — {criteriaBreakdown[4].note.charAt(0).toLowerCase() + criteriaBreakdown[4].note.slice(1)}
               </div>
             )}
           </div>
 
-          {verificationState === 'verified' && !isLoggedIn && (
-            <div style={{ fontSize: "12px", color: "#5DCAA5", marginBottom: "12px" }}>✓ Email verified</div>
+          {/* Above-fold CTA */}
+          {(outcome === "PROCEED" || outcome === "PROCEED_RISK") && (
+            <div style={{ marginBottom: "16px" }}>
+              <Link href={isLoggedIn ? "/apply" : `/pricing?tier=${data.application_type}`} style={{ display: "inline-block", padding: "14px 24px", background: "#C9A84C", color: "#0a0a0a", fontSize: "12px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", fontFamily: "'DM Sans', sans-serif", textDecoration: "none", whiteSpace: "nowrap" as const }}>
+                Build my E-2 case file — ${pricing.total} →
+              </Link>
+            </div>
           )}
 
-          {isLoggedIn && (
-            <div style={{ padding: "12px 16px", background: "rgba(201,168,76,0.05)", border: "1px solid rgba(201,168,76,0.15)", fontSize: "13px", color: "rgba(245,240,232,0.6)", lineHeight: 1.6, display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px" }}>
-              <span>✓ Your profile has been saved. You can return to these results any time.</span>
-              <Link href="/dashboard" style={{ fontSize: "12px", color: "#C9A84C", textDecoration: "underline", whiteSpace: "nowrap", fontFamily: "'DM Sans', sans-serif" }}>Go to dashboard →</Link>
-            </div>
+          {verificationState === 'verified' && !isLoggedIn && (
+            <div style={{ fontSize: "12px", color: "#5DCAA5", marginBottom: "12px" }}>✓ Email verified</div>
           )}
         </div>
       </div>
@@ -649,61 +680,20 @@ function ResultsPageInner() {
           </div>
         )}
 
-        {/* ─── ZONE 3: Roadmap — visual hero of the page ─────────────────────── */}
-        <div style={{ padding: "56px 0", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
-
-          {/* Archetype intelligence label */}
-          <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", padding: "4px 14px", border: "1px solid rgba(201,168,76,0.25)", background: "rgba(201,168,76,0.04)", marginBottom: "32px" }}>
-            <div style={{ width: "5px", height: "5px", borderRadius: "50%", background: "#C9A84C" }} />
-            <span style={{ fontSize: "10px", letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(201,168,76,0.8)" }}>
-              Profile-derived · {archetype === 'buyer' ? 'Franchise Buyer' : archetype === 'builder' ? 'Business Builder' : archetype === 'investor' ? 'Treaty Investor' : 'Career Switcher'}
-            </span>
-          </div>
-
-          {/* Profile snapshot tiles — inside roadmap for context */}
-          {caseProfile && (caseProfile.netWorthRange || caseProfile.priorBusiness || caseProfile.industryInterest || caseProfile.timelineGoal) && (
-            <div className="profile-snap" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginBottom: "40px" }}>
-              {[
-                { label: "Net worth", value: NET_WORTH_LABELS[caseProfile.netWorthRange] || caseProfile.netWorthRange || "—" },
-                { label: "Business background", value: PRIOR_BUSINESS_LABELS[caseProfile.priorBusiness] || caseProfile.priorBusiness || "—" },
-                { label: "Industry interest", value: INDUSTRY_LABELS[caseProfile.industryInterest] || caseProfile.industryInterest || "—" },
-                { label: "Target timeline", value: TIMELINE_LABELS[caseProfile.timelineGoal] || caseProfile.timelineGoal || "—" },
-              ].map((tile) => (
-                <div key={tile.label} style={{ padding: "14px 16px", border: "1px solid rgba(201,168,76,0.1)", background: "rgba(201,168,76,0.02)" }}>
-                  <div style={{ fontSize: "10px", letterSpacing: "0.1em", textTransform: "uppercase", color: "rgba(245,240,232,0.3)", marginBottom: "5px" }}>{tile.label}</div>
-                  <div style={{ fontSize: "14px", color: "#f5f0e8", lineHeight: 1.4 }}>{tile.value}</div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "26px", fontWeight: 300, color: "#f5f0e8", marginBottom: "44px", letterSpacing: "-0.01em" }}>
-            Your personalised roadmap
-          </div>
-
-          {/* Steps — large, breathing, dominant */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "44px" }}>
-            {archetypeSteps.map((step, i) => (
-              <div key={i} className="roadmap-step" style={{ display: "flex", alignItems: "flex-start", gap: "32px" }}>
-                <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "80px", fontWeight: 300, color: "rgba(201,168,76,0.22)", lineHeight: 0.85, flexShrink: 0, minWidth: "64px", userSelect: "none" }}>{i + 1}</div>
-                <div style={{ paddingTop: "12px" }}>
-                  <div style={{ fontSize: "18px", fontWeight: 500, color: "#f5f0e8", marginBottom: "10px", lineHeight: 1.3 }}>{step.title}</div>
-                  <div style={{ fontSize: "14px", color: "rgba(245,240,232,0.5)", lineHeight: 1.75 }}>{step.desc}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div style={{ marginTop: "36px", fontSize: "11px", color: "rgba(245,240,232,0.18)", letterSpacing: "0.04em" }}>
-            Steps derived from your quiz answers and investor profile
-          </div>
-        </div>
-
         {/* ─── ZONE 4: Package CTA — full-width conversion block ─────────────── */}
         <div style={{ padding: "40px 0", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
           <div className="cta-block" style={{ padding: "36px", border: "1px solid rgba(201,168,76,0.4)", background: "rgba(201,168,76,0.03)" }}>
 
-            <div style={{ fontSize: "10px", letterSpacing: "0.16em", textTransform: "uppercase", color: "rgba(201,168,76,0.65)", marginBottom: "20px" }}>Recommended for your case</div>
+            <div style={{ fontSize: "13px", fontWeight: 500, color: "#f5f0e8", marginBottom: "4px" }}>Your case is ready. Are You?</div>
+            <div style={{ fontSize: "10px", letterSpacing: "0.16em", textTransform: "uppercase", color: "rgba(201,168,76,0.65)", marginBottom: "20px" }}>E-2 application package · {pricing.tier}</div>
+
+            <div style={{ fontSize: "13px", color: "rgba(245,240,232,0.5)", lineHeight: 1.8, marginBottom: "24px" }}>
+              You&apos;ve done the research. Talked to a few people. Your funds are ready.<br /><br />
+              And yet — one more question. One more article. One more person to ask.<br /><br />
+              That&apos;s not laziness. That&apos;s fear of the process.<br /><br />
+              E2go removes it. We get you to the USA faster than you thought possible — at a fraction of what an immigration attorney would charge.<br /><br />
+              <span style={{ color: "#f5f0e8", fontWeight: 500 }}>The case is built. Are you?</span>
+            </div>
 
             <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: "24px", flexWrap: "wrap", gap: "16px" }}>
               <div>
@@ -741,7 +731,7 @@ function ResultsPageInner() {
             </div>
 
             <Link href={isLoggedIn ? "/apply" : `/pricing?tier=${data.application_type}`} style={{ display: "block", padding: "18px 24px", background: "#C9A84C", color: "#0a0a0a", fontSize: "13px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", fontFamily: "'DM Sans', sans-serif", textDecoration: "none", textAlign: "center" as const }}>
-              {isLoggedIn ? `Start your case file — $${pricing.total} →` : `Get started — $${pricing.total} →`}
+              Yes — build my case file →
             </Link>
             {!isLoggedIn && (
               <div style={{ marginTop: "10px", fontSize: "12px", color: "rgba(245,240,232,0.28)", textAlign: "center" as const }}>
@@ -768,75 +758,6 @@ function ResultsPageInner() {
             </div>
           </div>
         )}
-
-        {/* ─── ZONE 6: Why you qualify — criteria table ──────────────────────── */}
-        <div style={{ padding: "48px 0", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
-          <div style={{ fontSize: "10px", letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(201,168,76,0.5)", marginBottom: "6px" }}>Why you qualify</div>
-          <div style={{ fontSize: "13px", color: "rgba(245,240,232,0.3)", marginBottom: "24px" }}>E-2 eligibility across all five criteria</div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-            {criteriaBreakdown.map(({ label, score: cScore, note }) => {
-              const color = cScore >= 85 ? "#22c55e" : cScore >= 60 ? "#f59e0b" : "#ef4444";
-              return (
-                <div key={label}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px" }}>
-                    <span style={{ fontSize: "13px", color: "rgba(245,240,232,0.7)" }}>{label}</span>
-                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                      <span style={{ fontSize: "11px", color: "rgba(245,240,232,0.35)" }}>{note}</span>
-                      <span style={{ fontSize: "13px", fontWeight: 600, color, minWidth: "36px", textAlign: "right" as const }}>{cScore}</span>
-                    </div>
-                  </div>
-                  <div style={{ height: "3px", background: "rgba(245,240,232,0.07)" }}>
-                    <div style={{ height: "100%", background: color, width: `${cScore}%`, transition: "width 0.8s cubic-bezier(.4,0,.2,1)" }} />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* ─── ZONE 7: Timeline path ──────────────────────────────────────────── */}
-        <div style={{ padding: "48px 0", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
-          <div style={{ fontSize: "10px", letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(201,168,76,0.5)", marginBottom: "20px" }}>Estimated path to your interview</div>
-          <div style={{ display: "flex", alignItems: "flex-start" }}>
-            {["Eligibility confirmed", "Business selection", "Application package", "DS-160 & booking", "Interview"].map((step, i) => (
-              <div key={step} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: "6px" }}>
-                <div style={{ display: "flex", alignItems: "center", width: "100%" }}>
-                  <div style={{ width: "10px", height: "10px", borderRadius: "50%", background: i === 0 ? "rgba(93,202,165,0.6)" : i === 1 ? "#C9A84C" : "rgba(201,168,76,0.2)", border: `1px solid ${i === 0 ? "#5DCAA5" : i === 1 ? "#C9A84C" : "rgba(201,168,76,0.3)"}`, flexShrink: 0 }} />
-                  {i < 4 && <div style={{ flex: 1, height: "1px", background: "rgba(201,168,76,0.15)" }} />}
-                </div>
-                <div style={{ fontSize: "10px", color: i === 0 ? "rgba(93,202,165,0.7)" : i === 1 ? "#C9A84C" : "rgba(245,240,232,0.35)", textAlign: "center", letterSpacing: "0.04em", lineHeight: 1.4, maxWidth: "60px" }}>{step}</div>
-              </div>
-            ))}
-          </div>
-          {timelineWeeks.adjustments.length > 0 && (
-            <div style={{ marginTop: "20px", display: "flex", flexDirection: "column", gap: "4px" }}>
-              {timelineWeeks.adjustments.map((adj, i) => (
-                <div key={i} style={{ fontSize: "11px", color: "rgba(245,240,232,0.35)", display: "flex", gap: "6px", alignItems: "flex-start" }}>
-                  <span style={{ color: "rgba(201,168,76,0.4)", flexShrink: 0 }}>◈</span>
-                  <span>{adj}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* ─── ZONE 8: Officer discretion ─────────────────────────────────────── */}
-        <div style={{ padding: "40px 0", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
-          <div style={{ padding: "20px 24px", border: "1px solid rgba(201,168,76,0.12)", background: "rgba(201,168,76,0.02)" }}>
-            <div style={{ fontSize: "10px", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(201,168,76,0.5)", marginBottom: "8px" }}>Important: Officer discretion</div>
-            <div style={{ fontSize: "13px", color: "rgba(245,240,232,0.45)", lineHeight: 1.65 }}>Consular officers have discretion under 9 FAM to request additional documentation beyond what is listed in standard checklists. The most common additional requests are:</div>
-            <div style={{ fontSize: "13px", color: "rgba(245,240,232,0.45)", lineHeight: 1.65, marginTop: "8px", paddingLeft: "12px" }}>
-              — Bank statements extending beyond 12 months<br />
-              — Tax returns for years not initially requested<br />
-              — Third-party business valuations<br />
-              — Additional evidence of operational status<br />
-              — Further source-of-funds documentation
-            </div>
-            <div style={{ fontSize: "13px", color: "rgba(245,240,232,0.45)", lineHeight: 1.65, marginTop: "8px" }}>
-              The best defense against a 221(g) request is preparation depth — having documents ready that weren&apos;t specifically asked for. Your case file will note where additional preparation is recommended based on your profile.
-            </div>
-          </div>
-        </div>
 
         {/* ─── ZONE 9: FAQ ────────────────────────────────────────────────────── */}
         <div style={{ padding: "56px 0" }}>
