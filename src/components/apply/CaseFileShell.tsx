@@ -171,24 +171,22 @@ export default function CaseFileShell({
           </button>
 
           {/* Next section button */}
-          {sectionNumber < 6 && (
-            <button
-              onClick={handleNext}
-              className="transition-opacity hover:opacity-90"
-              style={{
-                fontFamily: "'DM Sans', sans-serif",
-                fontSize: '11px',
-                fontWeight: 500,
-                textTransform: 'uppercase',
-                letterSpacing: '0.08em',
-                color: '#0a0a0a',
-                backgroundColor: '#C9A84C',
-                padding: '7px 16px',
-              }}
-            >
-              Next: {nextSectionName} &rarr;
-            </button>
-          )}
+          <button
+            onClick={handleNext}
+            className="transition-opacity hover:opacity-90"
+            style={{
+              fontFamily: "'DM Sans', sans-serif",
+              fontSize: '11px',
+              fontWeight: 500,
+              textTransform: 'uppercase',
+              letterSpacing: '0.08em',
+              color: '#0a0a0a',
+              backgroundColor: '#C9A84C',
+              padding: '7px 16px',
+            }}
+          >
+            {sectionNumber < 6 ? `Next: ${nextSectionName} →` : 'Back to Case File →'}
+          </button>
         </div>
       </header>
 
