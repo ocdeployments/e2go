@@ -212,7 +212,7 @@ function EmailGate({ onBackToQuiz }: { onBackToQuiz: () => void }) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || sending) return;
+    if (!email || !caslConsent || sending) return;
     setSending(true);
     setError(null);
     try {
@@ -258,7 +258,7 @@ function EmailGate({ onBackToQuiz }: { onBackToQuiz: () => void }) {
                 <input type="checkbox" checked={caslConsent} onChange={(e) => setCaslConsent(e.target.checked)} style={{ marginTop: "3px", accentColor: "#C9A84C", width: "16px", height: "16px" }} />
                 <span style={{ fontSize: "12px", color: "rgba(245,240,232,0.4)", lineHeight: 1.5 }}>I consent to receiving email from e2go.app. You can unsubscribe at any time. View our <a href="/terms" style={{ color: "#C9A84C", textDecoration: "underline" }}>Terms of Service</a>.</span>
               </label>
-              <button type="submit" disabled={sending || !email} style={{ width: "100%", padding: "14px", background: "#C9A84C", border: "none", color: "#0a0a0a", fontSize: "13px", fontWeight: 500, cursor: sending || !email ? "not-allowed" : "pointer", letterSpacing: "0.08em", textTransform: "uppercase" as const, fontFamily: "'DM Sans', sans-serif", borderRadius: 0, opacity: sending || !email ? 0.5 : 1 }}>
+              <button type="submit" disabled={sending || !email || !caslConsent} style={{ width: "100%", padding: "14px", background: "#C9A84C", border: "none", color: "#0a0a0a", fontSize: "13px", fontWeight: 500, cursor: sending || !email || !caslConsent ? "not-allowed" : "pointer", letterSpacing: "0.08em", textTransform: "uppercase" as const, fontFamily: "'DM Sans', sans-serif", borderRadius: 0, opacity: sending || !email || !caslConsent ? 0.5 : 1 }}>
                 {sending ? "Sending..." : "Send my results"}
               </button>
               {error && <div style={{ marginTop: "16px", padding: "12px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", fontSize: "13px", color: "rgba(245,240,232,0.7)", lineHeight: 1.5 }}>{error}</div>}
@@ -642,7 +642,16 @@ function ResultsPageInner() {
                       {data.answers?.[info.question_id] && (
                         <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.3)", marginBottom: "6px" }}>Your answer: &ldquo;{Array.isArray(data.answers[info.question_id]) ? (data.answers[info.question_id] as string[]).join(", ") : String(data.answers[info.question_id])}&rdquo;</div>
                       )}
-                      <a href={`/quiz?edit=${info.question_id}`} style={{ fontSize: "11px", color: "#C9A84C", textDecoration: "underline" }}>{info.edit_label} →</a>
+                      <button
+                        onClick={() => {
+                          localStorage.setItem("quiz_jump_to_id", info.question_id);
+                          localStorage.setItem("quiz_return_to_results", "true");
+                          router.push("/quiz");
+                        }}
+                        style={{ fontSize: "11px", color: "#C9A84C", textDecoration: "underline", background: "transparent", border: "none", cursor: "pointer", padding: 0, fontFamily: "inherit" }}
+                      >
+                        {info.edit_label} →
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -782,12 +791,7 @@ function ResultsPageInner() {
         )}
 
         {/* ─── ZONE 9: FAQ ────────────────────────────────────────────────────── */}
-        <div style={{ padding: "56px 0" }}>
-          <div style={{ fontSize: "10px", letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(201,168,76,0.5)", marginBottom: "8px" }}>Ask E2go</div>
-          <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "22px", fontWeight: 300, color: "#f5f0e8", marginBottom: "6px" }}>Questions about your results?</div>
-          <div style={{ fontSize: "13px", color: "rgba(245,240,232,0.4)", marginBottom: "24px" }}>Ask anything about the E-2 visa — eligibility, investment thresholds, the application process, or what your flags mean.</div>
-          <FaqWidget />
-        </div>
+        <FaqWidget />
 
       </div>
 

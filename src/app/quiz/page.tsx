@@ -238,6 +238,7 @@ export default function QuizPage() {
   const [isAnimating, setIsAnimating] = useState(false);
   const [returnToResults, setReturnToResults] = useState(false);
   const [hardStopsTriggered, setHardStopsTriggered] = useState<string[]>([]);
+  const [pendingJumpId, setPendingJumpId] = useState<string | null>(null);
   const isAdvancing = useRef(false);
 
   // Compute visible questions from JSON + current answers
@@ -274,8 +275,12 @@ export default function QuizPage() {
             .limit(1)
             .single();
           if (existing) {
-            router.push("/dashboard");
-            return;
+            // Allow edit-mode access when coming from quiz/review (jump_to_id is set)
+            const jumpToId = localStorage.getItem("quiz_jump_to_id");
+            if (!jumpToId) {
+              router.push("/dashboard");
+              return;
+            }
           }
 
           // Post-login session linking: if user has an unlinked completed
@@ -321,14 +326,45 @@ export default function QuizPage() {
             localStorage.removeItem("e2go_quiz_draft");
           }
         }
+        // Legacy numeric jump (kept for safety)
         const jumpTo = localStorage.getItem("quiz_jump_to");
         if (jumpTo !== null) {
-          const idx = parseInt(jumpTo, 10);
-          if (!isNaN(idx)) {
-            setCur(idx);
-            setReturnToResults(true);
-          }
           localStorage.removeItem("quiz_jump_to");
+        }
+        // ID-based jump from quiz/review (correct mechanism)
+        const jumpToId = localStorage.getItem("quiz_jump_to_id");
+        if (jumpToId) {
+          setPendingJumpId(jumpToId);
+          setReturnToResults(true);
+          localStorage.removeItem("quiz_jump_to_id");
+
+          // If no draft was loaded, fetch existing answers from DB so the
+          // question pre-fills correctly when the user arrives to edit it
+          const draft = localStorage.getItem("e2go_quiz_draft");
+          if (!draft) {
+            try {
+              const { data: { user } } = await supabase.auth.getUser();
+              if (user) {
+                const { data: session } = await supabase
+                  .from("quiz_sessions")
+                  .select("result_json")
+                  .eq("user_id", user.id)
+                  .not("outcome", "is", null)
+                  .order("completed_at", { ascending: false })
+                  .limit(1)
+                  .single();
+                const dbAnswers = (session?.result_json as Record<string, unknown>)?.answers;
+                if (dbAnswers && typeof dbAnswers === "object") {
+                  setAnswers(dbAnswers as Record<string, Answer>);
+                }
+              }
+            } catch { /* non-blocking */ }
+          }
+        }
+        const returnFlag = localStorage.getItem("quiz_return_to_results");
+        if (returnFlag) {
+          setReturnToResults(true);
+          localStorage.removeItem("quiz_return_to_results");
         }
       }
     };
@@ -337,6 +373,33 @@ export default function QuizPage() {
       if (authCheckTimeout.current) clearTimeout(authCheckTimeout.current);
     };
   }, [supabase, router]);
+
+  // Resolve pending question jump once answers are loaded from DB
+  useEffect(() => {
+    if (!pendingJumpId || visibleQuestions.length === 0) return;
+    // Wait until answers are non-empty (DB load complete) before resolving
+    if (Object.keys(answers).length === 0) return;
+    const idx = visibleQuestions.findIndex(q => q.id === pendingJumpId);
+    if (idx !== -1) {
+      setCur(idx);
+      setPendingJumpId(null);
+    }
+  }, [pendingJumpId, visibleQuestions, answers]);
+
+  // Restore selection state when jumping to a question with existing answers
+  useEffect(() => {
+    if (!q) return;
+    const existing = answers[q.id];
+    if (!existing) return;
+    if (q.type === 'multiselect') {
+      const selectedTexts = Array.isArray(existing) ? existing : [existing];
+      const indices = q.options
+        .map((opt, i) => (selectedTexts as string[]).includes(opt.text) ? i : -1)
+        .filter(i => i !== -1);
+      if (indices.length > 0) setMultiSel(indices);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cur, answers]);
 
   // Scroll highlighted country into view
   useEffect(() => {

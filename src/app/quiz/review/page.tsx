@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { createBrowserSupabaseClient } from "@/lib/supabase";
 
 interface QuizAnswer {
   id: string;
@@ -25,7 +26,7 @@ const QUESTIONS_MAP: Record<string, { q: string; section: string }> = {
   "Q0-08a": { q: "What type of business is it?", section: "Business" },
   "Q0-08b": { q: "Who introduced you to the business opportunity?", section: "Business" },
   "Q0-09": { q: "Do any of the following apply to your immigration history?", section: "History" },
-  "Q0-09a": { q: "When did the visa refusal occur?", section: "History" },
+  "Q0-09a": { q: "Have you ever been refused a US visa?", section: "History" },
   "Q0-09b": { q: "Please describe the nature of your criminal conviction.", section: "History" },
   "Q0-10": { q: "What ties do you maintain in your home country?", section: "Home Ties" },
 };
@@ -36,26 +37,63 @@ export default function QuizReview() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const draft = localStorage.getItem("e2go_quiz_draft");
-    if (draft) {
+    const load = async () => {
+      // Try localStorage first (works for unauthenticated users with a draft)
+      const draft = localStorage.getItem("e2go_quiz_draft");
+      if (draft) {
+        try {
+          const parsed = JSON.parse(draft);
+          if (parsed.answers && Object.keys(parsed.answers).length > 0) {
+            setAnswers(parsed.answers);
+            setLoading(false);
+            return;
+          }
+        } catch {}
+      }
+
+      // Also try the completed quiz result stored after submission
+      const result = localStorage.getItem("e2go_quiz_result");
+      if (result) {
+        try {
+          const parsed = JSON.parse(result);
+          if (parsed.answers && Object.keys(parsed.answers).length > 0) {
+            setAnswers(parsed.answers);
+            setLoading(false);
+            return;
+          }
+        } catch {}
+      }
+
+      // Fallback: fetch from DB for authenticated users
       try {
-        const parsed = JSON.parse(draft);
-        if (parsed.answers && Object.keys(parsed.answers).length > 0) {
-          setAnswers(parsed.answers);
+        const supabase = createBrowserSupabaseClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: session } = await supabase
+            .from("quiz_sessions")
+            .select("result_json")
+            .eq("user_id", user.id)
+            .not("outcome", "is", null)
+            .order("completed_at", { ascending: false })
+            .limit(1)
+            .single();
+          const dbAnswers = (session?.result_json as Record<string, unknown>)?.answers;
+          if (dbAnswers && typeof dbAnswers === "object") {
+            setAnswers(dbAnswers as Record<string, string | string[]>);
+          }
         }
       } catch {}
-    }
-    setLoading(false);
+
+      setLoading(false);
+    };
+
+    load();
   }, []);
 
   const handleJumpToQuestion = (questionId: string) => {
-    const questionIds = Object.keys(QUESTIONS_MAP);
-    const idx = questionIds.indexOf(questionId);
-    if (idx !== -1) {
-      localStorage.setItem("quiz_jump_to", String(idx));
-      localStorage.setItem("quiz_return_to_results", "true");
-      router.push("/quiz");
-    }
+    localStorage.setItem("quiz_jump_to_id", questionId);
+    localStorage.setItem("quiz_return_to_results", "true");
+    router.push("/quiz");
   };
 
   if (loading) {
