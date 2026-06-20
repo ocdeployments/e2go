@@ -1,6 +1,6 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 20, 2026 (Session 46) — S5 /apply/module1 complete. 2 bugs fixed: step 6 never saved (permanent spinner dead-end), Terms/Privacy links opened in same tab losing form state. Build clean. S6 (/apply hub + /apply/module2) is next sprint.
+**Last Updated:** June 20, 2026 (Session 47) — S4 extended audit complete. 5 critical bugs fixed: GoTrueClient navigator.locks deadlock (affected /fdd, /dashboard post-navigation), /documents auth broken (localStorage never populated), dashboard checklist links wrong, gap-analysis engine ignoring select-field values. Build clean. S6 (/apply hub + /apply/module2) is next sprint.
 **App Name:** E2go.app
 **Stack:** Next.js 14 · TypeScript · Tailwind CSS · Supabase · Claude API
 **Dev URL:** https://e2go-git-dev-ocdeployments-projects.vercel.app
@@ -4006,7 +4006,7 @@ Resolved all ESLint errors to achieve clean build (119 pages, zero errors):
 | S1 | `/results` | ✅ Complete | 6 bugs found (see Session 43) | ✅ All fixed |
 | S2 | `/pricing` | 🔶 DEFERRED — prices changing, re-audit after pricing update | — | — |
 | S3 | `/login` + `/signup` + `/forgot-password` | ✅ Complete | 4 bugs found (see Session 46) | ✅ All fixed |
-| S4 | `/dashboard` | ✅ Complete | 5 bugs found (see Session 44) | ✅ All fixed |
+| S4 | `/dashboard` + `/documents/[id]` + cross-app deadlock | ✅ Complete | 10 bugs total (5 in Session 44, 5 in Session 47) | ✅ All fixed |
 | S5 | `/apply/module1` | ✅ Complete | 2 bugs found (see Session 46) | ✅ All fixed |
 | S6 | `/apply` hub + `/apply/module2` | ⏳ | — | — |
 | S7 | `/apply/business` | ⏳ | — | — |
@@ -4075,6 +4075,48 @@ Resolved all ESLint errors to achieve clean build (119 pages, zero errors):
 - quiz_sessions does not store `family_type`, `partner_name`, `partner_email`, `spouse_name`, `spouse_dob` — these columns are never written by the quiz. Pre-fill on step 1 and step 5 silently falls back to empty. No crash — just no pre-fill from quiz data for these fields.
 
 **Build:** clean — 122 pages. Commit: a9e390d.
+
+---
+
+### Session 47 — S4 Extended Audit: Documents Auth + GoTrueClient Deadlock + Dashboard Link Fixes (June 20, 2026)
+
+**Context:** Second pass at S4 during a live audit. Session 44 had fixed 5 dashboard rendering bugs; this session exposed 5 more bugs discovered by actually clicking through the dashboard checklist, navigating from /gap-analysis → /fdd, and opening /documents/[id].
+
+**Bugs found and fixed:**
+
+| # | Bug | File(s) | Fix | Commit |
+|---|---|---|---|---|
+| 1 | "Solo Application" rendered as "solo Application" — `application_type` raw value from DB, lowercase | `dashboard/page.tsx` | Capitalize first char: `charAt(0).toUpperCase() + slice(1)` | 574248d |
+| 2 | "Eligibility Quiz" checklist linked to `/quiz` — sending completed-quiz users back to quiz with no feedback (quiz page redirects them to /dashboard creating a loop) | `dashboard/page.tsx` | Changed href to `/results` | 574248d |
+| 3 | "Investment & Documents" checklist linked to `/apply/upload` (document intake flow for self-preparers) instead of the case file investment section | `dashboard/page.tsx` | Changed href to `/apply/investment` | 574248d |
+| 4 | `/documents/[applicationId]` showed "Not authenticated" for every logged-in user — page read `localStorage.getItem("supabase_user")` which the app never writes (session lives in Supabase auth cookies, not localStorage) | `documents/[applicationId]/page.tsx` | Removed localStorage check entirely; API returns 401 for unauthenticated users, client handles status code directly. Removed Bearer header (cookie auth only). | 6c8c9d9 |
+| 5 | GoTrueClient `navigator.locks` deadlock — after navigating away from /gap-analysis (which fires many parallel Supabase queries that trigger token refresh), the exclusive `navigator.locks` lock gets stuck. All subsequent `getSession()`/`getUser()` calls queue behind the stuck lock indefinitely. Affected: /fdd spinner never resolved, nav disappeared (showed null = unauthenticated), dashboard showed loading forever on re-navigation. | `src/lib/supabase.ts` | Added `noOpLock` function that bypasses `navigator.locks` entirely. Passed as `auth: { lock: noOpLock }` to `createBrowserClient`. Safe for our singleton/read-mostly auth pattern — two concurrent refreshes overwrite each other without data loss. Also confirmed `window.__e2go_supabase__` singleton persists across HMR to prevent duplicate GoTrueClient instances. | c5e5ea2 |
+
+**Also committed this session (related but separate fixes):**
+
+| Commit | What | File |
+|---|---|---|
+| 6975b12 | Gap-analysis engine was scoring fund deployment (M3-F-NEW-01) and paper trail (M3-H-NEW-01) as "no data" even when user selected 'yes'/'partial'/'no'. These are select fields, not free-text amounts — engine was only checking numeric `.amount` property. Fixed: check string values ('yes'/'deploy'/'spent'/'active' → low risk; 'no'/'partial'/'need to compile' → high risk). | `src/lib/gap-analysis-engine.ts` |
+| 824de1c | Expanded UK test profile (James Windsor) seed with 50+ Module 3 answers across all 6 case file sections for realistic gap analysis QA. | `scripts/seed-test-profiles.mjs` |
+
+**Root cause note — navigator.locks deadlock:**
+- The GoTrueClient (inside `@supabase/supabase-js`) wraps all auth operations in a `navigator.locks` exclusive lock named `lock:sb-<project_ref>-auth-token`
+- Gap-analysis page fires many parallel Supabase queries simultaneously — some trigger a token refresh that acquires the lock
+- When navigating away mid-refresh, the callback inside the lock is abandoned but the lock is NOT released by the browser
+- A service worker was also confirmed present (1 registered) which can hold the lock across page reloads
+- **Failed approach tried first:** `navigator.locks.request(name, { steal: true })` after 6s timeout — caused "Lock broken" AbortError in GoTrueClient which invalidated the session state
+- **Final fix:** `noOpLock` pattern (bypass entirely) — confirmed by `navigator.locks.query()` showing `held: []` after navigation
+
+**Full S4 audit results — all items confirmed ✅:**
+- /dashboard nav, 4 stat cards, module checklist, Quick Actions grid, profile snapshot
+- /gap-analysis → /fdd navigation (was deadlocking — now fixed)
+- /documents/[id] (was showing "Not authenticated" — now fixed)
+- /simulator (tab nav, gating message)
+- /apply/calendar (renders, empty body — no timeline-setting form)
+- /apply (application hub)
+- Settings, Log out, James dropdown
+
+**Build:** clean. 5 commits on dev branch: 574248d, 6c8c9d9, c5e5ea2, 6975b12, 824de1c.
 
 ---
 
