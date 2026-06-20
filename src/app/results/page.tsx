@@ -679,6 +679,13 @@ function ResultsPageInner() {
             <div style={{ fontSize: "13px", fontWeight: 500, color: "#f5f0e8", marginBottom: "4px" }}>Your case is ready. Are You?</div>
             <div style={{ fontSize: "10px", letterSpacing: "0.16em", textTransform: "uppercase", color: "rgba(201,168,76,0.65)", marginBottom: "20px" }}>E-2 application package · {pricing.tier}</div>
 
+            <div style={{ fontSize: "13px", color: "rgba(245,240,232,0.5)", lineHeight: 1.9, marginBottom: "28px" }}>
+              You&apos;ve done the research. Talked to a few people. Your funds are ready.<br /><br />
+              And yet — one more question. One more article. One more person to ask.<br /><br />
+              That&apos;s not laziness. That&apos;s fear of the process.<br /><br />
+              E2go removes it. We get you to the USA faster than you thought possible — at a fraction of what an immigration attorney would charge.
+            </div>
+
             <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: "24px", flexWrap: "wrap", gap: "16px" }}>
               <div>
                 <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "24px", fontWeight: 300, color: "#f5f0e8", marginBottom: "8px" }}>{pricing.tier}</div>
