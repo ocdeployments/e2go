@@ -136,9 +136,11 @@ export default function ApplyPage() {
         }
 
         // Load latest application
+        // Note: last_active_section/cluster require migration 002 — omit until applied
+        // Note: preparation_status requires migration 003 — omit until applied
         const { data: apps } = await supabase
           .from('applications')
-          .select('id, application_type, last_active_section, last_active_cluster, preparation_status')
+          .select('id, application_type, status')
           .eq('user_id', user.id)
           .order('created_at', { ascending: false })
           .limit(1);
@@ -148,35 +150,23 @@ export default function ApplyPage() {
           if (app.application_type) {
             setApplicationType(app.application_type as 'solo' | 'partnership' | 'cos');
           }
-          if (app.last_active_section) {
-            setLastActiveSection(app.last_active_section);
-            setLastActiveCluster(app.last_active_cluster);
-            setIsReturning(true);
-          }
-          if (app.preparation_status) {
-            setPreparationStatus(app.preparation_status as PreparationStatus);
-          }
 
           // Load answers for this application
+          // Note: 'source' column requires migration 001_case_file_columns.sql — omit until applied
           const { data: answers } = await supabase
             .from('answers')
-            .select('question_key, answer_value, source')
+            .select('question_key, answer_value')
             .eq('application_id', app.id);
 
           if (answers) {
             const counts: Record<string, number> = {};
-            const prefill: Record<string, number> = {};
 
-            answers.forEach((row: { question_key: string; answer_value: string | string[] | number | null; source: string | null }) => {
+            answers.forEach((row: { question_key: string; answer_value: string | string[] | number | null }) => {
               if (row.answer_value !== null && row.answer_value !== '' && row.answer_value !== undefined) {
-                // Determine which section this answer belongs to
                 for (const section of SOLO_SECTIONS) {
                   const matches = section.questionPrefixes.some(p => row.question_key.startsWith(p));
                   if (matches) {
                     counts[section.route] = (counts[section.route] || 0) + 1;
-                    if (row.source === 'quiz') {
-                      prefill[section.route] = (prefill[section.route] || 0) + 1;
-                    }
                     break;
                   }
                 }
@@ -184,12 +174,49 @@ export default function ApplyPage() {
             });
 
             setAnswerCounts(counts);
-            setPrefillCounts(prefill);
+          }
+
+          // Try to get business name, city, and investment from answers
+          const appId = app.id;
+
+          const { data: bizAnswers } = await supabase
+            .from('answers')
+            .select('question_key, answer_value')
+            .eq('application_id', appId)
+            .eq('question_key', 'M3-E-01')
+            .limit(1);
+
+          if (bizAnswers && bizAnswers.length > 0 && bizAnswers[0].answer_value) {
+            setBusinessName(String(bizAnswers[0].answer_value));
+          }
+
+          const { data: cityAnswers } = await supabase
+            .from('answers')
+            .select('question_key, answer_value')
+            .eq('application_id', appId)
+            .eq('question_key', 'M3-A-52')
+            .limit(1);
+
+          if (cityAnswers && cityAnswers.length > 0 && cityAnswers[0].answer_value) {
+            setTargetCity(String(cityAnswers[0].answer_value));
+          }
+
+          const { data: investAnswers } = await supabase
+            .from('answers')
+            .select('question_key, answer_value')
+            .eq('application_id', appId)
+            .eq('question_key', 'M3-F-02')
+            .limit(1);
+
+          if (investAnswers && investAnswers.length > 0 && investAnswers[0].answer_value) {
+            const amt = Number(investAnswers[0].answer_value);
+            if (!isNaN(amt) && amt > 0) {
+              setInvestmentAmount(`$${amt.toLocaleString()} USD`);
+            }
           }
         }
 
-        // Load quiz session for data state detection
-        // quiz_sessions has no `answers` column — answers live in result_json.answers
+        // Load quiz session for nationality, dependents, and completion state
         // quiz_sessions has no `created_at` column — order by id instead
         const { data: quizSession } = await supabase
           .from('quiz_sessions')
@@ -214,45 +241,6 @@ export default function ApplyPage() {
                 !familyVal.includes('none') && familyVal !== 'no' && familyVal !== ''
               );
             }
-          }
-        }
-
-        // Try to get business name and city from answers (scoped to this application)
-        const appId = apps[0].id;
-
-        const { data: bizAnswers } = await supabase
-          .from('answers')
-          .select('question_key, answer_value')
-          .eq('application_id', appId)
-          .eq('question_key', 'M3-E-01')
-          .limit(1);
-
-        if (bizAnswers && bizAnswers.length > 0 && bizAnswers[0].answer_value) {
-          setBusinessName(String(bizAnswers[0].answer_value));
-        }
-
-        const { data: cityAnswers } = await supabase
-          .from('answers')
-          .select('question_key, answer_value')
-          .eq('application_id', appId)
-          .eq('question_key', 'M3-A-52')
-          .limit(1);
-
-        if (cityAnswers && cityAnswers.length > 0 && cityAnswers[0].answer_value) {
-          setTargetCity(String(cityAnswers[0].answer_value));
-        }
-
-        const { data: investAnswers } = await supabase
-          .from('answers')
-          .select('question_key, answer_value')
-          .eq('application_id', appId)
-          .eq('question_key', 'M3-F-02')
-          .limit(1);
-
-        if (investAnswers && investAnswers.length > 0 && investAnswers[0].answer_value) {
-          const amt = Number(investAnswers[0].answer_value);
-          if (!isNaN(amt) && amt > 0) {
-            setInvestmentAmount(`$${amt.toLocaleString()} USD`);
           }
         }
 
