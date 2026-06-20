@@ -106,12 +106,12 @@ export default function ApplyPage() {
   const [targetCity, setTargetCity] = useState<string | null>(null);
   const [investmentAmount, setInvestmentAmount] = useState<string | null>(null);
   const [applicationType, setApplicationType] = useState<'solo' | 'partnership' | 'cos'>('solo');
-  const [lastActiveSection] = useState<string | null>(null);
-  const [lastActiveCluster] = useState<number | null>(null);
-  const [isReturning] = useState(false);
+  const [lastActiveSection, setLastActiveSection] = useState<string | null>(null);
+  const [lastActiveCluster, setLastActiveCluster] = useState<number | null>(null);
+  const [isReturning, setIsReturning] = useState(false);
   const [hasDependents, setHasDependents] = useState(false);
   const [quizCompleted, setQuizCompleted] = useState(false);
-  const [preparationStatus] = useState<PreparationStatus>('scratch');
+  const [preparationStatus, setPreparationStatus] = useState<PreparationStatus>('scratch');
 
   const [answerCounts, setAnswerCounts] = useState<Record<string, number>>({});
   const [prefillCounts] = useState<Record<string, number>>({});
@@ -141,11 +141,9 @@ export default function ApplyPage() {
         }
 
         // Load latest application
-        // Note: last_active_section/cluster require migration 002 — omit until applied
-        // Note: preparation_status requires migration 003 — omit until applied
         const { data: apps } = await supabase
           .from('applications')
-          .select('id, application_type, status')
+          .select('id, application_type, status, last_active_section, last_active_cluster, preparation_status')
           .eq('user_id', user.id)
           .order('created_at', { ascending: false })
           .limit(1);
@@ -155,9 +153,18 @@ export default function ApplyPage() {
           if (app.application_type) {
             setApplicationType(app.application_type as 'solo' | 'partnership' | 'cos');
           }
+          if (app.last_active_section) {
+            setLastActiveSection(app.last_active_section as string);
+            setIsReturning(true);
+          }
+          if (app.last_active_cluster) {
+            setLastActiveCluster(app.last_active_cluster as number);
+          }
+          if (app.preparation_status) {
+            setPreparationStatus(app.preparation_status as PreparationStatus);
+          }
 
           // Load answers for this application
-          // Note: 'source' column requires migration 001_case_file_columns.sql — omit until applied
           const { data: answers } = await supabase
             .from('answers')
             .select('question_key, answer_value')
