@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useTrackSectionVisit } from "@/hooks/useTrackSectionVisit";
 import { useRouter } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
@@ -169,6 +169,8 @@ export default function Module2Page() {
     init();
   }, [supabase, router]);
 
+  const descDebounceRef = useRef<NodeJS.Timeout | null>(null);
+
   const saveAnswer = async (key: string, value: string) => {
     if (!applicationId) return;
     await fetch("/api/answers", {
@@ -176,6 +178,12 @@ export default function Module2Page() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ question_key: key, answer_value: value, application_id: applicationId, source: "user_entry" }),
     });
+  };
+
+  const handleSpecificBusinessDescChange = (value: string) => {
+    setSpecificBusinessDesc(value);
+    if (descDebounceRef.current) clearTimeout(descDebounceRef.current);
+    descDebounceRef.current = setTimeout(() => saveAnswer("M2-specific_business", value), 800);
   };
 
   const handleNext = async () => {
@@ -340,7 +348,7 @@ export default function Module2Page() {
                   <input
                     type="text"
                     value={specificBusinessDesc}
-                    onChange={(e) => setSpecificBusinessDesc(e.target.value)}
+                    onChange={(e) => handleSpecificBusinessDescChange(e.target.value)}
                     className="w-full max-w-[480px] p-4 bg-[rgba(255,255,255,0.04)] border border-[rgba(201,168,76,0.2)] text-[#f5f0e8] text-[15px] outline-none focus:border-[#C9A84C] transition-colors"
                     placeholder="e.g., A specialty coffee shop in Austin, Texas"
                   />
