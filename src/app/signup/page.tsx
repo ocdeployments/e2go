@@ -3,8 +3,11 @@
 import { useState, useRef, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { Turnstile } from "@marsidev/react-turnstile";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import AuthImageSlider from "@/components/auth/AuthImageSlider";
+
+const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_CF_TURNSTILE_SITE_KEY ?? '';
 
 function SignupForm() {
   const searchParams = useSearchParams();
@@ -25,6 +28,9 @@ function SignupForm() {
 
   // CASL consent state
   const [caslConsent, setCaslConsent] = useState(false);
+
+  // Cloudflare Turnstile CAPTCHA
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 
   const handleTermsScroll = () => {
     const el = termsBoxRef.current;
@@ -60,6 +66,31 @@ function SignupForm() {
       setStatus('error');
       setErrorMessage("You must accept the Terms of Service to create an account");
       return;
+    }
+
+    // Verify CAPTCHA if Turnstile is configured
+    if (TURNSTILE_SITE_KEY) {
+      if (!captchaToken) {
+        setStatus('error');
+        setErrorMessage("Please complete the security check before continuing.");
+        return;
+      }
+      try {
+        const captchaRes = await fetch('/api/auth/verify-captcha', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: captchaToken }),
+        });
+        const captchaData = await captchaRes.json() as { ok: boolean; error?: string };
+        if (!captchaData.ok) {
+          setStatus('error');
+          setErrorMessage(captchaData.error ?? 'Security check failed. Please try again.');
+          setCaptchaToken(null);
+          return;
+        }
+      } catch {
+        // Network failure — allow through (CAPTCHA is defense-in-depth)
+      }
     }
 
     try {
@@ -396,10 +427,23 @@ function SignupForm() {
                   </label>
                 </div>
 
+                {/* Cloudflare Turnstile — only renders when site key is configured */}
+                {TURNSTILE_SITE_KEY && (
+                  <div className="flex justify-center">
+                    <Turnstile
+                      siteKey={TURNSTILE_SITE_KEY}
+                      onSuccess={(token) => setCaptchaToken(token)}
+                      onExpire={() => setCaptchaToken(null)}
+                      onError={() => setCaptchaToken(null)}
+                      options={{ theme: 'dark', size: 'normal' }}
+                    />
+                  </div>
+                )}
+
                 <button
                   type="submit"
                   className="w-full font-medium py-3 transition-colors"
-                  disabled={!hasScrolledTerms || !termsAccepted}
+                  disabled={!hasScrolledTerms || !termsAccepted || (!!TURNSTILE_SITE_KEY && !captchaToken)}
                   style={{
                     background: (!hasScrolledTerms || !termsAccepted)
                       ? 'rgba(201,168,76,0.3)'
