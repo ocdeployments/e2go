@@ -519,6 +519,12 @@ const PROFILES = [
       'M3-Q-23': 'Yes',
       'M3-Q-24': 'Yes — full-time, on-site',
       'M3-Q-25': 'Monday to Friday, 45–50 hours per week. Monday: staff scheduling, caregiver check-ins, and weekly P&L review. Tuesday: client intake appointments and care plan assessments in the field. Wednesday: vendor and supplier meetings, compliance review, marketing outreach to referral sources. Thursday: franchisee network calls (bi-weekly), financial reconciliation, accounts payable. Friday: client satisfaction calls, staff performance reviews, and weekend on-call roster setup. Personal 24/7 emergency on-call shared with care coordinator.',
+      // Semantic eval keys — gap-analysis/semantic-eval route checks these specific keys
+      // projection_basis: looks for M3-I-BASIS, M3-I-01, QI-01, M3-B-PROJ
+      'M3-I-BASIS': 'Revenue projections based on: (1) Assisting Hands FDD 2024 Item 19 — system-wide median Year 1 gross revenue $342,000 across 180+ franchise locations in comparable markets; (2) Austin MSA 65+ population of 82,000 in exclusive territory confirmed by franchisor territory mapping; (3) validation calls with 4 existing franchisees confirming Year 1 range $280,000–$420,000; (4) IBIS World 2024 Austin home care market $420M annually; (5) Travis County population aged 65+ projected to grow 22% by 2030 (US Census Bureau). Year 3 projection of $650,000 assumes 20% annual growth consistent with Item 19 data for franchisees in Years 2–3.',
+      // source_of_funds: looks for M3-H-NEW-01, M3-H-FUNDS-DETAIL, M3-S1-FUNDS, QH-01
+      'M3-H-FUNDS-DETAIL': 'Funds originated from two sources: (1) 18 years of personal savings in Barclays UK accounts (£95,000 as of January 2025); (2) net proceeds from selling UK investment flat in Leeds in March 2025 (£75,000 after mortgage redemption and solicitor fees). In April 2025, £170,000 converted to USD at rate 1.27 via Barclays international FX service, receiving $215,900. On 12 May 2025, $195,000 wired to Assisting Hands Home Care East Austin LLC business account at Chase Bank Austin (account ending 7842), wire reference CHSE-2025-04872. Full documentation available: Barclays statements 2020–2025, UK property sale conveyancing documents, FX conversion confirmation, Chase wire receipt.',
+
       'M3-V-01': 'No — clean visa history',
       // Engine key for D-15 (214b prior denial check)
       'M3-A-23': 'No — clean visa history, no prior refusals or violations',

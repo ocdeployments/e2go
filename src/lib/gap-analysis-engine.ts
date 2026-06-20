@@ -471,18 +471,23 @@ function scoreDenialFactors(
     const hasLicense = hasAnswer(am, 'QG-NEW-01', 'M3-G-NEW-01');
     const hasBankAccount = hasAnswer(am, 'QG-BANK', 'M3-G-BANK');
     const hasLeaseDocs = hasDoc(docs, 'lease', 'commercial');
+    // Derive effective operational status: app.operational_status if set, otherwise infer from M3-G-08 answer
+    const opsAnswer = (getAnswer(am, 'QG-08', 'M3-G-08') || '').toLowerCase();
+    const effectiveOpStatus = opStatus ||
+      (opsAnswer.includes('operational') && !opsAnswer.includes('not yet') && !opsAnswer.includes('pre') ? 'operational' : '') ||
+      (opsAnswer.includes('pre') || opsAnswer.includes('not yet') || opsAnswer.includes('pre-start') ? 'pre_start' : '');
     let risk: DenialRiskFactor['risk'];
     let finding: string;
     let mitigation: string | null = null;
 
-    if (opStatus === 'operational') {
+    if (effectiveOpStatus === 'operational') {
       risk = 'low';
       finding = 'Business is operational — real operations already exist.';
-    } else if ((hasLicense || hasBankAccount) && (hasLeaseDocs || opStatus === 'pre_start')) {
+    } else if ((hasLicense || hasBankAccount) && (hasLeaseDocs || effectiveOpStatus === 'pre_start')) {
       risk = 'moderate';
-      finding = 'Business is pre-start with some operational evidence (license or bank account).';
+      finding = 'Business is pre-start with operational evidence on file (license, bank account, or registration).';
       mitigation = 'Add any additional operational evidence: signed lease, business registration, supplier agreements, permits.';
-    } else if (opStatus === 'pre_start') {
+    } else if (effectiveOpStatus === 'pre_start') {
       risk = 'moderate';
       finding = 'Pre-start status declared but no license, bank account, or lease documents on file.';
       mitigation = 'Upload business registration, EIN confirmation, lease agreement, or other evidence the business is real.';
