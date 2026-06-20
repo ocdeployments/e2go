@@ -205,7 +205,7 @@ export default async function DashboardPage() {
                    quiz.outcome.toLowerCase().replace(/_/g, " ")}
                 </p>
                 <p className="text-sm mt-1" style={{ color: "rgba(245,240,232,0.45)" }}>
-                  {quiz.application_type || "Solo"} Application
+                  {quiz.application_type ? (quiz.application_type.charAt(0).toUpperCase() + quiz.application_type.slice(1)) : "Solo"} Application
                 </p>
               </div>
 
@@ -270,10 +270,10 @@ export default async function DashboardPage() {
               <h2 className="text-lg font-semibold mb-4" style={{ color: "#f5f0e8", fontFamily: "'Cormorant Garamond', serif", fontWeight: 300 }}>Your Application Checklist</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {[
-                  { label: 'Eligibility Quiz', href: '/quiz', done: !!quizData?.completed_at, desc: 'Confirm E-2 eligibility' },
+                  { label: 'Eligibility Quiz', href: '/results', done: !!quizData?.completed_at, desc: 'Confirm E-2 eligibility' },
                   { label: 'Onboarding', href: '/apply/module1', done: !!lifecycle?.module1_completed_at, desc: 'Personal info & timeline' },
                   { label: 'Business Information', href: '/apply/business', done: !!lifecycle?.module2_completed_at, desc: 'Business description & structure' },
-                  { label: 'Investment & Documents', href: '/apply/upload', done: !!lifecycle?.module3_completed_at, desc: 'Source of funds & supporting docs' },
+                  { label: 'Investment & Documents', href: '/apply/investment', done: !!lifecycle?.module3_completed_at, desc: 'Source of funds & supporting docs' },
                   { label: 'Gap Analysis', href: '/gap-analysis', done: !!lifecycle?.module4_completed_at, desc: 'Identify case weaknesses' },
                   { label: 'Interview Simulator', href: '/simulator', done: !!lifecycle?.module5_completed_at, desc: 'Practice your consular interview' },
                 ].map((step) => (
