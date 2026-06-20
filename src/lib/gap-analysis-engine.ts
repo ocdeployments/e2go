@@ -201,11 +201,23 @@ function scoreDenialFactors(
   {
     const spent = getAnswer(am, 'QF-NEW-01', 'M3-F-NEW-01');
     const spentAmount = parseAmount(spent);
+    // M3-F-NEW-01 is a select field: 'yes' = deployed, 'partial' = partially deployed, 'no' = not yet spent
+    const spentConfirmed = spent && (
+      spent.toLowerCase() === 'yes' ||
+      spent.toLowerCase().includes('deploy') ||
+      spent.toLowerCase().includes('spent') ||
+      spent.toLowerCase().includes('active')
+    );
     let risk: DenialRiskFactor['risk'];
     let finding: string;
     let mitigation: string | null = null;
 
-    if (spent && spentAmount > 0) {
+    if (spentConfirmed || (spent && spentAmount >= investmentAmount * 0.5 && investmentAmount > 0)) {
+      risk = 'low';
+      finding = investmentAmount > 0
+        ? `$${investmentAmount.toLocaleString()} confirmed deployed on business expenses — funds are demonstrably at risk.`
+        : 'Funds confirmed deployed on business expenses — funds are demonstrably at risk.';
+    } else if (spentAmount > 0) {
       if (investmentAmount > 0 && spentAmount >= investmentAmount * 0.5) {
         risk = 'low';
         finding = `$${spentAmount.toLocaleString()} deployed on business expenses — funds are demonstrably at risk.`;
@@ -237,18 +249,34 @@ function scoreDenialFactors(
     let finding: string;
     let mitigation: string | null = null;
 
-    const mentionsGaps = paperTrail && (
-      paperTrail.toLowerCase().includes('yes') ||
+    // M3-H-NEW-01 is a select: 'yes' = complete trail, 'partial' = some gaps, 'no' = need to compile
+    const hasCompletePaperTrail = paperTrail && (
+      paperTrail.toLowerCase() === 'yes' ||
+      paperTrail.toLowerCase().includes('complete') ||
+      paperTrail.toLowerCase().includes('full trail') ||
+      paperTrail.toLowerCase().includes('fully traceable')
+    );
+    const mentionsGaps = paperTrail && !hasCompletePaperTrail && (
+      paperTrail.toLowerCase() === 'no' ||
+      paperTrail.toLowerCase() === 'partial' ||
       paperTrail.toLowerCase().includes('gap') ||
       paperTrail.toLowerCase().includes('cash') ||
       paperTrail.toLowerCase().includes('crypto') ||
-      paperTrail.toLowerCase().includes('gift')
+      paperTrail.toLowerCase().includes('gift') ||
+      paperTrail.toLowerCase().includes('need to compile')
     );
 
     if (mentionsGaps) {
       risk = 'high';
       finding = `Paper trail gap disclosed: "${paperTrail!.substring(0, 80)}…"`;
       mitigation = 'Work with an attorney to document and explain each gap. Affidavits, gift letters, or additional statements may be required.';
+    } else if (hasCompletePaperTrail && hasBankDocs && hasTransferDocs) {
+      risk = 'low';
+      finding = 'Complete paper trail confirmed — bank statements and transfer records on file.';
+    } else if (hasCompletePaperTrail) {
+      risk = 'moderate';
+      finding = 'Complete paper trail confirmed by applicant. Upload supporting bank statements and wire transfer records to corroborate.';
+      mitigation = 'Upload 6–12 months of bank statements and wire transfer confirmations to back up your paper trail declaration.';
     } else if (hasBankDocs && hasTransferDocs) {
       risk = 'low';
       finding = 'Bank statements and transfer documents uploaded — paper trail appears documented.';
