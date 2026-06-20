@@ -551,8 +551,8 @@ function ResultsPageInner() {
               { label: "Eligibility confirmed", sub: `Quiz complete · ${score}/100`, month: sm[0], state: "done" as const },
               { label: "Business selection", sub: "Franchise matching · FDD & Market Analysis", month: sm[1], state: "active" as const },
               { label: "Application package", sub: "Business plan · All docs · Funds narrative", month: sm[2], state: "upcoming" as const },
-              { label: "Interview preparation", sub: "Consulate coaching · AI Simulator · Prep Kit", month: sm[3], state: "upcoming" as const },
-              { label: "Application submission", sub: "DS-160 · Fees · Booking", month: sm[4], state: "upcoming" as const },
+              { label: "Application submission", sub: "DS-160 · Fees · Booking", month: sm[3], state: "upcoming" as const },
+              { label: "Interview preparation", sub: "Consulate coaching · AI Simulator · Prep Kit", month: sm[4], state: "upcoming" as const },
               { label: "Consular interview", sub: consulate.name, month: sm[5], state: "upcoming" as const },
               { label: "Arrive in USA", sub: "Own your business", month: sm[6], state: "goal" as const },
             ];
@@ -622,14 +622,6 @@ function ResultsPageInner() {
             )}
           </div>
 
-          {/* Above-fold CTA */}
-          {(outcome === "PROCEED" || outcome === "PROCEED_RISK") && (
-            <div style={{ marginBottom: "16px" }}>
-              <Link href={isLoggedIn ? "/apply" : `/pricing?tier=${data.application_type}`} style={{ display: "inline-block", padding: "14px 24px", background: "#C9A84C", color: "#0a0a0a", fontSize: "12px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", fontFamily: "'DM Sans', sans-serif", textDecoration: "none", whiteSpace: "nowrap" as const }}>
-                Build my E-2 case file — ${pricing.total} →
-              </Link>
-            </div>
-          )}
 
           {verificationState === 'verified' && !isLoggedIn && (
             <div style={{ fontSize: "12px", color: "#5DCAA5", marginBottom: "12px" }}>✓ Email verified</div>
@@ -686,14 +678,6 @@ function ResultsPageInner() {
 
             <div style={{ fontSize: "13px", fontWeight: 500, color: "#f5f0e8", marginBottom: "4px" }}>Your case is ready. Are You?</div>
             <div style={{ fontSize: "10px", letterSpacing: "0.16em", textTransform: "uppercase", color: "rgba(201,168,76,0.65)", marginBottom: "20px" }}>E-2 application package · {pricing.tier}</div>
-
-            <div style={{ fontSize: "13px", color: "rgba(245,240,232,0.5)", lineHeight: 1.8, marginBottom: "24px" }}>
-              You&apos;ve done the research. Talked to a few people. Your funds are ready.<br /><br />
-              And yet — one more question. One more article. One more person to ask.<br /><br />
-              That&apos;s not laziness. That&apos;s fear of the process.<br /><br />
-              E2go removes it. We get you to the USA faster than you thought possible — at a fraction of what an immigration attorney would charge.<br /><br />
-              <span style={{ color: "#f5f0e8", fontWeight: 500 }}>The case is built. Are you?</span>
-            </div>
 
             <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: "24px", flexWrap: "wrap", gap: "16px" }}>
               <div>
