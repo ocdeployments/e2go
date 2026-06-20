@@ -4117,6 +4117,30 @@ Resolved all ESLint errors to achieve clean build (119 pages, zero errors):
 
 ---
 
+### Session 51 — Migrations applied + hub select restored (June 20, 2026)
+
+**Migrations applied to Supabase (all 3 verified):**
+
+| Migration | Columns | Status |
+|---|---|---|
+| `001_case_file_columns.sql` | `answers.source`, `applications.partner_gender` | ✅ Applied |
+| `002_module_state_columns.sql` | `last_active_section`, `last_active_cluster`, `module_1_complete`, `module_2_complete` | ✅ Applied |
+| `003_document_uploads.sql` | `answers.confidence`, `answers.source_document_type`, `application_documents` table, `document_discrepancies` table | ✅ Applied (partial — `preparation_status` missing; applied manually as fix) |
+
+**Note:** `applications.preparation_status` was missing from migration 003 output — added manually via Supabase SQL Editor. Verified with `SELECT column_name FROM information_schema.columns WHERE table_name = 'applications' AND column_name = 'preparation_status'` → 1 row.
+
+**Hub page follow-up (commit 82cfae1):**
+
+Previously, `last_active_section`, `last_active_cluster`, and `preparation_status` were omitted from the hub's `applications` select with "Note: omit until migration applied" comments. Now that all migrations are live, those columns are restored:
+- `last_active_section` / `last_active_cluster` → `setLastActiveSection` / `setLastActiveCluster` / `setIsReturning(true)` — returning-user banner in `CaseFileHeader` now activates
+- `preparation_status` → `setPreparationStatus` → `DocumentUploadCard` receives real DB value instead of static `'scratch'`
+
+**Verified:** Hub loads correctly at `/apply` — James Windsor / $195,000 / Assisting Hands data present. Supabase network request at `/rest/v1/applications?select=id,application_type,status,last_active_section,last_active_cluster,preparation_status` returns 200.
+
+**Next:** S13 — `/apply/upload` → `/apply/upload/review` → `/apply/upload/gaps` document upload flow audit.
+
+---
+
 ### Session 50 — S8: /apply/investment Full Audit (June 20, 2026)
 
 **Tested:** All 5 clusters, cluster navigation, save, NEXT/Back navigation, hash routing.
