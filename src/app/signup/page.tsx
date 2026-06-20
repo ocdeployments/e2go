@@ -460,8 +460,8 @@ function SignupForm() {
 
                 <p className="text-xs text-center mt-4" style={{ color: "rgba(245,240,232,0.45)" }}>
                   By creating an account, you agree to our{" "}
-                  <Link href="/terms" className="underline hover:text-[#C9A84C]">Terms of Service</Link> and{" "}
-                  <Link href="/privacy" className="underline hover:text-[#C9A84C]">Privacy Policy</Link>
+                  <Link href="/terms" target="_blank" rel="noopener noreferrer" className="underline hover:text-[#C9A84C]">Terms of Service</Link> and{" "}
+                  <Link href="/privacy" target="_blank" rel="noopener noreferrer" className="underline hover:text-[#C9A84C]">Privacy Policy</Link>
                 </p>
               </form>
 

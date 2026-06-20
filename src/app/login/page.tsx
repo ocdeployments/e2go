@@ -39,10 +39,8 @@ function LoginForm() {
       ]);
       if (timedOut) return;
 
-      console.log("[login] 1/7 calling signInWithPassword");
       const { data: signInData, error } = await supabase.auth.signInWithPassword({ email, password });
       if (timedOut) return;
-      console.log("[login] 2/7 signInWithPassword returned", { hasError: !!error, hasUser: !!signInData?.user });
 
       if (error) {
         setStatus('error');
@@ -51,30 +49,25 @@ function LoginForm() {
       }
 
       const user = signInData?.user;
+      const session = signInData?.session;
 
       // If "Remember me" is checked, persist session for 30 days
-      if (rememberMe && user) {
-        console.log("[login] 3/7 remember-me: calling getSession");
-        const { data: { session } } = await supabase.auth.getSession();
-        console.log("[login] 4/7 remember-me: getSession returned", { hasSession: !!session });
-        if (session) {
-          await supabase.auth.setSession({
-            access_token: session.access_token,
-            refresh_token: session.refresh_token,
-          });
-          document.cookie = `sb-remember-me=true; max-age=${30 * 24 * 60 * 60}; path=/; SameSite=Lax`;
-        }
+      if (rememberMe && session) {
+        await supabase.auth.setSession({
+          access_token: session.access_token,
+          refresh_token: session.refresh_token,
+        });
+        document.cookie = `sb-remember-me=true; max-age=${30 * 24 * 60 * 60}; path=/; SameSite=Lax`;
       }
 
       if (user) {
-        console.log("[login] 5/7 linking quiz sessions for", user.id);
         // Link any existing quiz sessions (email-matched, no user_id yet) to this account
         const { error: linkError } = await supabase
           .from("quiz_sessions")
           .update({ user_id: user.id })
           .eq("email", email)
           .is("user_id", null);
-        console.log("[login] 6/7 quiz link result", { linkError: linkError?.message ?? "none" });
+        if (linkError) console.error("[login] quiz session link failed:", linkError.message);
 
         // Check for unlinked quiz draft in localStorage
         const draft = localStorage.getItem('e2go_quiz_draft');
@@ -108,7 +101,6 @@ function LoginForm() {
         }
       }
 
-      console.log("[login] 7/7 setting success + routing");
       setStatus('success');
 
       if (user) {
