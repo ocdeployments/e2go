@@ -217,10 +217,13 @@ export default function ApplyPage() {
           }
         }
 
-        // Try to get business name and city from answers
+        // Try to get business name and city from answers (scoped to this application)
+        const appId = apps[0].id;
+
         const { data: bizAnswers } = await supabase
           .from('answers')
           .select('question_key, answer_value')
+          .eq('application_id', appId)
           .eq('question_key', 'M3-E-01')
           .limit(1);
 
@@ -231,6 +234,7 @@ export default function ApplyPage() {
         const { data: cityAnswers } = await supabase
           .from('answers')
           .select('question_key, answer_value')
+          .eq('application_id', appId)
           .eq('question_key', 'M3-A-52')
           .limit(1);
 
@@ -241,6 +245,7 @@ export default function ApplyPage() {
         const { data: investAnswers } = await supabase
           .from('answers')
           .select('question_key, answer_value')
+          .eq('application_id', appId)
           .eq('question_key', 'M3-F-02')
           .limit(1);
 

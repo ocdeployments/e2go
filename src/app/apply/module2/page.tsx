@@ -84,6 +84,7 @@ export default function Module2Page() {
   const [loading, setLoading] = useState(true);
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
+  const [applicationId, setApplicationId] = useState<string | null>(null);
 
   // Screen 1 State
   const [background, setBackground] = useState("");
@@ -124,6 +125,16 @@ export default function Module2Page() {
         return;
       }
 
+      // Load application id
+      const { data: apps } = await supabase
+        .from("applications")
+        .select("id")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(1);
+      const appId = apps?.[0]?.id ?? null;
+      setApplicationId(appId);
+
       // Load existing answers
       const { data: answers } = await supabase
         .from("answers")
@@ -159,14 +170,12 @@ export default function Module2Page() {
   }, [supabase, router]);
 
   const saveAnswer = async (key: string, value: string) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    await supabase.from("answers").upsert({
-      user_id: user.id,
-      question_key: key,
-      answer_value: value,
-      answered_at: new Date().toISOString(),
-    }, { onConflict: "user_id,question_key" });
+    if (!applicationId) return;
+    await fetch("/api/answers", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question_key: key, answer_value: value, application_id: applicationId, source: "user_entry" }),
+    });
   };
 
   const handleNext = async () => {
@@ -188,6 +197,15 @@ export default function Module2Page() {
       await saveAnswer("M2-categories", JSON.stringify(selectedCategories));
     } else if (step === 3) {
       await saveAnswer("M2-shortlist", JSON.stringify(shortlist));
+    } else if (step === 4) {
+      // Compute gap advisory so step 5 displays the correct state
+      let gapFlag: string | null = null;
+      if (background === "healthcare" && selectedCategories.includes("food")) {
+        gapFlag = "Healthcare background + Food & Beverage business requires demonstration of transferable management skills.";
+      } else if (background === "tech" && selectedCategories.includes("retail_store")) {
+        gapFlag = "Technology background + Retail business requires clear operational management plan.";
+      }
+      setGapAdvisory(gapFlag);
     }
 
     setSaving(false);
@@ -207,17 +225,8 @@ export default function Module2Page() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    // Gap detection logic
-    let gapFlag = null;
-    if (background === "healthcare" && selectedCategories.includes("food")) {
-      gapFlag = "Healthcare background + Food & Beverage business requires demonstration of transferable management skills.";
-    } else if (background === "tech" && selectedCategories.includes("retail_store")) {
-      gapFlag = "Technology background + Retail business requires clear operational management plan.";
-    }
-
-    if (gapFlag) {
-      setGapAdvisory(gapFlag);
-      await supabase.from("applications").update({ experience_gap_flag: gapFlag }).eq("user_id", user.id);
+    if (gapAdvisory) {
+      await supabase.from("applications").update({ experience_gap_flag: gapAdvisory }).eq("user_id", user.id);
     }
 
     await supabase.from("applications").update({
@@ -231,7 +240,7 @@ export default function Module2Page() {
       module2_completed_at: new Date().toISOString(),
     }, { onConflict: "user_id" });
 
-    router.push("/apply/module3");
+    router.push("/apply");
   };
 
   if (loading) {
@@ -427,7 +436,16 @@ export default function Module2Page() {
               {selectedCategories.map((catId) => {
                 const examples = BUSINESS_EXAMPLES[catId] || [];
                 const cat = CATEGORIES.find(c => c.id === catId);
-                if (examples.length === 0) return null;
+                if (examples.length === 0) return (
+                  <div key={catId}>
+                    <h3 className="text-[14px] font-medium uppercase tracking-[0.12em] text-[#C9A84C] mb-3">{cat?.name}</h3>
+                    <div className="p-5 border border-[rgba(201,168,76,0.15)] bg-[rgba(201,168,76,0.02)]">
+                      <p className="text-[13px] text-[#f5f0e8]/50 leading-relaxed">
+                        Specific business examples for this category are curated per client. Your case advisor will provide a matched shortlist at no extra cost. Continue to proceed.
+                      </p>
+                    </div>
+                  </div>
+                );
                 return (
                   <div key={catId}>
                     <h3 className="text-[14px] font-medium uppercase tracking-[0.12em] text-[#C9A84C] mb-3">{cat?.name} Examples</h3>
