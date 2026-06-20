@@ -687,7 +687,7 @@ function ResultsPageInner() {
             </p>
             <p style={{ fontSize: "19px", color: "rgba(245,240,232,0.75)", margin: 0 }}>
               <span style={{ color: "#C9A84C" }}>E2go removes it.</span>{" "}
-              We get you to the USA faster than you thought possible — at a fraction of what an immigration attorney would charge.
+              From business plan to interview simulator, we guide you through every step of your application — at your own pace, in one platform, at a fraction of what an attorney charges.
             </p>
           </div>
         </div>
@@ -696,7 +696,7 @@ function ResultsPageInner() {
         <div style={{ padding: "40px 0", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
           <div className="cta-block" style={{ padding: "36px", border: "1px solid rgba(201,168,76,0.4)", background: "rgba(201,168,76,0.03)" }}>
 
-            <div style={{ fontSize: "13px", fontWeight: 500, color: "#f5f0e8", marginBottom: "4px" }}>Your case is ready. Are You?</div>
+            <div style={{ fontSize: "13px", fontWeight: 500, color: "#f5f0e8", marginBottom: "4px" }}>Eligibility confirmed. Let&apos;s build your case.</div>
             <div style={{ fontSize: "10px", letterSpacing: "0.16em", textTransform: "uppercase", color: "rgba(201,168,76,0.65)", marginBottom: "20px" }}>E-2 application package · {pricing.tier}</div>
 
             <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: "24px", flexWrap: "wrap", gap: "16px" }}>
@@ -734,12 +734,30 @@ function ResultsPageInner() {
               Applications submitted this summer are best positioned for the {timeline} interview window at {consulate.name}.
             </div>
 
+            {/* After you join us */}
+            <div style={{ borderTop: "1px solid rgba(201,168,76,0.1)", paddingTop: "20px", marginBottom: "24px" }}>
+              <div style={{ fontSize: "9px", letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(245,240,232,0.2)", marginBottom: "14px" }}>After you join us</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                {[
+                  { n: "1", text: "Your onboarding questionnaire is ready — ", strong: "instantly" },
+                  { n: "2", text: "We match you with a franchise broker based on your investment range — ", strong: "within 24 hours" },
+                  { n: "3", text: "Build your application package inside E2go at your own pace — ", strong: "the platform is ready when you are" },
+                  { n: "4", text: "When your information is complete, your case file is submission-ready — ", strong: "most clients finish in 2–4 weeks" },
+                ].map(({ n, text, strong }) => (
+                  <div key={n} style={{ display: "flex", gap: "12px", alignItems: "flex-start" }}>
+                    <div style={{ width: "18px", height: "18px", borderRadius: "50%", border: "1px solid rgba(201,168,76,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "9px", color: "rgba(201,168,76,0.55)", flexShrink: 0, marginTop: "1px" }}>{n}</div>
+                    <div style={{ fontSize: "12px", color: "rgba(245,240,232,0.45)", lineHeight: 1.5 }}>{text}<span style={{ color: "rgba(245,240,232,0.75)" }}>{strong}</span></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
             <Link href={isLoggedIn ? "/apply" : `/pricing?tier=${data.application_type}`} style={{ display: "block", padding: "18px 24px", background: "#C9A84C", color: "#0a0a0a", fontSize: "13px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", fontFamily: "'DM Sans', sans-serif", textDecoration: "none", textAlign: "center" as const }}>
               Yes — build my case file →
             </Link>
             {!isLoggedIn && (
-              <div style={{ marginTop: "10px", fontSize: "12px", color: "rgba(245,240,232,0.28)", textAlign: "center" as const }}>
-                Free to start — no credit card required
+              <div style={{ marginTop: "10px", fontSize: "11px", color: "rgba(245,240,232,0.22)", textAlign: "center" as const, lineHeight: 1.6 }}>
+                Quiz and AI coaching are always free.<br />You pay only when you&apos;re ready to build your case.
               </div>
             )}
           </div>
