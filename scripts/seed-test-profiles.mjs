@@ -407,7 +407,104 @@ const PROFILES = [
       processing_path:    'solo',
       family_composition: 'family',
       module_1_complete:  true,
+      business_name:      'Assisting Hands Home Care East Austin LLC',
+      principal_name:     'James Windsor',
       status:             'in_progress',
+    },
+
+    // Module 3 answers — realistic franchise buyer data for meaningful gap analysis output
+    module3Answers: {
+      // ── Investment Overview ──────────────────────────────────────────────
+      'M3-F-01': 'Franchise (buying into an established brand)',
+      'M3-F-02': '195000',
+      'M3-F-03': '195000',
+      'M3-F-04': JSON.stringify(['Franchise fee ($49,500)', 'Working capital (3 months operating costs)', 'Equipment and vehicle fit-out', 'Professional fees (attorney and accountant)', 'Initial marketing launch package']),
+      'M3-F-NEW-01': 'Yes — funds are actively deployed as business expenses',
+      'M3-F-NET': '1500000',
+      'M3-F-05': JSON.stringify(['Personal savings or accumulated wealth', 'Proceeds from selling property']),
+
+      // ── Source of Funds / Paper Trail ───────────────────────────────────
+      'M3-H-NEW-01': 'Yes — complete paper trail',
+      'M3-H-01': 'Funds originated from two sources: 18 years of personal savings held in Barclays UK accounts (£95,000 as of January 2025), and proceeds from selling my UK investment flat in Leeds in March 2025 (net proceeds £75,000 after mortgage redemption and solicitor fees). In April 2025 I converted £170,000 to USD at a rate of 1.27, receiving $215,900 via Barclays international FX service. On 12 May 2025 I wired $195,000 to the Assisting Hands East Austin LLC business account at Chase Bank Austin (account ending 7842), wire reference CHSE-2025-04872. Remaining $20,900 retained as personal emergency reserve in personal Chase checking account.',
+      'M3-H-02': '5–10 years',
+      'M3-H-03': 'Yes',
+      'M3-H-05': 'No — all funds are mine',
+      'M3-H-08': JSON.stringify(['International wire transfer', 'From personal savings accounts']),
+      'M3-H-09': 'Yes — complete wire records and SWIFT confirmations',
+      'M3-H-10': 'Yes — converted from GBP to USD',
+      'M3-B-BANK': 'Yes — account opened',
+      'M3-B-WIRE': 'Yes — confirmed with Barclays international team',
+
+      // ── Financial Projections ────────────────────────────────────────────
+      'M3-I-03': '5',
+      'M3-I-04': '75000',
+      'M3-I-05': '380000',
+      'M3-I-06': '3',
+      'M3-I-07': '85000',
+      'M3-I-09': 'Yes — the business generates revenue from clients beyond supporting our household',
+      'M3-I-10': JSON.stringify(['Franchise Item 19 financial performance representations (FDD 2024)', 'Market research: Austin MSA 65+ population data (Travis County)', 'Signed franchise agreement with defined territory', 'Three existing franchisee validation calls confirming Year 1 revenue ranges']),
+
+      // ── Business Entity & Registration ───────────────────────────────────
+      'M3-E-01': 'Assisting Hands Home Care East Austin LLC',
+      'M3-E-02': 'LLC',
+      'M3-E-03': 'Texas',
+      'M3-E-04': '93-4821765',
+      'M3-E-05': '2025-03-15',
+      'M3-E-06': '100',
+      'M3-E-13': 'LLC operating agreement (Articles of Organization on file with Texas SOS)',
+      'M3-E-07': 'Yes — operating agreement signed',
+      'M3-E-12': 'Yes — entity formed',
+
+      // ── What You Do / Business Description ──────────────────────────────
+      'M3-K-01': 'Assisting Hands Home Care East Austin LLC provides non-medical in-home care services to elderly and disabled clients across the East Austin territory. Clients or their families pay directly for care hours on weekly billing cycles, with selected Medicare Advantage and long-term care insurance plans accepted. Revenue flows from care packages averaging 20 hours per week per client, with caregiver payroll as the primary variable expense and a 6% franchise royalty as a fixed percentage of gross billings.',
+      'M3-B-01': 'Austin was selected because Texas has no state income tax, attracting a high-net-worth retirement population from California and the Northeast. The East Austin Assisting Hands territory has the lowest franchisee penetration relative to its 65+ population density — a gap the franchisor\'s own territory mapping confirmed. My professional background in care management operations directly matches the Assisting Hands operational model, and I have already completed the franchisor\'s 5-day training program in Chicago.',
+      'M3-B-02': '2.3 million (Austin MSA)',
+      'M3-B-03': '2 direct franchise competitors within 5 miles (Home Instead and Visiting Angels)',
+
+      // ── Operations ───────────────────────────────────────────────────────
+      'M3-G-04': 'Yes — leased commercial office',
+      'M3-G-05': '4301 West William Cannon Drive Suite 200, Austin TX 78749',
+      'M3-G-08': 'Not yet operational — pre-start (launch scheduled June 2025)',
+      'M3-G-08a': '5 days per week',
+      'M3-G-09': 'Day 1–30: Complete caregiver recruitment (target 6 caregivers hired and background-checked via Checkr); establish scheduling system (WellSky ClearCare). Day 31–60: Begin client intake and care plan assessments; achieve first 8 active clients generating $18,000 monthly billings. Day 61–90: Reach $30,000 monthly billings and break even on fixed operating costs; file for Texas Medicaid provider enrollment.',
+      'M3-G-10': 'Home health agency license application submitted to Texas Health and Human Services (HHSC). Business owner liability insurance and workers compensation policy obtained from Employers Holdings Inc. Registered with Texas Secretary of State. EIN obtained from IRS.',
+      'M3-G-06': 'Leased office space',
+      'M3-G-07': 'Long-term lease (3+ years)',
+      'M3-G-11': 'Yes — general liability, E&O, and workers compensation in place',
+
+      // ── Franchise Details ─────────────────────────────────────────────────
+      'M3-F-09': 'Assisting Hands Home Care',
+      'M3-F-10': 'Yes — Item 19 data provided with gross revenue ranges for system-wide units',
+      'M3-F-11': 'Yes — franchise agreement signed March 2025',
+
+      // ── Market & Competition ─────────────────────────────────────────────
+      'M3-K-02': 'Primary clients: adults aged 70+ who require assistance with activities of daily living (bathing, dressing, medication reminders, mobility) and prefer to age at home. Secondary clients: adult children of aging parents who act as decision-makers and primary payers. Referral sources: hospital discharge planners at St. David\'s Medical Center and Seton Medical Center Austin, geriatric care managers, and senior living communities in the territory.',
+      'M3-K-11': 'The Austin MSA has 2.3 million residents with a 65+ cohort projected to grow 22% by 2030 (US Census Bureau). Travis County\'s home care market exceeds $420M annually (IBIS World 2024). The East Austin Assisting Hands territory contains approximately 82,000 residents aged 65+, representing an addressable home care market of approximately $37M annually at industry standard penetration rates.',
+      'M3-K-03': 'Primary franchise competitors: Home Instead (3 locations in Austin MSA), Visiting Angels (2 locations). Non-franchise competitors: Care.com freelancers and private agencies. Our competitive advantages: (1) Assisting Hands 25-year brand with 8.2/10 average franchisee satisfaction score; (2) caregiver training program exceeds Texas minimum by 2.5x; (3) 24/7 care coordination line; (4) Italian-speaking care coordinator giving us an edge with Austin\'s growing Italian retiree community.',
+      'M3-K-12': 'Post-COVID demand for aging-in-place care has increased 34% in the Austin market. Texas\'s no-income-tax advantage is accelerating retirement migration from California and New York, growing our client base faster than the national average. Medicare Advantage plan expansion is increasing reimbursement rates for non-medical home care by an estimated 12% annually through 2027.',
+
+      // ── Qualifications ────────────────────────────────────────────────────
+      'M3-Q-01': "Bachelor's degree",
+      'M3-Q-02': 'BA Business Administration — University of Leeds (2004)',
+      'M3-Q-03': 'Native English speaker',
+      'M3-Q-04': '22 years in service operations and client relationship management. Most recently 8 years as Director of Operations at CarePlus Group (London), a care management consultancy with 40 staff and £3.2M annual revenue, where I held full P&L responsibility and oversaw regulatory compliance with CQC (Care Quality Commission) standards. Previously 6 years as Senior Account Manager at Sodexo UK managing facilities service contracts worth £1.8M annually. Extensive experience in care service delivery, staff recruitment, scheduling software, and healthcare regulatory frameworks.',
+      'M3-Q-05': '22',
+      'M3-Q-06': JSON.stringify(['Industry-specific experience (care services)', 'Prior business ownership or management (Director level)', 'Staff management and recruitment', 'Financial management and P&L', 'Marketing and client acquisition']),
+      'M3-Q-07': 'Yes — I have managed business units at director level (P&L responsibility)',
+      'M3-Q-10': 'Through a structured franchise selection process over 6 months with FranChoice (franchise consultant) — Assisting Hands was the top-ranked match for my care sector background and capital range',
+      'M3-Q-11': 'Researched 8 home care franchise systems over 6 months. Attended Assisting Hands Discovery Day in Chicago (February 2025). Validated Item 19 financial performance with 4 existing franchisees (calls recorded and notes available). Reviewed 2024 FDD with US immigration and franchise attorney. Hired FranChoice consultant who independently ranked Assisting Hands top-3 match for my profile. Visited proposed territory in Austin twice and met with the Regional Developer.',
+      'M3-Q-12': 'Yes — visited Austin territory twice; attended franchisor Discovery Day in Chicago',
+      'M3-Q-20': 'Chief Executive Officer / Owner-Operator',
+      'M3-Q-21': JSON.stringify(['Hiring, managing and scheduling caregivers', 'Client intake appointments and care plan assessments', 'Financial oversight and P&L management', 'Vendor and supplier relationship management', 'Marketing outreach and referral source development']),
+      'M3-Q-22': 'Yes — full authority',
+      'M3-Q-23': 'Yes',
+      'M3-Q-24': 'Yes — full-time, on-site',
+      'M3-Q-25': 'Monday to Friday, 45–50 hours per week. Monday: staff scheduling, caregiver check-ins, and weekly P&L review. Tuesday: client intake appointments and care plan assessments in the field. Wednesday: vendor and supplier meetings, compliance review, marketing outreach to referral sources. Thursday: franchisee network calls (bi-weekly), financial reconciliation, accounts payable. Friday: client satisfaction calls, staff performance reviews, and weekend on-call roster setup. Personal 24/7 emergency on-call shared with care coordinator.',
+      'M3-V-01': 'No — clean visa history',
+
+      // ── Engine-facing legacy keys (gap-analysis-engine.ts uses QA-08, M3-A-08) ─
+      'M3-A-08': 'Chief Executive Officer / Owner-Operator',
+      'M3-A-09': 'Daily management activities: caregiver recruitment and scheduling (8 caregivers in Year 1), client intake assessments and care plan design, P&L review and financial decision-making, vendor management (scheduling software, insurance, supplies), referral source outreach (hospital discharge planners, senior centers). Full-time on-site in Austin, TX with personal 24/7 on-call availability.',
     },
 
     // archetype: owner + retail_services → "buyer" (first rule in classifyArchetype)
@@ -417,11 +514,11 @@ const PROFILES = [
       eligibility_score:      100,
       franchise_triggered:    true,
       franchise_match_score:  0,
-      completeness_score:     35,
-      data_state:             'quiz_only',
-      source_of_funds_score:  0,
-      management_role_score:  0,
-      business_plan_score:    0,
+      completeness_score:     82,
+      data_state:             'module3_started',
+      source_of_funds_score:  78,
+      management_role_score:  82,
+      business_plan_score:    74,
       profile_data: {
         net_worth_range:   '1m_2_5m',
         prior_business:    'owner',
@@ -528,6 +625,19 @@ for (const profile of PROFILES) {
   if (answerRows.length > 0) {
     await dbInsert('answers', answerRows);
     console.log(`  ✓ answers (${answerRows.length} quiz answers)`);
+  }
+
+  // 5d. Seed Module 3 case file answers (investment, business, qualifications)
+  const m3Answers = profile.module3Answers ?? {};
+  const m3Rows = Object.entries(m3Answers).map(([key, val]) => ({
+    application_id: appId,
+    question_key:   key,
+    answer_value:   String(val ?? ''),
+    source:         'user_entry',
+  }));
+  if (m3Rows.length > 0) {
+    await dbInsert('answers', m3Rows);
+    console.log(`  ✓ answers (${m3Rows.length} Module 3 answers)`);
   }
 
   // 6. Insert case_profile (pre-computed — avoids needing buildCaseProfile)
