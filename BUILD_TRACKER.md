@@ -1,6 +1,6 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 19, 2026 (Session 40) — Phase G Security complete. HSTS, XSS fix, PIPEDA data export, GH Actions security pipeline, pre-commit secret scan, Cloudflare Turnstile CAPTCHA. Build clean (119 pages). Owner confirmed: Upstash Redis ✅, Storage bucket private ✅. Turnstile keys pending.
+**Last Updated:** June 20, 2026 (Session 44) — Sprint 4 (/dashboard) complete. 5 bugs fixed: quiz progress column mismatch, Onboarding link wrong route, outcome all-caps display, Nav dropdown no click-outside, module3/5 lifecycle deferred. Build clean 122 pages.
 **App Name:** E2go.app
 **Stack:** Next.js 14 · TypeScript · Tailwind CSS · Supabase · Claude API
 **Dev URL:** https://e2go-git-dev-ocdeployments-projects.vercel.app
@@ -90,7 +90,7 @@ changed, run npm run build:clean, report summary.
 | FAQ widget ambient states | ✅ COMPLETE | Session 16 — animated gradient border, thinking indicator |
 | FAQ widget scrollable container | ✅ COMPLETE | Sessions 17-18 — fixed height, no layout jump |
 | Supabase singleton fix | ✅ COMPLETE | Sessions 28-30 — duplicate GoTrueClient resolved |
-| Dashboard loading state | ✅ COMPLETE | Sessions 27-29 — try/catch/finally, singleton client |
+| Dashboard loading state | ✅ COMPLETE | Session 41 — converted to server component; no more navigator.locks deadlock |
 | Simulator loading state | ✅ COMPLETE | Sessions 28-30 — singleton, column name fixes |
 | Login quiz-session linkage | ✅ COMPLETE | Session 26 — await signInWithPassword, remove redundant getSession |
 | Nav on authenticated layouts | ✅ COMPLETE | Session 25 — Nav added to authenticated page layouts |
@@ -3963,6 +3963,158 @@ Resolved all ESLint errors to achieve clean build (119 pages, zero errors):
 1. FDD freemium payment gate — wire `hasAccess` to Stripe (owner must confirm price)
 2. Add CRON_SECRET to Vercel env — activates nightly profile rebuild
 3. FAQ seeds — add OPENAI_API_KEY to .env.local and run scripts (unblocks dynamic KB for 2 engines)
+
+---
+
+### Session 42 — E2E Audit Initiated + 3 Bug Fixes (June 20, 2026)
+
+**Context:** Structured page-by-page E2E audit launched. 21-sprint plan defined. Sprint results will be recorded here after each phase.
+
+**Bugs found and fixed:**
+
+| Bug | File | Fix |
+|---|---|---|
+| Ghost columns in `applications` SELECT crashed gap-analysis | `src/app/gap-analysis/page.tsx` | Removed `business_category`, `operational_status`, `target_state` from SELECT — columns don't exist in DB. PostgREST returned 400 → `.single()` returned null → "Application not found or access denied." |
+| Seed never inserted `applications` row | `scripts/seed-test-profiles.mjs` | Added `dbInsert('applications', profile.application)` + batch `dbInsert('answers', answerRows)` per profile. Added `application` config block to each profile definition. `case_profiles.application_id` now set correctly. |
+| Dashboard RSC router cache served previous user's data on client-side nav | `src/app/dashboard/page.tsx` | Added `export const dynamic = 'force-dynamic'` — prevents Next.js router from serving cached RSC payload when switching accounts in same browser session. Dashboard now shows `ƒ` in build output. |
+
+**Test profile verification results:**
+
+| Profile | /results | /dashboard | /gap-analysis |
+|---|---|---|---|
+| A — Canada/Romy (owner) | Not re-tested (confirmed S41) | ✅ Instant load | ✅ Loads |
+| B — France/Jean (ATTORNEY_RECOMMENDED · 86) | ✅ Score, flags, journey strip, France flag | ✅ Instant from /results nav | ✅ 11 critical / 3 moderate / 17/100 |
+| C — UK/James (PROCEED · 100 / buyer) | ✅ London Embassy consulate, SOLO+FAMILY $750 | ✅ After hard refresh (RSC cache bug — now fixed) | ✅ Loads |
+
+**Note on login routing for seeded profiles:**
+- After seed, profiles have an `applications` row with `payment_status` = NULL (not 'paid')
+- Login page routes: no app → `/results`; app exists but unpaid → `/pricing`; app paid → `/apply/{last_section}`
+- For testing, navigate directly to `/results`, `/dashboard`, `/gap-analysis` — pages don't paywall, only the login router does
+
+**Build:** Clean. 122 pages (was 119 — 3 additional routes counted). `/dashboard` now `ƒ` (dynamic server-rendered).
+
+---
+
+### 21-Sprint E2E Audit Plan
+
+**Rule:** After each phase, update BUILD_TRACKER sprint results table before starting the next phase.
+
+**Sprint tracking:**
+
+| Sprint | Page(s) | Status | Issues Found | Issues Fixed |
+|---|---|---|---|---|
+| S1 | `/results` | ✅ Complete | 6 bugs found (see Session 43) | ✅ All fixed |
+| S2 | `/pricing` | 🔶 DEFERRED — prices changing, re-audit after pricing update | — | — |
+| S3 | `/login` + `/signup` + `/forgot-password` | ⏳ Next | — | — |
+| S4 | `/dashboard` | ✅ Complete | 5 bugs found (see Session 44) | ✅ All fixed |
+| S5 | `/apply/module1` | ⏳ | — | — |
+| S6 | `/apply` hub + `/apply/module2` | ⏳ | — | — |
+| S7 | `/apply/business` | ⏳ | — | — |
+| S8 | `/apply/investment` | ⏳ | — | — |
+| S9 | `/apply/family` | ⏳ | — | — |
+| S10 | `/apply/ties` | ⏳ | — | — |
+| S11 | `/apply/story` | ⏳ | — | — |
+| S12 | `/apply/qualifications` | ⏳ | — | — |
+| S13 | `/apply/upload` → `/upload/review` → `/upload/gaps` | ⏳ | — | — |
+| S14 | `/apply/module3/a–l` | ⏳ | — | — |
+| S15 | `/apply/module4` + `/apply/checklist` + `/apply/calendar` + `/apply/overview` | ⏳ | — | — |
+| S16 | `/gap-analysis` | 🔶 Partial (render verified; full button audit pending) | Ghost columns + missing app row | ✅ Fixed |
+| S17 | `/simulator` → full flow | ⏳ | — | — |
+| S18 | `/fdd/upload` → `/fdd/report` | ⏳ | — | — |
+| S19 | `/generate/[id]` → `/documents/[id]` | ⏳ | — | — |
+| S20 | `/settings` | ⏳ | — | — |
+| S21 | `/learn/*` + `/support` + `/terms` + `/privacy` | ⏳ | — | — |
+
+---
+
+### Session 44 — Sprint 4: /dashboard Full Audit (June 20, 2026)
+
+**Tested:** All elements on `/dashboard` — 4 stat cards, module checklist, profile snapshot, Quick Actions grid, Nav authenticated links, user dropdown (Settings / Log out).
+
+**Bugs found and fixed (commit 7ceb6d7):**
+
+| # | Bug | File | Fix |
+|---|---|---|---|
+| 1 | `lifecycle.quiz_completed_at` never populated — quiz writes `module0_completed_at` (no migration), dashboard reads different column name. Eligibility Quiz checklist item and progress step always showed unchecked | `dashboard/page.tsx` | Use `quizData?.completed_at` directly from quiz_sessions (already fetched) — no lifecycle column needed |
+| 2 | Checklist "Onboarding" linked to `/apply` (case file hub) instead of `/apply/module1` | `dashboard/page.tsx` | Changed href to `/apply/module1` |
+| 3 | Outcome displayed raw all-caps: "ATTORNEY RECOMMENDED" | `dashboard/page.tsx` | Map outcomes to human labels: PROCEED → "Eligible to proceed", ATTORNEY_RECOMMENDED → "Attorney recommended", PR-* → "Not eligible" |
+| 4 | Nav dropdown had no click-outside handler — stayed open when clicking anywhere else on the page | `Nav.tsx` | Added `useRef` + `useEffect` `mousedown` listener; dropdown closes on outside click |
+| 5 | Progress calculation also used `lifecycle.quiz_completed_at` (same broken column) | `dashboard/page.tsx` | Same fix — use `quizData?.completed_at` for quiz step |
+
+**Deferred (not fixed — need lifecycle wiring):**
+- `module3_completed_at` — no migration, nothing writes it. "Investment & Documents" checklist item will never check.
+- `module5_completed_at` — no migration, nothing writes it. "Interview Simulator" checklist item will never check.
+- Maximum dashboard progress = 4/6 (67%) until these lifecycle events are wired.
+- Root fix needed: add migrations + write events when upload flow completes and when simulator session completes.
+
+**Note re: "No sign-out button" (Session 43 deferred bug):** Nav.tsx has a Log out button in the user dropdown (`handleSignOut → supabase.auth.signOut() → router.push("/")`). This bug appears resolved. Closing.
+
+**Build:** clean — 122 pages. Commit: 7ceb6d7.
+
+---
+
+### Session 43 — Sprint 1: /results Full Audit (June 20, 2026)
+
+**Tested:** Every interactive element on `/results` — nav, review button, flag edit links, CTA routing, FAQ widget, EmailGate (unauthenticated), and quiz edit jump flow.
+
+**Bugs found and fixed:**
+
+| # | Bug | File(s) | Fix |
+|---|---|---|---|
+| 1 | `q.type === 'multi'` never matched — quiz type is `'multiselect'` | `src/app/quiz/page.tsx` | Changed to `q.type === 'multiselect'` so checkboxes pre-fill on edit jump |
+| 2 | `pendingJumpId` restore effect deps `[cur]` — stale answers if both changed in same render | `src/app/quiz/page.tsx` | Added `answers` to deps: `[cur, answers]` |
+| 3 | Flag card links used `<a href="/quiz?edit=Q0-06">` — bypasses localStorage mechanism; quiz page has no `useSearchParams` handler for `?edit=` | `src/app/results/page.tsx` | Converted to `<button onClick>` that sets `quiz_jump_to_id` + `quiz_return_to_results` in localStorage then calls `router.push("/quiz")` |
+| 4 | `QUESTIONS_MAP` in quiz/review had stale label for Q0-09a: "When did the visa refusal occur?" — actual question is "Have you ever been refused a US visa?" | `src/app/quiz/review/page.tsx` | Updated label to match actual quiz JSON |
+| 5 | Duplicate FAQ header — results page added its own "Ask E2go / Questions about your results?" wrapper before `<FaqWidget>`, which already has its own full header | `src/app/results/page.tsx` | Removed the redundant outer wrapper; `<FaqWidget />` now renders directly |
+| 6 | CASL consent not enforced — EmailGate `Send` button was `disabled={!email}` only; user could submit without checking consent, triggering real email send | `src/app/results/page.tsx` | Added `!caslConsent` to both button `disabled` attr and `handleSubmit` guard |
+
+**Tested and passed:**
+- ✅ Nav Dashboard link → `/dashboard`
+- ✅ "← Review or change my answers" → `/quiz/review` (loads DB answers for auth users)
+- ✅ Flag card → quiz jump → correct question displayed → multiselect checkboxes pre-filled
+- ✅ "Change funding source →" from results page now uses localStorage mechanism (same as quiz/review)
+- ✅ CTA "Yes — build my case file →": logged-in → `/apply`; logged-out → `/pricing?tier=...`
+- ✅ FAQ widget responds to question clicks (4 preset questions + chat input)
+- ✅ EmailGate: email field, CASL checkbox (now enforced), Terms → `/terms`, "Retake the quiz" → `/quiz`
+- ✅ EmailGate error state: "No quiz results found for this email. Take the quiz first."
+- ✅ Quiz/review: DB answers loaded for authenticated users (3-tier fallback: draft → quiz_result → DB)
+
+**Known bugs (not fixed — deferred):**
+- 🐛 No sign-out button anywhere in the app (dashboard, settings, nav — nowhere)
+- 🐛 Journey strip shows "Your Home Consulate" fallback for France (not in consulate intel map)
+
+**NameCaptureForm:** Component code reviewed — validates name + password (min 8 chars, confirm match). UI state only reachable after real email verification click; untestable without live email flow.
+
+---
+
+### Session 41 — Dashboard server component + seed script fixes (June 20, 2026)
+
+**Problem diagnosed:** `/dashboard` showed infinite "Loading..." when navigating from `/results`. Root cause: `supabase.auth.getUser()` and `getSession()` both use `navigator.locks` internally (GoTrueClient global lock). The results page held the lock during token refresh; the dashboard queued behind it and waited forever.
+
+**Fixes shipped:**
+
+| Item | File | What changed |
+|---|---|---|
+| Dashboard → server component | `src/app/dashboard/page.tsx` | Removed `"use client"`, `useState`, `useEffect`. Now uses `createSupabaseServerClient()`. No loading state — page renders on the server, no lock contention possible. |
+| Wrong column name | `src/app/dashboard/page.tsx` | `module0_completed_at` → `quiz_completed_at` everywhere (interface, getProgress(), checklist array) |
+| `application_lifecycle` query fix | `src/app/dashboard/page.tsx` | Removed `.order("created_at")` (column doesn't exist on this table). Changed `.single()` → `.maybeSingle()` |
+| Seed: lifecycle column fix | `scripts/seed-test-profiles.mjs` | `module0_completed_at` → `quiz_completed_at` |
+| Seed: lifecycle upsert → insert | `scripts/seed-test-profiles.mjs` | `application_lifecycle` has no UNIQUE constraint on `user_id`, so `?on_conflict=user_id` silently failed. Changed to plain `dbInsert` (cleanUser already deletes previous row) |
+| Seed: error surfacing | `scripts/seed-test-profiles.mjs` | `dbInsert` and `dbUpsert` now throw on non-OK HTTP response instead of silently returning error JSON |
+
+**All 3 test profiles re-seeded successfully:**
+- Profile A: `romyjames@gmail.com` (owner's account) — Canada/solo/PROCEED
+- Profile B: `test-france@example.com` / `TestFrance2026!` — France/married/ATTORNEY_RECOMMENDED
+- Profile C: `test-uk@example.com` / `TestUK2026!` — UK/family/buyer archetype/PROCEED
+
+**Build:** clean (119 pages). Webpack cache cleared. Dev server restarted clean.
+
+**Confirmed working:** Owner logged in, `/dashboard` loaded immediately with correct data.
+
+**Next up (deferred to next session):**
+- Fix T&C modal on signup (currently a separate page — should be a modal popup). File: `src/app/signup/page.tsx`
+- Replace Supabase default email with branded Resend email (unbranded confirmation emails going out)
+- The `/results` page plan is loaded (see plan file) — journey strip, copy rewrite, remove criteria bars, etc.
 
 ---
 
