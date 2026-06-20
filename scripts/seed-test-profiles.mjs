@@ -419,12 +419,14 @@ const PROFILES = [
       'M3-F-02': '195000',
       'M3-F-03': '195000',
       'M3-F-04': JSON.stringify(['Franchise fee ($49,500)', 'Working capital (3 months operating costs)', 'Equipment and vehicle fit-out', 'Professional fees (attorney and accountant)', 'Initial marketing launch package']),
-      'M3-F-NEW-01': 'Yes — funds are actively deployed as business expenses',
+      // 'yes' is the stored value for "Yes — funds are deployed" select option (engine checks for 'yes')
+      'M3-F-NEW-01': 'yes',
       'M3-F-NET': '1500000',
       'M3-F-05': JSON.stringify(['Personal savings or accumulated wealth', 'Proceeds from selling property']),
 
       // ── Source of Funds / Paper Trail ───────────────────────────────────
-      'M3-H-NEW-01': 'Yes — complete paper trail',
+      // 'yes' is the stored value for "Yes — complete paper trail" (engine checks for 'yes' = good)
+      'M3-H-NEW-01': 'yes',
       'M3-H-01': 'Funds originated from two sources: 18 years of personal savings held in Barclays UK accounts (£95,000 as of January 2025), and proceeds from selling my UK investment flat in Leeds in March 2025 (net proceeds £75,000 after mortgage redemption and solicitor fees). In April 2025 I converted £170,000 to USD at a rate of 1.27, receiving $215,900 via Barclays international FX service. On 12 May 2025 I wired $195,000 to the Assisting Hands East Austin LLC business account at Chase Bank Austin (account ending 7842), wire reference CHSE-2025-04872. Remaining $20,900 retained as personal emergency reserve in personal Chase checking account.',
       'M3-H-02': '5–10 years',
       'M3-H-03': 'Yes',
@@ -432,15 +434,25 @@ const PROFILES = [
       'M3-H-08': JSON.stringify(['International wire transfer', 'From personal savings accounts']),
       'M3-H-09': 'Yes — complete wire records and SWIFT confirmations',
       'M3-H-10': 'Yes — converted from GBP to USD',
+      // M3-G-BANK is the key the engine reads (D-10 shell company check); M3-B-BANK is the UI key (both seeded)
       'M3-B-BANK': 'Yes — account opened',
+      'M3-G-BANK': 'Yes — US Chase business bank account opened (account ending 7842)',
       'M3-B-WIRE': 'Yes — confirmed with Barclays international team',
 
-      // ── Financial Projections ────────────────────────────────────────────
-      'M3-I-03': '5',
-      'M3-I-04': '75000',
-      'M3-I-05': '380000',
-      'M3-I-06': '3',
-      'M3-I-07': '85000',
+      // ── Financial Projections ─────────────────────────────────────────────
+      // Engine reads M3-I-03 as employeeY1 (parseInt), M3-I-04 as roleList (string length check),
+      // M3-I-05 as revenueY1 (parseAmount), M3-I-06 as revenueY3 (parseAmount),
+      // M3-I-07 as householdIncome (parseAmount) — note: investment page uses these for different
+      // semantics, but these legacy M3- keys are what the gap-analysis-engine.ts reads.
+      'M3-I-02': '0',      // current US employees (pre-start: 0)
+      'M3-I-03': '6',      // projected full-time employees Year 1
+      'M3-I-04': '6 × Caregiver ($18/hr FT), 1 × Care Coordinator ($22/hr FT), 1 × Office Admin ($18/hr PT)',  // role list
+      'M3-I-05': '380000', // Year 1 gross revenue projection
+      'M3-I-06': '650000', // Year 3 gross revenue projection (was '3' — fixed)
+      'M3-I-07': '85000',  // household income need Year 1 (annual salary/draw)
+      // Hiring plan and projection basis (M3-I-NEW-* keys read by engine for D-05, D-06, D-07)
+      'M3-I-NEW-01': 'Day 1–30: Recruit and hire 6 caregivers via ZipRecruiter and Indeed, complete Checkr background checks, enroll in WellSky ClearCare scheduling. Day 31–60: Begin client intake; target 8 active clients at $18,000/month billings. Day 61–90: Reach $30,000/month billings and break even on fixed costs; file for Texas Medicaid provider enrollment.',
+      'M3-I-NEW-02': 'Revenue projections based on: (1) Assisting Hands FDD 2024 Item 19 — system-wide median Year 1 gross revenue $342,000; (2) Austin MSA 65+ population of 82,000 in territory with below-average franchise penetration; (3) validation calls with 4 existing Assisting Hands franchisees confirming Year 1 ranges of $280,000–$420,000; (4) signed territory agreement confirming exclusive 82,000-resident catchment area.',
       'M3-I-09': 'Yes — the business generates revenue from clients beyond supporting our household',
       'M3-I-10': JSON.stringify(['Franchise Item 19 financial performance representations (FDD 2024)', 'Market research: Austin MSA 65+ population data (Travis County)', 'Signed franchise agreement with defined territory', 'Three existing franchisee validation calls confirming Year 1 revenue ranges']),
 
@@ -454,6 +466,9 @@ const PROFILES = [
       'M3-E-13': 'LLC operating agreement (Articles of Organization on file with Texas SOS)',
       'M3-E-07': 'Yes — operating agreement signed',
       'M3-E-12': 'Yes — entity formed',
+      // Engine keys for D-13 (ownership structure) — M3-E-NEW-01 = MIL, M3-E-NEW-02 = operating agreement
+      'M3-E-NEW-01': 'James Windsor — 100% membership interest per LLC Operating Agreement and Certificate of Membership Interest (Texas SOS File No. 803924871)',
+      'M3-E-NEW-02': 'Yes — LLC Operating Agreement executed March 15, 2025. Governing documents include Articles of Organization (filed with Texas Secretary of State) and Operating Agreement confirming 100% ownership and sole management authority.',
 
       // ── What You Do / Business Description ──────────────────────────────
       'M3-K-01': 'Assisting Hands Home Care East Austin LLC provides non-medical in-home care services to elderly and disabled clients across the East Austin territory. Clients or their families pay directly for care hours on weekly billing cycles, with selected Medicare Advantage and long-term care insurance plans accepted. Revenue flows from care packages averaging 20 hours per week per client, with caregiver payroll as the primary variable expense and a 6% franchise royalty as a fixed percentage of gross billings.',
@@ -468,6 +483,8 @@ const PROFILES = [
       'M3-G-08a': '5 days per week',
       'M3-G-09': 'Day 1–30: Complete caregiver recruitment (target 6 caregivers hired and background-checked via Checkr); establish scheduling system (WellSky ClearCare). Day 31–60: Begin client intake and care plan assessments; achieve first 8 active clients generating $18,000 monthly billings. Day 61–90: Reach $30,000 monthly billings and break even on fixed operating costs; file for Texas Medicaid provider enrollment.',
       'M3-G-10': 'Home health agency license application submitted to Texas Health and Human Services (HHSC). Business owner liability insurance and workers compensation policy obtained from Employers Holdings Inc. Registered with Texas Secretary of State. EIN obtained from IRS.',
+      // Engine key for D-10 (shell company) — M3-G-NEW-01 = license/permit evidence
+      'M3-G-NEW-01': 'Texas home health agency license application submitted to HHSC (reference HHSC-2025-HC-40281). Business registered with Texas Secretary of State (SOS File No. 803924871). EIN 93-4821765 obtained from IRS. General liability and workers compensation insurance in force (Employers Holdings Inc., policy EM-2025-TX-99312).',
       'M3-G-06': 'Leased office space',
       'M3-G-07': 'Long-term lease (3+ years)',
       'M3-G-11': 'Yes — general liability, E&O, and workers compensation in place',
@@ -482,6 +499,8 @@ const PROFILES = [
       'M3-K-11': 'The Austin MSA has 2.3 million residents with a 65+ cohort projected to grow 22% by 2030 (US Census Bureau). Travis County\'s home care market exceeds $420M annually (IBIS World 2024). The East Austin Assisting Hands territory contains approximately 82,000 residents aged 65+, representing an addressable home care market of approximately $37M annually at industry standard penetration rates.',
       'M3-K-03': 'Primary franchise competitors: Home Instead (3 locations in Austin MSA), Visiting Angels (2 locations). Non-franchise competitors: Care.com freelancers and private agencies. Our competitive advantages: (1) Assisting Hands 25-year brand with 8.2/10 average franchisee satisfaction score; (2) caregiver training program exceeds Texas minimum by 2.5x; (3) 24/7 care coordination line; (4) Italian-speaking care coordinator giving us an edge with Austin\'s growing Italian retiree community.',
       'M3-K-12': 'Post-COVID demand for aging-in-place care has increased 34% in the Austin market. Texas\'s no-income-tax advantage is accelerating retirement migration from California and New York, growing our client base faster than the national average. Medicare Advantage plan expansion is increasing reimbursement rates for non-medical home care by an estimated 12% annually through 2027.',
+      // Engine key for D-06 (revenue projections not backed) — M3-K-NEW-01 = market data/basis
+      'M3-K-NEW-01': 'Austin MSA: 2.3M population, 82,000 residents aged 65+ in territory. Travis County home care market $420M annually (IBIS World 2024). Assisting Hands FDD 2024 Item 19: system median Year 1 gross revenue $342,000 across 180+ franchise locations. Validated by 4 existing franchisee calls (Year 1 range $280,000–$420,000). US Census Bureau projects 22% growth in 65+ population in Austin MSA by 2030.',
 
       // ── Qualifications ────────────────────────────────────────────────────
       'M3-Q-01': "Bachelor's degree",
@@ -501,6 +520,8 @@ const PROFILES = [
       'M3-Q-24': 'Yes — full-time, on-site',
       'M3-Q-25': 'Monday to Friday, 45–50 hours per week. Monday: staff scheduling, caregiver check-ins, and weekly P&L review. Tuesday: client intake appointments and care plan assessments in the field. Wednesday: vendor and supplier meetings, compliance review, marketing outreach to referral sources. Thursday: franchisee network calls (bi-weekly), financial reconciliation, accounts payable. Friday: client satisfaction calls, staff performance reviews, and weekend on-call roster setup. Personal 24/7 emergency on-call shared with care coordinator.',
       'M3-V-01': 'No — clean visa history',
+      // Engine key for D-15 (214b prior denial check)
+      'M3-A-23': 'No — clean visa history, no prior refusals or violations',
 
       // ── Engine-facing legacy keys (gap-analysis-engine.ts uses QA-08, M3-A-08) ─
       'M3-A-08': 'Chief Executive Officer / Owner-Operator',
@@ -633,7 +654,7 @@ for (const profile of PROFILES) {
     application_id: appId,
     question_key:   key,
     answer_value:   String(val ?? ''),
-    source:         'user_entry',
+    // source column omitted — migration 001_case_file_columns.sql not yet applied
   }));
   if (m3Rows.length > 0) {
     await dbInsert('answers', m3Rows);
