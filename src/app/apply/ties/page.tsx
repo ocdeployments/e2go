@@ -211,6 +211,35 @@ export default function TiesPage() {
                   <OptionButton key={opt.value} label={opt.label} selected={answer?.value === opt.value} onClick={() => handleAnswerChange(q.key, opt.value)} />
                 ))}
               </div>
+            ) : q.type === 'multi' ? (
+              <div className="flex flex-col gap-2">
+                {q.options?.map((opt) => {
+                  let currentValues: string[] = [];
+                  try {
+                    const parsed = JSON.parse(answer?.value || '[]');
+                    if (Array.isArray(parsed)) currentValues = parsed;
+                  } catch { /* empty */ }
+                  const isSelected = currentValues.includes(opt.value);
+                  return (
+                    <OptionButton
+                      key={opt.value}
+                      label={opt.label}
+                      selected={isSelected}
+                      onClick={() => {
+                        let vals: string[] = [];
+                        try {
+                          const p = JSON.parse(answer?.value || '[]');
+                          if (Array.isArray(p)) vals = p;
+                        } catch { /* empty */ }
+                        const next = vals.includes(opt.value)
+                          ? vals.filter((v) => v !== opt.value)
+                          : [...vals, opt.value];
+                        handleAnswerChange(q.key, JSON.stringify(next));
+                      }}
+                    />
+                  );
+                })}
+              </div>
             ) : q.type === 'textarea' ? (
               <TextArea value={answer?.value || ''} onChange={(val) => handleAnswerChange(q.key, val)} rows={4} />
             ) : (
