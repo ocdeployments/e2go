@@ -121,11 +121,15 @@ export default function Module1Page() {
     loadSession();
   }, [supabase, router]);
 
-  const handleNext = async () => {
+  // Auto-trigger save when step 6 is reached (step 6 has no button)
+  useEffect(() => {
     if (step === 6) {
-      await saveApplicationRecord();
-      return;
+      void saveApplicationRecord();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step]);
+
+  const handleNext = () => {
     setStep((prev) => prev + 1);
   };
 
@@ -367,8 +371,8 @@ export default function Module1Page() {
             </h1>
             <p className="text-[#f5f0e8]/60 text-[16px] leading-relaxed mb-8">
               Please review and accept our terms. You can read the full{" "}
-              <Link href="/terms" className="text-[#C9A84C] underline hover:text-[#D4BC6A]">Terms of Service</Link> and{" "}
-              <Link href="/privacy" className="text-[#C9A84C] underline hover:text-[#D4BC6A]">Privacy Policy</Link>.
+              <Link href="/terms" target="_blank" rel="noopener noreferrer" className="text-[#C9A84C] underline hover:text-[#D4BC6A]">Terms of Service</Link> and{" "}
+              <Link href="/privacy" target="_blank" rel="noopener noreferrer" className="text-[#C9A84C] underline hover:text-[#D4BC6A]">Privacy Policy</Link>.
             </p>
 
             <div className="border-l-[3px] border-[#C9A84C] bg-[rgba(201,168,76,0.04)] p-6 mb-8">
@@ -394,7 +398,7 @@ export default function Module1Page() {
                   )}
                 </div>
                 <span className="text-[14px] text-[#f5f0e8]/80 group-hover:text-[#f5f0e8] transition-colors pt-0.5">
-                  I have read and agree to the <Link href="/terms" className="text-[#C9A84C] underline">Terms of Service</Link>
+                  I have read and agree to the <Link href="/terms" target="_blank" rel="noopener noreferrer" className="text-[#C9A84C] underline">Terms of Service</Link>
                 </span>
               </label>
 
@@ -414,7 +418,7 @@ export default function Module1Page() {
                   )}
                 </div>
                 <span className="text-[14px] text-[#f5f0e8]/80 group-hover:text-[#f5f0e8] transition-colors pt-0.5">
-                  I have read and agree to the <Link href="/privacy" className="text-[#C9A84C] underline">Privacy Policy</Link>
+                  I have read and agree to the <Link href="/privacy" target="_blank" rel="noopener noreferrer" className="text-[#C9A84C] underline">Privacy Policy</Link>
                 </span>
               </label>
             </div>
