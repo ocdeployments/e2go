@@ -1,6 +1,6 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 20, 2026 (Session 48) — Seed audit + gap-analysis engine hardening complete. Profile C (James Windsor / Assisting Hands East Austin) now seeds 83 Module 3 answers covering all engine-evaluated keys. 3 engine logic bugs fixed (D-02, D-03, D-10). Gap analysis verified: 67/100, 2 legitimate criticals only. Build clean. S6 (/apply hub + /apply/module2) is next sprint.
+**Last Updated:** June 20, 2026 (Session 49) — Sprint S6 complete. 7 bugs found and fixed across /apply hub and /apply/module2. Root cause: 3 application table columns (preparation_status, last_active_section, last_active_cluster) referenced in code but never added to Supabase via migration. Created migration 002_module_state_columns.sql. Hub section completion % now verified working (Story 38%, 3/5 sections complete). Build clean. ⚠️ Migration 002 must be applied to Supabase before last_active_section resume logic becomes active. S7 (/apply/business) is next sprint.
 **App Name:** E2go.app
 **Stack:** Next.js 14 · TypeScript · Tailwind CSS · Supabase · Claude API
 **Dev URL:** https://e2go-git-dev-ocdeployments-projects.vercel.app
@@ -4075,6 +4075,45 @@ Resolved all ESLint errors to achieve clean build (119 pages, zero errors):
 - quiz_sessions does not store `family_type`, `partner_name`, `partner_email`, `spouse_name`, `spouse_dob` — these columns are never written by the quiz. Pre-fill on step 1 and step 5 silently falls back to empty. No crash — just no pre-fill from quiz data for these fields.
 
 **Build:** clean — 122 pages. Commit: a9e390d.
+
+---
+
+### Session 49 — Sprint S6: /apply hub + /apply/module2 audit (June 20, 2026)
+
+**Sprint scope:** Full E2E audit of `/apply` (Case File hub) and `/apply/module2` (business advisor).
+**Commits:** `80a10d8` (module2 fixes), `6c3ee98` (hub fixes + migration 002)
+
+**Root cause discovered:** The applications table in the live Supabase DB has fewer columns than the code expects. Three columns were written into the codebase without corresponding migration files — causing all `/apply` hub queries to return HTTP 400, silently zeroing out all section completion %.
+
+**Bugs fixed — /apply hub (page.tsx):**
+1. `preparation_status` in applications select → 400 (column missing, needs migration 003)
+2. `last_active_section` in applications select → 400 (column missing, needs migration 002)
+3. `last_active_cluster` in applications select → 400 (column missing, needs migration 002)
+4. `const appId = apps[0].id` was outside the `if (apps)` null guard → crash risk
+5. Quiz session loading block accidentally dropped during prior fix → restored
+
+**Bugs fixed — /apply/module2 (page.tsx, from prior commit 80a10d8):**
+6. `applicationId` state missing → `saveAnswer` had no application_id to use
+7. `saveAnswer` was posting to legacy route instead of `/api/answers`
+8. Gap advisory computed at step 6 but displayed at step 5 → always showed "Strong Alignment"
+9. `completeModule2` recomputed gap (wrong) instead of using `gapAdvisory` state
+10. `completeModule2` redirected to `/apply/module3` instead of `/apply`
+11. Empty shortlist crash for categories without BUSINESS_EXAMPLES
+
+**Migration created:**
+- `docs/migrations/002_module_state_columns.sql` — adds all module-progress columns:
+  last_active_section, last_active_cluster, module_1_complete, module_2_complete,
+  experience_gap_flag, business_shortlist, specific_business_description, processing_path, family_composition
+
+**Verification:**
+- James Windsor hub: Story 38% complete, $195,000 USD, Assisting Hands Home Care East Austin LLC ✓
+- 3 of 5 sections complete (Business + Investment + Ties exceed seed answer thresholds) ✓
+- Applications query returns 200, answers query returns 200 ✓
+
+**⚠️ ACTIONS REQUIRED (Supabase SQL Editor):**
+1. Apply `docs/migrations/002_module_state_columns.sql` — unlocks last_active_section resume logic + module2 completion writes
+2. Apply `docs/migrations/001_case_file_columns.sql` — unlocks source column pre-fill tracking
+3. Apply `docs/migrations/003_document_uploads.sql` — unlocks preparation_status document upload routing
 
 ---
 
