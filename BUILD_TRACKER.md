@@ -1,6 +1,6 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 20, 2026 (Session 44) — Sprint 4 (/dashboard) complete. 5 bugs fixed: quiz progress column mismatch, Onboarding link wrong route, outcome all-caps display, Nav dropdown no click-outside, module3/5 lifecycle deferred. Build clean 122 pages.
+**Last Updated:** June 20, 2026 (Session 45) — S16 /gap-analysis complete. 4 bugs fixed: `business_category` ghost column in semantic-eval route, `marginality_score` ghost column blocking AI analysis display, hash-based tab navigation (9 D-codes now land on correct tabs), plus S1 quiz/results + apply hub fixes committed. Build clean.
 **App Name:** E2go.app
 **Stack:** Next.js 14 · TypeScript · Tailwind CSS · Supabase · Claude API
 **Dev URL:** https://e2go-git-dev-ocdeployments-projects.vercel.app
@@ -4018,12 +4018,51 @@ Resolved all ESLint errors to achieve clean build (119 pages, zero errors):
 | S13 | `/apply/upload` → `/upload/review` → `/upload/gaps` | ⏳ | — | — |
 | S14 | `/apply/module3/a–l` | ⏳ | — | — |
 | S15 | `/apply/module4` + `/apply/checklist` + `/apply/calendar` + `/apply/overview` | ⏳ | — | — |
-| S16 | `/gap-analysis` | 🔶 Partial (render verified; full button audit pending) | Ghost columns + missing app row | ✅ Fixed |
+| S16 | `/gap-analysis` | ✅ Complete | 4 bugs: ghost columns (business_category, marginality_score), hash nav broken on 9 D-codes, semantic-eval always 404 | ✅ All fixed |
 | S17 | `/simulator` → full flow | ⏳ | — | — |
 | S18 | `/fdd/upload` → `/fdd/report` | ⏳ | — | — |
 | S19 | `/generate/[id]` → `/documents/[id]` | ⏳ | — | — |
 | S20 | `/settings` | ⏳ | — | — |
 | S21 | `/learn/*` + `/support` + `/terms` + `/privacy` | ⏳ | — | — |
+
+---
+
+### Session 45 — S16 /gap-analysis Full Audit + Prior Fixes Committed (June 20, 2026)
+
+**Work done:**
+- Committed all S1 (results/quiz) fixes — 6 bugs: multiselect type mismatch, stale deps, edit-jump mechanism, QUESTIONS_MAP label, FAQ duplicate header, CASL enforcement
+- Committed apply hub fixes — ghost columns `full_name`, `answers`, `created_at` causing "complete eligibility check" banner to show for completed users
+- Completed S16 /gap-analysis full audit — all 15 D-code cards + Fix links, Run AI analysis, Practice in Simulator
+
+**Bugs found and fixed (commits 007f62a, 3f16ae6):**
+
+| # | Bug | File | Fix |
+|---|---|---|---|
+| 1 | `business_category` column doesn't exist → `/api/gap-analysis/semantic-eval` always 404 | `api/gap-analysis/semantic-eval/route.ts` | Removed non-existent column from SELECT |
+| 2 | `marginality_score` column doesn't exist → `brief` always null → AI analysis banner never hides | `app/gap-analysis/page.tsx` | Changed to `substantiality_score` only |
+| 3 | Hash-based D-code Fix links land on wrong tab (9/15 D-codes affected) | `apply/investment/page.tsx`, `apply/business/page.tsx`, `apply/qualifications/page.tsx` | Added hash→cluster mapping in mount useEffect |
+| 4 | `Run AI analysis` button never showed "analysis complete" state (same root as bug #2) | `app/gap-analysis/page.tsx` | Fixed by bug #2 fix |
+
+**D-code Fix link audit results:**
+- ✅ D-01 `#investment-overview` → cluster-1 (correct — first tab)
+- ✅ D-02 `#paper-trail` → cluster-3 (FIXED)
+- ✅ D-03 `#source-of-funds` → cluster-2 (FIXED)
+- ✅ D-04 `#projections` → cluster-4 (FIXED)
+- ✅ D-05 `#market` (business) → cluster-7 (FIXED)
+- ✅ D-06 `#projections` → cluster-4 (FIXED)
+- ✅ D-07 `#operations` (business) → cluster-3 (FIXED)
+- ✅ D-08 `/simulator` (no hash needed)
+- ✅ D-09 `/simulator` (no hash needed)
+- ✅ D-10 `#operations` (business) → cluster-3 (FIXED)
+- ✅ D-11 `#role` (qualifications) → cluster-3 (FIXED)
+- ✅ D-12 `#source-of-funds` → cluster-2 (FIXED)
+- ✅ D-13 `#entity` → cluster-1 (already correct)
+- ✅ D-14 `/apply/business` no hash → cluster-1 Entity (correct)
+- ✅ D-15 `/apply/ties` no hash (correct)
+
+**Verified working:** Run AI analysis (fires `/api/analysis/run` → writes case_briefs → banner hides on reload), Practice in Simulator button (→ `/simulator?applicationId=...`), all 6 evidence category accordion buttons.
+
+**Note:** `npm run build` was run mid-session which corrupted the dev server webpack cache. Fixed by stopping/restarting the preview server (`preview_stop` → `preview_start`). Do NOT run `npm run build` while the preview server is active in future sessions.
 
 ---
 
