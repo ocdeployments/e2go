@@ -1,6 +1,6 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 20, 2026 (Session 47) — S4 extended audit complete. 5 critical bugs fixed: GoTrueClient navigator.locks deadlock (affected /fdd, /dashboard post-navigation), /documents auth broken (localStorage never populated), dashboard checklist links wrong, gap-analysis engine ignoring select-field values. Build clean. S6 (/apply hub + /apply/module2) is next sprint.
+**Last Updated:** June 20, 2026 (Session 48) — Seed audit + gap-analysis engine hardening complete. Profile C (James Windsor / Assisting Hands East Austin) now seeds 83 Module 3 answers covering all engine-evaluated keys. 3 engine logic bugs fixed (D-02, D-03, D-10). Gap analysis verified: 67/100, 2 legitimate criticals only. Build clean. S6 (/apply hub + /apply/module2) is next sprint.
 **App Name:** E2go.app
 **Stack:** Next.js 14 · TypeScript · Tailwind CSS · Supabase · Claude API
 **Dev URL:** https://e2go-git-dev-ocdeployments-projects.vercel.app
@@ -4075,6 +4075,53 @@ Resolved all ESLint errors to achieve clean build (119 pages, zero errors):
 - quiz_sessions does not store `family_type`, `partner_name`, `partner_email`, `spouse_name`, `spouse_dob` — these columns are never written by the quiz. Pre-fill on step 1 and step 5 silently falls back to empty. No crash — just no pre-fill from quiz data for these fields.
 
 **Build:** clean — 122 pages. Commit: a9e390d.
+
+---
+
+### Session 48 — Seed Audit + Gap-Analysis Engine Hardening (June 20, 2026)
+
+**Goal:** Confirm Profile C (James Windsor / Assisting Hands Home Care East Austin LLC) seeds enough data that the gap analysis report shows only *legitimate* gaps — not false criticals caused by missing answer keys.
+
+**Root cause identified:** The gap-analysis engine was written against old M3-I-* key semantics, the UI pages write different keys (e.g. M3-I-05 = FT employees, not Y1 revenue), and UI select fields store lowercase `value` attributes (`'yes'`/`'no'`/`'partial'`), not the full label text the engine was checking.
+
+**Engine fixes (3 bugs in `src/lib/gap-analysis-engine.ts`):**
+
+| # | D-code | Bug | Fix | Commit |
+|---|---|---|---|---|
+| 1 | D-02 | M3-F-NEW-01 is a select ('yes'/'partial'/'no'), not a dollar amount — engine's `parseAmount()` always returned 0, making funds look "not deployed" | Added string check: 'yes' → low risk (funds deployed), 'partial'/'no' → high risk | b45ccba |
+| 2 | D-03 | Engine treated 'yes' on M3-H-NEW-01 as a gap disclosure (checked for string 'yes' in `mentionsGaps`). Inverted logic: 'yes' means *complete* paper trail (good), 'no'/'partial' means gaps (bad) | Rewrote `hasCompletePaperTrail` / `mentionsGaps` detection with correct polarity | b45ccba |
+| 3 | D-10 | Engine read `app.operational_status` — column does not exist in `applications` DB schema → always null → pre-start businesses scored incorrectly | Added `effectiveOpStatus` inference from M3-G-08 answer key text when DB column is absent | b45ccba |
+
+**Seed data fixes (8 mismatches in `scripts/seed-test-profiles.mjs`):**
+
+| Key | Was | Now | Why |
+|---|---|---|---|
+| M3-F-NEW-01 | `'Yes — funds are actively deployed...'` (label) | `'yes'` | Actual select value stored by UI |
+| M3-H-NEW-01 | `'Yes — complete paper trail'` (label) | `'yes'` | Actual select value stored by UI |
+| M3-I-06 | `'3'` (PT employees) | `'650000'` | Engine uses this key as Year 3 revenue — was producing $3 Y3, making business look marginal ($3/$85K = 0×) |
+| M3-I-04 | `'75000'` (5 chars) | Full job title list | Engine's `roleList.length > 10` check failed on dollar amount |
+| M3-G-BANK | missing | US business bank account confirmation | D-10 bank account evidence |
+| M3-I-BASIS | missing | Full projection basis narrative | Semantic eval `projection_basis` field checks this key |
+| M3-H-FUNDS-DETAIL | missing | Full funds chain narrative | Semantic eval `source_of_funds` field checks this key |
+| M3-A-23 | missing | Clean visa history statement | D-15 immigration compliance |
+
+**Additional keys seeded:** M3-E-NEW-01/02 (ownership docs for D-13), M3-K-NEW-01 (market data for D-06), M3-I-NEW-01 (hiring timeline), M3-I-NEW-02 (projection basis), M3-I-02 (0 current employees, pre-start), M3-G-NEW-01 (business license), M3-I-03 (6 FT employees Y1).
+
+**Profile C now seeds 83 Module 3 answers** (up from 72). All keys cross-checked against every `getAnswer()` call in gap-analysis-engine.ts.
+
+**Verified gap analysis result (Profile C):**
+- Score: **67/100**
+- Critical risks (2 — both legitimate): D-05 (no business plan document uploaded), D-08 (no simulator sessions)
+- Moderate risks (6): D-03 (no bank docs uploaded yet — correct), D-10 (pre-start + license docs moderate), others
+- Low risks (7): D-01 (investment substantial), D-02 (funds deployed ✓), D-04 ($650K Y3 / $85K household = 7.6× ✓), D-06 (projections backed ✓), D-07 (6 employees + roles ✓)
+- Evidence categories: Investment Amount 100 STRONG, Employment Creation 100 STRONG, Business Operations 75 STRONG, Source of Funds 68 GOOD, Business Plan 62 GOOD, Management Role 37 NEEDS WORK (legitimate — no simulator sessions)
+
+**Key decisions:**
+- `operational_status` column does NOT exist in `applications` table — do not attempt to seed it. Engine infers from M3-G-08 answer.
+- Select fields store `value` attributes (`'yes'`), not label text — engine must check string equality, not `parseAmount()`.
+- Semantic eval (`/api/gap-analysis/semantic-eval`) uses a separate key set from the main engine — both must be seeded.
+
+**Build:** clean. Commits: b45ccba (engine D-10 fix), earlier commits in Session 47 for D-02/D-03.
 
 ---
 
