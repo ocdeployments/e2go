@@ -144,11 +144,11 @@ function GapAnalysisInner() {
         ] = await Promise.all([
           supabase
             .from('applications')
-            .select('business_name, business_category, operational_status, target_state, principal_name, simulator_sessions_used')
+            .select('business_name, principal_name, simulator_sessions_used')
             .eq('id', resolvedId).eq('user_id', user.id).single(),
           supabase.from('answers').select('question_key, answer_value').eq('application_id', resolvedId),
           supabase.from('application_documents').select('detected_document_type, user_selected_document_type').eq('application_id', resolvedId),
-          supabase.from('case_briefs').select('substantiality_score, marginality_score').eq('application_id', resolvedId).order('created_at', { ascending: false }).limit(1).maybeSingle(),
+          supabase.from('case_briefs').select('substantiality_score').eq('application_id', resolvedId).order('created_at', { ascending: false }).limit(1).maybeSingle(),
           supabase.from('applications').select('simulator_sessions_used').eq('id', resolvedId).single(),
           supabase.from('simulator_sessions').select('inconsistency_count').eq('application_id', resolvedId).order('started_at', { ascending: false }).limit(1),
           supabase.from('case_profiles').select('archetype').eq('user_id', user.id).maybeSingle(),

@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
   // Verify ownership
   const { data: app } = await serviceSupabase
     .from('applications')
-    .select('user_id, business_name, business_category')
+    .select('user_id, business_name')
     .eq('id', applicationId)
     .single();
 
@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
       const prompt = `You are an E-2 visa reviewing officer evaluating a specific field in an application.
 
 Field: ${fieldDef.label}
-Business: ${app.business_name || 'Not specified'} (${app.business_category || 'category not specified'})
+Business: ${app.business_name || 'Not specified'}
 
 The officer question this field must answer: "${fieldDef.officerQuestion}"
 
