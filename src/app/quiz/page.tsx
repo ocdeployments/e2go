@@ -492,13 +492,11 @@ export default function QuizPage() {
             completed_at: new Date().toISOString(),
           });
 
-          // Track quiz completion lifecycle event
-          await supabase.from("application_lifecycle").insert({
-            application_id: null,
-            event: "quiz_completed",
+          // Mark quiz (module 0) complete in lifecycle
+          await supabase.from("application_lifecycle").upsert({
             user_id: loggedInUser.id,
-            created_at: new Date().toISOString(),
-          });
+            module0_completed_at: new Date().toISOString(),
+          }, { onConflict: "user_id" });
         } catch {
           // ignore
         } finally {
