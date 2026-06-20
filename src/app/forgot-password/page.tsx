@@ -1,19 +1,27 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 
-export default function ForgotPassword() {
+function ForgotPasswordForm() {
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (searchParams.get('error') === 'expired') {
+      setError("That reset link has expired. Please request a new one.");
+    }
+  }, [searchParams]);
 
   const handleReset = async () => {
     if (!email) { setError("Enter your email address."); return; }
     const supabase = createBrowserSupabaseClient();
     const { error: err } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/login`,
+      redirectTo: `${window.location.origin}/auth/callback?next=/reset-password`,
     });
     if (err) { setError(err.message); } else { setSent(true); }
   };
@@ -60,5 +68,17 @@ export default function ForgotPassword() {
         )}
       </div>
     </main>
+  );
+}
+
+export default function ForgotPassword() {
+  return (
+    <Suspense fallback={
+      <main style={{ minHeight: "100vh", background: "#0a0a0a", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ width: "32px", height: "32px", border: "2px solid #C9A84C", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 1s linear infinite" }} />
+      </main>
+    }>
+      <ForgotPasswordForm />
+    </Suspense>
   );
 }
