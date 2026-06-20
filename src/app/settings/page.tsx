@@ -83,6 +83,34 @@ export default function SettingsPage() {
           </p>
         </section>
 
+        {/* Data export section — PIPEDA / GDPR right to portability */}
+        <section style={{ padding: '28px', border: '1px solid rgba(201,168,76,0.12)', background: 'rgba(201,168,76,0.02)', marginBottom: '24px' }}>
+          <h2 style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontWeight: 300, fontSize: '20px', color: '#f5f0e8', marginBottom: '8px' }}>
+            Download your data
+          </h2>
+          <p style={{ fontSize: '13px', color: 'rgba(245,240,232,0.45)', lineHeight: 1.7, marginBottom: '20px' }}>
+            Download a copy of all personal data E2go holds about you — quiz results, case file answers,
+            simulator sessions, consent records, and payment history. Provided as a JSON file.
+          </p>
+          <a
+            href="/api/account/export"
+            download
+            style={{
+              display: 'inline-block',
+              padding: '10px 24px',
+              background: 'transparent',
+              border: '1px solid rgba(201,168,76,0.35)',
+              color: 'rgba(201,168,76,0.8)',
+              fontSize: '13px',
+              cursor: 'pointer',
+              fontFamily: "'DM Sans', sans-serif",
+              textDecoration: 'none',
+            }}
+          >
+            Export my data
+          </a>
+        </section>
+
         {/* Data & privacy section */}
         <section style={{ padding: '28px', border: '1px solid rgba(239,68,68,0.15)', background: 'rgba(239,68,68,0.02)' }}>
           <h2 style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontWeight: 300, fontSize: '20px', color: '#f5f0e8', marginBottom: '8px' }}>
