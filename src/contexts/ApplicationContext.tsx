@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
 import { createBrowserSupabaseClient } from '@/lib/supabase';
 
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
@@ -27,7 +27,7 @@ export function ApplicationProvider({ children, applicationId }: { children: Rea
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [debounceTimer, setDebounceTimer] = useState<NodeJS.Timeout | null>(null);
+  const debounceTimers = useRef<Record<string, NodeJS.Timeout>>({});
 
   const navigationBlocked = saveStatus === 'saving';
 
@@ -120,36 +120,28 @@ export function ApplicationProvider({ children, applicationId }: { children: Rea
     }
   }, [applicationId]);
 
-  // Set answer with debounce
+  // Set answer with per-key debounce — each key gets its own timer so rapid
+  // changes across multiple fields don't cancel each other's pending saves.
   const setAnswer = useCallback((key: string, value: string | string[] | number | null, source?: AnswerSource) => {
-    // Update local state immediately
     setAnswers((prev) => ({ ...prev, [key]: value }));
     if (source) {
       setAnswerSources((prev) => ({ ...prev, [key]: source }));
     }
     setError(null);
 
-    // Clear existing timer
-    if (debounceTimer) {
-      clearTimeout(debounceTimer);
-    }
-
-    // Debounce save by 800ms
-    const timer = setTimeout(() => {
+    if (debounceTimers.current[key]) clearTimeout(debounceTimers.current[key]);
+    debounceTimers.current[key] = setTimeout(() => {
       saveAnswer(key, value, source);
     }, 800);
+  }, [saveAnswer]);
 
-    setDebounceTimer(timer);
-  }, [debounceTimer, saveAnswer]);
-
-  // Cleanup timer on unmount
+  // Cleanup all pending timers on unmount
   useEffect(() => {
+    const timers = debounceTimers.current;
     return () => {
-      if (debounceTimer) {
-        clearTimeout(debounceTimer);
-      }
+      Object.values(timers).forEach(clearTimeout);
     };
-  }, [debounceTimer]);
+  }, []);
 
   return (
     <ApplicationContext.Provider
