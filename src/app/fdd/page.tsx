@@ -49,7 +49,8 @@ function AnalysisCard({ analysis }: { analysis: FddAnalysis }) {
   return (
     <button
       onClick={handleClick}
-      className="w-full text-left border border-white/10 rounded-xl p-5 hover:border-white/20 hover:bg-white/2 transition-all"
+      className="w-full text-left border border-white/10 p-5 hover:border-white/20 hover:bg-white/2 transition-all"
+      style={{ borderRadius: 0 }}
     >
       <div className="flex items-start justify-between mb-4">
         <div>
@@ -124,7 +125,8 @@ export default function FddIndexPage() {
           </div>
           <button
             onClick={() => router.push('/fdd/upload')}
-            className="bg-[#C9A84C] text-[#0a0a0a] font-semibold px-5 py-2.5 rounded-xl text-sm hover:bg-[#d4b55a] transition-colors shrink-0 self-start sm:self-auto"
+            className="bg-[#C9A84C] text-[#0a0a0a] font-semibold px-5 py-2.5 text-sm hover:bg-[#d4b55a] transition-colors shrink-0 self-start sm:self-auto"
+            style={{ borderRadius: 0 }}
           >
             + New analysis
           </button>
@@ -148,7 +150,8 @@ export default function FddIndexPage() {
             <p className="text-white/30 text-sm mb-8">Upload your first Franchise Disclosure Document to get started.</p>
             <button
               onClick={() => router.push('/fdd/upload')}
-              className="bg-[#C9A84C] text-[#0a0a0a] font-semibold px-8 py-3 rounded-xl text-sm hover:bg-[#d4b55a] transition-colors"
+              className="bg-[#C9A84C] text-[#0a0a0a] font-semibold px-8 py-3 text-sm hover:bg-[#d4b55a] transition-colors"
+              style={{ borderRadius: 0 }}
             >
               Analyse an FDD
             </button>
