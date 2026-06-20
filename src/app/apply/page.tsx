@@ -123,15 +123,16 @@ export default function ApplyPage() {
           return;
         }
 
-        // Load profile
+        // Load profile (table has first_name + last_name, not full_name)
         const { data: profile } = await supabase
           .from('profiles')
-          .select('full_name')
+          .select('first_name, last_name')
           .eq('id', user.id)
           .single();
 
-        if (profile?.full_name) {
-          setApplicantName(profile.full_name);
+        if (profile?.first_name) {
+          const full = [profile.first_name, profile.last_name].filter(Boolean).join(' ');
+          setApplicantName(full);
         }
 
         // Load latest application
@@ -188,18 +189,21 @@ export default function ApplyPage() {
         }
 
         // Load quiz session for data state detection
+        // quiz_sessions has no `answers` column — answers live in result_json.answers
+        // quiz_sessions has no `created_at` column — order by id instead
         const { data: quizSession } = await supabase
           .from('quiz_sessions')
-          .select('answers, completed_at')
+          .select('result_json, completed_at')
           .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
+          .order('id', { ascending: false })
           .limit(1)
           .single();
 
         if (quizSession) {
           setQuizCompleted(!!quizSession.completed_at);
 
-          const quizAnswers = quizSession.answers as Record<string, string> | null;
+          const resultJson = quizSession.result_json as { answers?: Record<string, string> } | null;
+          const quizAnswers = resultJson?.answers ?? null;
           if (quizAnswers) {
             if (quizAnswers['Q0-01'] && !nationality) {
               setNationality(quizAnswers['Q0-01']);
