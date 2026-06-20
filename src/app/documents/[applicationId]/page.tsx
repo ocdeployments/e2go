@@ -58,17 +58,12 @@ export default function DocumentsReviewPage() {
   const fetchDocuments = useCallback(async () => {
     try {
       setLoading(true);
-      const stored = localStorage.getItem("supabase_user");
-      const userId = stored ? JSON.parse(stored).id : null;
-      if (!userId) {
+      const res = await fetch(`/api/generate/documents/${applicationId}`);
+
+      if (res.status === 401) {
         setError("Not authenticated");
         return;
       }
-
-      const res = await fetch(`/api/generate/documents/${applicationId}`, {
-        headers: { Authorization: `Bearer ${userId}` },
-      });
-
       if (!res.ok) throw new Error("Failed to fetch documents");
 
       const data: DocumentListResponse = await res.json();
@@ -119,15 +114,9 @@ export default function DocumentsReviewPage() {
 
   const approveDocument = async (documentId: string) => {
     try {
-      const stored = localStorage.getItem("supabase_user");
-      const userId = stored ? JSON.parse(stored).id : null;
-
       await fetch(`/api/generate/documents/${applicationId}`, {
         method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${userId}`,
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ documentId, status: "approved" }),
       });
 
