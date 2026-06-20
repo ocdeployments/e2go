@@ -31,7 +31,8 @@ const SOLO_SECTIONS = [
       { label: 'Investor Bio', primary: false },
     ],
     route: 'story',
-    questionPrefixes: ['M3-A-', 'M3-D-'],
+    // M3-S1- = narrative questions; M3-A- = administrative/personal; QA-/QD- = document extraction keys
+    questionPrefixes: ['M3-S1-', 'M3-A-', 'QA-', 'QD-'],
   },
   {
     number: '02',
@@ -42,7 +43,8 @@ const SOLO_SECTIONS = [
       { label: 'Visa Category', primary: false },
     ],
     route: 'business',
-    questionPrefixes: ['M3-E-', 'M3-G-', 'M3-K-'],
+    // QE- = entity type; QK- = business description — document extraction aliases
+    questionPrefixes: ['M3-E-', 'M3-G-', 'M3-K-', 'QE-', 'QK-'],
   },
   {
     number: '03',
@@ -53,7 +55,8 @@ const SOLO_SECTIONS = [
       { label: 'Investment Proof', primary: false },
     ],
     route: 'investment',
-    questionPrefixes: ['M3-F-', 'M3-H-'],
+    // M3-I- = projection questions (revenue/employees); QF-/QH-/QI- = document extraction aliases
+    questionPrefixes: ['M3-F-', 'M3-H-', 'M3-I-', 'QF-', 'QH-', 'QI-'],
   },
   {
     number: '04',
@@ -63,7 +66,8 @@ const SOLO_SECTIONS = [
       { label: 'Qualifications', primary: true },
     ],
     route: 'qualifications',
-    questionPrefixes: ['M3-J-'],
+    // M3-Q- = qualifications; M3-V- = visa history; QJ- = document extraction alias
+    questionPrefixes: ['M3-Q-', 'M3-V-', 'QJ-'],
   },
   {
     number: '05',
@@ -84,7 +88,8 @@ const SOLO_SECTIONS = [
       { label: 'Non-Marginality', primary: true },
     ],
     route: 'ties',
-    questionPrefixes: ['M3-I-'],
+    // M3-T- = ties/non-marginality questions (was wrongly set to M3-I- before)
+    questionPrefixes: ['M3-T-'],
   },
 ];
 
@@ -101,15 +106,15 @@ export default function ApplyPage() {
   const [targetCity, setTargetCity] = useState<string | null>(null);
   const [investmentAmount, setInvestmentAmount] = useState<string | null>(null);
   const [applicationType, setApplicationType] = useState<'solo' | 'partnership' | 'cos'>('solo');
-  const [lastActiveSection, setLastActiveSection] = useState<string | null>(null);
-  const [lastActiveCluster, setLastActiveCluster] = useState<number | null>(null);
-  const [isReturning, setIsReturning] = useState(false);
+  const [lastActiveSection] = useState<string | null>(null);
+  const [lastActiveCluster] = useState<number | null>(null);
+  const [isReturning] = useState(false);
   const [hasDependents, setHasDependents] = useState(false);
   const [quizCompleted, setQuizCompleted] = useState(false);
-  const [preparationStatus, setPreparationStatus] = useState<PreparationStatus>('scratch');
+  const [preparationStatus] = useState<PreparationStatus>('scratch');
 
   const [answerCounts, setAnswerCounts] = useState<Record<string, number>>({});
-  const [prefillCounts, setPrefillCounts] = useState<Record<string, number>>({});
+  const [prefillCounts] = useState<Record<string, number>>({});
   const [priorityDismissed, setPriorityDismissed] = useState(false);
 
   useEffect(() => {

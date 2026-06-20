@@ -218,16 +218,16 @@ export default function BusinessPage() {
 
         const { data: existingAnswers } = await supabase
           .from('answers')
-          .select('question_key, answer_value, source')
+          .select('question_key, answer_value')
           .eq('application_id', appId);
 
         if (existingAnswers) {
           const answerMap: Record<string, BizAnswer> = {};
-          existingAnswers.forEach((row: { question_key: string; answer_value: string | string[] | number | null; source: string | null }) => {
+          existingAnswers.forEach((row: { question_key: string; answer_value: string | string[] | number | null }) => {
             if (row.answer_value !== null) {
               answerMap[row.question_key] = {
                 value: String(row.answer_value),
-                source: row.source as BizAnswer['source'],
+                source: null,
               };
             }
           });
@@ -248,15 +248,12 @@ export default function BusinessPage() {
 
   const saveAnswer = useCallback(async (key: string, value: string) => {
     if (!applicationId) return;
-    const source = answers[key]?.source === 'quiz' && value === answers[key]?.value
-      ? 'quiz' : answers[key]?.source === 'quiz' ? 'user_edited' : 'user_entry';
-
     setSaveStatus('saving');
     try {
       const res = await fetch('/api/answers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question_key: key, answer_value: value, application_id: applicationId, source }),
+        body: JSON.stringify({ question_key: key, answer_value: value, application_id: applicationId }),
       });
       if (!res.ok) throw new Error('Save failed');
       setSaveStatus('saved');
@@ -271,7 +268,7 @@ export default function BusinessPage() {
       ...prev,
       [key]: {
         value,
-        source: prev[key]?.source === 'quiz' ? 'user_edited' : prev[key]?.source || 'user_entry',
+        source: prev[key]?.source ?? null,
       },
     }));
     if (debounceRef.current[key]) clearTimeout(debounceRef.current[key]);

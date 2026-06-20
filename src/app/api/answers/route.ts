@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { question_key, answer_value, application_id, source } = body;
+    const { question_key, answer_value, application_id } = body;
 
     // Validate required fields
     if (!question_key || !application_id) {
@@ -45,6 +45,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Upsert to answers table
+    // Note: user_id and source columns require migrations 001/002 — omit until applied
     const { data, error } = await supabase
       .from('answers')
       .upsert(
@@ -52,9 +53,7 @@ export async function POST(request: NextRequest) {
           application_id,
           question_key,
           answer_value,
-          user_id: user.id,
           answered_at: new Date().toISOString(),
-          source: source || 'user_entry',
         },
         {
           onConflict: 'application_id,question_key',

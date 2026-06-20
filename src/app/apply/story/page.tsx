@@ -200,16 +200,16 @@ export default function StoryPage() {
 
         const { data: existingAnswers } = await supabase
           .from('answers')
-          .select('question_key, answer_value, source')
+          .select('question_key, answer_value')
           .eq('application_id', appId);
 
         if (existingAnswers) {
           const answerMap: Record<string, StoryAnswer> = {};
-          existingAnswers.forEach((row: { question_key: string; answer_value: string | string[] | number | null; source: string | null }) => {
+          existingAnswers.forEach((row: { question_key: string; answer_value: string | string[] | number | null }) => {
             if (row.answer_value !== null) {
               answerMap[row.question_key] = {
                 value: String(row.answer_value),
-                source: row.source as StoryAnswer['source'],
+                source: null,
               };
             }
           });
@@ -227,12 +227,6 @@ export default function StoryPage() {
   const saveAnswer = useCallback(async (key: string, value: string) => {
     if (!applicationId) return;
 
-    const source = answers[key]?.source === 'quiz' && value === answers[key]?.value
-      ? 'quiz'
-      : answers[key]?.source === 'quiz'
-        ? 'user_edited'
-        : 'user_entry';
-
     setSaveStatus('saving');
     try {
       const res = await fetch('/api/answers', {
@@ -242,7 +236,6 @@ export default function StoryPage() {
           question_key: key,
           answer_value: value,
           application_id: applicationId,
-          source,
         }),
       });
       if (!res.ok) throw new Error('Save failed');
@@ -258,7 +251,7 @@ export default function StoryPage() {
       ...prev,
       [key]: {
         value,
-        source: prev[key]?.source === 'quiz' ? 'user_edited' : prev[key]?.source || 'user_entry',
+        source: prev[key]?.source ?? null,
         originalQuizValue: prev[key]?.originalQuizValue,
       },
     }));

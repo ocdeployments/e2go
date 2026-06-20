@@ -186,6 +186,7 @@ export async function POST(request: NextRequest) {
             );
 
             // Store extracted answers in the answers table
+            // Note: confidence, source_document_type, source columns require migration 003 — omit until applied
             for (const field of validFields) {
               if (field.confidence === 'low') continue; // Skip low-confidence extractions
 
@@ -197,9 +198,6 @@ export async function POST(request: NextRequest) {
                     question_key: field.question_id,
                     answer_value: field.value,
                     answered_at: new Date().toISOString(),
-                    confidence: field.confidence,
-                    source_document_type: doc.document_type,
-                    source: 'user_entry',
                   },
                   { onConflict: 'application_id,question_key' }
                 );
