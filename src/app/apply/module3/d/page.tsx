@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import DOMPurify from 'dompurify';
 import { createBrowserSupabaseClient } from '@/lib/supabase';
 
 type ScreenState = 'intro' | 'question' | 'generation' | 'completion' | 'resume';
@@ -525,7 +526,7 @@ export default function TabDPage() {
               <div className="mt-8">
                 <div className="bg-white rounded-lg p-6 mb-6" style={{ maxHeight: '400px', overflowY: 'auto' }}>
                   <div style={{ fontFamily: 'Times New Roman, serif', fontSize: '14px', lineHeight: '1.8', color: '#000' }}>
-                    <div dangerouslySetInnerHTML={{ __html: generatedLetter.replace(/\n/g, '<br/>') }} />
+                    <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(generatedLetter.replace(/\n/g, '<br/>'), { ALLOWED_TAGS: ['br', 'p', 'strong', 'em', 'b', 'i'], ALLOWED_ATTR: [] }) }} />
                   </div>
                 </div>
 
