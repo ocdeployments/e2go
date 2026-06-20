@@ -623,6 +623,33 @@ function ResultsPageInner() {
           </div>
 
 
+          {/* ─── Flags — immediately below chips ───────────────────────────── */}
+          {flagsToShow.length > 0 && (
+            <div style={{ marginTop: "16px", marginBottom: "8px" }}>
+              <div style={{ fontSize: "10px", letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(201,168,76,0.5)", marginBottom: "6px" }}>
+                {flagsToShow.length === 1 ? "One area to address" : `${flagsToShow.length} areas to address`}
+              </div>
+              <div style={{ fontSize: "13px", color: "rgba(245,240,232,0.35)", marginBottom: "12px", lineHeight: 1.5 }}>
+                Your application is still viable — these are preparation priorities, not disqualifiers.
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                {flagsToShow.map(({ code, info, isAttorney }) => (
+                  <div key={code} style={{ display: "flex", gap: "12px", padding: "14px 16px", border: `1px solid ${isAttorney ? "rgba(239,100,100,0.25)" : "rgba(239,159,39,0.25)"}`, background: isAttorney ? "rgba(239,100,100,0.04)" : "rgba(239,159,39,0.04)" }}>
+                    <div style={{ fontSize: "16px", color: isAttorney ? "rgba(239,100,100,0.8)" : "rgba(239,159,39,0.8)", flexShrink: 0, marginTop: "1px" }}>{isAttorney ? "⚖" : "!"}</div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: "13px", fontWeight: 500, color: isAttorney ? "rgba(239,100,100,0.95)" : "rgba(239,159,39,0.95)", marginBottom: "3px" }}>{info.plain_language}</div>
+                      <div style={{ fontSize: "12px", color: "rgba(245,240,232,0.45)", lineHeight: 1.6, marginBottom: "6px" }}>{personalizedExplanations[code] || info.why_it_matters}</div>
+                      {data.answers?.[info.question_id] && (
+                        <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.3)", marginBottom: "6px" }}>Your answer: &ldquo;{Array.isArray(data.answers[info.question_id]) ? (data.answers[info.question_id] as string[]).join(", ") : String(data.answers[info.question_id])}&rdquo;</div>
+                      )}
+                      <a href={`/quiz?edit=${info.question_id}`} style={{ fontSize: "11px", color: "#C9A84C", textDecoration: "underline" }}>{info.edit_label} →</a>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {verificationState === 'verified' && !isLoggedIn && (
             <div style={{ fontSize: "12px", color: "#5DCAA5", marginBottom: "12px" }}>✓ Email verified</div>
           )}
@@ -645,32 +672,25 @@ function ResultsPageInner() {
 
       <div className="results-page-inner" style={{ maxWidth: "760px", margin: "0 auto", padding: "0 40px" }}>
 
-        {/* ─── ZONE 2: Flags — all material flags, compact ───────────────────── */}
-        {flagsToShow.length > 0 && (
-          <div style={{ padding: "36px 0", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
-            <div style={{ fontSize: "10px", letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(201,168,76,0.5)", marginBottom: "6px" }}>
-              {flagsToShow.length === 1 ? "One area to address" : `${flagsToShow.length} areas to address`}
-            </div>
-            <div style={{ fontSize: "13px", color: "rgba(245,240,232,0.35)", marginBottom: "16px", lineHeight: 1.5 }}>
-              Your application is still viable — these are preparation priorities, not disqualifiers.
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-              {flagsToShow.map(({ code, info, isAttorney }) => (
-                <div key={code} style={{ display: "flex", gap: "12px", padding: "14px 16px", border: `1px solid ${isAttorney ? "rgba(239,100,100,0.25)" : "rgba(239,159,39,0.25)"}`, background: isAttorney ? "rgba(239,100,100,0.04)" : "rgba(239,159,39,0.04)" }}>
-                  <div style={{ fontSize: "16px", color: isAttorney ? "rgba(239,100,100,0.8)" : "rgba(239,159,39,0.8)", flexShrink: 0, marginTop: "1px" }}>{isAttorney ? "⚖" : "!"}</div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: "13px", fontWeight: 500, color: isAttorney ? "rgba(239,100,100,0.95)" : "rgba(239,159,39,0.95)", marginBottom: "3px" }}>{info.plain_language}</div>
-                    <div style={{ fontSize: "12px", color: "rgba(245,240,232,0.45)", lineHeight: 1.6, marginBottom: "6px" }}>{personalizedExplanations[code] || info.why_it_matters}</div>
-                    {data.answers?.[info.question_id] && (
-                      <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.3)", marginBottom: "6px" }}>Your answer: &ldquo;{Array.isArray(data.answers[info.question_id]) ? (data.answers[info.question_id] as string[]).join(", ") : String(data.answers[info.question_id])}&rdquo;</div>
-                    )}
-                    <a href={`/quiz?edit=${info.question_id}`} style={{ fontSize: "11px", color: "#C9A84C", textDecoration: "underline" }}>{info.edit_label} →</a>
-                  </div>
-                </div>
-              ))}
-            </div>
+        {/* ─── Editorial hook — between chips and flags ───────────────────── */}
+        <div style={{ padding: "48px 0", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
+          <div style={{ width: "28px", height: "1px", background: "rgba(201,168,76,0.4)", marginBottom: "28px" }} />
+          <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontWeight: 300, lineHeight: 1.85 }}>
+            <p style={{ fontSize: "19px", color: "rgba(245,240,232,0.6)", margin: "0 0 18px" }}>
+              You&apos;ve done the research. Talked to a few people. Your funds are ready.
+            </p>
+            <p style={{ fontSize: "22px", color: "#f5f0e8", fontStyle: "italic", margin: "0 0 18px" }}>
+              And yet — one more question. One more article. One more person to ask.
+            </p>
+            <p style={{ fontSize: "19px", color: "rgba(245,240,232,0.6)", margin: "0 0 18px" }}>
+              That&apos;s not laziness. That&apos;s fear of the process.
+            </p>
+            <p style={{ fontSize: "19px", color: "rgba(245,240,232,0.75)", margin: 0 }}>
+              <span style={{ color: "#C9A84C" }}>E2go removes it.</span>{" "}
+              We get you to the USA faster than you thought possible — at a fraction of what an immigration attorney would charge.
+            </p>
           </div>
-        )}
+        </div>
 
         {/* ─── ZONE 4: Package CTA — full-width conversion block ─────────────── */}
         <div style={{ padding: "40px 0", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
@@ -678,13 +698,6 @@ function ResultsPageInner() {
 
             <div style={{ fontSize: "13px", fontWeight: 500, color: "#f5f0e8", marginBottom: "4px" }}>Your case is ready. Are You?</div>
             <div style={{ fontSize: "10px", letterSpacing: "0.16em", textTransform: "uppercase", color: "rgba(201,168,76,0.65)", marginBottom: "20px" }}>E-2 application package · {pricing.tier}</div>
-
-            <div style={{ fontSize: "13px", color: "rgba(245,240,232,0.5)", lineHeight: 1.9, marginBottom: "28px" }}>
-              You&apos;ve done the research. Talked to a few people. Your funds are ready.<br /><br />
-              And yet — one more question. One more article. One more person to ask.<br /><br />
-              That&apos;s not laziness. That&apos;s fear of the process.<br /><br />
-              E2go removes it. We get you to the USA faster than you thought possible — at a fraction of what an immigration attorney would charge.
-            </div>
 
             <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: "24px", flexWrap: "wrap", gap: "16px" }}>
               <div>
