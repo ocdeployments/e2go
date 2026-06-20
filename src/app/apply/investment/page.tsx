@@ -187,6 +187,17 @@ export default function InvestmentPage() {
   const debounceRef = useRef<Record<string, NodeJS.Timeout>>({});
 
   useEffect(() => {
+    const HASH_TO_CLUSTER: Record<string, string> = {
+      'investment-overview': 'cluster-1',
+      'source-of-funds': 'cluster-2',
+      'paper-trail': 'cluster-3',
+      'projections': 'cluster-4',
+    };
+    const hash = window.location.hash.slice(1);
+    if (HASH_TO_CLUSTER[hash]) setActiveClusterId(HASH_TO_CLUSTER[hash]);
+  }, []);
+
+  useEffect(() => {
     const loadData = async () => {
       try {
         const supabase = createBrowserSupabaseClient();

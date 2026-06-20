@@ -186,6 +186,18 @@ export default function QualificationsPage() {
   const debounceRef = useRef<Record<string, NodeJS.Timeout>>({});
 
   useEffect(() => {
+    const HASH_TO_CLUSTER: Record<string, string> = {
+      'background': 'cluster-1',
+      'experience': 'cluster-2',
+      'role': 'cluster-3',
+      'visa-history': 'cluster-4',
+      'interview-prep': 'cluster-5',
+    };
+    const hash = window.location.hash.slice(1);
+    if (HASH_TO_CLUSTER[hash]) setActiveCluster(HASH_TO_CLUSTER[hash]);
+  }, []);
+
+  useEffect(() => {
     const loadData = async () => {
       try {
         const supabase = createBrowserSupabaseClient();

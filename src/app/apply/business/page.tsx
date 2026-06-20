@@ -185,6 +185,20 @@ export default function BusinessPage() {
   const debounceRef = useRef<Record<string, NodeJS.Timeout>>({});
 
   useEffect(() => {
+    const HASH_TO_CLUSTER: Record<string, number> = {
+      'entity': 1,
+      'what-you-do': 2,
+      'operations': 3,
+      'licenses': 4,
+      'startup-costs': 6,
+      'market': 7,
+      'growth': 8,
+    };
+    const hash = window.location.hash.slice(1);
+    if (HASH_TO_CLUSTER[hash] !== undefined) setActiveCluster(HASH_TO_CLUSTER[hash]);
+  }, []);
+
+  useEffect(() => {
     const loadData = async () => {
       try {
         const supabase = createBrowserSupabaseClient();
