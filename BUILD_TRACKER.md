@@ -1,6 +1,6 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 19, 2026 (Session 40) — Phase G Security: HSTS header, XSS fix (DOMPurify), PIPEDA data export, GitHub Actions security workflow, pre-commit secret scan, Cloudflare Turnstile CAPTCHA on signup. Build clean (119 pages). 5 commits.
+**Last Updated:** June 19, 2026 (Session 40) — Phase G Security complete. HSTS, XSS fix, PIPEDA data export, GH Actions security pipeline, pre-commit secret scan, Cloudflare Turnstile CAPTCHA. Build clean (119 pages). Owner confirmed: Upstash Redis ✅, Storage bucket private ✅. Turnstile keys pending.
 **App Name:** E2go.app
 **Stack:** Next.js 14 · TypeScript · Tailwind CSS · Supabase · Claude API
 **Dev URL:** https://e2go-git-dev-ocdeployments-projects.vercel.app
@@ -2184,6 +2184,11 @@ These cannot be done by code — require owner access to Supabase, Stripe, or co
 | ~~Apply migration 004_answers_source_update.sql~~ | ~~🟡 MEDIUM~~ | ✅ CLOSED — file never existed; code doesn't write that value to DB. No action needed. |
 | ~~Configure Stripe webhook for production URL~~ | ~~🟡 MEDIUM~~ | ✅ DONE June 16, 2026 |
 | ~~Configure Upstash Redis in Vercel env vars~~ | ~~🟡 MEDIUM~~ | ✅ DONE — both UPSTASH_REDIS_REST_URL and TOKEN confirmed set June 16, 2026 |
+| ~~Supabase Storage bucket private~~ | ~~🟡 MEDIUM~~ | ✅ CONFIRMED June 19, 2026 — application-documents bucket is Private |
+| **Cloudflare Turnstile keys** | 🟡 MEDIUM | dash.cloudflare.com → Turnstile → Add site → add NEXT_PUBLIC_CF_TURNSTILE_SITE_KEY + CF_TURNSTILE_SECRET_KEY to Vercel env |
+| **CRON_SECRET env var in Vercel** | 🟡 MEDIUM | Any random string; activates nightly CaseProfile rebuild at 02:00 UTC |
+| **Confirm FDD pricing** | 🟡 MEDIUM | $297 placeholder currently in teaser — confirm price to unblock FDD freemium gate wiring |
+| **Run FAQ seed scripts** (OPENAI_API_KEY required) | 🟠 LOW | Add OPENAI_API_KEY to .env.local + Vercel, then: `npx tsx scripts/seed-faq-corpus.ts` + `seed-faq-kb-chunks.ts` |
 
 ### COMBINED SQL BLOCK — Apply in Supabase SQL Editor
 
@@ -3980,12 +3985,10 @@ Full security audit against OWASP API Top 10, PIPEDA, GDPR, and Tier 1/2 checkli
 | PCI DSS | ✅ NOT APPLICABLE | — | Stripe handles all card data; never touches E2go servers |
 | SOC 2 | ❌ DEFERRED | — | Not required at B2C stage; revisit at $1M ARR |
 
-### Phase G — Owner Actions Required
-1. **Cloudflare Turnstile** — go to dash.cloudflare.com → Turnstile → Add site → get Site Key + Secret Key
-   - Add `NEXT_PUBLIC_CF_TURNSTILE_SITE_KEY` (public) to Vercel env
-   - Add `CF_TURNSTILE_SECRET_KEY` (private) to Vercel env
-   - CAPTCHA widget will appear on signup automatically once keys are set
-2. **Upstash Redis** — verify UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN are set in Vercel env
-   - Without these, all rate limiting fails open (allows everything) in production
-3. **Supabase Storage bucket** — confirm `application-documents` bucket is Private (not Public) in Supabase Dashboard → Storage
+### Phase G — Owner Actions Status
+| Action | Status | Notes |
+|---|---|---|
+| Upstash Redis env vars in Vercel | ✅ CONFIRMED | UPSTASH_REDIS_REST_URL + TOKEN set — rate limiting active in prod |
+| Supabase Storage bucket private | ✅ CONFIRMED | application-documents bucket is Private |
+| Cloudflare Turnstile keys | ⏳ PENDING | dash.cloudflare.com → Turnstile → Add site. Add NEXT_PUBLIC_CF_TURNSTILE_SITE_KEY + CF_TURNSTILE_SECRET_KEY to Vercel |
 
