@@ -1,6 +1,6 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 19, 2026 (Session 39) — Phase F continued: cross-session coaching memory depth (last 2 sessions, trend analysis), evaluator pattern tracking in text-mode live evals, scheduled nightly CaseProfile rebuild (Vercel Cron 02:00 UTC). Build clean (119 pages). Requires CRON_SECRET env var on Vercel.
+**Last Updated:** June 19, 2026 (Session 40) — Phase G Security: HSTS header, XSS fix (DOMPurify), PIPEDA data export, GitHub Actions security workflow, pre-commit secret scan, Cloudflare Turnstile CAPTCHA on signup. Build clean (119 pages). 5 commits.
 **App Name:** E2go.app
 **Stack:** Next.js 14 · TypeScript · Tailwind CSS · Supabase · Claude API
 **Dev URL:** https://e2go-git-dev-ocdeployments-projects.vercel.app
@@ -3958,4 +3958,34 @@ Resolved all ESLint errors to achieve clean build (119 pages, zero errors):
 1. FDD freemium payment gate — wire `hasAccess` to Stripe (owner must confirm price)
 2. Add CRON_SECRET to Vercel env — activates nightly profile rebuild
 3. FAQ seeds — add OPENAI_API_KEY to .env.local and run scripts (unblocks dynamic KB for 2 engines)
+
+---
+
+### Phase G — Security (Session 40)
+
+Full security audit against OWASP API Top 10, PIPEDA, GDPR, and Tier 1/2 checklist.
+
+| Item | Status | Commit | Notes |
+|---|---|---|---|
+| HSTS header | ✅ COMPLETE | 7d814de | max-age=63072000; includeSubDomains; preload — Strict-Transport-Security added to all routes in next.config.mjs |
+| XSS fix — module3/d dangerouslySetInnerHTML | ✅ COMPLETE | 19d2fa2 | DOMPurify sanitizes AI-generated letter HTML; only br/p/strong/em/b/i allowed |
+| PIPEDA/GDPR data export | ✅ COMPLETE | 86ac03c | GET /api/account/export returns JSON with all user data; download link in Settings |
+| GitHub Actions security workflow | ✅ COMPLETE | 564653d | npm audit (weekly + on push), TypeScript check, Trufflehog verified secret scan, build check |
+| Pre-commit secret scan | ✅ COMPLETE | 564653d | .husky/pre-commit blocks commits containing live API key patterns |
+| Cloudflare Turnstile CAPTCHA (signup) | ✅ COMPLETE | 01ff7dc | Graceful degradation — disabled until owner provisions CF Turnstile keys |
+| IDOR audit (all applicationId routes) | ✅ VERIFIED | — | All 8 routes confirmed safe: explicit user_id check OR .eq('user_id', user.id) scoping |
+| SQL injection | ✅ NOT APPLICABLE | — | Supabase parameterized queries throughout; no raw SQL construction |
+| SSRF | ✅ NOT APPLICABLE | — | No user-controlled URL fetching server-side |
+| Clickjacking | ✅ ALREADY DONE | — | X-Frame-Options: DENY in next.config.mjs |
+| PCI DSS | ✅ NOT APPLICABLE | — | Stripe handles all card data; never touches E2go servers |
+| SOC 2 | ❌ DEFERRED | — | Not required at B2C stage; revisit at $1M ARR |
+
+### Phase G — Owner Actions Required
+1. **Cloudflare Turnstile** — go to dash.cloudflare.com → Turnstile → Add site → get Site Key + Secret Key
+   - Add `NEXT_PUBLIC_CF_TURNSTILE_SITE_KEY` (public) to Vercel env
+   - Add `CF_TURNSTILE_SECRET_KEY` (private) to Vercel env
+   - CAPTCHA widget will appear on signup automatically once keys are set
+2. **Upstash Redis** — verify UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN are set in Vercel env
+   - Without these, all rate limiting fails open (allows everything) in production
+3. **Supabase Storage bucket** — confirm `application-documents` bucket is Private (not Public) in Supabase Dashboard → Storage
 
