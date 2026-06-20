@@ -4008,13 +4008,13 @@ Resolved all ESLint errors to achieve clean build (119 pages, zero errors):
 | S3 | `/login` + `/signup` + `/forgot-password` | ✅ Complete | 4 bugs found (see Session 46) | ✅ All fixed |
 | S4 | `/dashboard` + `/documents/[id]` + cross-app deadlock | ✅ Complete | 10 bugs total (5 in Session 44, 5 in Session 47) | ✅ All fixed |
 | S5 | `/apply/module1` | ✅ Complete | 2 bugs found (see Session 46) | ✅ All fixed |
-| S6 | `/apply` hub + `/apply/module2` | ⏳ | — | — |
-| S7 | `/apply/business` | ⏳ | — | — |
-| S8 | `/apply/investment` | ⏳ | — | — |
-| S9 | `/apply/family` | ⏳ | — | — |
-| S10 | `/apply/ties` | ⏳ | — | — |
-| S11 | `/apply/story` | ⏳ | — | — |
-| S12 | `/apply/qualifications` | ⏳ | — | — |
+| S6 | `/apply` hub + `/apply/module2` | ✅ Complete | 11 bugs found (see Session 49) | ✅ All fixed |
+| S7 | `/apply/business` | ⏳ DEFERRED | — | — |
+| S8 | `/apply/investment` | ✅ Complete | 1 bug found (see Session 50) | ✅ Fixed |
+| S9 | `/apply/family` | ✅ Complete | 1 bug found (see Session 50) | ✅ Fixed |
+| S10 | `/apply/ties` | ✅ Complete | 2 bugs found (see Session 50) | ✅ Fixed |
+| S11 | `/apply/story` | ✅ Complete | 0 bugs (see Session 50) | — |
+| S12 | `/apply/qualifications` | ✅ Complete | 1 bug found (see Session 50) | ✅ Fixed |
 | S13 | `/apply/upload` → `/upload/review` → `/upload/gaps` | ⏳ | — | — |
 | S14 | `/apply/module3/a–l` | ⏳ | — | — |
 | S15 | `/apply/module4` + `/apply/checklist` + `/apply/calendar` + `/apply/overview` | ⏳ | — | — |
@@ -4114,6 +4114,32 @@ Resolved all ESLint errors to achieve clean build (119 pages, zero errors):
 1. Apply `docs/migrations/002_module_state_columns.sql` — unlocks last_active_section resume logic + module2 completion writes
 2. Apply `docs/migrations/001_case_file_columns.sql` — unlocks source column pre-fill tracking
 3. Apply `docs/migrations/003_document_uploads.sql` — unlocks preparation_status document upload routing
+
+---
+
+### Session 50 — S8: /apply/investment Full Audit (June 20, 2026)
+
+**Tested:** All 5 clusters, cluster navigation, save, NEXT/Back navigation, hash routing.
+
+**Bug found and fixed (commit pending):**
+
+| # | Bug | File | Fix |
+|---|---|---|---|
+| 1 | `renderQuestions()` had no `multi` case — questions with `type: 'multi'` (`M3-F-04`, `M3-F-05`, `M3-H-08`, `M3-I-03`, `M3-I-10`) fell through to `TextInput`, displaying a raw JSON array string instead of clickable checkboxes | `apply/investment/page.tsx` | Added `multi` case: parses stored JSON array, renders `OptionButton` per option with toggle-on-click, saves as `JSON.stringify(selectedValues[])` |
+
+**Tested and confirmed correct:**
+- ✅ All 5 clusters render with correct content and data
+- ✅ Cluster navigation (sidebar buttons) switches panels
+- ✅ Single-select OptionButtons work
+- ✅ Multi-select now renders as checkboxes — save returns 200 OK
+- ✅ Investment health indicator (STRONG at 100%) renders
+- ✅ Advisory blocks fire conditionally (round-number warning, proportionality warning)
+- ✅ ProjectionTable renders in cluster 4
+- ✅ `NEXT: YOUR QUALIFICATIONS →` navigates to `/apply/qualifications`
+- ✅ `Back to case file` navigates to `/apply/business` (prevSectionPath — correct)
+- ✅ Hash navigation: `#investment-overview` → cluster 1, `#source-of-funds` → cluster 2, `#paper-trail` → cluster 3, `#projections` → cluster 4
+- ✅ `POST /api/answers → 200 OK` on every save
+- ✅ `application_lifecycle → 400` (expected — migration 002 pending)
 
 ---
 
