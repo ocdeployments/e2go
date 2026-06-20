@@ -5,6 +5,9 @@ on:
     branches: [main, dev]
   pull_request:
     branches: [main]
+  schedule:
+    # Weekly scan Monday 09:00 UTC — catches newly disclosed CVEs between pushes
+    - cron: '0 9 * * 1'
 
 jobs:
   dependency-audit:
@@ -56,6 +59,43 @@ jobs:
             exit 1
           fi
           echo "No hardcoded secrets found"
+
+  type-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm ci
+      - name: Create test env
+        run: |
+          cat > .env.local << 'EOF'
+          NEXT_PUBLIC_SUPABASE_URL=https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder_anon_key
+          OPENROUTER_API_KEY=placeholder
+          ANTHROPIC_API_KEY=placeholder
+          RESEND_API_KEY=placeholder
+          STRIPE_PUBLISHABLE_KEY=pk_test_placeholder
+          STRIPE_SECRET_KEY=sk_test_placeholder
+          STRIPE_WEBHOOK_SECRET=whsec_placeholder
+          GROQ_API_KEY=gsk_placeholder
+          EOF
+      - run: npx tsc --noEmit
+
+  trufflehog:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: TruffleHog verified secrets scan
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+          extra_args: --only-verified
 
   build-check:
     runs-on: ubuntu-latest
