@@ -1,6 +1,6 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 20, 2026 (Session 45) — S16 /gap-analysis complete. 4 bugs fixed: `business_category` ghost column in semantic-eval route, `marginality_score` ghost column blocking AI analysis display, hash-based tab navigation (9 D-codes now land on correct tabs), plus S1 quiz/results + apply hub fixes committed. Build clean.
+**Last Updated:** June 20, 2026 (Session 46) — S5 /apply/module1 complete. 2 bugs fixed: step 6 never saved (permanent spinner dead-end), Terms/Privacy links opened in same tab losing form state. Build clean. S6 (/apply hub + /apply/module2) is next sprint.
 **App Name:** E2go.app
 **Stack:** Next.js 14 · TypeScript · Tailwind CSS · Supabase · Claude API
 **Dev URL:** https://e2go-git-dev-ocdeployments-projects.vercel.app
@@ -4005,9 +4005,9 @@ Resolved all ESLint errors to achieve clean build (119 pages, zero errors):
 |---|---|---|---|---|
 | S1 | `/results` | ✅ Complete | 6 bugs found (see Session 43) | ✅ All fixed |
 | S2 | `/pricing` | 🔶 DEFERRED — prices changing, re-audit after pricing update | — | — |
-| S3 | `/login` + `/signup` + `/forgot-password` | ⏳ Next | — | — |
+| S3 | `/login` + `/signup` + `/forgot-password` | ✅ Complete | 4 bugs found (see Session 46) | ✅ All fixed |
 | S4 | `/dashboard` | ✅ Complete | 5 bugs found (see Session 44) | ✅ All fixed |
-| S5 | `/apply/module1` | ⏳ | — | — |
+| S5 | `/apply/module1` | ✅ Complete | 2 bugs found (see Session 46) | ✅ All fixed |
 | S6 | `/apply` hub + `/apply/module2` | ⏳ | — | — |
 | S7 | `/apply/business` | ⏳ | — | — |
 | S8 | `/apply/investment` | ⏳ | — | — |
@@ -4024,6 +4024,57 @@ Resolved all ESLint errors to achieve clean build (119 pages, zero errors):
 | S19 | `/generate/[id]` → `/documents/[id]` | ⏳ | — | — |
 | S20 | `/settings` | ⏳ | — | — |
 | S21 | `/learn/*` + `/support` + `/terms` + `/privacy` | ⏳ | — | — |
+
+---
+
+### Session 46 — S3: /login + /signup + /forgot-password Full Audit (June 20, 2026)
+
+**Bugs found and fixed (commits 389240d, 7f6a52b):**
+
+| # | Bug | File | Fix |
+|---|---|---|---|
+| 1 | Forgot-password `redirectTo` pointed to `/login` — Supabase sends user to login page with a token, but login page has no handler for password reset tokens. Flow was broken end-to-end | `forgot-password/page.tsx` | Redirects to `/auth/callback?next=/reset-password` |
+| 2 | No `/auth/callback` route existed — Supabase magic link / password reset codes were never exchanged for sessions | `src/app/auth/callback/route.ts` (NEW) | Server route: exchanges code for session, redirects to `next` param; expired codes → `/forgot-password?error=expired` |
+| 3 | No `/reset-password` page — users had nowhere to land after clicking a reset email | `src/app/reset-password/page.tsx` (NEW) | Full reset form: new password + confirm, session guard, expired-link state, success state |
+| 4 | Login page had 7× `console.log` debug statements in production and made a redundant `getSession()` call (signInData.session already available) | `login/page.tsx` | Removed all debug logs; use `signInData.session` directly for rememberMe |
+
+**Bonus fix (commit 7f6a52b):**
+- `/signup`: Terms of Service and Privacy Policy links now open `target="_blank"` — users no longer lose their signup form when clicking legal links
+
+**Seed script (commit a0c9da6):**
+- Added 50+ realistic Module 3 case file answers to James Windsor seed profile for meaningful gap analysis output
+
+**Build:** clean — 123 pages (reset-password added). Commits: 389240d, 7f6a52b, a0c9da6.
+
+---
+
+### Session 46 — Sprint 5: /apply/module1 Full Audit (June 20, 2026)
+
+**Tested:** All 6 steps of the Module 1 onboarding flow — application type, terms consent, CASL, referral consent, family composition, and application record creation.
+
+**Bugs found and fixed (commit a9e390d):**
+
+| # | Bug | File | Fix |
+|---|---|---|---|
+| 1 | Step 6 (application record creation) had no trigger — `saveApplicationRecord()` gated inside `handleNext()` checking `step===6`, but step 6 renders no button so the call never fired. User left on permanent spinner with no way to proceed. | `apply/module1/page.tsx` | Added `useEffect` that fires `void saveApplicationRecord()` when step reaches 6. Removed the dead `if (step === 6)` branch from `handleNext()`. |
+| 2 | Terms of Service and Privacy Policy links on step 2 opened in same tab — clicking to read them navigated away, losing all form state (application type, partner name/email, etc.) | `apply/module1/page.tsx` | Added `target="_blank" rel="noopener noreferrer"` to all 4 links on step 2 (both intro paragraph links and both checkbox label links). |
+
+**Tested and confirmed correct:**
+- ✅ Step 1 → 2 → 3 → 4 → 5: back/continue navigation works correctly
+- ✅ Step 1 Back → /dashboard
+- ✅ Step 1 solo/partnership toggle wires correctly; partnership requires partner name + email before enabling Continue
+- ✅ Step 2 Continue disabled until both checkboxes checked
+- ✅ Step 3 Continue disabled until CASL choice made
+- ✅ Step 4 referral consent optional — Continue always enabled
+- ✅ Step 5 family composition + spouse/children fields
+- ✅ PreFilledField component exists and is correctly imported
+- ✅ All DB columns exist in migrations: `consent_log`, `referral_consents`, `module_1_complete`, `working_target_date`, `family_composition`, `processing_path`, `module1_completed_at`
+- ✅ S3 Complete noted (other agent)
+
+**Known issue (not fixed — pre-fill gap):**
+- quiz_sessions does not store `family_type`, `partner_name`, `partner_email`, `spouse_name`, `spouse_dob` — these columns are never written by the quiz. Pre-fill on step 1 and step 5 silently falls back to empty. No crash — just no pre-fill from quiz data for these fields.
+
+**Build:** clean — 122 pages. Commit: a9e390d.
 
 ---
 
