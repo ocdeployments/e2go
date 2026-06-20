@@ -91,7 +91,7 @@ export default function ChecklistPage() {
             <svg className="w-6 h-6 text-[#C9A84C]" viewBox="0 0 24 24" fill="currentColor">
               <path d="M12 2L2 7v10l10 5 10-5V7L12 2z" />
             </svg>
-            <span className="text-xl font-semibold text-[#f5f0e8] font-['Cormorant_Garamond']">E2go.app</span>
+            <span className="text-xl font-medium text-[#f5f0e8] font-['Cormorant_Garamond']">E2go.app</span>
           </Link>
           <div className="flex items-center gap-4">
             <Link href="/dashboard" className="text-sm text-[#f5f0e8]/70 hover:text-[#C9A84C] transition-colors">
@@ -111,7 +111,7 @@ export default function ChecklistPage() {
               </svg>
               <span className="text-xs font-semibold uppercase tracking-wider">YOUR ROADMAP</span>
             </div>
-            <h1 className="text-3xl md:text-4xl font-semibold font-['Cormorant_Garamond'] text-[#f5f0e8] mb-4">
+            <h1 className="text-3xl md:text-4xl font-light font-['Cormorant_Garamond'] text-[#f5f0e8] mb-4">
               Application Checklist
             </h1>
             <p className="text-lg text-[#f5f0e8]/70 max-w-xl mx-auto">

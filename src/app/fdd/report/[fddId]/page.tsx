@@ -210,7 +210,7 @@ function FullReport({ analysis, report, onPrint }: {
       <div className={`rounded-2xl border ${cfg.border} ${cfg.bg} p-6 flex items-center justify-between`}>
         <div>
           <p className="text-white/40 text-xs uppercase tracking-widest mb-1">E-2 Compatibility</p>
-          <p className={`font-['Cormorant_Garamond'] text-3xl font-semibold ${cfg.color}`}>{compat}</p>
+          <p className={`font-['Cormorant_Garamond'] text-3xl font-light ${cfg.color}`}>{compat}</p>
         </div>
         <div className="text-right space-y-1">
           {ta?.overall_rating && (

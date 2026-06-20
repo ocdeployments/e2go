@@ -363,7 +363,7 @@ export default function FddScorePage() {
         <div className={`rounded-2xl border ${compat.border} ${compat.bg} p-6 flex items-center justify-between`}>
           <div>
             <p className="text-white/40 text-xs uppercase tracking-widest mb-1">Overall Rating</p>
-            <p className={`font-['Cormorant_Garamond'] text-3xl font-semibold ${compat.color}`}>
+            <p className={`font-['Cormorant_Garamond'] text-3xl font-light ${compat.color}`}>
               {compat.label}
             </p>
           </div>
