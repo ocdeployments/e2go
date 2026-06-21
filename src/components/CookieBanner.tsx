@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
 
 export default function CookieBanner() {
   const [showBanner, setShowBanner] = useState(false);
@@ -74,8 +73,10 @@ export default function CookieBanner() {
         >
           Accept
         </button>
-        <Link
+        <a
           href="/privacy"
+          target="_blank"
+          rel="noopener noreferrer"
           className="w-full sm:w-auto text-center px-5 py-2.5 text-sm font-medium transition-colors duration-200 border"
           style={{
             background: "transparent",
@@ -87,7 +88,7 @@ export default function CookieBanner() {
           }}
         >
           Learn more
-        </Link>
+        </a>
       </div>
     </div>
   );
