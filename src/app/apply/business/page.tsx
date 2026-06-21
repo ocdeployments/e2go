@@ -183,6 +183,7 @@ export default function BusinessPage() {
   const [isFranchise, setIsFranchise] = useState(false);
   const [startupCosts, setStartupCosts] = useState<Array<{ id: string; category: string; description: string; amount: string }>>([]);
   const debounceRef = useRef<Record<string, NodeJS.Timeout>>({});
+  const costsSaveRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const HASH_TO_CLUSTER: Record<string, number> = {
@@ -233,6 +234,15 @@ export default function BusinessPage() {
           });
           setAnswers(answerMap);
 
+          // Load startup costs from serialised JSON answer
+          const rawCosts = answerMap['M3-E-STARTUP-COSTS']?.value;
+          if (rawCosts) {
+            try {
+              const parsed = JSON.parse(rawCosts);
+              if (Array.isArray(parsed)) setStartupCosts(parsed);
+            } catch { /* ignore malformed */ }
+          }
+
           // Check franchise type
           const bizType = answerMap['M3-F-01']?.value;
           setIsFranchise(bizType?.toLowerCase().includes('franchise') || false);
@@ -245,6 +255,23 @@ export default function BusinessPage() {
     };
     loadData();
   }, []);
+
+  // Auto-save startup costs as JSON whenever they change
+  useEffect(() => {
+    if (!applicationId) return;
+    if (costsSaveRef.current) clearTimeout(costsSaveRef.current);
+    costsSaveRef.current = setTimeout(async () => {
+      await fetch('/api/answers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          question_key: 'M3-E-STARTUP-COSTS',
+          answer_value: JSON.stringify(startupCosts),
+          application_id: applicationId,
+        }),
+      });
+    }, 800);
+  }, [startupCosts, applicationId]);
 
   const saveAnswer = useCallback(async (key: string, value: string) => {
     if (!applicationId) return;
