@@ -999,3 +999,194 @@ export function scoreCase(
     topPriorities,
   };
 }
+
+// =============================================================================
+// REMEDIATION REGISTRY — what each D-code needs to reach LOW risk
+// =============================================================================
+
+export type FieldInputType = 'text' | 'number' | 'textarea' | 'select';
+
+export interface RemediationField {
+  key: string;
+  label: string;
+  inputType: FieldInputType;
+  options?: { value: string; label: string }[];
+  placeholder?: string;
+}
+
+export interface RemediationDoc {
+  docType: string;   // substring matched by hasDoc() — same tokens the engine uses
+  label: string;
+}
+
+export type RemediationMode = 'fields' | 'simulator' | 'structural';
+
+export interface DCodeRemediation {
+  code: string;
+  mode: RemediationMode;
+  lowRiskWhen: string;
+  fields: RemediationField[];
+  docs: RemediationDoc[];
+  simulatorNote?: string;
+  structuralExplanation?: string;
+}
+
+export const D_CODE_REMEDIATION: DCodeRemediation[] = [
+  {
+    code: 'D-01', mode: 'fields',
+    lowRiskWhen: 'Investment amount ≥ 75% of total enterprise cost',
+    fields: [
+      { key: 'M3-F-02', label: 'Total invested to date (USD)', inputType: 'number', placeholder: '150000' },
+      { key: 'M3-F-03', label: 'Total cost to establish the business (USD)', inputType: 'number', placeholder: '200000' },
+    ],
+    docs: [],
+  },
+  {
+    code: 'D-02', mode: 'fields',
+    lowRiskWhen: 'Funds confirmed spent or irrevocably committed on business expenses',
+    fields: [
+      { key: 'M3-F-NEW-01', label: 'Have the funds been spent or irrevocably committed on business expenses?',
+        inputType: 'select',
+        options: [{ value: 'yes', label: 'Yes — fully deployed' }, { value: 'partial', label: 'Partially deployed' }, { value: 'no', label: 'Not yet spent' }] },
+    ],
+    docs: [],
+  },
+  {
+    code: 'D-03', mode: 'fields',
+    lowRiskWhen: 'Complete paper trail confirmed + bank statements + wire transfer records uploaded',
+    fields: [
+      { key: 'M3-H-NEW-01', label: 'Can you trace the funds from their origin to the US business account?',
+        inputType: 'select',
+        options: [{ value: 'yes', label: 'Yes — fully traceable' }, { value: 'partial', label: 'Partially traceable' }, { value: 'no', label: 'No — gaps exist' }] },
+    ],
+    docs: [
+      { docType: 'bank', label: 'Bank statements (6–12 months)' },
+      { docType: 'wire', label: 'Wire transfer records' },
+    ],
+  },
+  {
+    code: 'D-04', mode: 'fields',
+    lowRiskWhen: 'Year 3 revenue ≥ 5× household income need, or ≥ 3 US employees projected',
+    fields: [
+      { key: 'M3-I-05', label: 'Full-time US employees hired in Year 1', inputType: 'number', placeholder: '2' },
+      { key: 'M3-I-06', label: 'Part-time US employees hired in Year 1', inputType: 'number', placeholder: '1' },
+      { key: 'M3-I-07', label: 'Planned roles for Year 1 hires', inputType: 'textarea', placeholder: 'e.g. Sales Associate (FT), Customer Service Rep (PT)' },
+      { key: 'M3-I-NEW-03', label: 'Annual household income needed in the US (USD)', inputType: 'number', placeholder: '80000' },
+    ],
+    docs: [],
+  },
+  {
+    code: 'D-05', mode: 'fields',
+    lowRiskWhen: 'Business plan document uploaded AND projection assumptions documented',
+    fields: [
+      { key: 'M3-I-NEW-02', label: 'What is the basis for your revenue projections?', inputType: 'textarea',
+        placeholder: 'e.g. FDD Item 19 system-wide averages, comparable business data, signed contracts, market research report' },
+    ],
+    docs: [
+      { docType: 'business_plan', label: 'Business plan document (PDF or DOCX)' },
+    ],
+  },
+  {
+    code: 'D-06', mode: 'fields',
+    lowRiskWhen: 'Year 1 revenue documented and projection assumptions on file',
+    fields: [
+      { key: 'M3-I-NEW-02', label: 'Basis for revenue projections (assumptions)', inputType: 'textarea',
+        placeholder: 'e.g. FDD Item 19, market research, signed LOIs, comparable businesses' },
+    ],
+    docs: [],
+  },
+  {
+    code: 'D-07', mode: 'fields',
+    lowRiskWhen: '≥ 2 US employees projected AND a written hiring plan on file',
+    fields: [
+      { key: 'M3-I-03', label: 'Current number of US employees', inputType: 'number', placeholder: '0' },
+      { key: 'M3-I-NEW-01', label: 'Hiring timeline — when will you hire and in what roles?', inputType: 'textarea',
+        placeholder: 'e.g. Month 3: Store Manager (FT). Month 6: 2 Sales Associates (FT).' },
+    ],
+    docs: [],
+  },
+  {
+    code: 'D-08', mode: 'simulator',
+    lowRiskWhen: 'At least 3 full interview simulator sessions completed',
+    fields: [],
+    docs: [],
+    simulatorNote: 'Complete at least 3 full interview sessions in the Simulator. The officer will ask questions from your own case file — rehearsal is the only reliable preparation.',
+  },
+  {
+    code: 'D-09', mode: 'simulator',
+    lowRiskWhen: 'Zero answer inconsistencies detected in the simulator',
+    fields: [],
+    docs: [],
+    simulatorNote: 'Run more simulator sessions — the coaching report flags verbal answers that conflict with your filed documents. Fix each flagged inconsistency before your appointment.',
+  },
+  {
+    code: 'D-10', mode: 'fields',
+    lowRiskWhen: 'Business is operational AND a signed commercial lease is on file',
+    fields: [
+      { key: 'M3-G-08', label: 'Current operational status of the business', inputType: 'select',
+        options: [
+          { value: 'operational', label: 'Operational — open and serving customers' },
+          { value: 'pre-opening', label: 'Pre-opening — lease signed, not yet open' },
+          { value: 'concept-stage', label: 'Concept stage — no lease yet' },
+        ] },
+    ],
+    docs: [
+      { docType: 'lease', label: 'Commercial lease agreement' },
+    ],
+  },
+  {
+    code: 'D-11', mode: 'fields',
+    lowRiskWhen: 'Specific management role + day-to-day activities described + biography uploaded',
+    fields: [
+      { key: 'M3-A-08', label: 'Your title and role in the business', inputType: 'text', placeholder: 'e.g. President & Owner-Operator' },
+      { key: 'M3-A-09', label: 'Day-to-day management activities', inputType: 'textarea',
+        placeholder: 'e.g. Hiring and training staff, managing vendor relationships, overseeing daily operations, reviewing financials weekly' },
+    ],
+    docs: [
+      { docType: 'resume', label: 'Investor biography or CV' },
+    ],
+  },
+  {
+    code: 'D-12', mode: 'fields',
+    lowRiskWhen: 'No loan used, or loan is secured by personal assets only',
+    fields: [
+      { key: 'M3-F-NEW-02', label: 'Is any borrowed capital secured by business assets?', inputType: 'select',
+        options: [
+          { value: 'no-loan-used', label: 'No borrowed capital used' },
+          { value: 'no', label: 'Loan exists but secured by personal assets' },
+          { value: 'yes', label: 'Loan secured by business/equipment assets' },
+        ] },
+    ],
+    docs: [],
+  },
+  {
+    code: 'D-13', mode: 'fields',
+    lowRiskWhen: 'Entity formation docs uploaded AND operating agreement on file',
+    fields: [
+      { key: 'M3-E-NEW-01', label: 'Business entity type', inputType: 'text', placeholder: 'e.g. LLC, C-Corp, S-Corp' },
+      { key: 'M3-E-NEW-02', label: 'Your ownership percentage in the entity', inputType: 'number', placeholder: '100' },
+    ],
+    docs: [
+      { docType: 'article', label: 'Articles of incorporation / formation documents' },
+      { docType: 'operating agreement', label: 'Operating agreement' },
+    ],
+  },
+  {
+    code: 'D-14', mode: 'structural',
+    lowRiskWhen: 'Business category not flagged as structurally marginal',
+    fields: [],
+    docs: [],
+    structuralExplanation: 'This risk is based on your business category, which has been flagged as potentially marginal by design (e.g. solo consultant, personal services). This cannot be resolved by answering questions — it requires a strong non-marginality argument in your cover letter. Review the hiring plan and revenue projections sections to build the strongest case for job creation beyond your own livelihood.',
+  },
+  {
+    code: 'D-15', mode: 'fields',
+    lowRiskWhen: '≥ 3 specific home-country ties documented AND return intent stated',
+    fields: [
+      { key: 'M3-D-05', label: 'Your ties to your home country (be specific)', inputType: 'textarea',
+        placeholder: 'e.g. Property: 3-bedroom home at [address], owned outright. Family: spouse and two children remain in Canada. Pension: RRSP account with [bank], value $X.' },
+      { key: 'M3-A-23', label: 'Intent to return to your home country after the E-2 period', inputType: 'textarea',
+        placeholder: 'e.g. I intend to operate the business for 5 years then return to Canada where I retain property and family ties.' },
+    ],
+    docs: [],
+  },
+];
