@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Nav from "@/components/Nav";
 
 export const metadata: Metadata = {
   title: "Support | E2go",
@@ -7,5 +8,10 @@ export const metadata: Metadata = {
 };
 
 export default function SupportLayout({ children }: { children: React.ReactNode }) {
-  return children;
+  return (
+    <>
+      <Nav />
+      {children}
+    </>
+  );
 }
