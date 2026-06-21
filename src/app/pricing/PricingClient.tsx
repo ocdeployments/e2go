@@ -52,7 +52,9 @@ export default function PricingPage() {
         .order('amount', { ascending: true });
 
       if (!tiersError && tiers && tiers.length > 0) {
-        setPricingTiers(tiers);
+        // Only show main application plan tiers — filter out add-ons (simulator sessions, additional child, etc.)
+        const mainTiers = tiers.filter((t: PricingTier) => t.tier_id.startsWith('solo_') || t.tier_id.startsWith('partnership_'));
+        setPricingTiers(mainTiers.length > 0 ? mainTiers : tiers);
       }
 
       // Get count of completed payments for founding member counter

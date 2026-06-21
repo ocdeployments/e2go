@@ -61,6 +61,7 @@ function MobileStepper({
 export default function TabPage({
   tabTitle,
   tabDescription,
+  tabLabel,
   sections,
   answers,
   onAnswerChange,
@@ -114,6 +115,7 @@ export default function TabPage({
           sections={sectionProgress}
           activeSectionId={activeSectionId}
           onSectionClick={handleSectionClick}
+          tabLabel={tabLabel}
         />
       )}
 

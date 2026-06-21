@@ -97,7 +97,7 @@ export default function Module1Page() {
         .from("quiz_sessions")
         .select("*")
         .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
+        .order("id", { ascending: false })
         .limit(1)
         .single();
 

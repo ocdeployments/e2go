@@ -15,6 +15,7 @@ interface TabSidebarProps {
   sections: Section[];
   activeSectionId: string;
   onSectionClick: (sectionId: string) => void;
+  tabLabel?: string;
 }
 
 function CompletionRing({ answered, total }: { answered: number; total: number }) {
@@ -72,6 +73,7 @@ export default function TabSidebar({
   sections,
   activeSectionId,
   onSectionClick,
+  tabLabel = 'Module 3',
 }: TabSidebarProps) {
   const sidebarRef = useRef<HTMLDivElement>(null);
 
@@ -176,7 +178,7 @@ export default function TabSidebar({
 
       <div className="p-4 border-t" style={{ borderColor: 'rgba(201,168,76,0.1)' }}>
         <div className="text-xs" style={{ color: 'rgba(245,240,232,0.4)' }}>
-          Tab A • Module 3
+          {tabLabel}
         </div>
       </div>
     </aside>

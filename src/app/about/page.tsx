@@ -27,7 +27,7 @@ export const metadata: Metadata = {
 
 export default function AboutPage() {
   return (
-    <main className="pt-8 pb-16 px-4 min-h-screen" style={{ background: "#0a0a0a" }}>
+    <main className="pt-20 pb-16 px-4 min-h-screen" style={{ background: "#0a0a0a" }}>
       <div className="max-w-3xl mx-auto">
         <Breadcrumb items={[{ label: "Home", href: "/" }, { label: "About" }]} />
 

@@ -42,6 +42,7 @@ function TabIInner() {
   return (
     <TabPage
       tabTitle="Non-Marginality Evidence"
+      tabLabel="Tab I • Module 3"
       tabDescription="Provide proof that your business will contribute significantly to the U.S. economy."
       sections={sections as Section[]}
       answers={answers}

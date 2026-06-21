@@ -60,6 +60,7 @@ function TabKInner() {
     <TabPage
       tabTitle="Business Plan"
       tabDescription="Provide a comprehensive operational and financial blueprint."
+      tabLabel="Tab K • Module 3"
       sections={sections as Section[]}
       answers={answers}
       onAnswerChange={(key, val) => setAnswer(key, val)}

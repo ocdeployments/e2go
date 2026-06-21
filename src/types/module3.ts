@@ -28,6 +28,7 @@ export interface Section {
 export interface TabPageProps {
   tabTitle: string;
   tabDescription: string;
+  tabLabel?: string;
   sections: Section[];
   answers: Record<string, string | string[] | number | null>;
   onAnswerChange: (key: string, value: string | string[] | number | null) => void;

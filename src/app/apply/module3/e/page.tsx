@@ -97,7 +97,8 @@ function TabEContent() {
 
       <TabPage
         tabTitle="Ownership Structure"
-        tabDescription="Define your ownership, corporate structure, and operational authority."
+        tabLabel="Tab E • Module 3"
+      tabDescription="Define your ownership, corporate structure, and operational authority."
         sections={sections}
         answers={answers}
         onAnswerChange={(key, val) => setAnswer(key, val)}

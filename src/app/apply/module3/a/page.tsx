@@ -247,6 +247,7 @@ function TabAWithContext() {
   return (
     <TabPage
       tabTitle="DS-160 Reference"
+      tabLabel="Tab A • Module 3"
       tabDescription="Personal information for your visa application. Fields pre-filled from your eligibility check are marked and can be edited."
       sections={sections}
       answers={answers}
