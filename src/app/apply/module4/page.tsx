@@ -36,6 +36,8 @@ export default function Module4Page() {
   // Completion state
   const [summary, setSummary] = useState<string[]>([]);
   const [isLoadingSummary, setIsLoadingSummary] = useState(false);
+  const [questionsError, setQuestionsError] = useState(false);
+  const [summaryError, setSummaryError] = useState(false);
 
   // Get application ID on mount
   useEffect(() => {
@@ -134,6 +136,7 @@ export default function Module4Page() {
       setQuestions(data.questions || []);
     } catch (error) {
       console.error('Failed to generate questions:', error);
+      setQuestionsError(true);
     } finally {
       setIsLoadingQuestions(false);
     }
@@ -208,9 +211,14 @@ export default function Module4Page() {
       });
 
       const data = await response.json();
-      setSummary(data.summary || []);
+      if (data.summary?.length) {
+        setSummary(data.summary);
+      } else {
+        setSummaryError(true);
+      }
     } catch (error) {
       console.error('Failed to get summary:', error);
+      setSummaryError(true);
     } finally {
       setIsLoadingSummary(false);
     }
@@ -359,6 +367,25 @@ export default function Module4Page() {
 
   // Screen 3: Follow-Up Questions
   if (screen === 3) {
+    if (questionsError) {
+      return (
+        <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-6">
+          <div className="text-center max-w-md">
+            <p className="text-[rgba(245,240,232,0.60)] text-lg italic mb-4" style={{ fontFamily: 'Cormorant Garamond, serif' }}>
+              Something went wrong loading your questions.
+            </p>
+            <button
+              onClick={() => { setQuestionsError(false); handleGenerateQuestions(); }}
+              className="bg-[#C9A84C] text-[#0a0a0a] px-8 py-3.5 font-medium hover:opacity-90"
+              style={{ fontFamily: 'DM Sans, sans-serif', borderRadius: 0 }}
+            >
+              Try Again →
+            </button>
+          </div>
+        </div>
+      );
+    }
+
     if (isLoadingQuestions || questions.length === 0) {
       return (
         <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-6">
@@ -475,7 +502,11 @@ export default function Module4Page() {
           </p>
 
           <div className="mb-6">
-            {summary.map((bullet, index) => (
+            {summaryError ? (
+              <p className="text-[rgba(245,240,232,0.50)] text-sm mb-4" style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 300 }}>
+                Your answers have been saved. We were unable to generate a summary — your documents will still incorporate all your responses.
+              </p>
+            ) : summary.map((bullet, index) => (
               <div key={index} className="flex items-start gap-3 mb-4">
                 <svg
                   className="w-4 h-4 mt-0.5 flex-shrink-0"
