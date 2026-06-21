@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { createServiceClient } from '@/lib/supabase-service';
-import Anthropic from '@anthropic-ai/sdk';
-import type { FddExtractedFields, FddFinalReport } from '@/types/fdd';
-
-const anthropic = new Anthropic();
+import { generateProfessionalReport } from '@/lib/fdd-report-engine';
+import type { FddExtractedFields } from '@/types/fdd';
+import type { ScoringResult } from '@/lib/fdd-scoring-engine';
+import type { TerritoryAnalysis } from '@/lib/fdd-territory-engine';
+import type { FddProfessionalReport } from '@/lib/fdd-report-engine';
 
 // POST /api/fdd/report
 // Body: { fdd_id: string }
-// Generates final report + writes platform integration keys
+// Generates professional report via fdd-report-engine, then writes platform integration keys.
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createSupabaseServerClient();
@@ -33,25 +34,34 @@ export async function POST(request: NextRequest) {
     }
 
     if (!analysis.extracted_fields || !analysis.e2_score) {
-      return NextResponse.json({ error: 'E-2 scoring must complete before generating the report' }, { status: 422 });
+      return NextResponse.json(
+        { error: 'E-2 scoring must complete before generating the report' },
+        { status: 422 }
+      );
     }
 
     const fields = analysis.extracted_fields as FddExtractedFields;
-    const e2Score = analysis.e2_score as Record<string, unknown>;
-    const territoryData = analysis.territory_analysis as Record<string, unknown> | null;
-    const questionsData = analysis.questions as Record<string, unknown> | null;
+    const scoring = analysis.e2_score as ScoringResult;
 
-    // Build final report via LLM
-    const report = await generateFinalReport(fields, e2Score, territoryData, questionsData, analysis);
+    // Extract full territory result if it exists
+    const territoryRaw = analysis.territory_analysis as ({ _full?: TerritoryAnalysis } & Record<string, unknown>) | null;
+    const territory: TerritoryAnalysis | null = territoryRaw?._full ?? null;
 
-    // Write platform integration keys to the user's most recent application
-    await writePlatformIntegration(service, user.id, fields, e2Score, territoryData, analysis);
+    // Generate professional report — uses new report engine with territory cross-feed
+    const report = await generateProfessionalReport(
+      fields,
+      scoring,
+      scoring.ode,
+      analysis.target_state as string | null,
+      analysis.target_city as string | null,
+      territory
+    );
 
-    // Persist
+    // Persist full professional report
     const { error: updateErr } = await service
       .from('fdd_analyses')
       .update({
-        final_report: report,
+        final_report: report as unknown as Record<string, unknown>,
         updated_at: new Date().toISOString(),
       })
       .eq('id', fdd_id);
@@ -59,6 +69,11 @@ export async function POST(request: NextRequest) {
     if (updateErr) {
       console.error('Report persist error:', updateErr);
     }
+
+    // Write platform integration keys (non-blocking — we don't await errors)
+    writePlatformIntegration(service, user.id, fields, scoring, territory, report, analysis).catch(err =>
+      console.error('Platform integration error:', err)
+    );
 
     return NextResponse.json({ final_report: report });
   } catch (err) {
@@ -71,115 +86,17 @@ export async function POST(request: NextRequest) {
 }
 
 // ============================================================================
-// Final report generation
-// ============================================================================
-
-async function generateFinalReport(
-  fields: FddExtractedFields,
-  e2Score: Record<string, unknown>,
-  territory: Record<string, unknown> | null,
-  questions: Record<string, unknown> | null,
-  analysis: Record<string, unknown>
-): Promise<FddFinalReport> {
-  const franchiseName = (fields.franchisor_legal_name?.value as string) ?? 'the franchise';
-  const overall = e2Score.overall as string;
-  const flags = (e2Score.flags as string[]) ?? [];
-  const narrative = e2Score.narrative as Record<string, string> | undefined;
-
-  const totalMin = fields.total_investment_min?.value as number | null;
-  const totalMax = fields.total_investment_max?.value as number | null;
-  const auv = (fields.item19_median?.value ?? fields.item19_auv?.value) as number | null;
-  const royalty = fields.royalty_rate_pct?.value as number | null;
-  const targetCity = analysis.target_city as string | null;
-  const targetState = analysis.target_state as string | null;
-
-  const territoryRating = territory?.overall_rating as string | null;
-  const territoryScore = territory?.overall_score as number | null;
-
-  const priorityQCount = (questions?.priority_questions as unknown[])?.length ?? 0;
-  const totalQCount = (questions?.questions as unknown[])?.length ?? 0;
-
-  const prompt = `You are a senior franchise development director and immigration attorney. Write a final investment analysis report for a client considering the ${franchiseName} franchise for their E-2 visa application.
-
-CONTEXT:
-- Franchise: ${franchiseName}
-- Location: ${targetCity ? `${targetCity}, ` : ''}${targetState ?? 'US'}
-- Investment range: ${totalMin ? `$${totalMin.toLocaleString()}–$${totalMax?.toLocaleString()}` : 'Not confirmed'}
-- Median AUV: ${auv ? `$${auv.toLocaleString()}` : 'Not disclosed (no Item 19)'}
-- Royalty rate: ${royalty !== null ? `${(royalty * 100).toFixed(1)}%` : 'Unconfirmed'}
-- E-2 compatibility: ${overall}
-- Territory rating: ${territoryRating ?? 'Not analysed'}${territoryScore ? ` (${territoryScore}/100)` : ''}
-- Flags raised: ${flags.length > 0 ? flags.join('; ') : 'None'}
-- Questions generated: ${totalQCount} total, ${priorityQCount} critical
-${narrative?.OVERALL_VERDICT ? `\nScoring note: ${narrative.OVERALL_VERDICT}` : ''}
-
-Write the following sections. Be direct, specific, and grounded in the data. No generic phrases.
-
-EXECUTIVE_SUMMARY: 2–3 sentences summarising the overall investment picture for this franchise in this location for an E-2 investor. State the overall rating explicitly.
-
-KEY_STRENGTHS: Exactly 3 bullet points (as a list, each starting with "•"). Each strength must reference a specific data point.
-
-KEY_CONCERNS: Exactly 3 bullet points (each starting with "•"). Each concern must be specific and actionable. If there are no flags, identify 3 standard risks the investor should still investigate.
-
-FINANCIAL_PICTURE: 2–3 sentences on the financial model: investment size, AUV/revenue expectations, royalty burden, and what the income model looks like before and after fees.
-
-MARKET_VERDICT: 1–2 sentences on the territory analysis outcome and what it means for this franchise's success in this market.
-
-RECOMMENDED_NEXT_STEPS: Exactly 4 steps the investor should take, in order of priority. Each step should be 1 sentence and concrete (e.g. "Request the Item 20 franchisee contact list and call 10 current franchisees in markets with ≤50,000 population").
-
-Return as JSON:
-{"EXECUTIVE_SUMMARY":"...","KEY_STRENGTHS":["•...","•...","•..."],"KEY_CONCERNS":["•...","•...","•..."],"FINANCIAL_PICTURE":"...","MARKET_VERDICT":"...","RECOMMENDED_NEXT_STEPS":["1...","2...","3...","4..."]}`;
-
-  try {
-    const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 1800,
-      messages: [{ role: 'user', content: prompt }],
-    });
-
-    const text = response.content[0].type === 'text' ? response.content[0].text : '';
-    const match = text.match(/\{[\s\S]*\}/);
-    if (match) {
-      const raw = JSON.parse(match[0]) as Record<string, string | string[]>;
-      return {
-        executive_summary: raw.EXECUTIVE_SUMMARY as string ?? '',
-        key_strengths: (raw.KEY_STRENGTHS as string[]) ?? [],
-        key_concerns: (raw.KEY_CONCERNS as string[]) ?? [],
-        financial_picture: raw.FINANCIAL_PICTURE as string ?? '',
-        market_verdict: raw.MARKET_VERDICT as string ?? `Territory rating: ${territoryRating ?? 'not analysed'}`,
-        recommended_next_steps: (raw.RECOMMENDED_NEXT_STEPS as string[]) ?? [],
-      };
-    }
-  } catch (err) {
-    console.error('Final report LLM error:', err);
-  }
-
-  // Fallback
-  return {
-    executive_summary: `This ${franchiseName} FDD analysis rates the E-2 compatibility as ${overall}. ${flags.length} flags were identified during review.`,
-    key_strengths: ['• Complete FDD extraction and analysis', '• Territory data reviewed', '• Due diligence questions generated'],
-    key_concerns: flags.slice(0, 3).map(f => `• ${f}`) || ['• Request updated FDD if over 12 months old', '• Confirm state registration before proceeding', '• Validate Item 19 with franchisee calls'],
-    financial_picture: `Investment range: ${totalMin ? `$${totalMin.toLocaleString()}–$${totalMax?.toLocaleString()}` : 'unconfirmed'}. ${auv ? `Median AUV $${auv.toLocaleString()}.` : 'No financial performance data disclosed.'}`,
-    market_verdict: territoryRating ? `Territory rated ${territoryRating} (${territoryScore}/100).` : 'Territory analysis not completed.',
-    recommended_next_steps: [
-      'Share this report with a licensed immigration attorney before signing',
-      'Contact 10 current franchisees using the Item 20 contact list',
-      'Address all critical questions with the franchisor development representative',
-      'Obtain the current year FDD and have your attorney review any state addendum',
-    ],
-  };
-}
-
-// ============================================================================
-// Platform integration — write FDD findings to the user's case profile
+// Platform integration — write FDD findings to the user's application module
+// This is the non-silo bridge: FDD intelligence feeds the E-2 application.
 // ============================================================================
 
 async function writePlatformIntegration(
   service: ReturnType<typeof import('@/lib/supabase-service').createServiceClient>,
   userId: string,
   fields: FddExtractedFields,
-  e2Score: Record<string, unknown>,
-  territory: Record<string, unknown> | null,
+  scoring: ScoringResult,
+  territory: TerritoryAnalysis | null,
+  report: FddProfessionalReport,
   analysis: Record<string, unknown>
 ): Promise<void> {
   // Find the user's most recent application
@@ -193,73 +110,125 @@ async function writePlatformIntegration(
 
   if (!app?.id) return;
 
-  // Build answer key/value pairs from FDD intelligence
   const answerUpdates: Array<{ key: string; value: string }> = [];
 
-  // Business name
+  // ── Business identity ────────────────────────────────────────────────────
   const franchiseName = fields.franchisor_legal_name?.value as string | null;
-  if (franchiseName) {
-    answerUpdates.push({ key: 'QA-NEW-04', value: franchiseName }); // business name
-  }
+  if (franchiseName) answerUpdates.push({ key: 'QA-NEW-04', value: franchiseName });
 
-  // Investment amount — use Item 7 total_investment_min as baseline
+  const targetState = analysis.target_state as string | null;
+  if (targetState) answerUpdates.push({ key: 'QA-NEW-11', value: targetState });
+
+  const category = territory?.franchise_category ?? null;
+  if (category) answerUpdates.push({ key: 'QA-NEW-03', value: category });
+
+  const territoryType = fields.territory_type?.value as string | null;
+  if (territoryType) answerUpdates.push({ key: 'QA-NEW-12', value: territoryType });
+
+  // ── Financial inputs ─────────────────────────────────────────────────────
   const investMin = fields.total_investment_min?.value as number | null;
-  if (investMin) {
-    answerUpdates.push({ key: 'QF-NEW-01', value: String(investMin) }); // investment amount
+  if (investMin) answerUpdates.push({ key: 'QF-NEW-01', value: String(investMin) });
+
+  // ODE central estimate — feeds business plan module
+  const odeCentral = scoring.ode.ode_mid;
+  if (odeCentral !== null) {
+    answerUpdates.push({ key: 'QA-FDD-ODE', value: String(Math.round(odeCentral)) });
   }
 
-  // Total employees (opening day)
+  // Payback period — feeds investment pitch
+  const payback = report.executive_summary.key_metrics.payback_period_years;
+  if (payback && payback !== 'Cannot calculate') {
+    answerUpdates.push({ key: 'QA-FDD-PAYBACK', value: payback });
+  }
+
+  // AUV from Item 19 — feeds revenue projections
+  const auv = (fields.item19_median?.value ?? fields.item19_auv?.value) as number | null;
+  if (auv) answerUpdates.push({ key: 'QA-FDD-AUV', value: String(auv) });
+
+  // Royalty rate — feeds fee model in business plan
+  const royalty = fields.royalty_rate_pct?.value as number | null;
+  if (royalty !== null) {
+    answerUpdates.push({ key: 'QA-FDD-ROYALTY', value: (royalty * 100).toFixed(1) });
+  }
+
+  // ── Employment ──────────────────────────────────────────────────────────
   const openingEmployees = fields.opening_day_employees?.value as number | null;
   const fteEmployees = fields.typical_fte_employees?.value as number | null;
   const empCount = openingEmployees ?? fteEmployees;
-  if (empCount) {
-    answerUpdates.push({ key: 'QA-NEW-09', value: String(empCount) }); // year 1 employees
-  }
+  if (empCount) answerUpdates.push({ key: 'QA-NEW-09', value: String(empCount) });
 
-  // Territory / location type
-  const territoryType = fields.territory_type?.value as string | null;
-  if (territoryType) {
-    answerUpdates.push({ key: 'QA-NEW-12', value: territoryType }); // territory type
-  }
+  // ── E-2 analysis results ──────────────────────────────────────────────
+  answerUpdates.push({ key: 'QA-FDD-COMPAT', value: scoring.overall });
+  answerUpdates.push({ key: 'QA-FDD-FLAGS', value: String(scoring.flag_count) });
 
-  // Business sector — use franchise category from territory analysis
-  const category = territory?.franchise_category as string | null;
-  if (category) {
-    answerUpdates.push({ key: 'QA-NEW-03', value: category }); // business industry
-  }
+  // Non-marginality verdict — the most important E-2 financial test
+  const nonMarginality = report.financial_performance.non_marginality_verdict;
+  answerUpdates.push({ key: 'QA-FDD-NONMARGINALITY', value: nonMarginality });
 
-  // Target state
-  const targetState = analysis.target_state as string | null;
-  if (targetState) {
-    answerUpdates.push({ key: 'QA-NEW-11', value: targetState }); // target state
-  }
+  // Investment recommendation — top-line result for dashboard
+  answerUpdates.push({ key: 'QA-FDD-RECOMMENDATION', value: report.executive_summary.recommendation });
 
-  // E-2 compatibility result
-  const compatibility = e2Score.overall as string | null;
-  if (compatibility) {
-    answerUpdates.push({ key: 'QA-FDD-COMPAT', value: compatibility }); // FDD compatibility outcome
-  }
+  // One-line verdict for the main dashboard overview
+  const verdict = report.executive_summary.one_line_verdict;
+  if (verdict) answerUpdates.push({ key: 'QA-FDD-VERDICT', value: verdict });
 
-  // Flag count
-  const flagCount = (e2Score.flags as string[])?.length ?? 0;
-  answerUpdates.push({ key: 'QA-FDD-FLAGS', value: String(flagCount) });
+  // ── Territory intelligence ─────────────────────────────────────────────
+  if (territory) {
+    answerUpdates.push({ key: 'QA-FDD-TERRITORY-RATING', value: territory.overall_rating });
+    answerUpdates.push({ key: 'QA-FDD-TERRITORY-SCORE', value: String(territory.overall_score) });
 
-  // Upsert each answer key
-  for (const { key, value } of answerUpdates) {
-    await service
-      .from('answers')
-      .upsert(
-        {
-          application_id: app.id,
-          question_key: key,
-          answer: value,
-          source: 'fdd_intelligence',
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: 'application_id,question_key' }
-      )
-      .then(({ error }) => {
-        if (error) console.warn(`Answer upsert failed for ${key}:`, error.message);
+    if (territory.target_market.annual_addressable_revenue !== null) {
+      answerUpdates.push({
+        key: 'QA-FDD-TERRITORY-TAM',
+        value: String(territory.target_market.annual_addressable_revenue),
       });
+    }
+
+    // Labor market risk — feeds gap analysis for labor cost warnings
+    answerUpdates.push({
+      key: 'QA-FDD-LABOR-SCORE',
+      value: String(territory.labor_market_score.score),
+    });
+
+    // Demographic fit — relevant for business plan target market section
+    if (territory.census.population_65_plus !== null) {
+      answerUpdates.push({
+        key: 'QA-FDD-POP-65PLUS',
+        value: String(territory.census.population_65_plus),
+      });
+    }
+    if (territory.census.median_household_income !== null) {
+      answerUpdates.push({
+        key: 'QA-FDD-TERRITORY-MHI',
+        value: String(territory.census.median_household_income),
+      });
+    }
   }
+
+  // ── Critical flags for gap analysis ─────────────────────────────────────
+  const criticalFlags = scoring.flags.filter(f => f.severity === 'critical').map(f => f.key).join(',');
+  if (criticalFlags) {
+    answerUpdates.push({ key: 'QA-FDD-CRITICAL-FLAGS', value: criticalFlags });
+  }
+
+  // Upsert all keys
+  await Promise.all(
+    answerUpdates.map(({ key, value }) =>
+      service
+        .from('answers')
+        .upsert(
+          {
+            application_id: app.id,
+            question_key: key,
+            answer: value,
+            source: 'fdd_intelligence',
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: 'application_id,question_key' }
+        )
+        .then(({ error }) => {
+          if (error) console.warn(`Answer upsert failed for ${key}:`, error.message);
+        })
+    )
+  );
 }

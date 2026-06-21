@@ -80,23 +80,31 @@ export async function POST(request: NextRequest) {
     case 'checkout.session.completed': {
       const session = event.data.object as Stripe.Checkout.Session;
       const applicationId = session.metadata?.applicationId;
+      const fddId = session.metadata?.fddId;
       const userId = session.metadata?.userId;
+      const tierId = session.metadata?.tierId || '';
       const paymentIntentId = session.payment_intent as string;
 
-      if (applicationId && userId) {
-        const tierId = session.metadata?.tierId || '';
+      // Always update the payment record status
+      await supabase
+        .from('payments')
+        .update({
+          stripe_payment_intent_id: paymentIntentId,
+          amount_paid: session.amount_total || 0,
+          status: 'completed',
+          completed_at: new Date().toISOString(),
+        })
+        .eq('stripe_session_id', session.id);
 
-        // Update payment record
+      if (tierId === 'fdd_intelligence' && fddId && userId) {
+        // Unlock the FDD report — set report_unlocked = true on the analysis row
         await supabase
-          .from('payments')
-          .update({
-            stripe_payment_intent_id: paymentIntentId,
-            amount_paid: session.amount_total || 0,
-            status: 'completed',
-            completed_at: new Date().toISOString(),
-          })
-          .eq('stripe_session_id', session.id);
+          .from('fdd_analyses')
+          .update({ report_unlocked: true })
+          .eq('id', fddId)
+          .eq('user_id', userId);
 
+      } else if (applicationId && userId) {
         if (tierId === 'simulator_3pack') {
           // Grant 3 additional simulator sessions
           const { data: currentApp } = await supabase

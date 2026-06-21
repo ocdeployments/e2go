@@ -77,13 +77,21 @@ function DimensionCard({
 }
 
 function CensusTable({ census }: { census: TerritoryAnalysis['census'] }) {
+  const c = census as TerritoryAnalysis['census'] & {
+    population_65_plus?: number | null;
+    population_under_18?: number | null;
+    family_households_with_children?: number | null;
+  };
   const rows = [
-    { label: 'Total population', value: census.total_population !== null ? census.total_population.toLocaleString() : '—' },
-    { label: 'Total households', value: census.total_households !== null ? census.total_households.toLocaleString() : '—' },
-    { label: 'Median household income', value: census.median_household_income !== null ? `$${census.median_household_income.toLocaleString()}` : '—' },
-    { label: 'Median age', value: census.median_age !== null ? `${census.median_age} years` : '—' },
-    { label: 'Employment rate', value: census.employment_rate !== null ? `${(census.employment_rate * 100).toFixed(1)}%` : '—' },
-    { label: 'Owner-occupied housing', value: census.owner_occupied_pct !== null ? `${(census.owner_occupied_pct * 100).toFixed(0)}%` : '—' },
+    { label: 'Total population', value: c.total_population !== null ? c.total_population.toLocaleString() : '—' },
+    { label: 'Total households', value: c.total_households !== null ? c.total_households.toLocaleString() : '—' },
+    { label: 'Median household income', value: c.median_household_income !== null ? `$${c.median_household_income.toLocaleString()}` : '—' },
+    { label: 'Median age', value: c.median_age !== null ? `${c.median_age} years` : '—' },
+    { label: 'Employment rate', value: c.employment_rate !== null ? `${(c.employment_rate * 100).toFixed(1)}%` : '—' },
+    { label: 'Owner-occupied housing', value: c.owner_occupied_pct !== null ? `${(c.owner_occupied_pct * 100).toFixed(0)}%` : '—' },
+    ...(c.population_65_plus ? [{ label: 'Population 65+', value: c.population_65_plus.toLocaleString() }] : []),
+    ...(c.population_under_18 ? [{ label: 'Population under 18', value: c.population_under_18.toLocaleString() }] : []),
+    ...(c.family_households_with_children ? [{ label: 'Family HH with children', value: c.family_households_with_children.toLocaleString() }] : []),
   ];
 
   return (
@@ -112,22 +120,26 @@ function NarrativeSection({ narrative }: { narrative: TerritoryAnalysis['narrati
           <p className="text-white/80 text-sm leading-relaxed">{narrative.MARKET_OVERVIEW}</p>
         </div>
       )}
-      {(narrative.ECONOMIC_STRENGTH || narrative.COMPETITIVE_LANDSCAPE) && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {narrative.ECONOMIC_STRENGTH && (
-            <div className="border border-white/10 rounded-xl p-5">
-              <h3 className="text-white/40 text-xs uppercase tracking-widest mb-3">Economic Strength</h3>
-              <p className="text-white/70 text-xs leading-relaxed">{narrative.ECONOMIC_STRENGTH}</p>
-            </div>
-          )}
-          {narrative.COMPETITIVE_LANDSCAPE && (
-            <div className="border border-white/10 rounded-xl p-5">
-              <h3 className="text-white/40 text-xs uppercase tracking-widest mb-3">Competitive Landscape</h3>
-              <p className="text-white/70 text-xs leading-relaxed">{narrative.COMPETITIVE_LANDSCAPE}</p>
-            </div>
-          )}
-        </div>
-      )}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {narrative.ECONOMIC_STRENGTH && (
+          <div className="border border-white/10 rounded-xl p-5">
+            <h3 className="text-white/40 text-xs uppercase tracking-widest mb-3">Economic Strength</h3>
+            <p className="text-white/70 text-xs leading-relaxed">{narrative.ECONOMIC_STRENGTH}</p>
+          </div>
+        )}
+        {('DEMOGRAPHIC_FIT' in narrative) && (narrative as { DEMOGRAPHIC_FIT?: string }).DEMOGRAPHIC_FIT && (
+          <div className="border border-white/10 rounded-xl p-5">
+            <h3 className="text-white/40 text-xs uppercase tracking-widest mb-3">Demographic Fit</h3>
+            <p className="text-white/70 text-xs leading-relaxed">{(narrative as { DEMOGRAPHIC_FIT: string }).DEMOGRAPHIC_FIT}</p>
+          </div>
+        )}
+        {narrative.COMPETITIVE_LANDSCAPE && (
+          <div className="border border-white/10 rounded-xl p-5">
+            <h3 className="text-white/40 text-xs uppercase tracking-widest mb-3">Competitive Landscape</h3>
+            <p className="text-white/70 text-xs leading-relaxed">{narrative.COMPETITIVE_LANDSCAPE}</p>
+          </div>
+        )}
+      </div>
       {narrative.VERDICT && (
         <div className="bg-white/3 border border-[#C9A84C]/20 rounded-xl p-5">
           <h3 className="text-[#C9A84C] text-xs uppercase tracking-widest mb-2">Territory Verdict</h3>
@@ -297,23 +309,61 @@ export default function FddTerritoryPage() {
         <div>
           <h2 className="text-white/40 text-xs uppercase tracking-widest mb-4">Dimension Breakdown</h2>
           <div className="space-y-4">
-            <DimensionCard
-              title="Population & Demand"
-              icon="👥"
-              dim={territory.population_score}
-            />
-            <DimensionCard
-              title="Economic Strength"
-              icon="💰"
-              dim={territory.income_score}
-            />
-            <DimensionCard
-              title="Competitive Landscape"
-              icon="🏪"
-              dim={territory.competition_score}
-            />
+            <DimensionCard title="Population & Demand" icon="👥" dim={territory.population_score} />
+            <DimensionCard title="Economic Strength" icon="💰" dim={territory.income_score} />
+            <DimensionCard title="Competitive Landscape" icon="🏪" dim={territory.competition_score} />
+            {'demographic_fit_score' in territory && territory.demographic_fit_score && (
+              <DimensionCard title="Demographic Fit" icon="🎯" dim={territory.demographic_fit_score} />
+            )}
+            {'labor_market_score' in territory && territory.labor_market_score && (
+              <DimensionCard title="Labor Market Risk" icon="⚙️" dim={territory.labor_market_score} />
+            )}
           </div>
         </div>
+
+        {/* Target market sizing */}
+        {'target_market' in territory && territory.target_market?.annual_addressable_revenue && (
+          <div className="border border-[#C9A84C]/20 bg-[#C9A84C]/3 rounded-xl p-5">
+            <h3 className="text-[#C9A84C] text-xs uppercase tracking-widest mb-4">Territory Market Sizing</h3>
+            <div className="space-y-2.5">
+              <div className="flex justify-between">
+                <span className="text-white/50 text-xs">Target segment</span>
+                <span className="text-white text-xs font-medium">
+                  {territory.target_market.relevant_segment?.toLocaleString() ?? '—'} {territory.target_market.segment_label}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-white/50 text-xs">Annual addressable revenue</span>
+                <span className="text-white text-xs font-medium">
+                  ${territory.target_market.annual_addressable_revenue.toLocaleString()}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-white/50 text-xs">Year 1 revenue target</span>
+                <span className="text-white text-xs font-medium">
+                  {territory.target_market.year1_revenue_target ? `$${territory.target_market.year1_revenue_target.toLocaleString()}` : '—'}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-white/50 text-xs">Year 3 revenue target</span>
+                <span className="text-white text-xs font-medium">
+                  {territory.target_market.year3_revenue_target ? `$${territory.target_market.year3_revenue_target.toLocaleString()}` : '—'}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-white/50 text-xs">Non-marginality check</span>
+                <span className={`text-xs font-medium ${
+                  territory.target_market.nonmarginality_check === 'pass' ? 'text-emerald-400' :
+                  territory.target_market.nonmarginality_check === 'borderline' ? 'text-amber-400' :
+                  territory.target_market.nonmarginality_check === 'fail' ? 'text-red-400' : 'text-white/40'
+                }`}>
+                  {territory.target_market.nonmarginality_check.toUpperCase()}
+                </span>
+              </div>
+            </div>
+            <p className="text-white/30 text-xs mt-4 leading-relaxed">{territory.target_market.sizing_note}</p>
+          </div>
+        )}
 
         {/* Census data table */}
         <CensusTable census={territory.census} />
@@ -322,9 +372,17 @@ export default function FddTerritoryPage() {
         {territory.competitors.source === 'google_places' && territory.competitors.nearby_count !== null && (
           <div className="border border-white/10 rounded-xl p-5">
             <h3 className="text-white/40 text-xs uppercase tracking-widest mb-3">Competitive Scan</h3>
-            <div className="flex items-center justify-between">
-              <span className="text-white/60 text-sm">Similar operators within {territory.competitors.radius_miles} miles</span>
-              <span className="text-white font-medium">{territory.competitors.nearby_count}</span>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-white/60 text-sm">Similar operators within {territory.competitors.radius_miles} miles</span>
+                <span className="text-white font-medium">{territory.competitors.nearby_count}</span>
+              </div>
+              {'population_per_competitor' in territory.competitors && territory.competitors.population_per_competitor && (
+                <div className="flex items-center justify-between">
+                  <span className="text-white/40 text-xs">Population per operator</span>
+                  <span className="text-white/70 text-xs">{territory.competitors.population_per_competitor.toLocaleString()}</span>
+                </div>
+              )}
             </div>
             <p className="text-white/25 text-xs mt-2">Source: Google Places · Point-in-time snapshot</p>
           </div>

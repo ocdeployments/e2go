@@ -14,6 +14,7 @@ const VALID_TIER_IDS = [
   'solo_none', 'solo_spouse', 'solo_family_small', 'solo_family_large',
   'partnership_none', 'partnership_couples', 'partnership_families',
   'simulator_3pack', 'renewal', 'child_surcharge',
+  'fdd_intelligence',
 ];
 
 function getStripe(): Stripe | null {
@@ -36,6 +37,7 @@ const FALLBACK_PRICE_IDS: Record<string, string> = {
   simulator_3pack: process.env.STRIPE_PRICE_SIMULATOR_3PACK || '',
   renewal: process.env.STRIPE_PRICE_RENEWAL || '',
   child_surcharge: process.env.STRIPE_PRICE_CHILD_SURCHARGE || '',
+  fdd_intelligence: process.env.STRIPE_PRICE_FDD_INTELLIGENCE || '',
 };
 
 async function getStripePriceId(supabase: ReturnType<typeof getSupabase>, tierId: string): Promise<string | null> {
@@ -80,9 +82,16 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { tierId, applicationId, children_count, successUrl: rawSuccessUrl, cancelUrl: rawCancelUrl } = body;
+    const { tierId, applicationId, fddId, children_count, successUrl: rawSuccessUrl, cancelUrl: rawCancelUrl } = body;
 
-    if (!tierId || !applicationId) {
+    // fdd_intelligence requires fddId; all other tiers require applicationId
+    if (!tierId) {
+      return NextResponse.json({ error: 'Missing required field: tierId' }, { status: 400 });
+    }
+    if (tierId === 'fdd_intelligence' && !fddId) {
+      return NextResponse.json({ error: 'Missing required field: fddId for fdd_intelligence' }, { status: 400 });
+    }
+    if (tierId !== 'fdd_intelligence' && !applicationId) {
       return NextResponse.json(
         { error: 'Missing required fields: tierId, applicationId' },
         { status: 400 }
@@ -163,7 +172,8 @@ export async function POST(request: NextRequest) {
       cancel_url: cancelUrl,
       customer_email: email,
       metadata: {
-        applicationId,
+        applicationId: applicationId ?? '',
+        fddId: fddId ?? '',
         userId: user.id,
         tierId,
         children_count: children_count?.toString() || '0',
@@ -172,7 +182,7 @@ export async function POST(request: NextRequest) {
 
     // Create pending payment record
     const { error: insertError } = await supabase.from('payments').insert({
-      application_id: applicationId,
+      application_id: applicationId ?? null,
       user_id: user.id,
       stripe_session_id: session.id,
       stripe_price_id: priceId,
