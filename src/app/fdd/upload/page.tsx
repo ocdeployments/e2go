@@ -152,10 +152,11 @@ export default function FddUploadPage() {
     } else if (event.event === 'staleness_check') {
       if (event.data.status !== 'current') {
         const months = event.data.age_months;
+        const ageLabel = months !== null && months !== undefined ? `${months} months old` : 'of unknown age';
         setStalenessWarn(
           event.data.status === 'fail'
-            ? `This FDD is ${months} months old — it may be superseded. Request the current year FDD before proceeding.`
-            : `This FDD is ${months} months old. Confirm no material changes since issuance.`
+            ? `This FDD is ${ageLabel} — it may be superseded. Request the current year FDD before proceeding.`
+            : `This FDD is ${ageLabel}. Confirm no material changes since issuance.`
         );
       }
     } else if (event.event === 'registration_check') {

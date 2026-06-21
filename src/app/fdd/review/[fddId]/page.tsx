@@ -267,10 +267,9 @@ export default function FddReviewPage() {
             <div>
               <p className="text-amber-400 text-sm font-medium mb-0.5">FDD may be outdated</p>
               <p className="text-amber-400/70 text-xs">
-                This FDD is {ageMonths} months old.
-                {ageMonths && ageMonths > 18
-                  ? ' It may be superseded by a newer version. Request the current FDD before proceeding.'
-                  : ' Confirm no material changes since issuance.'}
+                {ageMonths !== null && ageMonths !== undefined
+                  ? `This FDD is ${ageMonths} months old.${ageMonths > 18 ? ' It may be superseded by a newer version. Request the current FDD before proceeding.' : ' Confirm no material changes since issuance.'}`
+                  : 'FDD effective date could not be determined — confirm currency with your franchisor.'}
               </p>
             </div>
           </div>
