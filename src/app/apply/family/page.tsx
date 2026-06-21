@@ -172,9 +172,10 @@ export default function FamilyPage() {
     const answered = set.questions.filter((q) => {
       if ('showIf' in q && q.showIf) {
         const depAnswer = answers[q.showIf.key]?.value;
-        return depAnswer !== q.showIf.value || answers[q.key]?.value !== '';
+        if (depAnswer !== q.showIf.value) return false; // hidden — exclude from count
       }
-      return answers[q.key]?.value !== '';
+      const val = answers[q.key]?.value;
+      return val !== undefined && val !== '';
     }).length;
     const visible = set.questions.filter((q) => !('showIf' in q) || !q.showIf || answers[q.showIf.key]?.value === q.showIf.value).length;
     const status: 'complete' | 'active' | 'pending' = answered === visible && visible > 0 ? 'complete' : answered > 0 ? 'active' : 'pending';
