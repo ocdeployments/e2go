@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useState, Suspense, useRef, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import Link from "next/link";
@@ -7,6 +7,7 @@ import { getPricingTier, PRICING_TIERS } from "@/lib/pricing-tier";
 import { createAccountFromVerifiedEmail } from "../actions/create-account";
 import flagExplanations from "../../data/flag_explanations.json";
 import FaqWidget from "@/components/landing/FaqWidget";
+import FlagCard, { FLAG_REMEDIATION } from "@/components/results/FlagCard";
 import type { CaseProfile } from "@/types/case-profile";
 
 interface ResultData {
@@ -349,6 +350,11 @@ function ResultsPageInner() {
   const [quizEmail, setQuizEmail] = useState<string | null>(null);
   const [nameCaptureDismissed, setNameCaptureDismissed] = useState(false);
   const [personalizedExplanations, setPersonalizedExplanations] = useState<Record<string, string>>({});
+  const [expandedFlag, setExpandedFlag] = useState<string | null>(null);
+  const [flagAnswers, setFlagAnswers] = useState<Record<string, string>>({});
+  const [applicationId, setApplicationId] = useState<string | null>(null);
+  const [flagSaveStatus, setFlagSaveStatus] = useState<Record<string, 'idle' | 'saving' | 'saved'>>({});
+  const flagDebounceRefs = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
   useEffect(() => {
     if (!data) return;
@@ -392,6 +398,33 @@ function ResultsPageInner() {
           }
         } catch { /* non-blocking */ }
 
+        // Load applicationId + any existing flag remediation answers
+        try {
+          const { data: appRow } = await supabase
+            .from('applications')
+            .select('id')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          if (appRow) {
+            setApplicationId(appRow.id);
+            const uniqueAnswerKeys = [...new Set(Object.values(FLAG_REMEDIATION).map(r => r.answerKey))];
+            const { data: savedAnswers } = await supabase
+              .from('answers')
+              .select('question_key, answer_value')
+              .eq('application_id', appRow.id)
+              .in('question_key', uniqueAnswerKeys);
+            if (savedAnswers) {
+              const map: Record<string, string> = {};
+              for (const a of savedAnswers) {
+                if (a.answer_value) map[a.question_key] = a.answer_value;
+              }
+              setFlagAnswers(map);
+            }
+          }
+        } catch { /* non-blocking — flag remediation is enhancement only */ }
+
         setLoading(false);
         return;
       }
@@ -422,6 +455,32 @@ function ResultsPageInner() {
 
     loadResult();
   }, [supabase, searchParams]);
+
+  const handleFlagAnswerChange = useCallback((answerKey: string, value: string) => {
+    setFlagAnswers(prev => ({ ...prev, [answerKey]: value }));
+    if (!applicationId) return;
+    const existing = flagDebounceRefs.current.get(answerKey);
+    if (existing) clearTimeout(existing);
+    setFlagSaveStatus(prev => ({ ...prev, [answerKey]: 'saving' }));
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch('/api/answers', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question_key: answerKey, answer_value: value, application_id: applicationId }),
+        });
+        if (res.ok) {
+          setFlagSaveStatus(prev => ({ ...prev, [answerKey]: 'saved' }));
+          setTimeout(() => setFlagSaveStatus(prev => ({ ...prev, [answerKey]: 'idle' })), 1500);
+        } else {
+          setFlagSaveStatus(prev => ({ ...prev, [answerKey]: 'idle' }));
+        }
+      } catch {
+        setFlagSaveStatus(prev => ({ ...prev, [answerKey]: 'idle' }));
+      }
+    }, 800);
+    flagDebounceRefs.current.set(answerKey, timer);
+  }, [applicationId]);
 
   if (loading || verificationState === 'loading') {
     return (
@@ -633,28 +692,37 @@ function ResultsPageInner() {
                 Your application is still viable — these are preparation priorities, not disqualifiers.
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                {flagsToShow.map(({ code, info, isAttorney }) => (
-                  <div key={code} style={{ display: "flex", gap: "12px", padding: "14px 16px", border: `1px solid ${isAttorney ? "rgba(239,100,100,0.25)" : "rgba(239,159,39,0.25)"}`, background: isAttorney ? "rgba(239,100,100,0.04)" : "rgba(239,159,39,0.04)" }}>
-                    <div style={{ fontSize: "16px", color: isAttorney ? "rgba(239,100,100,0.8)" : "rgba(239,159,39,0.8)", flexShrink: 0, marginTop: "1px" }}>{isAttorney ? "⚖" : "!"}</div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: "13px", fontWeight: 500, color: isAttorney ? "rgba(239,100,100,0.95)" : "rgba(239,159,39,0.95)", marginBottom: "3px" }}>{info.plain_language}</div>
-                      <div style={{ fontSize: "12px", color: "rgba(245,240,232,0.45)", lineHeight: 1.6, marginBottom: "6px" }}>{personalizedExplanations[code] || info.why_it_matters}</div>
-                      {data.answers?.[info.question_id] && (
-                        <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.3)", marginBottom: "6px" }}>Your answer: &ldquo;{Array.isArray(data.answers[info.question_id]) ? (data.answers[info.question_id] as string[]).join(", ") : String(data.answers[info.question_id])}&rdquo;</div>
-                      )}
-                      <button
-                        onClick={() => {
-                          localStorage.setItem("quiz_jump_to_id", info.question_id);
-                          localStorage.setItem("quiz_return_to_results", "true");
-                          router.push("/quiz");
-                        }}
-                        style={{ fontSize: "11px", color: "#C9A84C", textDecoration: "underline", background: "transparent", border: "none", cursor: "pointer", padding: 0, fontFamily: "inherit" }}
-                      >
-                        {info.edit_label} →
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                {flagsToShow.map(({ code, info, isAttorney }) => {
+                  const remediation = FLAG_REMEDIATION[code];
+                  const answerKey = remediation?.answerKey;
+                  const flagAnswer = answerKey ? (flagAnswers[answerKey] ?? '') : '';
+                  const currentAnswer = data.answers?.[info.question_id]
+                    ? (Array.isArray(data.answers[info.question_id])
+                        ? (data.answers[info.question_id] as string[]).join(", ")
+                        : String(data.answers[info.question_id]))
+                    : undefined;
+                  return (
+                    <FlagCard
+                      key={code}
+                      code={code}
+                      info={info}
+                      isAttorney={isAttorney}
+                      currentAnswer={currentAnswer}
+                      personalizedExplanation={personalizedExplanations[code]}
+                      flagAnswer={flagAnswer}
+                      isExpanded={expandedFlag === code}
+                      canEdit={isLoggedIn && !!applicationId}
+                      onToggle={() => setExpandedFlag(expandedFlag === code ? null : code)}
+                      onFlagAnswerChange={handleFlagAnswerChange}
+                      saveStatus={answerKey ? (flagSaveStatus[answerKey] ?? 'idle') : 'idle'}
+                      onRedirectToQuiz={() => {
+                        localStorage.setItem("quiz_jump_to_id", info.question_id);
+                        localStorage.setItem("quiz_return_to_results", "true");
+                        router.push("/quiz");
+                      }}
+                    />
+                  );
+                })}
               </div>
             </div>
           )}
