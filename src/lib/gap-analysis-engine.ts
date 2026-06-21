@@ -357,7 +357,7 @@ function scoreDenialFactors(
     } else {
       risk = 'high';
       finding = 'No business plan document on file.';
-      mitigation = 'A professionally prepared business plan is expected at the E-2 interview. Upload one before filing.';
+      mitigation = 'Build your business plan in Tab K of Module 3 — E2go assembles your complete business plan document from your answers there. A professional business plan is required at the E-2 interview.';
     }
 
     factors.push({ code: 'D-05', name: 'Business plan generic, vague, or inconsistent with finances', frequency: 'Common', risk, finding, mitigation, categoryId: 'business_plan' });
@@ -752,7 +752,7 @@ function scoreCategory(
       const hasBasis = hasAnswer(am, 'QI-NEW-02', 'M3-I-NEW-02');
 
       if (hasPlan) evidence.push('Business plan document uploaded');
-      else { gaps.push('No business plan document'); actions.push('Upload a comprehensive business plan'); }
+      else { gaps.push('No business plan document'); actions.push('Complete your business plan in Tab K (Module 3)'); }
 
       if (revY1 > 0) evidence.push(`Year 1 revenue: $${revY1.toLocaleString()}`);
       else { gaps.push('No Year 1 revenue projection'); actions.push('Add 5-year financial projections'); }

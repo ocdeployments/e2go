@@ -542,7 +542,7 @@ const D_CODE_FIX_LINKS: Record<string, { label: string; href: string }> = {
   'D-02': { label: 'Investment paper trail',  href: '/apply/investment#paper-trail' },
   'D-03': { label: 'Source of funds',         href: '/apply/investment#source-of-funds' },
   'D-04': { label: 'Business financials',     href: '/apply/investment#projections' },
-  'D-05': { label: 'Business plan',           href: '/apply/business#market' },
+  'D-05': { label: 'Business plan (Tab K)',     href: '/apply/module3/k' },
   'D-06': { label: 'Revenue projections',     href: '/apply/investment#projections' },
   'D-07': { label: 'Hiring plan',             href: '/apply/business#operations' },
   'D-08': { label: 'Practice interview',      href: '/simulator' },
