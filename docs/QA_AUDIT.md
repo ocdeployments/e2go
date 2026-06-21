@@ -1,5 +1,104 @@
 # E2go QA Audit Report
 
+---
+
+## Session 51 — Category-Driven Horizontal Audit + Per-Page Pass
+
+**Date:** 2026-06-21 | **Tester:** Claude (code audit — no live browser)  
+**Branch:** `dev` | **Build status:** ✅ Clean  
+**Methodology:** 7 horizontal sweeps (systemic bug categories) + per-page audit of all previously unaudited routes
+
+### Session 51 Summary
+
+| Category | Count |
+|---|---|
+| Pages audited this session | 18 (auth flow, module2, module4, upload flow, simulator, documents) |
+| Bugs found | 5 |
+| Bugs fixed | 5 |
+| Commits | 4 |
+| Migration debt noted | 1 (module2 columns — in migration file, verify remote applied) |
+
+### Session 51 Bugs Found & Fixed
+
+#### BUG-QA-01 (P2) — `/api/applications/[applicationId]` route missing
+**Page:** `/generate/[applicationId]`  
+**Root cause:** `generate/[applicationId]/page.tsx:298` calls `/api/applications/${applicationId}` for header display data. No such route existed — directory was missing entirely.  
+**Fix:** Created `src/app/api/applications/[applicationId]/route.ts` with auth + ownership check, returns `applicant_name`, `business_name`, `investment_amount`, `state` from applications table. `city`/`consulate`/`nationality` returned as null (page handles null gracefully).  
+**Status:** ✅ Fixed & committed
+
+#### BUG-QA-02 (P3) — `/support` page has no Nav
+**Page:** `/support`  
+**Root cause:** `src/app/support/layout.tsx` returned `children` only — Nav component never rendered.  
+**Fix:** Added `import Nav from "@/components/Nav"` to layout, wrapped children. Added `paddingTop: "80px"` to support page's main element (Nav is position:fixed height 64px).  
+**Status:** ✅ Fixed & committed
+
+#### BUG-QA-03 (P2) — `/verify` resend button silently does nothing on expired token
+**Page:** `/verify`  
+**Root cause:** When `verifyToken()` returns `valid: false`, `verifiedData` stays null. The error state's "Resend results" button calls `handleResend()`, which immediately returns because `verifiedData?.quiz_session_id` is null. User clicks the button and nothing happens — no feedback, no error.  
+**Fix:** Conditioned the resend button on `verifiedData?.quiz_session_id` being truthy. When the token is invalid (and we have no session ID), shows "Please retake the quiz to get a new results link" instead.  
+**Status:** ✅ Fixed & committed
+
+#### BUG-QA-04 (P2) — Module 4 Screen 3 stuck loading forever on API failure
+**Page:** `/apply/module4`  
+**Root cause:** If `handleGenerateQuestions` fetch fails, `questions` stays `[]` and `isLoadingQuestions` becomes `false`. Render condition `isLoadingQuestions || questions.length === 0` evaluates to `true` forever — user sees "Reviewing your application..." indefinitely.  
+**Fix:** Added `questionsError` state; set it in the catch block. Screen 3 now renders an error message with a "Try Again" button before the loading check.  
+**Status:** ✅ Fixed & committed
+
+#### BUG-QA-05 (P2) — Module 4 Screen 4 empty summary with no explanation
+**Page:** `/apply/module4`  
+**Root cause:** If `handleGetSummary` fetch fails, `summary` stays `[]`. Screen 4 renders "Here is what we found." with an empty bullets list — user sees nothing and doesn't know why.  
+**Fix:** Added `summaryError` state; set it in catch and when `data.summary` is empty. Screen 4 now shows a fallback message: "Your answers have been saved. We were unable to generate a summary — your documents will still incorporate all your responses."  
+**Status:** ✅ Fixed & committed
+
+### Session 51 Sweeps Completed
+
+| Sweep | Description | Result |
+|---|---|---|
+| 1 — DB Schema vs Code | Already complete from prior session | N/A (prior session) |
+| 2 — Nav Link Validity | Already complete from prior session | N/A (prior session) |
+| 3 — Layout + Nav | Already complete from prior session | N/A (prior session) |
+| 4 — Migration Completeness | Already complete from prior session | N/A (prior session) |
+| 5 — API Route Existence | Already complete from prior session | N/A (prior session) |
+| 6 — Hardcoded Dynamic Content | Dollar amounts and emails scanned | ✅ PASS — all hardcoded strings are legitimate static content |
+| 7 — Async + Error State Coverage | 28 async handlers across app pages reviewed | ✅ PASS — patterns consistent; 2 gaps found and fixed (BUG-QA-04/05) |
+
+### Session 51 Pages Audited
+
+| Route | Status | Notes |
+|---|---|---|
+| `/login` | ✅ Pass | Timeout, double-submit, smart routing, quiz session linking — all clean |
+| `/signup` | ✅ Pass | CAPTCHA, scroll-to-accept ToS, loading overlay, CASL consent |
+| `/forgot-password` | ✅ Pass | Security-phrased response ("if account exists"), `?error=expired` param supported |
+| `/reset-password` | ✅ Pass | Session check, loading state, success screen, expired link fallback |
+| `/verify` | ✅ Pass | BUG-QA-03 fixed — resend button now conditional on having session ID |
+| `/terms-required` | ✅ Pass | Smart scroll detection, double-submit guard, `/api/auth/accept-terms` route exists |
+| `/apply/module2` | ✅ Pass | 6-step flow, auth check, Module 1 gate, all DB columns verified in migration 20260605160000 |
+| `/apply/module4` | ✅ Pass | BUG-QA-04+05 fixed — error states for question/summary fetch failures |
+| `/apply/upload` | ✅ Pass | validateFile() function, MAX_FILES_PER_SESSION, file deduplication |
+| `/apply/upload/processing` | ✅ Pass | SSE streaming, per-doc error events, stale-closure-safe ref for discrepancy count |
+| `/apply/upload/review` | ✅ Pass | Clean wrapper with missing-param guard |
+| `/apply/upload/gaps` | ✅ Pass | Clean wrapper with missing-param guard |
+| `/simulator/quick-start` | ✅ Pass | Auth check, SSE extraction with error handling, error message with "return to simulator" |
+| `/simulator/case-file` | ✅ Pass | Auth check, auto-resolve applicationId if missing from URL |
+| `/simulator/interview-day` | ✅ Pass | Auth check, loading state |
+| `/simulator/outcome` | ✅ Pass | Error state, navigation to dashboard and gap-analysis |
+| `/documents/[applicationId]` | ✅ Pass | Loading, error, download state machine (locked→ready→downloading→complete) |
+| `/generate/[applicationId]` | ✅ Pass | BUG-QA-01 API route now exists; comprehensive error handling throughout |
+
+### Session 51 Migration Debt Noted
+
+| Item | Status |
+|---|---|
+| `applications.business_shortlist`, `specific_business_description`, `experience_gap_flag` | In migration `20260605160000_module2_business_advisor.sql` — verify was applied to remote DB if module 2 has not been tested end-to-end |
+
+### Session 51 Dead Code Noted (P3 — no action required)
+
+The download button in `/documents/[applicationId]/page.tsx:455` sends `Authorization: Bearer ${userId}` where userId is a plain user ID (not a JWT). The download API route ignores this header entirely — auth comes from Supabase cookies via `createSupabaseServerClient()`. The header is dead code. No security issue, but confusing.
+
+---
+
+## Sessions 49–50 — (prior session record below)
+
 **Sessions:** 49–50 | **Date:** 2026-06-21 | **Tester:** Claude (automated browser audit)  
 **Branch:** `dev` | **Build status:** ✅ Clean  
 **Environment:** `localhost` dev server, logged in as James Windsor (test account)
