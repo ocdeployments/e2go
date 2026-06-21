@@ -1,6 +1,6 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 21, 2026 — Session 50 QA Audit complete. 7 bugs found and fixed: (1) Module 1 redirect to dashboard fixed — `quiz_sessions.order("created_at")` → `order("id")`. (2) Pricing add-on tiers appearing first — filtered to `solo_*`/`partnership_*` tier_ids. (3) About page missing Nav — created `about/layout.tsx`. (4) Module 3 sidebar hardcoded "Tab A" — dynamic `tabLabel` prop added to `TabPage`/`TabSidebar`. (5) Calendar page blank — applied missing migrations: `working_target_date` + `confirmed_interview_date` columns pushed to remote Supabase via Management API. (6) `calendar_items` table missing — created table + RLS in Supabase + saved migration `20260621000000_calendar_items.sql`. (7) `/documents` 404 — created `src/app/documents/page.tsx` redirect to `/documents/{applicationId}`. Full audit in `docs/QA_AUDIT.md`. Build clean. ⚠️ Still pending: apply migration `20260621000000_fdd_report_access.sql` + SQL for `generated_documents.status` CHECK constraint.
+**Last Updated:** June 21, 2026 — Session 52: 4 UX bugs fixed + Gap Analysis Remediation Tool shipped. Bugs: (1) Cookie banner "Learn More" opened in same tab → `<a target="_blank">`. (2) Login routed quiz-complete unpaid users to `/pricing` → now routes to `/results`. (3) Gap analysis D-05 "Fix this" linked to form at `/apply/business#market` → now `/apply/module3/k`. (4) D-05 mitigation copy said "Upload" → reworded to Tab K. Feature: Gap Analysis Remediation Tool — each D-code card now self-contained action unit: `D_CODE_REMEDIATION` registry (15 entries in `gap-analysis-engine.ts`), `RemediationPanel` component (progress bar + completion checklist + inline form fields + file upload + per-field 800ms debounce), `DenialRiskRadar` extracted + enhanced (card header vs panel click separated), `CategoryCard` extracted. `page.tsx` rewired: `localAnswers`/`localDocs` state initialised from DB fetch; live rescore `useEffect` calls `scoreCase()` synchronously on every field change; `liveResult` drives all score numbers on page. Build clean. 3 commits on dev. ⚠️ Still pending: apply migration `20260621000000_fdd_report_access.sql` + SQL for `generated_documents.status` CHECK constraint ('revising', 'revision_requested').
 
 **Previous:** June 21, 2026 — E2E audit sprints S13–S21 complete. Bugs fixed this session: (1) Document revision feature wired end-to-end (`src/app/documents/[applicationId]/page.tsx`) — `submitRevision()` calls `POST /api/generate/revise/${applicationId}`, change type radio UI (wording/add info/factual fix), loading + success states, 4 stale `setRevisionForm` call sites patched to include `changeType`. (2) `humanizeDocument` in `src/app/api/generate/revise/[applicationId]/route.ts` called with missing 2nd arg — fixed to `humanizeDocument(rawText, payload.voice_profile || '')`. (3) `fdd/compare` route — `territory.competition` → `territory.competitors`, `.grade` → `.result` on ProfileMatchDimension. (4) `ProcessingClient.tsx` stale-closure bug — `discrepancyCount` read as 0 in `extraction_complete` handler; fixed with `discrepancyCountRef`. (5) `DiscrepancyReviewClient.tsx` — stale sessionStorage gap report cleared before redirect. (6) `UploadClient.tsx` — UX copy fix. (7) `module3/page.tsx` — generate button routed to SSE page (was calling raw API). ⚠️ SQL PENDING: Add `'revising'` and `'revision_requested'` to `generated_documents.status` CHECK constraint in Supabase. S7 (`/apply/business`) and S2 (`/pricing`) remain deferred.
 
@@ -4013,21 +4013,21 @@ Resolved all ESLint errors to achieve clean build (119 pages, zero errors):
 | S4 | `/dashboard` + `/documents/[id]` + cross-app deadlock | ✅ Complete | 10 bugs total (5 in Session 44, 5 in Session 47) | ✅ All fixed |
 | S5 | `/apply/module1` | ✅ Complete | 2 bugs found (see Session 46) | ✅ All fixed |
 | S6 | `/apply` hub + `/apply/module2` | ✅ Complete | 11 bugs found (see Session 49) | ✅ All fixed |
-| S7 | `/apply/business` | ⏳ DEFERRED | — | — |
+| S7 | `/apply/business` | ✅ Complete | 1 bug: startup costs never persisted to DB (now serialised as JSON under M3-E-STARTUP-COSTS) | ✅ Fixed (commit 1ba5976) |
 | S8 | `/apply/investment` | ✅ Complete | 1 bug found (see Session 50) | ✅ Fixed |
 | S9 | `/apply/family` | ✅ Complete | 1 bug found (see Session 50) | ✅ Fixed |
 | S10 | `/apply/ties` | ✅ Complete | 2 bugs found (see Session 50) | ✅ Fixed |
 | S11 | `/apply/story` | ✅ Complete | 0 bugs (see Session 50) | — |
 | S12 | `/apply/qualifications` | ✅ Complete | 1 bug found (see Session 50) | ✅ Fixed |
-| S13 | `/apply/upload` → `/upload/review` → `/upload/gaps` | ⏳ | — | — |
-| S14 | `/apply/module3/a–l` | ⏳ | — | — |
-| S15 | `/apply/module4` + `/apply/checklist` + `/apply/calendar` + `/apply/overview` | ⏳ | — | — |
+| S13 | `/apply/upload` → `/upload/review` → `/upload/gaps` | ✅ Complete | document revision + stale closure bugs fixed | ✅ |
+| S14 | `/apply/module3/a–l` | ✅ Complete | 0 bugs | ✅ |
+| S15 | `/apply/module4` + `/apply/checklist` + `/apply/calendar` + `/apply/overview` | ✅ Complete | 0 bugs | ✅ |
 | S16 | `/gap-analysis` | ✅ Complete | 4 bugs: ghost columns (business_category, marginality_score), hash nav broken on 9 D-codes, semantic-eval always 404 | ✅ All fixed |
-| S17 | `/simulator` → full flow | ⏳ | — | — |
+| S17 | `/simulator` → full flow | ✅ Complete | 0 bugs | ✅ |
 | S18 | `/fdd/upload` → `/fdd/report` | ⏳ | — | — |
 | S19 | `/generate/[id]` → `/documents/[id]` | ⏳ | — | — |
-| S20 | `/settings` | ⏳ | — | — |
-| S21 | `/learn/*` + `/support` + `/terms` + `/privacy` | ⏳ | — | — |
+| S20 | `/settings` | ✅ Complete | 0 bugs | ✅ |
+| S21 | `/learn/*` + `/support` + `/terms` + `/privacy` | ✅ Complete | 0 bugs | ✅ |
 
 ---
 
