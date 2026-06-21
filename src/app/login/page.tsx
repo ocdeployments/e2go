@@ -135,8 +135,8 @@ function LoginForm() {
               // Simulator-only purchase → simulator home
               window.location.href = '/simulator';
             } else if (application.payment_status !== 'paid') {
-              // 3. Application exists, payment not complete → /pricing
-              window.location.href = '/pricing';
+              // 3. Application exists, payment not complete → /results (show quiz outcome)
+              window.location.href = '/results';
             } else {
               // 4. Paid — check last visited section
               const { data: lifecycle } = await supabase
