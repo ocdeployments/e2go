@@ -49,16 +49,17 @@ interface FddSections {
   items_19_21: string;
 }
 
+// (?![^\n]*\.{3,}) skips TOC lines where "ITEM N TITLE .......page" has 3+ dots on the same line
 const ITEM_PATTERNS: Record<number, RegExp> = {
-  1:  /ITEM\s+1[\s\W]/i,
-  3:  /ITEM\s+3[\s\W]/i,
-  8:  /ITEM\s+8[\s\W]/i,
-  11: /ITEM\s+11[\s\W]/i,
-  13: /ITEM\s+13[\s\W]/i,
-  17: /ITEM\s+17[\s\W]/i,
-  18: /ITEM\s+18[\s\W]/i,
-  19: /ITEM\s+19[\s\W]/i,
-  22: /ITEM\s+22[\s\W]/i,
+  1:  /ITEM\s+1[\s\W](?![^\n]*\.{3,})/i,
+  3:  /ITEM\s+3[\s\W](?![^\n]*\.{3,})/i,
+  8:  /ITEM\s+8[\s\W](?![^\n]*\.{3,})/i,
+  11: /ITEM\s+11[\s\W](?![^\n]*\.{3,})/i,
+  13: /ITEM\s+13[\s\W](?![^\n]*\.{3,})/i,
+  17: /ITEM\s+17[\s\W](?![^\n]*\.{3,})/i,
+  18: /ITEM\s+18[\s\W](?![^\n]*\.{3,})/i,
+  19: /ITEM\s+19[\s\W](?![^\n]*\.{3,})/i,
+  22: /ITEM\s+22[\s\W](?![^\n]*\.{3,})/i,
 };
 
 function findItemOffset(text: string, itemNum: number, searchFrom = 0): number {
