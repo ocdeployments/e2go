@@ -32,7 +32,10 @@ export default function DocumentsReviewPage() {
     open: false,
     documentId: "",
     description: "",
+    changeType: "wording" as "wording" | "additional_info" | "factual_correction",
   });
+  const [revisionSubmitting, setRevisionSubmitting] = useState(false);
+  const [revisionSuccess, setRevisionSuccess] = useState(false);
   const [hoveredParagraph, setHoveredParagraph] = useState<number | null>(null);
   const [acknowledgments, setAcknowledgments] = useState({
     genuine: false,
@@ -86,7 +89,7 @@ export default function DocumentsReviewPage() {
 
   const closeModal = () => {
     setModal({ open: false, document: null });
-    setRevisionForm({ open: false, documentId: "", description: "" });
+    setRevisionForm({ open: false, documentId: "", description: "", changeType: "wording" });
     setHoveredParagraph(null);
   };
 
@@ -97,19 +100,45 @@ export default function DocumentsReviewPage() {
       description: prefill
         ? `Please revise this paragraph:\n\n"${prefill.trim()}"\n\nChange: `
         : "",
+      changeType: "wording",
     });
   };
 
   const submitRevision = async () => {
     if (!revisionForm.documentId || !revisionForm.description.trim()) return;
-    // Revision request would go to an API endpoint
-    // For now, close the form
-    setRevisionForm({ open: false, documentId: "", description: "" });
-    setCredits((prev) =>
-      prev
-        ? { ...prev, credits_remaining: prev.credits_remaining - 1, credits_used: prev.credits_used + 1 }
-        : null
-    );
+    setRevisionSubmitting(true);
+    try {
+      const res = await fetch(`/api/generate/revise/${applicationId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          documentId: revisionForm.documentId,
+          description: revisionForm.description,
+          changeType: revisionForm.changeType,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Revision failed");
+      }
+      // Update the document in local state
+      if (data.document) {
+        setDocuments((prev) =>
+          prev.map((d) => (d.id === revisionForm.documentId ? { ...d, ...data.document } : d))
+        );
+      }
+      // Refresh credits
+      setCredits((prev) =>
+        prev ? { ...prev, credits_remaining: prev.credits_remaining - 1, credits_used: prev.credits_used + 1 } : null
+      );
+      setRevisionSuccess(true);
+      setRevisionForm({ open: false, documentId: "", description: "", changeType: "wording" });
+      setTimeout(() => setRevisionSuccess(false), 4000);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Revision failed. Please try again.");
+    } finally {
+      setRevisionSubmitting(false);
+    }
   };
 
   const approveDocument = async (documentId: string) => {
@@ -513,58 +542,91 @@ export default function DocumentsReviewPage() {
             {/* Modal Body */}
             <div className="max-h-[60vh] overflow-y-auto px-8 py-6">
               {revisionForm.open ? (
-                <div>
-                  <h3
-                    className="mb-4 text-sm font-medium text-[#C9A84C]"
-                    style={{ fontFamily: "'DM Sans', sans-serif" }}
-                  >
-                    Request a Revision
-                  </h3>
-                  <textarea
-                    value={revisionForm.description}
-                    onChange={(e) =>
-                      setRevisionForm((prev) => ({
-                        ...prev,
-                        description: e.target.value,
-                      }))
-                    }
-                    placeholder="Describe what needs to be changed..."
-                    rows={4}
-                    className="w-full border border-white/10 bg-[#0a0a0a] p-3 text-sm text-white/80 placeholder:text-white/20"
-                    style={{ fontFamily: "'DM Sans', sans-serif" }}
-                  />
-                  <div className="mt-3 flex items-center justify-between">
-                    <p
-                      className="text-xs text-white/30"
-                      style={{ fontFamily: "'DM Sans', sans-serif" }}
-                    >
-                      This uses 1 revision credit (
-                      {credits?.credits_remaining || 0} remaining)
-                    </p>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() =>
-                          setRevisionForm({
-                            open: false,
-                            documentId: "",
-                            description: "",
-                          })
-                        }
-                        className="border border-white/15 px-4 py-2 text-xs font-medium uppercase tracking-wider text-white/40"
-                        style={{ fontFamily: "'DM Sans', sans-serif" }}
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        onClick={submitRevision}
-                        disabled={!revisionForm.description.trim()}
-                        className="border border-[#C9A84C] px-4 py-2 text-xs font-medium uppercase tracking-wider text-[#C9A84C] disabled:opacity-30"
-                        style={{ fontFamily: "'DM Sans', sans-serif" }}
-                      >
-                        Submit Revision
-                      </button>
+                <div style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                  {revisionSuccess ? (
+                    <div className="py-8 text-center">
+                      <p className="text-2xl mb-2">✓</p>
+                      <p className="text-sm text-[#C9A84C]">Revision submitted</p>
+                      <p className="text-xs text-white/30 mt-1">Your document is being updated.</p>
                     </div>
-                  </div>
+                  ) : (
+                    <>
+                      <h3 className="mb-4 text-sm font-medium text-[#C9A84C]">
+                        Request a Revision
+                      </h3>
+
+                      {/* Change type */}
+                      <div className="mb-4 flex gap-2">
+                        {(
+                          [
+                            { value: "wording", label: "Wording" },
+                            { value: "additional_info", label: "Add Info" },
+                            { value: "factual_correction", label: "Factual Fix" },
+                          ] as const
+                        ).map((opt) => (
+                          <button
+                            key={opt.value}
+                            onClick={() =>
+                              setRevisionForm((prev) => ({
+                                ...prev,
+                                changeType: opt.value,
+                              }))
+                            }
+                            className={`px-3 py-1.5 text-xs uppercase tracking-wider border transition-colors ${
+                              revisionForm.changeType === opt.value
+                                ? "border-[#C9A84C] text-[#C9A84C]"
+                                : "border-white/15 text-white/30 hover:border-white/30 hover:text-white/50"
+                            }`}
+                          >
+                            {opt.label}
+                          </button>
+                        ))}
+                      </div>
+
+                      <textarea
+                        value={revisionForm.description}
+                        onChange={(e) =>
+                          setRevisionForm((prev) => ({
+                            ...prev,
+                            description: e.target.value,
+                          }))
+                        }
+                        placeholder="Describe what needs to be changed..."
+                        rows={4}
+                        className="w-full border border-white/10 bg-[#0a0a0a] p-3 text-sm text-white/80 placeholder:text-white/20"
+                        disabled={revisionSubmitting}
+                      />
+
+                      <div className="mt-3 flex items-center justify-between">
+                        <p className="text-xs text-white/30">
+                          Uses 1 credit ({credits?.credits_remaining ?? 0} remaining)
+                        </p>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() =>
+                              setRevisionForm({
+                                open: false,
+                                documentId: "",
+                                description: "",
+                                changeType: "wording",
+                              })
+                            }
+                            disabled={revisionSubmitting}
+                            className="border border-white/15 px-4 py-2 text-xs font-medium uppercase tracking-wider text-white/40 disabled:opacity-30"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            onClick={submitRevision}
+                            disabled={!revisionForm.description.trim() || revisionSubmitting}
+                            className="border border-[#C9A84C] px-4 py-2 text-xs font-medium uppercase tracking-wider text-[#C9A84C] disabled:opacity-30"
+                          >
+                            {revisionSubmitting ? "Submitting…" : "Submit Revision"}
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               ) : (
                 <div style={{ fontFamily: "'DM Sans', sans-serif" }}>
@@ -631,6 +693,7 @@ export default function DocumentsReviewPage() {
                         open: false,
                         documentId: "",
                         description: "",
+                        changeType: "wording",
                       })
                     : openRevisionForm(modal.document?.id || "")
                 }

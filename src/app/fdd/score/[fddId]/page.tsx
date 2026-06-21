@@ -5,6 +5,8 @@ import { useParams, useRouter } from 'next/navigation';
 import { createBrowserSupabaseClient } from '@/lib/supabase';
 import type { FddAnalysis, FddCompatibility } from '@/types/fdd';
 import type { DimensionScore, OdeAssessment, TimingAssessment } from '@/lib/fdd-scoring-engine';
+import { matchInvestorProfile } from '@/lib/fdd-profile-match-engine';
+import type { ProfileMatchResult, ProfileMatchGrade } from '@/lib/fdd-profile-match-engine';
 
 // ============================================================================
 // Types for persisted e2_score shape
@@ -216,6 +218,102 @@ function NarrativeSection({ narrative }: { narrative: PersistedE2Score['narrativ
 }
 
 // ============================================================================
+// Profile match panel
+// ============================================================================
+
+const GRADE_CONFIG: Record<ProfileMatchGrade, { dot: string; label: string; color: string }> = {
+  pass:    { dot: 'bg-emerald-400', label: 'Pass',    color: 'text-emerald-400' },
+  viable:  { dot: 'bg-[#C9A84C]',  label: 'Viable',  color: 'text-[#C9A84C]' },
+  caution: { dot: 'bg-amber-400',   label: 'Caution', color: 'text-amber-400' },
+  fail:    { dot: 'bg-red-400',     label: 'Fail',    color: 'text-red-400' },
+  unknown: { dot: 'bg-white/20',    label: 'Unknown', color: 'text-white/30' },
+};
+
+const OVERALL_CONFIG: Record<ProfileMatchResult['overall'], { label: string; color: string; border: string; bg: string }> = {
+  STRONG_FIT:       { label: 'Strong Fit',       color: 'text-emerald-400', border: 'border-emerald-400/30', bg: 'bg-emerald-400/5' },
+  GOOD_FIT:         { label: 'Good Fit',         color: 'text-[#C9A84C]',  border: 'border-[#C9A84C]/30',  bg: 'bg-[#C9A84C]/5' },
+  PARTIAL_FIT:      { label: 'Partial Fit',      color: 'text-amber-400',  border: 'border-amber-400/30',   bg: 'bg-amber-400/5' },
+  POOR_FIT:         { label: 'Poor Fit',         color: 'text-red-400',    border: 'border-red-400/30',     bg: 'bg-red-400/5' },
+  INSUFFICIENT_DATA:{ label: 'Insufficient Data',color: 'text-white/40',   border: 'border-white/10',       bg: 'bg-white/3' },
+};
+
+function ProfileMatchPanel({ match }: { match: ProfileMatchResult }) {
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const cfg = OVERALL_CONFIG[match.overall];
+
+  const dimEntries = Object.entries(match.dimensions) as Array<[string, ProfileMatchResult['dimensions'][keyof ProfileMatchResult['dimensions']]]>;
+
+  const dimLabels: Record<string, string> = {
+    capital_adequacy:    'Capital Adequacy',
+    e2_substantiality:   'E-2 Substantiality',
+    role_alignment:      'Role Alignment',
+    employment_creation: 'Employment Creation',
+    net_worth_position:  'Net Worth Position',
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className={`rounded-2xl border ${cfg.border} ${cfg.bg} p-5 flex items-center justify-between`}>
+        <div>
+          <p className="text-white/40 text-xs uppercase tracking-widest mb-1">Your Profile vs This Franchise</p>
+          <p className={`font-['Cormorant_Garamond'] text-2xl font-light ${cfg.color}`}>{cfg.label}</p>
+          <p className="text-white/50 text-xs mt-2 leading-relaxed max-w-sm">{match.recommendation}</p>
+        </div>
+        <div className="text-right shrink-0 ml-4">
+          <p className={`text-3xl font-light ${cfg.color}`}>{match.fit_score}</p>
+          <p className="text-white/30 text-xs">/100 fit score</p>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        {dimEntries.map(([key, dim]) => {
+          const gcfg = GRADE_CONFIG[dim.result];
+          const isOpen = expanded === key;
+          return (
+            <div key={key} className="border border-white/8 rounded-xl overflow-hidden">
+              <button
+                className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-white/3 transition-colors text-left"
+                onClick={() => setExpanded(isOpen ? null : key)}
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${gcfg.dot}`} />
+                  <span className="text-white/70 text-xs font-medium">{dimLabels[key] ?? dim.name}</span>
+                </div>
+                <div className="flex items-center gap-3 shrink-0 ml-2">
+                  <span className={`text-xs font-medium ${gcfg.color}`}>{gcfg.label}</span>
+                  <span className={`text-white/25 text-xs transition-transform ${isOpen ? 'rotate-180' : ''}`}>▾</span>
+                </div>
+              </button>
+
+              {isOpen && (
+                <div className="border-t border-white/8 px-5 py-4 space-y-3">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-white/30 text-xs mb-0.5">You have</p>
+                      <p className="text-white text-sm">{dim.investor_value}</p>
+                    </div>
+                    <div>
+                      <p className="text-white/30 text-xs mb-0.5">Required</p>
+                      <p className="text-white text-sm">{dim.requirement}</p>
+                    </div>
+                  </div>
+                  {dim.gap && (
+                    <div className="bg-amber-400/8 border border-amber-400/20 rounded-lg px-3 py-2">
+                      <p className="text-amber-400 text-xs">Gap: {dim.gap}</p>
+                    </div>
+                  )}
+                  <p className="text-white/40 text-xs leading-relaxed">{dim.note}</p>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
 // Main page
 // ============================================================================
 
@@ -341,6 +439,13 @@ export default function FddScorePage() {
     score.dimensions.develop_and_direct,
   ].filter(Boolean);
 
+  const fields = analysis.extracted_fields ?? {};
+  const profileMatch = matchInvestorProfile(
+    fields as Parameters<typeof matchInvestorProfile>[0],
+    analysis.investor_liquid_capital,
+    analysis.investor_net_worth
+  );
+
   return (
     <main className="min-h-screen bg-[#0a0a0a] text-white">
       <div className="max-w-2xl mx-auto px-6 py-16 space-y-8">
@@ -392,6 +497,12 @@ export default function FddScorePage() {
 
         {/* Timing */}
         {score.timing_assessment && <TimingPanel timing={score.timing_assessment as TimingAssessment} />}
+
+        {/* Investor–Franchise Profile Match */}
+        <div>
+          <h2 className="text-white/40 text-xs uppercase tracking-widest mb-4">Investor Profile Match</h2>
+          <ProfileMatchPanel match={profileMatch} />
+        </div>
 
         {/* CTAs */}
         <div className="flex gap-3 pt-4">
