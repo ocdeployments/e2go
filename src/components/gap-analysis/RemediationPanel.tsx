@@ -31,7 +31,18 @@ function docIsPresent(docType: string, docs: DocRow[]): boolean {
   });
 }
 
-interface CompletionItem { label: string; complete: boolean }
+// Quality check for textarea answers — presence alone isn't enough.
+const FILLER_PHRASES = ['not sure', "don't know", 'tbd', 'n/a', 'none', 'na', 'will add later', 'coming soon', 'todo', 'unknown', 'not yet'];
+function getTextQuality(value: string, inputType: string): 'empty' | 'weak' | 'strong' {
+  const v = value.trim();
+  if (v.length <= 3) return 'empty';
+  if (inputType !== 'textarea') return v.length > 0 ? 'strong' : 'empty';
+  if (FILLER_PHRASES.some(p => v.toLowerCase().includes(p)) && v.length < 40) return 'weak';
+  if (v.split(/\s+/).length < 5) return 'weak';
+  return 'strong';
+}
+
+interface CompletionItem { label: string; complete: boolean; quality?: 'weak' | 'strong' }
 
 function computeCompletion(
   remediation: DCodeRemediation,
@@ -40,7 +51,9 @@ function computeCompletion(
 ): { done: number; total: number; items: CompletionItem[] } {
   const items: CompletionItem[] = [];
   for (const f of remediation.fields) {
-    items.push({ label: f.label, complete: (localAnswers.get(f.key)?.trim().length ?? 0) > 3 });
+    const val = localAnswers.get(f.key) ?? '';
+    const quality = getTextQuality(val, f.inputType);
+    items.push({ label: f.label, complete: quality === 'strong', quality: quality === 'empty' ? undefined : quality });
   }
   for (const d of remediation.docs) {
     items.push({ label: d.label, complete: docIsPresent(d.docType, localDocs) });
@@ -152,24 +165,28 @@ export default function RemediationPanel({
       {/* ── Checklist ─────────────────────────────────────────────────── */}
       {total > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', marginBottom: '14px' }}>
-          {items.map(item => (
-            <div key={item.label} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
-              <span style={{
-                flexShrink: 0, marginTop: '1px',
-                fontSize: '12px',
-                color: item.complete ? '#22c55e' : 'rgba(245,240,232,0.25)',
-              }}>
-                {item.complete ? '✓' : '○'}
-              </span>
-              <span style={{
-                fontSize: '11px', lineHeight: 1.4,
-                color: item.complete ? 'rgba(245,240,232,0.4)' : 'rgba(245,240,232,0.65)',
-                textDecoration: item.complete ? 'line-through' : 'none',
-              }}>
-                {item.label}
-              </span>
-            </div>
-          ))}
+          {items.map(item => {
+            const icon = item.complete ? '✓' : item.quality === 'weak' ? '⚠' : '○';
+            const iconColor = item.complete ? '#22c55e' : item.quality === 'weak' ? '#f59e0b' : 'rgba(245,240,232,0.25)';
+            const textColor = item.complete ? 'rgba(245,240,232,0.4)' : item.quality === 'weak' ? 'rgba(245,240,232,0.75)' : 'rgba(245,240,232,0.65)';
+            return (
+              <div key={item.label} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                <span style={{ flexShrink: 0, marginTop: '1px', fontSize: '12px', color: iconColor }}>
+                  {icon}
+                </span>
+                <div style={{ flex: 1 }}>
+                  <span style={{ fontSize: '11px', lineHeight: 1.4, color: textColor, textDecoration: item.complete ? 'line-through' : 'none' }}>
+                    {item.label}
+                  </span>
+                  {item.quality === 'weak' && !item.complete && (
+                    <span style={{ display: 'block', fontSize: '10px', color: '#f59e0b', marginTop: '1px' }}>
+                      Too brief — add more specific detail
+                    </span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
 

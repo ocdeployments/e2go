@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
-import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { createBrowserSupabaseClient } from '@/lib/supabase';
 import Link from 'next/link';
@@ -70,6 +70,12 @@ function GapAnalysisInner() {
   const [cachedBrief, setCachedBrief] = useState<BriefRow | undefined>(undefined);
   const [cachedSim, setCachedSim] = useState<SimulatorData>({ sessionsUsed: 0, latestInconsistencyCount: 0 });
   const [cachedArchetype, setCachedArchetype] = useState<string | null>(null);
+
+  // Diff tracking — captures baseline risk levels on first load, computes improvements live
+  const initialRisksRef = useRef<Map<string, string>>(new Map());
+  const changedKeysRef = useRef<Set<string>>(new Set());
+  const [showReanalysisPrompt, setShowReanalysisPrompt] = useState(false);
+  const [resolvedCodes, setResolvedCodes] = useState<{ code: string; from: string; to: string }[]>([]);
 
   // Rebuild case profile then re-score
   const recalculate = async () => {
@@ -167,6 +173,14 @@ function GapAnalysisInner() {
         const scored = scoreCase(app, answers || [], docs || [], brief || undefined, simData, resolvedArchetype);
         setResult(scored);
 
+        // Capture baseline risk levels for session-diff tracking
+        const riskMap = new Map<string, string>();
+        for (const f of scored.denialFactors) riskMap.set(f.code, f.risk);
+        initialRisksRef.current = riskMap;
+        changedKeysRef.current = new Set();
+        setShowReanalysisPrompt(false);
+        setResolvedCodes([]);
+
         // Initialise live rescore state
         const initialAnswerMap = new Map<string, string>();
         for (const a of (answers || [])) {
@@ -233,10 +247,23 @@ function GapAnalysisInner() {
     const answerRows = Array.from(localAnswers.entries()).map(([question_key, answer_value]) => ({ question_key, answer_value }));
     const rescored = scoreCase(cachedApp, answerRows, localDocs, cachedBrief, cachedSim, cachedArchetype);
     setLiveResult(rescored);
+
+    // Compute which D-codes improved vs. the initial load baseline
+    const riskOrder: Record<string, number> = { low: 0, moderate: 1, high: 2 };
+    const improvements: { code: string; from: string; to: string }[] = [];
+    for (const f of rescored.denialFactors) {
+      const initial = initialRisksRef.current.get(f.code);
+      if (initial && (riskOrder[f.risk] ?? 3) < (riskOrder[initial] ?? 3)) {
+        improvements.push({ code: f.code, from: initial, to: f.risk });
+      }
+    }
+    setResolvedCodes(improvements);
   }, [localAnswers, localDocs, cachedApp, cachedBrief, cachedSim, cachedArchetype]);
 
   // Handlers passed down to DenialRiskRadar → RemediationPanel
   const handleAnswerChange = useCallback((key: string, value: string) => {
+    changedKeysRef.current.add(key);
+    if (changedKeysRef.current.size >= 3) setShowReanalysisPrompt(true);
     setLocalAnswers(prev => {
       const next = new Map(prev);
       next.set(key, value);
@@ -485,6 +512,75 @@ function GapAnalysisInner() {
           onAnswerChange={handleAnswerChange}
           onDocUploaded={handleDocUploaded}
         />
+
+        {/* Re-analysis prompt — appears after 3+ distinct fields updated */}
+        {showReanalysisPrompt && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: '16px',
+            padding: '14px 18px', marginTop: '12px',
+            background: 'rgba(201,168,76,0.06)', border: '1px solid rgba(201,168,76,0.2)',
+            flexWrap: 'wrap' as const,
+          }}>
+            <div style={{ flex: 1 }}>
+              <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.1em', color: '#C9A84C' }}>
+                FIELDS UPDATED
+              </span>
+              <p style={{ fontSize: '12px', color: 'rgba(245,240,232,0.6)', margin: '3px 0 0', lineHeight: 1.5 }}>
+                You&apos;ve updated {changedKeysRef.current.size} fields this session. Re-run AI analysis to refresh your substantiality scores and denial risk briefing.
+              </p>
+            </div>
+            <button
+              onClick={() => { setShowReanalysisPrompt(false); runAIAnalysis(); }}
+              disabled={analysisRunning}
+              style={{
+                padding: '8px 16px', fontSize: '11px', fontWeight: 600,
+                letterSpacing: '0.06em', background: 'rgba(201,168,76,0.12)',
+                border: '1px solid rgba(201,168,76,0.35)', color: '#C9A84C',
+                cursor: analysisRunning ? 'not-allowed' : 'pointer',
+                fontFamily: "'DM Sans', sans-serif", whiteSpace: 'nowrap' as const,
+              }}
+            >
+              {analysisRunning ? 'Running…' : 'Re-run AI analysis →'}
+            </button>
+            <button
+              onClick={() => setShowReanalysisPrompt(false)}
+              style={{ background: 'none', border: 'none', color: 'rgba(245,240,232,0.25)', cursor: 'pointer', fontSize: '14px', padding: '0 4px' }}
+              aria-label="Dismiss"
+            >
+              ×
+            </button>
+          </div>
+        )}
+
+        {/* Resolution summary — shows which D-codes improved this session */}
+        {resolvedCodes.length > 0 && (
+          <div style={{
+            padding: '16px 20px', marginTop: '12px',
+            background: 'rgba(34,197,94,0.04)', border: '1px solid rgba(34,197,94,0.18)',
+          }}>
+            <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.12em', color: 'rgba(34,197,94,0.8)', marginBottom: '10px' }}>
+              PROGRESS THIS SESSION — {resolvedCodes.length} RISK{resolvedCodes.length > 1 ? 'S' : ''} REDUCED
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '6px' }}>
+              {resolvedCodes.map(r => {
+                const fromColor = r.from === 'high' ? '#ef4444' : '#f59e0b';
+                const toColor = r.to === 'low' ? '#22c55e' : '#f59e0b';
+                return (
+                  <div key={r.code} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px' }}>
+                    <span style={{ fontWeight: 600, color: 'rgba(245,240,232,0.55)', minWidth: '36px' }}>{r.code}</span>
+                    <span style={{ color: fromColor, fontSize: '10px', fontWeight: 700, letterSpacing: '0.06em' }}>{r.from.toUpperCase()}</span>
+                    <span style={{ color: 'rgba(245,240,232,0.25)' }}>→</span>
+                    <span style={{ color: toColor, fontSize: '10px', fontWeight: 700, letterSpacing: '0.06em' }}>{r.to.toUpperCase()}</span>
+                    <span style={{ color: 'rgba(245,240,232,0.3)', fontSize: '11px' }}>· live score updated</span>
+                  </div>
+                );
+              })}
+            </div>
+            <p style={{ fontSize: '11px', color: 'rgba(245,240,232,0.3)', margin: '10px 0 0', lineHeight: 1.5 }}>
+              These changes are reflected in your score above. Re-run AI analysis to update your full case briefing.
+            </p>
+          </div>
+        )}
 
         {/* 6 evidence categories */}
         <div style={{ marginBottom: '48px' }}>

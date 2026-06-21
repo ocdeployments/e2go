@@ -121,6 +121,32 @@ function categoryPriority(score: number): GapCategory['priority'] {
   return 'critical';
 }
 
+// Parse Year N revenue from M3-I-PROJECTIONS JSON (serialised ProjectionTable).
+// Falls back to legacy quiz keys (QI-05 for Y1, QI-06 for Y3) for backward compat.
+function getProjectionRevenue(am: Map<string, string>, year: number): number {
+  const raw = am.get('M3-I-PROJECTIONS');
+  if (raw) {
+    try {
+      const rows = JSON.parse(raw) as { year: number; revenue: string }[];
+      const row = rows.find(r => r.year === year);
+      if (row?.revenue) return parseAmount(row.revenue);
+    } catch { /* ignore malformed */ }
+  }
+  // Legacy fallback: quiz-generated keys (these are revenue, not employee counts)
+  if (year === 1) return parseAmount(getAnswer(am, 'QI-05'));
+  if (year === 3) return parseAmount(getAnswer(am, 'QI-06'));
+  return 0;
+}
+
+// Total projected employees for Year 1 from M3-I-05 (FT) + M3-I-06 (PT).
+// Falls back to QI-03 quiz key. Does NOT read M3-I-03 (that's projection basis text).
+function getEmployeeY1(am: Map<string, string>): number {
+  const ft = parseInt(getAnswer(am, 'M3-I-05') || '0') || 0;
+  const pt = parseInt(getAnswer(am, 'M3-I-06') || '0') || 0;
+  if (ft > 0 || pt > 0) return ft + pt;
+  return parseInt(getAnswer(am, 'QI-03', 'M3-I-03') || '0') || 0;
+}
+
 // Marginal-by-design business types — inherently limited to supporting investor only
 const MARGINAL_BY_DESIGN = [
   'lawn', 'cleaning', 'house cleaning', 'solo consultant', 'personal training',
@@ -140,9 +166,12 @@ function scoreDenialFactors(
 ): DenialRiskFactor[] {
   const investmentAmount = parseAmount(getAnswer(am, 'QF-02', 'M3-F-02'));
   const totalCost = parseAmount(getAnswer(am, 'QF-03', 'M3-F-03'));
-  const revenueY3 = parseAmount(getAnswer(am, 'QI-06', 'M3-I-06'));
-  const householdIncome = parseAmount(getAnswer(am, 'QI-07', 'M3-I-07', 'QI-NEW-03', 'M3-I-NEW-03'));
-  const employeeY1 = parseInt(getAnswer(am, 'QI-03', 'M3-I-03') || '0') || 0;
+  // M3-I-06 is part-time employee count — do NOT use it for revenue. Use projection JSON.
+  const revenueY3 = getProjectionRevenue(am, 3);
+  // M3-I-07 is planned roles text — do NOT parse as income. Use M3-I-NEW-03 / quiz fallback.
+  const householdIncome = parseAmount(getAnswer(am, 'QI-07', 'QI-NEW-03', 'M3-I-NEW-03'));
+  // M3-I-03 is projection basis text — do NOT parse as employee count. Use M3-I-05/06.
+  const employeeY1 = getEmployeeY1(am);
   const role = getAnswer(am, 'QA-08', 'M3-A-08') || '';
   const category = (app.business_category || '').toLowerCase();
   const opStatus = app.operational_status || '';
@@ -365,7 +394,8 @@ function scoreDenialFactors(
 
   // D-06 — Revenue projections inflated, not data-backed
   {
-    const revenueY1 = parseAmount(getAnswer(am, 'QI-05', 'M3-I-05'));
+    // M3-I-05 is FT employee count, not revenue — read from projection JSON instead.
+    const revenueY1 = getProjectionRevenue(am, 1);
     const hasBasis = hasAnswer(am, 'QI-NEW-02', 'M3-I-NEW-02', 'QK-NEW-01', 'M3-K-NEW-01');
     let risk: DenialRiskFactor['risk'];
     let finding: string;
