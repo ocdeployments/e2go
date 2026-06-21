@@ -28,6 +28,9 @@ export default function ProcessingClient({ documentIds, applicationId }: Process
   const [discrepancyCount, setDiscrepancyCount] = useState(0);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const hasStarted = useRef(false);
+  // Ref to avoid stale closure in the SSE callback — state updates are
+  // async so discrepancyCount inside handleExtraction would always read 0.
+  const discrepancyCountRef = useRef(0);
 
   const handleExtraction = useCallback(async () => {
     if (hasStarted.current) return;
@@ -113,21 +116,22 @@ export default function ProcessingClient({ documentIds, applicationId }: Process
               break;
 
             case 'discrepancies_found':
+              discrepancyCountRef.current = data.count;
               setDiscrepancyCount(data.count);
               break;
 
             case 'extraction_complete':
               setOverallStatus('complete');
-              // Navigate after a brief delay to show completion state
+              // Navigate after a brief delay to show completion state.
+              // Read from ref — the state value is stale inside this closure.
               setTimeout(() => {
                 if (data.gapReport) {
-                  // Store gap report in sessionStorage for the gaps page
                   sessionStorage.setItem(
                     `gap-report-${applicationId}`,
                     JSON.stringify(data.gapReport)
                   );
                 }
-                if (discrepancyCount > 0) {
+                if (discrepancyCountRef.current > 0) {
                   router.push(`/apply/upload/review?app=${applicationId}`);
                 } else {
                   router.push(`/apply/upload/gaps?app=${applicationId}`);
@@ -146,7 +150,7 @@ export default function ProcessingClient({ documentIds, applicationId }: Process
       setOverallStatus('error');
       setErrorMessage(err instanceof Error ? err.message : 'Extraction failed');
     }
-  }, [applicationId, documentIds, discrepancyCount, router]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [applicationId, documentIds, router]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     handleExtraction();

@@ -12,15 +12,25 @@ const COMPAT_CONFIG: Record<FddCompatibility, { color: string; dot: string }> = 
   INELIGIBLE:{ color: 'text-red-400',    dot: 'bg-red-400' },
 };
 
-function AnalysisCard({ analysis }: { analysis: FddAnalysis }) {
+interface AnalysisCardProps {
+  analysis: FddAnalysis;
+  selected: boolean;
+  onSelect: (id: string) => void;
+  compareMode: boolean;
+}
+
+function AnalysisCard({ analysis, selected, onSelect, compareMode }: AnalysisCardProps) {
   const router = useRouter();
   const compat = analysis.overall_compatibility;
   const cfg = compat ? COMPAT_CONFIG[compat] : null;
   const fields = analysis.extracted_fields as Record<string, { value: unknown }> | null;
   const franchiseName = (fields?.franchisor_legal_name?.value as string) ?? analysis.original_filename;
 
-  // Determine where to navigate based on completion stage
   function handleClick() {
+    if (compareMode) {
+      onSelect(analysis.id);
+      return;
+    }
     if (analysis.final_report) {
       router.push(`/fdd/report/${analysis.id}`);
     } else if (analysis.questions) {
@@ -29,8 +39,6 @@ function AnalysisCard({ analysis }: { analysis: FddAnalysis }) {
       router.push(`/fdd/territory/${analysis.id}`);
     } else if (analysis.e2_score) {
       router.push(`/fdd/score/${analysis.id}`);
-    } else if (analysis.extraction_status === 'extracted') {
-      router.push(`/fdd/review/${analysis.id}`);
     } else {
       router.push(`/fdd/review/${analysis.id}`);
     }
@@ -38,27 +46,43 @@ function AnalysisCard({ analysis }: { analysis: FddAnalysis }) {
 
   const stages = [
     { label: 'Extracted', done: analysis.extraction_status === 'extracted' },
-    { label: 'Scored', done: !!analysis.e2_score },
+    { label: 'Scored',    done: !!analysis.e2_score },
     { label: 'Territory', done: !!analysis.territory_analysis },
     { label: 'Questions', done: !!analysis.questions },
-    { label: 'Report', done: !!analysis.final_report },
+    { label: 'Report',    done: !!analysis.final_report },
   ];
-
   const completedStages = stages.filter(s => s.done).length;
 
   return (
     <button
       onClick={handleClick}
-      className="w-full text-left border border-white/10 p-5 hover:border-white/20 hover:bg-white/2 transition-all"
+      className={`w-full text-left border p-5 hover:bg-white/2 transition-all ${
+        selected
+          ? 'border-[#C9A84C]/60 bg-[#C9A84C]/5'
+          : 'border-white/10 hover:border-white/20'
+      }`}
       style={{ borderRadius: 0 }}
     >
       <div className="flex items-start justify-between mb-4">
-        <div>
-          <p className="text-white font-medium text-sm mb-1">{franchiseName}</p>
-          <p className="text-white/40 text-xs">
-            {analysis.target_city ? `${analysis.target_city}, ` : ''}{analysis.target_state ?? ''}
-            {analysis.transaction_type && <> · {analysis.transaction_type.replace(/_/g, ' ')}</>}
-          </p>
+        <div className="flex items-start gap-3">
+          {compareMode && (
+            <div className={`mt-0.5 w-4 h-4 border flex items-center justify-center shrink-0 ${
+              selected ? 'border-[#C9A84C] bg-[#C9A84C]' : 'border-white/30'
+            }`}>
+              {selected && (
+                <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                  <path d="M1 4L3.5 6.5L9 1" stroke="#0a0a0a" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              )}
+            </div>
+          )}
+          <div>
+            <p className="text-white font-medium text-sm mb-1">{franchiseName}</p>
+            <p className="text-white/40 text-xs">
+              {analysis.target_city ? `${analysis.target_city}, ` : ''}{analysis.target_state ?? ''}
+              {analysis.transaction_type && <> · {analysis.transaction_type.replace(/_/g, ' ')}</>}
+            </p>
+          </div>
         </div>
         {compat && cfg && (
           <div className="flex items-center gap-1.5 shrink-0">
@@ -68,7 +92,6 @@ function AnalysisCard({ analysis }: { analysis: FddAnalysis }) {
         )}
       </div>
 
-      {/* Progress stages */}
       <div className="flex gap-1.5 mb-3">
         {stages.map(({ label, done }) => (
           <div
@@ -90,10 +113,10 @@ export default function FddIndexPage() {
   const [analyses, setAnalyses] = useState<FddAnalysis[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [compareMode, setCompareMode] = useState(false);
+  const [selected, setSelected] = useState<string[]>([]);
 
-  useEffect(() => {
-    loadAnalyses();
-  }, []);
+  useEffect(() => { loadAnalyses(); }, []);
 
   async function loadAnalyses() {
     setLoading(true);
@@ -104,12 +127,27 @@ export default function FddIndexPage() {
       .order('created_at', { ascending: false })
       .limit(20);
 
-    if (err) {
-      setError('Could not load your analyses.');
-    } else {
-      setAnalyses((data ?? []) as FddAnalysis[]);
-    }
+    if (err) setError('Could not load your analyses.');
+    else setAnalyses((data ?? []) as FddAnalysis[]);
     setLoading(false);
+  }
+
+  function toggleSelect(id: string) {
+    setSelected(prev => {
+      if (prev.includes(id)) return prev.filter(x => x !== id);
+      if (prev.length >= 4) return prev; // max 4
+      return [...prev, id];
+    });
+  }
+
+  function exitCompareMode() {
+    setCompareMode(false);
+    setSelected([]);
+  }
+
+  function goCompare() {
+    if (selected.length < 2) return;
+    router.push(`/fdd/compare?ids=${selected.join(',')}`);
   }
 
   return (
@@ -123,14 +161,41 @@ export default function FddIndexPage() {
               Your FDD Analyses
             </h1>
           </div>
-          <button
-            onClick={() => router.push('/fdd/upload')}
-            className="bg-[#C9A84C] text-[#0a0a0a] font-semibold px-5 py-2.5 text-sm hover:bg-[#d4b55a] transition-colors shrink-0 self-start sm:self-auto"
-            style={{ borderRadius: 0 }}
-          >
-            + New analysis
-          </button>
+          <div className="flex items-center gap-3 shrink-0 self-start sm:self-auto">
+            {analyses.length >= 2 && !compareMode && (
+              <button
+                onClick={() => setCompareMode(true)}
+                className="border border-white/20 text-white/60 px-4 py-2.5 text-sm hover:border-white/40 hover:text-white/80 transition-colors"
+                style={{ borderRadius: 0 }}
+              >
+                Compare
+              </button>
+            )}
+            <button
+              onClick={() => router.push('/fdd/upload')}
+              className="bg-[#C9A84C] text-[#0a0a0a] font-semibold px-5 py-2.5 text-sm hover:bg-[#d4b55a] transition-colors"
+              style={{ borderRadius: 0 }}
+            >
+              + New analysis
+            </button>
+          </div>
         </div>
+
+        {/* Compare mode instruction banner */}
+        {compareMode && (
+          <div className="mb-6 p-4 border border-[#C9A84C]/30 bg-[#C9A84C]/5 flex items-center justify-between">
+            <p className="text-[#C9A84C] text-sm">
+              Select 2–4 franchises to compare.
+              <span className="text-white/40 ml-2">{selected.length} selected</span>
+            </p>
+            <button
+              onClick={exitCompareMode}
+              className="text-white/30 text-xs hover:text-white/60 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        )}
 
         {loading && (
           <div className="text-center py-16">
@@ -160,7 +225,15 @@ export default function FddIndexPage() {
 
         {!loading && analyses.length > 0 && (
           <div className="space-y-3">
-            {analyses.map(a => <AnalysisCard key={a.id} analysis={a} />)}
+            {analyses.map(a => (
+              <AnalysisCard
+                key={a.id}
+                analysis={a}
+                selected={selected.includes(a.id)}
+                onSelect={toggleSelect}
+                compareMode={compareMode}
+              />
+            ))}
           </div>
         )}
 
@@ -171,6 +244,22 @@ export default function FddIndexPage() {
           </p>
         </div>
       </div>
+
+      {/* Floating compare CTA */}
+      {compareMode && selected.length >= 2 && (
+        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50">
+          <button
+            onClick={goCompare}
+            className="bg-[#C9A84C] text-[#0a0a0a] font-semibold px-8 py-3.5 text-sm shadow-2xl hover:bg-[#d4b55a] transition-colors flex items-center gap-3"
+            style={{ borderRadius: 0 }}
+          >
+            <span>Compare {selected.length} franchises</span>
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M1 7h12M8 3l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+        </div>
+      )}
     </main>
   );
 }

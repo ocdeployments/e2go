@@ -82,10 +82,12 @@ function ProfessionalReport({
   analysis,
   report,
   onPrint,
+  onImport,
 }: {
   analysis: FddAnalysis;
   report: FddProfessionalReport;
   onPrint: () => void;
+  onImport: () => void;
 }) {
   const router = useRouter();
   const fddId = analysis.id;
@@ -414,6 +416,23 @@ function ProfessionalReport({
         </div>
       )}
 
+      {/* Import to Case File CTA */}
+      <div className="border border-[#C9A84C]/20 bg-[#C9A84C]/3 p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <p className="text-white/80 text-sm font-medium mb-1">Ready to proceed?</p>
+          <p className="text-white/40 text-xs leading-relaxed">
+            Import these findings into your E-2 case file — investment, compatibility, and territory data pre-filled.
+          </p>
+        </div>
+        <button
+          onClick={onImport}
+          className="bg-[#C9A84C] text-[#0a0a0a] font-semibold px-6 py-3 text-sm hover:bg-[#d4b55a] transition-colors shrink-0"
+          style={{ borderRadius: 0 }}
+        >
+          Import to Case File
+        </button>
+      </div>
+
       {/* Module navigation */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-2">
         {[
@@ -628,6 +647,150 @@ function FreeTeaser({ analysis, onUpgrade, upgrading }: {
 // Main page
 // ============================================================================
 
+// ============================================================================
+// Import to Case File modal
+// ============================================================================
+
+interface ImportGroup {
+  label: string;
+  items: Array<{ key: string; label: string; value: string }>;
+}
+
+interface ImportModalProps {
+  fddId: string;
+  onClose: () => void;
+}
+
+function ImportModal({ fddId, onClose }: ImportModalProps) {
+  const [state, setState] = useState<'confirm' | 'loading' | 'done' | 'error'>('confirm');
+  const [groups, setGroups] = useState<ImportGroup[]>([]);
+  const [totalWritten, setTotalWritten] = useState(0);
+  const [errorMsg, setErrorMsg] = useState('');
+
+  async function handleImport() {
+    setState('loading');
+    try {
+      const res = await fetch('/api/fdd/writeback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fdd_id: fddId }),
+      });
+      const json = await res.json() as { preview?: { total_written: number; groups: ImportGroup[] }; error?: string };
+      if (!res.ok) throw new Error(json.error ?? 'Import failed');
+      setGroups(json.preview?.groups ?? []);
+      setTotalWritten(json.preview?.total_written ?? 0);
+      setState('done');
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : 'Import failed');
+      setState('error');
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+      <div className="absolute inset-0 bg-black/70" onClick={onClose} />
+      <div className="relative bg-[#111] border border-white/15 w-full sm:max-w-md max-h-[90vh] overflow-y-auto">
+        <div className="p-6">
+          {state === 'confirm' && (
+            <>
+              <p className="text-[#C9A84C] text-xs tracking-widest uppercase mb-3">Case File Integration</p>
+              <h2 className="font-['Cormorant_Garamond'] text-2xl font-light text-white mb-2">
+                Import to Case File
+              </h2>
+              <p className="text-white/50 text-sm mb-6 leading-relaxed">
+                FDD Intelligence findings — investment amounts, business details, E-2 compatibility, and territory data — will be imported into your E-2 case file. Existing answers will be updated; nothing will be deleted.
+              </p>
+              <div className="space-y-3 mb-6">
+                {['Business Identity', 'Financial', 'Employment', 'E-2 Analysis', 'Territory'].map(g => (
+                  <div key={g} className="flex items-center gap-3">
+                    <div className="w-1.5 h-1.5 rounded-full bg-[#C9A84C]" />
+                    <span className="text-white/60 text-sm">{g}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={handleImport}
+                  className="flex-1 bg-[#C9A84C] text-[#0a0a0a] font-semibold py-3 text-sm hover:bg-[#d4b55a] transition-colors"
+                  style={{ borderRadius: 0 }}
+                >
+                  Import findings
+                </button>
+                <button
+                  onClick={onClose}
+                  className="border border-white/15 text-white/50 px-5 py-3 text-sm hover:border-white/30 hover:text-white/70 transition-colors"
+                  style={{ borderRadius: 0 }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </>
+          )}
+
+          {state === 'loading' && (
+            <div className="text-center py-10">
+              <div className="w-8 h-8 border-2 border-[#C9A84C]/30 border-t-[#C9A84C] rounded-full animate-spin mx-auto mb-4" />
+              <p className="text-white/50 text-sm">Writing to case file…</p>
+            </div>
+          )}
+
+          {state === 'done' && (
+            <>
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-8 h-8 rounded-full bg-emerald-400/20 flex items-center justify-center shrink-0">
+                  <svg width="16" height="12" viewBox="0 0 16 12" fill="none">
+                    <path d="M1 6L5.5 10.5L15 1" stroke="#34d399" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-white font-medium text-sm">{totalWritten} fields imported</p>
+                  <p className="text-white/40 text-xs">Your E-2 case file has been updated</p>
+                </div>
+              </div>
+              <div className="space-y-4 mb-6">
+                {groups.map(g => (
+                  <div key={g.label}>
+                    <p className="text-white/30 text-xs uppercase tracking-widest mb-2">{g.label}</p>
+                    <div className="space-y-1.5">
+                      {g.items.map(item => (
+                        <div key={item.key} className="flex items-center justify-between gap-3">
+                          <span className="text-white/50 text-xs truncate">{item.label}</span>
+                          <span className="text-white/80 text-xs text-right max-w-[55%] truncate">{item.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <button
+                onClick={onClose}
+                className="w-full border border-white/15 text-white/60 py-3 text-sm hover:border-white/30 hover:text-white/80 transition-colors"
+                style={{ borderRadius: 0 }}
+              >
+                Close
+              </button>
+            </>
+          )}
+
+          {state === 'error' && (
+            <>
+              <p className="text-red-400 text-sm mb-4">{errorMsg}</p>
+              <button
+                onClick={onClose}
+                className="text-white/40 text-xs hover:text-white/60"
+              >
+                Dismiss
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+
 export default function FddReportPage() {
   const params = useParams<{ fddId: string }>();
   const fddId = params.fddId;
@@ -636,6 +799,7 @@ export default function FddReportPage() {
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [upgrading, setUpgrading] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -769,10 +933,13 @@ export default function FddReportPage() {
     <main className="min-h-screen bg-[#0a0a0a] text-white">
       {hasAccess && report ? (
         isProfessionalReport(report)
-          ? <ProfessionalReport analysis={analysis} report={report} onPrint={() => window.print()} />
+          ? <ProfessionalReport analysis={analysis} report={report} onPrint={() => window.print()} onImport={() => setImportOpen(true)} />
           : <LegacyFullReport analysis={analysis} report={report as FddFinalReport} onPrint={() => window.print()} />
       ) : (
         <FreeTeaser analysis={analysis} onUpgrade={handleUpgrade} upgrading={upgrading} />
+      )}
+      {importOpen && fddId && (
+        <ImportModal fddId={fddId} onClose={() => setImportOpen(false)} />
       )}
     </main>
   );

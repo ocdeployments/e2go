@@ -313,7 +313,7 @@ export default function UploadClient({ applicationId }: { applicationId: string 
                     fontFamily: "'DM Sans', sans-serif",
                   }}
                 >
-                  Fix errors before processing
+                  Errored files will be skipped
                 </span>
               )}
             </div>

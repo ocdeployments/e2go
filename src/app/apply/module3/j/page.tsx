@@ -178,7 +178,7 @@ export default function TabJPage() {
           .from('answers')
           .select('question_key, answer_value')
           .eq('application_id', existingApp.id)
-          .in('question_key', ['QA-01', 'QA-54', 'QA-55', 'QE-08', 'QE-09', 'QI-04']);
+          .in('question_key', ['QA-01', 'QA-54', 'QA-55', 'QE-03', 'QE-04', 'QI-04']);
 
         const orgAnswers: Record<string, string> = {};
         orgData?.forEach((row: { question_key: string; answer_value: string }) => {
@@ -194,13 +194,14 @@ export default function TabJPage() {
 
         setBusinessName(bizData?.answer_value || 'your business');
 
+        const hasPartner = orgAnswers['QE-03'] && orgAnswers['QE-03'] !== 'No — I am the sole owner';
         setOrgChartData({
           applicantName: orgAnswers['QA-01'] || 'Applicant',
           applicantTitle: orgAnswers['QA-54'] || 'Owner / Managing Director',
           ownershipPercent: orgAnswers['QA-55'] || '100',
-          partnerName: orgAnswers['QE-08'],
+          partnerName: hasPartner ? 'Business Partner' : undefined,
           partnerTitle: 'Co-Owner / Director',
-          partnerOwnership: orgAnswers['QE-09'],
+          partnerOwnership: orgAnswers['QE-04'],
           employeeRoles: orgAnswers['QI-04'] ? orgAnswers['QI-04'].split(',').filter(Boolean) : [],
         });
 
@@ -313,6 +314,28 @@ export default function TabJPage() {
       (currentQuestion.showIf.startsWith('QJ-06') && currentQuestion.showIf.includes('=') && answers['QJ-06']?.startsWith(currentQuestion.showIf.split('=')[1]));
 
     if (!showThisQuestion) return null;
+
+    if (currentQuestion.type === 'education' || currentQuestion.type === 'workhistory') {
+      return (
+        <textarea
+          value={(answers as Record<string, string>)[currentQuestion.key] || ''}
+          onChange={(e) => handleAnswerChange(currentQuestion.key, e.target.value)}
+          placeholder={currentQuestion.type === 'education'
+            ? 'Degree / Diploma, Institution, Year — most recent first'
+            : 'Role, Company, Start–End dates, Key responsibilities — most recent first'}
+          className="w-full rounded-lg p-4"
+          style={{
+            minHeight: '160px',
+            background: 'rgba(255,255,255,0.06)',
+            border: '1px solid rgba(255,255,255,0.12)',
+            color: '#f0ede6',
+            fontFamily: "'DM Sans', sans-serif",
+            fontSize: '16px',
+            resize: 'vertical',
+          }}
+        />
+      );
+    }
 
     if (currentQuestion.type === 'select') {
       return (

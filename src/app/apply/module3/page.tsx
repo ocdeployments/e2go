@@ -37,9 +37,7 @@ export default function Module3Overview() {
     }))
   );
   const [loading, setLoading] = useState(true);
-  const [generating, setGenerating] = useState(false);
   const [applicationId, setApplicationId] = useState<string>("");
-  const [userId, setUserId] = useState<string>("");
 
   useEffect(() => {
     const loadStatus = async () => {
@@ -54,7 +52,6 @@ export default function Module3Overview() {
           return;
         }
 
-        setUserId(user.id);
 
         const { data: apps } = await supabase
           .from("applications")
@@ -78,9 +75,9 @@ export default function Module3Overview() {
 
         const _answeredIds = new Set(answers?.map((a: { question_key: string }) => a.question_key) || []);
 
-        // Tab prefixes: Tab A answers use a_ prefix, etc.
+        // Tab prefixes: Tab A answers use QA- prefix, Tab B uses QB-, etc.
         const updatedTabs = TABS.map((tab) => {
-          const prefix = `${tab.letter.toLowerCase()}_`;
+          const prefix = `Q${tab.letter.toUpperCase()}-`;
           const tabAnswers = answers?.filter((a: { question_key: string }) =>
             a.question_key.startsWith(prefix)
           ) || [];
@@ -104,35 +101,10 @@ export default function Module3Overview() {
 
   const allComplete = tabs.every((t) => t.complete);
 
-  const handleGeneratePackage = async () => {
-    if (!applicationId || !userId) return;
-    setGenerating(true);
-
-    try {
-      const res = await fetch("/api/generate/start", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ applicationId, userId }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || "Failed to start generation");
-      }
-
-      // Kick off background pipeline
-      await fetch(`/api/generate/run/${data.jobId}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId }),
-      });
-
-      // Navigate to Module 4 (follow-up conversation) before generation
-      router.push(`/apply/module4`);
-    } catch {
-      setGenerating(false);
-    }
+  const handleGeneratePackage = () => {
+    if (!applicationId) return;
+    // Route to the SSE generation page which handles the full pipeline + progress UI
+    router.push(`/generate/${applicationId}`);
   };
 
   const completedCount = tabs.filter((t) => t.complete).length;
@@ -233,11 +205,11 @@ export default function Module3Overview() {
             </div>
             <button
               onClick={handleGeneratePackage}
-              disabled={generating}
+              disabled={!applicationId}
               className="border border-[#C9A84C] bg-[#C9A84C] px-10 py-4 text-sm font-medium uppercase tracking-wider text-[#0a0a0a] transition-colors hover:bg-[#d4b35c] disabled:opacity-50"
               style={{ fontFamily: "'DM Sans', sans-serif" }}
             >
-              {generating ? "Starting..." : "Generate My Package →"}
+              Generate My Package →
             </button>
           </div>
         )}

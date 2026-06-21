@@ -1,5 +1,7 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+import { createBrowserSupabaseClient } from '@/lib/supabase';
 import { ApplicationProvider, useApplication } from '@/contexts/ApplicationContext';
 import TabPage from '@/components/module3/TabPage';
 import { Section } from '@/types/module3';
@@ -208,8 +210,35 @@ function TabFContent() {
 }
 
 export default function TabFPage() {
+  const [applicationId, setApplicationId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const load = async () => {
+      const supabase = createBrowserSupabaseClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: app } = await supabase
+        .from('applications')
+        .select('id')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (app) setApplicationId(app.id);
+    };
+    load();
+  }, []);
+
+  if (!applicationId) {
+    return (
+      <div style={{ color: 'rgba(245,240,232,0.4)', padding: '48px 24px', textAlign: 'center', fontFamily: "'DM Sans', sans-serif" }}>
+        Loading...
+      </div>
+    );
+  }
+
   return (
-    <ApplicationProvider applicationId="dummy-id">
+    <ApplicationProvider applicationId={applicationId}>
       <TabFContent />
     </ApplicationProvider>
   );

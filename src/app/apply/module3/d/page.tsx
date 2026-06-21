@@ -332,20 +332,30 @@ export default function TabDPage() {
 
     // Call AI API to generate letter
     try {
+      const userPrompt = `Generate a professional E-2 Treaty Investor visa cover letter for ${coverLetterData?.applicantName} from ${coverLetterData?.country}, investing ${coverLetterData?.investmentAmount} (${coverLetterData?.ownershipPercent}% ownership) in ${coverLetterData?.businessName}, a ${coverLetterData?.businessType} enterprise.
+
+Professional background: ${answers['QD-01'] || 'Not provided'}
+
+Investment motivation: ${answers['QD-02'] || 'Not provided'}
+
+Qualifications for this business: ${answers['QD-03'] || 'Not provided'}
+
+12-month business plan: ${answers['QD-04'] || 'Not provided'}
+
+Ties to home country / non-immigrant intent: ${answers['QD-05'] || 'Not provided'}
+
+${answers['QD-06'] ? `Special circumstances to address: ${answers['QD-06']}` : ''}
+
+Write a formal 3-4 paragraph cover letter addressed "To Whom It May Concern:". Use first-person voice. End with "Respectfully submitted," followed by the applicant's name. Format it for consular review with no markdown.`;
+
       const response = await fetch('/api/ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          prompt: 'cover-letter',
-          data: {
-            ...coverLetterData,
-            ...answers,
-          },
-        }),
+        body: JSON.stringify({ userPrompt }),
       });
 
       const data = await response.json();
-      const letter = data.letter || 'Failed to generate letter. Please try again.';
+      const letter = data.response || 'Failed to generate letter. Please try again.';
 
       setGeneratedLetter(letter);
 

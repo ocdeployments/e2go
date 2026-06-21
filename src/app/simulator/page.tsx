@@ -827,9 +827,26 @@ function StartScreen({
           Each session is 15 minutes. Your simulator has been personalised to your specific application and business type.
         </p>
 
+        {available && sessionsRemaining > 0 && (
+          <p style={styles.sessionCount}>{sessionsRemaining} session{sessionsRemaining !== 1 ? 's' : ''} remaining</p>
+        )}
+
         {error && <div style={styles.error}>{error}</div>}
 
-        <div style={styles.modeButtons}>
+        {!available ? (
+          <div style={styles.purchaseBanner}>
+            <p style={styles.purchaseText}>You&apos;ve used all your simulator sessions. Purchase another pack to keep practising before your interview.</p>
+            <button
+              style={styles.purchaseButton}
+              onClick={onPurchase}
+              disabled={purchaseLoading}
+            >
+              {purchaseLoading ? 'Loading...' : 'Purchase 3 More Sessions →'}
+            </button>
+            <p style={styles.purchaseNote}>Sessions never expire · Use anytime before your interview</p>
+          </div>
+        ) : (
+          <div style={styles.modeButtons}>
             <button
               style={styles.modeButton}
               onClick={onStartText}
@@ -849,6 +866,7 @@ function StartScreen({
               {voiceDisabled && <span style={styles.modeTooltip}>Voice mode requires configuration</span>}
             </button>
           </div>
+        )}
 
         <div style={{ display: 'flex', flexDirection: 'column' as const, alignItems: 'center', gap: 12 }}>
           <Link href="/simulator/interview-day" style={{ ...styles.backLink, color: '#C9A84C' }}>

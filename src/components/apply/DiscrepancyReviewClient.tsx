@@ -116,7 +116,8 @@ export default function DiscrepancyReviewClient({ applicationId }: DiscrepancyRe
         }
       }
 
-      // All resolved — navigate to gap report
+      // Clear stale gap report cache — answers just changed, API must re-fetch
+      sessionStorage.removeItem(`gap-report-${applicationId}`);
       router.push(`/apply/upload/gaps?app=${applicationId}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Resolution failed');
