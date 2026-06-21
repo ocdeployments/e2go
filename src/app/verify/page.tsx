@@ -113,28 +113,34 @@ function VerifyPageInner() {
         <div className="w-full md:w-1/2 flex flex-col items-center justify-center p-8">
           <h1 className="text-2xl mb-4" style={{ color: '#f5f0e8', fontFamily: "'Cormorant Garamond', serif", fontWeight: 300 }}>This link has expired</h1>
           <p className="mb-8" style={{ color: 'rgba(245,240,232,0.6)' }}>Verification links expire after 24 hours.</p>
-          {resent ? (
-            <p style={{ color: '#5DCAA5', fontSize: '14px', marginBottom: '16px' }}>New link sent. Check your email.</p>
+          {verifiedData?.quiz_session_id ? (
+            resent ? (
+              <p style={{ color: '#5DCAA5', fontSize: '14px', marginBottom: '16px' }}>New link sent. Check your email.</p>
+            ) : (
+              <button
+                onClick={handleResend}
+                disabled={resending}
+                className="px-8 py-3"
+                style={{
+                  background: '#C9A84C',
+                  color: '#0a0a0a',
+                  fontWeight: 500,
+                  borderRadius: 0,
+                  cursor: resending ? 'not-allowed' : 'pointer',
+                  opacity: resending ? 0.6 : 1,
+                  border: 'none',
+                  fontSize: '13px',
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase' as const,
+                }}
+              >
+                {resending ? 'Sending...' : 'Resend results'}
+              </button>
+            )
           ) : (
-            <button
-              onClick={handleResend}
-              disabled={resending}
-              className="px-8 py-3"
-              style={{
-                background: '#C9A84C',
-                color: '#0a0a0a',
-                fontWeight: 500,
-                borderRadius: 0,
-                cursor: resending ? 'not-allowed' : 'pointer',
-                opacity: resending ? 0.6 : 1,
-                border: 'none',
-                fontSize: '13px',
-                letterSpacing: '0.08em',
-                textTransform: 'uppercase' as const,
-              }}
-            >
-              {resending ? 'Sending...' : 'Resend results'}
-            </button>
+            <p style={{ color: 'rgba(245,240,232,0.5)', fontSize: '14px', marginBottom: '16px', textAlign: 'center' as const }}>
+              Please retake the quiz to get a new results link.
+            </p>
           )}
           <Link href="/quiz" className="mt-6" style={{ color: 'rgba(245,240,232,0.4)', fontSize: '13px', textDecoration: 'underline' }}>
             Or retake the quiz
