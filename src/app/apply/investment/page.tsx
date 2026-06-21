@@ -185,6 +185,7 @@ export default function InvestmentPage() {
   const [applicationId, setApplicationId] = useState<string | null>(null);
   const [projections, setProjections] = useState<Array<{ year: number; revenue: string; netIncome: string; employees: string }>>([]);
   const debounceRef = useRef<Record<string, NodeJS.Timeout>>({});
+  const projSaveRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const HASH_TO_CLUSTER: Record<string, string> = {
@@ -227,12 +228,38 @@ export default function InvestmentPage() {
             }
           });
           setAnswers(answerMap);
+
+          // Load saved financial projections from JSON blob
+          const rawProj = answerMap['M3-I-PROJECTIONS']?.value;
+          if (rawProj) {
+            try {
+              const parsed = JSON.parse(rawProj);
+              if (Array.isArray(parsed)) setProjections(parsed);
+            } catch { /* ignore malformed */ }
+          }
         }
         setLoading(false);
       } catch { setLoading(false); }
     };
     loadData();
   }, []);
+
+  // Auto-save financial projections as JSON whenever they change
+  useEffect(() => {
+    if (!applicationId) return;
+    if (projSaveRef.current) clearTimeout(projSaveRef.current);
+    projSaveRef.current = setTimeout(async () => {
+      await fetch('/api/answers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          question_key: 'M3-I-PROJECTIONS',
+          answer_value: JSON.stringify(projections),
+          application_id: applicationId,
+        }),
+      });
+    }, 800);
+  }, [projections, applicationId]);
 
   const saveAnswer = useCallback(async (key: string, value: string) => {
     if (!applicationId) return;
