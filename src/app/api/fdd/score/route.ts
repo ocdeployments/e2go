@@ -3,6 +3,7 @@ import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { createServiceClient } from '@/lib/supabase-service';
 import Anthropic from '@anthropic-ai/sdk';
 import { scoreFdd } from '@/lib/fdd-scoring-engine';
+import { synthesizeInvestorProfile } from '@/lib/investor-profile-synthesizer';
 import type { FddExtractedFields, FddE2Score } from '@/types/fdd';
 
 const anthropic = new Anthropic();
@@ -43,26 +44,40 @@ export async function POST(request: NextRequest) {
     const registrationStatus = analysis.state_registration_status ?? 'unknown';
     const investorLiquidCapital = analysis.investor_liquid_capital as number | null;
 
-    // Fetch investor QFN profile to enrich develop-and-direct scoring
+    // Build synthesized investor profile (QFN first, then inferred from M3/archetype/category)
     const { data: apps } = await service
       .from('applications')
-      .select('id')
+      .select('id, business_category, operational_status')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(1);
-    const appId = apps?.[0]?.id ?? null;
+    const latestApp = apps?.[0] ?? null;
+    const appId = latestApp?.id ?? null;
+
+    const { data: caseProfileRow } = await service
+      .from('case_profiles')
+      .select('archetype')
+      .eq('user_id', user.id)
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
     let investorProfile: { professionalBackground?: string; managementExperience?: string } | undefined;
     if (appId) {
-      const { data: qfnRows } = await service
+      const { data: answerRows } = await service
         .from('answers')
         .select('question_key, answer_value')
         .eq('application_id', appId)
-        .in('question_key', ['QFN-07', 'QFN-08']);
-      if (qfnRows && qfnRows.length > 0) {
+        .in('question_key', ['QFN-07', 'QFN-08', 'QFN-09', 'QFN-10', 'QFN-01', 'M3-A-08', 'M3-A-09']);
+      const synthesized = synthesizeInvestorProfile(
+        answerRows ?? [],
+        { business_category: latestApp?.business_category ?? null },
+        (caseProfileRow?.archetype as string) ?? null
+      );
+      if (synthesized.source !== 'unknown') {
         investorProfile = {
-          professionalBackground: qfnRows.find(r => r.question_key === 'QFN-07')?.answer_value ?? undefined,
-          managementExperience:   qfnRows.find(r => r.question_key === 'QFN-08')?.answer_value ?? undefined,
+          professionalBackground: synthesized.professionalBackground ?? undefined,
+          managementExperience:   synthesized.managementExperience   ?? undefined,
         };
       }
     }

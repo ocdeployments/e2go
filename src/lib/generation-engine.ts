@@ -1,6 +1,7 @@
 import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import Anthropic from '@anthropic-ai/sdk';
+import { synthesizeInvestorProfile, formatInvestorProfileContext } from './investor-profile-synthesizer';
 import { createClient } from '@supabase/supabase-js';
 import {
   type DocumentType,
@@ -405,29 +406,24 @@ export async function buildGenerationPayload(
     }
   }
 
-  // Extract QFN investor profile for richer document generation context
-  const getQfn = (key: string): string | null => {
-    if (!answers) return null;
-    const found = (answers as Array<Record<string, unknown>>).find(
-      r => (r.question_key ?? r.question_id) === key
-    );
-    return (found?.answer_value as string) ?? null;
-  };
-  const qfnBackground    = getQfn('QFN-07');
-  const qfnPriorBusiness = getQfn('QFN-10');
-  const qfnMgmtExp       = getQfn('QFN-08');
-  const qfnOperatorStyle = getQfn('QFN-09');
-
-  const qfnLines = [
-    qfnBackground    && `Professional background: ${qfnBackground}`,
-    qfnPriorBusiness && `Prior business ownership: ${qfnPriorBusiness}`,
-    qfnMgmtExp       && `Management experience: ${qfnMgmtExp}`,
-    qfnOperatorStyle && `Operator style (systems vs. sales): ${qfnOperatorStyle}`,
-  ].filter(Boolean) as string[];
-
-  const qfnInvestorProfile = qfnLines.length > 0
-    ? ['INVESTOR PROFILE (from Franchise Navigator):', ...qfnLines].join('\n')
-    : undefined;
+  // Build universal investor profile — QFN Franchise Navigator first, then infer
+  // from M3-A-08 (role), M3-A-09 (activities), archetype, and business category.
+  // This fires for every user, not just those who ran the Franchise Navigator.
+  const archForProfile = ((caseBrief as unknown as Record<string, unknown>)?.archetype as string) ?? null;
+  const catForProfile  = ((caseBrief as unknown as Record<string, unknown>)?.business_category as string) ?? null;
+  const answersForProfile = (answers ?? []).map(r => {
+    const row = r as Record<string, unknown>;
+    return {
+      question_key: ((row.question_key ?? row.question_id) as string) ?? '',
+      answer_value: row.answer_value as string | null,
+    };
+  });
+  const investorProfileData = synthesizeInvestorProfile(
+    answersForProfile,
+    { business_category: catForProfile },
+    archForProfile
+  );
+  const qfnInvestorProfile = formatInvestorProfileContext(investorProfileData) ?? undefined;
 
   // Extract investment breakdown as structured data
   const investmentBreakdown = extractInvestmentBreakdown(module3Answers);

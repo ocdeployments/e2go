@@ -5,6 +5,8 @@
 //
 // Pure function — no API calls, no async. Pass raw DB rows in, get scored result out.
 
+import { synthesizeInvestorProfile, type InvestorProfile } from './investor-profile-synthesizer';
+
 // =============================================================================
 // TYPES
 // =============================================================================
@@ -162,7 +164,8 @@ function scoreDenialFactors(
   docs: DocumentRow[],
   app: ApplicationRow,
   brief?: CaseBriefRow,
-  simulator?: SimulatorData
+  simulator?: SimulatorData,
+  investorProfile?: InvestorProfile | null
 ): DenialRiskFactor[] {
   const investmentAmount = parseAmount(getAnswer(am, 'QF-02', 'M3-F-02'));
   const totalCost = parseAmount(getAnswer(am, 'QF-03', 'M3-F-03'));
@@ -536,9 +539,9 @@ function scoreDenialFactors(
     const hasSpecificRole = role.length > 10 && !['owner', 'investor', 'principal'].includes(role.toLowerCase().trim());
     const hasBio = hasDoc(docs, 'resume', 'cv', 'biograph', 'curriculum');
 
-    // QFN intelligence — enriches risk only when answers are present
-    const hoursPerWeek    = getAnswer(am, 'QFN-01');
-    const mgmtExperience  = getAnswer(am, 'QFN-08');
+    // Synthesized investor profile (QFN first, then inferred from M3/archetype/category)
+    const hoursPerWeek   = investorProfile?.hoursPerWeek ?? null;
+    const mgmtExperience = investorProfile?.managementExperience ?? null;
     const lowHours = hoursPerWeek && (
       hoursPerWeek.toLowerCase().includes('under 20') ||
       hoursPerWeek.toLowerCase().includes('20–30') ||
@@ -546,7 +549,9 @@ function scoreDenialFactors(
     );
     const noMgmtExp = mgmtExperience && (
       mgmtExperience.toLowerCase().includes('no experience') ||
-      mgmtExperience.toLowerCase().includes('no prior management')
+      mgmtExperience.toLowerCase().includes('no prior management') ||
+      mgmtExperience.toLowerCase().includes('limited prior management') ||
+      mgmtExperience.toLowerCase().includes('first business venture')
     );
 
     let risk: DenialRiskFactor['risk'];
@@ -969,32 +974,32 @@ export function scoreCase(
 ): GapAnalysisResult {
   const am = buildAnswerMap(answers);
 
-  // Infer archetype from QFN profile when not explicitly provided by the caller
+  // Build universal investor profile — QFN answers first, then infer from M3/archetype/category.
+  // This fires for every user regardless of whether they used the Franchise Navigator.
+  const answersForProfile = Array.from(am.entries()).map(([question_key, answer_value]) => ({
+    question_key,
+    answer_value,
+  }));
+  const investorProfile = synthesizeInvestorProfile(answersForProfile, application, archetype);
+
+  // Resolve archetype: explicit param → synthesized inference from quiz/profile data
   let resolvedArchetype = archetype ?? null;
   if (!resolvedArchetype) {
-    const qfnPrior  = getAnswer(am, 'QFN-10');
-    const qfnMgmt   = getAnswer(am, 'QFN-08');
-    const qfnBg     = getAnswer(am, 'QFN-07');
-    const hasPrior  = qfnPrior?.toLowerCase().includes('yes');
-    const noExp     = !qfnMgmt || qfnMgmt.toLowerCase().includes('no experience') || qfnMgmt.toLowerCase().includes('no prior');
-    const isProfessional = qfnBg && (
-      qfnBg.toLowerCase().includes('corporate') ||
-      qfnBg.toLowerCase().includes('management') ||
-      qfnBg.toLowerCase().includes('executive') ||
-      qfnBg.toLowerCase().includes('professional')
-    );
-    if (hasPrior) {
-      resolvedArchetype = 'buyer';
-    } else if (!noExp && isProfessional) {
-      resolvedArchetype = 'builder';
-    } else if (qfnPrior && !hasPrior) {
-      // Answered the question but said no prior business
+    const prior = (investorProfile.priorBusiness ?? '').toLowerCase();
+    const mgmt  = (investorProfile.managementExperience ?? '').toLowerCase();
+    if (prior.includes('no') || prior.includes('first business')) {
       resolvedArchetype = 'career_switcher';
+    } else if (prior.includes('yes') || prior.includes('prior')) {
+      if (mgmt.includes('professional') || mgmt.includes('builder') || mgmt.includes('executive')) {
+        resolvedArchetype = 'builder';
+      } else {
+        resolvedArchetype = 'buyer';
+      }
     }
   }
 
-  // Score all 15 denial factors first
-  const denialFactors = scoreDenialFactors(am, documents, application, caseBrief, simulator);
+  // Score all 15 denial factors — pass synthesized profile so D-11 can use it
+  const denialFactors = scoreDenialFactors(am, documents, application, caseBrief, simulator, investorProfile);
 
   // Weight selection — priority order:
   // 1. isFranchise  — operational fact; FDD is the primary document regardless of archetype
