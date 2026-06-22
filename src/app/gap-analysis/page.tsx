@@ -12,6 +12,8 @@ import {
 } from '@/lib/gap-analysis-engine';
 import DenialRiskRadar from '@/components/gap-analysis/DenialRiskRadar';
 import CategoryCard from '@/components/gap-analysis/CategoryCard';
+import PathwaySection from '@/components/gap-analysis/PathwaySection';
+import { analyzePathways, buildPathwayInput, type PathwayAnalysisResult } from '@/lib/pathway-engine';
 
 const supabase = createBrowserSupabaseClient();
 
@@ -70,6 +72,9 @@ function GapAnalysisInner() {
   const [cachedBrief, setCachedBrief] = useState<BriefRow | undefined>(undefined);
   const [cachedSim, setCachedSim] = useState<SimulatorData>({ sessionsUsed: 0, latestInconsistencyCount: 0 });
   const [cachedArchetype, setCachedArchetype] = useState<string | null>(null);
+
+  // Pathway intelligence state
+  const [pathwayResult, setPathwayResult] = useState<PathwayAnalysisResult | null>(null);
 
   // Diff tracking — captures baseline risk levels on first load, computes improvements live
   const initialRisksRef = useRef<Map<string, string>>(new Map());
@@ -150,6 +155,8 @@ function GapAnalysisInner() {
           { data: simApp },
           { data: simSessions },
           { data: profile },
+          { data: quizSession },
+          { data: appFull },
         ] = await Promise.all([
           supabase.from('applications').select('business_name, principal_name, simulator_sessions_used').eq('id', resolvedId).eq('user_id', user.id).single(),
           supabase.from('answers').select('question_key, answer_value').eq('application_id', resolvedId),
@@ -157,7 +164,9 @@ function GapAnalysisInner() {
           supabase.from('case_briefs').select('substantiality_score').eq('application_id', resolvedId).order('created_at', { ascending: false }).limit(1).maybeSingle(),
           supabase.from('applications').select('simulator_sessions_used').eq('id', resolvedId).single(),
           supabase.from('simulator_sessions').select('inconsistency_count').eq('application_id', resolvedId).order('started_at', { ascending: false }).limit(1),
-          supabase.from('case_profiles').select('archetype').eq('user_id', user.id).maybeSingle(),
+          supabase.from('case_profiles').select('archetype, franchise_triggered').eq('user_id', user.id).maybeSingle(),
+          supabase.from('quiz_sessions').select('result_json, hard_stop_codes').eq('user_id', user.id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
+          supabase.from('applications').select('investment_amount, application_type').eq('id', resolvedId).single(),
         ]);
 
         if (!app) { setError('Application not found or access denied.'); setLoading(false); return; }
@@ -173,6 +182,32 @@ function GapAnalysisInner() {
         const scored = scoreCase(app, answers || [], docs || [], brief || undefined, simData, resolvedArchetype);
         setResult(scored);
 
+        // Pathway intelligence — extract nationality and hard stops from quiz session
+        const quizResultJson = (quizSession?.result_json as Record<string, unknown> | null) ?? {};
+        const nationality = (quizResultJson.country as string | null) ?? null;
+        const quizHardStops = (quizSession?.hard_stop_codes as string[] | null) ?? [];
+        const franchiseTrigger = profile?.franchise_triggered ?? false;
+        const investmentAmount = (appFull?.investment_amount as number | null) ?? null;
+        const applicationStructure = (appFull?.application_type as string | null) ?? null;
+
+        // Build answer map for pathway engine
+        const initialAnswerMap = new Map<string, string>();
+        for (const a of (answers || [])) {
+          if (a.answer_value) initialAnswerMap.set(a.question_key, a.answer_value);
+        }
+
+        const pathwayInput = buildPathwayInput({
+          applicantNationality: nationality,
+          hardStops: quizHardStops,
+          activeDCodes: scored.denialFactors.map(f => f.code),
+          substantialityScore: scored.categories.find(c => c.id === 'investment_amount')?.score ?? 50,
+          franchiseTrigger,
+          applicationStructure,
+          investmentAmount,
+          answers: initialAnswerMap,
+        });
+        setPathwayResult(analyzePathways(pathwayInput));
+
         // Capture baseline risk levels for session-diff tracking
         const riskMap = new Map<string, string>();
         for (const f of scored.denialFactors) riskMap.set(f.code, f.risk);
@@ -181,11 +216,6 @@ function GapAnalysisInner() {
         setShowReanalysisPrompt(false);
         setResolvedCodes([]);
 
-        // Initialise live rescore state
-        const initialAnswerMap = new Map<string, string>();
-        for (const a of (answers || [])) {
-          if (a.answer_value) initialAnswerMap.set(a.question_key, a.answer_value);
-        }
         setLocalAnswers(initialAnswerMap);
         setLocalDocs(docs || []);
         setLiveResult(scored);
@@ -597,6 +627,13 @@ function GapAnalysisInner() {
             ))}
           </div>
         </div>
+
+        {/* Alternative Pathways — CEI engine */}
+        {pathwayResult && pathwayResult.pathways.length > 0 && (
+          <div style={{ marginTop: '40px' }}>
+            <PathwaySection pathwayResult={pathwayResult} />
+          </div>
+        )}
 
         {/* Footer CTA */}
         <div style={{ padding: '28px 32px', border: '1px solid rgba(201,168,76,0.12)', background: 'rgba(201,168,76,0.02)', textAlign: 'center' as const }}>

@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import quizData from "@/data/module0_questions.json";
+import { TREATY_COUNTRIES } from "@/lib/treaty-countries";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -44,23 +45,6 @@ interface ScoreWeights {
 // Static data
 // ---------------------------------------------------------------------------
 
-const TREATY_COUNTRIES = [
-  "Albania","Argentina","Armenia","Australia","Austria","Azerbaijan",
-  "Bahrain","Bangladesh","Belgium","Bolivia","Bosnia and Herzegovina",
-  "Bulgaria","Cameroon","Canada","Chile","Colombia","Congo",
-  "Costa Rica","Croatia","Czech Republic","Denmark","Ecuador",
-  "Egypt","Estonia","Ethiopia","Finland","France","Georgia",
-  "Germany","Greece","Grenada","Honduras","Ireland","Israel",
-  "Italy","Japan","Jordan","Kazakhstan","South Korea","Kosovo",
-  "Kyrgyzstan","Latvia","Liberia","Lithuania","Luxembourg",
-  "Macedonia","Mexico","Moldova","Mongolia","Montenegro","Morocco",
-  "Netherlands","New Zealand","Norway","Oman","Pakistan","Panama",
-  "Paraguay","Philippines","Poland","Romania","Senegal","Serbia",
-  "Singapore","Slovak Republic","Slovenia","Spain","Sri Lanka",
-  "Suriname","Sweden","Switzerland","Thailand","Togo",
-  "Trinidad and Tobago","Tunisia","Turkey","Ukraine",
-  "United Kingdom","Yugoslavia"
-];
 
 const ALL_QUESTIONS = quizData.questions as QuizQuestion[];
 const HARD_STOPS = quizData.hard_stops as HardStops;
