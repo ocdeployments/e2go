@@ -116,6 +116,7 @@ export default function ApplyPage() {
   const [answerCounts, setAnswerCounts] = useState<Record<string, number>>({});
   const [prefillCounts] = useState<Record<string, number>>({});
   const [priorityDismissed, setPriorityDismissed] = useState(false);
+  const [showFranchiseNavigator, setShowFranchiseNavigator] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
@@ -253,6 +254,10 @@ export default function ApplyPage() {
                 !familyVal.includes('none') && familyVal !== 'no' && familyVal !== ''
               );
             }
+            const wantsFranchise =
+              quizAnswers['Q0-08'] === 'I am still searching — I have not chosen yet' ||
+              quizAnswers['Q0-08b'] === 'Yes — please connect me';
+            setShowFranchiseNavigator(wantsFranchise);
           }
         }
 
@@ -402,6 +407,53 @@ export default function ApplyPage() {
 
         {/* Document upload card */}
         <DocumentUploadCard preparationStatus={preparationStatus} />
+
+        {/* Franchise Navigator next-step card — shown when no business identified */}
+        {showFranchiseNavigator && quizCompleted && (
+          <div
+            style={{
+              marginBottom: '24px',
+              padding: '20px 20px 20px 24px',
+              borderLeft: '3px solid #C9A84C',
+              border: '1px solid rgba(201,168,76,0.22)',
+              borderLeftWidth: '3px',
+              borderLeftColor: '#C9A84C',
+              background: 'rgba(201,168,76,0.025)',
+              fontFamily: "'DM Sans', sans-serif",
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <span style={{ fontSize: '10px', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#C9A84C', fontWeight: 500 }}>
+                  Recommended next step
+                </span>
+                <p style={{ fontSize: '14px', fontFamily: "'Cormorant Garamond', serif", fontWeight: 400, color: '#f5f0e8', margin: '6px 0 8px' }}>
+                  Find the right business for your E-2
+                </p>
+                <p style={{ fontSize: '12px', color: 'rgba(245,240,232,0.5)', lineHeight: 1.7, marginBottom: '14px', maxWidth: '460px' }}>
+                  You haven&rsquo;t selected a business yet. The Franchise Navigator matches you to E-2 eligible
+                  franchises based on your investment range and background — free, with no broker fees charged to you.
+                </p>
+                <a
+                  href="/franchise"
+                  style={{
+                    display: 'inline-block',
+                    padding: '8px 16px',
+                    background: '#C9A84C',
+                    color: '#0a0a0a',
+                    fontSize: '11px',
+                    letterSpacing: '0.07em',
+                    textTransform: 'uppercase',
+                    textDecoration: 'none',
+                    fontWeight: 500,
+                  }}
+                >
+                  Launch Franchise Navigator →
+                </a>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Case-type field prioritization banner */}
         {!priorityDismissed && !allComplete && (() => {
