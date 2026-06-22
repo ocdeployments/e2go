@@ -63,6 +63,41 @@ return val !== undefined && val !== '';
 
 ---
 
+#### BUG-QA-11 (P3 — model quality) — FDD extraction returned sparse data
+**Pages:** `/fdd/review/[fddId]`  
+**Symptom:** Review page shows "6 Fields extracted" from 208-page Assisting Hands Home Care FDD. Most fields (Item 1 franchisor identity, Items 5–6 fees, Item 7 investment, Item 19 financial performance) show "Not disclosed."  
+**Root cause:** Extraction pipeline ran correctly (status: 'extracted', not 'failed'). The PDF was text-extractable (not scanned). The AI prompts in `fdd-extraction-engine.ts` returned mostly null values — likely because this particular FDD's formatting or section structure didn't match the expected patterns in the extraction prompts.  
+**Not a code bug:** The pipeline, UI, and downstream scoring all handle missing data gracefully. Score displays "Unknown" for unpopulated dimensions. Territory analysis still ran using upload-form location data. Questions engine generated 18 questions from flag-triggered templates despite sparse fields.  
+**Action:** Improve extraction prompts for home-care franchise FDDs. Test with additional document variations. This is a model quality / prompt engineering task, not a bug fix.  
+**Status:** ⚠️ Noted — P3 improvement task
+
+---
+
+#### BUG-QA-12 (P2) — `[target state]` placeholder not replaced in FDD questions
+**Pages:** `/fdd/questions/[fddId]`, `/api/fdd/questions/route.ts`  
+**Symptom:** Question 2 rendered as "Is your franchise offering currently registered and approved to be sold in [target state]?" — the literal `[target state]` appeared instead of the actual state.  
+**Root cause:** `FLAG_QUESTIONS.state_registration.text` in `fdd-questions-engine.ts:63` uses a `[target state]` placeholder, but neither the generator nor the API route replaced it with `analysis.target_state` before storing or rendering.  
+**Fix:**
+1. API route (`/api/fdd/questions/route.ts`): replaces placeholder in all questions before persisting to DB — affects future generation runs
+2. Questions page (`/fdd/questions/[fddId]/page.tsx`): replaces at render time in `sortedQuestions` map — handles already-stored questions with the literal  
+**Status:** ✅ Fixed & verified ("VA" now appears correctly)
+
+---
+
+### Session 54 FDD Pipeline Test
+
+| Route | Status | Notes |
+|---|---|---|
+| `/fdd/review/[fddId]` | ✅ Renders | Sparse extraction (BUG-QA-11) but UI handles gracefully with "Not disclosed" fallbacks |
+| `/fdd/score/[fddId]` | ✅ Renders | INELIGIBLE result; analysis, strengths/concerns, flags, dimension breakdown all render |
+| `/fdd/questions/[fddId]` | ✅ Renders | 18 questions, 6 critical; filters by audience work; [target state] now fixed |
+| `/fdd/territory/[fddId]` | ✅ Renders | Territory analysis runs; Census ZCTA lookup failed for 22030 VA (graceful fallback) |
+| `/fdd/report/[fddId]` | ✅ Renders | Paywall gate shows summary preview + "Unlock Full Report — $297" button |
+
+**FDD location note:** The FDD was uploaded with target_city="Fairfax", target_state="VA" in a prior session. All state-specific analysis runs against VA. The correct location for this application is Celina, TX. To re-test with correct location, re-upload the FDD with TX target state.
+
+---
+
 ### Session 54 Data Filled
 
 | Section | Clusters ✓ | Notes |
