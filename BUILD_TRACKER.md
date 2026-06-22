@@ -2182,6 +2182,9 @@ These cannot be done by code — require owner access to Supabase, Stripe, or co
 | ~~Accept Groq Orpheus TTS terms~~ | ~~🔴 HIGH~~ | ✅ DONE June 16, 2026 |
 | ~~Update Supabase pricing table: simulator_3pack~~ | ~~🔴 HIGH~~ | ✅ DONE June 16, 2026 — price_1Tim5fF7Ggk3LUEy2JGRRKrB / 2999 cents |
 | ~~Update Vercel env: STRIPE_PRICE_SIMULATOR_3PACK~~ | ~~🔴 HIGH~~ | ✅ DONE June 16, 2026 |
+| ~~Apply BUG-QA-06 migration (last_visited_section + franchise_referral_requested)~~ | ~~🔴 HIGH~~ | ✅ DONE June 22, 2026 |
+| ~~Apply FDD report access migration (fdd_analyses.report_unlocked + pricing row)~~ | ~~🔴 HIGH~~ | ✅ DONE June 22, 2026 |
+| ~~Add revising/revision_requested to generated_documents.status CHECK~~ | ~~🔴 HIGH~~ | ✅ DONE June 22, 2026 |
 | **Apply FAQ pgvector migration** | 🔴 HIGH | Paste COMBINED SQL BLOCK below into Supabase SQL Editor → Run. Then run seed scripts. |
 | **Run FAQ seed scripts** | 🔴 HIGH | After applying FAQ migration: `npx tsx scripts/seed-faq-corpus.ts` then `npx tsx scripts/seed-faq-kb-chunks.ts` |
 | **Rotate OpenAI API key** | 🔴 HIGH | platform.openai.com → API keys → delete old key → create new → update `.env.local` OPENAI_API_KEY + Vercel env var |

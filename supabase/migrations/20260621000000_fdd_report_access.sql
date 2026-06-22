@@ -7,7 +7,7 @@ ALTER TABLE fdd_analyses
 
 -- Insert fdd_intelligence pricing row — price ID will be set by STRIPE_PRICE_FDD_INTELLIGENCE env var.
 -- Use INSERT ON CONFLICT so this is idempotent.
-INSERT INTO pricing (tier_id, name, amount_cents, stripe_price_id, active)
+INSERT INTO pricing (tier_id, name, amount, stripe_price_id, active)
 VALUES (
   'fdd_intelligence',
   'FDD Intelligence Report',
@@ -17,5 +17,5 @@ VALUES (
 )
 ON CONFLICT (tier_id) DO UPDATE
   SET stripe_price_id = EXCLUDED.stripe_price_id,
-      amount_cents    = EXCLUDED.amount_cents,
+      amount          = EXCLUDED.amount,
       active          = true;
