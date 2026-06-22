@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import PackageSummary from "@/components/PackageSummary";
+import DocumentAuditPanel from "@/components/documents/DocumentAuditPanel";
 import {
   DOCUMENT_TYPE_LABELS,
   DOCUMENT_TYPE_TABS,
@@ -253,9 +254,10 @@ export default function DocumentsReviewPage() {
           {documents.map((doc) => (
             <div
               key={doc.id}
-              className="border border-white/8 bg-[#0d0d0d] p-6"
+              className="border border-white/8 bg-[#0d0d0d]"
             >
-              <div className="flex flex-wrap items-start justify-between gap-4">
+              {/* Card header */}
+              <div className="flex flex-wrap items-start justify-between gap-4 p-6">
                 <div className="flex-1">
                   <div className="mb-2 flex items-center gap-3">
                     <h3
@@ -300,6 +302,17 @@ export default function DocumentsReviewPage() {
                   </button>
                 </div>
               </div>
+
+              {/* Quality audit panel */}
+              {doc.content_text && (
+                <DocumentAuditPanel
+                  doc={doc}
+                  onRequestRevision={(description) => {
+                    openModal(doc);
+                    openRevisionForm(doc.id, description);
+                  }}
+                />
+              )}
             </div>
           ))}
         </div>
