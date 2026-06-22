@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars, react/no-unescaped-entities */
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { createBrowserSupabaseClient } from '@/lib/supabase';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -780,6 +780,7 @@ export default function InterviewSimulator() {
           summary={coachingSummary}
           sessionNumber={currentSession?.sessionNumber}
           coachingLoading={coachingLoading}
+          applicationId={application?.id}
           onStartNew={() => {
             setScreen('start');
             window.location.reload();
@@ -1315,39 +1316,85 @@ function VoiceInput({
   );
 }
 
-function CoachingCard({ item, coaching }: {
+function coachingCardWordCount(s: string): number {
+  return s.trim() ? s.trim().split(/\s+/).length : 0;
+}
+
+function CoachingCard({ item, coaching, answerKey, correctionNote, correctionSaveStatus, isExpanded, onToggleExpand, onCorrectionChange }: {
   item: { questionId: string; question: string; suggestion: string; originalAnswer: string } | { questionId: string; question: string; filed: string; spoken: string; originalAnswer: string };
   coaching: QuestionCoaching | undefined;
-  isInconsistency?: boolean;
+  answerKey?: string;
+  correctionNote?: string;
+  correctionSaveStatus?: 'idle' | 'saving' | 'saved';
+  isExpanded?: boolean;
+  onToggleExpand?: () => void;
+  onCorrectionChange?: (answerKey: string, value: string) => void;
 }) {
   const isInconsistency = 'spoken' in item;
   const accentColor = isInconsistency ? '#ef4444' : '#f59e0b';
+  const correction = correctionNote ?? '';
+  const isResolved = isInconsistency && coachingCardWordCount(correction) > 10;
+
+  const inputStyle: React.CSSProperties = {
+    width: '100%',
+    background: 'rgba(245,240,232,0.04)',
+    border: '1px solid rgba(245,240,232,0.12)',
+    color: '#f5f0e8',
+    fontSize: '12px',
+    fontFamily: "'DM Sans', sans-serif",
+    padding: '9px 11px',
+    outline: 'none',
+    boxSizing: 'border-box',
+    resize: 'vertical' as const,
+    lineHeight: 1.6,
+    borderRadius: 0,
+  };
 
   return (
     <div style={{
-      border: `1px solid ${accentColor}30`,
-      background: `${accentColor}06`,
+      border: `1px solid ${isResolved ? 'rgba(34,197,94,0.3)' : accentColor + '30'}`,
+      background: isResolved ? 'rgba(34,197,94,0.04)' : `${accentColor}06`,
       marginBottom: '20px',
       padding: '24px',
+      transition: 'border-color 0.3s ease, background 0.3s ease',
     }}>
-      <div style={{
-        display: 'inline-block',
-        fontSize: '10px',
-        fontWeight: 600,
-        letterSpacing: '0.1em',
-        color: accentColor,
-        marginBottom: '12px',
-        padding: '3px 8px',
-        border: `1px solid ${accentColor}50`,
-      }}>
-        {isInconsistency ? 'INCONSISTENCY' : 'NEEDS WORK'}
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px', marginBottom: '12px' }}>
+        <div style={{
+          display: 'inline-block',
+          fontSize: '10px',
+          fontWeight: 600,
+          letterSpacing: '0.1em',
+          color: isResolved ? '#22c55e' : accentColor,
+          padding: '3px 8px',
+          border: `1px solid ${isResolved ? 'rgba(34,197,94,0.5)' : accentColor + '50'}`,
+        }}>
+          {isInconsistency ? (isResolved ? 'RESOLVED' : 'INCONSISTENCY') : 'NEEDS WORK'}
+        </div>
+        {isInconsistency && answerKey && onToggleExpand && (
+          <button
+            onClick={onToggleExpand}
+            style={{
+              fontSize: '11px',
+              color: isResolved ? 'rgba(34,197,94,0.7)' : '#C9A84C',
+              textDecoration: 'underline',
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              padding: 0,
+              fontFamily: 'inherit',
+              flexShrink: 0,
+            }}
+          >
+            {isExpanded ? 'Close ↑' : (isResolved ? 'View correction ↓' : 'Correct this ↓')}
+          </button>
+        )}
       </div>
 
-      <div style={{ fontSize: '15px', color: '#f5f0e8', fontWeight: 500, marginBottom: '16px', lineHeight: 1.4 }}>
+      <div style={{ fontSize: '15px', color: isResolved ? 'rgba(245,240,232,0.6)' : '#f5f0e8', fontWeight: 500, marginBottom: '16px', lineHeight: 1.4 }}>
         {item.question}
       </div>
 
-      {item.originalAnswer && (
+      {item.originalAnswer && !isInconsistency && (
         <div style={{
           fontSize: '13px',
           color: 'rgba(245,240,232,0.45)',
@@ -1357,7 +1404,79 @@ function CoachingCard({ item, coaching }: {
           marginBottom: '20px',
           lineHeight: 1.5,
         }}>
-          Your answer: "{item.originalAnswer.substring(0, 180)}{item.originalAnswer.length > 180 ? '...' : ''}"
+          Your answer: &ldquo;{item.originalAnswer.substring(0, 180)}{item.originalAnswer.length > 180 ? '...' : ''}&rdquo;
+        </div>
+      )}
+
+      {/* Inconsistency: side-by-side comparison (always visible) */}
+      {isInconsistency && (
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gap: '12px',
+          marginBottom: '16px',
+        }}>
+          <div style={{ padding: '12px', background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.15)' }}>
+            <div style={{ fontSize: '9px', fontWeight: 700, letterSpacing: '0.12em', color: 'rgba(239,68,68,0.6)', marginBottom: '8px' }}>
+              YOU SAID
+            </div>
+            <div style={{ fontSize: '12px', color: 'rgba(245,240,232,0.7)', lineHeight: 1.55, fontStyle: 'italic' }}>
+              &ldquo;{(item as { spoken: string }).spoken.substring(0, 200)}{(item as { spoken: string }).spoken.length > 200 ? '...' : ''}&rdquo;
+            </div>
+          </div>
+          <div style={{ padding: '12px', background: 'rgba(201,168,76,0.06)', border: '1px solid rgba(201,168,76,0.15)' }}>
+            <div style={{ fontSize: '9px', fontWeight: 700, letterSpacing: '0.12em', color: 'rgba(201,168,76,0.6)', marginBottom: '8px' }}>
+              CASE FILE SAYS
+            </div>
+            <div style={{ fontSize: '12px', color: 'rgba(245,240,232,0.7)', lineHeight: 1.55 }}>
+              {(item as { filed: string }).filed}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Inconsistency: inline correction panel (toggled) */}
+      {isInconsistency && isExpanded && answerKey && onCorrectionChange && (
+        <div
+          style={{ borderTop: '1px solid rgba(245,240,232,0.08)', paddingTop: '16px', marginTop: '4px' }}
+          onClick={e => e.stopPropagation()}
+        >
+          <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.12em', color: 'rgba(245,240,232,0.3)', textTransform: 'uppercase', marginBottom: '6px' }}>
+            Correction note
+          </div>
+          <div style={{ fontSize: '12px', color: 'rgba(245,240,232,0.45)', lineHeight: 1.6, marginBottom: '10px' }}>
+            Clarify what you meant or note what you&apos;ll say differently. This is saved to your case file.
+          </div>
+          <textarea
+            value={correction}
+            onChange={e => onCorrectionChange(answerKey, e.target.value)}
+            placeholder="e.g. I misspoke — the actual figure in my business plan is $240,000, not $180,000. I will clarify this clearly in my interview."
+            rows={3}
+            style={inputStyle}
+          />
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '6px' }}>
+            <div style={{ fontSize: '10px', color: isResolved ? 'rgba(34,197,94,0.7)' : 'rgba(245,240,232,0.25)' }}>
+              {isResolved ? '✓ Correction noted' : `${coachingCardWordCount(correction)} words — add ~10+ words to mark resolved`}
+            </div>
+            {(correctionSaveStatus ?? 'idle') !== 'idle' && (
+              <div style={{ fontSize: '10px', color: correctionSaveStatus === 'saved' ? '#22c55e' : 'rgba(245,240,232,0.3)' }}>
+                {correctionSaveStatus === 'saving' ? 'Saving…' : '✓ Saved'}
+              </div>
+            )}
+          </div>
+          {isResolved && (
+            <div style={{
+              marginTop: '10px',
+              padding: '10px 12px',
+              background: 'rgba(34,197,94,0.06)',
+              border: '1px solid rgba(34,197,94,0.2)',
+              fontSize: '12px',
+              color: 'rgba(34,197,94,0.8)',
+              lineHeight: 1.5,
+            }}>
+              ✓ Correction saved. Your attorney will see this note alongside the original inconsistency.
+            </div>
+          )}
         </div>
       )}
 
@@ -1414,7 +1533,7 @@ function CoachingCard({ item, coaching }: {
                 WHAT A STRONG ANSWER LOOKS LIKE
               </div>
               <div style={{ fontSize: '13px', color: 'rgba(245,240,232,0.75)', lineHeight: 1.65, fontStyle: 'italic' }}>
-                "{coaching.modelAnswer}"
+                &ldquo;{coaching.modelAnswer}&rdquo;
               </div>
               <div style={{ fontSize: '11px', color: 'rgba(245,240,232,0.3)', marginTop: '10px', lineHeight: 1.5 }}>
                 This is a guide to the level of detail and structure expected — not a script. Officers can tell when answers are memorized. Use this to understand what to cover, then answer in your own words based on your actual situation.
@@ -1437,9 +1556,11 @@ function CoachingCard({ item, coaching }: {
           )}
         </>
       ) : (
-        <div style={{ fontSize: '13px', color: `${accentColor}cc`, lineHeight: 1.6 }}>
-          {'suggestion' in item ? item.suggestion : `Your answer conflicts with your filed documents. Filed: ${item.filed}`}
-        </div>
+        !isInconsistency && (
+          <div style={{ fontSize: '13px', color: `${accentColor}cc`, lineHeight: 1.6 }}>
+            {'suggestion' in item ? item.suggestion : ''}
+          </div>
+        )
       )}
     </div>
   );
@@ -1498,16 +1619,48 @@ function SessionComplete({
   summary,
   sessionNumber,
   coachingLoading,
+  applicationId,
   onStartNew,
   onBackToDashboard,
 }: {
   summary: CoachingSummary;
   sessionNumber?: number;
   coachingLoading: boolean;
+  applicationId?: string;
   onStartNew: () => void;
   onBackToDashboard: () => void;
 }) {
   const hasWeakItems = summary.needsWork.length > 0 || summary.inconsistencies.length > 0;
+  const [expandedInconsistency, setExpandedInconsistency] = useState<string | null>(null);
+  const [corrections, setCorrections] = useState<Record<string, string>>({});
+  const [correctionSaveStatus, setCorrectionSaveStatus] = useState<Record<string, 'idle' | 'saving' | 'saved'>>({});
+  const correctionDebounceRefs = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+
+  const handleCorrectionChange = useCallback((answerKey: string, value: string) => {
+    setCorrections(prev => ({ ...prev, [answerKey]: value }));
+    if (!applicationId) return;
+    const existing = correctionDebounceRefs.current.get(answerKey);
+    if (existing) clearTimeout(existing);
+    setCorrectionSaveStatus(prev => ({ ...prev, [answerKey]: 'saving' }));
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch('/api/answers', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question_key: answerKey, answer_value: value, application_id: applicationId }),
+        });
+        if (res.ok) {
+          setCorrectionSaveStatus(prev => ({ ...prev, [answerKey]: 'saved' }));
+          setTimeout(() => setCorrectionSaveStatus(prev => ({ ...prev, [answerKey]: 'idle' })), 1500);
+        } else {
+          setCorrectionSaveStatus(prev => ({ ...prev, [answerKey]: 'idle' }));
+        }
+      } catch {
+        setCorrectionSaveStatus(prev => ({ ...prev, [answerKey]: 'idle' }));
+      }
+    }, 800);
+    correctionDebounceRefs.current.set(answerKey, timer);
+  }, [applicationId]);
 
   return (
     <div style={styles.completeContainer}>
@@ -1585,13 +1738,24 @@ function SessionComplete({
               />
             ))}
 
-            {summary.inconsistencies.map((item) => (
-              <CoachingCard
-                key={item.questionId}
-                item={item}
-                coaching={summary.detailedCoaching?.find(c => c.questionId === item.questionId)}
-              />
-            ))}
+            {summary.inconsistencies.map((item) => {
+              const answerKey = 'QS-' + item.questionId.replace(/-/g, '');
+              return (
+                <CoachingCard
+                  key={item.questionId}
+                  item={item}
+                  coaching={summary.detailedCoaching?.find(c => c.questionId === item.questionId)}
+                  answerKey={answerKey}
+                  correctionNote={corrections[answerKey] ?? ''}
+                  correctionSaveStatus={correctionSaveStatus[answerKey] ?? 'idle'}
+                  isExpanded={expandedInconsistency === item.questionId}
+                  onToggleExpand={() => setExpandedInconsistency(
+                    expandedInconsistency === item.questionId ? null : item.questionId
+                  )}
+                  onCorrectionChange={handleCorrectionChange}
+                />
+              );
+            })}
           </div>
         )}
 
