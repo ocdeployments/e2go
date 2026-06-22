@@ -4,19 +4,21 @@
 
 ## Session 54 — Live Browser QA with Real Client Data (Anupama Attri / Assisting Hands)
 
-**Date:** 2026-06-21 | **Tester:** Claude (live browser automation via preview harness)  
+**Date:** 2026-06-21 / 2026-06-22 | **Tester:** Claude (live browser automation via preview harness)  
 **Branch:** `dev` | **Account:** romyjames@gmail.com | **Application ID:** f9af9776-7ec8-4120-bb0b-2e45790c3234  
-**Methodology:** Fill every apply section field with real document data, click every button as a user would, verify cluster completion, record and fix bugs found.
+**Methodology:** Fill every apply section field with real document data (Anupama Attri / Care Shepherds LLC / Assisting Hands Home Care), click through as a real user, verify cluster completion, record and fix bugs found. Then full FDD pipeline walkthrough.
 
 ### Session 54 Summary
 
 | Category | Count |
 |---|---|
-| Apply sections filled this session | 6 of 6 (business, investment, qualifications, family, ties — all data entered) |
-| Bugs found | 2 (BUG-QA-09, BUG-QA-10) |
-| Bugs fixed | 2 |
-| Pending owner action | 1 (BUG-QA-06 — DB migration SQL) |
-| Commits | Pending (end of session) |
+| Apply sections filled | 5 of 6 (business, investment, qualifications, family, ties — all data entered via direct API) |
+| FDD pipeline pages tested | 5 of 5 (review, score, questions, territory, report) |
+| Bugs found | 4 (BUG-QA-09, BUG-QA-10, BUG-QA-11, BUG-QA-12) |
+| Bugs fixed | 3 (BUG-QA-09, BUG-QA-10, BUG-QA-12) |
+| Model quality issues noted | 1 (BUG-QA-11 — sparse FDD extraction, P3) |
+| Pending owner action | 1 (BUG-QA-06 — remote DB migration SQL) |
+| Commits | 5 on dev branch — build clean ✅ |
 
 ---
 
@@ -112,9 +114,10 @@ return val !== undefined && val !== '';
 
 ### Session 54 Open Items
 
-1. **BUG-QA-06** — Owner must apply migration SQL (above) to remote Supabase
-2. **SPOUSE cluster incomplete** — M3-L-04 (nationality) and M3-L-05 (passport number) not available in test data. SPOUSE INFORMATION will show as in-progress until filled. This is correct behavior after BUG-QA-10 fix.
-3. **Next QA target** — FDD pipeline: test `/fdd/score`, `/fdd/territory`, `/fdd/questions`, `/fdd/report` with `fdd_id: b262c48a-b39d-4917-8fb5-344da7f4b0e4`
+1. **BUG-QA-06 (owner action)** — Apply migration SQL to remote Supabase (see BUG-QA-06 above). Every apply section visit currently fires a 400 until this lands.
+2. **SPOUSE cluster incomplete** — M3-L-04 (nationality) and M3-L-05 (passport number) not available in test data. SPOUSE INFORMATION correctly shows as in-progress after the BUG-QA-10 fix. Fill these fields manually to complete the cluster.
+3. **FDD re-upload recommended** — The Assisting Hands FDD was uploaded with target_state=VA (Fairfax). Re-upload with target_state=TX (Celina) to get accurate territory + state registration analysis for the actual application.
+4. **BUG-QA-11 (model quality)** — FDD extraction prompts return sparse data for this home-care FDD format. Prompt engineering improvement needed; not blocking.
 
 ---
 
