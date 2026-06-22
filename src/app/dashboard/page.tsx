@@ -25,7 +25,7 @@ export default async function DashboardPage() {
     supabase.from("profiles").select("*").eq("id", authUser.id).single(),
     supabase
       .from("quiz_sessions")
-      .select("id, outcome, application_type, completed_at")
+      .select("id, outcome, application_type, completed_at, result_json")
       .eq("user_id", authUser.id)
       .order("completed_at", { ascending: false })
       .limit(1)
@@ -101,8 +101,14 @@ export default async function DashboardPage() {
   }
 
   const user = profile as { email?: string; first_name?: string; last_name?: string; tier?: string } | null;
-  const quiz = quizData as { id: string; outcome: string; application_type: string | null; completed_at: string } | null;
+  const quiz = quizData as { id: string; outcome: string; application_type: string | null; completed_at: string; result_json?: { answers?: Record<string, string> } | null } | null;
   const caseProfile = cpData as { archetype?: string | null; completeness_score?: number | null; net_worth_range?: string | null; industry_interest?: string | null; timeline_goal?: string | null; data_state?: string | null } | null;
+
+  // Detect Franchise Navigator trigger from quiz answers
+  const quizAnswersFromSession = quiz?.result_json?.answers ?? {};
+  const showFranchiseNavigator =
+    quizAnswersFromSession['Q0-08'] === 'I am still searching — I have not chosen yet' ||
+    quizAnswersFromSession['Q0-08b'] === 'Yes — please connect me';
 
   return (
     <div className="min-h-screen" style={{ background: "#0a0a0a" }}>
@@ -265,6 +271,36 @@ export default async function DashboardPage() {
               </div>
             </section>
 
+            {/* Franchise Navigator banner — shown when no business identified */}
+            {showFranchiseNavigator && (
+              <section style={{ marginBottom: "32px", padding: "28px 24px", background: "rgba(201,168,76,0.03)", border: "1px solid rgba(201,168,76,0.25)", borderRadius: 0, borderLeft: "3px solid #C9A84C" }}>
+                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "24px", flexWrap: "wrap" }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <span style={{ fontSize: "10px", letterSpacing: "0.12em", textTransform: "uppercase", color: "#C9A84C", fontFamily: "'DM Sans', sans-serif", fontWeight: 500 }}>
+                      Recommended next step
+                    </span>
+                    <h2 style={{ fontSize: "18px", fontFamily: "'Cormorant Garamond', serif", fontWeight: 300, color: "#f5f0e8", margin: "6px 0 10px" }}>
+                      Find the right business for your E-2
+                    </h2>
+                    <p style={{ fontSize: "13px", color: "rgba(245,240,232,0.6)", lineHeight: 1.7, marginBottom: "8px", maxWidth: "520px" }}>
+                      You indicated you haven&rsquo;t selected a business yet. The Franchise Navigator matches you to
+                      E-2 eligible businesses based on your investment range, professional background, and target
+                      location — then prepares a structured introduction to a specialist broker.
+                    </p>
+                    <p style={{ fontSize: "11px", color: "rgba(245,240,232,0.3)", fontFamily: "'DM Sans', sans-serif", marginBottom: "18px" }}>
+                      Free — brokers are paid by franchisors, never by you.
+                    </p>
+                    <Link
+                      href="/franchise"
+                      style={{ display: "inline-block", padding: "10px 20px", background: "#C9A84C", color: "#0a0a0a", fontSize: "12px", letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "'DM Sans', sans-serif", textDecoration: "none", fontWeight: 500 }}
+                    >
+                      Launch Franchise Navigator →
+                    </Link>
+                  </div>
+                </div>
+              </section>
+            )}
+
             {/* Module Checklist */}
             <section style={{ padding: "24px", background: "rgba(201,168,76,0.02)", border: "1px solid rgba(201,168,76,0.12)", borderRadius: 0, marginBottom: "32px" }}>
               <h2 className="text-lg font-semibold mb-4" style={{ color: "#f5f0e8", fontFamily: "'Cormorant Garamond', serif", fontWeight: 300 }}>Your Application Checklist</h2>
@@ -272,6 +308,7 @@ export default async function DashboardPage() {
                 {[
                   { label: 'Eligibility Quiz', href: '/results', done: !!quizData?.completed_at, desc: 'Confirm E-2 eligibility' },
                   { label: 'Onboarding', href: '/apply/module1', done: !!lifecycle?.module1_completed_at, desc: 'Personal info & timeline' },
+                  ...(showFranchiseNavigator ? [{ label: 'Franchise Navigator', href: '/franchise', done: false, desc: 'Find your E-2 business match' }] : []),
                   { label: 'Business Information', href: '/apply/business', done: !!lifecycle?.module2_completed_at, desc: 'Business description & structure' },
                   { label: 'Investment & Documents', href: '/apply/investment', done: !!lifecycle?.module3_completed_at, desc: 'Source of funds & supporting docs' },
                   { label: 'Gap Analysis', href: '/gap-analysis', done: !!lifecycle?.module4_completed_at, desc: 'Identify case weaknesses' },
@@ -346,6 +383,16 @@ export default async function DashboardPage() {
             <section style={{ padding: "24px", background: "rgba(201,168,76,0.02)", border: "1px solid rgba(201,168,76,0.12)", borderRadius: 0 }}>
               <h2 className="text-lg font-semibold mb-4" style={{ color: "#f5f0e8", fontFamily: "'Cormorant Garamond', serif", fontWeight: 300 }}>Quick Actions</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {showFranchiseNavigator && (
+                  <Link
+                    href="/franchise"
+                    className="p-4 transition-colors"
+                    style={{ border: "1px solid #C9A84C", borderRadius: 0, color: "#f5f0e8", background: "rgba(201,168,76,0.04)" }}
+                  >
+                    <p className="font-medium" style={{ color: "#C9A84C" }}>Franchise Navigator</p>
+                    <p className="text-sm" style={{ color: "rgba(245,240,232,0.45)" }}>Find your E-2 business match</p>
+                  </Link>
+                )}
                 <Link
                   href="/apply/checklist"
                   className="p-4 transition-colors"
