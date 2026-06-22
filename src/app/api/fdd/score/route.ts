@@ -43,12 +43,37 @@ export async function POST(request: NextRequest) {
     const registrationStatus = analysis.state_registration_status ?? 'unknown';
     const investorLiquidCapital = analysis.investor_liquid_capital as number | null;
 
+    // Fetch investor QFN profile to enrich develop-and-direct scoring
+    const { data: apps } = await service
+      .from('applications')
+      .select('id')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(1);
+    const appId = apps?.[0]?.id ?? null;
+
+    let investorProfile: { professionalBackground?: string; managementExperience?: string } | undefined;
+    if (appId) {
+      const { data: qfnRows } = await service
+        .from('answers')
+        .select('question_key, answer_value')
+        .eq('application_id', appId)
+        .in('question_key', ['QFN-07', 'QFN-08']);
+      if (qfnRows && qfnRows.length > 0) {
+        investorProfile = {
+          professionalBackground: qfnRows.find(r => r.question_key === 'QFN-07')?.answer_value ?? undefined,
+          managementExperience:   qfnRows.find(r => r.question_key === 'QFN-08')?.answer_value ?? undefined,
+        };
+      }
+    }
+
     // Run pure numeric scoring
     const scoringResult = scoreFdd(
       fields,
       staleStatus,
       registrationStatus,
-      investorLiquidCapital
+      investorLiquidCapital,
+      investorProfile
     );
 
     // Build narrative with LLM

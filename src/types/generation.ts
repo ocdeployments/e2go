@@ -171,6 +171,7 @@ export interface GenerationPayload {
   consulate_post: string;
   document_type: DocumentType;
   follow_up_responses: Record<string, unknown>;
+  qfn_investor_profile?: string;
 }
 
 export interface InvestmentBreakdownData {

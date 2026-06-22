@@ -535,20 +535,44 @@ function scoreDenialFactors(
     const mgmtActivities = getAnswer(am, 'QA-09', 'M3-A-09');
     const hasSpecificRole = role.length > 10 && !['owner', 'investor', 'principal'].includes(role.toLowerCase().trim());
     const hasBio = hasDoc(docs, 'resume', 'cv', 'biograph', 'curriculum');
+
+    // QFN intelligence — enriches risk only when answers are present
+    const hoursPerWeek    = getAnswer(am, 'QFN-01');
+    const mgmtExperience  = getAnswer(am, 'QFN-08');
+    const lowHours = hoursPerWeek && (
+      hoursPerWeek.toLowerCase().includes('under 20') ||
+      hoursPerWeek.toLowerCase().includes('20–30') ||
+      hoursPerWeek.toLowerCase().includes('20-30')
+    );
+    const noMgmtExp = mgmtExperience && (
+      mgmtExperience.toLowerCase().includes('no experience') ||
+      mgmtExperience.toLowerCase().includes('no prior management')
+    );
+
     let risk: DenialRiskFactor['risk'];
     let finding: string;
     let mitigation: string | null = null;
 
     if (hasSpecificRole && mgmtActivities && hasBio) {
-      risk = 'low';
-      finding = `Role documented ("${role.substring(0, 60)}") with management activities and biography on file.`;
+      if (lowHours) {
+        risk = 'moderate';
+        finding = `Role documented with activities and biography, but investor indicated ${hoursPerWeek} per week — officers routinely challenge active management at this commitment level.`;
+        mitigation = 'E-2 requires active, day-to-day management. Build a detailed staffing structure showing the business runs under your direct oversight, not just your occasional presence.';
+      } else if (noMgmtExp) {
+        risk = 'moderate';
+        finding = 'Role documented with activities and biography, but no prior management experience declared — officer may probe whether the investor can credibly manage staff and operations.';
+        mitigation = 'Strengthen the management argument: document specific hiring decisions, the org chart showing direct reports, and any transferable skills from your professional background. Franchisor training completions are key evidence.';
+      } else {
+        risk = 'low';
+        finding = `Role documented ("${role.substring(0, 60)}") with management activities and biography on file.`;
+      }
     } else if (hasSpecificRole && (mgmtActivities || hasBio)) {
       risk = 'moderate';
-      finding = `Role documented but management activities or biography partially filed.`;
+      finding = 'Role documented but management activities or biography partially filed.';
       mitigation = 'Strengthen the management role section: list 5+ specific day-to-day activities and upload an investor biography.';
     } else if (role && role.trim().length > 0) {
       risk = 'high';
-      finding = `Role listed as "${role.substring(0, 40)}" but no specific management activities or biography on file.`;
+      finding = `Role listed as "${role.substring(0, 40)}" but no specific management activities or biography on file.${noMgmtExp ? ' No prior management experience increases officer scrutiny.' : ''}`;
       mitigation = 'Active management is a hard E-2 requirement. Document what you do daily: staff oversight, client meetings, financial decisions, vendor management.';
     } else {
       risk = 'high';
@@ -945,6 +969,30 @@ export function scoreCase(
 ): GapAnalysisResult {
   const am = buildAnswerMap(answers);
 
+  // Infer archetype from QFN profile when not explicitly provided by the caller
+  let resolvedArchetype = archetype ?? null;
+  if (!resolvedArchetype) {
+    const qfnPrior  = getAnswer(am, 'QFN-10');
+    const qfnMgmt   = getAnswer(am, 'QFN-08');
+    const qfnBg     = getAnswer(am, 'QFN-07');
+    const hasPrior  = qfnPrior?.toLowerCase().includes('yes');
+    const noExp     = !qfnMgmt || qfnMgmt.toLowerCase().includes('no experience') || qfnMgmt.toLowerCase().includes('no prior');
+    const isProfessional = qfnBg && (
+      qfnBg.toLowerCase().includes('corporate') ||
+      qfnBg.toLowerCase().includes('management') ||
+      qfnBg.toLowerCase().includes('executive') ||
+      qfnBg.toLowerCase().includes('professional')
+    );
+    if (hasPrior) {
+      resolvedArchetype = 'buyer';
+    } else if (!noExp && isProfessional) {
+      resolvedArchetype = 'builder';
+    } else if (qfnPrior && !hasPrior) {
+      // Answered the question but said no prior business
+      resolvedArchetype = 'career_switcher';
+    }
+  }
+
   // Score all 15 denial factors first
   const denialFactors = scoreDenialFactors(am, documents, application, caseBrief, simulator);
 
@@ -958,8 +1006,8 @@ export function scoreCase(
 
   // Base weight set: id → weight (merged onto D-code category defs below)
   const archetypeWeightMap: Map<string, number> = new Map(
-    (archetype && !isFranchise && !isPreStart && ARCHETYPE_WEIGHTS[archetype])
-      ? ARCHETYPE_WEIGHTS[archetype].map(w => [w.id, w.weight])
+    (resolvedArchetype && !isFranchise && !isPreStart && ARCHETYPE_WEIGHTS[resolvedArchetype])
+      ? ARCHETYPE_WEIGHTS[resolvedArchetype].map(w => [w.id, w.weight])
       : []
   );
 

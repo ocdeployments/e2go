@@ -399,9 +399,35 @@ export async function buildGenerationPayload(
   const module3Answers: Record<string, unknown> = {};
   if (answers) {
     for (const row of answers) {
-      module3Answers[row.question_id] = row.answer_value;
+      const r = row as Record<string, unknown>;
+      const key = (r.question_key ?? r.question_id) as string | undefined;
+      if (key) module3Answers[key] = r.answer_value;
     }
   }
+
+  // Extract QFN investor profile for richer document generation context
+  const getQfn = (key: string): string | null => {
+    if (!answers) return null;
+    const found = (answers as Array<Record<string, unknown>>).find(
+      r => (r.question_key ?? r.question_id) === key
+    );
+    return (found?.answer_value as string) ?? null;
+  };
+  const qfnBackground    = getQfn('QFN-07');
+  const qfnPriorBusiness = getQfn('QFN-10');
+  const qfnMgmtExp       = getQfn('QFN-08');
+  const qfnOperatorStyle = getQfn('QFN-09');
+
+  const qfnLines = [
+    qfnBackground    && `Professional background: ${qfnBackground}`,
+    qfnPriorBusiness && `Prior business ownership: ${qfnPriorBusiness}`,
+    qfnMgmtExp       && `Management experience: ${qfnMgmtExp}`,
+    qfnOperatorStyle && `Operator style (systems vs. sales): ${qfnOperatorStyle}`,
+  ].filter(Boolean) as string[];
+
+  const qfnInvestorProfile = qfnLines.length > 0
+    ? ['INVESTOR PROFILE (from Franchise Navigator):', ...qfnLines].join('\n')
+    : undefined;
 
   // Extract investment breakdown as structured data
   const investmentBreakdown = extractInvestmentBreakdown(module3Answers);
@@ -415,6 +441,7 @@ export async function buildGenerationPayload(
     consulate_post: (caseBrief as unknown as Record<string, unknown>).consulate_post as string || 'toronto',
     document_type: documentType,
     follow_up_responses: (followUp ? (Array.isArray(followUp) ? followUp : followUp) : {}) as Record<string, unknown>,
+    qfn_investor_profile: qfnInvestorProfile,
   };
 }
 
@@ -483,6 +510,9 @@ export async function callClaudeAPI(payload: GenerationPayload): Promise<string>
     `APPLICANT MODULE 3 ANSWERS:`,
     wrapUserContent(JSON.stringify(payload.module_3_answers, null, 2)),
     '',
+    ...(payload.qfn_investor_profile
+      ? [`INVESTOR PROFILE CONTEXT (Franchise Navigator):`, wrapUserContent(payload.qfn_investor_profile), '']
+      : []),
     `VOICE PROFILE:`,
     wrapUserContent(payload.voice_profile),
     '',

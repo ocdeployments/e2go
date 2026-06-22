@@ -443,7 +443,12 @@ function scoreDimension3(
 // Dimension 4 — Develop and Direct
 // ============================================================================
 
-function scoreDimension4(fields: FddExtractedFields): DimensionScore {
+interface InvestorProfile {
+  professionalBackground?: string;
+  managementExperience?: string;
+}
+
+function scoreDimension4(fields: FddExtractedFields, investorProfile?: InvestorProfile): DimensionScore {
   const checks: CheckResult[] = [];
 
   // Training hours
@@ -503,6 +508,24 @@ function scoreDimension4(fields: FddExtractedFields): DimensionScore {
       `${nearestBrandMiles} miles required`,
       'pass',
       'Minimum separation disclosed — verify nearest same-brand unit during territory analysis'
+    ));
+  }
+
+  // Investor management background alignment (only when profile data is available)
+  if (investorProfile?.managementExperience) {
+    const exp = investorProfile.managementExperience.toLowerCase();
+    const noExp   = exp.includes('no experience') || exp.includes('no prior management');
+    const someExp = exp.includes('some') || exp.includes('limited') || exp.includes('moderate');
+    const bgResult: DimensionResult = noExp ? 'warn' : someExp ? 'warn' : 'pass';
+    checks.push(checkResult(
+      'Investor management background',
+      investorProfile.managementExperience,
+      bgResult,
+      noExp
+        ? 'No prior management experience — officer will probe develop-and-direct capacity; franchisor training programme becomes critical evidence'
+        : someExp
+        ? 'Limited management experience — document specific oversight decisions and build a detailed org chart'
+        : 'Demonstrated management experience supports the develop-and-direct argument'
     ));
   }
 
@@ -662,7 +685,8 @@ export function scoreFdd(
   fields: FddExtractedFields,
   staleStatus: FddStaleStatus,
   registrationStatus: FddRegistrationStatus,
-  investorLiquidCapital: number | null
+  investorLiquidCapital: number | null,
+  investorProfile?: InvestorProfile
 ): ScoringResult {
   const ode = computeOde(fields);
   const timing = assessTiming(fields);
@@ -670,7 +694,7 @@ export function scoreFdd(
   const dim1 = scoreDimension1(fields, staleStatus, registrationStatus);
   const dim2 = scoreDimension2(fields, investorLiquidCapital);
   const dim3 = scoreDimension3(fields, ode);
-  const dim4 = scoreDimension4(fields);
+  const dim4 = scoreDimension4(fields, investorProfile);
   const flags = collectFlags(fields, staleStatus, registrationStatus);
 
   const overall = computeOverall(dim1, dim2, dim3, dim4, flags);
