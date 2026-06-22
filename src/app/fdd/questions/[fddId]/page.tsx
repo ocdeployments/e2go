@@ -249,9 +249,11 @@ export default function FddQuestionsPage() {
   const franchisorName = (analysis.extracted_fields as { franchisor_legal_name?: { value: string } } | null)
     ?.franchisor_legal_name?.value ?? analysis.original_filename;
 
-  const sortedQuestions = [...result.questions].sort(
-    (a, b) => IMPORTANCE_ORDER[a.importance] - IMPORTANCE_ORDER[b.importance]
-  );
+  const targetStateLabel = (analysis.target_state as string | null) ?? 'your target state';
+
+  const sortedQuestions = [...result.questions]
+    .sort((a, b) => IMPORTANCE_ORDER[a.importance] - IMPORTANCE_ORDER[b.importance])
+    .map(q => ({ ...q, text: q.text.replace(/\[target state\]/gi, targetStateLabel) }));
 
   const filteredQuestions = activeAudience === 'all'
     ? sortedQuestions

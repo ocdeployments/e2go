@@ -63,6 +63,17 @@ export async function POST(request: NextRequest) {
 
     const result = await generateQuestions(fields, scoring, profileSubset);
 
+    // Replace [target state] placeholder with actual target state
+    const targetStateLabel = (analysis.target_state as string | null) ?? 'your target state';
+    result.questions.forEach(q => {
+      q.text = q.text.replace(/\[target state\]/gi, targetStateLabel);
+    });
+    if (result.priority_questions) {
+      result.priority_questions.forEach(q => {
+        q.text = q.text.replace(/\[target state\]/gi, targetStateLabel);
+      });
+    }
+
     // Persist questions and profile_match
     const questionsRecord: FddQuestions = {
       questions: result.questions,
