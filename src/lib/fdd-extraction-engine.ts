@@ -49,41 +49,62 @@ interface FddSections {
   items_19_21: string;
 }
 
-// (?![^\n]*\.{3,}) skips TOC lines where "ITEM N TITLE .......page" has 3+ dots on the same line
-const ITEM_PATTERNS: Record<number, RegExp> = {
-  1:  /ITEM\s+1[\s\W](?![^\n]*\.{3,})/i,
-  3:  /ITEM\s+3[\s\W](?![^\n]*\.{3,})/i,
-  8:  /ITEM\s+8[\s\W](?![^\n]*\.{3,})/i,
-  11: /ITEM\s+11[\s\W](?![^\n]*\.{3,})/i,
-  13: /ITEM\s+13[\s\W](?![^\n]*\.{3,})/i,
-  17: /ITEM\s+17[\s\W](?![^\n]*\.{3,})/i,
-  18: /ITEM\s+18[\s\W](?![^\n]*\.{3,})/i,
-  19: /ITEM\s+19[\s\W](?![^\n]*\.{3,})/i,
-  22: /ITEM\s+22[\s\W](?![^\n]*\.{3,})/i,
+// Multiple patterns per item number — tried in order, first match wins.
+// Handles: standard "ITEM 1 ", period-then-newline "ITEM 1.\n", colon/dash variants,
+// and spaced-letter artifacts from some PDF extractors ("I T E M  1").
+const ITEM_PATTERNS: Record<number, RegExp[]> = {
+  1:  [/ITEM\s+1[\s\W](?![^\n]*\.{3,})/i, /(?:^|\n)\s*ITEM\s+1\.\s*\n/im, /(?:^|\n)\s*ITEM\s+1\s*[:\-]\s/im],
+  3:  [/ITEM\s+3[\s\W](?![^\n]*\.{3,})/i, /(?:^|\n)\s*ITEM\s+3\.\s*\n/im, /(?:^|\n)\s*ITEM\s+3\s*[:\-]\s/im],
+  8:  [/ITEM\s+8[\s\W](?![^\n]*\.{3,})/i, /(?:^|\n)\s*ITEM\s+8\.\s*\n/im, /(?:^|\n)\s*ITEM\s+8\s*[:\-]\s/im],
+  11: [/ITEM\s+11[\s\W](?![^\n]*\.{3,})/i, /(?:^|\n)\s*ITEM\s+11\.\s*\n/im, /(?:^|\n)\s*ITEM\s+11\s*[:\-]\s/im],
+  13: [/ITEM\s+13[\s\W](?![^\n]*\.{3,})/i, /(?:^|\n)\s*ITEM\s+13\.\s*\n/im, /(?:^|\n)\s*ITEM\s+13\s*[:\-]\s/im],
+  17: [/ITEM\s+17[\s\W](?![^\n]*\.{3,})/i, /(?:^|\n)\s*ITEM\s+17\.\s*\n/im, /(?:^|\n)\s*ITEM\s+17\s*[:\-]\s/im],
+  18: [/ITEM\s+18[\s\W](?![^\n]*\.{3,})/i, /(?:^|\n)\s*ITEM\s+18\.\s*\n/im, /(?:^|\n)\s*ITEM\s+18\s*[:\-]\s/im],
+  19: [/ITEM\s+19[\s\W](?![^\n]*\.{3,})/i, /(?:^|\n)\s*ITEM\s+19\.\s*\n/im, /(?:^|\n)\s*ITEM\s+19\s*[:\-]\s/im],
+  22: [/ITEM\s+22[\s\W](?![^\n]*\.{3,})/i, /(?:^|\n)\s*ITEM\s+22\.\s*\n/im, /(?:^|\n)\s*ITEM\s+22\s*[:\-]\s/im],
 };
 
 function findItemOffset(text: string, itemNum: number, searchFrom = 0): number {
-  const pattern = ITEM_PATTERNS[itemNum];
-  if (!pattern) return -1;
-  const match = text.slice(searchFrom).match(pattern);
-  if (!match || match.index === undefined) return -1;
-  return searchFrom + match.index;
+  const patterns = ITEM_PATTERNS[itemNum];
+  if (!patterns) return -1;
+  const slice = text.slice(searchFrom);
+  for (const pattern of patterns) {
+    const match = slice.match(pattern);
+    if (match && match.index !== undefined) return searchFrom + match.index;
+  }
+  return -1;
 }
 
-function sliceSection(text: string, startItem: number, endItem: number): string {
+// When an item boundary isn't found, fall back to a proportional document slice
+// rather than always returning the start. FDD sections are approximately:
+//   Items 1-7: first half | Items 11-12: middle | Item 17: ~65-80% | Items 19-21: last third
+function sliceSection(
+  text: string,
+  startItem: number,
+  endItem: number,
+  fallbackStartFrac: number,
+  fallbackEndFrac: number,
+): string {
   const start = findItemOffset(text, startItem);
   const end = findItemOffset(text, endItem, start > 0 ? start + 100 : 0);
-  if (start === -1) return text.slice(0, MAX_CHUNK_CHARS);
+  if (start === -1) {
+    const docLen = text.length;
+    const fb = text.slice(
+      Math.floor(docLen * fallbackStartFrac),
+      Math.floor(docLen * fallbackEndFrac),
+    );
+    return fb.slice(0, MAX_CHUNK_CHARS);
+  }
   const raw = end > start ? text.slice(start, end) : text.slice(start);
   return raw.slice(0, MAX_CHUNK_CHARS);
 }
 
 export function splitFddIntoSections(text: string): FddSections {
   return {
-    items_1_7:   sliceSection(text, 1, 8),
-    items_11_12: sliceSection(text, 11, 13),
-    item_17:     sliceSection(text, 17, 18),
-    items_19_21: sliceSection(text, 19, 22),
+    items_1_7:   sliceSection(text, 1,  8,  0.05, 0.50),
+    items_11_12: sliceSection(text, 11, 13, 0.45, 0.65),
+    item_17:     sliceSection(text, 17, 18, 0.60, 0.78),
+    items_19_21: sliceSection(text, 19, 22, 0.65, 1.00),
   };
 }
 
@@ -144,7 +165,13 @@ For each field, return an object with:
 - "_conf": "high" | "medium" | "low" | "not_disclosed"
 
 If a field is not present, set value to null and _conf to "not_disclosed".
-Do not fabricate values. Do not infer beyond what the text states.`;
+Do not fabricate values. Do not infer beyond what the text states.
+
+IMPORTANT — adapt to franchise category terminology:
+- Home care / senior care FDDs: revenue may appear as "gross billings", "client billings", or "annualised territory billings" rather than "gross revenue" or "AUV". Caregiver headcount replaces employee count. Item 19 often shows billing ranges per territory, not per-unit average volumes.
+- Home-based / mobile FDDs: minimal equipment costs; working capital dominates Item 7.
+- Food / retail FDDs: use standard AUV, covers, seat counts.
+Match field values to the actual terminology in the document — do not require exact label matches.`;
 
 async function extractChunkA(text: string): Promise<Record<string, FddFieldMeta>> {
   const userPrompt = `FDD text (Items 1–7):
@@ -451,6 +478,44 @@ export function assessRegistration(
 }
 
 // ============================================================================
+// Recovery pass — targeted search for critical fields still null after 4 chunks
+// ============================================================================
+
+const CRITICAL_FIELDS = [
+  'initial_franchise_fee',
+  'royalty_rate_pct',
+  'total_investment_min',
+  'total_investment_max',
+  'item19_auv',
+  'item19_median',
+] as const;
+
+async function extractCriticalFieldsRecovery(
+  text: string,
+  existing: Record<string, FddFieldMeta>,
+): Promise<Record<string, FddFieldMeta>> {
+  const missing = CRITICAL_FIELDS.filter(f => {
+    const v = existing[f]?.value;
+    return v === null || v === undefined;
+  });
+  if (missing.length < 3) return {}; // enough populated — skip recovery
+
+  const snippet = sanitizeForPrompt(text.slice(0, MAX_CHUNK_CHARS));
+
+  const prompt = `FDD text (first portion — search entire text for these specific fields):
+${snippet}
+
+Several critical fields were not found in the initial extraction. Search carefully for them now.
+The document may use non-standard terminology — adapt accordingly (e.g. "gross billings" for revenue, "annualised territory" for AUV).
+
+Return ONLY a JSON object for these fields (omit any that are truly not present):
+${JSON.stringify(Object.fromEntries(missing.map(f => [f, { value: null, _page: null, _quote: null, _conf: 'not_disclosed' }])), null, 2)}`;
+
+  const raw = await callAnthropic(CHUNK_A_SYSTEM, prompt, 2000);
+  return parseJsonFromLlm(raw);
+}
+
+// ============================================================================
 // Main entry point — full extraction orchestration
 // ============================================================================
 
@@ -498,6 +563,15 @@ export async function extractFdd(
     ...chunkC,
     ...chunkD,
   };
+
+  // Recovery pass — re-query for critical fields still null
+  const recovery = await extractCriticalFieldsRecovery(text, allFields);
+  // Only overwrite if recovery found a non-null value
+  for (const [key, meta] of Object.entries(recovery)) {
+    if (meta?.value !== null && meta?.value !== undefined) {
+      allFields[key] = meta;
+    }
+  }
 
   // Compute derived fields
   const derived = computeDerivedFields(allFields, targetState);
