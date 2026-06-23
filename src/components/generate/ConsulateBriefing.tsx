@@ -88,7 +88,7 @@ function PageBudgetBar({ config }: { config: ConsulateConfig }) {
   if (config.pageLimitType !== 'overall' || !config.pageLimit) return null;
 
   const docs = getDocumentManifest(config);
-  const countedDocs = docs.filter((d) => d.countsTowardLimit);
+  const countedDocs = docs.filter((d) => d.countsTowardLimit && !d.conditional);
   const minPages = countedDocs.reduce((s, d) => s + d.pagesMin, 0);
   const maxPages = countedDocs.reduce((s, d) => s + d.pagesMax, 0);
   const midPages = Math.round((minPages + maxPages) / 2);
@@ -216,7 +216,8 @@ function PerTabLimitsTable({ config }: { config: ConsulateConfig }) {
 export default function ConsulateBriefing({ consulate, onContinue }: Props) {
   const config = getConsulateConfig(consulate);
   const docs = getDocumentManifest(config);
-  const generatedDocs = docs.filter((d) => d.exemptNote !== 'Reference guide — not submitted in binder');
+  const alwaysGeneratedDocs = docs.filter((d) => d.exemptNote !== 'Reference guide — not submitted in binder' && !d.conditional);
+  const conditionalDocs = docs.filter((d) => d.conditional);
   const referenceDocs = docs.filter((d) => d.exemptNote === 'Reference guide — not submitted in binder');
 
   const CLIENT_COLLECT_ITEMS = [
@@ -360,7 +361,7 @@ export default function ConsulateBriefing({ consulate, onContinue }: Props) {
         </div>
 
         <div style={{ border: '1px solid rgba(201,168,76,0.15)' }}>
-          {generatedDocs.map((doc, i) => (
+          {alwaysGeneratedDocs.map((doc, i) => (
             <div
               key={doc.key}
               style={{
@@ -369,7 +370,7 @@ export default function ConsulateBriefing({ consulate, onContinue }: Props) {
                 justifyContent: 'space-between',
                 padding: '12px 16px',
                 borderBottom:
-                  i < generatedDocs.length - 1
+                  i < alwaysGeneratedDocs.length - 1
                     ? '1px solid rgba(201,168,76,0.08)'
                     : 'none',
                 gap: '12px',
@@ -429,6 +430,78 @@ export default function ConsulateBriefing({ consulate, onContinue }: Props) {
             </div>
           ))}
         </div>
+
+        {/* Conditional documents */}
+        {conditionalDocs.length > 0 && (
+          <div style={{ marginTop: '12px' }}>
+            <div
+              style={{
+                fontSize: '10px',
+                fontFamily: "'DM Sans', sans-serif",
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                color: 'rgba(245,240,232,0.25)',
+                marginBottom: '8px',
+              }}
+            >
+              ◇ Also generated when applicable
+            </div>
+            <div style={{ border: '1px solid rgba(255,255,255,0.06)' }}>
+              {conditionalDocs.map((doc, i) => (
+                <div
+                  key={doc.key}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '10px 16px',
+                    borderBottom:
+                      i < conditionalDocs.length - 1
+                        ? '1px solid rgba(255,255,255,0.04)'
+                        : 'none',
+                    gap: '12px',
+                  }}
+                >
+                  <div style={{ flex: 1 }}>
+                    <span
+                      style={{
+                        fontSize: '12px',
+                        fontFamily: "'DM Sans', sans-serif",
+                        color: 'rgba(245,240,232,0.4)',
+                      }}
+                    >
+                      {doc.label}
+                    </span>
+                    {doc.conditionalNote && (
+                      <span
+                        style={{
+                          display: 'block',
+                          fontSize: '10px',
+                          fontFamily: "'DM Sans', sans-serif",
+                          color: 'rgba(245,240,232,0.22)',
+                          marginTop: '2px',
+                          letterSpacing: '0.03em',
+                        }}
+                      >
+                        {doc.conditionalNote}
+                      </span>
+                    )}
+                  </div>
+                  <span
+                    style={{
+                      fontSize: '11px',
+                      fontFamily: "'Cormorant Garamond', Georgia, serif",
+                      color: 'rgba(201,168,76,0.4)',
+                      flexShrink: 0,
+                    }}
+                  >
+                    {doc.pagesMin}–{doc.pagesMax} pages
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Reference docs footnote */}
         {referenceDocs.length > 0 && (
