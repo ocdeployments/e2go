@@ -1,6 +1,6 @@
 # CLAUDE_CONTEXT.md — E2go
 ## Master Context for Every Claude Code Session
-**Version:** June 20, 2026 — Sessions 4-46 complete. Phase A through G done. 21-sprint E2E audit active: S1 ✅ S3 ✅ S4 ✅ S5 ✅ S16 ✅. Build clean 122 pages. **ACTIVE: 21-sprint E2E audit. S6 (/apply hub + /apply/module2) is next sprint. After each sprint, update BUILD_TRACKER + memory.**
+**Version:** June 23, 2026 — Sessions 4-58 complete. Phase A through G done. DOC sprint complete (all buildable-without-input tasks). 13 documents now in generation pipeline (steps 2-14); quality steps 15-23. Pending: per-child intake (E), Tab B checklist (F), Gift Letter (G) — all need user input. Build clean. Branch: dev. Last push: 8fd05c1.
 **Read this entire file before doing anything.**
 **Then read BUILD_TRACKER.md.**
 
