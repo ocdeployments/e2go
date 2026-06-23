@@ -1,6 +1,14 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 23, 2026 — Session 61: Silo sprint + gap cleanup complete. Build clean. Branch: dev.
+**Last Updated:** June 23, 2026 — Session 62: FAQ corpus seeded, revising-status migration created, FEATURE_INVENTORY updated. Build clean. Branch: dev.
+
+(1) **FAQ corpus seeded**: `scripts/seed-faq-corpus.ts` + `seed-faq-kb-chunks.ts` — both fixed to load `.env.local` via dotenv (were reading `.env`). Seeded 355 Q&A pairs into `faq_qa_corpus` + 285 KB chunks from 33 docs into `faq_kb_chunks`. Ask E2go FAQ now has full vector search backing.
+
+(2) **generated_documents 'revising' migration created**: `supabase/migrations/20260623000000_generated_documents_revising_status.sql` — drops old constraint, re-adds with `'revising'` appended. Owner must paste into Supabase SQL Editor.
+
+(3) **FEATURE_INVENTORY.html updated**: FAQ corpus gap removed (done); generated_documents status gap updated with migration filename; faq_qa_corpus + faq_kb_chunks table notes updated to show seeded row counts.
+
+**Previous session:** June 23, 2026 — Session 61: Silo sprint + gap cleanup complete. Build clean. Branch: dev.
 
 (1) **Conditional Document Automation** (Silo 2 resolved): generation-engine.ts — `DOCUMENT_TYPES` renamed to `CORE_DOCUMENT_TYPES`; after step 1 complete, queries `answers` for M3-L-01 and M3-F-05; builds dynamic `DOCUMENT_TYPES = [...CORE, ...conditional]`; `Q = DOCUMENT_TYPES.length + 2` (first quality step offset); `effectiveTotalSteps = 1 + DOCUMENT_TYPES.length + 9`; `updateJob({ total_steps: effectiveTotalSteps })`; conditional doc rows inserted into `generated_documents` if missing. `QUALITY_LABELS` array + `emitQualityStep(offset, status)` helper replace all hardcoded `emitStep(15..23)` calls — quality step labels no longer depend on static index. start/route.ts mirrors: queries same answers at job creation, computes `allDocTypes` + `totalSteps` dynamically.
 

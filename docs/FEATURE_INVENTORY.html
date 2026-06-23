@@ -522,7 +522,6 @@ const GAPS = [
     items:[
       {priority:'critical', name:'FDD Freemium Gate — Migration Not Applied', desc:'Stripe flow and report_unlocked flag fully wired (Session 51). Owner must apply migration 20260621000000_fdd_report_access.sql in Supabase SQL Editor. Without it, hasAccess defaults true and FDD reports are free for all auth users.'},
       {priority:'critical', name:'Groq TTS Voice Mode Blocked', desc:'canopylabs/orpheus-v1-english returns 400 model_terms_required. Owner must accept Groq model terms at console.groq.com/playground?model=canopylabs%2Forpheus-v1-english'},
-      {priority:'high', name:'FAQ Corpus Not Seeded', desc:'FAQ widget falls back to LLM-only until corpus is loaded. Run: npx tsx scripts/seed-faq-corpus.ts && npx tsx scripts/seed-faq-kb-chunks.ts'},
     ]
   },
   {
@@ -530,7 +529,7 @@ const GAPS = [
     items:[
       {priority:'high', name:'Sentry DSN — Add to Vercel Env', desc:'Sentry code fully integrated (Session 56). Owner must create project at sentry.io then add NEXT_PUBLIC_SENTRY_DSN + SENTRY_DSN + SENTRY_ORG + SENTRY_PROJECT to Vercel environment variables to activate error monitoring.'},
       {priority:'high', name:'BUG-QA-06 Migration SQL — Not Applied', desc:'ALTER TABLE application_lifecycle ADD COLUMN IF NOT EXISTS last_visited_section text; + index + ALTER TABLE quiz_sessions ADD COLUMN IF NOT EXISTS franchise_referral_requested BOOLEAN DEFAULT false;'},
-      {priority:'high', name:'generated_documents.status CHECK — Not Applied', desc:'DROP old constraint + re-add with status IN (draft, approved, rejected, revision_requested, revising). Without this, document revision status writes fail at the DB constraint layer.'},
+      {priority:'high', name:'generated_documents.status CHECK — Apply Migration', desc:'Migration file created: supabase/migrations/20260623000000_generated_documents_revising_status.sql. Paste into Supabase SQL Editor to add \'revising\' to status CHECK. Without it, document revision status writes fail at the DB constraint layer.'},
       {priority:'high', name:'Google Places API Key Missing', desc:'GOOGLE_PLACES_API_KEY not in .env.local. Territory analysis (FDD + market-analysis) uses neutral score 50 fallback for all locations. Real competitor data blocked.'},
       {priority:'high', name:'Stripe Simulator Price ID Update', desc:'Run SQL: UPDATE pricing SET stripe_price_id = \'price_1Tim5fF7Ggk3LUEy2JGRRKrB\', amount_cents = 2999 WHERE tier_id = \'simulator_3pack\'. Also update STRIPE_PRICE_SIMULATOR_3PACK in Vercel env.'},
       {priority:'medium', name:'Migration 004 Not Applied', desc:'004_answers_source_update.sql not applied in Supabase SQL Editor. Document upload source tracking broken until applied.'},
@@ -599,13 +598,13 @@ const DB_TABLES = [
   {name:'payments', desc:'Stripe payment records. user_id, tier, stripe_session_id, stripe_payment_intent_id, amount_cents, status, metadata (fddId for FDD Intelligence tier).', notes:'Written by webhook handler only'},
   {name:'pricing', desc:'Tier configuration. tier_id, stripe_price_id, amount_cents, name. Includes fdd_intelligence row ($297). Editable without redeploy.', notes:'Read by pricing-tier.ts for access control'},
   {name:'fdd_analyses', desc:'FDD extraction result, scoring dimensions, territory analysis, generated questions, report sections. report_unlocked boolean (gated by payment). Keyed by fddId.', notes:'⚠️ Migration 20260621000000_fdd_report_access.sql adds report_unlocked — NOT YET APPLIED'},
-  {name:'generated_documents', desc:'One row per document type per application. content_text, step_number, step_name, status, humanization_score. 13 core rows created at job start; 3 conditional types created only when applicable.', notes:'⚠️ status CHECK constraint needs update (pending migration) to allow revising + revision_requested'},
+  {name:'generated_documents', desc:'One row per document type per application. content_text, step_number, step_name, status, humanization_score. 13 core rows created at job start; 3 conditional types created only when applicable.', notes:'⚠️ Apply migration 20260623000000_generated_documents_revising_status.sql in Supabase to add \'revising\' to status CHECK'},
   {name:'document_generation_jobs', desc:'Job queue for SSE pipeline. status: queued | running | awaiting_approval | completed | failed. current_step, current_step_label, total_steps (23).', notes:'One active job per application enforced at start route.'},
   {name:'generation_pipeline_log', desc:'Audit trail per generation step. timestamp, status, tokens_used, humanization_score, consistency_pass, applicant_acknowledged, final_status, downloaded_at.', notes:'Quality gate evidence. downloaded_at set by download route.'},
   {name:'pre_generation_confirmation', desc:'5-checkbox acknowledgment gate state per application. All 5 must be true before pipeline starts.', notes:'FK: applications.id'},
   {name:'revision_credits', desc:'10 revision credits per application created at generation start. credits_remaining, credits_used.', notes:'Created by start route. Decremented per revision.'},
-  {name:'faq_qa_corpus', desc:'355 E-2 Q&A pairs with pgvector embeddings. Cosine similarity search for FAQ chatbot.', notes:'⚠️ Seed required: seed-faq-corpus.ts'},
-  {name:'faq_kb_chunks', desc:'Knowledge base chunks with embeddings for 3-layer FAQ retrieval fallback.', notes:'⚠️ Seed required: seed-faq-kb-chunks.ts'},
+  {name:'faq_qa_corpus', desc:'355 E-2 Q&A pairs with pgvector embeddings. Cosine similarity search for FAQ chatbot.', notes:'✅ Seeded: 355 rows (Session 62, June 23 2026)'},
+  {name:'faq_kb_chunks', desc:'Knowledge base chunks with embeddings for 3-layer FAQ retrieval fallback. 285 chunks from 33 KB docs.', notes:'✅ Seeded: 285 rows (Session 62, June 23 2026)'},
   {name:'webhook_events', desc:'Stripe webhook event log. event_id + status for idempotency checking.', notes:'Prevents duplicate payment processing'},
   {name:'email_log', desc:'Sent email records. to_address, template, sent_at, resend_id.', notes:'RLS: users read own emails'},
   {name:'email_verifications', desc:'Email verification tokens. token, user_id, verified_at. Checked in middleware for every authenticated route.', notes:'Enforced: unverified = redirect to /verify'},
