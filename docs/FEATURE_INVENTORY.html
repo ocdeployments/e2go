@@ -343,7 +343,7 @@ const PHASES = [
       {status:'built', name:'Rate Limiting (Upstash Redis)', route:'', desc:'Login: 5/15min/IP. Quiz submit: 3/hr/IP. Generate/Analysis: 50/day/user. FAQ: 10/min/IP.'},
       {status:'built', name:'PWA (Service Worker)', route:'', desc:'Installable. Service worker + manifest. PWAInstallPrompt component.'},
       {status:'built', name:'Error Monitoring (Sentry)', route:'/api/_sentry-tunnel', desc:'@sentry/nextjs installed (Session 56). sentry.client/server/edge.config.ts. withSentryConfig in next.config.mjs. Tunnel route /api/_sentry-tunnel (bypasses ad blockers). global-error.tsx. DSN + org + project env vars added to Vercel June 23 2026. Active.', badge:'new'},
-      {status:'partial', name:'Uptime Monitoring', route:'/api/health', desc:'/api/health built (Session 61) — DB ping, returns { status, timestamp, checks: { database: { status, latency_ms } } }, 503 on DB failure. Owner action: add https://e2go.app/api/health to UptimeRobot or BetterStack (free, 2 min setup).', badge:'blocked'},
+      {status:'built', name:'Uptime Monitoring', route:'/api/health', desc:'/api/health built (Session 61) — DB ping, returns { status, timestamp, checks: { database: { status, latency_ms } } }, 503 on DB failure. UptimeRobot monitor active June 23 2026 — pings every 5 min, email alert on 503.', badge:'new'},
     ]
   }
 ];
