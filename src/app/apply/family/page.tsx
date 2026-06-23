@@ -62,7 +62,20 @@ const CHILDREN_QUESTIONS: QuestionField[] = [
     { value: 'yes', label: 'Yes' },
     { value: 'no', label: 'No' },
   ]},
-  { key: 'M3-L-08', type: 'textarea', label: 'Dependent details — names, dates of birth, and nationalities', showIf: { key: 'M3-L-07', value: 'yes' } },
+  { key: 'M3-L-07-COUNT', type: 'single', label: 'How many children will apply?', showIf: { key: 'M3-L-07', value: 'yes' }, required: true, options: [
+    { value: '1', label: '1' },
+    { value: '2', label: '2' },
+    { value: '3', label: '3' },
+    { value: '4', label: '4' },
+    { value: '5', label: '5' },
+  ]},
+];
+
+const CHILD_FIELDS = [
+  { suffix: 'NAME',        label: 'Full legal name',             type: 'text' as const },
+  { suffix: 'DOB',         label: 'Date of birth (YYYY-MM-DD)',  type: 'text' as const },
+  { suffix: 'NATIONALITY', label: 'Nationality',                 type: 'text' as const },
+  { suffix: 'PASSPORT',    label: 'Passport number',             type: 'text' as const },
 ];
 
 const DOCUMENTS_QUESTIONS: QuestionField[] = [
@@ -164,6 +177,32 @@ export default function FamilyPage() {
     if (debounceRef.current[key]) clearTimeout(debounceRef.current[key]);
     debounceRef.current[key] = setTimeout(() => saveAnswer(key, value), 800);
   }, [saveAnswer]);
+
+  // Sync M3-L-08 summary whenever any per-child field changes (backwards compat for generation engine)
+  useEffect(() => {
+    const count = parseInt(answers['M3-L-07-COUNT']?.value || '0', 10);
+    if (!count || answers['M3-L-07']?.value !== 'yes') return;
+    const lines: string[] = [];
+    for (let n = 1; n <= count; n++) {
+      const name = answers[`CHILD-${n}-NAME`]?.value || '';
+      const dob  = answers[`CHILD-${n}-DOB`]?.value || '';
+      const nat  = answers[`CHILD-${n}-NATIONALITY`]?.value || '';
+      const pp   = answers[`CHILD-${n}-PASSPORT`]?.value || '';
+      if (name) lines.push(`Child ${n}: ${name}${dob ? `, DOB ${dob}` : ''}${nat ? `, ${nat}` : ''}${pp ? `, PP# ${pp}` : ''}`);
+    }
+    const summary = lines.join('\n');
+    if (summary && summary !== (answers['M3-L-08']?.value || '')) {
+      setAnswers(prev => ({ ...prev, 'M3-L-08': { value: summary, source: prev['M3-L-08']?.source ?? null } }));
+      if (debounceRef.current['M3-L-08']) clearTimeout(debounceRef.current['M3-L-08']);
+      debounceRef.current['M3-L-08'] = setTimeout(() => saveAnswer('M3-L-08', summary), 1200);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [answers['M3-L-07-COUNT']?.value, ...Array.from({ length: 5 }, (_, i) => [
+    answers[`CHILD-${i+1}-NAME`]?.value,
+    answers[`CHILD-${i+1}-DOB`]?.value,
+    answers[`CHILD-${i+1}-NATIONALITY`]?.value,
+    answers[`CHILD-${i+1}-PASSPORT`]?.value,
+  ]).flat()]);
 
   const clusterStatuses = CLUSTERS.map((cluster) => {
     const set = ALL_QUESTION_SETS.find((s) => s.cluster === cluster.number);
@@ -299,6 +338,38 @@ export default function FamilyPage() {
         <div>
           <ClusterDivider label="Children" />
           {renderQuestions(CHILDREN_QUESTIONS)}
+
+          {answers['M3-L-07']?.value === 'yes' && answers['M3-L-07-COUNT']?.value && (() => {
+            const count = parseInt(answers['M3-L-07-COUNT'].value, 10);
+            return (
+              <div className="mt-8 space-y-8">
+                {Array.from({ length: count }, (_, i) => {
+                  const n = i + 1;
+                  return (
+                    <div key={n} style={{ borderLeft: '2px solid rgba(201,168,76,0.25)', paddingLeft: '1rem' }}>
+                      <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '15px', fontWeight: 500, color: 'rgba(245,240,232,0.6)', marginBottom: '1rem', letterSpacing: '0.04em' }}>
+                        Child {n}
+                      </p>
+                      <div className="space-y-5">
+                        {CHILD_FIELDS.map(({ suffix, label }) => {
+                          const key = `CHILD-${n}-${suffix}`;
+                          return (
+                            <div key={key}>
+                              <QuestionLabel>{label}</QuestionLabel>
+                              <TextInput
+                                value={answers[key]?.value || ''}
+                                onChange={(val) => handleAnswerChange(key, val)}
+                              />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
         </div>
       )}
 
