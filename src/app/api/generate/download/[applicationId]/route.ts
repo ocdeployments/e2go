@@ -52,6 +52,14 @@ const DOC_DISPLAY_NAMES: Record<DocumentType, string> = {
   ds160_reference: 'DS160_Reference',
   visa_category: 'Visa_Category_Letter',
   nonimmigrant_intent: 'Nonimmigrant_Intent_Statement',
+  marginality_rebuttal: 'NonMarginality_Rebuttal',
+  declaration_principal: 'Declaration_Principal',
+  declaration_spouse: 'Declaration_Spouse',
+  fund_flow_chronology: 'Fund_Flow_Chronology',
+  net_worth_statement: 'Net_Worth_Statement',
+  property_portfolio: 'Property_Portfolio',
+  resume_principal: 'Resume_Principal',
+  resume_spouse: 'Resume_Spouse',
 };
 
 /** Format today's date as "Month DD, YYYY" */

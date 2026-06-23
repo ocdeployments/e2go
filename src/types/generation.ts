@@ -1,4 +1,5 @@
 export type DocumentType =
+  // Existing core documents (generated in sequential pipeline)
   | 'cover_letter'
   | 'source_of_funds'
   | 'investment_proof'
@@ -6,7 +7,18 @@ export type DocumentType =
   | 'qualifications'
   | 'ds160_reference'
   | 'visa_category'
-  | 'nonimmigrant_intent';
+  | 'nonimmigrant_intent'
+  // DOC-3: Marginality & Declarations (conditional on application data)
+  | 'marginality_rebuttal'
+  | 'declaration_principal'
+  | 'declaration_spouse'
+  // DOC-4: Financial evidence documents
+  | 'fund_flow_chronology'
+  | 'net_worth_statement'
+  | 'property_portfolio'
+  // DOC-5: Employment resumes
+  | 'resume_principal'
+  | 'resume_spouse';
 
 export type GenerationJobStatus =
   | 'queued'
@@ -65,19 +77,35 @@ export const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {
   business_plan: 'Business Plan',
   qualifications: 'Investor Biography & Qualifications',
   ds160_reference: 'DS-156E / DS-160 Reference',
-  visa_category: 'Visa Category Letter',
+  visa_category: 'Substantiality Memorandum',
   nonimmigrant_intent: 'Non-immigrant Intent Statement',
+  marginality_rebuttal: 'Non-Marginality Rebuttal',
+  declaration_principal: 'Principal Applicant Declaration',
+  declaration_spouse: 'Spouse Declaration',
+  fund_flow_chronology: 'Fund Flow Chronology',
+  net_worth_statement: 'Consolidated Net Worth Statement',
+  property_portfolio: 'Property Portfolio Summary',
+  resume_principal: 'Principal Applicant Resume',
+  resume_spouse: 'Spouse Resume',
 };
 
 export const DOCUMENT_TYPE_TABS: Record<DocumentType, string> = {
-  cover_letter: 'Tab B',
-  source_of_funds: 'Tab H',
-  investment_proof: 'Tab F',
-  business_plan: 'Tab K',
-  qualifications: 'Tab J',
-  ds160_reference: 'Tab A',
-  visa_category: 'Business + Investment',
-  nonimmigrant_intent: 'Your Ties',
+  cover_letter: 'Tab D',
+  source_of_funds: 'Tab B',
+  investment_proof: 'Tab B',
+  business_plan: 'Tab C',
+  qualifications: 'Tab D',
+  ds160_reference: 'Tab D / E',
+  visa_category: 'Tab C',
+  nonimmigrant_intent: 'Tab G',
+  marginality_rebuttal: 'Tab C',
+  declaration_principal: 'Tab G',
+  declaration_spouse: 'Tab G',
+  fund_flow_chronology: 'Tab B',
+  net_worth_statement: 'Tab B',
+  property_portfolio: 'Tab F',
+  resume_principal: 'Tab D',
+  resume_spouse: 'Tab E',
 };
 
 export interface GenerationStep {

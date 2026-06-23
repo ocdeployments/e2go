@@ -37,6 +37,14 @@ const DOC_TYPE_QUESTION_MAP: Record<string, string[]> = {
   investment_proof: ['IQ-08', 'IQ-09', 'IQ-10', 'IQ-13'],
   ds160_reference: ['IQ-20'],
   visa_category: ['IQ-01', 'IQ-02', 'IQ-04'],
+  marginality_rebuttal: ['IQ-01', 'IQ-02', 'IQ-12'],
+  declaration_principal: ['IQ-17', 'IQ-18', 'IQ-19'],
+  declaration_spouse: ['IQ-17', 'IQ-18'],
+  fund_flow_chronology: ['IQ-08', 'IQ-09', 'IQ-10'],
+  net_worth_statement: ['IQ-08', 'IQ-09'],
+  property_portfolio: ['IQ-17', 'IQ-18'],
+  resume_principal: ['IQ-14', 'IQ-15', 'IQ-16'],
+  resume_spouse: ['IQ-14', 'IQ-15'],
   exhibit_list: [],
 };
 
@@ -63,6 +71,22 @@ Franchise buyers have a strong structural advantage: they have invested a substa
 The visa category letter must establish the applicant as a Treaty National of Canada (or qualifying country) making a substantial, at-risk investment in a qualifying enterprise. Franchise investments are well-suited here: (1) the franchise agreement evidences a bona fide commercial enterprise, (2) FDD Item 7 substantiates the investment amount, (3) the applicant's owner-operator role satisfies develop-and-direct. Cite the USCIS Policy Manual Chapter 14.3 standard and map this case to each element explicitly.`,
     ds160_reference: `ARCHETYPE: FRANCHISE BUYER
 The DS-156E/DS-160 reference must be precise: franchise name, legal entity name, EIN, business address, investment amount matching Item 7, and applicant's title (Owner/Operator or President). All social media accounts disclosed on the DS-160 must match what the applicant will state at the interview window. Ensure the franchise trade name matches the FDD exactly.`,
+    marginality_rebuttal: `ARCHETYPE: FRANCHISE BUYER
+Lead with the FDD's disclosed Average Unit Volume (AUV) or system-wide gross revenue figures as third-party evidence of non-marginality. The FDD Item 19 (if present) is the gold-standard citation — use it directly. Staffing: reference Item 11 or Item 15 disclosures on typical employee counts per location. The officer will compare this business to the FDD's own projections — ensure the business plan and this rebuttal are internally consistent. Employment creation: cite both the year-1 and year-2 headcount targets from the business plan, tied to FDD operational requirements.`,
+    declaration_principal: `ARCHETYPE: FRANCHISE BUYER
+The declaration should confirm the investor's personal commitment to operate the franchise, having completed or scheduled Discovery Day and initial training. Reference the Franchise Agreement as evidence of the irrevocable investment commitment. State the investor's travel plan to arrive and begin operations before visa expiry.`,
+    declaration_spouse: `ARCHETYPE: FRANCHISE BUYER
+State that the spouse will accompany the principal to the U.S. in derivative E-2S status. Confirm the spouse understands the nonimmigrant nature of the status and the plan to return to the home country should status end.`,
+    fund_flow_chronology: `ARCHETYPE: FRANCHISE BUYER
+The fund flow must trace the franchise fee payment to the franchisor directly — this is the most critical transaction. Then document build-out payments to contractors (with invoice references), equipment purchases, and working capital deposit into the U.S. LLC bank account. Reference FDD Item 7 minimum investment ranges at each step to show the deployment aligns with the disclosed requirements.`,
+    net_worth_statement: `ARCHETYPE: FRANCHISE BUYER
+Post-investment position should show: (1) franchise investment as a business asset (at-risk, not liquid), (2) retained Canadian assets providing financial stability, (3) working capital in the U.S. operating account. If the franchise brand has a goodwill value (established brands), the FDD's Item 19 AUVs can be referenced as a basis for business equity valuation.`,
+    property_portfolio: `ARCHETYPE: FRANCHISE BUYER
+Canadian real property is the strongest home-country tie for franchise buyers. Lead with the family home in Canada — retained, mortgaged or owned — as evidence of roots. If the investor is renting the franchise premises in the U.S., emphasise that no U.S. property is owned, strengthening the nonimmigrant intent argument.`,
+    resume_principal: `ARCHETYPE: FRANCHISE BUYER
+Emphasise management, operations, and customer-facing roles. Each position should show evidence of: (1) supervising staff, (2) managing budgets or P&L, (3) delivering consistent customer service at scale. Map every role explicitly to the franchise's operational requirements. Highlight any franchise-specific training completed (Discovery Day, initial training programme hours and curriculum).`,
+    resume_spouse: `ARCHETYPE: FRANCHISE BUYER
+Present the spouse's background honestly. If the spouse has professional experience, highlight any customer service, education, or administrative roles that complement the franchise's operations. If the spouse was primarily a homemaker, state this accurately — it is not a weakness in the context of an E-2 application.`,
   },
   builder: {
     cover_letter: `ARCHETYPE: ENTREPRENEUR / BUILDER
@@ -81,6 +105,22 @@ Builders often have weaker home-country ties because they are starting fresh —
 The visa category letter must establish that the investor is developing and directing the enterprise — not just funding it. For a new concept business, the officer will scrutinise non-marginality most closely (since there is no franchisor's track record). Lead with job creation projections and revenue ramp. Establish that the investor has operational control: authority to hire, fire, set strategy, and commit capital.`,
     ds160_reference: `ARCHETYPE: ENTREPRENEUR / BUILDER
 The DS-156E/DS-160 reference must include: legal business name, EIN, business address, investment amount, and the applicant's title (Founder/Owner or President). If the business is a startup, use the projections from the business plan for revenue figures. Confirm social media accounts match what will be disclosed at the interview. All application figures must be internally consistent — the DS-160 investment amount must match the source of funds statement exactly.`,
+    marginality_rebuttal: `ARCHETYPE: ENTREPRENEUR / BUILDER
+The rebuttal must substitute third-party market data for the franchisor track record this archetype lacks. Use industry benchmarks (IBISWorld, Statista, local BDC/SBA reports) to establish the market's size and growth trajectory. Hiring plan: the business plan's staffing schedule is the primary non-marginality evidence — restate it here with year-by-year headcount and average wages. Reference the business plan's financial model assumptions and show the independent market data that supports them.`,
+    declaration_principal: `ARCHETYPE: ENTREPRENEUR / BUILDER
+The declaration should convey the investor's personal commitment to their own concept — the vision, the gap in the market they are addressing, and the irreversible steps already taken (entity formed, lease signed, capital deployed). Avoid corporate-speak — the officer is assessing genuine entrepreneurial intent. Briefly state the investor's plan after a successful E-2 period (scale the business, return home, or renewal), demonstrating that the E-2 is a defined business phase, not an indefinite U.S. residency strategy.`,
+    declaration_spouse: `ARCHETYPE: ENTREPRENEUR / BUILDER
+State that the spouse will accompany the principal to the U.S. in derivative E-2S status. If the spouse intends to seek work authorisation under E-2S, note that this will be pursued through the proper channels — do not imply automatic authorisation in the declaration itself.`,
+    fund_flow_chronology: `ARCHETYPE: ENTREPRENEUR / BUILDER
+For new concept businesses, the fund flow may span a longer period (early-stage development costs, prototype or market testing). Include all pre-entity expenditures that are clearly tied to this specific business venture. Group disbursements by category (legal/entity setup, lease/fit-out, equipment, working capital) and show the timeline of commitment. Emphasise that funds were not deployed in contingent stages tied to visa approval.`,
+    net_worth_statement: `ARCHETYPE: ENTREPRENEUR / BUILDER
+Show the pre-investment position to establish that the invested capital was a meaningful commitment relative to total net worth — this addresses substantiality. Post-investment, the business equity (at cost) replaces the liquid capital. If the investor retained significant assets, note these as evidence of financial stability and ability to sustain the enterprise.`,
+    property_portfolio: `ARCHETYPE: ENTREPRENEUR / BUILDER
+If the investor was previously renting in the home country, this section may be brief or not applicable — state this honestly. If property is owned, lead with the home-country property as the primary tie. If the investor sold home-country property to fund the E-2 investment, ensure the fund flow chronology cross-references this and the disposition plan notes the investment of those proceeds.`,
+    resume_principal: `ARCHETYPE: ENTREPRENEUR / BUILDER
+Lead with entrepreneurial history — prior businesses founded, revenue generated, team built. Map every role to the capabilities required to operate THIS specific venture: market knowledge, operations management, team leadership, financial oversight. Quantify everything: revenue figures, headcount managed, years in industry. For investors without direct industry experience, highlight transferable management skills and any sector-specific preparation undertaken.`,
+    resume_spouse: `ARCHETYPE: ENTREPRENEUR / BUILDER
+Present the spouse's background concisely. If relevant professional experience exists, feature it. If the spouse will be involved in the business (even informally), note any skills that complement the enterprise — without overstating an employee relationship that could complicate the E-2 structure.`,
   },
   investor: {
     cover_letter: `ARCHETYPE: PASSIVE / ACTIVE INVESTOR
@@ -99,6 +139,22 @@ Investor archetype applicants must demonstrate that the E-2 is a business opport
 The visa category letter must address the develop-and-direct element directly — this is the most common challenge for investor-archetype applicants. Establish: (1) the investor holds majority ownership (50%+), (2) the investor has authority to hire and fire key personnel, (3) the investor sets strategy and approves capital expenditures. Reference any evidence of active governance: board resolutions, signed agreements in the investor's name, correspondence with management team.`,
     ds160_reference: `ARCHETYPE: INVESTOR
 The DS-156E/DS-160 reference must match the legal ownership structure: investor's title (Managing Partner / President / Director), the business's legal name and EIN, the full investment amount, and the business address. If the investor holds a board or governance role rather than an operational title, note that explicitly and ensure it aligns with the develop-and-direct evidence in the cover letter.`,
+    marginality_rebuttal: `ARCHETYPE: INVESTOR
+For investor-archetype cases, the non-marginality argument rests primarily on job creation and governance structure. Lead with the year-1 and year-2 hiring plans, total wages to be paid, and the investor's role in approving the staffing budget. If the business has existing operations (acquisition scenario), reference current headcount and growth projections. Revenue projections are secondary evidence — support them with market data and third-party benchmarks.`,
+    declaration_principal: `ARCHETYPE: INVESTOR
+The declaration should emphasise the investor's active governance role — board decisions made, capital committed, management team selected. Use first-person language that demonstrates genuine engagement with the business, not passive financial participation. State clearly that the investor will be present in the U.S. for the periods required to discharge their develop-and-direct responsibilities.`,
+    declaration_spouse: `ARCHETYPE: INVESTOR
+State that the spouse will accompany the principal in derivative E-2S status. If the investor is primarily a governance participant (not daily operations), the spouse's declaration is typically brief — confirm derivative status intent and nonimmigrant intent clearly.`,
+    fund_flow_chronology: `ARCHETYPE: INVESTOR
+Investment capital may come from portfolio liquidations, business asset sales, or dividends. Each source requires its own chain of documentation. If capital was wired from multiple accounts or jurisdictions, show each leg separately. Corporate wire references (vs personal wires) must include the investor's ownership/control documentation for those sending entities. Staging: if capital was deployed in tranches, show each tranche's date, amount, and business purpose.`,
+    net_worth_statement: `ARCHETYPE: INVESTOR
+The investor archetype often has the strongest net worth statement. Show the breadth of assets — investment portfolio, business interests, real property, liquid savings — to establish financial credibility. The substantiality test (investment proportional to total enterprise value) is typically satisfied easily for investors; state the proportionality ratio explicitly.`,
+    property_portfolio: `ARCHETYPE: INVESTOR
+Investors may hold property in multiple countries. List home-country properties first (home-country ties) and note any U.S. property separately. If the investor holds investment properties as income-generating assets, include these as financial assets in the net worth statement cross-reference.`,
+    resume_principal: `ARCHETYPE: INVESTOR
+Emphasise board roles, governance responsibilities, and portfolio oversight experience. Headcount supervised in prior companies; capital allocated; strategic decisions made. If the investor has previously held E-2 or other business visas, these are relevant precedents — note them if publicly documented. The resume must establish credibility as a director/governor of enterprises, not a day-to-day operator.`,
+    resume_spouse: `ARCHETYPE: INVESTOR
+Present the spouse's professional background concisely. For investor-archetype cases, the spouse is often professionally independent — feature their career accurately. If the spouse has board or governance experience of their own, include it as it may support derivative status credibility.`,
   },
   career_switcher: {
     cover_letter: `ARCHETYPE: CAREER SWITCHER
@@ -117,6 +173,22 @@ Career switchers who are leaving employment may appear to have weaker home-count
 The visa category letter must compensate for the cross-sector transition. Emphasise: (1) the investor's management credentials from the prior career that transfer to this enterprise, (2) any sector-specific preparation taken (training, consulting relationships, market research), (3) the business plan's credibility despite the career shift — cite market data and third-party projections. For franchise career switchers, lean on the franchisor's training programme and support system as institutional backing that reduces execution risk.`,
     ds160_reference: `ARCHETYPE: CAREER SWITCHER
 The DS-156E/DS-160 reference should reflect the investor's intended title in the new business (President / Owner-Operator / Managing Member), not their prior employment title. All social media accounts must be disclosed — career switchers often have LinkedIn profiles referencing their prior career; ensure that content does not contradict the E-2 application narrative. Confirm investment amounts are consistent across all documents.`,
+    marginality_rebuttal: `ARCHETYPE: CAREER SWITCHER
+For career switchers entering a new industry, the officer may scrutinise non-marginality more closely (since neither the investor nor a known franchisor has a track record in this sector). Compensate with: (1) third-party market demand data for the specific business type and location, (2) the business plan's conservative, data-backed projections, (3) sector-specific advisory relationships or pre-opening research the investor conducted. Hiring plan: emphasise year-1 job creation as immediate evidence, and note that the investor's prior management experience in another industry is directly transferable to managing a team.`,
+    declaration_principal: `ARCHETYPE: CAREER SWITCHER
+The declaration should acknowledge the career transition explicitly and frame it as a deliberate, researched decision — not a hasty pivot. Reference the preparation taken: market research, mentorship, certifications, Discovery Day (if franchise), conversations with existing operators. The declaration should convey confidence and competence despite the sector change. State clearly the investor's plan to develop and direct the enterprise full-time.`,
+    declaration_spouse: `ARCHETYPE: CAREER SWITCHER
+State that the spouse will accompany the principal to the U.S. in derivative E-2S status. If the family is relocating from a professional employment context, note that both the investor and spouse have considered the nonimmigrant nature of the status and are committed to the E-2 enterprise for its defined business horizon.`,
+    fund_flow_chronology: `ARCHETYPE: CAREER SWITCHER
+Career switchers often fund investment from accumulated employment savings, RRSP drawdowns, or severance proceeds. Trace each source clearly: employment income that generated savings (bank statements over 6–12 months), RRSP withdrawal documentation (include withholding tax calculation), severance letter (if applicable). Foreign currency conversions must show the exchange rate applied and the date of each conversion. All downstream deployment must be traceable to the business without any unexplained gaps.`,
+    net_worth_statement: `ARCHETYPE: CAREER SWITCHER
+Show the pre-investment position to establish that the career savings were genuine and of sufficient scale to fund the investment without red flags. Post-investment position: the business equity replaces the liquid capital. Retained Canadian assets (home, registered plans, savings) demonstrate financial stability despite the career transition — include these prominently to counter any argument of financial desperation.`,
+    property_portfolio: `ARCHETYPE: CAREER SWITCHER
+The family home in Canada is typically the strongest home-country tie for career switchers who may be leaving their employer. Feature it prominently — owned, with mortgage details, and a clear statement of the plan to retain it during the E-2 period. If the investor is renting in Canada, note any long-term lease arrangements or family property that substitutes as a tie.`,
+    resume_principal: `ARCHETYPE: CAREER SWITCHER
+This is the most important document in the package for this archetype. Structure the narrative as a transferable-skills argument: take each role in the investor's prior career and draw a direct, explicit line to a function in the new business. Management → managing E-2 enterprise staff. Finance → managing business P&L. Customer relations → delivering customer service in the new venture. For franchise career switchers, the franchisor's training programme (hours, curriculum, certification) is a legitimate credential — describe it in full. Include any sector-specific preparation: courses, certifications, industry event attendance, advisory conversations.`,
+    resume_spouse: `ARCHETYPE: CAREER SWITCHER
+Present the spouse's background honestly. Career switcher spouses often have their own professional history — feature it. If the spouse has any skills that could support the new business (even indirectly), note them without overstating a role that could complicate the E-2 structure. Gaps should be explained honestly (caregiving, relocation, supporting principal's transition).`,
   },
 };
 
@@ -379,14 +451,22 @@ function validateContext(
 
 // Map each document type to the gap categories it primarily addresses.
 const DOC_GAP_CATEGORY_MAP: Record<string, string[]> = {
-  cover_letter:        ['source_of_funds', 'management_role', 'business_plan', 'investment_amount', 'employment_creation', 'business_operations'],
-  source_of_funds:     ['source_of_funds', 'investment_amount'],
-  investment_proof:    ['investment_amount', 'source_of_funds'],
-  business_plan:       ['business_plan', 'employment_creation', 'business_operations'],
-  qualifications:      ['management_role'],
-  nonimmigrant_intent: ['management_role', 'source_of_funds'],
-  visa_category:       ['source_of_funds', 'management_role', 'business_plan', 'investment_amount'],
-  ds160_reference:     ['investment_amount', 'source_of_funds'],
+  cover_letter:          ['source_of_funds', 'management_role', 'business_plan', 'investment_amount', 'employment_creation', 'business_operations'],
+  source_of_funds:       ['source_of_funds', 'investment_amount'],
+  investment_proof:      ['investment_amount', 'source_of_funds'],
+  business_plan:         ['business_plan', 'employment_creation', 'business_operations'],
+  qualifications:        ['management_role'],
+  nonimmigrant_intent:   ['management_role', 'source_of_funds'],
+  visa_category:         ['source_of_funds', 'management_role', 'business_plan', 'investment_amount'],
+  ds160_reference:       ['investment_amount', 'source_of_funds'],
+  marginality_rebuttal:  ['employment_creation', 'business_operations', 'business_plan'],
+  declaration_principal: ['management_role', 'source_of_funds'],
+  declaration_spouse:    [],
+  fund_flow_chronology:  ['source_of_funds', 'investment_amount'],
+  net_worth_statement:   ['source_of_funds', 'investment_amount'],
+  property_portfolio:    ['source_of_funds'],
+  resume_principal:      ['management_role'],
+  resume_spouse:         [],
 };
 
 function buildGapContext(
@@ -931,6 +1011,14 @@ const MIN_WORD_COUNTS: Record<string, number> = {
   ds160_reference: 300,
   visa_category: 600,
   nonimmigrant_intent: 300,
+  marginality_rebuttal: 400,
+  declaration_principal: 500,
+  declaration_spouse: 250,
+  fund_flow_chronology: 250,
+  net_worth_statement: 250,
+  property_portfolio: 150,
+  resume_principal: 400,
+  resume_spouse: 150,
 };
 
 const MAX_PAGE_ESTIMATES: Record<string, number> = {
@@ -942,6 +1030,14 @@ const MAX_PAGE_ESTIMATES: Record<string, number> = {
   ds160_reference: 5,
   visa_category: 4,
   nonimmigrant_intent: 2,
+  marginality_rebuttal: 3,
+  declaration_principal: 4,
+  declaration_spouse: 2,
+  fund_flow_chronology: 3,
+  net_worth_statement: 2,
+  property_portfolio: 3,
+  resume_principal: 3,
+  resume_spouse: 2,
 };
 
 const FORBIDDEN_LEGAL_PHRASES = [
@@ -1209,6 +1305,44 @@ const REQUIRED_ELEMENTS: Record<DocumentType, string[]> = {
     'return_intent',
     'departure_plan',
   ],
+  marginality_rebuttal: [
+    'employment_projections',
+    'market_evidence',
+    'revenue_projections',
+  ],
+  declaration_principal: [
+    'applicant_name',
+    'treaty_country',
+    'investment_amount',
+  ],
+  declaration_spouse: [
+    'spouse_name',
+    'derivative_status',
+  ],
+  fund_flow_chronology: [
+    'source_description',
+    'timeline',
+    'amount',
+  ],
+  net_worth_statement: [
+    'total_assets',
+    'total_liabilities',
+    'net_worth',
+  ],
+  property_portfolio: [
+    'property_location',
+    'ownership',
+    'estimated_value',
+  ],
+  resume_principal: [
+    'applicant_name',
+    'employment',
+    'education',
+  ],
+  resume_spouse: [
+    'spouse_name',
+    'employment',
+  ],
 };
 
 function extractKeyElements(text: string): string[] {
@@ -1258,6 +1392,14 @@ export function runGapAnalysis(documents: GeneratedDocument[]): GapAnalysisResul
     ds160_reference: [],
     visa_category: [],
     nonimmigrant_intent: [],
+    marginality_rebuttal: [],
+    declaration_principal: [],
+    declaration_spouse: [],
+    fund_flow_chronology: [],
+    net_worth_statement: [],
+    property_portfolio: [],
+    resume_principal: [],
+    resume_spouse: [],
   };
 
   const recommendations: string[] = [];
