@@ -1,6 +1,6 @@
 # CLAUDE_CONTEXT.md — E2go
 ## Master Context for Every Claude Code Session
-**Version:** June 23, 2026 — Sessions 4-58 complete. Phase A through G done. DOC sprint complete (all buildable-without-input tasks). 13 documents now in generation pipeline (steps 2-14); quality steps 15-23. Pending: per-child intake (E), Tab B checklist (F), Gift Letter (G) — all need user input. Build clean. Branch: dev. Last push: 8fd05c1.
+**Version:** June 23, 2026 — Sessions 4-60 complete. DOC sprint + ZIP pipeline complete. 14 always-generated documents in pipeline (steps 2-15); quality steps 16-24; 3 additional conditional docs (declaration_spouse, property_portfolio, resume_spouse). ConsulateBriefing shows full 15-doc manifest split into always/conditional sections. Download ZIP emits all docs across 11 tabs (A–K). docx-package-constants.ts is now the single source of truth for DOC_DISPLAY_NAMES, DOC_TYPE_TAB_MAP, TAB_SECTION_TITLES, TAB_ORDER. Build clean. Branch: dev. Last push: (Session 60 commits pending push).
 **Read this entire file before doing anything.**
 **Then read BUILD_TRACKER.md.**
 
