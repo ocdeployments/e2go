@@ -169,6 +169,26 @@
   .p-critical { background: rgba(220,38,38,0.12); color: #f87171; border: 1px solid rgba(220,38,38,0.3); }
   .p-high { background: rgba(217,119,6,0.1); color: #fbbf24; border: 1px solid rgba(217,119,6,0.3); }
   .p-medium { background: rgba(245,240,232,0.06); color: rgba(245,240,232,0.5); border: 1px solid rgba(245,240,232,0.15); }
+  .p-low { background: rgba(100,116,139,0.08); color: rgba(245,240,232,0.3); border: 1px solid rgba(245,240,232,0.08); }
+  /* Testing tab */
+  .test-section { padding: 20px 28px; }
+  .test-group { margin-bottom: 28px; }
+  .test-group-title { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(201,168,76,0.6); margin-bottom: 10px; font-weight: 600; }
+  .test-item { display: flex; align-items: flex-start; gap: 10px; padding: 7px 0; border-bottom: 1px solid rgba(201,168,76,0.05); cursor: pointer; user-select: none; }
+  .test-item:hover { background: rgba(201,168,76,0.03); margin: 0 -8px; padding-left: 8px; padding-right: 8px; }
+  .test-cb { width: 14px; height: 14px; border: 1px solid rgba(201,168,76,0.35); border-radius: 2px; flex-shrink: 0; margin-top: 2px; display: flex; align-items: center; justify-content: center; transition: background 0.15s; }
+  .test-cb.checked { background: rgba(201,168,76,0.25); border-color: #C9A84C; }
+  .test-cb.checked::after { content: '✓'; font-size: 9px; color: #C9A84C; }
+  .test-label { font-size: 12px; color: rgba(245,240,232,0.75); line-height: 1.4; }
+  .test-label.checked { color: rgba(245,240,232,0.35); text-decoration: line-through; }
+  .test-tag { font-size: 9px; padding: 1px 5px; border-radius: 2px; flex-shrink: 0; margin-top: 3px; font-weight: 600; letter-spacing: 0.04em; }
+  .tag-critical { background: rgba(220,38,38,0.1); color: #f87171; border: 1px solid rgba(220,38,38,0.2); }
+  .tag-high { background: rgba(217,119,6,0.08); color: #fbbf24; border: 1px solid rgba(217,119,6,0.2); }
+  .tag-medium { background: rgba(245,240,232,0.05); color: rgba(245,240,232,0.4); border: 1px solid rgba(245,240,232,0.1); }
+  .test-progress { display: flex; align-items: center; gap: 12px; padding: 14px 28px; border-bottom: 1px solid rgba(201,168,76,0.1); background: rgba(201,168,76,0.03); }
+  .test-progress-bar { flex: 1; height: 3px; background: rgba(245,240,232,0.08); border-radius: 2px; overflow: hidden; }
+  .test-progress-fill { height: 100%; background: #C9A84C; border-radius: 2px; transition: width 0.3s; }
+  .test-progress-text { font-size: 11px; color: rgba(201,168,76,0.7); white-space: nowrap; }
   .gap-name { font-size: 12px; font-weight: 500; color: #f5f0e8; }
   .gap-desc { font-size: 11px; color: rgba(245,240,232,0.4); margin-top: 2px; }
 
@@ -210,6 +230,7 @@
   <div class="tab" onclick="switchTab('gaps',this)">Gaps &amp; Blockers</div>
   <div class="tab" onclick="switchTab('engines',this)">Engines</div>
   <div class="tab" onclick="switchTab('db',this)">Database</div>
+  <div class="tab" onclick="switchTab('testing',this)">Testing</div>
 </div>
 
 <!-- ═══════ PHASES ═══════ -->
@@ -240,6 +261,16 @@
 <!-- ═══════ DATABASE ═══════ -->
 <div class="pane" id="pane-db">
   <div class="db-grid" id="db-container"></div>
+</div>
+
+<!-- ═══════ TESTING ═══════ -->
+<div class="pane" id="pane-testing">
+  <div class="test-progress">
+    <span class="test-progress-text" id="test-progress-text">0 / 0 passed</span>
+    <div class="test-progress-bar"><div class="test-progress-fill" id="test-progress-fill" style="width:0%"></div></div>
+    <span class="test-progress-text" id="test-progress-pct">0%</span>
+  </div>
+  <div class="test-section" id="test-container"></div>
 </div>
 
 <script>
@@ -534,12 +565,43 @@ const GAPS = [
     items:[
       {priority:'high', name:'Renewal Package Application Flow', desc:'$497 Stripe tier exists. No renewal application flow, no renewal route, no renewal case file sections. Users who renew have nowhere to go.'},
       {priority:'medium', name:'Referral Partner Integrations', desc:'Mercury, Wise, Relay, East West Bank, FranNet/IFPG/FranChoice brokers, MNP/BDO CPAs — all identified, none connected to the product.'},
+      {priority:'medium', name:'Live System Health Page (/admin/system-status)', desc:'Build /admin/system-status: DB ping, env var presence check (boolean only, never expose values), table row counts (faq_qa_corpus, pricing rows), external API reachability (Anthropic, OpenRouter, Groq, Stripe, Resend), last generation job status, cron last run, Redis rate-limiter status. Admin-gated. Replaces manual health checks.'},
+    ]
+  },
+  {
+    group:'Architectural — P0 Fix Now',
+    items:[
+      {priority:'critical', name:'FAQ /api/faq/ask — Anthropic SDK Violation', desc:'/api/faq/ask imports @anthropic-ai/sdk directly. Standing rule: Anthropic SDK only in generation-engine.ts and /api/fdd/* routes. If Anthropic key is rotated expecting only generation/FDD to use it, FAQ breaks silently. Fix: switch to OpenRouter (xiaomi/mimo-v2.5) via callLLM() — same 10-line change used everywhere else.'},
+      {priority:'critical', name:'Supabase CLI Migration History Out of Sync', desc:'22 migrations applied manually via SQL Editor, Supabase CLI shows 2. If anyone runs supabase db push or supabase db reset — even accidentally — it risks overwriting live data. Fix: seed the supabase_migrations tracking table with all 22 applied migration timestamps so CLI knows what is already applied.'},
+    ]
+  },
+  {
+    group:'Architectural — P1 High Impact',
+    items:[
+      {priority:'high', name:'No Supabase Connection Pooler', desc:'Every Vercel serverless function creates a new Postgres connection. Under concurrent load this hits the connection limit fast (default 60 for free tier). Fix: add ?pgbouncer=true&connection_limit=1 to the Supabase connection string or switch to the Supabase pooler URL in env vars. Zero code change — pure config. Immediate reliability improvement.'},
+      {priority:'high', name:'Generation Pipeline — No Resume from Checkpoint', desc:'If the SSE pipeline fails at step 12 of 22, the user must start over from scratch. generation_pipeline_log records each step but there is no restart logic. For a 5–10 minute pipeline costing real Anthropic tokens, a transient timeout = lost work + wasted money. Fix: on restart, query generation_pipeline_log for last completed step and resume from there.'},
+      {priority:'high', name:'No Per-User Generation Rate Limit', desc:'start/route.ts enforces one active job per application but not per user. A user with 2 applications can run 2 simultaneous generation jobs = 26–32 concurrent Claude Opus calls. Fix: add per-user daily generation limit (e.g. 3/day) in the start route using Upstash Redis (already available).'},
+    ]
+  },
+  {
+    group:'Architectural — P2 Structural Health',
+    items:[
+      {priority:'medium', name:'Document Content Stored in Postgres', desc:'generated_documents.content_text stores full document text in DB rows. A 15-document package is ~80,000–120,000 words. At scale this bloats the table and slows every query. Fix: move content to Supabase Storage (S3-compatible), store only the object path in generated_documents. Load content on demand at download/review time.'},
+      {priority:'medium', name:'Account Deletion is Permanent and Instant', desc:'/api/account/delete wipes 16 tables immediately. An accidental confirmation destroys an applicant\'s E-2 visa package with no recovery. Fix: add deleted_at timestamp to applications + profiles. Mark as deleted, run actual purge after 30 days. One migration + one middleware check.'},
+      {priority:'medium', name:'Cron Jobs Have No Failure Alerting', desc:'/api/cron/rebuild-profiles and email-scheduler can fail silently — no retry, no notification. Fix: log each cron execution to a cron_log table (job_name, started_at, completed_at, status, error). Alert via Sentry or email on 3 consecutive failures.'},
+    ]
+  },
+  {
+    group:'Architectural — P3 Long-term Resilience',
+    items:[
+      {priority:'low', name:'No E2E Test Suite for Core User Journey', desc:'The happy path — quiz → payment → module completion → generate → download — has no automated test. A single regression could silently break the revenue-generating flow. Fix: Playwright E2E tests for at minimum: quiz completes, payment grants access, generation pipeline starts and completes, ZIP downloads successfully.'},
+      {priority:'low', name:'Admin Panel Has No Audit Log', desc:'Admin can query all user data via auth.admin.listUsers() service role. No record of who accessed what, when. For a product handling immigration documents, this is a compliance risk. Fix: admin_audit_log table with action, admin_user_id, target_user_id, resource, timestamp. Write on every admin data access.'},
+      {priority:'low', name:'Simulator Sessions Never Expire', desc:'Simulator sessions purchased are held indefinitely with no TTL. Minor now, but becomes a pricing integrity issue at scale (users sit on sessions for years). Fix: add expires_at to simulator session grants, default 12 months from purchase.'},
     ]
   },
   {
     group:'Technical Debt',
     items:[
-      {priority:'medium', name:'CLI Migration History Out of Sync', desc:'~22 migrations applied manually, Supabase CLI shows 2. Never use db push without SQL Editor verification. Risk of overwrite on next migration.'},
       {priority:'low', name:'investment_proof — Partially Cleaned', desc:'Removed from VALID_DOC_TYPES (download), DOC_DISPLAY_NAMES, DOC_TYPE_TAB_MAP (docx-package-constants), and consulate-config.ts manifest (Session 61). Still exists in DocumentType union + DOCUMENT_TYPE_LABELS/TABS for DB backward-compat. generation-engine.ts archetype blocks reference it — low risk, no functional path triggers it.'},
     ]
   }
@@ -698,6 +760,229 @@ function togglePhase(id){
 
 // Open all phases by default
 document.querySelectorAll('#phases-container .phase').forEach(el=>el.classList.add('open'));
+
+// ─── TESTING TAB ────────────────────────────────────────────────────────────
+
+const TESTS = [
+  {
+    group: 'Core User Journey — Happy Path',
+    tag: 'critical',
+    items: [
+      'Quiz: all 30 questions answer and submit without error',
+      'Results page renders: score, tier label, completeness bar, CTA',
+      'Signup → email verification → dashboard lands correctly',
+      'Pricing: select Solo Individual tier → Stripe checkout opens',
+      'Stripe test payment succeeds → webhook fires → /pricing/success routes to /apply',
+      'Dashboard shows correct tier badge and unlocked modules',
+      'Module 1 consent: all checkboxes save and persist on reload',
+      'Module 2 business profile: fields autosave (800ms debounce)',
+      'Module 3: all 12 tabs (A–K + L) load and autosave answers',
+      'Module 4: voice sample saves → questions generate → responses save → summary appears',
+      'Pre-generation confirmation: all 5 checkboxes required before pipeline starts',
+      'Generation pipeline: runs 22–25 steps to completion without error',
+      'Document package: ZIP downloads with all tabs A–K present + checklist',
+      'Document revision: request change → revising state shown → revised doc appears',
+    ]
+  },
+  {
+    group: 'Authentication & Access Control',
+    tag: 'critical',
+    items: [
+      'Unauthenticated /apply → redirected to /login',
+      'Unverified email → redirected to /verify (not /apply)',
+      'Terms not accepted → redirected to /terms-required',
+      'Simulator-only tier: /apply, /generate, /documents all return 403',
+      '/admin route: accessible as role=admin, blocked as role=user',
+      'Session expiry: redirect to login, no data loss on return',
+      'Signup with existing email: correct error shown (no silent fail)',
+    ]
+  },
+  {
+    group: 'Payment Flows',
+    tag: 'critical',
+    items: [
+      'All 7 pricing tiers resolve to correct Stripe Price IDs (no placeholders)',
+      'FDD Intelligence ($297): report_unlocked = true after payment',
+      'Simulator 3-pack: +3 sessions added to simulator_sessions_used',
+      'Failed payment: no access granted, user shown retry option',
+      'Stripe webhook: reject tampered signatures (test with bad secret)',
+      'Duplicate webhook event: idempotency check prevents double-processing',
+      '/pricing/success: routes to correct destination per tier',
+    ]
+  },
+  {
+    group: 'AI Features & Generation',
+    tag: 'high',
+    items: [
+      'FAQ chatbot: answers "What is the minimum E-2 investment?" using corpus (not generic LLM)',
+      'FAQ chatbot: streaming response visible in <500ms',
+      'Gap analysis semantic eval: weak answers flagged before generation',
+      'Gap analysis enrich: LLM context loads per category on /gap-analysis',
+      'Generation: all 13 core documents produce non-empty content',
+      'Generation: conditional docs — spouse flag → declaration_spouse + resume_spouse included in ZIP',
+      'Generation: conditional docs — property-sale flag → property_portfolio included',
+      'Humanization pass: AI-detection score ≥0.35 on all docs (check generation_pipeline_log)',
+      'Groq TTS: simulator voice mode produces audio output (test: speak a question)',
+      'FDD extraction: test PDF → 50 fields populated in fdd_analyses table',
+      'Simulator evaluate: answer scored + deliveryNotes returned in response',
+      'Coaching report: generated after session completion with QuestionCoaching array',
+    ]
+  },
+  {
+    group: 'Module 3 Conditional Logic',
+    tag: 'high',
+    items: [
+      'Spouse flag (M3-L-01 = yes): spouse fields appear in Module 3 family tab',
+      'Children fields: per-child cards appear for count 1–5',
+      'Property sale (M3-F-05 includes property-sale): property section appears',
+      'Franchise flow: franchise-specific questions appear, FDD upload CTA shown',
+      'Tab B checklist: bank statements always shown, RRSP/TFSA conditional on answer',
+      'Tab D AI assist: chat responds with story guidance',
+      'Pre-fill badges: uploaded document answers shown with source badge',
+      'Discrepancy HARD GATE: cannot advance without resolving extracted vs manual conflicts',
+    ]
+  },
+  {
+    group: 'Document Package Integrity',
+    tag: 'high',
+    items: [
+      'ZIP contains exactly 13 core docs + conditional docs based on intake',
+      'Tab ordering A–K is correct (not alphabetical by filename)',
+      'TOC lists all documents with correct tab assignments',
+      'Cover page present and correctly addressed',
+      'COMPLETE_BEFORE_SUBMITTING.docx checklist included',
+      'Multi-doc tabs (B, F, G): all assigned docs present (not just first)',
+      'Filenames follow [TAB]-[SEQ]_[Document_Name].docx convention',
+      'Downloaded ZIP not corrupted (opens in macOS/Windows without error)',
+    ]
+  },
+  {
+    group: 'Simulator',
+    tag: 'high',
+    items: [
+      'Interview prep: 9 universal questions loaded + business-type specific pool',
+      'Franchise applicant: FDD probe questions replace generic BT section',
+      'Session evaluate: each answer gets score + 3-sentence coaching feedback',
+      'Delivery analysis: short answer (<30 words) flagged with deliveryNotes',
+      'Session outcome: approved / denied / pending rendered correctly',
+      'SimulatorNudge: shows on /apply/business if coaching identified weakness',
+      'Quick-start: simulator accessible without full case file',
+      'Session limit enforced: blocked when simulator_sessions_used exhausted',
+    ]
+  },
+  {
+    group: 'Mobile & Responsive',
+    tag: 'medium',
+    items: [
+      'Quiz: all 30 questions usable on 390px (iPhone 14) viewport',
+      'Dashboard: readable and actionable on mobile',
+      'Generation progress SSE: visible and updating on mobile',
+      'Module 3 tabs: horizontal scroll or collapse works on narrow viewport',
+      'Documents page: download button accessible and tappable on mobile',
+      'Simulator: voice mode UI usable on mobile',
+      'FDD upload: file picker works on mobile browser',
+    ]
+  },
+  {
+    group: 'Security',
+    tag: 'critical',
+    items: [
+      'RLS: user A cannot read user B\'s answers, documents, or payments (test with 2 accounts)',
+      'Admin routes: /api/admin/* return 403 for non-admin JWT',
+      'Stripe webhook: tampered signature rejected with 400',
+      'No API keys visible in browser Network tab (check: ANTHROPIC, STRIPE_SECRET, SERVICE_ROLE)',
+      'Cloudflare Turnstile: bot protection active on /login and /signup (verify in CF dashboard)',
+      'Rate limits: FAQ blocks after 10 req/min from same IP',
+      'TruffleHog CI: no verified secrets in git history (check CI status)',
+      'Account delete: wipes all 16 tables + Auth user (verify in Supabase dashboard after test)',
+    ]
+  },
+  {
+    group: 'Performance',
+    tag: 'medium',
+    items: [
+      'Dashboard first paint: <2 seconds on 4G (Vercel edge)',
+      'Quiz loads: <1 second (static questions from JSON)',
+      'Generation pipeline: completes full 22-step run in <10 minutes',
+      'FDD extraction: 4-pass completes in <5 minutes for 200-page PDF',
+      'FAQ first token: <500ms (streaming visible immediately)',
+      'Document ZIP download: <5 seconds for full package',
+      'Supabase queries: no N+1 patterns on dashboard (check Network tab)',
+    ]
+  },
+  {
+    group: 'Email & Notifications',
+    tag: 'medium',
+    items: [
+      'Signup: verification email delivered to inbox (not spam) from results@e2go.app',
+      'Resend domain: e2go.app verified — sender shows results@e2go.app not onboarding@resend.dev',
+      'Email sequence clock1: inactivity nudge fires after configured delay',
+      'Email sequence clock2: post-outcome follow-up fires after outcome recorded',
+      'Franchise referral notification: fires when franchise_referral_requested = true',
+      'Account delete confirmation: Resend confirmation email delivered',
+    ]
+  },
+  {
+    group: 'Edge Cases & Error States',
+    tag: 'medium',
+    items: [
+      'Duplicate generation job: second start blocked (one active per application)',
+      'Generation failure mid-pipeline: UI shows error state with retry option',
+      'FDD upload non-PDF: rejected with clear error message',
+      'Quiz submit with unanswered required questions: validation error shown',
+      'Stripe checkout abandoned: no payment record created, user can retry',
+      'Network offline during autosave: answer not lost on reconnect',
+      'Cron job CRON_SECRET: unauthenticated request to /api/cron/* returns 401',
+      'UptimeRobot: confirm monitor shows green (dashboard.uptimerobot.com)',
+    ]
+  },
+];
+
+const testEl = document.getElementById('test-container');
+const STORAGE_KEY = 'e2go_test_checks';
+let checks = {};
+try { checks = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } catch(e) {}
+
+function saveChecks() { localStorage.setItem(STORAGE_KEY, JSON.stringify(checks)); }
+
+function updateProgress() {
+  const all = document.querySelectorAll('.test-cb');
+  const done = document.querySelectorAll('.test-cb.checked');
+  const pct = all.length ? Math.round(done.length / all.length * 100) : 0;
+  document.getElementById('test-progress-text').textContent = `${done.length} / ${all.length} passed`;
+  document.getElementById('test-progress-fill').style.width = pct + '%';
+  document.getElementById('test-progress-pct').textContent = pct + '%';
+}
+
+TESTS.forEach((group, gi) => {
+  const groupEl = document.createElement('div');
+  groupEl.className = 'test-group';
+  groupEl.innerHTML = `<div class="test-group-title">${group.group}</div>`;
+  group.items.forEach((label, ii) => {
+    const key = `${gi}-${ii}`;
+    const checked = !!checks[key];
+    const item = document.createElement('div');
+    item.className = 'test-item';
+    item.innerHTML = `
+      <div class="test-cb${checked?' checked':''}"></div>
+      <span class="tag-${group.tag} test-tag">${group.tag}</span>
+      <div class="test-label${checked?' checked':''}">${label}</div>
+    `;
+    item.addEventListener('click', () => {
+      checks[key] = !checks[key];
+      saveChecks();
+      const cb = item.querySelector('.test-cb');
+      const lbl = item.querySelector('.test-label');
+      cb.classList.toggle('checked', !!checks[key]);
+      lbl.classList.toggle('checked', !!checks[key]);
+      updateProgress();
+    });
+    groupEl.appendChild(item);
+  });
+  testEl.appendChild(groupEl);
+});
+
+updateProgress();
 </script>
 </body>
 </html>
