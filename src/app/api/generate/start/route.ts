@@ -94,6 +94,36 @@ export async function POST(request: Request) {
       });
     }
 
+    // Determine conditional doc types from intake answers
+    const { data: condAnswers } = await supabase
+      .from('answers')
+      .select('question_key, answer_value')
+      .eq('application_id', applicationId)
+      .in('question_key', ['M3-L-01', 'M3-F-05']);
+
+    const condMap: Record<string, string> = {};
+    for (const row of (condAnswers ?? [])) {
+      condMap[(row as Record<string, string>).question_key] =
+        (row as Record<string, string>).answer_value;
+    }
+
+    const conditionalDocTypes: string[] = [];
+    if (condMap['M3-L-01'] === 'yes') {
+      conditionalDocTypes.push('declaration_spouse', 'resume_spouse');
+    }
+    if (typeof condMap['M3-F-05'] === 'string' && condMap['M3-F-05'].includes('property-sale')) {
+      conditionalDocTypes.push('property_portfolio');
+    }
+
+    const coreDocTypes = [
+      'cover_letter', 'source_of_funds', 'business_plan', 'qualifications',
+      'ds160_reference', 'visa_category', 'nonimmigrant_intent',
+      'marginality_rebuttal', 'declaration_principal', 'fund_flow_chronology',
+      'net_worth_statement', 'resume_principal', 'gift_letter',
+    ];
+    const allDocTypes = [...coreDocTypes, ...conditionalDocTypes];
+    const totalSteps = 1 + allDocTypes.length + 9;
+
     // Create job
     const { data: job, error: jobError } = await supabase
       .from('document_generation_jobs')
@@ -103,7 +133,7 @@ export async function POST(request: Request) {
         status: 'queued',
         current_step: 0,
         current_step_label: 'Initializing',
-        total_steps: 23,
+        total_steps: totalSteps,
       })
       .select('id')
       .single();
@@ -122,25 +152,9 @@ export async function POST(request: Request) {
       created_at: new Date().toISOString(),
     });
 
-    // Create document rows for all pipeline document types
-    const documentTypes = [
-      'cover_letter',
-      'source_of_funds',
-      'business_plan',
-      'qualifications',
-      'ds160_reference',
-      'visa_category',
-      'nonimmigrant_intent',
-      'marginality_rebuttal',
-      'declaration_principal',
-      'fund_flow_chronology',
-      'net_worth_statement',
-      'resume_principal',
-      'gift_letter',
-    ];
-
+    // Create document rows for all pipeline document types (core + conditional)
     await supabase.from('generated_documents').insert(
-      documentTypes.map((docType) => ({
+      allDocTypes.map((docType) => ({
         job_id: jobId,
         application_id: applicationId,
         user_id: user.id,
