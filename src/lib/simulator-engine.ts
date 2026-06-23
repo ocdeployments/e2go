@@ -10,8 +10,9 @@ import type {
   CompletedSession,
   InvestmentSource,
   FundFlowEvent,
-  DeliveryNote,
 } from '@/types/simulator';
+
+export { analyzeDelivery } from '@/lib/delivery-analysis';
 
 // Use the shared browser singleton — avoids creating a second GoTrueClient
 // that would cause "Multiple GoTrueClient instances detected" warnings and
@@ -131,6 +132,37 @@ export async function buildSimulatorContext(applicationId: string): Promise<Simu
     answersMap.get('Q0-10') ||
     'general';
 
+  // FDD priority questions — fetched for franchise applicants only (non-blocking)
+  let fddPriorityQuestions: { text: string; triggered_by: string; importance: string }[] = [];
+  const businessRoute = application.business_route || answersMap.get('M2-ROUTE') || 'new';
+  const isFranchiseApplicant =
+    businessRoute === 'franchise' ||
+    (businessCategory || '').toLowerCase().includes('franchise');
+
+  if (isFranchiseApplicant) {
+    try {
+      const { data: fddAnalysis } = await supabase
+        .from('fdd_analyses')
+        .select('questions')
+        .eq('user_id', application.user_id)
+        .not('questions', 'is', null)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (fddAnalysis?.questions) {
+        const stored = fddAnalysis.questions as {
+          priority_questions?: { text: string; triggered_by: string; importance: string; ask_of?: string }[];
+        };
+        fddPriorityQuestions = (stored.priority_questions || [])
+          .filter(q => (q.importance === 'critical' || q.importance === 'important') && q.ask_of !== 'attorney')
+          .slice(0, 3);
+      }
+    } catch {
+      // Non-blocking — simulator proceeds without FDD questions if fetch fails
+    }
+  }
+
   return {
     applicationId,
     userId: application.user_id,
@@ -140,7 +172,7 @@ export async function buildSimulatorContext(applicationId: string): Promise<Simu
       'My Business',
     operatingName: answersMap.get('QF-09') || answersMap.get('M3-F-09') || null,
     businessCategory,
-    businessRoute: application.business_route || answersMap.get('M2-ROUTE') || 'new',
+    businessRoute,
     targetState: application.target_state ||
       answersMap.get('QE-03') ||
       answersMap.get('M3-E-03') ||
@@ -172,12 +204,48 @@ export async function buildSimulatorContext(applicationId: string): Promise<Simu
     businessPlanScore: caseProfile?.business_plan_score ?? null,
     applicationType: application.application_type || 'solo',
     createdAt: application.created_at,
+    fddPriorityQuestions: fddPriorityQuestions.length > 0 ? fddPriorityQuestions : undefined,
   };
 }
 
 // =============================================================================
 // QUESTION GENERATION
 // =============================================================================
+
+// Officer-style reframes for known FDD flag keys.
+// FDD questions are directed at franchisors; these reframe them as what a
+// consular officer would probe in an E-2 interview.
+const FDD_OFFICER_QUESTION_MAP: Record<string, string> = {
+  entity_transfer:      'Have you verified that your franchise agreement permits ownership through the entity structure required for your E-2 visa — not as an individual?',
+  litigation:           'Were there litigation disclosures in the Franchise Disclosure Document? How did that affect your decision to invest in this system?',
+  bankruptcy:           'The franchisor\'s history includes a bankruptcy. What additional due diligence did you conduct to confirm the system is financially sound today?',
+  fdd_stale:            'Is the Franchise Disclosure Document you reviewed the most current annual disclosure? When was it issued and what did you verify?',
+  state_registration:   'Has this franchise been registered and approved for sale in your target state? What did you confirm before committing your funds?',
+  working_capital:      'How have you planned for operating cash flow during the ramp-up period before the business reaches profitability — beyond the Item 7 estimates?',
+  fee_escalation:       'Walk me through all the ongoing fees — royalties, marketing fund, technology fees — and how you factored each of them into your financial projections.',
+  revenue_variability:  'Financial performance varies significantly across franchise units in this system. What specific research did you do to understand why top performers outperform the median?',
+  renewal_terms:        'What are the renewal terms of your franchise agreement, and are you aware those terms may change materially at renewal?',
+  noncompete:           'Are you aware of the post-termination non-compete obligations in your franchise agreement and how that affects your plans if you exit?',
+  rofr:                 'If you decide to sell this business in the future, what rights does the franchisor hold over that sale, and how does that affect your exit planning?',
+  cherry_pick:          'When you reviewed the financial performance data in the FDD, how did you assess which units were included versus excluded, and what that means for your projections?',
+  company_only_i19:     'The FDD financial data covers company-owned units only. How did you validate that a franchisee-operated unit would achieve comparable results?',
+  covid_data:           'The financial performance data in this FDD comes from the pandemic period. How did you adjust your projections to reflect current market conditions?',
+  cure_period:          'Are you aware of the circumstances under which the franchisor can terminate your agreement, and what protections you have if a dispute arises?',
+  ecommerce_carveout:   'Your franchise territory has an e-commerce carve-out. How did you assess whether online sales by the franchisor would compete with your local revenues?',
+};
+
+function reframeAsFranchiseOfficerQuestion(
+  fq: { text: string; triggered_by: string; importance: string },
+): string {
+  const key = fq.triggered_by.replace(/^flag:|^gap:/, '').trim();
+  if (FDD_OFFICER_QUESTION_MAP[key]) return FDD_OFFICER_QUESTION_MAP[key];
+  const label = key.replace(/_/g, ' ');
+  return pick([
+    `During your FDD review, what did you discover about ${label} and how did you address it before committing your investment?`,
+    `Your Franchise Disclosure Document raised a concern regarding ${label}. Walk me through how you evaluated that before signing.`,
+    `How thoroughly did you investigate the franchise system's ${label} before making your investment decision?`,
+  ]);
+}
 
 function pick<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
@@ -438,12 +506,29 @@ export function generateQuestions(context: SimulatorContext): Question[] {
     questions.push({ ...q, id: `AQ-0${i + 1}` });
   });
 
-  // === BUSINESS TYPE QUESTIONS — shuffled pool, pick 2 (reduced from 3 to make room) ===
+  // === FDD PROBE QUESTIONS — franchise applicants with completed FDD analysis ===
+  // These replace generic BT questions with questions grounded in actual FDD findings.
+  const fddProbes: Question[] = [];
+  if (context.fddPriorityQuestions && context.fddPriorityQuestions.length > 0) {
+    context.fddPriorityQuestions.slice(0, 3).forEach((fq, i) => {
+      const label = fq.triggered_by.replace(/^flag:|^gap:/, '').replace(/_/g, ' ').trim();
+      fddProbes.push({
+        id: `FD-0${i + 1}`,
+        category: 'fdd_probe',
+        context: `FDD finding: ${label}`,
+        text: reframeAsFranchiseOfficerQuestion(fq),
+      });
+    });
+  }
+
+  // === BUSINESS TYPE QUESTIONS — fill remaining slots when fewer than 2 FDD probes ===
+  const btSlotsNeeded = Math.max(0, 2 - fddProbes.length);
   const businessTypePool = getBusinessTypeQuestions(context.businessCategory, context);
-  const selected = shuffle(businessTypePool).slice(0, 2);
+  const selected = shuffle(businessTypePool).slice(0, btSlotsNeeded);
   selected.forEach((q, i) => {
     questions.push({ ...q, id: `BT-0${i + 1}` });
   });
+  fddProbes.forEach(q => questions.push(q));
 
   return questions.slice(0, 12);
 }
@@ -631,76 +716,6 @@ function getBusinessTypeQuestions(category: string, context: SimulatorContext): 
 /**
  * Generates a post-session coaching summary.
  */
-// =============================================================================
-// DELIVERY CONFIDENCE ANALYSIS
-// Pure text analysis — no LLM call, no API cost.
-// =============================================================================
-
-const FILLER_PATTERN = /\b(um+|uh+|like|you know|kinda|kind of|sort of)\b/gi;
-const HEDGE_PATTERN = /\b(i think|maybe|probably|i believe|i guess|might be|not sure|i'm not sure|i suppose|i mean)\b/gi;
-
-export function analyzeDelivery(answerText: string): DeliveryNote[] {
-  const notes: DeliveryNote[] = [];
-  const trimmed = answerText.trim();
-  if (!trimmed) return notes;
-
-  const wordCount = trimmed.split(/\s+/).filter(Boolean).length;
-  const fillerMatches = [...trimmed.matchAll(new RegExp(FILLER_PATTERN.source, 'gi'))];
-  const hedgeMatches = [...trimmed.matchAll(new RegExp(HEDGE_PATTERN.source, 'gi'))];
-
-  if (wordCount < 30) {
-    notes.push({
-      type: 'brevity',
-      detail: `${wordCount} words — officers expect 50–100 words for substantive answers. Expand with specific facts about your investment or role.`,
-    });
-  }
-  if (fillerMatches.length >= 2) {
-    const examples = [...new Set(fillerMatches.map(m => m[0].toLowerCase()))].slice(0, 3).join('", "');
-    notes.push({
-      type: 'fillers',
-      detail: `${fillerMatches.length} filler words detected ("${examples}"). These signal uncertainty to the officer. Pause instead of filling silence.`,
-    });
-  }
-  if (hedgeMatches.length >= 2) {
-    const examples = [...new Set(hedgeMatches.map(m => m[0].toLowerCase()))].slice(0, 2).join('", "');
-    notes.push({
-      type: 'hedging',
-      detail: `Hedging language detected ("${examples}"). State investment facts directly — "I invested $180,000" not "I think it was around $180,000."`,
-    });
-  }
-
-  // Hedge ratio: >8% of words are hedges → pattern worth flagging separately from count
-  if (wordCount >= 40 && hedgeMatches.length / wordCount > 0.08) {
-    const ratio = Math.round((hedgeMatches.length / wordCount) * 100);
-    notes.push({
-      type: 'high_hedge_ratio',
-      detail: `${ratio}% of words are hedges or qualifiers. Officers interpret this as low confidence in your own case. Practise stating facts without softening language.`,
-    });
-  }
-
-  // Sentence complexity: any sentence >35 words is hard to deliver fluently under stress
-  const sentences = trimmed.split(/[.!?]+/).filter(s => s.trim().length > 0);
-  const longSentences = sentences.filter(s => s.trim().split(/\s+/).length > 35);
-  if (longSentences.length > 0) {
-    notes.push({
-      type: 'complex_sentences',
-      detail: `${longSentences.length} sentence${longSentences.length > 1 ? 's are' : ' is'} over 35 words. Long sentences are harder to deliver clearly and easier for an officer to interrupt. Break them into two shorter statements.`,
-    });
-  }
-
-  // Choppy delivery: many very short sentences (<6 words average) in a long answer
-  if (sentences.length >= 5) {
-    const avgSentenceLength = wordCount / sentences.length;
-    if (avgSentenceLength < 6) {
-      notes.push({
-        type: 'choppy',
-        detail: `Average sentence length is ${Math.round(avgSentenceLength)} words — very short sentences can sound rehearsed or stilted. Connect related ideas into fuller sentences for a more natural flow.`,
-      });
-    }
-  }
-
-  return notes;
-}
 
 export function generateCoachingSummary(
   session: CompletedSession,

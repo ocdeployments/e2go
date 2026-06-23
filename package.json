@@ -19,6 +19,7 @@
     "@keystatic/core": "^0.5.50",
     "@keystatic/next": "^5.0.4",
     "@marsidev/react-turnstile": "^1.5.3",
+    "@sentry/nextjs": "^10.59.0",
     "@supabase/auth-helpers-nextjs": "^0.15.0",
     "@supabase/ssr": "^0.10.3",
     "@supabase/supabase-js": "^2.106.2",
@@ -61,5 +62,11 @@
     "ts-jest": "^29.4.11",
     "typescript": "^5",
     "ws": "^8.21.0"
+  },
+  "allowScripts": {
+    "@sentry/cli@2.58.6": true,
+    "fsevents@2.3.3": true,
+    "fsevents@2.3.2": true,
+    "unrs-resolver@1.12.2": true
   }
 }

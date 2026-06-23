@@ -40,6 +40,8 @@ export interface SimulatorContext {
   sourceOfFundsScore: number | null;
   managementRoleScore: number | null;
   businessPlanScore: number | null;
+  // FDD priority questions for franchise applicants (fetched from fdd_analyses)
+  fddPriorityQuestions?: { text: string; triggered_by: string; importance: string }[];
   // Application metadata
   applicationType: string;
   createdAt: string;
@@ -62,7 +64,7 @@ export interface FundFlowEvent {
 export interface Question {
   id: string;
   text: string;
-  category: 'universal' | 'weak_point_probe' | 'business_type' | 'investment_source' | 'profile_flag' | 'archetype_probe' | 'gap_probe';
+  category: 'universal' | 'weak_point_probe' | 'business_type' | 'investment_source' | 'profile_flag' | 'archetype_probe' | 'gap_probe' | 'fdd_probe';
   context?: string;
   relatesToField?: string;
 }
@@ -79,6 +81,7 @@ export interface AnswerEvaluation {
   feedback: string;
   specificSuggestion: string;
   documentReference: string | null;
+  deliveryNotes?: DeliveryNote[];
 }
 
 export interface CompletedSession {

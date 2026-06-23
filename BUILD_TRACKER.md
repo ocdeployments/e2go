@@ -1,6 +1,10 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 21, 2026 — Session 54: Live browser QA with real client data (Anupama Attri / Assisting Hands Home Care). Filled all 6 apply sections via direct API calls: business, investment, qualifications, family, ties. Found and fixed 2 bugs: BUG-QA-09 (qualifications cluster completion counted hidden conditional questions as answered — never showed ✓), BUG-QA-10 (family/ties cluster completion counted visible-but-empty conditionals as answered via `undefined !== ''` — showed ✓ prematurely). Fix applied to qualifications, family, and ties pages. QA_AUDIT.md updated with Session 54 entry. 2 commits on dev. ⚠️ Owner action required: apply BUG-QA-06 migration SQL (`ALTER TABLE application_lifecycle ADD COLUMN IF NOT EXISTS last_visited_section text;` + index + quiz_sessions franchise_referral_requested bool). SPOUSE cluster in /apply/family correctly shows incomplete — nationality + passport fields not available in test data. Next: FDD pipeline test (fdd_id: b262c48a-b39d-4917-8fb5-344da7f4b0e4).
+**Last Updated:** June 22, 2026 — Session 56: Gap & Silo Resolution — 12-task sprint. Completed Tasks 1–12: (1) getSession()→getUser() sweep (reset-password); (2) bracket regex audit (correct, no change); (3) Stripe API version bump; (4) Gap Analysis→Generation silo wired (buildGapContext helper, gap_analysis_context injected into Claude prompt); (5) FDD→Simulator injection (fddPriorityQuestions fetched in buildSimulatorContext, FDD probe questions replace BT section for franchise applicants); (6) Coaching→Case file nudges (SimulatorNudge component + /api/simulator/section-nudge route injected into all 5 apply section pages); (7) Module 4 voice path audit (follow-up responses formatted as clean Q&A, voice profile conditional in LLM prompt); (8) Market Analysis writeback (territory score written to answers table); (9) Delivery detection (analyzeDelivery shared utility created at delivery-analysis.ts, simulator-engine.ts re-exports it, evaluate route calls it and returns deliveryNotes in all response paths); (10) Admin dashboard (/admin/page.tsx — metrics row, payments table with email lookup, users table with app count); (11) FDD freemium gate — already complete from prior session; (12) Sentry integration (@sentry/nextjs installed, sentry.client/server/edge.config.ts, withSentryConfig in next.config.mjs, tunnel route /api/_sentry-tunnel, global-error.tsx). Build clean. ⚠️ Owner actions required: (a) Add NEXT_PUBLIC_SENTRY_DSN + SENTRY_DSN + SENTRY_ORG + SENTRY_PROJECT to Vercel env after creating project at sentry.io; (b) All prior pending items still outstanding (Groq TTS terms, FAQ corpus seed, Google Places API key, Stripe SQL, Migration 004, Resend domain, BUG-QA-06 migration). Next: DOC-1 sprint (Tab B checklist expand + per-child intake + 7 missing prompts).
+
+**Previous session:** June 22, 2026 — Session 55: Document Intelligence Audit. Full gap analysis across all document prompts, intake pages, checklist (Tab B), generation engine, and Anupama real-submission templates. Identified 19 confirmed gaps across 6 categories. No code changes this session — pure research and categorisation. BUILD_TRACKER and memory updated. Next: expand Tab B checklist + restructure per-child intake + build 7 missing document prompts.
+
+**Previous session:** June 21, 2026 — Session 54: Live browser QA with real client data (Anupama Attri / Assisting Hands Home Care). Filled all 6 apply sections via direct API calls: business, investment, qualifications, family, ties. Found and fixed 2 bugs: BUG-QA-09 (qualifications cluster completion counted hidden conditional questions as answered — never showed ✓), BUG-QA-10 (family/ties cluster completion counted visible-but-empty conditionals as answered via `undefined !== ''` — showed ✓ prematurely). Fix applied to qualifications, family, and ties pages. QA_AUDIT.md updated with Session 54 entry. 2 commits on dev. ⚠️ Owner action required: apply BUG-QA-06 migration SQL (`ALTER TABLE application_lifecycle ADD COLUMN IF NOT EXISTS last_visited_section text;` + index + quiz_sessions franchise_referral_requested bool). SPOUSE cluster in /apply/family correctly shows incomplete — nationality + passport fields not available in test data. Next: FDD pipeline test (fdd_id: b262c48a-b39d-4917-8fb5-344da7f4b0e4).
 
 **Previous session:** June 21, 2026 — Session 53: Category-driven horizontal QA audit complete. All 7 sweeps done (Sweeps 6+7 this session). 18 pages audited for the first time (auth flow, upload flow, simulator, documents, generate). 5 bugs found and fixed: (1) BUG-QA-01: `/api/applications/[applicationId]` route missing — generate page header fell back to nulls. Created route. (2) BUG-QA-02: `/support` had no Nav — added layout.tsx. (3) BUG-QA-03: `/verify` resend button silently did nothing when token invalid (verifiedData null). Conditioned on session ID existence. (4) BUG-QA-04: module4 Screen 3 stuck loading forever if generateQuestions API fails — added questionsError state + retry button. (5) BUG-QA-05: module4 Screen 4 empty summary with no message if getCompletionSummary fails — added summaryError state + fallback copy. Build clean. 4 commits on dev. QA_AUDIT.md updated. Migration debt noted: verify `20260605160000_module2_business_advisor.sql` was applied to remote (adds business_shortlist, specific_business_description, experience_gap_flag). ⚠️ Still pending from S52: migration `20260621000000_fdd_report_access.sql` + SQL for `generated_documents.status` CHECK constraint.
 
@@ -416,6 +420,224 @@ What the redesign delivers:
 - Known bug: mic button disappears on click (getUserMedia permission pre-check missing)
 - Fix: part of case file redesign session (SESSION_CASEFILE_REDESIGN.md)
 - /apply/module4 voice sample unchanged — separate system, no mic button
+
+---
+
+## DOCUMENT INTELLIGENCE AUDIT — Session 55 (June 22, 2026)
+
+Full audit of document gaps across: quiz (Module 1), all apply/ intake pages (Module 3), Tab B checklist,
+generation engine, 8 document prompts, and Anupama Attri real-submission templates (docs/Anupama/).
+
+Real submission structure discovered: 7-tab format (A–G) matching attorney binder, cover letter Section VIII
+contains the actual document index. This is now the canonical reference for what e2go must produce.
+
+---
+
+### BUCKET 1 — GENERATED DOCUMENTS (what e2go produces today)
+
+**Tab A — Entity Formation**
+| ID | Document | Status |
+|---|---|---|
+| A-01 | Operating Agreement | ✅ Generates |
+| A-02 | Membership Interest Ledger | ✅ Generates |
+| A-03 | Membership Certificates | ✅ Generates |
+| A-04 | Organizational Resolutions | ✅ Generates |
+
+**Tab B — Financial Evidence**
+| ID | Document | Status |
+|---|---|---|
+| B-01 | Source & Application of Funds | ⚠️ Split across 2 prompts (source_of_funds + investment_proof) — MERGE NEEDED |
+| B-02 | Fund Flow Chronology | ❌ No prompt exists |
+| B-03 | Net Worth Statement | ❌ No prompt exists |
+
+**Tab C — Business & Franchise**
+| ID | Document | Status |
+|---|---|---|
+| C-01 | Business Plan | ✅ Generates |
+| C-02 | Cover Letter | ✅ Generates |
+| C-03 | Substantiality Memorandum | ⚠️ Currently `visa_category` — wrong scope, must be replaced |
+| C-04 | Marginality Rebuttal Statement | ❌ No prompt exists |
+
+**Tab D/E — Personal (per applicant)**
+| ID | Document | Status |
+|---|---|---|
+| D-01 | DS-160 Reference — Principal | ✅ Generates |
+| E-01 | DS-160 Reference — Spouse | ✅ Generates (conditional) |
+| E-0x | DS-160 Reference — per Child | ⚠️ Cannot generate per child (children captured as single textarea) |
+| — | DS-156E Helper (E-visa supplemental form) | ❌ No prompt — different form from DS-160 |
+
+**Tab F — Property & Financial Summaries**
+| ID | Document | Status |
+|---|---|---|
+| F-01 | Property Portfolio Summary | ❌ No prompt exists |
+| F-02 | Investment Portfolio Summary | ❌ No prompt exists |
+
+**Tab G — Declarations & Supporting**
+| ID | Document | Status |
+|---|---|---|
+| G-01 | Applicant Declaration — Principal | ❌ No prompt (nonimmigrant_intent too narrow) |
+| G-02 | Applicant Declaration — Spouse | ❌ No prompt |
+| — | Gift Letter (conditional: if gift-funded) | ❌ No prompt |
+| — | Resume — Principal | ❌ No prompt |
+| — | Resume — Spouse (conditional: if co-investing) | ❌ No prompt |
+
+---
+
+### BUCKET 2 — CLIENT-COLLECTED DOCUMENTS (checklist items for Tab B)
+
+**What Tab B checklist CURRENTLY has (14 items):**
+- Personal identity: passport, photos, birth certificate, DS-160 confirmation, DS-156E, MRV fee, appointment letter
+- Conditional family: marriage cert, divorce cert, name change, spouse passport, spouse birth cert, child passports, child birth certs
+
+**MISSING from Tab B checklist — 5 entire categories absent:**
+
+**2A — Entity Formation (SOS docs)**
+- A-05 SOS Certificate of Formation
+- A-06 SOS Certificate of Filing
+- A-07 SOS Acknowledgment Letter
+- EIN Confirmation Letter (CP-575 / SS-4)
+
+**2B — Financial Evidence (per source selected)**
+- B-04 Bank statements — primary source account(s) (3–6 months, per account)
+- B-05 Investment account statements — RRSP, TFSA, brokerage (per account, as of investment date)
+- B-06 Wire transfer confirmation records
+- B-07 US business bank account statement (post-funding)
+- B-08 Asset sale closing statement (if property sold) [CONDITIONAL: property-sale source]
+- B-09 Property MLS or appraisal at sale (if property sold) [CONDITIONAL]
+- B-10 Business/investment sale agreement (if business sold) [CONDITIONAL]
+- B-11 Loan agreement + collateral documentation [CONDITIONAL: loan source]
+- B-12 Cryptocurrency exchange records + fiat conversion records [CONDITIONAL: crypto source]
+- B-13 Gift letter (signed by donor) [CONDITIONAL: gift/inheritance source]
+- B-14 Donor's bank statements (showing ability to gift) [CONDITIONAL: gift source]
+
+**2C — Business/Franchise Documents**
+- C-05 Executed Franchise Agreement (if franchise)
+- C-06 Franchise Disclosure Document (if franchise)
+- C-07 Letter of Intent or Purchase Agreement (if acquisition)
+- C-08 3 years of business financial statements (if acquisition)
+- C-09 Business valuation or broker opinion of value (if acquisition)
+- C-10 Premises lease agreement (if new brick-and-mortar)
+- C-11 Franchisor's E-2 support letter (if available — some franchisors provide)
+
+**2D — Property Documentation (per property owned)**
+- F-03 Mortgage statement — per property (× number of properties)
+- F-04 Property appraisal or tax assessment — per property
+
+**2E — Immigration/History Documents (conditional)**
+- Prior visa refusal notice / CEAC determination letter
+- Police clearance certificate
+- Court records (if criminal conviction disclosed)
+
+**2F — Ties Evidence (maps to ties claimed in M3-T-01)**
+- Property title/deed (if home property claimed)
+- Retained account statements (for accounts staying in home country)
+- Professional license certificate (if professional license claimed)
+- Business registration (if ongoing home country business claimed)
+
+**2G — Translation Requirements**
+- Certified English translation — birth certificate (if not in English)
+- Certified English translation — marriage certificate (if not in English)
+- Certified English translation — other vital records (if applicable)
+*(No mention of translation requirement anywhere in the platform)*
+
+---
+
+### BUCKET 3 — INTAKE GAPS (questions missing from Module 1 / Module 3)
+
+| Gap | Missing From | Impacts |
+|---|---|---|
+| Children captured as single textarea (M3-L-08) | `/apply/family` | Cannot generate per-child DS-160, cannot multiply checklist items |
+| No structured career/employment history fields | Module 3 | Cannot generate Qualifications Statement, Resume |
+| No property count + per-property details (address, value, mortgage) | Module 3 | Cannot generate F-01 Property Portfolio, B-03 Net Worth |
+| No per-account investment details (institution, type, balance) | Module 3 | Cannot generate B-02 Fund Flow, B-03 Net Worth accurately |
+| No wire transfer specifics (dates, amounts, banks) | `/apply/investment` | B-02 Fund Flow Chronology would be hollow |
+| No asset sale specifics (if property/business sold) | Module 3 | B-06/B-09 documentation path absent |
+| No gift details (donor, amount, date) — if gift-funded | Module 3 | Gift letter cannot be generated |
+| No loan details (institution, collateral) — if loan-funded | Module 3 | Loan documentation path absent |
+| No crypto specifics (exchange, conversion records) | Module 3 | Crypto documentation path completely missing |
+| No entity formation status check (what SOS docs exist today) | Module 3 | Checklist can't distinguish "collect" vs "already have" |
+| No EIN status question | Module 3 | EIN letter won't appear on checklist at right time |
+| No US bank account status question | Module 3 | Bank statement requirement mis-timed |
+| No consulate selection question (hardcoded to Toronto) | Module 3 | Cover letter address, officer notes wrong for non-Toronto |
+| No language/translation needs question | Module 3 | Translation requirement never surfaced |
+| No prior refusal evidence question | `/apply/qualifications` | Evidence path for history disclosures absent |
+
+---
+
+### BUCKET 4 — DOCUMENT PROMPT ISSUES (existing prompts with problems)
+
+| Issue | File | Problem |
+|---|---|---|
+| `source_of_funds` + `investment_proof` are the same document | Both prompts | Real submission has ONE "Source & Application of Funds" — merge to B-01 |
+| `visa_category` is wrong scope | `visa_category.md` | Covers all 5 E-2 elements (same as cover letter); replace with `substantiality_memorandum` focused on 9 FAM proportionality only |
+| `cover_letter` Sections VII–VIII repeat content from standalone docs | `cover_letter.md` | Sections VII (Qualifications) and VIII (Intent) should be high-level references, not full restatements |
+| Tab R referenced 8× in prompts | All prompts | `Tab R` does not exist — no data file, no intake page, no questions. Currently sends null data to LLM. |
+| Crypto not handled in source_of_funds | `source_of_funds.md` | No mention of exchange records, fiat conversion docs, or tax treatment of crypto gains |
+
+---
+
+### BUCKET 5 — CHECKLIST STRUCTURAL GAPS (Tab B architecture)
+
+| Gap | Impact |
+|---|---|
+| Per-applicant items not multiplied by family size | DS-160, MRV fee, photos, appointment listed once regardless of family of 4 |
+| No "e2go generates this" vs "you collect this" distinction | Client doesn't know which documents they need to find vs which we produce |
+| Checklist doesn't adapt to entity formation status | SOS docs shown as required even if LLC not formed yet |
+| Checklist doesn't capture what client already has in hand | No way to mark "already collected" at intake |
+| DS-156E not explained as different from DS-160 | Clients will confuse the two or skip DS-156E entirely |
+| No photos for dependents explicitly listed | Family of 4 needs 8 photos; checklist shows "two passport-style photographs" |
+| EAD filing (Form I-765) not mentioned for spouse | Spouse thinks saying "yes" to EAD in intake is sufficient — it's a separate USCIS post-arrival filing |
+
+---
+
+### BUCKET 6 — DOCUMENT RESTRUCTURING (changes to naming + generation pipeline)
+
+**Naming convention (matches real attorney submission tabs):**
+- Format: `[TAB-LETTER]-[TWO-DIGIT-SEQ]_[Document_Name].[ext]`
+- Generated by e2go: `★` prefix in checklist UI
+- Collected by client: `○` prefix in checklist UI
+- Generated + signed by client: `✎` prefix in checklist UI
+- Example: `B-04_Bank_Statement_TD_Canada.pdf`, `A-01_Operating_Agreement.docx`
+
+**Restructuring actions needed:**
+1. Rename/merge: `source_of_funds` + `investment_proof` → `source_and_application_of_funds` (single B-01 prompt)
+2. Replace: `visa_category.md` → `substantiality_memorandum.md` (new C-03 prompt, focused scope)
+3. Scope: `cover_letter` Sections VII–VIII → high-level reference paragraphs only
+4. Scope: `qualifications` → develop-and-direct legal argument only (not career narrative)
+5. Remove: all `Tab R` references from all 8 prompts
+6. Add 7 new document prompts: C-04, B-02, B-03, F-01, F-02, G-01/G-02, Gift Letter, Resumes
+
+---
+
+### PRIORITY BUILD ORDER (next sprints)
+
+**Sprint DOC-1 (unblock generation accuracy — immediate):**
+- Fix Tab R references in all 8 prompts (null data bug)
+- Restructure children intake in `/apply/family` — per-child structured fields
+- Merge source_of_funds + investment_proof → single prompt
+
+**Sprint DOC-2 (expand checklist — high impact, all clients):**
+- Expand Tab B checklist: add Buckets 2A–2G (financial, entity, franchise, property, translations)
+- Add "e2go generates this" vs "you collect this" distinction
+- Add per-applicant multiplier for DS-160, MRV fee, photos
+
+**Sprint DOC-3 (build missing prompts):**
+- C-04 Marginality Rebuttal Statement prompt
+- C-03 Substantiality Memorandum prompt (replace visa_category)
+- G-01/G-02 Applicant Declaration prompts
+- Gift Letter prompt (conditional)
+
+**Sprint DOC-4 (financial completeness):**
+- B-02 Fund Flow Chronology prompt
+- B-03 Net Worth Statement prompt
+- F-01 Property Portfolio Summary prompt
+- F-02 Investment Portfolio Summary prompt
+- Intake: add per-property detail fields, per-account investment fields
+
+**Sprint DOC-5 (resumes + DS-156E):**
+- Resume prompts (principal + spouse)
+- DS-156E helper/reference prompt
+- Intake: structured employment history fields
 
 ---
 

@@ -1,3 +1,5 @@
+import { withSentryConfig } from '@sentry/nextjs';
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   webpack: (config, { isServer }) => {
@@ -61,4 +63,20 @@ const nextConfig = {
   },
 };
 
-export default nextConfig;
+export default withSentryConfig(nextConfig, {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+
+  // Only upload source maps in CI / Vercel — skip in local dev.
+  silent: !process.env.CI,
+
+  // Disable source map upload when DSN is absent (local dev without Sentry).
+  disableSourceMapUpload: !process.env.SENTRY_DSN && !process.env.NEXT_PUBLIC_SENTRY_DSN,
+
+  // Tunnel Sentry requests through /api/_sentry-tunnel to avoid ad-blockers.
+  tunnelRoute: '/api/_sentry-tunnel',
+
+  // Tree-shake Sentry debug code in production builds.
+  hideSourceMaps: true,
+  disableLogger: true,
+});

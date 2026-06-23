@@ -3,6 +3,7 @@ import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { getQuestionKnowledge } from '@/lib/interview-knowledge-base';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { callLLM } from '@/lib/llm-client';
+import { analyzeDelivery } from '@/lib/delivery-analysis';
 import type { SimulatorContext, AnswerEvaluation } from '@/types/simulator';
 
 const DOC_TYPE_LABELS: Record<string, string> = {
@@ -68,6 +69,9 @@ export async function POST(request: NextRequest) {
       { status: 400 }
     );
   }
+
+  // Run delivery analysis synchronously — pure function, no cost
+  const deliveryNotes = analyzeDelivery(answer);
 
   // Fetch filed document summaries for grounded evaluation (non-fatal if absent)
   let documentEvidence = '';
@@ -164,6 +168,7 @@ Score guide: 1-3 = fails core E-2 criteria or contradicts documents; 4-5 = meets
         feedback: 'Evaluation service unavailable. Your answer has been recorded.',
         specificSuggestion: 'Review your answer and ensure it covers specific details about your business and investment.',
         documentReference: null,
+        deliveryNotes: deliveryNotes.length > 0 ? deliveryNotes : undefined,
       } satisfies AnswerEvaluation);
     }
 
@@ -180,6 +185,7 @@ Score guide: 1-3 = fails core E-2 criteria or contradicts documents; 4-5 = meets
           feedback: parsed.feedback || 'Evaluation complete.',
           specificSuggestion: parsed.specificSuggestion || 'Review your answer and add more specific details.',
           documentReference: parsed.documentReference || null,
+          deliveryNotes: deliveryNotes.length > 0 ? deliveryNotes : undefined,
         } satisfies AnswerEvaluation);
       }
     } catch (parseError) {
@@ -191,6 +197,7 @@ Score guide: 1-3 = fails core E-2 criteria or contradicts documents; 4-5 = meets
       feedback: content.substring(0, 200) || 'Answer recorded.',
       specificSuggestion: 'Provide more specific details about your business and experience.',
       documentReference: null,
+      deliveryNotes: deliveryNotes.length > 0 ? deliveryNotes : undefined,
     } satisfies AnswerEvaluation);
 
   } catch (error) {
@@ -201,6 +208,7 @@ Score guide: 1-3 = fails core E-2 criteria or contradicts documents; 4-5 = meets
       feedback: 'Evaluation timed out. Your answer has been recorded.',
       specificSuggestion: 'Ensure your answer is specific and relates to your filed documents.',
       documentReference: null,
+      deliveryNotes: deliveryNotes.length > 0 ? deliveryNotes : undefined,
     } satisfies AnswerEvaluation);
   } finally {
     clearTimeout(timeout);
