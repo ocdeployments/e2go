@@ -35,7 +35,6 @@ import type { DocumentType } from '@/types/generation';
 const VALID_DOC_TYPES: DocumentType[] = [
   'cover_letter',
   'source_of_funds',
-  'investment_proof',
   'business_plan',
   'qualifications',
   'ds160_reference',

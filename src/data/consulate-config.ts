@@ -560,13 +560,6 @@ export function getDocumentManifest(config: ConsulateConfig): DocManifestEntry[]
       countsTowardLimit: true,
     },
     {
-      key: 'investment_proof',
-      label: 'Investment Proof',
-      pagesMin: 2,
-      pagesMax: 3,
-      countsTowardLimit: true,
-    },
-    {
       key: 'qualifications',
       label: 'Qualifications Summary',
       pagesMin: 1,

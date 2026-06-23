@@ -11,7 +11,6 @@
 export const DOC_DISPLAY_NAMES: Record<string, string> = {
   cover_letter: 'Cover_Letter',
   source_of_funds: 'Source_of_Funds',
-  investment_proof: 'Investment_Proof',
   business_plan: 'Business_Plan',
   qualifications: 'Qualifications',
   ds160_reference: 'DS160_Reference',
@@ -36,7 +35,6 @@ export const DOC_TYPE_TAB_MAP: Record<string, string> = {
   marginality_rebuttal: 'C',
   cover_letter: 'D',
   visa_category: 'E',
-  investment_proof: 'F',
   property_portfolio: 'F',
   declaration_principal: 'G',
   declaration_spouse: 'G',
