@@ -38,6 +38,8 @@ export interface DocManifestEntry {
   pagesMax: number;
   countsTowardLimit: boolean;
   exemptNote?: string;
+  conditional?: boolean;
+  conditionalNote?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -593,6 +595,82 @@ export function getDocumentManifest(config: ConsulateConfig): DocManifestEntry[]
       pagesMin: 3,
       pagesMax: 4,
       countsTowardLimit: true,
+    },
+    // DOC-3: Always-generated analytical documents
+    {
+      key: 'marginality_rebuttal',
+      label: 'Non-Marginality Rebuttal',
+      pagesMin: 1,
+      pagesMax: 2,
+      countsTowardLimit: true,
+    },
+    {
+      key: 'declaration_principal',
+      label: 'Principal Applicant Declaration',
+      pagesMin: 1,
+      pagesMax: 2,
+      countsTowardLimit: true,
+    },
+    // DOC-4: Financial evidence documents
+    {
+      key: 'fund_flow_chronology',
+      label: 'Fund Flow Chronology',
+      pagesMin: 1,
+      pagesMax: 2,
+      countsTowardLimit: true,
+    },
+    {
+      key: 'net_worth_statement',
+      label: 'Net Worth Statement',
+      pagesMin: 1,
+      pagesMax: 2,
+      countsTowardLimit: true,
+    },
+    // DOC-5: Employment documents
+    {
+      key: 'resume_principal',
+      label: 'Principal Applicant Resume',
+      pagesMin: 1,
+      pagesMax: 2,
+      countsTowardLimit: !cvExempt,
+      exemptNote: cvExempt ? 'Exempt — unlimited length' : undefined,
+    },
+    // Task G: Source-of-funds supplemental
+    {
+      key: 'gift_letter',
+      label: 'Gift / Inheritance Letter',
+      pagesMin: 1,
+      pagesMax: 1,
+      countsTowardLimit: true,
+    },
+    // Conditional documents — generated only when applicable
+    {
+      key: 'declaration_spouse',
+      label: 'Spouse Declaration',
+      pagesMin: 1,
+      pagesMax: 1,
+      countsTowardLimit: true,
+      conditional: true,
+      conditionalNote: 'Generated if spouse is applying',
+    },
+    {
+      key: 'property_portfolio',
+      label: 'Property Portfolio Summary',
+      pagesMin: 1,
+      pagesMax: 2,
+      countsTowardLimit: true,
+      conditional: true,
+      conditionalNote: 'Generated if property is owned',
+    },
+    {
+      key: 'resume_spouse',
+      label: 'Spouse Resume',
+      pagesMin: 1,
+      pagesMax: 2,
+      countsTowardLimit: !cvExempt,
+      exemptNote: cvExempt ? 'Exempt — unlimited length' : undefined,
+      conditional: true,
+      conditionalNote: 'Generated if spouse is applying',
     },
   ];
 }
