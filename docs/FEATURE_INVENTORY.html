@@ -268,7 +268,7 @@ const PHASES = [
       {status:'built', name:'Territory Market Analysis', route:'/fdd/territory/[fddId]', desc:'Census ACS 5-year ZCTA API + Google Places (graceful degradation) + category-specific weights and radii + LLM narrative.', badge:'new'},
       {status:'built', name:'Questions Generator', route:'/fdd/questions/[fddId]', desc:'15 flag→question templates + 8 standard + data-gap triggers + 5 LLM bespoke. CaseProfile match score 0–100. Filter by audience. FDD probe questions injected into simulator for franchise applicants.', badge:'new'},
       {status:'built', name:'FDD Final Report', route:'/fdd/report/[fddId]', desc:'6-section LLM report + freemium paywall (report_unlocked DB flag, $297 Stripe price wired). Writes 8 answer keys back to answers table. Migration 20260621000000_fdd_report_access.sql pending owner apply.', badge:'new'},
-      {status:'partial', name:'FDD Freemium Gate — Pending Migration', route:'/fdd/report/[fddId]', desc:'Stripe checkout + webhook + report_unlocked flag all wired. Owner must apply migration 20260621000000_fdd_report_access.sql in Supabase SQL Editor. Without it, hasAccess defaults true.', badge:'blocked'},
+      {status:'built', name:'FDD Freemium Gate', route:'/fdd/report/[fddId]', desc:'Stripe checkout + webhook + report_unlocked flag all wired. Migration 20260621000000_fdd_report_access.sql applied June 23 2026. hasAccess reads real DB flag.'},
       {status:'built', name:'Franchise Navigator', route:'/franchise', desc:'5-page flow: landing (reads quiz investment range), discover/profiler, match report (franchise-scoring-engine), brand detail, broker introduction.', badge:'new'},
       {status:'built', name:'Market Analysis (Standalone)', route:'/market-analysis', desc:'ZIP code + business type entry. Uses FDD territory engine directly. Territory score written back to answers table (Session 56 silo fix). Results surfaceable in gap analysis.'},
     ]
@@ -520,7 +520,6 @@ const GAPS = [
   {
     group:'Pre-Launch Blockers — Fix Before Any Public Users',
     items:[
-      {priority:'critical', name:'FDD Freemium Gate — Migration Not Applied', desc:'Stripe flow and report_unlocked flag fully wired (Session 51). Owner must apply migration 20260621000000_fdd_report_access.sql in Supabase SQL Editor. Without it, hasAccess defaults true and FDD reports are free for all auth users.'},
       {priority:'critical', name:'Groq TTS Voice Mode Blocked', desc:'canopylabs/orpheus-v1-english returns 400 model_terms_required. Owner must accept Groq model terms at console.groq.com/playground?model=canopylabs%2Forpheus-v1-english'},
     ]
   },
@@ -528,11 +527,8 @@ const GAPS = [
     group:'Owner Actions Required (No Code Needed)',
     items:[
       {priority:'high', name:'Sentry DSN — Add to Vercel Env', desc:'Sentry code fully integrated (Session 56). Owner must create project at sentry.io then add NEXT_PUBLIC_SENTRY_DSN + SENTRY_DSN + SENTRY_ORG + SENTRY_PROJECT to Vercel environment variables to activate error monitoring.'},
-      {priority:'high', name:'BUG-QA-06 Migration SQL — Not Applied', desc:'ALTER TABLE application_lifecycle ADD COLUMN IF NOT EXISTS last_visited_section text; + index + ALTER TABLE quiz_sessions ADD COLUMN IF NOT EXISTS franchise_referral_requested BOOLEAN DEFAULT false;'},
-      {priority:'high', name:'generated_documents.status CHECK — Apply Migration', desc:'Migration file created: supabase/migrations/20260623000000_generated_documents_revising_status.sql. Paste into Supabase SQL Editor to add \'revising\' to status CHECK. Without it, document revision status writes fail at the DB constraint layer.'},
       {priority:'high', name:'Google Places API Key Missing', desc:'GOOGLE_PLACES_API_KEY not in .env.local. Territory analysis (FDD + market-analysis) uses neutral score 50 fallback for all locations. Real competitor data blocked.'},
       {priority:'high', name:'Stripe Simulator Price ID Update', desc:'Run SQL: UPDATE pricing SET stripe_price_id = \'price_1Tim5fF7Ggk3LUEy2JGRRKrB\', amount_cents = 2999 WHERE tier_id = \'simulator_3pack\'. Also update STRIPE_PRICE_SIMULATOR_3PACK in Vercel env.'},
-      {priority:'medium', name:'Migration 004 Not Applied', desc:'004_answers_source_update.sql not applied in Supabase SQL Editor. Document upload source tracking broken until applied.'},
       {priority:'medium', name:'Cloudflare Turnstile Keys', desc:'NEXT_PUBLIC_TURNSTILE_SITE_KEY + TURNSTILE_SECRET_KEY not in Vercel env. Bot protection on sensitive routes inactive.'},
       {priority:'medium', name:'CRON_SECRET Not Set', desc:'CRON_SECRET not in Vercel env. Cron job routes for profile rebuilds and email scheduling will fail authentication check.'},
       {priority:'medium', name:'Resend Domain Verification', desc:'Unknown if e2go.app is verified in Resend dashboard. Unverified = emails sent from fallback address. Check and revert sender to results@e2go.app if verified.'},
@@ -588,7 +584,7 @@ const ENGINES = [
 const DB_TABLES = [
   {name:'profiles', desc:'first_name, last_name, role (admin/user). Linked to Supabase Auth user_id.', notes:'RLS: users read own row. role=admin gates /admin route.'},
   {name:'applications', desc:'Core record. principal_name, business_name, business_category, operational_status, target_state, principal_country, application_type, simulator_sessions_used, source (main_flow | simulator_standalone), last_visited_section.', notes:'One per user main path; multiple for simulator_standalone'},
-  {name:'quiz_sessions', desc:'Quiz attempt + result_json (all 30 answers + score + flags + eligibility). completed_at. franchise_referral_requested boolean (pending BUG-QA-06 migration).', notes:'Multiple per user; latest used for profile'},
+  {name:'quiz_sessions', desc:'Quiz attempt + result_json (all 30 answers + score + flags + eligibility). completed_at. franchise_referral_requested boolean.', notes:'Multiple per user; latest used for profile'},
   {name:'answers', desc:'Case file answers. question_key → answer_value. source: manual | quiz | upload. application_id FK. market_territory key written by standalone market analysis (Session 56).', notes:'Autosave 800ms. Source drives pre-fill badge variant.'},
   {name:'case_profiles', desc:'Built by buildCaseProfile(). archetype, completeness_score, data_state, dimension scores, franchise_trigger. Updated fire-and-forget at 5 trigger events.', notes:'Read by simulator, FDD match, gap analysis, generation.'},
   {name:'followup_responses', desc:'Module 4 voice/writing sample + multi-turn follow-up Q&A formatted as clean Q&A pairs (Session 56). answer_key → answer_text.', notes:'Source for voice profile in generation. Format verified and confirmed.'},
@@ -597,8 +593,8 @@ const DB_TABLES = [
   {name:'document_discrepancies', desc:'Conflicts between extracted document data and existing answers. Must resolve before proceeding (HARD GATE).', notes:'resolution: accepted | overwritten | kept'},
   {name:'payments', desc:'Stripe payment records. user_id, tier, stripe_session_id, stripe_payment_intent_id, amount_cents, status, metadata (fddId for FDD Intelligence tier).', notes:'Written by webhook handler only'},
   {name:'pricing', desc:'Tier configuration. tier_id, stripe_price_id, amount_cents, name. Includes fdd_intelligence row ($297). Editable without redeploy.', notes:'Read by pricing-tier.ts for access control'},
-  {name:'fdd_analyses', desc:'FDD extraction result, scoring dimensions, territory analysis, generated questions, report sections. report_unlocked boolean (gated by payment). Keyed by fddId.', notes:'⚠️ Migration 20260621000000_fdd_report_access.sql adds report_unlocked — NOT YET APPLIED'},
-  {name:'generated_documents', desc:'One row per document type per application. content_text, step_number, step_name, status, humanization_score. 13 core rows created at job start; 3 conditional types created only when applicable.', notes:'⚠️ Apply migration 20260623000000_generated_documents_revising_status.sql in Supabase to add \'revising\' to status CHECK'},
+  {name:'fdd_analyses', desc:'FDD extraction result, scoring dimensions, territory analysis, generated questions, report sections. report_unlocked boolean (gated by payment). Keyed by fddId.', notes:'report_unlocked migration applied June 23 2026'},
+  {name:'generated_documents', desc:'One row per document type per application. content_text, step_number, step_name, status, humanization_score. 13 core rows created at job start; 3 conditional types created only when applicable.', notes:'status CHECK includes: queued, generating, generated, awaiting_approval, under_review, approved, locked, failed, revision_requested, revising'},
   {name:'document_generation_jobs', desc:'Job queue for SSE pipeline. status: queued | running | awaiting_approval | completed | failed. current_step, current_step_label, total_steps (23).', notes:'One active job per application enforced at start route.'},
   {name:'generation_pipeline_log', desc:'Audit trail per generation step. timestamp, status, tokens_used, humanization_score, consistency_pass, applicant_acknowledged, final_status, downloaded_at.', notes:'Quality gate evidence. downloaded_at set by download route.'},
   {name:'pre_generation_confirmation', desc:'5-checkbox acknowledgment gate state per application. All 5 must be true before pipeline starts.', notes:'FK: applications.id'},
@@ -610,7 +606,7 @@ const DB_TABLES = [
   {name:'email_verifications', desc:'Email verification tokens. token, user_id, verified_at. Checked in middleware for every authenticated route.', notes:'Enforced: unverified = redirect to /verify'},
   {name:'terms_acceptance', desc:'ToS acceptance timestamp per user. Recorded at account creation and /terms-required acceptance.', notes:'Checked by auth flow'},
   {name:'consent_records', desc:'PIPEDA/privacy notice acknowledgment. Inline privacy notices at document upload and case file first visit.', notes:'PT-2 complete'},
-  {name:'application_lifecycle', desc:'Event log per application. quiz_started → quiz_completed → payment_completed → module completions → generation triggered/completed → simulator sessions → interview_date → outcome. last_visited_section column pending BUG-QA-06 migration.', notes:'Rule 9 — every significant action logged'},
+  {name:'application_lifecycle', desc:'Event log per application. quiz_started → quiz_completed → payment_completed → module completions → generation triggered/completed → simulator sessions → interview_date → outcome. last_visited_section text for smart resume routing.', notes:'Rule 9 — every significant action logged'},
   {name:'app_settings', desc:'LLM model config (claude-opus-4-8 for doc gen). Editable by admin without redeploy.', notes:'Read by generation-engine.ts at pipeline start'},
   {name:'case_briefs', desc:'Substantiality score, marginality score per application. Used as input to gap analysis engine.', notes:'Written by /api/generate/case-brief route'},
 ];
