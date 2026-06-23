@@ -20,19 +20,29 @@ import {
   TabStopType,
   TabStopPosition,
 } from 'docx';
-import { TAB_SECTION_TITLES } from '@/lib/docx-package-constants';
+import { TAB_SECTION_TITLES, DOC_DISPLAY_NAMES, DOC_TYPE_TAB_MAP } from '@/lib/docx-package-constants';
 
 export interface TocBuilderOptions {
   applicantName: string;
   preparedDate: string;
   includedTabs: string[]; // filtered TAB_ORDER for this application
+  includedDocTypes?: string[]; // all generated doc types — enables per-tab file listing
+  totalDocCount?: number; // actual doc count (may exceed tab count for multi-doc tabs)
+  consulateDisplay?: string; // e.g. "U.S. Consulate General, Toronto"
 }
 
 /**
  * Build a formatted Document for the package table of contents.
  */
 export function buildTableOfContents(options: TocBuilderOptions): Document {
-  const { applicantName, preparedDate, includedTabs } = options;
+  const {
+    applicantName,
+    preparedDate,
+    includedTabs,
+    includedDocTypes = [],
+    totalDocCount,
+    consulateDisplay = 'U.S. Consulate General',
+  } = options;
 
   const children: Paragraph[] = [];
 
@@ -73,7 +83,7 @@ export function buildTableOfContents(options: TocBuilderOptions): Document {
       alignment: AlignmentType.CENTER,
       children: [
         new TextRun({
-          text: 'Submitted to: U.S. Consulate General, Toronto',
+          text: `Submitted to: ${consulateDisplay}`,
           font: 'Century Schoolbook',
           size: 22, // 11pt
         }),
@@ -116,9 +126,17 @@ export function buildTableOfContents(options: TocBuilderOptions): Document {
     const entry = TAB_SECTION_TITLES[tabLetter];
     if (!entry) continue;
 
-    const filename = `Tab_${tabLetter}_${entry.title.replace(/[^a-zA-Z0-9]/g, '_')}.docx`;
+    // All generated doc types assigned to this tab
+    const docsInTab = includedDocTypes.filter(
+      (dt) => DOC_TYPE_TAB_MAP[dt] === tabLetter
+    );
 
-    // Tab letter (bold) + section title (bold, sentence case) + dot leader → filename
+    // Tab letter + section title header (no filename on this line for multi-doc tabs)
+    const firstFilename =
+      docsInTab.length === 1
+        ? `Tab_${tabLetter}_${DOC_DISPLAY_NAMES[docsInTab[0]] ?? docsInTab[0]}.docx`
+        : '';
+
     children.push(
       new Paragraph({
         spacing: { after: 60 },
@@ -147,35 +165,79 @@ export function buildTableOfContents(options: TocBuilderOptions): Document {
             font: 'Century Schoolbook',
             size: 24,
           }),
-          new TextRun({
-            children: ['\t'],
-            font: 'Century Schoolbook',
-            size: 24,
-          }),
-          new TextRun({
-            text: filename,
-            font: 'Century Schoolbook',
-            size: 20, // 10pt for filename
-          }),
+          ...(firstFilename
+            ? [
+                new TextRun({
+                  children: ['\t'],
+                  font: 'Century Schoolbook',
+                  size: 24,
+                }),
+                new TextRun({
+                  text: firstFilename,
+                  font: 'Century Schoolbook',
+                  size: 20,
+                }),
+              ]
+            : []),
         ],
       })
     );
 
-    // Description line below, italic, 10pt, indented 0.25"
+    // Description line, italic 10pt, indented 0.25"
     children.push(
       new Paragraph({
-        spacing: { after: 200 },
+        spacing: { after: docsInTab.length > 1 ? 60 : 200 },
         indent: { left: convertInchesToTwip(0.25) },
         children: [
           new TextRun({
             text: entry.description,
             font: 'Century Schoolbook',
-            size: 20, // 10pt
+            size: 20,
             italics: true,
           }),
         ],
       })
     );
+
+    // For multi-doc tabs: list each file indented below the description
+    if (docsInTab.length > 1) {
+      for (const dt of docsInTab) {
+        const filename = `Tab_${tabLetter}_${DOC_DISPLAY_NAMES[dt] ?? dt}.docx`;
+        children.push(
+          new Paragraph({
+            spacing: { after: 40 },
+            indent: { left: convertInchesToTwip(0.5) },
+            tabStops: [
+              {
+                type: TabStopType.RIGHT,
+                position: TabStopPosition.MAX,
+                leader: 'dot',
+              },
+            ],
+            children: [
+              new TextRun({
+                text: '→  ',
+                font: 'Century Schoolbook',
+                size: 20,
+                color: '888888',
+              }),
+              new TextRun({
+                text: filename,
+                font: 'Century Schoolbook',
+                size: 20,
+              }),
+            ],
+          })
+        );
+      }
+      // Extra spacing after a multi-doc tab
+      children.push(
+        new Paragraph({
+          spacing: { after: 160 },
+          children: [],
+        })
+      );
+    }
   }
 
   // --- Bottom spacing ---
@@ -209,7 +271,7 @@ export function buildTableOfContents(options: TocBuilderOptions): Document {
       alignment: AlignmentType.CENTER,
       children: [
         new TextRun({
-          text: `TOTAL PACKAGE: ${includedTabs.length} documents (plus cover page, index, and tab dividers)`,
+          text: `TOTAL PACKAGE: ${totalDocCount ?? includedTabs.length} generated documents across ${includedTabs.length} tabs (plus cover page, index, and tab dividers)`,
           bold: true,
           font: 'Century Schoolbook',
           size: 22,
