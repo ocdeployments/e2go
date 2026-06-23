@@ -337,13 +337,13 @@ const PHASES = [
       {status:'built', name:'Settings', route:'/settings', desc:'2-step deletion + type-to-confirm. POST /api/account/delete wipes 16 tables + Auth user + Resend confirmation. PT-1 complete.'},
       {status:'built', name:'Gap Analysis + Remediation Tool', route:'/gap-analysis', desc:'scoreCase() with 6 evidence categories + 15 D-codes. DenialRiskRadar, CategoryCard, PathwaySection, pathway-engine. RemediationPanel: D_CODE_REMEDIATION registry (15 entries), inline form fields + progress bar + file upload, live rescore useEffect calls scoreCase() on every field change. liveResult drives all score numbers.', badge:'new'},
       {status:'built', name:'Application Lifecycle Tracking', route:'', desc:'application_lifecycle table. Events: quiz_started → quiz_completed → payment_completed → module completions → generation triggered/completed → simulator sessions → interview_date → outcome.'},
-      {status:'built', name:'Case Intelligence Profile (CIP) — De Facto', route:'/api/case-profile/build', desc:'buildCaseProfile() is the de facto CIP. Reads answers + quiz_sessions + followup_responses + case_briefs + simulation_sessions. classifyArchetype(), scoreQuizEligibility(), detectFranchiseTrigger(). No unified CIP schema — raw table queries.', badge:'silo'},
+      {status:'built', name:'Case Intelligence Profile (CIP)', route:'/api/case-profile/build', desc:'buildCaseProfile() is the official CIP implementation (Session 61 audit confirmed). Reads answers + quiz_sessions + followup_responses + case_briefs + simulation_sessions → case_profiles table. classifyArchetype(), scoreQuizEligibility(), detectFranchiseTrigger(). Consumed by: simulator-engine (reads case_profiles), fdd-profile-match-engine (reads case_profiles). gap-analysis-engine is pure function — takes precomputed inputs, no raw queries needed. Architecture sound.'},
       {status:'built', name:'Admin Panel', route:'/admin', desc:'src/app/admin/page.tsx — middleware-gated to role=admin. Metrics row (user count, payment count, active applications). Payments table with email lookup via auth.admin.listUsers() service role. Users table with application count. createServiceClient() server-side only — never client components.', badge:'new'},
       {status:'built', name:'SimulatorNudge (Coaching → Case File)', route:'/apply/*', desc:'SimulatorNudge component injected into all 5 apply section pages. /api/simulator/section-nudge route maps coaching weakness categories to case file section improvement suggestions. Visible after any completed simulator session.', badge:'new'},
       {status:'built', name:'Rate Limiting (Upstash Redis)', route:'', desc:'Login: 5/15min/IP. Quiz submit: 3/hr/IP. Generate/Analysis: 50/day/user. FAQ: 10/min/IP.'},
       {status:'built', name:'PWA (Service Worker)', route:'', desc:'Installable. Service worker + manifest. PWAInstallPrompt component.'},
       {status:'partial', name:'Error Monitoring (Sentry)', route:'/api/_sentry-tunnel', desc:'@sentry/nextjs installed (Session 56). sentry.client/server/edge.config.ts. withSentryConfig in next.config.mjs. Tunnel route /api/_sentry-tunnel (bypasses ad blockers). global-error.tsx. Code complete — owner must add NEXT_PUBLIC_SENTRY_DSN + SENTRY_DSN + SENTRY_ORG + SENTRY_PROJECT to Vercel env.', badge:'blocked'},
-      {status:'planned', name:'Uptime Monitoring', route:'', desc:'SESSION23_UPTIME_MONITORING — planned, not built. No alerting if production goes down.', badge:'gap'},
+      {status:'partial', name:'Uptime Monitoring', route:'/api/health', desc:'/api/health built (Session 61) — DB ping, returns { status, timestamp, checks: { database: { status, latency_ms } } }, 503 on DB failure. Owner action: wire to UptimeRobot or BetterStack for alerting.', badge:'blocked'},
     ]
   }
 ];
@@ -537,13 +537,13 @@ const GAPS = [
       {priority:'medium', name:'Cloudflare Turnstile Keys', desc:'NEXT_PUBLIC_TURNSTILE_SITE_KEY + TURNSTILE_SECRET_KEY not in Vercel env. Bot protection on sensitive routes inactive.'},
       {priority:'medium', name:'CRON_SECRET Not Set', desc:'CRON_SECRET not in Vercel env. Cron job routes for profile rebuilds and email scheduling will fail authentication check.'},
       {priority:'medium', name:'Resend Domain Verification', desc:'Unknown if e2go.app is verified in Resend dashboard. Unverified = emails sent from fallback address. Check and revert sender to results@e2go.app if verified.'},
+      {priority:'medium', name:'Wire /api/health to Uptime Monitor', desc:'/api/health endpoint built and returning DB ping. Add https://e2go.app/api/health to UptimeRobot or BetterStack. Set alert threshold: status != "ok" or HTTP != 200. No code needed.'},
     ]
   },
   {
     group:'Features Not Yet Built',
     items:[
       {priority:'high', name:'Renewal Package Application Flow', desc:'$497 Stripe tier exists. No renewal application flow, no renewal route, no renewal case file sections. Users who renew have nowhere to go.'},
-      {priority:'medium', name:'Uptime Monitoring — /api/health built', desc:'/api/health endpoint built with DB ping (Supabase latency check). Returns status, timestamp, database.status, database.latency_ms. 503 on DB failure. Wire to UptimeRobot or BetterStack for alerting — owner action required.'},
       {priority:'medium', name:'Referral Partner Integrations', desc:'Mercury, Wise, Relay, East West Bank, FranNet/IFPG/FranChoice brokers, MNP/BDO CPAs — all identified, none connected to the product.'},
     ]
   },
