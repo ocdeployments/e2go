@@ -6,7 +6,7 @@ import * as path from 'path'
 dotenv.config({ path: path.join(__dirname, '../.env.local') })
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-06-20' as any
+  apiVersion: '2026-05-27.dahlia' as const
 })
 
 const tiers = [

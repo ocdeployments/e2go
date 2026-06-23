@@ -1,7 +1,22 @@
 # Investment Proof Generation Prompt
 ## Document Type: investment_proof
-## Tab Reference: Tab F
+## Tab Reference: Tab B — Investment Proof (At-Risk Element)
 ## Generation Order: Step 3
+
+## SCOPE — READ THIS FIRST
+
+This document covers ONE E-2 element: **investment at risk / irrevocability**.
+It proves that the investor's funds are irrevocably committed to the enterprise
+and subject to partial or total loss if the business fails.
+
+THIS DOCUMENT DOES NOT cover:
+- Substantiality / proportionality (investment as % of enterprise cost)
+  → That analysis is in the Substantiality Memorandum (generated separately)
+- Source of funds (where the money came from)
+  → That analysis is in the Source of Funds Statement (generated separately)
+
+If content about proportionality or fund sourcing begins appearing in this document,
+stop and remove it. Those topics have their own dedicated documents.
 
 ---
 
@@ -194,18 +209,33 @@ Does not claim eligibility — states the facts.
 - Business type and location
 - Franchise brand: Kumon
 
-**Section III — Investment Breakdown:**
-Show exactly how the $175,000 is deployed:
+**Section III — Investment Deployment Table (REQUIRED):**
 
-| Category | Amount | Purpose |
-|----------|--------|---------|
-| Franchise Fee | $125,000 | Initial franchise fee payable to Assisting Hands Franchising LLC |
-| Working Capital | $50,000 | Pre-opening expenses and initial operations |
+Show exactly how every dollar is deployed. Use the investment_breakdown data.
+This is the at-risk proof — every line item must show a committed expenditure.
 
-TOTAL: $175,000 USD
+| Category | Amount | Status | Supporting Evidence |
+|----------|--------|--------|---------------------|
+| Franchise Fee | $125,000 | Paid — non-refundable | Tab B-1: Franchise Agreement; Tab B-2: Wire Transfer |
+| Leasehold Improvements | $XX,000 | Committed | Tab B-3: Lease Agreement |
+| Equipment / Build-out | $XX,000 | Paid or contracted | Tab B-4: Vendor Invoices |
+| Initial Inventory | $XX,000 | Ordered / received | Tab B-5: Purchase Orders |
+| Working Capital Reserve | $XX,000 | Deposited in LLC account | Tab B-6: U.S. Bank Statement |
 
-Reference the FDD Item 7 (Estimated Initial Investment) if available.
-If applicant's stated total differs from FDD by more than 15%, flag discrepancy.
+TOTAL: $[exact total] USD
+
+Adapt the table rows to the actual investment_breakdown data.
+Reference FDD Item 7 (Estimated Initial Investment) if available to confirm categories.
+If the applicant's stated total differs from the FDD Item 7 range by more than 15%,
+add a note: "The investment above [exceeds / falls within] the FDD Item 7 estimated
+initial investment range of $[X]–$[X], reflecting [reason for variance if known]."
+
+At-Risk Assessment:
+After the table, include one paragraph explaining which items are irrevocably committed
+and which remain at risk. Example: "The $125,000 franchise fee is non-refundable per
+Section [X] of the Franchise Agreement (Tab B-1). The $50,000 working capital has been
+deposited to the LLC operating account and is being drawn down for pre-opening expenses.
+No portion of the total investment is currently in escrow with a refund condition."
 
 **Section IV — Irrevocability Statement:**
 
@@ -219,12 +249,18 @@ the U.S. business account for operational use."
 ```
 
 **Section V — Supporting Documentation Index:**
-List all exhibits proving the investment:
-- Tab F-1: Franchise Agreement
-- Tab F-2: Wire Transfer Confirmation
-- Tab F-3: LLC Certificate of Formation
-- Tab F-4: EIN Assignment Letter
-- Tab F-5: Bank Statement showing funds in U.S. account
+List all exhibits that prove commitment and at-risk status.
+Use "Tab B-X" as the exhibit prefix for this document's tab:
+- Tab B-1: Franchise Agreement (fully executed — with signature page)
+- Tab B-2: Wire Transfer Confirmation(s) — investment funds to LLC
+- Tab B-3: Signed Lease Agreement — key pages (parties, term, rent, signatures)
+- Tab B-4: Vendor Contracts or Invoices for equipment/build-out (if applicable)
+- Tab B-5: LLC Certificate of Formation + EIN Assignment Letter
+- Tab B-6: U.S. Business Bank Statement showing funds on deposit
+
+Only list exhibits that the applicant has confirmed are in their package.
+If an exhibit type is not applicable (e.g., no leasehold improvements), omit it.
+Never list an exhibit that doesn't exist in the submission.
 
 ---
 

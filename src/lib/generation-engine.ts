@@ -2,6 +2,7 @@ import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import Anthropic from '@anthropic-ai/sdk';
 import { synthesizeInvestorProfile, formatInvestorProfileContext } from './investor-profile-synthesizer';
+import { scoreCase, type GapCategory } from './gap-analysis-engine';
 import { createClient } from '@supabase/supabase-js';
 import {
   type DocumentType,
@@ -370,6 +371,71 @@ function validateContext(
 }
 
 // ---------------------------------------------------------------------------
+// 4a-2. Gap analysis context builder
+// Runs scoreCase() on the existing answers and formats the result as a
+// prompt injection block. Weak/critical categories get explicit instructions
+// to go deeper on the relevant evidence for this document type.
+// ---------------------------------------------------------------------------
+
+// Map each document type to the gap categories it primarily addresses.
+const DOC_GAP_CATEGORY_MAP: Record<string, string[]> = {
+  cover_letter:        ['source_of_funds', 'management_role', 'business_plan', 'investment_amount', 'employment_creation', 'business_operations'],
+  source_of_funds:     ['source_of_funds', 'investment_amount'],
+  investment_proof:    ['investment_amount', 'source_of_funds'],
+  business_plan:       ['business_plan', 'employment_creation', 'business_operations'],
+  qualifications:      ['management_role'],
+  nonimmigrant_intent: ['management_role', 'source_of_funds'],
+  visa_category:       ['source_of_funds', 'management_role', 'business_plan', 'investment_amount'],
+  ds160_reference:     ['investment_amount', 'source_of_funds'],
+};
+
+function buildGapContext(
+  answers: { question_key: string; answer_value: string | null }[],
+  application: { business_name?: string | null; business_category?: string | null; operational_status?: string | null; target_state?: string | null; principal_name?: string | null; simulator_sessions_used?: number | null },
+  documentType: string,
+  archetype?: string | null
+): string {
+  try {
+    const result = scoreCase(application, answers, [], undefined, undefined, archetype ?? null);
+    const relevantCategoryIds = DOC_GAP_CATEGORY_MAP[documentType] ?? [];
+
+    // Only surface categories that need attention — skip 'strong' and 'good'
+    const weakCategories = result.categories.filter(
+      (c: GapCategory) =>
+        relevantCategoryIds.includes(c.id) &&
+        (c.priority === 'needs_work' || c.priority === 'critical')
+    );
+
+    if (weakCategories.length === 0) return '';
+
+    const lines: string[] = [
+      'GAP ANALYSIS — AREAS REQUIRING DEEPER COVERAGE IN THIS DOCUMENT:',
+      `Overall case readiness: ${result.readiness.toUpperCase()} (${result.overallScore}/100)`,
+      'The following evidence gaps were identified. Address each one with greater specificity and depth than you normally would.',
+      '',
+    ];
+
+    for (const cat of weakCategories) {
+      lines.push(`[${cat.priority.toUpperCase()}] ${cat.name} (score: ${cat.score}/100)`);
+      if (cat.gaps.length > 0) {
+        lines.push(`  Gaps: ${cat.gaps.slice(0, 3).join(' | ')}`);
+      }
+      if (cat.actions.length > 0) {
+        lines.push(`  Required coverage: ${cat.actions.slice(0, 2).join(' | ')}`);
+      }
+      lines.push('');
+    }
+
+    lines.push('INSTRUCTION: For each gap above, allocate additional detail and specific factual evidence in this document. Do not pad — add substance.');
+
+    return lines.join('\n');
+  } catch {
+    // Gap analysis is non-blocking — never let it crash generation
+    return '';
+  }
+}
+
+// ---------------------------------------------------------------------------
 // 4b. Build the generation payload
 // ---------------------------------------------------------------------------
 
@@ -428,6 +494,36 @@ export async function buildGenerationPayload(
   // Extract investment breakdown as structured data
   const investmentBreakdown = extractInvestmentBreakdown(module3Answers);
 
+  // Build gap analysis context — surfaces weak evidence areas so the LLM
+  // allocates deeper coverage to the sections that need it most.
+  const appRowForGap = {
+    business_name: (caseBrief as unknown as Record<string, unknown>).business_name as string | null,
+    business_category: catForProfile,
+    operational_status: (caseBrief as unknown as Record<string, unknown>).operational_status as string | null,
+    target_state: (caseBrief as unknown as Record<string, unknown>).target_state as string | null,
+    principal_name: (caseBrief as unknown as Record<string, unknown>).principal_name as string | null,
+    simulator_sessions_used: null,
+  };
+  const gapAnalysisContext = buildGapContext(answersForProfile, appRowForGap, documentType, archForProfile) || undefined;
+
+  // Format follow-up responses as clean Q&A dialogue for the LLM.
+  // Raw DB rows include metadata noise (id, created_at, content_value, etc.)
+  // that reduces prompt clarity. We extract only the question and answer.
+  type FollowUpRow = { question_text?: string; answer_text?: string; gap_category?: string; question_number?: number };
+  const followUpFormatted: Record<string, unknown> = {};
+  if (followUp && Array.isArray(followUp) && followUp.length > 0) {
+    const rows = (followUp as FollowUpRow[])
+      .filter(r => r.question_text && r.answer_text && (r.answer_text || '').trim().length > 0)
+      .sort((a, b) => (a.question_number ?? 0) - (b.question_number ?? 0));
+    rows.forEach((r, i) => {
+      followUpFormatted[`q${i + 1}`] = {
+        category: r.gap_category || 'general',
+        question: r.question_text,
+        answer: r.answer_text,
+      };
+    });
+  }
+
   return {
     system_prompt: systemPrompt,
     case_brief: caseBrief as unknown as Record<string, unknown>,
@@ -436,8 +532,9 @@ export async function buildGenerationPayload(
     voice_profile: voiceProfile?.voice_profile_text || '',
     consulate_post: (caseBrief as unknown as Record<string, unknown>).consulate_post as string || 'toronto',
     document_type: documentType,
-    follow_up_responses: (followUp ? (Array.isArray(followUp) ? followUp : followUp) : {}) as Record<string, unknown>,
+    follow_up_responses: followUpFormatted,
     qfn_investor_profile: qfnInvestorProfile,
+    gap_analysis_context: gapAnalysisContext,
   };
 }
 
@@ -499,6 +596,7 @@ export async function callClaudeAPI(payload: GenerationPayload): Promise<string>
     staticKBContext,
     dynamicKBContext,
     dCodeBlock,
+    ...(payload.gap_analysis_context ? [payload.gap_analysis_context, ''] : []),
     investmentBreakdownText,
     `APPLICANT CASE BRIEF:`,
     wrapUserContent(JSON.stringify(payload.case_brief, null, 2)),
@@ -509,12 +607,12 @@ export async function callClaudeAPI(payload: GenerationPayload): Promise<string>
     ...(payload.qfn_investor_profile
       ? [`INVESTOR PROFILE CONTEXT (Franchise Navigator):`, wrapUserContent(payload.qfn_investor_profile), '']
       : []),
-    `VOICE PROFILE:`,
-    wrapUserContent(payload.voice_profile),
-    '',
-    `FOLLOW-UP CONVERSATION:`,
-    wrapUserContent(JSON.stringify(payload.follow_up_responses, null, 2)),
-    '',
+    ...(payload.voice_profile
+      ? [`VOICE PROFILE (match this writing style in all documents):`, wrapUserContent(payload.voice_profile), '']
+      : []),
+    ...(Object.keys(payload.follow_up_responses).length > 0
+      ? [`FOLLOW-UP CONVERSATION (applicant answers to targeted gap questions — use this content in the document):`, wrapUserContent(JSON.stringify(payload.follow_up_responses, null, 2)), '']
+      : []),
     `Generate the ${docLabel} now. Follow all instructions in the system prompt.`,
     'Do not include any headers, labels, or meta-commentary in your output.',
     'Output the document text only.',

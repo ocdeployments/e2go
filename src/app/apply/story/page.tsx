@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useTrackSectionVisit } from "@/hooks/useTrackSectionVisit";
 import { createBrowserSupabaseClient } from '@/lib/supabase';
 import CaseFileShell from '@/components/apply/CaseFileShell';
+import SimulatorNudge from '@/components/apply/SimulatorNudge';
 import QuestionLabel from '@/components/apply/questions/QuestionLabel';
 import HelperText from '@/components/apply/questions/HelperText';
 import TextInput from '@/components/apply/questions/TextInput';
@@ -313,6 +314,7 @@ export default function StoryPage() {
       {/* Cluster 1 — Who you are */}
       {activeCluster === 1 && (
         <div className="space-y-8">
+          <SimulatorNudge section="story" />
           <ClusterDivider label="Who you are" />
           {CLUSTER_1_QUESTIONS.map((q) => {
             const answer = answers[q.key];

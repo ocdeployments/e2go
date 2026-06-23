@@ -14,8 +14,8 @@ export default function ResetPassword() {
   useEffect(() => {
     const supabase = createBrowserSupabaseClient();
     void (async () => {
-      const { data } = await supabase.auth.getSession();
-      setHasSession(!!data.session);
+      const { data } = await supabase.auth.getUser();
+      setHasSession(!!data.user);
     })();
   }, []);
 

@@ -8,6 +8,7 @@ import { GENERATION_STEP_LABELS, DOCUMENT_TYPE_LABELS } from "@/types/generation
 import type { SSEProgressMessage, DocumentType } from "@/types/generation";
 import AcknowledgmentGate from "@/components/AcknowledgmentGate";
 import PreGenerationConfirmation from "@/components/generate/PreGenerationConfirmation";
+import ConsulateBriefing from "@/components/generate/ConsulateBriefing";
 import type { PreGenerationValidationResult } from "@/lib/pre-generation-validation";
 
 type StepStatus = "pending" | "running" | "complete" | "failed";
@@ -99,6 +100,9 @@ export default function GenerateProgressPage() {
   const [validationLoading, setValidationLoading] = useState(true);
   const [validationError, setValidationError] = useState<string>("");
   const [confirming, setConfirming] = useState(false);
+
+  // Consulate briefing — shown before investment confirmation
+  const [consulateBriefingDone, setConsulateBriefingDone] = useState(false);
 
   // Voice profile completeness gate
   const [voiceWordCount, setVoiceWordCount] = useState<number | null>(null);
@@ -399,6 +403,31 @@ export default function GenerateProgressPage() {
     fetchVoiceWordCount();
   }, [applicationId]);
 
+  // Fetch application data on mount so consulate is available for the briefing screen
+  useEffect(() => {
+    const fetchInitialAppData = async () => {
+      try {
+        const appRes = await fetch(`/api/applications/${applicationId}`);
+        if (appRes.ok) {
+          const appData = await appRes.json();
+          setApplicationData((prev) => ({
+            ...prev,
+            applicantName: appData.applicant_name ?? prev.applicantName,
+            businessName: appData.business_name ?? prev.businessName,
+            city: appData.city ?? prev.city,
+            state: appData.state ?? prev.state,
+            investmentAmount: appData.investment_amount ?? prev.investmentAmount,
+            consulate: appData.consulate ?? prev.consulate,
+            nationality: appData.nationality ?? prev.nationality,
+          }));
+        }
+      } catch {
+        // Non-blocking — briefing falls back to generic if consulate unavailable
+      }
+    };
+    fetchInitialAppData();
+  }, [applicationId]);
+
   // Fetch validation data on mount — shows confirmation panel instead of auto-starting
   useEffect(() => {
     const fetchValidation = async () => {
@@ -665,7 +694,16 @@ export default function GenerateProgressPage() {
                 </div>
               )}
 
-              {validation && validation.readyForGeneration && (
+              {/* STEP 1 — Consulate briefing (before investment confirmation) */}
+              {validation && validation.readyForGeneration && !consulateBriefingDone && (
+                <ConsulateBriefing
+                  consulate={applicationData.consulate}
+                  onContinue={() => setConsulateBriefingDone(true)}
+                />
+              )}
+
+              {/* STEP 2 — Investment confirmation */}
+              {validation && validation.readyForGeneration && consulateBriefingDone && (
                 <>
                   {/* Voice profile completeness gate */}
                   {voiceWordCount !== null && voiceWordCount < 100 && !voiceWarningDismissed && (
@@ -712,6 +750,7 @@ export default function GenerateProgressPage() {
                   />
                 </>
               )}
+              {/* END investment confirmation */}
             </>
           )}
 

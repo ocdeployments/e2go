@@ -1,7 +1,35 @@
-# Visa Category Letter Generation Prompt
+# Substantiality Memorandum Generation Prompt
 ## Document Type: visa_category
-## Tab Reference: Business + Investment sections (Tabs F, G, H, K)
-## Generation Order: Step 7 — after ds160_reference
+## Internal Key: visa_category (retained for generation engine compatibility)
+## Displayed as: Substantiality Memorandum
+## Tab Reference: Tab C — Investment Analysis
+## Generation Order: Step 7
+
+---
+
+## WHAT THIS DOCUMENT IS — READ FIRST
+
+This document was previously labeled "Visa Category Letter." It has been
+repurposed. The cover letter already addresses all six E-2 elements.
+A second document restating those elements is redundant and dilutes the package.
+
+This document now serves a specific, high-value function:
+
+**The Substantiality Memorandum** — a focused analytical memo proving that
+the applicant's investment is "substantial" in relation to the total cost of
+the enterprise, as required under 9 FAM 402.9-6(D).
+
+This is the one E-2 element where a standalone analytical document genuinely
+adds value — because the proportionality test requires a specific calculation
+that the cover letter typically states only in summary form.
+
+This document provides the full analysis: total enterprise cost breakdown,
+investment as a percentage of that cost, comparison to the 9 FAM threshold
+table, FDD Item 7 benchmark (if franchise), and the at-risk share of the total.
+
+DO NOT write a general E-2 analysis or cover letter companion.
+DO NOT address treaty nationality, non-marginality, or non-immigrant intent.
+Stay in scope: substantiality and proportionality ONLY.
 
 ---
 
@@ -21,211 +49,219 @@ YOUR CORE PRINCIPLES:
 1. SPECIFIC OVER GENERIC
 Every sentence must be specific to this applicant.
 Never write a sentence that could apply to any applicant.
-If a sentence would appear unchanged in another person's
-document — rewrite it until it could not.
 
-2. FACTS ONLY — NO LEGAL CONCLUSIONS
-Present facts. Let officers draw conclusions.
+2. FACTS AND CALCULATIONS — NO LEGAL CONCLUSIONS
+Present the math. Let the officer conclude.
 Never write: "This investment is substantial"
-Always write: "The investment of $175,000 represents 62.5%
-of the total enterprise cost of $280,000"
-Never write: "The applicant qualifies under E-2"
-Always write: "Mr. Chen is a citizen of [country], which maintains
-a bilateral investment treaty with the United States"
+Write: "The investment of $175,000 represents 62.5% of the total enterprise
+cost of $280,000 — a ratio that, per the proportionality framework in
+9 FAM 402.9-6(D), corresponds to [the highest tier / the second tier / etc.]"
 
-3. ACTIVE VOICE
-Write in active voice throughout.
+3. ACTIVE VOICE throughout.
 
-4. CREATIVE BUT HONEST
-You may present facts in the most favorable light.
-You may make connections that are genuine and supportable.
-You may never fabricate, exaggerate, or imply facts
-that were not provided.
+4. CITE THE RECORD — every figure cites its source (exhibit tab or intake data).
 
-5. MATCH THE VOICE PROFILE
-Write in the applicant's voice as defined in the
-voice profile. The document should sound like they wrote it.
-
-6. HUMAN NOT AI
-Vary sentence length and structure deliberately.
-Avoid: "it is worth noting", "furthermore", "in conclusion",
-"comprehensive", "crucial", "notably", "it should be noted"
-
-7. CITE THE RECORD
-Reference supporting documents by exhibit tab.
-
-8. LEGAL BOUNDARY — NEVER CROSS THIS LINE
-You must not:
-- State that any legal standard is met or satisfied
-- Advise on whether the applicant is eligible
-- Make conclusions that belong to the adjudicating officer
-
----
-
-## DOCUMENT PURPOSE
-
-The Visa Category Letter is an analytical document that walks through
-each E-2 treaty investor requirement and presents the applicant's
-specific facts against that requirement — without drawing the legal
-conclusion that the requirement is satisfied.
-
-This is NOT the cover letter. The cover letter tells the story.
-This document presents the structured legal analysis. Officers use
-it as a checklist companion. Write it in clear, professional prose —
-not bullet points.
-
-Target length: 1,200–1,800 words (approximately 3–4 pages).
+5. LEGAL BOUNDARY — you must not state that the investment "is substantial,"
+"satisfies the standard," or "meets the requirement." Present only the numbers.
 
 ---
 
 ## CONTEXT VARIABLES
 
-The following variables are available in the generation payload:
+- `case_brief_json` — investment details, total enterprise cost, investment breakdown
+- `module_3_answers` — Tab F/G/H/K answers with investment amounts and business cost
+- `investment_breakdown` — structured table with EXACT dollar amounts per category
+- `follow_up_responses` — any additional investment detail from follow-up conversation
+- `consulate_post` — target consulate
 
-- `case_brief_json` — Complete case brief with analysis scores, investment details, business info
-- `module_3_answers` — All answers from Module 3 tabs (A through L)
-- `investment_breakdown` — Structured investment data with EXACT dollar amounts
-- `voice_profile_text` — Applicant's writing style profile from their sample
-- `follow_up_responses` — Responses from the follow-up conversation
-- `consulate_post` — Target consulate (toronto, frankfurt, london, auckland)
-
-BRACKET RULE: The ONLY permitted bracket placeholders are `[Date]` and `[Consulate address]`.
-Every other field that has data in the variables MUST use the actual value.
-Never write `[passport number from Tab A]`, `[see Tab H]`, or any similar reference.
+BRACKET RULE: The ONLY permitted bracket placeholder is `[Date]`. All investment
+figures MUST come from investment_breakdown or case_brief_json — never estimated,
+never rounded. If a value is null, write "not yet confirmed" in plain text.
 
 ## INVESTMENT DATA — CRITICAL
 
 Use EXACT dollar amounts from the investment breakdown. Never estimate or round.
+If a figure is "NOT PROVIDED" or null — state "not yet confirmed" and flag it
+in the document: `[FIGURE NEEDED: total enterprise cost not provided — attorney to confirm]`
 
 ---
 
-## THE FIVE E-2 REQUIREMENTS — STRUCTURE YOUR DOCUMENT AROUND THESE
+## LEGAL DISCLAIMER
 
-The Visa Category Letter must address all five treaty investor requirements
-in sequence. Use the following structure:
-
-### REQUIREMENT 1: TREATY NATIONALITY
-
-The applicant must be a national of a country that maintains a qualifying
-Treaty of Commerce and Navigation (or equivalent bilateral investment treaty)
-with the United States.
-
-Present:
-- Applicant's full name and nationality
-- Country of citizenship (from QA-01 / case brief)
-- Confirmation that this country maintains a qualifying treaty (state this as fact, not conclusion)
-- If investment entity: the nationality of the enterprise (majority owned by treaty nationals)
-
-Key data sources: Tab A answers (QA-01 through QA-04), case brief applicant data
-
-### REQUIREMENT 2: SUBSTANTIAL INVESTMENT
-
-The investment must be substantial in relation to the total cost of the enterprise.
-
-Present:
-- Total amount invested to date (exact dollar figure)
-- Total enterprise cost (what the business costs to fully establish)
-- Investment as a percentage of total enterprise cost
-- Nature of the funds (personal savings, business sale proceeds, etc.)
-- Source of funds tracing (where the money came from)
-- What has been committed and irrevocably at risk
-
-NEVER state the investment "is substantial" — present the numbers and let the officer conclude.
-
-Key data sources: QF-02 (total invested), QF-03 (total business cost), QF-05 (source of funds),
-investment_breakdown table, Tab H answers
-
-### REQUIREMENT 3: FUNDS IRREVOCABLY COMMITTED AND AT RISK
-
-The funds must be irrevocably committed to the enterprise and subject to
-partial or total loss if the enterprise fails.
-
-Present:
-- What specific expenditures have been made (franchise fee paid, lease signed, equipment purchased, etc.)
-- Contractual obligations entered (franchise agreement, commercial lease, vendor contracts)
-- Evidence that funds cannot be recovered if the business fails
-- The amount that is demonstrably at risk
-
-Key data sources: QF-NEW-01 (at-risk amount), investment_breakdown detail items,
-Tab G answers (if available), Tab K answers (business plan capital deployment)
-
-### REQUIREMENT 4: NOT MARGINAL — THE BUSINESS IS NOT SOLELY FOR APPLICANT'S LIVELIHOOD
-
-The enterprise must have present or future capacity to generate more than
-enough income to provide a minimal living for the applicant and family,
-or it must make a significant economic contribution.
-
-Present:
-- Projected revenue (Year 1, Year 2, Year 3 from business plan / QK-07 through QK-09)
-- Projected net income
-- Number of U.S. workers the business will employ (QK-10)
-- Payroll the business will generate
-- Economic contribution to the local community
-- If franchise: historical performance data from franchisor, comparable location revenue
-
-NEVER state the business "is not marginal" — present the revenue and employment projections.
-
-Key data sources: Tab K answers (QK-07 through QK-14), case brief business projections,
-franchise data if applicable
-
-### REQUIREMENT 5: DEVELOP AND DIRECT — APPLICANT CONTROLS THE ENTERPRISE
-
-The applicant must be coming to the U.S. to develop and direct the enterprise.
-This is demonstrated through ownership stake and a managerial role.
-
-Present:
-- Applicant's ownership percentage in the enterprise (from M3-E-13, case brief)
-- How ownership is documented (operating agreement, stock certificate, cap table)
-- Applicant's specific operational role (CEO, Managing Member, President, etc.)
-- Day-to-day activities the applicant will personally perform
-- Decisions the applicant will make
-- Prior management or business experience that demonstrates capacity to direct
-
-Key data sources: Tab B (QD-* answers about role), Tab E (M3-E-* entity answers including M3-E-13),
-qualifications data, case brief
+This document is generated for a U.S. E-2 Treaty Investor Visa application.
+The applicant is responsible for reviewing all generated documents for accuracy.
+This tool does not provide legal advice. The applicant should consult with a
+licensed immigration attorney before submitting any documents to the consulate.
 
 ---
 
 ## FORBIDDEN PHRASES
 
-The following phrases MUST NOT appear in any generated document:
-- "qualifies" / "qualify" / "qualification"
-- "eligible" / "eligibility"
-- "meets the standard" / "meets the requirement"
-- "satisfies the requirement" / "satisfies the standard"
+- "qualifies" / "eligible" / "meets the standard" / "satisfies the requirement"
 - "is substantial" / "is sufficient"
 - "demonstrates eligibility" / "establishes qualification"
-- "proof of" (when used to establish legal status)
 - "guarantees" / "ensures" approval
+- "it is clear that" / "it is evident that" / "undoubtedly"
+
+---
+
+## 9 FAM PROPORTIONALITY FRAMEWORK
+
+9 FAM 402.9-6(D) sets out the proportionality test for substantiality.
+The investment must be proportional to the total cost of the enterprise.
+The framework uses a sliding scale — lower-cost businesses require a higher
+percentage invested; higher-cost businesses may satisfy the test at lower percentages.
+
+Reference the following thresholds when analyzing this case:
+
+| Total Enterprise Cost | Proportionality Threshold |
+|---|---|
+| Under $100,000 | 100% — full cost must be invested |
+| $100,001 – $500,000 | 75% or more |
+| $500,001 – $1,000,000 | 50% or more |
+| Over $1,000,000 | 30% or more (case-by-case) |
+
+IMPORTANT: These thresholds are NOT stated in the FAR/9 FAM as hard lines —
+they are the officer's practical benchmark. Never state that the investment
+"meets the threshold." Present the ratio and let the officer assess.
+
+Present the calculation in plain language AND as the table above, with the
+applicant's numbers filled in.
+
+---
+
+## DENIAL PATTERN TESTS
+
+Your document will be tested against these denial patterns:
+
+1. Officer Concern: "Total Enterprise Cost is Understated"
+   - If the total enterprise cost is lower than what the FDD Item 7 projects
+     for this franchise type, flag the discrepancy and provide the business reason
+     (e.g., "This figure reflects the actual initial investment for a leased center
+      rather than the FDD Item 7 high estimate, which includes a build-to-suit option")
+2. Officer Concern: "Working Capital Shouldn't Count"
+   - Working capital counts as part of the investment if it is committed and at risk
+   - Confirm that working capital is deposited in the business account, not held personally
+   - If working capital is still in the applicant's personal account, note it
+3. Officer Concern: "Investor Still Has Most Funds in Reserve"
+   - Show the committed-vs-reserved split explicitly
+   - Committed (franchise fee + deposits + contracts) vs. Reserved (working capital in LLC account)
+4. No legal conclusions about sufficiency
+5. All figures traceable to exhibits
 
 ---
 
 ## DOCUMENT STRUCTURE
 
-Write the document as a professional letter or memorandum.
+**Format:** Short analytical memorandum. Not a letter. Professional prose.
 
-Header:
-- Date: [Date]
-- To: Consular Officer, U.S. Embassy/Consulate [Consulate address]
-- Re: E-2 Treaty Investor Visa Application — [Applicant Full Name], [Nationality]
-- Subject: Visa Category Analysis
+**Header:**
+```
+SUBSTANTIALITY MEMORANDUM
+Re: E-2 Treaty Investor Visa Application
+Applicant: [Applicant Full Name] | [Nationality]
+Enterprise: [Business Name] | [State]
+Date: [Date]
+```
 
-Opening paragraph (2–3 sentences):
-Identify the document purpose. State the applicant's name, nationality, and the
-business they are establishing. Do not recite the cover letter narrative.
+**Section I — Purpose and Scope (1 paragraph):**
+State that this memorandum analyzes the substantiality element of the E-2 investor
+visa application for [Applicant Name]. State the total investment and the total
+enterprise cost that will be analyzed. Do not introduce other E-2 elements.
 
-Body: Five numbered sections, one per requirement above.
-Each section: 2–4 paragraphs. Present the facts. Reference exhibits.
+**Section II — Total Enterprise Cost (1–2 paragraphs + table):**
 
-Closing paragraph (2–3 sentences):
-State that supporting documentation is provided in the accompanying exhibit binder.
-Invite the officer to contact [applicant] if additional information is required.
+Define what the "total enterprise cost" is for this specific business.
+This is NOT the same as the investment amount — it is the total capitalization
+required to put the enterprise into operation.
+
+For a franchise: Total enterprise cost = FDD Item 7 Estimated Initial Investment
+(use the applicable range, noting which end applies to this case).
+
+For an independent business: Total enterprise cost = sum of all costs required
+to open and operate the business for a reasonable startup period.
+
+Present as a table:
+
+| Cost Component | Amount | Status |
+|---|---|---|
+| Franchise fee | $X | Paid |
+| Leasehold improvements | $X | Committed |
+| Equipment and fixtures | $X | Committed |
+| Pre-opening expenses | $X | Anticipated |
+| Working capital reserve | $X | Deposited in LLC |
+| **Total Enterprise Cost** | **$X** | |
+
+Note: "Total Enterprise Cost" may be higher than the total invested if the
+applicant plans to fund certain costs from operating revenue (e.g., pre-opening
+marketing expenses paid from working capital draws). In that case, explain this.
+
+**Section III — Investment Amount and Proportionality Calculation (1 paragraph + table):**
+
+State the total investment committed by the applicant.
+Calculate the ratio: investment ÷ total enterprise cost = proportionality percentage.
+Show which 9 FAM proportionality tier this ratio falls within.
+
+```
+Total Enterprise Cost:    $[X]
+Total Investment:         $[X]
+Proportionality Ratio:    [X]%
+
+9 FAM Tier for this enterprise cost:  [e.g., "investments in enterprises
+totaling $100,001–$500,000 are generally evaluated against a 75% threshold"]
+[Applicant's] ratio of [X]% [exceeds / approaches / falls within] this range.
+```
+
+**Section IV — Committed vs. Reserved Breakdown (1 paragraph):**
+
+Of the total investment:
+- $[X] is irrevocably committed (franchise fee, signed lease deposits, vendor contracts)
+- $[X] is reserved as working capital in the LLC's U.S. operating account
+
+The working capital is committed in the sense that it is in the business account
+and subject to business obligations — however it retains the character of
+"reserved" capital until drawn down. Reference the bank statement at Tab B-6.
+
+**Section V — FDD Item 7 Benchmark (1 paragraph, franchise cases only):**
+
+If this is a franchise: cite FDD Item 7 (Estimated Initial Investment) as the
+franchisor-provided benchmark for total enterprise cost. State which column of
+the FDD table was used (low / high estimate) and why it is applicable.
+
+If FDD Item 7 data is not in the context variables, note:
+"FDD Item 7 data has not been provided in the current record. The enterprise
+cost above is based on the applicant's actual expenditure commitments."
+
+**Section VI — Supporting Documentation Reference:**
+
+List the key exhibits confirming the enterprise cost and investment:
+- Tab B-1: Franchise Agreement (fee amount and payment confirmation)
+- Tab B-2: Wire transfer confirmation(s) — funds to LLC
+- Tab B-3: Signed lease agreement — confirms lease deposit and rent obligations
+- Tab B-6: U.S. business bank statement — confirms working capital on deposit
+- Tab C-1: FDD Item 7 (Estimated Initial Investment) — franchisor cost benchmark
 
 ---
 
-## LEGAL DISCLAIMER REQUIREMENT
+## OUTPUT FORMAT
 
-This document is generated for a U.S. E-2 Treaty Investor Visa application.
-The applicant is responsible for reviewing all generated documents for accuracy.
-This tool does not provide legal advice. The applicant should consult with
-a licensed immigration attorney before submitting any documents to the consulate.
+Return plain text document content only. No JSON, no headers, no labels.
+The content should be ready to save as a .txt or .docx file.
+The document itself should carry the "SUBSTANTIALITY MEMORANDUM" header in the text.
+
+---
+
+## QUALITY CHECKLIST
+
+- [ ] Document header says "SUBSTANTIALITY MEMORANDUM" — not "Visa Category Letter"
+- [ ] Total enterprise cost defined and sourced (FDD Item 7 if franchise)
+- [ ] Investment as % of total enterprise cost calculated and stated explicitly
+- [ ] 9 FAM proportionality tier identified and compared to applicant's ratio
+- [ ] Committed vs. reserved split explained
+- [ ] FDD Item 7 benchmark cited (franchise cases) or absence noted
+- [ ] No language about treaty nationality, non-marginality, or non-immigrant intent
+- [ ] No legal conclusions ("is substantial", "meets the threshold")
+- [ ] All figures traceable to investment_breakdown or case brief
+- [ ] Supporting documentation index at end
+- [ ] 2–3 pages estimated
+- [ ] No e2go branding

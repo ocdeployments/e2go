@@ -136,6 +136,50 @@ the sentence to state only facts without conclusions.
 
 ---
 
+## EVIDENTIARY STANDARDS — OFFICER EXPECTATIONS
+
+The LLM cannot see the actual supporting documents — only what the applicant stated in intake.
+This section defines what the officer will expect to see in the supporting document tab,
+and what gaps in the applicant's intake answers must be flagged in the document itself.
+
+**Bank Statement Minimum:**
+- Minimum: 12 consecutive months for all source accounts
+- Preferred: 24 months (USCIS standard; consulates often follow this)
+- If the intake data shows < 12 months referenced, flag in the document:
+  `[NOTE: Extended bank statement history recommended — 12 months minimum]`
+- All statements must show the same account number, institution, and account holder name
+  as the wire transfer records
+
+**Tax Return Requirement:**
+- U.S. applications expect the last 3 years of filed tax returns from the applicant's
+  home country (Canada: T1 General; UK: SA302; Germany: Steuererklärung; etc.)
+- If no tax return data is in the intake, flag in the document:
+  `[NOTE: 3 years of tax returns required — verify with your immigration attorney]`
+- Do not fabricate or imply tax returns are prepared if not stated in intake
+
+**Round-Trip Funds Warning:**
+If the funds flow out of the U.S. to a foreign account and then back into the U.S.
+(commonly: U.S. savings → Canada → U.S. business account), this is "round-tripping"
+and creates officer scrutiny. If the fund flow in the context variables suggests this
+pattern, add a sentence acknowledging the pattern explicitly and citing the business reason:
+"The funds were temporarily held in [applicant's Canadian account] from [date] to [date]
+while the LLC formation was pending, then transferred to [LLC account] on [date]."
+Do NOT omit the intermediate step — officers see bank records and will notice if the
+narrative skips a hop.
+
+**RRSP/TFSA — Canadian Applicants:**
+If investment funds originated from a Registered Retirement Savings Plan (RRSP) or
+Tax-Free Savings Account (TFSA):
+- RRSP: state the redemption date, withholding tax applied, and net proceeds received
+  "Mr. Chen redeemed $X from his RRSP at [institution] on [date]. A 25% withholding tax
+  of $X was deducted, yielding net proceeds of $X deposited to his CIBC chequing account
+  on [date]."
+- TFSA: TFSA withdrawals are tax-free — no withholding note needed. State the
+  withdrawal date and institution.
+- Both types: cite the account statement as the exhibit (e.g., Tab H-2).
+- If the applicant used an RRSP with a spousal RRSP attribution period, note that the
+  three-year attribution rule has expired (or flag it if it hasn't).
+
 ## DENIAL PATTERN TESTS
 
 Your document will be tested against these common denial patterns.
@@ -148,8 +192,10 @@ Ensure your output:
    in the last 6 months without clear documented source triggers scrutiny
 5. Loan documents specify whether secured by personal or business assets
    (only personal assets count for E-2)
-6. Never uses legal conclusion language
-7. Contains specific dates, amounts, and institution names — never vague
+6. Round-trip fund flows explicitly acknowledged if pattern detected in intake data
+7. Canadian RRSP/TFSA withdrawals: withholding tax and net proceeds stated
+8. Never uses legal conclusion language
+9. Contains specific dates, amounts, and institution names — never vague
 
 ---
 
@@ -258,4 +304,7 @@ The content should be ready to save as a .txt or .docx file.
 - [ ] No AI-sounding phrases
 - [ ] All exhibit references use correct tab format
 - [ ] No e2go branding
-- [ ] Under 2 pages estimated
+- [ ] Bank statement period referenced (12-month minimum flagged if not in intake)
+- [ ] Round-trip fund flow acknowledged if detected
+- [ ] RRSP/TFSA withholding noted if applicable (Canadian applicants)
+- [ ] 2–4 pages estimated (longer if multiple sources)

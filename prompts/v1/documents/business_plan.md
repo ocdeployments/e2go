@@ -170,6 +170,48 @@ Use this test case to validate the generation:
 
 ---
 
+## CONSULATE-AWARE PAGE BUDGET
+
+The `consulate_post` variable sets the maximum length for this document.
+This is a binding constraint — not a suggestion.
+
+| consulate_post | Business Plan Target | Compression Mode |
+|---|---|---|
+| frankfurt | 6–8 pages | MAXIMUM — tables only, no extended narrative |
+| amsterdam | 8–12 pages | STANDARD — "think lean" directive applies |
+| toronto | 10–13 pages | STANDARD |
+| paris | 10–13 pages | STANDARD |
+| madrid | 10–13 pages | STANDARD |
+| lisbon | 10–13 pages | STANDARD |
+| rome | 8–12 pages | STANDARD |
+| asuncion | 14–18 pages | COMPRESSED |
+| london | 16–22 pages | NONE |
+| sydney | 16–22 pages | NONE |
+| melbourne | 16–22 pages | NONE |
+| auckland | 16–22 pages | NONE |
+| tel_aviv | 20–25 pages | NONE |
+| mexico_city | 20–25 pages | NONE |
+| (unknown) | 10–13 pages | STANDARD |
+
+### Frankfurt MAXIMUM Compression Rules (consulate_post = "frankfurt")
+
+1. Hard cap: 6–8 pages total
+2. Replace all narrative paragraphs with numbered bullets and tables
+3. Financial projections: table format only — Year 1 / Year 3 / Year 5 columns
+4. Market analysis: maximum 5 data points, cited; no narrative prose
+5. Staffing plan: table with Position / Hire Date / Monthly Wage / Role
+6. OMIT Exit Strategy section — move talking points to the interview
+7. OMIT extended Growth Projections narrative — replace with single row in financials table
+8. Every sentence must justify its page space; if it can be a table, make it a table
+
+### Amsterdam STANDARD-LEAN Rules (consulate_post = "amsterdam")
+
+Follow the consulate's published directive: "Think lean — demonstrate business prowess."
+Keep sections tight. Market analysis: local data only, no national trend padding.
+Financial projections: 3-column table (Year 1/3/5). Avoid decorative language.
+
+---
+
 ## DOCUMENT-SPECIFIC INSTRUCTIONS
 
 ### Business Plan
@@ -184,9 +226,13 @@ IV.  Competitive Analysis
 V.   Operations Plan
 VI.  Marketing Strategy
 VII. Financial Projections
+     VII.A. 5-Year Projections Table
+     VII.B. Non-Marginality Proof Table (required)
+     VII.C. Break-Even Analysis (required)
+     VII.D. Monthly Cash Flow — Year 1 (required)
 VIII.Staffing Plan
 IX.  Growth Projections
-X.   Exit Strategy
+X.   Exit Strategy (omit for Frankfurt)
 ```
 
 **Section I — Executive Summary:**
@@ -238,6 +284,60 @@ CRITICAL: Ensure financials pass Officer Concern checks:
 
 If FDD Item 19 is present, cite it as benchmark. If absent, cite independent market research.
 
+**VII.B — Non-Marginality Proof Table (REQUIRED IN ALL CASES):**
+
+Include this table immediately after the 5-year projections. Use the applicant's actual
+household income need from their intake data. The Coverage Ratio = Net Owner Income ÷
+Household Income Need. Target: ratio reaches 3.0× or higher by Year 2–3 at the latest.
+
+```
+| Metric                  | Year 1     | Year 3     | Year 5     |
+|-------------------------|------------|------------|------------|
+| Projected Revenue       | $X         | $X         | $X         |
+| Net Owner Income        | $X         | $X         | $X         |
+| Household Income Need   | $X         | $X         | $X         |
+| Coverage Ratio          | X.X×       | X.X×       | X.X×       |
+```
+
+"Household Income Need" = stated household monthly expenses × 12.
+"Net Owner Income" = the investor's projected salary from the staffing plan.
+NEVER leave this table blank or use placeholders — use the actual figures.
+
+**VII.C — Break-Even Analysis (REQUIRED IN ALL CASES):**
+
+State the break-even month explicitly:
+"Break-even is projected in Month [X], when cumulative operating revenue is projected to
+first exceed cumulative operating costs of $[X]. This timeline is consistent with FDD Item 19
+performance data [or: comparable franchise units in similar markets]."
+
+**VII.D — Monthly Cash Flow — Year 1 (REQUIRED IN ALL CASES, except Frankfurt MAXIMUM):**
+
+For NONE, STANDARD, and COMPRESSED modes — include a monthly breakdown:
+
+```
+| Month  | Revenue | Total Expenses | Net Cash Flow | Cumulative Balance |
+|--------|---------|----------------|---------------|--------------------|
+| Month 1| $X      | $X             | $X            | $X                 |
+...
+| Month 12| $X     | $X             | $X            | $X                 |
+```
+
+The cumulative balance must never go negative without explanation. If it does, add a footnote
+explaining how the working capital reserve covers the shortfall.
+
+For MAXIMUM compression (Frankfurt) — replace VII.D with a single sentence: "Detailed monthly
+cash flow projections for Year 1 are available upon request at interview."
+
+**CPA Certification Note (add at end of Section VII):**
+
+"These financial projections were prepared by [Applicant Full Name] based on [FDD Item 19
+data / independent market research / comparable business performance]. A licensed CPA has
+reviewed and certified the underlying assumptions. The certified projection letter is included
+in Tab G of this submission."
+
+If no CPA has been engaged, substitute: "These projections are based on [source]. The applicant
+is prepared to present supporting market data at interview."
+
 **Section VIII — Staffing Plan:**
 - Initial hires: position titles, wages, hire dates
 - Growth hires: timeline for additional staff
@@ -283,4 +383,8 @@ The content should be ready to save as a .txt or .docx file.
 - [ ] Applicant voice matched from voice_profile
 - [ ] No AI-sounding phrases
 - [ ] No e2go branding
-- [ ] Under 8 pages estimated
+- [ ] Non-Marginality Proof Table present (VII.B)
+- [ ] Break-Even month stated explicitly (VII.C)
+- [ ] Monthly Cash Flow Year 1 table present (VII.D) — or Frankfurt override note
+- [ ] CPA certification note at end of Section VII
+- [ ] Page count within consulate target range for this consulate_post

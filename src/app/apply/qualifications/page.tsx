@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useTrackSectionVisit } from "@/hooks/useTrackSectionVisit";
 import { createBrowserSupabaseClient } from '@/lib/supabase';
 import CaseFileShell from '@/components/apply/CaseFileShell';
+import SimulatorNudge from '@/components/apply/SimulatorNudge';
 import QuestionLabel from '@/components/apply/questions/QuestionLabel';
 import HelperText from '@/components/apply/questions/HelperText';
 import TextInput from '@/components/apply/questions/TextInput';
@@ -374,6 +375,7 @@ export default function QualificationsPage() {
     >
       {activeClusterNumber === 1 && (
         <div>
+          <SimulatorNudge section="qualifications" />
           <ClusterDivider label="Your background" />
           {renderQuestions(BACKGROUND_QUESTIONS)}
         </div>

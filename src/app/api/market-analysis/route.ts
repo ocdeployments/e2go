@@ -1,0 +1,128 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { createSupabaseServerClient } from '@/lib/supabase-server';
+import { analyseTeritoryForBusiness } from '@/lib/fdd-territory-engine';
+import type { TerritoryAnalysis } from '@/lib/fdd-territory-engine';
+
+const VALID_CATEGORIES = [
+  'qsr',
+  'home_services',
+  'senior_care',
+  'health_fitness',
+  'child_education',
+  'automotive',
+  'retail',
+  'professional',
+];
+
+// Write territory score metrics back to the answers table so Gap Analysis,
+// Generation, and Case Profile engines can reference them.
+async function writeMarketScoreBack(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  applicationId: string,
+  analysis: TerritoryAnalysis,
+): Promise<void> {
+  // Keys use QMA- prefix (Q-series, market-analysis source).
+  // source/user_id columns omitted — may not exist until migration 004 is applied.
+  const rows = [
+    { key: 'QMA-SCORE',              value: String(analysis.overall_score) },
+    { key: 'QMA-RATING',             value: analysis.overall_rating },
+    { key: 'QMA-ZIP',                value: analysis.target_zip },
+    { key: 'QMA-STATE',              value: analysis.target_state },
+    { key: 'QMA-POPULATION',         value: String(analysis.census.total_population ?? '') },
+    { key: 'QMA-COMPETITOR-COUNT',   value: String(analysis.competitors.nearby_count ?? '') },
+    { key: 'QMA-POP-PER-COMPETITOR', value: String(analysis.competitors.population_per_competitor ?? '') },
+    { key: 'QMA-VERDICT',            value: analysis.narrative.VERDICT },
+  ].filter(r => r.value !== '' && r.value !== 'null' && r.value !== 'undefined');
+
+  await supabase.from('answers').upsert(
+    rows.map(r => ({
+      application_id: applicationId,
+      question_key: r.key,
+      answer_value: r.value,
+      answered_at: new Date().toISOString(),
+    })),
+    { onConflict: 'application_id,question_key' },
+  );
+}
+
+export async function POST(req: NextRequest) {
+  const supabase = await createSupabaseServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  let body: {
+    businessName?: string;
+    businessCategory?: string;
+    zip?: string;
+    state?: string;
+    applicationId?: string;
+  };
+
+  try {
+    body = await req.json() as typeof body;
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+  }
+
+  const { businessName, businessCategory, zip, state, applicationId } = body;
+
+  if (!businessName?.trim()) {
+    return NextResponse.json({ error: 'businessName is required' }, { status: 400 });
+  }
+  if (!businessCategory || !VALID_CATEGORIES.includes(businessCategory)) {
+    return NextResponse.json(
+      { error: `businessCategory must be one of: ${VALID_CATEGORIES.join(', ')}` },
+      { status: 400 }
+    );
+  }
+  if (!zip || !/^\d{5}$/.test(zip.trim())) {
+    return NextResponse.json({ error: 'zip must be a 5-digit US ZIP code' }, { status: 400 });
+  }
+  if (!state?.trim()) {
+    return NextResponse.json({ error: 'state is required' }, { status: 400 });
+  }
+
+  try {
+    const analysis = await analyseTeritoryForBusiness(
+      zip.trim(),
+      state.trim().toUpperCase(),
+      businessName.trim(),
+      businessCategory,
+    );
+
+    // Write territory metrics back to answers table (non-blocking).
+    // Use the provided applicationId, or fall back to the user's latest application.
+    const resolveAndWriteBack = async () => {
+      try {
+        let appId = applicationId;
+        if (!appId) {
+          const { data: app } = await supabase
+            .from('applications')
+            .select('id')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          appId = app?.id ?? null;
+        }
+        if (appId) {
+          await writeMarketScoreBack(supabase, appId, analysis);
+        }
+      } catch (writeErr) {
+        // Non-blocking — log but never fail the response
+        console.error('[market-analysis] Score writeback failed:', writeErr);
+      }
+    };
+    void resolveAndWriteBack();
+
+    return NextResponse.json(analysis);
+  } catch (err) {
+    console.error('Market analysis error:', err);
+    return NextResponse.json(
+      { error: 'Analysis failed. Please try again.' },
+      { status: 500 }
+    );
+  }
+}

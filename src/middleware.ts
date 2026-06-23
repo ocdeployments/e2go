@@ -143,6 +143,7 @@ export async function middleware(req: NextRequest) {
     '/documents/',
     '/fdd/',
     '/gap-analysis',
+    '/market-analysis',
   ];
 
   // Auth routes - redirect to dashboard if already logged in
@@ -220,5 +221,8 @@ export const config = {
     '/api/fdd/:path*',
     '/gap-analysis',
     '/gap-analysis/:path*',
+    '/market-analysis',
+    '/market-analysis/:path*',
+    '/api/market-analysis',
   ],
 };

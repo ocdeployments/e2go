@@ -899,7 +899,141 @@ function fallbackNarrative(analysis: Omit<TerritoryAnalysis, 'narrative'>): Terr
 }
 
 // ============================================================================
-// Main entry point
+// Standalone business narrative (non-franchise — no FDD fields)
+// ============================================================================
+
+async function generateTerritoryNarrativeForBusiness(
+  analysis: Omit<TerritoryAnalysis, 'narrative'>,
+  businessName: string,
+): Promise<TerritoryAnalysis['narrative']> {
+  const tm = analysis.target_market;
+
+  const prompt = `Write a professional territory market analysis for this business opportunity.
+
+BUSINESS: ${businessName || 'This business'}
+CATEGORY: ${analysis.franchise_category}
+TARGET ZIP: ${analysis.target_zip}, ${analysis.target_state}
+
+DIMENSION SCORES (out of 100):
+- Population & Demand: ${analysis.population_score.score} (${analysis.population_score.rating}) — ${analysis.population_score.note}
+- Income & Spending Power: ${analysis.income_score.score} (${analysis.income_score.rating}) — ${analysis.income_score.note}
+- Competition: ${analysis.competition_score.score} (${analysis.competition_score.rating}) — ${analysis.competition_score.note}
+- Demographic Fit: ${analysis.demographic_fit_score.score} (${analysis.demographic_fit_score.rating}) — ${analysis.demographic_fit_score.note}
+- Labor Market: ${analysis.labor_market_score.score} (${analysis.labor_market_score.rating}) — ${analysis.labor_market_score.note}
+
+OVERALL: ${analysis.overall_score}/100 — ${analysis.overall_rating}
+
+TARGET MARKET SIZING:
+- Relevant segment: ${tm.relevant_segment?.toLocaleString() ?? 'Unknown'} ${tm.segment_label}
+- Annual addressable revenue: ${tm.annual_addressable_revenue ? `$${tm.annual_addressable_revenue.toLocaleString()}` : 'Unknown'}
+- Year 1 revenue target: ${tm.year1_revenue_target ? `$${tm.year1_revenue_target.toLocaleString()}` : 'Unknown'}
+- Non-marginality check: ${tm.nonmarginality_check.toUpperCase()}
+
+Write FIVE sections, each 2–3 sentences. Every sentence must cite a specific number from the data above.
+
+MARKET_OVERVIEW: Population base, household count, and whether the raw demand pool supports a business of this type in this ZIP code.
+
+ECONOMIC_STRENGTH: What the income level and employment data mean for sustained customer spending — compare to the category's minimum viable income threshold.
+
+DEMOGRAPHIC_FIT: How well this territory's demographic profile matches the core customer for this type of business — be specific about the target cohort count.
+
+COMPETITIVE_LANDSCAPE: Interpret the competitor density against the population-per-operator benchmark. State whether this territory has white space or is contested.
+
+VERDICT: A direct recommendation. Should this investor seriously pursue this location? Name the single most important data point that drives the verdict, and the one thing they must verify before committing.
+
+Return as JSON: {"MARKET_OVERVIEW":"...","ECONOMIC_STRENGTH":"...","DEMOGRAPHIC_FIT":"...","COMPETITIVE_LANDSCAPE":"...","VERDICT":"..."}`;
+
+  try {
+    const response = await anthropic.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 1100,
+      system: `You are a senior business location analyst with 20 years of experience advising investors on site selection. Your assessments inform $100K–$1M investment decisions. Write with authority, cite specific numbers, and give a clear verdict. Return ONLY valid JSON.`,
+      messages: [{ role: 'user', content: prompt }],
+    });
+
+    const text = response.content[0].type === 'text' ? response.content[0].text : '';
+    const match = text.match(/\{[\s\S]*\}/);
+    if (match) return JSON.parse(match[0]) as TerritoryAnalysis['narrative'];
+    return fallbackNarrative(analysis);
+  } catch (err) {
+    console.error('Territory narrative error:', err);
+    return fallbackNarrative(analysis);
+  }
+}
+
+// ============================================================================
+// Standalone entry point — no FDD required
+// ============================================================================
+
+export async function analyseTeritoryForBusiness(
+  zip: string,
+  state: string,
+  businessName: string,
+  categoryKey: string,
+): Promise<TerritoryAnalysis> {
+  const category = (WEIGHTS_BY_CATEGORY[categoryKey] ? categoryKey : 'default');
+  const weights = WEIGHTS_BY_CATEGORY[category] ?? DEFAULT_WEIGHTS;
+  const radiusMiles = RADIUS_BY_CATEGORY[category] ?? RADIUS_BY_CATEGORY.default;
+
+  const [census, competitors] = await Promise.all([
+    fetchCensusData(zip, state),
+    fetchCompetitors(zip, category, radiusMiles, businessName, null),
+  ]);
+
+  if (competitors.source === 'google_places' && competitors.nearby_count !== null && census.total_population !== null) {
+    competitors.population_per_competitor = competitors.nearby_count > 0
+      ? Math.round(census.total_population / competitors.nearby_count)
+      : null;
+  }
+
+  const populationScore = scorePopulation(census, category);
+  const incomeScore = scoreIncome(census, category);
+  const competitionScore = scoreCompetition(competitors, census, category);
+  const demographicFitScore = scoreDemographicFit(census, category);
+  const laborMarketScore = scoreLaborMarket(census, category, state);
+
+  const overallScore = Math.round(
+    populationScore.score     * weights.population +
+    incomeScore.score         * weights.income +
+    competitionScore.score    * weights.competition +
+    demographicFitScore.score * weights.demographic_fit +
+    laborMarketScore.score    * weights.labor_market
+  );
+
+  const overallRating = rateScore(overallScore);
+
+  const availableCount = [populationScore, incomeScore, competitionScore, demographicFitScore, laborMarketScore]
+    .filter(d => d.data_available).length;
+  const dataCompleteness: TerritoryAnalysis['data_completeness'] =
+    availableCount >= 4 ? 'full' : availableCount >= 2 ? 'partial' : 'minimal';
+
+  const targetMarket = computeTargetMarketSizing(census, category, null);
+
+  const partial: Omit<TerritoryAnalysis, 'narrative'> = {
+    target_zip: zip,
+    target_state: state,
+    franchise_category: category,
+    radius_miles: radiusMiles,
+    census,
+    competitors,
+    population_score: populationScore,
+    income_score: incomeScore,
+    competition_score: competitionScore,
+    demographic_fit_score: demographicFitScore,
+    labor_market_score: laborMarketScore,
+    target_market: targetMarket,
+    overall_score: overallScore,
+    overall_rating: overallRating,
+    data_completeness: dataCompleteness,
+  };
+
+  const narrative = await generateTerritoryNarrativeForBusiness(partial, businessName);
+
+  return { ...partial, narrative };
+}
+
+// ============================================================================
+// Main entry point (FDD-backed)
 // ============================================================================
 
 export async function analyseTeritory(

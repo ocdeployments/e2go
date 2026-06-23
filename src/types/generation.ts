@@ -172,6 +172,7 @@ export interface GenerationPayload {
   document_type: DocumentType;
   follow_up_responses: Record<string, unknown>;
   qfn_investor_profile?: string;
+  gap_analysis_context?: string;
 }
 
 export interface InvestmentBreakdownData {

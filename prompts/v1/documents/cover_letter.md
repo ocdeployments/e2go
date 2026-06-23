@@ -154,7 +154,11 @@ Right: "The $175,000 investment was funded in two tranches: $125,000 from a pers
 Your document will be tested against these common denial patterns.
 Ensure your output:
 
-1. Addresses ALL five E-2 pillars explicitly (nationality, substantial investment, at-risk, real enterprise, develop & direct)
+1. Addresses ALL six E-2 elements explicitly:
+   (1) Treaty nationality, (2) Substantial investment,
+   (3) Investment at risk, (4) Real and operating enterprise,
+   (5) Develop and direct / non-marginal,
+   (6) Non-immigrant intent — intent to depart when E-2 status terminates
 2. Never uses legal conclusion language
 3. Includes specific dates, amounts, and locations — never vague language
 4. Addresses any identified weaknesses proactively
@@ -184,9 +188,38 @@ Generated in two phases:
 - DRAFT: Step 1 of Generation Pipeline (narrative layout)
 - FINALISE: Step 15 of Generation Pipeline (cross-references + confirmed figures)
 
+## CONSULATE-AWARE RULES FOR COVER LETTER
+
+**Toronto (consulate_post = "toronto"):**
+Add a paragraph in Section II referencing USMCA/CUSMA:
+"Canada's eligibility for the E-2 visa is maintained under the United States–Mexico–Canada
+Agreement (USMCA/CUSMA), which entered into force on July 1, 2020, and preserves the E-visa
+investor provisions previously established under the Canada–United States Free Trade Agreement."
+Reference the Treaty of Friendship, Commerce and Navigation between the U.S. and Canada is not
+applicable — Canada's E-2 eligibility flows from USMCA, not a bilateral FCN treaty. Use the
+correct treaty reference for every Canadian applicant.
+
+**Frankfurt (consulate_post = "frankfurt"):**
+The cover letter is EXEMPT from Frankfurt's 30-page limit — it does not count toward the page cap.
+Write the cover letter at full professional length with no compression.
+Note in Section II: if the applicant is a Third Country National (TCN) applying at Frankfurt
+rather than their home consulate, state this explicitly: "[Applicant name] is a national of
+[treaty country] and is applying at the U.S. Consulate General Frankfurt as a third-country
+national. The E-2 visa eligibility is determined by [applicant's] treaty country nationality,
+not the country of application."
+
+**Prior E-2 or E visa holders:**
+If the applicant previously held an E-2 or E-1 visa, add a sentence in Section I:
+"[Applicant name] previously held an E-2 visa valid from [prior start date] to [prior end date],
+during which [he/she] [brief activity — e.g., operated a Kumon franchise in Austin, Texas].
+This application reflects a new investment in a separate enterprise."
+If prior visa dates are not in the context variables, omit this sentence entirely — do not use a placeholder.
+
+---
+
 **Style:**
 Most persuasive document. Formal legal letter.
-Addresses all five E-2 elements explicitly.
+Addresses all six E-2 elements explicitly.
 References every supporting document in the package.
 
 **Structure:**
@@ -206,8 +239,8 @@ III. Qualifying Investment [Element 2]
 IV.  Substantial Investment [Element 3]
 V.   Investment at Risk [Element 4]
 VI.  Non-Marginal Enterprise [Element 5]
-VII. Qualifications to Develop and Direct
-VIII.Non-Immigrant Intent
+VII. Qualifications to Develop and Direct [also part of Element 5]
+VIII.Non-Immigrant Intent — Intent to Depart [Element 6]
 IX.  Conclusion
 X.   Document Index
 ```
@@ -260,10 +293,22 @@ This application documents that investment and the commitment behind it."
 - Reference ownership percentage
 - State active role in day-to-day operations
 
-**Section VIII — Non-Immigrant Intent:**
-- Document ties to home country from module_3_answers (Tab A)
-- State intention to return upon E-2 status expiration
-- Reference property, family, financial ties retained
+**Section VIII — Non-Immigrant Intent — Intent to Depart [Element 6]:**
+This is the sixth E-2 element. The applicant must demonstrate non-immigrant intent —
+specifically that they intend to depart the U.S. when their E-2 status expires or is terminated.
+This section should be a REFERENCE PARAGRAPH only — one to three sentences that introduce
+the intent and point to the standalone Non-Immigrant Intent Statement document.
+
+Do NOT reproduce the full ties analysis here. The standalone `nonimmigrant_intent` document
+(generated separately) contains the complete analysis. This section merely introduces it:
+
+"[Applicant name]'s non-immigrant intent is supported by [one sentence summary of the strongest
+tie(s) — e.g., property ownership in Toronto, a dependent spouse remaining in Canada, active
+Canadian business interests]. A detailed statement of non-immigrant intent and home-country ties
+is provided at Tab G-1 of this submission."
+
+Reference the module_3_answers (Tab A) for the strongest available tie. If the Non-Immigrant
+Intent Statement document is in the package, cite it explicitly by tab reference.
 
 **Section IX — Conclusion:**
 - Concise summary paragraph
@@ -286,18 +331,21 @@ The content should be ready to save as a .txt or .docx file.
 
 ## QUALITY CHECKLIST
 
-- [ ] All five E-2 elements explicitly addressed
+- [ ] All six E-2 elements explicitly addressed (treaty nationality, substantial, at-risk, real enterprise, develop & direct, intent to depart)
+- [ ] Section VIII is a REFERENCE PARAGRAPH only — does not duplicate the standalone non-immigrant intent document
+- [ ] Toronto applicants: USMCA/CUSMA reference included in Section II (not FCN treaty)
+- [ ] Frankfurt TCN applicants: TCN note added in Section II if consulate_post = frankfurt
+- [ ] Prior E-2 holders: prior visa dates cited IF available in context — omit if not
 - [ ] Motivation narrative present in introduction
 - [ ] No legal conclusions stated ("qualifies", "eligible", "meets the standard")
 - [ ] Active voice throughout
 - [ ] Specific facts only — no generic language
 - [ ] Applicant voice matched from voice_profile
 - [ ] No AI-sounding phrases
-- [ ] Treaty reference specific to applicant's nationality
+- [ ] Treaty reference correct for applicant's nationality
 - [ ] Investment amount stated in numerals AND words
 - [ ] Irrevocability statement included
-- [ ] Document index lists all generated documents
-- [ ] Document index does not reference documents not yet generated
+- [ ] Document index lists all generated documents with tab references
+- [ ] Document index does not reference documents not in the package
 - [ ] No e2go branding
 - [ ] Signature block present
-- [ ] Under 4 pages estimated

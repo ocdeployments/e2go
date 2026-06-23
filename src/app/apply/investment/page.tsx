@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useTrackSectionVisit } from "@/hooks/useTrackSectionVisit";
 import { createBrowserSupabaseClient } from '@/lib/supabase';
 import CaseFileShell from '@/components/apply/CaseFileShell';
+import SimulatorNudge from '@/components/apply/SimulatorNudge';
 import QuestionLabel from '@/components/apply/questions/QuestionLabel';
 import HelperText from '@/components/apply/questions/HelperText';
 import TextInput from '@/components/apply/questions/TextInput';
@@ -387,6 +388,7 @@ export default function InvestmentPage() {
     >
       {activeNumber === 1 && (
         <div>
+          <SimulatorNudge section="investment" />
           <ClusterDivider label="Investment overview" />
           {renderQuestions(INVESTMENT_OVERVIEW_QUESTIONS)}
           {answers['M3-F-02']?.value && Number(answers['M3-F-02'].value) % 1000 === 0 && Number(answers['M3-F-02'].value) > 0 && (

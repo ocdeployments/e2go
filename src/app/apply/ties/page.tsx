@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useTrackSectionVisit } from "@/hooks/useTrackSectionVisit";
 import { createBrowserSupabaseClient } from '@/lib/supabase';
 import CaseFileShell from '@/components/apply/CaseFileShell';
+import SimulatorNudge from '@/components/apply/SimulatorNudge';
 import QuestionLabel from '@/components/apply/questions/QuestionLabel';
 import HelperText from '@/components/apply/questions/HelperText';
 import TextInput from '@/components/apply/questions/TextInput';
@@ -288,6 +289,7 @@ export default function TiesPage() {
     >
       {activeNumber === 1 && (
         <div>
+          <SimulatorNudge section="ties" />
           <ClusterDivider label="Property & assets" />
           {renderQuestions(PROPERTY_QUESTIONS)}
 
