@@ -9,6 +9,8 @@
  * Requires: OPENAI_API_KEY in .env.local
  */
 
+import { config as loadEnv } from 'dotenv';
+loadEnv({ path: '.env.local' });
 import { createClient } from "@supabase/supabase-js";
 import { readFileSync, readdirSync } from "fs";
 import { join } from "path";
