@@ -18,7 +18,9 @@ export type DocumentType =
   | 'property_portfolio'
   // DOC-5: Employment resumes
   | 'resume_principal'
-  | 'resume_spouse';
+  | 'resume_spouse'
+  // DOC-6: Conditional documents (generated only when applicable)
+  | 'gift_letter';
 
 export type GenerationJobStatus =
   | 'queued'
@@ -64,7 +66,7 @@ export const GENERATION_STEP_LABELS: Record<number, string> = {
   11: 'Fund Flow Chronology',
   12: 'Net Worth Statement',
   13: 'Principal Resume',
-  14: 'Gap Analysis',
+  14: 'Gift Letter',
   15: 'Gap Analysis',
   16: 'Repetition Check',
   17: 'Consistency Check',
@@ -72,8 +74,9 @@ export const GENERATION_STEP_LABELS: Record<number, string> = {
   19: 'Humanization Pass',
   20: 'Metadata Sanitization',
   21: 'Quality Gate',
-  22: 'Acknowledgment Gate',
-  23: 'Preview Unlocked',
+  22: 'Quality Gate',
+  23: 'Acknowledgment Gate',
+  24: 'Preview Unlocked',
 } as const;
 
 export const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {
@@ -93,6 +96,7 @@ export const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {
   property_portfolio: 'Property Portfolio Summary',
   resume_principal: 'Principal Applicant Resume',
   resume_spouse: 'Spouse Resume',
+  gift_letter: 'Gift Letter',
 };
 
 export const DOCUMENT_TYPE_TABS: Record<DocumentType, string> = {
@@ -112,6 +116,7 @@ export const DOCUMENT_TYPE_TABS: Record<DocumentType, string> = {
   property_portfolio: 'Tab F',
   resume_principal: 'Tab D',
   resume_spouse: 'Tab E',
+  gift_letter: 'Tab B',
 };
 
 export interface GenerationStep {

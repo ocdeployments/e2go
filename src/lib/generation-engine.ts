@@ -45,6 +45,7 @@ const DOC_TYPE_QUESTION_MAP: Record<string, string[]> = {
   property_portfolio: ['IQ-17', 'IQ-18'],
   resume_principal: ['IQ-14', 'IQ-15', 'IQ-16'],
   resume_spouse: ['IQ-14', 'IQ-15'],
+  gift_letter: ['IQ-08', 'IQ-09'],
   exhibit_list: [],
 };
 
@@ -68,7 +69,7 @@ Investment proof must document the full franchise investment trail: (1) the fran
     nonimmigrant_intent: `ARCHETYPE: FRANCHISE BUYER
 Franchise buyers have a strong structural advantage: they have invested a substantial, irrevocable sum — the franchise fee — which demonstrates commitment to the E-2 enterprise, not permanent U.S. residency. Lead with this. Then document Canadian ties: property retained in Canada, family remaining there, Canadian bank accounts and registered savings (RRSP, TFSA). The framing: the investor is running a U.S. franchise under the E-2 status; if status ends, the investor would return to Canada and manage the business remotely or sell it.`,
     visa_category: `ARCHETYPE: FRANCHISE BUYER
-The visa category letter must establish the applicant as a Treaty National of Canada (or qualifying country) making a substantial, at-risk investment in a qualifying enterprise. Franchise investments are well-suited here: (1) the franchise agreement evidences a bona fide commercial enterprise, (2) FDD Item 7 substantiates the investment amount, (3) the applicant's owner-operator role satisfies develop-and-direct. Cite the USCIS Policy Manual Chapter 14.3 standard and map this case to each element explicitly.`,
+The Substantiality Memorandum analyzes the investment proportionality test under 9 FAM 402.9-6(D). For franchise buyers, total enterprise cost = FDD Item 7 Estimated Initial Investment range — cite the applicable low or high estimate and explain which column applies to this case. Calculate: franchise fee + leasehold improvements + equipment + working capital + pre-opening costs = total investment ÷ total enterprise cost = proportionality ratio. Identify the 9 FAM tier (under $100K = 100%; $100K–$500K = 75%+; $500K–$1M = 50%+; over $1M = 30%+). Reference FDD Item 7 as the third-party benchmark for total enterprise cost. Committed vs. reserved split: distinguish irrevocably committed funds (franchise fee + deposits + signed contracts) from reserved working capital in the LLC account.`,
     ds160_reference: `ARCHETYPE: FRANCHISE BUYER
 The DS-156E/DS-160 reference must be precise: franchise name, legal entity name, EIN, business address, investment amount matching Item 7, and applicant's title (Owner/Operator or President). All social media accounts disclosed on the DS-160 must match what the applicant will state at the interview window. Ensure the franchise trade name matches the FDD exactly.`,
     marginality_rebuttal: `ARCHETYPE: FRANCHISE BUYER
@@ -87,6 +88,8 @@ Canadian real property is the strongest home-country tie for franchise buyers. L
 Emphasise management, operations, and customer-facing roles. Each position should show evidence of: (1) supervising staff, (2) managing budgets or P&L, (3) delivering consistent customer service at scale. Map every role explicitly to the franchise's operational requirements. Highlight any franchise-specific training completed (Discovery Day, initial training programme hours and curriculum).`,
     resume_spouse: `ARCHETYPE: FRANCHISE BUYER
 Present the spouse's background honestly. If the spouse has professional experience, highlight any customer service, education, or administrative roles that complement the franchise's operations. If the spouse was primarily a homemaker, state this accurately — it is not a weakness in the context of an E-2 application.`,
+    gift_letter: `ARCHETYPE: FRANCHISE BUYER
+The gift is funding part or all of the franchise investment. The letter must make clear that the donor has no ownership interest in the franchise entity and expects nothing in return — this is critical to ensure the gifted funds count as the applicant's own at-risk capital. Reference the franchise fee specifically as the destination of the gift.`,
   },
   builder: {
     cover_letter: `ARCHETYPE: ENTREPRENEUR / BUILDER
@@ -102,7 +105,7 @@ For a new concept business, investment proof should show the full capital deploy
     nonimmigrant_intent: `ARCHETYPE: ENTREPRENEUR / BUILDER
 Builders often have weaker home-country ties because they are starting fresh — address this proactively. Emphasise: (1) retained Canadian property (strongest single tie), (2) family members remaining in Canada, (3) Canadian registered savings and bank accounts left open, (4) provincial health coverage maintained. Frame the E-2 business as a venture with a defined business horizon — the investor built this; if E-2 status ends, they would return to Canada to pursue the next venture there, or manage this one remotely.`,
     visa_category: `ARCHETYPE: ENTREPRENEUR / BUILDER
-The visa category letter must establish that the investor is developing and directing the enterprise — not just funding it. For a new concept business, the officer will scrutinise non-marginality most closely (since there is no franchisor's track record). Lead with job creation projections and revenue ramp. Establish that the investor has operational control: authority to hire, fire, set strategy, and commit capital.`,
+The Substantiality Memorandum must independently construct total enterprise cost — there is no FDD benchmark for a new concept. Define total enterprise cost as the sum of all costs required to put the enterprise into operation: lease deposit + fit-out + equipment + initial inventory + working capital + professional fees. Back every cost component with a document reference (contractor estimate, lease term, purchase order). Calculate the proportionality ratio and identify the applicable 9 FAM tier. Officers will be more skeptical of total enterprise cost for new concepts — the more items that are already committed (lease signed, contractor engaged, equipment ordered) vs. still "estimated," the stronger the analysis. Committed vs. reserved split: demonstrate that the majority of funds are already irrevocably deployed, not sitting in reserve pending visa approval.`,
     ds160_reference: `ARCHETYPE: ENTREPRENEUR / BUILDER
 The DS-156E/DS-160 reference must include: legal business name, EIN, business address, investment amount, and the applicant's title (Founder/Owner or President). If the business is a startup, use the projections from the business plan for revenue figures. Confirm social media accounts match what will be disclosed at the interview. All application figures must be internally consistent — the DS-160 investment amount must match the source of funds statement exactly.`,
     marginality_rebuttal: `ARCHETYPE: ENTREPRENEUR / BUILDER
@@ -121,6 +124,8 @@ If the investor was previously renting in the home country, this section may be 
 Lead with entrepreneurial history — prior businesses founded, revenue generated, team built. Map every role to the capabilities required to operate THIS specific venture: market knowledge, operations management, team leadership, financial oversight. Quantify everything: revenue figures, headcount managed, years in industry. For investors without direct industry experience, highlight transferable management skills and any sector-specific preparation undertaken.`,
     resume_spouse: `ARCHETYPE: ENTREPRENEUR / BUILDER
 Present the spouse's background concisely. If relevant professional experience exists, feature it. If the spouse will be involved in the business (even informally), note any skills that complement the enterprise — without overstating an employee relationship that could complicate the E-2 structure.`,
+    gift_letter: `ARCHETYPE: ENTREPRENEUR / BUILDER
+The gift funds the investor's own business concept. The letter must emphasise that the donor believes in the investor's vision but has no ownership, control, or financial stake in the enterprise. If the donor is a parent, that familial relationship adds credibility — note it matter-of-factly without sentimentality.`,
   },
   investor: {
     cover_letter: `ARCHETYPE: PASSIVE / ACTIVE INVESTOR
@@ -136,7 +141,7 @@ Investment proof for an investor archetype must document: (1) the capital inject
     nonimmigrant_intent: `ARCHETYPE: INVESTOR
 Investor archetype applicants must demonstrate that the E-2 is a business opportunity, not a permanent residency strategy. Key: (1) Canadian domicile maintained — home, bank accounts, registered plans, (2) clear statement that E-2 status is held for the duration of the business venture, not indefinitely, (3) explicit acknowledgment of E-2's nonimmigrant nature. If the investor has previously held U.S. nonimmigrant visas without overstay, reference this as evidence of compliance.`,
     visa_category: `ARCHETYPE: INVESTOR
-The visa category letter must address the develop-and-direct element directly — this is the most common challenge for investor-archetype applicants. Establish: (1) the investor holds majority ownership (50%+), (2) the investor has authority to hire and fire key personnel, (3) the investor sets strategy and approves capital expenditures. Reference any evidence of active governance: board resolutions, signed agreements in the investor's name, correspondence with management team.`,
+The Substantiality Memorandum for an investor archetype should lead with total enterprise cost — typically a larger figure covering acquisition price, buildout, equipment, and working capital. Larger investments ($500K–$1M) require only 50%+ proportionality; over $1M requires 30%+. State the applicable tier explicitly and show the investor's actual ratio. Committed vs. reserved split: investor archetypes often hold larger working capital reserves — emphasize that even reserved funds are fully deployed inside the U.S. business entity and subject to business risk, not held personally. If the investment was staged (tranches), analyze each tranche's contribution to the proportionality ratio and note the cumulative position.`,
     ds160_reference: `ARCHETYPE: INVESTOR
 The DS-156E/DS-160 reference must match the legal ownership structure: investor's title (Managing Partner / President / Director), the business's legal name and EIN, the full investment amount, and the business address. If the investor holds a board or governance role rather than an operational title, note that explicitly and ensure it aligns with the develop-and-direct evidence in the cover letter.`,
     marginality_rebuttal: `ARCHETYPE: INVESTOR
@@ -155,6 +160,8 @@ Investors may hold property in multiple countries. List home-country properties 
 Emphasise board roles, governance responsibilities, and portfolio oversight experience. Headcount supervised in prior companies; capital allocated; strategic decisions made. If the investor has previously held E-2 or other business visas, these are relevant precedents — note them if publicly documented. The resume must establish credibility as a director/governor of enterprises, not a day-to-day operator.`,
     resume_spouse: `ARCHETYPE: INVESTOR
 Present the spouse's professional background concisely. For investor-archetype cases, the spouse is often professionally independent — feature their career accurately. If the spouse has board or governance experience of their own, include it as it may support derivative status credibility.`,
+    gift_letter: `ARCHETYPE: INVESTOR
+For investor-archetype cases, gifts typically come from within a family wealth structure. The letter must be precise about the legal distinction: the gift is personal capital given to the applicant, not an equity injection or shareholder loan. The donor has zero governance rights in the investee entity.`,
   },
   career_switcher: {
     cover_letter: `ARCHETYPE: CAREER SWITCHER
@@ -170,7 +177,7 @@ Career switchers often invest career savings or severance proceeds. Document cle
     nonimmigrant_intent: `ARCHETYPE: CAREER SWITCHER
 Career switchers who are leaving employment may appear to have weaker home-country ties (no employer to return to). Address this directly: (1) retained Canadian property — owned home or long-term lease, (2) family ties — parents, siblings, extended family remaining in Canada, (3) Canadian financial ties — registered plans (RRSP, TFSA), bank accounts, investments, (4) the fact that the prior career was in Canada demonstrates a long-standing connection. Frame the E-2 as a venture with defined business milestones; when complete or if status ends, the investor has a home, family, and financial life to return to in Canada.`,
     visa_category: `ARCHETYPE: CAREER SWITCHER
-The visa category letter must compensate for the cross-sector transition. Emphasise: (1) the investor's management credentials from the prior career that transfer to this enterprise, (2) any sector-specific preparation taken (training, consulting relationships, market research), (3) the business plan's credibility despite the career shift — cite market data and third-party projections. For franchise career switchers, lean on the franchisor's training programme and support system as institutional backing that reduces execution risk.`,
+The Substantiality Memorandum for a career switcher must be especially credible on total enterprise cost — officers scrutinize these cases for cost understatement (artificially low enterprise cost inflates the proportionality ratio). Reference market rates for the business type, FDD Item 7 if franchise, or comparable business setup cost estimates from industry sources. Document every cost component with its supporting reference. Career switchers investing in the $100K–$300K range fall in the 75%+ threshold tier — show that committed funds (not just bank balance) represent 75%+ of total enterprise cost. Committed vs. reserved: emphasize that the franchise fee or initial capital payment is irrevocably committed regardless of visa outcome.`,
     ds160_reference: `ARCHETYPE: CAREER SWITCHER
 The DS-156E/DS-160 reference should reflect the investor's intended title in the new business (President / Owner-Operator / Managing Member), not their prior employment title. All social media accounts must be disclosed — career switchers often have LinkedIn profiles referencing their prior career; ensure that content does not contradict the E-2 application narrative. Confirm investment amounts are consistent across all documents.`,
     marginality_rebuttal: `ARCHETYPE: CAREER SWITCHER
@@ -189,6 +196,8 @@ The family home in Canada is typically the strongest home-country tie for career
 This is the most important document in the package for this archetype. Structure the narrative as a transferable-skills argument: take each role in the investor's prior career and draw a direct, explicit line to a function in the new business. Management → managing E-2 enterprise staff. Finance → managing business P&L. Customer relations → delivering customer service in the new venture. For franchise career switchers, the franchisor's training programme (hours, curriculum, certification) is a legitimate credential — describe it in full. Include any sector-specific preparation: courses, certifications, industry event attendance, advisory conversations.`,
     resume_spouse: `ARCHETYPE: CAREER SWITCHER
 Present the spouse's background honestly. Career switcher spouses often have their own professional history — feature it. If the spouse has any skills that could support the new business (even indirectly), note them without overstating a role that could complicate the E-2 structure. Gaps should be explained honestly (caregiving, relocation, supporting principal's transition).`,
+    gift_letter: `ARCHETYPE: CAREER SWITCHER
+Career switchers sometimes receive financial support from family to supplement employment savings during their transition into entrepreneurship. The gift letter must make clear this was a decision made after careful consideration and the funds are genuinely irrevocable. If the investor can note that they themselves have substantial savings and the gift is a supplement — not the sole source — this context strengthens the application.`,
   },
 };
 
@@ -467,6 +476,7 @@ const DOC_GAP_CATEGORY_MAP: Record<string, string[]> = {
   property_portfolio:    ['source_of_funds'],
   resume_principal:      ['management_role'],
   resume_spouse:         [],
+  gift_letter:           ['source_of_funds', 'investment_amount'],
 };
 
 function buildGapContext(
@@ -1019,6 +1029,7 @@ const MIN_WORD_COUNTS: Record<string, number> = {
   property_portfolio: 150,
   resume_principal: 400,
   resume_spouse: 150,
+  gift_letter: 300,
 };
 
 const MAX_PAGE_ESTIMATES: Record<string, number> = {
@@ -1038,6 +1049,7 @@ const MAX_PAGE_ESTIMATES: Record<string, number> = {
   property_portfolio: 3,
   resume_principal: 3,
   resume_spouse: 2,
+  gift_letter: 1,
 };
 
 const FORBIDDEN_LEGAL_PHRASES = [
@@ -1294,11 +1306,10 @@ const REQUIRED_ELEMENTS: Record<DocumentType, string[]> = {
     'employment',
   ],
   visa_category: [
-    'treaty_nationality',
     'investment_substantiality',
-    'at_risk_funds',
-    'non_marginality',
-    'develop_and_direct',
+    'proportionality_ratio',
+    'total_enterprise_cost',
+    'committed_vs_reserved',
   ],
   nonimmigrant_intent: [
     'home_country_ties',
@@ -1342,6 +1353,11 @@ const REQUIRED_ELEMENTS: Record<DocumentType, string[]> = {
   resume_spouse: [
     'spouse_name',
     'employment',
+  ],
+  gift_letter: [
+    'donor_name',
+    'gift_amount',
+    'irrevocability',
   ],
 };
 
@@ -1400,6 +1416,7 @@ export function runGapAnalysis(documents: GeneratedDocument[]): GapAnalysisResul
     property_portfolio: [],
     resume_principal: [],
     resume_spouse: [],
+    gift_letter: [],
   };
 
   const recommendations: string[] = [];
@@ -1656,6 +1673,7 @@ export async function runGenerationPipeline(
     'fund_flow_chronology',
     'net_worth_statement',
     'resume_principal',
+    'gift_letter',
   ];
 
   const generatedDocs: GeneratedDocument[] = [];
@@ -1917,8 +1935,8 @@ export async function runGenerationPipeline(
       .eq('status', 'completed');
 
     // Step 15: Gap Analysis - Check for missing required elements
-    emitStep(15, 'running');
-    await updateJob({ current_step: 15, current_step_label: GENERATION_STEP_LABELS[15] });
+    emitStep(16, 'running');
+    await updateJob({ current_step: 16, current_step_label: GENERATION_STEP_LABELS[16] });
 
     const gapResult = runGapAnalysis(generatedDocs);
 
@@ -1937,12 +1955,12 @@ export async function runGenerationPipeline(
         });
     }
 
-    emitStep(15, 'complete');
-    await updateJob({ current_step: 15, current_step_label: GENERATION_STEP_LABELS[15] });
+    emitStep(16, 'complete');
+    await updateJob({ current_step: 16, current_step_label: GENERATION_STEP_LABELS[16] });
 
     // Step 16: Repetition Check - Detect duplicate content across documents
-    emitStep(16, 'running');
-    await updateJob({ current_step: 16, current_step_label: GENERATION_STEP_LABELS[16] });
+    emitStep(17, 'running');
+    await updateJob({ current_step: 17, current_step_label: GENERATION_STEP_LABELS[17] });
 
     const repetitionResult = checkRepetition(generatedDocs);
 
@@ -1962,12 +1980,12 @@ export async function runGenerationPipeline(
         });
     }
 
-    emitStep(16, 'complete');
-    await updateJob({ current_step: 16, current_step_label: GENERATION_STEP_LABELS[16] });
+    emitStep(17, 'complete');
+    await updateJob({ current_step: 17, current_step_label: GENERATION_STEP_LABELS[17] });
 
     // Step 17: Consistency check
-    emitStep(17, 'running');
-    await updateJob({ current_step: 17, current_step_label: GENERATION_STEP_LABELS[17] });
+    emitStep(18, 'running');
+    await updateJob({ current_step: 18, current_step_label: GENERATION_STEP_LABELS[18] });
 
     const consistencyResult = checkConsistency(generatedDocs);
 
@@ -1989,21 +2007,21 @@ export async function runGenerationPipeline(
       }
     }
 
-    emitStep(17, 'complete');
-    await updateJob({ current_step: 17, current_step_label: GENERATION_STEP_LABELS[17] });
-
-    // Step 18: AI Detection Audit - Check if content appears AI-generated (threshold: 0.35)
-    emitStep(18, 'running');
-    await updateJob({ current_step: 18, current_step_label: GENERATION_STEP_LABELS[18] });
-
-    await runAIDetectionAudit(generatedDocs);
-
     emitStep(18, 'complete');
     await updateJob({ current_step: 18, current_step_label: GENERATION_STEP_LABELS[18] });
 
-    // Step 19: Humanization pass on all documents (Spec4 Stage 2 — max 3 attempts)
+    // Step 18: AI Detection Audit - Check if content appears AI-generated (threshold: 0.35)
     emitStep(19, 'running');
     await updateJob({ current_step: 19, current_step_label: GENERATION_STEP_LABELS[19] });
+
+    await runAIDetectionAudit(generatedDocs);
+
+    emitStep(19, 'complete');
+    await updateJob({ current_step: 19, current_step_label: GENERATION_STEP_LABELS[19] });
+
+    // Step 19: Humanization pass on all documents (Spec4 Stage 2 — max 3 attempts)
+    emitStep(20, 'running');
+    await updateJob({ current_step: 20, current_step_label: GENERATION_STEP_LABELS[20] });
 
     const HUMANIZATION_MAX_ATTEMPTS = 3;
     const DETECTION_THRESHOLD = 0.35;
@@ -2102,12 +2120,12 @@ export async function runGenerationPipeline(
       humanizationState.set(doc.document_type, { attempts: actualAttempts, finalScore });
     }
 
-    emitStep(19, 'complete');
-    await updateJob({ current_step: 19, current_step_label: GENERATION_STEP_LABELS[19] });
+    emitStep(20, 'complete');
+    await updateJob({ current_step: 20, current_step_label: GENERATION_STEP_LABELS[20] });
 
     // Step 20: Metadata sanitization — strip placeholders, AI artifacts, and markdown
-    emitStep(20, 'running');
-    await updateJob({ current_step: 20, current_step_label: GENERATION_STEP_LABELS[20] });
+    emitStep(21, 'running');
+    await updateJob({ current_step: 21, current_step_label: GENERATION_STEP_LABELS[21] });
 
     for (const doc of generatedDocs) {
       if (doc.content_text) {
@@ -2174,12 +2192,12 @@ export async function runGenerationPipeline(
       }
     }
 
-    emitStep(20, 'complete');
-    await updateJob({ current_step: 20, current_step_label: GENERATION_STEP_LABELS[20] });
+    emitStep(21, 'complete');
+    await updateJob({ current_step: 21, current_step_label: GENERATION_STEP_LABELS[21] });
 
     // Step 21: Quality Gate - Final validation of each document
-    emitStep(21, 'running');
-    await updateJob({ current_step: 21, current_step_label: GENERATION_STEP_LABELS[21] });
+    emitStep(22, 'running');
+    await updateJob({ current_step: 22, current_step_label: GENERATION_STEP_LABELS[22] });
 
     // caseBriefData and investmentTotal declared above Step 11 — reused here
 
@@ -2394,12 +2412,12 @@ export async function runGenerationPipeline(
         .eq('document_type', doc.document_type);
     }
 
-    emitStep(21, 'complete');
-    await updateJob({ current_step: 21, current_step_label: GENERATION_STEP_LABELS[21] });
+    emitStep(22, 'complete');
+    await updateJob({ current_step: 22, current_step_label: GENERATION_STEP_LABELS[22] });
 
     // Step 22: Acknowledgment Gate — log results, set final status
-    emitStep(22, 'running');
-    await updateJob({ current_step: 22, current_step_label: GENERATION_STEP_LABELS[22] });
+    emitStep(23, 'running');
+    await updateJob({ current_step: 23, current_step_label: GENERATION_STEP_LABELS[23] });
 
     for (const docType of DOCUMENT_TYPES) {
       const generatedDoc = generatedDocs.find(d => d.document_type === docType);
@@ -2463,12 +2481,12 @@ export async function runGenerationPipeline(
         .eq('document_type', docType);
     }
 
-    emitStep(22, 'complete');
-    await updateJob({ current_step: 22, current_step_label: GENERATION_STEP_LABELS[22] });
-
-    // Step 23: Preview unlocked
     emitStep(23, 'complete');
     await updateJob({ current_step: 23, current_step_label: GENERATION_STEP_LABELS[23] });
+
+    // Step 23: Preview unlocked
+    emitStep(24, 'complete');
+    await updateJob({ current_step: 24, current_step_label: GENERATION_STEP_LABELS[24] });
 
     // Determine final job status: 'completed' if all documents passed quality gate,
     // 'partial' if one or more documents have final_status 'FAILED'

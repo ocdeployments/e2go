@@ -103,7 +103,7 @@ export async function POST(request: Request) {
         status: 'queued',
         current_step: 0,
         current_step_label: 'Initializing',
-        total_steps: 23,
+        total_steps: 24,
       })
       .select('id')
       .single();
@@ -122,7 +122,7 @@ export async function POST(request: Request) {
       created_at: new Date().toISOString(),
     });
 
-    // Create 8 document rows
+    // Create document rows for all pipeline document types
     const documentTypes = [
       'cover_letter',
       'source_of_funds',
@@ -132,6 +132,12 @@ export async function POST(request: Request) {
       'ds160_reference',
       'visa_category',
       'nonimmigrant_intent',
+      'marginality_rebuttal',
+      'declaration_principal',
+      'fund_flow_chronology',
+      'net_worth_statement',
+      'resume_principal',
+      'gift_letter',
     ];
 
     await supabase.from('generated_documents').insert(

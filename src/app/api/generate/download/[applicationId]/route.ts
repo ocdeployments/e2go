@@ -50,7 +50,7 @@ const DOC_DISPLAY_NAMES: Record<DocumentType, string> = {
   business_plan: 'Business_Plan',
   qualifications: 'Qualifications',
   ds160_reference: 'DS160_Reference',
-  visa_category: 'Visa_Category_Letter',
+  visa_category: 'Substantiality_Memorandum',
   nonimmigrant_intent: 'Nonimmigrant_Intent_Statement',
   marginality_rebuttal: 'NonMarginality_Rebuttal',
   declaration_principal: 'Declaration_Principal',
@@ -60,6 +60,7 @@ const DOC_DISPLAY_NAMES: Record<DocumentType, string> = {
   property_portfolio: 'Property_Portfolio',
   resume_principal: 'Resume_Principal',
   resume_spouse: 'Resume_Spouse',
+  gift_letter: 'Gift_Letter',
 };
 
 /** Format today's date as "Month DD, YYYY" */
