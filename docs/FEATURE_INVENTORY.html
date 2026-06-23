@@ -467,10 +467,10 @@ const FLOWS = [
 
 const SILOS = [
   {
-    resolved: false,
-    title:'CIP (Case Intelligence Profile) — Designed, Not Built',
-    desc:'The locked architecture calls for a single unified CIP data object fed by all intake sources (quiz + documents + case file + simulator). No formal schema exists. Data lives in: answers, quiz_sessions, followup_responses, case_briefs, simulation_sessions. case-profile.ts is the de facto CIP but reads from raw table queries, not a unified view or materialized schema.',
-    fix:'Fix: Formally document case-profile.ts as the official CIP implementation. Audit that all engines (gap analysis, simulator, generation, FDD) consistently read from buildCaseProfile() output rather than issuing their own raw table queries.'
+    resolved: true,
+    title:'RESOLVED — CIP Architecture Verified Sound',
+    desc:'Was: concern that no formal CIP schema existed and engines might issue raw table queries instead of using buildCaseProfile(). Audited Session 61: buildCaseProfile() in case-profile.ts IS the official CIP — writes to case_profiles table. Consumers confirmed: simulator-engine reads case_profiles ✓, fdd-profile-match-engine reads case_profiles ✓, gap-analysis-engine is a pure function (takes precomputed inputs, no DB queries of its own ✓), fdd-scoring-engine operates on FDD data directly ✓. Architecture is sound as-is. No code change needed.',
+    fix:'Resolved Session 61 audit. buildCaseProfile() confirmed as official CIP. All consumers verified. No code change required.'
   },
   {
     resolved: true,
