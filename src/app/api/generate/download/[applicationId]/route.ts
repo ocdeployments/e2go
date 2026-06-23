@@ -40,6 +40,12 @@ const VALID_DOC_TYPES: DocumentType[] = [
   'ds160_reference',
   'visa_category',
   'nonimmigrant_intent',
+  'marginality_rebuttal',
+  'declaration_principal',
+  'fund_flow_chronology',
+  'net_worth_statement',
+  'resume_principal',
+  'gift_letter',
 ];
 
 /** Human-readable display names for renamed document files */
