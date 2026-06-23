@@ -53,15 +53,15 @@ export type ChangeType =
   | 'factual_correction';
 
 export const GENERATION_STEP_LABELS: Record<number, string> = {
-  1: 'Cover Letter',
-  2: 'Source of Funds',
-  3: 'Investment Proof',
-  4: 'Business Plan',
-  5: 'Qualifications',
-  6: 'DS-160 Reference',
-  7: 'Substantiality Memorandum',
-  8: 'Non-immigrant Intent',
-  9: 'Non-Marginality Rebuttal',
+  1:  'Cover Letter',
+  2:  'Cover Letter',
+  3:  'Source & Application of Funds',
+  4:  'Business Plan',
+  5:  'Qualifications',
+  6:  'DS-160 Reference',
+  7:  'Substantiality Memorandum',
+  8:  'Non-immigrant Intent',
+  9:  'Non-Marginality Rebuttal',
   10: 'Principal Declaration',
   11: 'Fund Flow Chronology',
   12: 'Net Worth Statement',
@@ -74,9 +74,8 @@ export const GENERATION_STEP_LABELS: Record<number, string> = {
   19: 'Humanization Pass',
   20: 'Metadata Sanitization',
   21: 'Quality Gate',
-  22: 'Quality Gate',
-  23: 'Acknowledgment Gate',
-  24: 'Preview Unlocked',
+  22: 'Acknowledgment Gate',
+  23: 'Preview Unlocked',
 } as const;
 
 export const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {

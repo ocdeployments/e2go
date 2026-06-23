@@ -19,12 +19,11 @@ interface StepState {
   status: StepStatus;
 }
 
-const TOTAL_DOCUMENTS = 14;
+const TOTAL_DOCUMENTS = 13;
 
 const DOCUMENT_LIST = [
   { id: "cover_letter", label: "Cover Letter", status: "pending" as StepStatus },
-  { id: "source_of_funds", label: "Source of Funds", status: "pending" as StepStatus },
-  { id: "investment_proof", label: "Investment Proof", status: "pending" as StepStatus },
+  { id: "source_of_funds", label: "Source & Application of Funds", status: "pending" as StepStatus },
   { id: "business_plan", label: "Business Plan", status: "pending" as StepStatus },
   { id: "qualifications", label: "Qualifications", status: "pending" as StepStatus },
   { id: "ds160_reference", label: "DS-160 Reference", status: "pending" as StepStatus },
@@ -46,15 +45,13 @@ const QUALITY_STEPS = [
   { id: 19, label: "Humanization Pass" },
   { id: 20, label: "Metadata Sanitization" },
   { id: 21, label: "Quality Gate" },
-  { id: 22, label: "Quality Gate" },
-  { id: 23, label: "Acknowledgment Gate" },
-  { id: 24, label: "Preview Unlocked" },
+  { id: 22, label: "Acknowledgment Gate" },
+  { id: 23, label: "Preview Unlocked" },
 ];
 
 const STATUS_MESSAGES: Record<string, string> = {
   cover_letter: "Establishing your investment narrative for the consular officer...",
-  source_of_funds: "Tracing your investment funds from source to business account...",
-  investment_proof: "Documenting your investment breakdown and irrevocability...",
+  source_of_funds: "Tracing investment origin through every transfer to the U.S. business account...",
   business_plan: "Building your financial projections and staffing plan...",
   qualifications: "Presenting your professional qualifications and management experience...",
   ds160_reference: "Preparing your DS-160 form reference guide...",
@@ -86,7 +83,7 @@ export default function GenerateProgressPage() {
 
   const [_jobId, setJobId] = useState<string | null>(null);
   const [_steps, setSteps] = useState<StepState[]>(() =>
-    Array.from({ length: 24 }, (_, i) => ({
+    Array.from({ length: 23 }, (_, i) => ({
       id: i + 1,
       label: GENERATION_STEP_LABELS[i + 1] || `Step ${i + 1}`,
       status: "pending" as StepStatus,
@@ -139,7 +136,7 @@ export default function GenerateProgressPage() {
   // Get quality step state
   const getQualityStepState = (stepId: number): StepStatus => {
     if (stepId < currentQualityStep) return "complete";
-    if (stepId === currentQualityStep && approvedDocuments >= 14) return "running";
+    if (stepId === currentQualityStep && approvedDocuments >= 13) return "running";
     return "pending";
   };
 
@@ -220,14 +217,14 @@ export default function GenerateProgressPage() {
           setAwaitingApproval(false);
         } else if (msg.status === "failed") {
           updateStepStatus(stepNum, "failed");
-          setOverallProgress(Math.round((stepNum / 24) * 100));
+          setOverallProgress(Math.round((stepNum / 23) * 100));
           setAwaitingApproval(false);
         } else if (msg.status === "awaiting_approval") {
           updateStepStatus(stepNum, "running");
-          setOverallProgress(Math.round((stepNum / 24) * 100));
+          setOverallProgress(Math.round((stepNum / 23) * 100));
         } else {
           updateStepStatus(stepNum, "running");
-          setOverallProgress(Math.round((stepNum / 24) * 100));
+          setOverallProgress(Math.round((stepNum / 23) * 100));
         }
       });
     },

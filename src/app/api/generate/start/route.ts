@@ -103,7 +103,7 @@ export async function POST(request: Request) {
         status: 'queued',
         current_step: 0,
         current_step_label: 'Initializing',
-        total_steps: 24,
+        total_steps: 23,
       })
       .select('id')
       .single();
@@ -126,7 +126,6 @@ export async function POST(request: Request) {
     const documentTypes = [
       'cover_letter',
       'source_of_funds',
-      'investment_proof',
       'business_plan',
       'qualifications',
       'ds160_reference',
