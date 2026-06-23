@@ -26,6 +26,7 @@ import { buildTableOfContents } from '@/lib/docx-toc-builder';
 import { buildTabDivider } from '@/lib/docx-divider-builder';
 import {
   DOC_TYPE_TAB_MAP,
+  DOC_DISPLAY_NAMES,
   TAB_SECTION_TITLES,
   TAB_ORDER,
 } from '@/lib/docx-package-constants';
@@ -42,32 +43,14 @@ const VALID_DOC_TYPES: DocumentType[] = [
   'nonimmigrant_intent',
   'marginality_rebuttal',
   'declaration_principal',
+  'declaration_spouse',
   'fund_flow_chronology',
   'net_worth_statement',
+  'property_portfolio',
   'resume_principal',
+  'resume_spouse',
   'gift_letter',
 ];
-
-/** Human-readable display names for renamed document files */
-const DOC_DISPLAY_NAMES: Record<DocumentType, string> = {
-  cover_letter: 'Cover_Letter',
-  source_of_funds: 'Source_of_Funds',
-  investment_proof: 'Investment_Proof',
-  business_plan: 'Business_Plan',
-  qualifications: 'Qualifications',
-  ds160_reference: 'DS160_Reference',
-  visa_category: 'Substantiality_Memorandum',
-  nonimmigrant_intent: 'Nonimmigrant_Intent_Statement',
-  marginality_rebuttal: 'NonMarginality_Rebuttal',
-  declaration_principal: 'Declaration_Principal',
-  declaration_spouse: 'Declaration_Spouse',
-  fund_flow_chronology: 'Fund_Flow_Chronology',
-  net_worth_statement: 'Net_Worth_Statement',
-  property_portfolio: 'Property_Portfolio',
-  resume_principal: 'Resume_Principal',
-  resume_spouse: 'Resume_Spouse',
-  gift_letter: 'Gift_Letter',
-};
 
 /** Format today's date as "Month DD, YYYY" */
 function formatPreparedDate(): string {
@@ -233,22 +216,24 @@ export async function GET(
       applicantName,
       preparedDate,
       includedTabs,
+      includedDocTypes,
+      totalDocCount: includedDocTypes.length,
     });
     const tocBuffer = await Packer.toBuffer(tocDoc);
     zip.file('01_Table_of_Contents.docx', Buffer.from(tocBuffer));
 
-    // 7c. For each tab in TAB_ORDER: divider + renamed document
+    // 7c. For each tab in TAB_ORDER: divider + all documents assigned to that tab
     for (const tabLetter of TAB_ORDER) {
       const tabEntry = TAB_SECTION_TITLES[tabLetter];
       if (!tabEntry) continue;
 
-      // Find the document for this tab
-      const docForTab = includedDocTypes.find(
+      // Find ALL documents assigned to this tab
+      const docsForTab = includedDocTypes.filter(
         (dt) => DOC_TYPE_TAB_MAP[dt] === tabLetter
       );
-      if (!docForTab) continue;
+      if (docsForTab.length === 0) continue;
 
-      // Build divider
+      // Build one divider per tab
       const dividerDoc = buildTabDivider({
         tabLetter,
         sectionTitle: tabEntry.title,
@@ -261,22 +246,24 @@ export async function GET(
         Buffer.from(dividerBuffer)
       );
 
-      // Build the actual document (reuses existing buildDocument)
-      const docContent = documents.find(
-        (d) => d.document_type === docForTab
-      );
-      if (docContent?.content_text) {
-        const docx = buildDocument({
-          contentText: docContent.content_text,
-          documentType: docForTab,
-          lastName,
-        });
-        const docBuffer = await Packer.toBuffer(docx);
-        const displayName = DOC_DISPLAY_NAMES[docForTab];
-        zip.file(
-          `Tab_${tabLetter}_${displayName}.docx`,
-          Buffer.from(docBuffer)
+      // Build each document in this tab
+      for (const docType of docsForTab) {
+        const docContent = documents.find(
+          (d) => d.document_type === docType
         );
+        if (docContent?.content_text) {
+          const docx = buildDocument({
+            contentText: docContent.content_text,
+            documentType: docType,
+            lastName,
+          });
+          const docBuffer = await Packer.toBuffer(docx);
+          const displayName = DOC_DISPLAY_NAMES[docType];
+          zip.file(
+            `Tab_${tabLetter}_${displayName}.docx`,
+            Buffer.from(docBuffer)
+          );
+        }
       }
     }
 
