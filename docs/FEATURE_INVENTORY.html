@@ -342,8 +342,8 @@ const PHASES = [
       {status:'built', name:'SimulatorNudge (Coaching → Case File)', route:'/apply/*', desc:'SimulatorNudge component injected into all 5 apply section pages. /api/simulator/section-nudge route maps coaching weakness categories to case file section improvement suggestions. Visible after any completed simulator session.', badge:'new'},
       {status:'built', name:'Rate Limiting (Upstash Redis)', route:'', desc:'Login: 5/15min/IP. Quiz submit: 3/hr/IP. Generate/Analysis: 50/day/user. FAQ: 10/min/IP.'},
       {status:'built', name:'PWA (Service Worker)', route:'', desc:'Installable. Service worker + manifest. PWAInstallPrompt component.'},
-      {status:'partial', name:'Error Monitoring (Sentry)', route:'/api/_sentry-tunnel', desc:'@sentry/nextjs installed (Session 56). sentry.client/server/edge.config.ts. withSentryConfig in next.config.mjs. Tunnel route /api/_sentry-tunnel (bypasses ad blockers). global-error.tsx. Code complete — owner must add NEXT_PUBLIC_SENTRY_DSN + SENTRY_DSN + SENTRY_ORG + SENTRY_PROJECT to Vercel env.', badge:'blocked'},
-      {status:'partial', name:'Uptime Monitoring', route:'/api/health', desc:'/api/health built (Session 61) — DB ping, returns { status, timestamp, checks: { database: { status, latency_ms } } }, 503 on DB failure. Owner action: wire to UptimeRobot or BetterStack for alerting.', badge:'blocked'},
+      {status:'built', name:'Error Monitoring (Sentry)', route:'/api/_sentry-tunnel', desc:'@sentry/nextjs installed (Session 56). sentry.client/server/edge.config.ts. withSentryConfig in next.config.mjs. Tunnel route /api/_sentry-tunnel (bypasses ad blockers). global-error.tsx. DSN + org + project env vars added to Vercel June 23 2026. Active.', badge:'new'},
+      {status:'partial', name:'Uptime Monitoring', route:'/api/health', desc:'/api/health built (Session 61) — DB ping, returns { status, timestamp, checks: { database: { status, latency_ms } } }, 503 on DB failure. Owner action: add https://e2go.app/api/health to UptimeRobot or BetterStack (free, 2 min setup).', badge:'blocked'},
     ]
   }
 ];
@@ -520,18 +520,12 @@ const GAPS = [
   {
     group:'Pre-Launch Blockers — Fix Before Any Public Users',
     items:[
-      {priority:'critical', name:'Groq TTS Voice Mode Blocked', desc:'canopylabs/orpheus-v1-english returns 400 model_terms_required. Owner must accept Groq model terms at console.groq.com/playground?model=canopylabs%2Forpheus-v1-english'},
     ]
   },
   {
     group:'Owner Actions Required (No Code Needed)',
     items:[
-      {priority:'high', name:'Sentry DSN — Add to Vercel Env', desc:'Sentry code fully integrated (Session 56). Owner must create project at sentry.io then add NEXT_PUBLIC_SENTRY_DSN + SENTRY_DSN + SENTRY_ORG + SENTRY_PROJECT to Vercel environment variables to activate error monitoring.'},
-      {priority:'high', name:'Google Places API Key Missing', desc:'GOOGLE_PLACES_API_KEY not in .env.local. Territory analysis (FDD + market-analysis) uses neutral score 50 fallback for all locations. Real competitor data blocked.'},
       {priority:'high', name:'Stripe Simulator Price ID Update', desc:'Run SQL: UPDATE pricing SET stripe_price_id = \'price_1Tim5fF7Ggk3LUEy2JGRRKrB\', amount_cents = 2999 WHERE tier_id = \'simulator_3pack\'. Also update STRIPE_PRICE_SIMULATOR_3PACK in Vercel env.'},
-      {priority:'medium', name:'Cloudflare Turnstile Keys', desc:'NEXT_PUBLIC_TURNSTILE_SITE_KEY + TURNSTILE_SECRET_KEY not in Vercel env. Bot protection on sensitive routes inactive.'},
-      {priority:'medium', name:'CRON_SECRET Not Set', desc:'CRON_SECRET not in Vercel env. Cron job routes for profile rebuilds and email scheduling will fail authentication check.'},
-      {priority:'medium', name:'Resend Domain Verification', desc:'Unknown if e2go.app is verified in Resend dashboard. Unverified = emails sent from fallback address. Check and revert sender to results@e2go.app if verified.'},
       {priority:'medium', name:'Wire /api/health to Uptime Monitor', desc:'/api/health endpoint built and returning DB ping. Add https://e2go.app/api/health to UptimeRobot or BetterStack. Set alert threshold: status != "ok" or HTTP != 200. No code needed.'},
     ]
   },
