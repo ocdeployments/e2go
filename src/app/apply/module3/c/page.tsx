@@ -158,11 +158,11 @@ export default function TabCPage() {
             </div>
 
             <h1 className="text-2xl font-semibold mb-4" style={{ color: '#f0ede6', fontSize: '24px', fontWeight: 600, fontFamily: "'Cormorant Garamond', serif" }}>
-              Visa Category Confirmation Letter
+              Substantiality Memorandum
             </h1>
 
             <p className="mb-6" style={{ color: 'rgba(240,237,230,0.65)', fontSize: '16px', lineHeight: '24px' }}>
-              This letter confirms you are applying under the E-2 Treaty Investor classification and sits behind Tab C in your binder. It&apos;s generated from your answers — review it and confirm it&apos;s accurate.
+              This memorandum analyzes your investment proportionality under 9 FAM 402.9-6(D) — calculating your investment as a percentage of total enterprise cost and comparing it to the applicable threshold. It sits behind Tab C in your binder and is generated from your investment breakdown answers.
             </p>
 
             {/* Feature highlights */}

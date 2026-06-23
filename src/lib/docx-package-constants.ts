@@ -35,9 +35,9 @@ export const TAB_SECTION_TITLES: Record<
       'Narrative addressing all E-2 eligibility requirements under 9 FAM 402.9',
   },
   E: {
-    title: 'Visa Category Letter',
+    title: 'Substantiality Memorandum',
     description:
-      'Analytical memorandum addressing each E-2 treaty investor requirement in sequence',
+      'Investment proportionality analysis under 9 FAM 402.9-6(D) — total enterprise cost, investment ratio, and committed vs. reserved breakdown',
   },
   F: {
     title: 'Investment Evidence — Funds Committed',

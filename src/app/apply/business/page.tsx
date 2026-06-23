@@ -34,7 +34,7 @@ const CLUSTERS = [
 
 const DOCUMENTS = [
   { name: 'Business Plan', status: 'waiting' as const },
-  { name: 'Visa Category Letter', status: 'waiting' as const },
+  { name: 'Substantiality Memorandum', status: 'waiting' as const },
 ];
 
 interface QuestionField {
@@ -379,7 +379,7 @@ export default function BusinessPage() {
       clusters={clusterStatuses}
       activeClusterId={`cluster-${activeCluster}`}
       onClusterChange={handleClusterChange}
-      buildsDocuments={['Business Plan', 'Visa Category Letter']}
+      buildsDocuments={['Business Plan', 'Substantiality Memorandum']}
       nextSectionPath="/apply/investment"
       prevSectionPath="/apply/story"
       isSaving={saveStatus === 'saving'}

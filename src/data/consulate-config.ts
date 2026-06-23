@@ -589,7 +589,7 @@ export function getDocumentManifest(config: ConsulateConfig): DocManifestEntry[]
     },
     {
       key: 'visa_category',
-      label: 'E-2 Category Analysis',
+      label: 'Substantiality Memorandum',
       pagesMin: 3,
       pagesMax: 4,
       countsTowardLimit: true,

@@ -28,7 +28,7 @@ const DOCUMENT_LIST = [
   { id: "business_plan", label: "Business Plan", status: "pending" as StepStatus },
   { id: "qualifications", label: "Qualifications", status: "pending" as StepStatus },
   { id: "ds160_reference", label: "DS-160 Reference", status: "pending" as StepStatus },
-  { id: "visa_category", label: "Visa Category Letter", status: "pending" as StepStatus },
+  { id: "visa_category", label: "Substantiality Memorandum", status: "pending" as StepStatus },
   { id: "nonimmigrant_intent", label: "Non-immigrant Intent", status: "pending" as StepStatus },
 ];
 
@@ -51,7 +51,7 @@ const STATUS_MESSAGES: Record<string, string> = {
   business_plan: "Building your financial projections and staffing plan...",
   qualifications: "Presenting your professional qualifications and management experience...",
   ds160_reference: "Preparing your DS-160 form reference guide...",
-  visa_category: "Building your E-2 visa category analysis across five treaty requirements...",
+  visa_category: "Calculating investment proportionality ratio against 9 FAM 402.9-6(D) thresholds...",
   nonimmigrant_intent: "Writing your non-immigrant intent statement from your ties data...",
   quality_steps: "Applying final quality checks before your package is ready...",
 };

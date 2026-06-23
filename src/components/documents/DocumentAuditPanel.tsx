@@ -106,14 +106,14 @@ const DOC_QUALITY_CONFIG: Partial<Record<DocumentType, DocQualityConfig>> = {
   },
   visa_category: {
     minWords: 400,
-    expansionHint: 'legal basis for E-2 eligibility, treaty country connection, and statutory elements',
+    expansionHint: 'total enterprise cost breakdown, investment proportionality ratio, 9 FAM 402.9-6(D) tier analysis, committed vs. reserved split, and FDD Item 7 benchmark if franchise',
     requiredTerms: [
       {
-        phrase: 'treaty',
-        code: 'TREATY',
-        title: 'Treaty country reference may be missing',
-        detail: 'The visa category letter must explicitly reference the investor\'s treaty country and its treaty relationship with the United States.',
-        revisionPrompt: 'Please ensure the visa category letter explicitly references the investor\'s treaty country and confirms it has a qualifying treaty with the United States for E-2 visa purposes.',
+        phrase: 'proportionality',
+        code: 'PROPORTIONALITY',
+        title: 'Proportionality analysis may be missing',
+        detail: 'The Substantiality Memorandum must calculate the investment as a percentage of total enterprise cost and compare it to the applicable 9 FAM 402.9-6(D) threshold.',
+        revisionPrompt: 'Please ensure the memorandum calculates the exact proportionality ratio (investment ÷ total enterprise cost) and identifies which 9 FAM 402.9-6(D) tier applies to this enterprise cost level.',
       },
     ],
   },
