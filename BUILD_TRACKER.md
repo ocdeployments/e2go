@@ -1,6 +1,20 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 23, 2026 — Session 62: FAQ corpus seeded, revising-status migration created, FEATURE_INVENTORY updated. Build clean. Branch: dev.
+**Last Updated:** June 23, 2026 — Session 62 cont: Feature inventory audit complete. 5 missing features found and added. All stale entries corrected. Gap list fully cleared.
+
+**Inventory audit findings (Session 62):**
+- ADDED: Ask E2go FAQ Chat (FaqChat.tsx + /api/faq/ask, 3-layer RAG, public, seeded)
+- ADDED: Account Data Export (/api/account/export, PIPEDA/GDPR, accessible from Settings)
+- ADDED: Gap Analysis AI Enrich (/api/gap-analysis/enrich, LLM per-category enrichment)
+- ADDED: Gap Analysis Semantic Eval (/api/gap-analysis/semantic-eval, 3-field consular officer check)
+- ADDED: Module 3 Tab D AI Assist (/api/ai, Upstash Redis rate-limited, story writing help)
+- FIXED: groq-tts.ts marked unblocked (Groq terms accepted)
+- FIXED: document_generation_jobs total_steps now shows dynamic (22–25)
+- FIXED: FLOWS step references updated from hardcoded 15–23 to dynamic Q→Q+8
+- CLEARED: Stripe simulator price + UptimeRobot gaps (both done)
+- TRACKED: 3 CI failures (dependency-audit, type-check, build-check) deferred by owner
+
+**Previous session:** June 23, 2026 — Session 62: FAQ corpus seeded, revising-status migration created, FEATURE_INVENTORY updated. Build clean. Branch: dev.
 
 (1) **FAQ corpus seeded**: `scripts/seed-faq-corpus.ts` + `seed-faq-kb-chunks.ts` — both fixed to load `.env.local` via dotenv (were reading `.env`). Seeded 355 Q&A pairs into `faq_qa_corpus` + 285 KB chunks from 33 docs into `faq_kb_chunks`. Ask E2go FAQ now has full vector search backing.
 
