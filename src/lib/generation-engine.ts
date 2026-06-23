@@ -1651,6 +1651,11 @@ export async function runGenerationPipeline(
     'ds160_reference',
     'visa_category',
     'nonimmigrant_intent',
+    'marginality_rebuttal',
+    'declaration_principal',
+    'fund_flow_chronology',
+    'net_worth_statement',
+    'resume_principal',
   ];
 
   const generatedDocs: GeneratedDocument[] = [];
@@ -1911,9 +1916,9 @@ export async function runGenerationPipeline(
       .eq('application_id', applicationId)
       .eq('status', 'completed');
 
-    // Step 9: Gap Analysis - Check for missing required elements
-    emitStep(9, 'running');
-    await updateJob({ current_step: 9, current_step_label: GENERATION_STEP_LABELS[9] });
+    // Step 15: Gap Analysis - Check for missing required elements
+    emitStep(15, 'running');
+    await updateJob({ current_step: 15, current_step_label: GENERATION_STEP_LABELS[15] });
 
     const gapResult = runGapAnalysis(generatedDocs);
 
@@ -1932,12 +1937,12 @@ export async function runGenerationPipeline(
         });
     }
 
-    emitStep(9, 'complete');
-    await updateJob({ current_step: 9, current_step_label: GENERATION_STEP_LABELS[9] });
+    emitStep(15, 'complete');
+    await updateJob({ current_step: 15, current_step_label: GENERATION_STEP_LABELS[15] });
 
-    // Step 10: Repetition Check - Detect duplicate content across documents
-    emitStep(10, 'running');
-    await updateJob({ current_step: 10, current_step_label: GENERATION_STEP_LABELS[10] });
+    // Step 16: Repetition Check - Detect duplicate content across documents
+    emitStep(16, 'running');
+    await updateJob({ current_step: 16, current_step_label: GENERATION_STEP_LABELS[16] });
 
     const repetitionResult = checkRepetition(generatedDocs);
 
@@ -1957,12 +1962,12 @@ export async function runGenerationPipeline(
         });
     }
 
-    emitStep(10, 'complete');
-    await updateJob({ current_step: 10, current_step_label: GENERATION_STEP_LABELS[10] });
+    emitStep(16, 'complete');
+    await updateJob({ current_step: 16, current_step_label: GENERATION_STEP_LABELS[16] });
 
-    // Step 11: Consistency check
-    emitStep(11, 'running');
-    await updateJob({ current_step: 11, current_step_label: GENERATION_STEP_LABELS[11] });
+    // Step 17: Consistency check
+    emitStep(17, 'running');
+    await updateJob({ current_step: 17, current_step_label: GENERATION_STEP_LABELS[17] });
 
     const consistencyResult = checkConsistency(generatedDocs);
 
@@ -1984,21 +1989,21 @@ export async function runGenerationPipeline(
       }
     }
 
-    emitStep(11, 'complete');
-    await updateJob({ current_step: 11, current_step_label: GENERATION_STEP_LABELS[11] });
+    emitStep(17, 'complete');
+    await updateJob({ current_step: 17, current_step_label: GENERATION_STEP_LABELS[17] });
 
-    // Step 12: AI Detection Audit - Check if content appears AI-generated (threshold: 0.35)
-    emitStep(12, 'running');
-    await updateJob({ current_step: 12, current_step_label: GENERATION_STEP_LABELS[12] });
+    // Step 18: AI Detection Audit - Check if content appears AI-generated (threshold: 0.35)
+    emitStep(18, 'running');
+    await updateJob({ current_step: 18, current_step_label: GENERATION_STEP_LABELS[18] });
 
     await runAIDetectionAudit(generatedDocs);
 
-    emitStep(12, 'complete');
-    await updateJob({ current_step: 12, current_step_label: GENERATION_STEP_LABELS[12] });
+    emitStep(18, 'complete');
+    await updateJob({ current_step: 18, current_step_label: GENERATION_STEP_LABELS[18] });
 
-    // Step 13: Humanization pass on all 8 documents (Spec4 Stage 2 — max 3 attempts)
-    emitStep(13, 'running');
-    await updateJob({ current_step: 13, current_step_label: GENERATION_STEP_LABELS[13] });
+    // Step 19: Humanization pass on all documents (Spec4 Stage 2 — max 3 attempts)
+    emitStep(19, 'running');
+    await updateJob({ current_step: 19, current_step_label: GENERATION_STEP_LABELS[19] });
 
     const HUMANIZATION_MAX_ATTEMPTS = 3;
     const DETECTION_THRESHOLD = 0.35;
@@ -2097,12 +2102,12 @@ export async function runGenerationPipeline(
       humanizationState.set(doc.document_type, { attempts: actualAttempts, finalScore });
     }
 
-    emitStep(13, 'complete');
-    await updateJob({ current_step: 13, current_step_label: GENERATION_STEP_LABELS[13] });
+    emitStep(19, 'complete');
+    await updateJob({ current_step: 19, current_step_label: GENERATION_STEP_LABELS[19] });
 
-    // Step 14: Metadata sanitization — strip placeholders, AI artifacts, and markdown
-    emitStep(14, 'running');
-    await updateJob({ current_step: 14, current_step_label: GENERATION_STEP_LABELS[14] });
+    // Step 20: Metadata sanitization — strip placeholders, AI artifacts, and markdown
+    emitStep(20, 'running');
+    await updateJob({ current_step: 20, current_step_label: GENERATION_STEP_LABELS[20] });
 
     for (const doc of generatedDocs) {
       if (doc.content_text) {
@@ -2169,12 +2174,12 @@ export async function runGenerationPipeline(
       }
     }
 
-    emitStep(14, 'complete');
-    await updateJob({ current_step: 14, current_step_label: GENERATION_STEP_LABELS[14] });
+    emitStep(20, 'complete');
+    await updateJob({ current_step: 20, current_step_label: GENERATION_STEP_LABELS[20] });
 
-    // Step 15: Quality Gate - Final validation of each document
-    emitStep(15, 'running');
-    await updateJob({ current_step: 15, current_step_label: GENERATION_STEP_LABELS[15] });
+    // Step 21: Quality Gate - Final validation of each document
+    emitStep(21, 'running');
+    await updateJob({ current_step: 21, current_step_label: GENERATION_STEP_LABELS[21] });
 
     // caseBriefData and investmentTotal declared above Step 11 — reused here
 
@@ -2389,12 +2394,12 @@ export async function runGenerationPipeline(
         .eq('document_type', doc.document_type);
     }
 
-    emitStep(15, 'complete');
-    await updateJob({ current_step: 15, current_step_label: GENERATION_STEP_LABELS[15] });
+    emitStep(21, 'complete');
+    await updateJob({ current_step: 21, current_step_label: GENERATION_STEP_LABELS[21] });
 
-    // Step 16: Acknowledgment Gate — log results, set final status
-    emitStep(16, 'running');
-    await updateJob({ current_step: 16, current_step_label: GENERATION_STEP_LABELS[16] });
+    // Step 22: Acknowledgment Gate — log results, set final status
+    emitStep(22, 'running');
+    await updateJob({ current_step: 22, current_step_label: GENERATION_STEP_LABELS[22] });
 
     for (const docType of DOCUMENT_TYPES) {
       const generatedDoc = generatedDocs.find(d => d.document_type === docType);
@@ -2458,12 +2463,12 @@ export async function runGenerationPipeline(
         .eq('document_type', docType);
     }
 
-    emitStep(16, 'complete');
-    await updateJob({ current_step: 16, current_step_label: GENERATION_STEP_LABELS[16] });
+    emitStep(22, 'complete');
+    await updateJob({ current_step: 22, current_step_label: GENERATION_STEP_LABELS[22] });
 
-    // Step 17: Preview unlocked
-    emitStep(17, 'complete');
-    await updateJob({ current_step: 17, current_step_label: GENERATION_STEP_LABELS[17] });
+    // Step 23: Preview unlocked
+    emitStep(23, 'complete');
+    await updateJob({ current_step: 23, current_step_label: GENERATION_STEP_LABELS[23] });
 
     // Determine final job status: 'completed' if all documents passed quality gate,
     // 'partial' if one or more documents have final_status 'FAILED'

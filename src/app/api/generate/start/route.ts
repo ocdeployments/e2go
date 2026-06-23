@@ -103,7 +103,7 @@ export async function POST(request: Request) {
         status: 'queued',
         current_step: 0,
         current_step_label: 'Initializing',
-        total_steps: 17,
+        total_steps: 23,
       })
       .select('id')
       .single();
