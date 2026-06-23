@@ -19,7 +19,7 @@ interface StepState {
   status: StepStatus;
 }
 
-const TOTAL_DOCUMENTS = 8;
+const TOTAL_DOCUMENTS = 14;
 
 const DOCUMENT_LIST = [
   { id: "cover_letter", label: "Cover Letter", status: "pending" as StepStatus },
@@ -30,18 +30,25 @@ const DOCUMENT_LIST = [
   { id: "ds160_reference", label: "DS-160 Reference", status: "pending" as StepStatus },
   { id: "visa_category", label: "Substantiality Memorandum", status: "pending" as StepStatus },
   { id: "nonimmigrant_intent", label: "Non-immigrant Intent", status: "pending" as StepStatus },
+  { id: "marginality_rebuttal", label: "Non-Marginality Rebuttal", status: "pending" as StepStatus },
+  { id: "declaration_principal", label: "Principal Declaration", status: "pending" as StepStatus },
+  { id: "fund_flow_chronology", label: "Fund Flow Chronology", status: "pending" as StepStatus },
+  { id: "net_worth_statement", label: "Net Worth Statement", status: "pending" as StepStatus },
+  { id: "resume_principal", label: "Principal Resume", status: "pending" as StepStatus },
+  { id: "gift_letter", label: "Gift Letter", status: "pending" as StepStatus },
 ];
 
 const QUALITY_STEPS = [
-  { id: 9, label: "Gap Analysis" },
-  { id: 10, label: "Repetition Check" },
-  { id: 11, label: "Consistency Check" },
-  { id: 12, label: "AI Detection Audit" },
-  { id: 13, label: "Humanization Pass" },
-  { id: 14, label: "Metadata Sanitization" },
-  { id: 15, label: "Quality Gate" },
-  { id: 16, label: "Pre-download Ack" },
-  { id: 17, label: "Preview Unlock" },
+  { id: 15, label: "Gap Analysis" },
+  { id: 16, label: "Repetition Check" },
+  { id: 17, label: "Consistency Check" },
+  { id: 18, label: "AI Detection Audit" },
+  { id: 19, label: "Humanization Pass" },
+  { id: 20, label: "Metadata Sanitization" },
+  { id: 21, label: "Quality Gate" },
+  { id: 22, label: "Quality Gate" },
+  { id: 23, label: "Acknowledgment Gate" },
+  { id: 24, label: "Preview Unlocked" },
 ];
 
 const STATUS_MESSAGES: Record<string, string> = {
@@ -53,6 +60,12 @@ const STATUS_MESSAGES: Record<string, string> = {
   ds160_reference: "Preparing your DS-160 form reference guide...",
   visa_category: "Calculating investment proportionality ratio against 9 FAM 402.9-6(D) thresholds...",
   nonimmigrant_intent: "Writing your non-immigrant intent statement from your ties data...",
+  marginality_rebuttal: "Building the non-marginality argument from your financial projections...",
+  declaration_principal: "Drafting your personal declaration confirming nonimmigrant intent...",
+  fund_flow_chronology: "Mapping the complete chain of funds from source to U.S. investment...",
+  net_worth_statement: "Compiling your net worth and financial position statement...",
+  resume_principal: "Preparing your professional resume for the consular officer...",
+  gift_letter: "Preparing the gift letter from your donor (if applicable)...",
   quality_steps: "Applying final quality checks before your package is ready...",
 };
 
@@ -73,7 +86,7 @@ export default function GenerateProgressPage() {
 
   const [_jobId, setJobId] = useState<string | null>(null);
   const [_steps, setSteps] = useState<StepState[]>(() =>
-    Array.from({ length: 17 }, (_, i) => ({
+    Array.from({ length: 24 }, (_, i) => ({
       id: i + 1,
       label: GENERATION_STEP_LABELS[i + 1] || `Step ${i + 1}`,
       status: "pending" as StepStatus,
@@ -126,7 +139,7 @@ export default function GenerateProgressPage() {
   // Get quality step state
   const getQualityStepState = (stepId: number): StepStatus => {
     if (stepId < currentQualityStep) return "complete";
-    if (stepId === currentQualityStep && approvedDocuments >= 8) return "running";
+    if (stepId === currentQualityStep && approvedDocuments >= 14) return "running";
     return "pending";
   };
 
@@ -197,7 +210,7 @@ export default function GenerateProgressPage() {
         }
 
         const stepNum = msg.step || 0;
-        if (stepNum >= 9) {
+        if (stepNum >= 15) {
           setCurrentQualityStep(stepNum);
         }
 
@@ -207,14 +220,14 @@ export default function GenerateProgressPage() {
           setAwaitingApproval(false);
         } else if (msg.status === "failed") {
           updateStepStatus(stepNum, "failed");
-          setOverallProgress(Math.round((stepNum / 17) * 100));
+          setOverallProgress(Math.round((stepNum / 24) * 100));
           setAwaitingApproval(false);
         } else if (msg.status === "awaiting_approval") {
           updateStepStatus(stepNum, "running");
-          setOverallProgress(Math.round((stepNum / 17) * 100));
+          setOverallProgress(Math.round((stepNum / 24) * 100));
         } else {
           updateStepStatus(stepNum, "running");
-          setOverallProgress(Math.round((stepNum / 17) * 100));
+          setOverallProgress(Math.round((stepNum / 24) * 100));
         }
       });
     },
