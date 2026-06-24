@@ -1,6 +1,14 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 23, 2026 — Session 67: ENG-2 complete. All 8 sprints done. Build clean.
+**Last Updated:** June 24, 2026 — Session 69: Page transitions + login animation + GenerationProgress audit complete. Build clean.
+
+**Session 69 — Page transitions, login animation, GenerationProgress audit:**
+
+(22) **Page transitions** — `src/components/ui/PageTransition.tsx` (new): client component wrapping all page content in root layout. Uses `usePathname()` as animation key; every route change re-triggers a 220ms fade+slide entrance (`opacity: 0, y: 7` → `opacity: 1, y: 0`). No exit animation (App Router unmounts old component before exit can play — causes flicker with `mode="wait"`). Wired in `src/app/layout.tsx`: `<PageTransition>{children}</PageTransition>`. Framer Motion import path: `motion/react` (v12). Commit: `527bd8c`.
+
+(23) **Login animated submit overlay** — `src/app/login/page.tsx`: replaced bare spinner with a full-screen `AnimatePresence` overlay that fades in (200ms) over the form on submit. Overlay shows `GenerationProgress` with 3 auth-specific steps (`Verifying credentials…`, `Loading your profile…`, `Preparing your workspace…`, `estimatedSeconds=8`, `showEstimate=false`). `motion.button` with `whileTap={{ scale: 0.98 }}` on the Sign In button. Animated error message slides down from above (`y: -6 → 0`). Form stays visible underneath the overlay during the fade-in. Commit: `527bd8c`.
+
+(24) **GenerationProgress component audit** — Verified all 9 background-loading states in the app. 6 states already upgraded to `GenerationProgress`: Simulator evaluate (estimatedSeconds=30, 5 steps), Simulator coaching loading (estimatedSeconds=15, 4 steps), Simulator follow-up compact bar (compact=true, estimatedSeconds=12), InterviewBrief LoadingState (estimatedSeconds=90, 7 E-2-specific steps), Gap-analysis AI analysis banner (estimatedSeconds=20, 6 steps), Gap-analysis re-analysis prompt (same). 3 states intentionally kept as simple spinners (admin page, generate page, document download — structural chrome, not user-facing wait states). Added QA-UX-01 through QA-UX-08 rows to `docs/FEATURE_INVENTORY.html`. Commit: `3b92519`.
 
 **Session 67 — ENG-2: Quiz conditional branches + archetype classifier fix:**
 

@@ -1,6 +1,6 @@
 # CLAUDE_CONTEXT.md — E2go
 ## Master Context for Every Claude Code Session
-**Version:** June 23, 2026 — Session 67. All 8 sprints complete. ENG-2 quiz branches (Q0-08c/Q0-08d) + archetype classifier fix shipped. UI state restore on generate reload live. Build clean on dev (02644fb).
+**Version:** June 24, 2026 — Session 69. Page transitions (PageTransition component), login animated submit overlay (AnimatePresence + GenerationProgress), GenerationProgress 9-state audit complete. All 8 sprints remain complete. Build clean on dev (527bd8c).
 
 ## SPRINT STATUS
 - OPS-1 (API Cost Intelligence): ✅ COMPLETE — llm_cost_log, cost logging in callLLM(), /admin/cost page
@@ -965,6 +965,13 @@ Rate limits (production only):
 - Gap Analysis architecture planned: 6 evidence categories, scoring weights, remediation loop
 - Process flow widget designed (HTML/JS); React component conversion pending
 - Build: clean ✅
+
+**June 24, 2026 — Session 69: Page transitions + login animation:**
+- PageTransition component: fade+slide on every route change (220ms, Framer Motion v12 `motion/react`)
+- Login animated submit overlay: AnimatePresence fade-in over form, GenerationProgress with 3 auth steps
+- motion.button with whileTap scale on Sign In button; animated error message slide-in
+- GenerationProgress 9-state audit: 6 upgraded, 3 kept as spinners; QA-UX-01–08 added to FEATURE_INVENTORY
+- Commits: 3b92519, 527bd8c — Build: clean ✅
 
 **Next session priorities (as of June 19, 2026 — Phase A + B + C complete):**
 
