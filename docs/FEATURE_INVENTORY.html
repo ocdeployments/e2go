@@ -378,15 +378,22 @@
           <td style="padding:6px 12px 6px 0;color:#C9A84C;font-family:monospace;white-space:nowrap">QA-DB-01</td>
           <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.4);white-space:nowrap">2026-06-23</td>
           <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.7)">Supabase 400s on: quiz_sessions.hard_stop_codes (column missing), applications.investment_amount (column missing), application_lifecycle upsert (no UNIQUE constraint on user_id)</td>
-          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.5)">Created supabase/migrations/20260623800000_missing_schema_columns.sql — idempotent ADD COLUMN IF NOT EXISTS for all three + unique constraint. Awaiting Supabase apply.</td>
-          <td style="padding:6px 0;color:#facc15;white-space:nowrap">⚡ Migration pending</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.5)">Created supabase/migrations/20260623800000_missing_schema_columns.sql — idempotent ADD COLUMN IF NOT EXISTS for all three + unique constraint. Migration applied 2026-06-23.</td>
+          <td style="padding:6px 0;color:#4ade80;white-space:nowrap">✅ Fixed</td>
         </tr>
         <tr style="border-bottom:1px solid rgba(245,240,232,0.04)">
           <td style="padding:6px 12px 6px 0;color:#C9A84C;font-family:monospace;white-space:nowrap">QA-DB-02</td>
           <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.4);white-space:nowrap">2026-06-23</td>
           <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.7)">applications.principal_name + operational_status + target_state missing from all migrations — causes /api/simulator/interview-prep and /api/applications/[id] to return 404 (Supabase 400 on SELECT → caught as appError → route returns 404). InterviewBrief prep report silently disappears on Prepare tab.</td>
-          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.5)">Added ADD COLUMN IF NOT EXISTS for all three to 20260623800000 migration. Awaiting Supabase apply.</td>
-          <td style="padding:6px 0;color:#facc15;white-space:nowrap">⚡ Migration pending</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.5)">Added ADD COLUMN IF NOT EXISTS for principal_name, operational_status, target_state, and business_category to 20260623800000 migration. Migration applied 2026-06-23. InterviewBrief prep report now renders with score gauge, denial risks, and category scores.</td>
+          <td style="padding:6px 0;color:#4ade80;white-space:nowrap">✅ Fixed</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(245,240,232,0.04)">
+          <td style="padding:6px 12px 6px 0;color:#C9A84C;font-family:monospace;white-space:nowrap">QA-IP-01</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.4);white-space:nowrap">2026-06-24</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.7)">InterviewBrief LLM prompt had two data quality bugs: (1) business_category was passed as raw JSON array string to LLM — appeared verbatim in applicationSummary text. (2) Treaty country read from Q0-TC which is absent; answer stored under Q0-01, so treatyCountry resolved to "Not specified" in all coaching output.</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.5)">Fixed in /api/simulator/interview-prep/route.ts: business_category now JSON.parse'd with Array.isArray guard before label lookup; rawCountry falls back to aMap.get('Q0-01') when Q0-TC absent.</td>
+          <td style="padding:6px 0;color:#4ade80;white-space:nowrap">✅ Fixed</td>
         </tr>
         <tr style="border-bottom:1px solid rgba(245,240,232,0.04)">
           <td style="padding:6px 12px 6px 0;color:#C9A84C;font-family:monospace;white-space:nowrap">QA-SMOKE-01</td>
