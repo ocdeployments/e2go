@@ -255,8 +255,19 @@ export async function GET(request: NextRequest) {
 
     // Context labels
     const rawCategory = aMap.get('Q0-10') || app.business_category;
-    const businessCategory = rawCategory ? getBusinessCategoryLabel(rawCategory) : 'Not specified';
-    const rawCountry = aMap.get('Q0-TC');
+    let businessCategory = 'Not specified';
+    if (rawCategory) {
+      try {
+        const parsed = JSON.parse(rawCategory);
+        businessCategory = Array.isArray(parsed)
+          ? parsed.map(v => getBusinessCategoryLabel(String(v))).join(', ')
+          : getBusinessCategoryLabel(rawCategory);
+      } catch {
+        businessCategory = getBusinessCategoryLabel(rawCategory);
+      }
+    }
+    // Q0-01 stores the treaty country — Q0-TC may be absent
+    const rawCountry = aMap.get('Q0-TC') || aMap.get('Q0-01');
     const treatyCountry = rawCountry ? (COUNTRY_LABELS[rawCountry] || rawCountry) : 'Not specified';
     const rawBizType = aMap.get('Q0-BT');
     const businessType = rawBizType ? (BIZ_TYPE_LABELS[rawBizType] || rawBizType) : 'Not specified';
