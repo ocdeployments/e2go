@@ -538,6 +538,74 @@
       ]
     },
     {
+      "id": "Q0-08c",
+      "type": "select",
+      "section": "business",
+      "section_index": 2,
+      "question": "Have you received the Franchise Disclosure Document from the franchisor?",
+      "helper_text": "The FDD is a legal document franchisors must give you at least 14 days before you sign anything. It contains the financial performance data used to build your case — including Item 19 AUV figures.",
+      "tooltip": "Federal law requires franchisors to provide the FDD at least 14 calendar days before you sign any agreement or pay any money. If you haven't received it yet, that's normal at early stages.",
+      "is_sub": true,
+      "parent": "Q0-08a",
+      "show_if": {
+        "Q0-08a": ["A franchise — buying into an established brand"]
+      },
+      "options": [
+        {
+          "text": "Yes — I have the FDD",
+          "action": "continue",
+          "code": null,
+          "warning_message": null
+        },
+        {
+          "text": "Not yet — the franchisor has offered it",
+          "action": "continue",
+          "code": null,
+          "warning_message": null
+        },
+        {
+          "text": "Not yet — I'm still in early discussions",
+          "action": "continue",
+          "code": null,
+          "warning_message": null
+        }
+      ]
+    },
+    {
+      "id": "Q0-08d",
+      "type": "select",
+      "section": "business",
+      "section_index": 2,
+      "question": "Is the business you are acquiring currently operational with active customers?",
+      "helper_text": "Acquiring a business with existing revenue and employees strengthens the non-marginality argument considerably.",
+      "tooltip": null,
+      "is_sub": true,
+      "parent": "Q0-08a",
+      "show_if": {
+        "Q0-08a": ["An existing independent business I am acquiring"]
+      },
+      "options": [
+        {
+          "text": "Yes — it is currently operational with staff",
+          "action": "continue",
+          "code": null,
+          "warning_message": null
+        },
+        {
+          "text": "It operates but has no employees beyond the owner",
+          "action": "warn:W-MARGINALITY-ACQUISITION",
+          "code": "W-MARGINALITY-ACQUISITION",
+          "warning_message": "Acquiring a business with no existing employees means the non-marginality case depends entirely on your near-term hiring projections. Your business plan must show credible year-1 job creation."
+        },
+        {
+          "text": "No — it is a dormant or pre-operational business",
+          "action": "warn:W-DORMANT-ACQUISITION",
+          "code": "W-DORMANT-ACQUISITION",
+          "warning_message": "Dormant business acquisitions receive closer scrutiny. The officer will evaluate whether the investment is genuinely at-risk. A detailed activation plan with committed capital is essential."
+        }
+      ]
+    },
+    {
       "id": "Q0-09",
       "type": "select",
       "section": "history",

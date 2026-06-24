@@ -13,8 +13,26 @@ function getSupabaseAdmin() {
 
 export function classifyArchetype(
   priorBusiness: string,
-  industryInterest: string
+  industryInterest: string,
+  businessTypeAnswer?: string  // Q0-08a raw text from quiz
 ): Archetype {
+  const typeAnswer = (businessTypeAnswer ?? '').toLowerCase();
+
+  // Explicit franchise signal from Q0-08a overrides everything
+  if (typeAnswer.includes('franchise')) return 'buyer';
+
+  // Acquisition path: typically an investor-class operator
+  if (typeAnswer.includes('existing independent')) return 'investor';
+
+  // New concept + experienced operator → builder
+  if (
+    (typeAnswer.includes('new business') || typeAnswer.includes('new concept') || typeAnswer.includes('starting from scratch')) &&
+    ['owner', 'manager'].includes(priorBusiness)
+  ) {
+    return 'builder';
+  }
+
+  // Post-profile heuristics (legacy path — no Q0-08a answer available)
   if (
     priorBusiness === 'owner' &&
     ['home_care', 'food_beverage', 'retail_services'].includes(industryInterest)
@@ -166,7 +184,11 @@ export async function buildCaseProfile(userId: string): Promise<CaseProfile> {
   const investmentRange = (resultJson.investment_range as string) ?? '';
   const hardStops     = session?.outcome === 'DO_NOT_PROCEED' ? attorneyFlags : [];
 
-  const archetype       = classifyArchetype(priorBusiness, industryInterest);
+  // Q0-08a: explicit franchise/acquisition/new-concept signal from main quiz
+  const resultAnswers     = (resultJson.answers as Record<string, string>) ?? {};
+  const businessTypeAnswer = (resultAnswers['Q0-08a'] as string) ?? '';
+
+  const archetype       = classifyArchetype(priorBusiness, industryInterest, businessTypeAnswer);
   const eligibilityScore = scoreQuizEligibility(session?.score ?? 0, hardStops, riskFlags);
   const franchiseTrigger = detectFranchiseTrigger(
     industryInterest,
