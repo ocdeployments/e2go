@@ -249,7 +249,7 @@
 
 <div class="topbar">
   <div>
-    <div class="subtitle">E2go · Architecture Audit · June 23, 2026 · Session 66 — All 3 Backlog Items Complete</div>
+    <div class="subtitle">E2go · Architecture Audit · June 23, 2026 · Session 67 — ENG-2 Complete · All 8 Sprints Done</div>
     <h1>Complete Feature Inventory</h1>
   </div>
   <div class="legend">
@@ -1473,13 +1473,13 @@ const SPRINTS = [
     ]
   },
   {
-    id:'ENG-2', name:'Engine Quality — Advanced', priority:'medium', effort:'2–3 sessions', status:'partial',
-    desc:'⚡ PARTIAL S64 — Adaptive interview difficulty (escalation on weak answers) ✅. Remaining: doc gen archetype template variants (per-doc language by archetype), quiz conditional branch paths (franchise vs solo routing), FDD extraction prompt tuning (sparse extract fix).',
+    id:'ENG-2', name:'Engine Quality — Advanced', priority:'medium', effort:'2–3 sessions', status:'complete',
+    desc:'✅ COMPLETE S63–67 — All 4 items done. Adaptive interview difficulty ✅ S63. FDD extraction prompt tuning ✅ S63. Doc gen archetype variants ✅ S63 (ARCHETYPE_DOC_GUIDANCE: 4 archetypes × 16 doc types, injected into every document). Quiz conditional branches ✅ S67 (Q0-08c FDD status + Q0-08d acquisition status + classifyArchetype() now uses Q0-08a direct signal).',
     items:[
-      {name:'Doc gen archetype template variants', desc:'Impact: +0.4 pts. One template currently serves all 4 archetypes. Archetype-specific language, evidence framing, and emphasis per document type.'},
-      {name:'Quiz conditional branch paths', desc:'Impact: +0.3 pts. Currently linear 30 questions. Add conditional routing — franchise path skips solo-business questions, etc.'},
-      {name:'Adaptive interview difficulty', desc:'Impact: +0.3 pts. Adjust question difficulty based on rolling answer score. Weak answers trigger easier follow-ups before advancing.'},
-      {name:'FDD extraction quality — prompt tuning', desc:'Impact: +1.0 pts (when built). Home-care franchise FDDs returned sparse data (BUG-QA-11). Improve prompts for variable section structure.'},
+      {name:'✅ Doc gen archetype template variants', desc:'S63 — ARCHETYPE_DOC_GUIDANCE constant in generation-engine.ts: 4 archetypes (buyer/builder/investor/career_switcher) × 16 doc types. buildArchetypeGuidance() appended to every Claude system prompt at line 716. Each archetype gets specific evidence framing, officer-test emphasis, and risk pre-emption language per document.'},
+      {name:'✅ Quiz conditional branch paths', desc:'S67 — Added Q0-08c (FDD status, franchise path only: show_if Q0-08a=franchise) and Q0-08d (acquisition operational status: show_if Q0-08a=existing independent business, triggers W-MARGINALITY-ACQUISITION/W-DORMANT-ACQUISITION warnings). Fixed classifyArchetype() in case-profile.ts to extract Q0-08a from result_json.answers — franchise buyers now correctly classified as "buyer" archetype regardless of post-profile answers. Archetype passed into ARCHETYPE_DOC_GUIDANCE and ARCHETYPE_WEIGHTS in gap analysis.'},
+      {name:'✅ Adaptive interview difficulty', desc:'S63 — simulator-engine.ts: if total probe count < 2 AND questions < 11, injects 2 adversarial escalation questions from a pool of 8. Pool covers: remote-operation challenge, financial contingency, passive-vs-active management, nonimmigrant intent, due diligence, competitor awareness.'},
+      {name:'✅ FDD extraction quality — prompt tuning', desc:'S63 — CHUNK_A_SYSTEM expanded for 8 franchise categories with category-specific terminology. PDF table artifact handling + numeric extraction rules. Chunk D (Item 19) improved with table-format reading notes and cherry-pick detection. Recovery pass threshold 3→2.'},
     ]
   },
   {
@@ -1555,7 +1555,7 @@ const roadmapSprintEl = document.getElementById('roadmap-sprint-container');
 const sprintTitle = document.createElement('div');
 sprintTitle.className = 'roadmap-section-title';
 sprintTitle.style.marginTop = '36px';
-sprintTitle.textContent = 'Sprints — 8 planned · OPS-1✅ OPS-2✅ OPS-3✅ OPS-4✅ OPS-5✅ ENG-1✅ ENG-2⚡ INFRA-1✅';
+sprintTitle.textContent = 'Sprints — 8 planned · OPS-1✅ OPS-2✅ OPS-3✅ OPS-4✅ OPS-5✅ ENG-1✅ ENG-2✅ INFRA-1✅ — ALL COMPLETE';
 roadmapSprintEl.appendChild(sprintTitle);
 
 const sprintGrid = document.createElement('div');

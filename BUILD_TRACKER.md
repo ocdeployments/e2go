@@ -1,6 +1,18 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 23, 2026 — Session 66: All 3 remaining backlog items complete. UI state restore, mobile QA fixes, and connection pooler note done. Build clean.
+**Last Updated:** June 23, 2026 — Session 67: ENG-2 complete. All 8 sprints done. Build clean.
+
+**Session 67 — ENG-2: Quiz conditional branches + archetype classifier fix:**
+
+(19) **Quiz conditional branch paths (Q0-08c + Q0-08d)** — Added two new conditional questions to `src/data/module0_questions.json`:
+- **Q0-08c** (franchise path, show_if Q0-08a = "A franchise"): "Have you received the FDD from the franchisor?" — 3 options covering Yes/Offered/Early discussions. Feeds into FDD intelligence product routing and gap analysis.
+- **Q0-08d** (acquisition path, show_if Q0-08a = "An existing independent business"): "Is the business currently operational with active staff?" — Triggers `W-MARGINALITY-ACQUISITION` warning if no employees, `W-DORMANT-ACQUISITION` if dormant. Both codes flow into `result_json.warnings` and surface on the results page as risk flags.
+
+(20) **Archetype classifier fix** — `classifyArchetype()` in `src/lib/case-profile.ts` now accepts a 3rd param `businessTypeAnswer` (Q0-08a text from `result_json.answers`). Priority order: (1) Q0-08a franchise signal → 'buyer'; (2) Q0-08a acquisition signal → 'investor'; (3) new concept + experienced operator → 'builder'; (4) legacy post-profile heuristics. `buildCaseProfile()` extracts Q0-08a at line 163 and passes it through. Previously, franchise buyers who selected "career switcher" in the post-profile were misclassified — archetype guidance in document gen was wrong for their entire package.
+
+(21) **Doc gen archetype variants confirmed complete** — `ARCHETYPE_DOC_GUIDANCE` in `generation-engine.ts` already has all 4 archetypes × 16 doc types (buyer/builder/investor/career_switcher). Built in S63, never marked done. Now recorded as complete.
+
+**All 8 sprints now complete.** No planned sprint backlog remaining. Next phase: user acquisition, packaging audit, or new sprint definition.
 
 **Session 66 additions:**
 
