@@ -1,16 +1,16 @@
 # CLAUDE_CONTEXT.md — E2go
 ## Master Context for Every Claude Code Session
-**Version:** June 23, 2026 — Session 64. All OPS + ENG + INFRA sprints complete or partial. Admin command center fully built (5 sub-pages). NPS pipeline live. Pipeline checkpoint resume shipped. Build clean on dev (869a75c).
+**Version:** June 23, 2026 — Session 67. All 8 sprints complete. ENG-2 quiz branches (Q0-08c/Q0-08d) + archetype classifier fix shipped. UI state restore on generate reload live. Build clean on dev (02644fb).
 
 ## SPRINT STATUS
 - OPS-1 (API Cost Intelligence): ✅ COMPLETE — llm_cost_log, cost logging in callLLM(), /admin/cost page
 - OPS-2 (System Health): ✅ COMPLETE — health-watchdog cron (5 min), /admin/system-status, kill switch, cron_log
 - OPS-3 (Admin Command Center): ✅ COMPLETE — /admin rebuilt, /admin/users/[userId], tier override, admin_audit_log
 - OPS-4 (Revenue Intelligence): ✅ COMPLETE — /admin/revenue, MoM, projection, churn signals, funnel
-- OPS-5 (Quality & Growth): ⚡ PARTIAL — /admin/quality built, NPS modal + submit route live. Remaining: mobile viewport QA pass (70+ routes at 390px)
+- OPS-5 (Quality & Growth): ✅ COMPLETE — /admin/quality + NPS + simulator metrics + doc download rate + mobile QA pass (S66)
 - ENG-1 (Engine Quality Priority): ✅ COMPLETE — KB→docgen, coaching memory, multi-turn probing all confirmed built
-- ENG-2 (Engine Quality Advanced): ⚡ PARTIAL — FDD prompt tuning (+1.0pts), adaptive difficulty (+0.3pts) done. Archetype variants + quiz conditional branches already built (no gap).
-- INFRA-1 (Infrastructure Hardening): ⚡ PARTIAL — FAQ route Anthropic violation fixed (P0). SSE backoff + existing-job skip done. Remaining: connection pooler (owner action), soft-delete SQL migration
+- ENG-2 (Engine Quality Advanced): ✅ COMPLETE — FDD prompt tuning (+1.0pts), adaptive difficulty (+0.3pts), Q0-08c/Q0-08d quiz branches, archetype classifier Q0-08a primary signal (S67)
+- INFRA-1 (Infrastructure Hardening): ✅ COMPLETE — FAQ Anthropic violation fixed, SSE backoff + existing-job skip + UI state restore (S66), connection pooler N/A confirmed
 
 ## KEY RULES — NEVER BREAK
 - ANTHROPIC_API_KEY: ONLY in generation-engine.ts + /api/fdd/* routes
