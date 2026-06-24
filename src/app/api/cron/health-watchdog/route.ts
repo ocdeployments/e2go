@@ -91,6 +91,62 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // ── 3. OpenRouter balance check ────────────────────────────────────────
+    const orKey = process.env.OPENROUTER_API_KEY;
+    if (orKey) {
+      try {
+        const { data: thresholdSetting } = await admin
+          .from('app_settings')
+          .select('value')
+          .eq('key', 'openrouter_reload_threshold')
+          .maybeSingle();
+        const threshold = Number(thresholdSetting?.value ?? 20);
+
+        const orRes = await fetch('https://openrouter.ai/api/v1/auth/key', {
+          headers: { Authorization: `Bearer ${orKey}` },
+        });
+        if (orRes.ok) {
+          const orData = await orRes.json() as { data?: { usage?: number; limit?: number } };
+          const usage  = orData.data?.usage  ?? 0;
+          const limit  = orData.data?.limit  ?? 0;
+          const balance = limit - usage;
+
+          // Store current balance so admin page can display it
+          await admin.from('app_settings')
+            .upsert({ key: 'openrouter_balance_usd', value: String(balance.toFixed(2)) }, { onConflict: 'key' });
+
+          if (balance < threshold) {
+            // Only send one alert per 24h to avoid spam
+            const { data: lastAlert } = await admin
+              .from('app_settings')
+              .select('value')
+              .eq('key', 'openrouter_low_balance_alerted_at')
+              .maybeSingle();
+            const lastAlertTs = lastAlert?.value ? Number(lastAlert.value) : 0;
+            const oneDayMs = 24 * 3600 * 1000;
+
+            if (Date.now() - lastAlertTs > oneDayMs) {
+              await sendAlert(
+                `[E2go OPS] ⚠ OpenRouter balance low — $${balance.toFixed(2)} remaining`,
+                `OpenRouter balance: $${balance.toFixed(2)}\nThreshold: $${threshold}\n\nTop up at https://openrouter.ai/credits\nTime: ${new Date().toISOString()}`
+              );
+              await admin.from('app_settings')
+                .upsert({ key: 'openrouter_low_balance_alerted_at', value: String(Date.now()) }, { onConflict: 'key' });
+              await admin.from('app_settings')
+                .upsert({ key: 'openrouter_balance_low', value: 'true' }, { onConflict: 'key' });
+              results.alerts_sent.push('openrouter_low_balance');
+            }
+          } else {
+            // Clear the low-balance flag if balance is back up
+            await admin.from('app_settings')
+              .upsert({ key: 'openrouter_balance_low', value: 'false' }, { onConflict: 'key' });
+          }
+        }
+      } catch (orErr) {
+        console.warn('[health-watchdog] OpenRouter balance check failed:', orErr);
+      }
+    }
+
     // ── 3. Close cron_log row ──────────────────────────────────────────────
     if (logId) {
       await admin
