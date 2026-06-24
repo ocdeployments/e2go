@@ -101,42 +101,64 @@ async function callOpenRouter(options: LLMOptions): Promise<string> {
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) throw new Error('OPENROUTER_API_KEY not set');
 
+  // 30s hard timeout — MIMO silent failures reach Anthropic fallback in ~30s, not ~250s
+  const timeoutController = new AbortController();
+  const timeoutId = setTimeout(() => timeoutController.abort(), 30_000);
+
+  // Compose with any caller-supplied signal
+  const onExternalAbort = () => timeoutController.abort();
+  if (options.signal) {
+    if (options.signal.aborted) {
+      clearTimeout(timeoutId);
+      timeoutController.abort();
+    } else {
+      options.signal.addEventListener('abort', onExternalAbort, { once: true });
+    }
+  }
+
   const t0 = Date.now();
-  const response = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
-    method: 'POST',
-    headers: {
-      'Content-Type':  'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-      'HTTP-Referer':  'https://e2go.app',
-      'X-Title':       'E2go Interview Simulator',
-    },
-    body: JSON.stringify({
-      models:      OPENROUTER_MODELS[options.task],
-      messages:    options.messages,
-      temperature: options.temperature ?? 0.3,
-      max_tokens:  options.max_tokens  ?? 700,
-      stream:      false,
-    }),
-    signal: options.signal,
-  });
+  try {
+    const response = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type':  'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+        'HTTP-Referer':  'https://e2go.app',
+        'X-Title':       'E2go Interview Simulator',
+      },
+      body: JSON.stringify({
+        models:      OPENROUTER_MODELS[options.task],
+        messages:    options.messages,
+        temperature: options.temperature ?? 0.3,
+        max_tokens:  options.max_tokens  ?? 700,
+        stream:      false,
+      }),
+      signal: timeoutController.signal,
+    });
 
-  if (!response.ok) throw new Error(`OpenRouter HTTP ${response.status}`);
+    if (!response.ok) throw new Error(`OpenRouter HTTP ${response.status}`);
 
-  const data = await response.json();
-  const content = data.choices?.[0]?.message?.content;
-  if (!content) throw new Error('OpenRouter returned empty content');
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content;
+    if (!content) throw new Error('OpenRouter returned empty content');
 
-  const model     = data.model ?? OPENROUTER_MODELS[options.task][0];
-  const tokensIn  = data.usage?.prompt_tokens     ?? 0;
-  const tokensOut = data.usage?.completion_tokens ?? 0;
-  logCost({
-    userId: options.userId, task: options.task, route: options.route,
-    provider: 'openrouter', model, tokensIn, tokensOut,
-    costUsd: calcCost(model, tokensIn, tokensOut),
-    latencyMs: Date.now() - t0,
-  });
+    const model     = data.model ?? OPENROUTER_MODELS[options.task][0];
+    const tokensIn  = data.usage?.prompt_tokens     ?? 0;
+    const tokensOut = data.usage?.completion_tokens ?? 0;
+    logCost({
+      userId: options.userId, task: options.task, route: options.route,
+      provider: 'openrouter', model, tokensIn, tokensOut,
+      costUsd: calcCost(model, tokensIn, tokensOut),
+      latencyMs: Date.now() - t0,
+    });
 
-  return content;
+    return content;
+  } finally {
+    clearTimeout(timeoutId);
+    if (options.signal) {
+      options.signal.removeEventListener('abort', onExternalAbort);
+    }
+  }
 }
 
 async function callAnthropic(options: LLMOptions): Promise<string> {
