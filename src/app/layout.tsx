@@ -6,6 +6,7 @@ import { Cormorant_Garamond, DM_Sans } from "next/font/google";
 import "./globals.css";
 import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
 import CookieBanner from "@/components/CookieBanner";
+import PageTransition from "@/components/ui/PageTransition";
 
 const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
@@ -73,7 +74,7 @@ export default function RootLayout({
       <body className="font-sans antialiased bg-[#0a0a0a] text-[#f5f0e8]">
         <ServiceWorkerRegistration />
         <main className="min-h-screen">
-          {children}
+          <PageTransition>{children}</PageTransition>
         </main>
         <CookieBanner />
       </body>

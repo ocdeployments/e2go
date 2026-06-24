@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, Suspense } from "react";
+import { motion, AnimatePresence } from "motion/react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
+import GenerationProgress from "@/components/ui/GenerationProgress";
 
 function LoginForm() {
   const searchParams = useSearchParams();
@@ -164,22 +166,38 @@ function LoginForm() {
     }
   };
 
-  if (status === 'loading') {
-    return (
-      <div
-        className="flex items-center justify-center bg-[#0a0a0a]"
-        style={{ position: 'fixed', inset: 0, zIndex: 9999 }}
-      >
-        <div className="text-center">
-          <div className="w-8 h-8 border-2 border-[#C9A84C] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p style={{ color: "rgba(245,240,232,0.6)" }}>Signing you in...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex flex-col md:flex-row">
+      {/* Animated overlay — fades in over the form on submit */}
+      <AnimatePresence>
+        {status === 'loading' && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            style={{ position: 'fixed', inset: 0, zIndex: 9999, background: '#0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.28, delay: 0.08, ease: [0.25, 0.46, 0.45, 0.94] }}
+              style={{ width: '100%', maxWidth: '320px', padding: '0 24px' }}
+            >
+              <p style={{ marginBottom: '20px', fontSize: '13px', fontFamily: "'DM Sans', sans-serif", color: 'rgba(245,240,232,0.5)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                Signing you in
+              </p>
+              <GenerationProgress
+                isActive={true}
+                estimatedSeconds={8}
+                steps={['Verifying credentials…', 'Loading your profile…', 'Preparing your workspace…']}
+                showEstimate={false}
+              />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Flag panel — desktop only */}
       <div className="hidden md:flex md:w-1/2 relative overflow-hidden bg-[#0a0a0a]">
         <svg width="100%" height="100%" viewBox="0 0 660 520" preserveAspectRatio="xMinYMid slice" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -235,11 +253,20 @@ function LoginForm() {
               <h1 className="text-2xl font-bold mb-2" style={{ color: "#f5f0e8", fontFamily: "'Cormorant Garamond', serif", fontWeight: 300 }}>Welcome back</h1>
               <p className="mb-8" style={{ color: "rgba(245,240,232,0.6)" }}>Sign in to continue your application</p>
 
-              {status === 'error' && (
-                <div className="p-3 text-sm mb-4" style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.3)", color: "#fca5a5" }}>
-                  {errorMessage}
-                </div>
-              )}
+              <AnimatePresence>
+                {status === 'error' && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="p-3 text-sm mb-4"
+                    style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.3)", color: "#fca5a5" }}
+                  >
+                    {errorMessage}
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               <form onSubmit={handleLogin} className="space-y-4">
                 <div>
@@ -291,13 +318,15 @@ function LoginForm() {
                   </Link>
                 </div>
 
-                <button
+                <motion.button
                   type="submit"
-                  className="w-full font-medium py-3 transition-colors"
-                  style={{ background: "#C9A84C", color: "#0a0a0a", borderRadius: 0 }}
+                  disabled={status === 'loading'}
+                  whileTap={{ scale: 0.98 }}
+                  className="w-full font-medium py-3"
+                  style={{ background: "#C9A84C", color: "#0a0a0a", borderRadius: 0, transition: 'opacity 0.15s', opacity: status === 'loading' ? 0.7 : 1 }}
                 >
-                  Sign In
-                </button>
+                  {status === 'loading' ? 'Signing in…' : 'Sign In'}
+                </motion.button>
               </form>
 
               <p className="mt-6 text-center text-sm" style={{ color: "rgba(245,240,232,0.45)" }}>
