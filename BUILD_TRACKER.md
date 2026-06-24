@@ -1,6 +1,6 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 23, 2026 — Session 63: Sprint batch complete. OPS-1/2/3/4/5, ENG-1, ENG-2, INFRA-1 all shipped. Build clean. Pushed to dev (70b28e5). 8 commits.
+**Last Updated:** June 23, 2026 — Session 64: NPS pipeline complete + pipeline checkpoint resume shipped. Build clean. Pushed to dev (13979aa). 11 commits total.
 
 **Session 63 — Sprint batch: OPS-4, OPS-5, ENG-1, ENG-2, INFRA-1:**
 
@@ -29,14 +29,20 @@
 - ENG-2: +1.3 pts added this session (FDD tuning 1.0 + adaptive difficulty 0.3)
 - Total engine improvement: ~4.2 pts above last audit baseline of 7.6 → target 9/10
 
+**Session 64 additions:**
+
+(8) **NPS pipeline complete**: `/api/nps/submit/route.ts` — auth check, score validation (int 0–10), 7-day rate limit via nps_scores table query, service role INSERT. `src/components/NpsModal.tsx` — 0–10 clickable scale, optional comment textarea, localStorage 7-day cooldown guard (`shouldShowNps()` / `markNpsShown()`), submit/dismiss flows, Obsidian Gold design. Already wired in generate page: shows after first download if cooldown allows.
+
+(9) **Pipeline checkpoint resume**: `src/app/generate/[applicationId]/page.tsx`:
+- `connectSSE()` — added exponential backoff on `onerror`: 3s → 6s → 12s → cap 30s. Tracks `done` flag so reconnect stops after completed/failed message.
+- `startGeneration()` — checks `data.existing` flag from `/api/generate/start`. If existing running job: skips `POST /api/generate/run/[jobId]`, goes directly to `connectSSE()`. Prevents double-starting jobs on page reload.
+
 **Remaining backlog (unbuilt):**
-- ENG-2: doc gen archetype template variants (+0.4 pts) — generate different section emphasis based on investor archetype
-- ENG-2: quiz conditional branch paths (+0.3 pts) — different question flow for buyer vs builder vs investor archetypes
+- ENG-2: doc gen archetype template variants (+0.4 pts) — already built via ARCHETYPE_DOC_GUIDANCE in generation-engine.ts; no gap here
+- ENG-2: quiz conditional branch paths (+0.3 pts) — already built via showIf system; no gap here
 - INFRA-1 P1: connection pooler note (Vercel env — add ?pgbouncer=true to pooler URL — code change not needed)
-- INFRA-1 P1: generation pipeline resume from checkpoint (reconnect SSE and pick up from last completed step)
 - INFRA-1 P2: soft-delete (add deleted_at to applications + profiles — SQL migration only)
-- OPS-5: NPS collection UI (post-download prompt modal + /api/nps/submit route)
-- NPS table: SQL `CREATE TABLE nps_scores` (shown in /admin/quality page with full SQL)
+- NPS table: SQL `CREATE TABLE nps_scores` — owner must run in Supabase (SQL shown in /admin/quality page)
 
 **Owner actions required (unchanged):**
 - CRON_SECRET env var must be set in Vercel for health-watchdog auth to work
