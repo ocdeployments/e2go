@@ -2,6 +2,8 @@ import { createClient } from '@supabase/supabase-js';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import TierOverridePanel from './TierOverridePanel';
+import SendEmailPanel from './SendEmailPanel';
+import FlagUserPanel from './FlagUserPanel';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,7 +15,7 @@ function getAdmin() {
   );
 }
 
-type ProfileRow = { id: string; first_name: string | null; last_name: string | null; role: string | null; created_at: string | null };
+type ProfileRow = { id: string; first_name: string | null; last_name: string | null; role: string | null; created_at: string | null; flagged_at: string | null; flag_reason: string | null };
 type ApplicationRow = { id: string; status: string | null; source: string | null; created_at: string | null };
 type PaymentRow = { id: string; tier: string | null; payment_type: string | null; amount_cents: number | null; amount_paid: number | null; status: string | null; created_at: string | null };
 type QuizRow = { id: string; outcome: string | null; application_type: string | null; completed_at: string | null };
@@ -140,11 +142,26 @@ export default async function UserDetailPage({ params }: { params: Promise<{ use
             )}
           </div>
         </div>
-        <div className="text-xs text-zinc-600 text-right">
+        <div className="text-xs text-zinc-600 text-right space-y-2">
           <div>User ID: <code className="text-zinc-500">{userId.slice(0, 8)}…</code></div>
-          <div className="mt-1">Joined: {fmtD(typedProfile.created_at)}</div>
+          <div>Joined: {fmtD(typedProfile.created_at)}</div>
+          <Link
+            href={`/admin/users/${userId}/view`}
+            className="inline-block mt-1 text-xs px-3 py-1.5 border border-zinc-700 text-zinc-400 hover:border-[#C9A84C]/40 hover:text-[#C9A84C] transition-colors"
+          >
+            View as User →
+          </Link>
         </div>
       </div>
+
+      {/* Flagged banner */}
+      {typedProfile.flagged_at && (
+        <div className="mb-6 px-4 py-2 border border-red-500/30 bg-red-950/20 text-red-300 text-xs flex items-center gap-3">
+          <span className="font-semibold">⚑ FLAGGED FOR REVIEW</span>
+          {typedProfile.flag_reason && <span className="text-red-400/60">— {typedProfile.flag_reason}</span>}
+          <span className="ml-auto text-red-400/40">Since {fmtD(typedProfile.flagged_at)}</span>
+        </div>
+      )}
 
       {/* Profile snapshot */}
       <section className="mb-10">
@@ -319,6 +336,24 @@ export default async function UserDetailPage({ params }: { params: Promise<{ use
             ))}
           </div>
         )}
+      </section>
+
+      {/* Communication */}
+      <section className="mb-10">
+        <SectionTitle>Send Email</SectionTitle>
+        <p className="text-xs text-zinc-600 mb-2">Send a direct email to this user via Resend. Logged to admin_audit_log.</p>
+        <SendEmailPanel userId={userId} />
+      </section>
+
+      {/* Flag / review */}
+      <section className="mb-10">
+        <SectionTitle>Flag for Review</SectionTitle>
+        <p className="text-xs text-zinc-600 mb-2">Mark this account for manual review (suspected abuse, duplicate, support case). Does not affect user access.</p>
+        <FlagUserPanel
+          userId={userId}
+          isFlagged={!!typedProfile.flagged_at}
+          flagReason={typedProfile.flag_reason}
+        />
       </section>
 
       {/* Danger zone */}
