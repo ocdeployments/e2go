@@ -153,6 +153,9 @@ export default async function AdminPage() {
           <Link href="/admin/quality" className="text-xs text-zinc-400 border border-zinc-800 px-3 py-1.5 hover:border-[#C9A84C]/30 hover:text-[#C9A84C] transition-colors">
             Quality →
           </Link>
+          <Link href="/admin/cost" className="text-xs text-zinc-400 border border-zinc-800 px-3 py-1.5 hover:border-[#C9A84C]/30 hover:text-[#C9A84C] transition-colors">
+            Cost →
+          </Link>
           <Link href="/admin/system-status" className="text-xs text-[#C9A84C] border border-[#C9A84C]/20 px-3 py-1.5 hover:bg-[#C9A84C]/5 transition-colors">
             System Status →
           </Link>
@@ -334,7 +337,11 @@ export default async function AdminPage() {
             <tbody>
               {typedProfiles.map(p => (
                 <tr key={p.id} className="border-b border-zinc-900 hover:bg-zinc-900/40 transition-colors">
-                  <td className="py-3 px-4 text-zinc-300">{emailById[p.id] || '—'}</td>
+                  <td className="py-3 px-4">
+                    <Link href={`/admin/users/${p.id}`} className="text-zinc-300 hover:text-[#C9A84C] transition-colors">
+                      {emailById[p.id] || '—'}
+                    </Link>
+                  </td>
                   <td className="py-3 px-4 text-zinc-400">{[p.first_name, p.last_name].filter(Boolean).join(' ') || '—'}</td>
                   <td className="py-3 px-4">
                     {p.role === 'admin'
