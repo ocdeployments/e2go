@@ -1,6 +1,19 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 24, 2026 — Session 69: Page transitions + login animation + GenerationProgress audit complete. Build clean.
+**Last Updated:** June 24, 2026 — Session 70: Full-app text contrast fix complete. Build clean.
+
+**Session 70 — Full-app readability pass (faded text removal):**
+
+(25) **App-wide text contrast fix** — Raised all low-opacity text colors throughout the entire app to a minimum 0.62 opacity (cream text) / 0.65 (gold text), targeting users in their 40s–60s with aging eyes. Three-pass approach:
+- **Pass 1**: Perl script with `\bcolor\s*:` word-boundary anchoring — safely replaced 570+ `color:` property values across 115 `.tsx`/`.ts` files. Borders/backgrounds on the same line were untouched.
+- **Pass 2**: Targeted the 16 files with ternary-expression text colors that Pass 1 couldn't reach (e.g. `color: condition ? '#C9A84C' : 'rgba(245,240,232,0.35)'`).
+- **Pass 3**: Handled Tailwind arbitrary value classes (`text-[rgba(245,240,232,0.XX)]`), event handler `style.color =` assignments, and `const` colour token variables missed by the CSS-property anchored passes.
+- **`globals.css`**: `--text-muted` raised from `0.35` → `0.68`.
+- Borders, backgrounds, and box-shadows that use the same rgba values were NOT changed.
+- Final grep: 0 remaining text color values below 0.60 opacity.
+- Commit: `598cf76`. Build clean.
+
+**Session 69 — Page transitions + login animation + GenerationProgress audit complete. Build clean.**
 
 **Session 69 — Page transitions, login animation, GenerationProgress audit:**
 
