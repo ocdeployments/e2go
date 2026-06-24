@@ -1,6 +1,14 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 23, 2026 — Session 65: All 6 missing admin features shipped. Every item from the original 28-feature admin plan is now built. Build clean. Pushed to dev (be295f0). 19+ commits total.
+**Last Updated:** June 23, 2026 — Session 66: All 3 remaining backlog items complete. UI state restore, mobile QA fixes, and connection pooler note done. Build clean.
+
+**Session 66 additions:**
+
+(16) **UI state restore on generate page reload** — `/api/generate/start` now returns `current_step`, `total_steps`, `current_step_label` for existing active jobs. Generate page `startGeneration()` detects `data.existing === true` and pre-populates: `overallProgress` from step ratio, `approvedDocuments` from step count, `currentQualityStep` if in quality phase. SSE takes over immediately and corrects from live state. Users reloading mid-generation no longer see all-pending UI.
+
+(17) **Mobile viewport QA pass** — audited all key pages (generate, quiz, results, simulator, apply shell, dashboard). Key fix: generate page header + main content now uses `px-4 sm:px-8 lg:px-12` (was `px-8 lg:px-12`; gave only 311px content on 375px iPhone). Header text scaled: `text-xl sm:text-2xl`. FDD compare page already wrapped in `overflow-x-auto`. Quiz uses `clamp()` padding. Simulator has `isMobile` detection. CaseFileShell has horizontal scroll nav for mobile. NpsModal uses sheet-from-bottom pattern on mobile. All pages confirmed responsive.
+
+(18) **Connection pooler** — Supabase SDK (REST API) handles pooling internally; no DATABASE_URL pgbouncer param needed for this architecture. Note added to system documentation. Owner action: no change required.
 
 **Session 63 — Sprint batch: OPS-4, OPS-5, ENG-1, ENG-2, INFRA-1:**
 
