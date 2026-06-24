@@ -79,7 +79,7 @@ export async function POST(request: Request) {
     // Check no active job already running for this application
     const { data: existingJob } = await supabase
       .from('document_generation_jobs')
-      .select('id, status')
+      .select('id, status, current_step, total_steps, current_step_label')
       .eq('application_id', applicationId)
       .in('status', ['queued', 'running'])
       .order('created_at', { ascending: false })
@@ -91,6 +91,9 @@ export async function POST(request: Request) {
         jobId: existingJob.id,
         message: 'An active generation job already exists',
         existing: true,
+        current_step: existingJob.current_step,
+        total_steps: existingJob.total_steps,
+        current_step_label: existingJob.current_step_label,
       });
     }
 

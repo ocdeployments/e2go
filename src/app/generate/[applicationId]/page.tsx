@@ -353,7 +353,16 @@ export default function GenerateProgressPage() {
       const newJobId = data.jobId;
       setJobId(newJobId);
 
-      if (!data.existing) {
+      if (data.existing) {
+        // Pre-populate progress state so the UI doesn't show all-pending on reload
+        const currentStep = (data.current_step as number) ?? 0;
+        const totalSteps = (data.total_steps as number) ?? 23;
+        setOverallProgress(Math.round((currentStep / totalSteps) * 100));
+        setApprovedDocuments(Math.max(0, Math.min(currentStep - 1, DOCUMENT_LIST.length)));
+        if (currentStep >= 15) {
+          setCurrentQualityStep(currentStep);
+        }
+      } else {
         await fetch(`/api/generate/run/${newJobId}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -506,9 +515,9 @@ export default function GenerateProgressPage() {
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-[#f5f0e8]">
       {/* ZONE 1: CASE HEADER */}
-      <header className="pt-12 pb-8 text-center">
+      <header className="pt-10 pb-8 text-center px-4">
         <h1
-          className="font-light text-2xl tracking-wide italic text-[#C9A84C]"
+          className="font-light text-xl sm:text-2xl tracking-wide italic text-[#C9A84C]"
           style={{ fontFamily: "'Cormorant Garamond', serif" }}
         >
           {isComplete
@@ -634,7 +643,7 @@ export default function GenerateProgressPage() {
         </aside>
 
         {/* ZONE 3: MAIN CONTENT */}
-        <main className="flex-1 px-8 lg:px-12 pb-32">
+        <main className="flex-1 px-4 sm:px-8 lg:px-12 pb-32">
           {/* Mobile progress bar */}
           <div className="lg:hidden mb-6">
             <div className="flex items-center justify-between text-[11px] text-white/40 mb-2">
