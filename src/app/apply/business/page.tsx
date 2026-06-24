@@ -9,6 +9,7 @@ import QuestionLabel from '@/components/apply/questions/QuestionLabel';
 import HelperText from '@/components/apply/questions/HelperText';
 import TextInput from '@/components/apply/questions/TextInput';
 import TextArea from '@/components/apply/questions/TextArea';
+import { useFieldQuality, getQualityBadgeStyle } from '@/hooks/useFieldQuality';
 import OptionButton from '@/components/apply/questions/OptionButton';
 import PreFillBadge from '@/components/apply/questions/PreFillBadge';
 import AdvisoryBlock from '@/components/apply/questions/AdvisoryBlock';
@@ -175,6 +176,7 @@ const ALL_QUESTION_SETS = [
 
 export default function BusinessPage() {
   useTrackSectionVisit("business");
+  const { qualityMap, checkFieldQuality } = useFieldQuality();
 
   const [loading, setLoading] = useState(true);
   const [activeCluster, setActiveCluster] = useState(1);
@@ -329,6 +331,8 @@ export default function BusinessPage() {
         }
         const answer = answers[q.key];
         const isOriginal = answer?.source === 'quiz';
+        const qResult = qualityMap[q.key];
+        const badge = qResult ? getQualityBadgeStyle(qResult.quality) : null;
         return (
           <div key={q.key}>
             {isOriginal && <PreFillBadge isOriginal={true} />}
@@ -346,11 +350,24 @@ export default function BusinessPage() {
                 ))}
               </div>
             ) : q.type === 'textarea' ? (
-              <TextArea
-                value={answer?.value || ''}
-                onChange={(val) => handleAnswerChange(q.key, val)}
-                rows={4}
-              />
+              <>
+                {badge && (
+                  <span style={{ fontSize: '10px', letterSpacing: '0.1em', color: badge.color }}>
+                    {badge.label.toUpperCase()}
+                  </span>
+                )}
+                <TextArea
+                  value={answer?.value || ''}
+                  onChange={(val) => handleAnswerChange(q.key, val)}
+                  onBlur={(val) => checkFieldQuality(q.key, val)}
+                  rows={4}
+                />
+                {qResult?.feedback && qResult.quality !== 'strong' && (
+                  <div style={{ fontSize: '12px', color: 'rgba(245,240,232,0.45)', lineHeight: 1.5, marginTop: '6px' }}>
+                    {qResult.feedback}
+                  </div>
+                )}
+              </>
             ) : (
               <TextInput
                 value={answer?.value || ''}
