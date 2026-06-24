@@ -12,8 +12,8 @@ export interface FieldQualityResult {
 // Fields eligible for quality checks (must match FIELD_CRITERIA keys in /api/case-file/field-quality)
 const QUALITY_CHECK_FIELDS = new Set([
   'M3-S1-01', 'M3-S1-02', 'M3-S1-03',
-  'M3-Q-04', 'M3-B-MKT', 'M3-B-OPS',
-  'M3-H-NEW-01', 'M3-K-TIES',
+  'M3-Q-04', 'M3-K-03', 'M3-G-09',
+  'M3-H-01', 'M3-T-08',
 ]);
 
 export function useFieldQuality(businessType?: string) {

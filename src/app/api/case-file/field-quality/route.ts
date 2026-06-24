@@ -10,13 +10,13 @@ const FIELD_CRITERIA: Record<string, { topic: string; minWords: number; requirem
   'M3-S1-03': { topic: 'management capability statement', minWords: 60, requirements: 'concrete examples of prior management experience, what was managed, how many people, and how this applies to the E-2 business' },
   // Qualifications section
   'M3-Q-04':  { topic: 'professional background summary', minWords: 50, requirements: 'education, specific work history, management experience, and skills relevant to this business category' },
-  // Business section
-  'M3-B-MKT': { topic: 'market analysis', minWords: 60, requirements: 'target customer profile, local market size, competition assessment, and evidence the business can succeed in this location' },
-  'M3-B-OPS': { topic: 'business operations plan', minWords: 50, requirements: 'day-to-day operations, supplier relationships, service delivery, and how the investor will manage these activities personally' },
-  // Investment / source of funds section
-  'M3-H-NEW-01': { topic: 'source of funds narrative', minWords: 40, requirements: 'origin of the capital, how long it was accumulated, and confirmation it is legally available for the E-2 investment' },
-  // Ties section
-  'M3-K-TIES':   { topic: 'ties to home country', minWords: 40, requirements: 'property, family obligations, financial commitments, or business interests that demonstrate genuine intent to return' },
+  // Business section (M3-K-03 = competition/market; M3-G-09 = 90-day ops walkthrough)
+  'M3-K-03': { topic: 'market analysis', minWords: 60, requirements: 'target customer profile, local market size, competition assessment, and evidence the business can succeed in this location' },
+  'M3-G-09': { topic: 'business operations plan', minWords: 50, requirements: 'day-to-day operations, supplier relationships, service delivery, and how the investor will manage these activities personally' },
+  // Investment / source of funds section (M3-H-01 = the detailed fund-trace narrative)
+  'M3-H-01': { topic: 'source of funds narrative', minWords: 40, requirements: 'origin of the capital, how long it was accumulated, and confirmation it is legally available for the E-2 investment' },
+  // Ties section (M3-T-08 = ongoing financial ties to home country)
+  'M3-T-08':   { topic: 'ties to home country', minWords: 40, requirements: 'property, family obligations, financial commitments, or business interests that demonstrate genuine intent to return' },
 };
 
 export async function POST(request: NextRequest) {
