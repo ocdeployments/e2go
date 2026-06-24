@@ -14,6 +14,7 @@ import DenialRiskRadar from '@/components/gap-analysis/DenialRiskRadar';
 import CategoryCard from '@/components/gap-analysis/CategoryCard';
 import PathwaySection from '@/components/gap-analysis/PathwaySection';
 import { analyzePathways, buildPathwayInput, type PathwayAnalysisResult } from '@/lib/pathway-engine';
+import GenerationProgress from '@/components/ui/GenerationProgress';
 
 const supabase = createBrowserSupabaseClient();
 

@@ -18,6 +18,7 @@ import {
 } from '@/lib/simulator-engine';
 import { speakQuestion } from '@/lib/groq-tts';
 import CaseFileSummary from '@/components/simulator/CaseFileSummary';
+import GenerationProgress from '@/components/ui/GenerationProgress';
 import ConversationalSession, { type RawVoiceAnswer } from '@/components/simulator/ConversationalSession';
 import type { SimulatorContext, Question, AnswerEvaluation, CoachingSummary, CompletedSession, QuestionCoaching, DeliveryNote } from '@/types/simulator';
 

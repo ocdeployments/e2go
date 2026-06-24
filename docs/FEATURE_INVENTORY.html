@@ -396,6 +396,62 @@
           <td style="padding:6px 0;color:#4ade80;white-space:nowrap">✅ Fixed</td>
         </tr>
         <tr style="border-bottom:1px solid rgba(245,240,232,0.04)">
+          <td style="padding:6px 12px 6px 0;color:#C9A84C;font-family:monospace;white-space:nowrap">QA-UX-01</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.4);white-space:nowrap">2026-06-24</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.7)">Progress bar audit — codebase scan found 9 loading states across simulator, gap-analysis, and InterviewBrief. States were either: blank white space, a static text label, a spinning character, or skeleton bars. None communicated operation progress, estimated time, or step-by-step status. User experience: waiting with no feedback, no indication of whether the operation was working or had failed.</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.5)">Created src/components/ui/GenerationProgress.tsx — shared animated progress component. Exponential easing (95%×(1−e^(−2.5t/T))), 200ms tick, step cycling every 4s with 400ms fade, gold leading-edge glow dot, snaps to green ✓ when done. Props: isActive, estimatedSeconds, steps[], compact, showEstimate.</td>
+          <td style="padding:6px 0;color:#4ade80;white-space:nowrap">✅ Built</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(245,240,232,0.04)">
+          <td style="padding:6px 12px 6px 0;color:#C9A84C;font-family:monospace;white-space:nowrap">QA-UX-02</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.4);white-space:nowrap">2026-06-24</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.7)">InterviewBrief (Prepare tab) — loading state was skeleton placeholder bars. No percentage, no step messages, no time estimate. Generation takes 90–250s (MIMO fallback to Haiku). User had no feedback during this wait.</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.5)">Replaced with GenerationProgress (estimatedSeconds=90, 7 E-2-specific steps: denial risk assessment → source of funds → investment substantiality → management role → employment plan → business plan → coaching brief). "Usually takes ~2 min" hint shown. Verified rendering at 5% with glow dot and cycling step text.</td>
+          <td style="padding:6px 0;color:#4ade80;white-space:nowrap">✅ Fixed</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(245,240,232,0.04)">
+          <td style="padding:6px 12px 6px 0;color:#C9A84C;font-family:monospace;white-space:nowrap">QA-UX-03</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.4);white-space:nowrap">2026-06-24</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.7)">Simulator evaluating screen (/simulator, screen=evaluating) — was a centred spinner with no context. Appears after interview practice while session is scored. No time estimate, no step breakdown.</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.5)">Replaced with GenerationProgress (estimatedSeconds=30, steps: scoring consistency → denial risk check → evaluating response depth → cross-referencing case file → building feedback report). Centred in full viewport with "Analysing your session" label above.</td>
+          <td style="padding:6px 0;color:#4ade80;white-space:nowrap">✅ Fixed</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(245,240,232,0.04)">
+          <td style="padding:6px 12px 6px 0;color:#C9A84C;font-family:monospace;white-space:nowrap">QA-UX-04</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.4);white-space:nowrap">2026-06-24</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.7)">Simulator coaching loading state — was "⟳ Analyzing..." static text inside a plain div. Coaching report generation (mimo-v2.5-pro, 2400 tokens) takes 15–30s. No progress feedback.</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.5)">Replaced with card containing "Analysing your answers with E-2 expertise…" label + GenerationProgress (estimatedSeconds=15, steps: reviewing answer depth → scoring E-2 knowledge demonstration → checking investment detail quality → building personalised coaching).</td>
+          <td style="padding:6px 0;color:#4ade80;white-space:nowrap">✅ Fixed</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(245,240,232,0.04)">
+          <td style="padding:6px 12px 6px 0;color:#C9A84C;font-family:monospace;white-space:nowrap">QA-UX-05</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.4);white-space:nowrap">2026-06-24</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.7)">Simulator follow-up question generation — both text and voice modes had no loading indicator while the AI generates the next follow-up question. Button was just disabled with no visual feedback that work was in progress.</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.5)">Added compact GenerationProgress (compact=true, estimatedSeconds=12) below the follow-up submit button in both text and voice modes — renders only when followupLoading is true. Bar-only variant keeps the UI clean in the conversation flow.</td>
+          <td style="padding:6px 0;color:#4ade80;white-space:nowrap">✅ Fixed</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(245,240,232,0.04)">
+          <td style="padding:6px 12px 6px 0;color:#C9A84C;font-family:monospace;white-space:nowrap">QA-UX-06</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.4);white-space:nowrap">2026-06-24</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.7)">Gap Analysis AI enrichment banner (/gap-analysis, hasAIAnalysis=false) — "Run Analysis" button triggers LLM enrichment per category via /api/gap-analysis/enrich. Previously no loading state after clicking — just a disabled button, leaving user unsure if it was working.</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.5)">Restructured banner to wrap content + GenerationProgress. When analysisRunning=true, bar appears below button row (estimatedSeconds=20, steps: scoring source of funds → evaluating investment substantiality → checking management role credentials → assessing employment creation plan → running denial risk cross-check → building remediation guidance). showEstimate=true.</td>
+          <td style="padding:6px 0;color:#4ade80;white-space:nowrap">✅ Fixed</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(245,240,232,0.04)">
+          <td style="padding:6px 12px 6px 0;color:#C9A84C;font-family:monospace;white-space:nowrap">QA-UX-07</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.4);white-space:nowrap">2026-06-24</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.7)">Gap Analysis re-analysis prompt (hasAIAnalysis=true, re-run button) — same issue as QA-UX-06 on subsequent runs. analysisRunning state existed but was not wired to any loading UI.</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.5)">Same restructure as QA-UX-06 applied to the re-analysis banner variant. GenerationProgress renders conditionally when analysisRunning=true on second/subsequent runs.</td>
+          <td style="padding:6px 0;color:#4ade80;white-space:nowrap">✅ Fixed</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(245,240,232,0.04)">
+          <td style="padding:6px 12px 6px 0;color:#C9A84C;font-family:monospace;white-space:nowrap">QA-UX-08</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.4);white-space:nowrap">2026-06-24</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.7)">Remaining loading states not requiring GenerationProgress: (1) Document generation (/generate) — already has custom SSE streaming progress with per-document section tracking. (2) FDD analysis — already has 5-stage pipeline progress (Fetch → Extract → Score → Territory → Questions). (3) Voice transcription — sub-2s, Groq Whisper, loader already shown inline. These 3 are adequately handled.</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.5)">No change needed. Documented for completeness. Full audit: 9 loading states found, 6 upgraded with GenerationProgress, 3 already had appropriate purpose-built loaders.</td>
+          <td style="padding:6px 0;color:rgba(245,240,232,0.4);white-space:nowrap">— N/A</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(245,240,232,0.04)">
           <td style="padding:6px 12px 6px 0;color:#C9A84C;font-family:monospace;white-space:nowrap">QA-SMOKE-01</td>
           <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.4);white-space:nowrap">2026-06-23</td>
           <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.7)">Full autonomous smoke test — 20 pages verified with test-uk@example.com (James Windsor). All pages rendered, buttons responded, CTAs navigated correctly. Pages covered: /, /pricing, /login, /results, /dashboard, /apply, /apply/story, /apply/business, /apply/investment, /gap-analysis, /simulator, /simulator/quick-start, /simulator/case-file, /simulator/interview-day, /simulator/outcome, /fdd, /generate/{id}, /documents/{id}, /quiz (redirects—correct), /settings.</td>

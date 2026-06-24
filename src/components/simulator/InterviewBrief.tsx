@@ -1,12 +1,24 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import GenerationProgress from '@/components/ui/GenerationProgress';
 import type {
   InterviewBriefData,
   CategoryScore,
   DenialRisk,
   GapAction,
 } from '@/app/api/simulator/interview-prep/route';
+
+// Steps cycled in the interview prep loading state
+const PREP_STEPS = [
+  'Running 15-factor denial risk assessment…',
+  'Scoring source of funds evidence…',
+  'Checking investment substantiality…',
+  'Evaluating management role depth…',
+  'Analysing employment creation plan…',
+  'Reviewing business plan viability…',
+  'Building your personalised coaching brief…',
+];
 
 interface InterviewBriefProps {
   applicationId: string;
@@ -290,21 +302,17 @@ function LoadingState() {
     <div style={s.root}>
       <div style={s.header}>
         <span style={s.eyebrow}>INTERVIEW PREPARATION REPORT</span>
-        <span style={{ fontSize: '11px', color: 'rgba(201,168,76,0.4)', fontFamily: "'DM Sans', sans-serif", fontStyle: 'italic' as const }}>
+        <span style={{ fontSize: '11px', color: 'rgba(201,168,76,0.5)', fontFamily: "'DM Sans', sans-serif", fontStyle: 'italic' as const }}>
           Analysing your case…
         </span>
       </div>
-      <div style={{ padding: '32px 0' }}>
-        {[90, 75, 60, 45].map((w, i) => (
-          <div key={i} style={{
-            height: '10px', width: `${w}%`, background: 'rgba(201,168,76,0.07)',
-            borderRadius: '2px', marginBottom: '12px',
-            animation: 'pulse 1.5s ease-in-out infinite',
-          }} />
-        ))}
-        <p style={{ fontSize: '12px', color: 'rgba(245,240,232,0.25)', marginTop: '20px', fontFamily: "'DM Sans', sans-serif" }}>
-          Running 15-factor denial risk assessment and building your personalised prep brief…
-        </p>
+      <div style={{ padding: '28px 0 24px' }}>
+        <GenerationProgress
+          isActive={true}
+          estimatedSeconds={90}
+          steps={PREP_STEPS}
+          showEstimate={true}
+        />
       </div>
     </div>
   );
