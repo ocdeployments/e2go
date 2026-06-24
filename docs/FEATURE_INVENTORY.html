@@ -309,6 +309,61 @@
     <div class="test-progress-bar"><div class="test-progress-fill" id="test-progress-fill" style="width:0%"></div></div>
     <span class="test-progress-text" id="test-progress-pct">0%</span>
   </div>
+
+  <!-- ── QA Audit Log — dated fix record, never delete entries ── -->
+  <div style="padding:16px 28px 0;border-bottom:1px solid rgba(201,168,76,0.1);margin-bottom:0">
+    <div style="font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:rgba(201,168,76,0.6);font-weight:600;margin-bottom:10px">QA Audit Log — Autonomous Pass Results</div>
+    <table style="width:100%;font-size:11px;border-collapse:collapse">
+      <thead>
+        <tr style="border-bottom:1px solid rgba(201,168,76,0.12)">
+          <th style="text-align:left;padding:4px 12px 4px 0;color:rgba(201,168,76,0.5);font-weight:600;white-space:nowrap">ID</th>
+          <th style="text-align:left;padding:4px 12px 4px 0;color:rgba(201,168,76,0.5);font-weight:600;white-space:nowrap">Date</th>
+          <th style="text-align:left;padding:4px 12px 4px 0;color:rgba(201,168,76,0.5);font-weight:600">Issue Found</th>
+          <th style="text-align:left;padding:4px 12px 4px 0;color:rgba(201,168,76,0.5);font-weight:600">Fix Applied</th>
+          <th style="text-align:left;padding:4px 0;color:rgba(201,168,76,0.5);font-weight:600">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid rgba(245,240,232,0.04)">
+          <td style="padding:6px 12px 6px 0;color:#C9A84C;font-family:monospace;white-space:nowrap">QA-SEC-01</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.4);white-space:nowrap">2026-06-23</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.7)">/api/admin/cost-summary had NO auth — returned full LLM cost data to unauthenticated requests</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.5)">Added getRequestingAdmin() gate returning 403 for non-admins</td>
+          <td style="padding:6px 0;color:#4ade80;white-space:nowrap">✅ Fixed</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(245,240,232,0.04)">
+          <td style="padding:6px 12px 6px 0;color:#C9A84C;font-family:monospace;white-space:nowrap">QA-SEC-02</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.4);white-space:nowrap">2026-06-23</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.7)">/api/admin/health-detail had NO auth — exposed service health, stuck jobs, API latency publicly</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.5)">Added getRequestingAdmin() gate returning 403 for non-admins</td>
+          <td style="padding:6px 0;color:#4ade80;white-space:nowrap">✅ Fixed</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(245,240,232,0.04)">
+          <td style="padding:6px 12px 6px 0;color:#C9A84C;font-family:monospace;white-space:nowrap">QA-SEC-03</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.4);white-space:nowrap">2026-06-23</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.7)">Admin page role gate: investigated — admin/layout.tsx already enforces role=admin via profiles table check + redirect("/")</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.5)">Added per-page requireAdmin() as defence-in-depth on cost/quality/revenue/users pages. Layout confirmed as primary gate.</td>
+          <td style="padding:6px 0;color:#4ade80;white-space:nowrap">✅ Confirmed + hardened</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(245,240,232,0.04)">
+          <td style="padding:6px 12px 6px 0;color:#C9A84C;font-family:monospace;white-space:nowrap">QA-BUILD-01</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.4);white-space:nowrap">2026-06-23</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.7)">Vercel cron */5 * * * * blocked deployment — Hobby plan only allows daily crons</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.5)">health-watchdog changed to 0 3 * * * (daily 3am UTC). Full resolution: upgrade to Vercel Pro.</td>
+          <td style="padding:6px 0;color:#facc15;white-space:nowrap">⚡ Partial</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(245,240,232,0.04)">
+          <td style="padding:6px 12px 6px 0;color:#C9A84C;font-family:monospace;white-space:nowrap">QA-AUTO-01</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.4);white-space:nowrap">2026-06-23</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.7)">Autonomous pass: 24/24 security + route checks passed. No API keys in client bundles. All auth gates present. Simulator model constraint (mimo-v2.5) intact. FAQ on OpenRouter confirmed.</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.5)">No code change required.</td>
+          <td style="padding:6px 0;color:#4ade80;white-space:nowrap">✅ Pass</td>
+        </tr>
+      </tbody>
+    </table>
+    <p style="font-size:10px;color:rgba(245,240,232,0.2);padding:10px 0 12px">All entries are permanent. Add new rows above; never delete existing rows.</p>
+  </div>
+
   <div class="test-section" id="test-container"></div>
 </div>
 
