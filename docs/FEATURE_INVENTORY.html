@@ -744,7 +744,7 @@ const DB_TABLES = [
   {name:'llm_cost_log', desc:'Per-call AI cost tracking. Columns: user_id, task, model, provider, cost_usd, tokens_in, tokens_out, latency_ms, created_at. Written by all AI routes via logLlmCost(). Read by /admin/cost.', notes:'Applied migration S63'},
   {name:'cron_log', desc:'Cron job execution audit trail. Columns: job_name, status, duration_ms, error, created_at. Written by /api/cron/health-watchdog on each run.', notes:'Applied migration S63'},
   {name:'admin_audit_log', desc:'Admin action audit trail. Columns: admin_user_id, action, target_user_id, resource, details, created_at. Written by all admin mutation routes (tier-override, settings, etc.).', notes:'Applied migration S63'},
-  {name:'nps_scores', desc:'NPS survey responses. Columns: user_id, score (0–10 int), comment, trigger_event, created_at. Rate-limited to 1 submission per user per 7 days. Collected post-download via NpsModal.', notes:'SQL available at /admin/quality — NOT YET CREATED in Supabase (owner action required)'},
+  {name:'nps_scores', desc:'NPS survey responses. Columns: user_id, score (0–10 int), comment, trigger_event, created_at. Rate-limited to 1 submission per user per 7 days. Collected post-download via NpsModal.', notes:'Applied S64 — table + RLS confirmed in Supabase by owner'},
 ];
 
 // ─── RENDER ──────────────────────────────────────────────────────────────────
@@ -1418,11 +1418,11 @@ const SPRINTS = [
   },
   {
     id:'INFRA-1', name:'Infrastructure Hardening', priority:'high', effort:'1 session', status:'partial',
-    desc:'⚡ PARTIAL S64 — P0 ✅: /api/faq/ask switched to OpenRouter (xiaomi/mimo-v2.5), Anthropic SDK removed. Remaining: P1 connection pooler (owner action — add ?pgbouncer=true to DATABASE_URL in Vercel), pipeline checkpoint resume (unbuilt), soft-delete for account deletion (unbuilt).',
+    desc:'⚡ PARTIAL S64 — P0 ✅: /api/faq/ask OpenRouter-only. Pipeline checkpoint resume ✅: connectSSE() exponential backoff (3s→6s→12s→30s cap), startGeneration() skips run call for existing jobs. Remaining: connection pooler (owner action — ?pgbouncer=true), UI state restore from pipeline_log on reload, soft-delete.',
     items:[
       {name:'/api/faq/ask — Anthropic SDK violation (P0)', desc:'Switch from @anthropic-ai/sdk to OpenRouter via callLLM() using xiaomi/mimo-v2.5. Anthropic key must only exist in generation-engine.ts and /api/fdd/* routes.'},
       {name:'Supabase connection pooler (P1)', desc:'Add ?pgbouncer=true&connection_limit=1 to SUPABASE_URL. Prevents connection exhaustion under concurrent load.'},
-      {name:'Generation pipeline resume from checkpoint (P1)', desc:'Query generation_pipeline_log for last completed step on SSE reconnect. Resume from step N instead of restarting from step 1.'},
+      {name:'Generation pipeline resume from checkpoint (P1)', desc:'✅ PARTIAL S64 — SSE reconnect with exponential backoff done; existing-job detection skips re-run. Remaining: restore completed-step UI state from generation_pipeline_log on fresh page load.'},
       {name:'Per-user generation rate limit (P1)', desc:'Upstash Redis: sliding window, daily limit per user_id. Prevents a single user from running the full pipeline repeatedly.'},
       {name:'Soft-delete for account deletion (P2)', desc:'Add deleted_at to applications + profiles. Run actual purge after 30-day grace period. Prevents accidental permanent data loss.'},
     ]

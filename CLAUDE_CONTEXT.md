@@ -1,6 +1,24 @@
 # CLAUDE_CONTEXT.md — E2go
 ## Master Context for Every Claude Code Session
-**Version:** June 23, 2026 — Sessions 4-60 complete. DOC sprint + ZIP pipeline complete. 14 always-generated documents in pipeline (steps 2-15); quality steps 16-24; 3 additional conditional docs (declaration_spouse, property_portfolio, resume_spouse). ConsulateBriefing shows full 15-doc manifest split into always/conditional sections. Download ZIP emits all docs across 11 tabs (A–K). docx-package-constants.ts is now the single source of truth for DOC_DISPLAY_NAMES, DOC_TYPE_TAB_MAP, TAB_SECTION_TITLES, TAB_ORDER. Build clean. Branch: dev. Last push: (Session 60 commits pending push).
+**Version:** June 23, 2026 — Session 64. All OPS + ENG + INFRA sprints complete or partial. Admin command center fully built (5 sub-pages). NPS pipeline live. Pipeline checkpoint resume shipped. Build clean on dev (869a75c).
+
+## SPRINT STATUS
+- OPS-1 (API Cost Intelligence): ✅ COMPLETE — llm_cost_log, cost logging in callLLM(), /admin/cost page
+- OPS-2 (System Health): ✅ COMPLETE — health-watchdog cron (5 min), /admin/system-status, kill switch, cron_log
+- OPS-3 (Admin Command Center): ✅ COMPLETE — /admin rebuilt, /admin/users/[userId], tier override, admin_audit_log
+- OPS-4 (Revenue Intelligence): ✅ COMPLETE — /admin/revenue, MoM, projection, churn signals, funnel
+- OPS-5 (Quality & Growth): ⚡ PARTIAL — /admin/quality built, NPS modal + submit route live. Remaining: mobile viewport QA pass (70+ routes at 390px)
+- ENG-1 (Engine Quality Priority): ✅ COMPLETE — KB→docgen, coaching memory, multi-turn probing all confirmed built
+- ENG-2 (Engine Quality Advanced): ⚡ PARTIAL — FDD prompt tuning (+1.0pts), adaptive difficulty (+0.3pts) done. Archetype variants + quiz conditional branches already built (no gap).
+- INFRA-1 (Infrastructure Hardening): ⚡ PARTIAL — FAQ route Anthropic violation fixed (P0). SSE backoff + existing-job skip done. Remaining: connection pooler (owner action), soft-delete SQL migration
+
+## KEY RULES — NEVER BREAK
+- ANTHROPIC_API_KEY: ONLY in generation-engine.ts + /api/fdd/* routes
+- callLLM(): OpenRouter only — never route through Anthropic SDK
+- Simulator routes: ONLY xiaomi/mimo-v2.5 or xiaomi/mimo-v2.5-pro
+- Dashboard: server component — never add "use client"
+- createServiceClient(): only in server-side API routes
+- Branch: dev — never commit to main
 **Read this entire file before doing anything.**
 **Then read BUILD_TRACKER.md.**
 
@@ -241,8 +259,13 @@ Repo: github.com/ocdeployments/e2go
 - /fdd/questions/[fddId] — Questions generator (flag→question map, profile match, filter by audience)
 - /fdd/report/[fddId] — Final report + freemium teaser (hasAccess gate, platform integration)
 
-### Admin
-- /admin — Admin panel (never linked publicly)
+### Admin (never linked publicly — middleware-gated to role=admin)
+- /admin — Command center (10 parallel queries, kill switch, overview cards, cost chart, stuck users, recent payments)
+- /admin/revenue — Revenue intelligence (MoM, projection, LTV by tier, churn signals, conversion funnel)
+- /admin/quality — Quality & growth (generation quality, FDD extraction, NPS data, prompt version registry)
+- /admin/system-status — System health (kill switch toggle, cron log, stuck job remediation, API status)
+- /admin/users/[userId] — User detail (profile, payments, AI costs, sim sessions, tier override)
+- /admin/cost — Cost intelligence (7-day chart, cost by task, cost by model, top 10 users, burn projection)
 
 ---
 
@@ -358,6 +381,14 @@ from the list above before being marked done.
 Read docs/DESIGN_REFERENCE.html before writing any component.
 Zero border-radius everywhere. No glassmorphism. No blue selection
 borders. No rounded corners. No external image URLs in UI.
+
+### RULE 1A — NEW TABLES (added S63–S64)
+Four new tables are live in Supabase:
+- llm_cost_log — per-call AI cost tracking (model, route, tokens, cost_usd, latency_ms)
+- cron_log — cron execution audit (job_name, status, duration_ms, error)
+- admin_audit_log — admin action log (action, admin_user_id, target_user_id, resource)
+- nps_scores — NPS responses (user_id, score 0–10, comment, trigger_event) — 7-day rate limit enforced server-side
+All four have RLS enabled. Read via service role client only.
 
 ### RULE 2 — API KEY ROUTING
 OPENROUTER_API_KEY → all app AI features.
