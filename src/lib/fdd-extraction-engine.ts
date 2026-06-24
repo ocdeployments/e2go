@@ -167,11 +167,21 @@ For each field, return an object with:
 If a field is not present, set value to null and _conf to "not_disclosed".
 Do not fabricate values. Do not infer beyond what the text states.
 
+IMPORTANT — PDF TEXT ARTIFACTS: FDD text extracted from PDFs often has table cells run together, random line breaks mid-number, or dollar signs detached from their amounts. Read dollar amounts and percentages carefully even when formatting is garbled.
+
 IMPORTANT — adapt to franchise category terminology:
-- Home care / senior care FDDs: revenue may appear as "gross billings", "client billings", or "annualised territory billings" rather than "gross revenue" or "AUV". Caregiver headcount replaces employee count. Item 19 often shows billing ranges per territory, not per-unit average volumes.
-- Home-based / mobile FDDs: minimal equipment costs; working capital dominates Item 7.
-- Food / retail FDDs: use standard AUV, covers, seat counts.
-Match field values to the actual terminology in the document — do not require exact label matches.`;
+- Home care / senior care FDDs: revenue appears as "gross billings", "client billings", "annualized territory billings", or "annualized run rate". Caregiver headcount replaces employee count. Item 19 shows billing ranges per territory, not per-unit AUV. Map these to the requested revenue fields.
+- Fitness / gym / wellness: members rather than customers; EFT revenue; "mature location" or "ramp period" language for AUV.
+- Education / tutoring / childcare: "enrollment", "student capacity", "center-based" vs "home-based". AUV may be "annual revenue per learning center".
+- Healthcare / therapy / medical: "patient visits", "reimbursement rates", "Medicare/Medicaid". Revenue may be disclosed as a billing range rather than AUV.
+- B2B services (staffing, consulting, facilities, cleaning): AUV may be "gross billings" or "contracted revenue". Very little equipment; working capital dominates Item 7.
+- Home-based / mobile services: minimal or zero real estate; working capital and vehicle costs dominate Item 7.
+- Food / retail / coffee: standard AUV, covers, seat counts, COGS%, food cost%.
+- Automotive: bay counts, ticket averages, parts vs labor revenue.
+
+For ALL categories: do not require exact label matches — identify the underlying metric and map it to the correct field. If the document uses non-standard terminology, preserve the actual label from the document in the _quote field.
+
+NUMERIC VALUES: Always extract as integers (no $ signs, no commas). Percentages as decimals (e.g. 6% → 0.06). Ranges → extract min and max separately where fields request both.`;
 
 async function extractChunkA(text: string): Promise<Record<string, FddFieldMeta>> {
   const userPrompt = `FDD text (Items 1–7):
@@ -294,18 +304,26 @@ async function extractChunkD(text: string): Promise<Record<string, FddFieldMeta>
   const userPrompt = `FDD text (Items 19–21 — Financial Performance, Outlets, Audited Financials):
 ${sanitizeForPrompt(text)}
 
+ITEM 19 EXTRACTION NOTES:
+- Item 19 data is often in tables. PDF extraction may mangle column alignment — read carefully.
+- "AUV" = Average Unit Volume = average annual gross revenue per unit. Some FDDs call this "average annual gross sales", "average annual billings", or "average annualized revenue". Extract the single most representative average figure.
+- Home care / territory-based FDDs: Item 19 shows annualized billing ranges per territory. Use the midpoint of the median range as item19_median; the overall system average (if stated) as item19_auv.
+- If multiple tiers are shown (e.g. by age of location, unit type, or region), use the ALL-UNIT or FULL-SYSTEM row. If no aggregate is given, use the franchisee-only row (exclude company/affiliate units).
+- item19_pct_system_included: if the document says "X of Y units" or "X franchisees representing Y% of the system", extract Y as a float (0.72 = 72%). If all units included, value = 1.0.
+- item19_cherry_pick_flag: set true if the inclusion criteria systematically exclude underperforming units (e.g., "units open 24+ months only", "units achieving breakeven", "top quartile").
+
 Extract these fields and return as a single JSON object:
 
 {
   "item19_present": { "value": true/false, "_page": null, "_quote": "...", "_conf": "high" },
-  "item19_metric_type": { "value": "gross_revenue|net_income|EBITDA|multiple|null", ... },
+  "item19_metric_type": { "value": "gross_revenue|net_income|EBITDA|gross_billings|multiple|null", ... },
   "item19_fiscal_year": { "value": integer or null, "_quote": "fiscal year the Item 19 data covers", ... },
-  "item19_auv": { "value": integer USD or null, "_quote": "average unit volume figure", ... },
+  "item19_auv": { "value": integer USD or null, "_quote": "average unit volume or equivalent figure", ... },
   "item19_median": { "value": integer USD or null, ... },
   "item19_mean": { "value": integer USD or null, ... },
   "item19_high": { "value": integer USD or null, ... },
   "item19_low": { "value": integer USD or null, ... },
-  "item19_units_included": { "value": integer or null, ... },
+  "item19_units_included": { "value": integer or null, "_quote": "number of units or territories in the dataset", ... },
   "item19_pct_system_included": { "value": float 0-1 or null, "_quote": "e.g. 0.72 for 72% of system", ... },
   "item19_includes_franchisee_units": { "value": true/false, "_quote": "false if company/affiliate units only", ... },
   "item19_footnote_exclusions": { "value": "what was excluded and why, or null", ... },
@@ -498,15 +516,29 @@ async function extractCriticalFieldsRecovery(
     const v = existing[f]?.value;
     return v === null || v === undefined;
   });
-  if (missing.length < 3) return {}; // enough populated — skip recovery
+  if (missing.length < 2) return {}; // enough populated — skip recovery
 
-  const snippet = sanitizeForPrompt(text.slice(0, MAX_CHUNK_CHARS));
+  // For recovery: search the full document start + financial sections
+  const fullSnippet = sanitizeForPrompt(
+    text.slice(0, Math.floor(MAX_CHUNK_CHARS * 0.6)) +
+    '\n\n[...]\n\n' +
+    text.slice(Math.floor(text.length * 0.55), Math.floor(text.length * 0.55) + Math.floor(MAX_CHUNK_CHARS * 0.4))
+  );
 
-  const prompt = `FDD text (first portion — search entire text for these specific fields):
-${snippet}
+  const prompt = `FDD text (full document excerpt — searching for missing critical fields):
+${fullSnippet}
 
-Several critical fields were not found in the initial extraction. Search carefully for them now.
-The document may use non-standard terminology — adapt accordingly (e.g. "gross billings" for revenue, "annualised territory" for AUV).
+The following critical fields were not extracted in earlier passes. Search the ENTIRE text carefully — these values may appear in:
+- Item 5 (fees) for franchise fee and royalty data
+- Item 7 (estimated initial investment) for investment ranges
+- Item 19 (financial performance representations) for AUV data
+- The cover page or introduction for basic fee summaries
+
+The document may use non-standard terminology. Common variations:
+- "initial franchise fee" → may appear as "license fee", "entry fee", "initial rights fee"
+- "royalty" → may appear as "service fee", "continuing fee", "management fee"
+- "AUV" / "average unit volume" → may appear as "average annual gross revenue", "average territory billings", "average annualized billings", "median gross sales"
+- "total investment min/max" → look for Item 7 table with "Estimated Initial Investment" column showing low/high range
 
 Return ONLY a JSON object for these fields (omit any that are truly not present):
 ${JSON.stringify(Object.fromEntries(missing.map(f => [f, { value: null, _page: null, _quote: null, _conf: 'not_disclosed' }])), null, 2)}`;
