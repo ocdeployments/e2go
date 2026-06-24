@@ -530,7 +530,52 @@ export function generateQuestions(context: SimulatorContext): Question[] {
   });
   fddProbes.forEach(q => questions.push(q));
 
+  // === ADAPTIVE ESCALATION — for strong profiles with few probing questions ===
+  // When profile scores are healthy (few weak-point or gap probes triggered),
+  // a prepared applicant would face harder, more adversarial officer questions.
+  const probeCount = questions.filter(
+    q => q.category === 'weak_point_probe' || q.category === 'gap_probe'
+  ).length;
+
+  if (probeCount < 2 && questions.length < 11) {
+    const escalationPool = getEscalationQuestions(context);
+    const escalation = shuffle(escalationPool).slice(0, 2);
+    escalation.forEach((q, i) => {
+      questions.push({ ...q, id: `ESC-0${i + 1}` });
+    });
+  }
+
   return questions.slice(0, 12);
+}
+
+/**
+ * Escalation questions — adversarial probes used when a profile has few weak points.
+ * These simulate the harder questions a skeptical officer asks of a well-prepared applicant.
+ */
+function getEscalationQuestions(context: SimulatorContext): Question[] {
+  const inv = context.investmentAmount > 0 ? `$${context.investmentAmount.toLocaleString()}` : 'your investment';
+  const biz = context.businessName;
+  const esc = (text: string): Question => ({ id: 'ESC-X', text, category: 'weak_point_probe' as const });
+
+  const pool: Question[] = [
+    esc(`Why do you need to be physically present in the United States to run ${biz}? Could this business be operated remotely from abroad?`),
+    esc(`If your E-2 is approved and the business underperforms its projections — say, 40% below Year 1 targets — what specifically would you do?`),
+    esc(`${inv} in a single enterprise is a substantial commitment. What due diligence did you do before committing this amount, and what validated your confidence?`),
+    esc('How are you different from a passive investor who merely owns a share of a business? Give me a specific, concrete example of a management decision you made in the last month.'),
+    esc('What is your plan when your E-2 status expires? Walk me through exactly how you intend to maintain legal status long-term.'),
+    esc(`You are entering a competitive market. Name your two or three closest competitors and explain why your customers would choose ${biz} over them.`),
+    esc('If the business had to cease operations tomorrow, what would happen to the investment funds already committed? Have they been fully deployed?'),
+    esc('What specific commitment have you made to your home country that guarantees you will return when the visa expires or is revoked?'),
+  ];
+
+  // Filter out questions that overlap with already-triggered probes
+  const skipIfDenial = context.priorVisaDenial;
+  const skipIfIntentRisk = context.immigrantIntentRisk !== 'low';
+  return pool.filter(q => {
+    if (skipIfDenial && q.text.includes('expire')) return false;
+    if (skipIfIntentRisk && q.text.includes('home country')) return false;
+    return true;
+  });
 }
 
 /**
