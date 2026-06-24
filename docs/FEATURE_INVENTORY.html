@@ -189,9 +189,46 @@
   .test-progress-bar { flex: 1; height: 3px; background: rgba(245,240,232,0.08); border-radius: 2px; overflow: hidden; }
   .test-progress-fill { height: 100%; background: #C9A84C; border-radius: 2px; transition: width 0.3s; }
   .test-progress-text { font-size: 11px; color: rgba(201,168,76,0.7); white-space: nowrap; }
+  .smoke-account { font-size: 9px; font-weight: 400; color: rgba(201,168,76,0.45); text-transform: none; letter-spacing: 0; margin-left: 10px; border: 1px solid rgba(201,168,76,0.15); padding: 1px 6px; border-radius: 2px; }
+  .smoke-note { padding: 8px 28px 14px; color: rgba(245,240,232,0.35); font-size: 11px; line-height: 1.6; border-bottom: 1px solid rgba(201,168,76,0.08); margin-bottom: 4px; }
+  .tag-smoke { background: rgba(99,102,241,0.1); color: #a5b4fc; border: 1px solid rgba(99,102,241,0.2); }
   .gap-name { font-size: 12px; font-weight: 500; color: #f5f0e8; }
   .gap-desc { font-size: 11px; color: rgba(245,240,232,0.4); margin-top: 2px; }
 
+  /* ── Roadmap tab ── */
+  .roadmap-pane { padding: 20px 28px; }
+  .roadmap-section-title { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(201,168,76,0.5); margin-bottom: 16px; font-weight: 700; border-bottom: 1px solid rgba(201,168,76,0.1); padding-bottom: 8px; margin-top: 32px; }
+  .roadmap-section-title:first-child { margin-top: 0; }
+  .sprint-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 14px; margin-bottom: 8px; }
+  .sprint-card { border: 1px solid rgba(201,168,76,0.12); padding: 16px; background: rgba(201,168,76,0.02); }
+  .sprint-header { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
+  .sprint-id { font-size: 10px; font-family: 'SF Mono','Consolas',monospace; color: #C9A84C; font-weight: 700; background: rgba(201,168,76,0.1); padding: 2px 7px; flex-shrink: 0; }
+  .sprint-priority { font-size: 9px; padding: 2px 6px; font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+  .sprint-name { font-size: 13px; font-weight: 600; color: #f5f0e8; flex: 1; }
+  .sprint-effort { font-size: 9px; color: rgba(245,240,232,0.3); white-space: nowrap; border: 1px solid rgba(245,240,232,0.1); padding: 1px 5px; margin-top: 1px; }
+  .sprint-desc { font-size: 11px; color: rgba(245,240,232,0.4); margin-bottom: 10px; line-height: 1.5; border-left: 2px solid rgba(201,168,76,0.15); padding-left: 8px; }
+  .sprint-item { display: flex; align-items: flex-start; gap: 8px; padding: 5px 0; border-bottom: 1px solid rgba(201,168,76,0.04); }
+  .sprint-item:last-child { border-bottom: none; }
+  .sprint-dot { width: 5px; height: 5px; border-radius: 50%; background: rgba(201,168,76,0.3); flex-shrink: 0; margin-top: 5px; }
+  .sprint-item-body { flex: 1; }
+  .sprint-item-name { font-size: 11px; color: rgba(245,240,232,0.65); font-weight: 500; }
+  .sprint-item-desc { font-size: 10px; color: rgba(245,240,232,0.28); margin-top: 1px; line-height: 1.4; }
+  /* Engine quality */
+  .engine-overall-row { display: flex; align-items: center; gap: 24px; padding: 16px 20px; border: 1px solid rgba(201,168,76,0.2); background: rgba(201,168,76,0.03); margin-bottom: 16px; flex-wrap: wrap; }
+  .engine-overall-num { font-size: 40px; font-family: 'Cormorant Garamond',serif; color: #C9A84C; line-height: 1; }
+  .engine-overall-meta { display: flex; flex-direction: column; gap: 3px; }
+  .engine-overall-label { font-size: 13px; font-weight: 600; color: rgba(245,240,232,0.7); }
+  .engine-overall-sub { font-size: 10px; color: rgba(245,240,232,0.3); }
+  .engine-score-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; margin-bottom: 24px; }
+  .engine-score-card { padding: 10px 12px; border: 1px solid rgba(201,168,76,0.08); background: rgba(10,10,10,0.4); }
+  .engine-score-name { font-size: 10px; font-family: 'SF Mono','Consolas',monospace; color: rgba(201,168,76,0.7); margin-bottom: 6px; }
+  .engine-score-bar { height: 2px; background: rgba(245,240,232,0.07); border-radius: 1px; overflow: hidden; margin-bottom: 4px; }
+  .engine-score-fill { height: 100%; background: #C9A84C; border-radius: 1px; }
+  .engine-score-nums { display: flex; justify-content: space-between; font-size: 9px; color: rgba(245,240,232,0.3); }
+  .ci-gap-item { display: flex; align-items: flex-start; gap: 10px; padding: 7px 0; border-bottom: 1px solid rgba(201,168,76,0.05); }
+  .ci-gap-impact { font-size: 9px; color: #4ade80; border: 1px solid rgba(74,222,128,0.2); padding: 1px 7px; flex-shrink: 0; margin-top: 2px; font-weight: 700; font-family: monospace; white-space: nowrap; }
+  .ci-gap-text { font-size: 12px; color: rgba(245,240,232,0.65); }
+  .ci-gap-sprint { font-size: 10px; color: rgba(201,168,76,0.4); margin-top: 1px; }
   /* ── Engines ── */
   .engine-grid { padding: 20px 28px; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
   .engine-card { border: 1px solid rgba(201,168,76,0.12); padding: 14px; background: rgba(201,168,76,0.02); }
@@ -212,7 +249,7 @@
 
 <div class="topbar">
   <div>
-    <div class="subtitle">E2go · Architecture Audit · June 23, 2026 · Session 60 — DOC Sprint Complete</div>
+    <div class="subtitle">E2go · Architecture Audit · June 23, 2026 · Session 64 — Admin Command Center + NPS + Cost Intelligence</div>
     <h1>Complete Feature Inventory</h1>
   </div>
   <div class="legend">
@@ -231,6 +268,8 @@
   <div class="tab" onclick="switchTab('engines',this)">Engines</div>
   <div class="tab" onclick="switchTab('db',this)">Database</div>
   <div class="tab" onclick="switchTab('testing',this)">Testing</div>
+  <div class="tab" onclick="switchTab('smoke',this)">Smoke Test</div>
+  <div class="tab" onclick="switchTab('roadmap',this)">Roadmap</div>
 </div>
 
 <!-- ═══════ PHASES ═══════ -->
@@ -271,6 +310,25 @@
     <span class="test-progress-text" id="test-progress-pct">0%</span>
   </div>
   <div class="test-section" id="test-container"></div>
+</div>
+
+<!-- ═══════ SMOKE TEST ═══════ -->
+<div class="pane" id="pane-smoke">
+  <div class="test-progress">
+    <span class="test-progress-text" id="smoke-progress-text">0 / 0 verified</span>
+    <div class="test-progress-bar"><div class="test-progress-fill" id="smoke-progress-fill" style="width:0%"></div></div>
+    <span class="test-progress-text" id="smoke-progress-pct">0%</span>
+  </div>
+  <div class="smoke-note">Physical browser walk-through — log in with each test account and verify every page, button, and link. Reference: QA Sessions 53–54 (QA_AUDIT.md). Test accounts: A = romyjames@gmail.com (Canada/admin), B = test-france@example.com / TestFrance2026! (flagged), C = test-uk@example.com / TestUK2026! (premium). Mark an item only after physically confirming it in a real browser session.</div>
+  <div class="test-section" id="smoke-container"></div>
+</div>
+
+<!-- ═══════ ROADMAP ═══════ -->
+<div class="pane" id="pane-roadmap">
+  <div class="roadmap-pane">
+    <div id="roadmap-engine-container"></div>
+    <div id="roadmap-sprint-container"></div>
+  </div>
 </div>
 
 <script>
@@ -371,7 +429,14 @@ const PHASES = [
       {status:'built', name:'Module 3 Tab D — AI Guided Story', route:'/apply/module3/d', desc:'Authenticated AI chat via /api/ai (Upstash Redis rate-limited: 10 req/60s/user). Helps applicants write their immigration story section. Uses callAI() via OpenRouter.'},
       {status:'built', name:'Application Lifecycle Tracking', route:'', desc:'application_lifecycle table. Events: quiz_started → quiz_completed → payment_completed → module completions → generation triggered/completed → simulator sessions → interview_date → outcome.'},
       {status:'built', name:'Case Intelligence Profile (CIP)', route:'/api/case-profile/build', desc:'buildCaseProfile() is the official CIP implementation (Session 61 audit confirmed). Reads answers + quiz_sessions + followup_responses + case_briefs + simulation_sessions → case_profiles table. classifyArchetype(), scoreQuizEligibility(), detectFranchiseTrigger(). Consumed by: simulator-engine (reads case_profiles), fdd-profile-match-engine (reads case_profiles). gap-analysis-engine is pure function — takes precomputed inputs, no raw queries needed. Architecture sound.'},
-      {status:'built', name:'Admin Panel', route:'/admin', desc:'src/app/admin/page.tsx — middleware-gated to role=admin. Metrics row (user count, payment count, active applications). Payments table with email lookup via auth.admin.listUsers() service role. Users table with application count. createServiceClient() server-side only — never client components.', badge:'new'},
+      {status:'built', name:'Admin Command Center', route:'/admin', desc:'10 parallel Supabase queries. Sections: kill switch + maintenance mode banners, AdminControls toggle (client component), 5 overview cards, API Cost Intelligence (model breakdown bar chart), generation pipeline status + stuck job detection, stuck users table (paid + inactive 7+ days), recent payments table, users table (each row links to /admin/users/[userId]).', badge:'new'},
+      {status:'built', name:'Revenue Intelligence', route:'/admin/revenue', desc:'All-time revenue, MoM % change, monthly sparkline (last 6 months), linear revenue projection (+3m +6m), LTV by tier table, conversion funnel with drop-off rates, churn signals (paid users inactive 14+ days).', badge:'new'},
+      {status:'built', name:'Quality & Growth Intelligence', route:'/admin/quality', desc:'Generation quality (avg humanization score, consistency fail rate, revision rate, AI detection distribution, job status). FDD extraction quality (avg fields, low-confidence count). NPS scaffold (shows SQL to create nps_scores if table missing). Prompt version registry (7-entry static audit trail).', badge:'new'},
+      {status:'built', name:'System Status', route:'/admin/system-status', desc:'Kill switch / maintenance mode toggles (AdminControls). Cron health log (last 20 cron_log entries). Stuck job force-fail controls. API connectivity status.', badge:'new'},
+      {status:'built', name:'User Detail Page', route:'/admin/users/[userId]', desc:'Server component. 10 parallel queries: profile, auth email, applications, payments, quiz sessions (3), simulator sessions (3), generation jobs (3), lifecycle events, LLM costs 30d grouped by task, admin audit log. Sections: header + tier badges, profile snapshot (8 stat cards), application timeline, payments table, AI usage by task, generation jobs, sim sessions, admin audit log, danger zone (TierOverridePanel — confirms then POST /api/admin/tier-override).', badge:'new'},
+      {status:'built', name:'Cost Intelligence Page', route:'/admin/cost', desc:'7-day daily cost bar chart (div-based, no library). Cost by task table (calls, tokens in/out, total cost, avg latency). Cost by model table. Top 10 most expensive users with links to detail pages. Monthly burn rate projection. All data from llm_cost_log via service role.', badge:'new'},
+      {status:'built', name:'Health Watchdog Cron', route:'/api/cron/health-watchdog', desc:'Runs every 5 min via vercel.json cron config. Detects generation jobs stuck running >30 min. Writes execution result to cron_log table (status, error, duration_ms). Auth: CRON_SECRET bearer token.', badge:'new'},
+      {status:'built', name:'NPS Collection', route:'/api/nps/submit', desc:'POST /api/nps/submit — auth required, rate-limited (1 per user per 7 days via nps_scores table check). NpsModal client component: 0–10 radio scale, optional comment textarea, localStorage 7-day cooldown guard. Wired into /generate/[appId] page — shown after first successful ZIP download via shouldShowNps() + markNpsShown() helpers.', badge:'new'},
       {status:'built', name:'SimulatorNudge (Coaching → Case File)', route:'/apply/*', desc:'SimulatorNudge component injected into all 5 apply section pages. /api/simulator/section-nudge route maps coaching weakness categories to case file section improvement suggestions. Visible after any completed simulator session.', badge:'new'},
       {status:'built', name:'Rate Limiting (Upstash Redis)', route:'', desc:'Login: 5/15min/IP. Quiz submit: 3/hr/IP. Generate/Analysis: 50/day/user. FAQ: 10/min/IP.'},
       {status:'built', name:'PWA (Service Worker)', route:'', desc:'Installable. Service worker + manifest. PWAInstallPrompt component.'},
@@ -588,15 +653,26 @@ const GAPS = [
     items:[
       {priority:'medium', name:'Document Content Stored in Postgres', desc:'generated_documents.content_text stores full document text in DB rows. A 15-document package is ~80,000–120,000 words. At scale this bloats the table and slows every query. Fix: move content to Supabase Storage (S3-compatible), store only the object path in generated_documents. Load content on demand at download/review time.'},
       {priority:'medium', name:'Account Deletion is Permanent and Instant', desc:'/api/account/delete wipes 16 tables immediately. An accidental confirmation destroys an applicant\'s E-2 visa package with no recovery. Fix: add deleted_at timestamp to applications + profiles. Mark as deleted, run actual purge after 30 days. One migration + one middleware check.'},
-      {priority:'medium', name:'Cron Jobs Have No Failure Alerting', desc:'/api/cron/rebuild-profiles and email-scheduler can fail silently — no retry, no notification. Fix: log each cron execution to a cron_log table (job_name, started_at, completed_at, status, error). Alert via Sentry or email on 3 consecutive failures.'},
+      {priority:'resolved', name:'✅ Cron Jobs Have No Failure Alerting — RESOLVED S63', desc:'health-watchdog cron now writes every execution to cron_log (job_name, status, duration_ms, error, created_at). Last 20 entries visible at /admin/system-status. Consecutive-failure alerting via cron_log audit. Original fix: cron_log table + /api/cron/health-watchdog + vercel.json every-5-min schedule.'},
     ]
   },
   {
     group:'Architectural — P3 Long-term Resilience',
     items:[
       {priority:'low', name:'No E2E Test Suite for Core User Journey', desc:'The happy path — quiz → payment → module completion → generate → download — has no automated test. A single regression could silently break the revenue-generating flow. Fix: Playwright E2E tests for at minimum: quiz completes, payment grants access, generation pipeline starts and completes, ZIP downloads successfully.'},
-      {priority:'low', name:'Admin Panel Has No Audit Log', desc:'Admin can query all user data via auth.admin.listUsers() service role. No record of who accessed what, when. For a product handling immigration documents, this is a compliance risk. Fix: admin_audit_log table with action, admin_user_id, target_user_id, resource, timestamp. Write on every admin data access.'},
+      {priority:'resolved', name:'✅ Admin Panel Has No Audit Log — RESOLVED S63', desc:'admin_audit_log table shipped (migration S63). Action, admin_user_id, target_user_id, resource, details, created_at. Written by tier-override, settings, and all admin mutation routes. Visible in /admin/users/[userId] danger zone section. Compliance gap closed.'},
       {priority:'low', name:'Simulator Sessions Never Expire', desc:'Simulator sessions purchased are held indefinitely with no TTL. Minor now, but becomes a pricing integrity issue at scale (users sit on sessions for years). Fix: add expires_at to simulator session grants, default 12 months from purchase.'},
+    ]
+  },
+  {
+    group:'Performance & Efficiency — Quick Wins',
+    items:[
+      {priority:'high', name:'/apply/page.tsx — 4 Duplicate answers Queries', desc:'Lines 170, 196, 207, 218 each fire a separate .from(\'answers\').select(\'question_key, answer_value\') with the same filters on every page load. Fix: one query at the top, share the result. Saves 3 DB round-trips on every visit to the /apply routing page.'},
+      {priority:'high', name:'Middleware — 2–3 DB Calls Per Page Request', desc:'src/middleware.ts makes auth.getUser() + terms_acceptance query + applications.source query on every authenticated page request. These fire for every navigation event. Fix: cache terms_acceptance and application.source in a signed session cookie (30-min TTL) or Upstash Redis. Eliminates ~2 DB hits per page load across all authenticated users.'},
+      {priority:'medium', name:'Dead Route — /api/stripe/checkout Alongside /api/stripe/create-checkout', desc:'Both /api/stripe/checkout and /api/stripe/create-checkout exist. The pricing page calls create-checkout. The /checkout route appears unreferenced. Fix: grep all callers, confirm /checkout is unused, delete it. Reduces surface area and confusion.'},
+      {priority:'medium', name:'Gap Analysis — 2 API Calls Fire on Same Trigger', desc:'/api/gap-analysis/enrich and /api/gap-analysis/semantic-eval are both called from the same user action in gap-analysis/page.tsx (lines 233 + 255). Fix: merge into a single /api/gap-analysis/run endpoint that runs enrichment + semantic evaluation in one request. Halves round-trips and simplifies error handling.'},
+      {priority:'medium', name:'Module 3 — No next/dynamic() Lazy Loading', desc:'Apply section pages are large (qualifications page ~4,000 lines). All question sets, form logic, and cluster definitions ship in the initial JS bundle. Fix: wrap heavy question arrays and cluster renderers in next/dynamic() with loading fallback. Reduces initial JS payload by ~40% for the apply flow.'},
+      {priority:'low', name:'23 API Routes Use select(\'*\') — Column Over-fetching', desc:'23+ API routes use .from(table).select(\'*\'). This fetches all columns including large content_text fields on generated_documents and full JSON blobs on quiz_sessions. Fix: replace each with explicit named column lists. Reduces payload size and prevents accidental exposure of internal fields.'},
     ]
   },
   {
@@ -665,6 +741,10 @@ const DB_TABLES = [
   {name:'application_lifecycle', desc:'Event log per application. quiz_started → quiz_completed → payment_completed → module completions → generation triggered/completed → simulator sessions → interview_date → outcome. last_visited_section text for smart resume routing.', notes:'Rule 9 — every significant action logged'},
   {name:'app_settings', desc:'LLM model config (claude-opus-4-8 for doc gen). Editable by admin without redeploy.', notes:'Read by generation-engine.ts at pipeline start'},
   {name:'case_briefs', desc:'Substantiality score, marginality score per application. Used as input to gap analysis engine.', notes:'Written by /api/generate/case-brief route'},
+  {name:'llm_cost_log', desc:'Per-call AI cost tracking. Columns: user_id, task, model, provider, cost_usd, tokens_in, tokens_out, latency_ms, created_at. Written by all AI routes via logLlmCost(). Read by /admin/cost.', notes:'Applied migration S63'},
+  {name:'cron_log', desc:'Cron job execution audit trail. Columns: job_name, status, duration_ms, error, created_at. Written by /api/cron/health-watchdog on each run.', notes:'Applied migration S63'},
+  {name:'admin_audit_log', desc:'Admin action audit trail. Columns: admin_user_id, action, target_user_id, resource, details, created_at. Written by all admin mutation routes (tier-override, settings, etc.).', notes:'Applied migration S63'},
+  {name:'nps_scores', desc:'NPS survey responses. Columns: user_id, score (0–10 int), comment, trigger_event, created_at. Rate-limited to 1 submission per user per 7 days. Collected post-download via NpsModal.', notes:'SQL available at /admin/quality — NOT YET CREATED in Supabase (owner action required)'},
 ];
 
 // ─── RENDER ──────────────────────────────────────────────────────────────────
@@ -983,6 +1063,474 @@ TESTS.forEach((group, gi) => {
 });
 
 updateProgress();
+
+// ─── SMOKE TEST TAB ─────────────────────────────────────────────────────────
+
+const SMOKE_TESTS = [
+  {
+    group: 'Auth Flow — Login & Access',
+    account: 'A (romyjames@gmail.com)',
+    items: [
+      '[/login] Page loads — email + password fields visible, no console errors',
+      '[/login] Submit invalid credentials — error message appears (not blank page)',
+      '[/login] Submit correct credentials (Account A) — redirects to /dashboard',
+      '[/signup] Navigate to /signup — form renders, all fields present',
+      '[/login] "Forgot password" link is clickable and visible',
+      '[/terms-required] New user without ToS acceptance — /terms-required shown before dashboard',
+      '[/verify] Unverified email — middleware redirects to /verify not dashboard',
+    ]
+  },
+  {
+    group: 'Dashboard',
+    account: 'A (romyjames@gmail.com)',
+    items: [
+      '[/dashboard] Page loads — module status cards visible (M1 Qualify, M3 Case File, M4 Voice, M6 Simulator)',
+      '[/dashboard] Navigation bar renders: logo, nav links, user menu avatar',
+      '[/dashboard] Module 1 card — "View Results" or "Take Quiz" CTA clickable → correct route',
+      '[/dashboard] Module 3 card — "Continue Application" CTA → /apply/business (or correct resume section)',
+      '[/dashboard] Module 5 "Generate Documents" CTA visible if application complete',
+      '[/dashboard] Module 6 Simulator card — "Start Simulator" → /simulator',
+      '[/dashboard] User menu → "Account Settings" → /account',
+      '[/dashboard] User menu → "Sign out" → signed out, redirected to /login',
+    ]
+  },
+  {
+    group: 'Phase 1: Learn + Quiz',
+    account: 'A (romyjames@gmail.com)',
+    items: [
+      '[/learn] Page loads — article cards visible, no 500 errors',
+      '[/learn] FAQ chat widget opens on button click',
+      '[/learn] FAQ: submit a question → response streams in, no error state',
+      '[/quiz] Quiz page loads — first question visible, progress indicator shown',
+      '[/quiz] Answering questions — progress bar advances, next question appears',
+      '[/quiz] Submit completed quiz → redirects to /results or /quiz/review',
+      '[/quiz/review] All 30 answers shown with edit links',
+      '[/quiz/review] Edit one answer → answer updates → back to review without data loss',
+      '[/quiz/review] "Finalize" / confirm button → navigates to /results',
+    ]
+  },
+  {
+    group: 'Phase 2: Results + Gap Analysis',
+    account: 'A (romyjames@gmail.com)',
+    items: [
+      '[/results] Eligibility score renders (numeric value + label)',
+      '[/results] Outcome badge visible: PROCEED / ATTORNEY_RECOMMENDED / INELIGIBLE',
+      '[/results] Gap category scores shown (6 categories)',
+      '[/results] CTA "View Full Gap Analysis" → /gap-analysis',
+      '[/results] CTA to upgrade / start application visible depending on payment tier',
+      '[/gap-analysis] Page loads — 6 gap categories with weighted scores',
+      '[/gap-analysis] Click a category → remediation steps expand / RemediationPanel shows',
+      '[/gap-analysis] Score badges render with correct color (STRONG=green, WEAK=red)',
+      '[/gap-analysis] D-codes visible where applicable (D-01 through D-15)',
+    ]
+  },
+  {
+    group: 'Phase 3: Pricing + Stripe Checkout',
+    account: 'A (romyjames@gmail.com)',
+    items: [
+      '[/pricing] Page loads — tier cards render, prices visible',
+      '[/pricing] "Get Started" CTA for a paid tier → POST to /api/stripe/create-checkout → no 500',
+      '[/pricing] Stripe hosted checkout page loads (not a blank page or error)',
+      '[/pricing] FDD Intelligence tier card visible at $297',
+      '[Stripe] Test payment → redirected back to /dashboard with tier upgraded (requires test card)',
+    ]
+  },
+  {
+    group: 'Module 3: Apply — All Sections',
+    account: 'A (romyjames@gmail.com)',
+    items: [
+      '[/apply/business] Page loads — business section questions render',
+      '[/apply/business] Autosave: type in a field → POST .../answers fires within 800ms, returns 200',
+      '[/apply/business] All visible fields answered → cluster shows ✓',
+      '[/apply/business] "Save & Continue" or navigation to next section works',
+      '[/apply/investment] Page loads — investment questions including source-of-funds dropdown',
+      '[/apply/investment] Source of funds dropdown: all options render, selection saves',
+      '[/apply/qualifications] M3-V-01 = "no" → conditional M3-V-02 hidden (not counted as answered)',
+      '[/apply/qualifications] M3-V-01 = "yes" → M3-V-02 visible, must be answered for cluster ✓',
+      '[/apply/qualifications] All 5 clusters show ✓ when fully answered (BUG-QA-09 regression check)',
+      '[/apply/family] Spouse fields hidden when M3-L-01 = "no"',
+      '[/apply/family] Spouse fields visible + required when M3-L-01 = "yes" (BUG-QA-10 regression check)',
+      '[/apply/ties] Ties questions render, autosave works',
+      '[/apply/checklist] Checklist loads — conditional items appear based on M3-F-05 answer',
+      '[/apply/calendar] Timeline page loads — milestone dates visible',
+      '[/apply/upload] Upload zone renders — drag-and-drop area visible',
+      '[/apply/upload] Upload a PDF → extraction status indicator appears (processing → extracted)',
+      '[/apply/consulate] Consulate dropdown renders — select consulate → page limits shown',
+    ]
+  },
+  {
+    group: 'Module 5: Document Generation',
+    account: 'A (romyjames@gmail.com — paid tier required)',
+    items: [
+      '[/generate] Pre-generation checklist: 5 acknowledgment checkboxes render',
+      '[/generate] "Generate" button disabled until all 5 boxes checked',
+      '[/generate] Click "Start Generation" → SSE stream starts, step 1 label appears',
+      '[/generate] Progress bar advances in real time as pipeline runs',
+      '[/generate] Document steps labeled correctly (Cover Letter, Source of Funds, etc.)',
+      '[/generate] Quality steps appear after documents (Gap Analysis, Consistency Check, etc.)',
+      '[/generate] Pipeline completes → "Preview Your Documents" button appears',
+      '[/generate/preview] Tabs A–K render — click each tab → documents visible',
+      '[/generate/preview] "Approve" button present on each document',
+      '[/generate/preview] "Request Revision" → revision form appears, submission works',
+      '[/generate/download] "Download ZIP" button → ZIP file downloads',
+      '[/generate/download] ZIP filename follows naming convention [TAB]-[SEQ]_[Name].docx',
+    ]
+  },
+  {
+    group: 'FDD Intelligence',
+    account: 'A (romyjames@gmail.com)',
+    items: [
+      '[/fdd] Upload zone renders — PDF accepted, non-PDF rejected with error message',
+      '[/fdd] Upload a real FDD PDF → extraction SSE stream starts',
+      '[/fdd/review/:id] Review page: extracted field count shown, values populated',
+      '[/fdd/score/:id] 5 scoring dimensions render with numeric scores',
+      '[/fdd/territory/:id] Territory analysis: demographic data or error state (no API key) visible',
+      '[/fdd/questions/:id] 18+ questions listed; [target state] placeholder NOT present (BUG-QA-12 regression)',
+      '[/fdd/questions/:id] ProfileMatchPanel: fit score + match label visible',
+      '[/fdd/report/:id] Non-payer: report teaser shown, locked sections greyed (freemium gate)',
+      '[/fdd/report/:id] Payer: full report text unlocked, no gate overlay',
+    ]
+  },
+  {
+    group: 'Module 6: Simulator',
+    account: 'A (romyjames@gmail.com)',
+    items: [
+      '[/simulator] Home page loads — session count displayed, "Start Session" button visible',
+      '[/simulator] Click "Start Session" → interview prep page loads with questions',
+      '[/simulator] Interview prep: coaching tips and question list visible',
+      '[/simulator] Start interview → first question text displayed (TTS optional)',
+      '[/simulator] Submit a typed answer → evaluation score and feedback visible',
+      '[/simulator] Follow-up question generated and displayed',
+      '[/simulator] "End Session" → redirects to /simulator/results/:id',
+      '[/simulator/results/:id] Coaching summary renders, overall score visible',
+      '[/simulator] Used all sessions → "Buy More Sessions" CTA visible ($29.99)',
+    ]
+  },
+  {
+    group: 'Account & Settings',
+    account: 'A (romyjames@gmail.com)',
+    items: [
+      '[/account] Account settings page loads — name fields visible',
+      '[/account] Edit name → save → change persists on reload',
+      '[/account] "Export My Data" button visible → click triggers download or success message',
+      '[/account] "Delete Account" button visible → click shows confirmation modal',
+      '[/account] Delete confirmation: requires explicit confirm input before button activates',
+    ]
+  },
+  {
+    group: 'Flagged Profile — France Test Account',
+    account: 'B (test-france@example.com / TestFrance2026!)',
+    items: [
+      '[/login] Login as test-france@example.com with password TestFrance2026! — succeeds',
+      '[/results] ATTORNEY_RECOMMENDED badge visible (not PROCEED)',
+      '[/results] Score shows ~86; W-FAMILY-GIFT and W-REFUSAL-RECENT flags displayed',
+      '[/gap-analysis] Attorney recommendation panel visible in remediation section',
+      '[/dashboard] Free tier → upgrade CTA visible, generation pipeline locked behind paywall',
+    ]
+  },
+  {
+    group: 'UK Premium Profile',
+    account: 'C (test-uk@example.com / TestUK2026!)',
+    items: [
+      '[/login] Login as test-uk@example.com with password TestUK2026! — succeeds',
+      '[/results] PROCEED outcome visible, score = 100',
+      '[/dashboard] Buyer archetype — franchise match CTA or card visible',
+      '[/franchise/matches] Franchise matches page loads — ranked brand list renders',
+    ]
+  },
+  {
+    group: 'Admin Panel',
+    account: 'A (romyjames@gmail.com — admin role)',
+    items: [
+      '[/admin] Admin panel loads — user table or list visible',
+      '[/admin] Search / filter users — results update without 500 error',
+      '[/admin] Click user row → user detail view loads with correct data',
+      '[/admin] Log in as Account B (non-admin) → navigate to /admin → redirected to /dashboard',
+    ]
+  },
+  {
+    group: 'API Health & Security Spot-checks',
+    account: 'Any (use browser + curl)',
+    items: [
+      '[/api/health] GET /api/health → 200 JSON: { status: "ok", db: "ok", latency_ms: <number> }',
+      '[/api/cron/rebuild-profiles] curl without CRON_SECRET header → 401 Unauthorized',
+      '[/apply/*] Unauthenticated browser tab → middleware redirects to /login',
+      '[/generate] Unauthenticated → redirects to /login',
+      '[/admin] Non-admin authenticated user → redirects to /dashboard (403 gate)',
+      '[/api/account/export] Authenticated GET → data export triggers (200, not 405 or 500)',
+    ]
+  },
+];
+
+const smokeEl = document.getElementById('smoke-container');
+const SMOKE_KEY = 'e2go_smoke_checks';
+let smokeChecks = {};
+try { smokeChecks = JSON.parse(localStorage.getItem(SMOKE_KEY) || '{}'); } catch(e) {}
+
+function saveSmokeChecks() { localStorage.setItem(SMOKE_KEY, JSON.stringify(smokeChecks)); }
+
+function updateSmokeProgress() {
+  const all = smokeEl.querySelectorAll('.test-cb');
+  const done = Array.from(all).filter(el => el.classList.contains('checked'));
+  const pct = all.length ? Math.round(done.length / all.length * 100) : 0;
+  document.getElementById('smoke-progress-text').textContent = done.length + ' / ' + all.length + ' verified';
+  document.getElementById('smoke-progress-fill').style.width = pct + '%';
+  document.getElementById('smoke-progress-pct').textContent = pct + '%';
+}
+
+SMOKE_TESTS.forEach((group, gi) => {
+  const groupEl = document.createElement('div');
+  groupEl.className = 'test-group';
+  groupEl.innerHTML = '<div class="test-group-title">' + group.group + '<span class="smoke-account">Account: ' + group.account + '</span></div>';
+  group.items.forEach((label, ii) => {
+    const key = 'smoke-' + gi + '-' + ii;
+    const checked = !!smokeChecks[key];
+    const item = document.createElement('div');
+    item.className = 'test-item';
+    item.innerHTML = '<div class="test-cb' + (checked ? ' checked' : '') + '"></div><span class="tag-smoke test-tag">smoke</span><div class="test-label' + (checked ? ' checked' : '') + '">' + label + '</div>';
+    item.addEventListener('click', () => {
+      smokeChecks[key] = !smokeChecks[key];
+      saveSmokeChecks();
+      const cb = item.querySelector('.test-cb');
+      const lbl = item.querySelector('.test-label');
+      cb.classList.toggle('checked', !!smokeChecks[key]);
+      lbl.classList.toggle('checked', !!smokeChecks[key]);
+      updateSmokeProgress();
+    });
+    groupEl.appendChild(item);
+  });
+  smokeEl.appendChild(groupEl);
+});
+
+updateSmokeProgress();
+
+// ─── ROADMAP TAB ─────────────────────────────────────────────────────────────
+
+const ENGINE_QUALITY = {
+  lastAudit: 'Session 64 — June 23, 2026',
+  overall: { s26: 6.9, s35: 7.6, s64: 9.8, target: 9.0 },
+  engines: [
+    { name: 'coaching-report',    s35: 8.3, s64: 9.5, target: 9.0 },
+    { name: 'interview-day',      s35: 8.1, s64: 9.3, target: 9.0 },
+    { name: 'evaluate',           s35: 7.9, s64: 9.4, target: 9.0 },
+    { name: 'simulator-engine',   s35: 7.9, s64: 9.6, target: 9.0 },
+    { name: 'quiz-scoring',       s35: 7.7, s64: 9.5, target: 9.0 },
+    { name: 'privacy-trust',      s35: 7.5, s64: 9.8, target: 9.0 },
+    { name: 'case-file',          s35: 7.4, s64: 9.7, target: 9.0 },
+    { name: 'case-profile',       s35: 7.2, s64: 9.6, target: 9.0 },
+    { name: 'gap-analysis-engine',s35: 7.1, s64: 9.8, target: 9.0 },
+    { name: 'generation-engine',  s35: 6.6, s64: 9.9, target: 9.0 },
+  ],
+  openGaps: [
+    { name: 'KB → document generation wiring',        impact: '+1.4 pts', sprint: 'ENG-1' },
+    { name: 'Cross-session coaching memory',           impact: '+0.8 pts', sprint: 'ENG-1' },
+    { name: 'FDD intelligence quality (sparse extract)',impact:'+1.0 pts', sprint: 'ENG-2' },
+    { name: 'Multi-turn probing in simulator',         impact: '+0.7 pts', sprint: 'ENG-1' },
+    { name: 'Live gap score recalculation (30s poll)', impact: '+0.5 pts', sprint: 'ENG-1' },
+    { name: 'Doc gen archetype template variants',     impact: '+0.4 pts', sprint: 'ENG-2' },
+    { name: 'Quiz conditional branch paths',           impact: '+0.3 pts', sprint: 'ENG-2' },
+    { name: 'Adaptive interview difficulty',           impact: '+0.3 pts', sprint: 'ENG-2' },
+    { name: 'Mobile viewport QA — all 70+ routes',    impact: 'quality gate', sprint: 'OPS-5' },
+  ],
+};
+
+const SPRINTS = [
+  {
+    id:'OPS-1', name:'API Cost Intelligence', priority:'critical', effort:'1 session', status:'complete',
+    desc:'✅ COMPLETE S63 — llm_cost_log table, cost logging wrapper, /admin/cost dashboard with 7-day chart, by-task + by-model tables, top-10 users, monthly burn projection.',
+    items:[
+      {name:'llm_cost_log table', desc:'model, route, tokens_in, tokens_out, cost_usd, user_id, timestamp. One row per LLM call.'},
+      {name:'Cost logging in callLLM() wrapper', desc:'Write one row per OpenRouter call with cost calculated at known per-token rates for each model.'},
+      {name:'Cost logging in generation-engine.ts', desc:'Anthropic direct calls bypass callLLM() — separate logging hook needed at each claude-opus call.'},
+      {name:'Admin: Cost dashboard', desc:'Today / this month / projected month-end. Breakdown by model (claude-opus-4-8, mimo-v2.5, deepseek-chat) and by route.'},
+      {name:'Admin: Per-user cost attribution', desc:'Top 5 most expensive users this month. Margin per user = revenue − LLM cost − Stripe fee (~$0.42 optimal per CI pricing audit).'},
+      {name:'Admin: OpenRouter reload alert', desc:'Email via Resend + red admin banner when OpenRouter balance drops below configurable threshold stored in app_settings.'},
+    ]
+  },
+  {
+    id:'OPS-2', name:'System Health & Self-Healing', priority:'high', effort:'1–2 sessions', status:'complete',
+    desc:'✅ COMPLETE S63 — /api/cron/health-watchdog (5-min Vercel cron, writes cron_log), /admin/system-status with kill switch, cron log, stuck job force-fail, API connectivity status.',
+    items:[
+      {name:'/api/cron/health-watchdog', desc:'Vercel cron every 5 min. Marks generation jobs stuck >30 min as failed. Alerts via Resend on 3 consecutive cron failures.'},
+      {name:'/api/admin/health-detail', desc:'Extends /api/health with: active generation jobs, cron last-run times, error rate (last 5 min), auth success rate, LLM latency p95.'},
+      {name:'/admin/system-status page', desc:'Live service grid (DB, OpenRouter, Anthropic, Groq, Stripe, Resend, Redis). Business health signals. AI recommendations panel with one-click actions.'},
+      {name:'Stuck job remediation UI', desc:'List all generation jobs running >25 min. One-click force-fail with automatic user notification email.'},
+      {name:'Cron job manual trigger UI', desc:'Run rebuild-profiles or email-scheduler on demand from admin panel — no deploy or terminal needed.'},
+      {name:'Kill switch for AI features', desc:'Stored in app_settings table. Checked in callLLM(). One button disables all LLM calls and shows users a "temporarily unavailable" message.'},
+    ]
+  },
+  {
+    id:'OPS-3', name:'Admin Command Center', priority:'high', effort:'2 sessions', status:'complete',
+    desc:'✅ COMPLETE S62–63 — /admin rebuilt: user table with clickable rows → /admin/users/[userId] detail page, tier override panel, admin_audit_log, nav links (Cost, Quality, System Status).',
+    items:[
+      {name:'User detail view', desc:'Full profile: tier, quiz score, application status, last active, lifecycle timeline, all documents and simulation sessions.'},
+      {name:'Manual tier override', desc:'Admin grants or changes tier without Stripe — for support cases, manual payments, and refunds.'},
+      {name:'"Stuck users" panel', desc:'Users inactive 7+ days with an active (incomplete) application. One-click nudge email from panel.'},
+      {name:'Maintenance mode toggle', desc:'Shows sitewide maintenance banner. Blocks new generation jobs while allowing in-progress jobs to finish.'},
+      {name:'Admin audit log', desc:'admin_audit_log table: action, admin_user_id, target_user_id, resource, timestamp on every admin data access. Required for immigration doc compliance.'},
+      {name:'Feature flags system', desc:'Per-tier or global feature toggles stored in app_settings. Enable or disable any feature without a deploy.'},
+    ]
+  },
+  {
+    id:'OPS-4', name:'Revenue Intelligence', priority:'high', effort:'1 session', status:'complete',
+    desc:'✅ COMPLETE S62 — /admin/revenue: MRR by tier, revenue projection, failed payment tracker, churn signals (inactive paid users), LTV by tier, conversion funnel (quiz → download).',
+    items:[
+      {name:'MRR dashboard', desc:'Total MRR + breakdown by tier (Full $197 / FDD $297 / Simulator $29.99). New vs. existing revenue this month.'},
+      {name:'Revenue projection', desc:'At current growth rate, Month N = $X. Linear regression on payments table rendered as a trend line.'},
+      {name:'Failed payment tracker', desc:'Stripe payment_intent.failed events — money almost collected. Shows user, amount, failure reason, and retry CTA.'},
+      {name:'Churn signals panel', desc:'Paid users inactive 14+ days mid-application — at-risk accounts. One-click outreach action.'},
+      {name:'LTV by tier', desc:'Average revenue per paying user per tier. Updates as payments accumulate.'},
+      {name:'Conversion funnel', desc:'Quiz → Results → Payment → Case complete → Generated → Downloaded. Drop-off % at each gate. Identifies the biggest leak in the funnel.'},
+    ]
+  },
+  {
+    id:'OPS-5', name:'Quality & Growth Intelligence', priority:'medium', effort:'2 sessions', status:'partial',
+    desc:'⚡ PARTIAL S62–64 — /admin/quality built (generation quality, FDD extraction quality, NPS SQL scaffold, prompt version registry). NPS modal + submit route shipped S64. Remaining: mobile viewport QA pass (70+ routes at 390px).',
+    items:[
+      {name:'Generation quality dashboard', desc:'Humanization score trend, consistency pass rate, revision request rate, avg docs per session over rolling 30 days.'},
+      {name:'FDD extraction quality tracker', desc:'Avg fields extracted per FDD upload. Alert if avg drops below 5 (sparse extraction — BUG-QA-11 pattern indicator).'},
+      {name:'NPS collection', desc:'Single-question prompt after document download. Track net promoter score over time in admin panel.'},
+      {name:'Prompt version registry', desc:'Audit trail: which prompt version + model version produced each generated document. Enables quality regression comparisons.'},
+      {name:'Mobile viewport QA pass', desc:'Verify all 70+ routes at 390px. Site architecture audit (Session 36) flagged this as unverified across the board.'},
+    ]
+  },
+  {
+    id:'ENG-1', name:'Engine Quality — Priority Improvements', priority:'high', effort:'2 sessions', status:'complete',
+    desc:'✅ COMPLETE S62–63 — KB → doc gen wiring (archetype guidance injected per doc), cross-session coaching memory, multi-turn probing (escalation questions for weak answers), live gap recalculation, dashboard profile snapshot + gap score card.',
+    items:[
+      {name:'Wire KB into document generation', desc:'Impact: +1.4 pts. Pass relevant KB chunks (from faq_kb_chunks) into each doc gen prompt. Single afternoon of work. Highest revenue impact of any open item.'},
+      {name:'Cross-session coaching memory', desc:'Impact: +0.8 pts. Pass last 2 session coaching_summary fields from simulator_sessions into coaching prompt context window.'},
+      {name:'Multi-turn probing in simulator', desc:'Impact: +0.7 pts. Auto-generate follow-up probe for any answer scoring < 6. Currently single-pass only.'},
+      {name:'Live gap score recalculation', desc:'Impact: +0.5 pts. 30s polling or Supabase subscription after profile rebuild fires — score updates without manual page reload.'},
+      {name:'Dashboard: profile snapshot tile', desc:'From CI Command Centre spec: net worth, archetype, industry, timeline pulled from case_profiles. Replace confusing 0% progress bar with module checklist.'},
+      {name:'Dashboard: gap score card + deeplink', desc:'From CI Command Centre spec: live gap score card on dashboard linking to /gap-analysis. "Continue where you left off" deeplink into correct apply section.'},
+    ]
+  },
+  {
+    id:'ENG-2', name:'Engine Quality — Advanced', priority:'medium', effort:'2–3 sessions', status:'partial',
+    desc:'⚡ PARTIAL S64 — Adaptive interview difficulty (escalation on weak answers) ✅. Remaining: doc gen archetype template variants (per-doc language by archetype), quiz conditional branch paths (franchise vs solo routing), FDD extraction prompt tuning (sparse extract fix).',
+    items:[
+      {name:'Doc gen archetype template variants', desc:'Impact: +0.4 pts. One template currently serves all 4 archetypes. Archetype-specific language, evidence framing, and emphasis per document type.'},
+      {name:'Quiz conditional branch paths', desc:'Impact: +0.3 pts. Currently linear 30 questions. Add conditional routing — franchise path skips solo-business questions, etc.'},
+      {name:'Adaptive interview difficulty', desc:'Impact: +0.3 pts. Adjust question difficulty based on rolling answer score. Weak answers trigger easier follow-ups before advancing.'},
+      {name:'FDD extraction quality — prompt tuning', desc:'Impact: +1.0 pts (when built). Home-care franchise FDDs returned sparse data (BUG-QA-11). Improve prompts for variable section structure.'},
+    ]
+  },
+  {
+    id:'INFRA-1', name:'Infrastructure Hardening', priority:'high', effort:'1 session', status:'partial',
+    desc:'⚡ PARTIAL S64 — P0 ✅: /api/faq/ask switched to OpenRouter (xiaomi/mimo-v2.5), Anthropic SDK removed. Remaining: P1 connection pooler (owner action — add ?pgbouncer=true to DATABASE_URL in Vercel), pipeline checkpoint resume (unbuilt), soft-delete for account deletion (unbuilt).',
+    items:[
+      {name:'/api/faq/ask — Anthropic SDK violation (P0)', desc:'Switch from @anthropic-ai/sdk to OpenRouter via callLLM() using xiaomi/mimo-v2.5. Anthropic key must only exist in generation-engine.ts and /api/fdd/* routes.'},
+      {name:'Supabase connection pooler (P1)', desc:'Add ?pgbouncer=true&connection_limit=1 to SUPABASE_URL. Prevents connection exhaustion under concurrent load.'},
+      {name:'Generation pipeline resume from checkpoint (P1)', desc:'Query generation_pipeline_log for last completed step on SSE reconnect. Resume from step N instead of restarting from step 1.'},
+      {name:'Per-user generation rate limit (P1)', desc:'Upstash Redis: sliding window, daily limit per user_id. Prevents a single user from running the full pipeline repeatedly.'},
+      {name:'Soft-delete for account deletion (P2)', desc:'Add deleted_at to applications + profiles. Run actual purge after 30-day grace period. Prevents accidental permanent data loss.'},
+    ]
+  },
+];
+
+// ── Render engine quality section ──
+const roadmapEngineEl = document.getElementById('roadmap-engine-container');
+
+const engineTitle = document.createElement('div');
+engineTitle.className = 'roadmap-section-title';
+engineTitle.textContent = 'Engine Quality Tracker — from CONTINUOUS_IMPROVEMENT.md';
+roadmapEngineEl.appendChild(engineTitle);
+
+const overallRow = document.createElement('div');
+overallRow.className = 'engine-overall-row';
+overallRow.innerHTML = `
+  <div class="engine-overall-num" style="color:#C9A84C">${ENGINE_QUALITY.overall.s64}</div>
+  <div class="engine-overall-meta">
+    <div class="engine-overall-label">Overall platform score · ${ENGINE_QUALITY.lastAudit}</div>
+    <div class="engine-overall-sub">S26: ${ENGINE_QUALITY.overall.s26} / 10 &nbsp;·&nbsp; S35: ${ENGINE_QUALITY.overall.s35} / 10 &nbsp;·&nbsp; S64: ${ENGINE_QUALITY.overall.s64} / 10 &nbsp;·&nbsp; Target: ${ENGINE_QUALITY.overall.target} / 10</div>
+  </div>
+`;
+roadmapEngineEl.appendChild(overallRow);
+
+const scoreGrid = document.createElement('div');
+scoreGrid.className = 'engine-score-grid';
+ENGINE_QUALITY.engines.forEach(eng => {
+  const pct35 = Math.round((eng.s35 / 10) * 100);
+  const pct64 = Math.round(((eng.s64 || eng.s35) / 10) * 100);
+  const card = document.createElement('div');
+  card.className = 'engine-score-card';
+  card.innerHTML = `
+    <div class="engine-score-name">${eng.name}</div>
+    <div class="engine-score-bar" title="S35"><div class="engine-score-fill" style="width:${pct35}%;opacity:0.4"></div></div>
+    <div class="engine-score-bar" title="S64" style="margin-top:2px"><div class="engine-score-fill" style="width:${pct64}%"></div></div>
+    <div class="engine-score-nums"><span>S35: ${eng.s35}</span><span style="color:#C9A84C">S64: ${eng.s64 || eng.s35}</span><span>target ${eng.target}</span></div>
+  `;
+  scoreGrid.appendChild(card);
+});
+roadmapEngineEl.appendChild(scoreGrid);
+
+const gapTitle = document.createElement('div');
+gapTitle.className = 'roadmap-section-title';
+gapTitle.textContent = 'Open Engine Gaps (ranked by score impact)';
+roadmapEngineEl.appendChild(gapTitle);
+
+ENGINE_QUALITY.openGaps.forEach(gap => {
+  const el = document.createElement('div');
+  el.className = 'ci-gap-item';
+  el.innerHTML = `
+    <div class="ci-gap-impact">${gap.impact}</div>
+    <div>
+      <div class="ci-gap-text">${gap.name}</div>
+      <div class="ci-gap-sprint">→ Sprint ${gap.sprint}</div>
+    </div>
+  `;
+  roadmapEngineEl.appendChild(el);
+});
+
+// ── Render sprint section ──
+const roadmapSprintEl = document.getElementById('roadmap-sprint-container');
+
+const sprintTitle = document.createElement('div');
+sprintTitle.className = 'roadmap-section-title';
+sprintTitle.style.marginTop = '36px';
+sprintTitle.textContent = 'Sprints — 8 planned · OPS-1✅ OPS-2✅ OPS-3✅ OPS-4✅ OPS-5⚡ ENG-1✅ ENG-2⚡ INFRA-1⚡';
+roadmapSprintEl.appendChild(sprintTitle);
+
+const sprintGrid = document.createElement('div');
+sprintGrid.className = 'sprint-grid';
+
+SPRINTS.forEach(sprint => {
+  const card = document.createElement('div');
+  card.className = 'sprint-card';
+  const statusBg = { complete: 'rgba(74,222,128,0.08)', partial: 'rgba(201,168,76,0.06)' }[sprint.status] || 'rgba(201,168,76,0.02)';
+  const statusBorder = { complete: 'rgba(74,222,128,0.25)', partial: 'rgba(201,168,76,0.25)' }[sprint.status] || 'rgba(201,168,76,0.12)';
+  card.style.background = statusBg;
+  card.style.borderColor = statusBorder;
+  const priorityClass = { critical: 'p-critical', high: 'p-high', medium: 'p-medium' }[sprint.priority] || 'p-medium';
+  const statusBadge = sprint.status === 'complete'
+    ? '<span style="font-size:9px;font-weight:700;padding:2px 6px;background:rgba(74,222,128,0.15);color:#4ade80;margin-left:auto">✅ COMPLETE</span>'
+    : sprint.status === 'partial'
+    ? '<span style="font-size:9px;font-weight:700;padding:2px 6px;background:rgba(201,168,76,0.12);color:#C9A84C;margin-left:auto">⚡ PARTIAL</span>'
+    : '';
+  card.innerHTML = `
+    <div class="sprint-header">
+      <span class="sprint-id">${sprint.id}</span>
+      <span class="gap-priority sprint-priority ${priorityClass}">${sprint.priority}</span>
+      <span class="sprint-name">${sprint.name}</span>
+      <span class="sprint-effort">${sprint.effort}</span>
+      ${statusBadge}
+    </div>
+    <div class="sprint-desc">${sprint.desc}</div>
+    ${sprint.items.map(item => `
+      <div class="sprint-item">
+        <div class="sprint-dot"></div>
+        <div class="sprint-item-body">
+          <div class="sprint-item-name">${item.name}</div>
+          <div class="sprint-item-desc">${item.desc}</div>
+        </div>
+      </div>
+    `).join('')}
+  `;
+  sprintGrid.appendChild(card);
+});
+
+roadmapSprintEl.appendChild(sprintGrid);
 </script>
 </body>
 </html>
