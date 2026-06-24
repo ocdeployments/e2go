@@ -668,6 +668,24 @@ const FLOWS = [
 
 const SILOS = [
   {
+    resolved: false,
+    title:'SILO — Q0-08c (FDD status answer) Captured but Not Consumed',
+    desc:'Q0-08c asks franchise applicants "Have you received the FDD from the franchisor?" — options: Yes / Being offered / Early discussions. The answer is stored in result_json.answers[\'Q0-08c\']. But: (1) the results page does not read it to show a "Start FDD Analysis" CTA for applicants who have an FDD in hand; (2) buildCaseProfile() does not extract it to set any flag; (3) gap analysis does not factor it in; (4) dashboard does not use it to route users to /fdd. A franchise applicant who answers "Yes, I have the FDD" gets the exact same results screen as one who hasn\'t. Fix: results page reads Q0-08c from quiz_session.result_json.answers and shows an FDD Intelligence CTA when value includes "yes" or "being offered".',
+    fix:'Wire Q0-08c → results page CTA. If Q0-08c = "Yes" or "Being offered" → show "Analyse Your FDD" card linking to /fdd. One read + conditional render in results/page.tsx.'
+  },
+  {
+    resolved: false,
+    title:'PARTIAL SILO — Field Quality Badges Only on Story Section',
+    desc:'useFieldQuality.ts hook calls /api/case-file/field-quality which evaluates 8 fields across 5 sections: story (M3-S1-01/02/03), qualifications (M3-Q-04), business (M3-B-MKT, M3-B-OPS), source of funds (M3-H-NEW-01), ties (M3-K-TIES). But useFieldQuality is only imported in apply/story/page.tsx — the other 4 sections show no quality badges. Officers care most about the qualifications and business plan fields, which are currently unrated. Fix: import useFieldQuality in apply/qualifications, apply/business, apply/investment, and apply/ties pages, wire the relevant field keys.',
+    fix:'Add useFieldQuality to 4 remaining apply section pages. 5–10 minute change per page. Already works — just needs the import and field key mapping.'
+  },
+  {
+    resolved: false,
+    title:'PARTIAL SILO — FDD Compare Has No Preferred-Brand Writeback',
+    desc:'When a user compares 2–4 FDD analyses at /fdd/compare and identifies a preferred brand, there is no mechanism to mark one as "selected" or write the brand name back to the case file (e.g., answers table, business_name on applications). The comparison is ephemeral. Gap: users must manually remember which brand won and navigate back. Fix: add a "Select this FDD as my primary" button on the compare page that writes franchise_name → M2-BIZ-NAME answer key and the fddId → app_settings or applications row.',
+    fix:'Add single CTA on compare page. POST /api/answers with franchise brand name. Low effort, closes the FDD Compare → Case File data flow.'
+  },
+  {
     resolved: true,
     title:'RESOLVED — CIP Architecture Verified Sound',
     desc:'Was: concern that no formal CIP schema existed and engines might issue raw table queries instead of using buildCaseProfile(). Audited Session 61: buildCaseProfile() in case-profile.ts IS the official CIP — writes to case_profiles table. Consumers confirmed: simulator-engine reads case_profiles ✓, fdd-profile-match-engine reads case_profiles ✓, gap-analysis-engine is a pure function (takes precomputed inputs, no DB queries of its own ✓), fdd-scoring-engine operates on FDD data directly ✓. Architecture is sound as-is. No code change needed.',
@@ -803,7 +821,7 @@ const ENGINES = [
   {name:'fdd-profile-match-engine.ts', desc:'5-dimension deterministic scoring (capital adequacy, E-2 substantiality via 9 FAM sliding scale, role alignment, employment creation, net worth position). Returns STRONG_FIT/GOOD_FIT/PARTIAL_FIT/POOR_FIT/INSUFFICIENT_DATA + 0–100 fit score. Reads case_profiles table.', consumers:'/fdd/questions/[fddId] (ProfileMatchPanel)'},
   {name:'simulator-engine.ts', desc:'Question pools: 9 universal (UQ-01→UQ-09) each with 3–4 phrasings + business-type pools (5–6 per category). pick() random selection + shuffle() Fisher-Yates. WP-05 immigrant intent probe. FDD probe question injection for franchise applicants. Re-exports analyzeDelivery from delivery-analysis.ts.', consumers:'/api/simulator/interview-prep, evaluate, follow-up routes'},
   {name:'investor-profile-synthesizer.ts', desc:'Unified investor profile from QFN Franchise Navigator answers + M3-A-08/09 case file answers + archetype from case_profiles. Source: qfn | inferred | mixed | unknown.', consumers:'gap-analysis-engine.ts, fdd-scoring-engine.ts, case-profile.ts'},
-  {name:'case-profile.ts (buildCaseProfile)', desc:'Reads answers + quiz_sessions + followup_responses + case_briefs + simulation_sessions → case_profiles table. classifyArchetype(), scoreQuizEligibility(), detectFranchiseTrigger(). Completeness score + data_state + dimension scores. Fire-and-forget at 5 events.', consumers:'Simulator interview-prep, fdd-profile-match-engine, gap-analysis, /api/profile/rebuild, /api/cron/rebuild-profiles'},
+  {name:'case-profile.ts (buildCaseProfile)', desc:'Reads answers + quiz_sessions + followup_responses + case_briefs + simulation_sessions → case_profiles table. classifyArchetype() — Q0-08a raw text is primary signal (S67 fix). scoreQuizEligibility(), detectFranchiseTrigger(). Completeness score + data_state + dimension scores. Fire-and-forget at 5 user events. /api/cron/rebuild-profiles runs daily at 2am UTC via vercel.json cron schedule.', consumers:'Simulator interview-prep, fdd-profile-match-engine, gap-analysis, /api/profile/rebuild, /api/cron/rebuild-profiles (daily 0 2 * * *)'},
   {name:'pathway-engine.ts', desc:'Builds remediation pathways per gap category. Reads case profile and gap scores → structured pathway recommendations.', consumers:'/gap-analysis (PathwaySection component)'},
   {name:'franchise-matcher.ts + franchise-scoring-engine.ts', desc:'Scores franchise brands from FRANCHISE_CATEGORIES data against investor profile (net worth, industry interest, management style). Returns ranked brand list with E-2 suitability scores.', consumers:'/franchise/matches page, /api/franchise/matches'},
   {name:'pre-generation-validation.ts', desc:'Validates application completeness before generation pipeline starts. Checks required fields per application type. Returns validation result + list of missing items.', consumers:'/api/generate/validate route'},
@@ -1009,6 +1027,11 @@ const TESTS = [
       'FDD extraction: test PDF → 50 fields populated in fdd_analyses table',
       'Simulator evaluate: answer scored + deliveryNotes returned in response',
       'Coaching report: generated after session completion with QuestionCoaching array',
+      'FDD Multi-Compare: select 2 FDDs on /fdd index → /fdd/compare renders side-by-side columns',
+      'FDD Multi-Compare: compatibility grade (STRONG/VIABLE/CAUTION/INELIGIBLE) shown per brand',
+      'Document revision: click "Request Revision" on a generated doc → revising status shows → revised doc appears',
+      'Personalized flags: results page shows LLM-personalized flag explanation for at least 1 risk flag',
+      'Field quality badge: /apply/story shows quality indicator on M3-S1-01 (cover letter intro field)',
     ]
   },
   {
@@ -1023,6 +1046,11 @@ const TESTS = [
       'Tab D AI assist: chat responds with story guidance',
       'Pre-fill badges: uploaded document answers shown with source badge',
       'Discrepancy HARD GATE: cannot advance without resolving extracted vs manual conflicts',
+      'Q0-08a = franchise: Q0-08c (FDD status question) appears as next question in quiz flow',
+      'Q0-08a = existing independent: Q0-08d (operational status) appears in quiz flow',
+      'Q0-08d = "no employees beyond owner": W-MARGINALITY-ACQUISITION risk flag shown on results',
+      'Q0-08d = "dormant/pre-operational": W-DORMANT-ACQUISITION risk flag shown on results',
+      'Archetype regression: quiz answers franchise → archetype on case_profiles = buyer (not career_switcher)',
     ]
   },
   {
@@ -1207,7 +1235,7 @@ const SMOKE_TESTS = [
       '[/quiz] Quiz page loads — first question visible, progress indicator shown',
       '[/quiz] Answering questions — progress bar advances, next question appears',
       '[/quiz] Submit completed quiz → redirects to /results or /quiz/review',
-      '[/quiz/review] All 30 answers shown with edit links',
+      '[/quiz/review] All quiz answers shown with edit links (22 questions, conditional branches vary)',
       '[/quiz/review] Edit one answer → answer updates → back to review without data loss',
       '[/quiz/review] "Finalize" / confirm button → navigates to /results',
     ]
@@ -1292,6 +1320,8 @@ const SMOKE_TESTS = [
       '[/fdd/questions/:id] ProfileMatchPanel: fit score + match label visible',
       '[/fdd/report/:id] Non-payer: report teaser shown, locked sections greyed (freemium gate)',
       '[/fdd/report/:id] Payer: full report text unlocked, no gate overlay',
+      '[/fdd] Multi-select 2+ FDD rows on index page → "Compare" button appears → /fdd/compare loads',
+      '[/fdd/compare] Side-by-side columns render: brand name, E-2 grade, dimension scores visible per brand',
     ]
   },
   {
@@ -1349,6 +1379,11 @@ const SMOKE_TESTS = [
       '[/admin] Search / filter users — results update without 500 error',
       '[/admin] Click user row → user detail view loads with correct data',
       '[/admin] Log in as Account B (non-admin) → navigate to /admin → redirected to /dashboard',
+      '[/admin/system-status] Page loads — service status cards visible (DB, OpenRouter, Stripe)',
+      '[/admin/system-status] Kill switch toggle responds without 500 error',
+      '[/admin/users/:id/view] "View as User" link renders the user\'s data with gold admin banner',
+      '[/admin/cost] 7-day cost bar chart renders, cost-by-task table visible',
+      '[/admin/revenue] All-time revenue figure and monthly sparkline visible',
     ]
   },
   {
@@ -1425,15 +1460,15 @@ const ENGINE_QUALITY = {
     { name: 'generation-engine',  s35: 6.6, s64: 9.9, target: 9.0 },
   ],
   openGaps: [
-    { name: 'KB → document generation wiring',        impact: '+1.4 pts', sprint: 'ENG-1' },
-    { name: 'Cross-session coaching memory',           impact: '+0.8 pts', sprint: 'ENG-1' },
-    { name: 'FDD intelligence quality (sparse extract)',impact:'+1.0 pts', sprint: 'ENG-2' },
-    { name: 'Multi-turn probing in simulator',         impact: '+0.7 pts', sprint: 'ENG-1' },
-    { name: 'Live gap score recalculation (30s poll)', impact: '+0.5 pts', sprint: 'ENG-1' },
-    { name: 'Doc gen archetype template variants',     impact: '+0.4 pts', sprint: 'ENG-2' },
-    { name: 'Quiz conditional branch paths',           impact: '+0.3 pts', sprint: 'ENG-2' },
-    { name: 'Adaptive interview difficulty',           impact: '+0.3 pts', sprint: 'ENG-2' },
-    { name: 'Mobile viewport QA — all 70+ routes',    impact: 'quality gate', sprint: 'OPS-5' },
+    { name: '✅ KB → document generation wiring',        impact: '+1.4 pts', sprint: 'ENG-1 — DONE' },
+    { name: '✅ Cross-session coaching memory',           impact: '+0.8 pts', sprint: 'ENG-1 — DONE' },
+    { name: '✅ FDD intelligence quality (sparse extract)',impact:'+1.0 pts', sprint: 'ENG-2 — DONE' },
+    { name: '✅ Multi-turn probing in simulator',         impact: '+0.7 pts', sprint: 'ENG-1 — DONE' },
+    { name: '✅ Live gap score recalculation (RemediationPanel live rescore)', impact: '+0.5 pts', sprint: 'ENG-1 — DONE' },
+    { name: '✅ Doc gen archetype template variants',     impact: '+0.4 pts', sprint: 'ENG-2 — DONE' },
+    { name: '✅ Quiz conditional branch paths (Q0-08c/Q0-08d)',impact: '+0.3 pts', sprint: 'ENG-2 — DONE S67' },
+    { name: '✅ Adaptive interview difficulty',           impact: '+0.3 pts', sprint: 'ENG-2 — DONE' },
+    { name: '✅ Mobile viewport QA — all 70+ routes',    impact: 'quality gate', sprint: 'OPS-5 — DONE S66' },
   ],
 };
 
@@ -1575,7 +1610,7 @@ roadmapEngineEl.appendChild(scoreGrid);
 
 const gapTitle = document.createElement('div');
 gapTitle.className = 'roadmap-section-title';
-gapTitle.textContent = 'Open Engine Gaps (ranked by score impact)';
+gapTitle.textContent = 'Engine Gaps — All Resolved via ENG-1 + ENG-2 (Sessions 63–67)';
 roadmapEngineEl.appendChild(gapTitle);
 
 ENGINE_QUALITY.openGaps.forEach(gap => {
