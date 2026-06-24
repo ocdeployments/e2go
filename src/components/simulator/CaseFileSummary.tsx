@@ -114,7 +114,14 @@ export default function CaseFileSummary({ applicationId, continueLabel, onContin
 
   const classification: Array<{ label: string; value: string }> = [];
   if (application.tier) classification.push({ label: 'Filing type', value: TIER_LABELS[application.tier] || application.tier });
-  if (application.businessCategory) classification.push({ label: 'Business category', value: application.businessCategory });
+  if (application.businessCategory) {
+    let catDisplay = application.businessCategory;
+    try {
+      const parsed = JSON.parse(application.businessCategory);
+      if (Array.isArray(parsed)) catDisplay = parsed.join(', ');
+    } catch { /* not JSON — use as-is */ }
+    classification.push({ label: 'Business category', value: catDisplay });
+  }
   if (application.targetState) classification.push({ label: 'Target state', value: application.targetState });
   if (application.investmentAmount) classification.push({ label: 'Investment amount', value: application.investmentAmount });
 
@@ -209,12 +216,19 @@ export default function CaseFileSummary({ applicationId, continueLabel, onContin
               </h2>
               <div style={styles.sectionCard}>
                 <div style={styles.fieldGrid}>
-                  {section.fields.map(field => (
-                    <div key={field.key} style={styles.fieldRow}>
-                      <p style={styles.fieldLabel}>{field.label}</p>
-                      <p style={styles.fieldValue}>{field.value}</p>
-                    </div>
-                  ))}
+                  {section.fields.map(field => {
+                    let displayValue = field.value;
+                    try {
+                      const parsed = JSON.parse(field.value);
+                      if (Array.isArray(parsed)) displayValue = parsed.join(', ');
+                    } catch { /* not JSON — use as-is */ }
+                    return (
+                      <div key={field.key} style={styles.fieldRow}>
+                        <p style={styles.fieldLabel}>{field.label}</p>
+                        <p style={styles.fieldValue}>{displayValue}</p>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>
