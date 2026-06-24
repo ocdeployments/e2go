@@ -675,22 +675,22 @@ const FLOWS = [
 
 const SILOS = [
   {
-    resolved: false,
-    title:'SILO — Q0-08c (FDD status answer) Captured but Not Consumed',
-    desc:'Q0-08c asks franchise applicants "Have you received the FDD from the franchisor?" — options: Yes / Being offered / Early discussions. The answer is stored in result_json.answers[\'Q0-08c\']. But: (1) the results page does not read it to show a "Start FDD Analysis" CTA for applicants who have an FDD in hand; (2) buildCaseProfile() does not extract it to set any flag; (3) gap analysis does not factor it in; (4) dashboard does not use it to route users to /fdd. A franchise applicant who answers "Yes, I have the FDD" gets the exact same results screen as one who hasn\'t. Fix: results page reads Q0-08c from quiz_session.result_json.answers and shows an FDD Intelligence CTA when value includes "yes" or "being offered".',
-    fix:'Wire Q0-08c → results page CTA. If Q0-08c = "Yes" or "Being offered" → show "Analyse Your FDD" card linking to /fdd. One read + conditional render in results/page.tsx.'
+    resolved: true,
+    title:'RESOLVED — Q0-08c (FDD status answer) Now Drives Results-Page CTA',
+    desc:'Q0-08c asks franchise applicants "Have you received the FDD from the franchisor?" — options: Yes / Being offered / Early discussions. The answer is stored in result_json.answers[\'Q0-08c\']. Was: answer stored but never consumed. Fixed Session 68: results/page.tsx reads Q0-08c, derives fddReceived / fddOffered booleans, renders a conditional FDD CTA card. If "Yes — I have the FDD": solid gold "Analyse My FDD Now →" button + "extract Item 19 performance data" copy. If "offered": muted outline button + softer copy about running the tool when the FDD arrives. Card sits between franchise teaser zone and FAQ. Q0-08c answer is now connected to user action.',
+    fix:'RESOLVED Session 68. results/page.tsx lines ~556–561 derive fddReceived/fddOffered from data.answers[\'Q0-08c\']. Conditional card renders at Zone 5b with dynamic copy and button weight.'
   },
   {
-    resolved: false,
-    title:'PARTIAL SILO — Field Quality Badges Only on Story Section',
-    desc:'useFieldQuality.ts hook calls /api/case-file/field-quality which evaluates 8 fields across 5 sections: story (M3-S1-01/02/03), qualifications (M3-Q-04), business (M3-B-MKT, M3-B-OPS), source of funds (M3-H-NEW-01), ties (M3-K-TIES). But useFieldQuality is only imported in apply/story/page.tsx — the other 4 sections show no quality badges. Officers care most about the qualifications and business plan fields, which are currently unrated. Fix: import useFieldQuality in apply/qualifications, apply/business, apply/investment, and apply/ties pages, wire the relevant field keys.',
-    fix:'Add useFieldQuality to 4 remaining apply section pages. 5–10 minute change per page. Already works — just needs the import and field key mapping.'
+    resolved: true,
+    title:'RESOLVED — Field Quality Badges Extended to All 5 Apply Sections',
+    desc:'useFieldQuality.ts hook calls /api/case-file/field-quality which evaluates fields across 5 sections. Was: hook only wired in apply/story/page.tsx (3 story fields). Fixed Session 68: (1) FIELD_CRITERIA keys in /api/case-file/field-quality/route.ts updated to match actual form question keys — M3-B-MKT→M3-K-03, M3-B-OPS→M3-G-09, M3-H-NEW-01→M3-H-01, M3-K-TIES→M3-T-08. (2) QUALITY_CHECK_FIELDS in useFieldQuality.ts updated to match. (3) useFieldQuality hook + onBlur + badge/feedback added to apply/qualifications (M3-Q-04), apply/business (M3-K-03, M3-G-09), apply/investment (M3-H-01), apply/ties (M3-T-08). All 5 sections now surface quality ratings on blur.',
+    fix:'RESOLVED Session 68. Updated FIELD_CRITERIA keys in route.ts + QUALITY_CHECK_FIELDS in hook. Added import, hook call, qResult/badge computation, onBlur, badge span, feedback div to 4 pages.'
   },
   {
-    resolved: false,
-    title:'PARTIAL SILO — FDD Compare Has No Preferred-Brand Writeback',
-    desc:'When a user compares 2–4 FDD analyses at /fdd/compare and identifies a preferred brand, there is no mechanism to mark one as "selected" or write the brand name back to the case file (e.g., answers table, business_name on applications). The comparison is ephemeral. Gap: users must manually remember which brand won and navigate back. Fix: add a "Select this FDD as my primary" button on the compare page that writes franchise_name → M2-BIZ-NAME answer key and the fddId → app_settings or applications row.',
-    fix:'Add single CTA on compare page. POST /api/answers with franchise brand name. Low effort, closes the FDD Compare → Case File data flow.'
+    resolved: true,
+    title:'RESOLVED — FDD Compare Preferred-Brand Writeback Added',
+    desc:'When a user compares 2–4 FDD analyses at /fdd/compare, there was no mechanism to mark one as selected or write the brand name back to the case file. Fixed Session 68: fdd/compare/page.tsx loads the user\'s applicationId via Supabase browser client on mount. Each column header now shows a "Select as primary →" button (gold outline, DM Sans, 10px caps). On click: POSTs to /api/answers with { question_key: \'M3-F-09\', answer_value: col.franchise_name, application_id }. Then navigates to /fdd/[col.id]/score. Selecting state prevents double-fire. Button hidden when applicationId not yet loaded.',
+    fix:'RESOLVED Session 68. compare/page.tsx: added createBrowserSupabaseClient, applicationId + selecting state, loadAppId useEffect, selectAsPrimary() callback, and button per column header.'
   },
   {
     resolved: true,
