@@ -1,6 +1,62 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 23, 2026 — Session 62 cont: Feature inventory audit complete. 5 missing features found and added. All stale entries corrected. Gap list fully cleared.
+**Last Updated:** June 23, 2026 — Session 63: Sprint batch complete. OPS-1/2/3/4/5, ENG-1, ENG-2, INFRA-1 all shipped. Build clean. Pushed to dev (70b28e5). 8 commits.
+
+**Session 63 — Sprint batch: OPS-4, OPS-5, ENG-1, ENG-2, INFRA-1:**
+
+(0) **Discovery: ENG-1 was already fully built** — KB wiring (+1.4 pts, generation-engine.ts lines 683-692), cross-session coaching memory (simulator/page.tsx lines 531-561), multi-turn probing (/api/simulator/follow-up route). Zero code needed for ENG-1.
+
+(1) **INFRA-1 P0 — FAQ route Anthropic violation fixed**: `/api/faq/ask/route.ts` was importing and calling `@anthropic-ai/sdk` as a streaming fallback. Removed. Replaced with dual OpenRouter calls: primary `xiaomi/mimo-v2.5`, fallback `google/gemini-2.5-flash`. ANTHROPIC_API_KEY now only in generation-engine.ts + /api/fdd/*.
+
+(2) **OPS-1/2/3 — Admin Command Center**: Full `/admin/page.tsx` rebuild (350 lines). 10 parallel Supabase queries. Sections: kill switch + maintenance banners, AdminControls toggle, 5 overview cards, API Cost Intelligence (model breakdown), generation pipeline status, stuck users table, recent payments, users table. Kill switch and maintenance mode editable live via AdminControls.tsx client component.
+
+(3) **OPS-4 — Revenue Intelligence** (`/admin/revenue/page.tsx`): All-time revenue, MoM % change, monthly sparkline (last 6 months), linear revenue projection (+3m, +6m), LTV by tier table, conversion funnel with drop-off rates, churn signals (paid users inactive 14+ days).
+
+(4) **OPS-5 — Quality & Growth Intelligence** (`/admin/quality/page.tsx`): Generation quality (avg humanization score, consistency gate fail rate, revision rate, AI detection score distribution, job status breakdown). FDD extraction quality (avg fields, low-confidence count, flag count, alert if < 5 fields). NPS section with SQL scaffold when table missing. Prompt version registry (7-entry static audit trail).
+
+(5) **ENG-2 — FDD extraction prompt tuning (+1.0 pts)**: Expanded `CHUNK_A_SYSTEM` to cover 8 franchise categories with category-specific terminology (home care, fitness, education, healthcare, B2B, home-based, food/retail, automotive). Added PDF table artifact handling + numeric extraction rules. Chunk D (Item 19) improved with table-format reading notes, territory billing guidance, cherry-pick detection. Recovery pass threshold 3→2; full-doc coverage; 6-field terminology variant guidance.
+
+(6) **ENG-2 — Adaptive interview difficulty (+0.3 pts)**: `simulator-engine.ts` — after all weak-point and gap probes assembled, if total probe count < 2 AND questions < 11, injects 2 adversarial escalation questions from a pool of 8. Pool covers: remote-operation challenge, financial contingency, passive-vs-active management, nonimmigrant intent, due diligence, competitor awareness. Filters overlap with already-triggered denial/intent probes.
+
+(7) **Supporting infra already committed (S62 overflow)**:
+- `vercel.json`: health-watchdog cron every 5 min
+- `/api/admin/settings`: kill switch + maintenance toggle with audit log
+- `/api/cron/health-watchdog`: stuck job detection, writes to cron_log
+- SQL migrations: llm_cost_log, cron_log, admin_audit_log (applied to Supabase by owner)
+
+**Score impact summary (cumulative):**
+- ENG-1: +2.9 pts already built (KB wiring 1.4 + coaching memory 0.8 + multi-turn probing 0.7)
+- ENG-2: +1.3 pts added this session (FDD tuning 1.0 + adaptive difficulty 0.3)
+- Total engine improvement: ~4.2 pts above last audit baseline of 7.6 → target 9/10
+
+**Remaining backlog (unbuilt):**
+- ENG-2: doc gen archetype template variants (+0.4 pts) — generate different section emphasis based on investor archetype
+- ENG-2: quiz conditional branch paths (+0.3 pts) — different question flow for buyer vs builder vs investor archetypes
+- INFRA-1 P1: connection pooler note (Vercel env — add ?pgbouncer=true to pooler URL — code change not needed)
+- INFRA-1 P1: generation pipeline resume from checkpoint (reconnect SSE and pick up from last completed step)
+- INFRA-1 P2: soft-delete (add deleted_at to applications + profiles — SQL migration only)
+- OPS-5: NPS collection UI (post-download prompt modal + /api/nps/submit route)
+- NPS table: SQL `CREATE TABLE nps_scores` (shown in /admin/quality page with full SQL)
+
+**Owner actions required (unchanged):**
+- CRON_SECRET env var must be set in Vercel for health-watchdog auth to work
+- Connection pooler: add `?pgbouncer=true&connection_limit=1` to DATABASE_URL in Vercel env
+- NPS table: paste SQL from /admin/quality → NPS section → SQL accordion into Supabase SQL editor
+
+**Session 62 cont — Roadmap tab additions:**
+- TAB: Added "Roadmap" tab to FEATURE_INVENTORY.html
+- ENGINE QUALITY: Scores from all 3 audits (S26: 6.9, S35: 7.6, target: 9.0). Per-engine bars for 10 engines. 9 open gaps with point-impact estimates, each linked to a sprint.
+- SPRINTS (8 total):
+  - OPS-1: API Cost Intelligence (critical / 1 session) — llm_cost_log, cost dashboard, reload alert
+  - OPS-2: System Health & Self-Healing (high / 1–2 sessions) — watchdog cron, /admin/system-status, kill switch
+  - OPS-3: Admin Command Center (high / 2 sessions) — user detail, tier override, stuck users, feature flags
+  - OPS-4: Revenue Intelligence (high / 1 session) — MRR, projections, funnel, churn signals
+  - OPS-5: Quality & Growth Intelligence (medium / 2 sessions) — quality dashboard, NPS, mobile QA
+  - ENG-1: Engine Quality Priority (high / 2 sessions) — KB→docgen +1.4pts, coaching memory +0.8pts, live gap recalc +0.5pts
+  - ENG-2: Engine Quality Advanced (medium / 2–3 sessions) — archetype variants, adaptive difficulty, FDD prompt tuning
+  - INFRA-1: Infrastructure Hardening (high / 1 session) — FAQ Anthropic violation P0, pooler, resume, rate limit, soft-delete
+- GAPS: Added "Performance & Efficiency — Quick Wins" group (6 items)
+- TAB: Added "Smoke Test" tab — 108 checklist items, 14 page groups, localStorage persistence
 
 **Inventory audit findings (Session 62):**
 - ADDED: Ask E2go FAQ Chat (FaqChat.tsx + /api/faq/ask, 3-layer RAG, public, seeded)
