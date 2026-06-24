@@ -78,5 +78,9 @@ export default withSentryConfig(nextConfig, {
 
   // Tree-shake Sentry debug code in production builds.
   hideSourceMaps: true,
-  disableLogger: true,
+  webpack: {
+    treeshake: {
+      removeDebugLogging: true,
+    },
+  },
 });

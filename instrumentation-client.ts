@@ -1,5 +1,7 @@
 import * as Sentry from '@sentry/nextjs';
 
+export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;
+
 // Only initialise when DSN is present — local dev without the key is a no-op.
 if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
   Sentry.init({
