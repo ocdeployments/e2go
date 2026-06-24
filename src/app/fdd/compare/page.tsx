@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { createBrowserSupabaseClient } from '@/lib/supabase';
 import type { CompareResponse, ComparisonColumn } from '@/types/fdd-compare';
 
 // ============================================================================
@@ -157,6 +158,34 @@ function FddCompareContent() {
   const [data, setData] = useState<CompareResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [applicationId, setApplicationId] = useState<string | null>(null);
+  const [selecting, setSelecting] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadAppId = async () => {
+      const supabase = createBrowserSupabaseClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: app } = await supabase.from('applications').select('id').eq('user_id', user.id).order('created_at', { ascending: false }).limit(1).maybeSingle();
+      if (app?.id) setApplicationId(app.id);
+    };
+    loadAppId();
+  }, []);
+
+  const selectAsPrimary = useCallback(async (col: ComparisonColumn) => {
+    if (!applicationId) return;
+    setSelecting(col.id);
+    try {
+      await fetch('/api/answers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question_key: 'M3-F-09', answer_value: col.franchise_name, application_id: applicationId }),
+      });
+      router.push(`/fdd/${col.id}/score`);
+    } catch {
+      setSelecting(null);
+    }
+  }, [applicationId, router]);
 
   const fddIds = searchParams.get('ids')?.split(',').filter(Boolean) ?? [];
 
@@ -242,9 +271,18 @@ function FddCompareContent() {
                   <p className="text-white font-medium text-sm leading-tight mb-1 line-clamp-2">
                     {col.franchise_name}
                   </p>
-                  <p className={`text-xs font-medium ${COMPAT_COLOR[col.compatibility ?? ''] ?? 'text-white/30'}`}>
+                  <p className={`text-xs font-medium mb-3 ${COMPAT_COLOR[col.compatibility ?? ''] ?? 'text-white/30'}`}>
                     {col.compatibility ?? 'Unscored'}
                   </p>
+                  {applicationId && (
+                    <button
+                      onClick={() => selectAsPrimary(col)}
+                      disabled={selecting === col.id}
+                      style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '10px', letterSpacing: '0.1em', textTransform: 'uppercase', padding: '6px 12px', border: '1px solid rgba(201,168,76,0.35)', background: 'transparent', color: '#C9A84C', cursor: selecting === col.id ? 'wait' : 'pointer', opacity: selecting && selecting !== col.id ? 0.4 : 1 }}
+                    >
+                      {selecting === col.id ? 'Selecting…' : 'Select as primary →'}
+                    </button>
+                  )}
                 </div>
               ))}
 
