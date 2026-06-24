@@ -148,7 +148,7 @@ export default function TabPage({
             {tabTitle}
           </h1>
           {tabDescription && (
-            <p className="mt-2 text-sm" style={{ color: 'rgba(245,240,232,0.5)' }}>
+            <p className="mt-2 text-sm" style={{ color: 'rgba(245,240,232,0.76)' }}>
               {tabDescription}
             </p>
           )}

@@ -970,16 +970,16 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '10px', fontWeight: 500, letterSpacing: '0.18em',
     textTransform: 'uppercase' as const, color: '#C9A84C',
   },
-  questionPill: { fontSize: '11px', color: 'rgba(245,240,232,0.4)', letterSpacing: '0.06em' },
+  questionPill: { fontSize: '11px', color: 'rgba(245,240,232,0.72)', letterSpacing: '0.06em' },
   introPill: {
     fontSize: '10px', fontWeight: 500, letterSpacing: '0.14em',
-    textTransform: 'uppercase' as const, color: 'rgba(245,240,232,0.35)',
+    textTransform: 'uppercase' as const, color: 'rgba(245,240,232,0.70)',
   },
   muteButton: { background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px', padding: '4px', opacity: 0.7 },
   timerLabel: { fontSize: '13px', fontVariantNumeric: 'tabular-nums', letterSpacing: '0.04em' },
   endButton: {
     background: 'transparent', border: '1px solid rgba(201,168,76,0.2)',
-    color: 'rgba(245,240,232,0.5)', fontSize: '11px', letterSpacing: '0.06em',
+    color: 'rgba(245,240,232,0.76)', fontSize: '11px', letterSpacing: '0.06em',
     padding: '6px 12px', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif",
   },
   recordedCard: {
@@ -1014,7 +1014,7 @@ const styles: Record<string, React.CSSProperties> = {
     lineHeight: 1.1, marginBottom: '12px',
   },
   readySubtext: {
-    fontSize: '15px', fontWeight: 300, color: 'rgba(245,240,232,0.55)',
+    fontSize: '15px', fontWeight: 300, color: 'rgba(245,240,232,0.78)',
     lineHeight: 1.65, margin: 0,
   },
   deviceChecks: {
@@ -1022,7 +1022,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   checkButton: {
     background: 'transparent', border: '1px solid rgba(201,168,76,0.25)',
-    color: 'rgba(245,240,232,0.5)', fontSize: '13px', letterSpacing: '0.06em',
+    color: 'rgba(245,240,232,0.76)', fontSize: '13px', letterSpacing: '0.06em',
     padding: '14px 20px', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif",
     textAlign: 'left' as const, width: '100%',
   },
@@ -1059,7 +1059,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   confirmNo: {
     background: 'transparent', border: '1px solid rgba(201,168,76,0.2)',
-    color: 'rgba(245,240,232,0.4)', fontSize: '13px', padding: '8px 18px',
+    color: 'rgba(245,240,232,0.72)', fontSize: '13px', padding: '8px 18px',
     cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", letterSpacing: '0.04em',
   },
   micTestCard: {
@@ -1069,7 +1069,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex', flexDirection: 'column' as const, gap: '12px',
   },
   micTestLabel: {
-    fontSize: '12px', color: 'rgba(245,240,232,0.5)', letterSpacing: '0.08em',
+    fontSize: '12px', color: 'rgba(245,240,232,0.76)', letterSpacing: '0.08em',
     textTransform: 'uppercase' as const,
   },
   micDoneButton: {
@@ -1088,7 +1088,7 @@ const styles: Record<string, React.CSSProperties> = {
     letterSpacing: '0.02em',
   },
   readyNote: {
-    fontSize: '11px', color: 'rgba(245,240,232,0.25)', margin: 0,
+    fontSize: '11px', color: 'rgba(245,240,232,0.65)', margin: 0,
     letterSpacing: '0.06em', textTransform: 'uppercase' as const,
   },
 
@@ -1108,7 +1108,7 @@ const styles: Record<string, React.CSSProperties> = {
     flexShrink: 0,
   },
   officerName: { fontSize: '15px', fontWeight: 500, color: '#f5f0e8', letterSpacing: '0.02em' },
-  officerTitle: { fontSize: '11px', color: 'rgba(245,240,232,0.35)', letterSpacing: '0.04em', marginTop: '2px' },
+  officerTitle: { fontSize: '11px', color: 'rgba(245,240,232,0.70)', letterSpacing: '0.04em', marginTop: '2px' },
   officerBubble: {
     padding: '28px 32px',
     background: 'rgba(201,168,76,0.03)',
@@ -1121,7 +1121,7 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#f5f0e8', lineHeight: 1.5, margin: 0,
   },
   introListeningHint: {
-    fontSize: '12px', color: 'rgba(245,240,232,0.25)', letterSpacing: '0.08em',
+    fontSize: '12px', color: 'rgba(245,240,232,0.65)', letterSpacing: '0.08em',
     textAlign: 'center' as const, marginTop: '4px',
   },
 
@@ -1133,7 +1133,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   questionCategory: {
     fontSize: '9px', fontWeight: 600, letterSpacing: '0.18em',
-    textTransform: 'uppercase' as const, color: 'rgba(201,168,76,0.5)', marginBottom: '14px',
+    textTransform: 'uppercase' as const, color: 'rgba(201,168,76,0.82)', marginBottom: '14px',
   },
   questionText: {
     fontFamily: "'Cormorant Garamond', serif", fontSize: '30px', fontWeight: 300,
@@ -1142,7 +1142,7 @@ const styles: Record<string, React.CSSProperties> = {
   questionContext: {
     marginTop: '16px', padding: '12px 16px',
     background: 'rgba(201,168,76,0.04)', border: '1px solid rgba(201,168,76,0.08)',
-    fontSize: '12px', color: 'rgba(245,240,232,0.45)', lineHeight: 1.6, margin: '16px 0 0',
+    fontSize: '12px', color: 'rgba(245,240,232,0.74)', lineHeight: 1.6, margin: '16px 0 0',
   },
 
   // ── State area (shared) ──
@@ -1153,7 +1153,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   stateLabel: {
     fontSize: '12px', fontWeight: 400, letterSpacing: '0.1em',
-    color: 'rgba(245,240,232,0.35)', textTransform: 'uppercase' as const,
+    color: 'rgba(245,240,232,0.70)', textTransform: 'uppercase' as const,
   },
 
   spinnerRow: { display: 'flex', justifyContent: 'center', padding: '8px 0' },
@@ -1169,7 +1169,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   transcriptLabel: {
     fontSize: '9px', fontWeight: 600, letterSpacing: '0.16em',
-    textTransform: 'uppercase' as const, color: 'rgba(245,240,232,0.3)', marginBottom: '10px',
+    textTransform: 'uppercase' as const, color: 'rgba(245,240,232,0.68)', marginBottom: '10px',
   },
   transcriptText: {
     fontSize: '15px', color: 'rgba(245,240,232,0.75)', lineHeight: 1.65, margin: 0, fontStyle: 'italic' as const,
@@ -1187,7 +1187,7 @@ const styles: Record<string, React.CSSProperties> = {
     background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.15)',
     fontSize: '13px', color: 'rgba(245,240,232,0.75)', lineHeight: 1.6,
   },
-  docRef: { marginTop: '10px', fontSize: '11px', color: 'rgba(245,240,232,0.35)', fontStyle: 'italic' as const },
+  docRef: { marginTop: '10px', fontSize: '11px', color: 'rgba(245,240,232,0.70)', fontStyle: 'italic' as const },
 
   errorBox: {
     width: '100%', padding: '24px',
@@ -1205,7 +1205,7 @@ const styles: Record<string, React.CSSProperties> = {
   voiceControls: { display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' as const },
   controlGhost: {
     background: 'transparent', border: '1px solid rgba(201,168,76,0.2)',
-    color: 'rgba(245,240,232,0.5)', fontSize: '12px', letterSpacing: '0.06em',
+    color: 'rgba(245,240,232,0.76)', fontSize: '12px', letterSpacing: '0.06em',
     padding: '10px 20px', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif",
   },
   controlStop: {
@@ -1217,13 +1217,13 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     gap: '20px', flexWrap: 'wrap' as const,
   },
-  autoAdvanceHint: { fontSize: '12px', color: 'rgba(245,240,232,0.3)', letterSpacing: '0.04em' },
+  autoAdvanceHint: { fontSize: '12px', color: 'rgba(245,240,232,0.68)', letterSpacing: '0.04em' },
   nextNowButton: {
     background: '#C9A84C', border: 'none', color: '#0a0a0a',
     fontSize: '14px', fontWeight: 500, padding: '14px 32px',
     cursor: 'pointer', fontFamily: "'DM Sans', sans-serif",
   },
-  processingHint: { textAlign: 'center' as const, fontSize: '12px', color: 'rgba(245,240,232,0.3)', letterSpacing: '0.08em' },
+  processingHint: { textAlign: 'center' as const, fontSize: '12px', color: 'rgba(245,240,232,0.68)', letterSpacing: '0.08em' },
 };
 
 const bars = {

@@ -93,7 +93,7 @@ export default function NpsModal({ triggerEvent = 'post_download', onClose }: Np
             <p style={{ color: '#C9A84C', fontSize: '18px', fontFamily: "'Cormorant Garamond', serif", fontWeight: 300 }}>
               Thank you for your feedback.
             </p>
-            <p className="text-sm mt-2" style={{ color: 'rgba(245,240,232,0.5)' }}>
+            <p className="text-sm mt-2" style={{ color: 'rgba(245,240,232,0.76)' }}>
               We read every response.
             </p>
           </div>
@@ -111,7 +111,7 @@ export default function NpsModal({ triggerEvent = 'post_download', onClose }: Np
               <button
                 onClick={handleDismiss}
                 className="ml-4 text-xs"
-                style={{ color: 'rgba(245,240,232,0.3)', flexShrink: 0, marginTop: 2 }}
+                style={{ color: 'rgba(245,240,232,0.68)', flexShrink: 0, marginTop: 2 }}
                 aria-label="Dismiss"
               >
                 ✕
@@ -138,13 +138,13 @@ export default function NpsModal({ triggerEvent = 'post_download', onClose }: Np
             </div>
 
             <div className="flex justify-between mb-5">
-              <span className="text-xs" style={{ color: 'rgba(245,240,232,0.35)' }}>Not likely</span>
-              <span className="text-xs" style={{ color: 'rgba(245,240,232,0.35)' }}>Extremely likely</span>
+              <span className="text-xs" style={{ color: 'rgba(245,240,232,0.70)' }}>Not likely</span>
+              <span className="text-xs" style={{ color: 'rgba(245,240,232,0.70)' }}>Extremely likely</span>
             </div>
 
             {score !== null && (
               <>
-                <p className="text-xs mb-2" style={{ color: 'rgba(245,240,232,0.5)' }}>
+                <p className="text-xs mb-2" style={{ color: 'rgba(245,240,232,0.76)' }}>
                   {LABELS[score] || 'What could we do better?'} (optional)
                 </p>
                 <textarea
@@ -175,7 +175,7 @@ export default function NpsModal({ triggerEvent = 'post_download', onClose }: Np
                 className="flex-1 py-2 text-sm font-medium transition-colors"
                 style={{
                   background: score !== null ? '#C9A84C' : 'rgba(201,168,76,0.15)',
-                  color: score !== null ? '#0a0a0a' : 'rgba(245,240,232,0.3)',
+                  color: score !== null ? '#0a0a0a' : 'rgba(245,240,232,0.68)',
                   borderRadius: 0,
                   cursor: score !== null ? 'pointer' : 'not-allowed',
                 }}
@@ -185,7 +185,7 @@ export default function NpsModal({ triggerEvent = 'post_download', onClose }: Np
               <button
                 onClick={handleDismiss}
                 className="px-4 py-2 text-xs"
-                style={{ color: 'rgba(245,240,232,0.4)', border: '1px solid rgba(201,168,76,0.12)', borderRadius: 0 }}
+                style={{ color: 'rgba(245,240,232,0.72)', border: '1px solid rgba(201,168,76,0.12)', borderRadius: 0 }}
               >
                 Skip
               </button>

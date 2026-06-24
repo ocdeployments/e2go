@@ -17,7 +17,7 @@ export default function OptionButton({ label, selected, onClick, disabled }: Opt
       style={{
         borderColor: selected ? '#C9A84C' : 'rgba(201,168,76,0.12)',
         backgroundColor: selected ? 'rgba(201,168,76,0.06)' : 'transparent',
-        color: selected ? '#f5f0e8' : 'rgba(245,240,232,0.55)',
+        color: selected ? '#f5f0e8' : 'rgba(245,240,232,0.78)',
         fontFamily: "'DM Sans', sans-serif",
         borderRadius: 0,
       }}

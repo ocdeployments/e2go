@@ -28,7 +28,7 @@ const QFN_KEY_MAP: Record<string, keyof FranchiseProfileAnswers> = {
 
 function ScoreBar({ value, max = 100, color = '#C9A84C' }: { value: number; max?: number; color?: string }) {
   return (
-    <div style={{ height: '4px', background: 'rgba(245,240,232,0.08)', borderRadius: 0, overflow: 'hidden' }}>
+    <div style={{ height: '4px', background: 'rgba(245,240,232,0.62)', borderRadius: 0, overflow: 'hidden' }}>
       <div style={{ height: '4px', width: `${Math.round((value / max) * 100)}%`, background: color, transition: 'width 0.6s ease' }} />
     </div>
   );
@@ -68,7 +68,7 @@ function BrandCard({ brand }: { brand: FranchiseBrand }) {
       style={{
         display: 'block',
         padding: '18px 20px',
-        border: '1px solid rgba(245,240,232,0.08)',
+        border: '1px solid rgba(245,240,232,0.62)',
         background: 'rgba(245,240,232,0.015)',
         textDecoration: 'none',
         transition: 'border-color 0.15s, background 0.15s',
@@ -79,22 +79,22 @@ function BrandCard({ brand }: { brand: FranchiseBrand }) {
           <span style={{ fontSize: '14px', color: '#f5f0e8', fontFamily: "'DM Sans', sans-serif", fontWeight: 500, display: 'block', marginBottom: '4px' }}>
             {brand.name}
           </span>
-          <span style={{ fontSize: '10px', color: 'rgba(245,240,232,0.35)', fontFamily: "'DM Sans', sans-serif", letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+          <span style={{ fontSize: '10px', color: 'rgba(245,240,232,0.70)', fontFamily: "'DM Sans', sans-serif", letterSpacing: '0.05em', textTransform: 'uppercase' }}>
             {catLabel}
           </span>
         </div>
         <E2Badge score={brand.e2CompatScore} />
       </div>
-      <p style={{ fontSize: '11px', color: 'rgba(245,240,232,0.45)', lineHeight: 1.6, fontFamily: "'DM Sans', sans-serif", marginBottom: '12px' }}>
+      <p style={{ fontSize: '11px', color: 'rgba(245,240,232,0.74)', lineHeight: 1.6, fontFamily: "'DM Sans', sans-serif", marginBottom: '12px' }}>
         {brand.description}
       </p>
       <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
         <div>
-          <span style={{ fontSize: '9px', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(245,240,232,0.25)', fontFamily: "'DM Sans', sans-serif", display: 'block', marginBottom: '2px' }}>Investment</span>
+          <span style={{ fontSize: '9px', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(245,240,232,0.65)', fontFamily: "'DM Sans', sans-serif", display: 'block', marginBottom: '2px' }}>Investment</span>
           <span style={{ fontSize: '12px', color: 'rgba(245,240,232,0.7)', fontFamily: "'DM Sans', sans-serif" }}>{investRange}</span>
         </div>
         <div>
-          <span style={{ fontSize: '9px', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(245,240,232,0.25)', fontFamily: "'DM Sans', sans-serif", display: 'block', marginBottom: '2px' }}>Staff at 12 months</span>
+          <span style={{ fontSize: '9px', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(245,240,232,0.65)', fontFamily: "'DM Sans', sans-serif", display: 'block', marginBottom: '2px' }}>Staff at 12 months</span>
           <span style={{ fontSize: '12px', color: 'rgba(245,240,232,0.7)', fontFamily: "'DM Sans', sans-serif" }}>{brand.staffingAt12Months.min}–{brand.staffingAt12Months.max} people</span>
         </div>
         {brand.item19Present && (
@@ -112,7 +112,7 @@ function BrandCard({ brand }: { brand: FranchiseBrand }) {
 const READINESS_CONFIG: Record<string, { color: string; label: string }> = {
   READY_FOR_INTRO: { color: 'rgba(34,197,94,0.85)', label: 'Ready for broker introduction' },
   NEARLY_READY:   { color: '#C9A84C', label: 'Nearly ready' },
-  REFINE_FIRST:   { color: 'rgba(245,240,232,0.4)', label: 'Refine your profile first' },
+  REFINE_FIRST:   { color: 'rgba(245,240,232,0.72)', label: 'Refine your profile first' },
 };
 
 // ─── Main component ───────────────────────────────────────────────────────────
@@ -195,7 +195,7 @@ export default function FranchiseMatchesPage() {
   if (loading) {
     return (
       <div style={{ minHeight: '100vh', background: '#0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <p style={{ color: 'rgba(245,240,232,0.3)', fontFamily: "'DM Sans', sans-serif", fontSize: '13px' }}>Scoring your profile…</p>
+        <p style={{ color: 'rgba(245,240,232,0.68)', fontFamily: "'DM Sans', sans-serif", fontSize: '13px' }}>Scoring your profile…</p>
       </div>
     );
   }
@@ -203,7 +203,7 @@ export default function FranchiseMatchesPage() {
   if (!result) {
     return (
       <div style={{ minHeight: '100vh', background: '#0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '16px' }}>
-        <p style={{ color: 'rgba(245,240,232,0.5)', fontFamily: "'DM Sans', sans-serif", fontSize: '14px' }}>Unable to load your match results.</p>
+        <p style={{ color: 'rgba(245,240,232,0.76)', fontFamily: "'DM Sans', sans-serif", fontSize: '14px' }}>Unable to load your match results.</p>
         <button onClick={() => router.push('/franchise/discover')} style={{ color: '#C9A84C', background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '13px', fontFamily: "'DM Sans', sans-serif" }}>
           ← Back to profiler
         </button>
@@ -226,7 +226,7 @@ export default function FranchiseMatchesPage() {
 
         {/* Header */}
         <div style={{ marginBottom: '48px' }}>
-          <a href="/franchise" style={{ fontSize: '11px', color: 'rgba(245,240,232,0.3)', fontFamily: "'DM Sans', sans-serif", textDecoration: 'none', display: 'inline-block', marginBottom: '32px' }}>
+          <a href="/franchise" style={{ fontSize: '11px', color: 'rgba(245,240,232,0.68)', fontFamily: "'DM Sans', sans-serif", textDecoration: 'none', display: 'inline-block', marginBottom: '32px' }}>
             ← Franchise Navigator
           </a>
           <span style={{ fontSize: '10px', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(201,168,76,0.6)', fontFamily: "'DM Sans', sans-serif", fontWeight: 500, display: 'block' }}>
@@ -236,8 +236,8 @@ export default function FranchiseMatchesPage() {
             Franchise category matches
           </h1>
           {profileAnswerCount < 12 && (
-            <div style={{ marginTop: '16px', padding: '10px 14px', border: '1px solid rgba(245,240,232,0.08)', background: 'rgba(245,240,232,0.02)', display: 'inline-flex', alignItems: 'center', gap: '10px' }}>
-              <span style={{ fontSize: '11px', color: 'rgba(245,240,232,0.4)', fontFamily: "'DM Sans', sans-serif" }}>
+            <div style={{ marginTop: '16px', padding: '10px 14px', border: '1px solid rgba(245,240,232,0.62)', background: 'rgba(245,240,232,0.02)', display: 'inline-flex', alignItems: 'center', gap: '10px' }}>
+              <span style={{ fontSize: '11px', color: 'rgba(245,240,232,0.72)', fontFamily: "'DM Sans', sans-serif" }}>
                 {profileAnswerCount} of 12 profiler questions answered —
               </span>
               <a href="/franchise/discover" style={{ fontSize: '11px', color: '#C9A84C', fontFamily: "'DM Sans', sans-serif", textDecoration: 'none' }}>
@@ -283,7 +283,7 @@ export default function FranchiseMatchesPage() {
 
         {/* Category scorecard */}
         <div style={{ marginBottom: '56px' }}>
-          <h2 style={{ fontSize: '13px', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(245,240,232,0.3)', fontFamily: "'DM Sans', sans-serif", marginBottom: '20px', fontWeight: 400 }}>
+          <h2 style={{ fontSize: '13px', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(245,240,232,0.68)', fontFamily: "'DM Sans', sans-serif", marginBottom: '20px', fontWeight: 400 }}>
             Category match scores
           </h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
@@ -306,15 +306,15 @@ export default function FranchiseMatchesPage() {
                           #{i + 1}
                         </span>
                       )}
-                      <span style={{ fontSize: '14px', color: isTop ? '#f5f0e8' : 'rgba(245,240,232,0.5)', fontFamily: "'DM Sans', sans-serif", fontWeight: isTop ? 500 : 400 }}>
+                      <span style={{ fontSize: '14px', color: isTop ? '#f5f0e8' : 'rgba(245,240,232,0.76)', fontFamily: "'DM Sans', sans-serif", fontWeight: isTop ? 500 : 400 }}>
                         {cat.label}
                       </span>
                     </div>
-                    <span style={{ fontSize: '22px', fontFamily: "'Cormorant Garamond', serif", fontWeight: 300, color: isTop ? '#C9A84C' : 'rgba(245,240,232,0.3)' }}>
+                    <span style={{ fontSize: '22px', fontFamily: "'Cormorant Garamond', serif", fontWeight: 300, color: isTop ? '#C9A84C' : 'rgba(245,240,232,0.68)' }}>
                       {cs.total}
                     </span>
                   </div>
-                  <ScoreBar value={cs.total} color={isTop ? '#C9A84C' : 'rgba(245,240,232,0.15)'} />
+                  <ScoreBar value={cs.total} color={isTop ? '#C9A84C' : 'rgba(245,240,232,0.62)'} />
                   {isTop && (
                     <div style={{ display: 'flex', gap: '16px', marginTop: '12px', flexWrap: 'wrap' }}>
                       {(Object.entries(dimLabels) as [keyof typeof cs, string][]).map(([dim, label]) => {
@@ -322,7 +322,7 @@ export default function FranchiseMatchesPage() {
                         return (
                           <div key={dim as string} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
                             <DimDot score={val} />
-                            <span style={{ fontSize: '10px', color: 'rgba(245,240,232,0.4)', fontFamily: "'DM Sans', sans-serif" }}>{label}</span>
+                            <span style={{ fontSize: '10px', color: 'rgba(245,240,232,0.72)', fontFamily: "'DM Sans', sans-serif" }}>{label}</span>
                           </div>
                         );
                       })}
@@ -337,7 +337,7 @@ export default function FranchiseMatchesPage() {
         {/* Brand shortlist */}
         {result.topBrands.length > 0 && (
           <div style={{ marginBottom: '56px' }}>
-            <h2 style={{ fontSize: '13px', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(245,240,232,0.3)', fontFamily: "'DM Sans', sans-serif", marginBottom: '20px', fontWeight: 400 }}>
+            <h2 style={{ fontSize: '13px', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(245,240,232,0.68)', fontFamily: "'DM Sans', sans-serif", marginBottom: '20px', fontWeight: 400 }}>
               Matched brands
             </h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '10px' }}>
@@ -352,7 +352,7 @@ export default function FranchiseMatchesPage() {
         <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'center', paddingTop: '24px', borderTop: '1px solid rgba(245,240,232,0.06)' }}>
           <a
             href="/franchise/discover"
-            style={{ fontSize: '12px', color: 'rgba(245,240,232,0.4)', fontFamily: "'DM Sans', sans-serif", textDecoration: 'underline', cursor: 'pointer' }}
+            style={{ fontSize: '12px', color: 'rgba(245,240,232,0.72)', fontFamily: "'DM Sans', sans-serif", textDecoration: 'underline', cursor: 'pointer' }}
           >
             Update my answers
           </a>
@@ -366,7 +366,7 @@ export default function FranchiseMatchesPage() {
           )}
           <a
             href="/dashboard"
-            style={{ fontSize: '12px', color: 'rgba(245,240,232,0.25)', fontFamily: "'DM Sans', sans-serif", textDecoration: 'none', marginLeft: 'auto' }}
+            style={{ fontSize: '12px', color: 'rgba(245,240,232,0.65)', fontFamily: "'DM Sans', sans-serif", textDecoration: 'none', marginLeft: 'auto' }}
           >
             ← Dashboard
           </a>

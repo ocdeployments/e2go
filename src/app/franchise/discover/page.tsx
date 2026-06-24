@@ -227,7 +227,7 @@ export default function FranchiseDiscoverPage() {
   if (loading) {
     return (
       <div style={{ minHeight: '100vh', background: '#0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <p style={{ color: 'rgba(245,240,232,0.3)', fontFamily: "'DM Sans', sans-serif", fontSize: '13px' }}>Loading your profile…</p>
+        <p style={{ color: 'rgba(245,240,232,0.68)', fontFamily: "'DM Sans', sans-serif", fontSize: '13px' }}>Loading your profile…</p>
       </div>
     );
   }
@@ -240,7 +240,7 @@ export default function FranchiseDiscoverPage() {
       <div style={{ minHeight: '100vh', background: '#0a0a0a', color: '#f5f0e8' }}>
         <div style={{ maxWidth: '620px', margin: '0 auto', padding: '64px 24px 80px' }}>
 
-          <a href="/franchise" style={{ fontSize: '11px', color: 'rgba(245,240,232,0.3)', fontFamily: "'DM Sans', sans-serif", textDecoration: 'none', display: 'inline-block', marginBottom: '40px' }}>
+          <a href="/franchise" style={{ fontSize: '11px', color: 'rgba(245,240,232,0.68)', fontFamily: "'DM Sans', sans-serif", textDecoration: 'none', display: 'inline-block', marginBottom: '40px' }}>
             ← Franchise Navigator
           </a>
 
@@ -250,7 +250,7 @@ export default function FranchiseDiscoverPage() {
           <h1 style={{ fontSize: '28px', fontFamily: "'Cormorant Garamond', serif", fontWeight: 300, color: '#f5f0e8', margin: '10px 0 16px' }}>
             Confirm your profile
           </h1>
-          <p style={{ fontSize: '13px', color: 'rgba(245,240,232,0.5)', lineHeight: 1.7, marginBottom: '32px', fontFamily: "'DM Sans', sans-serif" }}>
+          <p style={{ fontSize: '13px', color: 'rgba(245,240,232,0.76)', lineHeight: 1.7, marginBottom: '32px', fontFamily: "'DM Sans', sans-serif" }}>
             {hasPrefill
               ? "We've pulled this from your eligibility quiz. Confirm it's correct, then we'll ask only what we don't already know."
               : "Complete your eligibility quiz first to pre-fill this section. Or continue — we'll ask everything we need."}
@@ -270,7 +270,7 @@ export default function FranchiseDiscoverPage() {
                     gap: '24px',
                   }}
                 >
-                  <span style={{ fontSize: '11px', color: 'rgba(245,240,232,0.35)', fontFamily: "'DM Sans', sans-serif", letterSpacing: '0.04em', flexShrink: 0, minWidth: '130px' }}>
+                  <span style={{ fontSize: '11px', color: 'rgba(245,240,232,0.70)', fontFamily: "'DM Sans', sans-serif", letterSpacing: '0.04em', flexShrink: 0, minWidth: '130px' }}>
                     {f.label}
                   </span>
                   <span style={{ fontSize: '12px', color: '#f5f0e8', fontFamily: "'DM Sans', sans-serif", textAlign: 'right' }}>
@@ -282,7 +282,7 @@ export default function FranchiseDiscoverPage() {
           )}
 
           {hasPrefill && (
-            <p style={{ fontSize: '11px', color: 'rgba(245,240,232,0.3)', fontFamily: "'DM Sans', sans-serif", marginBottom: '28px', lineHeight: 1.6 }}>
+            <p style={{ fontSize: '11px', color: 'rgba(245,240,232,0.68)', fontFamily: "'DM Sans', sans-serif", marginBottom: '28px', lineHeight: 1.6 }}>
               Need to change something?{' '}
               <a href="/quiz" style={{ color: 'rgba(201,168,76,0.6)', textDecoration: 'underline' }}>Update your eligibility quiz</a>
               {' '}— changes sync here automatically.
@@ -329,7 +329,7 @@ export default function FranchiseDiscoverPage() {
             <span style={{ fontSize: '10px', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(201,168,76,0.6)', fontFamily: "'DM Sans', sans-serif" }}>
               Step 2 of 2 — Profiler
             </span>
-            <span style={{ fontSize: '10px', color: 'rgba(245,240,232,0.3)', fontFamily: "'DM Sans', sans-serif" }}>
+            <span style={{ fontSize: '10px', color: 'rgba(245,240,232,0.68)', fontFamily: "'DM Sans', sans-serif" }}>
               {answeredCount} / {QFN_QUESTIONS.length} answered
             </span>
           </div>
@@ -340,14 +340,14 @@ export default function FranchiseDiscoverPage() {
 
         {/* Current question */}
         <div style={{ marginBottom: '32px' }}>
-          <div style={{ fontSize: '10px', letterSpacing: '0.1em', color: 'rgba(245,240,232,0.25)', fontFamily: "'DM Sans', sans-serif", marginBottom: '12px' }}>
+          <div style={{ fontSize: '10px', letterSpacing: '0.1em', color: 'rgba(245,240,232,0.65)', fontFamily: "'DM Sans', sans-serif", marginBottom: '12px' }}>
             Question {currentQ + 1} of {QFN_QUESTIONS.length}
           </div>
           <h2 style={{ fontSize: '20px', fontFamily: "'Cormorant Garamond', serif", fontWeight: 400, color: '#f5f0e8', lineHeight: 1.4, marginBottom: q.helper ? '12px' : '0' }}>
             {q.label}
           </h2>
           {q.helper && (
-            <p style={{ fontSize: '11px', color: 'rgba(245,240,232,0.35)', lineHeight: 1.7, fontFamily: "'DM Sans', sans-serif", marginTop: '8px' }}>
+            <p style={{ fontSize: '11px', color: 'rgba(245,240,232,0.70)', lineHeight: 1.7, fontFamily: "'DM Sans', sans-serif", marginTop: '8px' }}>
               {q.helper}
             </p>
           )}
@@ -399,7 +399,7 @@ export default function FranchiseDiscoverPage() {
             {currentQ > 0 && (
               <button
                 onClick={() => setCurrentQ(q => q - 1)}
-                style={{ fontSize: '12px', color: 'rgba(245,240,232,0.35)', background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif' ", padding: 0 }}
+                style={{ fontSize: '12px', color: 'rgba(245,240,232,0.70)', background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif' ", padding: 0 }}
               >
                 ← Previous
               </button>
@@ -407,7 +407,7 @@ export default function FranchiseDiscoverPage() {
             {currentQ < QFN_QUESTIONS.length - 1 && (
               <button
                 onClick={() => setCurrentQ(q => q + 1)}
-                style={{ fontSize: '12px', color: 'rgba(245,240,232,0.35)', background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", padding: 0 }}
+                style={{ fontSize: '12px', color: 'rgba(245,240,232,0.70)', background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", padding: 0 }}
               >
                 Skip →
               </button>
@@ -460,7 +460,7 @@ export default function FranchiseDiscoverPage() {
             >
               See my matches →
             </button>
-            <p style={{ fontSize: '11px', color: 'rgba(245,240,232,0.25)', fontFamily: "'DM Sans', sans-serif", marginTop: '10px' }}>
+            <p style={{ fontSize: '11px', color: 'rgba(245,240,232,0.65)', fontFamily: "'DM Sans', sans-serif", marginTop: '10px' }}>
               All {QFN_QUESTIONS.length} questions answered
             </p>
           </div>
@@ -470,7 +470,7 @@ export default function FranchiseDiscoverPage() {
           <div style={{ marginTop: '32px', paddingTop: '24px', borderTop: '1px solid rgba(245,240,232,0.06)' }}>
             <button
               onClick={() => router.push('/franchise/matches')}
-              style={{ fontSize: '12px', color: 'rgba(245,240,232,0.35)', background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", padding: 0 }}
+              style={{ fontSize: '12px', color: 'rgba(245,240,232,0.70)', background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", padding: 0 }}
             >
               See partial results with {answeredCount} answers →
             </button>

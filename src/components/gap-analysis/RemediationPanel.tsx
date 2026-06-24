@@ -144,7 +144,7 @@ export default function RemediationPanel({
       {total > 0 && (
         <div style={{ marginBottom: '12px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-            <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.1em', color: 'rgba(245,240,232,0.4)' }}>
+            <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.1em', color: 'rgba(245,240,232,0.72)' }}>
               PROGRESS
             </span>
             <span style={{ fontSize: '11px', color: done === total ? '#22c55e' : 'rgba(245,240,232,0.4)' }}>
@@ -167,8 +167,8 @@ export default function RemediationPanel({
         <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', marginBottom: '14px' }}>
           {items.map(item => {
             const icon = item.complete ? '✓' : item.quality === 'weak' ? '⚠' : '○';
-            const iconColor = item.complete ? '#22c55e' : item.quality === 'weak' ? '#f59e0b' : 'rgba(245,240,232,0.25)';
-            const textColor = item.complete ? 'rgba(245,240,232,0.4)' : item.quality === 'weak' ? 'rgba(245,240,232,0.75)' : 'rgba(245,240,232,0.65)';
+            const iconColor = item.complete ? '#22c55e' : item.quality === 'weak' ? '#f59e0b' : 'rgba(245,240,232,0.65)';
+            const textColor = item.complete ? 'rgba(245,240,232,0.72)' : item.quality === 'weak' ? 'rgba(245,240,232,0.75)' : 'rgba(245,240,232,0.65)';
             return (
               <div key={item.label} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
                 <span style={{ flexShrink: 0, marginTop: '1px', fontSize: '12px', color: iconColor }}>
@@ -261,7 +261,7 @@ export default function RemediationPanel({
 
       {/* ── Save status indicator ─────────────────────────────────────── */}
       {saveStatus !== 'idle' && (
-        <div style={{ fontSize: '10px', letterSpacing: '0.06em', color: saveStatus === 'saved' ? '#22c55e' : 'rgba(245,240,232,0.35)', marginTop: '8px' }}>
+        <div style={{ fontSize: '10px', letterSpacing: '0.06em', color: saveStatus === 'saved' ? '#22c55e' : 'rgba(245,240,232,0.70)', marginTop: '8px' }}>
           {saveStatus === 'saving' ? 'Saving…' : '✓ Saved'}
         </div>
       )}
@@ -305,7 +305,7 @@ function InlineField({ field, value, onChange }: InlineFieldProps) {
 
   return (
     <div onClick={e => e.stopPropagation()}>
-      <label style={{ display: 'block', fontSize: '11px', color: 'rgba(245,240,232,0.55)', marginBottom: '5px', lineHeight: 1.4 }}>
+      <label style={{ display: 'block', fontSize: '11px', color: 'rgba(245,240,232,0.78)', marginBottom: '5px', lineHeight: 1.4 }}>
         {field.label}
       </label>
       {field.inputType === 'select' ? (
@@ -381,7 +381,7 @@ function DocUploadRow({ doc, uploading, onFile }: DocUploadRowProps) {
       >
         <span style={{ fontSize: '14px' }}>{uploading ? '…' : '↑'}</span>
         <span>{uploading ? `Uploading ${doc.label}…` : `Upload ${doc.label}`}</span>
-        <span style={{ marginLeft: 'auto', fontSize: '10px', color: 'rgba(245,240,232,0.25)' }}>PDF or DOCX</span>
+        <span style={{ marginLeft: 'auto', fontSize: '10px', color: 'rgba(245,240,232,0.65)' }}>PDF or DOCX</span>
       </label>
     </div>
   );

@@ -539,7 +539,7 @@ export default function SimulatorQuickStart() {
             <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '36px', fontWeight: 300, color: '#f5f0e8', lineHeight: 1.1, marginBottom: '12px' }}>
               Tell us about your case
             </h1>
-            <p style={{ fontSize: '14px', fontWeight: 300, color: 'rgba(245,240,232,0.55)', lineHeight: 1.7 }}>
+            <p style={{ fontSize: '14px', fontWeight: 300, color: 'rgba(245,240,232,0.78)', lineHeight: 1.7 }}>
               The more context you give us, the more realistic and targeted your practice interview will be.
               This takes about two minutes.
             </p>
@@ -758,10 +758,10 @@ export default function SimulatorQuickStart() {
               {overallStatus === 'complete' ? 'Extraction complete' : overallStatus === 'error' ? 'Something went wrong' : 'Reading your documents…'}
             </h1>
             {overallStatus === 'processing' && (
-              <p style={{ fontSize: '13px', color: 'rgba(245,240,232,0.4)' }}>This takes about 30–60 seconds per document.</p>
+              <p style={{ fontSize: '13px', color: 'rgba(245,240,232,0.72)' }}>This takes about 30–60 seconds per document.</p>
             )}
             {overallStatus === 'complete' && (
-              <p style={{ fontSize: '13px', color: 'rgba(245,240,232,0.4)' }}>
+              <p style={{ fontSize: '13px', color: 'rgba(245,240,232,0.72)' }}>
                 {completedCount} document{completedCount !== 1 ? 's' : ''} processed. Redirecting…
               </p>
             )}
@@ -788,14 +788,14 @@ export default function SimulatorQuickStart() {
                 marginBottom: '8px',
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
-                  <div style={{ width: '8px', height: '8px', flexShrink: 0, background: doc.status === 'complete' ? '#C9A84C' : doc.status === 'failed' ? 'rgba(200,80,80,0.7)' : doc.status === 'waiting' ? 'rgba(245,240,232,0.15)' : 'rgba(201,168,76,0.5)' }} />
+                  <div style={{ width: '8px', height: '8px', flexShrink: 0, background: doc.status === 'complete' ? '#C9A84C' : doc.status === 'failed' ? 'rgba(200,80,80,0.7)' : doc.status === 'waiting' ? 'rgba(245,240,232,0.62)' : 'rgba(201,168,76,0.82)' }} />
                   <div style={{ minWidth: 0 }}>
                     <p style={{ fontSize: '13px', color: doc.status === 'failed' ? 'rgba(200,120,120,0.8)' : '#f5f0e8', whiteSpace: 'nowrap' as const, overflow: 'hidden', textOverflow: 'ellipsis' }}>{doc.filename}</p>
                     {doc.error && <p style={{ fontSize: '11px', color: 'rgba(200,120,120,0.6)', marginTop: '2px' }}>{doc.error}</p>}
                   </div>
                 </div>
                 <div style={{ flexShrink: 0, marginLeft: '12px' }}>
-                  <span style={{ fontSize: '11px', textTransform: 'uppercase' as const, letterSpacing: '0.05em', color: doc.status === 'complete' ? 'rgba(201,168,76,0.6)' : doc.status === 'failed' ? 'rgba(200,120,120,0.6)' : 'rgba(245,240,232,0.25)' }}>
+                  <span style={{ fontSize: '11px', textTransform: 'uppercase' as const, letterSpacing: '0.05em', color: doc.status === 'complete' ? 'rgba(201,168,76,0.6)' : doc.status === 'failed' ? 'rgba(200,120,120,0.6)' : 'rgba(245,240,232,0.65)' }}>
                     {doc.status === 'waiting' ? 'Waiting…' : doc.status === 'classified' ? 'Classifying…' : doc.status === 'extracting' ? 'Extracting…' : doc.status === 'complete' ? (doc.fieldsFound !== undefined ? `${doc.fieldsFound} fields` : 'Complete') : 'Failed'}
                   </span>
                 </div>
@@ -872,7 +872,7 @@ export default function SimulatorQuickStart() {
             <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '36px', fontWeight: 300, color: '#f5f0e8', lineHeight: 1.1, marginBottom: '12px' }}>
               Let&apos;s build a profile
             </h1>
-            <p style={{ fontSize: '14px', fontWeight: 300, color: 'rgba(245,240,232,0.5)', lineHeight: 1.7 }}>
+            <p style={{ fontSize: '14px', fontWeight: 300, color: 'rgba(245,240,232,0.76)', lineHeight: 1.7 }}>
               {docsExtracted > 0
                 ? `Documents processed — ${docsExtracted} additional field${docsExtracted > 1 ? 's' : ''} found. Review your profile below.`
                 : 'Your profile is ready. Review the details below before moving to interview preparation.'}
@@ -940,7 +940,7 @@ export default function SimulatorQuickStart() {
           <div style={{ marginTop: '16px', textAlign: 'center' as const }}>
             <button
               onClick={() => confirmedAppId && router.push(`/simulator/case-file?applicationId=${confirmedAppId}`)}
-              style={{ background: 'none', border: 'none', color: 'rgba(245,240,232,0.3)', fontSize: '12px', cursor: 'pointer', textDecoration: 'underline' }}
+              style={{ background: 'none', border: 'none', color: 'rgba(245,240,232,0.68)', fontSize: '12px', cursor: 'pointer', textDecoration: 'underline' }}
             >
               Skip to preparation guide
             </button>
@@ -1001,7 +1001,7 @@ function FormField({
         {required && <span style={{ color: '#C9A84C', marginLeft: '4px' }}>*</span>}
       </label>
       {hint && (
-        <p style={{ fontSize: '11px', color: 'rgba(245,240,232,0.3)', marginBottom: '8px', lineHeight: 1.4 }}>
+        <p style={{ fontSize: '11px', color: 'rgba(245,240,232,0.68)', marginBottom: '8px', lineHeight: 1.4 }}>
           {hint}
         </p>
       )}
@@ -1027,10 +1027,10 @@ function SelectInput({ value, onChange, placeholder, options }: { value: string;
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      style={{ width: '100%', padding: '11px 14px', background: 'rgba(10,10,10,0.95)', border: '1px solid rgba(201,168,76,0.18)', color: value ? '#f5f0e8' : 'rgba(245,240,232,0.35)', fontSize: '14px', fontFamily: "'DM Sans', sans-serif", appearance: 'none' as const, cursor: 'pointer', boxSizing: 'border-box' as const }}
+      style={{ width: '100%', padding: '11px 14px', background: 'rgba(10,10,10,0.95)', border: '1px solid rgba(201,168,76,0.18)', color: value ? '#f5f0e8' : 'rgba(245,240,232,0.70)', fontSize: '14px', fontFamily: "'DM Sans', sans-serif", appearance: 'none' as const, cursor: 'pointer', boxSizing: 'border-box' as const }}
     >
       {placeholder && (
-        <option value="" style={{ background: '#0a0a0a', color: 'rgba(245,240,232,0.35)' }}>
+        <option value="" style={{ background: '#0a0a0a', color: 'rgba(245,240,232,0.70)' }}>
           {placeholder}
         </option>
       )}
@@ -1057,10 +1057,10 @@ function DropZone({ isDragging, onDragOver, onDragLeave, onDrop, onClick }: { is
         <polyline points="17 8 12 3 7 8" />
         <line x1="12" y1="3" x2="12" y2="15" />
       </svg>
-      <p style={{ fontSize: '13px', color: 'rgba(245,240,232,0.55)', marginBottom: '3px' }}>
+      <p style={{ fontSize: '13px', color: 'rgba(245,240,232,0.78)', marginBottom: '3px' }}>
         Drop files here or <span style={{ color: '#C9A84C' }}>browse</span>
       </p>
-      <p style={{ fontSize: '11px', color: 'rgba(245,240,232,0.25)' }}>
+      <p style={{ fontSize: '11px', color: 'rgba(245,240,232,0.65)' }}>
         PDF or DOCX — cover letter and/or business plan
       </p>
     </div>
@@ -1087,7 +1087,7 @@ function FileRow({ file, onUpdateType, onRemove }: { file: { id: string; name: s
       )}
       <button
         onClick={(e) => { e.stopPropagation(); onRemove(file.id); }}
-        style={{ background: 'none', border: 'none', color: 'rgba(245,240,232,0.3)', cursor: 'pointer', padding: '2px', fontSize: '16px', lineHeight: 1 }}
+        style={{ background: 'none', border: 'none', color: 'rgba(245,240,232,0.68)', cursor: 'pointer', padding: '2px', fontSize: '16px', lineHeight: 1 }}
       >
         ×
       </button>
@@ -1154,7 +1154,7 @@ function ProfileRow({ label, value, placeholder, editable = false, onChange }: P
         fontSize: '11px',
         fontWeight: 500,
         letterSpacing: '0.05em',
-        color: 'rgba(245,240,232,0.35)',
+        color: 'rgba(245,240,232,0.70)',
         textTransform: 'uppercase' as const,
         width: '160px',
         flexShrink: 0,
@@ -1182,7 +1182,7 @@ function ProfileRow({ label, value, placeholder, editable = false, onChange }: P
       ) : (
         <span style={{
           fontSize: '14px',
-          color: hasValue ? '#f5f0e8' : 'rgba(245,240,232,0.18)',
+          color: hasValue ? '#f5f0e8' : 'rgba(245,240,232,0.62)',
           fontFamily: "'DM Sans', sans-serif",
         }}>
           {hasValue ? value : '—'}

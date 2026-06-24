@@ -312,7 +312,7 @@ export default function Module4Page() {
             <span style={{ color: getWordCountColor(), fontFamily: 'DM Sans, sans-serif', fontSize: '14px', fontWeight: 300 }}>
               {wordCount} words
             </span>
-            <span style={{ color: 'rgba(245,240,232,0.40)', fontFamily: 'DM Sans, sans-serif', fontSize: '13px', fontWeight: 300 }}>
+            <span style={{ color: 'rgba(245,240,232,0.72)', fontFamily: 'DM Sans, sans-serif', fontSize: '13px', fontWeight: 300 }}>
               {wordCount < 30 ? 'Aim for at least 50 words' : wordCount >= 50 ? 'Great!' : 'Almost there...'}
             </span>
           </div>
@@ -421,7 +421,7 @@ export default function Module4Page() {
           </div>
 
           <div className="bg-[rgba(201,168,76,0.04)] border-l-2 border-[#C9A84C] p-3 mb-5">
-            <p className="text-[rgba(245,240,232,0.55)] text-sm italic" style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 300 }}>
+            <p className="text-[rgba(245,240,232,0.76)] text-sm italic" style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 300 }}>
               Why we asking: {currentQuestion.why_it_matters}
             </p>
           </div>
@@ -452,7 +452,7 @@ export default function Module4Page() {
           <div className="flex justify-between items-center mt-6">
             <button
               onClick={handleSkipQuestion}
-              className="text-[rgba(245,240,232,0.35)] text-sm cursor-pointer hover:text-[rgba(245,240,232,0.60)] transition-colors"
+              className="text-[rgba(245,240,232,0.68)] text-sm cursor-pointer hover:text-[rgba(245,240,232,0.60)] transition-colors"
               style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 300 }}
             >
               Skip this question
@@ -503,7 +503,7 @@ export default function Module4Page() {
 
           <div className="mb-6">
             {summaryError ? (
-              <p className="text-[rgba(245,240,232,0.50)] text-sm mb-4" style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 300 }}>
+              <p className="text-[rgba(245,240,232,0.76)] text-sm mb-4" style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 300 }}>
                 Your answers have been saved. We were unable to generate a summary — your documents will still incorporate all your responses.
               </p>
             ) : summary.map((bullet, index) => (
@@ -522,7 +522,7 @@ export default function Module4Page() {
             ))}
           </div>
 
-          <p className="text-[rgba(245,240,232,0.40)] text-sm mb-8" style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 300 }}>
+          <p className="text-[rgba(245,240,232,0.72)] text-sm mb-8" style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 300 }}>
             These insights have been added to your application profile.
           </p>
 

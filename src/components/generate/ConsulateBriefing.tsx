@@ -110,7 +110,7 @@ function PageBudgetBar({ config }: { config: ConsulateConfig }) {
           marginBottom: '8px',
           fontSize: '11px',
           fontFamily: "'DM Sans', sans-serif",
-          color: 'rgba(245,240,232,0.45)',
+          color: 'rgba(245,240,232,0.74)',
           letterSpacing: '0.06em',
           textTransform: 'uppercase',
         }}
@@ -155,7 +155,7 @@ function PageBudgetBar({ config }: { config: ConsulateConfig }) {
           marginTop: '6px',
           fontSize: '11px',
           fontFamily: "'DM Sans', sans-serif",
-          color: 'rgba(245,240,232,0.35)',
+          color: 'rgba(245,240,232,0.70)',
         }}
       >
         Remaining budget for supporting documents you collect:{' '}
@@ -251,7 +251,7 @@ export default function ConsulateBriefing({ consulate, onContinue }: Props) {
             fontFamily: "'DM Sans', sans-serif",
             letterSpacing: '0.12em',
             textTransform: 'uppercase',
-            color: 'rgba(245,240,232,0.35)',
+            color: 'rgba(245,240,232,0.70)',
             marginBottom: '10px',
           }}
         >
@@ -277,7 +277,7 @@ export default function ConsulateBriefing({ consulate, onContinue }: Props) {
           style={{
             fontSize: '13px',
             fontFamily: "'DM Sans', sans-serif",
-            color: 'rgba(245,240,232,0.55)',
+            color: 'rgba(245,240,232,0.78)',
             lineHeight: 1.65,
             marginBottom: '16px',
           }}
@@ -419,7 +419,7 @@ export default function ConsulateBriefing({ consulate, onContinue }: Props) {
                     style={{
                       fontSize: '11px',
                       fontFamily: "'DM Sans', sans-serif",
-                      color: 'rgba(245,240,232,0.3)',
+                      color: 'rgba(245,240,232,0.68)',
                       letterSpacing: '0.04em',
                     }}
                   >
@@ -440,7 +440,7 @@ export default function ConsulateBriefing({ consulate, onContinue }: Props) {
                 fontFamily: "'DM Sans', sans-serif",
                 letterSpacing: '0.08em',
                 textTransform: 'uppercase',
-                color: 'rgba(245,240,232,0.25)',
+                color: 'rgba(245,240,232,0.65)',
                 marginBottom: '8px',
               }}
             >
@@ -467,7 +467,7 @@ export default function ConsulateBriefing({ consulate, onContinue }: Props) {
                       style={{
                         fontSize: '12px',
                         fontFamily: "'DM Sans', sans-serif",
-                        color: 'rgba(245,240,232,0.4)',
+                        color: 'rgba(245,240,232,0.72)',
                       }}
                     >
                       {doc.label}
@@ -478,7 +478,7 @@ export default function ConsulateBriefing({ consulate, onContinue }: Props) {
                           display: 'block',
                           fontSize: '10px',
                           fontFamily: "'DM Sans', sans-serif",
-                          color: 'rgba(245,240,232,0.22)',
+                          color: 'rgba(245,240,232,0.62)',
                           marginTop: '2px',
                           letterSpacing: '0.03em',
                         }}
@@ -491,7 +491,7 @@ export default function ConsulateBriefing({ consulate, onContinue }: Props) {
                     style={{
                       fontSize: '11px',
                       fontFamily: "'Cormorant Garamond', Georgia, serif",
-                      color: 'rgba(201,168,76,0.4)',
+                      color: 'rgba(201,168,76,0.78)',
                       flexShrink: 0,
                     }}
                   >
@@ -510,7 +510,7 @@ export default function ConsulateBriefing({ consulate, onContinue }: Props) {
               marginTop: '10px',
               fontSize: '11px',
               fontFamily: "'DM Sans', sans-serif",
-              color: 'rgba(245,240,232,0.3)',
+              color: 'rgba(245,240,232,0.68)',
               lineHeight: 1.5,
             }}
           >
@@ -531,7 +531,7 @@ export default function ConsulateBriefing({ consulate, onContinue }: Props) {
             fontFamily: "'DM Sans', sans-serif",
             letterSpacing: '0.1em',
             textTransform: 'uppercase',
-            color: 'rgba(245,240,232,0.35)',
+            color: 'rgba(245,240,232,0.70)',
             marginBottom: '12px',
           }}
         >
@@ -563,7 +563,7 @@ export default function ConsulateBriefing({ consulate, onContinue }: Props) {
                   flexShrink: 0,
                   marginTop: '1px',
                   fontSize: '10px',
-                  color: 'rgba(245,240,232,0.2)',
+                  color: 'rgba(245,240,232,0.62)',
                 }}
               >
                 ○
@@ -572,7 +572,7 @@ export default function ConsulateBriefing({ consulate, onContinue }: Props) {
                 style={{
                   fontSize: '12px',
                   fontFamily: "'DM Sans', sans-serif",
-                  color: 'rgba(245,240,232,0.5)',
+                  color: 'rgba(245,240,232,0.76)',
                   lineHeight: 1.5,
                 }}
               >
@@ -611,7 +611,7 @@ export default function ConsulateBriefing({ consulate, onContinue }: Props) {
                   style={{
                     fontSize: '11px',
                     fontFamily: "'DM Sans', sans-serif",
-                    color: 'rgba(245,240,232,0.4)',
+                    color: 'rgba(245,240,232,0.72)',
                     lineHeight: 1.6,
                   }}
                 >
@@ -639,7 +639,7 @@ export default function ConsulateBriefing({ consulate, onContinue }: Props) {
               fontSize: '12px',
               fontFamily: "'Cormorant Garamond', Georgia, serif",
               fontStyle: 'italic',
-              color: 'rgba(245,240,232,0.55)',
+              color: 'rgba(245,240,232,0.78)',
               lineHeight: 1.7,
             }}
           >
@@ -678,7 +678,7 @@ export default function ConsulateBriefing({ consulate, onContinue }: Props) {
                   margin: 0,
                   fontSize: '12px',
                   fontFamily: "'DM Sans', sans-serif",
-                  color: 'rgba(245,240,232,0.55)',
+                  color: 'rgba(245,240,232,0.78)',
                   lineHeight: 1.65,
                 }}
               >
@@ -694,14 +694,14 @@ export default function ConsulateBriefing({ consulate, onContinue }: Props) {
         style={{
           fontSize: '11px',
           fontFamily: "'DM Sans', sans-serif",
-          color: 'rgba(245,240,232,0.25)',
+          color: 'rgba(245,240,232,0.65)',
           marginBottom: '32px',
           lineHeight: 1.5,
         }}
       >
         Requirements last verified: {config.lastVerified}. Consulate page limits change without
         notice — always confirm at{' '}
-        <span style={{ color: 'rgba(201,168,76,0.45)' }}>{config.officialUrl}</span> before
+        <span style={{ color: 'rgba(201,168,76,0.80)' }}>{config.officialUrl}</span> before
         submitting.
       </p>
 
@@ -740,7 +740,7 @@ export default function ConsulateBriefing({ consulate, onContinue }: Props) {
             textAlign: 'center',
             fontSize: '11px',
             fontFamily: "'DM Sans', sans-serif",
-            color: 'rgba(245,240,232,0.25)',
+            color: 'rgba(245,240,232,0.65)',
           }}
         >
           You will verify your investment amounts on the next screen before generation begins.

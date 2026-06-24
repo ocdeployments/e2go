@@ -223,11 +223,11 @@ export default function FlagCard({
               </span>
             )}
           </div>
-          <div style={{ fontSize: '12px', color: 'rgba(245,240,232,0.45)', lineHeight: 1.6, marginBottom: currentAnswer ? '6px' : '0' }}>
+          <div style={{ fontSize: '12px', color: 'rgba(245,240,232,0.74)', lineHeight: 1.6, marginBottom: currentAnswer ? '6px' : '0' }}>
             {personalizedExplanation || info.why_it_matters}
           </div>
           {currentAnswer && (
-            <div style={{ fontSize: '11px', color: 'rgba(245,240,232,0.3)', marginBottom: '0' }}>
+            <div style={{ fontSize: '11px', color: 'rgba(245,240,232,0.68)', marginBottom: '0' }}>
               Your answer: &ldquo;{currentAnswer}&rdquo;
             </div>
           )}
@@ -274,7 +274,7 @@ export default function FlagCard({
                 onClick={onRedirectToQuiz}
                 style={{
                   fontSize: '11px',
-                  color: 'rgba(245,240,232,0.35)',
+                  color: 'rgba(245,240,232,0.70)',
                   textDecoration: 'underline',
                   background: 'transparent',
                   border: 'none',
@@ -301,15 +301,15 @@ export default function FlagCard({
           onClick={e => e.stopPropagation()}
         >
           {/* Heading */}
-          <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.12em', color: 'rgba(245,240,232,0.3)', textTransform: 'uppercase', marginBottom: '6px' }}>
+          <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.12em', color: 'rgba(245,240,232,0.68)', textTransform: 'uppercase', marginBottom: '6px' }}>
             What to add
           </div>
-          <div style={{ fontSize: '12px', color: 'rgba(245,240,232,0.55)', lineHeight: 1.6, marginBottom: '12px' }}>
+          <div style={{ fontSize: '12px', color: 'rgba(245,240,232,0.78)', lineHeight: 1.6, marginBottom: '12px' }}>
             {remediation.heading}
           </div>
 
           {/* Question label */}
-          <label style={{ display: 'block', fontSize: '11px', color: 'rgba(245,240,232,0.5)', marginBottom: '6px', lineHeight: 1.5 }}>
+          <label style={{ display: 'block', fontSize: '11px', color: 'rgba(245,240,232,0.76)', marginBottom: '6px', lineHeight: 1.5 }}>
             {remediation.question}
           </label>
 
@@ -330,7 +330,7 @@ export default function FlagCard({
                 : `${wordCount(flagAnswer)} of ~${remediation.minWords} words — ${remediation.doneWhen}`}
             </div>
             {saveStatus !== 'idle' && (
-              <div style={{ fontSize: '10px', letterSpacing: '0.06em', color: saveStatus === 'saved' ? '#22c55e' : 'rgba(245,240,232,0.3)' }}>
+              <div style={{ fontSize: '10px', letterSpacing: '0.06em', color: saveStatus === 'saved' ? '#22c55e' : 'rgba(245,240,232,0.68)' }}>
                 {saveStatus === 'saving' ? 'Saving…' : '✓ Saved'}
               </div>
             )}

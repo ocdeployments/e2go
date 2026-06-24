@@ -11,7 +11,7 @@ export default function FranchiseBrandPage() {
   if (!brand) {
     return (
       <div style={{ minHeight: '100vh', background: '#0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '16px' }}>
-        <p style={{ color: 'rgba(245,240,232,0.5)', fontFamily: "'DM Sans', sans-serif", fontSize: '14px' }}>Brand not found.</p>
+        <p style={{ color: 'rgba(245,240,232,0.76)', fontFamily: "'DM Sans', sans-serif", fontSize: '14px' }}>Brand not found.</p>
         <Link href="/franchise/matches" style={{ color: '#C9A84C', fontSize: '13px', fontFamily: "'DM Sans', sans-serif", textDecoration: 'none' }}>
           ← Back to matches
         </Link>
@@ -33,13 +33,13 @@ export default function FranchiseBrandPage() {
     <div style={{ minHeight: '100vh', background: '#0a0a0a', color: '#f5f0e8' }}>
       <div style={{ maxWidth: '680px', margin: '0 auto', padding: '56px 24px 80px' }}>
 
-        <Link href="/franchise/matches" style={{ fontSize: '11px', color: 'rgba(245,240,232,0.3)', fontFamily: "'DM Sans', sans-serif", textDecoration: 'none', display: 'inline-block', marginBottom: '40px' }}>
+        <Link href="/franchise/matches" style={{ fontSize: '11px', color: 'rgba(245,240,232,0.68)', fontFamily: "'DM Sans', sans-serif", textDecoration: 'none', display: 'inline-block', marginBottom: '40px' }}>
           ← Back to matches
         </Link>
 
         {/* Header */}
         <div style={{ marginBottom: '40px' }}>
-          <span style={{ fontSize: '10px', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(245,240,232,0.35)', fontFamily: "'DM Sans', sans-serif", display: 'block', marginBottom: '8px' }}>
+          <span style={{ fontSize: '10px', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(245,240,232,0.70)', fontFamily: "'DM Sans', sans-serif", display: 'block', marginBottom: '8px' }}>
             {cat.label}
           </span>
           <h1 style={{ fontSize: '32px', fontFamily: "'Cormorant Garamond', serif", fontWeight: 300, color: '#f5f0e8', margin: '0 0 16px' }}>
@@ -56,17 +56,17 @@ export default function FranchiseBrandPage() {
             <span style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '0.1em', color: e2Config.color, fontFamily: "'DM Sans', sans-serif" }}>
               E-2 RATING: {brand.e2CompatScore}
             </span>
-            <span style={{ fontSize: '12px', color: 'rgba(245,240,232,0.5)', fontFamily: "'DM Sans', sans-serif" }}>—</span>
-            <span style={{ fontSize: '12px', color: 'rgba(245,240,232,0.5)', fontFamily: "'DM Sans', sans-serif" }}>{e2Config.label}</span>
+            <span style={{ fontSize: '12px', color: 'rgba(245,240,232,0.76)', fontFamily: "'DM Sans', sans-serif" }}>—</span>
+            <span style={{ fontSize: '12px', color: 'rgba(245,240,232,0.76)', fontFamily: "'DM Sans', sans-serif" }}>{e2Config.label}</span>
           </div>
-          <p style={{ fontSize: '12px', color: 'rgba(245,240,232,0.55)', lineHeight: 1.7, fontFamily: "'DM Sans', sans-serif", margin: 0 }}>
+          <p style={{ fontSize: '12px', color: 'rgba(245,240,232,0.78)', lineHeight: 1.7, fontFamily: "'DM Sans', sans-serif", margin: 0 }}>
             {brand.e2Notes}
           </p>
         </div>
 
         {/* Key facts */}
         <div style={{ marginBottom: '36px' }}>
-          <h2 style={{ fontSize: '12px', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(245,240,232,0.3)', fontFamily: "'DM Sans', sans-serif", marginBottom: '16px', fontWeight: 400 }}>
+          <h2 style={{ fontSize: '12px', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(245,240,232,0.68)', fontFamily: "'DM Sans', sans-serif", marginBottom: '16px', fontWeight: 400 }}>
             Key figures
           </h2>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2px' }}>
@@ -79,7 +79,7 @@ export default function FranchiseBrandPage() {
               { label: 'Renewal strength', value: `${brand.renewalStrengthScore}/100` },
             ].map(({ label, value }) => (
               <div key={label} style={{ padding: '14px 16px', border: '1px solid rgba(245,240,232,0.06)', background: 'rgba(245,240,232,0.015)' }}>
-                <span style={{ fontSize: '10px', letterSpacing: '0.06em', textTransform: 'uppercase', color: 'rgba(245,240,232,0.3)', fontFamily: "'DM Sans', sans-serif", display: 'block', marginBottom: '5px' }}>
+                <span style={{ fontSize: '10px', letterSpacing: '0.06em', textTransform: 'uppercase', color: 'rgba(245,240,232,0.68)', fontFamily: "'DM Sans', sans-serif", display: 'block', marginBottom: '5px' }}>
                   {label}
                 </span>
                 <span style={{ fontSize: '13px', color: '#f5f0e8', fontFamily: "'DM Sans', sans-serif" }}>{value}</span>
@@ -90,10 +90,10 @@ export default function FranchiseBrandPage() {
 
         {/* Category context */}
         <div style={{ marginBottom: '40px', padding: '18px 20px', border: '1px solid rgba(245,240,232,0.07)', background: 'rgba(245,240,232,0.01)' }}>
-          <h3 style={{ fontSize: '12px', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(245,240,232,0.3)', fontFamily: "'DM Sans', sans-serif", marginBottom: '10px', fontWeight: 400 }}>
+          <h3 style={{ fontSize: '12px', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(245,240,232,0.68)', fontFamily: "'DM Sans', sans-serif", marginBottom: '10px', fontWeight: 400 }}>
             Category: {cat.label}
           </h3>
-          <p style={{ fontSize: '12px', color: 'rgba(245,240,232,0.5)', lineHeight: 1.7, fontFamily: "'DM Sans', sans-serif", margin: 0 }}>
+          <p style={{ fontSize: '12px', color: 'rgba(245,240,232,0.76)', lineHeight: 1.7, fontFamily: "'DM Sans', sans-serif", margin: 0 }}>
             {cat.tagline}. E-2 visa strength for this category: {cat.visaFitScore}/100.
           </p>
         </div>
@@ -108,7 +108,7 @@ export default function FranchiseBrandPage() {
           </Link>
           <Link
             href="/franchise/matches"
-            style={{ fontSize: '12px', color: 'rgba(245,240,232,0.35)', fontFamily: "'DM Sans', sans-serif", textDecoration: 'underline' }}
+            style={{ fontSize: '12px', color: 'rgba(245,240,232,0.70)', fontFamily: "'DM Sans', sans-serif", textDecoration: 'underline' }}
           >
             ← Back to all matches
           </Link>

@@ -179,9 +179,9 @@ export default function JourneyWizard() {
 
         {/* Traditional Track */}
         <div className="space-y-4 relative">
-          <h3 className="text-lg font-medium text-[rgba(245,240,232,0.50)] mb-4 border-b border-[rgba(201,168,76,0.12)] pb-2">The traditional route</h3>
+          <h3 className="text-lg font-medium text-[rgba(245,240,232,0.76)] mb-4 border-b border-[rgba(201,168,76,0.12)] pb-2">The traditional route</h3>
           {traditionalStatus && (
-            <div className="mb-4 text-xs text-[rgba(245,240,232,0.50)] font-['DM_Sans'] italic">
+            <div className="mb-4 text-xs text-[rgba(245,240,232,0.76)] font-['DM_Sans'] italic">
               {traditionalStatus}
             </div>
           )}
@@ -191,11 +191,11 @@ export default function JourneyWizard() {
               .map((m, idx) => (
                 <div key={m.id} className="flex gap-4 items-start">
                   <div className="flex-shrink-0 w-6 h-6 rounded-full border border-[rgba(245,240,232,0.30)] flex items-center justify-center mt-0.5">
-                    <span className="text-[10px] text-[rgba(245,240,232,0.50)]">{idx + 1}</span>
+                    <span className="text-[10px] text-[rgba(245,240,232,0.76)]">{idx + 1}</span>
                   </div>
                   <div className="flex-1">
                     <div className="text-[rgba(245,240,232,0.60)] text-sm font-['DM_Sans']">{m.title}</div>
-                    <div className="text-[rgba(245,240,232,0.40)] text-xs font-['DM_Sans']">{m.duration}</div>
+                    <div className="text-[rgba(245,240,232,0.72)] text-xs font-['DM_Sans']">{m.duration}</div>
                   </div>
                 </div>
               ))}

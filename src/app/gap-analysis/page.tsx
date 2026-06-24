@@ -364,7 +364,7 @@ function GapAnalysisInner() {
           <Link href="/dashboard" style={styles.navLink}>← Dashboard</Link>
           {appId && (
             <>
-              <span style={{ color: 'rgba(245,240,232,0.15)' }}>·</span>
+              <span style={{ color: 'rgba(245,240,232,0.62)' }}>·</span>
               <Link href={`/simulator?applicationId=${appId}`} style={styles.navLink}>Simulator →</Link>
             </>
           )}
@@ -375,7 +375,7 @@ function GapAnalysisInner() {
               </span>
             )}
             {lastRefreshed && !liveUpdated && (
-              <span style={{ fontSize: '11px', color: 'rgba(245,240,232,0.35)' }}>
+              <span style={{ fontSize: '11px', color: 'rgba(245,240,232,0.70)' }}>
                 Updated {lastRefreshed.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </span>
             )}
@@ -472,7 +472,7 @@ function GapAnalysisInner() {
             <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '56px', fontWeight: 300, color: readinessCfg.color, lineHeight: 1 }}>
               {display.overallScore}
             </div>
-            <div style={{ fontSize: '10px', color: 'rgba(245,240,232,0.3)', letterSpacing: '0.08em' }}>/ 100 WEIGHTED</div>
+            <div style={{ fontSize: '10px', color: 'rgba(245,240,232,0.68)', letterSpacing: '0.08em' }}>/ 100 WEIGHTED</div>
           </div>
         </div>
 
@@ -497,7 +497,7 @@ function GapAnalysisInner() {
         {semanticResults && Object.keys(semanticResults).length > 0 && (
           <div style={{ marginBottom: '40px' }}>
             <h2 style={{ ...styles.sectionTitle, marginBottom: '6px' }}>Critical field review</h2>
-            <p style={{ fontSize: '12px', color: 'rgba(245,240,232,0.35)', marginBottom: '16px' }}>
+            <p style={{ fontSize: '12px', color: 'rgba(245,240,232,0.70)', marginBottom: '16px' }}>
               Three fields that officers scrutinise most closely — assessed against what they need to see.
             </p>
             <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '8px' }}>
@@ -521,7 +521,7 @@ function GapAnalysisInner() {
                         <span style={{ fontSize: '12px', fontWeight: 500, color: '#f5f0e8' }}>{def.label}</span>
                         <span style={{ fontSize: '10px', color: riskColor, letterSpacing: '0.08em' }}>{sem.rating.replace('_', ' ').toUpperCase()}</span>
                       </div>
-                      <p style={{ fontSize: '12px', color: 'rgba(245,240,232,0.5)', lineHeight: 1.5, margin: '0 0 6px' }}>{sem.finding}</p>
+                      <p style={{ fontSize: '12px', color: 'rgba(245,240,232,0.76)', lineHeight: 1.5, margin: '0 0 6px' }}>{sem.finding}</p>
                       {sem.risk !== 'low' && (
                         <a href={def.href} style={{ fontSize: '11px', color: 'rgba(201,168,76,0.7)', textDecoration: 'none' }}>Update this field →</a>
                       )}
@@ -574,7 +574,7 @@ function GapAnalysisInner() {
             </button>
             <button
               onClick={() => setShowReanalysisPrompt(false)}
-              style={{ background: 'none', border: 'none', color: 'rgba(245,240,232,0.25)', cursor: 'pointer', fontSize: '14px', padding: '0 4px' }}
+              style={{ background: 'none', border: 'none', color: 'rgba(245,240,232,0.65)', cursor: 'pointer', fontSize: '14px', padding: '0 4px' }}
               aria-label="Dismiss"
             >
               ×
@@ -597,16 +597,16 @@ function GapAnalysisInner() {
                 const toColor = r.to === 'low' ? '#22c55e' : '#f59e0b';
                 return (
                   <div key={r.code} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px' }}>
-                    <span style={{ fontWeight: 600, color: 'rgba(245,240,232,0.55)', minWidth: '36px' }}>{r.code}</span>
+                    <span style={{ fontWeight: 600, color: 'rgba(245,240,232,0.78)', minWidth: '36px' }}>{r.code}</span>
                     <span style={{ color: fromColor, fontSize: '10px', fontWeight: 700, letterSpacing: '0.06em' }}>{r.from.toUpperCase()}</span>
-                    <span style={{ color: 'rgba(245,240,232,0.25)' }}>→</span>
+                    <span style={{ color: 'rgba(245,240,232,0.65)' }}>→</span>
                     <span style={{ color: toColor, fontSize: '10px', fontWeight: 700, letterSpacing: '0.06em' }}>{r.to.toUpperCase()}</span>
-                    <span style={{ color: 'rgba(245,240,232,0.3)', fontSize: '11px' }}>· live score updated</span>
+                    <span style={{ color: 'rgba(245,240,232,0.68)', fontSize: '11px' }}>· live score updated</span>
                   </div>
                 );
               })}
             </div>
-            <p style={{ fontSize: '11px', color: 'rgba(245,240,232,0.3)', margin: '10px 0 0', lineHeight: 1.5 }}>
+            <p style={{ fontSize: '11px', color: 'rgba(245,240,232,0.68)', margin: '10px 0 0', lineHeight: 1.5 }}>
               These changes are reflected in your score above. Re-run AI analysis to update your full case briefing.
             </p>
           </div>
@@ -637,7 +637,7 @@ function GapAnalysisInner() {
 
         {/* Footer CTA */}
         <div style={{ padding: '28px 32px', border: '1px solid rgba(201,168,76,0.12)', background: 'rgba(201,168,76,0.02)', textAlign: 'center' as const }}>
-          <p style={{ fontSize: '14px', color: 'rgba(245,240,232,0.5)', marginBottom: '16px', lineHeight: 1.6 }}>
+          <p style={{ fontSize: '14px', color: 'rgba(245,240,232,0.76)', marginBottom: '16px', lineHeight: 1.6 }}>
             Practice answering officer questions about the gaps identified above.
           </p>
           {appId && (
@@ -669,7 +669,7 @@ const styles = {
   } as React.CSSProperties,
   eyebrow: { fontSize: '11px', fontWeight: 600, letterSpacing: '0.12em', color: '#C9A84C', marginBottom: '12px' } as React.CSSProperties,
   title: { fontFamily: "'Cormorant Garamond', serif", fontSize: '40px', fontWeight: 300, color: '#f5f0e8', lineHeight: 1.1, marginBottom: '10px' } as React.CSSProperties,
-  subtitle: { fontSize: '15px', color: 'rgba(245,240,232,0.45)', lineHeight: 1.6 } as React.CSSProperties,
-  sectionTitle: { fontSize: '11px', fontWeight: 700, letterSpacing: '0.12em', color: 'rgba(245,240,232,0.35)', textTransform: 'uppercase' as const, marginBottom: '16px' } as React.CSSProperties,
-  navLink: { color: 'rgba(201,168,76,0.55)', fontSize: '12px', textDecoration: 'none', letterSpacing: '0.03em' } as React.CSSProperties,
+  subtitle: { fontSize: '15px', color: 'rgba(245,240,232,0.74)', lineHeight: 1.6 } as React.CSSProperties,
+  sectionTitle: { fontSize: '11px', fontWeight: 700, letterSpacing: '0.12em', color: 'rgba(245,240,232,0.70)', textTransform: 'uppercase' as const, marginBottom: '16px' } as React.CSSProperties,
+  navLink: { color: 'rgba(201,168,76,0.85)', fontSize: '12px', textDecoration: 'none', letterSpacing: '0.03em' } as React.CSSProperties,
 };

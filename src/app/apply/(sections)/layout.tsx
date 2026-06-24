@@ -22,7 +22,7 @@ export default function SectionsLayout({ children }: SectionsLayoutProps) {
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
           className="flex items-center gap-2 text-[11px] uppercase tracking-[0.1em]"
-          style={{ color: 'rgba(245,240,232,0.55)', fontFamily: "'DM Sans', sans-serif" }}
+          style={{ color: 'rgba(245,240,232,0.78)', fontFamily: "'DM Sans', sans-serif" }}
         >
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
             {sidebarOpen ? (

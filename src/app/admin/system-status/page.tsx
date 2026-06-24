@@ -28,10 +28,10 @@ function ServiceCard({ name, s }: { name: string; s: ServiceStatus }) {
         <span style={{ fontSize: 9, color, fontWeight: 700, marginLeft: 'auto' }}>{STATUS_LABEL[s.status]}</span>
       </div>
       {s.latency_ms != null && (
-        <div style={{ fontSize: 10, color: 'rgba(245,240,232,0.35)' }}>Latency: {s.latency_ms}ms</div>
+        <div style={{ fontSize: 10, color: 'rgba(245,240,232,0.70)' }}>Latency: {s.latency_ms}ms</div>
       )}
       {s.last_webhook_hours_ago != null && (
-        <div style={{ fontSize: 10, color: 'rgba(245,240,232,0.35)' }}>Last webhook: {s.last_webhook_hours_ago}h ago</div>
+        <div style={{ fontSize: 10, color: 'rgba(245,240,232,0.70)' }}>Last webhook: {s.last_webhook_hours_ago}h ago</div>
       )}
     </div>
   );
@@ -84,11 +84,11 @@ export default function SystemStatusPage() {
     setToggling(false);
   }
 
-  const s = { fontSize: 10, color: 'rgba(245,240,232,0.3)', textTransform: 'uppercase' as const, letterSpacing: '0.1em', fontWeight: 700, marginBottom: 12, marginTop: 28, borderBottom: '1px solid rgba(201,168,76,0.1)', paddingBottom: 8 };
+  const s = { fontSize: 10, color: 'rgba(245,240,232,0.68)', textTransform: 'uppercase' as const, letterSpacing: '0.1em', fontWeight: 700, marginBottom: 12, marginTop: 28, borderBottom: '1px solid rgba(201,168,76,0.1)', paddingBottom: 8 };
 
   if (loading) return (
     <main style={{ minHeight: '100vh', background: '#0a0a0a', color: '#f5f0e8', padding: '40px 28px' }}>
-      <div style={{ color: 'rgba(245,240,232,0.3)', fontSize: 13 }}>Loading health data…</div>
+      <div style={{ color: 'rgba(245,240,232,0.68)', fontSize: 13 }}>Loading health data…</div>
     </main>
   );
 
@@ -96,8 +96,8 @@ export default function SystemStatusPage() {
     <main style={{ minHeight: '100vh', background: '#0a0a0a', color: '#f5f0e8', padding: '32px 28px', maxWidth: 1100, margin: '0 auto' }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 16, marginBottom: 28 }}>
         <h1 style={{ fontSize: 20, fontWeight: 600, color: '#C9A84C', margin: 0 }}>System Status</h1>
-        <span style={{ fontSize: 11, color: 'rgba(245,240,232,0.3)' }}>Auto-refreshes every 30s · Last: {lastFetch}</span>
-        <a href="/admin" style={{ marginLeft: 'auto', fontSize: 11, color: 'rgba(201,168,76,0.5)', textDecoration: 'none' }}>← Admin</a>
+        <span style={{ fontSize: 11, color: 'rgba(245,240,232,0.68)' }}>Auto-refreshes every 30s · Last: {lastFetch}</span>
+        <a href="/admin" style={{ marginLeft: 'auto', fontSize: 11, color: 'rgba(201,168,76,0.82)', textDecoration: 'none' }}>← Admin</a>
       </div>
 
       {/* Controls */}
@@ -143,7 +143,7 @@ export default function SystemStatusPage() {
               { label: 'Calls sampled', value: String(data.llm.recent_calls) },
             ].map(m => (
               <div key={m.label} style={{ border: '1px solid rgba(201,168,76,0.1)', padding: '12px 14px' }}>
-                <div style={{ fontSize: 9, color: 'rgba(245,240,232,0.3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>{m.label}</div>
+                <div style={{ fontSize: 9, color: 'rgba(245,240,232,0.68)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>{m.label}</div>
                 <div style={{ fontSize: 22, color: '#C9A84C', fontFamily: "'Cormorant Garamond',serif" }}>{m.value}</div>
               </div>
             ))}
@@ -152,13 +152,13 @@ export default function SystemStatusPage() {
           {/* Generation jobs */}
           <div style={s}>Generation Pipeline</div>
           {data.generation.active_jobs.length === 0 && data.generation.stuck_jobs.length === 0 && (
-            <div style={{ fontSize: 12, color: 'rgba(245,240,232,0.3)', padding: '8px 0' }}>No active generation jobs.</div>
+            <div style={{ fontSize: 12, color: 'rgba(245,240,232,0.68)', padding: '8px 0' }}>No active generation jobs.</div>
           )}
           {data.generation.active_jobs.map(job => (
             <div key={job.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 0', borderBottom: '1px solid rgba(201,168,76,0.06)', fontSize: 12 }}>
               <span style={{ width: 8, height: 8, background: '#4ade80', borderRadius: '50%', flexShrink: 0 }} />
               <span style={{ color: 'rgba(245,240,232,0.7)', flex: 1 }}>Step {job.current_step}/{job.total_steps} — {job.current_step_label}</span>
-              <span style={{ color: 'rgba(245,240,232,0.3)', fontSize: 10 }}>{job.application_id.slice(0, 8)}</span>
+              <span style={{ color: 'rgba(245,240,232,0.68)', fontSize: 10 }}>{job.application_id.slice(0, 8)}</span>
             </div>
           ))}
           {data.generation.stuck_jobs.map(job => (
@@ -166,7 +166,7 @@ export default function SystemStatusPage() {
               <span style={{ width: 8, height: 8, background: '#f87171', borderRadius: '50%', flexShrink: 0 }} />
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 12, color: '#f87171' }}>STUCK — {job.current_step_label}</div>
-                <div style={{ fontSize: 10, color: 'rgba(245,240,232,0.3)' }}>App: {job.application_id.slice(0, 8)} · Last update: {new Date(job.updated_at).toLocaleTimeString()}</div>
+                <div style={{ fontSize: 10, color: 'rgba(245,240,232,0.68)' }}>App: {job.application_id.slice(0, 8)} · Last update: {new Date(job.updated_at).toLocaleTimeString()}</div>
               </div>
               <button
                 onClick={() => forceFailJob(job.id)}
@@ -181,13 +181,13 @@ export default function SystemStatusPage() {
           {/* Cron jobs */}
           <div style={s}>Cron Jobs</div>
           {Object.entries(data.crons).length === 0 && (
-            <div style={{ fontSize: 12, color: 'rgba(245,240,232,0.3)', padding: '8px 0' }}>No cron history yet (cron_log table is empty).</div>
+            <div style={{ fontSize: 12, color: 'rgba(245,240,232,0.68)', padding: '8px 0' }}>No cron history yet (cron_log table is empty).</div>
           )}
           {Object.entries(data.crons).map(([name, entry]) => (
             <div key={name} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 0', borderBottom: '1px solid rgba(201,168,76,0.05)', fontSize: 12 }}>
               <span style={{ width: 8, height: 8, background: entry.status === 'success' ? '#4ade80' : '#f87171', borderRadius: '50%', flexShrink: 0 }} />
               <span style={{ color: '#f5f0e8', fontFamily: 'monospace', fontSize: 11 }}>{name}</span>
-              <span style={{ color: 'rgba(245,240,232,0.4)', flex: 1 }}>{new Date(entry.started_at).toLocaleString()}</span>
+              <span style={{ color: 'rgba(245,240,232,0.72)', flex: 1 }}>{new Date(entry.started_at).toLocaleString()}</span>
               <span style={{ color: entry.status === 'success' ? '#4ade80' : '#f87171', fontSize: 10, fontWeight: 700 }}>{entry.status}</span>
               {entry.error && <span style={{ fontSize: 10, color: '#f87171', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={entry.error}>{entry.error}</span>}
             </div>
@@ -201,7 +201,7 @@ export default function SystemStatusPage() {
 function ToggleButton({ label, active, danger, disabled, onToggle }: {
   label: string; active: boolean; danger: boolean; disabled: boolean; onToggle: () => void;
 }) {
-  const color = active ? (danger ? '#f87171' : '#4ade80') : 'rgba(245,240,232,0.3)';
+  const color = active ? (danger ? '#f87171' : '#4ade80') : 'rgba(245,240,232,0.68)';
   return (
     <button
       onClick={onToggle}

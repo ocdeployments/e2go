@@ -91,7 +91,7 @@ export default function CaseFileShell({
               fontFamily: "'DM Sans', sans-serif",
               fontSize: '12px',
               fontWeight: 300,
-              color: 'rgba(245,240,232,0.30)',
+              color: 'rgba(245,240,232,0.68)',
             }}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -142,7 +142,7 @@ export default function CaseFileShell({
                 fontFamily: "'DM Sans', sans-serif",
                 fontSize: '11px',
                 fontWeight: 300,
-                color: 'rgba(245,240,232,0.25)',
+                color: 'rgba(245,240,232,0.65)',
               }}
             >
               {isSaving ? 'Saving…' : 'Auto-saved'}
@@ -159,7 +159,7 @@ export default function CaseFileShell({
               fontWeight: 400,
               textTransform: 'uppercase',
               letterSpacing: '0.08em',
-              color: 'rgba(245,240,232,0.40)',
+              color: 'rgba(245,240,232,0.72)',
               borderColor: 'rgba(245,240,232,0.08)',
             }}
           >
@@ -211,7 +211,7 @@ export default function CaseFileShell({
                 fontWeight: 500,
                 textTransform: 'uppercase',
                 letterSpacing: '0.18em',
-                color: 'rgba(245,240,232,0.20)',
+                color: 'rgba(245,240,232,0.62)',
                 borderColor: 'rgba(201,168,76,0.06)',
               }}
             >
@@ -306,7 +306,7 @@ export default function CaseFileShell({
                   fontWeight: 500,
                   textTransform: 'uppercase',
                   letterSpacing: '0.18em',
-                  color: 'rgba(245,240,232,0.20)',
+                  color: 'rgba(245,240,232,0.62)',
                 }}
               >
                 This section builds
@@ -319,7 +319,7 @@ export default function CaseFileShell({
                       fontFamily: "'DM Sans', sans-serif",
                       fontSize: '11px',
                       fontWeight: 300,
-                      color: 'rgba(245,240,232,0.35)',
+                      color: 'rgba(245,240,232,0.70)',
                       lineHeight: '1.8',
                     }}
                   >
@@ -382,7 +382,7 @@ export default function CaseFileShell({
                 fontWeight: 400,
                 textTransform: 'uppercase',
                 letterSpacing: '0.08em',
-                color: 'rgba(245,240,232,0.40)',
+                color: 'rgba(245,240,232,0.72)',
                 borderColor: 'rgba(245,240,232,0.10)',
               }}
             >
@@ -417,7 +417,7 @@ export default function CaseFileShell({
                   fontWeight: 500,
                   textTransform: 'uppercase',
                   letterSpacing: '0.20em',
-                  color: 'rgba(245,240,232,0.22)',
+                  color: 'rgba(245,240,232,0.62)',
                 }}
               >
                 Document preview
@@ -457,7 +457,7 @@ export default function CaseFileShell({
                     fontWeight: 500,
                     textTransform: 'uppercase',
                     letterSpacing: '0.20em',
-                    color: 'rgba(245,240,232,0.22)',
+                    color: 'rgba(245,240,232,0.62)',
                   }}
                 >
                   Document preview
@@ -501,7 +501,7 @@ export default function CaseFileShell({
                   fontWeight: 500,
                   textTransform: 'uppercase',
                   letterSpacing: '0.20em',
-                  color: 'rgba(245,240,232,0.22)',
+                  color: 'rgba(245,240,232,0.62)',
                 }}
               >
                 Document preview

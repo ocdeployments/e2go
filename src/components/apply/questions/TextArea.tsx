@@ -128,7 +128,7 @@ export default function TextArea({ value, onChange, onBlur, placeholder, disable
             style={{
               background: listening ? 'rgba(201,168,76,0.05)' : 'transparent',
               border: `1px solid ${listening ? '#C9A84C' : 'rgba(201,168,76,0.22)'}`,
-              color: listening ? '#C9A84C' : 'rgba(245,240,232,0.40)',
+              color: listening ? '#C9A84C' : 'rgba(245,240,232,0.72)',
               fontFamily: "'DM Sans', sans-serif",
               fontSize: '11px',
               fontWeight: 400,
@@ -196,7 +196,7 @@ export default function TextArea({ value, onChange, onBlur, placeholder, disable
             fontFamily: "'DM Sans', sans-serif",
             fontSize: '10px',
             fontWeight: 300,
-            color: hasMinimumWords ? 'rgba(201,168,76,0.55)' : 'rgba(245,240,232,0.18)',
+            color: hasMinimumWords ? 'rgba(201,168,76,0.55)' : 'rgba(245,240,232,0.62)',
           }}
         >
           {wordCount} words{hasMinimumWords ? ' ✓' : ''}
@@ -222,7 +222,7 @@ export default function TextArea({ value, onChange, onBlur, placeholder, disable
           style={{
             fontSize: '12px',
             fontWeight: 300,
-            color: 'rgba(245,240,232,0.40)',
+            color: 'rgba(245,240,232,0.72)',
             fontFamily: "'DM Sans', sans-serif",
           }}
         >
@@ -236,7 +236,7 @@ export default function TextArea({ value, onChange, onBlur, placeholder, disable
             style={{
               background: 'none',
               border: 'none',
-              color: 'rgba(245,240,232,0.40)',
+              color: 'rgba(245,240,232,0.72)',
               cursor: 'pointer',
               padding: '0 2px',
               fontSize: '14px',

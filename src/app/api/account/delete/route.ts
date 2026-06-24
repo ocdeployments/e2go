@@ -85,15 +85,15 @@ export async function POST() {
 
             <div style="background: rgba(201,168,76,0.05); border: 1px solid rgba(201,168,76,0.15); padding: 20px; margin-bottom: 24px;">
               <p style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(201,168,76,0.7); margin-bottom: 12px;">Data deleted</p>
-              <p style="font-size: 13px; color: rgba(245,240,232,0.55); line-height: 1.8; white-space: pre-line;">${tableList}</p>
+              <p style="font-size: 13px; color: rgba(245,240,232,0.78); line-height: 1.8; white-space: pre-line;">${tableList}</p>
             </div>
 
-            <p style="color: rgba(245,240,232,0.4); font-size: 12px; line-height: 1.6;">
+            <p style="color: rgba(245,240,232,0.72); font-size: 12px; line-height: 1.6;">
               Deleted on: ${new Date(deletedAt).toUTCString()}<br/>
               Account: ${userEmail}
             </p>
 
-            <p style="color: rgba(245,240,232,0.35); font-size: 12px; margin-top: 24px; line-height: 1.6;">
+            <p style="color: rgba(245,240,232,0.70); font-size: 12px; margin-top: 24px; line-height: 1.6;">
               If you did not request this deletion, please contact
               <a href="mailto:support@e2go.app" style="color: #C9A84C;">support@e2go.app</a> immediately.
             </p>

@@ -45,7 +45,7 @@ export default function SettingsPage() {
           <h1 style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontWeight: 300, fontSize: '28px', color: '#f5f0e8', marginBottom: '12px' }}>
             Account deleted
           </h1>
-          <p style={{ fontSize: '14px', color: 'rgba(245,240,232,0.5)', lineHeight: 1.7, marginBottom: '32px' }}>
+          <p style={{ fontSize: '14px', color: 'rgba(245,240,232,0.76)', lineHeight: 1.7, marginBottom: '32px' }}>
             Your account and all associated data have been permanently deleted.
             A confirmation has been sent to your email address.
           </p>
@@ -68,7 +68,7 @@ export default function SettingsPage() {
         <h1 style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontWeight: 300, fontSize: '36px', color: '#f5f0e8', marginBottom: '8px' }}>
           Account Settings
         </h1>
-        <p style={{ fontSize: '14px', color: 'rgba(245,240,232,0.4)', marginBottom: '48px' }}>
+        <p style={{ fontSize: '14px', color: 'rgba(245,240,232,0.72)', marginBottom: '48px' }}>
           Manage your account preferences and data.
         </p>
 
@@ -77,7 +77,7 @@ export default function SettingsPage() {
           <h2 style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontWeight: 300, fontSize: '20px', color: '#f5f0e8', marginBottom: '16px' }}>
             Account
           </h2>
-          <p style={{ fontSize: '13px', color: 'rgba(245,240,232,0.45)', lineHeight: 1.7 }}>
+          <p style={{ fontSize: '13px', color: 'rgba(245,240,232,0.74)', lineHeight: 1.7 }}>
             To update your email address or password, please contact{' '}
             <a href="mailto:support@e2go.app" style={{ color: '#C9A84C', textDecoration: 'none' }}>support@e2go.app</a>.
           </p>
@@ -88,7 +88,7 @@ export default function SettingsPage() {
           <h2 style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontWeight: 300, fontSize: '20px', color: '#f5f0e8', marginBottom: '8px' }}>
             Download your data
           </h2>
-          <p style={{ fontSize: '13px', color: 'rgba(245,240,232,0.45)', lineHeight: 1.7, marginBottom: '20px' }}>
+          <p style={{ fontSize: '13px', color: 'rgba(245,240,232,0.74)', lineHeight: 1.7, marginBottom: '20px' }}>
             Download a copy of all personal data E2go holds about you — quiz results, case file answers,
             simulator sessions, consent records, and payment history. Provided as a JSON file.
           </p>
@@ -116,13 +116,13 @@ export default function SettingsPage() {
           <h2 style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontWeight: 300, fontSize: '20px', color: '#f5f0e8', marginBottom: '8px' }}>
             Delete account and all data
           </h2>
-          <p style={{ fontSize: '13px', color: 'rgba(245,240,232,0.45)', lineHeight: 1.7, marginBottom: '20px' }}>
+          <p style={{ fontSize: '13px', color: 'rgba(245,240,232,0.74)', lineHeight: 1.7, marginBottom: '20px' }}>
             Permanently deletes your account and all associated data — quiz results, case file answers,
             uploaded documents, simulator sessions, and generated documents. This cannot be undone.
             You will receive a confirmation email listing what was deleted.
           </p>
 
-          <div style={{ fontSize: '12px', color: 'rgba(245,240,232,0.3)', marginBottom: '20px', lineHeight: 1.7 }}>
+          <div style={{ fontSize: '12px', color: 'rgba(245,240,232,0.68)', marginBottom: '20px', lineHeight: 1.7 }}>
             Data deleted includes: quiz sessions · case file answers · uploaded documents ·
             simulator sessions · case profile · generated documents · payment records
           </div>
@@ -150,7 +150,7 @@ export default function SettingsPage() {
                 </button>
                 <button
                   onClick={() => setDeleteStep('idle')}
-                  style={{ padding: '10px 20px', background: 'transparent', border: '1px solid rgba(245,240,232,0.12)', color: 'rgba(245,240,232,0.45)', fontSize: '13px', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}
+                  style={{ padding: '10px 20px', background: 'transparent', border: '1px solid rgba(245,240,232,0.12)', color: 'rgba(245,240,232,0.74)', fontSize: '13px', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}
                 >
                   Cancel
                 </button>
@@ -202,7 +202,7 @@ export default function SettingsPage() {
                 </button>
                 <button
                   onClick={() => { setDeleteStep('idle'); setConfirmText(''); }}
-                  style={{ padding: '10px 20px', background: 'transparent', border: '1px solid rgba(245,240,232,0.12)', color: 'rgba(245,240,232,0.45)', fontSize: '13px', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}
+                  style={{ padding: '10px 20px', background: 'transparent', border: '1px solid rgba(245,240,232,0.12)', color: 'rgba(245,240,232,0.74)', fontSize: '13px', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}
                 >
                   Cancel
                 </button>
@@ -211,7 +211,7 @@ export default function SettingsPage() {
           )}
 
           {deleteStep === 'deleting' && (
-            <div style={{ padding: '16px', fontSize: '13px', color: 'rgba(245,240,232,0.45)', letterSpacing: '0.04em' }}>
+            <div style={{ padding: '16px', fontSize: '13px', color: 'rgba(245,240,232,0.74)', letterSpacing: '0.04em' }}>
               Deleting your account and all data…
             </div>
           )}
@@ -221,7 +221,7 @@ export default function SettingsPage() {
               <p style={{ fontSize: '13px', color: 'rgba(239,68,68,0.8)', marginBottom: '12px' }}>{errorMessage}</p>
               <button
                 onClick={() => { setDeleteStep('idle'); setConfirmText(''); setErrorMessage(null); }}
-                style={{ padding: '8px 18px', background: 'transparent', border: '1px solid rgba(245,240,232,0.15)', color: 'rgba(245,240,232,0.5)', fontSize: '13px', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}
+                style={{ padding: '8px 18px', background: 'transparent', border: '1px solid rgba(245,240,232,0.15)', color: 'rgba(245,240,232,0.76)', fontSize: '13px', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}
               >
                 Try again
               </button>
@@ -232,7 +232,7 @@ export default function SettingsPage() {
         <div style={{ marginTop: '40px' }}>
           <Link
             href="/dashboard"
-            style={{ fontSize: '13px', color: 'rgba(245,240,232,0.4)', textDecoration: 'none', letterSpacing: '0.02em' }}
+            style={{ fontSize: '13px', color: 'rgba(245,240,232,0.72)', textDecoration: 'none', letterSpacing: '0.02em' }}
           >
             ← Back to Dashboard
           </Link>

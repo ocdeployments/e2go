@@ -130,7 +130,7 @@ export default function DiscrepancyReviewClient({ applicationId }: DiscrepancyRe
       <div className="flex min-h-screen items-center justify-center bg-[#0a0a0a]">
         <p
           className="text-sm"
-          style={{ color: 'rgba(245,240,232,0.3)', fontFamily: "'DM Sans', sans-serif" }}
+          style={{ color: 'rgba(245,240,232,0.68)', fontFamily: "'DM Sans', sans-serif" }}
         >
           Loading discrepancies...
         </p>
@@ -146,7 +146,7 @@ export default function DiscrepancyReviewClient({ applicationId }: DiscrepancyRe
           href="/apply/upload"
           className="mb-8 inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.08em] transition-colors hover:text-[#C9A84C]"
           style={{
-            color: 'rgba(245,240,232,0.35)',
+            color: 'rgba(245,240,232,0.70)',
             fontFamily: "'DM Sans', sans-serif",
           }}
         >
@@ -181,7 +181,7 @@ export default function DiscrepancyReviewClient({ applicationId }: DiscrepancyRe
           <p
             className="text-[11px] leading-relaxed"
             style={{
-              color: 'rgba(245,240,232,0.4)',
+              color: 'rgba(245,240,232,0.72)',
               fontFamily: "'DM Sans', sans-serif",
             }}
           >
@@ -269,7 +269,7 @@ export default function DiscrepancyReviewClient({ applicationId }: DiscrepancyRe
                         <p
                           className="mt-1 text-[10px] leading-relaxed"
                           style={{
-                            color: 'rgba(245,240,232,0.35)',
+                            color: 'rgba(245,240,232,0.70)',
                             fontFamily: "'DM Sans', sans-serif",
                           }}
                         >
@@ -303,7 +303,7 @@ export default function DiscrepancyReviewClient({ applicationId }: DiscrepancyRe
                       <p
                         className="mb-2 text-[11px]"
                         style={{
-                          color: 'rgba(245,240,232,0.5)',
+                          color: 'rgba(245,240,232,0.76)',
                           fontFamily: "'DM Sans', sans-serif",
                         }}
                       >
@@ -335,7 +335,7 @@ export default function DiscrepancyReviewClient({ applicationId }: DiscrepancyRe
                 <p
                   className="mt-4 text-[10px] leading-relaxed"
                   style={{
-                    color: 'rgba(201,168,76,0.4)',
+                    color: 'rgba(201,168,76,0.78)',
                     fontFamily: "'DM Sans', sans-serif",
                   }}
                 >
@@ -354,8 +354,8 @@ export default function DiscrepancyReviewClient({ applicationId }: DiscrepancyRe
             disabled={!allResolved || resolving}
             className="w-full border py-3 text-[11px] uppercase tracking-[0.1em] transition-colors"
             style={{
-              borderColor: allResolved && !resolving ? '#C9A84C' : 'rgba(245,240,232,0.08)',
-              color: allResolved && !resolving ? '#C9A84C' : 'rgba(245,240,232,0.2)',
+              borderColor: allResolved && !resolving ? '#C9A84C' : 'rgba(245,240,232,0.62)',
+              color: allResolved && !resolving ? '#C9A84C' : 'rgba(245,240,232,0.62)',
               backgroundColor: allResolved && !resolving ? 'rgba(201,168,76,0.04)' : 'transparent',
               fontFamily: "'DM Sans', sans-serif",
               fontWeight: 500,
@@ -368,7 +368,7 @@ export default function DiscrepancyReviewClient({ applicationId }: DiscrepancyRe
             <p
               className="mt-3 text-center text-[10px]"
               style={{
-                color: 'rgba(245,240,232,0.2)',
+                color: 'rgba(245,240,232,0.62)',
                 fontFamily: "'DM Sans', sans-serif",
               }}
             >

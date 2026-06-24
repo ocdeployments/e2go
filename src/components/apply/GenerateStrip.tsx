@@ -32,7 +32,7 @@ export default function GenerateStrip({
               </p>
               <p
                 className="mt-1 text-[11px]"
-                style={{ color: 'rgba(245,240,232,0.4)', fontFamily: "'DM Sans', sans-serif" }}
+                style={{ color: 'rgba(245,240,232,0.72)', fontFamily: "'DM Sans', sans-serif" }}
               >
                 This process takes 3–5 minutes. Each document will be written
                 specifically for your case.
@@ -42,13 +42,13 @@ export default function GenerateStrip({
             <>
               <p
                 className="text-sm"
-                style={{ color: 'rgba(245,240,232,0.28)', fontFamily: "'DM Sans', sans-serif" }}
+                style={{ color: 'rgba(245,240,232,0.65)', fontFamily: "'DM Sans', sans-serif" }}
               >
                 Complete all {totalCount} sections to generate your case file
               </p>
               <p
                 className="mt-1 text-[11px]"
-                style={{ color: 'rgba(245,240,232,0.15)', fontFamily: "'DM Sans', sans-serif" }}
+                style={{ color: 'rgba(245,240,232,0.62)', fontFamily: "'DM Sans', sans-serif" }}
               >
                 {completedCount} of {totalCount} sections complete
               </p>
@@ -61,8 +61,8 @@ export default function GenerateStrip({
           disabled={!isUnlocked || generating}
           className="shrink-0 border px-8 py-3 text-xs uppercase tracking-[0.1em] transition-colors disabled:cursor-not-allowed"
           style={{
-            borderColor: isUnlocked ? '#C9A84C' : 'rgba(245,240,232,0.08)',
-            color: isUnlocked ? '#C9A84C' : 'rgba(245,240,232,0.15)',
+            borderColor: isUnlocked ? '#C9A84C' : 'rgba(245,240,232,0.62)',
+            color: isUnlocked ? '#C9A84C' : 'rgba(245,240,232,0.62)',
             background: isUnlocked ? 'rgba(201,168,76,0.04)' : 'transparent',
             fontFamily: "'DM Sans', sans-serif",
           }}

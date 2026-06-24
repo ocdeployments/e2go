@@ -55,7 +55,7 @@ export function getQualityBadgeStyle(quality: FieldQuality): { color: string; la
     case 'adequate':   return { color: '#f59e0b', label: 'Good' };
     case 'needs_work': return { color: '#ef4444', label: 'Needs detail' };
     case 'too_short':  return { color: '#ef4444', label: 'Too short' };
-    case 'checking':   return { color: 'rgba(245,240,232,0.3)', label: 'Checking…' };
+    case 'checking':   return { color: 'rgba(245,240,232,0.68)', label: 'Checking…' };
     default:           return null;
   }
 }

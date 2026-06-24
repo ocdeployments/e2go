@@ -14,7 +14,7 @@ const bg = '#0a0a0a';
 const surface = 'rgba(201,168,76,0.04)';
 const border = 'rgba(201,168,76,0.15)';
 const text = '#f5f0e8';
-const muted = 'rgba(245,240,232,0.5)';
+const muted = 'rgba(245,240,232,0.76)';
 const red = '#ef4444';
 
 const S = {

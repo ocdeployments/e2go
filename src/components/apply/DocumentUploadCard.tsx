@@ -18,7 +18,7 @@ export default function DocumentUploadCard({ preparationStatus }: DocumentUpload
           href="/apply/upload"
           className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.08em] transition-colors hover:text-[#C9A84C]"
           style={{
-            color: 'rgba(245,240,232,0.3)',
+            color: 'rgba(245,240,232,0.68)',
             fontFamily: "'DM Sans', sans-serif",
           }}
         >
@@ -27,7 +27,7 @@ export default function DocumentUploadCard({ preparationStatus }: DocumentUpload
             style={{ backgroundColor: 'rgba(201,168,76,0.4)' }}
           />
           Have existing documents? Upload them
-          <span style={{ color: 'rgba(201,168,76,0.5)' }}>&rarr;</span>
+          <span style={{ color: 'rgba(201,168,76,0.82)' }}>&rarr;</span>
         </a>
       </div>
     );
@@ -65,7 +65,7 @@ export default function DocumentUploadCard({ preparationStatus }: DocumentUpload
       <p
         className="mb-2 text-[11px] leading-relaxed"
         style={{
-          color: 'rgba(245,240,232,0.5)',
+          color: 'rgba(245,240,232,0.76)',
           fontFamily: "'Cormorant Garamond', serif",
           fontSize: '15px',
           fontWeight: 300,
@@ -76,7 +76,7 @@ export default function DocumentUploadCard({ preparationStatus }: DocumentUpload
       <p
         className="mb-6 text-[11px] leading-relaxed"
         style={{
-          color: 'rgba(245,240,232,0.35)',
+          color: 'rgba(245,240,232,0.70)',
           fontFamily: "'DM Sans', sans-serif",
         }}
       >
@@ -101,9 +101,9 @@ export default function DocumentUploadCard({ preparationStatus }: DocumentUpload
 
         <button
           onClick={() => setDismissed(true)}
-          className="inline-flex items-center justify-center px-6 py-2.5 text-[11px] uppercase tracking-[0.1em] transition-colors hover:text-[rgba(245,240,232,0.5)]"
+          className="inline-flex items-center justify-center px-6 py-2.5 text-[11px] uppercase tracking-[0.1em] transition-colors hover:text-[rgba(245,240,232,0.76)]"
           style={{
-            color: 'rgba(245,240,232,0.25)',
+            color: 'rgba(245,240,232,0.65)',
             fontFamily: "'DM Sans', sans-serif",
           }}
         >

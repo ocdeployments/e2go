@@ -163,7 +163,7 @@ export default function GenerationProgress({
             margin: 0,
             fontSize: '12px',
             fontFamily: "'DM Sans', sans-serif",
-            color: done ? 'rgba(74,222,128,0.7)' : 'rgba(245,240,232,0.35)',
+            color: done ? 'rgba(74,222,128,0.7)' : 'rgba(245,240,232,0.70)',
             opacity: stepVisible ? 1 : 0,
             transition: 'opacity 0.4s ease',
             letterSpacing: '0.02em',
@@ -179,7 +179,7 @@ export default function GenerationProgress({
           margin: '6px 0 0',
           fontSize: '11px',
           fontFamily: "'DM Sans', sans-serif",
-          color: 'rgba(245,240,232,0.18)',
+          color: 'rgba(245,240,232,0.62)',
           letterSpacing: '0.02em',
         }}>
           Usually takes ~{estimatedSeconds < 60

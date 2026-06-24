@@ -1097,7 +1097,7 @@ function ActiveSession({
           fontSize: '10px',
           letterSpacing: '0.14em',
           textTransform: 'uppercase' as const,
-          color: timerWarning ? 'rgba(239,68,68,0.55)' : 'rgba(245,240,232,0.3)',
+          color: timerWarning ? 'rgba(239,68,68,0.55)' : 'rgba(245,240,232,0.68)',
           whiteSpace: 'nowrap',
         }}>
           {timerWarning ? 'Time running out' : 'Session time'}
@@ -1339,7 +1339,7 @@ function CoachingCard({ item, coaching, answerKey, correctionNote, correctionSav
   const inputStyle: React.CSSProperties = {
     width: '100%',
     background: 'rgba(245,240,232,0.04)',
-    border: '1px solid rgba(245,240,232,0.12)',
+    border: '1px solid rgba(245,240,232,0.62)',
     color: '#f5f0e8',
     fontSize: '12px',
     fontFamily: "'DM Sans', sans-serif",
@@ -1398,7 +1398,7 @@ function CoachingCard({ item, coaching, answerKey, correctionNote, correctionSav
       {item.originalAnswer && !isInconsistency && (
         <div style={{
           fontSize: '13px',
-          color: 'rgba(245,240,232,0.45)',
+          color: 'rgba(245,240,232,0.74)',
           fontStyle: 'italic',
           borderLeft: '2px solid rgba(255,255,255,0.1)',
           paddingLeft: '12px',
@@ -1439,13 +1439,13 @@ function CoachingCard({ item, coaching, answerKey, correctionNote, correctionSav
       {/* Inconsistency: inline correction panel (toggled) */}
       {isInconsistency && isExpanded && answerKey && onCorrectionChange && (
         <div
-          style={{ borderTop: '1px solid rgba(245,240,232,0.08)', paddingTop: '16px', marginTop: '4px' }}
+          style={{ borderTop: '1px solid rgba(245,240,232,0.62)', paddingTop: '16px', marginTop: '4px' }}
           onClick={e => e.stopPropagation()}
         >
-          <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.12em', color: 'rgba(245,240,232,0.3)', textTransform: 'uppercase', marginBottom: '6px' }}>
+          <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.12em', color: 'rgba(245,240,232,0.68)', textTransform: 'uppercase', marginBottom: '6px' }}>
             Correction note
           </div>
-          <div style={{ fontSize: '12px', color: 'rgba(245,240,232,0.45)', lineHeight: 1.6, marginBottom: '10px' }}>
+          <div style={{ fontSize: '12px', color: 'rgba(245,240,232,0.74)', lineHeight: 1.6, marginBottom: '10px' }}>
             Clarify what you meant or note what you&apos;ll say differently. This is saved to your case file.
           </div>
           <textarea
@@ -1456,11 +1456,11 @@ function CoachingCard({ item, coaching, answerKey, correctionNote, correctionSav
             style={inputStyle}
           />
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '6px' }}>
-            <div style={{ fontSize: '10px', color: isResolved ? 'rgba(34,197,94,0.7)' : 'rgba(245,240,232,0.25)' }}>
+            <div style={{ fontSize: '10px', color: isResolved ? 'rgba(34,197,94,0.7)' : 'rgba(245,240,232,0.65)' }}>
               {isResolved ? '✓ Correction noted' : `${coachingCardWordCount(correction)} words — add ~10+ words to mark resolved`}
             </div>
             {(correctionSaveStatus ?? 'idle') !== 'idle' && (
-              <div style={{ fontSize: '10px', color: correctionSaveStatus === 'saved' ? '#22c55e' : 'rgba(245,240,232,0.3)' }}>
+              <div style={{ fontSize: '10px', color: correctionSaveStatus === 'saved' ? '#22c55e' : 'rgba(245,240,232,0.68)' }}>
                 {correctionSaveStatus === 'saving' ? 'Saving…' : '✓ Saved'}
               </div>
             )}
@@ -1536,7 +1536,7 @@ function CoachingCard({ item, coaching, answerKey, correctionNote, correctionSav
               <div style={{ fontSize: '13px', color: 'rgba(245,240,232,0.75)', lineHeight: 1.65, fontStyle: 'italic' }}>
                 &ldquo;{coaching.modelAnswer}&rdquo;
               </div>
-              <div style={{ fontSize: '11px', color: 'rgba(245,240,232,0.3)', marginTop: '10px', lineHeight: 1.5 }}>
+              <div style={{ fontSize: '11px', color: 'rgba(245,240,232,0.68)', marginTop: '10px', lineHeight: 1.5 }}>
                 This is a guide to the level of detail and structure expected — not a script. Officers can tell when answers are memorized. Use this to understand what to cover, then answer in your own words based on your actual situation.
               </div>
             </div>
@@ -1605,7 +1605,7 @@ function DeliveryFlagCard({ flag }: { flag: { questionId: string; questionText: 
               }}>
                 {label}
               </div>
-              <div style={{ fontSize: '12px', color: 'rgba(245,240,232,0.55)', lineHeight: 1.55 }}>
+              <div style={{ fontSize: '12px', color: 'rgba(245,240,232,0.78)', lineHeight: 1.55 }}>
                 {note.detail}
               </div>
             </div>
@@ -1714,7 +1714,7 @@ function SessionComplete({
                 </span>
               )}
             </h3>
-            <p style={{ fontSize: '12px', color: 'rgba(245,240,232,0.4)', marginBottom: '20px', marginTop: 0 }}>
+            <p style={{ fontSize: '12px', color: 'rgba(245,240,232,0.72)', marginBottom: '20px', marginTop: 0 }}>
               Questions where your answer needs strengthening before the real interview.
             </p>
 
@@ -1723,7 +1723,7 @@ function SessionComplete({
                 padding: '32px',
                 textAlign: 'center' as const,
                 border: '1px solid rgba(201,168,76,0.12)',
-                color: 'rgba(245,240,232,0.4)',
+                color: 'rgba(245,240,232,0.72)',
                 fontSize: '13px',
               }}>
                 <div style={{ marginBottom: '8px', fontSize: '20px' }}>⟳</div>
@@ -1766,7 +1766,7 @@ function SessionComplete({
             <h3 style={{ fontSize: '14px', fontWeight: 500, color: '#f5f0e8', marginBottom: '6px' }}>
               Delivery coaching
             </h3>
-            <p style={{ fontSize: '12px', color: 'rgba(245,240,232,0.4)', marginBottom: '20px', marginTop: 0 }}>
+            <p style={{ fontSize: '12px', color: 'rgba(245,240,232,0.72)', marginBottom: '20px', marginTop: 0 }}>
               These are presentation patterns detected in your spoken answers — independent of content quality.
             </p>
             {summary.deliveryFlags.map((flag) => (
@@ -1948,7 +1948,7 @@ function SimulatorTeaser() {
 
           <span style={{
             fontSize: '12px',
-            color: 'rgba(245,240,232,0.3)',
+            color: 'rgba(245,240,232,0.68)',
             fontFamily: "'DM Sans', sans-serif",
           }}>
             — or —
@@ -2052,7 +2052,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   sessionCount: {
     fontSize: '14px',
-    color: 'rgba(245,240,232,0.5)',
+    color: 'rgba(245,240,232,0.76)',
     marginBottom: '32px',
   },
   purchaseBanner: {
@@ -2078,7 +2078,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   purchaseNote: {
     fontSize: '12px',
-    color: 'rgba(245,240,232,0.4)',
+    color: 'rgba(245,240,232,0.72)',
     marginTop: '8px',
   },
   error: {
@@ -2122,11 +2122,11 @@ const styles: Record<string, React.CSSProperties> = {
   },
   modeDesc: {
     fontSize: '13px',
-    color: 'rgba(245,240,232,0.5)',
+    color: 'rgba(245,240,232,0.76)',
   },
   modeTooltip: {
     fontSize: '11px',
-    color: 'rgba(245,240,232,0.4)',
+    color: 'rgba(245,240,232,0.72)',
     marginTop: '4px',
   },
   backLink: {
@@ -2202,7 +2202,7 @@ const styles: Record<string, React.CSSProperties> = {
     border: '1px solid rgba(201,168,76,0.1)',
     borderRadius: 0,
     fontSize: '13px',
-    color: 'rgba(245,240,232,0.5)',
+    color: 'rgba(245,240,232,0.76)',
   },
   replayButton: {
     marginTop: '16px',
@@ -2235,10 +2235,10 @@ const styles: Record<string, React.CSSProperties> = {
   wordCount: {
     marginTop: '8px',
     fontSize: '12px',
-    color: 'rgba(245,240,232,0.4)',
+    color: 'rgba(245,240,232,0.72)',
   },
   wordHint: {
-    color: 'rgba(245,240,232,0.3)',
+    color: 'rgba(245,240,232,0.68)',
   },
   submitButton: {
     marginTop: '24px',
@@ -2284,7 +2284,7 @@ const styles: Record<string, React.CSSProperties> = {
   docRef: {
     marginTop: '12px',
     fontSize: '12px',
-    color: 'rgba(245,240,232,0.5)',
+    color: 'rgba(245,240,232,0.76)',
     fontStyle: 'italic' as const,
   },
   nextButton: {

@@ -138,11 +138,11 @@ function VerifyPageInner() {
               </button>
             )
           ) : (
-            <p style={{ color: 'rgba(245,240,232,0.5)', fontSize: '14px', marginBottom: '16px', textAlign: 'center' as const }}>
+            <p style={{ color: 'rgba(245,240,232,0.76)', fontSize: '14px', marginBottom: '16px', textAlign: 'center' as const }}>
               Please retake the quiz to get a new results link.
             </p>
           )}
-          <Link href="/quiz" className="mt-6" style={{ color: 'rgba(245,240,232,0.4)', fontSize: '13px', textDecoration: 'underline' }}>
+          <Link href="/quiz" className="mt-6" style={{ color: 'rgba(245,240,232,0.72)', fontSize: '13px', textDecoration: 'underline' }}>
             Or retake the quiz
           </Link>
         </div>

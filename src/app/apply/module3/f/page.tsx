@@ -231,7 +231,7 @@ export default function TabFPage() {
 
   if (!applicationId) {
     return (
-      <div style={{ color: 'rgba(245,240,232,0.4)', padding: '48px 24px', textAlign: 'center', fontFamily: "'DM Sans', sans-serif" }}>
+      <div style={{ color: 'rgba(245,240,232,0.72)', padding: '48px 24px', textAlign: 'center', fontFamily: "'DM Sans', sans-serif" }}>
         Loading...
       </div>
     );

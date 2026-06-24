@@ -11,7 +11,7 @@ export default function Breadcrumb({ items }: BreadcrumbProps) {
         const isLast = index === items.length - 1;
         return (
           <div key={item.label} className="flex items-center gap-2">
-            {index > 0 && <span className="text-[rgba(245,240,232,0.45)]">/</span>}
+            {index > 0 && <span className="text-[rgba(245,240,232,0.72)]">/</span>}
             {isLast ? (
               <span className="text-[#C9A84C]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
                 {item.label}

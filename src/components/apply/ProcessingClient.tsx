@@ -195,7 +195,7 @@ export default function ProcessingClient({ documentIds, applicationId }: Process
             <p
               className="text-[11px] leading-relaxed"
               style={{
-                color: 'rgba(245,240,232,0.4)',
+                color: 'rgba(245,240,232,0.72)',
                 fontFamily: "'DM Sans', sans-serif",
               }}
             >
@@ -206,7 +206,7 @@ export default function ProcessingClient({ documentIds, applicationId }: Process
             <p
               className="text-[11px] leading-relaxed"
               style={{
-                color: 'rgba(245,240,232,0.4)',
+                color: 'rgba(245,240,232,0.72)',
                 fontFamily: "'DM Sans', sans-serif",
               }}
             >
@@ -297,7 +297,7 @@ export default function ProcessingClient({ documentIds, applicationId }: Process
                   {doc.status === 'waiting' && (
                     <span
                       className="text-[10px] uppercase tracking-[0.05em]"
-                      style={{ color: 'rgba(245,240,232,0.25)', fontFamily: "'DM Sans', sans-serif" }}
+                      style={{ color: 'rgba(245,240,232,0.65)', fontFamily: "'DM Sans', sans-serif" }}
                     >
                       Waiting...
                     </span>
@@ -305,7 +305,7 @@ export default function ProcessingClient({ documentIds, applicationId }: Process
                   {doc.status === 'classified' && (
                     <span
                       className="text-[10px] uppercase tracking-[0.05em]"
-                      style={{ color: 'rgba(201,168,76,0.5)', fontFamily: "'DM Sans', sans-serif" }}
+                      style={{ color: 'rgba(201,168,76,0.82)', fontFamily: "'DM Sans', sans-serif" }}
                     >
                       Classifying...
                     </span>
@@ -313,7 +313,7 @@ export default function ProcessingClient({ documentIds, applicationId }: Process
                   {doc.status === 'extracting' && (
                     <span
                       className="text-[10px] uppercase tracking-[0.05em]"
-                      style={{ color: 'rgba(201,168,76,0.5)', fontFamily: "'DM Sans', sans-serif" }}
+                      style={{ color: 'rgba(201,168,76,0.82)', fontFamily: "'DM Sans', sans-serif" }}
                     >
                       Extracting fields...
                     </span>

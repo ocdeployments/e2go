@@ -76,7 +76,7 @@ export default function StartupCostTable({ value, onChange, investmentAmount }: 
                   className="border px-3 py-2 text-left text-[9px] uppercase tracking-[0.1em]"
                   style={{
                     borderColor: 'rgba(201,168,76,0.12)',
-                    color: 'rgba(245,240,232,0.28)',
+                    color: 'rgba(245,240,232,0.65)',
                     fontFamily: "'DM Sans', sans-serif",
                     width: i === 2 ? '120px' : i === 3 ? '40px' : undefined,
                   }}
@@ -139,7 +139,7 @@ export default function StartupCostTable({ value, onChange, investmentAmount }: 
                 className="border px-3 py-2 text-right text-[11px] uppercase tracking-[0.1em]"
                 style={{
                   borderColor: 'rgba(201,168,76,0.12)',
-                  color: 'rgba(245,240,232,0.4)',
+                  color: 'rgba(245,240,232,0.72)',
                   fontFamily: "'DM Sans', sans-serif",
                 }}
               >
@@ -179,7 +179,7 @@ export default function StartupCostTable({ value, onChange, investmentAmount }: 
                 onChange={(e) => updateRow(row.id, 'category', e.target.value)}
                 placeholder="Category"
                 className="bg-transparent text-[11px] uppercase tracking-[0.1em] outline-none"
-                style={{ color: 'rgba(245,240,232,0.55)', fontFamily: "'DM Sans', sans-serif" }}
+                style={{ color: 'rgba(245,240,232,0.78)', fontFamily: "'DM Sans', sans-serif" }}
               />
               <button
                 onClick={() => removeRow(row.id)}
@@ -200,7 +200,7 @@ export default function StartupCostTable({ value, onChange, investmentAmount }: 
             <div className="relative">
               <span
                 className="absolute left-3 top-1/2 -translate-y-1/2 text-[13px]"
-                style={{ color: 'rgba(245,240,232,0.3)' }}
+                style={{ color: 'rgba(245,240,232,0.68)' }}
               >
                 $
               </span>
@@ -227,7 +227,7 @@ export default function StartupCostTable({ value, onChange, investmentAmount }: 
         <button
           onClick={addRow}
           className="text-[11px] uppercase tracking-[0.1em] transition-colors hover:text-[#C9A84C]"
-          style={{ color: 'rgba(245,240,232,0.28)', fontFamily: "'DM Sans', sans-serif" }}
+          style={{ color: 'rgba(245,240,232,0.65)', fontFamily: "'DM Sans', sans-serif" }}
         >
           + Add item
         </button>

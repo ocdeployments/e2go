@@ -181,7 +181,7 @@ function SignupForm() {
                 </div>
                 <p className="font-medium mb-2" style={{ color: "#f5f0e8" }}>Check your email</p>
                 <p className="text-sm" style={{ color: "rgba(245,240,232,0.6)" }}>We sent a confirmation link to {email}</p>
-                <p className="text-xs mt-4" style={{ color: "rgba(245,240,232,0.35)" }}>Please verify your email before signing in.</p>
+                <p className="text-xs mt-4" style={{ color: "rgba(245,240,232,0.70)" }}>Please verify your email before signing in.</p>
               </div>
             </div>
           </main>
@@ -406,7 +406,7 @@ function SignupForm() {
                 </div>
 
                 {!hasScrolledTerms && (
-                  <p style={{ fontSize: '11px', color: 'rgba(245,240,232,0.4)', marginTop: '8px' }}>
+                  <p style={{ fontSize: '11px', color: 'rgba(245,240,232,0.72)', marginTop: '8px' }}>
                     Please scroll through the terms above before accepting.
                   </p>
                 )}
@@ -421,7 +421,7 @@ function SignupForm() {
                     style={{ width: '16px', height: '16px', marginTop: '2px', accentColor: '#C9A84C', flexShrink: 0 }}
                   />
                   <label htmlFor="casl-consent"
-                    style={{ fontSize: '12px', color: 'rgba(245,240,232,0.5)', lineHeight: '1.5' }}>
+                    style={{ fontSize: '12px', color: 'rgba(245,240,232,0.76)', lineHeight: '1.5' }}>
                     I&apos;d like to receive occasional tips and updates about E-2
                     visa preparation from E2go. (Optional — unsubscribe any time.)
                   </label>
@@ -458,14 +458,14 @@ function SignupForm() {
                   Create Account
                 </button>
 
-                <p className="text-xs text-center mt-4" style={{ color: "rgba(245,240,232,0.45)" }}>
+                <p className="text-xs text-center mt-4" style={{ color: "rgba(245,240,232,0.74)" }}>
                   By creating an account, you agree to our{" "}
                   <Link href="/terms" target="_blank" rel="noopener noreferrer" className="underline hover:text-[#C9A84C]">Terms of Service</Link> and{" "}
                   <Link href="/privacy" target="_blank" rel="noopener noreferrer" className="underline hover:text-[#C9A84C]">Privacy Policy</Link>
                 </p>
               </form>
 
-              <p className="mt-6 text-center text-sm" style={{ color: "rgba(245,240,232,0.45)" }}>
+              <p className="mt-6 text-center text-sm" style={{ color: "rgba(245,240,232,0.74)" }}>
                 Already have an account?{" "}
                 <Link href="/login" className="hover:text-[#C9A84C] underline" style={{ color: "#C9A84C" }}>
                   Sign in

@@ -238,7 +238,7 @@ function TermsRequiredContent() {
         </div>
 
         {!hasScrolledTerms && (
-          <p style={{ fontSize: "11px", color: "rgba(245,240,232,0.4)", marginBottom: "16px" }}>
+          <p style={{ fontSize: "11px", color: "rgba(245,240,232,0.72)", marginBottom: "16px" }}>
             Please scroll through the terms above before accepting.
           </p>
         )}
@@ -302,7 +302,7 @@ function TermsRequiredContent() {
             className="block w-full py-3 text-center font-medium transition-colors"
             style={{
               background: "transparent",
-              color: "rgba(245,240,232,0.4)",
+              color: "rgba(245,240,232,0.72)",
               border: "none",
               borderRadius: 0,
               fontSize: "12px",

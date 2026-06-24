@@ -48,7 +48,7 @@ export default function RiskFlag({ label = 'Denial risk', children }: RiskFlagPr
           fontFamily: "'DM Sans', sans-serif",
           fontSize: '12px',
           fontWeight: 300,
-          color: 'rgba(245,240,232,0.50)',
+          color: 'rgba(245,240,232,0.76)',
           lineHeight: '1.6',
         }}
       >

@@ -43,7 +43,7 @@ export function ComparisonSection() {
             fontFamily: 'DM Sans, sans-serif',
             fontSize: '16px',
             fontWeight: 300,
-            color: 'rgba(245,240,232,0.55)',
+            color: 'rgba(245,240,232,0.78)',
             maxWidth: '620px',
             margin: 0,
             lineHeight: 1.7,
@@ -94,7 +94,7 @@ export function ComparisonSection() {
                 fontFamily: 'DM Sans, sans-serif',
                 fontSize: '13px',
                 fontWeight: 300,
-                color: 'rgba(245,240,232,0.45)',
+                color: 'rgba(245,240,232,0.74)',
                 margin: 0,
                 lineHeight: 1.6,
               }}>
@@ -145,7 +145,7 @@ export function ComparisonSection() {
                     fontFamily: 'DM Sans, sans-serif',
                     fontSize: '13px',
                     fontWeight: 300,
-                    color: 'rgba(245,240,232,0.5)',
+                    color: 'rgba(245,240,232,0.76)',
                     lineHeight: 1.6,
                     marginBottom: '6px',
                   }}>
@@ -179,7 +179,7 @@ export function ComparisonSection() {
                   fontFamily: 'DM Sans, sans-serif',
                   fontSize: '12px',
                   fontWeight: 300,
-                  color: 'rgba(245,240,232,0.4)',
+                  color: 'rgba(245,240,232,0.72)',
                   textTransform: 'uppercase',
                   letterSpacing: '0.1em',
                 }}>
@@ -203,7 +203,7 @@ export function ComparisonSection() {
                   fontFamily: 'DM Sans, sans-serif',
                   fontSize: '12px',
                   fontWeight: 300,
-                  color: 'rgba(245,240,232,0.4)',
+                  color: 'rgba(245,240,232,0.72)',
                   textTransform: 'uppercase',
                   letterSpacing: '0.1em',
                 }}>
@@ -222,7 +222,7 @@ export function ComparisonSection() {
                 fontFamily: 'DM Sans, sans-serif',
                 fontSize: '11px',
                 fontWeight: 300,
-                color: 'rgba(245,240,232,0.3)',
+                color: 'rgba(245,240,232,0.68)',
                 margin: '10px 0 0',
                 lineHeight: 1.6,
               }}>
@@ -244,7 +244,7 @@ export function ComparisonSection() {
                 fontWeight: 500,
                 letterSpacing: '0.16em',
                 textTransform: 'uppercase',
-                color: 'rgba(245,240,232,0.3)',
+                color: 'rgba(245,240,232,0.68)',
                 background: 'rgba(245,240,232,0.04)',
                 border: '1px solid rgba(245,240,232,0.08)',
                 padding: '4px 12px',
@@ -257,7 +257,7 @@ export function ComparisonSection() {
                 fontFamily: '"Cormorant Garamond", serif',
                 fontSize: '24px',
                 fontWeight: 300,
-                color: 'rgba(245,240,232,0.55)',
+                color: 'rgba(245,240,232,0.78)',
                 margin: '0 0 8px',
                 lineHeight: 1.3,
               }}>
@@ -267,7 +267,7 @@ export function ComparisonSection() {
                 fontFamily: 'DM Sans, sans-serif',
                 fontSize: '13px',
                 fontWeight: 300,
-                color: 'rgba(245,240,232,0.3)',
+                color: 'rgba(245,240,232,0.68)',
                 margin: 0,
                 lineHeight: 1.6,
               }}>
@@ -300,7 +300,7 @@ export function ComparisonSection() {
                     fontFamily: 'DM Sans, sans-serif',
                     fontSize: '11px',
                     fontWeight: 500,
-                    color: 'rgba(245,240,232,0.3)',
+                    color: 'rgba(245,240,232,0.68)',
                   }}>
                     {String(i + 1).padStart(2, '0')}
                   </span>
@@ -319,7 +319,7 @@ export function ComparisonSection() {
                     fontFamily: 'DM Sans, sans-serif',
                     fontSize: '13px',
                     fontWeight: 300,
-                    color: 'rgba(245,240,232,0.35)',
+                    color: 'rgba(245,240,232,0.70)',
                     lineHeight: 1.6,
                     marginBottom: '6px',
                   }}>
@@ -329,7 +329,7 @@ export function ComparisonSection() {
                     fontFamily: 'DM Sans, sans-serif',
                     fontSize: '11px',
                     fontWeight: 400,
-                    color: 'rgba(245,240,232,0.3)',
+                    color: 'rgba(245,240,232,0.68)',
                     letterSpacing: '0.06em',
                   }}>
                     {step.cost}
@@ -353,7 +353,7 @@ export function ComparisonSection() {
                   fontFamily: 'DM Sans, sans-serif',
                   fontSize: '12px',
                   fontWeight: 300,
-                  color: 'rgba(245,240,232,0.25)',
+                  color: 'rgba(245,240,232,0.65)',
                   textTransform: 'uppercase',
                   letterSpacing: '0.1em',
                 }}>
@@ -363,7 +363,7 @@ export function ComparisonSection() {
                   fontFamily: '"Cormorant Garamond", serif',
                   fontSize: '28px',
                   fontWeight: 300,
-                  color: 'rgba(245,240,232,0.3)',
+                  color: 'rgba(245,240,232,0.68)',
                   textDecoration: 'line-through',
                   textDecorationColor: 'rgba(245,240,232,0.1)',
                 }}>
@@ -379,7 +379,7 @@ export function ComparisonSection() {
                   fontFamily: 'DM Sans, sans-serif',
                   fontSize: '12px',
                   fontWeight: 300,
-                  color: 'rgba(245,240,232,0.25)',
+                  color: 'rgba(245,240,232,0.65)',
                   textTransform: 'uppercase',
                   letterSpacing: '0.1em',
                 }}>
@@ -389,7 +389,7 @@ export function ComparisonSection() {
                   fontFamily: '"Cormorant Garamond", serif',
                   fontSize: '28px',
                   fontWeight: 300,
-                  color: 'rgba(245,240,232,0.3)',
+                  color: 'rgba(245,240,232,0.68)',
                 }}>
                   9–14 months
                 </span>
@@ -398,7 +398,7 @@ export function ComparisonSection() {
                 fontFamily: 'DM Sans, sans-serif',
                 fontSize: '11px',
                 fontWeight: 300,
-                color: 'rgba(245,240,232,0.2)',
+                color: 'rgba(245,240,232,0.62)',
                 margin: '10px 0 0',
                 lineHeight: 1.6,
               }}>
@@ -473,7 +473,7 @@ export function ComparisonSection() {
                         fontFamily: 'DM Sans, sans-serif',
                         fontSize: '13px',
                         fontWeight: 300,
-                        color: 'rgba(245,240,232,0.5)',
+                        color: 'rgba(245,240,232,0.76)',
                         lineHeight: 1.5,
                       }}>
                         <span style={{ fontWeight: 500, color: '#f5f0e8' }}>{item.name}</span>
@@ -513,7 +513,7 @@ export function ComparisonSection() {
             fontFamily: 'DM Sans, sans-serif',
             fontSize: '13px',
             fontWeight: 300,
-            color: 'rgba(245,240,232,0.5)',
+            color: 'rgba(245,240,232,0.76)',
             margin: 0,
             maxWidth: '640px',
             lineHeight: 1.7,

@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
                 <table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;">
                   <tr>
                     <td style="padding:32px;border:1px solid rgba(201,168,76,0.15);background:rgba(201,168,76,0.03);">
-                      <div style="font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(201,168,76,0.5);margin-bottom:16px;">
+                      <div style="font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(201,168,76,0.82);margin-bottom:16px;">
                         Franchise Referral Request
                       </div>
                       <div style="font-size:14px;color:#f5f0e8;line-height:1.7;margin-bottom:24px;">
@@ -70,24 +70,24 @@ export async function POST(req: NextRequest) {
                       </div>
                       <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
                         <tr>
-                          <td style="padding:8px 0;font-size:12px;color:rgba(245,240,232,0.4);width:120px;">Date</td>
+                          <td style="padding:8px 0;font-size:12px;color:rgba(245,240,232,0.72);width:120px;">Date</td>
                           <td style="padding:8px 0;font-size:12px;color:#f5f0e8;">${date}</td>
                         </tr>
                         <tr>
-                          <td style="padding:8px 0;font-size:12px;color:rgba(245,240,232,0.4);">Session ID</td>
+                          <td style="padding:8px 0;font-size:12px;color:rgba(245,240,232,0.72);">Session ID</td>
                           <td style="padding:8px 0;font-size:12px;color:#f5f0e8;font-family:monospace;">${safeSessionId}</td>
                         </tr>
                         <tr>
-                          <td style="padding:8px 0;font-size:12px;color:rgba(245,240,232,0.4);">Email</td>
+                          <td style="padding:8px 0;font-size:12px;color:rgba(245,240,232,0.72);">Email</td>
                           <td style="padding:8px 0;font-size:12px;color:#f5f0e8;">${safeUserEmail}</td>
                         </tr>
                         ${safeFranchiseName ? `
                         <tr>
-                          <td style="padding:8px 0;font-size:12px;color:rgba(245,240,232,0.4);">Franchise</td>
+                          <td style="padding:8px 0;font-size:12px;color:rgba(245,240,232,0.72);">Franchise</td>
                           <td style="padding:8px 0;font-size:12px;color:#f5f0e8;">${safeFranchiseName}</td>
                         </tr>` : ""}
                       </table>
-                      <div style="font-size:11px;color:rgba(245,240,232,0.3);border-top:1px solid rgba(201,168,76,0.1);padding-top:16px;">
+                      <div style="font-size:11px;color:rgba(245,240,232,0.68);border-top:1px solid rgba(201,168,76,0.1);padding-top:16px;">
                         This notification was sent automatically by E2go.
                       </div>
                     </td>

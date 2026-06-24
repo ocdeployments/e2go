@@ -255,7 +255,7 @@ export default function TiesPage() {
                 )}
                 <TextArea value={answer?.value || ''} onChange={(val) => handleAnswerChange(q.key, val)} onBlur={(val) => checkFieldQuality(q.key, val)} rows={4} />
                 {qResult?.feedback && qResult.quality !== 'strong' && (
-                  <div style={{ fontSize: '12px', color: 'rgba(245,240,232,0.45)', lineHeight: 1.5, marginTop: '6px' }}>
+                  <div style={{ fontSize: '12px', color: 'rgba(245,240,232,0.74)', lineHeight: 1.5, marginTop: '6px' }}>
                     {qResult.feedback}
                   </div>
                 )}
@@ -273,7 +273,7 @@ export default function TiesPage() {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#0a0a0a]">
-        <p className="text-sm" style={{ color: 'rgba(245,240,232,0.3)', fontFamily: "'DM Sans', sans-serif" }}>Loading...</p>
+        <p className="text-sm" style={{ color: 'rgba(245,240,232,0.68)', fontFamily: "'DM Sans', sans-serif" }}>Loading...</p>
       </div>
     );
   }
@@ -294,10 +294,10 @@ export default function TiesPage() {
           {DOCUMENTS.map(doc => (
             <div key={doc.name} className="border p-4" style={{ borderColor: 'rgba(201,168,76,0.12)', backgroundColor: 'rgba(201,168,76,0.01)' }}>
               <div className="flex items-center justify-between mb-3">
-                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '10px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'rgba(245,240,232,0.35)' }}>{doc.name}</span>
-                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '10px', color: 'rgba(245,240,232,0.18)', border: '1px solid rgba(245,240,232,0.08)', padding: '2px 7px' }}>Waiting</span>
+                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '10px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'rgba(245,240,232,0.70)' }}>{doc.name}</span>
+                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '10px', color: 'rgba(245,240,232,0.62)', border: '1px solid rgba(245,240,232,0.08)', padding: '2px 7px' }}>Waiting</span>
               </div>
-              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '12px', fontWeight: 300, color: 'rgba(245,240,232,0.18)', fontStyle: 'italic', lineHeight: 1.5 }}>[Answer the questions on the left to fill this in]</p>
+              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '12px', fontWeight: 300, color: 'rgba(245,240,232,0.62)', fontStyle: 'italic', lineHeight: 1.5 }}>[Answer the questions on the left to fill this in]</p>
             </div>
           ))}
         </div>

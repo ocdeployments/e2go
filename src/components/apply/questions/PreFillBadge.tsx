@@ -77,7 +77,7 @@ export default function PreFillBadge({
       <div
         className="mb-2 inline-flex items-center gap-1.5 border px-2 py-0.5"
         style={{
-          borderColor: 'rgba(245,240,232,0.08)',
+          borderColor: 'rgba(245,240,232,0.62)',
         }}
       >
         <span
@@ -86,7 +86,7 @@ export default function PreFillBadge({
             fontSize: '10px',
             fontWeight: 300,
             letterSpacing: '0.06em',
-            color: 'rgba(245,240,232,0.28)',
+            color: 'rgba(245,240,232,0.65)',
           }}
         >
           Edited
@@ -100,7 +100,7 @@ export default function PreFillBadge({
     <div
       className="mb-2 inline-flex items-center gap-1.5 border px-2 py-0.5"
       style={{
-        borderColor: isOriginal ? 'rgba(201,168,76,0.28)' : 'rgba(245,240,232,0.08)',
+        borderColor: isOriginal ? 'rgba(201,168,76,0.28)' : 'rgba(245,240,232,0.62)',
       }}
     >
       <span
@@ -109,7 +109,7 @@ export default function PreFillBadge({
           fontSize: '10px',
           fontWeight: 300,
           letterSpacing: '0.06em',
-          color: isOriginal ? '#C9A84C' : 'rgba(245,240,232,0.28)',
+          color: isOriginal ? '#C9A84C' : 'rgba(245,240,232,0.65)',
         }}
       >
         {isOriginal ? '✦ From your eligibility check' : 'Edited'}

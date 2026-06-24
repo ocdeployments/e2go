@@ -432,7 +432,7 @@ export default function ComplianceCalendarPage() {
                         <p
                           className="text-sm font-semibold"
                           style={{ 
-                            color: item.status === "completed" ? "rgba(245,240,232,0.5)" : "#C9A84C", 
+                            color: item.status === "completed" ? "rgba(245,240,232,0.76)" : "#C9A84C", 
                             fontFamily: "'DM Sans', sans-serif" 
                           }}
                         >
@@ -444,7 +444,7 @@ export default function ComplianceCalendarPage() {
                       ) : (
                         <span
                           className="inline-block px-2 py-1 text-xs border"
-                          style={{ borderColor: "rgba(245,240,232,0.2)", color: "rgba(245,240,232,0.4)" }}
+                          style={{ borderColor: "rgba(245,240,232,0.62)", color: "rgba(245,240,232,0.72)" }}
                         >
                           TBD
                         </span>

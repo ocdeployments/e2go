@@ -165,7 +165,7 @@ export default function FormField({
                 <div>
                   <div style={{ color: '#f5f0e8' }}>{option.label}</div>
                   {option.helperText && (
-                    <div className="text-xs mt-1" style={{ color: 'rgba(245,240,232,0.5)' }}>{option.helperText}</div>
+                    <div className="text-xs mt-1" style={{ color: 'rgba(245,240,232,0.76)' }}>{option.helperText}</div>
                   )}
                 </div>
               </label>
@@ -258,7 +258,7 @@ export default function FormField({
       case 'currency':
         return (
           <div className="relative">
-            <span className="absolute left-4 top-1/2 -translate-y-1/2" style={{ color: 'rgba(245,240,232,0.5)' }}>$</span>
+            <span className="absolute left-4 top-1/2 -translate-y-1/2" style={{ color: 'rgba(245,240,232,0.76)' }}>$</span>
             <input
               type="number"
               value={inputValue}
@@ -311,7 +311,7 @@ export default function FormField({
                 e.target.style.outline = 'none';
               }}
             />
-            <span className="absolute right-4 top-1/2 -translate-y-1/2" style={{ color: 'rgba(245,240,232,0.5)' }}>%</span>
+            <span className="absolute right-4 top-1/2 -translate-y-1/2" style={{ color: 'rgba(245,240,232,0.76)' }}>%</span>
           </div>
         );
 
@@ -363,7 +363,7 @@ export default function FormField({
             type="button"
             onClick={onSkip}
             className="ml-auto text-xs underline hover:no-underline"
-            style={{ color: 'rgba(245,240,232,0.4)' }}
+            style={{ color: 'rgba(245,240,232,0.72)' }}
           >
             Skip
           </button>
@@ -371,7 +371,7 @@ export default function FormField({
       </div>
       {renderInput()}
       {field.helperText && (
-        <p className="mt-2 text-xs" style={{ color: 'rgba(245,240,232,0.5)' }}>
+        <p className="mt-2 text-xs" style={{ color: 'rgba(245,240,232,0.76)' }}>
           {field.helperText}
         </p>
       )}

@@ -93,7 +93,7 @@ export default function TabSidebar({
       <div className="p-6 border-b" style={{ borderColor: 'rgba(201,168,76,0.1)' }}>
         <h3
           className="text-xs uppercase tracking-widest mb-4"
-          style={{ color: 'rgba(245,240,232,0.4)' }}
+          style={{ color: 'rgba(245,240,232,0.72)' }}
         >
           Progress
         </h3>
@@ -107,7 +107,7 @@ export default function TabSidebar({
             }}
           />
         </div>
-        <p className="mt-2 text-xs" style={{ color: 'rgba(245,240,232,0.5)' }}>
+        <p className="mt-2 text-xs" style={{ color: 'rgba(245,240,232,0.76)' }}>
           {totalAnswered} of {totalQuestions} questions completed
         </p>
       </div>
@@ -143,7 +143,7 @@ export default function TabSidebar({
                   >
                     {section.title}
                   </div>
-                  <div className="text-xs mt-0.5" style={{ color: 'rgba(245,240,232,0.4)' }}>
+                  <div className="text-xs mt-0.5" style={{ color: 'rgba(245,240,232,0.72)' }}>
                     {section.answeredCount} of {section.questionCount} questions
                   </div>
                 </div>
@@ -177,7 +177,7 @@ export default function TabSidebar({
       </nav>
 
       <div className="p-4 border-t" style={{ borderColor: 'rgba(201,168,76,0.1)' }}>
-        <div className="text-xs" style={{ color: 'rgba(245,240,232,0.4)' }}>
+        <div className="text-xs" style={{ color: 'rgba(245,240,232,0.72)' }}>
           {tabLabel}
         </div>
       </div>

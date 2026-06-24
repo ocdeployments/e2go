@@ -83,7 +83,7 @@ export default function ResetPassword() {
             </svg>
           </div>
           <p style={{ fontFamily: "'DM Sans', sans-serif", color: "#f5f0e8", fontSize: "14px", fontWeight: 500, marginBottom: "8px" }}>Password updated</p>
-          <p style={{ fontFamily: "'DM Sans', sans-serif", color: "rgba(245,240,232,0.55)", fontSize: "13px", marginBottom: "24px" }}>You can now sign in with your new password.</p>
+          <p style={{ fontFamily: "'DM Sans', sans-serif", color: "rgba(245,240,232,0.78)", fontSize: "13px", marginBottom: "24px" }}>You can now sign in with your new password.</p>
           <Link href="/login" style={{ display: "block", textAlign: "center", color: "#C9A84C", fontFamily: "'DM Sans', sans-serif", fontSize: "14px", textDecoration: "underline" }}>
             Back to Sign In →
           </Link>

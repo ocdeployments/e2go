@@ -490,7 +490,7 @@ export default function DocumentsReviewPage() {
                 }}
                 className={`border px-8 py-3 text-sm font-medium uppercase tracking-wider transition-all duration-300 ${
                   downloadState === "locked"
-                    ? "border-[rgba(201,168,76,0.2)] bg-[rgba(201,168,76,0.1)] text-[rgba(245,240,232,0.3)] cursor-not-allowed"
+                    ? "border-[rgba(201,168,76,0.2)] bg-[rgba(201,168,76,0.1)] text-[rgba(245,240,232,0.68)] cursor-not-allowed"
                     : downloadState === "downloading"
                     ? "border-[#C9A84C] bg-[rgba(201,168,76,0.1)] text-[#C9A84C] cursor-wait"
                     : downloadState === "complete"

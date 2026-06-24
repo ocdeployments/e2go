@@ -36,7 +36,7 @@ export default function CategoryCard({ category, factors, enrichment, enriching 
         <div style={{ flex: 1 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
             <span style={{ fontSize: '14px', fontWeight: 500, color: '#f5f0e8' }}>{category.name}</span>
-            <span style={{ fontSize: '10px', color: 'rgba(245,240,232,0.25)', fontWeight: 600, letterSpacing: '0.06em' }}>
+            <span style={{ fontSize: '10px', color: 'rgba(245,240,232,0.65)', fontWeight: 600, letterSpacing: '0.06em' }}>
               {category.weight}% WEIGHT
             </span>
             <span style={{ fontSize: '10px', color, fontWeight: 700, letterSpacing: '0.1em', marginLeft: 'auto' }}>
@@ -68,7 +68,7 @@ export default function CategoryCard({ category, factors, enrichment, enriching 
             {category.score}
           </span>
           <span style={{
-            fontSize: '16px', color: 'rgba(245,240,232,0.2)',
+            fontSize: '16px', color: 'rgba(245,240,232,0.62)',
             transform: expanded ? 'rotate(180deg)' : 'none',
             transition: 'transform 0.2s',
             display: 'inline-block',
@@ -85,7 +85,7 @@ export default function CategoryCard({ category, factors, enrichment, enriching 
             <div style={{ marginBottom: '16px', padding: '14px 16px', background: 'rgba(201,168,76,0.03)', border: '1px solid rgba(201,168,76,0.15)', borderLeft: '3px solid rgba(201,168,76,0.4)' }}>
               <div style={subLabel('rgba(201,168,76,0.5)')}>E2go Advisor</div>
               {enriching && !enrichment ? (
-                <div style={{ fontSize: '12px', color: 'rgba(245,240,232,0.3)', fontStyle: 'italic' }}>Generating personalised guidance…</div>
+                <div style={{ fontSize: '12px', color: 'rgba(245,240,232,0.68)', fontStyle: 'italic' }}>Generating personalised guidance…</div>
               ) : (
                 <p style={{ fontSize: '13px', color: 'rgba(245,240,232,0.65)', lineHeight: 1.6, margin: 0 }}>{enrichment}</p>
               )}

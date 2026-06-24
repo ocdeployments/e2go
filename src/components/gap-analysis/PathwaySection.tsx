@@ -52,7 +52,7 @@ function PathwayCard({ pathway }: { pathway: PathwayRecommendation }) {
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap' }}>
           <span style={{
             fontSize: '10px', fontWeight: 700, letterSpacing: '0.1em',
-            color: 'rgba(245,240,232,0.35)', textTransform: 'uppercase',
+            color: 'rgba(245,240,232,0.70)', textTransform: 'uppercase',
             background: 'rgba(245,240,232,0.06)', padding: '3px 8px', borderRadius: '2px',
           }}>
             {CATEGORY_LABELS[pathway.category] ?? pathway.category}
@@ -74,7 +74,7 @@ function PathwayCard({ pathway }: { pathway: PathwayRecommendation }) {
               Attorney review recommended
             </span>
           )}
-          <span style={{ marginLeft: 'auto', color: 'rgba(245,240,232,0.3)', fontSize: '14px' }}>
+          <span style={{ marginLeft: 'auto', color: 'rgba(245,240,232,0.68)', fontSize: '14px' }}>
             {expanded ? '▴' : '▾'}
           </span>
         </div>
@@ -86,7 +86,7 @@ function PathwayCard({ pathway }: { pathway: PathwayRecommendation }) {
           {pathway.title}
         </div>
         <div style={{
-          fontSize: '13px', color: 'rgba(245,240,232,0.55)', lineHeight: 1.6, marginTop: '6px',
+          fontSize: '13px', color: 'rgba(245,240,232,0.78)', lineHeight: 1.6, marginTop: '6px',
         }}>
           {pathway.headline}
         </div>
@@ -127,12 +127,12 @@ function PathwayCard({ pathway }: { pathway: PathwayRecommendation }) {
             </ul>
 
             <SectionLabel>Trade-offs</SectionLabel>
-            <ul style={{ margin: '0 0 16px 0', padding: '0 0 0 16px', color: 'rgba(245,240,232,0.5)', fontSize: '13px', lineHeight: 1.8 }}>
+            <ul style={{ margin: '0 0 16px 0', padding: '0 0 0 16px', color: 'rgba(245,240,232,0.76)', fontSize: '13px', lineHeight: 1.8 }}>
               {pathway.tradeoffs.map((t, i) => <li key={i}>{t}</li>)}
             </ul>
 
             <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
-              <span style={{ fontSize: '11px', color: 'rgba(245,240,232,0.35)', letterSpacing: '0.08em' }}>
+              <span style={{ fontSize: '11px', color: 'rgba(245,240,232,0.70)', letterSpacing: '0.08em' }}>
                 TIMELINE
               </span>
               <span style={{ fontSize: '13px', color: 'rgba(245,240,232,0.65)' }}>{pathway.timeline}</span>
@@ -163,7 +163,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
     <div style={{
       fontSize: '10px', fontWeight: 700, letterSpacing: '0.12em',
-      color: 'rgba(245,240,232,0.3)', textTransform: 'uppercase',
+      color: 'rgba(245,240,232,0.68)', textTransform: 'uppercase',
       marginBottom: '8px',
     }}>
       {children}
@@ -182,7 +182,7 @@ function FamilyCoverageTable({ coverage }: { coverage: FamilyVisaCoverage[] }) {
     <div style={{ marginTop: '32px' }}>
       <div style={{
         fontSize: '10px', fontWeight: 700, letterSpacing: '0.12em',
-        color: 'rgba(245,240,232,0.3)', textTransform: 'uppercase', marginBottom: '12px',
+        color: 'rgba(245,240,232,0.68)', textTransform: 'uppercase', marginBottom: '12px',
       }}>
         Proposed Visa Coverage — Your Family
       </div>
@@ -197,7 +197,7 @@ function FamilyCoverageTable({ coverage }: { coverage: FamilyVisaCoverage[] }) {
                 <th key={h} style={{
                   textAlign: 'left', padding: '8px 12px', borderBottom: '1px solid rgba(245,240,232,0.08)',
                   fontSize: '10px', fontWeight: 700, letterSpacing: '0.08em',
-                  color: 'rgba(245,240,232,0.3)', textTransform: 'uppercase',
+                  color: 'rgba(245,240,232,0.68)', textTransform: 'uppercase',
                   whiteSpace: 'nowrap',
                 }}>
                   {h}
@@ -216,7 +216,7 @@ function FamilyCoverageTable({ coverage }: { coverage: FamilyVisaCoverage[] }) {
                 <td style={{ padding: '10px 12px', color: row.workAuthorization.includes('Full') ? '#86efac' : undefined }}>
                   {row.workAuthorization}
                 </td>
-                <td style={{ padding: '10px 12px', color: 'rgba(245,240,232,0.4)', fontSize: '11px' }}>{row.notes}</td>
+                <td style={{ padding: '10px 12px', color: 'rgba(245,240,232,0.72)', fontSize: '11px' }}>{row.notes}</td>
               </tr>
             ))}
           </tbody>
@@ -244,7 +244,7 @@ function AttorneyBanner() {
         <div style={{ fontSize: '12px', fontWeight: 600, color: 'rgba(251,191,36,0.85)', marginBottom: '4px' }}>
           Attorney consultation recommended
         </div>
-        <div style={{ fontSize: '12px', color: 'rgba(245,240,232,0.45)', lineHeight: 1.6 }}>
+        <div style={{ fontSize: '12px', color: 'rgba(245,240,232,0.74)', lineHeight: 1.6 }}>
           One or more pathways above involve non-standard structures. We recommend reviewing with a
           qualified U.S. immigration attorney before proceeding. These pathways are grounded in
           established law — an attorney helps with structuring and documentation.
@@ -252,7 +252,7 @@ function AttorneyBanner() {
       </div>
       <button
         onClick={() => setDismissed(true)}
-        style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'rgba(245,240,232,0.3)', fontSize: '16px', padding: '0', flexShrink: 0 }}
+        style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'rgba(245,240,232,0.68)', fontSize: '16px', padding: '0', flexShrink: 0 }}
       >
         ×
       </button>
@@ -283,7 +283,7 @@ export default function PathwaySection({ pathwayResult }: PathwaySectionProps) {
       <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'baseline', gap: '12px', flexWrap: 'wrap' }}>
         <h2 style={{
           fontSize: '11px', fontWeight: 700, letterSpacing: '0.12em',
-          color: 'rgba(245,240,232,0.35)', textTransform: 'uppercase', margin: 0,
+          color: 'rgba(245,240,232,0.70)', textTransform: 'uppercase', margin: 0,
         }}>
           Alternative Pathways
         </h2>
@@ -298,7 +298,7 @@ export default function PathwaySection({ pathwayResult }: PathwaySectionProps) {
 
       {/* Intro */}
       <p style={{
-        fontSize: '13px', color: 'rgba(245,240,232,0.45)', lineHeight: 1.7, marginBottom: '24px',
+        fontSize: '13px', color: 'rgba(245,240,232,0.74)', lineHeight: 1.7, marginBottom: '24px',
         maxWidth: '640px',
       }}>
         Based on your family composition and case profile, these restructuring options may open
@@ -317,7 +317,7 @@ export default function PathwaySection({ pathwayResult }: PathwaySectionProps) {
 
       {/* Legal disclaimer */}
       <p style={{
-        fontSize: '11px', color: 'rgba(245,240,232,0.2)', lineHeight: 1.6,
+        fontSize: '11px', color: 'rgba(245,240,232,0.62)', lineHeight: 1.6,
         marginTop: '20px', borderTop: '1px solid rgba(245,240,232,0.06)', paddingTop: '16px',
       }}>
         These pathways are grounded in U.S. E-2 treaty investor regulations and Toronto

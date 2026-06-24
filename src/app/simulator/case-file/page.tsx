@@ -57,7 +57,7 @@ function CaseFileContent() {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0a0a0a' }}>
         <div style={{ textAlign: 'center' }}>
-          <p style={{ color: 'rgba(245,240,232,0.5)', fontFamily: "'DM Sans', sans-serif", fontSize: '14px', marginBottom: '20px' }}>
+          <p style={{ color: 'rgba(245,240,232,0.76)', fontFamily: "'DM Sans', sans-serif", fontSize: '14px', marginBottom: '20px' }}>
             No application found. Complete Quick Start first.
           </p>
           <a href="/simulator/quick-start" style={{ color: '#C9A84C', fontSize: '13px', textDecoration: 'underline', fontFamily: "'DM Sans', sans-serif" }}>
@@ -74,7 +74,7 @@ function CaseFileContent() {
       <InterviewBrief applicationId={applicationId} />
       <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '32px' }}>
         <div style={{ flex: 1, height: '1px', background: 'rgba(201,168,76,0.1)' }} />
-        <span style={{ fontSize: '10px', letterSpacing: '0.14em', textTransform: 'uppercase' as const, color: 'rgba(245,240,232,0.25)', fontFamily: "'DM Sans', sans-serif" }}>
+        <span style={{ fontSize: '10px', letterSpacing: '0.14em', textTransform: 'uppercase' as const, color: 'rgba(245,240,232,0.65)', fontFamily: "'DM Sans', sans-serif" }}>
           CASE DETAILS
         </span>
         <div style={{ flex: 1, height: '1px', background: 'rgba(201,168,76,0.1)' }} />

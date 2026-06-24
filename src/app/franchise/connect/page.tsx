@@ -140,7 +140,7 @@ export default function FranchiseConnectPage() {
   if (loading) {
     return (
       <div style={{ minHeight: '100vh', background: '#0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <p style={{ color: 'rgba(245,240,232,0.3)', fontFamily: "'DM Sans', sans-serif", fontSize: '13px' }}>Loading…</p>
+        <p style={{ color: 'rgba(245,240,232,0.68)', fontFamily: "'DM Sans', sans-serif", fontSize: '13px' }}>Loading…</p>
       </div>
     );
   }
@@ -155,12 +155,12 @@ export default function FranchiseConnectPage() {
           <h1 style={{ fontSize: '26px', fontFamily: "'Cormorant Garamond', serif", fontWeight: 300, color: '#f5f0e8', marginBottom: '16px' }}>
             Introduction requested
           </h1>
-          <p style={{ fontSize: '13px', color: 'rgba(245,240,232,0.55)', lineHeight: 1.8, fontFamily: "'DM Sans', sans-serif", marginBottom: '8px' }}>
+          <p style={{ fontSize: '13px', color: 'rgba(245,240,232,0.78)', lineHeight: 1.8, fontFamily: "'DM Sans', sans-serif", marginBottom: '8px' }}>
             A specialist franchise consultant will review your profile and reach out within 1–2 business days.
           </p>
-          <p style={{ fontSize: '12px', color: 'rgba(245,240,232,0.3)', lineHeight: 1.7, fontFamily: "'DM Sans', sans-serif", marginBottom: '32px' }}>
+          <p style={{ fontSize: '12px', color: 'rgba(245,240,232,0.68)', lineHeight: 1.7, fontFamily: "'DM Sans', sans-serif", marginBottom: '32px' }}>
             They will contact you at{' '}
-            <span style={{ color: 'rgba(245,240,232,0.5)' }}>{profile.email ?? 'your registered email'}</span>.
+            <span style={{ color: 'rgba(245,240,232,0.76)' }}>{profile.email ?? 'your registered email'}</span>.
             Remember: this consultation is free — the broker is paid by the franchisor, not by you.
           </p>
           <Link
@@ -178,7 +178,7 @@ export default function FranchiseConnectPage() {
     <div style={{ minHeight: '100vh', background: '#0a0a0a', color: '#f5f0e8' }}>
       <div style={{ maxWidth: '600px', margin: '0 auto', padding: '56px 24px 80px' }}>
 
-        <Link href="/franchise/matches" style={{ fontSize: '11px', color: 'rgba(245,240,232,0.3)', fontFamily: "'DM Sans', sans-serif", textDecoration: 'none', display: 'inline-block', marginBottom: '40px' }}>
+        <Link href="/franchise/matches" style={{ fontSize: '11px', color: 'rgba(245,240,232,0.68)', fontFamily: "'DM Sans', sans-serif", textDecoration: 'none', display: 'inline-block', marginBottom: '40px' }}>
           ← Back to matches
         </Link>
 
@@ -188,17 +188,17 @@ export default function FranchiseConnectPage() {
         <h1 style={{ fontSize: '28px', fontFamily: "'Cormorant Garamond', serif", fontWeight: 300, color: '#f5f0e8', margin: '0 0 16px' }}>
           Request a specialist introduction
         </h1>
-        <p style={{ fontSize: '13px', color: 'rgba(245,240,232,0.55)', lineHeight: 1.7, fontFamily: "'DM Sans', sans-serif", marginBottom: '40px' }}>
+        <p style={{ fontSize: '13px', color: 'rgba(245,240,232,0.78)', lineHeight: 1.7, fontFamily: "'DM Sans', sans-serif", marginBottom: '40px' }}>
           We will share a structured profile with a vetted E-2 franchise consultant so they can reach out with
           availability and territory information for your matched categories.
         </p>
 
         {/* What we share */}
         <div style={{ marginBottom: '36px' }}>
-          <h2 style={{ fontSize: '12px', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(245,240,232,0.3)', fontFamily: "'DM Sans', sans-serif", marginBottom: '16px', fontWeight: 400 }}>
+          <h2 style={{ fontSize: '12px', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(245,240,232,0.68)', fontFamily: "'DM Sans', sans-serif", marginBottom: '16px', fontWeight: 400 }}>
             What we share with the broker
           </h2>
-          <div style={{ border: '1px solid rgba(245,240,232,0.08)', background: 'rgba(245,240,232,0.01)' }}>
+          <div style={{ border: '1px solid rgba(245,240,232,0.62)', background: 'rgba(245,240,232,0.01)' }}>
             {[
               { label: 'Your name', value: [profile.firstName, profile.lastName].filter(Boolean).join(' ') || 'From your profile' },
               { label: 'Contact email', value: profile.email ?? 'Your registered email' },
@@ -218,7 +218,7 @@ export default function FranchiseConnectPage() {
                   gap: '20px',
                 }}
               >
-                <span style={{ fontSize: '11px', color: 'rgba(245,240,232,0.35)', fontFamily: "'DM Sans', sans-serif", flexShrink: 0, minWidth: '130px' }}>
+                <span style={{ fontSize: '11px', color: 'rgba(245,240,232,0.70)', fontFamily: "'DM Sans', sans-serif", flexShrink: 0, minWidth: '130px' }}>
                   {label}
                 </span>
                 <span style={{ fontSize: '12px', color: '#f5f0e8', fontFamily: "'DM Sans', sans-serif", textAlign: 'right' }}>
@@ -227,7 +227,7 @@ export default function FranchiseConnectPage() {
               </div>
             ))}
           </div>
-          <p style={{ fontSize: '11px', color: 'rgba(245,240,232,0.25)', fontFamily: "'DM Sans', sans-serif", marginTop: '10px', lineHeight: 1.6 }}>
+          <p style={{ fontSize: '11px', color: 'rgba(245,240,232,0.65)', fontFamily: "'DM Sans', sans-serif", marginTop: '10px', lineHeight: 1.6 }}>
             We do not share your full case file, immigration history, or financial documents.
             The broker receives only what is listed above.
           </p>
@@ -254,7 +254,7 @@ export default function FranchiseConnectPage() {
               width: '18px',
               height: '18px',
               flexShrink: 0,
-              border: `1.5px solid ${consent ? '#C9A84C' : 'rgba(245,240,232,0.2)'}`,
+              border: `1.5px solid ${consent ? '#C9A84C' : 'rgba(245,240,232,0.62)'}`,
               background: consent ? 'rgba(201,168,76,0.15)' : 'transparent',
               cursor: 'pointer',
               display: 'flex',
@@ -267,7 +267,7 @@ export default function FranchiseConnectPage() {
           >
             {consent ? '✓' : ''}
           </button>
-          <span style={{ fontSize: '12px', color: 'rgba(245,240,232,0.55)', lineHeight: 1.7, fontFamily: "'DM Sans', sans-serif" }}>
+          <span style={{ fontSize: '12px', color: 'rgba(245,240,232,0.78)', lineHeight: 1.7, fontFamily: "'DM Sans', sans-serif" }}>
             {CONSENT_TEXT}
           </span>
         </label>
@@ -280,7 +280,7 @@ export default function FranchiseConnectPage() {
             style={{
               padding: '13px 28px',
               background: consent ? '#C9A84C' : 'rgba(201,168,76,0.2)',
-              color: consent ? '#0a0a0a' : 'rgba(245,240,232,0.3)',
+              color: consent ? '#0a0a0a' : 'rgba(245,240,232,0.68)',
               border: 'none',
               cursor: consent && !submitting ? 'pointer' : 'default',
               fontSize: '12px',
@@ -295,7 +295,7 @@ export default function FranchiseConnectPage() {
           </button>
           <Link
             href="/franchise/matches"
-            style={{ fontSize: '12px', color: 'rgba(245,240,232,0.3)', fontFamily: "'DM Sans', sans-serif", textDecoration: 'none' }}
+            style={{ fontSize: '12px', color: 'rgba(245,240,232,0.68)', fontFamily: "'DM Sans', sans-serif", textDecoration: 'none' }}
           >
             Cancel
           </Link>

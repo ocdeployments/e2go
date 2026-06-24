@@ -314,7 +314,7 @@ export default function ApplyPage() {
       <div className="flex min-h-screen items-center justify-center bg-[#0a0a0a]">
         <p
           className="text-sm"
-          style={{ color: 'rgba(245,240,232,0.3)', fontFamily: "'DM Sans', sans-serif" }}
+          style={{ color: 'rgba(245,240,232,0.68)', fontFamily: "'DM Sans', sans-serif" }}
         >
           Loading your case file...
         </p>
@@ -349,11 +349,11 @@ export default function ApplyPage() {
               fontFamily: "'DM Sans', sans-serif",
             }}
           >
-            <p style={{ fontSize: '11px', color: 'rgba(245,240,232,0.45)', lineHeight: 1.7 }}>
+            <p style={{ fontSize: '11px', color: 'rgba(245,240,232,0.74)', lineHeight: 1.7 }}>
               <span style={{ color: 'rgba(201,168,76,0.65)', fontWeight: 500 }}>Your answers stay private.</span>{' '}
               Everything you enter here is used only to prepare your E-2 application — never to train AI models,
               never sold, never shared with third parties. You can delete your account and all data at any time
-              from <a href="/settings" style={{ color: 'rgba(201,168,76,0.55)', textDecoration: 'none' }}>Settings</a>.
+              from <a href="/settings" style={{ color: 'rgba(201,168,76,0.85)', textDecoration: 'none' }}>Settings</a>.
             </p>
           </div>
         )}
@@ -372,7 +372,7 @@ export default function ApplyPage() {
             </h3>
             <p
               className="mb-4 text-[11px] leading-relaxed"
-              style={{ color: 'rgba(245,240,232,0.4)', fontFamily: "'DM Sans', sans-serif" }}
+              style={{ color: 'rgba(245,240,232,0.72)', fontFamily: "'DM Sans', sans-serif" }}
             >
               The eligibility check pre-fills your case file with known information
               so you do not have to re-enter it. It also confirms your E-2
@@ -395,7 +395,7 @@ export default function ApplyPage() {
                 className="inline-flex items-center justify-center border px-6 py-2.5 text-xs uppercase tracking-[0.1em] transition-colors hover:bg-[rgba(245,240,232,0.03)]"
                 style={{
                   borderColor: 'rgba(245,240,232,0.08)',
-                  color: 'rgba(245,240,232,0.28)',
+                  color: 'rgba(245,240,232,0.65)',
                   fontFamily: "'DM Sans', sans-serif",
                 }}
               >
@@ -430,7 +430,7 @@ export default function ApplyPage() {
                 <p style={{ fontSize: '14px', fontFamily: "'Cormorant Garamond', serif", fontWeight: 400, color: '#f5f0e8', margin: '6px 0 8px' }}>
                   Find the right business for your E-2
                 </p>
-                <p style={{ fontSize: '12px', color: 'rgba(245,240,232,0.5)', lineHeight: 1.7, marginBottom: '14px', maxWidth: '460px' }}>
+                <p style={{ fontSize: '12px', color: 'rgba(245,240,232,0.76)', lineHeight: 1.7, marginBottom: '14px', maxWidth: '460px' }}>
                   You haven&rsquo;t selected a business yet. The Franchise Navigator matches you to E-2 eligible
                   franchises based on your investment range and background — free, with no broker fees charged to you.
                 </p>
@@ -477,13 +477,13 @@ export default function ApplyPage() {
             <div className="mb-6 border p-5" style={{ borderColor: 'rgba(201,168,76,0.15)', background: 'rgba(201,168,76,0.02)' }}>
               <div className="flex items-start justify-between gap-4 mb-3">
                 <div>
-                  <span style={{ fontSize: '10px', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(201,168,76,0.55)', fontFamily: "'DM Sans', sans-serif" }}>
+                  <span style={{ fontSize: '10px', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(201,168,76,0.85)', fontFamily: "'DM Sans', sans-serif" }}>
                     {typeLabel[applicationType] || 'E-2 application'} · Focus here first
                   </span>
                 </div>
                 <button
                   onClick={() => setPriorityDismissed(true)}
-                  style={{ color: 'rgba(245,240,232,0.2)', background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px', flexShrink: 0, lineHeight: 1 }}
+                  style={{ color: 'rgba(245,240,232,0.62)', background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px', flexShrink: 0, lineHeight: 1 }}
                   aria-label="Dismiss"
                 >
                   ✕
@@ -496,18 +496,18 @@ export default function ApplyPage() {
                     href={s.href}
                     style={{ display: 'flex', alignItems: 'center', gap: '12px', textDecoration: 'none', padding: '10px 12px', border: '1px solid rgba(245,240,232,0.05)', background: 'rgba(245,240,232,0.01)' }}
                   >
-                    <span style={{ fontSize: '11px', color: 'rgba(201,168,76,0.4)', fontFamily: "'DM Sans', sans-serif", flexShrink: 0, width: '14px' }}>
+                    <span style={{ fontSize: '11px', color: 'rgba(201,168,76,0.78)', fontFamily: "'DM Sans', sans-serif", flexShrink: 0, width: '14px' }}>
                       {i + 1}.
                     </span>
                     <div style={{ flex: 1 }}>
                       <span style={{ fontSize: '12px', color: 'rgba(245,240,232,0.75)', fontFamily: "'DM Sans', sans-serif", fontWeight: 500 }}>
                         {s.title}
                       </span>
-                      <span style={{ fontSize: '11px', color: 'rgba(245,240,232,0.3)', fontFamily: "'DM Sans', sans-serif", marginLeft: '8px' }}>
+                      <span style={{ fontSize: '11px', color: 'rgba(245,240,232,0.68)', fontFamily: "'DM Sans', sans-serif", marginLeft: '8px' }}>
                         {s.completionPct}% complete
                       </span>
                     </div>
-                    <span style={{ fontSize: '11px', color: 'rgba(201,168,76,0.45)', fontFamily: "'DM Sans', sans-serif" }}>→</span>
+                    <span style={{ fontSize: '11px', color: 'rgba(201,168,76,0.80)', fontFamily: "'DM Sans', sans-serif" }}>→</span>
                   </a>
                 ))}
               </div>

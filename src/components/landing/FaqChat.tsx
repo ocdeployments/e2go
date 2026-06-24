@@ -299,7 +299,7 @@ const FaqChat = forwardRef<FaqChatHandle, FaqChatProps>(function FaqChat(
         >
           {messages.length === 0 && !isStreaming && (
             <div className={`text-center py-4${fill ? " my-auto" : ""}`}>
-              <p className="text-sm text-[rgba(245,240,232,0.35)] mb-5">
+              <p className="text-sm text-[rgba(245,240,232,0.68)] mb-5">
                 Start with a question below, or try one of these:
               </p>
               <div className="flex flex-wrap gap-2 justify-center">
@@ -386,7 +386,7 @@ const FaqChat = forwardRef<FaqChatHandle, FaqChatProps>(function FaqChat(
             onKeyDown={handleKeyDown}
             placeholder={inputPlaceholder}
             disabled={isStreaming}
-            className="flex-1 text-sm text-[#f5f0e8] placeholder:text-[rgba(245,240,232,0.3)] outline-none min-h-[44px] px-3 border transition-colors duration-200"
+            className="flex-1 text-sm text-[#f5f0e8] placeholder:text-[rgba(245,240,232,0.68)] outline-none min-h-[44px] px-3 border transition-colors duration-200"
             style={{
               background: "rgba(201,168,76,0.05)",
               borderColor: "rgba(201,168,76,0.40)",
@@ -412,7 +412,7 @@ const FaqChat = forwardRef<FaqChatHandle, FaqChatProps>(function FaqChat(
             →
           </button>
         </div>
-        <p className="text-[10px] text-[rgba(245,240,232,0.2)] mt-2.5">
+        <p className="text-[10px] text-[rgba(245,240,232,0.65)] mt-2.5">
           Informational only — not legal advice. e2go is not a law firm.
         </p>
       </div>

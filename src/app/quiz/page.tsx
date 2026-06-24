@@ -855,7 +855,7 @@ export default function QuizPage() {
         <div style={{ padding: "clamp(32px, 5vw, 56px) clamp(16px, 5vw, 40px)", maxWidth: "560px" }}>
           <div style={{ width: "44px", height: "44px", border: "1px solid rgba(220,60,60,0.3)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "24px", color: "rgba(220,60,60,0.65)", fontSize: "20px" }}>✕</div>
           <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "28px", fontWeight: 300, color: "#f5f0e8", marginBottom: "12px", lineHeight: 1.3 }}>{stopTitle}</div>
-          <div style={{ fontSize: "14px", color: "rgba(245,240,232,0.5)", lineHeight: 1.7, marginBottom: "28px", maxWidth: "460px" }}>{stopText}</div>
+          <div style={{ fontSize: "14px", color: "rgba(245,240,232,0.76)", lineHeight: 1.7, marginBottom: "28px", maxWidth: "460px" }}>{stopText}</div>
           <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
             <button
               onClick={() => {
@@ -876,7 +876,7 @@ export default function QuizPage() {
             >
               Start over
             </button>
-            <button style={{ padding: "11px 24px", background: "transparent", border: "1px solid rgba(201,168,76,0.15)", color: "rgba(245,240,232,0.35)", fontSize: "12px", cursor: "pointer", letterSpacing: "0.07em", textTransform: "uppercase", fontFamily: "'DM Sans', sans-serif", borderRadius: 0 }}>
+            <button style={{ padding: "11px 24px", background: "transparent", border: "1px solid rgba(201,168,76,0.15)", color: "rgba(245,240,232,0.70)", fontSize: "12px", cursor: "pointer", letterSpacing: "0.07em", textTransform: "uppercase", fontFamily: "'DM Sans', sans-serif", borderRadius: 0 }}>
               Find an attorney →
             </button>
           </div>
@@ -900,10 +900,10 @@ export default function QuizPage() {
             <>
               <div style={{ width: "44px", height: "44px", border: "1px solid rgba(93,202,165,0.3)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "24px", color: "#5DCAA5", fontSize: "20px" }}>✓</div>
               <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "32px", fontWeight: 300, color: "#f5f0e8", marginBottom: "12px", lineHeight: 1.3 }}>Check your email</div>
-              <div style={{ fontSize: "14px", color: "rgba(245,240,232,0.55)", lineHeight: 1.7, marginBottom: "28px" }}>
+              <div style={{ fontSize: "14px", color: "rgba(245,240,232,0.78)", lineHeight: 1.7, marginBottom: "28px" }}>
                 We sent a link to <span style={{ color: "#C9A84C" }}>{email}</span>. Click it to view your full results.
               </div>
-              <div style={{ padding: "14px 16px", background: "rgba(201,168,76,0.04)", border: "1px solid rgba(201,168,76,0.12)", fontSize: "12px", color: "rgba(245,240,232,0.4)", lineHeight: 1.6 }}>
+              <div style={{ padding: "14px 16px", background: "rgba(201,168,76,0.04)", border: "1px solid rgba(201,168,76,0.12)", fontSize: "12px", color: "rgba(245,240,232,0.72)", lineHeight: 1.6 }}>
                 The link expires in 24 hours. Check your spam folder if you don&apos;t see it.
               </div>
             </>
@@ -912,7 +912,7 @@ export default function QuizPage() {
             <>
               <div style={{ fontSize: "10px", letterSpacing: "0.18em", textTransform: "uppercase", color: "rgba(201,168,76,0.6)", marginBottom: "16px" }}>Your results are ready</div>
               <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "32px", fontWeight: 300, color: "#f5f0e8", marginBottom: "8px", lineHeight: 1.3 }}>Enter your email and we&apos;ll send you a link to view them.</div>
-              <div style={{ fontSize: "14px", color: "rgba(245,240,232,0.45)", marginBottom: "32px", lineHeight: 1.6 }}>Your full eligibility result is waiting. We&apos;ll email you a secure link.</div>
+              <div style={{ fontSize: "14px", color: "rgba(245,240,232,0.74)", marginBottom: "32px", lineHeight: 1.6 }}>Your full eligibility result is waiting. We&apos;ll email you a secure link.</div>
               <input
                 type="email"
                 value={email}
@@ -927,7 +927,7 @@ export default function QuizPage() {
                 <div style={{ width: "16px", height: "16px", border: `1px solid ${caslConsent ? "#C9A84C" : "rgba(201,168,76,0.3)"}`, background: caslConsent ? "#C9A84C" : "transparent", flexShrink: 0, marginTop: "2px", display: "flex", alignItems: "center", justifyContent: "center" }}>
                   {caslConsent && <span style={{ color: "#0a0a0a", fontSize: "11px" }}>✓</span>}
                 </div>
-                <div style={{ fontSize: "12px", color: "rgba(245,240,232,0.4)", lineHeight: 1.6 }}>Send me occasional updates about the E-2 process. You can unsubscribe at any time.</div>
+                <div style={{ fontSize: "12px", color: "rgba(245,240,232,0.72)", lineHeight: 1.6 }}>Send me occasional updates about the E-2 process. You can unsubscribe at any time.</div>
               </div>
               {saveError && <div style={{ fontSize: "13px", color: "rgba(220,60,60,0.8)", marginBottom: "12px" }}>{saveError}</div>}
               <button
@@ -972,9 +972,9 @@ export default function QuizPage() {
           </div>
         </div>
         <div
-          style={{ fontSize: "11px", color: "rgba(245,240,232,0.55)", letterSpacing: "0.07em", textTransform: "uppercase", cursor: "pointer", transition: "color 0.15s" }}
+          style={{ fontSize: "11px", color: "rgba(245,240,232,0.78)", letterSpacing: "0.07em", textTransform: "uppercase", cursor: "pointer", transition: "color 0.15s" }}
           onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(245,240,232,0.85)")}
-          onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(245,240,232,0.55)")}
+          onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(245,240,232,0.78)")}
         >
           Save & exit
         </div>
@@ -999,12 +999,12 @@ export default function QuizPage() {
                 : undefined
             }
             onMouseEnter={i < q.section_index ? (e) => (e.currentTarget.style.color = "rgba(245,240,232,0.65)") : undefined}
-            onMouseLeave={i < q.section_index ? (e) => (e.currentTarget.style.color = "rgba(245,240,232,0.45)") : undefined}
+            onMouseLeave={i < q.section_index ? (e) => (e.currentTarget.style.color = "rgba(245,240,232,0.74)") : undefined}
             style={{
               fontSize: "10px",
               letterSpacing: "0.1em",
               textTransform: "uppercase",
-              color: i === q.section_index ? "#C9A84C" : i < q.section_index ? "rgba(245,240,232,0.45)" : "rgba(245,240,232,0.4)",
+              color: i === q.section_index ? "#C9A84C" : i < q.section_index ? "rgba(245,240,232,0.74)" : "rgba(245,240,232,0.72)",
               padding: "10px 0",
               marginRight: "18px",
               borderBottom: `2px solid ${i === q.section_index ? "#C9A84C" : i < q.section_index ? "rgba(201,168,76,0.25)" : "transparent"}`,
@@ -1040,7 +1040,7 @@ export default function QuizPage() {
 
         {/* Helper text */}
         {q.helper_text && (
-          <div style={{ fontSize: "13px", color: "rgba(245,240,232,0.55)", lineHeight: 1.65, marginBottom: "28px", maxWidth: "460px" }}>
+          <div style={{ fontSize: "13px", color: "rgba(245,240,232,0.78)", lineHeight: 1.65, marginBottom: "28px", maxWidth: "460px" }}>
             {q.helper_text}
           </div>
         )}
@@ -1049,7 +1049,7 @@ export default function QuizPage() {
         {warnMsg && (
           <div style={{ display: "flex", gap: "9px", padding: "11px 14px", border: "1px solid rgba(201,168,76,0.22)", background: "rgba(201,168,76,0.04)", marginBottom: "16px" }}>
             <div style={{ color: "#C9A84C", fontSize: "14px", flexShrink: 0 }}>!</div>
-            <div style={{ fontSize: "12px", color: "rgba(245,240,232,0.55)", lineHeight: 1.6 }}>{warnMsg}</div>
+            <div style={{ fontSize: "12px", color: "rgba(245,240,232,0.78)", lineHeight: 1.6 }}>{warnMsg}</div>
           </div>
         )}
 
@@ -1166,7 +1166,7 @@ export default function QuizPage() {
         {/* Multi-select options */}
         {isMulti && q.options.length > 0 && (
           <>
-            <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.25)", marginBottom: "14px", letterSpacing: "0.04em" }}>Select all that apply</div>
+            <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.65)", marginBottom: "14px", letterSpacing: "0.04em" }}>Select all that apply</div>
             <div style={{ display: "flex", flexDirection: "column", gap: "7px", marginBottom: "28px" }}>
               {q.options.map((o, i) => {
                 const sel = multiSel.includes(i);
@@ -1253,8 +1253,8 @@ export default function QuizPage() {
         {/* Tooltip */}
         {q.tooltip && (
           <div style={{ display: "flex", gap: "8px", marginTop: "22px", padding: "11px 14px", border: "1px solid rgba(201,168,76,0.18)", background: "rgba(201,168,76,0.02)" }}>
-            <div style={{ fontSize: "13px", color: "rgba(201,168,76,0.5)", flexShrink: 0 }}>i</div>
-            <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.35)", lineHeight: 1.65 }}>{q.tooltip}</div>
+            <div style={{ fontSize: "13px", color: "rgba(201,168,76,0.82)", flexShrink: 0 }}>i</div>
+            <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.70)", lineHeight: 1.65 }}>{q.tooltip}</div>
           </div>
         )}
 
@@ -1272,7 +1272,7 @@ export default function QuizPage() {
               onClick={() => { setCur(c => c - 1); setSelectedIdx(null); setWarnMsg(null); setMultiSel([]); }}
               style={{
                 background: 'transparent', border: 'none',
-                color: 'rgba(245,240,232,0.5)', fontSize: '13px',
+                color: 'rgba(245,240,232,0.76)', fontSize: '13px',
                 letterSpacing: '0.04em', cursor: 'pointer',
                 padding: '8px 0', fontFamily: "'DM Sans', sans-serif",
                 display: 'flex', alignItems: 'center', gap: '6px',

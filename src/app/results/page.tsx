@@ -245,26 +245,26 @@ function EmailGate({ onBackToQuiz }: { onBackToQuiz: () => void }) {
               <span style={{ color: "#5DCAA5", fontSize: "20px" }}>✓</span>
             </div>
             <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "24px", fontWeight: 300, color: "#f5f0e8", marginBottom: "12px", textAlign: "center" }}>Check your email</h1>
-            <p style={{ color: "rgba(245,240,232,0.5)", fontSize: "14px", textAlign: "center", lineHeight: 1.6, marginBottom: "8px" }}>We sent a verification link to <strong style={{ color: "#f5f0e8" }}>{email}</strong></p>
-            <p style={{ color: "rgba(245,240,232,0.35)", fontSize: "13px", textAlign: "center", lineHeight: 1.6 }}>Click the link in the email to view your results. The link expires in 24 hours.</p>
+            <p style={{ color: "rgba(245,240,232,0.76)", fontSize: "14px", textAlign: "center", lineHeight: 1.6, marginBottom: "8px" }}>We sent a verification link to <strong style={{ color: "#f5f0e8" }}>{email}</strong></p>
+            <p style={{ color: "rgba(245,240,232,0.70)", fontSize: "13px", textAlign: "center", lineHeight: 1.6 }}>Click the link in the email to view your results. The link expires in 24 hours.</p>
             <button onClick={onBackToQuiz} style={{ marginTop: "32px", padding: "12px 24px", background: "transparent", border: "1px solid rgba(201,168,76,0.3)", color: "rgba(201,168,76,0.7)", fontSize: "12px", cursor: "pointer", letterSpacing: "0.08em", textTransform: "uppercase" as const, fontFamily: "'DM Sans', sans-serif", borderRadius: 0 }}>← Back to quiz</button>
           </>
         ) : (
           <>
             <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "28px", fontWeight: 300, color: "#f5f0e8", marginBottom: "12px", textAlign: "center" }}>Your results are ready</h1>
-            <p style={{ color: "rgba(245,240,232,0.5)", fontSize: "14px", textAlign: "center", lineHeight: 1.6, marginBottom: "32px" }}>Enter your email and we&apos;ll send you a secure link to view your eligibility results.</p>
+            <p style={{ color: "rgba(245,240,232,0.76)", fontSize: "14px", textAlign: "center", lineHeight: 1.6, marginBottom: "32px" }}>Enter your email and we&apos;ll send you a secure link to view your eligibility results.</p>
             <form onSubmit={handleSubmit} style={{ width: "100%" }}>
               <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" required style={{ width: "100%", padding: "14px 16px", background: "rgba(201,168,76,0.04)", border: "1px solid rgba(201,168,76,0.2)", color: "#f5f0e8", fontSize: "14px", fontFamily: "'DM Sans', sans-serif", borderRadius: 0, outline: "none", marginBottom: "16px", boxSizing: "border-box" as const }} />
               <label style={{ display: "flex", alignItems: "flex-start", gap: "10px", marginBottom: "24px", cursor: "pointer" }}>
                 <input type="checkbox" checked={caslConsent} onChange={(e) => setCaslConsent(e.target.checked)} style={{ marginTop: "3px", accentColor: "#C9A84C", width: "16px", height: "16px" }} />
-                <span style={{ fontSize: "12px", color: "rgba(245,240,232,0.4)", lineHeight: 1.5 }}>I consent to receiving email from e2go.app. You can unsubscribe at any time. View our <a href="/terms" style={{ color: "#C9A84C", textDecoration: "underline" }}>Terms of Service</a>.</span>
+                <span style={{ fontSize: "12px", color: "rgba(245,240,232,0.72)", lineHeight: 1.5 }}>I consent to receiving email from e2go.app. You can unsubscribe at any time. View our <a href="/terms" style={{ color: "#C9A84C", textDecoration: "underline" }}>Terms of Service</a>.</span>
               </label>
               <button type="submit" disabled={sending || !email || !caslConsent} style={{ width: "100%", padding: "14px", background: "#C9A84C", border: "none", color: "#0a0a0a", fontSize: "13px", fontWeight: 500, cursor: sending || !email || !caslConsent ? "not-allowed" : "pointer", letterSpacing: "0.08em", textTransform: "uppercase" as const, fontFamily: "'DM Sans', sans-serif", borderRadius: 0, opacity: sending || !email || !caslConsent ? 0.5 : 1 }}>
                 {sending ? "Sending..." : "Send my results"}
               </button>
               {error && <div style={{ marginTop: "16px", padding: "12px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", fontSize: "13px", color: "rgba(245,240,232,0.7)", lineHeight: 1.5 }}>{error}</div>}
             </form>
-            <button onClick={onBackToQuiz} style={{ marginTop: "24px", padding: "8px 16px", background: "transparent", border: "none", color: "rgba(245,240,232,0.3)", fontSize: "12px", cursor: "pointer", textDecoration: "underline", fontFamily: "'DM Sans', sans-serif" }}>Or retake the quiz</button>
+            <button onClick={onBackToQuiz} style={{ marginTop: "24px", padding: "8px 16px", background: "transparent", border: "none", color: "rgba(245,240,232,0.68)", fontSize: "12px", cursor: "pointer", textDecoration: "underline", fontFamily: "'DM Sans', sans-serif" }}>Or retake the quiz</button>
           </>
         )}
       </div>
@@ -302,9 +302,9 @@ function NameCaptureForm({ email, quizSessionId, onSuccess, onDismiss }: { email
   if (accountExists) {
     return (
       <div style={{ padding: "28px", border: "1px solid rgba(201,168,76,0.2)", background: "rgba(201,168,76,0.03)", marginBottom: "24px" }}>
-        <div style={{ fontSize: "10px", letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(201,168,76,0.5)", marginBottom: "14px" }}>Account found</div>
+        <div style={{ fontSize: "10px", letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(201,168,76,0.82)", marginBottom: "14px" }}>Account found</div>
         <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "22px", fontWeight: 300, color: "#f5f0e8", marginBottom: "8px" }}>We found an account with this email</div>
-        <div style={{ fontSize: "13px", color: "rgba(245,240,232,0.45)", lineHeight: 1.6, marginBottom: "20px" }}>Log in to link this result to your account, or continue viewing as a guest.</div>
+        <div style={{ fontSize: "13px", color: "rgba(245,240,232,0.74)", lineHeight: 1.6, marginBottom: "20px" }}>Log in to link this result to your account, or continue viewing as a guest.</div>
         <div style={{ display: "flex", gap: "12px" }}>
           <Link href="/login" style={{ padding: "12px 24px", background: "#C9A84C", border: "none", color: "#0a0a0a", fontSize: "12px", fontWeight: 500, cursor: "pointer", letterSpacing: "0.08em", textTransform: "uppercase" as const, fontFamily: "'DM Sans', sans-serif", borderRadius: 0, textDecoration: "none", display: "inline-block" }}>Log in</Link>
           <button onClick={onDismiss} style={{ padding: "12px 24px", background: "transparent", border: "1px solid rgba(201,168,76,0.25)", color: "rgba(201,168,76,0.7)", fontSize: "12px", cursor: "pointer", letterSpacing: "0.08em", textTransform: "uppercase" as const, fontFamily: "'DM Sans', sans-serif", borderRadius: 0 }}>Skip for now</button>
@@ -315,9 +315,9 @@ function NameCaptureForm({ email, quizSessionId, onSuccess, onDismiss }: { email
 
   return (
     <div style={{ padding: "28px", border: "1px solid rgba(201,168,76,0.2)", background: "rgba(201,168,76,0.03)", marginBottom: "24px" }}>
-      <div style={{ fontSize: "10px", letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(201,168,76,0.5)", marginBottom: "14px" }}>One last thing</div>
+      <div style={{ fontSize: "10px", letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(201,168,76,0.82)", marginBottom: "14px" }}>One last thing</div>
       <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "22px", fontWeight: 300, color: "#f5f0e8", marginBottom: "4px" }}>What&apos;s your name?</div>
-      <div style={{ fontSize: "13px", color: "rgba(245,240,232,0.4)", lineHeight: 1.6, marginBottom: "20px" }}>We&apos;ll use this for your application documents.</div>
+      <div style={{ fontSize: "13px", color: "rgba(245,240,232,0.72)", lineHeight: 1.6, marginBottom: "20px" }}>We&apos;ll use this for your application documents.</div>
       <form onSubmit={handleSubmit}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "12px" }}>
           <input type="text" placeholder="First name" value={firstName} onChange={(e) => setFirstName(e.target.value)} required style={{ padding: "12px 14px", background: "rgba(201,168,76,0.04)", border: "1px solid rgba(201,168,76,0.15)", color: "#f5f0e8", fontSize: "14px", fontFamily: "'DM Sans', sans-serif", borderRadius: 0, outline: "none" }} />
@@ -506,7 +506,7 @@ function ResultsPageInner() {
   const scoreLabel = getScoreLabel(score);
   const verdict = getVerdict(outcome, score);
   const verdictSub = getVerdictSub(outcome, data.warnings || []);
-  const scoreColor = score >= 70 ? '#C9A84C' : score >= 40 ? '#f59e0b' : 'rgba(245,240,232,0.3)';
+  const scoreColor = score >= 70 ? '#C9A84C' : score >= 40 ? '#f59e0b' : 'rgba(245,240,232,0.68)';
 
   const allFlags = [...(data.warnings || []), ...(data.attorney_flags || [])];
 
@@ -577,16 +577,16 @@ function ResultsPageInner() {
         <div style={{ fontSize: "17px", color: "#C9A84C", fontWeight: 300 }}>E2go<span style={{ color: "rgba(245,240,232,0.9)" }}>.app</span></div>
         <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
           {isLoggedIn && (
-            <Link href="/dashboard" style={{ fontSize: "11px", color: "rgba(201,168,76,0.55)", letterSpacing: "0.08em", textTransform: "uppercase", textDecoration: "none" }}>Dashboard</Link>
+            <Link href="/dashboard" style={{ fontSize: "11px", color: "rgba(201,168,76,0.85)", letterSpacing: "0.08em", textTransform: "uppercase", textDecoration: "none" }}>Dashboard</Link>
           )}
-          <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.25)", letterSpacing: "0.08em", textTransform: "uppercase" }}>Eligibility result</div>
+          <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.65)", letterSpacing: "0.08em", textTransform: "uppercase" }}>Eligibility result</div>
         </div>
       </div>
 
       {/* ─── ZONE 1: Hero — compact verdict ───────────────────────────────────── */}
       <div style={{ borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
         <div className="results-hero" style={{ maxWidth: "760px", margin: "0 auto", padding: "48px 40px 36px" }}>
-          <button onClick={() => router.push('/quiz/review')} style={{ fontSize: '13px', color: 'rgba(245,240,232,0.35)', background: 'transparent', border: 'none', cursor: 'pointer', padding: '0', marginBottom: '28px', fontFamily: "'DM Sans', sans-serif", display: 'block' }}>
+          <button onClick={() => router.push('/quiz/review')} style={{ fontSize: '13px', color: 'rgba(245,240,232,0.70)', background: 'transparent', border: 'none', cursor: 'pointer', padding: '0', marginBottom: '28px', fontFamily: "'DM Sans', sans-serif", display: 'block' }}>
             ← Review or change my answers
           </button>
 
@@ -594,7 +594,7 @@ function ResultsPageInner() {
           <div style={{ display: "flex", alignItems: "flex-start", gap: "24px", marginBottom: "28px" }}>
             <div style={{ width: "88px", height: "88px", border: `3px solid ${scoreColor}`, borderRadius: "50%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
               <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "32px", fontWeight: 300, color: scoreColor, lineHeight: 1 }}>{score}</div>
-              <div style={{ fontSize: "10px", color: "rgba(245,240,232,0.3)", letterSpacing: "0.06em" }}>/100</div>
+              <div style={{ fontSize: "10px", color: "rgba(245,240,232,0.68)", letterSpacing: "0.06em" }}>/100</div>
             </div>
             <div style={{ paddingTop: "4px" }}>
               {isLoggedIn && userName ? (
@@ -602,8 +602,8 @@ function ResultsPageInner() {
               ) : (
                 <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "30px", fontWeight: 300, color: "#f5f0e8", lineHeight: 1.15, marginBottom: "6px" }}>{verdict}</div>
               )}
-              <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.25)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: "8px" }}>{scoreLabel}</div>
-              <div style={{ fontSize: "13px", color: "rgba(245,240,232,0.45)", lineHeight: 1.65, maxWidth: "480px" }}>{verdictSub}</div>
+              <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.65)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: "8px" }}>{scoreLabel}</div>
+              <div style={{ fontSize: "13px", color: "rgba(245,240,232,0.74)", lineHeight: 1.65, maxWidth: "480px" }}>{verdictSub}</div>
             </div>
           </div>
 
@@ -625,7 +625,7 @@ function ResultsPageInner() {
                   <div style={{ fontSize: "12px", fontWeight: 500, color: "#f5f0e8" }}>Your E-2 Journey to the USA</div>
                   <div style={{ fontSize: "10px", color: "rgba(201,168,76,0.65)", fontStyle: "italic" }}>Start now — you could be in the US by {sm[6]}</div>
                 </div>
-                <div style={{ fontSize: "10px", color: "rgba(245,240,232,0.2)", marginBottom: "16px" }}>7 milestones · {consulate.name}</div>
+                <div style={{ fontSize: "10px", color: "rgba(245,240,232,0.62)", marginBottom: "16px" }}>7 milestones · {consulate.name}</div>
                 <div style={{ overflowX: "auto" as const }}>
                   <div style={{ display: "flex", minWidth: "660px" }}>
                     {steps.map((step, i) => (
@@ -645,10 +645,10 @@ function ResultsPageInner() {
                           {step.state === "goal" && <span style={{ fontSize: "7px", color: "#0a0a0a", fontWeight: 700 }}>★</span>}
                         </div>
                         <div style={{ marginTop: "7px", textAlign: "center", padding: "0 2px" }}>
-                          <div style={{ fontSize: "8px", fontWeight: 600, lineHeight: 1.3, marginBottom: "2px", color: step.state === "done" ? "#5DCAA5" : step.state === "active" || step.state === "goal" ? "#C9A84C" : "rgba(245,240,232,0.28)" }}>{step.label}</div>
-                          <div style={{ fontSize: "7px", lineHeight: 1.4, marginBottom: "3px", color: step.state === "done" ? "rgba(93,202,165,0.45)" : step.state === "active" || step.state === "goal" ? "rgba(201,168,76,0.5)" : "rgba(245,240,232,0.13)" }}>{step.sub}</div>
+                          <div style={{ fontSize: "8px", fontWeight: 600, lineHeight: 1.3, marginBottom: "2px", color: step.state === "done" ? "#5DCAA5" : step.state === "active" || step.state === "goal" ? "#C9A84C" : "rgba(245,240,232,0.65)" }}>{step.label}</div>
+                          <div style={{ fontSize: "7px", lineHeight: 1.4, marginBottom: "3px", color: step.state === "done" ? "rgba(93,202,165,0.80)" : step.state === "active" || step.state === "goal" ? "rgba(201,168,76,0.82)" : "rgba(245,240,232,0.62)" }}>{step.sub}</div>
                           {step.state === "done" && <div style={{ display: "inline-block", fontSize: "6px", background: "rgba(93,202,165,0.1)", border: "1px solid rgba(93,202,165,0.3)", color: "#5DCAA5", padding: "1px 4px", letterSpacing: "0.08em", textTransform: "uppercase" as const, marginBottom: "2px" }}>YOU ARE HERE</div>}
-                          <div style={{ fontSize: "7px", fontWeight: step.state === "goal" ? 600 : 400, color: step.state === "done" ? "rgba(245,240,232,0.4)" : step.state === "goal" ? "#C9A84C" : "rgba(245,240,232,0.3)" }}>{step.month}</div>
+                          <div style={{ fontSize: "7px", fontWeight: step.state === "goal" ? 600 : 400, color: step.state === "done" ? "rgba(245,240,232,0.72)" : step.state === "goal" ? "#C9A84C" : "rgba(245,240,232,0.68)" }}>{step.month}</div>
                         </div>
                       </div>
                     ))}
@@ -689,10 +689,10 @@ function ResultsPageInner() {
           {/* ─── Flags — immediately below chips ───────────────────────────── */}
           {flagsToShow.length > 0 && (
             <div style={{ marginTop: "16px", marginBottom: "8px" }}>
-              <div style={{ fontSize: "10px", letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(201,168,76,0.5)", marginBottom: "6px" }}>
+              <div style={{ fontSize: "10px", letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(201,168,76,0.82)", marginBottom: "6px" }}>
                 {flagsToShow.length === 1 ? "One area to address" : `${flagsToShow.length} areas to address`}
               </div>
-              <div style={{ fontSize: "13px", color: "rgba(245,240,232,0.35)", marginBottom: "12px", lineHeight: 1.5 }}>
+              <div style={{ fontSize: "13px", color: "rgba(245,240,232,0.70)", marginBottom: "12px", lineHeight: 1.5 }}>
                 Your application is still viable — these are preparation priorities, not disqualifiers.
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
@@ -784,15 +784,15 @@ function ResultsPageInner() {
               <div>
                 <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "24px", fontWeight: 300, color: "#f5f0e8", marginBottom: "8px" }}>{pricing.tier}</div>
                 <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
-                  <span style={{ fontSize: "13px", color: "rgba(245,240,232,0.45)" }}>
+                  <span style={{ fontSize: "13px", color: "rgba(245,240,232,0.74)" }}>
                     {pricing.tier.includes("Partnership") ? "Partnership base" : "Solo applicant"}: <span style={{ color: "#f5f0e8" }}>${pricing.base}</span>
                   </span>
-                  {pricing.spouseAdd > 0 && <span style={{ fontSize: "13px", color: "rgba(245,240,232,0.45)" }}>+ Spouse: <span style={{ color: "#f5f0e8" }}>${pricing.spouseAdd}</span></span>}
-                  {pricing.childrenAdd > 0 && <span style={{ fontSize: "13px", color: "rgba(245,240,232,0.45)" }}>+ Children: <span style={{ color: "#f5f0e8" }}>${pricing.childrenAdd}</span></span>}
+                  {pricing.spouseAdd > 0 && <span style={{ fontSize: "13px", color: "rgba(245,240,232,0.74)" }}>+ Spouse: <span style={{ color: "#f5f0e8" }}>${pricing.spouseAdd}</span></span>}
+                  {pricing.childrenAdd > 0 && <span style={{ fontSize: "13px", color: "rgba(245,240,232,0.74)" }}>+ Children: <span style={{ color: "#f5f0e8" }}>${pricing.childrenAdd}</span></span>}
                 </div>
               </div>
               <div style={{ textAlign: "right" as const }}>
-                <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.3)", marginBottom: "2px", letterSpacing: "0.08em", textTransform: "uppercase" }}>Total</div>
+                <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.68)", marginBottom: "2px", letterSpacing: "0.08em", textTransform: "uppercase" }}>Total</div>
                 <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "44px", fontWeight: 300, color: "#C9A84C", lineHeight: 1 }}>${pricing.total}</div>
               </div>
             </div>
@@ -800,24 +800,24 @@ function ResultsPageInner() {
             {/* Timeline + Consulate intel — inside CTA block */}
             <div className="cta-intel-row" style={{ display: "flex", borderTop: "1px solid rgba(201,168,76,0.12)", borderBottom: "1px solid rgba(201,168,76,0.12)", margin: "0 0 24px" }}>
               <div style={{ flex: 1, padding: "16px 20px 16px 0" }}>
-                <div style={{ fontSize: "10px", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(245,240,232,0.22)", marginBottom: "6px" }}>Estimated interview window</div>
+                <div style={{ fontSize: "10px", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(245,240,232,0.62)", marginBottom: "6px" }}>Estimated interview window</div>
                 <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "22px", fontWeight: 300, color: "#C9A84C", marginBottom: "4px" }}>{timeline}</div>
-                {targetDateMsg && <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.35)", lineHeight: 1.5 }}>{targetDateMsg}</div>}
+                {targetDateMsg && <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.70)", lineHeight: 1.5 }}>{targetDateMsg}</div>}
               </div>
               <div style={{ width: "1px", background: "rgba(201,168,76,0.12)", flexShrink: 0 }} />
               <div style={{ flex: 1, padding: "16px 0 16px 20px" }}>
-                <div style={{ fontSize: "10px", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(245,240,232,0.22)", marginBottom: "6px" }}>Consulate data · {consulate.name}</div>
-                <div style={{ fontSize: "13px", color: "rgba(245,240,232,0.55)", lineHeight: 1.6 }}>{consulate.intel}</div>
+                <div style={{ fontSize: "10px", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(245,240,232,0.62)", marginBottom: "6px" }}>Consulate data · {consulate.name}</div>
+                <div style={{ fontSize: "13px", color: "rgba(245,240,232,0.78)", lineHeight: 1.6 }}>{consulate.intel}</div>
               </div>
             </div>
 
-            <div style={{ fontSize: "12px", color: "rgba(245,240,232,0.3)", marginBottom: "24px", lineHeight: 1.6 }}>
+            <div style={{ fontSize: "12px", color: "rgba(245,240,232,0.68)", marginBottom: "24px", lineHeight: 1.6 }}>
               Applications submitted this summer are best positioned for the {timeline} interview window at {consulate.name}.
             </div>
 
             {/* After you join us */}
             <div style={{ borderTop: "1px solid rgba(201,168,76,0.1)", paddingTop: "20px", marginBottom: "24px" }}>
-              <div style={{ fontSize: "9px", letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(245,240,232,0.2)", marginBottom: "14px" }}>After you join us</div>
+              <div style={{ fontSize: "9px", letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(245,240,232,0.62)", marginBottom: "14px" }}>After you join us</div>
               <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                 {[
                   { n: "1", text: "Your onboarding questionnaire is ready — ", strong: "instantly" },
@@ -826,8 +826,8 @@ function ResultsPageInner() {
                   { n: "4", text: "When your information is complete, your case file is submission-ready — ", strong: "most clients finish in 2–4 weeks" },
                 ].map(({ n, text, strong }) => (
                   <div key={n} style={{ display: "flex", gap: "12px", alignItems: "flex-start" }}>
-                    <div style={{ width: "18px", height: "18px", borderRadius: "50%", border: "1px solid rgba(201,168,76,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "9px", color: "rgba(201,168,76,0.55)", flexShrink: 0, marginTop: "1px" }}>{n}</div>
-                    <div style={{ fontSize: "12px", color: "rgba(245,240,232,0.45)", lineHeight: 1.5 }}>{text}<span style={{ color: "rgba(245,240,232,0.75)" }}>{strong}</span></div>
+                    <div style={{ width: "18px", height: "18px", borderRadius: "50%", border: "1px solid rgba(201,168,76,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "9px", color: "rgba(201,168,76,0.85)", flexShrink: 0, marginTop: "1px" }}>{n}</div>
+                    <div style={{ fontSize: "12px", color: "rgba(245,240,232,0.74)", lineHeight: 1.5 }}>{text}<span style={{ color: "rgba(245,240,232,0.75)" }}>{strong}</span></div>
                   </div>
                 ))}
               </div>
@@ -837,7 +837,7 @@ function ResultsPageInner() {
               Yes — build my case file →
             </Link>
             {!isLoggedIn && (
-              <div style={{ marginTop: "10px", fontSize: "11px", color: "rgba(245,240,232,0.22)", textAlign: "center" as const, lineHeight: 1.6 }}>
+              <div style={{ marginTop: "10px", fontSize: "11px", color: "rgba(245,240,232,0.62)", textAlign: "center" as const, lineHeight: 1.6 }}>
                 Quiz and AI coaching are always free.<br />You pay only when you&apos;re ready to build your case.
               </div>
             )}
@@ -852,7 +852,7 @@ function ResultsPageInner() {
               <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "20px", fontWeight: 300, color: "#f5f0e8", marginBottom: "8px" }}>
                 Your profile matches franchise investment opportunities
               </div>
-              <div style={{ fontSize: "13px", color: "rgba(245,240,232,0.45)", lineHeight: 1.6, marginBottom: "16px" }}>
+              <div style={{ fontSize: "13px", color: "rgba(245,240,232,0.74)", lineHeight: 1.6, marginBottom: "16px" }}>
                 Based on your industry interest and investment profile, we have identified E-2-proven franchise brands in your range. Introductions are made only with your consent.
               </div>
               <Link href="/fdd" style={{ display: "inline-block", padding: "11px 24px", background: "rgba(201,168,76,0.08)", border: "1px solid rgba(201,168,76,0.35)", color: "#C9A84C", fontSize: "12px", fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: "'DM Sans', sans-serif", textDecoration: "none" }}>
@@ -870,7 +870,7 @@ function ResultsPageInner() {
               <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "20px", fontWeight: 300, color: "#f5f0e8", marginBottom: "8px" }}>
                 {fddReceived ? 'Analyse your FDD before your interview' : 'Get ahead — analyse your FDD when it arrives'}
               </div>
-              <div style={{ fontSize: "13px", color: "rgba(245,240,232,0.45)", lineHeight: 1.6, marginBottom: "16px" }}>
+              <div style={{ fontSize: "13px", color: "rgba(245,240,232,0.74)", lineHeight: 1.6, marginBottom: "16px" }}>
                 {fddReceived
                   ? 'You indicated you already have your Franchise Disclosure Document. Upload it now to extract unit economics, identify officer red flags, and build a stronger case before your E-2 interview.'
                   : 'Your franchisor has offered you the FDD. As soon as you receive it, run it through our analysis tool — it extracts Item 19 performance data and flags the specific disclosures officers scrutinise.'}
@@ -889,7 +889,7 @@ function ResultsPageInner() {
 
       {/* Disclaimer */}
       <div style={{ padding: "20px 40px", borderTop: "1px solid rgba(201,168,76,0.06)" }}>
-        <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.18)", lineHeight: 1.6, maxWidth: "720px", margin: "0 auto" }}>
+        <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.62)", lineHeight: 1.6, maxWidth: "720px", margin: "0 auto" }}>
           This assessment is based solely on the answers you provided and does not constitute legal advice. e2go.app is a self-service preparation tool, not a law firm. Consular decisions involve factors beyond the scope of any preparation tool. For legal advice, consult a qualified U.S. immigration attorney.
         </div>
       </div>

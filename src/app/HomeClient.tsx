@@ -38,11 +38,11 @@ export default function HomeClient() {
             </Link>
             <div className="hidden md:flex items-center gap-7">
               {[["/#how-it-works","How it works"],["/learn","Learn"],["/pricing","Pricing"],["/simulator","Simulator"]].map(([href,label]) => (
-                <Link key={label} href={href} className="text-sm text-[rgba(245,240,232,0.55)] hover:text-[#f5f0e8] transition-colors tracking-wide">{label}</Link>
+                <Link key={label} href={href} className="text-sm text-[rgba(245,240,232,0.76)] hover:text-[#f5f0e8] transition-colors tracking-wide">{label}</Link>
               ))}
             </div>
             <div className="hidden md:flex items-center gap-3">
-              <Link href="/login" className="text-sm text-[rgba(245,240,232,0.4)] hover:text-[rgba(245,240,232,0.7)] transition-colors px-3 py-2 min-h-[44px] flex items-center">Log in</Link>
+              <Link href="/login" className="text-sm text-[rgba(245,240,232,0.72)] hover:text-[rgba(245,240,232,0.7)] transition-colors px-3 py-2 min-h-[44px] flex items-center">Log in</Link>
               <Link href="/quiz" className="px-5 py-2.5 border border-[rgba(201,168,76,0.45)] text-[#C9A84C] text-xs tracking-widest uppercase hover:border-[#C9A84C] transition-colors min-h-[44px] flex items-center">Check eligibility</Link>
             </div>
             <button
@@ -129,7 +129,7 @@ export default function HomeClient() {
               Your E-2 Investor Business Plan &amp; Full Application Package—Without the{" "}
               <em className="text-[#C9A84C]">$12,000</em> price tag.
             </h1>
-            <p className="text-sm md:text-base text-[rgba(245,240,232,0.5)] leading-relaxed max-w-xl mb-3"
+            <p className="text-sm md:text-base text-[rgba(245,240,232,0.76)] leading-relaxed max-w-xl mb-3"
               style={{textShadow:'0 1px 10px rgba(0,0,0,0.95)'}}>
               Consultants give you Zoom calls. Lawyers give you invoices. E2go gets you
               visa-ready — from eligibility check to a complete, consulate-ready
@@ -171,7 +171,7 @@ export default function HomeClient() {
               ].map((s,i) => (
                 <div key={i} className="pr-4">
                   <div className={`font-['Cormorant_Garamond',Georgia,serif] font-light text-[#C9A84C] ${s.num.length > 4 ? 'text-[26px] md:text-[32px]' : 'text-2xl md:text-3xl'}`}>{s.num}</div>
-                  <div className="text-xs text-[rgba(245,240,232,0.35)] mt-1 tracking-wide">{s.label}</div>
+                  <div className="text-xs text-[rgba(245,240,232,0.68)] mt-1 tracking-wide">{s.label}</div>
                 </div>
               ))}
             </div>
@@ -184,7 +184,7 @@ export default function HomeClient() {
 
       {/* ── PROOF BAR ── */}
       <div className="border-y border-[rgba(201,168,76,0.08)] py-4 px-4 md:px-10 text-center">
-        <p className="text-xs text-[rgba(245,240,232,0.28)] tracking-wide">
+        <p className="text-xs text-[rgba(245,240,232,0.65)] tracking-wide">
           Trusted by E-2 applicants from Canada, the UK, Germany, Australia, Japan, and 77 other treaty countries.
         </p>
       </div>
@@ -195,7 +195,7 @@ export default function HomeClient() {
         <h2 className="font-['Cormorant_Garamond',Georgia,serif] text-3xl md:text-5xl font-light text-[#f5f0e8] mb-3 leading-tight">
           The three most common E-2 mistakes.
         </h2>
-        <p className="text-sm text-[rgba(245,240,232,0.42)] mb-10 md:mb-14 max-w-lg leading-relaxed">
+        <p className="text-sm text-[rgba(245,240,232,0.72)] mb-10 md:mb-14 max-w-lg leading-relaxed">
           Most denials are not caused by ineligibility. They are caused by preparation errors that a structured process would have caught.
         </p>
         <div>
@@ -204,12 +204,12 @@ export default function HomeClient() {
               <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-[rgba(201,168,76,0)] group-hover:bg-[rgba(201,168,76,0.4)] transition-colors duration-300" />
               <div
                 className="absolute left-[-12px] top-[-18px] font-['Cormorant_Garamond',Georgia,serif] font-light leading-none pointer-events-none select-none"
-                style={{fontSize:'clamp(80px,14vw,160px)',color:'rgba(201,168,76,0.04)'}}
+                style={{fontSize:'clamp(80px,14vw,160px)',color:'rgba(201,168,76,0.65)'}}
               >{m.n}</div>
               <div className="font-['Cormorant_Garamond',Georgia,serif] text-xs font-light text-[rgba(201,168,76,0.45)] tracking-[0.12em] uppercase pt-1 relative z-10">{m.n}</div>
               <div className="relative z-10">
                 <div className="font-['Cormorant_Garamond',Georgia,serif] text-lg md:text-xl font-light italic text-[rgba(201,168,76,0.88)] mb-3 leading-snug">{m.t}</div>
-                <p className="text-xs md:text-sm text-[rgba(245,240,232,0.5)] leading-relaxed max-w-2xl">{m.d}</p>
+                <p className="text-xs md:text-sm text-[rgba(245,240,232,0.76)] leading-relaxed max-w-2xl">{m.d}</p>
               </div>
             </div>
           ))}
@@ -223,7 +223,7 @@ export default function HomeClient() {
         <h2 className="font-['Cormorant_Garamond',Georgia,serif] text-3xl md:text-5xl font-light text-[#f5f0e8] mb-3 leading-tight">
           Four steps to your consulate package.
         </h2>
-        <p className="text-sm text-[rgba(245,240,232,0.42)] mb-12 md:mb-16 max-w-lg leading-relaxed">
+        <p className="text-sm text-[rgba(245,240,232,0.72)] mb-12 md:mb-16 max-w-lg leading-relaxed">
           No consultants. No back-and-forth. Your complete application, built and tested in days.
         </p>
         <div className="relative">
@@ -241,10 +241,10 @@ export default function HomeClient() {
                 </div>
                 <div
                   className="font-['Cormorant_Garamond',Georgia,serif] text-[64px] md:text-[72px] font-light leading-none mb-3 select-none"
-                  style={{ WebkitTextStroke: "1px rgba(201,168,76,0.5)", color: "rgba(201,168,76,0.32)" }}
+                  style={{ WebkitTextStroke: "1px rgba(201,168,76,0.5)", color: "rgba(201,168,76,0.75)" }}
                 >{s.n}</div>
                 <div className="text-sm font-medium text-[#f5f0e8] mb-2">{s.t}</div>
-                <p className="text-xs text-[rgba(245,240,232,0.42)] leading-relaxed">{s.d}</p>
+                <p className="text-xs text-[rgba(245,240,232,0.72)] leading-relaxed">{s.d}</p>
               </div>
             ))}
           </div>
@@ -266,7 +266,7 @@ export default function HomeClient() {
             <h2 className="font-['Cormorant_Garamond',Georgia,serif] text-3xl md:text-4xl font-light text-[#f5f0e8] mb-4 leading-tight">
               Already have your documents? Practice your interview.
             </h2>
-            <p className="text-sm text-[rgba(245,240,232,0.5)] leading-relaxed mb-7 max-w-xl">
+            <p className="text-sm text-[rgba(245,240,232,0.76)] leading-relaxed mb-7 max-w-xl">
               An AI consular officer reads your application, finds where you are weak,
               and probes it across three unscripted sessions — so nothing at the real
               interview is a surprise.
@@ -279,7 +279,7 @@ export default function HomeClient() {
           <div className="border border-[rgba(201,168,76,0.15)] bg-[rgba(201,168,76,0.02)] p-6 md:p-7 md:min-w-[210px]">
             <div className="text-[10px] tracking-[0.15em] uppercase text-[rgba(201,168,76,0.45)] mb-2">Standalone</div>
             <div className="font-['Cormorant_Garamond',Georgia,serif] text-4xl md:text-5xl font-light text-[#C9A84C] leading-none mb-2">$197</div>
-            <div className="text-[11px] text-[rgba(245,240,232,0.4)] leading-relaxed">3 sessions · Included free in every E2go package</div>
+            <div className="text-[11px] text-[rgba(245,240,232,0.72)] leading-relaxed">3 sessions · Included free in every E2go package</div>
           </div>
         </div>
       </section>
@@ -315,7 +315,7 @@ export default function HomeClient() {
               <div className="absolute top-[-14px] left-[12px] font-['Cormorant_Garamond',Georgia,serif] text-[160px] font-light leading-none text-[rgba(201,168,76,0.04)] pointer-events-none select-none">&ldquo;</div>
               <p className="font-['Cormorant_Garamond',Georgia,serif] text-base md:text-lg font-light italic text-[rgba(245,240,232,0.76)] leading-relaxed mb-5 relative z-10">&ldquo;{t.q}&rdquo;</p>
               <div className="w-5 h-px bg-[rgba(201,168,76,0.45)] mb-3" />
-              <div className="text-xs text-[rgba(245,240,232,0.5)]">— {t.a}</div>
+              <div className="text-xs text-[rgba(245,240,232,0.76)]">— {t.a}</div>
               <div className="text-[10px] text-[rgba(201,168,76,0.55)] tracking-widest uppercase mt-1">{t.c} · {t.t}</div>
             </div>
           ))}
@@ -328,7 +328,7 @@ export default function HomeClient() {
         <h2 className="font-['Cormorant_Garamond',Georgia,serif] text-4xl md:text-6xl font-light text-[#f5f0e8] mb-4 leading-tight">
           Find out if you qualify.<br />It takes four minutes.
         </h2>
-        <p className="text-sm text-[rgba(245,240,232,0.4)] mb-8 leading-relaxed">
+        <p className="text-sm text-[rgba(245,240,232,0.72)] mb-8 leading-relaxed">
           No payment required for the eligibility check. No account required to start.<br className="hidden md:block" />
           {" "}82 treaty countries. Every consulate. One platform.
         </p>
@@ -340,7 +340,7 @@ export default function HomeClient() {
             View pricing
           </Link>
         </div>
-        <p className="text-xs text-[rgba(245,240,232,0.2)] tracking-wide">Lawyer-ready documents. Lawyer-optional price.</p>
+        <p className="text-xs text-[rgba(245,240,232,0.65)] tracking-wide">Lawyer-ready documents. Lawyer-optional price.</p>
       </section>
 
       {/* ── FOOTER ── */}
@@ -348,19 +348,19 @@ export default function HomeClient() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8 md:mb-10">
           <div>
             <div className="font-['Cormorant_Garamond',Georgia,serif] text-xl font-light text-[#C9A84C] mb-2">
-              E2go<span className="text-[rgba(245,240,232,0.5)]">.app</span>
+              E2go<span className="text-[rgba(245,240,232,0.76)]">.app</span>
             </div>
-            <p className="text-xs text-[rgba(245,240,232,0.25)] leading-relaxed">© 2026 E2go.app. All rights reserved.</p>
+            <p className="text-xs text-[rgba(245,240,232,0.65)] leading-relaxed">© 2026 E2go.app. All rights reserved.</p>
           </div>
           <div className="flex flex-wrap gap-x-6 gap-y-2 md:justify-end">
             {[["/#how-it-works","How it works"],["/learn","Learn"],["/pricing","Pricing"],["/simulator","Simulator"],["/support","Support"]].map(([href,label]) => (
-              <Link key={label} href={href} className="text-xs text-[rgba(245,240,232,0.35)] hover:text-[rgba(245,240,232,0.7)] transition-colors min-h-[44px] flex items-center">{label}</Link>
+              <Link key={label} href={href} className="text-xs text-[rgba(245,240,232,0.68)] hover:text-[rgba(245,240,232,0.7)] transition-colors min-h-[44px] flex items-center">{label}</Link>
             ))}
           </div>
         </div>
         {/* Legal — the closing word: full width, last thing on the page */}
         <div className="border-t border-[rgba(201,168,76,0.08)] pt-6">
-          <p className="text-[10px] text-[rgba(245,240,232,0.25)] leading-relaxed max-w-4xl">
+          <p className="text-[10px] text-[rgba(245,240,232,0.65)] leading-relaxed max-w-4xl">
             E2go.app is a self-service document-preparation platform — not a law firm. It does
             not provide legal advice, legal representation, or immigration services, and no
             attorney–client relationship is formed by using it. All generated documents are

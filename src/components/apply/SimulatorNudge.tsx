@@ -112,7 +112,7 @@ export default function SimulatorNudge({ section }: SimulatorNudgeProps) {
                   style={{
                     fontFamily: "'DM Sans', sans-serif",
                     fontSize: '12px',
-                    color: 'rgba(245,240,232,0.55)',
+                    color: 'rgba(245,240,232,0.78)',
                     lineHeight: 1.5,
                     marginBottom: '2px',
                   }}
@@ -132,7 +132,7 @@ export default function SimulatorNudge({ section }: SimulatorNudgeProps) {
             border: 'none',
             cursor: 'pointer',
             padding: '2px',
-            color: 'rgba(245,240,232,0.35)',
+            color: 'rgba(245,240,232,0.70)',
             flexShrink: 0,
             lineHeight: 1,
           }}

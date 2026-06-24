@@ -104,7 +104,7 @@ export default function SimulatorNav() {
             fontSize: '9px',
             letterSpacing: '0.16em',
             textTransform: 'uppercase',
-            color: 'rgba(201,168,76,0.4)',
+            color: 'rgba(201,168,76,0.78)',
             fontFamily: "'DM Sans', sans-serif",
             marginRight: '20px',
             flexShrink: 0,
@@ -139,7 +139,7 @@ export default function SimulatorNav() {
                 if (!active) (e.currentTarget as HTMLAnchorElement).style.color = 'rgba(245,240,232,0.8)';
               }}
               onMouseLeave={e => {
-                if (!active) (e.currentTarget as HTMLAnchorElement).style.color = 'rgba(245,240,232,0.5)';
+                if (!active) (e.currentTarget as HTMLAnchorElement).style.color = 'rgba(245,240,232,0.76)';
               }}
             >
               {section.label}

@@ -122,7 +122,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
       <div style={{ flex: 1, height: '1px', background: 'rgba(201,168,76,0.12)' }} />
       <span style={{
         fontSize: '9px', fontWeight: 700, letterSpacing: '0.18em',
-        textTransform: 'uppercase' as const, color: 'rgba(201,168,76,0.5)',
+        textTransform: 'uppercase' as const, color: 'rgba(201,168,76,0.82)',
         fontFamily: "'DM Sans', sans-serif", whiteSpace: 'nowrap' as const,
       }}>{children}</span>
       <div style={{ flex: 1, height: '1px', background: 'rgba(201,168,76,0.12)' }} />
@@ -166,7 +166,7 @@ function CategoryCard({ cat }: { cat: CategoryScore }) {
         </span>
       </div>
       {/* Weight badge */}
-      <span style={{ fontSize: '9px', color: 'rgba(245,240,232,0.25)', fontFamily: "'DM Sans', sans-serif" }}>
+      <span style={{ fontSize: '9px', color: 'rgba(245,240,232,0.65)', fontFamily: "'DM Sans', sans-serif" }}>
         {cat.weight}% of overall score
       </span>
       {/* Top gaps */}
@@ -175,7 +175,7 @@ function CategoryCard({ cat }: { cat: CategoryScore }) {
           {cat.gaps.slice(0, 2).map((gap, i) => (
             <li key={i} style={{ display: 'flex', gap: '6px', alignItems: 'flex-start' }}>
               <span style={{ color: '#f97316', fontSize: '10px', flexShrink: 0, marginTop: '1px' }}>!</span>
-              <span style={{ fontSize: '11px', color: 'rgba(245,240,232,0.45)', fontFamily: "'DM Sans', sans-serif", lineHeight: 1.5 }}>{gap}</span>
+              <span style={{ fontSize: '11px', color: 'rgba(245,240,232,0.74)', fontFamily: "'DM Sans', sans-serif", lineHeight: 1.5 }}>{gap}</span>
             </li>
           ))}
         </ul>
@@ -183,7 +183,7 @@ function CategoryCard({ cat }: { cat: CategoryScore }) {
       {cat.gaps.length === 0 && cat.evidence.length > 0 && (
         <div style={{ display: 'flex', gap: '6px', alignItems: 'flex-start' }}>
           <span style={{ color: '#22c55e', fontSize: '10px', flexShrink: 0, marginTop: '1px' }}>✓</span>
-          <span style={{ fontSize: '11px', color: 'rgba(245,240,232,0.4)', fontFamily: "'DM Sans', sans-serif", lineHeight: 1.5 }}>
+          <span style={{ fontSize: '11px', color: 'rgba(245,240,232,0.72)', fontFamily: "'DM Sans', sans-serif", lineHeight: 1.5 }}>
             {cat.evidence[0].substring(0, 80)}
           </span>
         </div>
@@ -231,12 +231,12 @@ function DenialRiskCard({ risk }: { risk: DenialRisk }) {
         <span style={{ fontSize: '12px', color: 'rgba(245,240,232,0.7)', fontFamily: "'DM Sans', sans-serif", flex: 1, lineHeight: 1.4 }}>
           {risk.name}
         </span>
-        <span style={{ color: 'rgba(245,240,232,0.2)', fontSize: '12px', flexShrink: 0 }}>{expanded ? '▲' : '▼'}</span>
+        <span style={{ color: 'rgba(245,240,232,0.62)', fontSize: '12px', flexShrink: 0 }}>{expanded ? '▲' : '▼'}</span>
       </button>
       {expanded && (
         <div style={{ padding: '0 16px 16px' }}>
-          <p style={{ fontSize: '12px', color: 'rgba(245,240,232,0.55)', lineHeight: 1.65, margin: '0 0 10px', fontFamily: "'DM Sans', sans-serif" }}>
-            <span style={{ color: 'rgba(245,240,232,0.35)', fontWeight: 600, marginRight: '6px' }}>FINDING:</span>
+          <p style={{ fontSize: '12px', color: 'rgba(245,240,232,0.78)', lineHeight: 1.65, margin: '0 0 10px', fontFamily: "'DM Sans', sans-serif" }}>
+            <span style={{ color: 'rgba(245,240,232,0.70)', fontWeight: 600, marginRight: '6px' }}>FINDING:</span>
             {risk.finding}
           </p>
           {risk.mitigation && (
@@ -268,7 +268,7 @@ function ActionItem({ action, index }: { action: GapAction; index: number }) {
       alignItems: 'flex-start',
     }}>
       <span style={{
-        fontSize: '11px', fontWeight: 700, color: 'rgba(245,240,232,0.2)',
+        fontSize: '11px', fontWeight: 700, color: 'rgba(245,240,232,0.62)',
         fontFamily: "'DM Sans', sans-serif", flexShrink: 0, width: '18px',
         paddingTop: '1px',
       }}>{index}</span>
@@ -281,7 +281,7 @@ function ActionItem({ action, index }: { action: GapAction; index: number }) {
           }}>
             {URGENCY_LABEL[action.urgency]}
           </span>
-          <span style={{ fontSize: '10px', color: 'rgba(245,240,232,0.3)', fontFamily: "'DM Sans', sans-serif" }}>
+          <span style={{ fontSize: '10px', color: 'rgba(245,240,232,0.68)', fontFamily: "'DM Sans', sans-serif" }}>
             {action.gap}
           </span>
         </div>
@@ -302,7 +302,7 @@ function LoadingState() {
     <div style={s.root}>
       <div style={s.header}>
         <span style={s.eyebrow}>INTERVIEW PREPARATION REPORT</span>
-        <span style={{ fontSize: '11px', color: 'rgba(201,168,76,0.5)', fontFamily: "'DM Sans', sans-serif", fontStyle: 'italic' as const }}>
+        <span style={{ fontSize: '11px', color: 'rgba(201,168,76,0.82)', fontFamily: "'DM Sans', sans-serif", fontStyle: 'italic' as const }}>
           Analysing your case…
         </span>
       </div>
@@ -372,7 +372,7 @@ export default function InterviewBrief({ applicationId, businessName }: Intervie
         <div>
           <span style={s.eyebrow}>INTERVIEW PREPARATION REPORT</span>
           {businessName && (
-            <p style={{ fontSize: '12px', color: 'rgba(245,240,232,0.3)', marginTop: '4px', fontFamily: "'DM Sans', sans-serif" }}>
+            <p style={{ fontSize: '12px', color: 'rgba(245,240,232,0.68)', marginTop: '4px', fontFamily: "'DM Sans', sans-serif" }}>
               {businessName}
             </p>
           )}
@@ -456,7 +456,7 @@ export default function InterviewBrief({ applicationId, businessName }: Intervie
           <SectionLabel>
             {`Denial Risk Assessment — ${highRisks.length} High · ${modRisks.length} Moderate`}
           </SectionLabel>
-          <p style={{ fontSize: '11px', color: 'rgba(245,240,232,0.28)', fontFamily: "'DM Sans', sans-serif", marginBottom: '12px', fontStyle: 'italic' as const }}>
+          <p style={{ fontSize: '11px', color: 'rgba(245,240,232,0.65)', fontFamily: "'DM Sans', sans-serif", marginBottom: '12px', fontStyle: 'italic' as const }}>
             Risk factors are derived from 15 documented denial grounds in 9 FAM 402.9 and real Toronto interview data. Click any factor to expand.
           </p>
           {highRisks.map(r => <DenialRiskCard key={r.code} risk={r} />)}
@@ -477,7 +477,7 @@ export default function InterviewBrief({ applicationId, businessName }: Intervie
             </div>
             {t.officerTests && (
               <p style={s.officerTest}>
-                <span style={{ color: 'rgba(201,168,76,0.45)', fontWeight: 600, marginRight: '4px' }}>Tests:</span>
+                <span style={{ color: 'rgba(201,168,76,0.80)', fontWeight: 600, marginRight: '4px' }}>Tests:</span>
                 {t.officerTests}
               </p>
             )}
@@ -490,7 +490,7 @@ export default function InterviewBrief({ applicationId, businessName }: Intervie
       {brief.gapActions.length > 0 && (
         <>
           <SectionLabel>Priority Action Plan</SectionLabel>
-          <p style={{ fontSize: '11px', color: 'rgba(245,240,232,0.28)', fontFamily: "'DM Sans', sans-serif", marginBottom: '12px', fontStyle: 'italic' as const }}>
+          <p style={{ fontSize: '11px', color: 'rgba(245,240,232,0.65)', fontFamily: "'DM Sans', sans-serif", marginBottom: '12px', fontStyle: 'italic' as const }}>
             Complete these actions before your interview. Critical items must be resolved; important items should be addressed; recommended items strengthen your case.
           </p>
           <div style={{ border: '1px solid rgba(201,168,76,0.1)' }}>
@@ -509,7 +509,7 @@ export default function InterviewBrief({ applicationId, businessName }: Intervie
           <ul style={s.bulletList}>
             {brief.businessTips.map((t, i) => (
               <li key={i} style={s.bulletRow}>
-                <span style={{ ...s.bulletDot, color: 'rgba(201,168,76,0.5)' }}>→</span>
+                <span style={{ ...s.bulletDot, color: 'rgba(201,168,76,0.82)' }}>→</span>
                 <span style={s.bulletText}>{t}</span>
               </li>
             ))}
@@ -521,7 +521,7 @@ export default function InterviewBrief({ applicationId, businessName }: Intervie
             {brief.pressurePoints.map((p, i) => (
               <li key={i} style={s.bulletRow}>
                 <span style={{ ...s.bulletDot, color: 'rgba(200,100,100,0.6)' }}>!</span>
-                <span style={{ ...s.bulletText, color: 'rgba(245,240,232,0.5)' }}>{p}</span>
+                <span style={{ ...s.bulletText, color: 'rgba(245,240,232,0.76)' }}>{p}</span>
               </li>
             ))}
           </ul>
@@ -556,7 +556,7 @@ const s: Record<string, React.CSSProperties> = {
     color: '#C9A84C', fontFamily: "'DM Sans', sans-serif",
   },
   aiTag: {
-    fontSize: '8px', letterSpacing: '0.12em', color: 'rgba(245,240,232,0.2)',
+    fontSize: '8px', letterSpacing: '0.12em', color: 'rgba(245,240,232,0.62)',
     fontFamily: "'DM Sans', sans-serif", padding: '3px 8px',
     border: '1px solid rgba(245,240,232,0.07)',
   },
@@ -575,7 +575,7 @@ const s: Record<string, React.CSSProperties> = {
   },
   panelHeading: {
     fontSize: '9px', fontWeight: 700, letterSpacing: '0.14em',
-    textTransform: 'uppercase' as const, color: 'rgba(201,168,76,0.55)',
+    textTransform: 'uppercase' as const, color: 'rgba(201,168,76,0.85)',
     fontFamily: "'DM Sans', sans-serif", marginBottom: '14px',
     paddingBottom: '10px', borderBottom: '1px solid rgba(201,168,76,0.07)',
   },
@@ -605,15 +605,15 @@ const s: Record<string, React.CSSProperties> = {
     fontFamily: "'DM Sans', sans-serif",
   },
   officerTest: {
-    fontSize: '11px', color: 'rgba(245,240,232,0.35)', lineHeight: 1.6,
+    fontSize: '11px', color: 'rgba(245,240,232,0.70)', lineHeight: 1.6,
     margin: '0 0 6px 70px', fontFamily: "'DM Sans', sans-serif", fontStyle: 'italic' as const,
   },
   coachNote: {
-    fontSize: '12px', color: 'rgba(245,240,232,0.5)', lineHeight: 1.65,
+    fontSize: '12px', color: 'rgba(245,240,232,0.76)', lineHeight: 1.65,
     margin: '0 0 0 70px', fontFamily: "'DM Sans', sans-serif",
   },
   disclaimer: {
-    fontSize: '10px', color: 'rgba(245,240,232,0.18)', lineHeight: 1.6,
+    fontSize: '10px', color: 'rgba(245,240,232,0.62)', lineHeight: 1.6,
     fontFamily: "'DM Sans', sans-serif", marginTop: '28px',
     fontStyle: 'italic' as const, borderTop: '1px solid rgba(245,240,232,0.04)',
     paddingTop: '16px',

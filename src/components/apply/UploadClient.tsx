@@ -156,7 +156,7 @@ export default function UploadClient({ applicationId }: { applicationId: string 
           href="/apply"
           className="mb-8 inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.08em] transition-colors hover:text-[#C9A84C]"
           style={{
-            color: 'rgba(245,240,232,0.35)',
+            color: 'rgba(245,240,232,0.70)',
             fontFamily: "'DM Sans', sans-serif",
           }}
         >
@@ -191,7 +191,7 @@ export default function UploadClient({ applicationId }: { applicationId: string 
           <p
             className="text-[11px] leading-relaxed"
             style={{
-              color: 'rgba(245,240,232,0.4)',
+              color: 'rgba(245,240,232,0.72)',
               fontFamily: "'DM Sans', sans-serif",
             }}
           >
@@ -210,7 +210,7 @@ export default function UploadClient({ applicationId }: { applicationId: string 
             fontFamily: "'DM Sans', sans-serif",
           }}
         >
-          <p style={{ fontSize: '11px', color: 'rgba(245,240,232,0.5)', lineHeight: 1.7 }}>
+          <p style={{ fontSize: '11px', color: 'rgba(245,240,232,0.76)', lineHeight: 1.7 }}>
             <span style={{ color: 'rgba(201,168,76,0.7)', fontWeight: 500 }}>Your documents are private.</span>{' '}
             We use them only to fill in your case file and check for gaps — never to train AI models,
             never shared with third parties. Documents are encrypted at rest and deleted when you close your account.
@@ -243,7 +243,7 @@ export default function UploadClient({ applicationId }: { applicationId: string 
             stroke="currentColor"
             strokeWidth="1"
             className="mb-4"
-            style={{ color: 'rgba(201,168,76,0.4)' }}
+            style={{ color: 'rgba(201,168,76,0.78)' }}
           >
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
             <polyline points="17 8 12 3 7 8" />
@@ -252,7 +252,7 @@ export default function UploadClient({ applicationId }: { applicationId: string 
           <p
             className="mb-1 text-[11px]"
             style={{
-              color: 'rgba(245,240,232,0.5)',
+              color: 'rgba(245,240,232,0.76)',
               fontFamily: "'DM Sans', sans-serif",
             }}
           >
@@ -261,7 +261,7 @@ export default function UploadClient({ applicationId }: { applicationId: string 
           <p
             className="text-[10px]"
             style={{
-              color: 'rgba(245,240,232,0.25)',
+              color: 'rgba(245,240,232,0.65)',
               fontFamily: "'DM Sans', sans-serif",
             }}
           >
@@ -299,7 +299,7 @@ export default function UploadClient({ applicationId }: { applicationId: string 
               <span
                 className="text-[10px] uppercase tracking-[0.08em]"
                 style={{
-                  color: 'rgba(245,240,232,0.3)',
+                  color: 'rgba(245,240,232,0.68)',
                   fontFamily: "'DM Sans', sans-serif",
                 }}
               >
@@ -344,7 +344,7 @@ export default function UploadClient({ applicationId }: { applicationId: string 
                       <p
                         className="mt-0.5 text-[10px]"
                         style={{
-                          color: 'rgba(245,240,232,0.3)',
+                          color: 'rgba(245,240,232,0.68)',
                           fontFamily: "'DM Sans', sans-serif",
                         }}
                       >
@@ -363,7 +363,7 @@ export default function UploadClient({ applicationId }: { applicationId: string 
                       }}
                       className="flex-shrink-0 p-1 text-[10px] uppercase tracking-[0.05em] transition-colors hover:text-[rgba(200,120,120,0.9)]"
                       style={{
-                        color: 'rgba(245,240,232,0.25)',
+                        color: 'rgba(245,240,232,0.65)',
                         fontFamily: "'DM Sans', sans-serif",
                       }}
                     >
@@ -386,7 +386,7 @@ export default function UploadClient({ applicationId }: { applicationId: string 
                       <label
                         className="mb-1 block text-[10px] uppercase tracking-[0.05em]"
                         style={{
-                          color: 'rgba(245,240,232,0.3)',
+                          color: 'rgba(245,240,232,0.68)',
                           fontFamily: "'DM Sans', sans-serif",
                         }}
                       >
@@ -437,8 +437,8 @@ export default function UploadClient({ applicationId }: { applicationId: string 
             disabled={!canProcess}
             className="w-full border py-3 text-[11px] uppercase tracking-[0.1em] transition-colors"
             style={{
-              borderColor: canProcess ? '#C9A84C' : 'rgba(245,240,232,0.08)',
-              color: canProcess ? '#C9A84C' : 'rgba(245,240,232,0.2)',
+              borderColor: canProcess ? '#C9A84C' : 'rgba(245,240,232,0.62)',
+              color: canProcess ? '#C9A84C' : 'rgba(245,240,232,0.62)',
               backgroundColor: canProcess ? 'rgba(201,168,76,0.04)' : 'transparent',
               fontFamily: "'DM Sans', sans-serif",
               fontWeight: 500,
@@ -454,7 +454,7 @@ export default function UploadClient({ applicationId }: { applicationId: string 
           <p
             className="mt-3 text-center text-[10px]"
             style={{
-              color: 'rgba(245,240,232,0.2)',
+              color: 'rgba(245,240,232,0.62)',
               fontFamily: "'DM Sans', sans-serif",
             }}
           >

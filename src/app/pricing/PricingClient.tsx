@@ -229,7 +229,7 @@ export default function PricingPage() {
               One-time fee, lifetime access to your complete consulate-formatted document package.
             </p>
             {!hasQuizData && (
-              <p className="text-sm mt-4" style={{ color: "rgba(245,240,232,0.45)" }}>
+              <p className="text-sm mt-4" style={{ color: "rgba(245,240,232,0.74)" }}>
                 Take our <Link href="/quiz" className="underline" style={{ color: "#C9A84C" }}>eligibility quiz</Link> to see which plan applies to your situation.
               </p>
             )}
@@ -330,7 +330,7 @@ export default function PricingPage() {
                   If you are not satisfied within 14 days of purchase, we will refund your payment
                   in full minus payment processing fees.
                 </p>
-                <div className="text-sm" style={{ color: "rgba(245,240,232,0.45)" }}>
+                <div className="text-sm" style={{ color: "rgba(245,240,232,0.74)" }}>
                   <p className="mb-2"><strong>To qualify:</strong> Request within 14 days of purchase, Module 1 started but no documents generated.</p>
                   <p>Email <a href="mailto:support@e2go.app" style={{ color: "#C9A84C", textDecoration: "underline" }}>support@e2go.app</a> — we respond within 2 business days. No forms. No arguments.</p>
                 </div>
@@ -341,19 +341,19 @@ export default function PricingPage() {
           {/* Trust Badges */}
           <div className="pt-8 max-w-2xl mx-auto" style={{ borderTop: "1px solid rgba(201,168,76,0.2)" }}>
             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-              <div className="flex items-center gap-2 text-sm" style={{ color: "rgba(245,240,232,0.45)" }}>
+              <div className="flex items-center gap-2 text-sm" style={{ color: "rgba(245,240,232,0.74)" }}>
                 <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24" style={{ color: "#C9A84C" }}>
                   <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z" />
                 </svg>
                 Secure payment via Stripe
               </div>
-              <div className="flex items-center gap-2 text-sm" style={{ color: "rgba(245,240,232,0.45)" }}>
+              <div className="flex items-center gap-2 text-sm" style={{ color: "rgba(245,240,232,0.74)" }}>
                 <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24" style={{ color: "#C9A84C" }}>
                   <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z" />
                 </svg>
                 256-bit encryption
               </div>
-              <div className="flex items-center gap-2 text-sm" style={{ color: "rgba(245,240,232,0.45)" }}>
+              <div className="flex items-center gap-2 text-sm" style={{ color: "rgba(245,240,232,0.74)" }}>
                 <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24" style={{ color: "#C9A84C" }}>
                   <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
                 </svg>
@@ -369,19 +369,19 @@ export default function PricingPage() {
         <div className="max-w-4xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
           <div>
             <p className="text-2xl md:text-3xl font-bold mb-1" style={{ color: "#C9A84C", fontFamily: "'Cormorant Garamond', serif", fontWeight: 300 }}>54,364</p>
-            <p className="text-sm" style={{ color: "rgba(245,240,232,0.45)" }}>E-2 visas issued FY2024</p>
+            <p className="text-sm" style={{ color: "rgba(245,240,232,0.74)" }}>E-2 visas issued FY2024</p>
           </div>
           <div>
             <p className="text-2xl md:text-3xl font-bold mb-1" style={{ color: "#C9A84C", fontFamily: "'Cormorant Garamond', serif", fontWeight: 300 }}>90%</p>
-            <p className="text-sm" style={{ color: "rgba(245,240,232,0.45)" }}>Global approval rate FY2024</p>
+            <p className="text-sm" style={{ color: "rgba(245,240,232,0.74)" }}>Global approval rate FY2024</p>
           </div>
           <div>
             <p className="text-2xl md:text-3xl font-bold mb-1" style={{ color: "#C9A84C", fontFamily: "'Cormorant Garamond', serif", fontWeight: 300 }}>3–6 weeks</p>
-            <p className="text-sm" style={{ color: "rgba(245,240,232,0.45)" }}>Typical Toronto processing</p>
+            <p className="text-sm" style={{ color: "rgba(245,240,232,0.74)" }}>Typical Toronto processing</p>
           </div>
           <div>
             <p className="text-2xl md:text-3xl font-bold mb-1" style={{ color: "#C9A84C", fontFamily: "'Cormorant Garamond', serif", fontWeight: 300 }}>$0</p>
-            <p className="text-sm" style={{ color: "rgba(245,240,232,0.45)" }}>Hidden fees</p>
+            <p className="text-sm" style={{ color: "rgba(245,240,232,0.74)" }}>Hidden fees</p>
           </div>
         </div>
       </section>
@@ -389,7 +389,7 @@ export default function PricingPage() {
       {/* Footer */}
       <footer className="py-8 px-4" style={{ background: "#0a0a0a", borderTop: "1px solid rgba(201,168,76,0.2)" }}>
         <div className="max-w-5xl mx-auto text-center">
-          <p className="text-sm" style={{ color: "rgba(245,240,232,0.45)" }}>
+          <p className="text-sm" style={{ color: "rgba(245,240,232,0.74)" }}>
             This tool is a self-service preparation guide and does not constitute legal advice.
             e2go.app is not a law firm and does not provide legal representation or immigration
             services. For legal advice, consult a qualified U.S. immigration consultant.

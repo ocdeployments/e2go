@@ -108,7 +108,7 @@ export default function Learn() {
                 <span className="text-sm" style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 400, color: "#C9A84C" }}>
                   Read article →
                 </span>
-                <span className="text-xs" style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 300, color: "rgba(245,240,232,0.40)" }}>
+                <span className="text-xs" style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 300, color: "rgba(245,240,232,0.72)" }}>
                   {article.readTime}
                 </span>
               </div>

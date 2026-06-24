@@ -59,7 +59,7 @@ export function PartialProfileTeaser() {
         >
           Your E-2 Intelligence Profile
         </h2>
-        <p className="text-sm" style={{ color: 'rgba(245,240,232,0.45)', lineHeight: 1.6 }}>
+        <p className="text-sm" style={{ color: 'rgba(245,240,232,0.74)', lineHeight: 1.6 }}>
           A complete case file unlocks your personalised risk scores, archetype classification,
           and 15-factor denial analysis. Preview below.
         </p>
@@ -79,7 +79,7 @@ export function PartialProfileTeaser() {
           >
             {/* Blurred preview */}
             <div style={{ filter: 'blur(4px)', userSelect: 'none', pointerEvents: 'none' }}>
-              <p className="text-xs uppercase tracking-widest mb-2" style={{ color: 'rgba(201,168,76,0.5)', letterSpacing: '0.1em' }}>
+              <p className="text-xs uppercase tracking-widest mb-2" style={{ color: 'rgba(201,168,76,0.82)', letterSpacing: '0.1em' }}>
                 {section.label}
               </p>
               <p
@@ -104,7 +104,7 @@ export function PartialProfileTeaser() {
                   />
                 </div>
               )}
-              <p className="text-xs mt-2" style={{ color: 'rgba(245,240,232,0.4)', lineHeight: 1.5 }}>
+              <p className="text-xs mt-2" style={{ color: 'rgba(245,240,232,0.72)', lineHeight: 1.5 }}>
                 {section.description}
               </p>
             </div>
@@ -166,7 +166,7 @@ export function PartialProfileTeaser() {
           >
             Unlock your full E-2 profile
           </p>
-          <p className="text-sm" style={{ color: 'rgba(245,240,232,0.5)', lineHeight: 1.6 }}>
+          <p className="text-sm" style={{ color: 'rgba(245,240,232,0.76)', lineHeight: 1.6 }}>
             Complete your case file to activate archetype scoring, dimension risk scores,
             and a personalised 15-factor denial analysis.
           </p>

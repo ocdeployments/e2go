@@ -84,7 +84,7 @@ export default function CaseFileSummary({ applicationId, continueLabel, onContin
   if (loading) {
     return (
       <div style={styles.center}>
-        <p style={{ color: 'rgba(245,240,232,0.4)', fontFamily: "'DM Sans', sans-serif", fontSize: '13px' }}>
+        <p style={{ color: 'rgba(245,240,232,0.72)', fontFamily: "'DM Sans', sans-serif", fontSize: '13px' }}>
           Loading your case file…
         </p>
       </div>
@@ -95,7 +95,7 @@ export default function CaseFileSummary({ applicationId, continueLabel, onContin
     return (
       <div style={styles.center}>
         <div style={{ textAlign: 'center' as const }}>
-          <p style={{ color: 'rgba(245,240,232,0.5)', fontFamily: "'DM Sans', sans-serif", fontSize: '14px', marginBottom: '20px' }}>
+          <p style={{ color: 'rgba(245,240,232,0.76)', fontFamily: "'DM Sans', sans-serif", fontSize: '14px', marginBottom: '20px' }}>
             {error || 'No case file available.'}
           </p>
           <button onClick={onContinue} style={styles.linkButton}>Continue →</button>
@@ -235,7 +235,7 @@ export default function CaseFileSummary({ applicationId, continueLabel, onContin
           ))
         ) : (
           <div style={styles.block}>
-            <p style={{ color: 'rgba(245,240,232,0.4)', fontSize: '13px', fontFamily: "'DM Sans', sans-serif" }}>
+            <p style={{ color: 'rgba(245,240,232,0.72)', fontSize: '13px', fontFamily: "'DM Sans', sans-serif" }}>
               We could not find structured details in your documents yet. You can still
               start a practice session — the simulator will ask general E-2 questions.
             </p>
@@ -313,7 +313,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '10px',
     fontWeight: 500,
     letterSpacing: '0.12em',
-    color: 'rgba(245,240,232,0.35)',
+    color: 'rgba(245,240,232,0.70)',
     fontFamily: "'DM Sans', sans-serif",
   },
   title: {
@@ -349,7 +349,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 500,
     textTransform: 'uppercase' as const,
     letterSpacing: '0.1em',
-    color: 'rgba(245,240,232,0.35)',
+    color: 'rgba(245,240,232,0.70)',
   },
   classificationValue: {
     fontSize: '14px',
@@ -382,7 +382,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   statLabel: {
     fontSize: '11px',
-    color: 'rgba(245,240,232,0.4)',
+    color: 'rgba(245,240,232,0.72)',
     textTransform: 'uppercase' as const,
     letterSpacing: '0.06em',
   },
@@ -394,7 +394,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 500,
     textTransform: 'uppercase' as const,
     letterSpacing: '0.14em',
-    color: 'rgba(245,240,232,0.4)',
+    color: 'rgba(245,240,232,0.72)',
     marginBottom: '14px',
     paddingBottom: '10px',
     borderBottom: '1px solid rgba(201,168,76,0.12)',
@@ -426,7 +426,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   fieldLabel: {
     fontSize: '12px',
-    color: 'rgba(245,240,232,0.4)',
+    color: 'rgba(245,240,232,0.72)',
     fontWeight: 400,
   },
   fieldValue: {
@@ -462,7 +462,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   docMeta: {
     fontSize: '11px',
-    color: 'rgba(245,240,232,0.35)',
+    color: 'rgba(245,240,232,0.70)',
   },
   docBadge: {
     fontSize: '10px',
@@ -477,7 +477,7 @@ const styles: Record<string, React.CSSProperties> = {
   docSummary: {
     marginTop: '10px',
     fontSize: '12px',
-    color: 'rgba(245,240,232,0.4)',
+    color: 'rgba(245,240,232,0.72)',
     lineHeight: 1.6,
     fontStyle: 'italic' as const,
   },

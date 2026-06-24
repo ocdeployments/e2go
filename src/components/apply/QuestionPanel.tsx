@@ -44,7 +44,7 @@ export default function QuestionPanel({
             className="border px-2 py-0.5 text-[9px] uppercase tracking-[0.08em]"
             style={{
               borderColor: 'rgba(245,240,232,0.08)',
-              color: 'rgba(245,240,232,0.28)',
+              color: 'rgba(245,240,232,0.65)',
               fontFamily: "'DM Sans', sans-serif",
             }}
           >
@@ -73,7 +73,7 @@ export default function QuestionPanel({
                 ? '#C9A84C'
                 : saveStatus === 'saved'
                   ? '#10B981'
-                  : 'rgba(245,240,232,0.15)',
+                  : 'rgba(245,240,232,0.65)',
               fontFamily: "'DM Sans', sans-serif",
             }}
           >
@@ -103,7 +103,7 @@ export default function QuestionPanel({
           className="border px-5 py-2 text-[11px] uppercase tracking-[0.1em] transition-colors hover:bg-[rgba(245,240,232,0.03)]"
           style={{
             borderColor: 'rgba(245,240,232,0.08)',
-            color: 'rgba(245,240,232,0.28)',
+            color: 'rgba(245,240,232,0.65)',
             fontFamily: "'DM Sans', sans-serif",
           }}
         >
@@ -112,7 +112,7 @@ export default function QuestionPanel({
 
         <span
           className="text-[11px]"
-          style={{ color: 'rgba(245,240,232,0.28)', fontFamily: "'DM Sans', sans-serif" }}
+          style={{ color: 'rgba(245,240,232,0.65)', fontFamily: "'DM Sans', sans-serif" }}
         >
           {answeredCount} of {totalCount} answered
         </span>

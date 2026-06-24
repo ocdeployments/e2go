@@ -133,7 +133,7 @@ export default async function DashboardPage() {
                   {simulatorData ? `${Math.max(simulatorData.sessionsPurchased - simulatorData.sessionsUsed, 0)} session${Math.max(simulatorData.sessionsPurchased - simulatorData.sessionsUsed, 0) === 1 ? '' : 's'} remaining` : 'Ready to practice'}
                 </p>
                 {simulatorData && (
-                  <p className="text-sm mt-1" style={{ color: "rgba(245,240,232,0.45)" }}>
+                  <p className="text-sm mt-1" style={{ color: "rgba(245,240,232,0.74)" }}>
                     {simulatorData.sessionsUsed} of {simulatorData.sessionsPurchased} used
                   </p>
                 )}
@@ -165,7 +165,7 @@ export default async function DashboardPage() {
                   style={{ border: "1px solid rgba(201,168,76,0.2)", borderRadius: 0, color: "#f5f0e8" }}
                 >
                   <p className="font-medium" style={{ color: "#f5f0e8" }}>Practice interview</p>
-                  <p className="text-sm" style={{ color: "rgba(245,240,232,0.45)" }}>Run a simulated consular interview</p>
+                  <p className="text-sm" style={{ color: "rgba(245,240,232,0.74)" }}>Run a simulated consular interview</p>
                 </Link>
                 <Link
                   href="/support"
@@ -173,7 +173,7 @@ export default async function DashboardPage() {
                   style={{ border: "1px solid rgba(201,168,76,0.2)", borderRadius: 0, color: "#f5f0e8" }}
                 >
                   <p className="font-medium" style={{ color: "#f5f0e8" }}>Get Help</p>
-                  <p className="text-sm" style={{ color: "rgba(245,240,232,0.45)" }}>Contact support</p>
+                  <p className="text-sm" style={{ color: "rgba(245,240,232,0.74)" }}>Contact support</p>
                 </Link>
               </div>
             </section>
@@ -210,7 +210,7 @@ export default async function DashboardPage() {
                    quiz.outcome.startsWith('PR-') ? 'Not eligible' :
                    quiz.outcome.toLowerCase().replace(/_/g, " ")}
                 </p>
-                <p className="text-sm mt-1" style={{ color: "rgba(245,240,232,0.45)" }}>
+                <p className="text-sm mt-1" style={{ color: "rgba(245,240,232,0.74)" }}>
                   {quiz.application_type ? (quiz.application_type.charAt(0).toUpperCase() + quiz.application_type.slice(1)) : "Solo"} Application
                 </p>
               </div>
@@ -233,7 +233,7 @@ export default async function DashboardPage() {
                     <p className="text-xl font-bold" style={{ color: "#f5f0e8", fontFamily: "'Cormorant Garamond', serif", fontWeight: 300 }}>
                       {new Date(timeline.workingTargetDate).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
                     </p>
-                    <p className="text-xs mt-1" style={{ color: "rgba(245,240,232,0.45)" }}>
+                    <p className="text-xs mt-1" style={{ color: "rgba(245,240,232,0.74)" }}>
                       Target move date (planning)
                     </p>
                     <p className="text-xs mt-1" style={{ color: "rgba(245,240,232,0.6)" }}>
@@ -287,7 +287,7 @@ export default async function DashboardPage() {
                       E-2 eligible businesses based on your investment range, professional background, and target
                       location — then prepares a structured introduction to a specialist broker.
                     </p>
-                    <p style={{ fontSize: "11px", color: "rgba(245,240,232,0.3)", fontFamily: "'DM Sans', sans-serif", marginBottom: "18px" }}>
+                    <p style={{ fontSize: "11px", color: "rgba(245,240,232,0.68)", fontFamily: "'DM Sans', sans-serif", marginBottom: "18px" }}>
                       Free — brokers are paid by franchisors, never by you.
                     </p>
                     <Link
@@ -325,7 +325,7 @@ export default async function DashboardPage() {
                     </span>
                     <div>
                       <p className="text-sm font-medium" style={{ color: step.done ? '#C9A84C' : '#f5f0e8' }}>{step.label}</p>
-                      <p className="text-xs" style={{ color: 'rgba(245,240,232,0.45)' }}>{step.desc}</p>
+                      <p className="text-xs" style={{ color: 'rgba(245,240,232,0.74)' }}>{step.desc}</p>
                     </div>
                   </Link>
                 ))}
@@ -346,25 +346,25 @@ export default async function DashboardPage() {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {caseProfile.archetype && (
                     <div>
-                      <p className="text-xs mb-1" style={{ color: 'rgba(245,240,232,0.45)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Investor type</p>
+                      <p className="text-xs mb-1" style={{ color: 'rgba(245,240,232,0.74)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Investor type</p>
                       <p className="text-sm font-medium capitalize" style={{ color: '#f5f0e8' }}>{caseProfile.archetype.replace(/_/g, ' ')}</p>
                     </div>
                   )}
                   {caseProfile.industry_interest && (
                     <div>
-                      <p className="text-xs mb-1" style={{ color: 'rgba(245,240,232,0.45)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Industry</p>
+                      <p className="text-xs mb-1" style={{ color: 'rgba(245,240,232,0.74)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Industry</p>
                       <p className="text-sm font-medium capitalize" style={{ color: '#f5f0e8' }}>{caseProfile.industry_interest.replace(/_/g, ' ')}</p>
                     </div>
                   )}
                   {caseProfile.net_worth_range && (
                     <div>
-                      <p className="text-xs mb-1" style={{ color: 'rgba(245,240,232,0.45)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Net worth range</p>
+                      <p className="text-xs mb-1" style={{ color: 'rgba(245,240,232,0.74)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Net worth range</p>
                       <p className="text-sm font-medium" style={{ color: '#f5f0e8' }}>{caseProfile.net_worth_range}</p>
                     </div>
                   )}
                   {caseProfile.timeline_goal && (
                     <div>
-                      <p className="text-xs mb-1" style={{ color: 'rgba(245,240,232,0.45)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Target timeline</p>
+                      <p className="text-xs mb-1" style={{ color: 'rgba(245,240,232,0.74)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Target timeline</p>
                       <p className="text-sm font-medium capitalize" style={{ color: '#f5f0e8' }}>{caseProfile.timeline_goal.replace(/_/g, ' ')}</p>
                     </div>
                   )}
@@ -390,7 +390,7 @@ export default async function DashboardPage() {
                     style={{ border: "1px solid #C9A84C", borderRadius: 0, color: "#f5f0e8", background: "rgba(201,168,76,0.04)" }}
                   >
                     <p className="font-medium" style={{ color: "#C9A84C" }}>Franchise Navigator</p>
-                    <p className="text-sm" style={{ color: "rgba(245,240,232,0.45)" }}>Find your E-2 business match</p>
+                    <p className="text-sm" style={{ color: "rgba(245,240,232,0.74)" }}>Find your E-2 business match</p>
                   </Link>
                 )}
                 <Link
@@ -399,7 +399,7 @@ export default async function DashboardPage() {
                   style={{ border: "1px solid rgba(201,168,76,0.2)", borderRadius: 0, color: "#f5f0e8" }}
                 >
                   <p className="font-medium" style={{ color: "#f5f0e8" }}>Document Checklist</p>
-                  <p className="text-sm" style={{ color: "rgba(245,240,232,0.45)" }}>View required documents</p>
+                  <p className="text-sm" style={{ color: "rgba(245,240,232,0.74)" }}>View required documents</p>
                 </Link>
                 <Link
                   href="/gap-analysis"
@@ -407,7 +407,7 @@ export default async function DashboardPage() {
                   style={{ border: "1px solid rgba(201,168,76,0.2)", borderRadius: 0, color: "#f5f0e8" }}
                 >
                   <p className="font-medium" style={{ color: "#f5f0e8" }}>Gap Analysis</p>
-                  <p className="text-sm" style={{ color: "rgba(245,240,232,0.45)" }}>See what&apos;s missing in your case</p>
+                  <p className="text-sm" style={{ color: "rgba(245,240,232,0.74)" }}>See what&apos;s missing in your case</p>
                 </Link>
                 <Link
                   href="/fdd"
@@ -415,7 +415,7 @@ export default async function DashboardPage() {
                   style={{ border: "1px solid rgba(201,168,76,0.2)", borderRadius: 0, color: "#f5f0e8" }}
                 >
                   <p className="font-medium" style={{ color: "#f5f0e8" }}>FDD Analysis</p>
-                  <p className="text-sm" style={{ color: "rgba(245,240,232,0.45)" }}>Analyse your franchise disclosure</p>
+                  <p className="text-sm" style={{ color: "rgba(245,240,232,0.74)" }}>Analyse your franchise disclosure</p>
                 </Link>
                 <Link
                   href="/support"
@@ -423,7 +423,7 @@ export default async function DashboardPage() {
                   style={{ border: "1px solid rgba(201,168,76,0.2)", borderRadius: 0, color: "#f5f0e8" }}
                 >
                   <p className="font-medium" style={{ color: "#f5f0e8" }}>Get Help</p>
-                  <p className="text-sm" style={{ color: "rgba(245,240,232,0.45)" }}>Contact support</p>
+                  <p className="text-sm" style={{ color: "rgba(245,240,232,0.74)" }}>Contact support</p>
                 </Link>
               </div>
             </section>

@@ -172,7 +172,7 @@ export default function FAQSection() {
                         fontFamily: 'DM Sans, sans-serif',
                         fontWeight: 500,
                         fontSize: '10px',
-                        color: 'rgba(245,240,232,0.40)',
+                        color: 'rgba(245,240,232,0.72)',
                         textTransform: 'uppercase',
                         letterSpacing: '0.15em',
                         border: '1px solid rgba(201,168,76,0.12)',

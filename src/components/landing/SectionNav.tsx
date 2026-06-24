@@ -88,7 +88,7 @@ export default function SectionNav() {
                 className={`relative flex items-center text-[13px] tracking-wide transition-colors ${
                   active
                     ? "text-[#C9A84C]"
-                    : "text-[rgba(245,240,232,0.5)] hover:text-[#f5f0e8]"
+                    : "text-[rgba(245,240,232,0.76)] hover:text-[#f5f0e8]"
                 }`}
               >
                 {section.label}
@@ -119,7 +119,7 @@ export default function SectionNav() {
                 className={`min-h-[44px] flex items-center whitespace-nowrap px-3.5 text-xs tracking-wide border transition-colors ${
                   active
                     ? "border-[#C9A84C] text-[#C9A84C]"
-                    : "border-[rgba(201,168,76,0.2)] text-[rgba(245,240,232,0.5)]"
+                    : "border-[rgba(201,168,76,0.2)] text-[rgba(245,240,232,0.76)]"
                 }`}
               >
                 {section.label}

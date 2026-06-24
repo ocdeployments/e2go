@@ -107,7 +107,7 @@ export default function SectionForm({
             </p>
           )}
         </div>
-        <span className="text-sm" style={{ color: 'rgba(245,240,232,0.5)' }}>
+        <span className="text-sm" style={{ color: 'rgba(245,240,232,0.76)' }}>
           {answeredCount} of {fields.length} answered
         </span>
       </div>

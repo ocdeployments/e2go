@@ -22,7 +22,7 @@ export default function PrivacyPolicyPage() {
         <h1 className="text-4xl font-light mb-4" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#f5f0e8", fontWeight: 300 }}>
           Privacy Policy
         </h1>
-        <p className="mb-8" style={{ fontSize: "14px", color: "rgba(245,240,232,0.5)", fontFamily: "'DM Sans', sans-serif" }}>
+        <p className="mb-8" style={{ fontSize: "14px", color: "rgba(245,240,232,0.76)", fontFamily: "'DM Sans', sans-serif" }}>
           Last updated: June 2026
         </p>
 

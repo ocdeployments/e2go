@@ -273,14 +273,14 @@ export default function StoryPage() {
       {DOCUMENTS.map((doc) => (
         <div key={doc.name} className="border p-4" style={{ borderColor: 'rgba(201,168,76,0.12)', backgroundColor: 'rgba(201,168,76,0.01)' }}>
           <div className="flex items-center justify-between mb-3">
-            <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '10px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'rgba(245,240,232,0.35)' }}>
+            <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '10px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'rgba(245,240,232,0.70)' }}>
               {doc.name}
             </span>
-            <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '10px', color: 'rgba(245,240,232,0.18)', border: '1px solid rgba(245,240,232,0.08)', padding: '2px 7px' }}>
+            <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '10px', color: 'rgba(245,240,232,0.62)', border: '1px solid rgba(245,240,232,0.08)', padding: '2px 7px' }}>
               Waiting
             </span>
           </div>
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '12px', fontWeight: 300, color: 'rgba(245,240,232,0.18)', fontStyle: 'italic', lineHeight: 1.5 }}>
+          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '12px', fontWeight: 300, color: 'rgba(245,240,232,0.62)', fontStyle: 'italic', lineHeight: 1.5 }}>
             [Answer the questions on the left to fill this in]
           </p>
         </div>
@@ -291,7 +291,7 @@ export default function StoryPage() {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#0a0a0a]">
-        <p className="text-sm" style={{ color: 'rgba(245,240,232,0.3)', fontFamily: "'DM Sans', sans-serif" }}>
+        <p className="text-sm" style={{ color: 'rgba(245,240,232,0.68)', fontFamily: "'DM Sans', sans-serif" }}>
           Loading...
         </p>
       </div>
@@ -338,7 +338,7 @@ export default function StoryPage() {
                   rows={4}
                 />
                 {qResult?.feedback && qResult.quality !== 'strong' && (
-                  <div style={{ fontSize: '12px', color: 'rgba(245,240,232,0.45)', lineHeight: 1.5, marginTop: '6px', paddingLeft: '2px' }}>
+                  <div style={{ fontSize: '12px', color: 'rgba(245,240,232,0.74)', lineHeight: 1.5, marginTop: '6px', paddingLeft: '2px' }}>
                     {qResult.feedback}
                   </div>
                 )}
@@ -347,7 +347,7 @@ export default function StoryPage() {
                   <div style={{ marginTop: '8px' }}>
                     <button
                       onClick={() => toggleGuidance(q.key)}
-                      style={{ fontSize: '11px', color: 'rgba(201,168,76,0.55)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, letterSpacing: '0.03em', display: 'flex', alignItems: 'center', gap: '4px' }}
+                      style={{ fontSize: '11px', color: 'rgba(201,168,76,0.85)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, letterSpacing: '0.03em', display: 'flex', alignItems: 'center', gap: '4px' }}
                     >
                       <span style={{ transition: 'transform 0.15s', display: 'inline-block', transform: expandedGuidance.has(q.key) ? 'rotate(90deg)' : 'rotate(0deg)' }}>▶</span>
                       What makes a strong answer?
@@ -355,7 +355,7 @@ export default function StoryPage() {
                     {expandedGuidance.has(q.key) && (
                       <ul style={{ marginTop: '8px', paddingLeft: '0', listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                         {FIELD_GUIDANCE[q.key].map((tip, i) => (
-                          <li key={i} style={{ fontSize: '12px', color: 'rgba(245,240,232,0.5)', lineHeight: 1.6, paddingLeft: '12px', borderLeft: '1px solid rgba(201,168,76,0.2)' }}>
+                          <li key={i} style={{ fontSize: '12px', color: 'rgba(245,240,232,0.76)', lineHeight: 1.6, paddingLeft: '12px', borderLeft: '1px solid rgba(201,168,76,0.2)' }}>
                             {tip}
                           </li>
                         ))}
@@ -402,7 +402,7 @@ export default function StoryPage() {
                   <div style={{ marginTop: '8px' }}>
                     <button
                       onClick={() => toggleGuidance(q.key)}
-                      style={{ fontSize: '11px', color: 'rgba(201,168,76,0.55)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, letterSpacing: '0.03em', display: 'flex', alignItems: 'center', gap: '4px' }}
+                      style={{ fontSize: '11px', color: 'rgba(201,168,76,0.85)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, letterSpacing: '0.03em', display: 'flex', alignItems: 'center', gap: '4px' }}
                     >
                       <span style={{ transition: 'transform 0.15s', display: 'inline-block', transform: expandedGuidance.has(q.key) ? 'rotate(90deg)' : 'rotate(0deg)' }}>▶</span>
                       What makes a strong answer?
@@ -410,7 +410,7 @@ export default function StoryPage() {
                     {expandedGuidance.has(q.key) && (
                       <ul style={{ marginTop: '8px', paddingLeft: '0', listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                         {FIELD_GUIDANCE[q.key].map((tip, i) => (
-                          <li key={i} style={{ fontSize: '12px', color: 'rgba(245,240,232,0.5)', lineHeight: 1.6, paddingLeft: '12px', borderLeft: '1px solid rgba(201,168,76,0.2)' }}>
+                          <li key={i} style={{ fontSize: '12px', color: 'rgba(245,240,232,0.76)', lineHeight: 1.6, paddingLeft: '12px', borderLeft: '1px solid rgba(201,168,76,0.2)' }}>
                             {tip}
                           </li>
                         ))}

@@ -238,7 +238,7 @@ export default function PreGenerationConfirmation({
             {INTRO_COPY.subtext}
           </p>
           {businessName && (
-            <p className="text-xs mt-3" style={{ color: 'rgba(245,240,232,0.45)' }}>
+            <p className="text-xs mt-3" style={{ color: 'rgba(245,240,232,0.74)' }}>
               {businessName}
             </p>
           )}
@@ -276,7 +276,7 @@ export default function PreGenerationConfirmation({
                   {item.label}
                 </span>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs" style={{ color: 'rgba(245,240,232,0.35)' }}>$</span>
+                  <span className="text-xs" style={{ color: 'rgba(245,240,232,0.70)' }}>$</span>
                   <input
                     type="text"
                     value={editableAmounts[item.key]?.toLocaleString() ?? ''}
@@ -355,7 +355,7 @@ export default function PreGenerationConfirmation({
                   </span>
                   <span
                     className="text-xs"
-                    style={{ color: 'rgba(245,240,232,0.45)', fontFamily: "'DM Sans', sans-serif" }}
+                    style={{ color: 'rgba(245,240,232,0.74)', fontFamily: "'DM Sans', sans-serif" }}
                   >
                     Documented
                   </span>
@@ -444,7 +444,7 @@ export default function PreGenerationConfirmation({
             className="px-6 py-3.5 text-sm font-medium tracking-wide transition-colors"
             style={{
               background: 'transparent',
-              color: 'rgba(245,240,232,0.5)',
+              color: 'rgba(245,240,232,0.76)',
               border: '1px solid rgba(245,240,232,0.15)',
             }}
           >

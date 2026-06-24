@@ -43,7 +43,7 @@ export default function ProjectionTable({ value, onChange }: ProjectionTableProp
               className="border px-3 py-2 text-left text-[9px] uppercase tracking-[0.1em]"
               style={{
                 borderColor: 'rgba(201,168,76,0.12)',
-                color: 'rgba(245,240,232,0.28)',
+                color: 'rgba(245,240,232,0.65)',
                 fontFamily: "'DM Sans', sans-serif",
               }}
             >
@@ -55,7 +55,7 @@ export default function ProjectionTable({ value, onChange }: ProjectionTableProp
                 className="border px-3 py-2 text-left text-[9px] uppercase tracking-[0.1em]"
                 style={{
                   borderColor: 'rgba(201,168,76,0.12)',
-                  color: 'rgba(245,240,232,0.28)',
+                  color: 'rgba(245,240,232,0.65)',
                   fontFamily: "'DM Sans', sans-serif",
                 }}
               >
@@ -71,7 +71,7 @@ export default function ProjectionTable({ value, onChange }: ProjectionTableProp
                 className="border px-3 py-2 text-[13px]"
                 style={{
                   borderColor: 'rgba(201,168,76,0.12)',
-                  color: 'rgba(245,240,232,0.55)',
+                  color: 'rgba(245,240,232,0.78)',
                   fontFamily: "'DM Sans', sans-serif",
                 }}
               >
@@ -118,7 +118,7 @@ export default function ProjectionTable({ value, onChange }: ProjectionTableProp
           >
             <p
               className="mb-3 text-[11px] uppercase tracking-[0.1em]"
-              style={{ color: 'rgba(245,240,232,0.28)', fontFamily: "'DM Sans', sans-serif" }}
+              style={{ color: 'rgba(245,240,232,0.65)', fontFamily: "'DM Sans', sans-serif" }}
             >
               Year {row.year}
             </p>
@@ -131,7 +131,7 @@ export default function ProjectionTable({ value, onChange }: ProjectionTableProp
                   <div key={field}>
                     <label
                       className="mb-1 block text-[9px] uppercase tracking-[0.1em]"
-                      style={{ color: 'rgba(245,240,232,0.28)', fontFamily: "'DM Sans', sans-serif" }}
+                      style={{ color: 'rgba(245,240,232,0.65)', fontFamily: "'DM Sans', sans-serif" }}
                     >
                       {labels[field]}
                     </label>

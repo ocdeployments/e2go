@@ -305,7 +305,7 @@ export default function DocumentAuditPanel({ doc, onRequestRevision }: DocumentA
           {summaryLabel}
         </span>
         {!clean && (
-          <span style={{ fontSize: '10px', color: 'rgba(245,240,232,0.3)', fontFamily: "'DM Sans', sans-serif" }}>
+          <span style={{ fontSize: '10px', color: 'rgba(245,240,232,0.68)', fontFamily: "'DM Sans', sans-serif" }}>
             {open ? 'Hide ↑' : 'Show ↓'}
           </span>
         )}
@@ -342,7 +342,7 @@ export default function DocumentAuditPanel({ doc, onRequestRevision }: DocumentA
                   </div>
 
                   {/* Detail */}
-                  <div style={{ fontSize: '11px', color: 'rgba(245,240,232,0.45)', lineHeight: 1.6, marginBottom: '10px', paddingLeft: '20px' }}>
+                  <div style={{ fontSize: '11px', color: 'rgba(245,240,232,0.74)', lineHeight: 1.6, marginBottom: '10px', paddingLeft: '20px' }}>
                     {finding.detail}
                   </div>
 

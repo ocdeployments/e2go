@@ -47,7 +47,7 @@ export default function AdvisoryBlock({ children }: AdvisoryBlockProps) {
           fontFamily: "'DM Sans', sans-serif",
           fontSize: '12px',
           fontWeight: 300,
-          color: 'rgba(245,240,232,0.55)',
+          color: 'rgba(245,240,232,0.78)',
           lineHeight: '1.6',
         }}
       >

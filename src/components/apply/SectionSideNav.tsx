@@ -41,7 +41,7 @@ export default function SectionSideNav({
       </h2>
       <p
         className="mb-6 text-[9px] uppercase tracking-[0.1em]"
-        style={{ color: 'rgba(245,240,232,0.28)', fontFamily: "'DM Sans', sans-serif" }}
+        style={{ color: 'rgba(245,240,232,0.65)', fontFamily: "'DM Sans', sans-serif" }}
       >
         {answeredCount} of {totalCount} answered
       </p>
@@ -120,7 +120,7 @@ export default function SectionSideNav({
         >
           <p
             className="mb-3 text-[9px] uppercase tracking-[0.1em]"
-            style={{ color: 'rgba(245,240,232,0.28)', fontFamily: "'DM Sans', sans-serif" }}
+            style={{ color: 'rgba(245,240,232,0.65)', fontFamily: "'DM Sans', sans-serif" }}
           >
             Building
           </p>
@@ -129,7 +129,7 @@ export default function SectionSideNav({
               <li key={doc.name} className="flex items-center justify-between">
                 <span
                   className="text-[11px]"
-                  style={{ color: 'rgba(245,240,232,0.4)', fontFamily: "'DM Sans', sans-serif" }}
+                  style={{ color: 'rgba(245,240,232,0.72)', fontFamily: "'DM Sans', sans-serif" }}
                 >
                   {doc.name}
                 </span>

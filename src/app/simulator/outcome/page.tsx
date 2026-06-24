@@ -7,7 +7,7 @@ const OUTCOME_OPTIONS = [
   { value: 'denied', label: 'Denied', desc: 'Visa denied at interview', color: '#ef4444' },
   { value: 'pending', label: 'Administrative Processing', desc: 'Case placed in administrative processing (221g)', color: '#f59e0b' },
   { value: 'rescheduled', label: 'Rescheduled', desc: 'Interview postponed or rescheduled', color: 'rgba(201,168,76,0.7)' },
-  { value: 'cancelled', label: 'Cancelled', desc: 'Interview cancelled before it happened', color: 'rgba(245,240,232,0.4)' },
+  { value: 'cancelled', label: 'Cancelled', desc: 'Interview cancelled before it happened', color: 'rgba(245,240,232,0.72)' },
 ];
 
 const DENIAL_REASONS = [
@@ -67,7 +67,7 @@ export default function OutcomePage() {
           <div style={{ fontSize: '28px', color: selectedOutcome?.color || '#C9A84C', marginBottom: '16px', fontFamily: "'Cormorant Garamond', Georgia, serif", fontWeight: 300 }}>
             {outcome === 'approved' ? 'Congratulations.' : 'Thank you for sharing your outcome.'}
           </div>
-          <p style={{ fontSize: '14px', color: 'rgba(245,240,232,0.5)', lineHeight: 1.7, marginBottom: '32px' }}>
+          <p style={{ fontSize: '14px', color: 'rgba(245,240,232,0.76)', lineHeight: 1.7, marginBottom: '32px' }}>
             {outcome === 'approved'
               ? 'Your E-2 visa was approved. Your outcome has been recorded — this helps us improve preparation guidance for future applicants.'
               : outcome === 'denied'
@@ -92,18 +92,18 @@ export default function OutcomePage() {
   return (
     <div style={{ minHeight: '100vh', background: '#0a0a0a', padding: '60px 24px' }}>
       <div style={{ maxWidth: '560px', margin: '0 auto' }}>
-        <div style={{ fontSize: '10px', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(201,168,76,0.5)', marginBottom: '12px' }}>Interview outcome</div>
+        <div style={{ fontSize: '10px', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(201,168,76,0.82)', marginBottom: '12px' }}>Interview outcome</div>
         <h1 style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: '32px', fontWeight: 300, color: '#f5f0e8', marginBottom: '8px' }}>
           How did your interview go?
         </h1>
-        <p style={{ fontSize: '14px', color: 'rgba(245,240,232,0.4)', lineHeight: 1.6, marginBottom: '40px' }}>
+        <p style={{ fontSize: '14px', color: 'rgba(245,240,232,0.72)', lineHeight: 1.6, marginBottom: '40px' }}>
           Recording your outcome helps track preparation effectiveness. This takes about 2 minutes.
         </p>
 
         <form onSubmit={handleSubmit}>
           {/* Outcome selection */}
           <div style={{ marginBottom: '32px' }}>
-            <div style={{ fontSize: '11px', letterSpacing: '0.1em', color: 'rgba(245,240,232,0.4)', marginBottom: '12px', textTransform: 'uppercase' }}>What was the result?</div>
+            <div style={{ fontSize: '11px', letterSpacing: '0.1em', color: 'rgba(245,240,232,0.72)', marginBottom: '12px', textTransform: 'uppercase' }}>What was the result?</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {OUTCOME_OPTIONS.map(opt => (
                 <button
@@ -112,7 +112,7 @@ export default function OutcomePage() {
                   onClick={() => setOutcome(opt.value)}
                   style={{
                     padding: '14px 18px',
-                    border: `1px solid ${outcome === opt.value ? opt.color : 'rgba(245,240,232,0.08)'}`,
+                    border: `1px solid ${outcome === opt.value ? opt.color : 'rgba(245,240,232,0.62)'}`,
                     background: outcome === opt.value ? `${opt.color}0a` : 'transparent',
                     cursor: 'pointer',
                     textAlign: 'left',
@@ -121,10 +121,10 @@ export default function OutcomePage() {
                     gap: '14px',
                   }}
                 >
-                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: outcome === opt.value ? opt.color : 'rgba(245,240,232,0.15)', flexShrink: 0 }} />
+                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: outcome === opt.value ? opt.color : 'rgba(245,240,232,0.62)', flexShrink: 0 }} />
                   <div>
                     <div style={{ fontSize: '13px', fontWeight: 500, color: outcome === opt.value ? opt.color : 'rgba(245,240,232,0.7)' }}>{opt.label}</div>
-                    <div style={{ fontSize: '11px', color: 'rgba(245,240,232,0.35)' }}>{opt.desc}</div>
+                    <div style={{ fontSize: '11px', color: 'rgba(245,240,232,0.70)' }}>{opt.desc}</div>
                   </div>
                 </button>
               ))}
@@ -135,7 +135,7 @@ export default function OutcomePage() {
             <>
               {/* Interview date */}
               <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', fontSize: '11px', letterSpacing: '0.1em', color: 'rgba(245,240,232,0.4)', marginBottom: '8px', textTransform: 'uppercase' }}>Interview date (optional)</label>
+                <label style={{ display: 'block', fontSize: '11px', letterSpacing: '0.1em', color: 'rgba(245,240,232,0.72)', marginBottom: '8px', textTransform: 'uppercase' }}>Interview date (optional)</label>
                 <input
                   type="date"
                   value={interviewDate}
@@ -146,7 +146,7 @@ export default function OutcomePage() {
 
               {/* Consulate */}
               <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', fontSize: '11px', letterSpacing: '0.1em', color: 'rgba(245,240,232,0.4)', marginBottom: '8px', textTransform: 'uppercase' }}>Consulate location (optional)</label>
+                <label style={{ display: 'block', fontSize: '11px', letterSpacing: '0.1em', color: 'rgba(245,240,232,0.72)', marginBottom: '8px', textTransform: 'uppercase' }}>Consulate location (optional)</label>
                 <input
                   type="text"
                   placeholder="e.g. US Consulate Toronto, US Embassy Ottawa"
@@ -159,7 +159,7 @@ export default function OutcomePage() {
               {/* Denial reason — only when denied */}
               {outcome === 'denied' && (
                 <div style={{ marginBottom: '20px' }}>
-                  <label style={{ display: 'block', fontSize: '11px', letterSpacing: '0.1em', color: 'rgba(245,240,232,0.4)', marginBottom: '8px', textTransform: 'uppercase' }}>Primary reason for denial (if stated)</label>
+                  <label style={{ display: 'block', fontSize: '11px', letterSpacing: '0.1em', color: 'rgba(245,240,232,0.72)', marginBottom: '8px', textTransform: 'uppercase' }}>Primary reason for denial (if stated)</label>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                     {DENIAL_REASONS.map(reason => (
                       <button
@@ -173,7 +173,7 @@ export default function OutcomePage() {
                           cursor: 'pointer',
                           textAlign: 'left',
                           fontSize: '12px',
-                          color: denialReason === reason ? 'rgba(252,165,165,0.9)' : 'rgba(245,240,232,0.5)',
+                          color: denialReason === reason ? 'rgba(252,165,165,0.9)' : 'rgba(245,240,232,0.76)',
                         }}
                       >{reason}</button>
                     ))}
@@ -183,7 +183,7 @@ export default function OutcomePage() {
 
               {/* Notes */}
               <div style={{ marginBottom: '32px' }}>
-                <label style={{ display: 'block', fontSize: '11px', letterSpacing: '0.1em', color: 'rgba(245,240,232,0.4)', marginBottom: '8px', textTransform: 'uppercase' }}>Additional notes (optional)</label>
+                <label style={{ display: 'block', fontSize: '11px', letterSpacing: '0.1em', color: 'rgba(245,240,232,0.72)', marginBottom: '8px', textTransform: 'uppercase' }}>Additional notes (optional)</label>
                 <textarea
                   value={notes}
                   onChange={e => setNotes(e.target.value)}

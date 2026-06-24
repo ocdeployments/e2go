@@ -93,7 +93,7 @@ export async function POST(req: Request) {
         <h1>Your eligibility assessment is ready.</h1>
         <p>Based on your answers, you appear to meet the foundational requirements for an E-2 Treaty Investor visa. Your full result — including your readiness score — is waiting for you.</p>
         <a href="${verifyLink}" style="background-color: #C9A84C; color: #0a0a0a; padding: 14px 28px; text-decoration: none;">View My Full Result →</a>
-        <footer style="margin-top: 40px; font-size: 12px; color: rgba(245,240,232,0.5);">
+        <footer style="margin-top: 40px; font-size: 12px; color: rgba(245,240,232,0.76);">
           This link expires in 24 hours. e2go.app — document preparation tool, not a law firm.
         </footer>
       </div>

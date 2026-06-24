@@ -772,7 +772,7 @@ export default function GenerateProgressPage() {
                       </div>
                       <button
                         onClick={() => setVoiceWarningDismissed(true)}
-                        style={{ flexShrink: 0, color: 'rgba(245,240,232,0.25)', background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px', lineHeight: 1 }}
+                        style={{ flexShrink: 0, color: 'rgba(245,240,232,0.65)', background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px', lineHeight: 1 }}
                         aria-label="Dismiss"
                       >
                         ✕

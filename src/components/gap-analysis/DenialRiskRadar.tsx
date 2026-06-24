@@ -65,7 +65,7 @@ export default function DenialRiskRadar({
     <div style={{ marginBottom: '48px' }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: '16px', marginBottom: '8px' }}>
         <h2 style={sectionTitle}>Denial risk radar</h2>
-        <span style={{ fontSize: '12px', color: 'rgba(245,240,232,0.3)' }}>
+        <span style={{ fontSize: '12px', color: 'rgba(245,240,232,0.68)' }}>
           D-01 to D-15 · click any factor to fix it
         </span>
       </div>
@@ -79,7 +79,7 @@ export default function DenialRiskRadar({
         ].map(({ count, label, color }) => (
           <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <div style={{ width: '8px', height: '8px', background: color }} />
-            <span style={{ fontSize: '12px', color: 'rgba(245,240,232,0.5)' }}>
+            <span style={{ fontSize: '12px', color: 'rgba(245,240,232,0.76)' }}>
               <span style={{ color, fontWeight: 600 }}>{count}</span> {label}
             </span>
           </div>
@@ -125,7 +125,7 @@ export default function DenialRiskRadar({
 
                 {/* Frequency + expand hint */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: '10px', color: 'rgba(245,240,232,0.25)', letterSpacing: '0.04em' }}>
+                  <span style={{ fontSize: '10px', color: 'rgba(245,240,232,0.65)', letterSpacing: '0.04em' }}>
                     {f.frequency}
                   </span>
                   {!isOpen && f.risk !== 'low' && (
@@ -188,6 +188,6 @@ export default function DenialRiskRadar({
 
 const sectionTitle: React.CSSProperties = {
   fontSize: '11px', fontWeight: 700, letterSpacing: '0.12em',
-  color: 'rgba(245,240,232,0.35)', textTransform: 'uppercase',
+  color: 'rgba(245,240,232,0.70)', textTransform: 'uppercase',
   marginBottom: 0,
 };

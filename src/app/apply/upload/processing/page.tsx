@@ -16,7 +16,7 @@ function ProcessingContent() {
         <div className="text-center">
           <p
             className="mb-4 text-sm"
-            style={{ color: 'rgba(245,240,232,0.5)', fontFamily: "'DM Sans', sans-serif" }}
+            style={{ color: 'rgba(245,240,232,0.76)', fontFamily: "'DM Sans', sans-serif" }}
           >
             Missing document or application reference.
           </p>
@@ -49,7 +49,7 @@ export default function ProcessingPage() {
         <div className="flex min-h-screen items-center justify-center bg-[#0a0a0a]">
           <p
             className="text-sm"
-            style={{ color: 'rgba(245,240,232,0.3)', fontFamily: "'DM Sans', sans-serif" }}
+            style={{ color: 'rgba(245,240,232,0.68)', fontFamily: "'DM Sans', sans-serif" }}
           >
             Loading...
           </p>

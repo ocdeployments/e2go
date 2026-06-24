@@ -134,7 +134,7 @@ export default function FaqWidgetHome() {
               <span className="e2-livedot w-[7px] h-[7px] rounded-full bg-[#C9A84C]" />
               Ask E2go
             </span>
-            <span className="text-[10px] tracking-[0.12em] uppercase text-[rgba(245,240,232,0.4)]">
+            <span className="text-[10px] tracking-[0.12em] uppercase text-[rgba(245,240,232,0.72)]">
               Free · instant answer
             </span>
           </div>
@@ -149,7 +149,7 @@ export default function FaqWidgetHome() {
             <span className="e2-livedot w-[6px] h-[6px] rounded-full bg-[#C9A84C]" />
             Ask E2go
           </span>
-          <span className="text-[10px] tracking-[0.12em] uppercase text-[rgba(245,240,232,0.35)]">
+          <span className="text-[10px] tracking-[0.12em] uppercase text-[rgba(245,240,232,0.68)]">
             Free · instant
           </span>
         </div>
@@ -173,7 +173,7 @@ export default function FaqWidgetHome() {
             </span>
           </button>
         </div>
-        <p className="text-[10px] text-[rgba(245,240,232,0.25)] mt-3">
+        <p className="text-[10px] text-[rgba(245,240,232,0.65)] mt-3">
           Informational only — not legal advice. e2go is not a law firm.
         </p>
       </div>
@@ -209,7 +209,7 @@ export default function FaqWidgetHome() {
           <button
             onClick={closeSheet}
             aria-label="Close"
-            className="min-h-[44px] min-w-[44px] -mr-2 flex items-center justify-center text-[rgba(245,240,232,0.5)] hover:text-[#f5f0e8] text-2xl leading-none"
+            className="min-h-[44px] min-w-[44px] -mr-2 flex items-center justify-center text-[rgba(245,240,232,0.76)] hover:text-[#f5f0e8] text-2xl leading-none"
           >
             ×
           </button>

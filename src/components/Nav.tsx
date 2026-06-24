@@ -166,9 +166,9 @@ export default function Nav() {
               <Link
                 href="/login"
                 className="text-sm transition-colors"
-                style={{ color: "rgba(245,240,232,0.55)" }}
+                style={{ color: "rgba(245,240,232,0.78)" }}
                 onMouseEnter={e => e.currentTarget.style.color = "#f5f0e8"}
-                onMouseLeave={e => e.currentTarget.style.color = "rgba(245,240,232,0.55)"}
+                onMouseLeave={e => e.currentTarget.style.color = "rgba(245,240,232,0.76)"}
               >
                 Log in
               </Link>
@@ -244,7 +244,7 @@ export default function Nav() {
                 <button
                   onClick={() => setDropdownOpen(!dropdownOpen)}
                   className="flex items-center gap-2 text-sm transition-colors"
-                  style={{ color: "rgba(245,240,232,0.55)" }}
+                  style={{ color: "rgba(245,240,232,0.78)" }}
                 >
                   <span>{user?.first_name ? user.first_name : 'Account'}</span>
                   <svg width="12" height="12" viewBox="0 0 12 12" fill="none" className="transition-transform" style={{ transform: dropdownOpen ? "rotate(180deg)" : "rotate(0deg)" }}>
@@ -303,7 +303,7 @@ export default function Nav() {
               <Link href="/simulator" className="text-sm py-2" style={{ color: "rgba(245,240,232,0.75)" }} onClick={() => setMobileMenuOpen(false)}>
                 Simulator
               </Link>
-              <Link href="/login" className="text-sm py-2" style={{ color: "rgba(245,240,232,0.55)" }} onClick={() => setMobileMenuOpen(false)}>
+              <Link href="/login" className="text-sm py-2" style={{ color: "rgba(245,240,232,0.78)" }} onClick={() => setMobileMenuOpen(false)}>
                 Log in
               </Link>
               <Link
@@ -356,13 +356,13 @@ export default function Nav() {
                 Simulator
               </Link>
               <div style={{ height: '1px', background: 'rgba(201,168,76,0.1)' }} />
-              <Link href="/settings" className="text-sm py-2" style={{ color: "rgba(245,240,232,0.5)" }} onClick={() => setMobileMenuOpen(false)}>
+              <Link href="/settings" className="text-sm py-2" style={{ color: "rgba(245,240,232,0.76)" }} onClick={() => setMobileMenuOpen(false)}>
                 Settings
               </Link>
               <button
                 onClick={handleSignOut}
                 className="text-left text-sm py-2 transition-colors"
-                style={{ color: "rgba(245,240,232,0.5)" }}
+                style={{ color: "rgba(245,240,232,0.76)" }}
               >
                 Log out
               </button>

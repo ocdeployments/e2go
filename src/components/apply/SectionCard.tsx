@@ -90,7 +90,7 @@ export default function SectionCard({
           fontFamily: "'DM Sans', sans-serif",
           fontSize: '12px',
           fontWeight: 300,
-          color: 'rgba(245,240,232,0.40)',
+          color: 'rgba(245,240,232,0.72)',
           lineHeight: 1.6,
         }}
       >
@@ -109,7 +109,7 @@ export default function SectionCard({
                 fontFamily: "'DM Sans', sans-serif",
                 fontSize: '10px',
                 fontWeight: 300,
-                color: 'rgba(245,240,232,0.28)',
+                color: 'rgba(245,240,232,0.65)',
                 borderColor: 'rgba(245,240,232,0.08)',
               }}
             >
@@ -130,7 +130,7 @@ export default function SectionCard({
               fontFamily: "'DM Sans', sans-serif",
               fontSize: '10px',
               fontWeight: 300,
-              color: 'rgba(201,168,76,0.55)',
+              color: 'rgba(201,168,76,0.85)',
             }}
           >
             {completionPct}% complete
@@ -143,7 +143,7 @@ export default function SectionCard({
               fontFamily: "'DM Sans', sans-serif",
               fontSize: '10px',
               fontWeight: 300,
-              color: 'rgba(201,168,76,0.40)',
+              color: 'rgba(201,168,76,0.78)',
             }}
           >
             {prefillCount} pre-filled

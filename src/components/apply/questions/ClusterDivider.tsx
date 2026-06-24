@@ -9,7 +9,7 @@ export default function ClusterDivider({ label }: ClusterDividerProps) {
     <div className="my-8 flex items-center gap-4">
       <span
         className="text-[9px] uppercase tracking-[0.1em] shrink-0"
-        style={{ color: 'rgba(245,240,232,0.28)', fontFamily: "'DM Sans', sans-serif" }}
+        style={{ color: 'rgba(245,240,232,0.65)', fontFamily: "'DM Sans', sans-serif" }}
       >
         {label}
       </span>

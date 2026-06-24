@@ -93,7 +93,7 @@ export default function CaseGapsForm({ applicationId, onComplete }: CaseGapsForm
   if (loading) {
     return (
       <div style={styles.center}>
-        <p style={{ color: 'rgba(245,240,232,0.4)', fontFamily: "'DM Sans', sans-serif", fontSize: '13px' }}>
+        <p style={{ color: 'rgba(245,240,232,0.72)', fontFamily: "'DM Sans', sans-serif", fontSize: '13px' }}>
           Checking your case file…
         </p>
       </div>
@@ -104,7 +104,7 @@ export default function CaseGapsForm({ applicationId, onComplete }: CaseGapsForm
     return (
       <div style={styles.center}>
         <div style={{ textAlign: 'center' as const }}>
-          <p style={{ color: 'rgba(245,240,232,0.5)', fontFamily: "'DM Sans', sans-serif", fontSize: '14px', marginBottom: '20px' }}>
+          <p style={{ color: 'rgba(245,240,232,0.76)', fontFamily: "'DM Sans', sans-serif", fontSize: '14px', marginBottom: '20px' }}>
             {error}
           </p>
           <button onClick={onComplete} style={styles.linkButton}>Continue anyway →</button>
@@ -260,7 +260,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 500,
     textTransform: 'uppercase' as const,
     letterSpacing: '0.14em',
-    color: 'rgba(245,240,232,0.35)',
+    color: 'rgba(245,240,232,0.70)',
     marginBottom: '16px',
     paddingBottom: '10px',
     borderBottom: '1px solid rgba(201,168,76,0.1)',
@@ -277,7 +277,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   helpText: {
     fontSize: '12px',
-    color: 'rgba(245,240,232,0.4)',
+    color: 'rgba(245,240,232,0.72)',
     marginBottom: '8px',
     lineHeight: 1.5,
   },

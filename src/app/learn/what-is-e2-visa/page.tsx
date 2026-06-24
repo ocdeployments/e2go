@@ -15,7 +15,7 @@ export default function WhatIsE2Visa() {
         <Breadcrumb items={[{ label: "Home", href: "/" }, { label: "Learn", href: "/learn" }, { label: "What is the E-2 Treaty Investor Visa?" }]} />
 
         <div className="mb-6">
-          <span className="text-xs" style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 400, color: "rgba(245,240,232,0.40)" }}>
+          <span className="text-xs" style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 400, color: "rgba(245,240,232,0.72)" }}>
             4 min read
           </span>
         </div>

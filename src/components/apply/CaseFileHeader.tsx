@@ -48,7 +48,7 @@ export default function CaseFileHeader({
       {/* Welcome line */}
       <p
         className="mb-3 text-[11px] uppercase tracking-[0.12em]"
-        style={{ color: 'rgba(245,240,232,0.28)', fontFamily: "'DM Sans', sans-serif" }}
+        style={{ color: 'rgba(245,240,232,0.65)', fontFamily: "'DM Sans', sans-serif" }}
       >
         {isReturning ? 'Welcome back' : 'Welcome'}
       </p>
@@ -61,7 +61,7 @@ export default function CaseFileHeader({
         >
           {firstName}{' '}
           {surname && (
-            <span style={{ fontStyle: 'italic', color: 'rgba(201,168,76,0.5)' }}>
+            <span style={{ fontStyle: 'italic', color: 'rgba(201,168,76,0.82)' }}>
               {surname}
             </span>
           )}
@@ -83,7 +83,7 @@ export default function CaseFileHeader({
             className="inline-flex items-center border px-3 py-1 text-[9px] uppercase tracking-[0.1em]"
             style={{
               borderColor: 'rgba(201,168,76,0.12)',
-              color: 'rgba(245,240,232,0.55)',
+              color: 'rgba(245,240,232,0.78)',
               fontFamily: "'DM Sans', sans-serif",
             }}
           >
@@ -114,7 +114,7 @@ export default function CaseFileHeader({
         <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p
             className="text-sm"
-            style={{ color: 'rgba(245,240,232,0.55)', fontFamily: "'DM Sans', sans-serif" }}
+            style={{ color: 'rgba(245,240,232,0.78)', fontFamily: "'DM Sans', sans-serif" }}
           >
             You left off in{' '}
             <span style={{ color: '#C9A84C' }}>{sectionName}</span>
@@ -137,7 +137,7 @@ export default function CaseFileHeader({
         <div className="mt-5">
           <p
             className="text-sm"
-            style={{ color: 'rgba(245,240,232,0.55)', fontFamily: "'DM Sans', sans-serif" }}
+            style={{ color: 'rgba(245,240,232,0.78)', fontFamily: "'DM Sans', sans-serif" }}
           >
             Your eligibility check is complete. Start with Section 1 —
             it takes about 8 minutes and sets the tone for everything that follows.

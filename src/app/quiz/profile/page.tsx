@@ -207,7 +207,7 @@ export default function QuizProfilePage() {
         <div
           style={{
             fontSize: "11px",
-            color: "rgba(245,240,232,0.3)",
+            color: "rgba(245,240,232,0.68)",
             letterSpacing: "0.1em",
             textTransform: "uppercase",
           }}
@@ -235,7 +235,7 @@ export default function QuizProfilePage() {
             fontSize: "10px",
             letterSpacing: "0.14em",
             textTransform: "uppercase",
-            color: "rgba(201,168,76,0.5)",
+            color: "rgba(201,168,76,0.82)",
             marginBottom: "20px",
           }}
         >
@@ -261,7 +261,7 @@ export default function QuizProfilePage() {
           <div
             style={{
               fontSize: "13px",
-              color: "rgba(245,240,232,0.45)",
+              color: "rgba(245,240,232,0.74)",
               lineHeight: 1.6,
               marginBottom: "32px",
             }}
@@ -328,7 +328,7 @@ export default function QuizProfilePage() {
               onClick={handleSkip}
               style={{
                 fontSize: "13px",
-                color: "rgba(245,240,232,0.3)",
+                color: "rgba(245,240,232,0.68)",
                 background: "none",
                 border: "none",
                 cursor: "pointer",
@@ -337,10 +337,10 @@ export default function QuizProfilePage() {
                 letterSpacing: "0.04em",
               }}
               onMouseEnter={(e) =>
-                (e.currentTarget.style.color = "rgba(245,240,232,0.55)")
+                (e.currentTarget.style.color = "rgba(245,240,232,0.76)")
               }
               onMouseLeave={(e) =>
-                (e.currentTarget.style.color = "rgba(245,240,232,0.3)")
+                (e.currentTarget.style.color = "rgba(245,240,232,0.68)")
               }
             >
               Skip

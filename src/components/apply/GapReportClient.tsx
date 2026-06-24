@@ -85,7 +85,7 @@ export default function GapReportClient({ applicationId }: GapReportClientProps)
       <div className="flex min-h-screen items-center justify-center bg-[#0a0a0a]">
         <p
           className="text-sm"
-          style={{ color: 'rgba(245,240,232,0.3)', fontFamily: "'DM Sans', sans-serif" }}
+          style={{ color: 'rgba(245,240,232,0.68)', fontFamily: "'DM Sans', sans-serif" }}
         >
           Loading gap report...
         </p>
@@ -99,7 +99,7 @@ export default function GapReportClient({ applicationId }: GapReportClientProps)
         <div className="text-center">
           <p
             className="mb-4 text-sm"
-            style={{ color: 'rgba(245,240,232,0.5)', fontFamily: "'DM Sans', sans-serif" }}
+            style={{ color: 'rgba(245,240,232,0.76)', fontFamily: "'DM Sans', sans-serif" }}
           >
             {error || 'No gap report available'}
           </p>
@@ -123,7 +123,7 @@ export default function GapReportClient({ applicationId }: GapReportClientProps)
           href="/apply/upload"
           className="mb-8 inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.08em] transition-colors hover:text-[#C9A84C]"
           style={{
-            color: 'rgba(245,240,232,0.35)',
+            color: 'rgba(245,240,232,0.70)',
             fontFamily: "'DM Sans', sans-serif",
           }}
         >
@@ -158,7 +158,7 @@ export default function GapReportClient({ applicationId }: GapReportClientProps)
           <p
             className="text-[11px] leading-relaxed"
             style={{
-              color: 'rgba(245,240,232,0.4)',
+              color: 'rgba(245,240,232,0.72)',
               fontFamily: "'DM Sans', sans-serif",
             }}
           >
@@ -172,7 +172,7 @@ export default function GapReportClient({ applicationId }: GapReportClientProps)
           <h3
             className="mb-4 text-[10px] uppercase tracking-[0.1em]"
             style={{
-              color: 'rgba(245,240,232,0.3)',
+              color: 'rgba(245,240,232,0.68)',
               fontFamily: "'DM Sans', sans-serif",
             }}
           >
@@ -231,7 +231,7 @@ export default function GapReportClient({ applicationId }: GapReportClientProps)
                   <p
                     className="mt-1 text-[9px]"
                     style={{
-                      color: 'rgba(245,240,232,0.2)',
+                      color: 'rgba(245,240,232,0.62)',
                       fontFamily: "'DM Sans', sans-serif",
                     }}
                   >
@@ -249,7 +249,7 @@ export default function GapReportClient({ applicationId }: GapReportClientProps)
             <h3
               className="mb-4 text-[10px] uppercase tracking-[0.1em]"
               style={{
-                color: 'rgba(245,240,232,0.3)',
+                color: 'rgba(245,240,232,0.68)',
                 fontFamily: "'DM Sans', sans-serif",
               }}
             >
@@ -293,7 +293,7 @@ export default function GapReportClient({ applicationId }: GapReportClientProps)
                       <p
                         className="mt-1 text-[10px] leading-relaxed"
                         style={{
-                          color: 'rgba(245,240,232,0.35)',
+                          color: 'rgba(245,240,232,0.70)',
                           fontFamily: "'DM Sans', sans-serif",
                         }}
                       >
@@ -313,7 +313,7 @@ export default function GapReportClient({ applicationId }: GapReportClientProps)
             <h3
               className="mb-4 text-[10px] uppercase tracking-[0.1em]"
               style={{
-                color: 'rgba(245,240,232,0.3)',
+                color: 'rgba(245,240,232,0.68)',
                 fontFamily: "'DM Sans', sans-serif",
               }}
             >
@@ -341,7 +341,7 @@ export default function GapReportClient({ applicationId }: GapReportClientProps)
                       <p
                         className="mt-0.5 text-[10px]"
                         style={{
-                          color: 'rgba(245,240,232,0.3)',
+                          color: 'rgba(245,240,232,0.68)',
                           fontFamily: "'DM Sans', sans-serif",
                         }}
                       >
@@ -358,7 +358,7 @@ export default function GapReportClient({ applicationId }: GapReportClientProps)
                     <p
                       className="mt-2 text-[10px] leading-relaxed"
                       style={{
-                        color: 'rgba(245,240,232,0.35)',
+                        color: 'rgba(245,240,232,0.70)',
                         fontFamily: "'DM Sans', sans-serif",
                         fontStyle: 'italic',
                       }}

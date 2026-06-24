@@ -184,7 +184,7 @@ function LoginForm() {
               transition={{ duration: 0.28, delay: 0.08, ease: [0.25, 0.46, 0.45, 0.94] }}
               style={{ width: '100%', maxWidth: '320px', padding: '0 24px' }}
             >
-              <p style={{ marginBottom: '20px', fontSize: '13px', fontFamily: "'DM Sans', sans-serif", color: 'rgba(245,240,232,0.5)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+              <p style={{ marginBottom: '20px', fontSize: '13px', fontFamily: "'DM Sans', sans-serif", color: 'rgba(245,240,232,0.76)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
                 Signing you in
               </p>
               <GenerationProgress
@@ -311,7 +311,7 @@ function LoginForm() {
                         borderRadius: 0,
                       }}
                     />
-                    <span style={{ color: "rgba(245,240,232,0.55)" }}>Remember me on this browser</span>
+                    <span style={{ color: "rgba(245,240,232,0.78)" }}>Remember me on this browser</span>
                   </label>
                   <Link href="/forgot-password" className="text-sm" style={{ color: "#C9A84C", textDecoration: "underline" }}>
                     Forgot password?
@@ -329,7 +329,7 @@ function LoginForm() {
                 </motion.button>
               </form>
 
-              <p className="mt-6 text-center text-sm" style={{ color: "rgba(245,240,232,0.45)" }}>
+              <p className="mt-6 text-center text-sm" style={{ color: "rgba(245,240,232,0.74)" }}>
                 Don&apos;t have an account?{" "}
                 <Link href="/signup" style={{ color: "#C9A84C", textDecoration: "underline" }}>
                   Sign up
