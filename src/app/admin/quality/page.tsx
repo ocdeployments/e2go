@@ -37,6 +37,17 @@ type NpsRow = {
   created_at: string;
 };
 
+type SimRow = {
+  user_id: string;
+  readiness_indicator: string | null;
+  completed_at: string | null;
+};
+
+type DownloadRow = {
+  downloaded_at: string | null;
+  applicant_acknowledged: boolean | null;
+};
+
 function pct(n: number, total: number) {
   if (total === 0) return '—';
   return Math.round((n / total) * 100) + '%';
@@ -81,6 +92,8 @@ export default async function QualityPage() {
     { data: allJobs },
     { data: fddRows },
     { data: npsRows },
+    { data: simRows },
+    { data: downloadRows },
   ] = await Promise.all([
     admin.from('generation_pipeline_log')
       .select('document_type, stage3_detection_score, stage3_attempts, final_status, created_at')
@@ -96,12 +109,21 @@ export default async function QualityPage() {
       .select('score, created_at')
       .gte('created_at', thirtyDaysAgo)
       .then(r => r, () => ({ data: null, error: null })),
+    admin.from('simulator_sessions')
+      .select('user_id, readiness_indicator, completed_at')
+      .gte('created_at', thirtyDaysAgo),
+    admin.from('generation_pipeline_log')
+      .select('downloaded_at, applicant_acknowledged')
+      .eq('applicant_acknowledged', true)
+      .gte('created_at', thirtyDaysAgo),
   ]);
 
-  const logs = (pipelineLogs ?? []) as PipelineLogRow[];
-  const jobs = (allJobs ?? []) as JobRow[];
-  const fdds = (fddRows ?? []) as FddRow[];
-  const nps  = (npsRows ?? []) as NpsRow[];
+  const logs      = (pipelineLogs ?? []) as PipelineLogRow[];
+  const jobs      = (allJobs ?? []) as JobRow[];
+  const fdds      = (fddRows ?? []) as FddRow[];
+  const nps       = (npsRows ?? []) as NpsRow[];
+  const sims      = (simRows ?? []) as SimRow[];
+  const downloads = (downloadRows ?? []) as DownloadRow[];
 
   // ── Generation quality ────────────────────────────────────────────────────
   const logsWithScore = logs.filter(l => l.stage3_detection_score !== null);
@@ -140,6 +162,23 @@ export default async function QualityPage() {
   const promoters  = nps.filter(n => n.score >= 9).length;
   const detractors = nps.filter(n => n.score <= 6).length;
   const npsScore   = npsTotal > 0 ? Math.round(((promoters - detractors) / npsTotal) * 100) : null;
+
+  // ── Simulator engagement ──────────────────────────────────────────────────
+  const totalSimSessions  = sims.length;
+  const completedSims     = sims.filter(s => s.completed_at !== null).length;
+  const simCompletionRate = totalSimSessions > 0 ? Math.round((completedSims / totalSimSessions) * 100) : null;
+  const readyCounts       = { ready: 0, nearly_ready: 0, needs_work: 0 };
+  for (const s of sims.filter(s => s.readiness_indicator)) {
+    const k = s.readiness_indicator as keyof typeof readyCounts;
+    if (k in readyCounts) readyCounts[k]++;
+  }
+  const uniqueSimUsers    = new Set(sims.map(s => s.user_id)).size;
+  const avgSimsPerUser    = uniqueSimUsers > 0 ? (totalSimSessions / uniqueSimUsers).toFixed(1) : '—';
+
+  // ── Document download rate ────────────────────────────────────────────────
+  const acknowledgedCount = downloads.length;
+  const downloadedCount   = downloads.filter(d => d.downloaded_at !== null).length;
+  const downloadRate      = acknowledgedCount > 0 ? Math.round((downloadedCount / acknowledgedCount) * 100) : null;
 
   return (
     <main className="min-h-screen bg-[#0a0a0a] text-white px-6 py-10 max-w-7xl mx-auto">
@@ -259,6 +298,32 @@ export default async function QualityPage() {
             <Metric label="Promoters (9–10)" value={String(promoters)} sub={pct(promoters, npsTotal)} />
             <Metric label="Detractors (0–6)" value={String(detractors)} sub={pct(detractors, npsTotal)} />
           </div>
+        )}
+      </Section>
+
+      {/* ── Simulator Engagement ── */}
+      <Section title="Simulator Engagement">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <Metric label="Sessions (30d)" value={String(totalSimSessions)} sub={`${uniqueSimUsers} unique users`} />
+          <Metric label="Avg sessions/user" value={avgSimsPerUser} sub="30-day window" />
+          <Metric label="Completion rate" value={simCompletionRate !== null ? `${simCompletionRate}%` : '—'} sub={`${completedSims} of ${totalSimSessions} completed`} />
+          <Metric label="Ready outcomes" value={readyCounts.ready > 0 || totalSimSessions > 0 ? String(readyCounts.ready) : '—'} sub={`${readyCounts.nearly_ready} nearly ready · ${readyCounts.needs_work} needs work`} />
+        </div>
+        {totalSimSessions === 0 && (
+          <p className="text-zinc-600 text-sm">No simulator sessions in the last 30 days.</p>
+        )}
+      </Section>
+
+      {/* ── Document Download Rate ── */}
+      <Section title="Document Download Rate">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+          <Metric label="Acknowledged (unlocked)" value={String(acknowledgedCount)} sub="Users who passed quality gate (30d)" />
+          <Metric label="Downloaded ZIP" value={String(downloadedCount)} sub="Users who clicked download" />
+          <Metric label="Download rate" value={downloadRate !== null ? `${downloadRate}%` : '—'}
+            sub={downloadRate !== null ? (downloadRate >= 80 ? 'Strong' : downloadRate >= 50 ? 'Moderate — investigate drop-off' : '⚠ Low — funnel leak after unlock') : 'No data yet'} />
+        </div>
+        {acknowledgedCount === 0 && (
+          <p className="text-zinc-600 text-sm">No acknowledged packages in the last 30 days.</p>
         )}
       </Section>
 
