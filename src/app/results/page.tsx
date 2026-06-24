@@ -554,6 +554,10 @@ function ResultsPageInner() {
 
   // Franchise trigger
   const showFranchiseTeaser = caseProfile?.franchiseTrigger ?? data.franchise_interest;
+  const fddAnswer = typeof data.answers?.['Q0-08c'] === 'string' ? (data.answers['Q0-08c'] as string) : '';
+  const fddReceived = fddAnswer.startsWith('Yes');
+  const fddOffered = fddAnswer.includes('offered');
+  const showFddCta = fddReceived || fddOffered;
 
   return (
     <div style={{ background: "#0a0a0a", minHeight: "100vh", fontFamily: "'DM Sans', system-ui, sans-serif", color: "#f5f0e8" }}>
@@ -853,6 +857,26 @@ function ResultsPageInner() {
               </div>
               <Link href="/fdd" style={{ display: "inline-block", padding: "11px 24px", background: "rgba(201,168,76,0.08)", border: "1px solid rgba(201,168,76,0.35)", color: "#C9A84C", fontSize: "12px", fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: "'DM Sans', sans-serif", textDecoration: "none" }}>
                 Analyse an FDD →
+              </Link>
+            </div>
+          </div>
+        )}
+
+        {/* ─── ZONE 5b: FDD CTA — shown when Q0-08c = have/offered ──────────── */}
+        {showFddCta && (
+          <div style={{ padding: "32px 0", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
+            <div style={{ padding: "20px 24px", border: "1px solid rgba(201,168,76,0.45)", background: "rgba(201,168,76,0.04)" }}>
+              <div style={{ fontSize: "10px", letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(201,168,76,0.6)", marginBottom: "10px" }}>Franchise disclosure document</div>
+              <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "20px", fontWeight: 300, color: "#f5f0e8", marginBottom: "8px" }}>
+                {fddReceived ? 'Analyse your FDD before your interview' : 'Get ahead — analyse your FDD when it arrives'}
+              </div>
+              <div style={{ fontSize: "13px", color: "rgba(245,240,232,0.45)", lineHeight: 1.6, marginBottom: "16px" }}>
+                {fddReceived
+                  ? 'You indicated you already have your Franchise Disclosure Document. Upload it now to extract unit economics, identify officer red flags, and build a stronger case before your E-2 interview.'
+                  : 'Your franchisor has offered you the FDD. As soon as you receive it, run it through our analysis tool — it extracts Item 19 performance data and flags the specific disclosures officers scrutinise.'}
+              </div>
+              <Link href="/fdd" style={{ display: "inline-block", padding: "11px 24px", background: fddReceived ? "#C9A84C" : "rgba(201,168,76,0.08)", border: "1px solid #C9A84C", color: fddReceived ? "#0a0a0a" : "#C9A84C", fontSize: "12px", fontWeight: fddReceived ? 600 : 500, letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: "'DM Sans', sans-serif", textDecoration: "none" }}>
+                {fddReceived ? 'Analyse My FDD Now →' : 'Learn About FDD Analysis →'}
               </Link>
             </div>
           </div>
