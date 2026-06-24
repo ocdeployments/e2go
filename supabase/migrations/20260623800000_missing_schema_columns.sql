@@ -16,7 +16,13 @@ ALTER TABLE applications
 ALTER TABLE applications
   ADD COLUMN IF NOT EXISTS application_type text;
 
--- 4. principal_name in applications
+-- 4. business_category in applications
+--    Referenced by: /api/simulator/interview-prep (gap engine scoring)
+--    Note: the value is also stored in answers but the route reads from applications
+ALTER TABLE applications
+  ADD COLUMN IF NOT EXISTS business_category text;
+
+-- 5. principal_name in applications
 --    Referenced by: /api/applications/[applicationId], /api/simulator/interview-prep
 --    Causes 400 from Supabase → routes return 404
 ALTER TABLE applications
