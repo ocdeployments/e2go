@@ -1,6 +1,6 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 23, 2026 — Session 64: NPS pipeline complete + pipeline checkpoint resume shipped. Build clean. Pushed to dev (13979aa). 11 commits total.
+**Last Updated:** June 23, 2026 — Session 65: All 6 missing admin features shipped. Every item from the original 28-feature admin plan is now built. Build clean. Pushed to dev (be295f0). 19+ commits total.
 
 **Session 63 — Sprint batch: OPS-4, OPS-5, ENG-1, ENG-2, INFRA-1:**
 
@@ -37,12 +37,30 @@
 - `connectSSE()` — added exponential backoff on `onerror`: 3s → 6s → 12s → cap 30s. Tracks `done` flag so reconnect stops after completed/failed message.
 - `startGeneration()` — checks `data.existing` flag from `/api/generate/start`. If existing running job: skips `POST /api/generate/run/[jobId]`, goes directly to `connectSSE()`. Prevents double-starting jobs on page reload.
 
-**Remaining backlog (unbuilt):**
-- ENG-2: doc gen archetype template variants (+0.4 pts) — already built via ARCHETYPE_DOC_GUIDANCE in generation-engine.ts; no gap here
-- ENG-2: quiz conditional branch paths (+0.3 pts) — already built via showIf system; no gap here
-- INFRA-1 P1: connection pooler note (Vercel env — add ?pgbouncer=true to pooler URL — code change not needed)
-- INFRA-1 P2: soft-delete (add deleted_at to applications + profiles — SQL migration only)
-- NPS table: SQL `CREATE TABLE nps_scores` — owner must run in Supabase (SQL shown in /admin/quality page)
+**Session 65 additions — completing the original 28-feature admin plan:**
+
+(10) **OpenRouter reload alert** — health-watchdog checks OR balance every 5 min via API. Sends Resend email when below threshold (24h dedup). Sets `openrouter_balance_low` flag in `app_settings`. Admin page shows red banner.
+
+(11) **Simulator engagement metrics** — `/admin/quality` now shows: total sessions (30d), unique users, avg sessions/user, completion rate, readiness breakdown (ready/nearly_ready/needs_work).
+
+(12) **Document download rate** — `/admin/quality`: acknowledged packages vs downloaded ZIPs from `generation_pipeline_log.downloaded_at`. Rate % with health label.
+
+(13) **Send email to user** — `POST /api/admin/send-email`. Admin-only. `SendEmailPanel` client component in user detail page. Audit logged.
+
+(14) **Flag account for review** — `POST /api/admin/flag-user`. Sets `flagged_at` + `flag_reason` on `profiles`. `FlagUserPanel` with confirm step. Red banner on user detail. **Requires SQL migration (see below).**
+
+(15) **Read-only user impersonation** — `/admin/users/[userId]/view`. Server-rendered full picture of what a user sees: answers by section, quiz, sims, jobs, lifecycle, documents. No auth switching.
+
+**Owner SQL required:**
+```sql
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS flagged_at timestamptz;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS flag_reason text;
+```
+
+**Remaining backlog (only 3 items left from the entire admin plan):**
+- INFRA-1: connection pooler (owner action — add `?pgbouncer=true&connection_limit=1` to DATABASE_URL in Vercel)
+- INFRA-1: UI state restore from `generation_pipeline_log` on page reload (show already-completed steps)
+- OPS-5: mobile viewport QA pass (70+ routes at 390px — manual browser walk-through)
 
 **Owner actions required (unchanged):**
 - CRON_SECRET env var must be set in Vercel for health-watchdog auth to work

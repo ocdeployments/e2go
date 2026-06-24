@@ -249,7 +249,7 @@
 
 <div class="topbar">
   <div>
-    <div class="subtitle">E2go · Architecture Audit · June 23, 2026 · Session 64 — Admin Command Center + NPS + Cost Intelligence</div>
+    <div class="subtitle">E2go · Architecture Audit · June 23, 2026 · Session 65 — All 5 Admin Layers Complete</div>
     <h1>Complete Feature Inventory</h1>
   </div>
   <div class="legend">
@@ -437,6 +437,12 @@ const PHASES = [
       {status:'built', name:'Cost Intelligence Page', route:'/admin/cost', desc:'7-day daily cost bar chart (div-based, no library). Cost by task table (calls, tokens in/out, total cost, avg latency). Cost by model table. Top 10 most expensive users with links to detail pages. Monthly burn rate projection. All data from llm_cost_log via service role.', badge:'new'},
       {status:'built', name:'Health Watchdog Cron', route:'/api/cron/health-watchdog', desc:'Runs every 5 min via vercel.json cron config. Detects generation jobs stuck running >30 min. Writes execution result to cron_log table (status, error, duration_ms). Auth: CRON_SECRET bearer token.', badge:'new'},
       {status:'built', name:'NPS Collection', route:'/api/nps/submit', desc:'POST /api/nps/submit — auth required, rate-limited (1 per user per 7 days via nps_scores table check). NpsModal client component: 0–10 radio scale, optional comment textarea, localStorage 7-day cooldown guard. Wired into /generate/[appId] page — shown after first successful ZIP download via shouldShowNps() + markNpsShown() helpers.', badge:'new'},
+      {status:'built', name:'Send Email to User', route:'/api/admin/send-email', desc:'POST /api/admin/send-email — admin role-gated. Sends via Resend to target user email. SendEmailPanel client component in /admin/users/[userId]. Audit logged to admin_audit_log.', badge:'new'},
+      {status:'built', name:'Flag Account for Review', route:'/api/admin/flag-user', desc:'POST /api/admin/flag-user — sets flagged_at + flag_reason on profiles. FlagUserPanel client component with confirm step. Red banner on user detail page when flagged. Requires SQL migration: ALTER TABLE profiles ADD COLUMN flagged_at timestamptz, ADD COLUMN flag_reason text. Audit logged.', badge:'new'},
+      {status:'built', name:'Read-Only User Impersonation', route:'/admin/users/[userId]/view', desc:'Server-rendered admin view of exactly what a user sees: profile, quiz result, case file answers grouped by section, simulator sessions, generation jobs, lifecycle events, documents. No auth switching — admin service role renders user-scoped data. Gold admin banner distinguishes view from real user session.', badge:'new'},
+      {status:'built', name:'OpenRouter Reload Alert', route:'/api/cron/health-watchdog', desc:'Added to health-watchdog (runs every 5 min). Fetches balance from openrouter.ai/api/v1/auth/key. Stores balance in app_settings.openrouter_balance_usd. If balance < threshold ($20 default from app_settings), sends Resend email (24h dedup via openrouter_low_balance_alerted_at). Sets openrouter_balance_low=true flag for admin page red banner.', badge:'new'},
+      {status:'built', name:'Simulator Engagement Metrics', route:'/admin/quality', desc:'Added to /admin/quality: total sessions 30d, unique users, avg sessions/user, completion rate (completed_at not null), readiness breakdown (ready/nearly_ready/needs_work counts). Queries simulator_sessions table.', badge:'new'},
+      {status:'built', name:'Document Download Rate', route:'/admin/quality', desc:'Added to /admin/quality: acknowledged count (applicant_acknowledged=true in generation_pipeline_log) vs downloaded count (downloaded_at not null). Renders download rate % with health label (≥80% strong, ≥50% moderate, <50% low — funnel leak).', badge:'new'},
       {status:'built', name:'SimulatorNudge (Coaching → Case File)', route:'/apply/*', desc:'SimulatorNudge component injected into all 5 apply section pages. /api/simulator/section-nudge route maps coaching weakness categories to case file section improvement suggestions. Visible after any completed simulator session.', badge:'new'},
       {status:'built', name:'Rate Limiting (Upstash Redis)', route:'', desc:'Login: 5/15min/IP. Quiz submit: 3/hr/IP. Generate/Analysis: 50/day/user. FAQ: 10/min/IP.'},
       {status:'built', name:'PWA (Service Worker)', route:'', desc:'Installable. Service worker + manifest. PWAInstallPrompt component.'},
@@ -1337,14 +1343,14 @@ const ENGINE_QUALITY = {
 const SPRINTS = [
   {
     id:'OPS-1', name:'API Cost Intelligence', priority:'critical', effort:'1 session', status:'complete',
-    desc:'✅ COMPLETE S63 — llm_cost_log table, cost logging wrapper, /admin/cost dashboard with 7-day chart, by-task + by-model tables, top-10 users, monthly burn projection.',
+    desc:'✅ COMPLETE S63–65 — llm_cost_log table, cost logging wrapper, /admin/cost dashboard with 7-day chart, by-task + by-model tables, top-10 users, monthly burn projection. OpenRouter reload alert: balance checked every 5 min by health-watchdog, email via Resend + red admin banner when below threshold (stored in app_settings).',
     items:[
       {name:'llm_cost_log table', desc:'model, route, tokens_in, tokens_out, cost_usd, user_id, timestamp. One row per LLM call.'},
       {name:'Cost logging in callLLM() wrapper', desc:'Write one row per OpenRouter call with cost calculated at known per-token rates for each model.'},
       {name:'Cost logging in generation-engine.ts', desc:'Anthropic direct calls bypass callLLM() — separate logging hook needed at each claude-opus call.'},
       {name:'Admin: Cost dashboard', desc:'Today / this month / projected month-end. Breakdown by model (claude-opus-4-8, mimo-v2.5, deepseek-chat) and by route.'},
       {name:'Admin: Per-user cost attribution', desc:'Top 5 most expensive users this month. Margin per user = revenue − LLM cost − Stripe fee (~$0.42 optimal per CI pricing audit).'},
-      {name:'Admin: OpenRouter reload alert', desc:'Email via Resend + red admin banner when OpenRouter balance drops below configurable threshold stored in app_settings.'},
+      {name:'✅ Admin: OpenRouter reload alert', desc:'S65 — health-watchdog checks balance every 5 min via openrouter.ai/api/v1/auth/key. Sends Resend email + sets openrouter_balance_low flag in app_settings (24h dedup). Admin page shows red banner when flag is true. Threshold in app_settings (default $20).'},
     ]
   },
   {
@@ -1361,14 +1367,17 @@ const SPRINTS = [
   },
   {
     id:'OPS-3', name:'Admin Command Center', priority:'high', effort:'2 sessions', status:'complete',
-    desc:'✅ COMPLETE S62–63 — /admin rebuilt: user table with clickable rows → /admin/users/[userId] detail page, tier override panel, admin_audit_log, nav links (Cost, Quality, System Status).',
+    desc:'✅ COMPLETE S62–65 — /admin rebuilt + all 5 sub-pages. Send email (Resend), flag for review, read-only user impersonation view, admin_audit_log on all actions.',
     items:[
-      {name:'User detail view', desc:'Full profile: tier, quiz score, application status, last active, lifecycle timeline, all documents and simulation sessions.'},
-      {name:'Manual tier override', desc:'Admin grants or changes tier without Stripe — for support cases, manual payments, and refunds.'},
-      {name:'"Stuck users" panel', desc:'Users inactive 7+ days with an active (incomplete) application. One-click nudge email from panel.'},
-      {name:'Maintenance mode toggle', desc:'Shows sitewide maintenance banner. Blocks new generation jobs while allowing in-progress jobs to finish.'},
-      {name:'Admin audit log', desc:'admin_audit_log table: action, admin_user_id, target_user_id, resource, timestamp on every admin data access. Required for immigration doc compliance.'},
+      {name:'User detail view', desc:'Full profile: tier, quiz score, application status, last active, lifecycle timeline, AI costs 30d, admin audit trail. /admin/users/[userId]'},
+      {name:'Manual tier override', desc:'Admin grants or changes tier without Stripe — for support cases, manual payments, and refunds. Writes $0 payment row + audit log.'},
+      {name:'"Stuck users" panel', desc:'Users inactive 7+ days with an active (incomplete) application. Visible on /admin main page.'},
+      {name:'Maintenance mode toggle', desc:'Shows sitewide maintenance banner. Stored in app_settings. AdminControls client component.'},
+      {name:'Admin audit log', desc:'admin_audit_log table written on every admin action: tier-override, flag-user, send-email, settings change. Visible in user detail danger zone.'},
       {name:'Feature flags system', desc:'Per-tier or global feature toggles stored in app_settings. Enable or disable any feature without a deploy.'},
+      {name:'✅ Send email to user', desc:'S65 — POST /api/admin/send-email. Admin-only (role check). Resend via RESEND_FROM. SendEmailPanel client component in /admin/users/[userId]. Audit logged.'},
+      {name:'✅ Flag account for review', desc:'S65 — POST /api/admin/flag-user. Sets flagged_at + flag_reason on profiles row (requires SQL migration: see below). FlagUserPanel in user detail with confirm step. Red banner on user detail when flagged. Audit logged.'},
+      {name:'✅ Read-only user impersonation', desc:'S65 — /admin/users/[userId]/view. Server-rendered view of everything that user sees: profile, quiz result, case file answers by section, sim sessions, generation jobs, lifecycle events, generated documents. Gold "Admin Read-Only View" banner. No auth switching — admin service role renders user data.'},
     ]
   },
   {
@@ -1385,12 +1394,14 @@ const SPRINTS = [
   },
   {
     id:'OPS-5', name:'Quality & Growth Intelligence', priority:'medium', effort:'2 sessions', status:'partial',
-    desc:'⚡ PARTIAL S62–64 — /admin/quality built (generation quality, FDD extraction quality, NPS SQL scaffold, prompt version registry). NPS modal + submit route shipped S64. Remaining: mobile viewport QA pass (70+ routes at 390px).',
+    desc:'⚡ PARTIAL S62–65 — /admin/quality: generation quality, FDD extraction, NPS, simulator engagement (sessions, completion rate, readiness breakdown), document download rate (acknowledged → downloaded). Remaining: mobile viewport QA pass (70+ routes at 390px).',
     items:[
       {name:'Generation quality dashboard', desc:'Humanization score trend, consistency pass rate, revision request rate, avg docs per session over rolling 30 days.'},
       {name:'FDD extraction quality tracker', desc:'Avg fields extracted per FDD upload. Alert if avg drops below 5 (sparse extraction — BUG-QA-11 pattern indicator).'},
-      {name:'NPS collection', desc:'Single-question prompt after document download. Track net promoter score over time in admin panel.'},
-      {name:'Prompt version registry', desc:'Audit trail: which prompt version + model version produced each generated document. Enables quality regression comparisons.'},
+      {name:'NPS collection', desc:'✅ S64 — NpsModal post-download + /api/nps/submit with 7-day rate limit. NPS score, promoters/detractors shown in /admin/quality.'},
+      {name:'Prompt version registry', desc:'7-entry static audit trail in /admin/quality. Model + version + notes per route.'},
+      {name:'✅ Simulator engagement metrics', desc:'S65 — /admin/quality: total sessions (30d), unique users, avg sessions/user, completion rate, readiness breakdown (ready / nearly_ready / needs_work).'},
+      {name:'✅ Document download rate', desc:'S65 — /admin/quality: acknowledged count vs downloaded count from generation_pipeline_log.downloaded_at. Download rate % with health label.'},
       {name:'Mobile viewport QA pass', desc:'Verify all 70+ routes at 390px. Site architecture audit (Session 36) flagged this as unverified across the board.'},
     ]
   },
@@ -1489,7 +1500,7 @@ const roadmapSprintEl = document.getElementById('roadmap-sprint-container');
 const sprintTitle = document.createElement('div');
 sprintTitle.className = 'roadmap-section-title';
 sprintTitle.style.marginTop = '36px';
-sprintTitle.textContent = 'Sprints — 8 planned · OPS-1✅ OPS-2✅ OPS-3✅ OPS-4✅ OPS-5⚡ ENG-1✅ ENG-2⚡ INFRA-1⚡';
+sprintTitle.textContent = 'Sprints — 8 planned · OPS-1✅ OPS-2✅ OPS-3✅ OPS-4✅ OPS-5⚡(mobile QA only) ENG-1✅ ENG-2⚡ INFRA-1⚡';
 roadmapSprintEl.appendChild(sprintTitle);
 
 const sprintGrid = document.createElement('div');
