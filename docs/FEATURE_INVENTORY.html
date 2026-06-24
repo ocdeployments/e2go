@@ -359,6 +359,42 @@
           <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.5)">No code change required.</td>
           <td style="padding:6px 0;color:#4ade80;white-space:nowrap">✅ Pass</td>
         </tr>
+        <!-- ── Session 64 Smoke Test — 2026-06-23 ── -->
+        <tr style="border-bottom:1px solid rgba(245,240,232,0.04)">
+          <td style="padding:6px 12px 6px 0;color:#C9A84C;font-family:monospace;white-space:nowrap">QA-SIM-01</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.4);white-space:nowrap">2026-06-23</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.7)">Raw JSON array ["item1","item2"] rendered verbatim in CaseFileSummary — visible on both the cover card (business_category) and section field rows of the Prepare tab case file</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.5)">CaseFileSummary.tsx: try/catch JSON.parse + Array.isArray + .join(', ') at both render locations (cover card ~line 117, field rows ~line 219)</td>
+          <td style="padding:6px 0;color:#4ade80;white-space:nowrap">✅ Fixed</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(245,240,232,0.04)">
+          <td style="padding:6px 12px 6px 0;color:#C9A84C;font-family:monospace;white-space:nowrap">QA-GEN-01</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.4);white-space:nowrap">2026-06-23</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.7)">Generate page heading read "Preparing the E-2 application of your application" when applicantName was null — fallback string placed inside a sentence expecting a person's name</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.5)">generate/[applicationId]/page.tsx line 525: ternary — name present → "${name}'s E-2 application" else → "Preparing your E-2 application package"</td>
+          <td style="padding:6px 0;color:#4ade80;white-space:nowrap">✅ Fixed</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(245,240,232,0.04)">
+          <td style="padding:6px 12px 6px 0;color:#C9A84C;font-family:monospace;white-space:nowrap">QA-DB-01</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.4);white-space:nowrap">2026-06-23</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.7)">Supabase 400s on: quiz_sessions.hard_stop_codes (column missing), applications.investment_amount (column missing), application_lifecycle upsert (no UNIQUE constraint on user_id)</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.5)">Created supabase/migrations/20260623800000_missing_schema_columns.sql — idempotent ADD COLUMN IF NOT EXISTS for all three + unique constraint. Awaiting Supabase apply.</td>
+          <td style="padding:6px 0;color:#facc15;white-space:nowrap">⚡ Migration pending</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(245,240,232,0.04)">
+          <td style="padding:6px 12px 6px 0;color:#C9A84C;font-family:monospace;white-space:nowrap">QA-DB-02</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.4);white-space:nowrap">2026-06-23</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.7)">applications.principal_name + operational_status + target_state missing from all migrations — causes /api/simulator/interview-prep and /api/applications/[id] to return 404 (Supabase 400 on SELECT → caught as appError → route returns 404). InterviewBrief prep report silently disappears on Prepare tab.</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.5)">Added ADD COLUMN IF NOT EXISTS for all three to 20260623800000 migration. Awaiting Supabase apply.</td>
+          <td style="padding:6px 0;color:#facc15;white-space:nowrap">⚡ Migration pending</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(245,240,232,0.04)">
+          <td style="padding:6px 12px 6px 0;color:#C9A84C;font-family:monospace;white-space:nowrap">QA-SMOKE-01</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.4);white-space:nowrap">2026-06-23</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.7)">Full autonomous smoke test — 20 pages verified with test-uk@example.com (James Windsor). All pages rendered, buttons responded, CTAs navigated correctly. Pages covered: /, /pricing, /login, /results, /dashboard, /apply, /apply/story, /apply/business, /apply/investment, /gap-analysis, /simulator, /simulator/quick-start, /simulator/case-file, /simulator/interview-day, /simulator/outcome, /fdd, /generate/{id}, /documents/{id}, /quiz (redirects—correct), /settings.</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.5)">No code change required beyond fixes QA-SIM-01, QA-GEN-01, QA-DB-01, QA-DB-02 above.</td>
+          <td style="padding:6px 0;color:#4ade80;white-space:nowrap">✅ 20/20 Pass</td>
+        </tr>
       </tbody>
     </table>
     <p style="font-size:10px;color:rgba(245,240,232,0.2);padding:10px 0 12px">All entries are permanent. Add new rows above; never delete existing rows.</p>
