@@ -85,7 +85,7 @@ export default async function AdminPage() {
     admin.from('llm_cost_log').select('cost_usd').gte('created_at', todayStart),
     admin.from('document_generation_jobs').select('id, application_id, status, current_step, total_steps, current_step_label, updated_at').eq('status', 'running'),
     admin.from('document_generation_jobs').select('id, application_id, current_step_label, updated_at').eq('status', 'running').lt('updated_at', stuckCutoff),
-    admin.from('app_settings').select('key, value').in('key', ['kill_switch_enabled', 'maintenance_mode']),
+    admin.from('app_settings').select('key, value').in('key', ['kill_switch_enabled', 'maintenance_mode', 'openrouter_balance_low', 'openrouter_balance_usd', 'openrouter_reload_threshold']),
     admin.from('application_lifecycle').select('user_id, updated_at').order('updated_at', { ascending: false }),
   ]);
 
@@ -136,8 +136,11 @@ export default async function AdminPage() {
     })
     .slice(0, 10);
 
-  const killSwitchOn  = typedSettings['kill_switch_enabled']  === 'true';
-  const maintenanceOn = typedSettings['maintenance_mode'] === 'true';
+  const killSwitchOn     = typedSettings['kill_switch_enabled']  === 'true';
+  const maintenanceOn    = typedSettings['maintenance_mode'] === 'true';
+  const orBalanceLow     = typedSettings['openrouter_balance_low'] === 'true';
+  const orBalanceUsd     = typedSettings['openrouter_balance_usd'] ?? null;
+  const orThreshold      = typedSettings['openrouter_reload_threshold'] ?? '20';
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
@@ -171,6 +174,15 @@ export default async function AdminPage() {
       {maintenanceOn && (
         <div className="mb-6 p-3 bg-yellow-950/40 border border-yellow-500/30 text-yellow-400 text-sm">
           Maintenance mode is ON — users see a maintenance banner.
+        </div>
+      )}
+      {orBalanceLow && (
+        <div className="mb-6 p-3 bg-red-950/40 border border-red-500/40 text-sm flex items-center justify-between">
+          <span className="text-red-300">
+            ⚠ OpenRouter balance low — <strong>${orBalanceUsd}</strong> remaining (threshold ${orThreshold}).
+            {' '}Top up at <a href="https://openrouter.ai/credits" target="_blank" rel="noopener" className="underline">openrouter.ai/credits</a>
+          </span>
+          {orBalanceUsd && <span className="text-red-400 font-mono text-xs">${orBalanceUsd} left</span>}
         </div>
       )}
 
