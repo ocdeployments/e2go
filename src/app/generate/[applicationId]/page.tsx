@@ -522,7 +522,9 @@ export default function GenerateProgressPage() {
         >
           {isComplete
             ? "Your application package is ready"
-            : `Preparing the E-2 application of ${applicationData.applicantName || "your application"}`
+            : applicationData.applicantName
+              ? `Preparing ${applicationData.applicantName}'s E-2 application`
+              : "Preparing your E-2 application package"
           }
         </h1>
 
