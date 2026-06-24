@@ -1,7 +1,25 @@
 import { createClient } from '@supabase/supabase-js';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
+import { notFound } from 'next/navigation';
 import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
+
+// FIXED 2026-06-23: added role gate — page had no role check (QA-SEC-03)
+async function requireAdmin() {
+  const cookieStore = await cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { cookies: { getAll: () => cookieStore.getAll(), setAll: () => {} } }
+  );
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) notFound();
+  const svc = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { autoRefreshToken: false, persistSession: false } });
+  const { data: profile } = await svc.from('profiles').select('role').eq('id', user.id).single();
+  if (profile?.role !== 'admin') notFound();
+}
 
 function getAdmin() {
   return createClient(
@@ -84,6 +102,7 @@ const PROMPT_REGISTRY = [
 ];
 
 export default async function QualityPage() {
+  await requireAdmin();
   const admin = getAdmin();
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 3600000).toISOString();
 

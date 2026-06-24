@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 
 export const dynamic = 'force-dynamic';
 
@@ -7,6 +9,21 @@ function getAdmin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY!;
   return createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } });
+}
+
+// FIXED 2026-06-23: route had no auth — exposed service health + stuck job data publicly (QA-SEC-02)
+async function getRequestingAdmin(): Promise<string | null> {
+  const cookieStore = await cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { cookies: { getAll: () => cookieStore.getAll(), setAll: () => {} } }
+  );
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+  const admin = getAdmin();
+  const { data: profile } = await admin.from('profiles').select('role').eq('id', user.id).single();
+  return profile?.role === 'admin' ? user.id : null;
 }
 
 async function probeLLM(url: string, apiKey: string, body: object): Promise<{ ok: boolean; latency_ms: number }> {
@@ -25,6 +42,9 @@ async function probeLLM(url: string, apiKey: string, body: object): Promise<{ ok
 }
 
 export async function GET() {
+  const adminId = await getRequestingAdmin();
+  if (!adminId) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+
   const admin = getAdmin();
   const now   = new Date();
   const stuckThresholdMs = 30 * 60 * 1000; // 30 minutes

@@ -1,4 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import TierOverridePanel from './TierOverridePanel';
@@ -13,6 +15,21 @@ function getAdmin() {
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     { auth: { autoRefreshToken: false, persistSession: false } }
   );
+}
+
+// FIXED 2026-06-23: added role gate — page had no role check (QA-SEC-03)
+async function requireAdmin() {
+  const cookieStore = await cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { cookies: { getAll: () => cookieStore.getAll(), setAll: () => {} } }
+  );
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) notFound();
+  const svc = getAdmin();
+  const { data: profile } = await svc.from('profiles').select('role').eq('id', user.id).single();
+  if (profile?.role !== 'admin') notFound();
 }
 
 type ProfileRow = { id: string; first_name: string | null; last_name: string | null; role: string | null; created_at: string | null; flagged_at: string | null; flag_reason: string | null };
@@ -51,6 +68,7 @@ function fmtAmt(cents: number | null, paid: number | null) {
 }
 
 export default async function UserDetailPage({ params }: { params: Promise<{ userId: string }> }) {
+  await requireAdmin();
   const { userId } = await params;
   const admin = getAdmin();
 

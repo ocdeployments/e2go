@@ -1,4 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
+import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import AdminControls from './AdminControls';
 
@@ -54,9 +57,26 @@ function fmt(cents: number | null)   { return cents ? `$${(cents / 100).toFixed(
 function fmtD(iso: string | null)    { return iso ? new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'; }
 function daysAgo(iso: string)        { return Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000); }
 
+// FIXED 2026-06-23: page was auth-gated but not role-gated — any logged-in user could reach it (QA-SEC-03)
+async function requireAdmin() {
+  const cookieStore = await cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { cookies: { getAll: () => cookieStore.getAll(), setAll: () => {} } }
+  );
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) notFound();
+  const svc = getAdmin();
+  const { data: profile } = await svc.from('profiles').select('role').eq('id', user.id).single();
+  if (profile?.role !== 'admin') notFound();
+}
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default async function AdminPage() {
+  await requireAdmin();
+
   const admin = getAdmin();
 
   const now        = new Date();
