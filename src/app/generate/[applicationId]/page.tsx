@@ -9,6 +9,7 @@ import type { SSEProgressMessage, DocumentType } from "@/types/generation";
 import AcknowledgmentGate from "@/components/AcknowledgmentGate";
 import PreGenerationConfirmation from "@/components/generate/PreGenerationConfirmation";
 import ConsulateBriefing from "@/components/generate/ConsulateBriefing";
+import NpsModal, { shouldShowNps, markNpsShown } from "@/components/NpsModal";
 import type { PreGenerationValidationResult } from "@/lib/pre-generation-validation";
 
 type StepStatus = "pending" | "running" | "complete" | "failed";
@@ -114,6 +115,9 @@ export default function GenerateProgressPage() {
   // Consulate briefing — shown before investment confirmation
   const [consulateBriefingDone, setConsulateBriefingDone] = useState(false);
 
+  // NPS modal — shown after download
+  const [showNps, setShowNps] = useState(false);
+
   // Voice profile completeness gate
   const [voiceWordCount, setVoiceWordCount] = useState<number | null>(null);
   const [voiceWarningDismissed, setVoiceWarningDismissed] = useState(false);
@@ -159,6 +163,11 @@ export default function GenerateProgressPage() {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       setDownloaded(true);
+      // Show NPS modal after first download if cooldown allows
+      if (shouldShowNps()) {
+        markNpsShown();
+        setShowNps(true);
+      }
     } catch (err) {
       console.error('[DOWNLOAD] Error:', err);
       setErrorMessage(err instanceof Error ? err.message : 'Download failed. Please try again.');
@@ -276,14 +285,16 @@ export default function GenerateProgressPage() {
     }
   }, [applicationId, currentDocumentType]);
 
-  const connectSSE = useCallback((jid: string) => {
+  const connectSSE = useCallback((jid: string, attempt = 0) => {
     const eventSource = new EventSource(`/api/generate/progress/${jid}`);
+    let done = false;
 
     eventSource.onmessage = (event) => {
       try {
         const msg: SSEProgressMessage = JSON.parse(event.data);
         processMessage(msg);
         if (msg.status === "completed" || msg.status === "failed") {
+          done = true;
           eventSource.close();
         }
       } catch {
@@ -293,9 +304,13 @@ export default function GenerateProgressPage() {
 
     eventSource.onerror = () => {
       eventSource.close();
+      if (done) return;
+      // Exponential backoff: 3s, 6s, 12s, cap at 30s
+      const delay = Math.min(3000 * Math.pow(2, attempt), 30000);
+      setTimeout(() => connectSSE(jid, attempt + 1), delay);
     };
 
-    return () => eventSource.close();
+    return () => { done = true; eventSource.close(); };
   }, [processMessage]);
 
   const startGeneration = useCallback(async () => {
@@ -338,11 +353,13 @@ export default function GenerateProgressPage() {
       const newJobId = data.jobId;
       setJobId(newJobId);
 
-      await fetch(`/api/generate/run/${newJobId}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId }),
-      });
+      if (!data.existing) {
+        await fetch(`/api/generate/run/${newJobId}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId }),
+        });
+      }
 
       connectSSE(newJobId);
     } catch (err) {
@@ -1029,6 +1046,14 @@ export default function GenerateProgressPage() {
           {errorMessage || statusMessage || "Preparing your E-2 visa application package..."}
         </p>
       </footer>
+
+      {/* NPS Modal — shown after first successful download */}
+      {showNps && (
+        <NpsModal
+          triggerEvent="post_download"
+          onClose={() => setShowNps(false)}
+        />
+      )}
     </div>
   );
 }
