@@ -5,8 +5,9 @@ import { createBrowserSupabaseClient } from "@/lib/supabase";
 import Link from "next/link";
 import { createAccountFromVerifiedEmail } from "../actions/create-account";
 import flagExplanations from "../../data/flag_explanations.json";
-import FaqWidget from "@/components/landing/FaqWidget";
 import FlagCard, { FLAG_REMEDIATION } from "@/components/results/FlagCard";
+import DocumentPackagePreview from "@/components/results/DocumentPackagePreview";
+import OutcomeSummaryCard from "@/components/results/OutcomeSummaryCard";
 import type { CaseProfile } from "@/types/case-profile";
 
 interface ResultData {
@@ -22,120 +23,75 @@ interface ResultData {
   dependents: string;
 }
 
-/* ─── Existing helper functions ─────────────────────────────────────────── */
+/* ─── Helpers ────────────────────────────────────────────────────────────── */
 
-function getScoreLabel(score: number): string {
-  if (score >= 90) return "Excellent eligibility profile";
-  if (score >= 80) return "Strong eligibility profile";
-  if (score >= 70) return "Good eligibility profile — some areas to address";
-  if (score >= 60) return "Moderate profile — attention required";
-  return "Elevated risk profile — legal guidance recommended";
+function getIdentityLabel(outcome: string, score: number): string {
+  if (outcome === "PROCEED" && score >= 90) return "You're on the Straight-Path E-2 Track.";
+  if (outcome === "PROCEED") return "You're on a strong E-2 path.";
+  if (outcome === "PROCEED_RISK") return "Your case is viable — a few things need attention.";
+  if (outcome === "ATTORNEY_RECOMMENDED") return "Your situation needs legal guidance alongside preparation.";
+  return "E-2 is not viable for your current situation.";
 }
 
-function getVerdict(outcome: string, score: number): string {
-  if (outcome === "PROCEED" && score >= 90) return `${score}/100. Strong case. Here's what comes next.`;
-  if (outcome === "PROCEED" || outcome === "PROCEED_RISK") return `${score}/100. You qualify. Here's what comes next.`;
-  if (outcome === "ATTORNEY_RECOMMENDED") return "You may qualify — legal guidance recommended for your situation.";
-  return "Your eligibility requires further review.";
+function getBandConfig(outcome: string): { color: string; label: string } {
+  if (outcome === "PROCEED") return { color: "#5DCAA5", label: "Strong E-2 eligibility band — safe to proceed into full preparation." };
+  if (outcome === "PROCEED_RISK") return { color: "#f59e0b", label: "Viable — specific areas require strengthening before submission." };
+  if (outcome === "ATTORNEY_RECOMMENDED") return { color: "rgba(239,68,68,0.8)", label: "Complex case — legal guidance recommended alongside preparation." };
+  return { color: "rgba(239,68,68,0.4)", label: "E-2 approval is unlikely for your current situation." };
 }
 
-function getVerdictSub(outcome: string, warnings: string[]): string {
-  if (outcome === "PROCEED") return "Your profile clears all core eligibility requirements with no material risk flags.";
-  if (outcome === "PROCEED_RISK") {
-    const count = warnings.length;
-    return `Your profile clears all core requirements. ${count} area${count > 1 ? "s" : ""} flagged below will need attention in your application — ${count > 1 ? "both are" : "this is"} manageable with the right preparation.`;
-  }
-  if (outcome === "ATTORNEY_RECOMMENDED") return "Your profile has complexity that benefits from legal review. You can still proceed — we recommend consulting an attorney alongside your preparation.";
-  return "Based on your answers, we recommend speaking with a qualified immigration attorney before proceeding.";
+function getOutcomeCTA(outcome: string): string {
+  if (outcome === "PROCEED") return "Start My E-2 Application Plan →";
+  if (outcome === "PROCEED_RISK") return "See How to Strengthen My Case →";
+  if (outcome === "ATTORNEY_RECOMMENDED") return "Review My Application Options →";
+  return "Review My Options →";
 }
 
-function getPricingFromAnswers(_data: ResultData): { tier: string; tierId: string; base: number; spouseAdd: number; childrenAdd: number; total: number } {
-  return { tier: 'Complete', tierId: 'complete', base: 1495, spouseAdd: 0, childrenAdd: 0, total: 1495 };
+function getPricingFromAnswers(_data: ResultData): { tier: string; tierId: string; total: number } {
+  return { tier: "Complete", tierId: "complete", total: 1495 };
 }
 
-function getTimelineWeeks(data: ResultData): { weeksMin: number; weeksMax: number; adjustments: string[] } {
+function getTimelineWeeks(data: ResultData): { weeksMin: number; weeksMax: number } {
   const hasBusiness = (data.answers["Q0-08"] as string || "").includes("specific business");
-  const country = (data.country || '').toLowerCase();
+  const country = (data.country || "").toLowerCase();
   const warnings = data.warnings || [];
-  const appType = data.application_type || 'solo';
-  const adjustments: string[] = [];
+  const appType = data.application_type || "solo";
 
   let weeksMin = hasBusiness ? 10 : 16;
   let weeksMax = hasBusiness ? 14 : 22;
 
-  if (country.includes('canada')) {
-    weeksMin = Math.max(8, weeksMin - 2);
-    weeksMax = Math.max(11, weeksMax - 3);
-    adjustments.push('Canadian applicants typically benefit from faster processing');
-  }
+  if (country.includes("canada")) { weeksMin = Math.max(8, weeksMin - 2); weeksMax = Math.max(11, weeksMax - 3); }
+  const hasPriorDenial = warnings.some(w => w === "W-REFUSAL-RECENT" || w === "W-E2-PRIOR-DENIAL" || w === "W-REFUSAL-MULTIPLE");
+  if (hasPriorDenial) { weeksMin += 4; weeksMax += 8; }
+  if (appType === "partnership" || appType === "spousal_partnership") { weeksMin += 2; weeksMax += 4; }
 
-  const hasPriorDenial = warnings.some(w =>
-    w === 'W-REFUSAL-RECENT' || w === 'W-E2-PRIOR-DENIAL' || w === 'W-REFUSAL-MULTIPLE'
-  );
-  if (hasPriorDenial) {
-    weeksMin += 4;
-    weeksMax += 8;
-    adjustments.push('Prior visa refusal adds preparation depth and may extend processing');
-  }
-
-  if (appType === 'partnership' || appType === 'spousal_partnership') {
-    weeksMin += 2;
-    weeksMax += 4;
-    adjustments.push('Partnership applications require additional documentation for both investors');
-  }
-
-  return { weeksMin, weeksMax, adjustments };
+  return { weeksMin, weeksMax };
 }
 
 function getInterviewMonthRange(weeksMin: number, weeksMax: number): string {
   const today = new Date();
-  const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-
-  const earliestDate = new Date(today);
-  earliestDate.setDate(today.getDate() + weeksMin * 7);
-
-  const latestDate = new Date(today);
-  latestDate.setDate(today.getDate() + weeksMax * 7);
-
-  const earliestMonth = monthNames[earliestDate.getMonth()];
-  const latestMonth = monthNames[latestDate.getMonth()];
-  const earliestYear = earliestDate.getFullYear();
-  const latestYear = latestDate.getFullYear();
-
-  if (earliestMonth === latestMonth && earliestYear === latestYear) return `${earliestMonth} ${earliestYear}`;
-  if (earliestYear === latestYear) return `${earliestMonth} — ${latestMonth} ${earliestYear}`;
-  return `${earliestMonth} ${earliestYear} — ${latestMonth} ${latestYear}`;
-}
-
-function getJourneyStepMonths(): string[] {
-  const today = new Date();
-  const addM = (n: number): string => {
-    const d = new Date(today);
-    d.setMonth(d.getMonth() + n);
-    return d.toLocaleString('default', { month: 'short', year: 'numeric' });
-  };
-  const addW = (n: number): string => {
-    const d = new Date(today);
-    d.setDate(d.getDate() + n * 7);
-    return d.toLocaleString('default', { month: 'short', year: 'numeric' });
-  };
-  return [addM(0), addM(1), addM(2), addM(3), addM(4), addW(22), addM(7)];
+  const monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  const earliestDate = new Date(today); earliestDate.setDate(today.getDate() + weeksMin * 7);
+  const latestDate = new Date(today); latestDate.setDate(today.getDate() + weeksMax * 7);
+  const em = monthNames[earliestDate.getMonth()]; const lm = monthNames[latestDate.getMonth()];
+  const ey = earliestDate.getFullYear(); const ly = latestDate.getFullYear();
+  if (em === lm && ey === ly) return `${em} ${ey}`;
+  if (ey === ly) return `${em} — ${lm} ${ey}`;
+  return `${em} ${ey} — ${lm} ${ly}`;
 }
 
 function getTargetDateMessage(targetDate: string | null | undefined): string | null {
   if (!targetDate || targetDate === "Not sure yet") return null;
-  const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
   const now = new Date();
   let monthsToAdd = 0;
   if (targetDate.includes("Within 6 months")) monthsToAdd = 6;
   else if (targetDate.includes("6 to 12")) monthsToAdd = 9;
   else if (targetDate.includes("12 to 24")) monthsToAdd = 18;
   else return null;
-  const target = new Date(now);
-  target.setMonth(target.getMonth() + monthsToAdd);
-  const submitBy = new Date(target);
-  submitBy.setMonth(submitBy.getMonth() - 4);
-  return `To be in the US by ${monthNames[target.getMonth()]} ${target.getFullYear()}, you need to submit your application by ${monthNames[submitBy.getMonth()]} ${submitBy.getFullYear()}.`;
+  const target = new Date(now); target.setMonth(target.getMonth() + monthsToAdd);
+  const submitBy = new Date(target); submitBy.setMonth(submitBy.getMonth() - 4);
+  return `To be in the US by ${monthNames[target.getMonth()]} ${target.getFullYear()}, submit by ${monthNames[submitBy.getMonth()]} ${submitBy.getFullYear()}.`;
 }
 
 function getConsulateIntel(country: string): { name: string; intel: string } {
@@ -150,30 +106,42 @@ function getConsulateIntel(country: string): { name: string; intel: string } {
 }
 
 function getCookie(name: string): string | null {
-  if (typeof document === 'undefined') return null;
-  const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+  if (typeof document === "undefined") return null;
+  const match = document.cookie.match(new RegExp("(^| )" + name + "=([^;]+)"));
   return match ? decodeURIComponent(match[2]) : null;
 }
 
 function getCountryFlag(country: string): string {
   const flags: Record<string, string> = {
-    'Canada': '🇨🇦', 'United Kingdom': '🇬🇧', 'Germany': '🇩🇪',
-    'Australia': '🇦🇺', 'Japan': '🇯🇵', 'France': '🇫🇷',
-    'Italy': '🇮🇹', 'Spain': '🇪🇸', 'South Korea': '🇰🇷',
-    'Brazil': '🇧🇷', 'Mexico': '🇲🇽', 'Netherlands': '🇳🇱',
-    'Switzerland': '🇨🇭', 'Sweden': '🇸🇪', 'Singapore': '🇸🇬',
-    'Israel': '🇮🇱', 'Turkey': '🇹🇷', 'Poland': '🇵🇱',
-    'Argentina': '🇦🇷', 'Chile': '🇨🇱', 'Colombia': '🇨🇴',
-    'Philippines': '🇵🇭', 'Thailand': '🇹🇭', 'New Zealand': '🇳🇿',
+    "Canada": "🇨🇦", "United Kingdom": "🇬🇧", "Germany": "🇩🇪",
+    "Australia": "🇦🇺", "Japan": "🇯🇵", "France": "🇫🇷",
+    "Italy": "🇮🇹", "Spain": "🇪🇸", "South Korea": "🇰🇷",
+    "Brazil": "🇧🇷", "Mexico": "🇲🇽", "Netherlands": "🇳🇱",
+    "Switzerland": "🇨🇭", "Sweden": "🇸🇪", "Singapore": "🇸🇬",
+    "Israel": "🇮🇱", "Turkey": "🇹🇷", "Poland": "🇵🇱",
+    "Argentina": "🇦🇷", "Chile": "🇨🇱", "Colombia": "🇨🇴",
+    "Philippines": "🇵🇭", "Thailand": "🇹🇭", "New Zealand": "🇳🇿",
   };
-  return flags[country] || '🌍';
+  return flags[country] || "🌍";
 }
 
+function getPersonalTranslation(data: ResultData, consulateName: string): string {
+  const parts: string[] = [];
+  if (data.country) parts.push(`${getCountryFlag(data.country)} ${data.country} national`);
+  if (data.investment_range) parts.push(data.investment_range);
+  const bizType = (data.answers?.["Q0-08a"] as string) || "";
+  if (/franchise/i.test(bizType)) parts.push("franchise buyer");
+  else if (/acquisition|existing independent/i.test(bizType)) parts.push("business acquisition");
+  else if (bizType) parts.push("new business");
+  if (data.application_type === "partnership" || data.application_type === "spousal_partnership") parts.push("partnership");
+  else parts.push("solo applicant");
+  parts.push(consulateName);
+  return parts.join(" · ");
+}
 
-
-/* ─── Email Gate ────────────────────────────────────────────────────────── */
+/* ─── Email Gate ─────────────────────────────────────────────────────────── */
 function EmailGate({ onBackToQuiz }: { onBackToQuiz: () => void }) {
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState("");
   const [caslConsent, setCaslConsent] = useState(false);
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
@@ -183,22 +151,11 @@ function EmailGate({ onBackToQuiz }: { onBackToQuiz: () => void }) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !caslConsent || sending) return;
-    setSending(true);
-    setError(null);
+    setSending(true); setError(null);
     try {
-      const { data: session } = await supabase
-        .from("quiz_sessions")
-        .select("id, result_json, outcome")
-        .eq("email", email)
-        .order("completed_at", { ascending: false })
-        .limit(1)
-        .single();
+      const { data: session } = await supabase.from("quiz_sessions").select("id, result_json, outcome").eq("email", email).order("completed_at", { ascending: false }).limit(1).single();
       if (!session) { setError("No quiz results found for this email. Take the quiz first."); setSending(false); return; }
-      await fetch("/api/email/results", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, outcome: session.outcome, result_json: session.result_json, quiz_session_id: session.id, franchise_interest: (session.result_json as Record<string, unknown>)?.franchise_interest || false }),
-      });
+      await fetch("/api/email/results", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, outcome: session.outcome, result_json: session.result_json, quiz_session_id: session.id, franchise_interest: (session.result_json as Record<string, unknown>)?.franchise_interest || false }) });
       setSent(true);
     } catch { setError("Something went wrong. Please try again."); }
     finally { setSending(false); }
@@ -210,9 +167,7 @@ function EmailGate({ onBackToQuiz }: { onBackToQuiz: () => void }) {
         <div style={{ fontSize: "17px", color: "#C9A84C", fontWeight: 300, marginBottom: "48px" }}>E2go<span style={{ color: "rgba(245,240,232,0.9)" }}>.app</span></div>
         {sent ? (
           <>
-            <div style={{ width: "48px", height: "48px", border: "2px solid #5DCAA5", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "24px" }}>
-              <span style={{ color: "#5DCAA5", fontSize: "20px" }}>✓</span>
-            </div>
+            <div style={{ width: "48px", height: "48px", border: "2px solid #5DCAA5", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "24px" }}><span style={{ color: "#5DCAA5", fontSize: "20px" }}>✓</span></div>
             <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "24px", fontWeight: 300, color: "#f5f0e8", marginBottom: "12px", textAlign: "center" }}>Check your email</h1>
             <p style={{ color: "rgba(245,240,232,0.76)", fontSize: "14px", textAlign: "center", lineHeight: 1.6, marginBottom: "8px" }}>We sent a verification link to <strong style={{ color: "#f5f0e8" }}>{email}</strong></p>
             <p style={{ color: "rgba(245,240,232,0.70)", fontSize: "13px", textAlign: "center", lineHeight: 1.6 }}>Click the link in the email to view your results. The link expires in 24 hours.</p>
@@ -243,17 +198,16 @@ function EmailGate({ onBackToQuiz }: { onBackToQuiz: () => void }) {
 
 /* ─── Name Capture ───────────────────────────────────────────────────────── */
 function NameCaptureForm({ email, quizSessionId, onSuccess, onDismiss }: { email: string; quizSessionId: string; onSuccess: () => void; onDismiss: () => void }) {
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [accountExists, setAccountExists] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
+    e.preventDefault(); setError(null);
     if (!firstName || !lastName || !newPassword) { setError("All fields are required."); return; }
     if (newPassword.length < 8) { setError("Password must be at least 8 characters."); return; }
     if (newPassword !== confirmNewPassword) { setError("Passwords do not match."); return; }
@@ -314,7 +268,7 @@ function ResultsPageInner() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [caseProfile, setCaseProfile] = useState<CaseProfile | null>(null);
 
-  const [verificationState, setVerificationState] = useState<'loading' | 'unverified' | 'verified' | 'authenticated'>('loading');
+  const [verificationState, setVerificationState] = useState<"loading" | "unverified" | "verified" | "authenticated">("loading");
   const [quizSessionId, setQuizSessionId] = useState<string | null>(null);
   const [quizEmail, setQuizEmail] = useState<string | null>(null);
   const [nameCaptureDismissed, setNameCaptureDismissed] = useState(false);
@@ -322,106 +276,63 @@ function ResultsPageInner() {
   const [expandedFlag, setExpandedFlag] = useState<string | null>(null);
   const [flagAnswers, setFlagAnswers] = useState<Record<string, string>>({});
   const [applicationId, setApplicationId] = useState<string | null>(null);
-  const [flagSaveStatus, setFlagSaveStatus] = useState<Record<string, 'idle' | 'saving' | 'saved'>>({});
+  const [flagSaveStatus, setFlagSaveStatus] = useState<Record<string, "idle" | "saving" | "saved">>({});
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
   const flagDebounceRefs = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
   useEffect(() => {
     if (!data) return;
     const allFlags = [...(data.warnings || []), ...(data.attorney_flags || [])];
     if (allFlags.length === 0) return;
-    fetch('/api/quiz/personalized-flags', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ flags: allFlags, answers: data.answers || {} }),
-    })
+    fetch("/api/quiz/personalized-flags", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ flags: allFlags, answers: data.answers || {} }) })
       .then(r => r.ok ? r.json() : { explanations: {} })
-      .then(({ explanations }) => { if (explanations && typeof explanations === 'object') setPersonalizedExplanations(explanations); })
+      .then(({ explanations }) => { if (explanations && typeof explanations === "object") setPersonalizedExplanations(explanations); })
       .catch(() => {});
   }, [data]);
 
   useEffect(() => {
     const loadResult = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-
       if (user) {
-        setIsLoggedIn(true);
-        setVerificationState('authenticated');
-
+        setIsLoggedIn(true); setVerificationState("authenticated");
         const { data: profile } = await supabase.from("profiles").select("first_name").eq("id", user.id).single();
         if (profile?.first_name) setUserName(profile.first_name);
-
         const stored = localStorage.getItem("e2go_quiz_result");
         if (stored) { try { setData(JSON.parse(stored)); } catch { /* ignore */ } }
-
         if (!stored) {
           const { data: session } = await supabase.from("quiz_sessions").select("result_json, outcome, score").eq("user_id", user.id).order("completed_at", { ascending: false }).limit(1).single();
           if (session?.result_json) setData(session.result_json as ResultData);
         }
-
-        // Build case profile server-side (graceful fallback on failure)
+        try { const res = await fetch("/api/case-profile/build"); if (res.ok) { const { profile: cp } = await res.json(); setCaseProfile(cp); } } catch { /* non-blocking */ }
         try {
-          const res = await fetch('/api/case-profile/build');
-          if (res.ok) {
-            const { profile: cp } = await res.json();
-            setCaseProfile(cp);
-          }
-        } catch { /* non-blocking */ }
-
-        // Load applicationId + any existing flag remediation answers
-        try {
-          const { data: appRow } = await supabase
-            .from('applications')
-            .select('id')
-            .eq('user_id', user.id)
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .maybeSingle();
+          const { data: appRow } = await supabase.from("applications").select("id").eq("user_id", user.id).order("created_at", { ascending: false }).limit(1).maybeSingle();
           if (appRow) {
             setApplicationId(appRow.id);
-            const uniqueAnswerKeys = [...new Set(Object.values(FLAG_REMEDIATION).map(r => r.answerKey))];
-            const { data: savedAnswers } = await supabase
-              .from('answers')
-              .select('question_key, answer_value')
-              .eq('application_id', appRow.id)
-              .in('question_key', uniqueAnswerKeys);
+            const uniqueAnswerKeys = Array.from(new Set(Object.values(FLAG_REMEDIATION).map(r => r.answerKey)));
+            const { data: savedAnswers } = await supabase.from("answers").select("question_key, answer_value").eq("application_id", appRow.id).in("question_key", uniqueAnswerKeys);
             if (savedAnswers) {
               const map: Record<string, string> = {};
-              for (const a of savedAnswers) {
-                if (a.answer_value) map[a.question_key] = a.answer_value;
-              }
+              for (const a of savedAnswers) { if (a.answer_value) map[a.question_key] = a.answer_value; }
               setFlagAnswers(map);
             }
           }
-        } catch { /* non-blocking — flag remediation is enhancement only */ }
-
-        setLoading(false);
-        return;
+        } catch { /* non-blocking */ }
+        setLoading(false); return;
       }
-
-      const paramSession = searchParams.get('session');
-      const cookieSession = getCookie('verified_session');
+      const paramSession = searchParams.get("session");
+      const cookieSession = getCookie("verified_session");
       const sessionId = paramSession || cookieSession;
-
-      if (!sessionId) { setVerificationState('unverified'); setLoading(false); return; }
-
+      if (!sessionId) { setVerificationState("unverified"); setLoading(false); return; }
       setQuizSessionId(sessionId);
       const { data: session } = await supabase.from("quiz_sessions").select("result_json, outcome, email").eq("id", sessionId).single();
-
-      if (session?.result_json) {
-        setData(session.result_json as ResultData);
-        setQuizEmail(session.email);
-        setVerificationState('verified');
-      } else {
+      if (session?.result_json) { setData(session.result_json as ResultData); setQuizEmail(session.email); setVerificationState("verified"); }
+      else {
         const stored = localStorage.getItem("e2go_quiz_result");
-        if (stored) {
-          try { setData(JSON.parse(stored)); setVerificationState('verified'); }
-          catch { setVerificationState('unverified'); }
-        } else { setVerificationState('unverified'); }
+        if (stored) { try { setData(JSON.parse(stored)); setVerificationState("verified"); } catch { setVerificationState("unverified"); } }
+        else { setVerificationState("unverified"); }
       }
-
       setLoading(false);
     };
-
     loadResult();
   }, [supabase, searchParams]);
 
@@ -430,41 +341,28 @@ function ResultsPageInner() {
     if (!applicationId) return;
     const existing = flagDebounceRefs.current.get(answerKey);
     if (existing) clearTimeout(existing);
-    setFlagSaveStatus(prev => ({ ...prev, [answerKey]: 'saving' }));
+    setFlagSaveStatus(prev => ({ ...prev, [answerKey]: "saving" }));
     const timer = setTimeout(async () => {
       try {
-        const res = await fetch('/api/answers', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ question_key: answerKey, answer_value: value, application_id: applicationId }),
-        });
-        if (res.ok) {
-          setFlagSaveStatus(prev => ({ ...prev, [answerKey]: 'saved' }));
-          setTimeout(() => setFlagSaveStatus(prev => ({ ...prev, [answerKey]: 'idle' })), 1500);
-        } else {
-          setFlagSaveStatus(prev => ({ ...prev, [answerKey]: 'idle' }));
-        }
-      } catch {
-        setFlagSaveStatus(prev => ({ ...prev, [answerKey]: 'idle' }));
-      }
+        const res = await fetch("/api/answers", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question_key: answerKey, answer_value: value, application_id: applicationId }) });
+        if (res.ok) { setFlagSaveStatus(prev => ({ ...prev, [answerKey]: "saved" })); setTimeout(() => setFlagSaveStatus(prev => ({ ...prev, [answerKey]: "idle" })), 1500); }
+        else { setFlagSaveStatus(prev => ({ ...prev, [answerKey]: "idle" })); }
+      } catch { setFlagSaveStatus(prev => ({ ...prev, [answerKey]: "idle" })); }
     }, 800);
     flagDebounceRefs.current.set(answerKey, timer);
   }, [applicationId]);
 
-  if (loading || verificationState === 'loading') {
+  if (loading || verificationState === "loading") {
     return (
       <div style={{ background: "#0a0a0a", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'DM Sans', sans-serif" }}>
         <div style={{ color: "rgba(201,168,76,0.6)", fontSize: "13px", letterSpacing: "0.08em", textTransform: "uppercase" }}>Loading your result...</div>
       </div>
     );
   }
-
-  if (verificationState === 'unverified') {
-    return <EmailGate onBackToQuiz={() => router.push('/quiz')} />;
-  }
-
+  if (verificationState === "unverified") return <EmailGate onBackToQuiz={() => router.push("/quiz")} />;
   if (!data) return null;
 
+  /* ── Computed variables ──────────────────────────────────────────────── */
   const score = data.score || 80;
   const outcome = data.outcome || "PROCEED";
   const pricing = getPricingFromAnswers(data);
@@ -472,71 +370,75 @@ function ResultsPageInner() {
   const timeline = getInterviewMonthRange(timelineWeeks.weeksMin, timelineWeeks.weeksMax);
   const consulate = getConsulateIntel(data.country);
   const targetDateMsg = getTargetDateMessage(data.answers?.["Q0-target-date"] as string);
-  const scoreLabel = getScoreLabel(score);
-  const verdict = getVerdict(outcome, score);
-  const verdictSub = getVerdictSub(outcome, data.warnings || []);
-  const scoreColor = score >= 70 ? '#C9A84C' : score >= 40 ? '#f59e0b' : 'rgba(245,240,232,0.68)';
+  const scoreColor = score >= 70 ? "#C9A84C" : score >= 40 ? "#f59e0b" : "rgba(245,240,232,0.68)";
+  const identityLabel = getIdentityLabel(outcome, score);
+  const band = getBandConfig(outcome);
+  const personalTranslation = getPersonalTranslation(data, consulate.name);
+  const ctaLabel = getOutcomeCTA(outcome);
+  const ctaHref = isLoggedIn ? "/apply" : `/pricing?tier=${data.application_type}`;
 
   const allFlags = [...(data.warnings || []), ...(data.attorney_flags || [])];
-
-  function computeCriteriaBreakdown(d: ResultData): Array<{ label: string; score: number; note: string }> {
-    const warns = new Set(d.warnings || []);
-    const atty  = new Set(d.attorney_flags || []);
-    const hard  = d.outcome === 'DO_NOT_PROCEED';
-    const has = (...codes: string[]) => codes.some(c => warns.has(c) || atty.has(c));
-
-    const nationalityScore = hard ? 0 : 100;
-    const nationalityNote  = hard ? 'Hard stop — eligibility blocked' : 'Treaty country confirmed';
-
-    const investScore = has('W-PROP-STRONG') ? 40 : has('W-PROP-SOFT', 'W-05') ? 70 : 100;
-    const investNote  = has('W-PROP-STRONG') ? 'Below $75K — strong concern' : has('W-PROP-SOFT', 'W-05') ? 'Below $150K — advisory flag' : 'Investment level clear';
-
-    const fundsFlags = [has('W-06'), has('W-07'), has('W-08')].filter(Boolean).length;
-    const fundsScore = fundsFlags >= 2 ? 45 : fundsFlags === 1 ? 65 : 100;
-    const fundsNote  = fundsFlags >= 2 ? 'Multiple documentation gaps' : fundsFlags === 1 ? 'Paper trail needs attention' : 'Source of funds clear';
-
-    const bizFlags = [has('W-09'), has('W-10'), has('W-15')].filter(Boolean).length;
-    const bizScore  = has('PR-05', 'PR-07', 'PR-08', 'PR-09') ? 20 : bizFlags >= 2 ? 50 : bizFlags === 1 ? 75 : 100;
-    const bizNote   = has('PR-05', 'PR-07', 'PR-08', 'PR-09') ? 'Role or business type concern' : bizFlags >= 1 ? 'Role / structure needs clarification' : 'Active management role confirmed';
-
-    const intentScore = has('W-NI-NONE') ? 30 : has('W-NI-WEAK') ? 55 : has('W-NI-01', 'W-NI-02', 'W-NI-03') ? 80 : 100;
-    const intentNote  = has('W-NI-NONE') ? 'Weak ties to home country' : has('W-NI-WEAK') ? 'Limited ties — needs attention' : has('W-NI-01', 'W-NI-02', 'W-NI-03') ? 'Ties documented — strengthen further' : 'Strong home-country ties';
-
-    return [
-      { label: 'Treaty nationality',  score: nationalityScore, note: nationalityNote },
-      { label: 'Investment amount',    score: investScore,      note: investNote },
-      { label: 'Source of funds',      score: fundsScore,       note: fundsNote },
-      { label: 'Business & role',      score: bizScore,         note: bizNote },
-      { label: 'Non-immigrant intent', score: intentScore,      note: intentNote },
-    ];
-  }
-
-  const criteriaBreakdown = computeCriteriaBreakdown(data);
-
   const flagsToShow = allFlags.map(code => ({
     code,
     info: (flagExplanations as Record<string, { question_id: string; plain_language: string; why_it_matters: string; edit_label: string }>)[code],
     isAttorney: (data.attorney_flags || []).includes(code),
   })).filter(f => f.info);
 
-  const showNameCapture = verificationState === 'verified' && !isLoggedIn && !nameCaptureDismissed;
-
-  // Franchise trigger
+  const showNameCapture = verificationState === "verified" && !isLoggedIn && !nameCaptureDismissed;
   const showFranchiseTeaser = caseProfile?.franchiseTrigger ?? data.franchise_interest;
-  const fddAnswer = typeof data.answers?.['Q0-08c'] === 'string' ? (data.answers['Q0-08c'] as string) : '';
-  const fddReceived = fddAnswer.startsWith('Yes');
-  const fddOffered = fddAnswer.includes('offered');
+  const fddAnswer = typeof data.answers?.["Q0-08c"] === "string" ? (data.answers["Q0-08c"] as string) : "";
+  const fddReceived = fddAnswer.startsWith("Yes");
+  const fddOffered = fddAnswer.includes("offered");
   const showFddCta = fddReceived || fddOffered;
+
+  const FLAG_MODULE: Record<string, string> = {
+    "W-NI-NONE": "Ties Section — Non-Immigrant Intent",
+    "W-NI-WEAK": "Ties Section — Non-Immigrant Intent",
+    "W-REFUSAL-RECENT": "Cover Letter — Prior Refusal Narrative",
+    "W-E2-PRIOR-DENIAL": "Cover Letter — Prior Refusal Narrative",
+    "W-INVESTMENT-LOW": "Investment Section — Source of Funds",
+    "W-INVESTMENT-CRITICAL": "Investment Section — Source of Funds",
+    "W-SOURCE-UNCLEAR": "Investment Section — Source of Funds",
+    "W-EXPERIENCE-WEAK": "Qualifications Section",
+    "W-EXPERIENCE-CRITICAL": "Qualifications Section",
+    "W-MARGINALITY-ACQUISITION": "Business Plan — Employment Creation",
+  };
+
+  const FAQ_ITEMS = [
+    {
+      q: "How much investment do I actually need?",
+      a: "There is no hard dollar floor — E-2 uses a proportionality test. In practice, applications below $75,000 are very difficult to approve. The most successful applications show that the investment is substantial relative to the total cost of the enterprise and that the funds are clearly committed. For franchise buyers, most well-structured applications fall between $100,000 and $500,000. Your investment level and business type are both accounted for in your score above.",
+    },
+    {
+      q: "Can E2go replace an immigration attorney?",
+      a: "No, and we are explicit about this. E2go is a document preparation and case management platform — we help you organize, write, and strengthen your application file. A licensed attorney provides legal strategy, handles complex situations (prior denials, 221(g) processing, security checks), and can represent you if needed. For straightforward applications with strong investment and clean funds, E2go prepares the documents at a fraction of attorney fees. Attorney review alongside E2go is always an option.",
+    },
+    {
+      q: "What if my application is flagged or gets a 221(g)?",
+      a: "A 221(g) is an administrative hold — not a denial. It is a request for additional documents or a security clearance check. The most common requests are for source of funds documentation, business plan clarification, or an organizational chart. E2go builds all of these proactively. If you receive a 221(g), your Gap Analysis case file identifies which evidence categories to strengthen and exactly what to add. Most 221(g) cases resolve within 4–8 weeks of providing the requested documents.",
+    },
+    {
+      q: "I've sold property in my home country — will that affect my case?",
+      a: "Yes, it can — but it is manageable. Selling your primary residence is a signal officers may interpret as immigrant intent. It is not disqualifying, but it requires a clear counter-narrative: demonstrable ties that remain after the sale (family, investments, accounts, professional obligations), a credible E-2 renewal plan, and an explicit non-immigrant intent statement. E2go's Ties Section and Interview Simulator both address this pattern directly.",
+    },
+    {
+      q: `How long does the ${consulate.name} process take?`,
+      a: `From submission to interview is currently ${timelineWeeks.weeksMin}–${timelineWeeks.weeksMax} weeks for a well-prepared application at ${consulate.name}. ${consulate.intel} Preparation inside E2go typically takes 2–4 weeks depending on case complexity. Your interview window is ${timeline}. Most approvals are issued the same day as the interview, with the passport returned within 5–7 business days.`,
+    },
+    {
+      q: "What's included in the $1,495 package?",
+      a: "15 consulate-formatted documents: Cover Letter, Business Plan, Source of Funds Statement, Personal Financial Statement, Investment Evidence Summary, Qualifications Narrative, Organizational Chart, Employment Creation Plan, Business Registration Summary, Franchise Agreement Summary (if applicable), Market Analysis, Non-Immigrant Intent Statement, Spouse's Declaration (if applicable), Compliance Calendar, and a Table of Contents formatted for your consulate. The package also includes the Gap Analysis Module (6 evidence categories) and 10 document revision credits.",
+    },
+  ];
 
   return (
     <div style={{ background: "#0a0a0a", minHeight: "100vh", fontFamily: "'DM Sans', system-ui, sans-serif", color: "#f5f0e8" }}>
       <style>{`
         @media (max-width: 640px) {
-          .profile-snap { grid-template-columns: 1fr 1fr !important; }
-          .roadmap-step { flex-direction: column !important; gap: 8px !important; }
-          .cta-intel-row { flex-direction: column !important; }
+          .results-hero { padding: 32px 20px 24px !important; }
           .results-page-inner { padding: 0 20px !important; }
-          .results-hero { padding: 36px 20px 28px !important; }
+          .free-paid-grid { grid-template-columns: 1fr !important; }
+          .cta-intel-row { flex-direction: column !important; }
           .cta-block { padding: 24px 20px !important; }
         }
       `}</style>
@@ -545,163 +447,61 @@ function ResultsPageInner() {
       <div style={{ padding: "18px 40px", borderBottom: "1px solid rgba(201,168,76,0.1)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div style={{ fontSize: "17px", color: "#C9A84C", fontWeight: 300 }}>E2go<span style={{ color: "rgba(245,240,232,0.9)" }}>.app</span></div>
         <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
-          {isLoggedIn && (
-            <Link href="/dashboard" style={{ fontSize: "11px", color: "rgba(201,168,76,0.85)", letterSpacing: "0.08em", textTransform: "uppercase", textDecoration: "none" }}>Dashboard</Link>
-          )}
+          {isLoggedIn && <Link href="/dashboard" style={{ fontSize: "11px", color: "rgba(201,168,76,0.85)", letterSpacing: "0.08em", textTransform: "uppercase", textDecoration: "none" }}>Dashboard</Link>}
           <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.65)", letterSpacing: "0.08em", textTransform: "uppercase" }}>Eligibility result</div>
         </div>
       </div>
 
-      {/* ─── ZONE 1: Hero — compact verdict ───────────────────────────────────── */}
+      {/* ─── ZONE 1: HERO ──────────────────────────────────────────────────────── */}
       <div style={{ borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
         <div className="results-hero" style={{ maxWidth: "760px", margin: "0 auto", padding: "48px 40px 36px" }}>
-          <button onClick={() => router.push('/quiz/review')} style={{ fontSize: '13px', color: 'rgba(245,240,232,0.70)', background: 'transparent', border: 'none', cursor: 'pointer', padding: '0', marginBottom: '28px', fontFamily: "'DM Sans', sans-serif", display: 'block' }}>
+
+          <button onClick={() => router.push("/quiz/review")} style={{ fontSize: "13px", color: "rgba(245,240,232,0.70)", background: "transparent", border: "none", cursor: "pointer", padding: "0", marginBottom: "28px", fontFamily: "'DM Sans', sans-serif", display: "block" }}>
             ← Review or change my answers
           </button>
 
-          {/* Score circle + verdict */}
-          <div style={{ display: "flex", alignItems: "flex-start", gap: "24px", marginBottom: "28px" }}>
+          {/* Score circle + Identity label */}
+          <div style={{ display: "flex", alignItems: "flex-start", gap: "24px", marginBottom: "20px" }}>
             <div style={{ width: "88px", height: "88px", border: `3px solid ${scoreColor}`, borderRadius: "50%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
               <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "32px", fontWeight: 300, color: scoreColor, lineHeight: 1 }}>{score}</div>
               <div style={{ fontSize: "10px", color: "rgba(245,240,232,0.68)", letterSpacing: "0.06em" }}>/100</div>
             </div>
-            <div style={{ paddingTop: "4px" }}>
+            <div style={{ paddingTop: "6px", flex: 1 }}>
               {isLoggedIn && userName ? (
-                <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "30px", fontWeight: 300, color: "#f5f0e8", lineHeight: 1.15, marginBottom: "6px" }}>{userName}, {verdict.charAt(0).toLowerCase() + verdict.slice(1)}</div>
+                <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "36px", fontWeight: 300, color: "#f5f0e8", lineHeight: 1.15, marginBottom: "8px" }}>
+                  {userName}, {identityLabel.charAt(0).toLowerCase() + identityLabel.slice(1)}
+                </div>
               ) : (
-                <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "30px", fontWeight: 300, color: "#f5f0e8", lineHeight: 1.15, marginBottom: "6px" }}>{verdict}</div>
+                <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "36px", fontWeight: 300, color: "#f5f0e8", lineHeight: 1.15, marginBottom: "8px" }}>
+                  {identityLabel}
+                </div>
               )}
-              <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.65)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: "8px" }}>{scoreLabel}</div>
-              <div style={{ fontSize: "13px", color: "rgba(245,240,232,0.74)", lineHeight: 1.65, maxWidth: "480px" }}>{verdictSub}</div>
+              <div style={{ fontSize: "12px", color: "rgba(245,240,232,0.62)", lineHeight: 1.6 }}>
+                {personalTranslation}
+              </div>
             </div>
           </div>
 
-          {/* ─── 7-step Journey Strip ──────────────────────────────────────────── */}
-          {(() => {
-            const sm = getJourneyStepMonths();
-            const steps = [
-              { label: "Eligibility confirmed", sub: `Quiz complete · ${score}/100`, month: sm[0], state: "done" as const },
-              { label: "Business selection", sub: "Franchise matching · FDD & Market Analysis", month: sm[1], state: "active" as const },
-              { label: "Application package", sub: "Business plan · All docs · Funds narrative", month: sm[2], state: "upcoming" as const },
-              { label: "Application submission", sub: "DS-160 · Fees · Booking", month: sm[3], state: "upcoming" as const },
-              { label: "Interview preparation", sub: "Consulate coaching · AI Simulator · Prep Kit", month: sm[4], state: "upcoming" as const },
-              { label: "Consular interview", sub: consulate.name, month: sm[5], state: "upcoming" as const },
-              { label: "Arrive in USA", sub: "Own your business", month: sm[6], state: "goal" as const },
-            ];
-            return (
-              <div style={{ marginBottom: "24px", padding: "18px 20px 20px", background: "rgba(201,168,76,0.02)", border: "1px solid rgba(201,168,76,0.08)", marginLeft: "-20px", marginRight: "-20px" }}>
-                <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: "3px", flexWrap: "wrap", gap: "4px" }}>
-                  <div style={{ fontSize: "12px", fontWeight: 500, color: "#f5f0e8" }}>Your E-2 Journey to the USA</div>
-                  <div style={{ fontSize: "10px", color: "rgba(201,168,76,0.65)", fontStyle: "italic" }}>Start now — you could be in the US by {sm[6]}</div>
-                </div>
-                <div style={{ fontSize: "10px", color: "rgba(245,240,232,0.62)", marginBottom: "16px" }}>7 milestones · {consulate.name}</div>
-                <div style={{ overflowX: "auto" as const }}>
-                  <div style={{ display: "flex", minWidth: "660px" }}>
-                    {steps.map((step, i) => (
-                      <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", position: "relative" }}>
-                        {i > 0 && <div style={{ position: "absolute", top: "5px", left: 0, width: "50%", height: "1px", background: "rgba(201,168,76,0.12)" }} />}
-                        {i < steps.length - 1 && <div style={{ position: "absolute", top: "5px", left: "50%", width: "50%", height: "1px", background: "rgba(201,168,76,0.12)" }} />}
-                        <div style={{
-                          width: step.state === "goal" ? "14px" : "11px",
-                          height: step.state === "goal" ? "14px" : "11px",
-                          borderRadius: "50%",
-                          background: step.state === "done" ? "#5DCAA5" : step.state === "active" || step.state === "goal" ? "#C9A84C" : "transparent",
-                          border: `1.5px solid ${step.state === "done" ? "#5DCAA5" : step.state === "active" || step.state === "goal" ? "#C9A84C" : "rgba(201,168,76,0.2)"}`,
-                          display: "flex", alignItems: "center", justifyContent: "center",
-                          position: "relative", zIndex: 1, flexShrink: 0,
-                        }}>
-                          {step.state === "done" && <span style={{ fontSize: "7px", color: "#0a0a0a", fontWeight: 700 }}>✓</span>}
-                          {step.state === "goal" && <span style={{ fontSize: "7px", color: "#0a0a0a", fontWeight: 700 }}>★</span>}
-                        </div>
-                        <div style={{ marginTop: "7px", textAlign: "center", padding: "0 2px" }}>
-                          <div style={{ fontSize: "8px", fontWeight: 600, lineHeight: 1.3, marginBottom: "2px", color: step.state === "done" ? "#5DCAA5" : step.state === "active" || step.state === "goal" ? "#C9A84C" : "rgba(245,240,232,0.65)" }}>{step.label}</div>
-                          <div style={{ fontSize: "7px", lineHeight: 1.4, marginBottom: "3px", color: step.state === "done" ? "rgba(93,202,165,0.80)" : step.state === "active" || step.state === "goal" ? "rgba(201,168,76,0.82)" : "rgba(245,240,232,0.62)" }}>{step.sub}</div>
-                          {step.state === "done" && <div style={{ display: "inline-block", fontSize: "6px", background: "rgba(93,202,165,0.1)", border: "1px solid rgba(93,202,165,0.3)", color: "#5DCAA5", padding: "1px 4px", letterSpacing: "0.08em", textTransform: "uppercase" as const, marginBottom: "2px" }}>YOU ARE HERE</div>}
-                          <div style={{ fontSize: "7px", fontWeight: step.state === "goal" ? 600 : 400, color: step.state === "done" ? "rgba(245,240,232,0.72)" : step.state === "goal" ? "#C9A84C" : "rgba(245,240,232,0.68)" }}>{step.month}</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            );
-          })()}
-
-          {/* All qualifying criteria chips */}
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "16px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "6px", padding: "5px 12px", background: "rgba(93,202,165,0.06)", border: "1px solid rgba(93,202,165,0.25)", fontSize: "12px", color: "#5DCAA5" }}>
-              {getCountryFlag(data.country)} {data.country} — E-2 treaty confirmed
-            </div>
-            {criteriaBreakdown[1].score >= 70 && (
-              <div style={{ display: "flex", alignItems: "center", gap: "6px", padding: "5px 12px", background: "rgba(93,202,165,0.06)", border: "1px solid rgba(93,202,165,0.25)", fontSize: "12px", color: "#5DCAA5" }}>
-                ✓ {data.investment_range} — {criteriaBreakdown[1].note.charAt(0).toLowerCase() + criteriaBreakdown[1].note.slice(1)}
-              </div>
-            )}
-            {criteriaBreakdown[2].score >= 70 && (
-              <div style={{ display: "flex", alignItems: "center", gap: "6px", padding: "5px 12px", background: "rgba(93,202,165,0.06)", border: "1px solid rgba(93,202,165,0.25)", fontSize: "12px", color: "#5DCAA5" }}>
-                ✓ {criteriaBreakdown[2].note}
-              </div>
-            )}
-            {criteriaBreakdown[3].score >= 70 && (
-              <div style={{ display: "flex", alignItems: "center", gap: "6px", padding: "5px 12px", background: "rgba(93,202,165,0.06)", border: "1px solid rgba(93,202,165,0.25)", fontSize: "12px", color: "#5DCAA5" }}>
-                ✓ {data.application_type === "partnership" ? "Partnership investors" : "Solo investor"} — {criteriaBreakdown[3].note.charAt(0).toLowerCase() + criteriaBreakdown[3].note.slice(1)}
-              </div>
-            )}
-            {criteriaBreakdown[4].score >= 70 && (
-              <div style={{ display: "flex", alignItems: "center", gap: "6px", padding: "5px 12px", background: "rgba(93,202,165,0.06)", border: "1px solid rgba(93,202,165,0.25)", fontSize: "12px", color: "#5DCAA5" }}>
-                ✓ Non-immigrant intent — {criteriaBreakdown[4].note.charAt(0).toLowerCase() + criteriaBreakdown[4].note.slice(1)}
-              </div>
-            )}
+          {/* Eligibility band strip */}
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 14px", background: "rgba(10,10,10,0.6)", border: `1px solid ${band.color}30`, marginBottom: "0" }}>
+            <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: band.color, flexShrink: 0 }} />
+            <div style={{ fontSize: "12px", color: "rgba(245,240,232,0.82)", fontFamily: "'DM Sans', sans-serif", lineHeight: 1.5 }}>{band.label}</div>
           </div>
 
+          {/* Outcome Summary Card */}
+          <OutcomeSummaryCard
+            country={data.country}
+            investmentRange={data.investment_range}
+            applicationType={data.application_type}
+            dependents={data.dependents}
+            answers={data.answers}
+            warnings={data.warnings || []}
+            consulateName={consulate.name}
+            outcome={outcome}
+          />
 
-          {/* ─── Flags — immediately below chips ───────────────────────────── */}
-          {flagsToShow.length > 0 && (
-            <div style={{ marginTop: "16px", marginBottom: "8px" }}>
-              <div style={{ fontSize: "10px", letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(201,168,76,0.82)", marginBottom: "6px" }}>
-                {flagsToShow.length === 1 ? "One area to address" : `${flagsToShow.length} areas to address`}
-              </div>
-              <div style={{ fontSize: "13px", color: "rgba(245,240,232,0.70)", marginBottom: "12px", lineHeight: 1.5 }}>
-                Your application is still viable — these are preparation priorities, not disqualifiers.
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                {flagsToShow.map(({ code, info, isAttorney }) => {
-                  const remediation = FLAG_REMEDIATION[code];
-                  const answerKey = remediation?.answerKey;
-                  const flagAnswer = answerKey ? (flagAnswers[answerKey] ?? '') : '';
-                  const currentAnswer = data.answers?.[info.question_id]
-                    ? (Array.isArray(data.answers[info.question_id])
-                        ? (data.answers[info.question_id] as string[]).join(", ")
-                        : String(data.answers[info.question_id]))
-                    : undefined;
-                  return (
-                    <FlagCard
-                      key={code}
-                      code={code}
-                      info={info}
-                      isAttorney={isAttorney}
-                      currentAnswer={currentAnswer}
-                      personalizedExplanation={personalizedExplanations[code]}
-                      flagAnswer={flagAnswer}
-                      isExpanded={expandedFlag === code}
-                      canEdit={isLoggedIn && !!applicationId}
-                      onToggle={() => setExpandedFlag(expandedFlag === code ? null : code)}
-                      onFlagAnswerChange={handleFlagAnswerChange}
-                      saveStatus={answerKey ? (flagSaveStatus[answerKey] ?? 'idle') : 'idle'}
-                      onRedirectToQuiz={() => {
-                        localStorage.setItem("quiz_jump_to_id", info.question_id);
-                        localStorage.setItem("quiz_return_to_results", "true");
-                        router.push("/quiz");
-                      }}
-                    />
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {verificationState === 'verified' && !isLoggedIn && (
-            <div style={{ fontSize: "12px", color: "#5DCAA5", marginBottom: "12px" }}>✓ Email verified</div>
+          {verificationState === "verified" && !isLoggedIn && (
+            <div style={{ fontSize: "12px", color: "#5DCAA5", marginTop: "14px" }}>✓ Email verified</div>
           )}
         </div>
       </div>
@@ -712,7 +512,7 @@ function ResultsPageInner() {
           <NameCaptureForm email={quizEmail} quizSessionId={quizSessionId} onSuccess={() => window.location.reload()} onDismiss={() => setNameCaptureDismissed(true)} />
         </div>
       )}
-      {verificationState === 'verified' && !isLoggedIn && nameCaptureDismissed && (
+      {verificationState === "verified" && !isLoggedIn && nameCaptureDismissed && (
         <div style={{ padding: "16px 40px" }}>
           <div style={{ maxWidth: "760px", margin: "0 auto" }}>
             <Link href="/signup" style={{ fontSize: "13px", color: "#C9A84C", textDecoration: "underline" }}>Create an account to save your results and access your dashboard</Link>
@@ -722,51 +522,126 @@ function ResultsPageInner() {
 
       <div className="results-page-inner" style={{ maxWidth: "760px", margin: "0 auto", padding: "0 40px" }}>
 
-        {/* ─── Editorial hook — between chips and flags ───────────────────── */}
-        <div style={{ padding: "48px 0", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
-          <div style={{ width: "28px", height: "1px", background: "rgba(201,168,76,0.4)", marginBottom: "28px" }} />
-          <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontWeight: 300, lineHeight: 1.85 }}>
-            <p style={{ fontSize: "19px", color: "rgba(245,240,232,0.6)", margin: "0 0 18px" }}>
-              You&apos;ve done the research. Talked to a few people. Your funds are ready.
-            </p>
-            <p style={{ fontSize: "22px", color: "#f5f0e8", fontStyle: "italic", margin: "0 0 18px" }}>
-              And yet — one more question. One more article. One more person to ask.
-            </p>
-            <p style={{ fontSize: "19px", color: "rgba(245,240,232,0.6)", margin: "0 0 18px" }}>
-              That&apos;s not laziness. That&apos;s fear of the process.
-            </p>
-            <p style={{ fontSize: "19px", color: "rgba(245,240,232,0.75)", margin: 0 }}>
-              <span style={{ color: "#C9A84C" }}>E2go removes it.</span>{" "}
-              From business plan to interview simulator, we guide you through every step of your application — at your own pace, in one platform, at a fraction of what an attorney charges.
-            </p>
+        {/* ─── FLAGS ─────────────────────────────────────────────────────────── */}
+        {flagsToShow.length > 0 && (
+          <div style={{ padding: "40px 0", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
+            <div style={{ fontSize: "10px", letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(201,168,76,0.82)", marginBottom: "6px" }}>
+              {flagsToShow.length === 1 ? "One area to address" : `${flagsToShow.length} areas to address`}
+            </div>
+            <div style={{ fontSize: "13px", color: "rgba(245,240,232,0.70)", marginBottom: "20px", lineHeight: 1.5 }}>
+              Your application is viable — these are preparation priorities, not disqualifiers.
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              {flagsToShow.map(({ code, info, isAttorney }) => {
+                const remediation = FLAG_REMEDIATION[code];
+                const answerKey = remediation?.answerKey;
+                const flagAnswer = answerKey ? (flagAnswers[answerKey] ?? "") : "";
+                const currentAnswer = data.answers?.[info.question_id]
+                  ? (Array.isArray(data.answers[info.question_id]) ? (data.answers[info.question_id] as string[]).join(", ") : String(data.answers[info.question_id]))
+                  : undefined;
+                return (
+                  <div key={code}>
+                    <FlagCard
+                      code={code}
+                      info={info}
+                      isAttorney={isAttorney}
+                      currentAnswer={currentAnswer}
+                      personalizedExplanation={personalizedExplanations[code]}
+                      flagAnswer={flagAnswer}
+                      isExpanded={expandedFlag === code}
+                      canEdit={isLoggedIn && !!applicationId}
+                      onToggle={() => setExpandedFlag(expandedFlag === code ? null : code)}
+                      onFlagAnswerChange={handleFlagAnswerChange}
+                      saveStatus={answerKey ? (flagSaveStatus[answerKey] ?? "idle") : "idle"}
+                      onRedirectToQuiz={() => { localStorage.setItem("quiz_jump_to_id", info.question_id); localStorage.setItem("quiz_return_to_results", "true"); router.push("/quiz"); }}
+                    />
+                    {FLAG_MODULE[code] && (
+                      <div style={{ marginTop: "4px", padding: "6px 12px", background: "rgba(201,168,76,0.03)", border: "1px solid rgba(201,168,76,0.08)", borderTop: "none", fontSize: "10.5px", color: "rgba(245,240,232,0.55)", fontFamily: "'DM Sans', sans-serif" }}>
+                        How we address this: <span style={{ color: "rgba(201,168,76,0.7)" }}>{FLAG_MODULE[code]}</span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* ─── ZONE 4: Package CTA — full-width conversion block ─────────────── */}
+        {/* ─── FREE / PAID SPLIT ─────────────────────────────────────────────── */}
         <div style={{ padding: "40px 0", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
-          <div className="cta-block" style={{ padding: "36px", border: "1px solid rgba(201,168,76,0.4)", background: "rgba(201,168,76,0.03)" }}>
-
-            <div style={{ fontSize: "13px", fontWeight: 500, color: "#f5f0e8", marginBottom: "4px" }}>Eligibility confirmed. Let&apos;s build your case.</div>
-            <div style={{ fontSize: "10px", letterSpacing: "0.16em", textTransform: "uppercase", color: "rgba(201,168,76,0.65)", marginBottom: "20px" }}>E-2 application package · {pricing.tier}</div>
-
-            <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: "24px", flexWrap: "wrap", gap: "16px" }}>
-              <div>
-                <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "24px", fontWeight: 300, color: "#f5f0e8", marginBottom: "8px" }}>{pricing.tier}</div>
-                <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
-                  <span style={{ fontSize: "13px", color: "rgba(245,240,232,0.74)" }}>
-                    {pricing.tier.includes("Partnership") ? "Partnership base" : "Solo applicant"}: <span style={{ color: "#f5f0e8" }}>${pricing.base}</span>
-                  </span>
-                  {pricing.spouseAdd > 0 && <span style={{ fontSize: "13px", color: "rgba(245,240,232,0.74)" }}>+ Spouse: <span style={{ color: "#f5f0e8" }}>${pricing.spouseAdd}</span></span>}
-                  {pricing.childrenAdd > 0 && <span style={{ fontSize: "13px", color: "rgba(245,240,232,0.74)" }}>+ Children: <span style={{ color: "#f5f0e8" }}>${pricing.childrenAdd}</span></span>}
-                </div>
+          <div className="free-paid-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0" }}>
+            {/* Free column */}
+            <div style={{ padding: "24px 28px 24px 0", borderRight: "1px solid rgba(201,168,76,0.1)" }}>
+              <div style={{ fontSize: "9px", letterSpacing: "0.16em", textTransform: "uppercase", color: "rgba(245,240,232,0.5)", marginBottom: "12px", fontFamily: "'DM Sans', sans-serif" }}>
+                You already have
               </div>
-              <div style={{ textAlign: "right" as const }}>
-                <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.68)", marginBottom: "2px", letterSpacing: "0.08em", textTransform: "uppercase" }}>Total</div>
-                <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "44px", fontWeight: 300, color: "#C9A84C", lineHeight: 1 }}>${pricing.total}</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "9px" }}>
+                {[
+                  "Eligibility assessment — complete",
+                  `Outcome: ${identityLabel.slice(0, 32)}...`,
+                  `${flagsToShow.length > 0 ? flagsToShow.length + " risk flags analysed" : "No critical flags"}`,
+                  `${consulate.name} intelligence`,
+                  "E-2 knowledge base — always free",
+                ].map((item, i) => (
+                  <div key={i} style={{ display: "flex", gap: "8px", alignItems: "flex-start", fontSize: "12px", color: "rgba(245,240,232,0.75)", lineHeight: 1.5 }}>
+                    <span style={{ color: "#5DCAA5", fontSize: "11px", flexShrink: 0, marginTop: "1px" }}>✓</span>
+                    <span>{item}</span>
+                  </div>
+                ))}
               </div>
             </div>
 
-            {/* Timeline + Consulate intel — inside CTA block */}
+            {/* Paid column */}
+            <div style={{ padding: "24px 0 24px 28px" }}>
+              <div style={{ fontSize: "9px", letterSpacing: "0.16em", textTransform: "uppercase", color: "rgba(201,168,76,0.65)", marginBottom: "12px", fontFamily: "'DM Sans', sans-serif" }}>
+                Complete · $1,495
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "9px", marginBottom: "18px" }}>
+                {[
+                  "15 consulate-formatted documents",
+                  "Business plan + source of funds narrative",
+                  "Gap Analysis — 6 evidence categories",
+                  "AI Interview Simulator (officer persona)",
+                  "10 document revision credits",
+                  "Franchise compatibility assessment",
+                ].map((item, i) => (
+                  <div key={i} style={{ display: "flex", gap: "8px", alignItems: "flex-start", fontSize: "12px", color: "rgba(245,240,232,0.8)", lineHeight: 1.5 }}>
+                    <span style={{ color: "#C9A84C", fontSize: "11px", flexShrink: 0, marginTop: "1px" }}>→</span>
+                    <span>{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Attorney anchor */}
+          <div style={{ marginTop: "20px", padding: "16px 20px", background: "rgba(201,168,76,0.04)", border: "1px solid rgba(201,168,76,0.18)", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>
+            <div style={{ fontSize: "13px", color: "rgba(245,240,232,0.72)", lineHeight: 1.5 }}>
+              E-2 attorneys charge <span style={{ color: "rgba(245,240,232,0.88)" }}>$8,000–$15,000</span> for document preparation.
+            </div>
+            <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "22px", fontWeight: 300, color: "#C9A84C", whiteSpace: "nowrap" }}>
+              E2go: $1,495
+            </div>
+          </div>
+        </div>
+
+        {/* ─── DOCUMENT PACKAGE PREVIEW ─────────────────────────────────────── */}
+        <DocumentPackagePreview data={data} isLoggedIn={isLoggedIn} consulateName={consulate.name} />
+
+        {/* ─── CTA BLOCK ─────────────────────────────────────────────────────── */}
+        <div style={{ padding: "40px 0", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
+          <div className="cta-block" style={{ padding: "36px", border: "1px solid rgba(201,168,76,0.4)", background: "rgba(201,168,76,0.025)" }}>
+
+            <div style={{ marginBottom: "20px" }}>
+              <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "26px", fontWeight: 300, color: "#f5f0e8", marginBottom: "6px" }}>
+                Eligibility confirmed. Let&apos;s build your case.
+              </div>
+              <div style={{ fontSize: "13px", color: "rgba(245,240,232,0.65)", lineHeight: 1.5 }}>
+                Your documents are pre-filled with your quiz answers. The case file opens instantly.
+              </div>
+            </div>
+
+            {/* Timeline + consulate intel */}
             <div className="cta-intel-row" style={{ display: "flex", borderTop: "1px solid rgba(201,168,76,0.12)", borderBottom: "1px solid rgba(201,168,76,0.12)", margin: "0 0 24px" }}>
               <div style={{ flex: 1, padding: "16px 20px 16px 0" }}>
                 <div style={{ fontSize: "10px", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(245,240,232,0.62)", marginBottom: "6px" }}>Estimated interview window</div>
@@ -775,90 +650,152 @@ function ResultsPageInner() {
               </div>
               <div style={{ width: "1px", background: "rgba(201,168,76,0.12)", flexShrink: 0 }} />
               <div style={{ flex: 1, padding: "16px 0 16px 20px" }}>
-                <div style={{ fontSize: "10px", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(245,240,232,0.62)", marginBottom: "6px" }}>Consulate data · {consulate.name}</div>
-                <div style={{ fontSize: "13px", color: "rgba(245,240,232,0.78)", lineHeight: 1.6 }}>{consulate.intel}</div>
+                <div style={{ fontSize: "10px", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(245,240,232,0.62)", marginBottom: "6px" }}>Consulate · {consulate.name}</div>
+                <div style={{ fontSize: "12px", color: "rgba(245,240,232,0.75)", lineHeight: 1.6 }}>{consulate.intel}</div>
               </div>
             </div>
 
-            <div style={{ fontSize: "12px", color: "rgba(245,240,232,0.68)", marginBottom: "24px", lineHeight: 1.6 }}>
-              Applications submitted this summer are best positioned for the {timeline} interview window at {consulate.name}.
-            </div>
-
-            {/* After you join us */}
-            <div style={{ borderTop: "1px solid rgba(201,168,76,0.1)", paddingTop: "20px", marginBottom: "24px" }}>
-              <div style={{ fontSize: "9px", letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(245,240,232,0.62)", marginBottom: "14px" }}>After you join us</div>
+            {/* What happens next */}
+            <div style={{ marginBottom: "24px" }}>
+              <div style={{ fontSize: "9px", letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(245,240,232,0.55)", marginBottom: "14px" }}>What happens next</div>
               <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                 {[
-                  { n: "1", text: "Your onboarding questionnaire is ready — ", strong: "instantly" },
-                  { n: "2", text: "We match you with a franchise broker based on your investment range — ", strong: "within 24 hours" },
-                  { n: "3", text: "Build your application package inside E2go at your own pace — ", strong: "the platform is ready when you are" },
-                  { n: "4", text: "When your information is complete, your case file is submission-ready — ", strong: "most clients finish in 2–4 weeks" },
-                ].map(({ n, text, strong }) => (
-                  <div key={n} style={{ display: "flex", gap: "12px", alignItems: "flex-start" }}>
-                    <div style={{ width: "18px", height: "18px", borderRadius: "50%", border: "1px solid rgba(201,168,76,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "9px", color: "rgba(201,168,76,0.85)", flexShrink: 0, marginTop: "1px" }}>{n}</div>
-                    <div style={{ fontSize: "12px", color: "rgba(245,240,232,0.74)", lineHeight: 1.5 }}>{text}<span style={{ color: "rgba(245,240,232,0.75)" }}>{strong}</span></div>
+                  { time: "Day 1", text: "Your case file opens with all quiz answers pre-loaded. Begin immediately — nothing to re-enter." },
+                  { time: "Week 1–2", text: "Build your 15 documents section by section. Business plan, source of funds, qualifications narrative." },
+                  { time: "Week 3", text: `Complete package formatted for ${consulate.name}. Export to PDF, ready for submission.` },
+                  { time: `${timeline}`, text: "Your interview. Most decisions are issued the same day. Passport returned in 5–7 days." },
+                ].map(({ time, text }) => (
+                  <div key={time} style={{ display: "flex", gap: "14px", alignItems: "flex-start" }}>
+                    <div style={{ fontSize: "10px", color: "#C9A84C", fontFamily: "'DM Sans', sans-serif", letterSpacing: "0.04em", whiteSpace: "nowrap", minWidth: "60px", paddingTop: "1px" }}>{time}</div>
+                    <div style={{ fontSize: "12px", color: "rgba(245,240,232,0.75)", lineHeight: 1.55 }}>{text}</div>
                   </div>
                 ))}
               </div>
             </div>
 
-            <Link href={isLoggedIn ? "/apply" : `/pricing?tier=${data.application_type}`} style={{ display: "block", padding: "18px 24px", background: "#C9A84C", color: "#0a0a0a", fontSize: "13px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", fontFamily: "'DM Sans', sans-serif", textDecoration: "none", textAlign: "center" as const }}>
-              Yes — build my case file →
-            </Link>
+            {/* Price + CTA */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px", flexWrap: "wrap", gap: "12px" }}>
+              <div>
+                <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "40px", fontWeight: 300, color: "#C9A84C", lineHeight: 1 }}>${pricing.total}</div>
+                <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.55)", marginTop: "3px" }}>Complete package · one-time payment</div>
+              </div>
+              <Link href={ctaHref} style={{ display: "inline-block", padding: "16px 28px", background: "#C9A84C", color: "#0a0a0a", fontSize: "13px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", fontFamily: "'DM Sans', sans-serif", textDecoration: "none", whiteSpace: "nowrap" }}>
+                {ctaLabel}
+              </Link>
+            </div>
+
             {!isLoggedIn && (
-              <div style={{ marginTop: "10px", fontSize: "11px", color: "rgba(245,240,232,0.62)", textAlign: "center" as const, lineHeight: 1.6 }}>
-                Quiz and AI coaching are always free.<br />You pay only when you&apos;re ready to build your case.
+              <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.55)", lineHeight: 1.6, textAlign: "center" as const }}>
+                Quiz and AI coaching are always free. You pay only when you&apos;re ready to build your case.
               </div>
             )}
           </div>
         </div>
 
-        {/* ─── ZONE 5: Franchise Teaser ──────────────────────────────────────── */}
+        {/* ─── INTERVIEW SIMULATOR TEASER ────────────────────────────────────── */}
+        <div style={{ padding: "40px 0", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
+          <div style={{ fontSize: "9px", letterSpacing: "0.16em", textTransform: "uppercase", color: "rgba(201,168,76,0.55)", marginBottom: "6px", fontFamily: "'DM Sans', sans-serif" }}>
+            After the build — before the interview
+          </div>
+          <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "24px", fontWeight: 300, color: "#f5f0e8", marginBottom: "8px" }}>
+            Interview Simulator
+          </div>
+          <div style={{ fontSize: "13px", color: "rgba(245,240,232,0.70)", lineHeight: 1.65, marginBottom: "24px", maxWidth: "560px" }}>
+            The E-2 interview is 15–25 minutes. Officers probe the same 8–12 areas in every session — investment substantiality, non-marginality, active management role, source of funds, and non-immigrant intent. The Simulator trains you on all of them with an adaptive AI officer persona.
+          </div>
+
+          {/* Preview card */}
+          <div style={{ padding: "20px", background: "rgba(201,168,76,0.02)", border: "1px solid rgba(201,168,76,0.15)", marginBottom: "16px" }}>
+            <div style={{ fontSize: "10px", color: "rgba(201,168,76,0.6)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: "10px" }}>Sample question</div>
+            <div style={{ fontSize: "13px", color: "#f5f0e8", lineHeight: 1.6, marginBottom: "12px", fontStyle: "italic" }}>
+              &ldquo;Walk me through how your investment qualifies as substantial under E-2 treaty standards, relative to the total cost of the enterprise you are proposing to operate.&rdquo;
+            </div>
+            <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+              <div style={{ padding: "4px 10px", background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.25)", fontSize: "11px", color: "#f59e0b" }}>
+                Unprepared score: 54/100
+              </div>
+              <span style={{ fontSize: "11px", color: "rgba(245,240,232,0.5)" }}>→</span>
+              <div style={{ padding: "4px 10px", background: "rgba(93,202,165,0.1)", border: "1px solid rgba(93,202,165,0.25)", fontSize: "11px", color: "#5DCAA5" }}>
+                After coaching: 89/100
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>
+            <div style={{ fontSize: "12px", color: "rgba(245,240,232,0.65)" }}>
+              Interview Prep Pack · <span style={{ color: "#C9A84C" }}>$347</span> · add-on (requires Complete package)
+            </div>
+            <Link href={isLoggedIn ? "/apply?addon=interview" : "/pricing"} style={{ padding: "10px 20px", background: "transparent", border: "1px solid rgba(201,168,76,0.35)", color: "rgba(201,168,76,0.85)", fontSize: "12px", letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: "'DM Sans', sans-serif", textDecoration: "none", display: "inline-block" }}>
+              Add Interview Prep →
+            </Link>
+          </div>
+        </div>
+
+        {/* ─── FAQ ACCORDION ─────────────────────────────────────────────────── */}
+        <div style={{ padding: "40px 0", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
+          <div style={{ fontSize: "9px", letterSpacing: "0.16em", textTransform: "uppercase", color: "rgba(201,168,76,0.55)", marginBottom: "6px", fontFamily: "'DM Sans', sans-serif" }}>
+            Before you decide
+          </div>
+          <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "22px", fontWeight: 300, color: "#f5f0e8", marginBottom: "20px" }}>
+            Common questions
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "0" }}>
+            {FAQ_ITEMS.map((item, i) => (
+              <div key={i} style={{ borderTop: "1px solid rgba(201,168,76,0.1)", borderBottom: i === FAQ_ITEMS.length - 1 ? "1px solid rgba(201,168,76,0.1)" : "none" }}>
+                <button
+                  onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                  style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px", padding: "16px 0", background: "transparent", border: "none", cursor: "pointer", textAlign: "left" as const, fontFamily: "'DM Sans', sans-serif" }}
+                >
+                  <span style={{ fontSize: "13px", color: openFaq === i ? "#C9A84C" : "#f5f0e8", lineHeight: 1.4, fontWeight: openFaq === i ? 500 : 400 }}>{item.q}</span>
+                  <span style={{ fontSize: "16px", color: "rgba(201,168,76,0.6)", flexShrink: 0, transform: openFaq === i ? "rotate(45deg)" : "rotate(0)", transition: "transform 0.2s ease" }}>+</span>
+                </button>
+                {openFaq === i && (
+                  <div style={{ paddingBottom: "18px", paddingRight: "32px" }}>
+                    <div style={{ fontSize: "13px", color: "rgba(245,240,232,0.76)", lineHeight: 1.75 }}>{item.a}</div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ─── FRANCHISE TEASER ──────────────────────────────────────────────── */}
         {showFranchiseTeaser && (
           <div style={{ padding: "32px 0", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
             <div style={{ padding: "20px 24px", border: "1px solid rgba(201,168,76,0.25)", background: "rgba(201,168,76,0.03)" }}>
               <div style={{ fontSize: "10px", letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(201,168,76,0.6)", marginBottom: "10px" }}>Franchise opportunity</div>
-              <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "20px", fontWeight: 300, color: "#f5f0e8", marginBottom: "8px" }}>
-                Your profile matches franchise investment opportunities
-              </div>
-              <div style={{ fontSize: "13px", color: "rgba(245,240,232,0.74)", lineHeight: 1.6, marginBottom: "16px" }}>
-                Based on your industry interest and investment profile, we have identified E-2-proven franchise brands in your range. Introductions are made only with your consent.
-              </div>
-              <Link href="/fdd" style={{ display: "inline-block", padding: "11px 24px", background: "rgba(201,168,76,0.08)", border: "1px solid rgba(201,168,76,0.35)", color: "#C9A84C", fontSize: "12px", fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: "'DM Sans', sans-serif", textDecoration: "none" }}>
-                Analyse an FDD →
-              </Link>
+              <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "20px", fontWeight: 300, color: "#f5f0e8", marginBottom: "8px" }}>Your profile matches franchise investment opportunities</div>
+              <div style={{ fontSize: "13px", color: "rgba(245,240,232,0.74)", lineHeight: 1.6, marginBottom: "16px" }}>Based on your industry interest and investment profile, we have identified E-2-proven franchise brands in your range. Introductions are made only with your consent.</div>
+              <Link href="/fdd" style={{ display: "inline-block", padding: "11px 24px", background: "rgba(201,168,76,0.08)", border: "1px solid rgba(201,168,76,0.35)", color: "#C9A84C", fontSize: "12px", fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: "'DM Sans', sans-serif", textDecoration: "none" }}>Analyse an FDD →</Link>
             </div>
           </div>
         )}
 
-        {/* ─── ZONE 5b: FDD CTA — shown when Q0-08c = have/offered ──────────── */}
+        {/* ─── FDD CTA ───────────────────────────────────────────────────────── */}
         {showFddCta && (
           <div style={{ padding: "32px 0", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
             <div style={{ padding: "20px 24px", border: "1px solid rgba(201,168,76,0.45)", background: "rgba(201,168,76,0.04)" }}>
               <div style={{ fontSize: "10px", letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(201,168,76,0.6)", marginBottom: "10px" }}>Franchise disclosure document</div>
               <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "20px", fontWeight: 300, color: "#f5f0e8", marginBottom: "8px" }}>
-                {fddReceived ? 'Analyse your FDD before your interview' : 'Get ahead — analyse your FDD when it arrives'}
+                {fddReceived ? "Analyse your FDD before your interview" : "Get ahead — analyse your FDD when it arrives"}
               </div>
               <div style={{ fontSize: "13px", color: "rgba(245,240,232,0.74)", lineHeight: 1.6, marginBottom: "16px" }}>
                 {fddReceived
-                  ? 'You indicated you already have your Franchise Disclosure Document. Upload it now to extract unit economics, identify officer red flags, and build a stronger case before your E-2 interview.'
-                  : 'Your franchisor has offered you the FDD. As soon as you receive it, run it through our analysis tool — it extracts Item 19 performance data and flags the specific disclosures officers scrutinise.'}
+                  ? "You indicated you already have your Franchise Disclosure Document. Upload it now to extract unit economics, identify officer red flags, and build a stronger case before your E-2 interview."
+                  : "Your franchisor has offered you the FDD. As soon as you receive it, run it through our analysis tool — it extracts Item 19 performance data and flags the specific disclosures officers scrutinise."}
               </div>
               <Link href="/fdd" style={{ display: "inline-block", padding: "11px 24px", background: fddReceived ? "#C9A84C" : "rgba(201,168,76,0.08)", border: "1px solid #C9A84C", color: fddReceived ? "#0a0a0a" : "#C9A84C", fontSize: "12px", fontWeight: fddReceived ? 600 : 500, letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: "'DM Sans', sans-serif", textDecoration: "none" }}>
-                {fddReceived ? 'Analyse My FDD Now →' : 'Learn About FDD Analysis →'}
+                {fddReceived ? "Analyse My FDD Now →" : "Learn About FDD Analysis →"}
               </Link>
             </div>
           </div>
         )}
 
-        {/* ─── ZONE 9: FAQ ────────────────────────────────────────────────────── */}
-        <FaqWidget />
-
       </div>
 
       {/* Disclaimer */}
-      <div style={{ padding: "20px 40px", borderTop: "1px solid rgba(201,168,76,0.06)" }}>
-        <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.62)", lineHeight: 1.6, maxWidth: "720px", margin: "0 auto" }}>
+      <div style={{ padding: "20px 40px", borderTop: "1px solid rgba(201,168,76,0.06)", marginTop: "8px" }}>
+        <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.55)", lineHeight: 1.6, maxWidth: "720px", margin: "0 auto" }}>
           This assessment is based solely on the answers you provided and does not constitute legal advice. e2go.app is a self-service preparation tool, not a law firm. Consular decisions involve factors beyond the scope of any preparation tool. For legal advice, consult a qualified U.S. immigration attorney.
         </div>
       </div>
