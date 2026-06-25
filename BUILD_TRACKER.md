@@ -1,10 +1,69 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 25, 2026 — Session 76: Full user journey audit complete. Sprint E defined (47 issues across 7 sub-sprints). Full detail: `docs/SPRINT_E_USER_JOURNEY_AUDIT.md`.
+**Last Updated:** June 25, 2026 — Session 77: E-1 (all 10 critical breaks) + E-2 (paywall) + E-6 (pricing quick fixes) complete. Build clean 142 pages.
 
 ---
 
-## Sprint E — Full User Journey Audit (NEXT SPRINT)
+## Sprint E — Full User Journey Audit
+
+### Sub-sprint status
+
+| Sprint | Theme | Issues | Status |
+|---|---|---|---|
+| E-1 | Critical breaks / dead ends | 10 | ✅ COMPLETE |
+| E-2 | Paywall / access control | 5 | ✅ COMPLETE (middleware + nav) |
+| E-3 | Results page restructure | 12 | NEXT |
+| E-4 | Quiz fixes | 8 | PENDING |
+| E-5 | Dashboard overhaul | 8 | PENDING |
+| E-6 | Pricing page | 4 | ✅ COMPLETE |
+| E-7 | Franchise Navigator | 7 | PENDING (awaiting OPQ answers) |
+
+### E-1 — All 10 critical breaks ✅
+
+| # | Fix | File |
+|---|---|---|
+| E-1-01 | Login error shows "Reset password →" + "No account? Sign up free →" links | `src/app/login/page.tsx` |
+| E-1-02 | Terms "Back" button uses ?returnTo param; terms/page.tsx wrapped in Suspense | `src/app/terms/TermsClient.tsx`, `terms/page.tsx` |
+| E-1-03 | Save & Exit on quiz wired to setShowEmailGate(true) | `src/app/quiz/page.tsx` |
+| E-1-04 | Terms acceptance: 15 s AbortController timeout; stuck state now recovers | `src/app/terms-required/page.tsx` |
+| E-1-05 | Pricing: .single() → .maybeSingle() on existingApp lookup | `src/app/pricing/PricingClient.tsx` |
+| E-1-06 | Pricing: authenticated users see "Dashboard" not "Sign In" in header | `src/app/pricing/PricingClient.tsx` |
+| E-1-07 | Upload: no-app state shows paywall CTA, not broken quiz loop | `src/app/apply/upload/page.tsx` |
+| E-1-08 | Calendar: empty state when no application/timeline instead of blank page | `src/app/apply/calendar/page.tsx` |
+| E-1-09 | Franchise/discover: setLoading(false) before early return when no user | `src/app/franchise/discover/page.tsx` |
+| E-1-10 | Simulator: 12 s timeout breaks infinite loading; shows "Refresh page" button | `src/app/simulator/page.tsx` |
+
+### E-2 — Paywall ✅
+
+**Middleware** (server-side, cannot be bypassed):
+- `/apply/story|business|investment|qualifications|family|ties` → redirect `/pricing?locked=complete` if no complete/complete_partnership payment
+- `/gap-analysis` → same Complete gate
+- `/fdd/*` → redirect `/pricing?locked=fdd` if no fdd_intelligence payment
+
+**Nav** (`src/components/Nav.tsx`):
+- Fetch payments on auth state change alongside profile/apps
+- My Application + Gap Analysis: greyed lock icon → /pricing when hasComplete=false
+- FDD Analysis: greyed lock icon → /pricing when hasFdd=false
+
+### E-6 — Pricing quick fixes ✅
+
+- Founding member counter removed (FOUNDING_MEMBER_LIMIT + DB query)
+- "Sign in" → "Dashboard" for authenticated users in header
+- Features list updated for 15-doc Complete package (isPartnership replaces broken isSolo)
+- additional_child + interview_prep_partnership added to UTILITY_TIERS filter
+
+### Commits (Session 77)
+- `232dcc4` fix(sprint-e1): Fix all 10 E-1 critical breaks
+- `b8de300` feat(sprint-e2): Paywall — gate paid features behind entitlements
+
+### Open product questions (need Romy decision before E-7)
+- FDD standalone vs in-app: same interface or separate?
+- Franchise broker handoff mechanism: email / CRM / API?
+- Industry category list: what beyond cleaning + renovation?
+
+---
+
+## Sprint E — Full User Journey Audit (ORIGINAL DEFINITION)
 
 **Source:** Live walkthrough by Romy — unregistered email → quiz → results → dashboard → features.  
 **Full detail:** [`docs/SPRINT_E_USER_JOURNEY_AUDIT.md`](docs/SPRINT_E_USER_JOURNEY_AUDIT.md)
