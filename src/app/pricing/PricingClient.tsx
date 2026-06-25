@@ -18,13 +18,13 @@ interface PricingTier {
 const FOUNDING_MEMBER_LIMIT = 500;
 
 const DEFAULT_TIERS: PricingTier[] = [
-  { tier_id: 'solo_none', name: 'Solo Individual', amount: 55000, stripe_price_id: process.env.NEXT_PUBLIC_STRIPE_PRICE_SOLO || '', active: true },
-  { tier_id: 'solo_spouse', name: 'Solo + Spouse', amount: 69700, stripe_price_id: process.env.NEXT_PUBLIC_STRIPE_PRICE_SOLO_SPOUSE || '', active: true },
-  { tier_id: 'solo_family_small', name: 'Solo + Family up to 2 kids', amount: 75000, stripe_price_id: process.env.NEXT_PUBLIC_STRIPE_PRICE_SOLO_FAMILY_2 || '', active: true },
-  { tier_id: 'solo_family_large', name: 'Solo + Family 3-5 kids', amount: 79700, stripe_price_id: process.env.NEXT_PUBLIC_STRIPE_PRICE_SOLO_FAMILY_5 || '', active: true },
-  { tier_id: 'partnership_none', name: 'Partnership', amount: 99700, stripe_price_id: process.env.NEXT_PUBLIC_STRIPE_PRICE_PARTNERSHIP || '', active: true },
-  { tier_id: 'partnership_couples', name: 'Partnership Two Couples', amount: 129700, stripe_price_id: process.env.NEXT_PUBLIC_STRIPE_PRICE_PARTNERSHIP_COUPLES || '', active: true },
-  { tier_id: 'partnership_families', name: 'Partnership Two Full Families', amount: 139700, stripe_price_id: process.env.NEXT_PUBLIC_STRIPE_PRICE_PARTNERSHIP_FAMILIES || '', active: true },
+  {
+    tier_id: 'complete',
+    name: 'Complete — Build & Document',
+    amount: 149500,
+    stripe_price_id: process.env.NEXT_PUBLIC_STRIPE_PRICE_COMPLETE || '',
+    active: true,
+  },
 ];
 
 export default function PricingPage() {
@@ -52,8 +52,9 @@ export default function PricingPage() {
         .order('amount', { ascending: true });
 
       if (!tiersError && tiers && tiers.length > 0) {
-        // Only show main application plan tiers — filter out add-ons (simulator sessions, additional child, etc.)
-        const mainTiers = tiers.filter((t: PricingTier) => t.tier_id.startsWith('solo_') || t.tier_id.startsWith('partnership_'));
+        // Show the main application package only — exclude add-ons and utility tiers
+        const UTILITY_TIERS = new Set(['simulator_3pack', 'renewal', 'interview_prep', 'fdd_intelligence', 'fdd_intelligence_loyalty']);
+        const mainTiers = tiers.filter((t: PricingTier) => !UTILITY_TIERS.has(t.tier_id));
         setPricingTiers(mainTiers.length > 0 ? mainTiers : tiers);
       }
 
@@ -147,7 +148,7 @@ export default function PricingPage() {
         .from('applications')
         .insert({
           user_id: user.id,
-          application_type: id.startsWith('partnership') ? 'partnership' : 'solo',
+          application_type: 'solo',
           status: 'pending',
         })
         .select('id')

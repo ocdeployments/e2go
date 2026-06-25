@@ -11,37 +11,44 @@ function getSupabase() {
 }
 
 const VALID_TIER_IDS = [
-  'solo_none', 'solo_spouse', 'solo_family_small', 'solo_family_large',
-  'partnership_none', 'partnership_couples', 'partnership_families',
-  'simulator_3pack', 'renewal', 'child_surcharge',
+  'complete',
+  'interview_prep',
   'fdd_intelligence',
+  'fdd_intelligence_loyalty',
+  'simulator_3pack',
+  'renewal',
 ];
+
+// Tiers that require an applicationId
+const REQUIRES_APPLICATION_ID = new Set([
+  'complete',
+  'interview_prep',
+  'simulator_3pack',
+  'renewal',
+]);
+
+// Tiers that require the user to already own Complete
+const REQUIRES_COMPLETE = new Set([
+  'interview_prep',
+  'fdd_intelligence_loyalty',
+]);
 
 function getStripe(): Stripe | null {
   const secretKey = process.env.STRIPE_SECRET_KEY;
-  if (!secretKey) {
-    return null;
-  }
+  if (!secretKey) return null;
   return new Stripe(secretKey, { apiVersion: '2026-05-27.dahlia' });
 }
 
-// Fallback price IDs from env (if DB unavailable)
 const FALLBACK_PRICE_IDS: Record<string, string> = {
-  solo_none: process.env.STRIPE_PRICE_SOLO || '',
-  solo_spouse: process.env.STRIPE_PRICE_SOLO_SPOUSE || '',
-  solo_family_small: process.env.STRIPE_PRICE_SOLO_FAMILY_2 || '',
-  solo_family_large: process.env.STRIPE_PRICE_SOLO_FAMILY_5 || '',
-  partnership_none: process.env.STRIPE_PRICE_PARTNERSHIP || '',
-  partnership_couples: process.env.STRIPE_PRICE_PARTNERSHIP_COUPLES || '',
-  partnership_families: process.env.STRIPE_PRICE_PARTNERSHIP_FAMILIES || '',
-  simulator_3pack: process.env.STRIPE_PRICE_SIMULATOR_3PACK || '',
-  renewal: process.env.STRIPE_PRICE_RENEWAL || '',
-  child_surcharge: process.env.STRIPE_PRICE_CHILD_SURCHARGE || '',
-  fdd_intelligence: process.env.STRIPE_PRICE_FDD_INTELLIGENCE || '',
+  complete:                 process.env.STRIPE_PRICE_COMPLETE || '',
+  interview_prep:           process.env.STRIPE_PRICE_INTERVIEW_PREP || '',
+  fdd_intelligence:         process.env.STRIPE_PRICE_FDD_INTELLIGENCE || '',
+  fdd_intelligence_loyalty: process.env.STRIPE_PRICE_FDD_INTELLIGENCE_LOYALTY || '',
+  simulator_3pack:          process.env.STRIPE_PRICE_SIMULATOR_3PACK || '',
+  renewal:                  process.env.STRIPE_PRICE_RENEWAL || '',
 };
 
 async function getStripePriceId(supabase: ReturnType<typeof getSupabase>, tierId: string): Promise<string | null> {
-  // Try DB first
   const { data: tier, error } = await supabase
     .from('pricing')
     .select('stripe_price_id, active')
@@ -53,7 +60,6 @@ async function getStripePriceId(supabase: ReturnType<typeof getSupabase>, tierId
     return tier.stripe_price_id;
   }
 
-  // Fallback to env var
   const fallback = FALLBACK_PRICE_IDS[tierId];
   if (fallback) {
     console.warn(`Using fallback price ID for ${tierId} from env`);
@@ -64,7 +70,6 @@ async function getStripePriceId(supabase: ReturnType<typeof getSupabase>, tierId
 }
 
 export async function POST(request: NextRequest) {
-  // Session auth
   const supabaseAuth = await createSupabaseServerClient();
   const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
   if (authError || !user) {
@@ -72,7 +77,6 @@ export async function POST(request: NextRequest) {
   }
 
   const stripe = getStripe();
-
   if (!stripe) {
     return NextResponse.json(
       { error: 'Payment processing not configured', status: 503 },
@@ -82,30 +86,60 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { tierId, applicationId, fddId, children_count, successUrl: rawSuccessUrl, cancelUrl: rawCancelUrl } = body;
+    const { tierId, applicationId, fddId, successUrl: rawSuccessUrl, cancelUrl: rawCancelUrl } = body;
 
-    // fdd_intelligence requires fddId; all other tiers require applicationId
     if (!tierId) {
       return NextResponse.json({ error: 'Missing required field: tierId' }, { status: 400 });
     }
-    if (tierId === 'fdd_intelligence' && !fddId) {
-      return NextResponse.json({ error: 'Missing required field: fddId for fdd_intelligence' }, { status: 400 });
-    }
-    if (tierId !== 'fdd_intelligence' && !applicationId) {
-      return NextResponse.json(
-        { error: 'Missing required fields: tierId, applicationId' },
-        { status: 400 }
-      );
-    }
 
-    // Validate tierId allowlist
     if (!VALID_TIER_IDS.includes(tierId)) {
       return NextResponse.json({ error: 'Invalid tier' }, { status: 400 });
     }
 
+    if (REQUIRES_APPLICATION_ID.has(tierId) && !applicationId) {
+      return NextResponse.json(
+        { error: `Missing required field: applicationId for ${tierId}` },
+        { status: 400 }
+      );
+    }
+
     const supabase = getSupabase();
 
-    // Get Stripe Price ID from DB or fallback
+    // Validate add-on eligibility: user must own Complete first
+    if (REQUIRES_COMPLETE.has(tierId)) {
+      const { data: completePayment } = await supabase
+        .from('payments')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('payment_type', 'complete')
+        .eq('status', 'completed')
+        .limit(1)
+        .single();
+
+      if (!completePayment) {
+        return NextResponse.json(
+          { error: `${tierId} requires an active Complete package` },
+          { status: 403 }
+        );
+      }
+    }
+
+    // Loyalty pricing: also verify Phase B hasn't started (no documents generated yet)
+    if (tierId === 'fdd_intelligence_loyalty' && applicationId) {
+      const { count } = await supabase
+        .from('generated_documents')
+        .select('*', { count: 'exact', head: true })
+        .eq('application_id', applicationId)
+        .eq('status', 'complete');
+
+      if ((count ?? 0) > 0) {
+        return NextResponse.json(
+          { error: 'Loyalty pricing is no longer available after document generation has started' },
+          { status: 403 }
+        );
+      }
+    }
+
     const priceId = await getStripePriceId(supabase, tierId);
     if (!priceId) {
       return NextResponse.json(
@@ -114,7 +148,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get user email for Stripe
     const { data: profile } = await supabase
       .from('profiles')
       .select('email')
@@ -122,30 +155,8 @@ export async function POST(request: NextRequest) {
       .single();
 
     const email = profile?.email || '';
-
-    // Get the app URL
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
-    // Build line items
-    const lineItems: { price: string; quantity: number }[] = [
-      { price: priceId, quantity: 1 },
-    ];
-
-    // Handle per-child surcharge for partnership_families
-    if (tierId === 'partnership_families' && children_count !== undefined && children_count > 2) {
-      const extraChildren = children_count - 2; // Base includes 2 kids per family = 4 total
-      const childSurchargePriceId = await getStripePriceId(supabase, 'child_surcharge');
-      if (childSurchargePriceId) {
-        // Add surcharge line item with quantity = extra children (2 families, so per-family extra * 2)
-        lineItems.push({
-          price: childSurchargePriceId,
-          quantity: extraChildren * 2,
-        });
-      }
-    }
-
-    // Accept caller-supplied redirect URLs only if they are same-origin.
-    // In development, any localhost port is trusted (port varies with autoPort).
     const isSameOrigin = (url: string) => {
       try {
         const parsed = new URL(url);
@@ -154,6 +165,7 @@ export async function POST(request: NextRequest) {
         return parsed.origin === base.origin;
       } catch { return false; }
     };
+
     const successUrl = rawSuccessUrl && isSameOrigin(rawSuccessUrl)
       ? rawSuccessUrl
       : `${appUrl}/pricing/success?session_id={CHECKOUT_SESSION_ID}`;
@@ -161,10 +173,9 @@ export async function POST(request: NextRequest) {
       ? rawCancelUrl
       : `${appUrl}/pricing`;
 
-    // Create Stripe checkout session
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
-      line_items: lineItems,
+      line_items: [{ price: priceId, quantity: 1 }],
       mode: 'payment',
       success_url: successUrl.includes('{CHECKOUT_SESSION_ID}')
         ? successUrl
@@ -176,11 +187,9 @@ export async function POST(request: NextRequest) {
         fddId: fddId ?? '',
         userId: user.id,
         tierId,
-        children_count: children_count?.toString() || '0',
       },
     });
 
-    // Create pending payment record
     const { error: insertError } = await supabase.from('payments').insert({
       application_id: applicationId ?? null,
       user_id: user.id,
@@ -194,13 +203,9 @@ export async function POST(request: NextRequest) {
 
     if (insertError) {
       console.error('Failed to create pending payment record:', insertError);
-      // Payment session exists on Stripe — success page will recover via Stripe API fallback
     }
 
-    return NextResponse.json({
-      url: session.url,
-      sessionId: session.id,
-    });
+    return NextResponse.json({ url: session.url, sessionId: session.id });
   } catch (error) {
     console.error('Stripe checkout error:', error);
     return NextResponse.json(

@@ -1,6 +1,39 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 24, 2026 — Session 70: Full-app text contrast fix complete. Build clean.
+**Last Updated:** June 24, 2026 — Session 71: Sprint A (Pricing Infrastructure) complete. Build clean.
+
+**Session 71 — Sprint A: Pricing infrastructure rebuild:**
+
+(26) **New 3-product pricing model** — Replaced the old 7-SKU family-size pricing structure with the new flat model:
+- **Complete** ($1,495) — single anchor package for all applicants, replaces all solo/partnership variants
+- **Interview Prep** ($347) — add-on, requires Complete ownership
+- **FDD Intelligence** ($575 standalone / $375 loyalty) — loyalty price only valid before Phase B document generation
+
+Files changed:
+- `src/types/payments.ts` — New type exports (`MainTierId`, `AddOnTierId`, `UtilityTierId`), new `STRIPE_PRICE_IDS`/`STRIPE_PRICES` constants
+- `src/lib/pricing-tier.ts` — Simplified `TierId`, `getPricingTier()` always returns `'complete'`, `PRICING_TIERS` has single entry
+- `src/lib/entitlements.ts` — **New file**: `getUserEntitlements(userId, supabase)` → `{ hasComplete, hasInterviewPrep, hasFddIntelligence }` — single source of truth for all lock states. Also `hasLoyaltyEligibility()` for Phase A/B gate.
+- `src/app/api/stripe/create-checkout/route.ts` — New `VALID_TIER_IDS`, loyalty validation (403 if no Complete, 403 if Phase B started), `REQUIRES_COMPLETE` set enforces add-on eligibility
+- `src/app/api/stripe/webhook/route.ts` — `complete` unlocks application, `fdd_intelligence`/`fdd_intelligence_loyalty` unlock FDD analysis, `interview_prep` requires no extra DB write (entitlements read from payments table)
+- `src/app/pricing/success/page.tsx` — Updated `PAYMENT_TYPE_NAMES` + new `PAYMENT_TYPE_NEXT_STEP` routing per tier
+- `src/app/results/page.tsx` — `getPricingFromAnswers()` now returns flat $1,495
+- `src/app/pricing/PricingClient.tsx` — `DEFAULT_TIERS` = single Complete entry; DB filter excludes add-ons/utility tiers
+- `src/app/admin/revenue/page.tsx` + `TierOverridePanel.tsx` — Updated TIER_PRICES/TIER_LABELS/TIERS to new model
+- `supabase/migrations/20260624100000_pricing_v2.sql` — Deactivates 7 old tiers, inserts 4 new tiers
+- `.env.example` — Updated to show new env var names (`STRIPE_PRICE_COMPLETE` etc.)
+- `src/lib/__tests__/pricing-tier.test.ts` — Updated tests for flat pricing model
+
+**Next up — Sprint B (Results page + Dashboard + Generate flow):**
+- Results page: live document teaser from quiz data (partial cover letter, 80–100 words visible, rest blurred)
+- Dashboard: full redesign — Journey Spine, lock states from entitlements, Phase A/Gate/Phase B flow
+- Generate page: Phase A/Decision Gate/Phase B split for franchise buyers
+
+**Stripe action required before Sprint B testing:** Create 4 products in Stripe dashboard and add Price IDs to `.env.local`:
+- `STRIPE_PRICE_COMPLETE` (one-time $1,495)
+- `STRIPE_PRICE_INTERVIEW_PREP` (one-time $347)
+- `STRIPE_PRICE_FDD_INTELLIGENCE` (one-time $575)
+- `STRIPE_PRICE_FDD_INTELLIGENCE_LOYALTY` (one-time $375)
+- `NEXT_PUBLIC_STRIPE_PRICE_COMPLETE` (same value as `STRIPE_PRICE_COMPLETE`)
 
 **Session 70 — Full-app readability pass (faded text removal):**
 

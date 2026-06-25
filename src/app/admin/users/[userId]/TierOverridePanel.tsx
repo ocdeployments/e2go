@@ -3,16 +3,12 @@
 import { useState } from 'react';
 
 const TIERS = [
-  { value: 'solo',                    label: 'Solo ($550)' },
-  { value: 'solo_spouse',             label: 'Solo+Spouse ($697)' },
-  { value: 'solo_family_2',           label: 'Family-2 ($750)' },
-  { value: 'solo_family_5',           label: 'Family-5 ($797)' },
-  { value: 'partnership',             label: 'Partnership ($997)' },
-  { value: 'partnership_couples',     label: 'Partnership+Couples ($1,297)' },
-  { value: 'partnership_families',    label: 'Partnership+Families ($1,397)' },
-  { value: 'fdd_intelligence',        label: 'FDD Intelligence ($297)' },
-  { value: 'simulator_3pack',         label: 'Simulator 3-Pack ($29.99)' },
-  { value: 'renewal',                 label: 'Renewal ($497)' },
+  { value: 'complete',                  label: 'Complete ($1,495)' },
+  { value: 'interview_prep',            label: 'Interview Prep add-on ($347)' },
+  { value: 'fdd_intelligence',          label: 'FDD Intelligence ($575)' },
+  { value: 'fdd_intelligence_loyalty',  label: 'FDD Intelligence Loyalty ($375)' },
+  { value: 'simulator_3pack',           label: 'Simulator 3-Pack ($49)' },
+  { value: 'renewal',                   label: 'Renewal ($99)' },
 ];
 
 export default function TierOverridePanel({ userId, currentTier }: { userId: string; currentTier: string | null }) {

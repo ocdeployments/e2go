@@ -16,8 +16,9 @@ export interface Payment {
 }
 
 export interface PaymentCheckoutRequest {
-  priceId: string
-  applicationId: string
+  tierId: string
+  applicationId?: string
+  fddId?: string
   userId: string
 }
 
@@ -40,24 +41,56 @@ export interface FoundingMemberCount {
   isActive: boolean
 }
 
-export const STRIPE_PRICE_IDS: Record<string, string> = {
-  solo: '', // $297
-  solo_spouse: '', // $347
-  solo_family_2: '', // $397
-  solo_family_5: '', // $447
-  partnership: '', // $497
-  partnership_couples: '', // $547
-  partnership_families: '', // $647
-} as const;
+export type MainTierId = 'complete';
+export type AddOnTierId = 'interview_prep' | 'fdd_intelligence' | 'fdd_intelligence_loyalty';
+export type UtilityTierId = 'simulator_3pack' | 'renewal';
 
-export const STRIPE_PRICES: Record<string, { name: string; amount: number }> = {
-  solo: { name: 'Solo individual', amount: 29700 },
-  solo_spouse: { name: 'Solo + spouse', amount: 34700 },
-  solo_family_2: { name: 'Solo + family (up to 2 kids)', amount: 39700 },
-  solo_family_5: { name: 'Solo + family (3-5 kids)', amount: 44700 },
-  partnership: { name: 'Partnership no families', amount: 49700 },
-  partnership_couples: { name: 'Partnership two couples', amount: 54700 },
-  partnership_families: { name: 'Partnership two full families', amount: 64700 },
-} as const;
+export interface StripePrice {
+  name: string;
+  amount: number; // cents
+  description: string;
+}
+
+export const STRIPE_PRICE_IDS: Record<string, string> = {
+  complete:                 process.env.STRIPE_PRICE_COMPLETE || '',
+  interview_prep:           process.env.STRIPE_PRICE_INTERVIEW_PREP || '',
+  fdd_intelligence:         process.env.STRIPE_PRICE_FDD_INTELLIGENCE || '',
+  fdd_intelligence_loyalty: process.env.STRIPE_PRICE_FDD_INTELLIGENCE_LOYALTY || '',
+  simulator_3pack:          process.env.STRIPE_PRICE_SIMULATOR_3PACK || '',
+  renewal:                  process.env.STRIPE_PRICE_RENEWAL || '',
+};
+
+export const STRIPE_PRICES: Record<string, StripePrice> = {
+  complete: {
+    name: 'Complete — Build & Document',
+    amount: 149500,
+    description: 'Full E-2 application platform: 13–16 consulate-ready documents, gap analysis, market analysis, interview simulator',
+  },
+  interview_prep: {
+    name: 'Interview Prep',
+    amount: 34700,
+    description: 'Unlimited consulate interview simulations with adaptive difficulty and coaching',
+  },
+  fdd_intelligence: {
+    name: 'FDD Intelligence',
+    amount: 57500,
+    description: 'Franchise Disclosure Document analysis, 5-dimension scoring, due diligence questions, and market territory analysis',
+  },
+  fdd_intelligence_loyalty: {
+    name: 'FDD Intelligence (Loyalty Pricing)',
+    amount: 37500,
+    description: 'FDD Intelligence at loyalty price — available to Complete owners before Phase B document generation',
+  },
+  simulator_3pack: {
+    name: 'Simulator Session Pack',
+    amount: 4900,
+    description: '3 additional interview simulation sessions',
+  },
+  renewal: {
+    name: 'Application Renewal',
+    amount: 9900,
+    description: 'Renew an expired or resubmitted application',
+  },
+};
 
 export const FOUNDING_MEMBER_LIMIT = 500;

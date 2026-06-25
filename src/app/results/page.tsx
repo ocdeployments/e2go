@@ -3,7 +3,6 @@ import { useEffect, useState, Suspense, useRef, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import Link from "next/link";
-import { getPricingTier, PRICING_TIERS } from "@/lib/pricing-tier";
 import { createAccountFromVerifiedEmail } from "../actions/create-account";
 import flagExplanations from "../../data/flag_explanations.json";
 import FaqWidget from "@/components/landing/FaqWidget";
@@ -50,38 +49,8 @@ function getVerdictSub(outcome: string, warnings: string[]): string {
   return "Based on your answers, we recommend speaking with a qualified immigration attorney before proceeding.";
 }
 
-function getPricingFromAnswers(data: ResultData): { tier: string; tierId: string; base: number; spouseAdd: number; childrenAdd: number; total: number } {
-  const tierId = getPricingTier({
-    application_type: data.application_type,
-    dependents: data.dependents,
-  });
-
-  if (tierId) {
-    const tierData = PRICING_TIERS[tierId];
-    const dep = (data.dependents || "").toLowerCase();
-    const hasSpouse = dep.includes("spouse");
-    const hasChildren = dep.includes("children");
-    const isPartnership = data.application_type === "partnership" || data.application_type === "spousal_partnership";
-
-    let base = 0;
-    let spouseAdd = 0;
-    let childrenAdd = 0;
-
-    if (isPartnership) {
-      base = 997;
-      if (hasSpouse && hasChildren) { spouseAdd = 300; childrenAdd = 100; }
-      else if (hasSpouse) { spouseAdd = 300; }
-    } else {
-      base = 550;
-      if (hasSpouse && hasChildren) { spouseAdd = 147; childrenAdd = 53; }
-      else if (hasSpouse) { spouseAdd = 147; }
-      else if (hasChildren) { childrenAdd = 200; }
-    }
-
-    return { tier: tierData.name, tierId, base, spouseAdd, childrenAdd, total: tierData.price };
-  }
-
-  return { tier: "Solo Individual", tierId: "solo_none", base: 550, spouseAdd: 0, childrenAdd: 0, total: 550 };
+function getPricingFromAnswers(_data: ResultData): { tier: string; tierId: string; base: number; spouseAdd: number; childrenAdd: number; total: number } {
+  return { tier: 'Complete', tierId: 'complete', base: 1495, spouseAdd: 0, childrenAdd: 0, total: 1495 };
 }
 
 function getTimelineWeeks(data: ResultData): { weeksMin: number; weeksMax: number; adjustments: string[] } {

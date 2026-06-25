@@ -11,13 +11,21 @@ interface PaymentInfo {
 }
 
 const PAYMENT_TYPE_NAMES: Record<string, string> = {
-  solo: 'Solo Individual',
-  solo_spouse: 'Solo + Spouse',
-  solo_family_2: 'Solo + Family (up to 2 kids)',
-  solo_family_5: 'Solo + Family (3-5 kids)',
-  partnership: 'Partnership (no families)',
-  partnership_couples: 'Partnership Two Couples',
-  partnership_families: 'Partnership Two Full Families',
+  complete:                 'Complete — Build & Document',
+  interview_prep:           'Interview Prep',
+  fdd_intelligence:         'FDD Intelligence',
+  fdd_intelligence_loyalty: 'FDD Intelligence (Loyalty)',
+  simulator_3pack:          'Simulator Session Pack',
+  renewal:                  'Application Renewal',
+};
+
+const PAYMENT_TYPE_NEXT_STEP: Record<string, { label: string; href: string }> = {
+  complete:                 { label: 'Begin Your Application', href: '/apply/module1' },
+  interview_prep:           { label: 'Go to Simulator',        href: '/simulator' },
+  fdd_intelligence:         { label: 'View FDD Analysis',      href: '/fdd' },
+  fdd_intelligence_loyalty: { label: 'View FDD Analysis',      href: '/fdd' },
+  simulator_3pack:          { label: 'Go to Simulator',        href: '/simulator' },
+  renewal:                  { label: 'Continue Application',   href: '/apply/module1' },
 };
 
 function SuccessContent() {
@@ -37,8 +45,6 @@ function SuccessContent() {
       }
 
       const supabase = createBrowserSupabaseClient();
-
-      // First get user
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         setError('Please log in to continue');
@@ -46,7 +52,6 @@ function SuccessContent() {
         return;
       }
 
-      // Find payment by session ID
       const { data: paymentData, error: paymentError } = await supabase
         .from('payments')
         .select('payment_type, amount_paid, status')
@@ -54,7 +59,6 @@ function SuccessContent() {
         .single();
 
       if (paymentError || !paymentData) {
-        // Fallback: verify via Stripe API and create payment row if missing
         try {
           const res = await fetch('/api/stripe/verify-payment', {
             method: 'POST',
@@ -64,7 +68,6 @@ function SuccessContent() {
           const result = await res.json();
 
           if (result.verified && result.payment) {
-            // Simulator session pack — route back to simulator to grant sessions
             if (result.payment.payment_type === 'simulator_3pack') {
               router.replace(`/simulator?purchase=success&session_id=${sessionId}`);
               return;
@@ -82,7 +85,6 @@ function SuccessContent() {
         return;
       }
 
-      // Simulator session pack landed here by mistake — send to simulator grant flow
       if (paymentData.payment_type === 'simulator_3pack') {
         router.replace(`/simulator?purchase=success&session_id=${sessionId}`);
         return;
@@ -93,7 +95,7 @@ function SuccessContent() {
     };
 
     verifyPayment();
-  }, [sessionId]);
+  }, [sessionId, router]);
 
   if (loading) {
     return (
@@ -129,7 +131,9 @@ function SuccessContent() {
     );
   }
 
-  const tierName = PAYMENT_TYPE_NAMES[payment?.payment_type || 'solo'] || 'Application';
+  const paymentType = payment?.payment_type || 'complete';
+  const tierName = PAYMENT_TYPE_NAMES[paymentType] || 'E2go Purchase';
+  const nextStep = PAYMENT_TYPE_NEXT_STEP[paymentType] || { label: 'Go to Dashboard', href: '/dashboard' };
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-6">
@@ -145,12 +149,14 @@ function SuccessContent() {
         </h1>
 
         <p className="text-[rgba(245,240,232,0.70)] mb-8" style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 300 }}>
-          Your application is ready. You now have full access to complete your E-2 visa preparation.
+          {paymentType === 'complete'
+            ? 'Your application is ready. You now have full access to your E-2 visa preparation.'
+            : 'Your purchase is confirmed and ready to use.'}
         </p>
 
         <div className="bg-[rgba(201,168,76,0.05)] border border-[rgba(201,168,76,0.15)] p-6 mb-8 text-left">
           <div className="flex justify-between mb-3">
-            <span className="text-[rgba(245,240,232,0.60)]" style={{ fontFamily: 'DM Sans, sans-serif' }}>Tier</span>
+            <span className="text-[rgba(245,240,232,0.60)]" style={{ fontFamily: 'DM Sans, sans-serif' }}>Package</span>
             <span className="text-[#f5f0e8]" style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 400 }}>{tierName}</span>
           </div>
           <div className="flex justify-between mb-3">
@@ -164,11 +170,11 @@ function SuccessContent() {
         </div>
 
         <button
-          onClick={() => router.push('/apply/module1')}
+          onClick={() => router.push(nextStep.href)}
           className="bg-[#C9A84C] text-[#0a0a0a] px-10 py-4 font-medium w-full mb-3 transition-opacity hover:opacity-90"
           style={{ fontFamily: 'DM Sans, sans-serif', borderRadius: 0 }}
         >
-          Begin Your Application →
+          {nextStep.label} →
         </button>
 
         <button

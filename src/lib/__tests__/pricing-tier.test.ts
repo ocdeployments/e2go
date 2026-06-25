@@ -1,44 +1,28 @@
-import { getPricingTier, getTierData, TierId } from '../pricing-tier';
+import { getPricingTier, getTierData } from '../pricing-tier';
 
 describe('getPricingTier', () => {
-  it('maps solo with no dependents to solo_none', () => {
-    const result = getPricingTier({ application_type: 'solo', family_status: 'just_me' });
-    expect(result).toBe('solo_none');
-    expect(getTierData(result as TierId).price).toBe(297);
+  it('returns complete for any quiz data (flat pricing model)', () => {
+    expect(getPricingTier({ application_type: 'solo', family_status: 'just_me' })).toBe('complete');
   });
 
-  it('maps solo with spouse only to solo_spouse', () => {
-    const result = getPricingTier({ application_type: 'solo', family_status: 'spouse_only' });
-    expect(result).toBe('solo_spouse');
-    expect(getTierData(result as TierId).price).toBe(347);
+  it('returns complete regardless of family status', () => {
+    expect(getPricingTier({ application_type: 'solo', family_status: 'spouse_only' })).toBe('complete');
+    expect(getPricingTier({ application_type: 'solo', family_status: 'spouse_and_children' })).toBe('complete');
+    expect(getPricingTier({ application_type: 'solo', family_status: 'children_only' })).toBe('complete');
   });
 
-  it('maps solo with children to solo_family_small (default fallback)', () => {
-    const result = getPricingTier({ application_type: 'solo', family_status: 'spouse_and_children' });
-    expect(result).toBe('solo_family_small');
-    expect(getTierData(result as TierId).price).toBe(397);
-  });
-
-  it('maps partnership with no dependents to partnership_none', () => {
-    const result = getPricingTier({ application_type: 'partnership', family_status: 'just_me' });
-    expect(result).toBe('partnership_none');
-    expect(getTierData(result as TierId).price).toBe(497);
-  });
-
-  it('maps partnership with spouses to partnership_couples', () => {
-    const result = getPricingTier({ application_type: 'partnership', family_status: 'spouse_only' });
-    expect(result).toBe('partnership_couples');
-    expect(getTierData(result as TierId).price).toBe(547);
-  });
-
-  it('maps partnership with families to partnership_families', () => {
-    const result = getPricingTier({ application_type: 'partnership', family_status: 'spouse_and_children' });
-    expect(result).toBe('partnership_families');
-    expect(getTierData(result as TierId).price).toBe(647);
+  it('returns complete regardless of application type', () => {
+    expect(getPricingTier({ application_type: 'partnership', family_status: 'just_me' })).toBe('complete');
+    expect(getPricingTier({ application_type: 'spousal_partnership', family_status: 'spouse_only' })).toBe('complete');
   });
 
   it('returns null when quizData is null', () => {
-    const result = getPricingTier(null);
-    expect(result).toBeNull();
+    expect(getPricingTier(null)).toBeNull();
+  });
+
+  it('getTierData returns correct data for complete tier', () => {
+    const tier = getTierData('complete');
+    expect(tier.price).toBe(1495);
+    expect(tier.id).toBe('complete');
   });
 });

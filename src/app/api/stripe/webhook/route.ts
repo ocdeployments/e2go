@@ -18,9 +18,7 @@ function getSupabase() {
 
 function getStripe(): Stripe | null {
   const secretKey = process.env.STRIPE_SECRET_KEY;
-  if (!secretKey) {
-    return null;
-  }
+  if (!secretKey) return null;
   return new Stripe(secretKey, { apiVersion: '2026-05-27.dahlia' });
 }
 
@@ -30,14 +28,10 @@ export async function POST(request: NextRequest) {
 
   if (!stripe || !webhookSecret) {
     console.error('Stripe not configured for webhooks');
-    return NextResponse.json(
-      { error: 'Webhook not configured' },
-      { status: 503 }
-    );
+    return NextResponse.json({ error: 'Webhook not configured' }, { status: 503 });
   }
 
   const signature = request.headers.get('stripe-signature');
-
   if (!signature) {
     return NextResponse.json({ error: 'No signature' }, { status: 400 });
   }
@@ -46,18 +40,12 @@ export async function POST(request: NextRequest) {
   let event: Stripe.Event;
 
   try {
-    event = stripe.webhooks.constructEvent(
-      body,
-      signature,
-      webhookSecret,
-      300 // reject events older than 5 minutes
-    );
+    event = stripe.webhooks.constructEvent(body, signature, webhookSecret, 300);
   } catch (err) {
     console.error('Webhook signature failed:', err);
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
   }
 
-  // Event type allowlist — ignore unknown events
   if (!ALLOWED_EVENT_TYPES.includes(event.type)) {
     return NextResponse.json({ received: true, ignored: true });
   }
@@ -75,7 +63,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ received: true, duplicate: true });
   }
 
-  // Process the event
   switch (event.type) {
     case 'checkout.session.completed': {
       const session = event.data.object as Stripe.Checkout.Session;
@@ -85,7 +72,7 @@ export async function POST(request: NextRequest) {
       const tierId = session.metadata?.tierId || '';
       const paymentIntentId = session.payment_intent as string;
 
-      // Always update the payment record status
+      // Always mark the payment record as completed
       await supabase
         .from('payments')
         .update({
@@ -96,47 +83,53 @@ export async function POST(request: NextRequest) {
         })
         .eq('stripe_session_id', session.id);
 
-      if (tierId === 'fdd_intelligence' && fddId && userId) {
-        // Unlock the FDD report — set report_unlocked = true on the analysis row
+      if (tierId === 'complete' && applicationId && userId) {
+        // Unlock full application access
+        await supabase
+          .from('applications')
+          .update({ payment_status: 'paid' })
+          .eq('id', applicationId);
+
+        await supabase
+          .from('application_lifecycle')
+          .update({ payment_completed_at: new Date().toISOString() })
+          .eq('application_id', applicationId);
+
+      } else if (
+        (tierId === 'fdd_intelligence' || tierId === 'fdd_intelligence_loyalty') &&
+        fddId && userId
+      ) {
+        // Unlock the specific FDD analysis report
         await supabase
           .from('fdd_analyses')
           .update({ report_unlocked: true })
           .eq('id', fddId)
           .eq('user_id', userId);
 
-      } else if (applicationId && userId) {
-        if (tierId === 'simulator_3pack') {
-          // Grant 3 additional simulator sessions
-          const { data: currentApp } = await supabase
-            .from('applications')
-            .select('simulator_sessions_purchased')
-            .eq('id', applicationId)
-            .single();
-          if (currentApp) {
-            await supabase
-              .from('applications')
-              .update({ simulator_sessions_purchased: (currentApp.simulator_sessions_purchased ?? 2) + 3 })
-              .eq('id', applicationId);
-          }
-        } else {
-          // Update application payment status for full application tiers
-          await supabase
-            .from('applications')
-            .update({ payment_status: 'paid' })
-            .eq('id', applicationId);
+      } else if (tierId === 'simulator_3pack' && applicationId && userId) {
+        // Grant 3 additional simulator sessions
+        const { data: currentApp } = await supabase
+          .from('applications')
+          .select('simulator_sessions_purchased')
+          .eq('id', applicationId)
+          .single();
 
+        if (currentApp) {
           await supabase
-            .from('application_lifecycle')
-            .update({ payment_completed_at: new Date().toISOString() })
-            .eq('application_id', applicationId);
+            .from('applications')
+            .update({
+              simulator_sessions_purchased: (currentApp.simulator_sessions_purchased ?? 2) + 3,
+            })
+            .eq('id', applicationId);
         }
       }
+      // interview_prep and renewal: payment record update above is sufficient.
+      // Entitlements are read from the payments table via getUserEntitlements().
       break;
     }
 
     case 'checkout.session.expired': {
       const session = event.data.object as Stripe.Checkout.Session;
-
       await supabase
         .from('payments')
         .update({ status: 'expired' })
@@ -148,23 +141,20 @@ export async function POST(request: NextRequest) {
       const charge = event.data.object as Stripe.Charge;
       const paymentIntentId = charge.payment_intent as string;
 
-      // Find payment by payment intent and update
       const { data: payment } = await supabase
         .from('payments')
-        .select('id, application_id')
+        .select('id, application_id, payment_type')
         .eq('stripe_payment_intent_id', paymentIntentId)
         .single();
 
       if (payment) {
         await supabase
           .from('payments')
-          .update({
-            status: 'refunded',
-            refunded_at: new Date().toISOString(),
-          })
+          .update({ status: 'refunded', refunded_at: new Date().toISOString() })
           .eq('id', payment.id);
 
-        if (payment.application_id) {
+        // Only revoke application access on Complete refund
+        if (payment.payment_type === 'complete' && payment.application_id) {
           await supabase
             .from('applications')
             .update({ payment_status: 'refunded' })
@@ -176,7 +166,6 @@ export async function POST(request: NextRequest) {
 
     case 'payment_intent.payment_failed': {
       const paymentIntent = event.data.object as Stripe.PaymentIntent;
-
       await supabase
         .from('payments')
         .update({ status: 'failed' })
@@ -185,7 +174,6 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  // Record processed event for idempotency
   await supabase
     .from('processed_webhook_events')
     .insert({ stripe_event_id: event.id, processed_at: new Date().toISOString() });
