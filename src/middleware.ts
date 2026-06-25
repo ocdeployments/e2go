@@ -173,6 +173,38 @@ export async function middleware(req: NextRequest) {
     }
   }
 
+  // Gate case-building and intelligence routes behind paid entitlements
+  const COMPLETE_GATED = ['/apply/story', '/apply/business', '/apply/investment', '/apply/qualifications', '/apply/family', '/apply/ties', '/gap-analysis'];
+  const FDD_GATED = ['/fdd/'];
+
+  if (user && COMPLETE_GATED.some(r => pathname.startsWith(r))) {
+    const { data: payment } = await supabase
+      .from('payments')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('status', 'completed')
+      .in('payment_type', ['complete', 'complete_partnership'])
+      .limit(1)
+      .maybeSingle();
+    if (!payment) {
+      return NextResponse.redirect(new URL('/pricing?locked=complete', req.url));
+    }
+  }
+
+  if (user && FDD_GATED.some(r => pathname.startsWith(r))) {
+    const { data: payment } = await supabase
+      .from('payments')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('status', 'completed')
+      .in('payment_type', ['fdd_intelligence', 'fdd_intelligence_loyalty'])
+      .limit(1)
+      .maybeSingle();
+    if (!payment) {
+      return NextResponse.redirect(new URL('/pricing?locked=fdd', req.url));
+    }
+  }
+
   // Block standalone simulator subscribers from case-building / document-
   // generation routes and the main application dashboard. They only purchased
   // the interview simulator — /simulator is their home.
