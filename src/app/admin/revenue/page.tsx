@@ -30,21 +30,25 @@ function getAdmin() {
 }
 
 const TIER_PRICES: Record<string, number> = {
-  complete:                 149500,
-  interview_prep:           34700,
-  fdd_intelligence:         57500,
-  fdd_intelligence_loyalty: 37500,
-  simulator_3pack:          4900,
-  renewal:                  9900,
+  complete:                   149500,
+  complete_partnership:       249500,
+  interview_prep:             34700,
+  interview_prep_partnership: 49500,
+  fdd_intelligence:           57500,
+  fdd_intelligence_loyalty:   37500,
+  simulator_3pack:            4900,
+  renewal:                    9900,
 };
 
 const TIER_LABELS: Record<string, string> = {
-  complete:                 'Complete ($1,495)',
-  interview_prep:           'Interview Prep ($347)',
-  fdd_intelligence:         'FDD Intelligence ($575)',
-  fdd_intelligence_loyalty: 'FDD Intelligence Loyalty ($375)',
-  simulator_3pack:          'Simulator 3-Pack ($49)',
-  renewal:                  'Renewal ($99)',
+  complete:                   'Complete ($1,495)',
+  complete_partnership:       'Complete — Partnership ($2,495)',
+  interview_prep:             'Interview Prep ($347)',
+  interview_prep_partnership: 'Interview Prep — Partnership ($495)',
+  fdd_intelligence:           'FDD Intelligence ($575)',
+  fdd_intelligence_loyalty:   'FDD Intelligence Loyalty ($375)',
+  simulator_3pack:            'Simulator 3-Pack ($49)',
+  renewal:                    'Renewal ($99)',
 };
 
 type PaymentRow = {

@@ -12,8 +12,9 @@ function getSupabase() {
 
 const VALID_TIER_IDS = [
   'complete',
-  'complete_partnership', // price TBD — inactive in DB until decided
+  'complete_partnership',
   'interview_prep',
+  'interview_prep_partnership',
   'fdd_intelligence',
   'fdd_intelligence_loyalty',
   'simulator_3pack',
@@ -23,16 +24,21 @@ const VALID_TIER_IDS = [
 // Tiers that require an applicationId
 const REQUIRES_APPLICATION_ID = new Set([
   'complete',
+  'complete_partnership',
   'interview_prep',
+  'interview_prep_partnership',
   'simulator_3pack',
   'renewal',
 ]);
 
-// Tiers that require the user to already own Complete
+// Tiers that require the user to already own a Complete package (solo or partnership)
 const REQUIRES_COMPLETE = new Set([
   'interview_prep',
+  'interview_prep_partnership',
   'fdd_intelligence_loyalty',
 ]);
+
+const COMPLETE_TIER_IDS = ['complete', 'complete_partnership'];
 
 function getStripe(): Stripe | null {
   const secretKey = process.env.STRIPE_SECRET_KEY;
@@ -42,8 +48,9 @@ function getStripe(): Stripe | null {
 
 const FALLBACK_PRICE_IDS: Record<string, string> = {
   complete:                 process.env.STRIPE_PRICE_COMPLETE || '',
-  complete_partnership:     process.env.STRIPE_PRICE_COMPLETE_PARTNERSHIP || '',
-  interview_prep:           process.env.STRIPE_PRICE_INTERVIEW_PREP || '',
+  complete_partnership:          process.env.STRIPE_PRICE_COMPLETE_PARTNERSHIP || '',
+  interview_prep:                process.env.STRIPE_PRICE_INTERVIEW_PREP || '',
+  interview_prep_partnership:    process.env.STRIPE_PRICE_INTERVIEW_PREP_PARTNERSHIP || '',
   fdd_intelligence:         process.env.STRIPE_PRICE_FDD_INTELLIGENCE || '',
   fdd_intelligence_loyalty: process.env.STRIPE_PRICE_FDD_INTELLIGENCE_LOYALTY || '',
   simulator_3pack:          process.env.STRIPE_PRICE_SIMULATOR_3PACK || '',
@@ -107,13 +114,13 @@ export async function POST(request: NextRequest) {
 
     const supabase = getSupabase();
 
-    // Validate add-on eligibility: user must own Complete first
+    // Validate add-on eligibility: user must own any Complete package
     if (REQUIRES_COMPLETE.has(tierId)) {
       const { data: completePayment } = await supabase
         .from('payments')
         .select('id')
         .eq('user_id', user.id)
-        .eq('payment_type', 'complete')
+        .in('payment_type', COMPLETE_TIER_IDS)
         .eq('status', 'completed')
         .limit(1)
         .single();

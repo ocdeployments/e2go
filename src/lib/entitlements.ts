@@ -8,7 +8,9 @@ export interface UserEntitlements {
 
 const ENTITLEMENT_PAYMENT_TYPES = [
   'complete',
+  'complete_partnership',
   'interview_prep',
+  'interview_prep_partnership',
   'fdd_intelligence',
   'fdd_intelligence_loyalty',
 ] as const;
@@ -31,8 +33,8 @@ export async function getUserEntitlements(
   const types = new Set(data.map((r: { payment_type: string }) => r.payment_type));
 
   return {
-    hasComplete:        types.has('complete'),
-    hasInterviewPrep:   types.has('interview_prep'),
+    hasComplete:        types.has('complete') || types.has('complete_partnership'),
+    hasInterviewPrep:   types.has('interview_prep') || types.has('interview_prep_partnership'),
     hasFddIntelligence: types.has('fdd_intelligence') || types.has('fdd_intelligence_loyalty'),
   };
 }

@@ -4,7 +4,9 @@ import { useState } from 'react';
 
 const TIERS = [
   { value: 'complete',                  label: 'Complete ($1,495)' },
-  { value: 'interview_prep',            label: 'Interview Prep add-on ($347)' },
+  { value: 'complete_partnership',      label: 'Complete — Partnership ($2,495)' },
+  { value: 'interview_prep',            label: 'Interview Prep ($347)' },
+  { value: 'interview_prep_partnership',label: 'Interview Prep — Partnership ($495)' },
   { value: 'fdd_intelligence',          label: 'FDD Intelligence ($575)' },
   { value: 'fdd_intelligence_loyalty',  label: 'FDD Intelligence Loyalty ($375)' },
   { value: 'simulator_3pack',           label: 'Simulator 3-Pack ($49)' },

@@ -11,9 +11,10 @@ interface PaymentInfo {
 }
 
 const PAYMENT_TYPE_NAMES: Record<string, string> = {
-  complete:                 'Complete — Build & Document',
-  complete_partnership:     'Complete — Partnership',
-  interview_prep:           'Interview Prep',
+  complete:                   'Complete — Build & Document',
+  complete_partnership:       'Complete — Partnership',
+  interview_prep:             'Interview Prep',
+  interview_prep_partnership: 'Interview Prep — Partnership',
   fdd_intelligence:         'FDD Intelligence',
   fdd_intelligence_loyalty: 'FDD Intelligence (Loyalty)',
   simulator_3pack:          'Simulator Session Pack',
@@ -21,9 +22,10 @@ const PAYMENT_TYPE_NAMES: Record<string, string> = {
 };
 
 const PAYMENT_TYPE_NEXT_STEP: Record<string, { label: string; href: string }> = {
-  complete:                 { label: 'Begin Your Application', href: '/apply/module1' },
-  complete_partnership:     { label: 'Begin Your Application', href: '/apply/module1' },
-  interview_prep:           { label: 'Go to Simulator',        href: '/simulator' },
+  complete:                   { label: 'Begin Your Application', href: '/apply/module1' },
+  complete_partnership:       { label: 'Begin Your Application', href: '/apply/module1' },
+  interview_prep:             { label: 'Go to Simulator',        href: '/simulator' },
+  interview_prep_partnership: { label: 'Go to Simulator',        href: '/simulator' },
   fdd_intelligence:         { label: 'View FDD Analysis',      href: '/fdd' },
   fdd_intelligence_loyalty: { label: 'View FDD Analysis',      href: '/fdd' },
   simulator_3pack:          { label: 'Go to Simulator',        href: '/simulator' },

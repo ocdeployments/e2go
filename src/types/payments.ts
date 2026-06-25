@@ -41,8 +41,8 @@ export interface FoundingMemberCount {
   isActive: boolean
 }
 
-export type MainTierId = 'complete' | 'complete_partnership'; // complete_partnership price TBD
-export type AddOnTierId = 'interview_prep' | 'fdd_intelligence' | 'fdd_intelligence_loyalty';
+export type MainTierId = 'complete' | 'complete_partnership';
+export type AddOnTierId = 'interview_prep' | 'interview_prep_partnership' | 'fdd_intelligence' | 'fdd_intelligence_loyalty';
 export type UtilityTierId = 'simulator_3pack' | 'renewal';
 
 export interface StripePrice {
@@ -53,8 +53,9 @@ export interface StripePrice {
 
 export const STRIPE_PRICE_IDS: Record<string, string> = {
   complete:                 process.env.STRIPE_PRICE_COMPLETE || '',
-  complete_partnership:     process.env.STRIPE_PRICE_COMPLETE_PARTNERSHIP || '', // TBD
-  interview_prep:           process.env.STRIPE_PRICE_INTERVIEW_PREP || '',
+  complete_partnership:          process.env.STRIPE_PRICE_COMPLETE_PARTNERSHIP || '',
+  interview_prep:                process.env.STRIPE_PRICE_INTERVIEW_PREP || '',
+  interview_prep_partnership:    process.env.STRIPE_PRICE_INTERVIEW_PREP_PARTNERSHIP || '',
   fdd_intelligence:         process.env.STRIPE_PRICE_FDD_INTELLIGENCE || '',
   fdd_intelligence_loyalty: process.env.STRIPE_PRICE_FDD_INTELLIGENCE_LOYALTY || '',
   simulator_3pack:          process.env.STRIPE_PRICE_SIMULATOR_3PACK || '',
@@ -69,8 +70,13 @@ export const STRIPE_PRICES: Record<string, StripePrice> = {
   },
   complete_partnership: {
     name: 'Complete — Partnership',
-    amount: 0, // Pricing TBD — activate once decided
+    amount: 249500,
     description: 'Full E-2 application platform for partnership (two-investor) applications',
+  },
+  interview_prep_partnership: {
+    name: 'Interview Prep — Partnership',
+    amount: 49500,
+    description: 'Interview simulation for both partners under one purchase ($495 vs $347 × 2)',
   },
   interview_prep: {
     name: 'Interview Prep',
