@@ -132,7 +132,7 @@ export default function FranchiseDiscoverPage() {
       try {
         const supabase = createBrowserSupabaseClient();
         const { data: { user } } = await supabase.auth.getUser();
-        if (!user) { router.push('/login'); return; }
+        if (!user) { setLoading(false); router.push('/login'); return; }
 
         // Get quiz answers for pre-fill
         const { data: quizSession } = await supabase

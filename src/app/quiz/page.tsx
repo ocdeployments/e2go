@@ -556,7 +556,7 @@ export default function QuizPage() {
         setShowEmailGate(true);
       }
     },
-    [loggedInUser, supabase, router, returnToResults]
+    [loggedInUser, supabase, router, returnToResults, caslConsent]
   );
 
   // Process an option action: returns true if quiz should advance
@@ -668,7 +668,7 @@ export default function QuizPage() {
     },
     [
       q, displayOpts, answers, cur, visibleQuestions, warningCodes, attorneyFlags,
-      franchiseInterest, hardStopsTriggered, processAction, advance, handleComplete, saveDraft
+      franchiseInterest, franchiseReferralRequested, hardStopsTriggered, processAction, advance, handleComplete, saveDraft
     ]
   );
 
@@ -739,7 +739,7 @@ export default function QuizPage() {
     } else {
       advance();
     }
-  }, [multiSel, q, answers, cur, visibleQuestions, warningCodes, attorneyFlags, franchiseInterest, hardStopsTriggered, advance, handleComplete, saveDraft]);
+  }, [multiSel, q, answers, cur, visibleQuestions, warningCodes, attorneyFlags, franchiseInterest, franchiseReferralRequested, hardStopsTriggered, advance, handleComplete, saveDraft]);
 
   // Handle email submit
   const handleEmailSubmit = useCallback(async () => {
@@ -973,6 +973,7 @@ export default function QuizPage() {
         </div>
         <div
           style={{ fontSize: "11px", color: "rgba(245,240,232,0.78)", letterSpacing: "0.07em", textTransform: "uppercase", cursor: "pointer", transition: "color 0.15s" }}
+          onClick={() => setShowEmailGate(true)}
           onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(245,240,232,0.85)")}
           onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(245,240,232,0.78)")}
         >

@@ -255,6 +255,33 @@ export default function ComplianceCalendarPage() {
     );
   }
 
+  if (!timeline) {
+    return (
+      <div className="min-h-screen bg-[#0a0a0a] text-[#f5f0e8]">
+        <div className="mx-auto max-w-3xl px-6 py-12">
+          <Link href="/dashboard" className="text-sm" style={{ color: 'rgba(245,240,232,0.5)', fontFamily: "'DM Sans', sans-serif" }}>
+            ← Back to Dashboard
+          </Link>
+          <h1 className="text-3xl font-light tracking-wide mt-8 mb-4" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
+            Compliance Calendar
+          </h1>
+          <div className="p-6 border-l-2 border-[#C9A84C] mt-6" style={{ background: 'rgba(201,168,76,0.04)' }}>
+            <p className="text-sm mb-4" style={{ color: 'rgba(245,240,232,0.7)', fontFamily: "'DM Sans', sans-serif" }}>
+              Your compliance calendar activates once your application is created. Complete the eligibility quiz and unlock your case to see your interview deadlines here.
+            </p>
+            <Link
+              href="/quiz"
+              className="inline-block px-4 py-2 text-xs font-medium uppercase tracking-wider"
+              style={{ background: '#C9A84C', color: '#0a0a0a', fontFamily: "'DM Sans', sans-serif", textDecoration: 'none', borderRadius: 0 }}
+            >
+              Start eligibility quiz →
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const phaseGroups = groupItemsByPhase(items);
 
   return (

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 
 const sectionHeading = {
   fontFamily: "'DM Sans', sans-serif",
@@ -30,6 +31,9 @@ const warningBlock = {
 };
 
 export default function TermsOfServicePage() {
+  const searchParams = useSearchParams();
+  const returnTo = searchParams.get("returnTo") || "/";
+
   return (
     <div className="min-h-screen flex flex-col" style={{ background: "#0a0a0a" }}>
       <header
@@ -45,8 +49,8 @@ export default function TermsOfServicePage() {
               e2go<span style={{ color: "#f5f0e8" }}>.app</span>
             </span>
           </Link>
-          <Link href="/" style={{ color: "rgba(245,240,232,0.7)", fontSize: "14px", textDecoration: "none" }}>
-            ← Back to home
+          <Link href={returnTo} style={{ color: "rgba(245,240,232,0.7)", fontSize: "14px", textDecoration: "none" }}>
+            ← Back
           </Link>
         </div>
       </header>
@@ -304,8 +308,8 @@ export default function TermsOfServicePage() {
         </div>
 
         <div className="mt-12 pt-8" style={{ borderTop: "1px solid rgba(201,168,76,0.2)" }}>
-          <Link href="/" style={{ color: "#C9A84C", fontSize: "14px", textDecoration: "none" }}>
-            ← Back to home
+          <Link href={returnTo} style={{ color: "#C9A84C", fontSize: "14px", textDecoration: "none" }}>
+            ← Back
           </Link>
         </div>
       </main>

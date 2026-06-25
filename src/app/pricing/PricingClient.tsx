@@ -15,7 +15,6 @@ interface PricingTier {
   active: boolean;
 }
 
-const FOUNDING_MEMBER_LIMIT = 500;
 
 const DEFAULT_TIERS: PricingTier[] = [
   {
@@ -30,19 +29,20 @@ const DEFAULT_TIERS: PricingTier[] = [
 export default function PricingPage() {
   const router = useRouter();
   const [pricingTiers, setPricingTiers] = useState<PricingTier[]>(DEFAULT_TIERS);
-  const [foundingCount, setFoundingCount] = useState<number>(0);
-  const [loading, setLoading] = useState(true);
   const [selectedTier, setSelectedTier] = useState<TierId | null>(null);
   const [hasQuizData, setHasQuizData] = useState(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [stripeNotConfigured, setStripeNotConfigured] = useState(false);
   const [testMode, setTestMode] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const highlightRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const fetchData = async () => {
       const supabase = createBrowserSupabaseClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      setIsLoggedIn(!!user);
 
       // Fetch pricing tiers from DB
       const { data: tiers, error: tiersError } = await supabase
@@ -53,18 +53,10 @@ export default function PricingPage() {
 
       if (!tiersError && tiers && tiers.length > 0) {
         // Show the main application package only — exclude add-ons and utility tiers
-        const UTILITY_TIERS = new Set(['simulator_3pack', 'renewal', 'interview_prep', 'fdd_intelligence', 'fdd_intelligence_loyalty']);
+        const UTILITY_TIERS = new Set(['simulator_3pack', 'renewal', 'interview_prep', 'interview_prep_partnership', 'fdd_intelligence', 'fdd_intelligence_loyalty', 'additional_child']);
         const mainTiers = tiers.filter((t: PricingTier) => !UTILITY_TIERS.has(t.tier_id));
         setPricingTiers(mainTiers.length > 0 ? mainTiers : tiers);
       }
-
-      // Get count of completed payments for founding member counter
-      const { count } = await supabase
-        .from('payments')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'completed');
-
-      setFoundingCount(count || 0);
 
       // Check if Stripe is configured
       const response = await fetch('/api/stripe/checkout', { method: 'HEAD' });
@@ -75,7 +67,6 @@ export default function PricingPage() {
       // Check if we're in test mode
       setTestMode(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.startsWith('pk_test_') || false);
 
-      setLoading(false);
     };
     fetchData();
   }, []);
@@ -108,9 +99,6 @@ export default function PricingPage() {
     }
   }, [selectedTier]);
 
-  const spotsRemaining = Math.max(0, FOUNDING_MEMBER_LIMIT - foundingCount);
-  const foundingActive = foundingCount < FOUNDING_MEMBER_LIMIT;
-
   const handleSelect = async (id: string) => {
     setSelectedTier(id as TierId);
     setError(null);
@@ -138,7 +126,7 @@ export default function PricingPage() {
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(1)
-      .single();
+      .maybeSingle();
 
     let applicationId = existingApp?.id;
 
@@ -199,9 +187,15 @@ export default function PricingPage() {
             </span>
           </Link>
           <div className="flex items-center gap-4">
-            <Link href="/login" className="hidden md:block text-sm" style={{ color: "rgba(245,240,232,0.6)" }}>
-              Sign In
-            </Link>
+            {isLoggedIn ? (
+              <Link href="/dashboard" className="hidden md:block text-sm" style={{ color: "rgba(245,240,232,0.6)" }}>
+                Dashboard
+              </Link>
+            ) : (
+              <Link href="/login" className="hidden md:block text-sm" style={{ color: "rgba(245,240,232,0.6)" }}>
+                Sign In
+              </Link>
+            )}
             <Link
               href="/quiz"
               className="text-sm font-medium px-4 py-2"
@@ -248,19 +242,6 @@ export default function PricingPage() {
             </div>
           )}
 
-          {/* Founding Member Counter */}
-          {!loading && foundingActive && (
-            <div className="text-center mb-8">
-              <div className="inline-flex items-center gap-2 px-4 py-2" style={{ background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.3)", borderRadius: 0 }}>
-                <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24" style={{ color: "#f59e0b" }}>
-                  <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
-                </svg>
-                <span className="text-sm font-medium" style={{ color: "#f59e0b" }}>
-                  {spotsRemaining} of {FOUNDING_MEMBER_LIMIT} founding spots remaining
-                </span>
-              </div>
-            </div>
-          )}
 
           {/* Pricing Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto mb-12" data-testid="pricing-tiers">
@@ -269,13 +250,13 @@ export default function PricingPage() {
               const tierName = tierFromDb?.name || tier.name;
               const tierAmount = tierFromDb?.amount || tier.amount;
               const isHighlighted = selectedTier === tier.tier_id;
-              const isSolo = tier.tier_id.startsWith('solo');
-              const description = isSolo
-                ? 'Individual E-2 application with comprehensive document package'
-                : 'Partnership E-2 application for treaty investor businesses';
-              const features = isSolo
-                ? ['DS-160 Form Preparation', 'Business Plan Draft', 'Investment Letter', 'Consulate Guide']
-                : ['DS-160 for All Partners', 'Partnership Business Plan', 'Corporate Documents', 'Consulate Guide'];
+              const isPartnership = tier.tier_id === 'complete_partnership';
+              const description = isPartnership
+                ? 'Partnership E-2 application — two investors, one complete package'
+                : 'Individual E-2 application with 15-document consulate package';
+              const features = isPartnership
+                ? ['15 consulate-formatted documents', 'Both investor profiles', 'Joint source of funds package', 'Partnership business plan', 'Gap Analysis & Consulate Briefing']
+                : ['15 consulate-formatted documents', 'Business Plan (complete)', 'Source of Funds Package', 'Gap Analysis & Risk Flags', 'Consulate Briefing Guide'];
 
               return (
                 <div

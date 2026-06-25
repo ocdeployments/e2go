@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import TermsClient from "./TermsClient";
 
 export const metadata: Metadata = {
@@ -25,5 +26,9 @@ export const metadata: Metadata = {
 };
 
 export default function TermsPage() {
-  return <TermsClient />;
+  return (
+    <Suspense fallback={<div className="min-h-screen" style={{ background: "#0a0a0a" }} />}>
+      <TermsClient />
+    </Suspense>
+  );
 }

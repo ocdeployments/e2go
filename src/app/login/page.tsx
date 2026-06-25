@@ -256,14 +256,27 @@ function LoginForm() {
               <AnimatePresence>
                 {status === 'error' && (
                   <motion.div
+                    key="auth-error"
                     initial={{ opacity: 0, y: -6 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.2 }}
-                    className="p-3 text-sm mb-4"
-                    style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.3)", color: "#fca5a5" }}
+                    className="mb-4"
                   >
-                    {errorMessage}
+                    <div
+                      className="p-3 text-sm mb-2"
+                      style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.3)", color: "#fca5a5" }}
+                    >
+                      {errorMessage}
+                    </div>
+                    <div className="flex gap-4 text-xs">
+                      <Link href="/forgot-password" style={{ color: "#C9A84C", textDecoration: "underline" }}>
+                        Reset password →
+                      </Link>
+                      <Link href="/signup" style={{ color: "#C9A84C", textDecoration: "underline" }}>
+                        No account? Sign up free →
+                      </Link>
+                    </div>
                   </motion.div>
                 )}
               </AnimatePresence>

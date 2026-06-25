@@ -59,19 +59,29 @@ export default function UploadPage() {
   if (!applicationId) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#0a0a0a]">
-        <div className="text-center">
+        <div className="text-center" style={{ maxWidth: '320px' }}>
           <p
-            className="mb-4 text-sm"
+            className="mb-2 text-sm"
             style={{ color: 'rgba(245,240,232,0.76)', fontFamily: "'DM Sans', sans-serif" }}
           >
-            No application found.
+            Document upload is part of your Complete package.
+          </p>
+          <p className="mb-6 text-xs" style={{ color: 'rgba(245,240,232,0.5)', fontFamily: "'DM Sans', sans-serif" }}>
+            Once you unlock your case, you can upload supporting documents here.
           </p>
           <a
-            href="/quiz"
-            className="text-[11px] uppercase tracking-[0.08em]"
-            style={{ color: '#C9A84C', fontFamily: "'DM Sans', sans-serif" }}
+            href="/pricing"
+            className="inline-block px-5 py-2 text-[11px] uppercase tracking-[0.08em] font-medium"
+            style={{ background: '#C9A84C', color: '#0a0a0a', fontFamily: "'DM Sans', sans-serif", textDecoration: 'none' }}
           >
-            Start eligibility check
+            Unlock Complete — $1,495
+          </a>
+          <a
+            href="/dashboard"
+            className="block mt-4 text-[11px]"
+            style={{ color: 'rgba(245,240,232,0.5)', fontFamily: "'DM Sans', sans-serif" }}
+          >
+            ← Back to dashboard
           </a>
         </div>
       </div>

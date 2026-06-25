@@ -35,11 +35,16 @@ function TermsRequiredContent() {
     setAccepting(true);
     setError(null);
 
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
+
     try {
       const res = await fetch("/api/auth/accept-terms", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
       });
+      clearTimeout(timeout);
 
       const data = await res.json();
 
@@ -51,8 +56,10 @@ function TermsRequiredContent() {
 
       // Acceptance recorded — redirect to intended destination
       router.push(next);
-    } catch {
-      setError("Something went wrong. Please try again.");
+    } catch (err) {
+      clearTimeout(timeout);
+      const isAbort = err instanceof Error && err.name === "AbortError";
+      setError(isAbort ? "Request timed out. Please try again." : "Something went wrong. Please try again.");
       setAccepting(false);
     }
   };

@@ -63,6 +63,7 @@ export default function InterviewSimulator() {
   const [isInFollowUp, setIsInFollowUp] = useState(false);
   const [followUpLoading, setFollowUpLoading] = useState(false);
   const [coachingLoading, setCoachingLoading] = useState(false);
+  const [loadTimedOut, setLoadTimedOut] = useState(false);
   // Captures ?session_id from Stripe redirect before URL is cleaned — processed once application loads
   const [pendingGrantSessionId, setPendingGrantSessionId] = useState<string | null>(() => {
     if (typeof window === 'undefined') return null;
@@ -668,8 +669,34 @@ export default function InterviewSimulator() {
     fetchCoachingReport(summary, context);
   }
 
+  // Break infinite spinner after 12 s
+  useEffect(() => {
+    if (sessionInfo && hasCaseFile !== null) return;
+    const t = setTimeout(() => setLoadTimedOut(true), 12000);
+    return () => clearTimeout(t);
+  }, [sessionInfo, hasCaseFile]);
+
   // Render based on screen state
   if (!sessionInfo || hasCaseFile === null) {
+    if (loadTimedOut) {
+      return (
+        <div style={styles.page}>
+          <div style={styles.loading}>
+            <div style={{ textAlign: 'center' }}>
+              <p style={{ color: 'rgba(245,240,232,0.7)', marginBottom: '16px', fontSize: '14px' }}>
+                Having trouble loading your simulator data.
+              </p>
+              <button
+                onClick={() => window.location.reload()}
+                style={{ background: '#C9A84C', color: '#0a0a0a', border: 'none', padding: '10px 24px', fontSize: '12px', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}
+              >
+                Refresh page
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
     return (
       <div style={styles.page}>
         <div style={styles.loading}>Loading...</div>
