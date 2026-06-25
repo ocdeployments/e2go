@@ -41,7 +41,7 @@ export interface FoundingMemberCount {
   isActive: boolean
 }
 
-export type MainTierId = 'complete';
+export type MainTierId = 'complete' | 'complete_partnership'; // complete_partnership price TBD
 export type AddOnTierId = 'interview_prep' | 'fdd_intelligence' | 'fdd_intelligence_loyalty';
 export type UtilityTierId = 'simulator_3pack' | 'renewal';
 
@@ -53,6 +53,7 @@ export interface StripePrice {
 
 export const STRIPE_PRICE_IDS: Record<string, string> = {
   complete:                 process.env.STRIPE_PRICE_COMPLETE || '',
+  complete_partnership:     process.env.STRIPE_PRICE_COMPLETE_PARTNERSHIP || '', // TBD
   interview_prep:           process.env.STRIPE_PRICE_INTERVIEW_PREP || '',
   fdd_intelligence:         process.env.STRIPE_PRICE_FDD_INTELLIGENCE || '',
   fdd_intelligence_loyalty: process.env.STRIPE_PRICE_FDD_INTELLIGENCE_LOYALTY || '',
@@ -65,6 +66,11 @@ export const STRIPE_PRICES: Record<string, StripePrice> = {
     name: 'Complete — Build & Document',
     amount: 149500,
     description: 'Full E-2 application platform: 13–16 consulate-ready documents, gap analysis, market analysis, interview simulator',
+  },
+  complete_partnership: {
+    name: 'Complete — Partnership',
+    amount: 0, // Pricing TBD — activate once decided
+    description: 'Full E-2 application platform for partnership (two-investor) applications',
   },
   interview_prep: {
     name: 'Interview Prep',

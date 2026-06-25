@@ -12,6 +12,7 @@ function getSupabase() {
 
 const VALID_TIER_IDS = [
   'complete',
+  'complete_partnership', // price TBD — inactive in DB until decided
   'interview_prep',
   'fdd_intelligence',
   'fdd_intelligence_loyalty',
@@ -41,6 +42,7 @@ function getStripe(): Stripe | null {
 
 const FALLBACK_PRICE_IDS: Record<string, string> = {
   complete:                 process.env.STRIPE_PRICE_COMPLETE || '',
+  complete_partnership:     process.env.STRIPE_PRICE_COMPLETE_PARTNERSHIP || '',
   interview_prep:           process.env.STRIPE_PRICE_INTERVIEW_PREP || '',
   fdd_intelligence:         process.env.STRIPE_PRICE_FDD_INTELLIGENCE || '',
   fdd_intelligence_loyalty: process.env.STRIPE_PRICE_FDD_INTELLIGENCE_LOYALTY || '',

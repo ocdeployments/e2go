@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
         })
         .eq('stripe_session_id', session.id);
 
-      if (tierId === 'complete' && applicationId && userId) {
+      if ((tierId === 'complete' || tierId === 'complete_partnership') && applicationId && userId) {
         // Unlock full application access
         await supabase
           .from('applications')
