@@ -1,13 +1,209 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 24, 2026 — Session 71: Sprint A (Pricing Infrastructure) complete. Build clean.
+**Last Updated:** June 25, 2026 — Session 76: Full user journey audit complete. Sprint E defined (47 issues across 7 sub-sprints). Full detail: `docs/SPRINT_E_USER_JOURNEY_AUDIT.md`.
+
+---
+
+## Sprint E — Full User Journey Audit (NEXT SPRINT)
+
+**Source:** Live walkthrough by Romy — unregistered email → quiz → results → dashboard → features.  
+**Full detail:** [`docs/SPRINT_E_USER_JOURNEY_AUDIT.md`](docs/SPRINT_E_USER_JOURNEY_AUDIT.md)
+
+### Sub-sprint summary
+
+| Sprint | Theme | Issues | Priority |
+|---|---|---|---|
+| E-1 | Critical breaks / dead ends | 10 | URGENT |
+| E-2 | Paywall / access control | 5 | HIGH — revenue leakage |
+| E-3 | Results page restructure | 12 | HIGH — conversion |
+| E-4 | Quiz fixes | 8 | MEDIUM |
+| E-5 | Dashboard overhaul | 8 | MEDIUM |
+| E-6 | Pricing page | 4 | QUICK WINS |
+| E-7 | Franchise Navigator | 7 | MEDIUM |
+
+### Top 10 E-1 critical breaks (fix first)
+1. **Login** — unknown email shows "invalid password" → should invite to sign up
+2. **ToS back button** — returns to landing page, not signup
+3. **Save & Exit** — does nothing on quiz page
+4. **ToS acceptance** — button stuck on "Recording acceptance"
+5. **Pricing "Selected" button** — "Failed to create application" dead end
+6. **Pricing "Sign in"** — shown to already-authenticated users
+7. **Dashboard upload** — "No application found" → broken loop back to quiz
+8. **Dashboard calendar** — stuck on loading
+9. **Dashboard navigator** — stuck on loading
+10. **Simulator** — stuck on loading for users with no case file
+
+### Paywall gaps (E-2) — all features accessible without payment today
+- Application section cards 1–5: fillable without paying
+- Gap analysis: open
+- FDD analysis: open (can upload + extract)
+- Simulator: open
+- Nav bar: exposes all gated features from results page
+
+### Open product questions (need decision before E-7)
+- FDD standalone vs in-app: same interface or separate?
+- Franchise broker handoff mechanism: email / CRM / API?
+- Industry category list: what should be added beyond cleaning + renovation?
+
+---
+
+## Sprint C — Results Page Conversion Rebuild + Email ✅ COMPLETE
+
+**Goal:** Turn the results page into the primary conversion engine. Everything in this sprint serves one objective: convert "I took a quiz" into "I'm ready to start building my case for $1,495."
+
+### C-1 · Results page full rebuild ✅ COMPLETE (Session 73)
+**File:** `src/app/results/page.tsx` + new components
+
+**Zone-by-zone spec:**
+- **Hero**: Keep score circle. Replace verbose verdict with identity label at 38–42px Cormorant Garamond. Identity labels by outcome:
+  - PROCEED ≥90: *"You're on the Straight-Path E-2 Track."*
+  - PROCEED 70–89: *"You're on a strong E-2 path."*
+  - PROCEED_RISK: *"Your case is viable — a few things need attention."*
+  - ATTORNEY_RECOMMENDED: *"Your situation needs legal guidance alongside preparation."*
+  - Under label: one-sentence personal translation — "Canadian citizen · $150k+ · Franchise buyer · Toronto consular path"
+  - Eligibility band strip: green / amber / red with one sentence
+
+- **Outcome Summary Card** ← NEW: 5–7 personalized bullets from quiz answers. Citizenship, investment band, business status, route (consular vs COS), family, immigrant-intent risk level. No scroll required — visible in first viewport after hero.
+
+- **Flags**: Keep existing FlagCard components. Add "How we address this → [module link]" footer to each card. Reframe section header: "Risks to address before your interview."
+
+- **Free / Paid split block** ← NEW: Two-column. Left: "What you've already got (free)." Right: "What you unlock for $1,495" — name the 15 documents, gap analysis, interview simulator specifically.
+  - **Attorney price anchor** ← NEW: directly above $1,495 — *"E-2 attorneys charge $8,000–$15,000 for document preparation. E2go: $1,495, and you control every word."*
+
+- **Document package preview** ← REBUILT (replaces `DocumentTeaser`): Business plan page mockup (not cover letter statutory opener). Two rendered PDF-style pages with their actual data (business type, investment, consulate, archetype). Marked "DRAFT — complete your case to unlock." Component: `DocumentPackagePreview.tsx`.
+
+- **CTA block**: Outcome-specific button label. "After you join" rewritten as an outcome timeline:
+  - Day 1: Case file opens with your quiz data pre-loaded
+  - Week 1–2: Build your 15-document package at your pace
+  - Week 2: Complete package, formatted for [Consulate], ready to submit
+  - Month 2–4: Your interview date. Arrive in the US.
+  - Legal disclaimer: 2 lines.
+
+- **Interview simulator teaser** ← ELEVATED: Own section. "Before your interview, we'll simulate it with your actual case details." Preview card: 12–18 min · text or voice · personalized coaching after each answer.
+
+- **Objection FAQ** ← REPLACES FaqWidget: Static accordion, 4–6 specific questions. "Is my investment enough for Toronto?" / "Can E2go replace a lawyer?" / "What if my case is refused?" / "I sold my Canadian home — did I make a mistake?" No chatbot, no wandering.
+
+- **Pathway block** (conditional): Show only if quiz indicates business not yet chosen. "Not sure what business to invest in?" → two tiles: Franchise Navigator / Business Advisor.
+
+- **Remove**: 7-step journey strip (replace with 4-step simplified or remove entirely). FaqWidget import.
+
+- **Aesthetics**: Hero background: very low-opacity (~5%) dark cityscape texture (SVG/CSS, not photo). Identity label at 38–42px. Full-strength gold on score number and primary CTA. Clear section breaks with horizontal rule.
+
+---
+
+### C-2 · Supabase verification email ✅ TEMPLATE READY — owner action required
+**Where:** Supabase dashboard → Auth → Email Templates → Confirm signup (HTML, inline styles)
+**Subject:** `Congratulations — your E-2 result is ready`
+
+**Copy decisions (Session 74 revision):**
+- Headline: *"Congratulations on taking the first step."* — warm, celebratory, not transactional
+- Para 1: Acknowledges courage of the decision ("done what most people only talk about")
+- Para 2: States what's waiting (score + analysis + document preview)
+- Encouraging strip (gold left border, italic Georgia): *"Most applicants discover their path is more viable than they expected. Every flag comes with a specific strategy to address it."* — handles both optimistic and anxious readers
+- "Not a law firm" disclaimer: **footer only — not repeated in the body**
+- CTA: *"SEE MY ELIGIBILITY RESULT →"* → `{{ .ConfirmationURL }}`
+
+**Design:**
+- Background: `#e0dbd0` outer, `#f5f0e8` card, `border-top: 3px solid #C9A84C`
+- Encouraging strip bg: `#fdf9f0` (warmer than card bg), gold left border
+- Footer bg: `#ece7dd`
+- Variables: `{{ .ConfirmationURL }}` and `{{ .Email }}` only (Supabase native)
+- **Template file:** `docs/supabase-verification-email-template.html`
+
+---
+
+### C-3 · Resend results preview email ✅ COMPLETE (Session 73)
+**File:** `src/app/api/email/results/route.ts`
+
+**Spec:**
+- Triggered after quiz completion (EmailGate flow) — same trigger as today, better email
+- Subject line variants by outcome:
+  - PROCEED ≥90: *"[Name], 100/100 — your E-2 path is clear."*
+  - PROCEED_RISK: *"[Name], your E-2 result: viable, with one thing to address."*
+  - ATTORNEY_RECOMMENDED: *"[Name], your E-2 result: complex case, here's your next step."*
+- Content: Score band + identity label + 3 outcome bullets + flag teaser if applicable + gold CTA
+- CTA: *"View your complete result →"* → `/results?session=[sessionId]`
+- Design: Light email (cream bg, dark text, gold CTA button). Full HTML, inline styles, responsive. Cormorant Garamond for headline via web-safe fallback (Georgia), DM Sans for body.
+- **Does not reveal full results** — teases them. The click-through is the payoff.
+
+---
+
+### C-4 · Generate page — franchise split ✅ COMPLETE (Session 74)
+**File:** `src/app/generate/[applicationId]/page.tsx`
+
+Phase A (FDD/market analysis) → Decision Gate → Phase B (15-document generation) for franchise buyers. Non-franchise buyers skip Phase A entirely.
+
+**Implementation:**
+- Franchise detection via `case_profiles.archetype === 'buyer'` (browser Supabase client, runs in parallel with validation fetch)
+- `FddSummary` interface: `id`, `franchisorName`, `e2Score`, `completedAt`
+- Phase A UI (two sub-states):
+  - **Has FDD analysis**: gold ✓ card showing franchisorName + E-2 score + description of how FDD data flows into documents → "Proceed to Document Generation →"
+  - **No FDD analysis**: warning card listing 3 document sections strengthened by FDD → primary CTA "Complete FDD Analysis First →" (/fdd) + secondary "Skip — proceed without FDD"
+- Loading state covers BOTH `validationLoading` AND `!franchiseCheckDone` — no flicker between states
+- Non-franchise buyers: `setPhaseADone(true)` fires immediately → zero UX change for them
+
+---
+
+### C-5 / D-1 · Partner account linking ✅ COMPLETE (Session 75)
+Grant `interview_prep_partnership` to both partner logins automatically.
+
+**Implementation:**
+- `supabase/migrations/20260625200000_partner_access_tokens.sql` — new table; one-time UUID token; RLS: buyers see own invitations
+- `src/app/api/partner/invite/route.ts` — POST; checks caller has `interview_prep_partnership` payment; upserts token (resend-safe); sends Resend branded email; sentinel `'partner_grant'` for non-Stripe payment record
+- `src/app/api/partner/accept/route.ts` — POST; validates token; 404 (not found), 409 (already used), 403 + `emailMismatch` (wrong account); idempotent insert into `payments`; marks token `used_at`
+- `src/app/partner-access/page.tsx` — client page; states: loading/ready/accepting/success/used/mismatch/error; redirects unauthenticated to `/login?next=...`; wrapped in Suspense (required for `useSearchParams`)
+- `src/components/dashboard/PartnerInvitePanel.tsx` — side-panel component; idle → sent → resend; returns null if invite already accepted
+- `src/lib/entitlements.ts` — added `hasInterviewPrepPartnership` boolean
+- `src/app/dashboard/page.tsx` — parallel fetch for `partner_access_tokens`; mounts `PartnerInvitePanel` in side panel when entitlement present and invite not yet accepted
+
+**Build fixes in this session:**
+- `partner-access/page.tsx` — apostrophe escaping (`{" You've..."}`) + Suspense wrapper for `useSearchParams`
+- `PartnerInvitePanel.tsx` — apostrophe escaping (`{"They'll..."}`)
+- `src/app/api/simulator/section-nudge/route.ts` — added `export const dynamic = 'force-dynamic'` (pre-existing static render error surfaced by this build)
+
+**Owner actions still required:**
+- Apply SQL migration: `supabase/migrations/20260625200000_partner_access_tokens.sql`
+- Set `RESEND_API_KEY` in env (invite emails fall back to console.log without it)
+
+---
+
+## Owner actions blocking Sprint C testing
+
+| Action | Blocks |
+|---|---|
+| Create Stripe product `complete` → $1,495, set `STRIPE_PRICE_COMPLETE` + `NEXT_PUBLIC_STRIPE_PRICE_COMPLETE` | All payment flows |
+| Create Stripe product `complete_partnership` → $2,495, set `STRIPE_PRICE_COMPLETE_PARTNERSHIP` | Partnership payments |
+| Create Stripe product `interview_prep` → $347, set `STRIPE_PRICE_INTERVIEW_PREP` | Interview prep add-on |
+| Create Stripe product `interview_prep_partnership` → $495, set `STRIPE_PRICE_INTERVIEW_PREP_PARTNERSHIP` | Partnership interview prep |
+| On FDD Intelligence: add $575 price → `STRIPE_PRICE_FDD_INTELLIGENCE`; add $375 → `STRIPE_PRICE_FDD_INTELLIGENCE_LOYALTY`; archive old $297 | FDD purchases |
+| Accept Groq terms at console.groq.com | Voice mode in simulator |
+| Apply SQL: `ALTER TABLE profiles ADD COLUMN IF NOT EXISTS flagged_at timestamptz, flag_reason text;` | Admin flag-user feature |
+| Set custom sender in Supabase Auth → Email → SMTP (or confirm Resend domain is active as sender) | Branded verification email |
+
+---
+
+## Session 72 — Sprint B: Dashboard rebuild complete. Build clean.
 
 **Session 71 — Sprint A: Pricing infrastructure rebuild:**
 
-(26) **New 3-product pricing model** — Replaced the old 7-SKU family-size pricing structure with the new flat model:
-- **Complete** ($1,495) — single anchor package for all applicants, replaces all solo/partnership variants
-- **Interview Prep** ($347) — add-on, requires Complete ownership
-- **FDD Intelligence** ($575 standalone / $375 loyalty) — loyalty price only valid before Phase B document generation
+(26) **New 8-SKU flat pricing model** — Replaced the old 7-SKU family-size pricing structure with a clean product-based model:
+
+| SKU | Price | Notes |
+|---|---|---|
+| `complete` | $1,495 | Solo applicants — replaces all solo/partnership family variants |
+| `complete_partnership` | $2,495 | Partnership (two investors) — separate Stripe product |
+| `interview_prep` | $347 | Add-on (solo) — requires `complete` or `complete_partnership` |
+| `interview_prep_partnership` | $495 | Add-on (partnership) — one purchase covers both partners |
+| `fdd_intelligence` | $575 | Standalone — same price for solo and partnership |
+| `fdd_intelligence_loyalty` | $375 | Complete owners only, before Phase B document generation starts |
+| `simulator_3pack` | $49 | Utility — 3 extra simulator sessions |
+| `renewal` | $99 | Utility — application renewal |
+
+**Key decisions (June 24, 2026):**
+- Partnership complete tier is $2,495 (separate product, not 2×$1,495)
+- FDD Intelligence charges the same $575 regardless of solo/partnership
+- `interview_prep_partnership` ($495) covers both partners under one purchase; today grants access to purchasing user only — second partner login requires manual admin tier override until account linking is built in Sprint B+
+- Loyalty price gated: `hasComplete` AND `generated_documents` count = 0 for the applicationId (enforces "before Phase B only" without schema changes)
 
 Files changed:
 - `src/types/payments.ts` — New type exports (`MainTierId`, `AddOnTierId`, `UtilityTierId`), new `STRIPE_PRICE_IDS`/`STRIPE_PRICES` constants
