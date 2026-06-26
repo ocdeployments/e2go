@@ -1,6 +1,6 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 25, 2026 — Session 77: E-1 (all 10 critical breaks) + E-2 (paywall) + E-6 (pricing quick fixes) complete. Build clean 142 pages.
+**Last Updated:** June 26, 2026 — Session 78: Sprint E complete. E-3 (12) + E-4 (8) + E-5 (8) + E-7 (7) all committed to dev. Build clean. 47 journey audit issues resolved. NOT YET DEPLOYED — pull dev to test locally.
 
 ---
 
@@ -12,11 +12,18 @@
 |---|---|---|---|
 | E-1 | Critical breaks / dead ends | 10 | ✅ COMPLETE |
 | E-2 | Paywall / access control | 5 | ✅ COMPLETE (middleware + nav) |
-| E-3 | Results page restructure | 12 | NEXT |
-| E-4 | Quiz fixes | 8 | PENDING |
-| E-5 | Dashboard overhaul | 8 | PENDING |
+| E-3 | Results page restructure | 12 | ✅ COMPLETE |
+| E-4 | Quiz fixes | 8 | ✅ COMPLETE |
+| E-5 | Dashboard overhaul | 8 | ✅ COMPLETE |
 | E-6 | Pricing page | 4 | ✅ COMPLETE |
-| E-7 | Franchise Navigator | 7 | PENDING (awaiting OPQ answers) |
+| E-7 | Franchise Navigator | 7 | ✅ COMPLETE |
+
+### Open items after E-audit
+- **Simulator paywall (OPQ-4):** Simulator intentionally excluded from middleware paywall (built-in 2-free-sessions default). Product decision pending: keep 2 free sessions OR gate entirely.
+- **OPQ-1:** FDD standalone ($575) — same interface as in-app, or separate? Multi-FDD comparison scope?
+- **OPQ-2:** Broker handoff mechanism — currently defaults to email romyjames@gmail.com. Confirm or replace.
+- **OPQ-3:** Industry categories list — confirm full set beyond cleaning/renovation.
+- **Deployment:** All E-sprint fixes are on dev branch only. Must deploy before live testing reflects changes.
 
 ### E-1 — All 10 critical breaks ✅
 
