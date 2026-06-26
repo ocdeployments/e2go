@@ -7,6 +7,7 @@ import { createAccountFromVerifiedEmail } from "../actions/create-account";
 import flagExplanations from "../../data/flag_explanations.json";
 import FlagCard, { FLAG_REMEDIATION } from "@/components/results/FlagCard";
 import DocumentPackagePreview from "@/components/results/DocumentPackagePreview";
+import DocumentTabPreview from "@/components/results/DocumentTabPreview";
 import type { CaseProfile } from "@/types/case-profile";
 
 interface ResultData {
@@ -420,8 +421,15 @@ function ResultsPageInner() {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         setIsLoggedIn(true); setVerificationState("authenticated");
-        const { data: profile } = await supabase.from("profiles").select("first_name").eq("id", user.id).single();
-        if (profile?.first_name) setUserName(profile.first_name);
+        const { data: profile } = await supabase.from("profiles").select("first_name").eq("id", user.id).maybeSingle();
+        if (profile?.first_name) {
+          setUserName(profile.first_name);
+        } else if ((user.user_metadata as Record<string, string>)?.first_name) {
+          setUserName((user.user_metadata as Record<string, string>).first_name);
+        } else if (user.email) {
+          const part = user.email.split("@")[0];
+          setUserName(part.charAt(0).toUpperCase() + part.slice(1));
+        }
         const stored = localStorage.getItem("e2go_quiz_result");
         if (stored) { try { setData(JSON.parse(stored)); } catch { /* ignore */ } }
         if (!stored) {
@@ -794,38 +802,135 @@ function ResultsPageInner() {
           </div>
         </div>
 
-        {/* ─── WHAT YOUR PACKAGE INCLUDES ───────────────────────────────────────── */}
+        {/* ─── MODULE CARDS ─────────────────────────────────────────────────────── */}
         <div style={{ padding: "52px 0", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
-          <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "30px", fontWeight: 300, color: "#f5f0e8", marginBottom: "32px" }}>What your package includes</div>
-          <div className="includes-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px 48px", marginBottom: "36px" }}>
-            {[
-              "Cover Letter — consulate-formatted",
-              "Business Plan — full narrative",
-              "Source of Funds Statement",
-              "Personal Financial Statement",
-              "Investment Evidence Summary",
-              "Qualifications Narrative",
-              "Organizational Chart",
-              "Employment Creation Plan",
-              "Non-Immigrant Intent Statement",
-              "Gap Analysis — 6 evidence categories",
-              "AI Interview Simulator (officer persona)",
-              "10 document revision credits",
-            ].map((item, i) => (
-              <div key={i} style={{ display: "flex", gap: "8px", alignItems: "flex-start", fontSize: "12px", color: "rgba(245,240,232,0.82)", lineHeight: 1.55 }}>
-                <span style={{ color: "#C9A84C", flexShrink: 0, marginTop: "2px" }}>✓</span><span>{item}</span>
+          <div style={{ fontSize: "9px", letterSpacing: "0.16em", textTransform: "uppercase" as const, color: "rgba(201,168,76,0.6)", marginBottom: "6px" }}>Everything in the package</div>
+          <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "30px", fontWeight: 300, color: "#f5f0e8", marginBottom: "36px" }}>Three modules. One case file.</div>
+
+          <div className="step-cards-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px", marginBottom: "48px" }}>
+            {/* Module 1 — Document Generation */}
+            <div style={{ border: "1px solid rgba(201,168,76,0.28)", padding: "28px 24px", background: "rgba(201,168,76,0.018)" }}>
+              <div style={{ fontSize: "9px", letterSpacing: "0.14em", textTransform: "uppercase" as const, color: "rgba(201,168,76,0.5)", marginBottom: "14px" }}>Module 1</div>
+              <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "21px", fontWeight: 300, color: "#f5f0e8", marginBottom: "8px" }}>Document Generation</div>
+              <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.58)", lineHeight: 1.65, marginBottom: "18px" }}>15 consulate-formatted documents generated from your case answers. Export-ready for {consulate.name}.</div>
+              <div style={{ borderTop: "1px solid rgba(201,168,76,0.1)", paddingTop: "14px" }}>
+                {["Cover Letter", "Business Plan", "Source of Funds Statement", "Qualifications Narrative", "Non-Immigrant Intent Statement"].map((d, i) => (
+                  <div key={i} style={{ display: "flex", gap: "7px", fontSize: "11px", color: "rgba(245,240,232,0.8)", marginBottom: "5px" }}>
+                    <span style={{ color: "#C9A84C", flexShrink: 0 }}>✓</span>{d}
+                  </div>
+                ))}
+                <div style={{ display: "flex", gap: "7px", fontSize: "11px", color: "rgba(201,168,76,0.65)", marginTop: "2px" }}>
+                  <span style={{ flexShrink: 0 }}>+</span>10 more documents
+                </div>
               </div>
-            ))}
+            </div>
+
+            {/* Module 2 — Gap Analysis */}
+            <div style={{ border: "1px solid rgba(201,168,76,0.28)", padding: "28px 24px", background: "rgba(201,168,76,0.018)" }}>
+              <div style={{ fontSize: "9px", letterSpacing: "0.14em", textTransform: "uppercase" as const, color: "rgba(201,168,76,0.5)", marginBottom: "14px" }}>Module 2</div>
+              <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "21px", fontWeight: 300, color: "#f5f0e8", marginBottom: "8px" }}>Gap Analysis</div>
+              <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.58)", lineHeight: 1.65, marginBottom: "18px" }}>6 evidence categories audited against consulate officer expectations. Identifies what to strengthen before submission.</div>
+              <div style={{ borderTop: "1px solid rgba(201,168,76,0.1)", paddingTop: "14px" }}>
+                {["Investment documentation", "Source of funds trail", "Business operations evidence", "Management qualifications", "Non-marginality proof", "Non-immigrant intent"].map((c, i) => (
+                  <div key={i} style={{ display: "flex", gap: "7px", fontSize: "11px", color: "rgba(245,240,232,0.8)", marginBottom: "5px" }}>
+                    <span style={{ color: "#5DCAA5", flexShrink: 0 }}>→</span>{c}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Module 3 — Interview Simulator */}
+            <div style={{ border: "1px solid rgba(201,168,76,0.28)", padding: "28px 24px", background: "rgba(201,168,76,0.018)" }}>
+              <div style={{ fontSize: "9px", letterSpacing: "0.14em", textTransform: "uppercase" as const, color: "rgba(201,168,76,0.5)", marginBottom: "14px" }}>Module 3</div>
+              <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "21px", fontWeight: 300, color: "#f5f0e8", marginBottom: "8px" }}>Interview Simulator</div>
+              <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.58)", lineHeight: 1.65, marginBottom: "18px" }}>AI officer persona trained on {consulate.name} adjudication patterns. Adapts to your specific case profile in real time.</div>
+              <div style={{ borderTop: "1px solid rgba(201,168,76,0.1)", paddingTop: "14px" }}>
+                {["Officer questions for your business type", "Adapted to your investment profile", "Source of funds drill", "Non-immigrant intent challenge", "Real-time answer feedback", "Consulate-day checklist"].map((f, i) => (
+                  <div key={i} style={{ display: "flex", gap: "7px", fontSize: "11px", color: "rgba(245,240,232,0.8)", marginBottom: "5px" }}>
+                    <span style={{ color: "#5DCAA5", flexShrink: 0 }}>✓</span>{f}
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
-          <div style={{ padding: "16px 20px", background: "rgba(201,168,76,0.04)", border: "1px solid rgba(201,168,76,0.14)", marginBottom: "28px" }}>
+
+          {/* ── Document Tab Preview ── */}
+          <div style={{ fontSize: "9px", letterSpacing: "0.14em", textTransform: "uppercase" as const, color: "rgba(201,168,76,0.48)", marginBottom: "10px" }}>
+            Sample document draft — generated from your quiz answers
+          </div>
+          <DocumentTabPreview data={data} consulateName={consulate.name} userName={userName} />
+
+          <div style={{ marginTop: "24px", padding: "14px 20px", background: "rgba(201,168,76,0.04)", border: "1px solid rgba(201,168,76,0.14)", marginBottom: "24px" }}>
             <div style={{ fontSize: "12px", color: "rgba(245,240,232,0.65)", lineHeight: 1.6 }}>
-              <span style={{ color: "#C9A84C", fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "17px" }}>$1,495</span> vs. $8,000–$15,000 for an attorney-prepared package. All formatted for {consulate.name}.
+              <span style={{ color: "#C9A84C", fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "17px" }}>$1,495</span>
+              {" "}vs. $8,000–$15,000 for an attorney-prepared package. All formatted for {consulate.name}. 10 document revision credits included.
             </div>
           </div>
           <Link href={ctaHref} style={{ display: "inline-block", padding: "16px 36px", background: "#C9A84C", color: "#0a0a0a", fontSize: "12px", fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase" as const, fontFamily: "'DM Sans', sans-serif", textDecoration: "none" }}>
             {ctaLabel} — $1,495 one-time
           </Link>
         </div>
+
+        {/* ─── ALSO AVAILABLE / NOT RELEVANT ────────────────────────────────────── */}
+        {(() => {
+          const bizAnswer = String(data.answers?.["Q0-08a"] || "").toLowerCase();
+          const isFranchisePath = /franchise/i.test(bizAnswer) || showFranchiseTeaser;
+          const isNewConcept = !isFranchisePath && !/acquisition/i.test(bizAnswer);
+
+          return (
+            <div style={{ padding: "52px 0", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
+              <div style={{ fontSize: "9px", letterSpacing: "0.16em", textTransform: "uppercase" as const, color: "rgba(201,168,76,0.6)", marginBottom: "6px" }}>Add-on modules</div>
+              <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "30px", fontWeight: 300, color: "#f5f0e8", marginBottom: "32px" }}>Tailored to your path</div>
+
+              <div className="step-cards-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px" }}>
+                {/* FDD Intelligence */}
+                {isFranchisePath ? (
+                  <div style={{ border: "1px solid rgba(201,168,76,0.45)", padding: "24px", background: "rgba(201,168,76,0.025)" }}>
+                    <div style={{ fontSize: "9px", letterSpacing: "0.14em", textTransform: "uppercase" as const, color: "#C9A84C", marginBottom: "10px" }}>Relevant for your case</div>
+                    <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "19px", fontWeight: 300, color: "#f5f0e8", marginBottom: "6px" }}>FDD Intelligence</div>
+                    <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.65)", lineHeight: 1.6, marginBottom: "14px" }}>
+                      Full item-by-item FDD analysis — Item 19 unit economics, officer red flags, territory fit, and
+                      {fddReceived ? " your FDD is already in hand." : fddOffered ? " analyse it the moment your franchisor delivers it." : " market analysis benchmarks."}
+                    </div>
+                    <Link href="/fdd" style={{ fontSize: "11px", color: "#C9A84C", textDecoration: "underline", fontFamily: "'DM Sans', sans-serif" }}>
+                      {fddReceived ? "Analyse my FDD now →" : "Learn about FDD analysis →"}
+                    </Link>
+                  </div>
+                ) : (
+                  <div style={{ border: "1px solid rgba(245,240,232,0.06)", padding: "24px", background: "rgba(245,240,232,0.012)", opacity: 0.6 }}>
+                    <div style={{ fontSize: "9px", letterSpacing: "0.14em", textTransform: "uppercase" as const, color: "rgba(245,240,232,0.38)", marginBottom: "10px" }}>Not applicable</div>
+                    <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "19px", fontWeight: 300, color: "rgba(245,240,232,0.55)", marginBottom: "6px" }}>FDD Intelligence</div>
+                    <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.42)", lineHeight: 1.6 }}>
+                      {isNewConcept
+                        ? "FDD analysis applies to franchise acquisitions only. Your case is a new concept build — this module is not needed."
+                        : "FDD analysis applies to franchise acquisitions. Based on your quiz answers, this module is not part of your recommended path."}
+                    </div>
+                  </div>
+                )}
+
+                {/* Market Analysis */}
+                <div style={{ border: "1px solid rgba(201,168,76,0.2)", padding: "24px", background: "rgba(201,168,76,0.012)" }}>
+                  <div style={{ fontSize: "9px", letterSpacing: "0.14em", textTransform: "uppercase" as const, color: "rgba(201,168,76,0.55)", marginBottom: "10px" }}>Available add-on</div>
+                  <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "19px", fontWeight: 300, color: "#f5f0e8", marginBottom: "6px" }}>Market Analysis</div>
+                  <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.65)", lineHeight: 1.6, marginBottom: "14px" }}>
+                    AI-generated market sizing with TAM/SAM data, competitive landscape, and industry benchmarks for your specific business sector and geography. Included in document generation for your consulate.
+                  </div>
+                  <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.42)" }}>Included in Complete Package</div>
+                </div>
+
+                {/* Additional Simulator Sessions */}
+                <div style={{ border: "1px solid rgba(201,168,76,0.2)", padding: "24px", background: "rgba(201,168,76,0.012)" }}>
+                  <div style={{ fontSize: "9px", letterSpacing: "0.14em", textTransform: "uppercase" as const, color: "rgba(201,168,76,0.55)", marginBottom: "10px" }}>Available add-on</div>
+                  <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "19px", fontWeight: 300, color: "#f5f0e8", marginBottom: "6px" }}>Additional Simulator Sessions</div>
+                  <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.65)", lineHeight: 1.6, marginBottom: "14px" }}>
+                    The Complete Package includes 10 simulator sessions. Purchase additional blocks as your interview date approaches — the officer persona adapts as your answers evolve.
+                  </div>
+                  <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.42)" }}>Available after purchase · priced per block</div>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* ─── FLAGS ─────────────────────────────────────────────────────────────── */}
         {flagsToShow.length > 0 && (
