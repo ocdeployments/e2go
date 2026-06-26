@@ -262,29 +262,68 @@ interface ScoreDimension {
   note: string;
 }
 
-function getScoreDimensions(score: number, warnings: string[]): ScoreDimension[] {
-  const hasInvLow = warnings.includes("W-INVESTMENT-LOW");
-  const hasInvCrit = warnings.includes("W-INVESTMENT-CRITICAL");
-  const hasSrcUnclear = warnings.includes("W-SOURCE-UNCLEAR");
-  const hasMarg = warnings.includes("W-MARGINALITY-ACQUISITION");
-  const hasExpWeak = warnings.includes("W-EXPERIENCE-WEAK");
-  const hasExpCrit = warnings.includes("W-EXPERIENCE-CRITICAL");
-  const hasNiIssue = warnings.includes("W-NI-NONE") || warnings.includes("W-NI-WEAK");
-  const hasRefusal = warnings.includes("W-REFUSAL-RECENT") || warnings.includes("W-E2-PRIOR-DENIAL");
-  const r = score / 100;
-  const inv = Math.min(25, hasInvCrit ? 12 : hasInvLow ? 17 : Math.round(25 * r * 1.08));
-  const src = Math.min(20, hasSrcUnclear ? 12 : Math.round(20 * r * 1.02));
-  const mar = Math.min(20, hasMarg ? 13 : Math.round(20 * r * 1.06));
-  const act = Math.min(15, hasExpCrit ? 8 : hasExpWeak ? 10 : Math.round(15 * r * 1.1));
-  const pln = Math.min(10, Math.round(10 * r * 0.96));
-  const evd = Math.min(10, (hasNiIssue || hasRefusal) ? Math.round(10 * 0.4) : Math.round(10 * r * 0.88));
+// Uses real quiz warning codes from module0_questions.json score_weights.
+// Dimension maxes sum to 100; deductions match the actual quiz score_weights values,
+// so the breakdown total tracks the quiz score.
+function getScoreDimensions(warnings: string[]): ScoreDimension[] {
+  // Investment Substantiality — Q0-07
+  const hasLowInv    = warnings.includes("W-LOW-INVESTMENT");           // −6 pts
+  const hasBorderInv = warnings.includes("W-BORDERLINE-INVESTMENT");    // −10 pts
+  const invDeduct    = hasLowInv ? 6 : hasBorderInv ? 10 : 0;
+
+  // Source of Funds — Q0-06, Q0-06a
+  const srcMap: Record<string, number> = {
+    "W-FAMILY-GIFT": 4, "W-RRSP": 3, "W-RRSP-PARTIAL": 4,
+    "W-RRSP-PENDING": 5, "W-LOAN-PERSONAL": 3,
+  };
+  const srcDeduct = Object.entries(srcMap).reduce((s, [c, v]) => s + (warnings.includes(c) ? v : 0), 0);
+
+  // Non-Marginality — Q0-08a, Q0-08d
+  const hasMarg    = warnings.includes("W-MARGINALITY");                // −6 pts
+  const hasMargAcq = warnings.includes("W-MARGINALITY-ACQUISITION");    // −6 pts
+  const margDeduct = (hasMarg ? 6 : 0) + (hasMargAcq ? 6 : 0);
+
+  // Non-Immigrant Intent — Q0-10
+  const hasNoTies = warnings.includes("W-NO-TIES");                     // −8 pts
+  const niDeduct  = hasNoTies ? 8 : 0;
+
+  // Immigration History — Q0-09a/b/c/d, Q0-05
+  const histMap: Record<string, number> = {
+    "W-STATUS-UNKNOWN": 6, "W-REFUSAL-OLD": 5, "W-REFUSAL-RECENT": 10,
+    "W-REFUSAL-MULTIPLE": 12, "W-E2-PRIOR-DENIAL": 15, "W-ENTRY-REFUSED": 12,
+    "W-DEPORTED": 15, "W-CONVICTION-OLD": 5, "W-CONVICTION-RECENT": 12,
+    "W-CONVICTION-UNSURE": 8,
+  };
+  const histDeduct = Object.entries(histMap).reduce((s, [c, v]) => s + (warnings.includes(c) ? v : 0), 0);
+
   return [
-    { label: "Investment Substantiality", earned: inv, max: 25, note: hasInvCrit ? "Investment is below typical approval threshold" : hasInvLow ? "Additional documentation recommended" : "Meets substantiality threshold" },
-    { label: "Source of Funds", earned: src, max: 20, note: hasSrcUnclear ? "Source documentation requires clarification" : "Clean, documentable funding path" },
-    { label: "Non-Marginality", earned: mar, max: 20, note: hasMarg ? "Employment creation plan needs strengthening" : "Business model supports job creation" },
-    { label: "Active Management Role", earned: act, max: 15, note: hasExpCrit ? "Management documentation insufficient" : hasExpWeak ? "Qualifications narrative needs development" : "Strong management profile" },
-    { label: "Business Plan Quality", earned: pln, max: 10, note: "Business plan meets officer expectations" },
-    { label: "Operating Evidence", earned: evd, max: 10, note: (hasNiIssue || hasRefusal) ? "Intent documentation requires strengthening" : "Consistent with E-2 operational intent" },
+    {
+      label: "Investment Substantiality", max: 30,
+      earned: Math.max(0, 30 - invDeduct),
+      note: invDeduct > 0
+        ? (hasLowInv ? "Below preferred range — documentation can strengthen" : "At lower threshold — borderline substantiality")
+        : "Meets substantiality threshold",
+    },
+    {
+      label: "Source of Funds", max: 25,
+      earned: Math.max(0, 25 - srcDeduct),
+      note: srcDeduct > 0 ? "Some fund sources require additional documentation" : "Clean, documentable funding path",
+    },
+    {
+      label: "Non-Marginality", max: 20,
+      earned: Math.max(0, 20 - margDeduct),
+      note: margDeduct > 0 ? "Employment creation plan needs strengthening" : "Business model supports job creation",
+    },
+    {
+      label: "Non-Immigrant Intent", max: 15,
+      earned: Math.max(0, 15 - niDeduct),
+      note: niDeduct > 0 ? "Home country ties documentation required" : "Non-immigrant intent established",
+    },
+    {
+      label: "Immigration History", max: 10,
+      earned: Math.max(0, 10 - Math.min(histDeduct, 10)),
+      note: histDeduct > 0 ? "Prior immigration issues must be addressed in application" : "Clean immigration record",
+    },
   ];
 }
 
@@ -294,49 +333,52 @@ interface RecoveryCard {
   points: string;
 }
 
-function getRecoveryCards(flagCodes: string[], missedPoints: number): RecoveryCard[] {
+// Maps real quiz warning codes to concrete recovery actions.
+// No generic fallbacks — only actionable steps tied to actual quiz deductions.
+function getRecoveryCards(warnings: string[]): RecoveryCard[] {
   const MAP: Record<string, RecoveryCard> = {
-    "W-INVESTMENT-CRITICAL": { title: "Increase committed investment", action: "Current level is below typical threshold. Capital addition, secured financing, or a business model adjustment is needed.", points: "+10–13 pts" },
-    "W-INVESTMENT-LOW": { title: "Document additional investment capital", action: "Additional committed funds or a signed loan agreement can bring the total above the proportionality threshold.", points: "+4–8 pts" },
-    "W-SOURCE-UNCLEAR": { title: "Build a funds trail narrative", action: "Document the complete origin and path of your investment funds — sale proceeds, savings history, gift letter, or loan agreement.", points: "+6–8 pts" },
-    "W-EXPERIENCE-CRITICAL": { title: "Establish your active management role", action: "Officers require evidence you will direct the business. An operating agreement, job description, and personnel plan address this.", points: "+6–7 pts" },
-    "W-EXPERIENCE-WEAK": { title: "Strengthen your qualifications narrative", action: "Connect prior roles directly to the proposed business. Quantify team size, budget responsibility, and key decisions.", points: "+3–5 pts" },
-    "W-MARGINALITY-ACQUISITION": { title: "Develop an employment creation plan", action: "A 3-year hiring plan with role descriptions and salary ranges, tied to financial projections, addresses non-marginality directly.", points: "+5–7 pts" },
-    "W-NI-NONE": { title: "Build a non-immigrant intent statement", action: "Document your home-country ties: property, family obligations, professional licenses, tax residency.", points: "+4–6 pts" },
-    "W-NI-WEAK": { title: "Strengthen your ties narrative", action: "Property records, family declarations, and financial obligations in your home country all count toward demonstrating intent.", points: "+3–4 pts" },
-    "W-REFUSAL-RECENT": { title: "Address the prior refusal directly", action: "The prior refusal must be disclosed and rebutted in the cover letter — explain what has changed and why this application is stronger.", points: "+4–6 pts" },
-    "W-E2-PRIOR-DENIAL": { title: "Rebut the prior E-2 denial", action: "Explicitly address the denial, what changed, and why this application now satisfies the original officer concern.", points: "+4–6 pts" },
+    "W-LOW-INVESTMENT":           { title: "Document total committed investment", action: "Your investment is in the lower range. Signed commitment letters, a business valuation, or confirmed escrow can strengthen the substantiality case.", points: "+4–6 pts" },
+    "W-BORDERLINE-INVESTMENT":    { title: "Raise or fully document investment level", action: "Investment sits at the threshold boundary. A formal appraisal, full escrow confirmation, or additional committed capital removes the risk.", points: "+8–10 pts" },
+    "W-FAMILY-GIFT":              { title: "Build your gift funds paper trail", action: "Provide a notarized gift letter, evidence of the donor's financial capacity, and a clear bank transfer trail from donor account to yours.", points: "+3–4 pts" },
+    "W-RRSP":                     { title: "Document the RRSP withdrawal", action: "Provide a statement showing the full withdrawal, post-tax amount, and confirmation the funds are now in a liquid account ready to invest.", points: "+2–3 pts" },
+    "W-RRSP-PENDING":             { title: "Complete and document the RRSP withdrawal", action: "Officers need funds already withdrawn and available. A pending withdrawal without completion evidence is a submission risk.", points: "+4–5 pts" },
+    "W-RRSP-PARTIAL":             { title: "Document the partial RRSP withdrawal", action: "Provide the RRSP statement showing the partial withdrawal, available post-tax balance, and the destination account receiving the funds.", points: "+3–4 pts" },
+    "W-LOAN-PERSONAL":            { title: "Document personal loan terms", action: "A signed loan agreement, evidence of disbursement to your account, and confirmation the full amount is available for the investment.", points: "+2–3 pts" },
+    "W-MARGINALITY":              { title: "Restructure around direct employment", action: "Consulting and professional service firms face higher scrutiny. Add a direct employment plan, revenue projections, and evidence of a non-passive operating model.", points: "+4–6 pts" },
+    "W-MARGINALITY-ACQUISITION":  { title: "Build a 3-year employment creation plan", action: "A detailed hiring plan with role descriptions, salary ranges, and financial projections supporting the growth directly addresses non-marginality.", points: "+4–6 pts" },
+    "W-NO-TIES":                  { title: "Document your home-country ties", action: "Provide evidence of intent to return: property ownership, family obligations, professional licenses, active bank accounts, and tax residency at home.", points: "+6–8 pts" },
+    "W-REFUSAL-OLD":              { title: "Disclose and address the prior refusal", action: "Disclose in the cover letter, explain what has changed since, and provide evidence showing why this application is materially stronger.", points: "+4–5 pts" },
+    "W-REFUSAL-RECENT":           { title: "Build a direct rebuttal to the refusal", action: "A recent refusal must be addressed head-on: state the specific grounds, document exactly what changed, and provide new evidence addressing the officer concern.", points: "+8–10 pts" },
+    "W-REFUSAL-MULTIPLE":         { title: "Engage an attorney for your refusal history", action: "Multiple refusals require a legal strategy with case law citations. An attorney can build a rebuttal brief and coordinate with the consulate.", points: "attorney recommended" },
+    "W-E2-PRIOR-DENIAL":          { title: "Rebut the prior E-2 denial directly", action: "Name the specific denial grounds, demonstrate what has materially changed, and provide new evidence not available in the prior application.", points: "+8–10 pts" },
+    "W-STATUS-UNKNOWN":           { title: "Clarify current immigration status", action: "Your current US immigration status must be confirmed and documented before filing. Consult an attorney to establish status and confirm you may proceed.", points: "attorney recommended" },
+    "W-CONVICTION-OLD":           { title: "Disclose and document the conviction", action: "Older convictions require disclosure: the court record, confirmation of no subsequent incidents, and a brief written explanation.", points: "+3–5 pts" },
   };
   const cards: RecoveryCard[] = [];
-  for (const code of flagCodes) {
+  for (const code of warnings) {
     if (MAP[code]) cards.push(MAP[code]);
     if (cards.length === 3) break;
-  }
-  if (cards.length < 3 && missedPoints > 3) {
-    const generic: RecoveryCard[] = [
-      { title: "Add operating evidence documents", action: "Signed contracts, LOIs, vendor agreements, or lease commitments show you are ready to operate — not just planning to.", points: "+2–4 pts" },
-      { title: "Commission a market analysis", action: "A third-party market analysis with TAM data and competitive positioning strengthens business plan quality.", points: "+2–3 pts" },
-      { title: "Obtain a sector expert letter", action: "A letter from a franchise consultant or industry specialist validating your model adds independent credibility.", points: "+2–3 pts" },
-    ];
-    for (const g of generic) {
-      if (cards.length >= 3) break;
-      cards.push(g);
-    }
   }
   return cards.slice(0, 3);
 }
 
-function getCaseStrengths(data: ResultData, flagCodes: string[]): string[] {
-  const w = flagCodes;
+function getCaseStrengths(data: ResultData, warnings: string[]): string[] {
   const bizType = String(data.answers?.["Q0-08a"] || "");
   const strengths: string[] = [];
-  if (!w.includes("W-INVESTMENT-LOW") && !w.includes("W-INVESTMENT-CRITICAL")) strengths.push("Investment meets threshold");
-  if (!w.includes("W-SOURCE-UNCLEAR")) strengths.push("Funding path is documentable");
-  if (!w.includes("W-EXPERIENCE-WEAK") && !w.includes("W-EXPERIENCE-CRITICAL")) strengths.push("Management experience qualifies");
-  if (!w.includes("W-MARGINALITY-ACQUISITION")) strengths.push("Business creates employment");
-  if (!w.includes("W-NI-NONE") && !w.includes("W-NI-WEAK")) strengths.push("Non-immigrant intent established");
+  if (!warnings.includes("W-LOW-INVESTMENT") && !warnings.includes("W-BORDERLINE-INVESTMENT"))
+    strengths.push("Investment meets substantiality threshold");
+  const srcCodes = ["W-FAMILY-GIFT", "W-RRSP", "W-RRSP-PARTIAL", "W-RRSP-PENDING", "W-LOAN-PERSONAL"];
+  if (!srcCodes.some(c => warnings.includes(c)))
+    strengths.push("Funding path is documentable");
+  if (!warnings.includes("W-MARGINALITY") && !warnings.includes("W-MARGINALITY-ACQUISITION"))
+    strengths.push("Business model supports employment");
+  if (!warnings.includes("W-NO-TIES"))
+    strengths.push("Non-immigrant intent established");
+  const histCodes = ["W-REFUSAL-OLD", "W-REFUSAL-RECENT", "W-REFUSAL-MULTIPLE", "W-E2-PRIOR-DENIAL", "W-ENTRY-REFUSED", "W-DEPORTED", "W-CONVICTION-OLD", "W-CONVICTION-RECENT"];
+  if (!histCodes.some(c => warnings.includes(c)))
+    strengths.push("Clean immigration record");
   if (/franchise/i.test(bizType)) strengths.push("Established franchise brand");
-  if (strengths.length < 2) strengths.push("No critical disqualifying factors");
+  if (strengths.length < 2) strengths.push("No critical disqualifying factors identified");
   return strengths.slice(0, 4);
 }
 
@@ -473,24 +515,33 @@ function ResultsPageInner() {
   const fddOffered = fddAnswer.includes("offered");
   const showFddCta = fddReceived || fddOffered;
 
-  const scoreDimensions = getScoreDimensions(score, data.warnings || []);
-  const recoveryCards = getRecoveryCards(flagsToShow.map(f => f.code), 100 - score);
-  const caseStrengths = getCaseStrengths(data, flagsToShow.map(f => f.code));
+  const allWarnings = [...(data.warnings || []), ...(data.attorney_flags || [])];
+  const scoreDimensions = getScoreDimensions(allWarnings);
+  const recoveryCards = getRecoveryCards(allWarnings);
+  const caseStrengths = getCaseStrengths(data, allWarnings);
   const missedPoints = 100 - score;
   const circumference = 2 * Math.PI * 40;
   const dashOffset = circumference * (1 - score / 100);
 
   const FLAG_MODULE: Record<string, string> = {
-    "W-NI-NONE": "Ties Section — Non-Immigrant Intent",
-    "W-NI-WEAK": "Ties Section — Non-Immigrant Intent",
-    "W-REFUSAL-RECENT": "Cover Letter — Prior Refusal Narrative",
-    "W-E2-PRIOR-DENIAL": "Cover Letter — Prior Refusal Narrative",
-    "W-INVESTMENT-LOW": "Investment Section — Source of Funds",
-    "W-INVESTMENT-CRITICAL": "Investment Section — Source of Funds",
-    "W-SOURCE-UNCLEAR": "Investment Section — Source of Funds",
-    "W-EXPERIENCE-WEAK": "Qualifications Section",
-    "W-EXPERIENCE-CRITICAL": "Qualifications Section",
-    "W-MARGINALITY-ACQUISITION": "Business Plan — Employment Creation",
+    "W-NO-TIES":                  "Ties Section — Non-Immigrant Intent",
+    "W-REFUSAL-RECENT":           "Cover Letter — Prior Refusal Narrative",
+    "W-REFUSAL-MULTIPLE":         "Cover Letter — Prior Refusal Narrative",
+    "W-E2-PRIOR-DENIAL":          "Cover Letter — Prior E-2 Denial Rebuttal",
+    "W-REFUSAL-OLD":              "Cover Letter — Prior Refusal Disclosure",
+    "W-LOW-INVESTMENT":           "Investment Section — Substantiality",
+    "W-BORDERLINE-INVESTMENT":    "Investment Section — Substantiality",
+    "W-FAMILY-GIFT":              "Investment Section — Source of Funds",
+    "W-RRSP":                     "Investment Section — Source of Funds",
+    "W-RRSP-PARTIAL":             "Investment Section — Source of Funds",
+    "W-RRSP-PENDING":             "Investment Section — Source of Funds",
+    "W-LOAN-PERSONAL":            "Investment Section — Source of Funds",
+    "W-MARGINALITY":              "Business Plan — Non-Marginality Section",
+    "W-MARGINALITY-ACQUISITION":  "Business Plan — Employment Creation Plan",
+    "W-STATUS-UNKNOWN":           "Cover Letter — Immigration Status",
+    "W-CONVICTION-OLD":           "Cover Letter — Immigration History",
+    "W-ENTRY-REFUSED":            "Cover Letter — Immigration History",
+    "W-DEPORTED":                 "Cover Letter — Immigration History",
   };
 
   const FAQ_ITEMS = [
@@ -730,9 +781,9 @@ function ResultsPageInner() {
           <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "30px", fontWeight: 300, color: "#f5f0e8", marginBottom: "36px" }}>What happens next</div>
           <div className="step-cards-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px" }}>
             {[
-              { step: "01", title: "Build", desc: "Your case file opens pre-filled with your quiz answers. Work section by section — business plan, source of funds, qualifications narrative, ties statement." },
-              { step: "02", title: "Generate", desc: `15 consulate-formatted documents produced instantly from your answers. Formatted specifically for ${consulate.name}. Export-ready PDF for submission.` },
-              { step: "03", title: "Prepare", desc: "Interview Simulator trains you on the exact questions officers ask. AI officer persona adapts to your specific answers and investment profile." },
+              { step: "01", title: "Choose & Build", desc: "Your account opens with quiz answers pre-loaded. Choose your business direction — independent or franchise. Franchise buyers are matched to a vetted broker in their investment range. Work through each section: business plan, source of funds, qualifications, ties statement." },
+              { step: "02", title: "Analyse & Generate", desc: `Franchise buyers upload their FDD for a full item-by-item analysis — unit economics, officer red flags, territory fit, and market analysis. Then generate all 15 consulate-formatted documents from your case file, ready for ${consulate.name}.` },
+              { step: "03", title: "Prepare", desc: "Your AI Interview Simulator trains you on the exact questions officers ask — adapted to your investment, business type, and consulate. Comes with a day-of checklist: what to bring, what to leave behind, and what to expect at each stage of the interview." },
             ].map(({ step, title, desc }) => (
               <div key={step} style={{ border: "1px solid rgba(201,168,76,0.15)", padding: "32px 24px", background: "rgba(10,10,10,0.4)" }}>
                 <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "56px", fontWeight: 300, color: "rgba(201,168,76,0.18)", lineHeight: 1, marginBottom: "14px" }}>{step}</div>
