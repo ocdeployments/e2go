@@ -30,6 +30,7 @@ export interface FranchiseProfileAnswers {
   priorBusiness?: string;          // QFN-10
   multiUnit?: string;              // QFN-11
   urbanOrSuburban?: string;        // QFN-12
+  industryCategories?: string[];   // QFN-13: multi-select preferred industry categories
 }
 
 export interface CategoryScore {

@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import quizData from "@/data/module0_questions.json";
 import { TREATY_COUNTRIES } from "@/lib/treaty-countries";
@@ -196,6 +196,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 export default function QuizPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [supabase] = useState(() => createBrowserSupabaseClient());
   const [loggedInUser, setLoggedInUser] = useState<{ id: string; email: string } | null>(null);
   const [authChecked, setAuthChecked] = useState(true);
@@ -369,6 +370,27 @@ export default function QuizPage() {
       setPendingJumpId(null);
     }
   }, [pendingJumpId, visibleQuestions, answers]);
+
+  // E-7-03: Deep-link to a specific question via ?step=<question-id-or-section>
+  // Supported values: a question id (e.g. "Q0-07") or a section name (e.g. "investment").
+  // Only fires once on mount, after questions are available.
+  const stepParamApplied = useRef(false);
+  useEffect(() => {
+    if (stepParamApplied.current) return;
+    if (visibleQuestions.length === 0) return;
+    const stepParam = searchParams.get('step');
+    if (!stepParam) return;
+    // Try exact question id first
+    let idx = visibleQuestions.findIndex(q => q.id === stepParam);
+    // Fall back to section name match (first question in that section)
+    if (idx === -1) {
+      idx = visibleQuestions.findIndex(q => q.section === stepParam);
+    }
+    if (idx !== -1) {
+      setCur(idx);
+      stepParamApplied.current = true;
+    }
+  }, [visibleQuestions, searchParams]);
 
   // Restore selection state when jumping to a question with existing answers
   useEffect(() => {

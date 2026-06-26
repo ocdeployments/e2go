@@ -2,10 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { createBrowserSupabaseClient } from '@/lib/supabase';
-import { scoreFranchiseProfile, type FranchiseMatchResult, type FranchiseProfileAnswers } from '@/lib/franchise-scoring-engine';
-import { FRANCHISE_CATEGORIES, type FranchiseBrand } from '@/data/franchise-brands';
+import { scoreFranchiseProfile, type FranchiseMatchResult, type FranchiseProfileAnswers, type CategoryScore } from '@/lib/franchise-scoring-engine';
+import { FRANCHISE_CATEGORIES } from '@/data/franchise-brands';
 
 // ─── Answer key → profile field mapping ──────────────────────────────────────
 
@@ -28,7 +27,7 @@ const QFN_KEY_MAP: Record<string, keyof FranchiseProfileAnswers> = {
 
 function ScoreBar({ value, max = 100, color = '#C9A84C' }: { value: number; max?: number; color?: string }) {
   return (
-    <div style={{ height: '4px', background: 'rgba(245,240,232,0.62)', borderRadius: 0, overflow: 'hidden' }}>
+    <div style={{ height: '4px', background: 'rgba(245,240,232,0.08)', borderRadius: 0, overflow: 'hidden' }}>
       <div style={{ height: '4px', width: `${Math.round((value / max) * 100)}%`, background: color, transition: 'width 0.6s ease' }} />
     </div>
   );
@@ -41,69 +40,174 @@ function DimDot({ score }: { score: number }) {
   return <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: color, flexShrink: 0 }} />;
 }
 
-// ─── E-2 compat badge ─────────────────────────────────────────────────────────
+// ─── Category match card (E-7-01: no brand names) ────────────────────────────
+// Shows: industry label + compatibility score + investment range + description.
+// Format: "Food & Beverage — Fast Casual · 94% match · $150K–$250K investment"
 
-function E2Badge({ score }: { score: 'A' | 'B' | 'C' }) {
-  const config = {
-    A: { color: 'rgba(34,197,94,0.85)', bg: 'rgba(34,197,94,0.08)', border: 'rgba(34,197,94,0.2)' },
-    B: { color: '#C9A84C', bg: 'rgba(201,168,76,0.08)', border: 'rgba(201,168,76,0.2)' },
-    C: { color: 'rgba(239,68,68,0.8)', bg: 'rgba(239,68,68,0.06)', border: 'rgba(239,68,68,0.2)' },
-  }[score];
+function CategoryMatchCard({ cs, rank }: { cs: CategoryScore; rank: number }) {
+  const cat = FRANCHISE_CATEGORIES[cs.category];
+  const isTop = rank <= 3;
+
+  // Derive investment range from topBrands in this category (min across minimums, max across maximums)
+  const investMins = cs.topBrands.map(b => b.investMin);
+  const investMaxs = cs.topBrands.map(b => b.investMax);
+  const rangeMin = investMins.length > 0 ? Math.min(...investMins) : null;
+  const rangeMax = investMaxs.length > 0 ? Math.max(...investMaxs) : null;
+  const investLabel = rangeMin !== null && rangeMax !== null
+    ? `$${(rangeMin / 1000).toFixed(0)}K–$${(rangeMax / 1000).toFixed(0)}K investment`
+    : null;
+
+  const dimLabels: Array<[keyof CategoryScore, string]> = [
+    ['capitalFit', 'Capital fit'],
+    ['visaFit', 'Visa strength'],
+    ['operatorFit', 'Operator fit'],
+    ['marketFit', 'Market fit'],
+    ['renewalFit', 'Renewal outlook'],
+  ];
+
   return (
-    <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.06em', color: config.color, background: config.bg, border: `1px solid ${config.border}`, padding: '2px 7px', fontFamily: "'DM Sans', sans-serif" }}>
-      E-2: {score}
-    </span>
+    <div
+      style={{
+        padding: '18px 20px',
+        border: `1px solid ${isTop ? 'rgba(201,168,76,0.15)' : 'rgba(245,240,232,0.05)'}`,
+        background: isTop ? 'rgba(201,168,76,0.02)' : 'rgba(245,240,232,0.01)',
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '10px' }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
+            {isTop && (
+              <span style={{ fontSize: '10px', color: '#C9A84C', fontFamily: "'DM Sans', sans-serif", fontWeight: 700, minWidth: '20px', flexShrink: 0 }}>
+                #{rank}
+              </span>
+            )}
+            <span style={{ fontSize: '14px', color: isTop ? '#f5f0e8' : 'rgba(245,240,232,0.76)', fontFamily: "'DM Sans', sans-serif", fontWeight: isTop ? 500 : 400 }}>
+              {cat.label}
+            </span>
+          </div>
+          {/* Subtitle line: tagline · investment range */}
+          <p style={{ fontSize: '11px', color: 'rgba(245,240,232,0.52)', fontFamily: "'DM Sans', sans-serif", margin: 0, lineHeight: 1.5 }}>
+            {cat.tagline}
+            {investLabel && (
+              <span style={{ color: 'rgba(201,168,76,0.6)' }}> · {investLabel}</span>
+            )}
+          </p>
+        </div>
+        <span style={{ fontSize: '22px', fontFamily: "'Cormorant Garamond', serif", fontWeight: 300, color: isTop ? '#C9A84C' : 'rgba(245,240,232,0.68)', flexShrink: 0, marginLeft: '16px' }}>
+          {cs.total}<span style={{ fontSize: '13px', color: 'rgba(245,240,232,0.35)' }}>/100</span>
+        </span>
+      </div>
+
+      <ScoreBar value={cs.total} color={isTop ? '#C9A84C' : 'rgba(245,240,232,0.25)'} />
+
+      {isTop && (
+        <div style={{ display: 'flex', gap: '16px', marginTop: '12px', flexWrap: 'wrap' }}>
+          {dimLabels.map(([dim, label]) => {
+            const val = typeof cs[dim] === 'number' ? (cs[dim] as number) : 0;
+            return (
+              <div key={dim as string} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <DimDot score={val} />
+                <span style={{ fontSize: '10px', color: 'rgba(245,240,232,0.72)', fontFamily: "'DM Sans', sans-serif" }}>{label}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }
 
-// ─── Brand card ───────────────────────────────────────────────────────────────
+// ─── Broker CTA card (E-7-02) ─────────────────────────────────────────────────
 
-function BrandCard({ brand }: { brand: FranchiseBrand }) {
-  const catLabel = FRANCHISE_CATEGORIES[brand.category].label;
-  const investRange = `$${(brand.investMin / 1000).toFixed(0)}K – $${(brand.investMax / 1000).toFixed(0)}K`;
+type BrokerState = 'idle' | 'loading' | 'confirmed' | 'dismissed';
+
+function BrokerCtaCard({ topCategories }: { topCategories: CategoryScore[] }) {
+  const [state, setState] = useState<BrokerState>('idle');
+
+  const handleConnect = async () => {
+    setState('loading');
+    try {
+      await fetch('/api/franchise/broker-request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          match_categories: topCategories.slice(0, 3).map(cs => FRANCHISE_CATEGORIES[cs.category].label),
+        }),
+      });
+    } catch {
+      // Non-blocking — show confirmation regardless
+    }
+    setState('confirmed');
+  };
+
+  if (state === 'dismissed') return null;
+
+  if (state === 'confirmed') {
+    return (
+      <div style={{ padding: '24px 24px', border: '1px solid rgba(34,197,94,0.2)', background: 'rgba(34,197,94,0.04)', marginBottom: '48px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <span style={{ fontSize: '16px', color: 'rgba(34,197,94,0.8)', flexShrink: 0 }}>✓</span>
+          <div>
+            <p style={{ fontSize: '14px', color: 'rgba(34,197,94,0.85)', fontFamily: "'DM Sans', sans-serif", fontWeight: 500, margin: '0 0 4px' }}>
+              Request received
+            </p>
+            <p style={{ fontSize: '12px', color: 'rgba(245,240,232,0.60)', fontFamily: "'DM Sans', sans-serif", margin: 0 }}>
+              We'll be in touch within 1 business day.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <Link
-      href={`/franchise/brand/${brand.slug}`}
-      style={{
-        display: 'block',
-        padding: '18px 20px',
-        border: '1px solid rgba(245,240,232,0.62)',
-        background: 'rgba(245,240,232,0.015)',
-        textDecoration: 'none',
-        transition: 'border-color 0.15s, background 0.15s',
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', marginBottom: '10px' }}>
-        <div>
-          <span style={{ fontSize: '14px', color: '#f5f0e8', fontFamily: "'DM Sans', sans-serif", fontWeight: 500, display: 'block', marginBottom: '4px' }}>
-            {brand.name}
-          </span>
-          <span style={{ fontSize: '10px', color: 'rgba(245,240,232,0.70)', fontFamily: "'DM Sans', sans-serif", letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-            {catLabel}
-          </span>
-        </div>
-        <E2Badge score={brand.e2CompatScore} />
-      </div>
-      <p style={{ fontSize: '11px', color: 'rgba(245,240,232,0.74)', lineHeight: 1.6, fontFamily: "'DM Sans', sans-serif", marginBottom: '12px' }}>
-        {brand.description}
+    <div style={{ padding: '24px 24px', border: '1px solid rgba(201,168,76,0.18)', background: 'rgba(201,168,76,0.025)', marginBottom: '48px' }}>
+      <h3 style={{ fontSize: '16px', fontFamily: "'Cormorant Garamond', serif", fontWeight: 400, color: '#f5f0e8', margin: '0 0 8px' }}>
+        Would you like to speak with a franchise specialist?
+      </h3>
+      <p style={{ fontSize: '12px', color: 'rgba(245,240,232,0.62)', lineHeight: 1.7, fontFamily: "'DM Sans', sans-serif", margin: '0 0 20px' }}>
+        We can connect you with a licensed franchise broker who specialises in E-2 visa-eligible franchises.
       </p>
-      <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
-        <div>
-          <span style={{ fontSize: '9px', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(245,240,232,0.65)', fontFamily: "'DM Sans', sans-serif", display: 'block', marginBottom: '2px' }}>Investment</span>
-          <span style={{ fontSize: '12px', color: 'rgba(245,240,232,0.7)', fontFamily: "'DM Sans', sans-serif" }}>{investRange}</span>
-        </div>
-        <div>
-          <span style={{ fontSize: '9px', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(245,240,232,0.65)', fontFamily: "'DM Sans', sans-serif", display: 'block', marginBottom: '2px' }}>Staff at 12 months</span>
-          <span style={{ fontSize: '12px', color: 'rgba(245,240,232,0.7)', fontFamily: "'DM Sans', sans-serif" }}>{brand.staffingAt12Months.min}–{brand.staffingAt12Months.max} people</span>
-        </div>
-        {brand.item19Present && (
-          <div style={{ display: 'flex', alignItems: 'flex-end' }}>
-            <span style={{ fontSize: '10px', color: 'rgba(34,197,94,0.6)', fontFamily: "'DM Sans', sans-serif" }}>✓ Item 19 available</span>
-          </div>
-        )}
+      <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+        <button
+          onClick={handleConnect}
+          disabled={state === 'loading'}
+          style={{
+            padding: '10px 22px',
+            background: '#C9A84C',
+            color: '#0a0a0a',
+            border: 'none',
+            cursor: state === 'loading' ? 'default' : 'pointer',
+            fontSize: '12px',
+            letterSpacing: '0.06em',
+            textTransform: 'uppercase',
+            fontFamily: "'DM Sans', sans-serif",
+            fontWeight: 500,
+            opacity: state === 'loading' ? 0.7 : 1,
+            transition: 'opacity 0.15s',
+          }}
+        >
+          {state === 'loading' ? 'Sending…' : 'Yes, connect me'}
+        </button>
+        <button
+          onClick={() => setState('dismissed')}
+          disabled={state === 'loading'}
+          style={{
+            padding: '10px 18px',
+            background: 'transparent',
+            color: 'rgba(245,240,232,0.55)',
+            border: '1px solid rgba(245,240,232,0.12)',
+            cursor: state === 'loading' ? 'default' : 'pointer',
+            fontSize: '12px',
+            letterSpacing: '0.04em',
+            fontFamily: "'DM Sans', sans-serif",
+            transition: 'border-color 0.15s, color 0.15s',
+          }}
+        >
+          Not right now
+        </button>
       </div>
-    </Link>
+    </div>
   );
 }
 
@@ -130,7 +234,6 @@ export default function FranchiseMatchesPage() {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) { router.push('/login'); return; }
 
-        // Load quiz answers + application answers in parallel
         const { data: apps } = await supabase
           .from('applications')
           .select('id, target_state')
@@ -166,7 +269,6 @@ export default function FranchiseMatchesPage() {
           }
         }
 
-        // Build profile answers object
         const profileAnswers: FranchiseProfileAnswers = {
           investmentRange: quizAnswers['Q0-07'],
           investmentAmount: savedMap['M3-F-02'] ? Number(savedMap['M3-F-02']) : undefined,
@@ -212,13 +314,6 @@ export default function FranchiseMatchesPage() {
   }
 
   const readinessCfg = READINESS_CONFIG[result.readiness];
-  const dimLabels: Record<string, string> = {
-    capitalFit: 'Capital fit',
-    visaFit: 'Visa strength',
-    operatorFit: 'Operator fit',
-    marketFit: 'Market fit',
-    renewalFit: 'Renewal outlook',
-  };
 
   return (
     <div style={{ minHeight: '100vh', background: '#0a0a0a', color: '#f5f0e8' }}>
@@ -236,7 +331,7 @@ export default function FranchiseMatchesPage() {
             Franchise category matches
           </h1>
           {profileAnswerCount < 12 && (
-            <div style={{ marginTop: '16px', padding: '10px 14px', border: '1px solid rgba(245,240,232,0.62)', background: 'rgba(245,240,232,0.02)', display: 'inline-flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ marginTop: '16px', padding: '10px 14px', border: '1px solid rgba(245,240,232,0.08)', background: 'rgba(245,240,232,0.02)', display: 'inline-flex', alignItems: 'center', gap: '10px' }}>
               <span style={{ fontSize: '11px', color: 'rgba(245,240,232,0.72)', fontFamily: "'DM Sans', sans-serif" }}>
                 {profileAnswerCount} of 12 profiler questions answered —
               </span>
@@ -258,14 +353,6 @@ export default function FranchiseMatchesPage() {
               <p style={{ fontSize: '13px', color: 'rgba(245,240,232,0.6)', lineHeight: 1.7, margin: '6px 0 0', fontFamily: "'DM Sans', sans-serif" }}>
                 {result.readinessReason}
               </p>
-              {result.readiness === 'READY_FOR_INTRO' && (
-                <Link
-                  href="/franchise/connect"
-                  style={{ display: 'inline-block', marginTop: '14px', padding: '9px 20px', background: '#C9A84C', color: '#0a0a0a', fontSize: '11px', letterSpacing: '0.07em', textTransform: 'uppercase', fontFamily: "'DM Sans', sans-serif", fontWeight: 500, textDecoration: 'none' }}
-                >
-                  Request broker introduction →
-                </Link>
-              )}
             </div>
           </div>
         </div>
@@ -281,72 +368,20 @@ export default function FranchiseMatchesPage() {
           </div>
         )}
 
-        {/* Category scorecard */}
+        {/* Category scorecard (E-7-01: categories only, no brand names) */}
         <div style={{ marginBottom: '56px' }}>
           <h2 style={{ fontSize: '13px', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(245,240,232,0.68)', fontFamily: "'DM Sans', sans-serif", marginBottom: '20px', fontWeight: 400 }}>
             Category match scores
           </h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-            {result.categoryScores.map((cs, i) => {
-              const cat = FRANCHISE_CATEGORIES[cs.category];
-              const isTop = i < 3;
-              return (
-                <div
-                  key={cs.category}
-                  style={{
-                    padding: '18px 20px',
-                    border: `1px solid ${isTop ? 'rgba(201,168,76,0.15)' : 'rgba(245,240,232,0.05)'}`,
-                    background: isTop ? 'rgba(201,168,76,0.02)' : 'rgba(245,240,232,0.01)',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      {isTop && (
-                        <span style={{ fontSize: '10px', color: '#C9A84C', fontFamily: "'DM Sans', sans-serif", fontWeight: 700, minWidth: '20px' }}>
-                          #{i + 1}
-                        </span>
-                      )}
-                      <span style={{ fontSize: '14px', color: isTop ? '#f5f0e8' : 'rgba(245,240,232,0.76)', fontFamily: "'DM Sans', sans-serif", fontWeight: isTop ? 500 : 400 }}>
-                        {cat.label}
-                      </span>
-                    </div>
-                    <span style={{ fontSize: '22px', fontFamily: "'Cormorant Garamond', serif", fontWeight: 300, color: isTop ? '#C9A84C' : 'rgba(245,240,232,0.68)' }}>
-                      {cs.total}
-                    </span>
-                  </div>
-                  <ScoreBar value={cs.total} color={isTop ? '#C9A84C' : 'rgba(245,240,232,0.62)'} />
-                  {isTop && (
-                    <div style={{ display: 'flex', gap: '16px', marginTop: '12px', flexWrap: 'wrap' }}>
-                      {(Object.entries(dimLabels) as [keyof typeof cs, string][]).map(([dim, label]) => {
-                        const val = typeof cs[dim] === 'number' ? (cs[dim] as number) : 0;
-                        return (
-                          <div key={dim as string} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                            <DimDot score={val} />
-                            <span style={{ fontSize: '10px', color: 'rgba(245,240,232,0.72)', fontFamily: "'DM Sans', sans-serif" }}>{label}</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+            {result.categoryScores.map((cs, i) => (
+              <CategoryMatchCard key={cs.category} cs={cs} rank={i + 1} />
+            ))}
           </div>
         </div>
 
-        {/* Brand shortlist */}
-        {result.topBrands.length > 0 && (
-          <div style={{ marginBottom: '56px' }}>
-            <h2 style={{ fontSize: '13px', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(245,240,232,0.68)', fontFamily: "'DM Sans', sans-serif", marginBottom: '20px', fontWeight: 400 }}>
-              Matched brands
-            </h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '10px' }}>
-              {result.topBrands.map(brand => (
-                <BrandCard key={brand.slug} brand={brand} />
-              ))}
-            </div>
-          </div>
-        )}
+        {/* Broker CTA (E-7-02) */}
+        <BrokerCtaCard topCategories={result.topCategories} />
 
         {/* Actions */}
         <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'center', paddingTop: '24px', borderTop: '1px solid rgba(245,240,232,0.06)' }}>
@@ -356,14 +391,6 @@ export default function FranchiseMatchesPage() {
           >
             Update my answers
           </a>
-          {result.readiness === 'READY_FOR_INTRO' && (
-            <Link
-              href="/franchise/connect"
-              style={{ fontSize: '12px', color: '#C9A84C', fontFamily: "'DM Sans', sans-serif", textDecoration: 'none' }}
-            >
-              Request broker introduction →
-            </Link>
-          )}
           <a
             href="/dashboard"
             style={{ fontSize: '12px', color: 'rgba(245,240,232,0.65)', fontFamily: "'DM Sans', sans-serif", textDecoration: 'none', marginLeft: 'auto' }}

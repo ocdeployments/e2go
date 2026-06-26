@@ -5,7 +5,28 @@ import { useRouter } from 'next/navigation';
 import { createBrowserSupabaseClient } from '@/lib/supabase';
 import type { FranchiseProfileAnswers } from '@/lib/franchise-scoring-engine';
 
-// ─── Net-new questions ────────────────────────────────────────────────────────
+// ─── Industry categories (E-7-05) ────────────────────────────────────────────
+
+const INDUSTRY_CATEGORIES: string[] = [
+  'Food & Beverage (fast casual, restaurant, café)',
+  'Retail',
+  'Health & Wellness / Medical / Dental',
+  'Home Services (cleaning, maid service, housekeeping)',
+  'Renovation / Home Improvement / Contracting',
+  'Fitness / Gym / Martial Arts',
+  'Education & Tutoring / Childcare',
+  'Pet Services (grooming, boarding, daycare)',
+  'Automotive (repair, detailing, rental)',
+  'Technology / IT Services',
+  'Consulting / Professional Services / Staffing',
+  'Senior Care / Home Health',
+  'Beauty / Hair / Nail Salon',
+  'Open to broker recommendation (I\'m flexible)',
+];
+
+const INDUSTRY_ANSWER_KEY = 'QFN-13';
+
+// ─── Single-select questions ──────────────────────────────────────────────────
 
 interface QFNQuestion {
   key: keyof FranchiseProfileAnswers;
@@ -15,6 +36,7 @@ interface QFNQuestion {
   options: string[];
 }
 
+// QFN-10 (priorBusiness) removed — duplicate of Module 3 question M3J-01
 const QFN_QUESTIONS: QFNQuestion[] = [
   {
     key: 'hoursPerWeek',
@@ -73,12 +95,6 @@ const QFN_QUESTIONS: QFNQuestion[] = [
     options: ['I love selling — client acquisition energises me', 'I love systems — I want to build great operations', 'Equal mix'],
   },
   {
-    key: 'priorBusiness',
-    answerKey: 'QFN-10',
-    label: 'Have you owned or operated a business before?',
-    options: ['Yes, successfully', 'Yes — it was a learning experience', 'No, this is my first business'],
-  },
-  {
     key: 'multiUnit',
     answerKey: 'QFN-11',
     label: 'Is your goal to operate a single location, or do you want to scale to multiple units over time?',
@@ -92,12 +108,14 @@ const QFN_QUESTIONS: QFNQuestion[] = [
   },
 ];
 
+// Total question count: 1 industry multi-select + N single-select
+const TOTAL_QUESTIONS = 1 + QFN_QUESTIONS.length;
+
 // ─── Pre-fill mapping ─────────────────────────────────────────────────────────
 
 interface PrefillField {
   label: string;
   sourceKey: string;
-  displayMap?: Record<string, string>;
 }
 
 const PREFILL_FIELDS: PrefillField[] = [
@@ -106,8 +124,6 @@ const PREFILL_FIELDS: PrefillField[] = [
   { label: 'Applying from', sourceKey: 'Q0-05' },
   { label: 'Family moving with you', sourceKey: 'Q0-03' },
 ];
-
-// ─── Types ────────────────────────────────────────────────────────────────────
 
 interface PrefillValues {
   [key: string]: string;
@@ -120,12 +136,18 @@ export default function FranchiseDiscoverPage() {
   const [loading, setLoading] = useState(true);
   const [applicationId, setApplicationId] = useState<string | null>(null);
   const [prefill, setPrefill] = useState<PrefillValues>({});
-  const [existingAnswers, setExistingAnswers] = useState<Record<string, string>>({});
   const [step, setStep] = useState<'confirm' | 'questions' | 'submitting'>('confirm');
+
+  // Question cursor: 0 = industry multi-select, 1+ = QFN_QUESTIONS[cursor-1]
   const [currentQ, setCurrentQ] = useState(0);
+
+  // Single-select answers (keyed by answerKey)
   const [answers, setAnswers] = useState<Record<string, string>>({});
+
+  // Multi-select state for QFN-13 industry categories
+  const [industrySelected, setIndustrySelected] = useState<string[]>([]);
+
   const [saving, setSaving] = useState(false);
-  const [error] = useState<string | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -171,18 +193,18 @@ export default function FranchiseDiscoverPage() {
             .like('question_key', 'QFN-%');
 
           if (savedAnswers) {
-            const existing: Record<string, string> = {};
-            for (const a of savedAnswers) {
-              if (a.answer_value && typeof a.answer_value === 'string') {
-                existing[a.question_key] = a.answer_value;
-              }
-            }
-            setExistingAnswers(existing);
-            // Pre-fill answers from saved QFN answers
             const preAnswers: Record<string, string> = {};
-            for (const q of QFN_QUESTIONS) {
-              const saved = existing[q.answerKey];
-              if (saved) preAnswers[q.answerKey] = saved;
+            for (const a of savedAnswers) {
+              if (!a.answer_value || typeof a.answer_value !== 'string') continue;
+              if (a.question_key === INDUSTRY_ANSWER_KEY) {
+                // Stored as JSON array
+                try {
+                  const parsed = JSON.parse(a.answer_value) as string[];
+                  if (Array.isArray(parsed)) setIndustrySelected(parsed);
+                } catch { /* ignore malformed */ }
+              } else {
+                preAnswers[a.question_key] = a.answer_value;
+              }
             }
             setAnswers(preAnswers);
           }
@@ -204,6 +226,18 @@ export default function FranchiseDiscoverPage() {
     } catch { /* non-critical */ }
   }, [applicationId]);
 
+  // Toggle industry category selection (multi-select)
+  const toggleIndustry = useCallback(async (cat: string) => {
+    setIndustrySelected(prev => {
+      const next = prev.includes(cat)
+        ? prev.filter(c => c !== cat)
+        : [...prev, cat];
+      // Persist as JSON array
+      saveAnswer(INDUSTRY_ANSWER_KEY, JSON.stringify(next));
+      return next;
+    });
+  }, [saveAnswer]);
+
   const selectOption = useCallback(async (answerKey: string, value: string) => {
     setAnswers(prev => ({ ...prev, [answerKey]: value }));
     setSaving(true);
@@ -211,7 +245,7 @@ export default function FranchiseDiscoverPage() {
     setSaving(false);
     // Auto-advance after short delay
     setTimeout(() => {
-      if (currentQ < QFN_QUESTIONS.length - 1) {
+      if (currentQ < TOTAL_QUESTIONS - 1) {
         setCurrentQ(q => q + 1);
       } else {
         router.push('/franchise/matches');
@@ -223,6 +257,13 @@ export default function FranchiseDiscoverPage() {
     setStep('submitting');
     router.push('/franchise/matches');
   }, [router]);
+
+  // Answered count: industry (counts if ≥1 selected) + single-select
+  const singleAnsweredCount = QFN_QUESTIONS.filter(q => answers[q.answerKey]).length;
+  const industryAnswered = industrySelected.length > 0;
+  const answeredCount = (industryAnswered ? 1 : 0) + singleAnsweredCount;
+  const progressPct = Math.round((answeredCount / TOTAL_QUESTIONS) * 100);
+  const allAnswered = answeredCount === TOTAL_QUESTIONS;
 
   if (loading) {
     return (
@@ -284,7 +325,8 @@ export default function FranchiseDiscoverPage() {
           {hasPrefill && (
             <p style={{ fontSize: '11px', color: 'rgba(245,240,232,0.68)', fontFamily: "'DM Sans', sans-serif", marginBottom: '28px', lineHeight: 1.6 }}>
               Need to change something?{' '}
-              <a href="/quiz" style={{ color: 'rgba(201,168,76,0.6)', textDecoration: 'underline' }}>Update your eligibility quiz</a>
+              {/* E-7-03: deep-link directly to the investment question */}
+              <a href="/quiz?step=investment" style={{ color: 'rgba(201,168,76,0.6)', textDecoration: 'underline' }}>Update your eligibility quiz</a>
               {' '}— changes sync here automatically.
             </p>
           )}
@@ -312,12 +354,12 @@ export default function FranchiseDiscoverPage() {
     );
   }
 
-  // ── Step 2: 12 net-new questions ──────────────────────────────────────────
+  // ── Step 2: Profiler questions ────────────────────────────────────────────
 
-  const q = QFN_QUESTIONS[currentQ];
-  const answeredCount = QFN_QUESTIONS.filter(q => answers[q.answerKey]).length;
-  const progressPct = Math.round((answeredCount / QFN_QUESTIONS.length) * 100);
-  const allAnswered = answeredCount === QFN_QUESTIONS.length;
+  // currentQ === 0 → industry multi-select
+  // currentQ >= 1  → QFN_QUESTIONS[currentQ - 1]
+  const isIndustryStep = currentQ === 0;
+  const singleQ = !isIndustryStep ? QFN_QUESTIONS[currentQ - 1] : null;
 
   return (
     <div style={{ minHeight: '100vh', background: '#0a0a0a', color: '#f5f0e8' }}>
@@ -330,7 +372,7 @@ export default function FranchiseDiscoverPage() {
               Step 2 of 2 — Profiler
             </span>
             <span style={{ fontSize: '10px', color: 'rgba(245,240,232,0.68)', fontFamily: "'DM Sans', sans-serif" }}>
-              {answeredCount} / {QFN_QUESTIONS.length} answered
+              {answeredCount} / {TOTAL_QUESTIONS} answered
             </span>
           </div>
           <div style={{ height: '2px', background: 'rgba(245,240,232,0.08)', borderRadius: 0 }}>
@@ -338,109 +380,253 @@ export default function FranchiseDiscoverPage() {
           </div>
         </div>
 
-        {/* Current question */}
-        <div style={{ marginBottom: '32px' }}>
-          <div style={{ fontSize: '10px', letterSpacing: '0.1em', color: 'rgba(245,240,232,0.65)', fontFamily: "'DM Sans', sans-serif", marginBottom: '12px' }}>
-            Question {currentQ + 1} of {QFN_QUESTIONS.length}
-          </div>
-          <h2 style={{ fontSize: '20px', fontFamily: "'Cormorant Garamond', serif", fontWeight: 400, color: '#f5f0e8', lineHeight: 1.4, marginBottom: q.helper ? '12px' : '0' }}>
-            {q.label}
-          </h2>
-          {q.helper && (
-            <p style={{ fontSize: '11px', color: 'rgba(245,240,232,0.70)', lineHeight: 1.7, fontFamily: "'DM Sans', sans-serif", marginTop: '8px' }}>
-              {q.helper}
-            </p>
-          )}
-        </div>
+        {/* ── Industry multi-select (Question 1 of N) ── */}
+        {isIndustryStep && (
+          <>
+            <div style={{ marginBottom: '28px' }}>
+              <div style={{ fontSize: '10px', letterSpacing: '0.1em', color: 'rgba(245,240,232,0.65)', fontFamily: "'DM Sans', sans-serif", marginBottom: '12px' }}>
+                Question 1 of {TOTAL_QUESTIONS}
+              </div>
+              <h2 style={{ fontSize: '20px', fontFamily: "'Cormorant Garamond', serif", fontWeight: 400, color: '#f5f0e8', lineHeight: 1.4, marginBottom: '8px' }}>
+                Which types of business interest you most?
+              </h2>
+              <p style={{ fontSize: '11px', color: 'rgba(245,240,232,0.68)', lineHeight: 1.7, fontFamily: "'DM Sans', sans-serif", margin: 0 }}>
+                Select all that apply — we'll weight your matches accordingly.
+              </p>
+            </div>
 
-        {/* Options */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '40px' }}>
-          {q.options.map(option => {
-            const selected = answers[q.answerKey] === option;
-            return (
+            {/* Multi-select checkboxes */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '32px' }}>
+              {INDUSTRY_CATEGORIES.map(cat => {
+                const selected = industrySelected.includes(cat);
+                return (
+                  <button
+                    key={cat}
+                    onClick={() => toggleIndustry(cat)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      width: '100%',
+                      textAlign: 'left',
+                      padding: '12px 16px',
+                      border: selected ? '1px solid #C9A84C' : '1px solid rgba(245,240,232,0.08)',
+                      background: selected ? 'rgba(201,168,76,0.06)' : 'rgba(245,240,232,0.012)',
+                      color: selected ? '#f5f0e8' : 'rgba(245,240,232,0.72)',
+                      cursor: 'pointer',
+                      fontSize: '13px',
+                      fontFamily: "'DM Sans', sans-serif",
+                      transition: 'border-color 0.12s, background 0.12s',
+                    }}
+                  >
+                    {/* Checkbox visual */}
+                    <span
+                      style={{
+                        width: '16px',
+                        height: '16px',
+                        border: selected ? '2px solid #C9A84C' : '1.5px solid rgba(245,240,232,0.22)',
+                        background: selected ? '#C9A84C' : 'transparent',
+                        borderRadius: '2px',
+                        flexShrink: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transition: 'all 0.12s',
+                      }}
+                    >
+                      {selected && (
+                        <span style={{ color: '#0a0a0a', fontSize: '10px', lineHeight: 1, fontWeight: 700 }}>✓</span>
+                      )}
+                    </span>
+                    {cat}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Continue from industry step */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <button
-                key={option}
-                onClick={() => selectOption(q.answerKey, option)}
-                disabled={saving}
+                onClick={() => setCurrentQ(1)}
                 style={{
-                  display: 'block',
-                  width: '100%',
-                  textAlign: 'left',
-                  padding: '14px 16px',
-                  border: selected ? '1px solid #C9A84C' : '1px solid rgba(245,240,232,0.1)',
-                  background: selected ? 'rgba(201,168,76,0.08)' : 'rgba(245,240,232,0.015)',
-                  color: selected ? '#C9A84C' : 'rgba(245,240,232,0.75)',
-                  cursor: saving ? 'default' : 'pointer',
-                  fontSize: '13px',
-                  fontFamily: "'DM Sans', sans-serif",
-                  transition: 'border-color 0.15s, background 0.15s, color 0.15s',
-                }}
-              >
-                <span style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <span style={{
-                    width: '14px',
-                    height: '14px',
-                    borderRadius: '50%',
-                    border: selected ? '4px solid #C9A84C' : '1.5px solid rgba(245,240,232,0.2)',
-                    flexShrink: 0,
-                    display: 'inline-block',
-                    transition: 'border 0.15s',
-                  }} />
-                  {option}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Navigation */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', gap: '12px' }}>
-            {currentQ > 0 && (
-              <button
-                onClick={() => setCurrentQ(q => q - 1)}
-                style={{ fontSize: '12px', color: 'rgba(245,240,232,0.70)', background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif' ", padding: 0 }}
-              >
-                ← Previous
-              </button>
-            )}
-            {currentQ < QFN_QUESTIONS.length - 1 && (
-              <button
-                onClick={() => setCurrentQ(q => q + 1)}
-                style={{ fontSize: '12px', color: 'rgba(245,240,232,0.70)', background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", padding: 0 }}
-              >
-                Skip →
-              </button>
-            )}
-          </div>
-
-          {/* Question nav dots */}
-          <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
-            {QFN_QUESTIONS.map((qItem, i) => (
-              <button
-                key={qItem.answerKey}
-                onClick={() => setCurrentQ(i)}
-                style={{
-                  width: answers[qItem.answerKey] ? '8px' : '6px',
-                  height: answers[qItem.answerKey] ? '8px' : '6px',
-                  borderRadius: '50%',
-                  background: i === currentQ
-                    ? '#C9A84C'
-                    : answers[qItem.answerKey]
-                    ? 'rgba(201,168,76,0.5)'
-                    : 'rgba(245,240,232,0.12)',
+                  padding: '11px 24px',
+                  background: industrySelected.length > 0 ? '#C9A84C' : 'rgba(245,240,232,0.08)',
+                  color: industrySelected.length > 0 ? '#0a0a0a' : 'rgba(245,240,232,0.4)',
                   border: 'none',
                   cursor: 'pointer',
-                  padding: 0,
-                  transition: 'all 0.15s',
+                  fontSize: '12px',
+                  letterSpacing: '0.06em',
+                  textTransform: 'uppercase',
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontWeight: 500,
+                  transition: 'background 0.15s, color 0.15s',
                 }}
-                aria-label={`Go to question ${i + 1}`}
-              />
-            ))}
-          </div>
-        </div>
+              >
+                {industrySelected.length > 0 ? `Continue (${industrySelected.length} selected) →` : 'Skip →'}
+              </button>
 
-        {/* See results CTA when enough answered */}
+              {/* Nav dots */}
+              <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
+                {/* Dot for industry question */}
+                <button
+                  onClick={() => setCurrentQ(0)}
+                  style={{
+                    width: industryAnswered ? '8px' : '6px',
+                    height: industryAnswered ? '8px' : '6px',
+                    borderRadius: '50%',
+                    background: currentQ === 0 ? '#C9A84C' : industryAnswered ? 'rgba(201,168,76,0.5)' : 'rgba(245,240,232,0.12)',
+                    border: 'none',
+                    cursor: 'pointer',
+                    padding: 0,
+                    transition: 'all 0.15s',
+                  }}
+                  aria-label="Go to question 1"
+                />
+                {QFN_QUESTIONS.map((qItem, i) => (
+                  <button
+                    key={qItem.answerKey}
+                    onClick={() => setCurrentQ(i + 1)}
+                    style={{
+                      width: answers[qItem.answerKey] ? '8px' : '6px',
+                      height: answers[qItem.answerKey] ? '8px' : '6px',
+                      borderRadius: '50%',
+                      background: (i + 1) === currentQ
+                        ? '#C9A84C'
+                        : answers[qItem.answerKey]
+                        ? 'rgba(201,168,76,0.5)'
+                        : 'rgba(245,240,232,0.12)',
+                      border: 'none',
+                      cursor: 'pointer',
+                      padding: 0,
+                      transition: 'all 0.15s',
+                    }}
+                    aria-label={`Go to question ${i + 2}`}
+                  />
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* ── Single-select questions (currentQ >= 1) ── */}
+        {!isIndustryStep && singleQ && (
+          <>
+            <div style={{ marginBottom: '32px' }}>
+              <div style={{ fontSize: '10px', letterSpacing: '0.1em', color: 'rgba(245,240,232,0.65)', fontFamily: "'DM Sans', sans-serif", marginBottom: '12px' }}>
+                Question {currentQ + 1} of {TOTAL_QUESTIONS}
+              </div>
+              <h2 style={{ fontSize: '20px', fontFamily: "'Cormorant Garamond', serif", fontWeight: 400, color: '#f5f0e8', lineHeight: 1.4, marginBottom: singleQ.helper ? '12px' : '0' }}>
+                {singleQ.label}
+              </h2>
+              {singleQ.helper && (
+                <p style={{ fontSize: '11px', color: 'rgba(245,240,232,0.70)', lineHeight: 1.7, fontFamily: "'DM Sans', sans-serif", marginTop: '8px' }}>
+                  {singleQ.helper}
+                </p>
+              )}
+            </div>
+
+            {/* Options */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '40px' }}>
+              {singleQ.options.map(option => {
+                const selected = answers[singleQ.answerKey] === option;
+                return (
+                  <button
+                    key={option}
+                    onClick={() => selectOption(singleQ.answerKey, option)}
+                    disabled={saving}
+                    style={{
+                      display: 'block',
+                      width: '100%',
+                      textAlign: 'left',
+                      padding: '14px 16px',
+                      border: selected ? '1px solid #C9A84C' : '1px solid rgba(245,240,232,0.1)',
+                      background: selected ? 'rgba(201,168,76,0.08)' : 'rgba(245,240,232,0.015)',
+                      color: selected ? '#C9A84C' : 'rgba(245,240,232,0.75)',
+                      cursor: saving ? 'default' : 'pointer',
+                      fontSize: '13px',
+                      fontFamily: "'DM Sans', sans-serif",
+                      transition: 'border-color 0.15s, background 0.15s, color 0.15s',
+                    }}
+                  >
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <span style={{
+                        width: '14px',
+                        height: '14px',
+                        borderRadius: '50%',
+                        border: selected ? '4px solid #C9A84C' : '1.5px solid rgba(245,240,232,0.2)',
+                        flexShrink: 0,
+                        display: 'inline-block',
+                        transition: 'border 0.15s',
+                      }} />
+                      {option}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Navigation */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <button
+                  onClick={() => setCurrentQ(q => q - 1)}
+                  style={{ fontSize: '12px', color: 'rgba(245,240,232,0.70)', background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", padding: 0 }}
+                >
+                  ← Previous
+                </button>
+                {currentQ < TOTAL_QUESTIONS - 1 && (
+                  <button
+                    onClick={() => setCurrentQ(q => q + 1)}
+                    style={{ fontSize: '12px', color: 'rgba(245,240,232,0.70)', background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", padding: 0 }}
+                  >
+                    Skip →
+                  </button>
+                )}
+              </div>
+
+              {/* Question nav dots */}
+              <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
+                <button
+                  onClick={() => setCurrentQ(0)}
+                  style={{
+                    width: industryAnswered ? '8px' : '6px',
+                    height: industryAnswered ? '8px' : '6px',
+                    borderRadius: '50%',
+                    background: currentQ === 0 ? '#C9A84C' : industryAnswered ? 'rgba(201,168,76,0.5)' : 'rgba(245,240,232,0.12)',
+                    border: 'none',
+                    cursor: 'pointer',
+                    padding: 0,
+                    transition: 'all 0.15s',
+                  }}
+                  aria-label="Go to question 1"
+                />
+                {QFN_QUESTIONS.map((qItem, i) => (
+                  <button
+                    key={qItem.answerKey}
+                    onClick={() => setCurrentQ(i + 1)}
+                    style={{
+                      width: answers[qItem.answerKey] ? '8px' : '6px',
+                      height: answers[qItem.answerKey] ? '8px' : '6px',
+                      borderRadius: '50%',
+                      background: (i + 1) === currentQ
+                        ? '#C9A84C'
+                        : answers[qItem.answerKey]
+                        ? 'rgba(201,168,76,0.5)'
+                        : 'rgba(245,240,232,0.12)',
+                      border: 'none',
+                      cursor: 'pointer',
+                      padding: 0,
+                      transition: 'all 0.15s',
+                    }}
+                    aria-label={`Go to question ${i + 2}`}
+                  />
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* See results CTA when all answered */}
         {allAnswered && (
           <div style={{ marginTop: '36px', paddingTop: '28px', borderTop: '1px solid rgba(245,240,232,0.06)' }}>
             <button
@@ -461,7 +647,7 @@ export default function FranchiseDiscoverPage() {
               See my matches →
             </button>
             <p style={{ fontSize: '11px', color: 'rgba(245,240,232,0.65)', fontFamily: "'DM Sans', sans-serif", marginTop: '10px' }}>
-              All {QFN_QUESTIONS.length} questions answered
+              All {TOTAL_QUESTIONS} questions answered
             </p>
           </div>
         )}
@@ -476,12 +662,6 @@ export default function FranchiseDiscoverPage() {
             </button>
           </div>
         )}
-
-        {error && (
-          <p style={{ marginTop: '16px', fontSize: '12px', color: 'rgba(239,68,68,0.8)', fontFamily: "'DM Sans', sans-serif" }}>{error}</p>
-        )}
-        {/* suppress unused var lint */}
-        {void existingAnswers}
 
       </div>
     </div>
