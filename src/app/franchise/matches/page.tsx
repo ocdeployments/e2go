@@ -152,7 +152,7 @@ function BrokerCtaCard({ topCategories }: { topCategories: CategoryScore[] }) {
               Request received
             </p>
             <p style={{ fontSize: '12px', color: 'rgba(245,240,232,0.60)', fontFamily: "'DM Sans', sans-serif", margin: 0 }}>
-              We'll be in touch within 1 business day.
+              We&apos;ll be in touch within 1 business day.
             </p>
           </div>
         </div>

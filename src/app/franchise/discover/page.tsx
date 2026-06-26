@@ -391,7 +391,7 @@ export default function FranchiseDiscoverPage() {
                 Which types of business interest you most?
               </h2>
               <p style={{ fontSize: '11px', color: 'rgba(245,240,232,0.68)', lineHeight: 1.7, fontFamily: "'DM Sans', sans-serif", margin: 0 }}>
-                Select all that apply — we'll weight your matches accordingly.
+                Select all that apply — we&apos;ll weight your matches accordingly.
               </p>
             </div>
 
