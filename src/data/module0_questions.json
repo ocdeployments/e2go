@@ -1,7 +1,7 @@
 {
   "module": "module0",
-  "version": "6.0",
-  "last_updated": "2026-06-10",
+  "version": "6.1",
+  "last_updated": "2026-06-25",
   "sections": [
     "Eligibility",
     "Family",
@@ -320,10 +320,10 @@
           "warning_message": "Gift-funded investments require documentation proving the gift is genuine — not a disguised loan. The donor's source of funds may also be required."
         },
         {
-          "text": "Retirement account funds (RRSP, TFSA, pension withdrawal)",
+          "text": "From your retirement accounts or savings (e.g. RRSP, TFSA, LIRA in Canada; 401K, IRA in the US):",
           "action": "warn:W-RRSP",
           "code": "W-RRSP",
-          "warning_message": "Registered Canadian accounts (RRSP, TFSA, LIRA) require specific documentation: account statements, withdrawal documentation, and evidence that the withdrawal was permitted without penalty. A letter explaining the source and legitimacy of the funds is strongly recommended."
+          "warning_message": "Retirement account withdrawals require specific documentation: account statements, withdrawal documentation, and evidence that the withdrawal was permitted. A letter explaining the source and legitimacy of the funds is strongly recommended."
         },
         {
           "text": "A personal loan secured by my own assets (home equity, personal guarantee)",
@@ -344,14 +344,14 @@
       "type": "select",
       "section": "investment",
       "section_index": 3,
-      "question": "For your RRSP, TFSA, or LIRA withdrawal — which of the following best describes your situation?",
-      "helper_text": "Consulates scrutinise registered account withdrawals carefully. Knowing your situation helps us prepare the right documentation guidance.",
-      "tooltip": "Canadian registered accounts require documentation of the withdrawal, evidence the funds are now freely available, and a source of funds letter explaining the investment chain.",
+      "question": "For your retirement account withdrawal — which of the following best describes your situation?",
+      "helper_text": "Consulates scrutinise retirement account withdrawals carefully. Knowing your situation helps us prepare the right documentation guidance.",
+      "tooltip": "Registered or tax-advantaged retirement accounts (RRSP, TFSA, LIRA, 401K, IRA, etc.) require documentation of the withdrawal, evidence the funds are now freely available, and a source of funds letter explaining the investment chain.",
       "is_sub": true,
       "parent": "Q0-06",
       "show_if": {
         "Q0-06": [
-          "Retirement account funds (RRSP, TFSA, pension withdrawal)"
+          "From your retirement accounts or savings (e.g. RRSP, TFSA, LIRA in Canada; 401K, IRA in the US):"
         ]
       },
       "options": [
@@ -380,8 +380,8 @@
       "type": "select",
       "section": "investment",
       "section_index": 3,
-      "question": "What is your approximate investment range?",
-      "helper_text": "The E-2 visa requires a substantial investment relative to the total cost of the enterprise. Typical approved investments range from $100,000 to $500,000+.",
+      "question": "What is the approximate value of your savings, investments, and retirement accounts?",
+      "helper_text": "This helps us assess your overall financial capacity and verify the investment is proportional to your net worth.",
       "tooltip": null,
       "is_sub": false,
       "parent": null,
@@ -415,6 +415,113 @@
           "text": "Under $50,000",
           "action": "stop:PR-LOW-INVESTMENT",
           "code": "PR-LOW-INVESTMENT",
+          "warning_message": null
+        }
+      ]
+    },
+    {
+      "id": "Q0-07b",
+      "type": "select",
+      "section": "investment",
+      "section_index": 3,
+      "question": "What is the approximate value of your primary residence equity, if you own property?",
+      "helper_text": "Property equity is a common secondary source of funds and helps establish overall financial standing.",
+      "tooltip": null,
+      "is_sub": true,
+      "parent": "Q0-07",
+      "show_if": {
+        "Q0-07": [
+          "Over $150,000",
+          "$100,000 – $150,000",
+          "$75,000 – $100,000",
+          "$50,000 – $75,000"
+        ]
+      },
+      "options": [
+        {
+          "text": "Over $150,000",
+          "action": "continue",
+          "code": null,
+          "warning_message": null
+        },
+        {
+          "text": "$100,000 – $150,000",
+          "action": "continue",
+          "code": null,
+          "warning_message": null
+        },
+        {
+          "text": "$75,000 – $100,000",
+          "action": "continue",
+          "code": null,
+          "warning_message": null
+        },
+        {
+          "text": "$50,000 – $75,000",
+          "action": "continue",
+          "code": null,
+          "warning_message": null
+        },
+        {
+          "text": "Under $50,000",
+          "action": "continue",
+          "code": null,
+          "warning_message": null
+        },
+        {
+          "text": "I rent / no property",
+          "action": "continue",
+          "code": null,
+          "warning_message": null
+        }
+      ]
+    },
+    {
+      "id": "Q0-prof",
+      "type": "multiselect",
+      "section": "business",
+      "section_index": 2,
+      "question": "Which of the following describe your current professional situation?",
+      "helper_text": "Select all that apply. Your background helps us personalise your business plan narrative and investor profile.",
+      "tooltip": null,
+      "is_sub": false,
+      "parent": null,
+      "show_if": null,
+      "options": [
+        {
+          "text": "Employed full-time at a company",
+          "action": "continue",
+          "code": null,
+          "warning_message": null
+        },
+        {
+          "text": "Self-employed or freelance",
+          "action": "continue",
+          "code": null,
+          "warning_message": null
+        },
+        {
+          "text": "Running or co-owning a business",
+          "action": "continue",
+          "code": null,
+          "warning_message": null
+        },
+        {
+          "text": "Previously ran a business (not currently active)",
+          "action": "continue",
+          "code": null,
+          "warning_message": null
+        },
+        {
+          "text": "Career break or in transition",
+          "action": "continue",
+          "code": null,
+          "warning_message": null
+        },
+        {
+          "text": "Retired",
+          "action": "continue",
+          "code": null,
           "warning_message": null
         }
       ]
@@ -548,7 +655,8 @@
       "is_sub": true,
       "parent": "Q0-08a",
       "show_if": {
-        "Q0-08a": ["A franchise — buying into an established brand"]
+        "Q0-08a": ["A franchise — buying into an established brand"],
+        "Q0-08b": ["No thanks"]
       },
       "options": [
         {
@@ -606,11 +714,141 @@
       ]
     },
     {
+      "id": "Q0-08e",
+      "type": "multiselect",
+      "section": "business",
+      "section_index": 2,
+      "question": "What industry or type of business interests you most?",
+      "helper_text": "Select all that apply. This helps us match you with the strongest franchise and business options for your profile.",
+      "tooltip": null,
+      "is_sub": false,
+      "parent": null,
+      "show_if": null,
+      "options": [
+        {
+          "text": "Food & Beverage",
+          "action": "continue",
+          "code": null,
+          "warning_message": null
+        },
+        {
+          "text": "Retail",
+          "action": "continue",
+          "code": null,
+          "warning_message": null
+        },
+        {
+          "text": "Health & Wellness / Medical",
+          "action": "continue",
+          "code": null,
+          "warning_message": null
+        },
+        {
+          "text": "Home Services (cleaning, maid service)",
+          "action": "continue",
+          "code": null,
+          "warning_message": null
+        },
+        {
+          "text": "Renovation / Home Improvement / Contracting",
+          "action": "continue",
+          "code": null,
+          "warning_message": null
+        },
+        {
+          "text": "Fitness / Gym",
+          "action": "continue",
+          "code": null,
+          "warning_message": null
+        },
+        {
+          "text": "Education & Tutoring",
+          "action": "continue",
+          "code": null,
+          "warning_message": null
+        },
+        {
+          "text": "Pet Services",
+          "action": "continue",
+          "code": null,
+          "warning_message": null
+        },
+        {
+          "text": "Automotive",
+          "action": "continue",
+          "code": null,
+          "warning_message": null
+        },
+        {
+          "text": "Technology / IT",
+          "action": "continue",
+          "code": null,
+          "warning_message": null
+        },
+        {
+          "text": "Consulting / Professional Services",
+          "action": "continue",
+          "code": null,
+          "warning_message": null
+        },
+        {
+          "text": "Other (please describe):",
+          "action": "continue",
+          "code": null,
+          "warning_message": null
+        }
+      ]
+    },
+    {
+      "id": "Q0-08f",
+      "type": "select",
+      "section": "business",
+      "section_index": 2,
+      "question": "What type of business premises do you prefer?",
+      "helper_text": "Your preference helps us identify businesses and franchise formats that fit your lifestyle and investment goals.",
+      "tooltip": null,
+      "is_sub": false,
+      "parent": null,
+      "show_if": null,
+      "options": [
+        {
+          "text": "Retail storefront or restaurant (customer-facing location)",
+          "action": "continue",
+          "code": null,
+          "warning_message": null
+        },
+        {
+          "text": "Mobile or on-site service (going to the customer)",
+          "action": "continue",
+          "code": null,
+          "warning_message": null
+        },
+        {
+          "text": "Office or light commercial space",
+          "action": "continue",
+          "code": null,
+          "warning_message": null
+        },
+        {
+          "text": "Home-based or fully remote",
+          "action": "continue",
+          "code": null,
+          "warning_message": null
+        },
+        {
+          "text": "No preference — open to any format",
+          "action": "continue",
+          "code": null,
+          "warning_message": null
+        }
+      ]
+    },
+    {
       "id": "Q0-09",
       "type": "select",
       "section": "history",
       "section_index": 4,
-      "question": "Does any of the following apply to your immigration history?",
+      "question": "Do you have anything in your immigration history that could affect a US visa application?",
       "helper_text": "We ask about prior immigration issues to ensure your application addresses them proactively. This is not a disqualifier — transparency strengthens your case.",
       "tooltip": null,
       "is_sub": false,

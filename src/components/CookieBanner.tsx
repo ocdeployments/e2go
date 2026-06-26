@@ -28,10 +28,10 @@ export default function CookieBanner() {
 
   return (
     <div
-      className="fixed bottom-0 left-0 w-full z-50 flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-4 md:px-6 md:py-4"
+      className="fixed top-0 left-0 w-full z-50 flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-4 md:px-6 md:py-4"
       style={{
         background: "rgba(10,10,10,0.96)",
-        borderTop: "0.5px solid rgba(201,168,76,0.2)",
+        borderBottom: "0.5px solid rgba(201,168,76,0.2)",
       }}
     >
       <p
