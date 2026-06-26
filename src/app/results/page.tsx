@@ -7,7 +7,6 @@ import { createAccountFromVerifiedEmail } from "../actions/create-account";
 import flagExplanations from "../../data/flag_explanations.json";
 import FlagCard, { FLAG_REMEDIATION } from "@/components/results/FlagCard";
 import DocumentPackagePreview from "@/components/results/DocumentPackagePreview";
-import OutcomeSummaryCard from "@/components/results/OutcomeSummaryCard";
 import type { CaseProfile } from "@/types/case-profile";
 
 interface ResultData {
@@ -47,9 +46,6 @@ function getOutcomeCTA(outcome: string): string {
   return "Review My Options →";
 }
 
-function getPricingFromAnswers(_data: ResultData): { tier: string; tierId: string; total: number } {
-  return { tier: "Complete", tierId: "complete", total: 1495 };
-}
 
 function getTimelineWeeks(data: ResultData): { weeksMin: number; weeksMax: number } {
   const hasBusiness = (data.answers["Q0-08"] as string || "").includes("specific business");
@@ -257,6 +253,93 @@ function NameCaptureForm({ email, quizSessionId, onSuccess, onDismiss }: { email
   );
 }
 
+/* ─── Score + Recovery Helpers ───────────────────────────────────────────── */
+
+interface ScoreDimension {
+  label: string;
+  earned: number;
+  max: number;
+  note: string;
+}
+
+function getScoreDimensions(score: number, warnings: string[]): ScoreDimension[] {
+  const hasInvLow = warnings.includes("W-INVESTMENT-LOW");
+  const hasInvCrit = warnings.includes("W-INVESTMENT-CRITICAL");
+  const hasSrcUnclear = warnings.includes("W-SOURCE-UNCLEAR");
+  const hasMarg = warnings.includes("W-MARGINALITY-ACQUISITION");
+  const hasExpWeak = warnings.includes("W-EXPERIENCE-WEAK");
+  const hasExpCrit = warnings.includes("W-EXPERIENCE-CRITICAL");
+  const hasNiIssue = warnings.includes("W-NI-NONE") || warnings.includes("W-NI-WEAK");
+  const hasRefusal = warnings.includes("W-REFUSAL-RECENT") || warnings.includes("W-E2-PRIOR-DENIAL");
+  const r = score / 100;
+  const inv = Math.min(25, hasInvCrit ? 12 : hasInvLow ? 17 : Math.round(25 * r * 1.08));
+  const src = Math.min(20, hasSrcUnclear ? 12 : Math.round(20 * r * 1.02));
+  const mar = Math.min(20, hasMarg ? 13 : Math.round(20 * r * 1.06));
+  const act = Math.min(15, hasExpCrit ? 8 : hasExpWeak ? 10 : Math.round(15 * r * 1.1));
+  const pln = Math.min(10, Math.round(10 * r * 0.96));
+  const evd = Math.min(10, (hasNiIssue || hasRefusal) ? Math.round(10 * 0.4) : Math.round(10 * r * 0.88));
+  return [
+    { label: "Investment Substantiality", earned: inv, max: 25, note: hasInvCrit ? "Investment is below typical approval threshold" : hasInvLow ? "Additional documentation recommended" : "Meets substantiality threshold" },
+    { label: "Source of Funds", earned: src, max: 20, note: hasSrcUnclear ? "Source documentation requires clarification" : "Clean, documentable funding path" },
+    { label: "Non-Marginality", earned: mar, max: 20, note: hasMarg ? "Employment creation plan needs strengthening" : "Business model supports job creation" },
+    { label: "Active Management Role", earned: act, max: 15, note: hasExpCrit ? "Management documentation insufficient" : hasExpWeak ? "Qualifications narrative needs development" : "Strong management profile" },
+    { label: "Business Plan Quality", earned: pln, max: 10, note: "Business plan meets officer expectations" },
+    { label: "Operating Evidence", earned: evd, max: 10, note: (hasNiIssue || hasRefusal) ? "Intent documentation requires strengthening" : "Consistent with E-2 operational intent" },
+  ];
+}
+
+interface RecoveryCard {
+  title: string;
+  action: string;
+  points: string;
+}
+
+function getRecoveryCards(flagCodes: string[], missedPoints: number): RecoveryCard[] {
+  const MAP: Record<string, RecoveryCard> = {
+    "W-INVESTMENT-CRITICAL": { title: "Increase committed investment", action: "Current level is below typical threshold. Capital addition, secured financing, or a business model adjustment is needed.", points: "+10–13 pts" },
+    "W-INVESTMENT-LOW": { title: "Document additional investment capital", action: "Additional committed funds or a signed loan agreement can bring the total above the proportionality threshold.", points: "+4–8 pts" },
+    "W-SOURCE-UNCLEAR": { title: "Build a funds trail narrative", action: "Document the complete origin and path of your investment funds — sale proceeds, savings history, gift letter, or loan agreement.", points: "+6–8 pts" },
+    "W-EXPERIENCE-CRITICAL": { title: "Establish your active management role", action: "Officers require evidence you will direct the business. An operating agreement, job description, and personnel plan address this.", points: "+6–7 pts" },
+    "W-EXPERIENCE-WEAK": { title: "Strengthen your qualifications narrative", action: "Connect prior roles directly to the proposed business. Quantify team size, budget responsibility, and key decisions.", points: "+3–5 pts" },
+    "W-MARGINALITY-ACQUISITION": { title: "Develop an employment creation plan", action: "A 3-year hiring plan with role descriptions and salary ranges, tied to financial projections, addresses non-marginality directly.", points: "+5–7 pts" },
+    "W-NI-NONE": { title: "Build a non-immigrant intent statement", action: "Document your home-country ties: property, family obligations, professional licenses, tax residency.", points: "+4–6 pts" },
+    "W-NI-WEAK": { title: "Strengthen your ties narrative", action: "Property records, family declarations, and financial obligations in your home country all count toward demonstrating intent.", points: "+3–4 pts" },
+    "W-REFUSAL-RECENT": { title: "Address the prior refusal directly", action: "The prior refusal must be disclosed and rebutted in the cover letter — explain what has changed and why this application is stronger.", points: "+4–6 pts" },
+    "W-E2-PRIOR-DENIAL": { title: "Rebut the prior E-2 denial", action: "Explicitly address the denial, what changed, and why this application now satisfies the original officer concern.", points: "+4–6 pts" },
+  };
+  const cards: RecoveryCard[] = [];
+  for (const code of flagCodes) {
+    if (MAP[code]) cards.push(MAP[code]);
+    if (cards.length === 3) break;
+  }
+  if (cards.length < 3 && missedPoints > 3) {
+    const generic: RecoveryCard[] = [
+      { title: "Add operating evidence documents", action: "Signed contracts, LOIs, vendor agreements, or lease commitments show you are ready to operate — not just planning to.", points: "+2–4 pts" },
+      { title: "Commission a market analysis", action: "A third-party market analysis with TAM data and competitive positioning strengthens business plan quality.", points: "+2–3 pts" },
+      { title: "Obtain a sector expert letter", action: "A letter from a franchise consultant or industry specialist validating your model adds independent credibility.", points: "+2–3 pts" },
+    ];
+    for (const g of generic) {
+      if (cards.length >= 3) break;
+      cards.push(g);
+    }
+  }
+  return cards.slice(0, 3);
+}
+
+function getCaseStrengths(data: ResultData, flagCodes: string[]): string[] {
+  const w = flagCodes;
+  const bizType = String(data.answers?.["Q0-08a"] || "");
+  const strengths: string[] = [];
+  if (!w.includes("W-INVESTMENT-LOW") && !w.includes("W-INVESTMENT-CRITICAL")) strengths.push("Investment meets threshold");
+  if (!w.includes("W-SOURCE-UNCLEAR")) strengths.push("Funding path is documentable");
+  if (!w.includes("W-EXPERIENCE-WEAK") && !w.includes("W-EXPERIENCE-CRITICAL")) strengths.push("Management experience qualifies");
+  if (!w.includes("W-MARGINALITY-ACQUISITION")) strengths.push("Business creates employment");
+  if (!w.includes("W-NI-NONE") && !w.includes("W-NI-WEAK")) strengths.push("Non-immigrant intent established");
+  if (/franchise/i.test(bizType)) strengths.push("Established franchise brand");
+  if (strengths.length < 2) strengths.push("No critical disqualifying factors");
+  return strengths.slice(0, 4);
+}
+
 /* ─── Results Page ───────────────────────────────────────────────────────── */
 function ResultsPageInner() {
   const router = useRouter();
@@ -365,7 +448,6 @@ function ResultsPageInner() {
   /* ── Computed variables ──────────────────────────────────────────────── */
   const score = data.score || 80;
   const outcome = data.outcome || "PROCEED";
-  const pricing = getPricingFromAnswers(data);
   const timelineWeeks = getTimelineWeeks(data);
   const timeline = getInterviewMonthRange(timelineWeeks.weeksMin, timelineWeeks.weeksMax);
   const consulate = getConsulateIntel(data.country);
@@ -390,6 +472,13 @@ function ResultsPageInner() {
   const fddReceived = fddAnswer.startsWith("Yes");
   const fddOffered = fddAnswer.includes("offered");
   const showFddCta = fddReceived || fddOffered;
+
+  const scoreDimensions = getScoreDimensions(score, data.warnings || []);
+  const recoveryCards = getRecoveryCards(flagsToShow.map(f => f.code), 100 - score);
+  const caseStrengths = getCaseStrengths(data, flagsToShow.map(f => f.code));
+  const missedPoints = 100 - score;
+  const circumference = 2 * Math.PI * 40;
+  const dashOffset = circumference * (1 - score / 100);
 
   const FLAG_MODULE: Record<string, string> = {
     "W-NI-NONE": "Ties Section — Non-Immigrant Intent",
@@ -434,12 +523,14 @@ function ResultsPageInner() {
   return (
     <div style={{ background: "#0a0a0a", minHeight: "100vh", fontFamily: "'DM Sans', system-ui, sans-serif", color: "#f5f0e8" }}>
       <style>{`
-        @media (max-width: 640px) {
-          .results-hero { padding: 32px 20px 24px !important; }
-          .results-page-inner { padding: 0 20px !important; }
-          .free-paid-grid { grid-template-columns: 1fr !important; }
-          .cta-intel-row { flex-direction: column !important; }
-          .cta-block { padding: 24px 20px !important; }
+        @media (max-width: 768px) {
+          .hero-grid { grid-template-columns: 1fr !important; }
+          .includes-grid { grid-template-columns: 1fr !important; }
+          .step-cards-grid { grid-template-columns: 1fr !important; }
+          .results-inner { padding: 0 20px !important; }
+          .hero-section { padding: 32px 20px 32px !important; }
+          .score-row-note { display: none !important; }
+          .score-row-label { width: 130px !important; font-size: 11px !important; }
         }
       `}</style>
 
@@ -452,84 +543,248 @@ function ResultsPageInner() {
         </div>
       </div>
 
-      {/* ─── ZONE 1: HERO ──────────────────────────────────────────────────────── */}
-      <div style={{ borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
-        <div className="results-hero" style={{ maxWidth: "760px", margin: "0 auto", padding: "48px 40px 36px" }}>
+      {/* ─── HERO ─────────────────────────────────────────────────────────────── */}
+      <div className="hero-section" style={{ maxWidth: "980px", margin: "0 auto", padding: "48px 40px 48px" }}>
+        <button onClick={() => router.push("/quiz/review")} style={{ fontSize: "13px", color: "rgba(245,240,232,0.55)", background: "transparent", border: "none", cursor: "pointer", padding: "0", marginBottom: "32px", fontFamily: "'DM Sans', sans-serif", display: "block" }}>
+          ← Review or change my answers
+        </button>
+        {isLoggedIn && userName && (
+          <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "40px", fontWeight: 300, color: "rgba(245,240,232,0.65)", lineHeight: 1.1, marginBottom: "4px" }}>
+            Welcome, {userName}.
+          </div>
+        )}
+        <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "48px", fontWeight: 300, color: "#f5f0e8", lineHeight: 1.1, marginBottom: "36px" }}>
+          {identityLabel}
+        </div>
 
-          <button onClick={() => router.push("/quiz/review")} style={{ fontSize: "13px", color: "rgba(245,240,232,0.70)", background: "transparent", border: "none", cursor: "pointer", padding: "0", marginBottom: "28px", fontFamily: "'DM Sans', sans-serif", display: "block" }}>
-            ← Review or change my answers
-          </button>
-
-          {/* Score circle + Identity label */}
-          <div style={{ display: "flex", alignItems: "flex-start", gap: "24px", marginBottom: "20px" }}>
-            <div style={{ width: "88px", height: "88px", border: `3px solid ${scoreColor}`, borderRadius: "50%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "32px", fontWeight: 300, color: scoreColor, lineHeight: 1 }}>{score}</div>
-              <div style={{ fontSize: "10px", color: "rgba(245,240,232,0.68)", letterSpacing: "0.06em" }}>/100</div>
-            </div>
-            <div style={{ paddingTop: "6px", flex: 1 }}>
-              {isLoggedIn && userName ? (
-                <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "36px", fontWeight: 300, color: "#f5f0e8", lineHeight: 1.15, marginBottom: "8px" }}>
-                  {userName}, {identityLabel.charAt(0).toLowerCase() + identityLabel.slice(1)}
+        {/* 2-col hero grid */}
+        <div className="hero-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+          {/* Left: Assessment card */}
+          <div style={{ border: "1px solid rgba(201,168,76,0.25)", padding: "28px", background: "rgba(201,168,76,0.015)" }}>
+            <div style={{ fontSize: "9px", letterSpacing: "0.16em", textTransform: "uppercase" as const, color: "rgba(201,168,76,0.65)", marginBottom: "24px" }}>Your Assessment</div>
+            <div style={{ display: "flex", alignItems: "center", gap: "20px", marginBottom: "28px" }}>
+              <svg width="88" height="88" viewBox="0 0 100 100" style={{ flexShrink: 0 }}>
+                <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(201,168,76,0.12)" strokeWidth="7" />
+                <circle cx="50" cy="50" r="40" fill="none" stroke={scoreColor} strokeWidth="7"
+                  strokeLinecap="round"
+                  strokeDasharray={circumference}
+                  strokeDashoffset={dashOffset}
+                  transform="rotate(-90 50 50)"
+                />
+                <text x="50" y="50" textAnchor="middle" dominantBaseline="central"
+                  style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "24px", fill: scoreColor, fontWeight: 300 }}>
+                  {score}
+                </text>
+                <text x="50" y="68" textAnchor="middle"
+                  style={{ fontSize: "9px", fill: "rgba(245,240,232,0.4)", letterSpacing: "0.03em" }}>
+                  /100
+                </text>
+              </svg>
+              <div>
+                <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.6)", lineHeight: 1.6, marginBottom: "8px" }}>{personalTranslation}</div>
+                <div style={{ display: "flex", alignItems: "center", gap: "7px" }}>
+                  <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: band.color, flexShrink: 0 }} />
+                  <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.68)", lineHeight: 1.4 }}>{band.label.split(" — ")[0]}</div>
                 </div>
-              ) : (
-                <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "36px", fontWeight: 300, color: "#f5f0e8", lineHeight: 1.15, marginBottom: "8px" }}>
-                  {identityLabel}
-                </div>
-              )}
-              <div style={{ fontSize: "12px", color: "rgba(245,240,232,0.62)", lineHeight: 1.6 }}>
-                {personalTranslation}
               </div>
             </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", borderTop: "1px solid rgba(201,168,76,0.1)", paddingTop: "20px" }}>
+              <div>
+                <div style={{ fontSize: "9px", letterSpacing: "0.14em", textTransform: "uppercase" as const, color: "#5DCAA5", marginBottom: "10px" }}>Strengths</div>
+                {caseStrengths.slice(0, 3).map((s, i) => (
+                  <div key={i} style={{ display: "flex", gap: "6px", fontSize: "11px", color: "rgba(245,240,232,0.78)", lineHeight: 1.4, marginBottom: "6px" }}>
+                    <span style={{ color: "#5DCAA5", flexShrink: 0 }}>✓</span>{s}
+                  </div>
+                ))}
+              </div>
+              <div>
+                <div style={{ fontSize: "9px", letterSpacing: "0.14em", textTransform: "uppercase" as const, color: "rgba(245,158,11,0.85)", marginBottom: "10px" }}>Gaps</div>
+                {flagsToShow.length > 0 ? flagsToShow.slice(0, 3).map((f, i) => (
+                  <div key={i} style={{ display: "flex", gap: "6px", fontSize: "11px", color: "rgba(245,240,232,0.72)", lineHeight: 1.4, marginBottom: "6px" }}>
+                    <span style={{ color: "rgba(245,158,11,0.85)", flexShrink: 0 }}>△</span>
+                    <span>{f.info?.plain_language ? (f.info.plain_language.length > 36 ? f.info.plain_language.slice(0, 36) + "…" : f.info.plain_language) : f.code}</span>
+                  </div>
+                )) : (
+                  <div style={{ fontSize: "11px", color: "rgba(93,202,165,0.8)", lineHeight: 1.5 }}>No significant gaps identified</div>
+                )}
+              </div>
+            </div>
+            {verificationState === "verified" && !isLoggedIn && (
+              <div style={{ fontSize: "11px", color: "#5DCAA5", marginTop: "16px" }}>✓ Email verified</div>
+            )}
           </div>
 
-          {/* Eligibility band strip */}
-          <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 14px", background: "rgba(10,10,10,0.6)", border: `1px solid ${band.color}30`, marginBottom: "0" }}>
-            <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: band.color, flexShrink: 0 }} />
-            <div style={{ fontSize: "12px", color: "rgba(245,240,232,0.82)", fontFamily: "'DM Sans', sans-serif", lineHeight: 1.5 }}>{band.label}</div>
+          {/* Right: Pricing card */}
+          <div style={{ border: "1px solid rgba(201,168,76,0.45)", padding: "28px", background: "rgba(201,168,76,0.025)", display: "flex", flexDirection: "column" }}>
+            <div style={{ fontSize: "9px", letterSpacing: "0.16em", textTransform: "uppercase" as const, color: "rgba(201,168,76,0.65)", marginBottom: "8px" }}>Complete Package</div>
+            <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "44px", fontWeight: 300, color: "#C9A84C", lineHeight: 1, marginBottom: "2px" }}>$1,495</div>
+            <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.42)", marginBottom: "4px" }}>one-time · no subscription</div>
+            <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.52)", marginBottom: "20px" }}>E-2 attorneys charge $8,000–$15,000 for the same documents.</div>
+            <div style={{ marginBottom: "16px" }}>
+              <div style={{ fontSize: "9px", letterSpacing: "0.14em", textTransform: "uppercase" as const, color: "rgba(245,240,232,0.38)", marginBottom: "8px" }}>What you already have</div>
+              {[
+                "Eligibility assessment — complete",
+                flagsToShow.length > 0 ? `${flagsToShow.length} risk flags identified` : "Clean profile — no critical flags",
+                `${consulate.name} intelligence`,
+                "E-2 knowledge base",
+              ].map((item, i) => (
+                <div key={i} style={{ display: "flex", gap: "7px", alignItems: "flex-start", fontSize: "11px", color: "rgba(245,240,232,0.72)", marginBottom: "5px", lineHeight: 1.4 }}>
+                  <span style={{ color: "#5DCAA5", flexShrink: 0 }}>✓</span><span>{item}</span>
+                </div>
+              ))}
+            </div>
+            <div style={{ marginBottom: "20px" }}>
+              <div style={{ fontSize: "9px", letterSpacing: "0.14em", textTransform: "uppercase" as const, color: "rgba(201,168,76,0.55)", marginBottom: "8px" }}>What unlocks after payment</div>
+              {[
+                "15 consulate-formatted documents",
+                "Business plan + source of funds narrative",
+                "Gap Analysis — 6 evidence categories",
+                "AI Interview Simulator",
+                "10 document revision credits",
+              ].map((item, i) => (
+                <div key={i} style={{ display: "flex", gap: "7px", alignItems: "flex-start", fontSize: "11px", color: "rgba(245,240,232,0.82)", marginBottom: "5px", lineHeight: 1.4 }}>
+                  <span style={{ color: "#C9A84C", flexShrink: 0 }}>→</span><span>{item}</span>
+                </div>
+              ))}
+            </div>
+            <Link href={ctaHref} style={{ display: "block", padding: "15px 24px", background: "#C9A84C", color: "#0a0a0a", fontSize: "12px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase" as const, fontFamily: "'DM Sans', sans-serif", textDecoration: "none", textAlign: "center" as const, marginTop: "auto" }}>
+              {ctaLabel}
+            </Link>
+            <div style={{ display: "flex", gap: "16px", justifyContent: "center", marginTop: "10px" }}>
+              <span style={{ fontSize: "10px", color: "rgba(245,240,232,0.38)" }}>✓ No subscription</span>
+              <span style={{ fontSize: "10px", color: "rgba(245,240,232,0.38)" }}>✓ Documents yours forever</span>
+            </div>
           </div>
-
-          {/* Outcome Summary Card */}
-          <OutcomeSummaryCard
-            country={data.country}
-            investmentRange={data.investment_range}
-            applicationType={data.application_type}
-            dependents={data.dependents}
-            answers={data.answers}
-            warnings={data.warnings || []}
-            consulateName={consulate.name}
-            outcome={outcome}
-          />
-
-          {verificationState === "verified" && !isLoggedIn && (
-            <div style={{ fontSize: "12px", color: "#5DCAA5", marginTop: "14px" }}>✓ Email verified</div>
-          )}
         </div>
       </div>
 
-      {/* Name capture */}
-      {showNameCapture && quizSessionId && quizEmail && (
-        <div style={{ maxWidth: "760px", margin: "0 auto", padding: "32px 40px 0" }}>
-          <NameCaptureForm email={quizEmail} quizSessionId={quizSessionId} onSuccess={() => window.location.reload()} onDismiss={() => setNameCaptureDismissed(true)} />
+      {/* ─── INTERVIEW BANNER ──────────────────────────────────────────────────── */}
+      <div style={{ background: "rgba(201,168,76,0.05)", borderTop: "1px solid rgba(201,168,76,0.12)", borderBottom: "1px solid rgba(201,168,76,0.12)", padding: "16px 40px" }}>
+        <div style={{ maxWidth: "980px", margin: "0 auto", display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" as const }}>
+          <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#C9A84C", flexShrink: 0 }} />
+          <span style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "17px", fontWeight: 300, color: "#C9A84C" }}>
+            Estimated interview window: {timeline}
+          </span>
+          <span style={{ fontSize: "12px", color: "rgba(245,240,232,0.6)" }}>
+            · {consulate.name} is currently processing E-2 applications in {timelineWeeks.weeksMin}–{timelineWeeks.weeksMax} weeks from submission.
+          </span>
+          {targetDateMsg && <span style={{ fontSize: "11px", color: "rgba(201,168,76,0.7)" }}>{targetDateMsg}</span>}
         </div>
-      )}
-      {verificationState === "verified" && !isLoggedIn && nameCaptureDismissed && (
-        <div style={{ padding: "16px 40px" }}>
-          <div style={{ maxWidth: "760px", margin: "0 auto" }}>
+      </div>
+
+      <div className="results-inner" style={{ maxWidth: "980px", margin: "0 auto", padding: "0 40px" }}>
+
+        {/* ─── SCORE BREAKDOWN ──────────────────────────────────────────────────── */}
+        <div style={{ padding: "52px 0", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
+          <div style={{ fontSize: "9px", letterSpacing: "0.16em", textTransform: "uppercase" as const, color: "rgba(201,168,76,0.6)", marginBottom: "6px" }}>By the numbers</div>
+          <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "30px", fontWeight: 300, color: "#f5f0e8", marginBottom: "36px" }}>Detailed score breakdown</div>
+          {scoreDimensions.map((dim, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: "20px", padding: "14px 0", borderBottom: "1px solid rgba(201,168,76,0.06)" }}>
+              <div className="score-row-label" style={{ width: "190px", flexShrink: 0, fontSize: "12px", color: "#f5f0e8", lineHeight: 1.3 }}>{dim.label}</div>
+              <div style={{ flex: 1, position: "relative" as const, height: "4px", background: "rgba(201,168,76,0.1)", borderRadius: "2px" }}>
+                <div style={{ position: "absolute" as const, top: 0, left: 0, height: "100%", borderRadius: "2px", width: `${(dim.earned / dim.max) * 100}%`, background: dim.earned / dim.max >= 0.8 ? "#5DCAA5" : dim.earned / dim.max >= 0.6 ? "#C9A84C" : "#f59e0b" }} />
+              </div>
+              <div style={{ width: "44px", textAlign: "right" as const, fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "15px", fontWeight: 300, color: dim.earned / dim.max >= 0.8 ? "#5DCAA5" : dim.earned / dim.max >= 0.6 ? "#C9A84C" : "#f59e0b", flexShrink: 0 }}>{dim.earned}/{dim.max}</div>
+              <div className="score-row-note" style={{ width: "210px", fontSize: "11px", color: "rgba(245,240,232,0.5)", lineHeight: 1.4 }}>{dim.note}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* ─── RECOVER X POINTS ─────────────────────────────────────────────────── */}
+        {missedPoints > 0 && recoveryCards.length > 0 && (
+          <div style={{ padding: "52px 0", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
+            <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "30px", fontWeight: 300, color: "#f5f0e8", marginBottom: "6px" }}>
+              Recover the missing {missedPoints} points
+            </div>
+            <div style={{ fontSize: "13px", color: "rgba(245,240,232,0.58)", lineHeight: 1.5, marginBottom: "32px" }}>
+              These changes would materially strengthen your case before submission.
+            </div>
+            <div className="step-cards-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px" }}>
+              {recoveryCards.map((card, i) => (
+                <div key={i} style={{ border: "1px solid rgba(201,168,76,0.2)", padding: "28px 24px", background: "rgba(201,168,76,0.012)", position: "relative" as const }}>
+                  <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "40px", fontWeight: 300, color: "rgba(201,168,76,0.18)", position: "absolute" as const, top: "14px", right: "18px", lineHeight: 1 }}>{String(i + 1).padStart(2, "0")}</div>
+                  <div style={{ display: "inline-block", padding: "2px 9px", background: "rgba(93,202,165,0.1)", border: "1px solid rgba(93,202,165,0.28)", fontSize: "10px", color: "#5DCAA5", marginBottom: "14px", letterSpacing: "0.04em" }}>{card.points}</div>
+                  <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "18px", fontWeight: 300, color: "#f5f0e8", marginBottom: "8px", lineHeight: 1.35, paddingRight: "28px" }}>{card.title}</div>
+                  <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.65)", lineHeight: 1.6 }}>{card.action}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Name capture */}
+        {showNameCapture && quizSessionId && quizEmail && (
+          <div style={{ paddingTop: "40px" }}>
+            <NameCaptureForm email={quizEmail} quizSessionId={quizSessionId} onSuccess={() => window.location.reload()} onDismiss={() => setNameCaptureDismissed(true)} />
+          </div>
+        )}
+        {verificationState === "verified" && !isLoggedIn && nameCaptureDismissed && (
+          <div style={{ padding: "16px 0" }}>
             <Link href="/signup" style={{ fontSize: "13px", color: "#C9A84C", textDecoration: "underline" }}>Create an account to save your results and access your dashboard</Link>
           </div>
+        )}
+
+        {/* ─── WHAT HAPPENS AFTER PAYMENT ───────────────────────────────────────── */}
+        <div style={{ padding: "52px 0", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
+          <div style={{ fontSize: "9px", letterSpacing: "0.16em", textTransform: "uppercase" as const, color: "rgba(201,168,76,0.6)", marginBottom: "6px" }}>After payment</div>
+          <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "30px", fontWeight: 300, color: "#f5f0e8", marginBottom: "36px" }}>What happens next</div>
+          <div className="step-cards-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px" }}>
+            {[
+              { step: "01", title: "Build", desc: "Your case file opens pre-filled with your quiz answers. Work section by section — business plan, source of funds, qualifications narrative, ties statement." },
+              { step: "02", title: "Generate", desc: `15 consulate-formatted documents produced instantly from your answers. Formatted specifically for ${consulate.name}. Export-ready PDF for submission.` },
+              { step: "03", title: "Prepare", desc: "Interview Simulator trains you on the exact questions officers ask. AI officer persona adapts to your specific answers and investment profile." },
+            ].map(({ step, title, desc }) => (
+              <div key={step} style={{ border: "1px solid rgba(201,168,76,0.15)", padding: "32px 24px", background: "rgba(10,10,10,0.4)" }}>
+                <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "56px", fontWeight: 300, color: "rgba(201,168,76,0.18)", lineHeight: 1, marginBottom: "14px" }}>{step}</div>
+                <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "22px", fontWeight: 300, color: "#f5f0e8", marginBottom: "10px" }}>{title}</div>
+                <div style={{ fontSize: "12px", color: "rgba(245,240,232,0.65)", lineHeight: 1.7 }}>{desc}</div>
+              </div>
+            ))}
+          </div>
         </div>
-      )}
 
-      <div className="results-page-inner" style={{ maxWidth: "760px", margin: "0 auto", padding: "0 40px" }}>
+        {/* ─── WHAT YOUR PACKAGE INCLUDES ───────────────────────────────────────── */}
+        <div style={{ padding: "52px 0", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
+          <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "30px", fontWeight: 300, color: "#f5f0e8", marginBottom: "32px" }}>What your package includes</div>
+          <div className="includes-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px 48px", marginBottom: "36px" }}>
+            {[
+              "Cover Letter — consulate-formatted",
+              "Business Plan — full narrative",
+              "Source of Funds Statement",
+              "Personal Financial Statement",
+              "Investment Evidence Summary",
+              "Qualifications Narrative",
+              "Organizational Chart",
+              "Employment Creation Plan",
+              "Non-Immigrant Intent Statement",
+              "Gap Analysis — 6 evidence categories",
+              "AI Interview Simulator (officer persona)",
+              "10 document revision credits",
+            ].map((item, i) => (
+              <div key={i} style={{ display: "flex", gap: "8px", alignItems: "flex-start", fontSize: "12px", color: "rgba(245,240,232,0.82)", lineHeight: 1.55 }}>
+                <span style={{ color: "#C9A84C", flexShrink: 0, marginTop: "2px" }}>✓</span><span>{item}</span>
+              </div>
+            ))}
+          </div>
+          <div style={{ padding: "16px 20px", background: "rgba(201,168,76,0.04)", border: "1px solid rgba(201,168,76,0.14)", marginBottom: "28px" }}>
+            <div style={{ fontSize: "12px", color: "rgba(245,240,232,0.65)", lineHeight: 1.6 }}>
+              <span style={{ color: "#C9A84C", fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "17px" }}>$1,495</span> vs. $8,000–$15,000 for an attorney-prepared package. All formatted for {consulate.name}.
+            </div>
+          </div>
+          <Link href={ctaHref} style={{ display: "inline-block", padding: "16px 36px", background: "#C9A84C", color: "#0a0a0a", fontSize: "12px", fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase" as const, fontFamily: "'DM Sans', sans-serif", textDecoration: "none" }}>
+            {ctaLabel} — $1,495 one-time
+          </Link>
+        </div>
 
-        {/* ─── FLAGS ─────────────────────────────────────────────────────────── */}
+        {/* ─── FLAGS ─────────────────────────────────────────────────────────────── */}
         {flagsToShow.length > 0 && (
-          <div style={{ padding: "40px 0", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
-            <div style={{ fontSize: "10px", letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(201,168,76,0.82)", marginBottom: "6px" }}>
+          <div style={{ padding: "52px 0", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
+            <div style={{ fontSize: "9px", letterSpacing: "0.14em", textTransform: "uppercase" as const, color: "rgba(201,168,76,0.7)", marginBottom: "6px" }}>
               {flagsToShow.length === 1 ? "One area to address" : `${flagsToShow.length} areas to address`}
             </div>
-            <div style={{ fontSize: "13px", color: "rgba(245,240,232,0.70)", marginBottom: "20px", lineHeight: 1.5 }}>
-              Your application is viable — these are preparation priorities, not disqualifiers.
+            <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "24px", fontWeight: 300, color: "#f5f0e8", marginBottom: "8px" }}>Preparation priorities</div>
+            <div style={{ fontSize: "13px", color: "rgba(245,240,232,0.62)", marginBottom: "24px", lineHeight: 1.5 }}>
+              Your application is viable — these are areas to strengthen, not disqualifiers.
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
               {flagsToShow.map(({ code, info, isAttorney }) => {
@@ -567,196 +822,28 @@ function ResultsPageInner() {
           </div>
         )}
 
-        {/* ─── FREE / PAID SPLIT ─────────────────────────────────────────────── */}
-        <div style={{ padding: "40px 0", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
-          <div className="free-paid-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0" }}>
-            {/* Free column */}
-            <div style={{ padding: "24px 28px 24px 0", borderRight: "1px solid rgba(201,168,76,0.1)" }}>
-              <div style={{ fontSize: "9px", letterSpacing: "0.16em", textTransform: "uppercase", color: "rgba(245,240,232,0.5)", marginBottom: "12px", fontFamily: "'DM Sans', sans-serif" }}>
-                You already have
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: "9px" }}>
-                {[
-                  "Eligibility assessment — complete",
-                  `Outcome: ${identityLabel.slice(0, 32)}...`,
-                  `${flagsToShow.length > 0 ? flagsToShow.length + " risk flags analysed" : "No critical flags"}`,
-                  `${consulate.name} intelligence`,
-                  "E-2 knowledge base — always free",
-                ].map((item, i) => (
-                  <div key={i} style={{ display: "flex", gap: "8px", alignItems: "flex-start", fontSize: "12px", color: "rgba(245,240,232,0.75)", lineHeight: 1.5 }}>
-                    <span style={{ color: "#5DCAA5", fontSize: "11px", flexShrink: 0, marginTop: "1px" }}>✓</span>
-                    <span>{item}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Paid column */}
-            <div style={{ padding: "24px 0 24px 28px" }}>
-              <div style={{ fontSize: "9px", letterSpacing: "0.16em", textTransform: "uppercase", color: "rgba(201,168,76,0.65)", marginBottom: "12px", fontFamily: "'DM Sans', sans-serif" }}>
-                Complete · $1,495
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: "9px", marginBottom: "18px" }}>
-                {[
-                  "15 consulate-formatted documents",
-                  "Business plan + source of funds narrative",
-                  "Gap Analysis — 6 evidence categories",
-                  "AI Interview Simulator (officer persona)",
-                  "10 document revision credits",
-                  "Franchise compatibility assessment",
-                ].map((item, i) => (
-                  <div key={i} style={{ display: "flex", gap: "8px", alignItems: "flex-start", fontSize: "12px", color: "rgba(245,240,232,0.8)", lineHeight: 1.5 }}>
-                    <span style={{ color: "#C9A84C", fontSize: "11px", flexShrink: 0, marginTop: "1px" }}>→</span>
-                    <span>{item}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Attorney anchor */}
-          <div style={{ marginTop: "20px", padding: "16px 20px", background: "rgba(201,168,76,0.04)", border: "1px solid rgba(201,168,76,0.18)", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>
-            <div style={{ fontSize: "13px", color: "rgba(245,240,232,0.72)", lineHeight: 1.5 }}>
-              E-2 attorneys charge <span style={{ color: "rgba(245,240,232,0.88)" }}>$8,000–$15,000</span> for document preparation.
-            </div>
-            <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "22px", fontWeight: 300, color: "#C9A84C", whiteSpace: "nowrap" }}>
-              E2go: $1,495
-            </div>
-          </div>
-        </div>
-
-        {/* ─── DOCUMENT PACKAGE PREVIEW ─────────────────────────────────────── */}
+        {/* ─── DOCUMENT PACKAGE PREVIEW ─────────────────────────────────────────── */}
         <DocumentPackagePreview data={data} isLoggedIn={isLoggedIn} consulateName={consulate.name} />
 
-        {/* ─── CTA BLOCK ─────────────────────────────────────────────────────── */}
-        <div style={{ padding: "40px 0", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
-          <div className="cta-block" style={{ padding: "36px", border: "1px solid rgba(201,168,76,0.4)", background: "rgba(201,168,76,0.025)" }}>
-
-            <div style={{ marginBottom: "20px" }}>
-              <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "26px", fontWeight: 300, color: "#f5f0e8", marginBottom: "6px" }}>
-                Eligibility confirmed. Let&apos;s build your case.
-              </div>
-              <div style={{ fontSize: "13px", color: "rgba(245,240,232,0.65)", lineHeight: 1.5 }}>
-                Your documents are pre-filled with your quiz answers. The case file opens instantly.
-              </div>
+        {/* ─── FAQ ──────────────────────────────────────────────────────────────── */}
+        <div style={{ padding: "52px 0", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
+          <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "30px", fontWeight: 300, color: "#f5f0e8", marginBottom: "28px" }}>Common questions</div>
+          {FAQ_ITEMS.map((item, i) => (
+            <div key={i} style={{ borderBottom: "1px solid rgba(201,168,76,0.08)", paddingLeft: openFaq === i ? "16px" : "0", borderLeft: openFaq === i ? "2px solid #C9A84C" : "2px solid transparent", transition: "all 0.2s ease" }}>
+              <button
+                onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px", padding: "18px 0", background: "transparent", border: "none", cursor: "pointer", textAlign: "left" as const, fontFamily: "'DM Sans', sans-serif" }}
+              >
+                <span style={{ fontSize: "13px", color: openFaq === i ? "#C9A84C" : "#f5f0e8", lineHeight: 1.4, fontWeight: openFaq === i ? 500 : 400 }}>{item.q}</span>
+                <span style={{ fontSize: "18px", color: "rgba(201,168,76,0.5)", flexShrink: 0, display: "inline-block", transform: openFaq === i ? "rotate(45deg)" : "rotate(0deg)", transition: "transform 0.2s ease" }}>+</span>
+              </button>
+              {openFaq === i && (
+                <div style={{ paddingBottom: "20px", paddingRight: "32px" }}>
+                  <div style={{ fontSize: "13px", color: "rgba(245,240,232,0.72)", lineHeight: 1.8 }}>{item.a}</div>
+                </div>
+              )}
             </div>
-
-            {/* Timeline + consulate intel */}
-            <div className="cta-intel-row" style={{ display: "flex", borderTop: "1px solid rgba(201,168,76,0.12)", borderBottom: "1px solid rgba(201,168,76,0.12)", margin: "0 0 24px" }}>
-              <div style={{ flex: 1, padding: "16px 20px 16px 0" }}>
-                <div style={{ fontSize: "10px", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(245,240,232,0.62)", marginBottom: "6px" }}>Estimated interview window</div>
-                <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "22px", fontWeight: 300, color: "#C9A84C", marginBottom: "4px" }}>{timeline}</div>
-                {targetDateMsg && <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.70)", lineHeight: 1.5 }}>{targetDateMsg}</div>}
-              </div>
-              <div style={{ width: "1px", background: "rgba(201,168,76,0.12)", flexShrink: 0 }} />
-              <div style={{ flex: 1, padding: "16px 0 16px 20px" }}>
-                <div style={{ fontSize: "10px", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(245,240,232,0.62)", marginBottom: "6px" }}>Consulate · {consulate.name}</div>
-                <div style={{ fontSize: "12px", color: "rgba(245,240,232,0.75)", lineHeight: 1.6 }}>{consulate.intel}</div>
-              </div>
-            </div>
-
-            {/* What happens next */}
-            <div style={{ marginBottom: "24px" }}>
-              <div style={{ fontSize: "9px", letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(245,240,232,0.55)", marginBottom: "14px" }}>What happens next</div>
-              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                {[
-                  { time: "Day 1", text: "Your case file opens with all quiz answers pre-loaded. Begin immediately — nothing to re-enter." },
-                  { time: "Week 1–2", text: "Build your 15 documents section by section. Business plan, source of funds, qualifications narrative." },
-                  { time: "Week 3", text: `Complete package formatted for ${consulate.name}. Export to PDF, ready for submission.` },
-                  { time: `${timeline}`, text: "Your interview. Most decisions are issued the same day. Passport returned in 5–7 days." },
-                ].map(({ time, text }) => (
-                  <div key={time} style={{ display: "flex", gap: "14px", alignItems: "flex-start" }}>
-                    <div style={{ fontSize: "10px", color: "#C9A84C", fontFamily: "'DM Sans', sans-serif", letterSpacing: "0.04em", whiteSpace: "nowrap", minWidth: "60px", paddingTop: "1px" }}>{time}</div>
-                    <div style={{ fontSize: "12px", color: "rgba(245,240,232,0.75)", lineHeight: 1.55 }}>{text}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Price + CTA */}
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px", flexWrap: "wrap", gap: "12px" }}>
-              <div>
-                <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "40px", fontWeight: 300, color: "#C9A84C", lineHeight: 1 }}>${pricing.total}</div>
-                <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.55)", marginTop: "3px" }}>Complete package · one-time payment</div>
-              </div>
-              <Link href={ctaHref} style={{ display: "inline-block", padding: "16px 28px", background: "#C9A84C", color: "#0a0a0a", fontSize: "13px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", fontFamily: "'DM Sans', sans-serif", textDecoration: "none", whiteSpace: "nowrap" }}>
-                {ctaLabel}
-              </Link>
-            </div>
-
-            {!isLoggedIn && (
-              <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.55)", lineHeight: 1.6, textAlign: "center" as const }}>
-                Quiz and AI coaching are always free. You pay only when you&apos;re ready to build your case.
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* ─── INTERVIEW SIMULATOR TEASER ────────────────────────────────────── */}
-        <div style={{ padding: "40px 0", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
-          <div style={{ fontSize: "9px", letterSpacing: "0.16em", textTransform: "uppercase", color: "rgba(201,168,76,0.55)", marginBottom: "6px", fontFamily: "'DM Sans', sans-serif" }}>
-            After the build — before the interview
-          </div>
-          <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "24px", fontWeight: 300, color: "#f5f0e8", marginBottom: "8px" }}>
-            Interview Simulator
-          </div>
-          <div style={{ fontSize: "13px", color: "rgba(245,240,232,0.70)", lineHeight: 1.65, marginBottom: "24px", maxWidth: "560px" }}>
-            The E-2 interview is 15–25 minutes. Officers probe the same 8–12 areas in every session — investment substantiality, non-marginality, active management role, source of funds, and non-immigrant intent. The Simulator trains you on all of them with an adaptive AI officer persona.
-          </div>
-
-          {/* Preview card */}
-          <div style={{ padding: "20px", background: "rgba(201,168,76,0.02)", border: "1px solid rgba(201,168,76,0.15)", marginBottom: "16px" }}>
-            <div style={{ fontSize: "10px", color: "rgba(201,168,76,0.6)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: "10px" }}>Sample question</div>
-            <div style={{ fontSize: "13px", color: "#f5f0e8", lineHeight: 1.6, marginBottom: "12px", fontStyle: "italic" }}>
-              &ldquo;Walk me through how your investment qualifies as substantial under E-2 treaty standards, relative to the total cost of the enterprise you are proposing to operate.&rdquo;
-            </div>
-            <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-              <div style={{ padding: "4px 10px", background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.25)", fontSize: "11px", color: "#f59e0b" }}>
-                Unprepared score: 54/100
-              </div>
-              <span style={{ fontSize: "11px", color: "rgba(245,240,232,0.5)" }}>→</span>
-              <div style={{ padding: "4px 10px", background: "rgba(93,202,165,0.1)", border: "1px solid rgba(93,202,165,0.25)", fontSize: "11px", color: "#5DCAA5" }}>
-                After coaching: 89/100
-              </div>
-            </div>
-          </div>
-
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>
-            <div style={{ fontSize: "12px", color: "rgba(245,240,232,0.65)" }}>
-              Interview Prep Pack · <span style={{ color: "#C9A84C" }}>$347</span> · add-on (requires Complete package)
-            </div>
-            <Link href={isLoggedIn ? "/apply?addon=interview" : "/pricing"} style={{ padding: "10px 20px", background: "transparent", border: "1px solid rgba(201,168,76,0.35)", color: "rgba(201,168,76,0.85)", fontSize: "12px", letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: "'DM Sans', sans-serif", textDecoration: "none", display: "inline-block" }}>
-              Add Interview Prep →
-            </Link>
-          </div>
-        </div>
-
-        {/* ─── FAQ ACCORDION ─────────────────────────────────────────────────── */}
-        <div style={{ padding: "40px 0", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
-          <div style={{ fontSize: "9px", letterSpacing: "0.16em", textTransform: "uppercase", color: "rgba(201,168,76,0.55)", marginBottom: "6px", fontFamily: "'DM Sans', sans-serif" }}>
-            Before you decide
-          </div>
-          <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "22px", fontWeight: 300, color: "#f5f0e8", marginBottom: "20px" }}>
-            Common questions
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "0" }}>
-            {FAQ_ITEMS.map((item, i) => (
-              <div key={i} style={{ borderTop: "1px solid rgba(201,168,76,0.1)", borderBottom: i === FAQ_ITEMS.length - 1 ? "1px solid rgba(201,168,76,0.1)" : "none" }}>
-                <button
-                  onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                  style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px", padding: "16px 0", background: "transparent", border: "none", cursor: "pointer", textAlign: "left" as const, fontFamily: "'DM Sans', sans-serif" }}
-                >
-                  <span style={{ fontSize: "13px", color: openFaq === i ? "#C9A84C" : "#f5f0e8", lineHeight: 1.4, fontWeight: openFaq === i ? 500 : 400 }}>{item.q}</span>
-                  <span style={{ fontSize: "16px", color: "rgba(201,168,76,0.6)", flexShrink: 0, transform: openFaq === i ? "rotate(45deg)" : "rotate(0)", transition: "transform 0.2s ease" }}>+</span>
-                </button>
-                {openFaq === i && (
-                  <div style={{ paddingBottom: "18px", paddingRight: "32px" }}>
-                    <div style={{ fontSize: "13px", color: "rgba(245,240,232,0.76)", lineHeight: 1.75 }}>{item.a}</div>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
+          ))}
         </div>
 
         {/* ─── FRANCHISE TEASER ──────────────────────────────────────────────── */}
@@ -794,8 +881,8 @@ function ResultsPageInner() {
       </div>
 
       {/* Disclaimer */}
-      <div style={{ padding: "20px 40px", borderTop: "1px solid rgba(201,168,76,0.06)", marginTop: "8px" }}>
-        <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.55)", lineHeight: 1.6, maxWidth: "720px", margin: "0 auto" }}>
+      <div style={{ padding: "24px 40px", borderTop: "1px solid rgba(201,168,76,0.06)", marginTop: "12px" }}>
+        <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.42)", lineHeight: 1.6, maxWidth: "960px", margin: "0 auto" }}>
           This assessment is based solely on the answers you provided and does not constitute legal advice. e2go.app is a self-service preparation tool, not a law firm. Consular decisions involve factors beyond the scope of any preparation tool. For legal advice, consult a qualified U.S. immigration attorney.
         </div>
       </div>
