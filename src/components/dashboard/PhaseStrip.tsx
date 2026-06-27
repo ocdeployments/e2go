@@ -57,6 +57,9 @@ export default function PhaseStrip({ phases }: PhaseStripProps) {
               ? `1px solid ${isOdd ? "rgba(43,26,7,0.18)" : "rgba(237,228,207,0.18)"}`
               : "none";
 
+          const isDone = Boolean(phase.contentData.done);
+          const isActive = phase.isCurrentPhase && !isDone;
+
           return (
             <div
               key={phase.id}
@@ -85,18 +88,51 @@ export default function PhaseStrip({ phases }: PhaseStripProps) {
                 aria-expanded={isExpanded}
               >
                 <div style={{ minWidth: 0 }}>
+                  {/* Number + status chip row */}
                   <div
                     style={{
-                      fontSize: "11px",
-                      fontFamily: "'DM Sans', sans-serif",
-                      fontWeight: 700,
-                      color: textColor,
-                      opacity: 0.45,
-                      letterSpacing: "0.1em",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "5px",
                       marginBottom: "4px",
                     }}
                   >
-                    {phase.number}
+                    <div
+                      style={{
+                        fontSize: "11px",
+                        fontFamily: "'DM Sans', sans-serif",
+                        fontWeight: 700,
+                        color: textColor,
+                        opacity: 0.45,
+                        letterSpacing: "0.1em",
+                      }}
+                    >
+                      {phase.number}
+                    </div>
+                    {isDone && (
+                      <span
+                        style={{
+                          fontSize: "9px",
+                          color: "#5DCAA5",
+                          fontWeight: 700,
+                          lineHeight: 1,
+                        }}
+                      >
+                        ✓
+                      </span>
+                    )}
+                    {isActive && (
+                      <span
+                        style={{
+                          width: "5px",
+                          height: "5px",
+                          borderRadius: "50%",
+                          background: "#C9A84C",
+                          display: "inline-block",
+                          flexShrink: 0,
+                        }}
+                      />
+                    )}
                   </div>
                   <div
                     style={{
@@ -295,12 +331,13 @@ function PhaseContentBlock({
   }
 
   if (content.contentType === "generation") {
+    const docCount = d.docCount != null ? Number(d.docCount) : 0;
     return (
       <div>
-        {d.docCount != null && Number(d.docCount) > 0 ? (
+        {docCount > 0 ? (
           <>
             <div style={label}>Documents ready</div>
-            <div style={value}>{String(d.docCount)} of 15</div>
+            <div style={value}>{docCount} of 15</div>
           </>
         ) : (
           <div style={statusStyle}>Not started</div>
