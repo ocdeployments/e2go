@@ -1106,9 +1106,9 @@ function ResultsPageInner() {
         {/* ─── PRICING CARD ─────────────────────────────────────────────────────── */}
         {(() => {
           const isPartnership = data.application_type === "complete_partnership";
-          const priceDollars = isPartnership ? "$2,495" : "$1,495";
-          const packageLabel = isPartnership ? "Partnership Package" : "Complete Package";
-          const packageSubline = isPartnership ? "Two investors · two complete case files" : "one-time · no subscription";
+          const priceDollars = "$1,495";
+          const packageLabel = "Complete Package";
+          const packageSubline = "one-time · no subscription";
           const isFranchiseBuyer = /franchise/i.test(String(data.answers?.["Q0-08a"] || ""));
           return (
         <div style={{ padding: "52px 0", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
@@ -1124,7 +1124,8 @@ function ResultsPageInner() {
                 <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.48)", marginTop: "3px" }}>vs. $8,000–$15,000 for attorneys</div>
                 {isPartnership && (
                   <div style={{ marginTop: "10px", padding: "7px 10px", background: "rgba(201,168,76,0.06)", border: "1px solid rgba(201,168,76,0.18)", fontSize: "10px", color: "rgba(201,168,76,0.8)", lineHeight: 1.5 }}>
-                    Covers both partners + their families.<br />Two separate case files. One price.
+                    Partnership pricing coming soon.<br />
+                    <a href="mailto:hello@e2go.app" style={{ color: "#C9A84C", textDecoration: "underline" }}>Contact us</a> for two-investor packages.
                   </div>
                 )}
               </div>

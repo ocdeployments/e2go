@@ -854,9 +854,20 @@ export async function createSimulatorSession(
   }
 
   const sessionsUsed = application.simulator_sessions_used || 0;
-  // Session limit check disabled — re-enable when purchase flow is verified
-  // const sessionsPurchased = application.simulator_sessions_purchased || 2;
-  // if (sessionsUsed >= sessionsPurchased) throw new Error('SESSION_LIMIT_EXCEEDED');
+
+  // Complete package holders get 3 sessions. Standalone buyers use DB value. Default: 2.
+  let sessionsPurchased = application.simulator_sessions_purchased || 2;
+  const { data: completePayment } = await supabase
+    .from('payments')
+    .select('id')
+    .eq('user_id', application.user_id)
+    .eq('status', 'completed')
+    .in('payment_type', ['complete', 'complete_partnership'])
+    .limit(1)
+    .maybeSingle();
+  if (completePayment) sessionsPurchased = Math.max(sessionsPurchased, 3);
+
+  if (sessionsUsed >= sessionsPurchased) throw new Error('SESSION_LIMIT_EXCEEDED');
 
   const sessionNumber = sessionsUsed + 1;
 
@@ -1012,7 +1023,7 @@ export async function checkSessionAvailability(applicationId: string): Promise<{
 }> {
   const { data: application, error } = await supabase
     .from('applications')
-    .select('simulator_sessions_used, simulator_sessions_purchased')
+    .select('user_id, simulator_sessions_used, simulator_sessions_purchased')
     .eq('id', applicationId)
     .single();
 
@@ -1026,7 +1037,23 @@ export async function checkSessionAvailability(applicationId: string): Promise<{
   }
 
   const sessionsUsed = application.simulator_sessions_used || 0;
-  const sessionsPurchased = application.simulator_sessions_purchased || 2;
+
+  // Complete package holders get 3 simulator sessions included.
+  // Standalone simulator buyers use simulator_sessions_purchased from DB.
+  // Default fallback: 2 free sessions.
+  let sessionsPurchased = application.simulator_sessions_purchased || 2;
+  if (application.user_id) {
+    const { data: completePayment } = await supabase
+      .from('payments')
+      .select('id')
+      .eq('user_id', application.user_id)
+      .eq('status', 'completed')
+      .in('payment_type', ['complete', 'complete_partnership'])
+      .limit(1)
+      .maybeSingle();
+    if (completePayment) sessionsPurchased = Math.max(sessionsPurchased, 3);
+  }
+
   const sessionsRemaining = Math.max(0, sessionsPurchased - sessionsUsed);
 
   return {
