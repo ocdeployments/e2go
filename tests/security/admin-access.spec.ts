@@ -8,8 +8,8 @@ test.describe('Admin Access Control', () => {
     expect(page.url()).not.toMatch(/\/admin/);
   });
 
-  test('Admin API returns 401 without auth', async ({ request }) => {
-    const r = await request.get('http://localhost:3001/api/admin/settings');
+  test('Admin API returns 403 without auth', async ({ request }) => {
+    const r = await request.get('http://localhost:3001/api/admin/cost-summary');
     expect([401, 403]).toContain(r.status());
   });
 
