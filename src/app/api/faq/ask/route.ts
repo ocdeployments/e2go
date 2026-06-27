@@ -1,6 +1,6 @@
 /**
  * POST /api/faq/ask — Public AI Q&A for E-2 visa questions
- * Session 11: Ask E2go FAQ
+ * Session 11: Ask e2go FAQ
  *
  * No auth required. Three-layer retrieval:
  *   Layer 1: pgvector cosine similarity against faq_qa_corpus (pre-answered Q&A)

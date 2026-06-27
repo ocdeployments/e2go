@@ -389,7 +389,7 @@ function scoreDenialFactors(
     } else {
       risk = 'high';
       finding = 'No business plan document on file.';
-      mitigation = 'Build your business plan in Tab K of Module 3 — E2go assembles your complete business plan document from your answers there. A professional business plan is required at the E-2 interview.';
+      mitigation = 'Build your business plan in Tab K of Module 3 — e2go assembles your complete business plan document from your answers there. A professional business plan is required at the E-2 interview.';
     }
 
     factors.push({ code: 'D-05', name: 'Business plan generic, vague, or inconsistent with finances', frequency: 'Common', risk, finding, mitigation, categoryId: 'business_plan' });

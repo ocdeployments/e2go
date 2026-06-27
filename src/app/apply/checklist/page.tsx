@@ -91,7 +91,7 @@ export default function ChecklistPage() {
             <svg className="w-6 h-6 text-[#C9A84C]" viewBox="0 0 24 24" fill="currentColor">
               <path d="M12 2L2 7v10l10 5 10-5V7L12 2z" />
             </svg>
-            <span className="text-xl font-medium text-[#f5f0e8] font-['Cormorant_Garamond']">E2go.app</span>
+            <span className="text-xl font-medium text-[#f5f0e8] font-['Cormorant_Garamond']">e2go.app</span>
           </Link>
           <div className="flex items-center gap-4">
             <Link href="/dashboard" className="text-sm text-[#f5f0e8]/70 hover:text-[#C9A84C] transition-colors">
@@ -130,7 +130,7 @@ export default function ChecklistPage() {
         <div className="max-w-5xl mx-auto text-center">
           <p className="text-sm text-[#f5f0e8]/50">
             This tool is a self-service preparation guide and does not constitute legal advice.
-            E2go.app is not a law firm.
+            e2go.app is not a law firm.
           </p>
         </div>
       </footer>

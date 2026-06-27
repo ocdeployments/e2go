@@ -41,7 +41,7 @@ export default function CookieBanner() {
           color: "#f5f0e8",
         }}
       >
-        E2go uses essential cookies for security and session management, and
+        e2go uses essential cookies for security and session management, and
         anonymised analytics to improve the product. No advertising cookies.
         No third-party tracking.
       </p>

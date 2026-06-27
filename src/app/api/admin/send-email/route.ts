@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
       <p style="font-size: 16px; line-height: 1.6; white-space: pre-wrap;">${message.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>
       <hr style="border-color: rgba(201,168,76,0.72); margin: 32px 0;" />
       <p style="font-size: 12px; color: rgba(245,240,232,0.72);">
-        Sent from the E2go team · <a href="https://e2go.app" style="color: #C9A84C;">e2go.app</a>
+        Sent from the e2go team · <a href="https://e2go.app" style="color: #C9A84C;">e2go.app</a>
       </p>
     </div>
   `;

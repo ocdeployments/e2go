@@ -297,7 +297,7 @@ export function generatePreAppChecklist(quizData: QuizData | null): ChecklistIte
       prefillNote: "Gift or inheritance was indicated in your case file investment section.",
       required: true,
       tabReference: "Tab B",
-      warning: "The gift letter must state the funds are a genuine gift with no expectation of repayment, and that they are available for E-2 investment. E2go generates this document for you."
+      warning: "The gift letter must state the funds are a genuine gift with no expectation of repayment, and that they are available for E-2 investment. e2go generates this document for you."
     });
     items.push({
       id: "donor_source_docs",

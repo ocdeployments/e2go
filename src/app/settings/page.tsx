@@ -89,7 +89,7 @@ export default function SettingsPage() {
             Download your data
           </h2>
           <p style={{ fontSize: '13px', color: 'rgba(245,240,232,0.74)', lineHeight: 1.7, marginBottom: '20px' }}>
-            Download a copy of all personal data E2go holds about you — quiz results, case file answers,
+            Download a copy of all personal data e2go holds about you — quiz results, case file answers,
             simulator sessions, consent records, and payment history. Provided as a JSON file.
           </p>
           <a

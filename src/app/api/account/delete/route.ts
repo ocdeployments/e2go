@@ -67,19 +67,19 @@ export async function POST() {
       const tableList = USER_TABLES.filter(t => t !== 'profiles').map(t => `• ${t.replace(/_/g, ' ')}`).join('\n');
 
       await resend.emails.send({
-        from: 'E2go <no-reply@e2go.app>',
+        from: 'e2go <no-reply@e2go.app>',
         to: userEmail,
-        subject: 'Your E2go account and data have been deleted',
+        subject: 'Your e2go account and data have been deleted',
         html: `
           <div style="font-family: 'DM Sans', Arial, sans-serif; background: #0a0a0a; color: #f5f0e8; padding: 40px; max-width: 560px; margin: 0 auto;">
-            <div style="font-size: 17px; color: #C9A84C; margin-bottom: 32px; font-weight: 300;">E2go<span style="color: #f5f0e8;">.app</span></div>
+            <div style="font-size: 17px; color: #C9A84C; margin-bottom: 32px; font-weight: 300;">e2go<span style="color: #f5f0e8;">.app</span></div>
 
             <h1 style="font-family: Georgia, serif; font-weight: 300; font-size: 26px; color: #f5f0e8; margin-bottom: 16px; line-height: 1.25;">
               Your account has been deleted
             </h1>
 
             <p style="color: rgba(245,240,232,0.65); font-size: 14px; line-height: 1.7; margin-bottom: 24px;">
-              This confirms that your E2go account and all associated data have been permanently deleted
+              This confirms that your e2go account and all associated data have been permanently deleted
               as requested. This action cannot be undone.
             </p>
 

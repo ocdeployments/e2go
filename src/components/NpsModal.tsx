@@ -105,7 +105,7 @@ export default function NpsModal({ triggerEvent = 'post_download', onClose }: Np
                   Quick question
                 </p>
                 <p style={{ color: '#f5f0e8', fontSize: '15px', fontFamily: "'Cormorant Garamond', serif", fontWeight: 300, lineHeight: 1.5 }}>
-                  How likely are you to recommend E2go to a friend or colleague?
+                  How likely are you to recommend e2go to a friend or colleague?
                 </p>
               </div>
               <button

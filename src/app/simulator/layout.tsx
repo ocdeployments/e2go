@@ -3,7 +3,7 @@ import Nav from "@/components/Nav";
 import SimulatorNav from "@/components/simulator/SimulatorNav";
 
 export const metadata: Metadata = {
-  title: "Interview Simulator | E2go",
+  title: "Interview Simulator | e2go",
   description: "Practice your E-2 visa interview with our AI simulator.",
   robots: { index: false, follow: false },
 };

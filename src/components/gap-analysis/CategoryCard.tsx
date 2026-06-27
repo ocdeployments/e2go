@@ -83,7 +83,7 @@ export default function CategoryCard({ category, factors, enrichment, enriching 
           {/* LLM enrichment */}
           {(enriching || enrichment) && (
             <div style={{ marginBottom: '16px', padding: '14px 16px', background: 'rgba(201,168,76,0.03)', border: '1px solid rgba(201,168,76,0.15)', borderLeft: '3px solid rgba(201,168,76,0.4)' }}>
-              <div style={subLabel('rgba(201,168,76,0.5)')}>E2go Advisor</div>
+              <div style={subLabel('rgba(201,168,76,0.5)')}>e2go Advisor</div>
               {enriching && !enrichment ? (
                 <div style={{ fontSize: '12px', color: 'rgba(245,240,232,0.68)', fontStyle: 'italic' }}>Generating personalised guidance…</div>
               ) : (

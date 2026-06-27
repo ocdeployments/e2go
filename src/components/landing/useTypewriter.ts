@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 // ---------------------------------------------------------------------------
 // useTypewriter — drives a self-typing string that types a phrase, holds it,
-// deletes it, and advances to the next, looping forever. Used by the Ask E2go
+// deletes it, and advances to the next, looping forever. Used by the Ask e2go
 // panel to make the prompt feel "alive" (the strongest come-use-me signal).
 //
 // Returns "" while disabled. Honours prefers-reduced-motion by parking on the

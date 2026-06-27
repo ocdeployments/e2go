@@ -772,7 +772,7 @@ export default function PackageSummary({ applicationId }: PackageSummaryProps) {
           This summary reflects how completely and clearly your documents
           were prepared — it is not a legal assessment of your E-2
           eligibility and does not predict the outcome of your visa
-          application. E2go is not a law firm and does not provide legal
+          application. e2go is not a law firm and does not provide legal
           advice. If you have questions about your eligibility, consult a
           licensed immigration attorney.
         </p>

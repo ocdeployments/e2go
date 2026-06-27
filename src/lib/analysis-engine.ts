@@ -703,7 +703,7 @@ Output a valid JSON array only. No other text. No markdown code fences.`;
         'Authorization': `Bearer ${openrouterKey}`,
         'Content-Type': 'application/json',
         'HTTP-Referer': 'https://e2go.app',
-        'X-Title': 'E2go Analysis Engine',
+        'X-Title': 'e2go Analysis Engine',
       },
       body: JSON.stringify({
         model: 'deepseek/deepseek-chat',

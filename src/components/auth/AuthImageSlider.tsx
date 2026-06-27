@@ -49,7 +49,7 @@ export default function AuthImageSlider() {
       {/* Gold text — bottom left */}
       <div className="absolute bottom-8 left-8 hidden lg:block">
         <p style={{ color: "rgba(245,240,232,0.6)", fontFamily: "'DM Sans', sans-serif", fontWeight: 300, fontSize: "12px", letterSpacing: "0.08em" }}>
-          E2go — U.S. E-2 Treaty Investor Visa Preparation
+          e2go — U.S. E-2 Treaty Investor Visa Preparation
         </p>
       </div>
     </div>

@@ -124,7 +124,7 @@ async function callOpenRouter(options: LLMOptions): Promise<string> {
         'Content-Type':  'application/json',
         'Authorization': `Bearer ${apiKey}`,
         'HTTP-Referer':  'https://e2go.app',
-        'X-Title':       'E2go Interview Simulator',
+        'X-Title':       'e2go Interview Simulator',
       },
       body: JSON.stringify({
         models:      OPENROUTER_MODELS[options.task],

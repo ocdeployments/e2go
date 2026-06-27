@@ -136,7 +136,7 @@ function SuccessContent() {
   }
 
   const paymentType = payment?.payment_type || 'complete';
-  const tierName = PAYMENT_TYPE_NAMES[paymentType] || 'E2go Purchase';
+  const tierName = PAYMENT_TYPE_NAMES[paymentType] || 'e2go Purchase';
   const nextStep = PAYMENT_TYPE_NEXT_STEP[paymentType] || { label: 'Go to Dashboard', href: '/dashboard' };
 
   return (

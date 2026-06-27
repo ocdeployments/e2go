@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
     const safeFranchiseName = franchiseName ? sanitize(franchiseName) : "";
 
     await resend.emails.send({
-      from: "E2go <notifications@e2go.app>",
+      from: "e2go <notifications@e2go.app>",
       to: adminEmail,
       subject: `New franchise referral request — ${date}`,
       html: `
@@ -88,7 +88,7 @@ export async function POST(req: NextRequest) {
                         </tr>` : ""}
                       </table>
                       <div style="font-size:11px;color:rgba(245,240,232,0.68);border-top:1px solid rgba(201,168,76,0.1);padding-top:16px;">
-                        This notification was sent automatically by E2go.
+                        This notification was sent automatically by e2go.
                       </div>
                     </td>
                   </tr>

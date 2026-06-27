@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import Nav from "@/components/Nav";
 
 export const metadata: Metadata = {
-  title: "Account Settings | E2go",
-  description: "Manage your E2go account settings and preferences.",
+  title: "Account Settings | e2go",
+  description: "Manage your e2go account settings and preferences.",
   robots: { index: false, follow: false },
 };
 
