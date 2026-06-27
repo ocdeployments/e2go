@@ -15,13 +15,40 @@ interface DocumentTabPreviewProps {
   userName: string | null;
 }
 
-const TABS = [
-  { id: "cover-letter",   label: "Cover Letter",              pages: "12–18 pages" },
-  { id: "business-plan",  label: "Business Plan",             pages: "30–45 pages" },
-  { id: "source-funds",   label: "Source of Funds",           pages: "6–10 pages"  },
-  { id: "qualifications", label: "Qualifications Narrative",  pages: "4–6 pages"   },
-  { id: "intent",         label: "Non-Immigrant Intent",      pages: "3–5 pages"   },
+const TAB_IDS = [
+  { id: "cover-letter",   label: "Cover Letter"              },
+  { id: "business-plan",  label: "Business Plan"             },
+  { id: "source-funds",   label: "Source of Funds"           },
+  { id: "qualifications", label: "Qualifications Narrative"  },
+  { id: "intent",         label: "Non-Immigrant Intent"      },
 ];
+
+// Page targets sourced from Document_Generation_Standards.md — verified May 2026
+function getTabPageTarget(country: string, docId: string): string {
+  const c = (country || "").toLowerCase();
+  if (c.includes("canada")) {
+    const t: Record<string, string> = {
+      "cover-letter":   "up to 5 pp",
+      "business-plan":  "up to 18 pp",
+      "source-funds":   "up to 3 pp",
+      "qualifications": "up to 2 pp",
+      "intent":         "up to 1 pp",
+    };
+    return t[docId] ?? "consulate-formatted";
+  }
+  if (c.includes("germany")) {
+    const t: Record<string, string> = {
+      "cover-letter":   "2–3 pp",
+      "business-plan":  "exec. summary",
+      "source-funds":   "1–2 pp",
+      "qualifications": "1 pp",
+      "intent":         "1 pp",
+    };
+    return t[docId] ?? "compressed";
+  }
+  // All other consulates: no confirmed hard limit — use consulate-formatted label
+  return "consulate-formatted";
+}
 
 const st: Record<string, CSSProperties> = {
   badge:    { fontSize: "10px", letterSpacing: "0.08em", textTransform: "uppercase", color: "rgba(201,168,76,0.55)", marginBottom: "14px", fontFamily: "'DM Sans', sans-serif" },
@@ -62,7 +89,7 @@ function PreviewContent({ tabId, data, consulateName, userName }: { tabId: strin
       </div>
       <div style={st.sections}>
         §1 — Treaty Standing &amp; Nationality · §2 — Investment Substantiality · §3 — Source and Path of Funds ·
-        §4 — Non-Marginality · §5 — Active Management Role · §6 — Non-Immigrant Intent · [continues for 12–18 pages]
+        §4 — Non-Marginality · §5 — Active Management Role · §6 — Non-Immigrant Intent · [continues per consulate page allocation]
       </div>
     </div>
   );
@@ -87,7 +114,7 @@ function PreviewContent({ tabId, data, consulateName, userName }: { tabId: strin
       </div>
       <div style={st.sections}>
         §1 — Business Description · §2 — Market Analysis · §3 — Products &amp; Services · §4 — Management Structure ·
-        §5 — Operations · §6 — Financial Projections (3-Year) · §7 — Employment Creation Plan · [30–45 pages]
+        §5 — Operations · §6 — Financial Projections (3-Year) · §7 — Employment Creation Plan · [length formatted to your consulate&apos;s limit]
       </div>
     </div>
   );
@@ -116,7 +143,7 @@ function PreviewContent({ tabId, data, consulateName, userName }: { tabId: strin
         ))}
       </div>
       <div style={st.sections}>
-        §2 — Fund Path Chronology · §3 — Banking Trail · §4 — Committed to Enterprise · §5 — Supporting Exhibits · [6–10 pages + exhibits]
+        §2 — Fund Path Chronology · §3 — Banking Trail · §4 — Committed to Enterprise · §5 — Supporting Exhibits · [consulate-formatted]
       </div>
     </div>
   );
@@ -138,7 +165,7 @@ function PreviewContent({ tabId, data, consulateName, userName }: { tabId: strin
         over [key business functions directly relevant to the proposed enterprise].
       </div>
       <div style={st.sections}>
-        §2 — Education and Certifications · §3 — Industry-Specific Experience · §4 — Connection to Proposed Business · [4–6 pages]
+        §2 — Education and Certifications · §3 — Industry-Specific Experience · §4 — Connection to Proposed Business · [consulate-formatted]
       </div>
     </div>
   );
@@ -169,7 +196,7 @@ function PreviewContent({ tabId, data, consulateName, userName }: { tabId: strin
           <div key={i} style={{ marginBottom: "5px", fontSize: "11px", color: "rgba(245,240,232,0.72)" }}>· {tie}</div>
         ))}
       </div>
-      <div style={st.sections}>§3 — E-2 Renewal Plan · §4 — Intent Evidence Exhibits · [3–5 pages + exhibits]</div>
+      <div style={st.sections}>§3 — E-2 Renewal Plan · §4 — Intent Evidence Exhibits · [continues per consulate page allocation]</div>
     </div>
   );
 
@@ -179,50 +206,119 @@ function PreviewContent({ tabId, data, consulateName, userName }: { tabId: strin
 export default function DocumentTabPreview({ data, consulateName, userName }: DocumentTabPreviewProps) {
   const [activeTab, setActiveTab] = useState(0);
 
-  return (
-    <div>
-      {/* Tab bar */}
-      <div style={{ display: "flex", borderBottom: "1px solid rgba(201,168,76,0.15)", overflowX: "auto" }}>
-        {TABS.map((tab, i) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(i)}
-            style={{
-              padding: "10px 18px",
-              background: "transparent",
-              border: "none",
-              borderBottom: activeTab === i ? "2px solid #C9A84C" : "2px solid transparent",
-              color: activeTab === i ? "#C9A84C" : "rgba(245,240,232,0.42)",
-              fontSize: "11px",
-              cursor: "pointer",
-              fontFamily: "'DM Sans', sans-serif",
-              letterSpacing: "0.04em",
-              whiteSpace: "nowrap",
-              flexShrink: 0,
-              transition: "color 0.15s",
-            }}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+  const PANEL_BG   = "#100E08";
+  const BORDER_COL = "rgba(201,168,76,0.25)";
+  const TAB_RADIUS = "10px 10px 0 0";
 
-      {/* Content */}
-      <div style={{ position: "relative", border: "1px solid rgba(201,168,76,0.12)", borderTop: "none", padding: "22px 24px 60px", background: "rgba(10,10,10,0.55)", minHeight: "230px" }}>
-        <div style={{ position: "absolute", top: "14px", right: "16px", fontSize: "9px", letterSpacing: "0.1em", textTransform: "uppercase", color: "rgba(201,168,76,0.35)", fontFamily: "'DM Sans', sans-serif" }}>
-          {TABS[activeTab].pages}
+  const TABS = TAB_IDS.map(t => ({
+    ...t,
+    pages: getTabPageTarget(data.country, t.id),
+  }));
+
+  return (
+    <div style={{ position: "relative" }}>
+      {/* Main card */}
+      <div style={{ position: "relative", zIndex: 1 }}>
+        {/* Tab row — folder tab style, active tab taller via alignItems flex-end */}
+        <div style={{
+          display: "flex",
+          alignItems: "flex-end",
+          gap: "4px",
+          paddingLeft: "0px",
+          overflowX: "auto",
+        }}>
+          {TABS.map((tab, i) => {
+            const isActive = activeTab === i;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(i)}
+                style={{
+                  /* Active tab taller (stagger) — solid gold like a physical folder tab */
+                  padding: isActive ? "12px 20px 11px" : "6px 20px 11px",
+                  background: isActive
+                    ? "#C9A84C"          /* solid gold — the folder tab itself */
+                    : "#1C1609",         /* dark bronze — inactive folder tab */
+                  border: `1px solid ${isActive ? "#A8882A" : "rgba(201,168,76,0.15)"}`,
+                  borderBottom: isActive
+                    ? `1px solid ${PANEL_BG}`   /* merges into panel */
+                    : "1px solid rgba(201,168,76,0.15)",
+                  borderRadius: TAB_RADIUS,
+                  color: isActive ? "#1A1208" : "rgba(201,168,76,0.45)",
+                  fontSize: "10px",
+                  letterSpacing: "0.06em",
+                  cursor: "pointer",
+                  fontFamily: "'DM Sans', sans-serif",
+                  whiteSpace: "nowrap",
+                  flexShrink: 0,
+                  transition: "color 0.15s, background 0.15s",
+                  marginBottom: "-1px",
+                  position: "relative",
+                  zIndex: isActive ? 2 : 1,
+                  fontWeight: isActive ? 600 : 400,
+                }}
+              >
+                {tab.label}
+              </button>
+            );
+          })}
         </div>
-        <PreviewContent
-          tabId={TABS[activeTab].id}
-          data={data}
-          consulateName={consulateName}
-          userName={userName}
-        />
-        {/* Fade overlay */}
-        <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "80px", background: "linear-gradient(to bottom, transparent, #0a0a0a)", display: "flex", alignItems: "flex-end", justifyContent: "center", paddingBottom: "14px", pointerEvents: "none" }}>
-          <span style={{ fontSize: "10px", color: "rgba(201,168,76,0.48)", letterSpacing: "0.1em", textTransform: "uppercase", fontFamily: "'DM Sans', sans-serif" }}>
-            Full document unlocks after payment
-          </span>
+
+        {/* Content panel */}
+        <div style={{
+          position: "relative",
+          border: `1px solid ${BORDER_COL}`,
+          borderRadius: "0 4px 4px 4px",
+          padding: "22px 24px 60px",
+          background: PANEL_BG,
+          minHeight: "230px",
+          zIndex: 2,
+        }}>
+          {/* Page count badge */}
+          <div style={{
+            position: "absolute",
+            top: "14px",
+            right: "16px",
+            fontSize: "9px",
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
+            color: "rgba(201,168,76,0.35)",
+            fontFamily: "'DM Sans', sans-serif",
+          }}>
+            {TABS[activeTab].pages}
+          </div>
+
+          <PreviewContent
+            tabId={TABS[activeTab].id}
+            data={data}
+            consulateName={consulateName}
+            userName={userName}
+          />
+
+          {/* Fade + unlock label */}
+          <div style={{
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: "80px",
+            background: `linear-gradient(to bottom, transparent, ${PANEL_BG})`,
+            display: "flex",
+            alignItems: "flex-end",
+            justifyContent: "center",
+            paddingBottom: "14px",
+            pointerEvents: "none",
+          }}>
+            <span style={{
+              fontSize: "10px",
+              color: "rgba(201,168,76,0.48)",
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+              fontFamily: "'DM Sans', sans-serif",
+            }}>
+              Full document unlocks after payment
+            </span>
+          </div>
         </div>
       </div>
     </div>

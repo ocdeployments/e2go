@@ -25,28 +25,12 @@ interface ResultData {
 
 /* ─── Helpers ────────────────────────────────────────────────────────────── */
 
-function getIdentityLabel(outcome: string, score: number): string {
-  if (outcome === "PROCEED" && score >= 90) return "You're on the Straight-Path E-2 Track.";
-  if (outcome === "PROCEED") return "You're on a strong E-2 path.";
-  if (outcome === "PROCEED_RISK") return "Your case is viable — a few things need attention.";
-  if (outcome === "ATTORNEY_RECOMMENDED") return "Your situation needs legal guidance alongside preparation.";
-  return "E-2 is not viable for your current situation.";
-}
-
 function getBandConfig(outcome: string): { color: string; label: string } {
   if (outcome === "PROCEED") return { color: "#5DCAA5", label: "Strong E-2 eligibility band — safe to proceed into full preparation." };
   if (outcome === "PROCEED_RISK") return { color: "#f59e0b", label: "Viable — specific areas require strengthening before submission." };
   if (outcome === "ATTORNEY_RECOMMENDED") return { color: "rgba(239,68,68,0.8)", label: "Complex case — legal guidance recommended alongside preparation." };
   return { color: "rgba(239,68,68,0.4)", label: "E-2 approval is unlikely for your current situation." };
 }
-
-function getOutcomeCTA(outcome: string): string {
-  if (outcome === "PROCEED") return "Start My E-2 Application Plan →";
-  if (outcome === "PROCEED_RISK") return "See How to Strengthen My Case →";
-  if (outcome === "ATTORNEY_RECOMMENDED") return "Review My Application Options →";
-  return "Review My Options →";
-}
-
 
 function getTimelineWeeks(data: ResultData): { weeksMin: number; weeksMax: number } {
   const hasBusiness = (data.answers["Q0-08"] as string || "").includes("specific business");
@@ -108,33 +92,7 @@ function getCookie(name: string): string | null {
   return match ? decodeURIComponent(match[2]) : null;
 }
 
-function getCountryFlag(country: string): string {
-  const flags: Record<string, string> = {
-    "Canada": "🇨🇦", "United Kingdom": "🇬🇧", "Germany": "🇩🇪",
-    "Australia": "🇦🇺", "Japan": "🇯🇵", "France": "🇫🇷",
-    "Italy": "🇮🇹", "Spain": "🇪🇸", "South Korea": "🇰🇷",
-    "Brazil": "🇧🇷", "Mexico": "🇲🇽", "Netherlands": "🇳🇱",
-    "Switzerland": "🇨🇭", "Sweden": "🇸🇪", "Singapore": "🇸🇬",
-    "Israel": "🇮🇱", "Turkey": "🇹🇷", "Poland": "🇵🇱",
-    "Argentina": "🇦🇷", "Chile": "🇨🇱", "Colombia": "🇨🇴",
-    "Philippines": "🇵🇭", "Thailand": "🇹🇭", "New Zealand": "🇳🇿",
-  };
-  return flags[country] || "🌍";
-}
 
-function getPersonalTranslation(data: ResultData, consulateName: string): string {
-  const parts: string[] = [];
-  if (data.country) parts.push(`${getCountryFlag(data.country)} ${data.country} national`);
-  if (data.investment_range) parts.push(data.investment_range);
-  const bizType = (data.answers?.["Q0-08a"] as string) || "";
-  if (/franchise/i.test(bizType)) parts.push("franchise buyer");
-  else if (/acquisition|existing independent/i.test(bizType)) parts.push("business acquisition");
-  else if (bizType) parts.push("new business");
-  if (data.application_type === "partnership" || data.application_type === "spousal_partnership") parts.push("partnership");
-  else parts.push("solo applicant");
-  parts.push(consulateName);
-  return parts.join(" · ");
-}
 
 /* ─── Email Gate ─────────────────────────────────────────────────────────── */
 function EmailGate({ onBackToQuiz }: { onBackToQuiz: () => void }) {
@@ -161,7 +119,7 @@ function EmailGate({ onBackToQuiz }: { onBackToQuiz: () => void }) {
   return (
     <div className="min-h-screen flex" style={{ background: "#0a0a0a" }}>
       <div className="w-full flex flex-col items-center justify-center p-8" style={{ maxWidth: "480px", margin: "0 auto" }}>
-        <div style={{ fontSize: "17px", color: "#C9A84C", fontWeight: 300, marginBottom: "48px" }}>E2go<span style={{ color: "rgba(245,240,232,0.9)" }}>.app</span></div>
+        <div style={{ fontSize: "17px", color: "#C9A84C", fontWeight: 300, marginBottom: "48px" }}>e2go<span style={{ color: "rgba(245,240,232,0.9)" }}>.app</span></div>
         {sent ? (
           <>
             <div style={{ width: "48px", height: "48px", border: "2px solid #5DCAA5", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "24px" }}><span style={{ color: "#5DCAA5", fontSize: "20px" }}>✓</span></div>
@@ -503,11 +461,11 @@ function ResultsPageInner() {
   const consulate = getConsulateIntel(data.country);
   const targetDateMsg = getTargetDateMessage(data.answers?.["Q0-target-date"] as string);
   const scoreColor = score >= 70 ? "#C9A84C" : score >= 40 ? "#f59e0b" : "rgba(245,240,232,0.68)";
-  const identityLabel = getIdentityLabel(outcome, score);
   const band = getBandConfig(outcome);
-  const personalTranslation = getPersonalTranslation(data, consulate.name);
-  const ctaLabel = getOutcomeCTA(outcome);
   const ctaHref = isLoggedIn ? "/apply" : `/pricing?tier=${data.application_type}`;
+  const displayNameFromEmail = quizEmail ? (quizEmail.split("@")[0].charAt(0).toUpperCase() + quizEmail.split("@")[0].slice(1)) : null;
+  const FALLBACK_NAMES = ["Alex", "Jordan", "Morgan", "Taylor", "Casey", "Riley"];
+  const displayName = userName || displayNameFromEmail || FALLBACK_NAMES[score % FALLBACK_NAMES.length];
 
   const allFlags = [...(data.warnings || []), ...(data.attorney_flags || [])];
   const flagsToShow = allFlags.map(code => ({
@@ -528,8 +486,6 @@ function ResultsPageInner() {
   const recoveryCards = getRecoveryCards(allWarnings);
   const caseStrengths = getCaseStrengths(data, allWarnings);
   const missedPoints = 100 - score;
-  const circumference = 2 * Math.PI * 40;
-  const dashOffset = circumference * (1 - score / 100);
 
   const FLAG_MODULE: Record<string, string> = {
     "W-NO-TIES":                  "Ties Section — Non-Immigrant Intent",
@@ -558,24 +514,24 @@ function ResultsPageInner() {
       a: "There is no hard dollar floor — E-2 uses a proportionality test. In practice, applications below $75,000 are very difficult to approve. The most successful applications show that the investment is substantial relative to the total cost of the enterprise and that the funds are clearly committed. For franchise buyers, most well-structured applications fall between $100,000 and $500,000. Your investment level and business type are both accounted for in your score above.",
     },
     {
-      q: "Can E2go replace an immigration attorney?",
-      a: "No, and we are explicit about this. E2go is a document preparation and case management platform — we help you organize, write, and strengthen your application file. A licensed attorney provides legal strategy, handles complex situations (prior denials, 221(g) processing, security checks), and can represent you if needed. For straightforward applications with strong investment and clean funds, E2go prepares the documents at a fraction of attorney fees. Attorney review alongside E2go is always an option.",
+      q: "Can e2go replace an immigration attorney?",
+      a: "No, and we are explicit about this. e2go is a document preparation and case management platform — we help you organize, write, and strengthen your application file. A licensed attorney provides legal strategy, handles complex situations (prior denials, 221(g) processing, security checks), and can represent you if needed. For straightforward applications with strong investment and clean funds, e2go prepares the documents at a fraction of attorney fees. Attorney review alongside e2go is always an option.",
     },
     {
       q: "What if my application is flagged or gets a 221(g)?",
-      a: "A 221(g) is an administrative hold — not a denial. It is a request for additional documents or a security clearance check. The most common requests are for source of funds documentation, business plan clarification, or an organizational chart. E2go builds all of these proactively. If you receive a 221(g), your Gap Analysis case file identifies which evidence categories to strengthen and exactly what to add. Most 221(g) cases resolve within 4–8 weeks of providing the requested documents.",
+      a: "A 221(g) is an administrative hold — not a denial. It is a request for additional documents or a security clearance check. The most common requests are for source of funds documentation, business plan clarification, or an organizational chart. e2go builds all of these proactively. If you receive a 221(g), your Gap Analysis case file identifies which evidence categories to strengthen and exactly what to add. Most 221(g) cases resolve within 4–8 weeks of providing the requested documents.",
     },
     {
       q: "I've sold property in my home country — will that affect my case?",
-      a: "Yes, it can — but it is manageable. Selling your primary residence is a signal officers may interpret as immigrant intent. It is not disqualifying, but it requires a clear counter-narrative: demonstrable ties that remain after the sale (family, investments, accounts, professional obligations), a credible E-2 renewal plan, and an explicit non-immigrant intent statement. E2go's Ties Section and Interview Simulator both address this pattern directly.",
+      a: "Yes, it can — but it is manageable. Selling your primary residence is a signal officers may interpret as immigrant intent. It is not disqualifying, but it requires a clear counter-narrative: demonstrable ties that remain after the sale (family, investments, accounts, professional obligations), a credible E-2 renewal plan, and an explicit non-immigrant intent statement. e2go's Ties Section and Interview Simulator both address this pattern directly.",
     },
     {
       q: `How long does the ${consulate.name} process take?`,
-      a: `From submission to interview is currently ${timelineWeeks.weeksMin}–${timelineWeeks.weeksMax} weeks for a well-prepared application at ${consulate.name}. ${consulate.intel} Preparation inside E2go typically takes 2–4 weeks depending on case complexity. Your interview window is ${timeline}. Most approvals are issued the same day as the interview, with the passport returned within 5–7 business days.`,
+      a: `From submission to interview is currently ${timelineWeeks.weeksMin}–${timelineWeeks.weeksMax} weeks for a well-prepared application at ${consulate.name}. ${consulate.intel} Preparation inside e2go typically takes 2–4 weeks depending on case complexity. Your interview window is ${timeline}. Most approvals are issued the same day as the interview, with the passport returned within 5–7 business days.`,
     },
     {
       q: "What's included in the $1,495 package?",
-      a: "15 consulate-formatted documents: Cover Letter, Business Plan, Source of Funds Statement, Personal Financial Statement, Investment Evidence Summary, Qualifications Narrative, Organizational Chart, Employment Creation Plan, Business Registration Summary, Franchise Agreement Summary (if applicable), Market Analysis, Non-Immigrant Intent Statement, Spouse's Declaration (if applicable), Compliance Calendar, and a Table of Contents formatted for your consulate. The package also includes the Gap Analysis Module (6 evidence categories) and 10 document revision credits.",
+      a: "Gap Analysis (6 evidence categories), 15 consulate-formatted documents including Cover Letter, Business Plan, Source of Funds Statement, Market Analysis, Qualifications Narrative, Non-Immigrant Intent Statement, and 9 more. FDD Analysis is included for franchise buyers. Also includes 3 Interview Simulator sessions (additional sessions available), and 10 document revision credits. All formatted for your specific consulate.",
     },
   ];
 
@@ -595,7 +551,7 @@ function ResultsPageInner() {
 
       {/* Nav */}
       <div style={{ padding: "18px 40px", borderBottom: "1px solid rgba(201,168,76,0.1)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div style={{ fontSize: "17px", color: "#C9A84C", fontWeight: 300 }}>E2go<span style={{ color: "rgba(245,240,232,0.9)" }}>.app</span></div>
+        <div style={{ fontSize: "17px", color: "#C9A84C", fontWeight: 300 }}>e2go<span style={{ color: "rgba(245,240,232,0.9)" }}>.app</span></div>
         <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
           {isLoggedIn && <Link href="/dashboard" style={{ fontSize: "11px", color: "rgba(201,168,76,0.85)", letterSpacing: "0.08em", textTransform: "uppercase", textDecoration: "none" }}>Dashboard</Link>}
           <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.65)", letterSpacing: "0.08em", textTransform: "uppercase" }}>Eligibility result</div>
@@ -607,136 +563,79 @@ function ResultsPageInner() {
         <button onClick={() => router.push("/quiz/review")} style={{ fontSize: "13px", color: "rgba(245,240,232,0.55)", background: "transparent", border: "none", cursor: "pointer", padding: "0", marginBottom: "32px", fontFamily: "'DM Sans', sans-serif", display: "block" }}>
           ← Review or change my answers
         </button>
-        {isLoggedIn && userName && (
-          <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "40px", fontWeight: 300, color: "rgba(245,240,232,0.65)", lineHeight: 1.1, marginBottom: "4px" }}>
-            Welcome, {userName}.
-          </div>
-        )}
-        <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "48px", fontWeight: 300, color: "#f5f0e8", lineHeight: 1.1, marginBottom: "36px" }}>
-          {identityLabel}
+        {/* Congratulatory headline — name embedded when available */}
+        <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "48px", fontWeight: 300, color: "#f5f0e8", lineHeight: 1.15, marginBottom: "24px" }}>
+          Congratulations{displayName ? `, ${displayName.split(" ")[0]}` : ""}. You qualify for an E-2 visa.
         </div>
 
-        {/* 2-col hero grid */}
-        <div className="hero-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
-          {/* Left: Assessment card */}
-          <div style={{ border: "1px solid rgba(201,168,76,0.25)", padding: "28px", background: "rgba(201,168,76,0.015)" }}>
-            <div style={{ fontSize: "9px", letterSpacing: "0.16em", textTransform: "uppercase" as const, color: "rgba(201,168,76,0.65)", marginBottom: "24px" }}>Your Assessment</div>
-            <div style={{ display: "flex", alignItems: "center", gap: "20px", marginBottom: "28px" }}>
-              <svg width="88" height="88" viewBox="0 0 100 100" style={{ flexShrink: 0 }}>
-                <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(201,168,76,0.12)" strokeWidth="7" />
-                <circle cx="50" cy="50" r="40" fill="none" stroke={scoreColor} strokeWidth="7"
-                  strokeLinecap="round"
-                  strokeDasharray={circumference}
-                  strokeDashoffset={dashOffset}
-                  transform="rotate(-90 50 50)"
-                />
-                <text x="50" y="50" textAnchor="middle" dominantBaseline="central"
-                  style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "24px", fill: scoreColor, fontWeight: 300 }}>
-                  {score}
-                </text>
-                <text x="50" y="68" textAnchor="middle"
-                  style={{ fontSize: "9px", fill: "rgba(245,240,232,0.4)", letterSpacing: "0.03em" }}>
-                  /100
-                </text>
-              </svg>
-              <div>
-                <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.6)", lineHeight: 1.6, marginBottom: "8px" }}>{personalTranslation}</div>
-                <div style={{ display: "flex", alignItems: "center", gap: "7px" }}>
-                  <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: band.color, flexShrink: 0 }} />
-                  <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.68)", lineHeight: 1.4 }}>{band.label.split(" — ")[0]}</div>
-                </div>
-              </div>
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", borderTop: "1px solid rgba(201,168,76,0.1)", paddingTop: "20px" }}>
-              <div>
-                <div style={{ fontSize: "9px", letterSpacing: "0.14em", textTransform: "uppercase" as const, color: "#5DCAA5", marginBottom: "10px" }}>Strengths</div>
-                {caseStrengths.slice(0, 3).map((s, i) => (
-                  <div key={i} style={{ display: "flex", gap: "6px", fontSize: "11px", color: "rgba(245,240,232,0.78)", lineHeight: 1.4, marginBottom: "6px" }}>
-                    <span style={{ color: "#5DCAA5", flexShrink: 0 }}>✓</span>{s}
-                  </div>
-                ))}
-              </div>
-              <div>
-                <div style={{ fontSize: "9px", letterSpacing: "0.14em", textTransform: "uppercase" as const, color: "rgba(245,158,11,0.85)", marginBottom: "10px" }}>Gaps</div>
-                {flagsToShow.length > 0 ? flagsToShow.slice(0, 3).map((f, i) => (
-                  <div key={i} style={{ display: "flex", gap: "6px", fontSize: "11px", color: "rgba(245,240,232,0.72)", lineHeight: 1.4, marginBottom: "6px" }}>
-                    <span style={{ color: "rgba(245,158,11,0.85)", flexShrink: 0 }}>△</span>
-                    <span>{f.info?.plain_language ? (f.info.plain_language.length > 36 ? f.info.plain_language.slice(0, 36) + "…" : f.info.plain_language) : f.code}</span>
-                  </div>
-                )) : (
-                  <div style={{ fontSize: "11px", color: "rgba(93,202,165,0.8)", lineHeight: 1.5 }}>No significant gaps identified</div>
-                )}
-              </div>
-            </div>
-            {verificationState === "verified" && !isLoggedIn && (
-              <div style={{ fontSize: "11px", color: "#5DCAA5", marginTop: "16px" }}>✓ Email verified</div>
-            )}
+        {/* Score — redesigned display */}
+        <div style={{ display: "flex", alignItems: "center", gap: "28px", marginBottom: "24px", flexWrap: "wrap" as const }}>
+          {/* Large score number */}
+          <div style={{ flexShrink: 0, lineHeight: 1 }}>
+            <span style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "88px", fontWeight: 300, color: scoreColor }}>{score}</span>
+            <span style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "32px", fontWeight: 300, color: "rgba(245,240,232,0.18)", verticalAlign: "super" }}>/100</span>
           </div>
-
-          {/* Right: Pricing card */}
-          <div style={{ border: "1px solid rgba(201,168,76,0.45)", padding: "28px", background: "rgba(201,168,76,0.025)", display: "flex", flexDirection: "column" }}>
-            <div style={{ fontSize: "9px", letterSpacing: "0.16em", textTransform: "uppercase" as const, color: "rgba(201,168,76,0.65)", marginBottom: "8px" }}>Complete Package</div>
-            <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "44px", fontWeight: 300, color: "#C9A84C", lineHeight: 1, marginBottom: "2px" }}>$1,495</div>
-            <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.42)", marginBottom: "4px" }}>one-time · no subscription</div>
-            <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.52)", marginBottom: "20px" }}>E-2 attorneys charge $8,000–$15,000 for the same documents.</div>
-            <div style={{ marginBottom: "16px" }}>
-              <div style={{ fontSize: "9px", letterSpacing: "0.14em", textTransform: "uppercase" as const, color: "rgba(245,240,232,0.38)", marginBottom: "8px" }}>What you already have</div>
-              {[
-                "Eligibility assessment — complete",
-                flagsToShow.length > 0 ? `${flagsToShow.length} risk flags identified` : "Clean profile — no critical flags",
-                `${consulate.name} intelligence`,
-                "E-2 knowledge base",
-              ].map((item, i) => (
-                <div key={i} style={{ display: "flex", gap: "7px", alignItems: "flex-start", fontSize: "11px", color: "rgba(245,240,232,0.72)", marginBottom: "5px", lineHeight: 1.4 }}>
-                  <span style={{ color: "#5DCAA5", flexShrink: 0 }}>✓</span><span>{item}</span>
-                </div>
-              ))}
+          {/* Score meta */}
+          <div style={{ flex: 1, minWidth: "200px" }}>
+            <div style={{ fontSize: "9px", letterSpacing: "0.18em", textTransform: "uppercase" as const, color: "rgba(201,168,76,0.55)", marginBottom: "10px" }}>Eligibility score</div>
+            <div style={{ height: "2px", background: "rgba(245,240,232,0.07)", maxWidth: "260px", marginBottom: "12px" }}>
+              <div style={{ height: "100%", width: `${score}%`, background: scoreColor }} />
             </div>
-            <div style={{ marginBottom: "20px" }}>
-              <div style={{ fontSize: "9px", letterSpacing: "0.14em", textTransform: "uppercase" as const, color: "rgba(201,168,76,0.55)", marginBottom: "8px" }}>What unlocks after payment</div>
-              {[
-                "15 consulate-formatted documents",
-                "Business plan + source of funds narrative",
-                "Gap Analysis — 6 evidence categories",
-                "AI Interview Simulator",
-                "10 document revision credits",
-              ].map((item, i) => (
-                <div key={i} style={{ display: "flex", gap: "7px", alignItems: "flex-start", fontSize: "11px", color: "rgba(245,240,232,0.82)", marginBottom: "5px", lineHeight: 1.4 }}>
-                  <span style={{ color: "#C9A84C", flexShrink: 0 }}>→</span><span>{item}</span>
-                </div>
-              ))}
-            </div>
-            <Link href={ctaHref} style={{ display: "block", padding: "15px 24px", background: "#C9A84C", color: "#0a0a0a", fontSize: "12px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase" as const, fontFamily: "'DM Sans', sans-serif", textDecoration: "none", textAlign: "center" as const, marginTop: "auto" }}>
-              {ctaLabel}
-            </Link>
-            <div style={{ display: "flex", gap: "16px", justifyContent: "center", marginTop: "10px" }}>
-              <span style={{ fontSize: "10px", color: "rgba(245,240,232,0.38)" }}>✓ No subscription</span>
-              <span style={{ fontSize: "10px", color: "rgba(245,240,232,0.38)" }}>✓ Documents yours forever</span>
+            <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "20px", fontWeight: 300, color: "#f5f0e8", marginBottom: "4px" }}>{band.label.split(" — ")[0]}</div>
+            <div style={{ fontSize: "10.5px", color: "rgba(245,240,232,0.4)", lineHeight: 1.5 }}>
+              {missedPoints > 0
+                ? `${missedPoints} points addressable — e2go targets every evidence gap`
+                : "Maximum score — your profile is in the strongest eligibility band"}
             </div>
           </div>
         </div>
+
+        {/* Case summary pills */}
+        <div style={{ display: "flex", flexWrap: "wrap" as const, gap: "8px", marginBottom: "36px" }}>
+          {caseStrengths.map((s, i) => (
+            <span key={i} style={{ display: "inline-flex", alignItems: "center", gap: "5px", padding: "6px 12px", background: "rgba(93,202,165,0.07)", border: "1px solid rgba(93,202,165,0.22)", borderRadius: "2px", fontSize: "11px", color: "#5DCAA5", fontFamily: "'DM Sans', sans-serif" }}>
+              ✓ {s}
+            </span>
+          ))}
+          {flagsToShow.slice(0, 2).map((f, i) => (
+            <span key={i} style={{ display: "inline-flex", alignItems: "center", gap: "5px", padding: "6px 12px", background: "rgba(245,158,11,0.07)", border: "1px solid rgba(245,158,11,0.22)", borderRadius: "2px", fontSize: "11px", color: "rgba(245,158,11,0.9)", fontFamily: "'DM Sans', sans-serif" }}>
+              △ {f.info?.plain_language ? (f.info.plain_language.length > 42 ? f.info.plain_language.slice(0, 42) + "…" : f.info.plain_language) : f.code}
+            </span>
+          ))}
+          {verificationState === "verified" && !isLoggedIn && (
+            <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", padding: "6px 12px", background: "rgba(93,202,165,0.07)", border: "1px solid rgba(93,202,165,0.2)", borderRadius: "2px", fontSize: "11px", color: "#5DCAA5", fontFamily: "'DM Sans', sans-serif" }}>
+              ✓ Email verified
+            </span>
+          )}
+          <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", padding: "6px 12px", background: "rgba(201,168,76,0.06)", border: "1px solid rgba(201,168,76,0.18)", borderRadius: "2px", fontSize: "11px", color: "rgba(201,168,76,0.75)", fontFamily: "'DM Sans', sans-serif" }}>
+            {consulate.name}
+          </span>
+        </div>
+
       </div>
 
-      {/* ─── INTERVIEW BANNER ──────────────────────────────────────────────────── */}
-      <div style={{ background: "rgba(201,168,76,0.05)", borderTop: "1px solid rgba(201,168,76,0.12)", borderBottom: "1px solid rgba(201,168,76,0.12)", padding: "16px 40px" }}>
-        <div style={{ maxWidth: "980px", margin: "0 auto", display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" as const }}>
-          <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#C9A84C", flexShrink: 0 }} />
-          <span style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "17px", fontWeight: 300, color: "#C9A84C" }}>
-            Estimated interview window: {timeline}
-          </span>
-          <span style={{ fontSize: "12px", color: "rgba(245,240,232,0.6)" }}>
-            · {consulate.name} is currently processing E-2 applications in {timelineWeeks.weeksMin}–{timelineWeeks.weeksMax} weeks from submission.
-          </span>
-          {targetDateMsg && <span style={{ fontSize: "11px", color: "rgba(201,168,76,0.7)" }}>{targetDateMsg}</span>}
+      {/* ─── INTERVIEW BANNER — only shown for known consulates ──────────────── */}
+      {consulate.name !== "Your Home Consulate" && (
+        <div style={{ background: "rgba(201,168,76,0.05)", borderTop: "1px solid rgba(201,168,76,0.12)", borderBottom: "1px solid rgba(201,168,76,0.12)", padding: "16px 40px" }}>
+          <div style={{ maxWidth: "980px", margin: "0 auto", display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" as const }}>
+            <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#C9A84C", flexShrink: 0 }} />
+            <span style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "17px", fontWeight: 300, color: "#C9A84C" }}>
+              If you start today — interview window: {timeline}
+            </span>
+            <span style={{ fontSize: "12px", color: "rgba(245,240,232,0.6)" }}>
+              · {consulate.name} is currently processing in {timelineWeeks.weeksMin}–{timelineWeeks.weeksMax} weeks from submission.
+            </span>
+            {targetDateMsg && <span style={{ fontSize: "11px", color: "rgba(201,168,76,0.7)" }}>{targetDateMsg}</span>}
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="results-inner" style={{ maxWidth: "980px", margin: "0 auto", padding: "0 40px" }}>
 
         {/* ─── SCORE BREAKDOWN ──────────────────────────────────────────────────── */}
         <div style={{ padding: "52px 0", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
           <div style={{ fontSize: "9px", letterSpacing: "0.16em", textTransform: "uppercase" as const, color: "rgba(201,168,76,0.6)", marginBottom: "6px" }}>By the numbers</div>
-          <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "30px", fontWeight: 300, color: "#f5f0e8", marginBottom: "36px" }}>Detailed score breakdown</div>
+          <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "30px", fontWeight: 300, color: "#f5f0e8", marginBottom: "36px" }}>What your quiz revealed</div>
           {scoreDimensions.map((dim, i) => (
             <div key={i} style={{ display: "flex", alignItems: "center", gap: "20px", padding: "14px 0", borderBottom: "1px solid rgba(201,168,76,0.06)" }}>
               <div className="score-row-label" style={{ width: "190px", flexShrink: 0, fontSize: "12px", color: "#f5f0e8", lineHeight: 1.3 }}>{dim.label}</div>
@@ -749,8 +648,8 @@ function ResultsPageInner() {
           ))}
         </div>
 
-        {/* ─── RECOVER X POINTS ─────────────────────────────────────────────────── */}
-        {missedPoints > 0 && recoveryCards.length > 0 && (
+        {/* ─── RECOVER X POINTS — removed from UI ──────────────────────────────── */}
+        {(false as boolean) && missedPoints > 0 && recoveryCards.length > 0 && (
           <div style={{ padding: "52px 0", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
             <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "30px", fontWeight: 300, color: "#f5f0e8", marginBottom: "6px" }}>
               Recover the missing {missedPoints} points
@@ -783,157 +682,584 @@ function ResultsPageInner() {
           </div>
         )}
 
-        {/* ─── WHAT HAPPENS AFTER PAYMENT ───────────────────────────────────────── */}
+        {/* ─── JOURNEY — 4 steps merged ─────────────────────────────────────────── */}
         <div style={{ padding: "52px 0", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
-          <div style={{ fontSize: "9px", letterSpacing: "0.16em", textTransform: "uppercase" as const, color: "rgba(201,168,76,0.6)", marginBottom: "6px" }}>After payment</div>
-          <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "30px", fontWeight: 300, color: "#f5f0e8", marginBottom: "36px" }}>What happens next</div>
-          <div className="step-cards-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px" }}>
-            {[
-              { step: "01", title: "Choose & Build", desc: "Your account opens with quiz answers pre-loaded. Choose your business direction — independent or franchise. Franchise buyers are matched to a vetted broker in their investment range. Work through each section: business plan, source of funds, qualifications, ties statement." },
-              { step: "02", title: "Analyse & Generate", desc: `Franchise buyers upload their FDD for a full item-by-item analysis — unit economics, officer red flags, territory fit, and market analysis. Then generate all 15 consulate-formatted documents from your case file, ready for ${consulate.name}.` },
-              { step: "03", title: "Prepare", desc: "Your AI Interview Simulator trains you on the exact questions officers ask — adapted to your investment, business type, and consulate. Comes with a day-of checklist: what to bring, what to leave behind, and what to expect at each stage of the interview." },
-            ].map(({ step, title, desc }) => (
-              <div key={step} style={{ border: "1px solid rgba(201,168,76,0.15)", padding: "32px 24px", background: "rgba(10,10,10,0.4)" }}>
-                <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "56px", fontWeight: 300, color: "rgba(201,168,76,0.18)", lineHeight: 1, marginBottom: "14px" }}>{step}</div>
-                <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "22px", fontWeight: 300, color: "#f5f0e8", marginBottom: "10px" }}>{title}</div>
-                <div style={{ fontSize: "12px", color: "rgba(245,240,232,0.65)", lineHeight: 1.7 }}>{desc}</div>
-              </div>
-            ))}
+          <div style={{ fontSize: "9px", letterSpacing: "0.16em", textTransform: "uppercase" as const, color: "rgba(201,168,76,0.6)", marginBottom: "6px" }}>How it works</div>
+          <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "30px", fontWeight: 300, color: "#f5f0e8", marginBottom: "36px" }}>From quiz to consulate — four steps</div>
+          <div className="step-cards-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px", marginBottom: "48px" }}>
+
+            {/* Step 00 — Quiz (done) */}
+            <div style={{ border: "1px solid rgba(93,202,165,0.22)", padding: "24px 20px", background: "rgba(93,202,165,0.012)" }}>
+              <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "44px", fontWeight: 300, color: "rgba(93,202,165,0.2)", lineHeight: 1, marginBottom: "10px" }}>00</div>
+              <div style={{ display: "inline-flex", alignItems: "center", gap: "4px", padding: "3px 8px", background: "rgba(93,202,165,0.1)", border: "1px solid rgba(93,202,165,0.28)", fontSize: "10px", color: "#5DCAA5", marginBottom: "10px", letterSpacing: "0.04em" }}>✓ Done</div>
+              <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "17px", fontWeight: 300, color: "#f5f0e8", marginBottom: "12px" }}>Eligibility Quiz</div>
+              <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+                {[
+                  `Score: ${score}/100`,
+                  `${consulate.name} matched`,
+                  flagsToShow.length > 0 ? `${flagsToShow.length} risk area${flagsToShow.length > 1 ? "s" : ""} flagged` : "Clean risk profile",
+                  "Answers saved to your case",
+                ].map((b, i) => (
+                  <li key={i} style={{ fontSize: "11px", color: "rgba(245,240,232,0.65)", lineHeight: 1.75, display: "flex", gap: "7px" }}>
+                    <span style={{ color: "#5DCAA5", flexShrink: 0 }}>·</span>{b}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Step 01 */}
+            <div style={{ border: "1px solid rgba(201,168,76,0.15)", padding: "24px 20px", background: "rgba(10,10,10,0.4)" }}>
+              <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "44px", fontWeight: 300, color: "rgba(201,168,76,0.18)", lineHeight: 1, marginBottom: "14px" }}>01</div>
+              <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "17px", fontWeight: 300, color: "#f5f0e8", marginBottom: "12px" }}>Choose & Build</div>
+              <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+                {[
+                  "Quiz answers pre-loaded in your account",
+                  "Pick your direction: independent or franchise",
+                  "Franchise buyers matched to a vetted broker",
+                  "Build: business plan, source of funds, qualifications, ties statement",
+                ].map((b, i) => (
+                  <li key={i} style={{ fontSize: "11px", color: "rgba(245,240,232,0.65)", lineHeight: 1.75, display: "flex", gap: "7px" }}>
+                    <span style={{ color: "rgba(201,168,76,0.5)", flexShrink: 0 }}>·</span>{b}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Step 02 */}
+            <div style={{ border: "1px solid rgba(201,168,76,0.15)", padding: "24px 20px", background: "rgba(10,10,10,0.4)" }}>
+              <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "44px", fontWeight: 300, color: "rgba(201,168,76,0.18)", lineHeight: 1, marginBottom: "14px" }}>02</div>
+              <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "17px", fontWeight: 300, color: "#f5f0e8", marginBottom: "12px" }}>Analyse & Generate</div>
+              <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+                {[
+                  "Franchise buyers: upload FDD for item-by-item analysis",
+                  "Unit economics, red flags, territory fit",
+                  `Generate 15 documents formatted for ${consulate.name}`,
+                  "Export-ready from your case file",
+                ].map((b, i) => (
+                  <li key={i} style={{ fontSize: "11px", color: "rgba(245,240,232,0.65)", lineHeight: 1.75, display: "flex", gap: "7px" }}>
+                    <span style={{ color: "rgba(201,168,76,0.5)", flexShrink: 0 }}>·</span>{b}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Step 03 */}
+            <div style={{ border: "1px solid rgba(201,168,76,0.15)", padding: "24px 20px", background: "rgba(10,10,10,0.4)" }}>
+              <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "44px", fontWeight: 300, color: "rgba(201,168,76,0.18)", lineHeight: 1, marginBottom: "14px" }}>03</div>
+              <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "17px", fontWeight: 300, color: "#f5f0e8", marginBottom: "12px" }}>Prepare</div>
+              <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+                {[
+                  `AI Simulator trained on ${consulate.name} patterns`,
+                  "Adapted to your business type and investment",
+                  "Day-of checklist: what to bring, what to leave",
+                  "Know what to expect at every stage",
+                ].map((b, i) => (
+                  <li key={i} style={{ fontSize: "11px", color: "rgba(245,240,232,0.65)", lineHeight: 1.75, display: "flex", gap: "7px" }}>
+                    <span style={{ color: "rgba(201,168,76,0.5)", flexShrink: 0 }}>·</span>{b}
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
-        </div>
 
-        {/* ─── MODULE CARDS ─────────────────────────────────────────────────────── */}
-        <div style={{ padding: "52px 0", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
-          <div style={{ fontSize: "9px", letterSpacing: "0.16em", textTransform: "uppercase" as const, color: "rgba(201,168,76,0.6)", marginBottom: "6px" }}>Everything in the package</div>
-          <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "30px", fontWeight: 300, color: "#f5f0e8", marginBottom: "36px" }}>Three modules. One case file.</div>
-
-          <div className="step-cards-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px", marginBottom: "48px" }}>
-            {/* Module 1 — Document Generation */}
-            <div style={{ border: "1px solid rgba(201,168,76,0.28)", padding: "28px 24px", background: "rgba(201,168,76,0.018)" }}>
-              <div style={{ fontSize: "9px", letterSpacing: "0.14em", textTransform: "uppercase" as const, color: "rgba(201,168,76,0.5)", marginBottom: "14px" }}>Module 1</div>
-              <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "21px", fontWeight: 300, color: "#f5f0e8", marginBottom: "8px" }}>Document Generation</div>
-              <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.58)", lineHeight: 1.65, marginBottom: "18px" }}>15 consulate-formatted documents generated from your case answers. Export-ready for {consulate.name}.</div>
-              <div style={{ borderTop: "1px solid rgba(201,168,76,0.1)", paddingTop: "14px" }}>
-                {["Cover Letter", "Business Plan", "Source of Funds Statement", "Qualifications Narrative", "Non-Immigrant Intent Statement"].map((d, i) => (
-                  <div key={i} style={{ display: "flex", gap: "7px", fontSize: "11px", color: "rgba(245,240,232,0.8)", marginBottom: "5px" }}>
-                    <span style={{ color: "#C9A84C", flexShrink: 0 }}>✓</span>{d}
-                  </div>
-                ))}
-                <div style={{ display: "flex", gap: "7px", fontSize: "11px", color: "rgba(201,168,76,0.65)", marginTop: "2px" }}>
-                  <span style={{ flexShrink: 0 }}>+</span>10 more documents
-                </div>
-              </div>
-            </div>
-
-            {/* Module 2 — Gap Analysis */}
-            <div style={{ border: "1px solid rgba(201,168,76,0.28)", padding: "28px 24px", background: "rgba(201,168,76,0.018)" }}>
-              <div style={{ fontSize: "9px", letterSpacing: "0.14em", textTransform: "uppercase" as const, color: "rgba(201,168,76,0.5)", marginBottom: "14px" }}>Module 2</div>
-              <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "21px", fontWeight: 300, color: "#f5f0e8", marginBottom: "8px" }}>Gap Analysis</div>
-              <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.58)", lineHeight: 1.65, marginBottom: "18px" }}>6 evidence categories audited against consulate officer expectations. Identifies what to strengthen before submission.</div>
-              <div style={{ borderTop: "1px solid rgba(201,168,76,0.1)", paddingTop: "14px" }}>
-                {["Investment documentation", "Source of funds trail", "Business operations evidence", "Management qualifications", "Non-marginality proof", "Non-immigrant intent"].map((c, i) => (
-                  <div key={i} style={{ display: "flex", gap: "7px", fontSize: "11px", color: "rgba(245,240,232,0.8)", marginBottom: "5px" }}>
-                    <span style={{ color: "#5DCAA5", flexShrink: 0 }}>→</span>{c}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Module 3 — Interview Simulator */}
-            <div style={{ border: "1px solid rgba(201,168,76,0.28)", padding: "28px 24px", background: "rgba(201,168,76,0.018)" }}>
-              <div style={{ fontSize: "9px", letterSpacing: "0.14em", textTransform: "uppercase" as const, color: "rgba(201,168,76,0.5)", marginBottom: "14px" }}>Module 3</div>
-              <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "21px", fontWeight: 300, color: "#f5f0e8", marginBottom: "8px" }}>Interview Simulator</div>
-              <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.58)", lineHeight: 1.65, marginBottom: "18px" }}>AI officer persona trained on {consulate.name} adjudication patterns. Adapts to your specific case profile in real time.</div>
-              <div style={{ borderTop: "1px solid rgba(201,168,76,0.1)", paddingTop: "14px" }}>
-                {["Officer questions for your business type", "Adapted to your investment profile", "Source of funds drill", "Non-immigrant intent challenge", "Real-time answer feedback", "Consulate-day checklist"].map((f, i) => (
-                  <div key={i} style={{ display: "flex", gap: "7px", fontSize: "11px", color: "rgba(245,240,232,0.8)", marginBottom: "5px" }}>
-                    <span style={{ color: "#5DCAA5", flexShrink: 0 }}>✓</span>{f}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* ── Document Tab Preview ── */}
+          {/* Document tab preview */}
           <div style={{ fontSize: "9px", letterSpacing: "0.14em", textTransform: "uppercase" as const, color: "rgba(201,168,76,0.48)", marginBottom: "10px" }}>
             Sample document draft — generated from your quiz answers
           </div>
-          <DocumentTabPreview data={data} consulateName={consulate.name} userName={userName} />
-
-          <div style={{ marginTop: "24px", padding: "14px 20px", background: "rgba(201,168,76,0.04)", border: "1px solid rgba(201,168,76,0.14)", marginBottom: "24px" }}>
-            <div style={{ fontSize: "12px", color: "rgba(245,240,232,0.65)", lineHeight: 1.6 }}>
-              <span style={{ color: "#C9A84C", fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "17px" }}>$1,495</span>
-              {" "}vs. $8,000–$15,000 for an attorney-prepared package. All formatted for {consulate.name}. 10 document revision credits included.
-            </div>
-          </div>
-          <Link href={ctaHref} style={{ display: "inline-block", padding: "16px 36px", background: "#C9A84C", color: "#0a0a0a", fontSize: "12px", fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase" as const, fontFamily: "'DM Sans', sans-serif", textDecoration: "none" }}>
-            {ctaLabel} — $1,495 one-time
-          </Link>
+          <DocumentTabPreview data={data} consulateName={consulate.name} userName={displayName} />
         </div>
 
-        {/* ─── ALSO AVAILABLE / NOT RELEVANT ────────────────────────────────────── */}
+        {/* ─── DOCUMENT BREAKDOWN ───────────────────────────────────────────────── */}
         {(() => {
+          // Page targets sourced from Document_Generation_Standards.md — verified May 2026
+          // Toronto (Canada): 50-page total package limit (official ca.usembassy.gov rule)
+          // Frankfurt (Germany): 30-page hard limit, compressed format
+          // All other consulates: no confirmed hard limit — standard format
+          const countryLower = (data.country || "").toLowerCase();
+          const isCanada  = countryLower.includes("canada");
+          const isGermany = countryLower.includes("germany");
+          const isFranchise = /franchise/i.test(String(data.answers?.["Q0-08a"] || ""));
+
+          const packageLimitNote = isCanada
+            ? `${consulate.name} enforces a 50-page maximum for the complete application package (official rule). All documents are sized to meet this limit with a 4-page buffer.`
+            : isGermany
+            ? `Frankfurt Consulate enforces a 30-page maximum and a 5MB file size limit. Your Business Plan is generated in executive summary format. All narratives are compressed to fit.`
+            : `Page allocation follows your consulate's published guidance. Where no hard limit is confirmed, documents are generated at full depth.`;
+
+          type DocRow = { title: string; pages: string; tags: string[]; detail: string };
+
+          function pp(ca: string, de: string, other = "consulate-formatted"): string {
+            if (isCanada) return ca;
+            if (isGermany) return de;
+            return other;
+          }
+
+          const DOCS: DocRow[] = [
+            {
+              title: "Cover Letter",
+              pages: pp("up to 5 pp", "2–3 pp"),
+              tags: ["gap", "archetype", "fdd"],
+              detail: "Six statutory sections — treaty standing, substantiality, source of funds, non-marginality, active management, nonimmigrant intent. Every section is cross-referenced with your gap analysis output and written to the develop-and-direct standard your archetype requires.",
+            },
+            {
+              title: "Business Plan",
+              pages: pp("up to 18 pp", "exec. summary format"),
+              tags: ["gap", "archetype", "market", "fdd"],
+              detail: "Built from your quiz answers, gap analysis, and Market Analysis engine output. Includes 3-year financial projections, employment creation timeline, and competitive positioning. Structured specifically around the consulate's non-marginality burden of proof — not a generic template.",
+            },
+            {
+              title: "Source of Funds Declaration",
+              pages: pp("up to 3 pp", "1–2 pp"),
+              tags: ["gap", "fdd"],
+              detail: "Full chronological trace from origin to U.S. account — savings, business proceeds, asset sales. Each source linked to its supporting document category. Exhibits checklist included.",
+            },
+            {
+              title: "Fund Flow Chronology",
+              pages: pp("up to 2 pp", "1 pp"),
+              tags: ["gap", "fdd"],
+              detail: "Transaction-level timeline: each wire, each disbursement, each recipient. Purpose-coded against investment categories. Built from your source of funds answers and gap analysis flags.",
+            },
+            {
+              title: "Net Worth Statement",
+              pages: pp("up to 2 pp", "1 pp"),
+              tags: ["gap", "fdd"],
+              detail: "Pre- and post-investment balance sheet. Substantiality ratio calculated and stated. Retained home-country assets documented as financial stability evidence for the nonimmigrant intent argument.",
+            },
+            {
+              title: "Investment Proof Package",
+              pages: pp("up to 3 pp", "1–2 pp"),
+              tags: ["gap", "archetype"],
+              detail: "Capital commitment evidence — bank wires, contracts, lease deposits, equipment invoices — organized by investment category with a running total. Structured to the proportionality standard your investment level requires.",
+            },
+            {
+              title: "Qualifications Narrative",
+              pages: pp("up to 2 pp", "1 pp"),
+              tags: ["gap", "archetype"],
+              detail: "Develop-and-direct argument built from your specific career history. Every past responsibility mapped to the proposed enterprise's operational demands. Archetype-specific: franchise buyer, entrepreneur, and investor archetypes each frame management capacity differently.",
+            },
+            {
+              title: "Non-Immigrant Intent Statement",
+              pages: pp("up to 1 pp", "1 pp"),
+              tags: ["gap"],
+              detail: "Home-country ties documentation: property, family, financial accounts, tax residency. Identifies the ties most relevant to your profile from gap analysis. Includes a defined E-2 renewal plan with a clear business timeline.",
+            },
+            {
+              title: "Visa Category Memorandum",
+              pages: pp("up to 3 pp", "1–2 pp"),
+              tags: ["gap", "archetype", "fdd"],
+              detail: "Legal substantiality memo. Proportionality ratio stated and defended against the applicable tier. Committed vs. reserved capital breakdown per USCIS guidance. Archetype-tailored — the investor and franchise buyer archetypes receive different proportionality arguments.",
+            },
+            {
+              title: "Marginality Rebuttal",
+              pages: pp("up to 2 pp", "1 pp"),
+              tags: ["gap"],
+              detail: "Proactive rebuttal to the marginality presumption. Job creation timeline with role descriptions and salary projections. Revenue model benchmarked against Market Analysis data. Written against your consulate's known scrutiny patterns.",
+            },
+            {
+              title: "Résumé — Principal",
+              pages: pp("up to 2 pp", "1–2 pp"),
+              tags: ["archetype"],
+              detail: "E-2-formatted résumé — not a job-search CV. Emphasis on management capacity, P&L ownership, and operational leadership. Framed specifically to connect your background to the proposed enterprise's day-to-day demands.",
+            },
+            {
+              title: "Principal Declaration",
+              pages: pp("up to 1 pp", "1 pp"),
+              tags: ["gap", "archetype", "fdd"],
+              detail: "First-person sworn statement of investment intent, operational commitment, and nonimmigrant intent. Written in the register of a legal declaration — precise, first-person, without hedging. Consulate-appropriate and archetype-matched.",
+            },
+            {
+              title: "Market Analysis",
+              pages: pp("within Business Plan", "within Business Plan"),
+              tags: ["gap", "market"],
+              detail: "TAM/SAM sizing with BLS and Census data anchors, competitive landscape specific to your sector and target location, and industry growth benchmarks. Generated by a dedicated Market Analysis engine — then injected into the Business Plan as an evidence annex. No other E-2 preparation platform includes this.",
+            },
+            {
+              title: "Spouse Declaration",
+              pages: pp("up to 1 pp", "1 pp"),
+              tags: ["conditional"],
+              detail: "Derivative E-2S intent statement for accompanying spouse. Generated when spousal accompaniment is indicated. Includes nonimmigrant intent and home-country ties statement.",
+            },
+            {
+              title: "Property Portfolio Summary",
+              pages: pp("up to 1 pp", "1 pp"),
+              tags: ["conditional"],
+              detail: "Home-country real estate schedule — title references, valuations, mortgage status. Generated when property ownership is a primary nonimmigrant intent tie. Supports the intent statement with specific asset references.",
+            },
+          ];
+
+          return (
+          <div style={{ padding: "52px 0", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
+            <div style={{ fontSize: "9px", letterSpacing: "0.16em", textTransform: "uppercase" as const, color: "rgba(201,168,76,0.5)", marginBottom: "6px" }}>What gets built</div>
+            <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "26px", fontWeight: 300, color: "#f5f0e8", marginBottom: "6px" }}>15 documents. Every one engineered.</div>
+            <div style={{ fontSize: "12px", color: "rgba(245,240,232,0.52)", lineHeight: 1.6, marginBottom: "20px", maxWidth: "560px" }}>
+              Each document passes through five intelligence layers before it reaches you. This is not a template fill-in — every sentence is generated from your specific answers, your evidence gaps, your investor archetype, and your consulate&apos;s known adjudication patterns.
+            </div>
+
+            {/* Consulate page limit notice */}
+            <div style={{ marginBottom: "28px", padding: "12px 16px", background: "rgba(201,168,76,0.03)", border: "1px solid rgba(201,168,76,0.15)", borderLeft: "2px solid rgba(201,168,76,0.5)", fontSize: "10.5px", color: "rgba(245,240,232,0.6)", lineHeight: 1.6 }}>
+              <span style={{ color: "rgba(201,168,76,0.75)", fontWeight: 600 }}>Page allocation — {consulate.name}: </span>
+              {packageLimitNote}
+            </div>
+
+            {/* Engine legend */}
+            <div style={{ display: "flex", gap: "20px", flexWrap: "wrap" as const, marginBottom: "20px" }}>
+              {([
+                { dot: "#C9A84C", label: "Gap analysis feeds this document" },
+                { dot: "#5DCAA5", label: "Archetype-tailored (4 investor types)" },
+                { dot: "#7BC8E8", label: "Market Analysis engine input" },
+                ...(isFranchise ? [{ dot: "#C47BDE", label: "FDD data injected (franchise)" }] : []),
+                { dot: "rgba(245,240,232,0.35)", label: "Conditional on your case" },
+              ] as Array<{ dot: string; label: string }>).map(({ dot, label }, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "10px", color: "rgba(245,240,232,0.52)" }}>
+                  <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: dot, flexShrink: 0 }} />
+                  {label}
+                </div>
+              ))}
+            </div>
+
+            {/* Document tiles — infographic style, 3-col grid */}
+            {(() => {
+              const coreDocs  = DOCS.filter(d => !d.tags.includes("conditional"));
+              const condDocs  = DOCS.filter(d =>  d.tags.includes("conditional"));
+              function tileAccent(doc: DocRow): string {
+                if (doc.tags.includes("fdd") && isFranchise) return "#C47BDE";
+                if (doc.tags.includes("market"))              return "#7BC8E8";
+                if (doc.tags.includes("archetype"))           return "#5DCAA5";
+                return "#C9A84C";
+              }
+              function Tile({ doc }: { doc: DocRow }) {
+                const isConditional = doc.tags.includes("conditional");
+                const accent = isConditional ? "rgba(245,240,232,0.18)" : tileAccent(doc);
+                return (
+                  <div style={{ background: "#0a0a0a", border: "1px solid rgba(201,168,76,0.1)", display: "flex", flexDirection: "column" as const, padding: "13px 14px 11px" }}>
+                    <div style={{ height: "2px", background: accent, marginBottom: "10px" }} />
+                    <div style={{ fontSize: "11px", fontWeight: 600, color: isConditional ? "rgba(245,240,232,0.5)" : "#f5f0e8", lineHeight: 1.35, flex: 1, marginBottom: "10px" }}>{doc.title}</div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <div style={{ display: "flex", gap: "3px", alignItems: "center" }}>
+                        {doc.tags.includes("gap")         && <div style={{ width: "4px", height: "4px", borderRadius: "50%", background: "#C9A84C" }} />}
+                        {doc.tags.includes("archetype")   && <div style={{ width: "4px", height: "4px", borderRadius: "50%", background: "#5DCAA5" }} />}
+                        {doc.tags.includes("market")      && <div style={{ width: "4px", height: "4px", borderRadius: "50%", background: "#7BC8E8" }} />}
+                        {doc.tags.includes("fdd") && isFranchise && <div style={{ width: "4px", height: "4px", borderRadius: "50%", background: "#C47BDE" }} />}
+                        {isConditional                    && <div style={{ width: "4px", height: "4px", borderRadius: "50%", background: "rgba(245,240,232,0.3)" }} />}
+                      </div>
+                      <span style={{ fontSize: "8px", color: "rgba(201,168,76,0.45)", letterSpacing: "0.05em", whiteSpace: "nowrap" as const }}>{doc.pages}</span>
+                    </div>
+                  </div>
+                );
+              }
+              return (
+                <div>
+                  {/* Core 13 */}
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "6px", marginBottom: "14px" }}>
+                    {coreDocs.map((doc, i) => <Tile key={i} doc={doc} />)}
+                  </div>
+                  {/* Conditional 2 */}
+                  <div style={{ display: "flex", gap: "6px", alignItems: "flex-start" }}>
+                    <div style={{ fontSize: "8px", letterSpacing: "0.1em", textTransform: "uppercase" as const, color: "rgba(245,240,232,0.3)", paddingTop: "14px", whiteSpace: "nowrap" as const, flexShrink: 0 }}>If applicable</div>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "6px", flex: 1 }}>
+                      {condDocs.map((doc, i) => <Tile key={i} doc={doc} />)}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Engine description — 4-stage visual pipeline */}
+            <div style={{ marginTop: "20px", padding: "20px 22px", background: "rgba(201,168,76,0.025)", border: "1px solid rgba(201,168,76,0.12)" }}>
+              <div style={{ fontSize: "9px", letterSpacing: "0.14em", textTransform: "uppercase" as const, color: "rgba(201,168,76,0.6)", marginBottom: "16px" }}>The intelligence pipeline — how every document is produced</div>
+
+              {/* Pipeline row — 4 stages with arrows */}
+              <div style={{ display: "flex", alignItems: "stretch", gap: "0", overflowX: "auto" as const }}>
+
+                {/* ── Stage 1: Assessment ── */}
+                {([
+                  {
+                    stageKey: "s1",
+                    barColor: "#C9A84C",
+                    labelColor: "#C9A84C",
+                    numColor: "rgba(201,168,76,0.7)",
+                    label: "Assessment",
+                    steps: [
+                      {
+                        num: "① Quiz scoring",
+                        title: "9 regulatory dimensions",
+                        facts: ["60+ answers evaluated", "Pure functions — no LLM", "Eligibility score + 15 risk flags"],
+                        badge: null,
+                      },
+                      {
+                        num: "② Gap analysis",
+                        title: "6 categories + 15 D-codes",
+                        facts: ["SoF 25% · Mgmt 25% · BP 20%", "Inv 15% · Emp 10% · Ops 5%", "buildGapContext() → every prompt"],
+                        badge: null,
+                      },
+                    ],
+                  },
+                  {
+                    stageKey: "s2",
+                    barColor: "#7BC8E8",
+                    labelColor: "#7BC8E8",
+                    numColor: "rgba(123,200,232,0.8)",
+                    label: "Data engines",
+                    steps: [
+                      {
+                        num: "③ Market Analysis",
+                        title: "Location + sector data",
+                        facts: ["Census ACS 5-year · BLS", "TAM/SAM + competitive landscape", "Injected into Business Plan sections"],
+                        badge: null,
+                      },
+                      {
+                        num: "④ FDD Intelligence",
+                        title: "4-pass · 50 fields · 5 engines",
+                        facts: ["Item 7 · 19 · 20 · 21 + red flags", "Injected into 7 documents"],
+                        badge: { label: "Franchise buyers only", color: "#C47BDE", bg: "rgba(196,123,222,0.08)", border: "rgba(196,123,222,0.3)" },
+                      },
+                    ],
+                  },
+                  {
+                    stageKey: "s3",
+                    barColor: "#5DCAA5",
+                    labelColor: "#5DCAA5",
+                    numColor: "rgba(93,202,165,0.8)",
+                    label: "Generation",
+                    steps: [
+                      {
+                        num: "⑤ Archetype",
+                        title: "64 tailored prompt layers",
+                        facts: ["4 investor types × 16 doc types", "Changes legal framing + structure", "Not just tone — different argument"],
+                        badge: null,
+                      },
+                      {
+                        num: "⑥ Document gen",
+                        title: "claude-opus-4-8 direct SDK",
+                        facts: ["All prior context in one prompt", "16 REQUIRED_ELEMENTS validated", "Per-doc structure enforced"],
+                        badge: null,
+                      },
+                    ],
+                  },
+                  {
+                    stageKey: "s4",
+                    barColor: "#C47BDE",
+                    labelColor: "#C47BDE",
+                    numColor: "rgba(196,123,222,0.8)",
+                    label: "Quality gate",
+                    steps: [
+                      {
+                        num: "⑦ Quality pipeline",
+                        title: "5 sequential checks",
+                        facts: ["Repetition → Consistency", "AI Detection → Humanization (3×)", "Metadata Sanitization → Gate"],
+                        badge: null,
+                      },
+                      {
+                        num: "⑧ Preview gate",
+                        title: "Acknowledgment gate",
+                        facts: ["All stages must pass", "22–25 steps per complete run", "Conditional docs auto-triggered"],
+                        badge: null,
+                      },
+                    ],
+                  },
+                ] as Array<{
+                  stageKey: string; barColor: string; labelColor: string; numColor: string; label: string;
+                  steps: Array<{ num: string; title: string; facts: string[]; badge: { label: string; color: string; bg: string; border: string } | null }>;
+                }>).map((stage, si) => (
+                  <div key={stage.stageKey} style={{ display: "flex", alignItems: "stretch" }}>
+                    {/* Arrow between stages */}
+                    {si > 0 && (
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "24px", flexShrink: 0 }}>
+                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                          <path d="M1 6h10M7 2l4 4-4 4" stroke="#C9A84C" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" opacity="0.35"/>
+                        </svg>
+                      </div>
+                    )}
+                    {/* Stage card */}
+                    <div style={{ flex: 1, minWidth: "168px", border: "1px solid rgba(201,168,76,0.18)", background: "rgba(201,168,76,0.025)", display: "flex", flexDirection: "column" as const }}>
+                      <div style={{ height: "3px", background: stage.barColor }} />
+                      <div style={{ padding: "14px 14px 16px", flex: 1, display: "flex", flexDirection: "column" as const }}>
+                        <div style={{ fontSize: "8px", letterSpacing: "0.16em", textTransform: "uppercase" as const, color: stage.labelColor, fontWeight: 600, marginBottom: "12px" }}>{stage.label}</div>
+                        {stage.steps.map((step, stepIdx) => (
+                          <div key={stepIdx} style={{ flex: 1, paddingTop: stepIdx > 0 ? "10px" : "0", marginTop: stepIdx > 0 ? "2px" : "0", borderTop: stepIdx > 0 ? "1px solid rgba(201,168,76,0.08)" : "none" }}>
+                            <div style={{ fontSize: "9px", letterSpacing: "0.04em", color: stage.numColor, marginBottom: "3px", fontWeight: 600 }}>{step.num}</div>
+                            <div style={{ fontSize: "11px", fontWeight: 600, color: "#f5f0e8", lineHeight: 1.3, marginBottom: "4px" }}>{step.title}</div>
+                            {step.facts.map((fact, fi) => (
+                              <div key={fi} style={{ fontSize: "9.5px", color: "rgba(245,240,232,0.5)", lineHeight: 1.4 }}>{fact}</div>
+                            ))}
+                            {step.badge && (
+                              <div style={{ marginTop: "5px", display: "inline-block", fontSize: "8px", padding: "2px 7px", background: step.badge.bg, color: step.badge.color, border: `1px solid ${step.badge.border}`, fontWeight: 600, letterSpacing: "0.04em" }}>
+                                {step.badge.label}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ marginTop: "14px", paddingTop: "12px", borderTop: "1px solid rgba(201,168,76,0.08)", fontSize: "10px", color: "rgba(245,240,232,0.35)", lineHeight: 1.6 }}>
+                Every document carries the full combined context: gap analysis output · archetype layer · market data · FDD findings (franchise). Conditional documents — Spouse Declaration, Property Portfolio — are generated only when triggered by specific quiz answers. Page budgets tracked in real time against {consulate.name}&apos;s confirmed limits.
+              </div>
+            </div>
+          </div>
+          );
+        })()}
+
+        {/* ─── PRICING CARD ─────────────────────────────────────────────────────── */}
+        {(() => {
+          const isPartnership = data.application_type === "complete_partnership";
+          const priceDollars = isPartnership ? "$2,495" : "$1,495";
+          const packageLabel = isPartnership ? "Partnership Package" : "Complete Package";
+          const packageSubline = isPartnership ? "Two investors · two complete case files" : "one-time · no subscription";
+          const isFranchiseBuyer = /franchise/i.test(String(data.answers?.["Q0-08a"] || ""));
+          return (
+        <div style={{ padding: "52px 0", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
+          <div style={{ fontSize: "9px", letterSpacing: "0.16em", textTransform: "uppercase" as const, color: "rgba(201,168,76,0.6)", marginBottom: "6px" }}>Ready to build your case</div>
+          <div style={{ border: "1px solid rgba(201,168,76,0.45)", padding: "32px 36px", background: "rgba(201,168,76,0.018)" }}>
+            <div style={{ display: "flex", gap: "40px", flexWrap: "wrap" as const }}>
+
+              {/* Price block */}
+              <div style={{ flexShrink: 0 }}>
+                <div style={{ fontSize: "9px", letterSpacing: "0.16em", textTransform: "uppercase" as const, color: "rgba(201,168,76,0.65)", marginBottom: "6px" }}>{packageLabel}</div>
+                <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "56px", fontWeight: 300, color: "#C9A84C", lineHeight: 1 }}>{priceDollars}</div>
+                <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.42)", marginTop: "4px" }}>{packageSubline}</div>
+                <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.48)", marginTop: "3px" }}>vs. $8,000–$15,000 for attorneys</div>
+                {isPartnership && (
+                  <div style={{ marginTop: "10px", padding: "7px 10px", background: "rgba(201,168,76,0.06)", border: "1px solid rgba(201,168,76,0.18)", fontSize: "10px", color: "rgba(201,168,76,0.8)", lineHeight: 1.5 }}>
+                    Covers both partners + their families.<br />Two separate case files. One price.
+                  </div>
+                )}
+              </div>
+
+              {/* Unified what's included list — two explicit columns, no grid wrapping */}
+              <div style={{ flex: 1, minWidth: "240px", display: "flex", gap: "20px" }}>
+                {/* Left column */}
+                <div style={{ flex: 1, display: "flex", flexDirection: "column" as const, gap: "6px" }}>
+                  {([
+                    { icon: "✓", color: "#5DCAA5", text: "Eligibility assessment", dim: true },
+                    { icon: "✓", color: "#5DCAA5", text: flagsToShow.length > 0 ? `${flagsToShow.length} risk area${flagsToShow.length > 1 ? "s" : ""} identified` : "Clean profile", dim: true },
+                    { icon: "✓", color: "#5DCAA5", text: "Consulate adjudication profiled", dim: true },
+                    { icon: "→", color: "#C9A84C", text: "15 engineered documents", dim: false },
+                    { icon: "→", color: "#C9A84C", text: "3 interview simulations", dim: false },
+                  ] as Array<{ icon: string; color: string; text: string; dim: boolean }>).map((row, i) => (
+                    <div key={i} style={{ display: "flex", gap: "7px", alignItems: "center", fontSize: "11px" }}>
+                      <span style={{ color: row.color, flexShrink: 0 }}>{row.icon}</span>
+                      <span style={{ color: row.dim ? "rgba(245,240,232,0.5)" : "rgba(245,240,232,0.85)", whiteSpace: "nowrap" as const }}>{row.text}</span>
+                    </div>
+                  ))}
+                </div>
+                {/* Right column */}
+                <div style={{ flex: 1, display: "flex", flexDirection: "column" as const, gap: "6px" }}>
+                  {([
+                    { icon: "→", color: "#C9A84C", text: "Gap Analysis — 6 categories", dim: false, star: false },
+                    { icon: "→", color: "#C9A84C", text: "Page limits enforced", dim: false, star: false },
+                    { icon: "→", color: "#C9A84C", text: "Market Analysis", dim: false, star: true },
+                    { icon: "→", color: isFranchiseBuyer ? "#C9A84C" : "rgba(201,168,76,0.28)", text: "FDD Intelligence", dim: !isFranchiseBuyer, star: isFranchiseBuyer },
+                  ] as Array<{ icon: string; color: string; text: string; dim: boolean; star: boolean }>).map((row, i) => (
+                    <div key={i} style={{ display: "flex", gap: "7px", alignItems: "center", fontSize: "11px" }}>
+                      <span style={{ color: row.color, flexShrink: 0 }}>{row.icon}</span>
+                      <span style={{ color: row.dim ? "rgba(245,240,232,0.3)" : "rgba(245,240,232,0.85)", whiteSpace: "nowrap" as const }}>{row.text}</span>
+                      {row.star && <span style={{ fontSize: "8px", color: "#C9A84C", fontWeight: 700 }}>★</span>}
+                    </div>
+                  ))}
+                  <div style={{ marginTop: "6px", fontSize: "9px", color: "rgba(201,168,76,0.45)", letterSpacing: "0.04em", whiteSpace: "nowrap" as const }}>★ Unique to e2go</div>
+                </div>
+              </div>
+
+              {/* CTA */}
+              <div style={{ display: "flex", flexDirection: "column" as const, alignItems: "flex-end", justifyContent: "flex-end", flexShrink: 0 }}>
+                <Link href={ctaHref} style={{ display: "block", padding: "17px 30px", background: "#C9A84C", color: "#0a0a0a", fontSize: "12px", fontWeight: 600, letterSpacing: "0.08em", fontFamily: "'DM Sans', sans-serif", textDecoration: "none", textAlign: "center" as const, whiteSpace: "nowrap" as const }}>
+                  {isPartnership ? "Build Our Partnership Case" : "Build My Case with E2Go"}
+                </Link>
+                <div style={{ display: "flex", gap: "14px", marginTop: "10px" }}>
+                  <span style={{ fontSize: "10px", color: "rgba(245,240,232,0.38)" }}>✓ No subscription</span>
+                  <span style={{ fontSize: "10px", color: "rgba(245,240,232,0.38)" }}>✓ Documents yours forever</span>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+          );
+        })()}
+
+        {/* ─── ALSO AVAILABLE / NOT RELEVANT — removed from UI ─────────────────── */}
+        {data.application_type !== "complete_partnership" && (() => {
           const bizAnswer = String(data.answers?.["Q0-08a"] || "").toLowerCase();
           const isFranchisePath = /franchise/i.test(bizAnswer) || showFranchiseTeaser;
           const isNewConcept = !isFranchisePath && !/acquisition/i.test(bizAnswer);
 
           return (
             <div style={{ padding: "52px 0", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
-              <div style={{ fontSize: "9px", letterSpacing: "0.16em", textTransform: "uppercase" as const, color: "rgba(201,168,76,0.6)", marginBottom: "6px" }}>Add-on modules</div>
-              <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "30px", fontWeight: 300, color: "#f5f0e8", marginBottom: "32px" }}>Tailored to your path</div>
+              <div style={{ fontSize: "9px", letterSpacing: "0.16em", textTransform: "uppercase" as const, color: "rgba(201,168,76,0.6)", marginBottom: "8px" }}>Individual modules</div>
+              <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "28px", fontWeight: 300, color: "#f5f0e8", marginBottom: "10px" }}>Joining us mid-journey?</div>
+              <div style={{ fontSize: "12px", color: "rgba(245,240,232,0.55)", lineHeight: 1.7, maxWidth: "560px", marginBottom: "32px" }}>
+                E2Go is designed to be with you from the very first step — quiz, gap analysis, consulate matching, and a complete submission-ready file. If you&apos;re already mid-process and only need a specific piece, each module is available individually.
+              </div>
 
-              <div className="step-cards-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px" }}>
+              <div className="step-cards-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "12px" }}>
                 {/* FDD Intelligence */}
                 {isFranchisePath ? (
-                  <div style={{ border: "1px solid rgba(201,168,76,0.45)", padding: "24px", background: "rgba(201,168,76,0.025)" }}>
-                    <div style={{ fontSize: "9px", letterSpacing: "0.14em", textTransform: "uppercase" as const, color: "#C9A84C", marginBottom: "10px" }}>Relevant for your case</div>
-                    <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "19px", fontWeight: 300, color: "#f5f0e8", marginBottom: "6px" }}>FDD Intelligence</div>
-                    <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.65)", lineHeight: 1.6, marginBottom: "14px" }}>
-                      Full item-by-item FDD analysis — Item 19 unit economics, officer red flags, territory fit, and
-                      {fddReceived ? " your FDD is already in hand." : fddOffered ? " analyse it the moment your franchisor delivers it." : " market analysis benchmarks."}
+                  <div style={{ border: "1px solid rgba(201,168,76,0.35)", padding: "22px", background: "rgba(201,168,76,0.02)", display: "flex", flexDirection: "column" as const }}>
+                    <div style={{ fontSize: "9px", letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "#C9A84C", marginBottom: "10px" }}>Relevant for your path</div>
+                    <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "18px", fontWeight: 300, color: "#f5f0e8", marginBottom: "8px" }}>FDD Intelligence</div>
+                    <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.6)", lineHeight: 1.65, marginBottom: "16px", flex: 1 }}>
+                      5 engines extract the 50 fields that matter from your FDD — Item 7 investment validation, Item 19 unit economics, territory density, officer red flags. Findings inject directly into your case documents.
                     </div>
-                    <Link href="/fdd" style={{ fontSize: "11px", color: "#C9A84C", textDecoration: "underline", fontFamily: "'DM Sans', sans-serif" }}>
-                      {fddReceived ? "Analyse my FDD now →" : "Learn about FDD analysis →"}
-                    </Link>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <Link href="/fdd" style={{ fontSize: "11px", color: "#C9A84C", textDecoration: "none", fontFamily: "'DM Sans', sans-serif" }}>
+                        {fddReceived ? "Analyse my FDD →" : "Learn more →"}
+                      </Link>
+                      <span style={{ fontSize: "12px", fontFamily: "'Cormorant Garamond', Georgia, serif", color: "#C9A84C", fontWeight: 300 }}>$495</span>
+                    </div>
                   </div>
                 ) : (
-                  <div style={{ border: "1px solid rgba(245,240,232,0.06)", padding: "24px", background: "rgba(245,240,232,0.012)", opacity: 0.6 }}>
-                    <div style={{ fontSize: "9px", letterSpacing: "0.14em", textTransform: "uppercase" as const, color: "rgba(245,240,232,0.38)", marginBottom: "10px" }}>Not applicable</div>
-                    <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "19px", fontWeight: 300, color: "rgba(245,240,232,0.55)", marginBottom: "6px" }}>FDD Intelligence</div>
-                    <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.42)", lineHeight: 1.6 }}>
+                  <div style={{ border: "1px solid rgba(245,240,232,0.06)", padding: "22px", background: "rgba(245,240,232,0.008)", opacity: 0.5, display: "flex", flexDirection: "column" as const }}>
+                    <div style={{ fontSize: "9px", letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "rgba(245,240,232,0.35)", marginBottom: "10px" }}>Not applicable</div>
+                    <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "18px", fontWeight: 300, color: "rgba(245,240,232,0.45)", marginBottom: "8px" }}>FDD Intelligence</div>
+                    <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.38)", lineHeight: 1.65, flex: 1 }}>
                       {isNewConcept
-                        ? "FDD analysis applies to franchise acquisitions only. Your case is a new concept build — this module is not needed."
-                        : "FDD analysis applies to franchise acquisitions. Based on your quiz answers, this module is not part of your recommended path."}
+                        ? "FDD analysis is for franchise acquisitions only. Your new-concept case does not require it."
+                        : "FDD analysis applies to franchise acquisitions. This module is not part of your recommended path."}
                     </div>
                   </div>
                 )}
 
                 {/* Market Analysis */}
-                <div style={{ border: "1px solid rgba(201,168,76,0.2)", padding: "24px", background: "rgba(201,168,76,0.012)" }}>
-                  <div style={{ fontSize: "9px", letterSpacing: "0.14em", textTransform: "uppercase" as const, color: "rgba(201,168,76,0.55)", marginBottom: "10px" }}>Available add-on</div>
-                  <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "19px", fontWeight: 300, color: "#f5f0e8", marginBottom: "6px" }}>Market Analysis</div>
-                  <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.65)", lineHeight: 1.6, marginBottom: "14px" }}>
-                    AI-generated market sizing with TAM/SAM data, competitive landscape, and industry benchmarks for your specific business sector and geography. Included in document generation for your consulate.
+                <div style={{ border: "1px solid rgba(201,168,76,0.2)", padding: "22px", background: "rgba(201,168,76,0.01)", display: "flex", flexDirection: "column" as const }}>
+                  <div style={{ fontSize: "9px", letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "rgba(201,168,76,0.55)", marginBottom: "10px" }}>All business types</div>
+                  <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "18px", fontWeight: 300, color: "#f5f0e8", marginBottom: "8px" }}>Market Analysis</div>
+                  <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.6)", lineHeight: 1.65, marginBottom: "16px", flex: 1 }}>
+                    Census ACS 5-year + BLS employment data for your exact sector and geography. TAM/SAM sizing, competitive landscape, industry benchmarks — embedded into your Business Plan, not appended as an afterthought.
                   </div>
-                  <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.42)" }}>Included in Complete Package</div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <Link href="/market-analysis" style={{ fontSize: "11px", color: "#C9A84C", textDecoration: "none", fontFamily: "'DM Sans', sans-serif" }}>Learn more →</Link>
+                    <span style={{ fontSize: "12px", fontFamily: "'Cormorant Garamond', Georgia, serif", color: "#C9A84C", fontWeight: 300 }}>$295</span>
+                  </div>
                 </div>
 
-                {/* Additional Simulator Sessions */}
-                <div style={{ border: "1px solid rgba(201,168,76,0.2)", padding: "24px", background: "rgba(201,168,76,0.012)" }}>
-                  <div style={{ fontSize: "9px", letterSpacing: "0.14em", textTransform: "uppercase" as const, color: "rgba(201,168,76,0.55)", marginBottom: "10px" }}>Available add-on</div>
-                  <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "19px", fontWeight: 300, color: "#f5f0e8", marginBottom: "6px" }}>Additional Simulator Sessions</div>
-                  <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.65)", lineHeight: 1.6, marginBottom: "14px" }}>
-                    The Complete Package includes 10 simulator sessions. Purchase additional blocks as your interview date approaches — the officer persona adapts as your answers evolve.
+                {/* Business Plan */}
+                <div style={{ border: "1px solid rgba(201,168,76,0.2)", padding: "22px", background: "rgba(201,168,76,0.01)", display: "flex", flexDirection: "column" as const }}>
+                  <div style={{ fontSize: "9px", letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "rgba(201,168,76,0.55)", marginBottom: "10px" }}>All business types</div>
+                  <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "18px", fontWeight: 300, color: "#f5f0e8", marginBottom: "8px" }}>E-2 Business Plan</div>
+                  <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.6)", lineHeight: 1.65, marginBottom: "16px", flex: 1 }}>
+                    Produced by claude-opus-4-8 with your gap analysis, investor archetype, and market data loaded into a single structured prompt. Formatted to your consulate&apos;s confirmed page limits. Market Analysis included.
                   </div>
-                  <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.42)" }}>Available after purchase · priced per block</div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <Link href="/modules" style={{ fontSize: "11px", color: "#C9A84C", textDecoration: "none", fontFamily: "'DM Sans', sans-serif" }}>Learn more →</Link>
+                    <span style={{ fontSize: "12px", fontFamily: "'Cormorant Garamond', Georgia, serif", color: "#C9A84C", fontWeight: 300 }}>$695</span>
+                  </div>
                 </div>
+              </div>
+
+              <div style={{ marginTop: "16px", fontSize: "10px", color: "rgba(245,240,232,0.3)", lineHeight: 1.6 }}>
+                All three modules are included in the Complete Package ($1,495). Purchasing individually costs more.{" "}
+                <Link href="/modules" style={{ color: "rgba(201,168,76,0.55)", textDecoration: "none" }}>See full module details →</Link>
               </div>
             </div>
           );
         })()}
 
-        {/* ─── FLAGS ─────────────────────────────────────────────────────────────── */}
-        {flagsToShow.length > 0 && (
+        {/* ─── FLAGS — removed from UI ──────────────────────────────────────────── */}
+        {(false as boolean) && flagsToShow.length > 0 && (
           <div style={{ padding: "52px 0", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
             <div style={{ fontSize: "9px", letterSpacing: "0.14em", textTransform: "uppercase" as const, color: "rgba(201,168,76,0.7)", marginBottom: "6px" }}>
               {flagsToShow.length === 1 ? "One area to address" : `${flagsToShow.length} areas to address`}
@@ -978,10 +1304,11 @@ function ResultsPageInner() {
           </div>
         )}
 
-        {/* ─── DOCUMENT PACKAGE PREVIEW ─────────────────────────────────────────── */}
-        <DocumentPackagePreview data={data} isLoggedIn={isLoggedIn} consulateName={consulate.name} />
+        {/* ─── DOCUMENT PACKAGE PREVIEW — removed from UI ───────────────────────── */}
+        {(false as boolean) && <DocumentPackagePreview data={data} isLoggedIn={isLoggedIn} consulateName={consulate.name} />}
 
-        {/* ─── FAQ ──────────────────────────────────────────────────────────────── */}
+        {/* ─── FAQ — removed from UI ────────────────────────────────────────────── */}
+        {(false as boolean) && (
         <div style={{ padding: "52px 0", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
           <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "30px", fontWeight: 300, color: "#f5f0e8", marginBottom: "28px" }}>Common questions</div>
           {FAQ_ITEMS.map((item, i) => (
@@ -1001,9 +1328,10 @@ function ResultsPageInner() {
             </div>
           ))}
         </div>
+        )}
 
-        {/* ─── FRANCHISE TEASER ──────────────────────────────────────────────── */}
-        {showFranchiseTeaser && (
+        {/* ─── FRANCHISE TEASER — removed from UI ───────────────────────────── */}
+        {(false as boolean) && showFranchiseTeaser && (
           <div style={{ padding: "32px 0", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
             <div style={{ padding: "20px 24px", border: "1px solid rgba(201,168,76,0.25)", background: "rgba(201,168,76,0.03)" }}>
               <div style={{ fontSize: "10px", letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(201,168,76,0.6)", marginBottom: "10px" }}>Franchise opportunity</div>
@@ -1014,8 +1342,8 @@ function ResultsPageInner() {
           </div>
         )}
 
-        {/* ─── FDD CTA ───────────────────────────────────────────────────────── */}
-        {showFddCta && (
+        {/* ─── FDD CTA — removed from UI ─────────────────────────────────────── */}
+        {(false as boolean) && showFddCta && (
           <div style={{ padding: "32px 0", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
             <div style={{ padding: "20px 24px", border: "1px solid rgba(201,168,76,0.45)", background: "rgba(201,168,76,0.04)" }}>
               <div style={{ fontSize: "10px", letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(201,168,76,0.6)", marginBottom: "10px" }}>Franchise disclosure document</div>
