@@ -12,6 +12,7 @@ interface CaseCommandPanelProps {
   score: number;
   currentPhase: string;
   nextAction: string;
+  nextActionWhy?: string;
   milestones: MilestoneRow[];
 }
 
@@ -19,6 +20,7 @@ export default function CaseCommandPanel({
   score,
   currentPhase,
   nextAction,
+  nextActionWhy,
   milestones,
 }: CaseCommandPanelProps) {
   const eyebrow: CSSProperties = {
@@ -176,21 +178,32 @@ export default function CaseCommandPanel({
             style={{
               fontSize: "13px",
               fontFamily: "'DM Sans', sans-serif",
-              color: "rgba(245,240,232,0.82)",
+              color: "rgba(245,240,232,0.88)",
               lineHeight: 1.3,
+              fontWeight: 500,
+              marginBottom: nextActionWhy ? "6px" : 0,
             }}
           >
             {nextAction}
           </div>
+          {nextActionWhy && (
+            <div
+              style={{
+                fontSize: "10px",
+                fontFamily: "'DM Sans', sans-serif",
+                color: "rgba(245,240,232,0.42)",
+                lineHeight: 1.5,
+              }}
+            >
+              {nextActionWhy}
+            </div>
+          )}
         </div>
       </div>
 
       {/* Milestone Tracker heading */}
       <div
         style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
           marginBottom: "12px",
         }}
       >
@@ -204,33 +217,20 @@ export default function CaseCommandPanel({
         >
           Milestone Tracker
         </div>
-        <div
-          style={{
-            fontSize: "9px",
-            letterSpacing: "0.08em",
-            textTransform: "uppercase",
-            color: "rgba(201,168,76,0.6)",
-            border: "1px solid rgba(201,168,76,0.2)",
-            padding: "3px 8px",
-            fontFamily: "'DM Sans', sans-serif",
-            cursor: "pointer",
-          }}
-        >
-          View Milestone
-        </div>
       </div>
 
       {/* Column headers */}
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "1fr auto 28px",
+          gridTemplateColumns: "16px 1fr auto",
           gap: "8px",
           paddingBottom: "8px",
           borderBottom: "1px solid rgba(201,168,76,0.15)",
           marginBottom: "4px",
         }}
       >
+        <div />
         <div
           style={{
             fontSize: "9px",
@@ -254,7 +254,6 @@ export default function CaseCommandPanel({
         >
           Required Phase
         </div>
-        <div />
       </div>
 
       {/* Milestone rows */}
@@ -284,7 +283,7 @@ export default function CaseCommandPanel({
               key={m.id}
               style={{
                 display: "grid",
-                gridTemplateColumns: "16px 1fr auto 28px",
+                gridTemplateColumns: "16px 1fr auto",
                 gap: "8px",
                 alignItems: "center",
                 padding: "9px 0",
@@ -322,17 +321,6 @@ export default function CaseCommandPanel({
                 }}
               >
                 {m.phase}
-              </span>
-              <span
-                style={{
-                  fontSize: "14px",
-                  color: "rgba(245,240,232,0.2)",
-                  textAlign: "center",
-                  letterSpacing: "0.1em",
-                  cursor: "pointer",
-                }}
-              >
-                ···
               </span>
             </div>
           );
