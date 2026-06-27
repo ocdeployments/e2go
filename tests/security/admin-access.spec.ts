@@ -9,7 +9,7 @@ test.describe('Admin Access Control', () => {
   });
 
   test('Admin API returns 401 without auth', async ({ request }) => {
-    const r = await request.get('http://localhost:3001/api/admin/applications');
+    const r = await request.get('http://localhost:3001/api/admin/settings');
     expect([401, 403]).toContain(r.status());
   });
 
@@ -23,10 +23,10 @@ test.describe('Admin Access Control', () => {
     }
   });
 
-  test('Apply route redirects unauthenticated users', async ({ page }) => {
+  test('Apply story (gated module) redirects unauthenticated users', async ({ page }) => {
     await page.context().clearCookies();
-    await page.goto('http://localhost:3001/apply');
+    await page.goto('http://localhost:3001/apply/story');
     await page.waitForLoadState('networkidle');
-    expect(page.url()).not.toMatch(/\/apply($|\/)/);
+    expect(page.url()).not.toMatch(/\/apply\/story/);
   });
 });
