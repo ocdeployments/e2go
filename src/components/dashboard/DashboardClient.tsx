@@ -22,6 +22,45 @@ const NEXT_ACTION_WHY: Record<string, string> = {
     "Practising builds the confidence and precision your consulate interview demands.",
 };
 
+const ARCHETYPE_LABEL: Record<string, string> = {
+  buyer: "Buyer",
+  builder: "Builder",
+  career_switcher: "Career Switcher",
+  investor: "Investor",
+};
+
+const ARCHETYPE_DESC: Record<string, string> = {
+  buyer: "Franchise-forward, acquisition-oriented case profile.",
+  builder: "Startup or new-business operator case profile.",
+  career_switcher: "Professional pivoting into U.S. business ownership.",
+  investor: "Capital-first, delegation-model case profile.",
+};
+
+const READINESS_LABEL: Record<string, string> = {
+  ready: "Ready",
+  nearly_ready: "Nearly Ready",
+  needs_work: "Needs Work",
+};
+
+const READINESS_COLOR: Record<string, string> = {
+  ready: "#5DCAA5",
+  nearly_ready: "#C9A84C",
+  needs_work: "#f87171",
+};
+
+interface DimensionScores {
+  sourceOfFunds: number | null;
+  managementRole: number | null;
+  businessPlan: number | null;
+}
+
+interface SimulatorSnapshot {
+  readinessIndicator: string;
+  top3: string[];
+  strongCount: number;
+  needsWorkCount: number;
+}
+
 interface DashboardClientProps {
   firstName: string | null;
   applicationLabel: string | null;
@@ -42,6 +81,8 @@ interface DashboardClientProps {
   sectionCompletionMap: { qualifications: boolean; family: boolean; ties: boolean };
   generatedDocCount: number;
   fddCount: number;
+  dimensionScores: DimensionScores | null;
+  simulatorSnapshot: SimulatorSnapshot | null;
 }
 
 function deriveCurrentPhase(
@@ -139,10 +180,7 @@ function buildPhases(
       number: "01",
       title: "Eligibility",
       contentType: "eligibility",
-      contentData: {
-        outcome: quizOutcome ?? "",
-        done: quizCompleted,
-      },
+      contentData: { outcome: quizOutcome ?? "", done: quizCompleted },
       isCurrentPhase: currentPhaseName === "Onboarding" && !quizCompleted,
     },
     {
@@ -158,10 +196,7 @@ function buildPhases(
       number: "03",
       title: "Business Profile",
       contentType: "business",
-      contentData: {
-        done: m2,
-        archetype: caseArchetype,
-      },
+      contentData: { done: m2, archetype: caseArchetype },
       isCurrentPhase: currentPhaseName === "Business Profile",
     },
     {
@@ -169,10 +204,7 @@ function buildPhases(
       number: "04",
       title: "Investment & Docs",
       contentType: "investment",
-      contentData: {
-        done: m3,
-        investmentRange,
-      },
+      contentData: { done: m3, investmentRange },
       isCurrentPhase: currentPhaseName === "Investment & Documents",
     },
     {
@@ -180,10 +212,7 @@ function buildPhases(
       number: "05",
       title: "Gap Analysis",
       contentType: "gap",
-      contentData: {
-        done: m4,
-        completenessScore: caseCompletenessScore,
-      },
+      contentData: { done: m4, completenessScore: caseCompletenessScore },
       isCurrentPhase: currentPhaseName === "Gap Analysis",
     },
     {
@@ -191,10 +220,7 @@ function buildPhases(
       number: "06",
       title: "Generation",
       contentType: "generation",
-      contentData: {
-        done: generatedDocCount > 0,
-        docCount: generatedDocCount,
-      },
+      contentData: { done: generatedDocCount > 0, docCount: generatedDocCount },
       isCurrentPhase: currentPhaseName === "Document Generation",
     },
     {
@@ -210,6 +236,490 @@ function buildPhases(
       isCurrentPhase: currentPhaseName === "Interview Preparation",
     },
   ];
+}
+
+// ── Profile Intelligence Strip ────────────────────────────────────────────────
+function ProfileIntelligenceStrip({
+  archetype,
+  completenessScore,
+  dimensionScores,
+  currentPhase,
+}: {
+  archetype: string | null;
+  completenessScore: number | null;
+  dimensionScores: DimensionScores | null;
+  currentPhase: string;
+}) {
+  const archetypeKey = archetype ?? "";
+  const archetypeLabel = ARCHETYPE_LABEL[archetypeKey] ?? "Not yet set";
+  const archetypeDesc = ARCHETYPE_DESC[archetypeKey] ?? "Complete your business profile to unlock your archetype.";
+
+  let primaryRisk = "Run Gap Analysis";
+  let primaryRiskDesc = "Your gap score hasn't been computed yet.";
+  if (dimensionScores) {
+    const dims = [
+      { name: "Source of Funds", desc: "Traceable fund flow and deployment evidence.", score: dimensionScores.sourceOfFunds },
+      { name: "Management Role", desc: "Active management authority and day-to-day control.", score: dimensionScores.managementRole },
+      { name: "Business Plan", desc: "Employment creation, non-marginality, and viability.", score: dimensionScores.businessPlan },
+    ].filter((d) => d.score !== null);
+    if (dims.length > 0) {
+      const lowest = dims.reduce((a, b) => (a.score! < b.score! ? a : b));
+      primaryRisk = lowest.name;
+      primaryRiskDesc = lowest.desc;
+    }
+  }
+
+  const eyebrow: React.CSSProperties = {
+    fontSize: "9px",
+    letterSpacing: "0.12em",
+    textTransform: "uppercase" as const,
+    color: "rgba(201,168,76,0.65)",
+    fontFamily: "'DM Sans', sans-serif",
+    marginBottom: "6px",
+  };
+  const val: React.CSSProperties = {
+    fontFamily: "'Cormorant Garamond', Georgia, serif",
+    fontSize: "18px",
+    fontWeight: 300,
+    color: "#f5f0e8",
+    marginBottom: "5px",
+    lineHeight: 1.15,
+  };
+  const desc: React.CSSProperties = {
+    fontSize: "11px",
+    color: "rgba(245,240,232,0.45)",
+    fontFamily: "'DM Sans', sans-serif",
+    lineHeight: 1.5,
+  };
+
+  return (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(4, 1fr)",
+        borderTop: "1px solid rgba(201,168,76,0.15)",
+        borderLeft: "1px solid rgba(201,168,76,0.15)",
+        marginBottom: "28px",
+      }}
+    >
+      {[
+        {
+          label: "Investor Archetype",
+          value: archetypeLabel,
+          detail: archetypeDesc,
+        },
+        {
+          label: "Case Readiness",
+          value: completenessScore != null ? `${completenessScore}%` : "Not scored",
+          detail:
+            completenessScore == null
+              ? "Complete your case file to generate a score."
+              : completenessScore >= 75
+              ? "Strong trajectory. Close remaining evidence gaps."
+              : completenessScore >= 50
+              ? "Good foundation. Several sections need attention."
+              : "Needs work. Focus on the priorities below.",
+        },
+        {
+          label: "Primary Risk Area",
+          value: primaryRisk,
+          detail: primaryRiskDesc,
+        },
+        {
+          label: "Current Stage",
+          value: currentPhase,
+          detail: NEXT_ACTION_WHY[currentPhase] ?? "",
+        },
+      ].map((cell, i) => (
+        <div
+          key={i}
+          style={{
+            padding: "16px 18px",
+            borderRight: "1px solid rgba(201,168,76,0.15)",
+            borderBottom: "1px solid rgba(201,168,76,0.15)",
+            background: i === 0 ? "rgba(201,168,76,0.03)" : "transparent",
+          }}
+        >
+          <div style={eyebrow}>{cell.label}</div>
+          <div style={val}>{cell.value}</div>
+          <div style={desc}>{cell.detail}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── Gap Priorities Panel ─────────────────────────────────────────────────────
+function GapPrioritiesPanel({
+  dimensionScores,
+}: {
+  dimensionScores: DimensionScores;
+}) {
+  const rows: { title: string; detail: string; href: string; score: number | null; severity: "critical" | "high" | "moderate" | "strong" }[] = [
+    {
+      title: "Source of Funds",
+      detail: "Traceable chronology from origin to U.S. deployment — most common denial trigger.",
+      href: "/apply/investment",
+      score: dimensionScores.sourceOfFunds,
+      severity:
+        dimensionScores.sourceOfFunds == null ? "moderate"
+        : dimensionScores.sourceOfFunds < 25 ? "critical"
+        : dimensionScores.sourceOfFunds < 50 ? "high"
+        : dimensionScores.sourceOfFunds < 75 ? "moderate"
+        : "strong",
+    },
+    {
+      title: "Management Role",
+      detail: "Active control and day-to-day authority — officer must believe you will run the business.",
+      href: "/apply/business",
+      score: dimensionScores.managementRole,
+      severity:
+        dimensionScores.managementRole == null ? "moderate"
+        : dimensionScores.managementRole < 25 ? "critical"
+        : dimensionScores.managementRole < 50 ? "high"
+        : dimensionScores.managementRole < 75 ? "moderate"
+        : "strong",
+    },
+    {
+      title: "Business Plan",
+      detail: "Employment creation, non-marginality proof, and long-term viability of the enterprise.",
+      href: "/apply/business",
+      score: dimensionScores.businessPlan,
+      severity:
+        dimensionScores.businessPlan == null ? "moderate"
+        : dimensionScores.businessPlan < 25 ? "critical"
+        : dimensionScores.businessPlan < 50 ? "high"
+        : dimensionScores.businessPlan < 75 ? "moderate"
+        : "strong",
+    },
+  ];
+
+  const visible = rows.filter((r) => r.severity !== "strong");
+  if (visible.length === 0) return null;
+
+  const SEVERITY_COLOR: Record<string, string> = {
+    critical: "#f87171",
+    high: "#fbbf24",
+    moderate: "rgba(245,240,232,0.45)",
+  };
+  const SEVERITY_BORDER: Record<string, string> = {
+    critical: "rgba(248,113,113,0.25)",
+    high: "rgba(251,191,36,0.25)",
+    moderate: "rgba(245,240,232,0.1)",
+  };
+
+  return (
+    <div
+      style={{
+        marginTop: "20px",
+        border: "1px solid rgba(201,168,76,0.15)",
+        padding: "20px 22px 16px",
+        background: "rgba(255,255,255,0.01)",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "baseline",
+          marginBottom: "14px",
+        }}
+      >
+        <div
+          style={{
+            fontFamily: "'Cormorant Garamond', Georgia, serif",
+            fontSize: "18px",
+            fontWeight: 300,
+            color: "#f5f0e8",
+          }}
+        >
+          Case Priorities
+        </div>
+        <a
+          href="/gap-analysis"
+          style={{
+            fontSize: "10px",
+            color: "rgba(201,168,76,0.7)",
+            fontFamily: "'DM Sans', sans-serif",
+            textDecoration: "none",
+            letterSpacing: "0.06em",
+          }}
+        >
+          Full analysis →
+        </a>
+      </div>
+      <div style={{ display: "grid", gap: "1px", background: "rgba(201,168,76,0.08)" }}>
+        {visible.map((row) => (
+          <div
+            key={row.title}
+            style={{
+              display: "grid",
+              gridTemplateColumns: "auto 1fr auto",
+              gap: "14px",
+              alignItems: "center",
+              padding: "12px 14px",
+              background: "#0a0a0a",
+            }}
+          >
+            <span
+              style={{
+                fontSize: "9px",
+                letterSpacing: "0.1em",
+                textTransform: "uppercase" as const,
+                color: SEVERITY_COLOR[row.severity],
+                border: `1px solid ${SEVERITY_BORDER[row.severity]}`,
+                padding: "3px 8px",
+                fontFamily: "'DM Sans', sans-serif",
+                whiteSpace: "nowrap" as const,
+              }}
+            >
+              {row.severity}
+            </span>
+            <div>
+              <div
+                style={{
+                  fontSize: "13px",
+                  fontFamily: "'DM Sans', sans-serif",
+                  color: "#f5f0e8",
+                  marginBottom: "2px",
+                }}
+              >
+                {row.title}
+                {row.score != null && (
+                  <span style={{ color: "rgba(245,240,232,0.38)", fontSize: "11px", marginLeft: "6px" }}>
+                    {row.score}%
+                  </span>
+                )}
+              </div>
+              <div
+                style={{
+                  fontSize: "11px",
+                  color: "rgba(245,240,232,0.45)",
+                  fontFamily: "'DM Sans', sans-serif",
+                  lineHeight: 1.5,
+                }}
+              >
+                {row.detail}
+              </div>
+            </div>
+            <a
+              href={row.href}
+              style={{
+                fontSize: "10px",
+                color: "rgba(201,168,76,0.65)",
+                fontFamily: "'DM Sans', sans-serif",
+                textDecoration: "none",
+                whiteSpace: "nowrap" as const,
+              }}
+            >
+              Fix →
+            </a>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Simulator Snapshot Card ──────────────────────────────────────────────────
+function SimulatorSnapshotCard({ snapshot }: { snapshot: SimulatorSnapshot }) {
+  const ri = snapshot.readinessIndicator in READINESS_LABEL
+    ? snapshot.readinessIndicator
+    : "needs_work";
+  const riLabel = READINESS_LABEL[ri];
+  const riColor = READINESS_COLOR[ri];
+
+  return (
+    <div
+      style={{
+        marginTop: "20px",
+        border: "1px solid rgba(201,168,76,0.15)",
+        padding: "20px 22px",
+        background: "rgba(255,255,255,0.01)",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: "16px",
+        }}
+      >
+        <div
+          style={{
+            fontFamily: "'Cormorant Garamond', Georgia, serif",
+            fontSize: "18px",
+            fontWeight: 300,
+            color: "#f5f0e8",
+          }}
+        >
+          Interview Coaching
+        </div>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "6px",
+            padding: "3px 10px",
+            border: `1px solid ${riColor}40`,
+            fontSize: "9px",
+            letterSpacing: "0.1em",
+            textTransform: "uppercase" as const,
+            color: riColor,
+            fontFamily: "'DM Sans', sans-serif",
+          }}
+        >
+          <span
+            style={{
+              width: "5px",
+              height: "5px",
+              borderRadius: "50%",
+              background: riColor,
+              display: "inline-block",
+            }}
+          />
+          {riLabel}
+        </div>
+      </div>
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: "12px",
+          marginBottom: snapshot.top3.length > 0 ? "14px" : 0,
+        }}
+      >
+        <div
+          style={{
+            padding: "12px 14px",
+            background: "rgba(93,202,165,0.05)",
+            border: "1px solid rgba(93,202,165,0.15)",
+          }}
+        >
+          <div
+            style={{
+              fontSize: "9px",
+              letterSpacing: "0.1em",
+              textTransform: "uppercase" as const,
+              color: "#5DCAA5",
+              fontFamily: "'DM Sans', sans-serif",
+              marginBottom: "4px",
+            }}
+          >
+            Strong Answers
+          </div>
+          <div
+            style={{
+              fontSize: "22px",
+              fontFamily: "'Cormorant Garamond', serif",
+              color: "#f5f0e8",
+            }}
+          >
+            {snapshot.strongCount}
+          </div>
+        </div>
+        <div
+          style={{
+            padding: "12px 14px",
+            background: "rgba(251,191,36,0.05)",
+            border: "1px solid rgba(251,191,36,0.15)",
+          }}
+        >
+          <div
+            style={{
+              fontSize: "9px",
+              letterSpacing: "0.1em",
+              textTransform: "uppercase" as const,
+              color: "#C9A84C",
+              fontFamily: "'DM Sans', sans-serif",
+              marginBottom: "4px",
+            }}
+          >
+            Needs Work
+          </div>
+          <div
+            style={{
+              fontSize: "22px",
+              fontFamily: "'Cormorant Garamond', serif",
+              color: "#f5f0e8",
+            }}
+          >
+            {snapshot.needsWorkCount}
+          </div>
+        </div>
+      </div>
+
+      {snapshot.top3.length > 0 && (
+        <div>
+          <div
+            style={{
+              fontSize: "9px",
+              letterSpacing: "0.1em",
+              textTransform: "uppercase" as const,
+              color: "rgba(245,240,232,0.38)",
+              fontFamily: "'DM Sans', sans-serif",
+              marginBottom: "8px",
+            }}
+          >
+            Recommended focus for next session
+          </div>
+          {snapshot.top3.map((item, i) => (
+            <div
+              key={i}
+              style={{
+                display: "flex",
+                gap: "10px",
+                padding: "8px 0",
+                borderBottom:
+                  i < snapshot.top3.length - 1
+                    ? "1px solid rgba(201,168,76,0.07)"
+                    : "none",
+              }}
+            >
+              <span
+                style={{
+                  fontSize: "9px",
+                  color: "rgba(245,240,232,0.3)",
+                  fontFamily: "'DM Sans', sans-serif",
+                  paddingTop: "2px",
+                  flexShrink: 0,
+                }}
+              >
+                {i + 1}.
+              </span>
+              <span
+                style={{
+                  fontSize: "12px",
+                  color: "rgba(245,240,232,0.72)",
+                  fontFamily: "'DM Sans', sans-serif",
+                  lineHeight: 1.5,
+                }}
+              >
+                {item}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <a
+        href="/simulator"
+        style={{
+          display: "inline-block",
+          marginTop: "16px",
+          fontSize: "10px",
+          color: "rgba(201,168,76,0.7)",
+          fontFamily: "'DM Sans', sans-serif",
+          textDecoration: "none",
+          letterSpacing: "0.06em",
+        }}
+      >
+        Run another session →
+      </a>
+    </div>
+  );
 }
 
 export default function DashboardClient({
@@ -232,6 +742,8 @@ export default function DashboardClient({
   sectionCompletionMap,
   generatedDocCount,
   fddCount,
+  dimensionScores,
+  simulatorSnapshot,
 }: DashboardClientProps) {
   const isFranchisePath =
     /franchise/i.test(quizAnswers["Q0-08a"] ?? "") ||
@@ -260,7 +772,7 @@ export default function DashboardClient({
     generatedDocCount
   );
 
-  // ── Simulator-only branch ────────────────────────────────────────────────────
+  // ── Simulator-only branch ─────────────────────────────────────────────────
   if (isSimulatorOnly) {
     return (
       <div>
@@ -379,7 +891,7 @@ export default function DashboardClient({
     );
   }
 
-  // ── No quiz state ────────────────────────────────────────────────────────────
+  // ── No quiz state ─────────────────────────────────────────────────────────
   if (!quizCompleted) {
     return (
       <div>
@@ -464,11 +976,11 @@ export default function DashboardClient({
     );
   }
 
-  // ── Full dashboard — quiz completed, paying customer ─────────────────────────
+  // ── Full dashboard — quiz completed, paying customer ──────────────────────
   return (
     <div>
       {/* Zone A — Welcome header */}
-      <div style={{ marginBottom: "32px" }}>
+      <div style={{ marginBottom: "20px" }}>
         <div
           style={{
             fontSize: "9px",
@@ -487,7 +999,7 @@ export default function DashboardClient({
             fontWeight: 300,
             fontSize: "clamp(26px, 4vw, 38px)",
             color: "#f5f0e8",
-            margin: "0 0 8px",
+            margin: "0 0 6px",
             lineHeight: 1.1,
           }}
         >
@@ -513,14 +1025,21 @@ export default function DashboardClient({
               fontSize: "12px",
               color: "rgba(201,168,76,0.6)",
               fontFamily: "'DM Sans', sans-serif",
-              marginTop: "6px",
-              letterSpacing: "0.01em",
+              marginTop: "4px",
             }}
           >
             {generatedDocCount} of 15 documents ready
           </div>
         )}
       </div>
+
+      {/* Profile Intelligence Strip */}
+      <ProfileIntelligenceStrip
+        archetype={caseArchetype}
+        completenessScore={caseCompletenessScore}
+        dimensionScores={dimensionScores}
+        currentPhase={currentPhase}
+      />
 
       {/* Franchise Navigator banner */}
       {showFranchiseNavigator && (
@@ -597,9 +1116,8 @@ export default function DashboardClient({
         </div>
       )}
 
-      {/* Zones B + C — Two-column, stacks to single on mobile */}
+      {/* Zones B + C */}
       <div className="dashboard-grid">
-        {/* Zone B — Case Command Panel */}
         <CaseCommandPanel
           score={progress}
           currentPhase={currentPhase}
@@ -607,8 +1125,6 @@ export default function DashboardClient({
           nextActionWhy={nextActionWhy}
           milestones={milestones}
         />
-
-        {/* Zone C — Folder Stack */}
         <FolderStack
           lifecycle={lifecycle}
           entitlements={entitlements}
@@ -620,6 +1136,16 @@ export default function DashboardClient({
           generatedDocCount={generatedDocCount}
         />
       </div>
+
+      {/* Gap Priorities Panel — only when dimension scores exist with gaps */}
+      {dimensionScores && (
+        <GapPrioritiesPanel dimensionScores={dimensionScores} />
+      )}
+
+      {/* Simulator Snapshot — only when a completed session exists */}
+      {simulatorSnapshot && (
+        <SimulatorSnapshotCard snapshot={simulatorSnapshot} />
+      )}
 
       {/* Zone D — Phase Strip */}
       <PhaseStrip phases={phases} />

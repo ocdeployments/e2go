@@ -60,7 +60,7 @@ export default async function DashboardPage() {
       .eq("user_id", authUser.id),
     supabase
       .from("case_profiles")
-      .select("archetype, completeness_score, net_worth_range, industry_interest, timeline_goal, data_state")
+      .select("archetype, completeness_score, net_worth_range, industry_interest, timeline_goal, data_state, source_of_funds_score, management_role_score, business_plan_score")
       .eq("user_id", authUser.id)
       .maybeSingle(),
     getUserEntitlements(authUser.id, supabase),
@@ -85,6 +85,12 @@ export default async function DashboardPage() {
   let sectionCompletionMap = { qualifications: false, family: false, ties: false };
   let generatedDocCount = 0;
   let fddCount = 0;
+  let simulatorSnapshot: {
+    readinessIndicator: string;
+    top3: string[];
+    strongCount: number;
+    needsWorkCount: number;
+  } | null = null;
 
   if (quizData) {
     // Find the primary E-2 application ID (non-simulator) for answer/doc queries
@@ -95,7 +101,7 @@ export default async function DashboardPage() {
           )?.id ?? null
         : null;
 
-    const [lifecycleRes, fddRes] = await Promise.all([
+    const [lifecycleRes, fddRes, simRes] = await Promise.all([
       supabase
         .from("application_lifecycle")
         .select("*")
@@ -105,9 +111,31 @@ export default async function DashboardPage() {
         .from("fdd_analyses")
         .select("id", { count: "exact", head: true })
         .eq("user_id", authUser.id),
+      supabase
+        .from("simulator_sessions")
+        .select("readiness_indicator, coaching_notes, strong_count, needs_work_count, session_number")
+        .eq("user_id", authUser.id)
+        .not("completed_at", "is", null)
+        .order("session_number", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
     ]);
     lifecycle = lifecycleRes.data;
     fddCount = fddRes.count ?? 0;
+    const simSession = simRes.data as {
+      readiness_indicator: string | null;
+      coaching_notes: { top3NextSession?: string[] } | null;
+      strong_count: number | null;
+      needs_work_count: number | null;
+    } | null;
+    simulatorSnapshot = simSession
+      ? {
+          readinessIndicator: simSession.readiness_indicator ?? "needs_work",
+          top3: simSession.coaching_notes?.top3NextSession ?? [],
+          strongCount: simSession.strong_count ?? 0,
+          needsWorkCount: simSession.needs_work_count ?? 0,
+        }
+      : null;
 
     if (primaryAppId) {
       const [docRes, answerRes] = await Promise.all([
@@ -168,7 +196,21 @@ export default async function DashboardPage() {
   const caseProfile = cpData as {
     archetype?: string | null;
     completeness_score?: number | null;
+    source_of_funds_score?: number | null;
+    management_role_score?: number | null;
+    business_plan_score?: number | null;
   } | null;
+
+  const dimensionScores =
+    caseProfile?.source_of_funds_score != null ||
+    caseProfile?.management_role_score != null ||
+    caseProfile?.business_plan_score != null
+      ? {
+          sourceOfFunds: caseProfile?.source_of_funds_score ?? null,
+          managementRole: caseProfile?.management_role_score ?? null,
+          businessPlan: caseProfile?.business_plan_score ?? null,
+        }
+      : null;
 
   const quizAnswers: Record<string, string> = (quiz?.result_json?.answers ?? {}) as Record<string, string>;
   const quizWarnings: string[] = quiz?.result_json?.warnings ?? [];
@@ -209,6 +251,8 @@ export default async function DashboardPage() {
           sectionCompletionMap={sectionCompletionMap}
           generatedDocCount={generatedDocCount}
           fddCount={fddCount}
+          dimensionScores={dimensionScores}
+          simulatorSnapshot={simulatorSnapshot}
         />
       </main>
     </div>
