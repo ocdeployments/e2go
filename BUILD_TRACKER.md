@@ -1,6 +1,46 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 27, 2026 — Session 80: Dashboard Case File UI redesign complete. 4 zones (welcome, command panel, folder stack, phase strip). Paywall removed from dashboard. Build clean. Committed to dev.
+**Last Updated:** June 27, 2026 — Session 81: Paywall nav removal committed; FolderStack spring animation upgrade; wiring 7 new doc types into generation engine.
+
+---
+
+## Session 81 — Dashboard Animation Polish + Document Engine Wiring (in progress)
+
+**Commits:** `8658107` (paywall nav removal + admin bypass) · more TBD
+
+**What's done:**
+- Nav lock icons removed: My Application / Gap Analysis / FDD Analysis now always render as plain links for authenticated non-simulator users. No more payment DB queries on every nav auth state change.
+- Middleware admin bypass: `profiles.role = 'admin'` skips all COMPLETE_GATED and FDD_GATED payment checks.
+
+**In progress:**
+- FolderStack spring animation: upgrading from plain opacity fade to slide-forward spring (translateY −4px → 0, stiffness 280 damping 28) — the "card comes from behind" effect
+- Task #8: Wire 7 new document types into generation engine
+
+**Animation audit — what's in and what's not:**
+- Welcome "family" greeting: ✅ in — `DashboardClient.tsx:473`
+- Phase strip expansion: ✅ in — spring `height 0 → auto` in `PhaseStrip.tsx`
+- Folder switch spring: ❌ was plain opacity fade — being upgraded now
+
+---
+
+## Session 80 — Dashboard Case File Redesign ✅
+
+**Commit:** `6b51f1c` — feat(dashboard): Case file UI redesign — 4 zones, folder stack, phase strip
+
+**What shipped:**
+- Zone A: Welcome header — "Welcome to the E2Go family, {firstName}." · application type sub-line
+- Zone B: Case Command Panel (left, 55%) — readiness score + progress bar, current phase, next action, 6-row milestone tracker with ✓/●/› status icons
+- Zone C: Folder Stack (right, 45%) — 3 physically-overlapping folder tabs (negative margin + z-index + drop-shadow), cream active card, dark peeking strips; Build Your Case / Strengthen Your Case / File Your Application with real lifecycle data
+- Zone D: Phase Strip (full-width) — 7 expandable panels in 4-column grid, alternating cream #DDD1B0 / amber #7A5C28, spring expand animation, auto-expands current phase
+- Paywall entirely removed from dashboard — no "Unlock with Complete", no "View pricing →"
+- Simulator-only branch preserved (PartialProfileTeaser); no-quiz empty state preserved
+
+**New files:** `CaseCommandPanel.tsx`, `FolderStack.tsx`, `PhaseStrip.tsx`, `DashboardClient.tsx`, `src/lib/strength-badges.ts`
+**Modified:** `dashboard/page.tsx` (server component preserved), `EligibilityBadges.tsx` (imports shared strength-badges.ts)
+
+**Design tokens locked:** active tab `#f0ece3` = card body (seamless), tab overlap `margin-right: -16px` + z-index 30/20/10 + `filter: drop-shadow()`, NO CSS border on tabs, PhaseStrip cream `#DDD1B0` / amber `#7A5C28`
+
+**Task #8 status:** Confirmed complete (Session 81 audit) — all 8 new doc types fully wired in commit `02c3d80`. Prompt files exist, types in CORE/conditional lists, quality gates set, DOCX constants set.
 
 ---
 
@@ -38,7 +78,7 @@
 
 **Design tokens locked:** active tab `#f0ece3` = card body (seamless), tab overlap `margin-right: -16px` + z-index 30/20/10 + `filter: drop-shadow()`, NO CSS border on tabs, PhaseStrip cream `#DDD1B0` / amber `#7A5C28`
 
-**Still TODO:** Wire 7 new document types into generation engine (Task #8, paused before dashboard sprint)
+**Task #8:** Wire 7 new document types — confirmed complete (commit `02c3d80`)
 
 ---
 
@@ -110,10 +150,10 @@ Results page currently shows $2,495 pricing for partnership applicants — this 
 - `/gap-analysis` → same Complete gate
 - `/fdd/*` → redirect `/pricing?locked=fdd` if no fdd_intelligence payment
 
-**Nav** (`src/components/Nav.tsx`):
-- Fetch payments on auth state change alongside profile/apps
-- My Application + Gap Analysis: greyed lock icon → /pricing when hasComplete=false
-- FDD Analysis: greyed lock icon → /pricing when hasFdd=false
+**Nav** (`src/components/Nav.tsx`) — updated Session 81:
+- Lock icons REMOVED — My Application / Gap Analysis / FDD Analysis are plain links for all authenticated non-simulator users
+- Payments query removed from Nav (no longer needed — 2 fewer DB queries per nav load)
+- Middleware handles access control server-side; Nav is display only
 
 ### E-6 — Pricing quick fixes ✅
 

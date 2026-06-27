@@ -161,10 +161,10 @@ export default function FolderStack({
         <AnimatePresence mode="wait">
           <motion.div
             key={activeIndex}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.12, delay: 0.06 }}
+            initial={{ opacity: 0, y: -4, scale: 0.985 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 3, scale: 0.99 }}
+            transition={{ type: "spring", stiffness: 280, damping: 28 }}
           >
             {activeIndex === 0 && (
               <BuildCard
