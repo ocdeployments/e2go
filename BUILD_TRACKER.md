@@ -4,22 +4,35 @@
 
 ---
 
-## Session 81 — Dashboard Animation Polish + Document Engine Wiring (in progress)
+## Session 81 — Deployment unblock, dashboard polish, partnership mitigation ✅
 
-**Commits:** `8658107` (paywall nav removal + admin bypass) · more TBD
+**Commits:**
+- `8658107` — fix(paywall): Nav lock icons removed + admin middleware bypass
+- `d8976dd` — feat(dashboard): FolderStack spring animation upgrade
+- `67a7854` — fix(tests): Remove unused vi/beforeEach imports from webhook.spec.ts
+- `e547c55` — fix(tests): Playwright config excludes unit/compliance; move prompt-injection test
+- `6ce16fe` — feat(simulator+results): 3 sessions for Complete buyers; suppress partnership price
 
-**What's done:**
-- Nav lock icons removed: My Application / Gap Analysis / FDD Analysis now always render as plain links for authenticated non-simulator users. No more payment DB queries on every nav auth state change.
-- Middleware admin bypass: `profiles.role = 'admin'` skips all COMPLETE_GATED and FDD_GATED payment checks.
+**What shipped:**
+- Nav lock icons removed — My Application / Gap Analysis / FDD Analysis are plain links; payments query eliminated
+- Middleware admin bypass — `profiles.role = 'admin'` bypasses all payment gates
+- FolderStack spring animation — card slides forward from behind (y −4→0, scale 0.985→1, spring 280/28)
+- Playwright pre-push hook unblocked — excluded compliance/unit test dirs, fixed bad imports
+- Simulator: Complete/complete_partnership buyers get 3 sessions (was 2); session limit re-enabled
+- Results page: partnership pricing suppressed — $1,495 shown to all users; partnership users see "contact us" callout instead of undeliverable $2,495
 
-**In progress:**
-- FolderStack spring animation: upgrading from plain opacity fade to slide-forward spring (translateY −4px → 0, stiffness 280 damping 28) — the "card comes from behind" effect
-- Task #8: Wire 7 new document types into generation engine
+**Deployment:** `git push origin dev` succeeded (or in progress) → PR dev→main needed to trigger Vercel
 
-**Animation audit — what's in and what's not:**
+**Product decisions confirmed:**
+- FDD interface: same as in-app (no separate standalone) — unlocks FDD-1 to FDD-5
+- Simulator: Complete holders = 3 sessions free; others = 2 free default
+
+**Animation audit — all confirmed:**
 - Welcome "family" greeting: ✅ in — `DashboardClient.tsx:473`
 - Phase strip expansion: ✅ in — spring `height 0 → auto` in `PhaseStrip.tsx`
-- Folder switch spring: ❌ was plain opacity fade — being upgraded now
+- Folder switch spring: ✅ fixed — slide-forward spring in `FolderStack.tsx`
+
+**Task #8:** Wire 7 new document types — confirmed complete (commit `02c3d80`)
 
 ---
 
