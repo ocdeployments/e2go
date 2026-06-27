@@ -1,0 +1,122 @@
+name: Security Gates
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Weekly scan Monday 09:00 UTC — catches newly disclosed CVEs between pushes
+    - cron: '0 9 * * 1'
+
+jobs:
+  dependency-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm ci
+      - name: Fail on HIGH/CRITICAL vulnerabilities (excluding accepted deferred risks)
+        run: |
+          # Accepted deferred risks (logged in BUILD_TRACKER.md DEFERRED RISKS section):
+          # - next@14.x: HIGH vulns with no patch in 14.x line — upgrade to 16.x is a dedicated session
+          # - xlsx@0.18.x: HIGH Prototype Pollution + ReDoS — no fix available upstream
+          ACCEPTED="next,xlsx"
+          VULNS=$(npm audit --json 2>/dev/null | node -e "
+            const d=JSON.parse(require('fs').readFileSync('/dev/stdin','utf8'));
+            const accepted=process.env.ACCEPTED.split(',');
+            const h=Object.values(d.vulnerabilities||{}).filter(v=>
+              ['high','critical'].includes(v.severity) && !accepted.includes(v.name)
+            );
+            process.stdout.write(String(h.length));
+          " 2>/dev/null || echo "0") ACCEPTED="$ACCEPTED"
+          if [ "$VULNS" -gt "0" ]; then echo "HIGH/CRITICAL vulnerabilities (excluding accepted): $VULNS"; exit 1; fi
+
+  secret-scanning:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Scan for hardcoded secrets
+        run: |
+          # Match key prefixes followed by 20+ alphanumeric chars (real key format, not string literals)
+          # Only scan source files — docs/session files reference these strings as instructions
+          if grep -rnE "sk_live_[A-Za-z0-9]{20,}|sk_test_[A-Za-z0-9]{20,}|gsk_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|re_[A-Za-z0-9]{20,}" \
+            --include="*.ts" --include="*.tsx" --include="*.js" \
+            --exclude-dir=".git" --exclude-dir="node_modules" \
+            --exclude="*.example" . ; then
+            echo "ERROR: Possible hardcoded API key found in source files"
+            exit 1
+          fi
+          # Check .env files only (not docs) for payment wall bypass
+          if grep -rn "SKIP_PAYMENT_WALL=true" \
+            --include="*.env*" --include=".env*" \
+            --exclude-dir=".git" --exclude-dir="node_modules" . ; then
+            echo "ERROR: SKIP_PAYMENT_WALL=true found in committed env file"
+            exit 1
+          fi
+          echo "No hardcoded secrets found"
+
+  type-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm ci
+      - name: Create test env
+        run: |
+          cat > .env.local << 'EOF'
+          NEXT_PUBLIC_SUPABASE_URL=https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder_anon_key
+          OPENROUTER_API_KEY=placeholder
+          ANTHROPIC_API_KEY=placeholder
+          RESEND_API_KEY=placeholder
+          STRIPE_PUBLISHABLE_KEY=pk_test_placeholder
+          STRIPE_SECRET_KEY=sk_test_placeholder
+          STRIPE_WEBHOOK_SECRET=whsec_placeholder
+          GROQ_API_KEY=gsk_placeholder
+          EOF
+      - run: npx tsc --noEmit
+
+  trufflehog:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: TruffleHog verified secrets scan
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+          extra_args: --only-verified
+
+  build-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm ci
+      - name: Create test env
+        run: |
+          cat > .env.local << 'EOF'
+          NEXT_PUBLIC_SUPABASE_URL=https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder_anon_key
+          OPENROUTER_API_KEY=placeholder
+          ANTHROPIC_API_KEY=placeholder
+          MINIMAX_MODEL=minimax/minimax-m2.5
+          RESEND_API_KEY=placeholder
+          STRIPE_PUBLISHABLE_KEY=pk_test_placeholder
+          STRIPE_SECRET_KEY=sk_test_placeholder
+          STRIPE_WEBHOOK_SECRET=whsec_placeholder
+          GROQ_API_KEY=gsk_placeholder
+          EOF
+      - run: npm run build

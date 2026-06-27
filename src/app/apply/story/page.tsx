@@ -1,0 +1,531 @@
+'use client';
+
+import { useEffect, useState, useCallback, useRef } from 'react';
+import { useTrackSectionVisit } from "@/hooks/useTrackSectionVisit";
+import { createBrowserSupabaseClient } from '@/lib/supabase';
+import CaseFileShell from '@/components/apply/CaseFileShell';
+import SimulatorNudge from '@/components/apply/SimulatorNudge';
+import QuestionLabel from '@/components/apply/questions/QuestionLabel';
+import HelperText from '@/components/apply/questions/HelperText';
+import TextInput from '@/components/apply/questions/TextInput';
+import TextArea from '@/components/apply/questions/TextArea';
+import OptionButton from '@/components/apply/questions/OptionButton';
+import PreFillBadge from '@/components/apply/questions/PreFillBadge';
+import AdvisoryBlock from '@/components/apply/questions/AdvisoryBlock';
+import ClusterDivider from '@/components/apply/questions/ClusterDivider';
+import { useFieldQuality, getQualityBadgeStyle } from '@/hooks/useFieldQuality';
+
+interface StoryAnswer {
+  value: string;
+  source: 'quiz' | 'user_entry' | 'user_edited' | null;
+  originalQuizValue?: string;
+}
+
+const CLUSTERS = [
+  { number: 1, label: 'Who you are' },
+  { number: 2, label: 'Your plan' },
+  { number: 3, label: 'Administrative' },
+  { number: 4, label: 'Travel & history' },
+];
+
+const DOCUMENTS = [
+  { name: 'Cover Letter', status: 'waiting' as const },
+  { name: 'Investor Biography', status: 'waiting' as const },
+];
+
+interface QuestionField {
+  key: string;
+  type: 'text' | 'textarea' | 'single';
+  label: string;
+  helperText?: string;
+  options?: { value: string; label: string }[];
+  required?: boolean;
+  minChars?: number;
+}
+
+const CLUSTER_1_QUESTIONS: QuestionField[] = [
+  {
+    key: 'M3-S1-01',
+    type: 'textarea',
+    label: "What have you spent your career doing, and how does it connect to this business?",
+    helperText: 'Name specific roles, industries, and results. This opens your cover letter and investor biography.',
+    minChars: 150,
+  },
+  {
+    key: 'M3-S1-02',
+    type: 'textarea',
+    label: "Why are you making this move, and why now?",
+    helperText: 'Officers read hundreds of applications. A specific, personal reason is far more convincing than a generic one.',
+  },
+  {
+    key: 'M3-S1-03',
+    type: 'textarea',
+    label: "What qualifies you to run this specific type of business?",
+    helperText: 'Be concrete — name what you have managed, built, or operated that directly applies.',
+    minChars: 100,
+  },
+];
+
+const CLUSTER_2_QUESTIONS: QuestionField[] = [
+  {
+    key: 'M3-S1-04',
+    type: 'textarea',
+    label: 'What are your first-year priorities?',
+    helperText: 'Hiring, operations, revenue targets, how you establish the business. Officers want a concrete plan, not a vague intention.',
+  },
+  {
+    key: 'M3-S1-05',
+    type: 'textarea',
+    label: 'Is there anything in your application a consular officer might question?',
+    helperText: 'An acknowledged weakness with a credible explanation is more convincing than an application that pretends none exist.',
+  },
+  {
+    key: 'M3-S1-05-option',
+    type: 'single',
+    label: '',
+    options: [
+      { value: 'na', label: 'Nothing unusual to address' },
+    ],
+  },
+];
+
+const CLUSTER_3_QUESTIONS: QuestionField[] = [
+  { key: 'M3-A-01', type: 'text', label: 'Full legal name as it appears on your passport', required: true },
+  { key: 'M3-A-02', type: 'single', label: 'Have you ever used any other names?', options: [{ value: 'yes', label: 'Yes' }, { value: 'no', label: 'No' }], required: true },
+  { key: 'M3-A-03', type: 'text', label: 'Date of birth', required: true },
+  { key: 'M3-A-04', type: 'text', label: 'Place of birth (City and Country)', required: true },
+  { key: 'M3-A-05', type: 'text', label: 'Country of citizenship', required: true, helperText: 'Pre-filled from your eligibility check.' },
+  { key: 'M3-A-06', type: 'single', label: 'Do you hold citizenship in any other country?', options: [{ value: 'yes', label: 'Yes' }, { value: 'no', label: 'No' }], required: true },
+  { key: 'M3-A-08', type: 'text', label: 'U.S. Social Security Number or Taxpayer ID (ITIN)', helperText: 'Leave blank if you do not have one — you will apply after arrival.' },
+  { key: 'M3-A-09', type: 'text', label: 'Current home address in Canada', required: true },
+  { key: 'M3-A-10', type: 'text', label: 'How long have you lived at this address?' },
+  { key: 'M3-A-11', type: 'text', label: 'Primary phone number', required: true },
+  { key: 'M3-A-12', type: 'text', label: 'Email address', required: true, helperText: 'Pre-filled from your account.' },
+  { key: 'M3-A-13', type: 'text', label: 'Social media platforms (list handles or "None")' },
+  { key: 'M3-A-14', type: 'text', label: "Parents' full names" },
+  { key: 'M3-A-15', type: 'single', label: 'Have you ever lost a passport or had one stolen?', options: [{ value: 'yes', label: 'Yes' }, { value: 'no', label: 'No' }], required: true },
+];
+
+const CLUSTER_4_QUESTIONS: QuestionField[] = [
+  { key: 'M3-A-16', type: 'textarea', label: 'List your last 5 trips to the United States with approximate dates and purposes' },
+  { key: 'M3-A-17', type: 'text', label: 'Countries visited in the past 5 years' },
+  { key: 'M3-A-18', type: 'single', label: 'Do you have any immediate family members living in the United States?', options: [{ value: 'yes', label: 'Yes' }, { value: 'no', label: 'No' }], required: true },
+  { key: 'M3-A-19', type: 'single', label: 'Have you ever applied for a U.S. green card or immigrant visa?', options: [{ value: 'yes', label: 'Yes' }, { value: 'no', label: 'No' }], required: true },
+  { key: 'M3-A-20', type: 'single', label: "Have you ever held a U.S. driver's license?", options: [{ value: 'yes', label: 'Yes' }, { value: 'no', label: 'No' }], required: true },
+  { key: 'M3-A-21', type: 'single', label: 'Have you held any U.S. visas in the past?', options: [{ value: 'yes', label: 'Yes' }, { value: 'no', label: 'No' }], required: true, helperText: 'Pre-filled from your eligibility check if you indicated prior visa history.' },
+];
+
+const ALL_QUESTIONS = [
+  ...CLUSTER_1_QUESTIONS,
+  ...CLUSTER_2_QUESTIONS,
+  ...CLUSTER_3_QUESTIONS,
+  ...CLUSTER_4_QUESTIONS,
+];
+
+const CLUSTER_QUESTION_RANGES = [
+  { start: 0, end: CLUSTER_1_QUESTIONS.length },
+  { start: CLUSTER_1_QUESTIONS.length, end: CLUSTER_1_QUESTIONS.length + CLUSTER_2_QUESTIONS.length },
+  { start: CLUSTER_1_QUESTIONS.length + CLUSTER_2_QUESTIONS.length, end: CLUSTER_1_QUESTIONS.length + CLUSTER_2_QUESTIONS.length + CLUSTER_3_QUESTIONS.length },
+  { start: CLUSTER_1_QUESTIONS.length + CLUSTER_2_QUESTIONS.length + CLUSTER_3_QUESTIONS.length, end: ALL_QUESTIONS.length },
+];
+
+const FIELD_GUIDANCE: Record<string, string[]> = {
+  'M3-S1-01': [
+    'Name specific industries, companies, or roles — not job categories. "I managed 14 staff at a Subway franchise" beats "I have management experience."',
+    'Connect your background directly to this business. Show why your career history makes this investment logical.',
+    'Avoid: "I have always been passionate about business." Include: specific results, revenues, or team sizes.',
+  ],
+  'M3-S1-02': [
+    'Officers are skilled at detecting boilerplate motivation. The more specific and personal your reason, the more credible it reads.',
+    'Include timing: why now, not three years ago? A concrete trigger (market opportunity, family reason, business readiness) is far stronger than a general statement.',
+    'Do not confuse motivation with business opportunity. This paragraph is about you and your decision — not about market size.',
+  ],
+  'M3-S1-03': [
+    'The officer asks: "Will this person actually be able to run this business?" Answer that question directly with evidence, not assertions.',
+    'If you have directly operated this type of business before, say so explicitly and include any measurable outcomes.',
+    'If your background is adjacent, bridge the gap: "My 8 years managing logistics operations translates directly to the operational demands of this distribution business."',
+  ],
+  'M3-S1-04': [
+    'Avoid vague phrases like "begin operations" or "establish the brand." Name specific hires, revenue targets, customer acquisition milestones, or location opens.',
+    'Officers look for evidence that you have thought through the business reality, not just the visa opportunity.',
+    'Show a sequence: month 1–3 (setup), month 4–6 (launch), month 7–12 (growth). Concrete phases are far more credible than a single paragraph.',
+  ],
+  'M3-S1-05': [
+    'This is the most underused part of an E-2 application. A weak area acknowledged and explained is far less damaging than one an officer finds on their own.',
+    'Common addressable issues: investment below $100K, no prior U.S. business experience, recently self-employed, no direct industry experience.',
+    'For each issue: acknowledge it, explain the context, then give a mitigating factor. Three sentences per concern is enough.',
+  ],
+};
+
+export default function StoryPage() {
+  useTrackSectionVisit("story");
+
+  const [loading, setLoading] = useState(true);
+  const [activeCluster, setActiveCluster] = useState(1);
+  const [answers, setAnswers] = useState<Record<string, StoryAnswer>>({});
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [applicationId, setApplicationId] = useState<string | null>(null);
+  const [expandedGuidance, setExpandedGuidance] = useState<Set<string>>(new Set());
+  const debounceRef = useRef<Record<string, NodeJS.Timeout>>({});
+  const { qualityMap, checkFieldQuality } = useFieldQuality();
+
+  const toggleGuidance = useCallback((key: string) => {
+    setExpandedGuidance(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  }, []);
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const supabase = createBrowserSupabaseClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) { setLoading(false); return; }
+
+        const { data: apps } = await supabase
+          .from('applications')
+          .select('id')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(1);
+
+        if (!apps || apps.length === 0) { setLoading(false); return; }
+        const appId = apps[0].id;
+        setApplicationId(appId);
+
+        const { data: existingAnswers } = await supabase
+          .from('answers')
+          .select('question_key, answer_value')
+          .eq('application_id', appId);
+
+        if (existingAnswers) {
+          const answerMap: Record<string, StoryAnswer> = {};
+          existingAnswers.forEach((row: { question_key: string; answer_value: string | string[] | number | null }) => {
+            if (row.answer_value !== null) {
+              answerMap[row.question_key] = {
+                value: String(row.answer_value),
+                source: null,
+              };
+            }
+          });
+          setAnswers(answerMap);
+        }
+
+        setLoading(false);
+      } catch {
+        setLoading(false);
+      }
+    };
+    loadData();
+  }, []);
+
+  const saveAnswer = useCallback(async (key: string, value: string) => {
+    if (!applicationId) return;
+
+    setSaveStatus('saving');
+    try {
+      const res = await fetch('/api/answers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          question_key: key,
+          answer_value: value,
+          application_id: applicationId,
+        }),
+      });
+      if (!res.ok) throw new Error('Save failed');
+      setSaveStatus('saved');
+      setTimeout(() => setSaveStatus('idle'), 2000);
+    } catch {
+      setSaveStatus('error');
+    }
+  }, [applicationId, answers]);
+
+  const handleAnswerChange = useCallback((key: string, value: string) => {
+    setAnswers((prev) => ({
+      ...prev,
+      [key]: {
+        value,
+        source: prev[key]?.source ?? null,
+        originalQuizValue: prev[key]?.originalQuizValue,
+      },
+    }));
+
+    if (debounceRef.current[key]) clearTimeout(debounceRef.current[key]);
+    debounceRef.current[key] = setTimeout(() => saveAnswer(key, value), 800);
+  }, [saveAnswer]);
+
+  const clusterStatuses = CLUSTER_QUESTION_RANGES.map((range, idx) => {
+    const questions = ALL_QUESTIONS.slice(range.start, range.end);
+    const answered = questions.filter((q) => answers[q.key]?.value !== '').length;
+    const status: 'complete' | 'active' | 'pending' = answered === questions.length ? 'complete' : answered > 0 ? 'active' : 'pending';
+    return { id: `cluster-${idx + 1}`, label: CLUSTERS[idx].label, status };
+  });
+
+  const previewContent = (
+    <div className="space-y-4">
+      {DOCUMENTS.map((doc) => (
+        <div key={doc.name} className="border p-4" style={{ borderColor: 'rgba(201,168,76,0.12)', backgroundColor: 'rgba(201,168,76,0.01)' }}>
+          <div className="flex items-center justify-between mb-3">
+            <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '10px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'rgba(245,240,232,0.70)' }}>
+              {doc.name}
+            </span>
+            <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '10px', color: 'rgba(245,240,232,0.62)', border: '1px solid rgba(245,240,232,0.08)', padding: '2px 7px' }}>
+              Waiting
+            </span>
+          </div>
+          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '12px', fontWeight: 300, color: 'rgba(245,240,232,0.62)', fontStyle: 'italic', lineHeight: 1.5 }}>
+            [Answer the questions on the left to fill this in]
+          </p>
+        </div>
+      ))}
+    </div>
+  );
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#0a0a0a]">
+        <p className="text-sm" style={{ color: 'rgba(245,240,232,0.68)', fontFamily: "'DM Sans', sans-serif" }}>
+          Loading...
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <CaseFileShell
+      sectionNumber={1}
+      sectionTitle="Your Story"
+      clusters={clusterStatuses}
+      activeClusterId={`cluster-${activeCluster}`}
+      onClusterChange={(id) => setActiveCluster(parseInt(id.replace('cluster-', '')))}
+      buildsDocuments={['Cover Letter', 'Investor Biography']}
+      nextSectionPath="/apply/business"
+      prevSectionPath="/apply"
+      isSaving={saveStatus === 'saving'}
+      previewContent={previewContent}
+    >
+      {/* Cluster 1 — Who you are */}
+      {activeCluster === 1 && (
+        <div className="space-y-8">
+          <SimulatorNudge section="story" />
+          <ClusterDivider label="Who you are" />
+          {CLUSTER_1_QUESTIONS.map((q) => {
+            const answer = answers[q.key];
+            const isOriginal = answer?.source === 'quiz';
+            const qResult = qualityMap[q.key];
+            const badge = qResult ? getQualityBadgeStyle(qResult.quality) : null;
+            return (
+              <div key={q.key}>
+                {isOriginal && <PreFillBadge isOriginal={true} />}
+                {answer?.source === 'user_edited' && <PreFillBadge isOriginal={false} />}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                  <QuestionLabel required={q.required}>{q.label}</QuestionLabel>
+                  {badge && (
+                    <span style={{ fontSize: '10px', letterSpacing: '0.1em', color: badge.color, flexShrink: 0, marginLeft: '12px' }}>{badge.label.toUpperCase()}</span>
+                  )}
+                </div>
+                <TextArea
+                  value={answer?.value || ''}
+                  onChange={(val) => handleAnswerChange(q.key, val)}
+                  onBlur={(val) => checkFieldQuality(q.key, val)}
+                  rows={4}
+                />
+                {qResult?.feedback && qResult.quality !== 'strong' && (
+                  <div style={{ fontSize: '12px', color: 'rgba(245,240,232,0.74)', lineHeight: 1.5, marginTop: '6px', paddingLeft: '2px' }}>
+                    {qResult.feedback}
+                  </div>
+                )}
+                {q.helperText && <HelperText>{q.helperText}</HelperText>}
+                {FIELD_GUIDANCE[q.key] && (
+                  <div style={{ marginTop: '8px' }}>
+                    <button
+                      onClick={() => toggleGuidance(q.key)}
+                      style={{ fontSize: '11px', color: 'rgba(201,168,76,0.85)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, letterSpacing: '0.03em', display: 'flex', alignItems: 'center', gap: '4px' }}
+                    >
+                      <span style={{ transition: 'transform 0.15s', display: 'inline-block', transform: expandedGuidance.has(q.key) ? 'rotate(90deg)' : 'rotate(0deg)' }}>▶</span>
+                      What makes a strong answer?
+                    </button>
+                    {expandedGuidance.has(q.key) && (
+                      <ul style={{ marginTop: '8px', paddingLeft: '0', listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        {FIELD_GUIDANCE[q.key].map((tip, i) => (
+                          <li key={i} style={{ fontSize: '12px', color: 'rgba(245,240,232,0.76)', lineHeight: 1.6, paddingLeft: '12px', borderLeft: '1px solid rgba(201,168,76,0.2)' }}>
+                            {tip}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Cluster 2 — Your plan */}
+      {activeCluster === 2 && (
+        <div className="space-y-8">
+          <ClusterDivider label="Your plan" />
+          {CLUSTER_2_QUESTIONS.map((q) => {
+            const answer = answers[q.key];
+            if (q.type === 'single' && q.key === 'M3-S1-05-option') {
+              return (
+                <div key={q.key} className="mt-4">
+                  <OptionButton
+                    label="Nothing unusual to address"
+                    selected={answer?.value === 'na'}
+                    onClick={() => handleAnswerChange(q.key, 'na')}
+                  />
+                </div>
+              );
+            }
+            const isOriginal = answer?.source === 'quiz';
+            return (
+              <div key={q.key}>
+                {isOriginal && <PreFillBadge isOriginal={true} />}
+                {answer?.source === 'user_edited' && <PreFillBadge isOriginal={false} />}
+                <QuestionLabel required={q.required}>{q.label}</QuestionLabel>
+                <TextArea
+                  value={answer?.value || ''}
+                  onChange={(val) => handleAnswerChange(q.key, val)}
+                  rows={4}
+                />
+                {q.helperText && <HelperText>{q.helperText}</HelperText>}
+                {FIELD_GUIDANCE[q.key] && (
+                  <div style={{ marginTop: '8px' }}>
+                    <button
+                      onClick={() => toggleGuidance(q.key)}
+                      style={{ fontSize: '11px', color: 'rgba(201,168,76,0.85)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, letterSpacing: '0.03em', display: 'flex', alignItems: 'center', gap: '4px' }}
+                    >
+                      <span style={{ transition: 'transform 0.15s', display: 'inline-block', transform: expandedGuidance.has(q.key) ? 'rotate(90deg)' : 'rotate(0deg)' }}>▶</span>
+                      What makes a strong answer?
+                    </button>
+                    {expandedGuidance.has(q.key) && (
+                      <ul style={{ marginTop: '8px', paddingLeft: '0', listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        {FIELD_GUIDANCE[q.key].map((tip, i) => (
+                          <li key={i} style={{ fontSize: '12px', color: 'rgba(245,240,232,0.76)', lineHeight: 1.6, paddingLeft: '12px', borderLeft: '1px solid rgba(201,168,76,0.2)' }}>
+                            {tip}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Cluster 3 — Administrative */}
+      {activeCluster === 3 && (
+        <div className="space-y-6">
+          <ClusterDivider label="Administrative details — used for your DS-160 reference sheet" />
+          {CLUSTER_3_QUESTIONS.map((q) => {
+            const answer = answers[q.key];
+            const isOriginal = answer?.source === 'quiz';
+            return (
+              <div key={q.key}>
+                {isOriginal && <PreFillBadge isOriginal={true} />}
+                {answer?.source === 'user_edited' && <PreFillBadge isOriginal={false} />}
+                <QuestionLabel required={q.required}>{q.label}</QuestionLabel>
+                {q.type === 'single' ? (
+                  <div className="flex flex-col gap-2">
+                    {q.options?.map((opt) => (
+                      <OptionButton
+                        key={opt.value}
+                        label={opt.label}
+                        selected={answer?.value === opt.value}
+                        onClick={() => handleAnswerChange(q.key, opt.value)}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <TextInput
+                    value={answer?.value || ''}
+                    onChange={(val) => handleAnswerChange(q.key, val)}
+                  />
+                )}
+                {q.helperText && <HelperText>{q.helperText}</HelperText>}
+              </div>
+            );
+          })}
+
+          {/* SSN routing question */}
+          <div className="mt-6">
+            <QuestionLabel>Do you currently have a U.S. Social Security Number?</QuestionLabel>
+            <div className="flex flex-col gap-2">
+              <OptionButton
+                label="Yes — enter it above"
+                selected={!!answers['M3-A-08']?.value}
+                onClick={() => {}}
+              />
+              <OptionButton
+                label="No — I'll apply after arrival"
+                selected={!answers['M3-A-08']?.value}
+                onClick={() => handleAnswerChange('M3-A-08', '')}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cluster 4 — Travel & history */}
+      {activeCluster === 4 && (
+        <div className="space-y-6">
+          <ClusterDivider label="Travel and history" />
+          {CLUSTER_4_QUESTIONS.map((q) => {
+            const answer = answers[q.key];
+            const isOriginal = answer?.source === 'quiz';
+            return (
+              <div key={q.key}>
+                {isOriginal && <PreFillBadge isOriginal={true} />}
+                {answer?.source === 'user_edited' && <PreFillBadge isOriginal={false} />}
+                <QuestionLabel required={q.required}>{q.label}</QuestionLabel>
+                {q.type === 'single' ? (
+                  <div className="flex flex-col gap-2">
+                    {q.options?.map((opt) => (
+                      <OptionButton
+                        key={opt.value}
+                        label={opt.label}
+                        selected={answer?.value === opt.value}
+                        onClick={() => handleAnswerChange(q.key, opt.value)}
+                      />
+                    ))}
+                  </div>
+                ) : q.type === 'textarea' ? (
+                  <TextArea
+                    value={answer?.value || ''}
+                    onChange={(val) => handleAnswerChange(q.key, val)}
+                    rows={3}
+                  />
+                ) : (
+                  <TextInput
+                    value={answer?.value || ''}
+                    onChange={(val) => handleAnswerChange(q.key, val)}
+                  />
+                )}
+                {q.helperText && <HelperText>{q.helperText}</HelperText>}
+              </div>
+            );
+          })}
+
+          <AdvisoryBlock>
+            E-2 interviews at Toronto are scheduled through the CGI Federal
+            portal at ais.usvisa-info.com/en-ca/niv. You will need your
+            DS-160 confirmation number and MRV fee receipt. Current wait
+            times at Toronto are approximately 4 months — factor this into
+            your timeline.
+          </AdvisoryBlock>
+        </div>
+      )}
+    </CaseFileShell>
+  );
+}

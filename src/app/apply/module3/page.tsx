@@ -1,80 +1,231 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTrackSectionVisit } from "@/hooks/useTrackSectionVisit";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 
-export default function Module3Page() {
+interface TabStatus {
+  letter: string;
+  title: string;
+  complete: boolean;
+  answerCount: number;
+  questionCount: number;
+}
+
+const TABS: { letter: string; title: string }[] = [
+  { letter: "A", title: "Personal & Passport" },
+  { letter: "B", title: "Personal Checklist" },
+  { letter: "C", title: "Visa Category" },
+  { letter: "D", title: "Cover Letter Details" },
+  { letter: "E", title: "Ownership & Control" },
+  { letter: "I", title: "Non-Marginality" },
+  { letter: "J", title: "Qualifications" },
+  { letter: "K", title: "Business Plan" },
+];
+
+export default function Module3Overview() {
+  useTrackSectionVisit("module3");
+
   const router = useRouter();
-  const [supabase] = useState(() => createBrowserSupabaseClient());
+  const [tabs, setTabs] = useState<TabStatus[]>(
+    TABS.map((t) => ({
+      ...t,
+      complete: false,
+      answerCount: 0,
+      questionCount: 0,
+    }))
+  );
   const [loading, setLoading] = useState(true);
+  const [applicationId, setApplicationId] = useState<string>("");
 
   useEffect(() => {
-    const init = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+    const loadStatus = async () => {
+      try {
+        const supabase = createBrowserSupabaseClient();
 
-      if (!user) {
-        router.push("/login?next=/apply/module3");
-        return;
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (!user) {
+          setLoading(false);
+          return;
+        }
+
+
+        const { data: apps } = await supabase
+          .from("applications")
+          .select("id")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(1);
+
+        if (!apps || apps.length === 0) {
+          setLoading(false);
+          return;
+        }
+
+        const appId = apps[0].id;
+        setApplicationId(appId);
+
+        const { data: answers } = await supabase
+          .from("answers")
+          .select("question_key")
+          .eq("application_id", appId);
+
+        const _answeredIds = new Set(answers?.map((a: { question_key: string }) => a.question_key) || []);
+
+        // Tab prefixes: Tab A answers use QA- prefix, Tab B uses QB-, etc.
+        const updatedTabs = TABS.map((tab) => {
+          const prefix = `Q${tab.letter.toUpperCase()}-`;
+          const tabAnswers = answers?.filter((a: { question_key: string }) =>
+            a.question_key.startsWith(prefix)
+          ) || [];
+          return {
+            ...tab,
+            answerCount: tabAnswers.length,
+            questionCount: 0, // We don't know the exact question count per tab here
+            complete: tabAnswers.length > 0,
+          };
+        });
+
+        setTabs(updatedTabs);
+        setLoading(false);
+      } catch {
+        setLoading(false);
       }
-
-      const { data: lifecycle } = await supabase
-        .from("application_lifecycle")
-        .select("module2_completed_at")
-        .eq("user_id", user.id)
-        .single();
-
-      if (!lifecycle?.module2_completed_at) {
-        router.push("/apply/module2");
-        return;
-      }
-
-      setLoading(false);
     };
 
-    init();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [router]);
+    loadStatus();
+  }, []);
+
+  const allComplete = tabs.every((t) => t.complete);
+
+  const handleGeneratePackage = () => {
+    if (!applicationId) return;
+    // Route to the SSE generation page which handles the full pipeline + progress UI
+    router.push(`/generate/${applicationId}`);
+  };
+
+  const completedCount = tabs.filter((t) => t.complete).length;
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#f8f9ff] flex items-center justify-center">
-        <div className="text-[#004ac6]">Loading...</div>
+      <div className="flex min-h-screen items-center justify-center bg-[#0a0a0a]">
+        <p className="text-sm text-white/30" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+          Loading...
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#f8f9ff] text-[#0b1c30] font-sans">
-      <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-b border-[#c3c6d7]">
-        <div className="flex justify-between items-center h-16 px-4 md:px-8 max-w-3xl mx-auto">
-          <Link href="/" className="flex items-center gap-2">
-            <svg className="w-6 h-6 text-[#004ac6]" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 2L2 7v10l10 5 10-5V7L12 2z" />
-            </svg>
-            <span className="text-xl font-bold text-[#004ac6]">e2go.app</span>
-          </Link>
-          <Link href="/dashboard" className="text-sm text-[#434655] hover:text-[#004ac6]">
-            Dashboard
-          </Link>
-        </div>
-      </header>
-
-      <main className="pt-24 pb-12 px-4 max-w-3xl mx-auto">
-        <div className="bg-white rounded-xl border border-[#e2e8f0] p-8 text-center">
-          <h1 className="text-2xl font-bold text-[#0b1c30] mb-4">Module 3: Coming Soon</h1>
-          <p className="text-[#434655] mb-6">
-            Document Interview Engine with Tabs A-L (~250 questions). This module is currently in development.
-          </p>
-          <Link
-            href="/dashboard"
-            className="inline-block px-6 py-3 bg-[#004ac6] text-white rounded-lg font-medium hover:bg-[#003699]"
+    <div className="min-h-screen bg-[#0a0a0a] text-[#f5f0e8]">
+      <div className="mx-auto max-w-4xl px-6 py-12">
+        {/* Header */}
+        <div className="mb-12 text-center">
+          <h1
+            className="text-4xl font-light tracking-wide"
+            style={{ fontFamily: "'Cormorant Garamond', serif" }}
           >
-            Back to Dashboard
-          </Link>
+            Module 3 — Your Application
+          </h1>
+          <p
+            className="mt-3 text-sm text-white/50"
+            style={{ fontFamily: "'DM Sans', sans-serif" }}
+          >
+            {completedCount} of {TABS.length} sections complete
+          </p>
+          {/* Overall progress bar */}
+          <div className="mt-4 h-[2px] w-full bg-white/8">
+            <div
+              className="h-full transition-all duration-500"
+              style={{
+                width: `${(completedCount / TABS.length) * 100}%`,
+                backgroundColor: "#C9A84C",
+              }}
+            />
+          </div>
         </div>
-      </main>
+
+        {/* Tab Grid */}
+        <div className="mb-12 grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
+          {tabs.map((tab) => (
+            <button
+              key={tab.letter}
+              onClick={() =>
+                router.push(`/apply/module3/${tab.letter.toLowerCase()}`)
+              }
+              className="flex items-center gap-3 border px-4 py-3 text-left transition-colors hover:bg-white/[0.02]"
+              style={{
+                borderColor: tab.complete
+                  ? "rgba(201,168,76,0.3)"
+                  : "rgba(255,255,255,0.08)",
+              }}
+            >
+              <span
+                className={`flex h-6 w-6 flex-shrink-0 items-center justify-center text-xs ${
+                  tab.complete ? "text-[#C9A84C]" : "text-white/20"
+                }`}
+              >
+                {tab.complete ? "✓" : tab.letter}
+              </span>
+              <div className="min-w-0 flex-1">
+                <p
+                  className={`truncate text-sm ${
+                    tab.complete ? "text-[#C9A84C]" : "text-white/50"
+                  }`}
+                  style={{ fontFamily: "'DM Sans', sans-serif" }}
+                >
+                  {tab.title}
+                </p>
+              </div>
+            </button>
+          ))}
+        </div>
+
+        {/* Generate Button */}
+        {allComplete && (
+          <div className="text-center">
+            <div className="mb-8">
+              <p
+                className="mb-2 text-sm text-[#C9A84C]"
+                style={{ fontFamily: "'DM Sans', sans-serif" }}
+              >
+                All sections are complete. Your application is ready for
+                document generation.
+              </p>
+              <p
+                className="text-xs text-white/30"
+                style={{ fontFamily: "'DM Sans', sans-serif" }}
+              >
+                This process takes 3–5 minutes. Each document will be written
+                specifically for your case.
+              </p>
+            </div>
+            <button
+              onClick={handleGeneratePackage}
+              disabled={!applicationId}
+              className="border border-[#C9A84C] bg-[#C9A84C] px-10 py-4 text-sm font-medium uppercase tracking-wider text-[#0a0a0a] transition-colors hover:bg-[#d4b35c] disabled:opacity-50"
+              style={{ fontFamily: "'DM Sans', sans-serif" }}
+            >
+              Generate My Package →
+            </button>
+          </div>
+        )}
+
+        {!allComplete && (
+          <div className="text-center">
+            <p
+              className="text-xs text-white/20"
+              style={{ fontFamily: "'DM Sans', sans-serif" }}
+            >
+              Complete all {TABS.length} sections above to unlock document
+              generation
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

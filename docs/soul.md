@@ -180,4 +180,98 @@ If the answer is the latter: rebuild it.
 
 ---
 
-*Version 1.1 | May 28, 2026 | E2Pathway*
+## Platform Boundaries — What e2go Is and Is Not
+
+e2go is a visa application preparation platform.
+Our boundary is the documentation process.
+
+What we do:
+- Guide applicants through building a complete consulate-ready E-2 application package
+- Educate on what consulates look for
+- Connect applicants with brokers, franchisors, and attorneys as a convenience
+
+What we never do:
+- Recommend a specific business or franchise
+- Tell an applicant their business qualifies
+- Tell an applicant their business does not qualify
+- Provide investment advice
+- Provide legal advice
+
+Approved framing:
+Never: "this business qualifies for E-2"
+Always: "here is what the consulate looks for in this business category"
+
+Never: "this business does not qualify"
+Always: "this category faces additional scrutiny — here is what that means for your application"
+
+---
+
+## Lawyer Positioning — Approved Framing
+
+Never say: "don't hire a lawyer"
+Never say: "you don't need a lawyer"
+Always say: "what you do with your finished package is up to you"
+Approved tagline: "Lawyer-ready documents. Lawyer-optional price."
+Approved comparison: "If you choose attorney review at this stage, it is a 2-hour job, not a 20-hour one."
+
+---
+
+## Experience Is a Signal Never a Filter
+
+When recommending franchise categories, experience in an industry boosts a recommendation — it never removes an option.
+Many E-2 franchises are management businesses. The franchisee manages. Staff delivers.
+Never say: "you need experience in X to qualify"
+Always say: "your background in X strengthens the application narrative for this category"
+
+---
+
+## Approved Landing Page Copy — Do Not Rewrite
+
+Are you one of those people?
+
+Funds sourced. Business model outlined.
+A state shortlisted. A lawyer's number saved
+in your phone.
+
+Everything except the one thing that actually
+moves things forward — starting.
+
+It's not laziness. It's a form of fear that
+hides within preparation. One more question,
+one more piece of research, one more person to ask.
+The research phase can quietly become a place to live.
+
+e2go was built for exactly this moment.
+
+What takes most applicants months of back-and-forth,
+lawyer fees, and second-guessing — we walk you through
+in hours. Not because we cut corners. Because we've
+already done the hard work of knowing exactly what
+the consulate needs, exactly how to present it,
+and exactly what trips people up.
+
+You bring the investment and the business.
+We'll build the application.
+
+Start with the quiz. Ten minutes. Free.
+No commitment.
+
+Find out where you stand — then let us get you ready.
+
+Trust line: "Optimized for Toronto.
+Built for every treaty country."
+
+---
+
+## Franchise Nudge — Approved Framing
+
+When a user has not decided on a business type, we educate on why franchises tend to produce stronger E-2 applications. This is factually accurate and genuinely in the applicant's interest.
+
+Approved framing:
+"Applicants with an established franchise tend to have stronger applications — the business model is proven, the financials are documented, and many franchises have processed E-2 visas before. If you have not settled on a direction yet, it is worth understanding why consular officers respond well to franchise applications."
+
+This nudge appears once only — in Module 2 when user selects 'still researching' or 'own business concept'. Never on landing page. Never repeatedly. Once only.
+
+---
+
+*Version 1.3 | May 31, 2026 | E2Pathway*

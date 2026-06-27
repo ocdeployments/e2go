@@ -1,0 +1,7 @@
+[     217ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom.development.js:38559
+[     342ms] [LOG] Service Worker registered: http://localhost:3000/ @ webpack-internal:///(app-pages-browser)/./src/components/ServiceWorkerRegistration.tsx:13
+[     342ms] [LOG] Service Worker registered: http://localhost:3000/ @ webpack-internal:///(app-pages-browser)/./src/components/ServiceWorkerRegistration.tsx:13
+[     361ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/icons/icon-192.png:0
+[     366ms] [WARNING] Error while trying to use the following icon from the Manifest: http://localhost:3000/icons/icon-192.png (Download error or resource isn't a valid image) @ http://localhost:3000/dashboard:0
+[    1040ms] [ERROR] Failed to load resource: the server responded with a status of 406 () @ https://cziphinlzfnlqlvynwnm.supabase.co/rest/v1/quiz_sessions?select=id%2Coutcome%2Capplication_type%2Ccompleted_at&user_id=eq.d654c937-d780-4e30-9388-5bfcd080c2d2&order=completed_at.desc&limit=1:0
+[    1102ms] [ERROR] Failed to load resource: the server responded with a status of 406 () @ https://cziphinlzfnlqlvynwnm.supabase.co/rest/v1/quiz_sessions?select=id%2Coutcome%2Capplication_type%2Ccompleted_at&user_id=eq.d654c937-d780-4e30-9388-5bfcd080c2d2&order=completed_at.desc&limit=1:0

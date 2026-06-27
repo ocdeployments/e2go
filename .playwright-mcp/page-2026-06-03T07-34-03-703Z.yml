@@ -1,0 +1,256 @@
+- main [ref=e2]:
+  - navigation [ref=e3]:
+    - link "e2go" [ref=e4] [cursor=pointer]:
+      - /url: /
+    - list [ref=e5]:
+      - listitem [ref=e6]:
+        - link "How It Works" [ref=e7] [cursor=pointer]:
+          - /url: "#how-it works"
+      - listitem [ref=e8]:
+        - link "What You Get" [ref=e9] [cursor=pointer]:
+          - /url: "#what-you get"
+      - listitem [ref=e10]:
+        - link "Pricing" [ref=e11] [cursor=pointer]:
+          - /url: "#pricing"
+      - listitem [ref=e12]:
+        - link "Learn" [ref=e13] [cursor=pointer]:
+          - /url: "#learn"
+    - link "Check My Eligibility →" [ref=e14] [cursor=pointer]:
+      - /url: /quiz
+  - generic [ref=e15]:
+    - heading "Your E-2 Visa Application. Built to Pass." [level=1] [ref=e16]:
+      - text: Your E-2 Visa Application.
+      - emphasis [ref=e17]: Built to Pass.
+    - paragraph [ref=e18]: Answer our questions. We analyze your case, identify every gap, and generate a complete consulate-formatted application package — without the $15,000 attorney fee.
+    - generic [ref=e19]:
+      - link "Check My Eligibility — Free" [ref=e20] [cursor=pointer]:
+        - /url: /quiz
+      - link "See What's Included" [ref=e21] [cursor=pointer]:
+        - /url: "#what-you-get"
+    - paragraph [ref=e22]: 82 treaty countries · Toronto consulate specialists · 15 denial risks checked automatically
+  - generic [ref=e24]:
+    - generic [ref=e25]:
+      - generic [ref=e26]: "82"
+      - generic [ref=e27]: TREATY COUNTRIES
+    - generic [ref=e28]:
+      - generic [ref=e29]: "11"
+      - generic [ref=e30]: APPLICATION TABS COVERED
+    - generic [ref=e31]:
+      - generic [ref=e32]: "15"
+      - generic [ref=e33]: DENIAL RISKS CHECKED
+  - generic [ref=e35]:
+    - generic [ref=e36]:
+      - heading "The traditional path" [level=3] [ref=e37]
+      - generic [ref=e38]: $6,500–$15,000 in attorney fees
+      - generic [ref=e39]: Weeks of back-and-forth emails
+      - generic [ref=e40]: You never see what goes in your documents
+      - generic [ref=e41]: No way to know if you're prepared
+    - generic [ref=e42]:
+      - heading "With e2go" [level=3] [ref=e43]
+      - generic [ref=e44]: ✓From $297 — founding member pricing
+      - generic [ref=e45]: ✓Complete in your own time, at your pace
+      - generic [ref=e46]: ✓Every document traces to your exact answers
+      - generic [ref=e47]: ✓Confidence score across 8 dimensions
+  - generic [ref=e48]:
+    - generic [ref=e49]: THE PROCESS
+    - heading "From your first answer to your completed binder." [level=2] [ref=e50]
+    - generic [ref=e51]:
+      - generic [ref=e52]:
+        - generic [ref=e53]: "01"
+        - generic [ref=e54]: Answer
+        - generic [ref=e55]: Tell us about your investment, your business, and your background. Takes 20–40 minutes.
+      - generic [ref=e56]:
+        - generic [ref=e57]: "02"
+        - generic [ref=e58]: We Analyze
+        - generic [ref=e59]: Our engine checks your answers against 15 real denial patterns and scores your case across 8 dimensions.
+      - generic [ref=e60]:
+        - generic [ref=e61]: "03"
+        - generic [ref=e62]: Download
+        - generic [ref=e63]: Your complete, consulate-formatted application binder. Every tab. Every document. Ready to print.
+  - generic [ref=e64]:
+    - generic [ref=e65]: WHAT'S INCLUDED
+    - heading "A complete, consulate-formatted application package." [level=2] [ref=e66]
+    - paragraph [ref=e67]: Every document your officer expects to see. In the right order. At the right length.
+    - generic [ref=e68]:
+      - generic [ref=e69]:
+        - generic [ref=e70]: A
+        - generic [ref=e71]:
+          - generic [ref=e72]: DS-160 Reference
+          - generic [ref=e73]: Personal and travel history
+        - generic [ref=e74]: Ready immediately
+      - generic [ref=e75]:
+        - generic [ref=e76]: B
+        - generic [ref=e77]:
+          - generic [ref=e78]: Document Checklist
+          - generic [ref=e79]: Every required document itemized
+        - generic [ref=e80]: Ready immediately
+      - generic [ref=e81]:
+        - generic [ref=e82]: C
+        - generic [ref=e83]:
+          - generic [ref=e84]: Visa Category Letter
+          - generic [ref=e85]: Treaty eligibility confirmation
+        - generic [ref=e86]: Ready immediately
+      - generic [ref=e87]:
+        - generic [ref=e88]: D
+        - generic [ref=e89]:
+          - generic [ref=e90]: Cover Letter
+          - generic [ref=e91]: Your personal investor narrative
+        - generic [ref=e92]: Ready immediately
+      - generic [ref=e93]:
+        - generic [ref=e94]: E
+        - generic [ref=e95]:
+          - generic [ref=e96]: Proof of Nationality
+          - generic [ref=e97]: Treaty country eligibility
+        - generic [ref=e98]: Ready immediately
+      - generic [ref=e99]:
+        - generic [ref=e100]: F
+        - generic [ref=e101]:
+          - generic [ref=e102]: Investment Proof
+          - generic [ref=e103]: Funds deployed and at risk
+        - generic [ref=e104]: After LLC formation
+      - generic [ref=e105]:
+        - generic [ref=e106]: G
+        - generic [ref=e107]:
+          - generic [ref=e108]: Business Evidence
+          - generic [ref=e109]: Real and operating enterprise
+        - generic [ref=e110]: After LLC formation
+      - generic [ref=e111]:
+        - generic [ref=e112]: H
+        - generic [ref=e113]:
+          - generic [ref=e114]: Source of Funds
+          - generic [ref=e115]: Complete paper trail narrative
+        - generic [ref=e116]: After LLC formation
+      - generic [ref=e117]:
+        - generic [ref=e118]: I
+        - generic [ref=e119]:
+          - generic [ref=e120]: Non-Marginality Evidence
+          - generic [ref=e121]: Job creation and viability
+        - generic [ref=e122]: After LLC formation
+      - generic [ref=e123]:
+        - generic [ref=e124]: J
+        - generic [ref=e125]:
+          - generic [ref=e126]: Investor Qualifications
+          - generic [ref=e127]: Experience and org chart
+        - generic [ref=e128]: Ready immediately
+      - generic [ref=e129]:
+        - generic [ref=e130]: K
+        - generic [ref=e131]:
+          - generic [ref=e132]: Business Plan
+          - generic [ref=e133]: Complete operational and financial plan
+        - generic [ref=e134]: After LLC formation
+      - generic [ref=e135]:
+        - generic [ref=e136]: L
+        - generic [ref=e137]:
+          - generic [ref=e138]: Family Dependents
+          - generic [ref=e139]: Spouse and children information
+        - generic [ref=e140]: Ready immediately
+  - generic [ref=e142]:
+    - generic [ref=e143]:
+      - generic [ref=e144]: MODULE 4
+      - heading "Know your application's strength before you walk in." [level=2] [ref=e145]
+      - paragraph [ref=e146]: After you complete your application materials, our engine scores your case across 8 dimensions — the same criteria a consular officer evaluates.
+      - paragraph [ref=e147]: See exactly where you're strong and where you need more work — before it costs you an appointment.
+      - paragraph [ref=e148]: This reflects preparation completeness — not a legal determination of E-2 eligibility.
+    - generic [ref=e149]:
+      - generic [ref=e150]: 74/100
+      - generic [ref=e151]: Application Readiness
+      - generic [ref=e152]:
+        - generic [ref=e154]: Substantiality
+        - generic [ref=e158]: Fund Source
+        - generic [ref=e162]: Non-Marginality
+        - generic [ref=e166]: Active Direction
+        - generic [ref=e170]: Business Plan
+        - generic [ref=e174]: Qualifications
+        - generic [ref=e178]: Real Enterprise
+        - generic [ref=e182]: Intent
+      - generic [ref=e185]: Example score — your results will vary
+  - generic [ref=e186]:
+    - generic [ref=e187]:
+      - generic [ref=e188]: FOUNDING MEMBER PRICING
+      - heading "Simple, transparent pricing." [level=2] [ref=e189]
+      - paragraph [ref=e190]: 14-day money-back guarantee for the first 50 members.
+      - paragraph [ref=e191]: "[ 47 ] founding member spots remaining"
+    - generic [ref=e192]:
+      - generic [ref=e193]:
+        - generic [ref=e194]: $297
+        - generic [ref=e195]: Solo
+        - generic [ref=e196]: One investor
+        - generic [ref=e197]:
+          - generic [ref=e198]: ✓Complete application package
+          - generic [ref=e199]: ✓All 11 tabs generated
+          - generic [ref=e200]: ✓Confidence score
+          - generic [ref=e201]: ✓2 interview simulator sessions
+        - link "Get Started →" [ref=e202] [cursor=pointer]:
+          - /url: /quiz
+      - generic [ref=e203]:
+        - generic [ref=e204]: MOST POPULAR
+        - generic [ref=e205]: $347
+        - generic [ref=e206]: Solo + Spouse
+        - generic [ref=e207]: Investor + spouse
+        - generic [ref=e208]:
+          - generic [ref=e209]: ✓Complete application package
+          - generic [ref=e210]: ✓All 11 tabs generated
+          - generic [ref=e211]: ✓Confidence score
+          - generic [ref=e212]: ✓2 interview simulator sessions
+          - generic [ref=e213]: ✓Spouse dependent documents
+        - link "Get Started →" [ref=e214] [cursor=pointer]:
+          - /url: /quiz
+      - generic [ref=e215]:
+        - generic [ref=e216]: $397
+        - generic [ref=e217]: Family
+        - generic [ref=e218]: Investor + spouse + up to 2 children
+        - generic [ref=e219]:
+          - generic [ref=e220]: ✓Complete application package
+          - generic [ref=e221]: ✓All 11 tabs generated
+          - generic [ref=e222]: ✓Confidence score
+          - generic [ref=e223]: ✓2 interview simulator sessions
+          - generic [ref=e224]: ✓Spouse dependent documents
+          - generic [ref=e225]: ✓Children dependent documents
+        - link "Get Started →" [ref=e226] [cursor=pointer]:
+          - /url: /quiz
+    - paragraph [ref=e227]: Partnership applications from $497. Additional dependents $25 each.
+  - generic [ref=e229]:
+    - generic [ref=e230]:
+      - heading "Preparation tool. Not a law firm." [level=3] [ref=e233]
+      - paragraph [ref=e234]: Every sentence in every document traces directly to an answer you provided. We never infer, invent, or make legal conclusions on your behalf.
+    - generic [ref=e235]:
+      - heading "Your data stays yours." [level=3] [ref=e238]
+      - paragraph [ref=e239]: We store your answers — never your actual documents, passport scans, or bank statements. Documents are generated fresh and downloaded directly.
+    - generic [ref=e240]:
+      - heading "14-day money-back guarantee." [level=3] [ref=e243]
+      - paragraph [ref=e244]: For founding members. Start and decide it&apos;s not right within 14 days, before generating documents, we refund in full.
+  - generic [ref=e245]:
+    - heading "Your consulate interview is closer than you think." [level=2] [ref=e247]
+    - paragraph [ref=e248]: The eligibility check takes 10 minutes. It's free. No account required to start. You'll know exactly where you stand.
+    - link "Check My Eligibility →" [ref=e249] [cursor=pointer]:
+      - /url: /quiz
+    - paragraph [ref=e250]: No credit card required · Takes 10 minutes
+  - generic [ref=e252]:
+    - generic [ref=e253]:
+      - generic [ref=e254]: e2go
+      - generic [ref=e255]:
+        - list [ref=e256]:
+          - listitem [ref=e257]:
+            - link "How It Works" [ref=e258] [cursor=pointer]:
+              - /url: "#how-it works"
+          - listitem [ref=e259]:
+            - link "What You Get" [ref=e260] [cursor=pointer]:
+              - /url: "#what-you get"
+          - listitem [ref=e261]:
+            - link "Pricing" [ref=e262] [cursor=pointer]:
+              - /url: "#pricing"
+        - list [ref=e263]:
+          - listitem [ref=e264]:
+            - link "Learn" [ref=e265] [cursor=pointer]:
+              - /url: /learn
+          - listitem [ref=e266]:
+            - link "Quiz" [ref=e267] [cursor=pointer]:
+              - /url: /quiz
+          - listitem [ref=e268]:
+            - link "Login" [ref=e269] [cursor=pointer]:
+              - /url: /login
+          - listitem [ref=e270]:
+            - link "Sign Up" [ref=e271] [cursor=pointer]:
+              - /url: /sign-up
+      - paragraph [ref=e273]: e2go is a document preparation tool — not a law firm and not a licensed immigration consultant.
+    - paragraph [ref=e275]: © 2026 e2go.app — All rights reserved

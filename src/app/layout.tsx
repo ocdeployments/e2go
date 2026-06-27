@@ -1,29 +1,67 @@
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
-import "./globals.css";
+import { runStartupSecurityChecks } from '@/lib/security-checks'
+runStartupSecurityChecks()
 
-const inter = Inter({
+import type { Metadata, Viewport } from "next";
+import { Cormorant_Garamond, DM_Sans } from "next/font/google";
+import "./globals.css";
+import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
+import CookieBanner from "@/components/CookieBanner";
+import PageTransition from "@/components/ui/PageTransition";
+
+const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
-  variable: "--font-inter",
+  variable: "--font-cormorant",
   display: "swap",
+  weight: ["300", "400", "500"],
+  style: ["normal", "italic"],
+});
+
+const dmSans = DM_Sans({
+  subsets: ["latin"],
+  variable: "--font-dm-sans",
+  display: "swap",
+  weight: ["300", "400", "500"],
 });
 
 export const metadata: Metadata = {
   title: {
-    default: "e2go.app - E-2 Visa Application Guide",
-    template: "%s | e2go.app",
+    default: "e2go — U.S. E-2 Treaty Investor Visa Preparation",
+    template: "%s | e2go",
   },
-  description: "Self-service guided application for U.S. E-2 Treaty Investor visa",
+  description: "Prepare your complete E-2 visa application package. All consulate tabs. 82 treaty countries. From $550.",
   metadataBase: new URL("https://e2go.app"),
   openGraph: {
     type: "website",
     locale: "en_US",
-    siteName: "e2go.app",
+    siteName: "e2go",
+    title: "e2go — U.S. E-2 Treaty Investor Visa Preparation",
+    description: "Prepare your complete E-2 visa application package. All consulate tabs. 82 treaty countries. From $550.",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "e2go — U.S. E-2 Treaty Investor Visa Preparation",
+      },
+    ],
   },
   robots: {
     index: true,
     follow: true,
   },
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "e2go",
+  },
+  other: {
+    "mobile-web-app-capable": "yes",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0a0a0a",
 };
 
 export default function RootLayout({
@@ -32,9 +70,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={`${inter.variable} font-sans antialiased`}>
-        {children}
+    <html lang="en" className={`${cormorant.variable} ${dmSans.variable}`}>
+      <body className="font-sans antialiased bg-[#0a0a0a] text-[#f5f0e8]">
+        <ServiceWorkerRegistration />
+        <main className="min-h-screen">
+          <PageTransition>{children}</PageTransition>
+        </main>
+        <CookieBanner />
       </body>
     </html>
   );

@@ -28,6 +28,11 @@ yarn-error.log*
 # local env files
 .env*.local
 
+# test data and seed scripts
+/scripts/test-applicant*.json
+/scripts/seed-test-applicant.ts
+/scripts/cleanup-test-data.ts
+
 # vercel
 .vercel
 
@@ -42,3 +47,24 @@ node_modules/
 /blob-report/
 /playwright/.cache/
 /playwright/.auth/
+.lazyweb/
+.lazyweb/
+.playwright-mcp/
+*.png
+scripts/test-applicant-michael-chen.json
+docs/test-applicant-michael-chen.json
+
+# generated docx test artifacts
+/docx-output/
+/docx-verification-output/
+
+# session build/dev logs
+build.log
+dev.log
+
+# session test/verify scripts
+scripts/test-learn-layout.ts
+scripts/verify-session18.mjs
+
+# supabase local temp
+supabase/.temp/

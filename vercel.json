@@ -1,1 +1,16 @@
-{"buildCommand": "npm run build", "outputDirectory": ".next", "framework": "nextjs", "installCommand": "npm install"}
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next",
+  "framework": "nextjs",
+  "installCommand": "npm install",
+  "crons": [
+    {
+      "path": "/api/cron/rebuild-profiles",
+      "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/cron/health-watchdog",
+      "schedule": "0 3 * * *"
+    }
+  ]
+}

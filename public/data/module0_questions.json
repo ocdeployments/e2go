@@ -1,538 +1,1027 @@
 {
-  "module": "0",
-  "name": "Eligibility Quiz",
-  "version": "2.1",
-  "last_updated": "2026-05-28",
-  "source_standard": [
-    "U.S. Embassy Toronto",
-    "State Department Foreign Affairs Manual",
-    "USCIS / Travel.state.gov where directly relevant"
-  ],
-  "purpose": [
-    "Determine whether the principal applicant appears eligible to proceed",
-    "Detect cases outside safe self-service scope",
-    "Route user to the correct path",
-    "Collect only information necessary at eligibility stage"
-  ],
-  "outcomes": [
-    "Proceed",
-    "Proceed with Risk Flag",
-    "Attorney Recommended",
-    "Do Not Proceed"
-  ],
-  "questions": [
-    {
-      "id": "Q0-01",
-      "type": "select",
-      "question": "What is your citizenship status?",
-      "section": "principal",
-      "options": [
-        "I am a Canadian citizen",
-        "I am a dual citizen and one of my citizenships is Canadian",
-        "I am a permanent resident of Canada, but not a Canadian citizen",
-        "I am not a Canadian citizen"
-      ],
-      "stop_codes": [
-        "PR-01"
-      ]
-    },
-    {
-      "id": "Q0-02",
-      "type": "select",
-      "question": "Do you currently hold a valid Canadian passport?",
-      "section": "principal",
-      "options": [
-        "Yes",
-        "No",
-        "I am not sure"
-      ],
-      "warning_codes": [
-        "W-01"
-      ]
-    },
-    {
-      "id": "Q0-03",
-      "type": "select",
-      "question": "Are you currently in Canada or in the United States?",
-      "section": "principal",
-      "options": [
-        "I am currently in Canada",
-        "I am currently in the United States on valid status",
-        "I am currently in the United States and I am not sure whether my status is valid",
-        "I am currently in the United States without valid status",
-        "I am in another country"
-      ],
-      "stop_codes": [
-        "PR-02"
-      ],
-      "warning_codes": [
-        "W-02",
-        "W-03"
-      ]
-    },
-    {
-      "id": "Q0-04",
-      "type": "select",
-      "question": "Have you already invested funds into the U.S. business, or are you in the process of committing funds to it?",
-      "section": "investment",
-      "options": [
-        "Yes \u2014 funds have already been invested",
-        "Yes \u2014 funds are in the process of being committed",
-        "No \u2014 funds are available, but nothing has been committed yet",
-        "No \u2014 I do not currently have funds available for the investment"
-      ],
-      "stop_codes": [
-        "PR-03"
-      ],
-      "warning_codes": [
-        "W-04"
-      ]
-    },
-    {
-      "id": "Q0-05",
-      "type": "currency",
-      "question": "Approximately how much capital do you expect to invest in the business?",
-      "section": "investment",
-      "currency_options": [
-        "CAD",
-        "USD"
-      ],
-      "warning_codes": [
-        "W-05"
-      ],
-      "proportionality_thresholds_usd": {
-        "clean": {
-          "min": 150000,
-          "flag": null
+    "module": "module0",
+    "version": "5.0",
+    "last_updated": "2026-06-10",
+    "sections": [
+        "Eligibility",
+        "Investment",
+        "Family",
+        "Business",
+        "History",
+        "Home Ties"
+    ],
+    "questions": [
+        {
+            "id": "Q0-01",
+            "type": "searchable_country",
+            "section": "eligibility",
+            "section_index": 0,
+            "question": "What is your current citizenship?",
+            "helper_text": "Your citizenship determines whether you qualify for the E-2 Treaty Investor visa. Only nationals of treaty countries are eligible.",
+            "tooltip": "E-2 visas are only available to nationals of countries with a Treaty of Commerce and Navigation with the United States.",
+            "is_sub": false,
+            "parent": null,
+            "show_if": null,
+            "options": []
         },
-        "soft_advisory": {
-          "min": 75000,
-          "max": 149999,
-          "flag": "W-PROP-SOFT"
+        {
+            "id": "Q0-readiness",
+            "type": "select",
+            "section": "eligibility",
+            "section_index": 0,
+            "question": "Where are you in your E-2 journey?",
+            "helper_text": "This helps us tailor your results and next steps to where you actually are.",
+            "tooltip": null,
+            "is_sub": false,
+            "parent": null,
+            "show_if": null,
+            "options": [
+                {
+                    "text": "I have made the decision — I am ready to apply",
+                    "action": "continue",
+                    "code": null,
+                    "warning_message": null
+                },
+                {
+                    "text": "I am seriously researching and getting close",
+                    "action": "continue",
+                    "code": null,
+                    "warning_message": null
+                },
+                {
+                    "text": "I am exploring whether this is right for me",
+                    "action": "continue",
+                    "code": null,
+                    "warning_message": null
+                }
+            ]
         },
-        "strong_warning": {
-          "max": 74999,
-          "flag": "W-PROP-STRONG"
+        {
+            "id": "Q0-target-date",
+            "type": "select",
+            "section": "eligibility",
+            "section_index": 0,
+            "question": "When are you hoping to be living in the United States?",
+            "helper_text": "This helps us personalise your timeline and compliance calendar.",
+            "tooltip": null,
+            "is_sub": false,
+            "parent": null,
+            "show_if": null,
+            "options": [
+                {
+                    "text": "Within 6 months",
+                    "action": "warn:W-TARGET-URGENT",
+                    "code": "W-TARGET-URGENT",
+                    "warning_message": "This is an ambitious timeline. Starting immediately gives you the best chance of meeting it."
+                },
+                {
+                    "text": "6 to 12 months",
+                    "action": "continue",
+                    "code": null,
+                    "warning_message": null
+                },
+                {
+                    "text": "12 to 24 months",
+                    "action": "continue",
+                    "code": null,
+                    "warning_message": null
+                },
+                {
+                    "text": "Not sure yet",
+                    "action": "continue",
+                    "code": null,
+                    "warning_message": null
+                }
+            ]
+        },
+        {
+            "id": "Q0-02",
+            "type": "select",
+            "section": "eligibility",
+            "section_index": 0,
+            "question": "Who is this application for?",
+            "helper_text": "This determines the scope of your application package and pricing.",
+            "tooltip": null,
+            "is_sub": false,
+            "parent": null,
+            "show_if": null,
+            "options": [
+                {
+                    "text": "Just me — I am the only applicant",
+                    "action": "continue",
+                    "code": null,
+                    "warning_message": null
+                },
+                {
+                    "text": "Me and my spouse or partner — we are applying together",
+                    "action": "continue",
+                    "code": null,
+                    "warning_message": null
+                },
+                {
+                    "text": "A group of business partners — multiple applicants",
+                    "action": "continue",
+                    "code": null,
+                    "warning_message": null
+                }
+            ]
+        },
+        {
+            "id": "Q0-03",
+            "type": "select",
+            "section": "family",
+            "section_index": 2,
+            "question": "Who is moving with you?",
+            "helper_text": "Your response determines E-2 dependent visa strategy and pricing.",
+            "tooltip": null,
+            "is_sub": false,
+            "parent": null,
+            "show_if": null,
+            "options": [
+                {
+                    "text": "Just me — I am moving alone",
+                    "action": "continue",
+                    "code": null,
+                    "warning_message": null
+                },
+                {
+                    "text": "My spouse or partner",
+                    "action": "continue",
+                    "code": null,
+                    "warning_message": null
+                },
+                {
+                    "text": "My spouse and children",
+                    "action": "continue",
+                    "code": null,
+                    "warning_message": null
+                },
+                {
+                    "text": "My children only",
+                    "action": "continue",
+                    "code": null,
+                    "warning_message": null
+                },
+                {
+                    "text": "Not decided yet",
+                    "action": "continue",
+                    "code": null,
+                    "warning_message": null
+                }
+            ]
+        },
+        {
+            "id": "Q0-03a",
+            "type": "select",
+            "section": "family",
+            "section_index": 2,
+            "question": "What are your children's ages?",
+            "helper_text": "Dependent status only applies to unmarried children under 21. This affects timeline and compliance planning.",
+            "tooltip": null,
+            "is_sub": true,
+            "parent": "Q0-03",
+            "show_if": {
+                "Q0-03": [
+                    "My spouse and children",
+                    "My children only"
+                ]
+            },
+            "options": [
+                {
+                    "text": "No children",
+                    "action": "continue",
+                    "code": null,
+                    "warning_message": null
+                },
+                {
+                    "text": "Yes — all under 21",
+                    "action": "continue",
+                    "code": null,
+                    "warning_message": null
+                },
+                {
+                    "text": "Yes — one or more are 21 or older",
+                    "action": "warn:W-OVER-21",
+                    "code": "W-OVER-21",
+                    "warning_message": "Children 21 or older do not qualify as E-2 dependents. They will need their own visa pathway."
+                }
+            ]
+        },
+        {
+            "id": "Q0-04",
+            "type": "select",
+            "section": "business",
+            "section_index": 3,
+            "question": "Will you have a business partner or co-investor?",
+            "helper_text": "Partnership structure affects ownership requirements, treaty basis, and pricing. Spousal partnerships and 50/50 partnerships have different compliance implications.",
+            "tooltip": "E-2 principal applicants must own at least 50% of the enterprise. Partnerships require careful structuring.",
+            "is_sub": false,
+            "parent": null,
+            "show_if": null,
+            "options": [
+                {
+                    "text": "No — I am the sole owner and investor",
+                    "action": "continue",
+                    "code": null,
+                    "warning_message": null
+                },
+                {
+                    "text": "Yes — one partner, my spouse",
+                    "action": "sub:Q0-04a",
+                    "code": null,
+                    "warning_message": null
+                },
+                {
+                    "text": "Yes — one partner, 50/50 split",
+                    "action": "sub:Q0-04a",
+                    "code": null,
+                    "warning_message": null
+                },
+                {
+                    "text": "Yes — multiple partners, unequal splits",
+                    "action": "warn:W-PARTNERSHIP-SPLIT",
+                    "code": "W-PARTNERSHIP-SPLIT",
+                    "warning_message": "Unequal partnership splits require additional documentation of control and ownership. This is flagged for attorney review."
+                }
+            ]
+        },
+        {
+            "id": "Q0-04a",
+            "type": "select",
+            "section": "business",
+            "section_index": 3,
+            "question": "What is your partner's role in the business?",
+            "helper_text": "This affects whether your spouse qualifies for independent E-2 status and determines ownership structure documentation.",
+            "tooltip": null,
+            "is_sub": true,
+            "parent": "Q0-04",
+            "show_if": {
+                "Q0-04": [
+                    "Yes — one partner, my spouse",
+                    "Yes — one partner, 50/50 split"
+                ]
+            },
+            "options": [
+                {
+                    "text": "Spouse — not involved in business operations",
+                    "action": "flag_spouse_perspective+continue",
+                    "code": null,
+                    "warning_message": null
+                },
+                {
+                    "text": "Spouse — active co-manager or employee",
+                    "action": "flag_spouse_qualifications+continue",
+                    "code": null,
+                    "warning_message": null
+                },
+                {
+                    "text": "Business partner — equal decision-maker",
+                    "action": "continue",
+                    "code": null,
+                    "warning_message": null
+                },
+                {
+                    "text": "Business partner — silent investor, no daily role",
+                    "action": "warn:W-PARTNERSHIP-SPLIT",
+                    "code": "W-PARTNERSHIP-SPLIT",
+                    "warning_message": "Silent investors in E-2 partnerships raise questions about active management. This is flagged for review."
+                }
+            ]
+        },
+        {
+            "id": "Q0-05",
+            "type": "select",
+            "section": "investment",
+            "section_index": 1,
+            "question": "Where are you currently located?",
+            "helper_text": "This determines whether you'll apply through a US consulate abroad (consular processing) or adjust status from within the US. If you're unsure, select 'Not sure — I need guidance' and we'll advise based on your situation.",
+            "tooltip": "Consular processing and change of status have different requirements, timelines, and risks. Your current location is the starting point for determining the best path.",
+            "is_sub": false,
+            "parent": null,
+            "show_if": null,
+            "options": [
+                {
+                    "text": "Inside the US — I want to change status",
+                    "action": "continue",
+                    "code": null,
+                    "warning_message": null
+                },
+                {
+                    "text": "Outside the US — I'll apply at a consulate",
+                    "action": "continue",
+                    "code": null,
+                    "warning_message": null
+                },
+                {
+                    "text": "I have a pending COS application",
+                    "action": "continue",
+                    "code": null,
+                    "warning_message": null
+                },
+                {
+                    "text": "Not sure — I need guidance",
+                    "action": "continue",
+                    "code": null,
+                    "warning_message": null
+                }
+            ]
+        },
+        {
+            "id": "Q0-06",
+            "type": "multiselect",
+            "section": "investment",
+            "section_index": 1,
+            "question": "What is the primary source of your investment funds?",
+            "helper_text": "Select all that apply. Each source requires specific documentation to prove the funds are lawfully obtained and traceable.",
+            "tooltip": "USCIS requires a clear paper trail for all investment funds. Different sources require different supporting documents — selecting accurately here helps us prepare the right documentation checklist.",
+            "is_sub": false,
+            "parent": null,
+            "show_if": null,
+            "options": [
+                {
+                    "text": "Personal savings or investments (bank/brokerage accounts)",
+                    "action": "continue",
+                    "code": null,
+                    "warning_message": null
+                },
+                {
+                    "text": "Sale of a property or business",
+                    "action": "continue",
+                    "code": null,
+                    "warning_message": null
+                },
+                {
+                    "text": "Registered accounts (RRSP, TFSA, LIRA, pension)",
+                    "action": "continue",
+                    "code": null,
+                    "warning_message": null
+                },
+                {
+                    "text": "Gift or inheritance",
+                    "action": "warn:W-FAMILY-GIFT",
+                    "code": "W-FAMILY-GIFT",
+                    "warning_message": "Gift-funded investments require additional documentation proving the gift is genuine and not a disguised loan."
+                },
+                {
+                    "text": "Loan (personal, home equity, or third-party)",
+                    "action": "attorney:W-LOAN-FUNDED",
+                    "code": "W-LOAN-FUNDED",
+                    "warning_message": "Loan-funded investments require careful structuring. The loan must be secured by personal assets, not the business. We recommend attorney guidance."
+                },
+                {
+                    "text": "Multiple sources combined",
+                    "action": "continue",
+                    "code": null,
+                    "warning_message": null
+                }
+            ]
+        },
+        {
+            "id": "Q0-07",
+            "type": "select",
+            "section": "investment",
+            "section_index": 1,
+            "question": "What is your estimated total investment?",
+            "helper_text": "E-2 investment must be 'substantial' relative to the total cost of the business. The standard benchmark is $100,000+.",
+            "tooltip": "The substantiality test compares your investment to the total cost of either purchasing an existing business or starting a new one. Amounts under $50,000 rarely qualify.",
+            "is_sub": false,
+            "parent": null,
+            "show_if": null,
+            "options": [
+                {
+                    "text": "Over $150,000",
+                    "action": "continue",
+                    "code": null,
+                    "warning_message": null
+                },
+                {
+                    "text": "$100,000 – $150,000",
+                    "action": "continue",
+                    "code": null,
+                    "warning_message": null
+                },
+                {
+                    "text": "$75,000 – $100,000",
+                    "action": "warn:W-LOW-INVESTMENT",
+                    "code": "W-LOW-INVESTMENT",
+                    "warning_message": "Investments below $100k face higher scrutiny. The substantiality test becomes more demanding at lower amounts."
+                },
+                {
+                    "text": "$50,000 – $75,000",
+                    "action": "warn:W-BORDERLINE-INVESTMENT",
+                    "code": "W-BORDERLINE-INVESTMENT",
+                    "warning_message": "This range is below the typical substantiality threshold. Success requires strong justification of proportionality to total business cost."
+                },
+                {
+                    "text": "Under $50,000",
+                    "action": "stop:PR-LOW-INVESTMENT",
+                    "code": "PR-LOW-INVESTMENT",
+                    "warning_message": "Investments under $50,000 rarely meet the substantiality requirement for E-2 classification."
+                }
+            ]
+        },
+        {
+            "id": "Q0-business-type",
+            "type": "select",
+            "section": "business",
+            "section_index": 3,
+            "question": "What best describes the business you are investing in?",
+            "helper_text": "Different business types have different compliance profiles and documentation requirements for E-2 purposes.",
+            "tooltip": null,
+            "is_sub": false,
+            "parent": null,
+            "show_if": null,
+            "options": [
+                {
+                    "text": "Service business — consulting, staffing, cleaning, or similar",
+                    "action": "continue",
+                    "code": null,
+                    "warning_message": null
+                },
+                {
+                    "text": "Franchise — an established brand and system",
+                    "action": "sub:Q0-08c",
+                    "code": null,
+                    "warning_message": null
+                },
+                {
+                    "text": "Retail — physical store or e-commerce",
+                    "action": "continue",
+                    "code": null,
+                    "warning_message": null
+                },
+                {
+                    "text": "Food and beverage — restaurant, café, or catering",
+                    "action": "continue",
+                    "code": null,
+                    "warning_message": null
+                },
+                {
+                    "text": "Healthcare or senior care",
+                    "action": "continue",
+                    "code": null,
+                    "warning_message": null
+                },
+                {
+                    "text": "Real estate — with active development or management",
+                    "action": "continue",
+                    "code": null,
+                    "warning_message": null
+                },
+                {
+                    "text": "I have not identified a specific business yet",
+                    "action": "warn:W-NO-BIZ-IDENTIFIED",
+                    "code": "W-NO-BIZ-IDENTIFIED",
+                    "warning_message": "Your business must be identified before an E-2 application can be filed. Preparation can begin now — we will help you build a strong profile while you search."
+                },
+                {
+                    "text": "Other",
+                    "action": "continue",
+                    "code": null,
+                    "warning_message": null
+                }
+            ]
+        },
+        {
+            "id": "Q0-business-cost",
+            "type": "currency",
+            "section": "investment",
+            "section_index": 1,
+            "question": "What is the approximate total cost to start or acquire this business — including purchase price, startup costs, and working capital?",
+            "helper_text": "This helps us assess the proportionality of your investment relative to the total business cost — a key factor in the substantiality test.",
+            "tooltip": "USCIS evaluates whether your investment is substantial relative to the total cost of the enterprise. A higher investment percentage strengthens your case.",
+            "is_sub": false,
+            "parent": null,
+            "show_if": {
+                "Q0-business-type": [
+                    "Service business — consulting, staffing, cleaning, or similar",
+                    "Franchise — an established brand and system",
+                    "Retail — physical store or e-commerce",
+                    "Food and beverage — restaurant, café, or catering",
+                    "Healthcare or senior care",
+                    "Real estate — with active development or management",
+                    "Other"
+                ]
+            },
+            "options": []
+        },
+        {
+            "id": "Q0-08",
+            "type": "select",
+            "section": "business",
+            "section_index": 3,
+            "question": "What is your current business situation?",
+            "helper_text": "This helps us understand where you are in the E-2 process and tailor your document package accordingly.",
+            "tooltip": null,
+            "is_sub": false,
+            "parent": null,
+            "show_if": null,
+            "options": [
+                {
+                    "text": "I have a specific business identified and ready to invest in",
+                    "action": "sub:Q0-08a",
+                    "code": null,
+                    "warning_message": null
+                },
+                {
+                    "text": "I am researching businesses and franchises",
+                    "action": "flag_franchise_interest+continue",
+                    "code": null,
+                    "warning_message": null
+                },
+                {
+                    "text": "I want to start a new business from scratch",
+                    "action": "continue",
+                    "code": null,
+                    "warning_message": null
+                },
+                {
+                    "text": "A broker or advisor introduced me to a business",
+                    "action": "sub:Q0-08b",
+                    "code": null,
+                    "warning_message": null
+                }
+            ]
+        },
+        {
+            "id": "Q0-08a",
+            "type": "select",
+            "section": "business",
+            "section_index": 3,
+            "question": "What type of business is it?",
+            "helper_text": "Different business types have different compliance profiles for E-2 purposes.",
+            "tooltip": null,
+            "is_sub": true,
+            "parent": "Q0-08",
+            "show_if": {
+                "Q0-08": [
+                    "I have a specific business identified and ready to invest in"
+                ]
+            },
+            "options": [
+                {
+                    "text": "Franchise — established brand with proven model",
+                    "action": "flag_franchise_interest+continue",
+                    "code": null,
+                    "warning_message": null
+                },
+                {
+                    "text": "Independent business — restaurant, retail, service, etc.",
+                    "action": "continue",
+                    "code": null,
+                    "warning_message": null
+                },
+                {
+                    "text": "Tech or consulting — low-overhead service business",
+                    "action": "continue",
+                    "code": null,
+                    "warning_message": null
+                },
+                {
+                    "text": "Real estate investment or holding company",
+                    "action": "stop:PR-PASSIVE-INVEST",
+                    "code": "PR-PASSIVE-INVEST",
+                    "warning_message": "Passive real estate holdings generally do not qualify as E-2 enterprises. The business must be active and operating."
+                },
+                {
+                    "text": "Non-profit organisation",
+                    "action": "stop:PR-NONPROFIT",
+                    "code": "PR-NONPROFIT",
+                    "warning_message": "Non-profit organisations generally do not qualify for E-2 classification. The enterprise must be a for-profit commercial business."
+                }
+            ]
+        },
+        {
+            "id": "Q0-08b",
+            "type": "select",
+            "section": "business",
+            "section_index": 3,
+            "question": "Who introduced you to the business opportunity?",
+            "helper_text": "This helps us understand your stage in the process.",
+            "tooltip": null,
+            "is_sub": true,
+            "parent": "Q0-08",
+            "show_if": {
+                "Q0-08": [
+                    "A broker or advisor introduced me to a business"
+                ]
+            },
+            "options": [
+                {
+                    "text": "Immigration attorney or legal advisor",
+                    "action": "continue",
+                    "code": null,
+                    "warning_message": null
+                },
+                {
+                    "text": "Business broker or franchise consultant",
+                    "action": "flag_franchise_interest+continue",
+                    "code": null,
+                    "warning_message": null
+                },
+                {
+                    "text": "Personal contact or referral",
+                    "action": "continue",
+                    "code": null,
+                    "warning_message": null
+                },
+                {
+                    "text": "Online research — found it myself",
+                    "action": "continue",
+                    "code": null,
+                    "warning_message": null
+                }
+            ]
+        },
+        {
+            "id": "Q0-08c",
+            "type": "select",
+            "section": "business",
+            "section_index": 3,
+            "question": "Have you made contact with the franchisor yet?",
+            "helper_text": "This helps us understand your stage in the franchise process and what documentation you may already have.",
+            "tooltip": null,
+            "is_sub": true,
+            "parent": "Q0-business-type",
+            "show_if": {
+                "Q0-business-type": [
+                    "Franchise — an established brand and system"
+                ]
+            },
+            "options": [
+                {
+                    "text": "Yes — I have been in contact and have information",
+                    "action": "continue",
+                    "code": null,
+                    "warning_message": null
+                },
+                {
+                    "text": "No — I know which franchise I want but have not reached out",
+                    "action": "sub:Q0-08d",
+                    "code": null,
+                    "warning_message": null
+                },
+                {
+                    "text": "I am still deciding which franchise",
+                    "action": "continue",
+                    "code": null,
+                    "warning_message": null
+                }
+            ]
+        },
+        {
+            "id": "Q0-08d",
+            "type": "select",
+            "section": "business",
+            "section_index": 3,
+            "question": "Would you like us to connect you with this franchisor on your behalf?",
+            "helper_text": "Based on your profile, we can connect you with E-2 specialist franchise brokers in your investment range — free to you, as brokers are paid by the franchisor, not by you.",
+            "tooltip": null,
+            "is_sub": true,
+            "parent": "Q0-08c",
+            "show_if": {
+                "Q0-08c": [
+                    "No — I know which franchise I want but have not reached out"
+                ]
+            },
+            "options": [
+                {
+                    "text": "Yes, please connect me",
+                    "action": "flag_franchise_referral+continue",
+                    "code": null,
+                    "warning_message": null
+                },
+                {
+                    "text": "No, I'll reach out myself",
+                    "action": "continue",
+                    "code": null,
+                    "warning_message": null
+                }
+            ]
+        },
+        {
+            "id": "Q0-09",
+            "type": "select",
+            "section": "history",
+            "section_index": 4,
+            "question": "Do you have anything to disclose about your immigration or criminal history?",
+            "helper_text": "This includes prior visa refusals, border incidents, deportation orders, or criminal convictions. If you're unsure, select 'Not sure — I may have something' and we'll help you assess.",
+            "tooltip": "Immigration history is one of the most sensitive areas of E-2 adjudication. Full disclosure is essential — undisclosed issues discovered later can result in permanent bars.",
+            "is_sub": false,
+            "parent": null,
+            "show_if": null,
+            "options": [
+                {
+                    "text": "Yes, I have something to disclose",
+                    "action": "sub:Q0-09c",
+                    "code": null,
+                    "warning_message": null
+                },
+                {
+                    "text": "No, my history is clear",
+                    "action": "continue",
+                    "code": null,
+                    "warning_message": null
+                },
+                {
+                    "text": "Not sure — I may have something",
+                    "action": "sub:Q0-09c",
+                    "code": null,
+                    "warning_message": null
+                }
+            ]
+        },
+        {
+            "id": "Q0-09c",
+            "type": "multiselect",
+            "section": "history",
+            "section_index": 4,
+            "question": "Which of the following apply to your history?",
+            "helper_text": "Select all that apply. This helps us prepare the right documentation and legal strategy.",
+            "tooltip": null,
+            "is_sub": true,
+            "parent": "Q0-09",
+            "show_if": {
+                "Q0-09": [
+                    "Yes, I have something to disclose",
+                    "Not sure — I may have something"
+                ]
+            },
+            "options": [
+                {
+                    "text": "I have been refused a US visa",
+                    "action": "warn:W-REFUSAL-RECENT",
+                    "code": "W-REFUSAL-RECENT",
+                    "warning_message": "Prior visa refusals must be addressed in your application. We will prepare a detailed explanation."
+                },
+                {
+                    "text": "I have been refused entry at a US border",
+                    "action": "warn:W-ENTRY-REFUSED",
+                    "code": "W-ENTRY-REFUSED",
+                    "warning_message": "Border refusals are serious and must be thoroughly addressed. Attorney review is recommended."
+                },
+                {
+                    "text": "I have been deported or removed from the US",
+                    "action": "attorney:W-DEPORTED",
+                    "code": "W-DEPORTED",
+                    "warning_message": "Deportation or removal orders create significant legal complexity. This requires professional legal guidance."
+                },
+                {
+                    "text": "I have criminal convictions",
+                    "action": "attorney:W-CONVICTION-RECENT",
+                    "code": "W-CONVICTION-RECENT",
+                    "warning_message": "Criminal history requires careful admissibility analysis. We recommend consulting with an immigration attorney."
+                },
+                {
+                    "text": "I have had a personal or business bankruptcy in the last 7 years",
+                    "action": "warn:W-BANKRUPTCY",
+                    "code": "W-BANKRUPTCY",
+                    "warning_message": "A recent bankruptcy may affect franchise approval and fund sourcing. We will help you document a clear path forward."
+                },
+                {
+                    "text": "I have a civil judgment or a revoked professional licence",
+                    "action": "warn:W-CIVIL-ACTION",
+                    "code": "W-CIVIL-ACTION",
+                    "warning_message": "Civil judgments and licence revocations are disclosable and may require legal explanation. An attorney review is recommended."
+                }
+            ]
+        },
+        {
+            "id": "Q0-09a",
+            "type": "select",
+            "section": "history",
+            "section_index": 4,
+            "question": "When did the visa refusal occur?",
+            "helper_text": "The timing of a prior refusal affects how we address it in your application.",
+            "tooltip": null,
+            "is_sub": true,
+            "parent": "Q0-09",
+            "show_if": {
+                "Q0-09c": [
+                    "I have been refused a US visa"
+                ]
+            },
+            "options": [
+                {
+                    "text": "Within the last 2 years",
+                    "action": "warn:W-REFUSAL-RECENT",
+                    "code": "W-REFUSAL-RECENT",
+                    "warning_message": "Recent refusals require detailed explanation and evidence of changed circumstances."
+                },
+                {
+                    "text": "2–5 years ago",
+                    "action": "warn:W-REFUSAL-RECENT",
+                    "code": "W-REFUSAL-RECENT",
+                    "warning_message": "Refusals within the last 5 years require careful explanation in your application narrative."
+                },
+                {
+                    "text": "More than 5 years ago",
+                    "action": "warn:W-REFUSAL-OLD",
+                    "code": "W-REFUSAL-OLD",
+                    "warning_message": "Older refusals still need to be disclosed, but carry less weight in adjudication."
+                },
+                {
+                    "text": "I have been refused more than once",
+                    "action": "warn:W-REFUSAL-MULTIPLE",
+                    "code": "W-REFUSAL-MULTIPLE",
+                    "warning_message": "Multiple refusals create a pattern that requires strong evidence of eligibility and changed circumstances."
+                }
+            ]
+        },
+        {
+            "id": "Q0-09b",
+            "type": "select",
+            "section": "history",
+            "section_index": 4,
+            "question": "Please describe the nature of your criminal conviction.",
+            "helper_text": "The type and recency of a conviction determines admissibility and required legal preparation.",
+            "tooltip": null,
+            "is_sub": true,
+            "parent": "Q0-09",
+            "show_if": {
+                "Q0-09c": [
+                    "I have criminal convictions"
+                ]
+            },
+            "options": [
+                {
+                    "text": "Minor offence — resolved more than 10 years ago",
+                    "action": "warn:W-CONVICTION-OLD",
+                    "code": "W-CONVICTION-OLD",
+                    "warning_message": "Older minor convictions are generally less problematic but still require disclosure and documentation."
+                },
+                {
+                    "text": "Minor offence — resolved within the last 10 years",
+                    "action": "attorney:W-CONVICTION-RECENT",
+                    "code": "W-CONVICTION-RECENT",
+                    "warning_message": "Recent convictions require careful admissibility analysis. Professional legal guidance is recommended."
+                },
+                {
+                    "text": "I am unsure about the exact details or admissibility",
+                    "action": "attorney:W-CONVICTION-UNSURE",
+                    "code": "W-CONVICTION-UNSURE",
+                    "warning_message": "Uncertainty about criminal history requires professional legal review before proceeding."
+                },
+                {
+                    "text": "Serious offence — requires legal assessment",
+                    "action": "attorney:W-CONVICTION-RECENT",
+                    "code": "W-CONVICTION-RECENT",
+                    "warning_message": "Serious convictions may create admissibility bars. This requires immediate attorney consultation."
+                }
+            ]
+        },
+        {
+            "id": "Q0-09e",
+            "type": "select",
+            "section": "history",
+            "section_index": 4,
+            "question": "Was the bankruptcy personal or related to a business entity?",
+            "helper_text": "The nature of the bankruptcy affects how we present your financial history and document your investment readiness.",
+            "tooltip": null,
+            "is_sub": true,
+            "parent": "Q0-09",
+            "show_if": {
+                "Q0-09c": [
+                    "I have had a personal or business bankruptcy in the last 7 years"
+                ]
+            },
+            "options": [
+                {
+                    "text": "Personal bankruptcy",
+                    "action": "warn:W-BANKRUPTCY",
+                    "code": "W-BANKRUPTCY",
+                    "warning_message": "Personal bankruptcy must be fully discharged and documented. We will help you build a strong financial recovery narrative."
+                },
+                {
+                    "text": "Business bankruptcy or insolvency",
+                    "action": "warn:W-BANKRUPTCY",
+                    "code": "W-BANKRUPTCY",
+                    "warning_message": "Prior business insolvency requires careful explanation of what changed and why the E-2 business is on sound footing."
+                },
+                {
+                    "text": "I am not sure of the classification",
+                    "action": "warn:W-BANKRUPTCY",
+                    "code": "W-BANKRUPTCY",
+                    "warning_message": "We will help you review the details with the right documentation framework."
+                }
+            ]
+        },
+        {
+            "id": "Q0-09f",
+            "type": "select",
+            "section": "history",
+            "section_index": 4,
+            "question": "Is the civil judgment or licence revocation fully resolved, or still pending?",
+            "helper_text": "The current status determines how this must be addressed in your application documentation.",
+            "tooltip": null,
+            "is_sub": true,
+            "parent": "Q0-09",
+            "show_if": {
+                "Q0-09c": [
+                    "I have a civil judgment or a revoked professional licence"
+                ]
+            },
+            "options": [
+                {
+                    "text": "Fully resolved — no outstanding obligations",
+                    "action": "warn:W-CIVIL-ACTION",
+                    "code": "W-CIVIL-ACTION",
+                    "warning_message": "Even resolved matters require disclosure and supporting documentation showing final disposition."
+                },
+                {
+                    "text": "Ongoing — still subject to proceedings or conditions",
+                    "action": "attorney:W-CIVIL-ACTION",
+                    "code": "W-CIVIL-ACTION",
+                    "warning_message": "Ongoing civil proceedings require immediate attorney review before proceeding with an E-2 application."
+                },
+                {
+                    "text": "I am not sure of the current status",
+                    "action": "attorney:W-CIVIL-ACTION",
+                    "code": "W-CIVIL-ACTION",
+                    "warning_message": "Uncertainty about legal proceedings requires professional legal assessment."
+                }
+            ]
+        },
+        {
+            "id": "Q0-10",
+            "type": "multiselect",
+            "section": "home_ties",
+            "section_index": 5,
+            "question": "What ties do you maintain in your home country?",
+            "helper_text": "Select all that apply. Strong home ties demonstrate non-immigrant intent — a critical factor in E-2 adjudication.",
+            "tooltip": "E-2 applicants must demonstrate they intend to return to their home country. The strength of home ties is a key adjudication factor.",
+            "is_sub": false,
+            "parent": null,
+            "show_if": null,
+            "options": [
+                {
+                    "text": "Property ownership",
+                    "action": "continue",
+                    "code": null,
+                    "warning_message": null
+                },
+                {
+                    "text": "Close family still living there",
+                    "action": "continue",
+                    "code": null,
+                    "warning_message": null
+                },
+                {
+                    "text": "Active bank accounts or investments",
+                    "action": "continue",
+                    "code": null,
+                    "warning_message": null
+                },
+                {
+                    "text": "Ongoing employment or business interests",
+                    "action": "continue",
+                    "code": null,
+                    "warning_message": null
+                },
+                {
+                    "text": "Limited or no ties",
+                    "action": "warn:W-WEAK-TIES",
+                    "code": "W-WEAK-TIES",
+                    "warning_message": "Limited home ties make non-immigrant intent harder to demonstrate. We will need to build a strong case around available evidence."
+                }
+            ]
         }
-      },
-      "currency_conversion_note": "Convert CAD to USD using daily cached rate before applying thresholds. Display rate used to user."
+    ],
+    "hard_stops": {
+        "PR-LOW-INVESTMENT": "Your investment amount appears below the typical threshold for E-2 classification. The treaty investor visa requires a 'substantial' investment relative to the total cost of the enterprise. Amounts below $50,000 rarely meet this standard.",
+        "PR-NON-TREATY": "Your country of citizenship does not currently have an active E-2 treaty with the United States. Only nationals of treaty countries are eligible for E-2 classification.",
+        "PR-PASSIVE-INVEST": "Passive investments such as stock portfolios, rental properties held for income, or other non-operational assets do not qualify for E-2 classification. The investment must be in an active, operating commercial enterprise.",
+        "PR-NONPROFIT": "Non-profit organisations do not qualify for E-2 treaty investor classification. The E-2 visa requires a for-profit commercial enterprise."
     },
-    {
-      "id": "Q0-06",
-      "type": "select",
-      "question": "Can you document where your investment funds came from and how they moved into the business?",
-      "section": "investment",
-      "options": [
-        "Yes \u2014 I can document the source and movement of funds",
-        "Mostly \u2014 I have most of the documentation, but there may be gaps",
-        "No \u2014 I cannot clearly document the source or movement of funds",
-        "I am not sure"
-      ],
-      "warning_codes": [
-        "W-06",
-        "W-07"
-      ]
+    "outcomes": {
+        "PROCEED": "Your profile shows strong E-2 eligibility. You meet the core requirements for treaty investor classification.",
+        "PROCEED_RISK": "Your profile shows E-2 eligibility with manageable risk factors. We recommend addressing the flagged items during preparation.",
+        "ATTORNEY_RECOMMENDED": "Your profile has complexity that benefits from legal review. We recommend consulting an immigration attorney alongside your preparation.",
+        "DO_NOT_PROCEED": "Based on your responses, there are significant barriers to E-2 eligibility that should be resolved before proceeding."
     },
-    {
-      "id": "Q0-07",
-      "type": "select",
-      "question": "Are any of your investment funds coming from a loan?",
-      "section": "investment",
-      "options": [
-        "No",
-        "Yes \u2014 a loan secured only by my personal assets",
-        "Yes \u2014 a loan secured by the assets of the business I am investing in",
-        "Yes \u2014 but I am not sure how the loan is secured"
-      ],
-      "stop_codes": [
-        "PR-04"
-      ],
-      "warning_codes": [
-        "W-08"
-      ]
-    },
-    {
-      "id": "Q0-08",
-      "type": "select",
-      "question": "What best describes your intended role in the business?",
-      "section": "business_role",
-      "options": [
-        "I will actively develop and direct the business myself",
-        "I will actively run the business with one equal business partner",
-        "I will mainly be a passive investor",
-        "I am not sure yet"
-      ],
-      "stop_codes": [
-        "PR-05"
-      ],
-      "warning_codes": [
-        "W-09"
-      ]
-    },
-    {
-      "id": "Q0-09",
-      "type": "select",
-      "question": "Is your business arrangement one of the following?",
-      "section": "business_role",
-      "options": [
-        "Sole owner",
-        "Two equal 50/50 owners",
-        "More than two equal owners",
-        "Two owners but not 50/50",
-        "I am not sure yet"
-      ],
-      "stop_codes": [
-        "PR-06"
-      ],
-      "warning_codes": [
-        "W-10"
-      ],
-      "routes": {
-        "solo": "Sole owner",
-        "partnership": "Two equal 50/50 owners"
-      }
-    },
-    {
-      "id": "Q0-10",
-      "type": "multiselect",
-      "question": "Is the business primarily any of the following?",
-      "section": "business_type",
-      "options": [
-        "Passive real estate holding or rental-only investment",
-        "Cannabis or marijuana-related activity",
-        "A business where I would not be actively involved in management",
-        "None of the above"
-      ],
-      "stop_codes": [
-        "PR-07",
-        "PR-08",
-        "PR-09"
-      ]
-    },
-    {
-      "id": "Q0-11",
-      "type": "select",
-      "question": "Have you ever been refused a U.S. visa or had a U.S. visa application denied?",
-      "section": "risk",
-      "denial_risk": "D-09",
-      "options": [
-        "No \u2014 never",
-        "Yes \u2014 one refusal, more than 5 years ago",
-        "Yes \u2014 one refusal, within the last 5 years",
-        "Yes \u2014 more than one refusal"
-      ],
-      "logic": {
-        "No \u2014 never": "proceed",
-        "Yes \u2014 one refusal, more than 5 years ago": "risk_flag:W-11-OLD",
-        "Yes \u2014 one refusal, within the last 5 years": "attorney_recommended:W-11-RECENT",
-        "Yes \u2014 more than one refusal": "attorney_recommended:W-11-MULTIPLE"
-      },
-      "warnings": {
-        "W-11-OLD": "A single refusal more than five years ago carries less weight than a recent refusal, but it must still be disclosed accurately on your DS-160 and addressed in your application. The Interview Simulator will prepare you for the question the officer may ask about it.",
-        "W-11-RECENT": "A visa refusal within the last five years will be actively reviewed by the consular officer handling your E-2 application. It must be disclosed on your DS-160. Your cover letter should address it proactively \u2014 explaining what has changed since the refusal. Legal review is recommended before proceeding.",
-        "W-11-MULTIPLE": "Multiple prior refusals significantly increase the scrutiny your application will receive. This does not automatically disqualify your case, but it requires careful, proactive handling \u2014 including a direct explanation in the cover letter. Legal review is strongly recommended."
-      },
-      "ack_required_if_continue": true
-    },
-    {
-      "id": "Q0-12",
-      "type": "select",
-      "question": "Have you ever been refused entry to the United States, removed, or deported?",
-      "section": "risk",
-      "options": [
-        "No",
-        "Yes",
-        "I am not sure"
-      ],
-      "warning_codes": [
-        "W-12"
-      ],
-      "ack_required_if_continue": true
-    },
-    {
-      "id": "Q0-13",
-      "type": "select",
-      "question": "Have you ever been convicted of, cautioned for, or charged with a criminal offence in any country \u2014 including charges that were dropped, withdrawn, or for which you received a pardon?",
-      "section": "risk",
-      "denial_risk": "FAM 9 FAM 302.3",
-      "options": [
-        "No \u2014 no convictions or charges",
-        "Yes \u2014 a minor conviction, more than 10 years ago",
-        "Yes \u2014 a minor conviction within the last 10 years",
-        "Yes \u2014 a serious conviction (any time)",
-        "I am not sure"
-      ],
-      "logic": {
-        "No \u2014 no convictions or charges": "proceed",
-        "Yes \u2014 a minor conviction, more than 10 years ago": "risk_flag:W-13-OLD",
-        "Yes \u2014 a minor conviction within the last 10 years": "attorney_recommended:W-13-RECENT",
-        "Yes \u2014 a serious conviction (any time)": "attorney_recommended:W-13-SERIOUS",
-        "I am not sure": "attorney_recommended:W-13-UNSURE"
-      },
-      "warnings": {
-        "W-13-OLD": "A minor, older conviction may fall within the petty offence exception under U.S. immigration law \u2014 meaning it may not constitute a ground of inadmissibility. This depends on the specific offence, the maximum possible sentence, and the actual sentence served. It must still be disclosed accurately on your DS-160. Legal review is recommended.",
-        "W-13-RECENT": "A conviction within the last 10 years \u2014 even a minor one \u2014 will be reviewed by the consular officer. Whether it triggers inadmissibility depends on the offence type and sentence. Do not assume it is resolved without individualized legal review.",
-        "W-13-SERIOUS": "A serious conviction requires individualized legal analysis before relying on a self-service preparation tool. Depending on the offence, mandatory inadmissibility grounds may apply. Legal review is essential before proceeding.",
-        "W-13-UNSURE": "If you are not sure whether you have a relevant criminal history, clarify this before proceeding. Failing to disclose a conviction on the DS-160 is itself a serious issue. Legal review recommended."
-      },
-      "ack_required_if_continue": true
-    },
-    {
-      "id": "Q0-NI-01",
-      "type": "select",
-      "question": "Do you own real estate in Canada that you intend to keep while living in the United States?",
-      "section": "non_immigrant_intent",
-      "denial_risk": "D-15",
-      "options": [
-        "Yes \u2014 I own Canadian property and will keep it",
-        "Yes \u2014 I own Canadian property but may sell it before moving",
-        "No \u2014 I do not own Canadian real estate",
-        "Not applicable"
-      ],
-      "logic": {
-        "Yes \u2014 I own Canadian property and will keep it": "tie_confirmed",
-        "Yes \u2014 I own Canadian property but may sell it before moving": "risk_flag:W-NI-01",
-        "No \u2014 I do not own Canadian real estate": "risk_flag:W-NI-01",
-        "Not applicable": "risk_flag:W-NI-01"
-      }
-    },
-    {
-      "id": "Q0-NI-02",
-      "type": "select",
-      "question": "Do you have immediate family members \u2014 spouse, children, or parents \u2014 who will remain living in Canada while you are in the United States?",
-      "section": "non_immigrant_intent",
-      "denial_risk": "D-15",
-      "options": [
-        "Yes \u2014 close family will remain in Canada",
-        "No \u2014 my immediate family will come with me",
-        "Mixed \u2014 some family in Canada, some coming with me",
-        "I do not have immediate family"
-      ],
-      "logic": {
-        "Yes \u2014 close family will remain in Canada": "tie_confirmed",
-        "Mixed \u2014 some family in Canada, some coming with me": "tie_confirmed",
-        "No \u2014 my immediate family will come with me": "risk_flag:W-NI-02",
-        "I do not have immediate family": "risk_flag:W-NI-02"
-      }
-    },
-    {
-      "id": "Q0-NI-03",
-      "type": "select",
-      "question": "Will you maintain active Canadian financial accounts, pension plans, or retirement savings (such as an RRSP) while in the United States?",
-      "section": "non_immigrant_intent",
-      "denial_risk": "D-15",
-      "options": [
-        "Yes \u2014 I will keep active Canadian financial accounts",
-        "Partially \u2014 I will keep some accounts active",
-        "No \u2014 I plan to close or transfer all accounts",
-        "I am not sure yet"
-      ],
-      "logic": {
-        "Yes \u2014 I will keep active Canadian financial accounts": "tie_confirmed",
-        "Partially \u2014 I will keep some accounts active": "tie_confirmed",
-        "No \u2014 I plan to close or transfer all accounts": "risk_flag:W-NI-03",
-        "I am not sure yet": "risk_flag:W-NI-03"
-      }
-    },
-    {
-      "id": "Q0-14",
-      "type": "select",
-      "question": "Is your business partner a Canadian citizen?",
-      "section": "partner",
-      "show_if": {
-        "Q0-09": "Two equal 50/50 owners"
-      },
-      "options": [
-        "Yes",
-        "No",
-        "I am not sure"
-      ],
-      "warning_codes": [
-        "W-14"
-      ]
-    },
-    {
-      "id": "Q0-15",
-      "type": "select",
-      "question": "Will your partner also be actively developing and directing the business?",
-      "section": "partner",
-      "show_if": {
-        "Q0-09": "Two equal 50/50 owners"
-      },
-      "options": [
-        "Yes",
-        "No",
-        "I am not sure"
-      ],
-      "warning_codes": [
-        "W-15"
-      ]
-    },
-    {
-      "id": "Q0-16",
-      "type": "select",
-      "question": "Will any family members apply as your dependents?",
-      "section": "family",
-      "options": [
-        "No",
-        "Yes \u2014 spouse only",
-        "Yes \u2014 children only",
-        "Yes \u2014 spouse and children",
-        "I am not sure yet"
-      ]
-    },
-    {
-      "id": "Q0-17",
-      "type": "select",
-      "question": "If a spouse is applying with you, are you legally married?",
-      "section": "family",
-      "show_if": {
-        "Q0-16": [
-          "Yes \u2014 spouse only",
-          "Yes \u2014 spouse and children"
-        ]
-      },
-      "options": [
-        "Yes",
-        "No",
-        "Not applicable"
-      ],
-      "warning_codes": [
-        "W-16"
-      ]
-    },
-    {
-      "id": "Q0-18",
-      "type": "select",
-      "question": "Will every dependent applying with you have a valid passport for visa processing?",
-      "section": "family",
-      "show_if": {
-        "Q0-16": [
-          "Yes \u2014 spouse only",
-          "Yes \u2014 children only",
-          "Yes \u2014 spouse and children"
-        ]
-      },
-      "options": [
-        "Yes",
-        "No",
-        "I am not sure",
-        "Not applicable"
-      ],
-      "warning_codes": [
-        "W-17"
-      ]
-    },
-    {
-      "id": "Q0-19",
-      "type": "select",
-      "question": "Do any children applying with you fall into either of these categories: 21 or older, or married?",
-      "section": "family",
-      "show_if": {
-        "Q0-16": [
-          "Yes \u2014 children only",
-          "Yes \u2014 spouse and children"
-        ]
-      },
-      "options": [
-        "No",
-        "Yes",
-        "Not applicable",
-        "I am not sure"
-      ],
-      "warning_codes": [
-        "W-18"
-      ]
-    },
-    {
-      "id": "Q0-20",
-      "type": "select",
-      "question": "Does any dependent have prior U.S. visa refusals, entry refusals, removal history, or criminal history?",
-      "section": "family",
-      "show_if": {
-        "Q0-16": [
-          "Yes \u2014 spouse only",
-          "Yes \u2014 children only",
-          "Yes \u2014 spouse and children"
-        ]
-      },
-      "options": [
-        "No",
-        "Yes",
-        "I am not sure",
-        "Not applicable"
-      ],
-      "warning_codes": [
-        "W-19"
-      ]
-    },
-    {
-      "id": "Q0-21",
-      "type": "text",
-      "question": "Where should we send your eligibility result and next-step summary?",
-      "section": "consent",
-      "validation": "email"
-    },
-    {
-      "id": "Q0-22",
-      "type": "acknowledgment",
-      "question": "If your case includes one or more risk flags, do you understand that E2Pathway is a preparation tool and not a legal service?",
-      "section": "consent",
-      "show_if": "attorney_recommended_and_user_continues"
+    "score_weights": {
+        "base_score": 100,
+        "deductions": {
+            "W-OVER-21": 8,
+            "W-PARTNERSHIP-SPLIT": 6,
+            "W-WEAK-TIES": 5,
+            "W-REFUSAL-OLD": 5,
+            "W-REFUSAL-RECENT": 10,
+            "W-REFUSAL-MULTIPLE": 12,
+            "W-ENTRY-REFUSED": 12,
+            "W-DEPORTED": 15,
+            "W-CONVICTION-OLD": 5,
+            "W-CONVICTION-RECENT": 12,
+            "W-CONVICTION-UNSURE": 10,
+            "W-FAMILY-GIFT": 5,
+            "W-LOAN-FUNDED": 8,
+            "W-LOW-INVESTMENT": 6,
+            "W-BORDERLINE-INVESTMENT": 10,
+            "W-TARGET-URGENT": 3,
+            "W-NO-BIZ-IDENTIFIED": 4,
+            "W-PROP-SOFT-30": 5,
+            "W-PROP-STRONG-30": 10,
+            "W-SILENT-PARTNER": 10
+        }
     }
-  ],
-  "hard_stops": {
-    "PR-01": "Principal applicant not a Canadian citizen",
-    "PR-02": "Principal applicant in U.S. without valid status",
-    "PR-03": "No investment funds currently available",
-    "PR-04": "Loan secured by business assets",
-    "PR-05": "Passive investor role",
-    "PR-06": "More than two equal owners",
-    "PR-07": "Passive real estate holding",
-    "PR-08": "Cannabis-related business",
-    "PR-09": "No active management role"
-  },
-  "attorney_recommended_flags": {
-    "W-02": "Unsure about U.S. status",
-    "W-03": "Outside standard Canada/U.S. path context",
-    "W-07": "Source/path of funds unclear",
-    "W-08": "Loan structure unclear",
-    "W-09": "Principal role unclear",
-    "W-10": "Two-owner structure not 50/50",
-    "W-11": "Prior visa refusal",
-    "W-12": "Prior refusal of entry/removal/deportation",
-    "W-13": "Criminal history or uncertainty",
-    "W-14": "Partner citizenship uncertain or non-Canadian",
-    "W-15": "Partner role uncertain or inactive",
-    "W-16": "Relationship may not qualify for spouse-dependent workflow",
-    "W-18": "Child age/marital-status issue",
-    "W-19": "Dependent admissibility issue"
-  },
-  "non_immigrant_intent_composite": {
-    "description": "After Q0-NI-01 through Q0-NI-03, count confirmed ties",
-    "logic": {
-      "2_or_3_ties": "proceed_cleanly",
-      "1_tie": "risk_flag:W-NI-WEAK",
-      "0_ties": "attorney_recommended:W-NI-NONE"
-    }
-  },
-  "investment_thresholds_usd": {
-    "clean": 150000,
-    "soft_advisory": {
-      "min": 75000,
-      "max": 149999,
-      "flag": "W-PROP-SOFT"
-    },
-    "strong_warning": {
-      "max": 74999,
-      "flag": "W-PROP-STRONG"
-    },
-    "note": "No statutory minimum. Thresholds are advisory only based on observed practice."
-  },
-  "version_notes": [
-    "Section 0.9 (Non-Immigrant Intent) moved to appear after Section 0.5 (Risk) and before Section 0.6 (Partner Screening)",
-    "Q0-11 revised to 4 options: no refusal / one >5yr / one <5yr / multiple",
-    "Q0-13 revised to 5 options: none / minor >10yr / minor <10yr / serious / unsure",
-    "Warning tiers written in V2.1 style for all new options"
-  ]
 }

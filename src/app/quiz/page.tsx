@@ -1,689 +1,1327 @@
-
-
 "use client";
-
-import { useState, useEffect, useCallback } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useCallback, useRef, useMemo, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
+import quizData from "@/data/module0_questions.json";
+import { TREATY_COUNTRIES } from "@/lib/treaty-countries";
 
-interface Question {
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+type Answer = string | string[];
+
+interface QuizOption {
+  text: string;
+  action?: string;
+  code?: string | null;
+  warning_message?: string | null;
+}
+
+interface QuizQuestion {
   id: string;
-  type: "select" | "multiselect" | "currency" | "text" | "acknowledgment";
-  question: string;
+  type: string;
   section: string;
-  options?: string[];
-  currency_options?: string[];
-  warning_codes?: string[];
-  stop_codes?: string[];
-  proportionality_thresholds_usd?: {
-    clean: { min: number; flag: null };
-    soft_advisory: { min: number; max: number; flag: string };
-    strong_warning: { max: number; flag: string };
-  };
-  show_if?: Record<string, string | string[]>;
-  validation?: string;
-  tooltip?: string;
+  section_index: number;
+  question: string;
+  helper_text: string;
+  tooltip: string;
+  is_sub: boolean;
+  parent: string | null;
+  show_if: Record<string, string[]> | null;
+  options: QuizOption[];
 }
 
-interface QuestionsData {
-  module: string;
-  questions: Question[];
-  hard_stops: Record<string, string>;
+interface HardStops {
+  [code: string]: string;
 }
 
-interface ScoringLogic {
-  hard_stops: Array<{ code: string; question: string; trigger: string[] }>;
-  attorney_flags: Array<{ code: string; question: string; trigger: string[]; level?: string }>;
-  risk_flags: Array<{ code: string; question: string; trigger: string[]; level?: string }>;
+interface ScoreWeights {
+  base_score: number;
+  deductions: Record<string, number>;
 }
 
-export default function QuizPage() {
+// ---------------------------------------------------------------------------
+// Static data
+// ---------------------------------------------------------------------------
+
+
+const ALL_QUESTIONS = quizData.questions as QuizQuestion[];
+const HARD_STOPS = quizData.hard_stops as HardStops;
+const SCORE_WEIGHTS = quizData.score_weights as ScoreWeights;
+const SECTIONS = quizData.sections as string[];
+
+// ---------------------------------------------------------------------------
+// Show-if evaluator
+// ---------------------------------------------------------------------------
+
+function evaluateShowIf(
+  showIf: Record<string, string[]> | null,
+  answers: Record<string, Answer>
+): boolean {
+  if (!showIf) return true;
+
+  // Handle _or_parent_sub: show if parent's sub-question was answered
+  // (meaning this question's parent directed to a sub that was answered)
+  if ("_or_parent_sub" in showIf) {
+    const parentSubConditions = showIf["_or_parent_sub"] as unknown as Record<string, string[]>;
+    let parentSubMet = false;
+    for (const [qId, allowedValues] of Object.entries(parentSubConditions)) {
+      const ans = answers[qId];
+      if (typeof ans === "string" && allowedValues.includes(ans)) {
+        parentSubMet = true;
+        break;
+      }
+    }
+    if (!parentSubMet) return false;
+  }
+
+  // Handle _and_not_sub: show only if the specified sub-question was NOT answered
+  if ("_and_not_sub" in showIf) {
+    const notSubId = showIf["_and_not_sub"] as unknown as string;
+    if (answers[notSubId] !== undefined) return false;
+  }
+
+  // Standard show_if: each key must match at least one of its allowed values
+  for (const [qId, allowedValues] of Object.entries(showIf)) {
+    if (qId.startsWith("_")) continue; // skip meta keys
+    const ans = answers[qId];
+    if (typeof ans === "string") {
+      if (!allowedValues.includes(ans)) return false;
+    } else if (Array.isArray(ans)) {
+      // Multiselect: show if any selected value is in the allowed list
+      const hasMatch = ans.some((v: string) => allowedValues.includes(v));
+      if (!hasMatch) return false;
+    } else {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+// ---------------------------------------------------------------------------
+// Proportionality calculator
+// ---------------------------------------------------------------------------
+
+const INVESTMENT_MIDPOINTS: Record<string, number> = {
+  "Over $150,000": 175000,
+  "$100,000 – $150,000": 125000,
+  "$75,000 – $100,000": 87500,
+  "$50,000 – $75,000": 62500,
+  "Under $50,000": 35000,
+};
+
+function calculateProportionalityFlags(
+  investmentRange: string,
+  businessCost: string
+): { attorney: string[]; risk: string[] } {
+  const attorney: string[] = [];
+  const risk: string[] = [];
+  const investmentMid = INVESTMENT_MIDPOINTS[investmentRange];
+  if (!investmentMid) return { attorney, risk };
+  const cost = parseFloat(businessCost.replace(/[^0-9.]/g, ""));
+  if (!cost || cost <= 0) return { attorney, risk };
+  const pct = (investmentMid / cost) * 100;
+  if (pct < 30) attorney.push("W-PROP-STRONG-30");
+  else if (pct < 50) risk.push("W-PROP-SOFT-30");
+  return { attorney, risk };
+}
+
+// ---------------------------------------------------------------------------
+// Score calculator
+// ---------------------------------------------------------------------------
+
+function calculateScore(warningCodes: string[], attorneyFlags: string[]): number {
+  let score = SCORE_WEIGHTS.base_score;
+  // Deduct for risk flags
+  for (const code of warningCodes) {
+    const deduction = SCORE_WEIGHTS.deductions[code];
+    if (deduction) score -= deduction;
+  }
+  // Deduct for attorney flags
+  for (const code of attorneyFlags) {
+    const deduction = SCORE_WEIGHTS.deductions[code];
+    if (deduction) score -= deduction;
+  }
+  // Attorney flag caps: any flags cap at 89, 3+ flags cap at 74
+  if (attorneyFlags.length > 2) {
+    score = Math.min(score, 74);
+  } else if (attorneyFlags.length > 0) {
+    score = Math.min(score, 89);
+  }
+  // Minimum score of 45 — flags don't eliminate eligibility
+  return Math.max(score, 45);
+}
+
+function getOutcome(
+  hardStopsTriggered: string[],
+  attorneyFlags: string[],
+  warningCodes: string[]
+): string {
+  if (hardStopsTriggered.length > 0) return "DO_NOT_PROCEED";
+  if (attorneyFlags.length > 0) return "ATTORNEY_RECOMMENDED";
+  if (warningCodes.length > 0) return "PROCEED_RISK";
+  return "PROCEED";
+}
+
+// ---------------------------------------------------------------------------
+// Extract warning code from action string
+// ---------------------------------------------------------------------------
+
+function extractWarningCode(action: string): string | null {
+  const match = action.match(/^warn:(.+)$/);
+  return match ? match[1] : null;
+}
+
+function extractAttorneyCode(action: string): string | null {
+  const match = action.match(/^attorney:(.+)$/);
+  return match ? match[1] : null;
+}
+
+function extractStopCode(action: string): string | null {
+  const match = action.match(/^stop:(.+)$/);
+  return match ? match[1] : null;
+}
+
+function extractSubTarget(action: string): string | null {
+  const match = action.match(/^sub:(.+)$/);
+  return match ? match[1] : null;
+}
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+function QuizInner() {
   const router = useRouter();
-  const [questionsData, setQuestionsData] = useState<QuestionsData | null>(null);
-  const [scoringLogic, setScoringLogic] = useState<ScoringLogic | null>(null);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, string | string[]>>({});
-  const [showTooltip, setShowTooltip] = useState(false);
-  const [stopScreen, setStopScreen] = useState<{ code: string; message: string } | null>(null);
-  const [currencyToggle, setCurrencyToggle] = useState<"CAD" | "USD">("USD");
-  const [currencyValue, setCurrencyValue] = useState("");
-  const [proportionalityFlag, setProportionalityFlag] = useState<string | null>(null);
+  const searchParams = useSearchParams();
   const [supabase] = useState(() => createBrowserSupabaseClient());
-  const [isAnimating, setIsAnimating] = useState(false);
-  const [emailValue, setEmailValue] = useState("");
-  const [cadUsdRate, setCadUsdRate] = useState<number | null>(null);
-  const [rateLoading, setRateLoading] = useState(false);
-  const [rateError, setRateError] = useState(false);
+  const [loggedInUser, setLoggedInUser] = useState<{ id: string; email: string } | null>(null);
+  const [authChecked, setAuthChecked] = useState(true);
+  const authCheckTimeout = useRef<NodeJS.Timeout | null>(null);
 
-  // Fetch CAD/USD rate once on mount
+  const [cur, setCur] = useState(0);
+  const [answers, setAnswers] = useState<Record<string, Answer>>({});
+  const [warningCodes, setWarningCodes] = useState<string[]>([]);
+  const [attorneyFlags, setAttorneyFlags] = useState<string[]>([]);
+  const [franchiseInterest, setFranchiseInterest] = useState(false);
+  const [franchiseReferralRequested, setFranchiseReferralRequested] = useState(false);
+  const [countrySearch, setCountrySearch] = useState("");
+  const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
+  const [highlightedIdx, setHighlightedIdx] = useState(-1);
+  const [multiSel, setMultiSel] = useState<number[]>([]);
+  const [warnMsg, setWarnMsg] = useState<string | null>(null);
+  const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
+  const [email, setEmail] = useState("");
+  const [caslConsent, setCaslConsent] = useState(false);
+  const [showEmailGate, setShowEmailGate] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [returnToResults, setReturnToResults] = useState(false);
+  const [hardStopsTriggered, setHardStopsTriggered] = useState<string[]>([]);
+  const [pendingJumpId, setPendingJumpId] = useState<string | null>(null);
+  const isAdvancing = useRef(false);
+
+  // Compute visible questions from JSON + current answers
+  const visibleQuestions = useMemo(() => {
+    return ALL_QUESTIONS.filter(q => evaluateShowIf(q.show_if, answers));
+  }, [answers]);
+
+  const q = visibleQuestions[cur] || null;
+
+  // Options for current question
+  const displayOpts = useMemo(() => {
+    if (!q) return [];
+    return q.options;
+  }, [q]);
+
+  // Auth check + draft restore
   useEffect(() => {
-    const fetchRate = async () => {
+    authCheckTimeout.current = setTimeout(() => {
+      setAuthChecked(true);
+    }, 1000);
+
+    const checkAuth = async () => {
       try {
-        setRateLoading(true);
-        const res = await fetch("https://open.er-api.com/v6/latest/CAD");
-        const data = await res.json();
-        if (data.rates?.USD) {
-          setCadUsdRate(data.rates.USD);
-        } else {
-          setRateError(true);
+        const { data: { user } } = await supabase.auth.getUser();
+        if (authCheckTimeout.current) clearTimeout(authCheckTimeout.current);
+        if (user) {
+          setLoggedInUser({ id: user.id, email: user.email || "" });
+          const { data: existing } = await supabase
+            .from("quiz_sessions")
+            .select("id, outcome")
+            .eq("user_id", user.id)
+            .not("outcome", "is", null)
+            .order("completed_at", { ascending: false })
+            .limit(1)
+            .single();
+          if (existing) {
+            // Allow edit-mode access when coming from quiz/review (jump_to_id is set)
+            const jumpToId = localStorage.getItem("quiz_jump_to_id");
+            if (!jumpToId) {
+              router.push("/dashboard");
+              return;
+            }
+          }
+
+          // Post-login session linking: if user has an unlinked completed
+          // session (e.g. from "account already exists" flow), link it now
+          const { data: unlinked } = await supabase
+            .from("quiz_sessions")
+            .select("id, outcome")
+            .eq("email", user.email || "")
+            .is("user_id", null)
+            .not("outcome", "is", null)
+            .order("completed_at", { ascending: false })
+            .limit(1)
+            .single();
+          if (unlinked) {
+            await supabase
+              .from("quiz_sessions")
+              .update({ user_id: user.id })
+              .eq("id", unlinked.id);
+            router.push("/dashboard");
+            return;
+          }
         }
       } catch {
-        setRateError(true);
+        // ignore
       } finally {
-        setRateLoading(false);
+        setAuthChecked(true);
+        const draft = localStorage.getItem("e2go_quiz_draft");
+        if (draft) {
+          try {
+            const parsed = JSON.parse(draft);
+            const savedAt = new Date(parsed.savedAt);
+            const daysSince = (Date.now() - savedAt.getTime()) / (1000 * 60 * 60 * 24);
+            if (daysSince < 1 && parsed.answers && Object.keys(parsed.answers).length > 0) {
+              setAnswers(parsed.answers);
+              setCur(parsed.cur || 0);
+              setWarningCodes(parsed.warningCodes || []);
+              setAttorneyFlags(parsed.attorneyFlags || []);
+              setFranchiseInterest(parsed.franchiseInterest || false);
+              setFranchiseReferralRequested(parsed.franchiseReferralRequested || false);
+              setHardStopsTriggered(parsed.hardStopsTriggered || []);
+            }
+          } catch {
+            localStorage.removeItem("e2go_quiz_draft");
+          }
+        }
+        // Legacy numeric jump (kept for safety)
+        const jumpTo = localStorage.getItem("quiz_jump_to");
+        if (jumpTo !== null) {
+          localStorage.removeItem("quiz_jump_to");
+        }
+        // ID-based jump from quiz/review (correct mechanism)
+        const jumpToId = localStorage.getItem("quiz_jump_to_id");
+        if (jumpToId) {
+          setPendingJumpId(jumpToId);
+          setReturnToResults(true);
+          localStorage.removeItem("quiz_jump_to_id");
+
+          // If no draft was loaded, fetch existing answers from DB so the
+          // question pre-fills correctly when the user arrives to edit it
+          const draft = localStorage.getItem("e2go_quiz_draft");
+          if (!draft) {
+            try {
+              const { data: { user } } = await supabase.auth.getUser();
+              if (user) {
+                const { data: session } = await supabase
+                  .from("quiz_sessions")
+                  .select("result_json")
+                  .eq("user_id", user.id)
+                  .not("outcome", "is", null)
+                  .order("completed_at", { ascending: false })
+                  .limit(1)
+                  .single();
+                const dbAnswers = (session?.result_json as Record<string, unknown>)?.answers;
+                if (dbAnswers && typeof dbAnswers === "object") {
+                  setAnswers(dbAnswers as Record<string, Answer>);
+                }
+              }
+            } catch { /* non-blocking */ }
+          }
+        }
+        const returnFlag = localStorage.getItem("quiz_return_to_results");
+        if (returnFlag) {
+          setReturnToResults(true);
+          localStorage.removeItem("quiz_return_to_results");
+        }
       }
     };
-    fetchRate();
-  }, []);
+    checkAuth();
+    return () => {
+      if (authCheckTimeout.current) clearTimeout(authCheckTimeout.current);
+    };
+  }, [supabase, router]);
 
-  // Load questions and scoring logic
+  // Resolve pending question jump once answers are loaded from DB
   useEffect(() => {
-    Promise.all([
-      fetch("/data/module0_questions.json").then((r) => r.json()),
-      fetch("/data/module0_scoring_logic.json").then((r) => r.json()),
-    ]).then(([q, s]) => {
-      setQuestionsData(q);
-      setScoringLogic(s);
-    });
-  }, []);
+    if (!pendingJumpId || visibleQuestions.length === 0) return;
+    // Wait until answers are non-empty (DB load complete) before resolving
+    if (Object.keys(answers).length === 0) return;
+    const idx = visibleQuestions.findIndex(q => q.id === pendingJumpId);
+    if (idx !== -1) {
+      setCur(idx);
+      setPendingJumpId(null);
+    }
+  }, [pendingJumpId, visibleQuestions, answers]);
 
-  // Filter questions based on show_if conditions
-  const getVisibleQuestions = useCallback(() => {
-    if (!questionsData) return [];
-    return questionsData.questions.filter((q) => {
-      if (!q.show_if) return true;
-      for (const [dependQId, dependValue] of Object.entries(q.show_if)) {
-        const dependentAnswer = answers[dependQId];
-        if (!dependentAnswer) return false;
-        if (Array.isArray(dependValue)) {
-          if (!dependValue.includes(dependentAnswer as string)) return false;
-        } else {
-          if (dependentAnswer !== dependValue) return false;
-        }
-      }
-      return true;
-    });
-  }, [questionsData, answers]);
+  // E-7-03: Deep-link to a specific question via ?step=<question-id-or-section>
+  // Supported values: a question id (e.g. "Q0-07") or a section name (e.g. "investment").
+  // Only fires once on mount, after questions are available.
+  const stepParamApplied = useRef(false);
+  useEffect(() => {
+    if (stepParamApplied.current) return;
+    if (visibleQuestions.length === 0) return;
+    const stepParam = searchParams.get('step');
+    if (!stepParam) return;
+    // Try exact question id first
+    let idx = visibleQuestions.findIndex(q => q.id === stepParam);
+    // Fall back to section name match (first question in that section)
+    if (idx === -1) {
+      idx = visibleQuestions.findIndex(q => q.section === stepParam);
+    }
+    if (idx !== -1) {
+      setCur(idx);
+      stepParamApplied.current = true;
+    }
+  }, [visibleQuestions, searchParams]);
 
-  const visibleQuestions = getVisibleQuestions();
-  const currentQuestion = visibleQuestions[currentIndex];
+  // Restore selection state when jumping to a question with existing answers
+  useEffect(() => {
+    if (!q) return;
+    const existing = answers[q.id];
+    if (!existing) return;
+    if (q.type === 'multiselect') {
+      const selectedTexts = Array.isArray(existing) ? existing : [existing];
+      const indices = q.options
+        .map((opt, i) => (selectedTexts as string[]).includes(opt.text) ? i : -1)
+        .filter(i => i !== -1);
+      if (indices.length > 0) setMultiSel(indices);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cur, answers]);
 
-  // Get current section
-  const getCurrentSection = () => {
-    if (!currentQuestion) return "";
-    const sections: Record<string, string> = {
-      principal: "About You",
-      investment: "Investment Details",
-      business_role: "Your Role",
-      business_type: "Business Type",
-      risk: "Risk Assessment",
-      non_immigrant_intent: "Ties to Canada",
-      partner: "Business Partner",
-      family: "Family Members",
-      consent: "Final Steps",
-    };
-    return sections[currentQuestion.section] || currentQuestion.section;
-  };
+  // Scroll highlighted country into view
+  useEffect(() => {
+    if (highlightedIdx >= 0) {
+      const el = document.getElementById(`country-option-${highlightedIdx}`);
+      if (el) el.scrollIntoView({ block: "nearest" });
+    }
+  }, [highlightedIdx]);
 
-  // Check for hard stops after each answer
-  const checkHardStops = useCallback(
-    (questionId: string, answer: string) => {
-      if (!scoringLogic || !questionsData) return;
-
-      const hardStops = scoringLogic.hard_stops;
-      for (const stop of hardStops) {
-        if (stop.question === questionId && stop.trigger.includes(answer)) {
-          const message = questionsData.hard_stops[stop.code];
-          setStopScreen({ code: stop.code, message: message || stop.code });
-          return;
-        }
-      }
+  // Save draft helper
+  const saveDraft = useCallback(
+    (newAnswers: Record<string, Answer>, newCur: number, newWarnings: string[], newAttorney: string[], newFranchise: boolean, newFranchiseReferral: boolean = false) => {
+      localStorage.setItem(
+        "e2go_quiz_draft",
+        JSON.stringify({
+          answers: newAnswers,
+          cur: newCur,
+          warningCodes: newWarnings,
+          attorneyFlags: newAttorney,
+          franchiseInterest: newFranchise,
+          franchiseReferralRequested: newFranchiseReferral,
+          savedAt: new Date().toISOString(),
+        })
+      );
     },
-    [scoringLogic, questionsData]
+    []
   );
 
-  // Handle answer selection
-  const handleAnswer = (answer: string) => {
-    if (!currentQuestion) return;
-
+  // Advance to next question
+  const advance = useCallback(() => {
     setIsAnimating(true);
-    setTimeout(() => setIsAnimating(false), 200);
-
-    const newAnswers = { ...answers, [currentQuestion.id]: answer };
-    setAnswers(newAnswers);
-
-    // Check hard stops
-    checkHardStops(currentQuestion.id, answer);
-
-    // Auto-advance for select type
-    if (currentQuestion.type === "select" && !stopScreen) {
-      if (currentIndex < visibleQuestions.length - 1) {
-        setCurrentIndex(currentIndex + 1);
-      } else {
-        // Final question - calculate score and redirect
-        calculateAndRedirect(newAnswers);
-      }
-    }
-  };
-
-  // Handle multiselect continue
-  const handleMultiselectContinue = () => {
-    const selected = currentQuestion?.options?.filter((opt) => answers[currentQuestion.id]?.includes(opt)) || [];
-    if (selected.length === 0) return;
-
-    setIsAnimating(true);
-    setTimeout(() => setIsAnimating(false), 200);
-
-    if (currentIndex < visibleQuestions.length - 1) {
-      setCurrentIndex(currentIndex + 1);
-    } else {
-      calculateAndRedirect(answers);
-    }
-  };
-
-  // Handle currency question
-  const handleCurrencyContinue = () => {
-    if (!currencyValue || !currentQuestion) return;
-
-    const amount = parseFloat(currencyValue);
-    // Use live rate if available, fallback to 0.73
-    const rate = cadUsdRate || 0.73;
-    const amountUSD = currencyToggle === "CAD" ? amount * rate : amount;
-
-    // Check proportionality
-    if (currentQuestion.proportionality_thresholds_usd) {
-      if (amountUSD < 75000) {
-        setProportionalityFlag("W-PROP-STRONG");
-      } else if (amountUSD < 150000) {
-        setProportionalityFlag("W-PROP-SOFT");
-      } else {
-        setProportionalityFlag(null);
-      }
-    }
-
-    const newAnswers = { ...answers, [currentQuestion.id]: currencyValue, [`${currentQuestion.id}_currency`]: currencyToggle };
-    setAnswers(newAnswers);
-
-    setIsAnimating(true);
-    setTimeout(() => setIsAnimating(false), 200);
-
-    if (currentIndex < visibleQuestions.length - 1) {
-      setCurrentIndex(currentIndex + 1);
-    } else {
-      calculateAndRedirect(newAnswers);
-    }
-  };
-
-  // Handle text/email question
-  const handleTextContinue = () => {
-    if (!emailValue || !currentQuestion) return;
-
-    const newAnswers = { ...answers, [currentQuestion.id]: emailValue };
-    setAnswers(newAnswers);
-
-    setIsAnimating(true);
-    setTimeout(() => setIsAnimating(false), 200);
-
-    if (currentIndex < visibleQuestions.length - 1) {
-      setCurrentIndex(currentIndex + 1);
-    } else {
-      calculateAndRedirect(newAnswers);
-    }
-  };
-
-  // Handle back
-  const handleBack = () => {
-    if (currentIndex > 0) {
-      setIsAnimating(true);
-      setTimeout(() => setIsAnimating(false), 200);
-      setCurrentIndex(currentIndex - 1);
-    }
-  };
-
-  // Calculate score and redirect
-  const calculateAndRedirect = async (finalAnswers: Record<string, string | string[]>) => {
-    if (!scoringLogic) return;
-
-    const hardStopCodes: string[] = [];
-    const attorneyFlags: string[] = [];
-    const riskFlags: string[] = [];
-
-    // Check hard stops
-    for (const stop of scoringLogic.hard_stops) {
-      const answer = finalAnswers[stop.question];
-      if (answer && stop.trigger.includes(answer as string)) {
-        hardStopCodes.push(stop.code);
-      }
-    }
-
-    if (hardStopCodes.length > 0) {
-      const result = {
-        outcome: "DO_NOT_PROCEED",
-        hard_stop_codes: hardStopCodes,
-        attorney_flag_codes: [],
-        risk_flag_codes: [],
-        answers: finalAnswers,
-      };
-      localStorage.setItem("e2go_quiz_result", JSON.stringify(result));
-
-      // Save to Supabase (if user is logged in)
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        await supabase.from("quiz_sessions").insert({
-          user_id: user.id,
-          outcome: "DO_NOT_PROCEED",
-          hard_stop_codes: hardStopCodes,
-          attorney_flag_codes: [],
-          risk_flag_codes: [],
-          acknowledged_risk: false,
-          casl_consent: false,
-        });
-      }
-
-      router.push("/results");
-      return;
-    }
-
-    // Check attorney flags
-    for (const flag of scoringLogic.attorney_flags) {
-      const answer = finalAnswers[flag.question];
-      if (answer && flag.trigger.includes(answer as string)) {
-        attorneyFlags.push(flag.code);
-      }
-    }
-
-    // Check risk flags
-    for (const flag of scoringLogic.risk_flags) {
-      const answer = finalAnswers[flag.question];
-      if (answer && flag.trigger.includes(answer as string)) {
-        riskFlags.push(flag.code);
-      }
-    }
-
-    // Determine outcome
-    let outcome: string;
-    if (attorneyFlags.length > 0) {
-      outcome = "ATTORNEY_RECOMMENDED";
-    } else if (riskFlags.length > 0) {
-      outcome = "PROCEED_RISK";
-    } else {
-      outcome = "PROCEED";
-    }
-
-    const result = {
-      outcome,
-      hard_stop_codes: hardStopCodes,
-      attorney_flag_codes: attorneyFlags,
-      risk_flag_codes: riskFlags,
-      answers: finalAnswers,
-    };
-
-    localStorage.setItem("e2go_quiz_result", JSON.stringify(result));
-
-    // Save to Supabase (if user is logged in)
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      // Determine application type
-      const q009 = finalAnswers["Q0-09"];
-      const applicationType = q009 === "Two equal 50/50 owners" ? "partnership" : "solo";
-
-      // Get investment amount and currency
-      const amountKey = Object.keys(finalAnswers).find((k) => k.startsWith("Q0-05"));
-      const investmentAmount = amountKey ? parseFloat(finalAnswers[amountKey] as string) : null;
-      const currencyKey = `${amountKey}_currency`;
-      const investmentCurrency = finalAnswers[currencyKey] as "USD" | "CAD" || null;
-
-      // Get email from Q0-21
-      const email = finalAnswers["Q0-21"] as string;
-
-      await supabase.from("quiz_sessions").insert({
-        user_id: user.id,
-        email: email || null,
-        outcome,
-        hard_stop_codes: hardStopCodes,
-        attorney_flag_codes: attorneyFlags,
-        risk_flag_codes: riskFlags,
-        application_type: applicationType,
-        investment_amount: investmentAmount,
-        investment_currency: investmentCurrency,
-        acknowledged_risk: outcome === "ATTORNEY_RECOMMENDED" ? false : true,
-        casl_consent: true,
+    setTimeout(() => {
+      setIsAnimating(false);
+      isAdvancing.current = false;
+      setCur((prev) => {
+        const next = prev + 1;
+        if (next >= visibleQuestions.length) return prev;
+        return next;
       });
+      setSelectedIdx(null);
+      setWarnMsg(null);
+      setMultiSel([]);
+    }, 200);
+  }, [visibleQuestions.length]);
+
+  // Handle completion
+  const handleComplete = useCallback(
+    async (
+      finalAnswers: Record<string, Answer>,
+      finalWarningCodes: string[],
+      finalAttorneyFlags: string[],
+      finalFranchise: boolean,
+      finalHardStops: string[],
+      finalFranchiseReferral: boolean = false
+    ) => {
+      // Calculate proportionality flags
+      const investmentRange = (finalAnswers["Q0-07"] as string) || "";
+      const businessCost = (finalAnswers["Q0-business-cost"] as string) || "";
+      const propFlags = calculateProportionalityFlags(investmentRange, businessCost);
+      const allWarnings = [...new Set([...finalWarningCodes, ...propFlags.risk])];
+      const allAttorney = [...new Set([...finalAttorneyFlags, ...propFlags.attorney])];
+
+      const score = calculateScore(allWarnings, allAttorney);
+      const outcome = getOutcome(finalHardStops, allAttorney, allWarnings);
+
+      const resultData = {
+        outcome,
+        score,
+        warnings: allWarnings,
+        attorney_flags: allAttorney,
+        franchise_interest: finalFranchise,
+        answers: finalAnswers,
+        country: (finalAnswers["Q0-01"] as string) || "",
+        cos_flag: (() => {
+          const q5 = (finalAnswers["Q0-05"] as string || "").toLowerCase();
+          return q5.includes("valid status") || q5.includes("change of status");
+        })(),
+        investment_range: (finalAnswers["Q0-07"] as string) || "",
+        application_type: (() => {
+          // Q0-02 takes priority — it establishes the structure first
+          const q2 = (finalAnswers["Q0-02"] as string || "").toLowerCase();
+          if (q2.includes("co-invest")) return "spousal_partnership";
+          if (q2.includes("business partner")) return "partnership";
+          if (q2.includes("spouse will accompany")) return "solo";
+
+          // Q0-04 for cases where Q0-02 = sole applicant
+          const q4 = (finalAnswers["Q0-04"] as string || "").toLowerCase();
+          if (q4.includes("50%") || q4.includes("50/50")) return "partnership";
+
+          return "solo";
+        })(),
+        partner_type: (() => {
+          const q2 = (finalAnswers["Q0-02"] as string || "").toLowerCase();
+          if (q2.includes("co-invest")) return "spouse";
+          if (q2.includes("business partner")) return "unrelated";
+
+          const q4 = (finalAnswers["Q0-04"] as string || "").toLowerCase();
+          if (q4.includes("50%") || q4.includes("50/50")) return "unrelated";
+
+          return "none";
+        })(),
+        dependents: (() => {
+          // Check Q0-02 established spouse first
+          const q2 = (finalAnswers["Q0-02"] as string || "").toLowerCase();
+          if (q2.includes("spouse will accompany") || q2.includes("co-invest")) {
+            // Check Q0-02a or Q0-03 for children
+            const q2a = (finalAnswers["Q0-02a"] as string || "").toLowerCase();
+            if (q2a.includes("children") && !q2a.includes("no children")) return "spouse_and_children";
+            return "spouse_only";
+          }
+
+          // Q0-03 determines dependents for solo/partner paths
+          const a = (finalAnswers["Q0-03"] as string || "").toLowerCase();
+          if (a.includes("spouse and children")) return "spouse_and_children";
+          if (a.includes("children only")) return "children_only";
+          if (a.includes("spouse")) return "spouse_only";
+          return "just_me";
+        })(),
+        hard_stops_triggered: finalHardStops,
+        readiness_stage: (finalAnswers["Q0-readiness"] as string) || null,
+        business_type: (finalAnswers["Q0-business-type"] as string) || null,
+        target_date: (finalAnswers["Q0-target-date"] as string) || null,
+        business_cost: (finalAnswers["Q0-business-cost"] as string) || null,
+      };
+
+      localStorage.setItem("e2go_quiz_result", JSON.stringify(resultData));
+      localStorage.removeItem("e2go_quiz_draft");
+
+      if (returnToResults) {
+        router.push("/results?from=quiz");
+        return;
+      }
+
+      if (loggedInUser) {
+        setIsSaving(true);
+        try {
+          await supabase.from("quiz_sessions").insert({
+            user_id: loggedInUser.id,
+            email: loggedInUser.email,
+            outcome,
+            score,
+            hard_stop_codes: finalHardStops,
+            attorney_flag_codes: allAttorney,
+            risk_flag_codes: allWarnings,
+            application_type: resultData.application_type,
+            franchise_interest: finalFranchise,
+            franchise_referral_requested: finalFranchiseReferral,
+            readiness_stage: resultData.readiness_stage || null,
+            business_type: resultData.business_type || null,
+            result_json: resultData,
+            casl_consent: caslConsent,
+            casl_consent_at: caslConsent ? new Date().toISOString() : null,
+            completed_at: new Date().toISOString(),
+          });
+
+          // Mark quiz (module 0) complete in lifecycle
+          await supabase.from("application_lifecycle").upsert({
+            user_id: loggedInUser.id,
+            module0_completed_at: new Date().toISOString(),
+          }, { onConflict: "user_id" });
+        } catch {
+          // ignore
+        } finally {
+          setIsSaving(false);
+        }
+        // Trigger profile rebuild fire-and-forget
+        fetch('/api/profile/rebuild', { method: 'POST' }).catch(() => {});
+        router.push("/quiz/profile");
+      } else {
+        setShowEmailGate(true);
+      }
+    },
+    [loggedInUser, supabase, router, returnToResults, caslConsent]
+  );
+
+  // Process an option action: returns true if quiz should advance
+  const processAction = useCallback(
+    (
+      opt: QuizOption,
+      _answers: Record<string, Answer>
+    ): { shouldAdvance: boolean; stopCode?: string } => {
+      const action = opt.action || "continue";
+
+      // Stop
+      const stopCode = extractStopCode(action);
+      if (stopCode) {
+        setTimeout(() => setHardStopsTriggered((prev) => [...prev, stopCode]), 0);
+        setTimeout(() => setStopCode(stopCode), 280);
+        return { shouldAdvance: false, stopCode };
+      }
+
+      // Warning — pause and show message, let user click Continue anyway
+      const warnCode = extractWarningCode(action);
+      if (warnCode) {
+        setWarningCodes((prev) => [...prev, warnCode]);
+        setWarnMsg(opt.warning_message || null);
+        return { shouldAdvance: false };
+      }
+
+      // Attorney flag
+      const attorneyCode = extractAttorneyCode(action);
+      if (attorneyCode) {
+        setAttorneyFlags((prev) => [...prev, attorneyCode]);
+        return { shouldAdvance: true };
+      }
+
+      // Flags (franchise, spouse, partnership)
+      if (action.includes("flag_franchise_interest")) setFranchiseInterest(true);
+      if (action.includes("flag_franchise_referral")) setFranchiseReferralRequested(true);
+      // Other flags are no-ops for now (data is captured in answers)
+
+      // Sub-question jump
+      const subTarget = extractSubTarget(action);
+      if (subTarget) {
+        setTimeout(() => {
+          const subIdx = visibleQuestions.findIndex((x) => x.id === subTarget);
+          if (subIdx !== -1) {
+            setIsAnimating(true);
+            setTimeout(() => {
+              setIsAnimating(false);
+              setCur(subIdx);
+              setSelectedIdx(null);
+              setWarnMsg(null);
+            }, 200);
+          }
+        }, 280);
+        return { shouldAdvance: false };
+      }
+
+      // Default: advance
+      return { shouldAdvance: true };
+    },
+    [visibleQuestions]
+  );
+
+  // [stopCode state for hard stops]
+  const [stopCode, setStopCode] = useState<string | null>(null);
+
+  // Handle select option click
+  const handleSelectOpt = useCallback(
+    (idx: number) => {
+      if (!q || q.type !== "select") return;
+      if (isAdvancing.current) return;
+      const opt = displayOpts[idx];
+      if (!opt) return;
+
+      isAdvancing.current = true;
+      setSelectedIdx(idx);
+      const newAnswers = { ...answers, [q.id]: opt.text };
+      setAnswers(newAnswers);
+
+      const result = processAction(opt, newAnswers);
+
+      setTimeout(() => {
+        if (result.stopCode) {
+          isAdvancing.current = false;
+          return;
+        }
+
+        if (result.shouldAdvance) {
+          const nextIdx = cur + 1;
+          if (nextIdx >= visibleQuestions.length) {
+            handleComplete(
+              newAnswers,
+              warningCodes,
+              attorneyFlags,
+              franchiseInterest,
+              hardStopsTriggered,
+              franchiseReferralRequested
+            );
+          } else {
+            advance();
+          }
+        }
+        // Reset for warning pause (shouldAdvance=false) so user can click Continue
+        if (!result.shouldAdvance) {
+          isAdvancing.current = false;
+        }
+      }, result.stopCode ? 280 : 1200);
+
+      saveDraft(newAnswers, cur, warningCodes, attorneyFlags, franchiseInterest, franchiseReferralRequested);
+    },
+    [
+      q, displayOpts, answers, cur, visibleQuestions, warningCodes, attorneyFlags,
+      franchiseInterest, franchiseReferralRequested, hardStopsTriggered, processAction, advance, handleComplete, saveDraft
+    ]
+  );
+
+  // Handle multi-select continue — MUST process action codes for every selected option
+  const handleMultiContinue = useCallback(() => {
+    if (multiSel.length === 0 || !q) return;
+
+    // Mutual exclusion enforcement for Q0-06 and Q0-10
+    let effectiveSel = [...multiSel];
+    if (q.id === "Q0-10") {
+      const noneIdx = q.options.length - 1;
+      if (effectiveSel.includes(noneIdx) && effectiveSel.length > 1) {
+        effectiveSel = [noneIdx]; // "None" wins
+      }
+    } else if (q.id === "Q0-06") {
+      const loanIdx = q.options.length - 1;
+      if (effectiveSel.includes(loanIdx) && effectiveSel.length > 1) {
+        effectiveSel = [loanIdx]; // Business loan = hard stop, alone
+      }
     }
 
-    router.push("/results");
-  };
+    const selected = effectiveSel.map((i) => q.options[i]);
+    const newAnswers = { ...answers, [q.id]: selected.map((o) => o.text) };
+    setAnswers(newAnswers);
 
-  // Loading state
-  if (!questionsData || !scoringLogic) {
+    const newWarnings = [...warningCodes];
+    const newFlags = [...attorneyFlags];
+    let newHardStops = [...hardStopsTriggered];
+    let newFranchise = franchiseInterest;
+    let newFranchiseReferral = franchiseReferralRequested;
+
+    for (const opt of selected) {
+      const action = opt.action || "continue";
+
+      const stopCode = extractStopCode(action);
+      if (stopCode) {
+        newHardStops = [...newHardStops, stopCode];
+        setHardStopsTriggered(newHardStops);
+        setStopCode(stopCode);
+        saveDraft(newAnswers, cur, newWarnings, newFlags, newFranchise, newFranchiseReferral);
+        return;
+      }
+
+      const warnCode = extractWarningCode(action);
+      if (warnCode && !newWarnings.includes(warnCode)) {
+        newWarnings.push(warnCode);
+        if (opt.warning_message) setWarnMsg(opt.warning_message);
+      }
+
+      const attorneyCode = extractAttorneyCode(action);
+      if (attorneyCode && !newFlags.includes(attorneyCode)) {
+        newFlags.push(attorneyCode);
+      }
+
+      if (action.includes("flag_franchise_interest")) newFranchise = true;
+      if (action.includes("flag_franchise_referral")) newFranchiseReferral = true;
+    }
+
+    setWarningCodes(newWarnings);
+    setAttorneyFlags(newFlags);
+    setFranchiseInterest(newFranchise);
+    setFranchiseReferralRequested(newFranchiseReferral);
+    saveDraft(newAnswers, cur, newWarnings, newFlags, newFranchise, newFranchiseReferral);
+
+    const nextIdx = cur + 1;
+    if (nextIdx >= visibleQuestions.length) {
+      handleComplete(newAnswers, newWarnings, newFlags, newFranchise, newHardStops, newFranchiseReferral);
+    } else {
+      advance();
+    }
+  }, [multiSel, q, answers, cur, visibleQuestions, warningCodes, attorneyFlags, franchiseInterest, franchiseReferralRequested, hardStopsTriggered, advance, handleComplete, saveDraft]);
+
+  // Handle email submit
+  const handleEmailSubmit = useCallback(async () => {
+    if (!email || !EMAIL_RE.test(email)) return;
+    setIsSaving(true);
+    setSaveError(null);
+
+    const stored = localStorage.getItem("e2go_quiz_result");
+    const resultData = stored ? JSON.parse(stored) : {};
+
+    try {
+      const { data: session, error } = await supabase
+        .from("quiz_sessions")
+        .insert({
+          user_id: null,
+          email,
+          outcome: resultData.outcome || "PROCEED",
+          score: resultData.score || 80,
+          hard_stop_codes: resultData.hard_stops_triggered || [],
+          attorney_flag_codes: resultData.attorney_flags || [],
+          risk_flag_codes: resultData.warnings || [],
+          application_type: resultData.application_type || "solo",
+          franchise_interest: resultData.franchise_interest || false,
+          result_json: resultData,
+          casl_consent: caslConsent,
+          casl_consent_at: caslConsent ? new Date().toISOString() : null,
+          completed_at: new Date().toISOString(),
+        })
+        .select("id")
+        .single();
+
+      if (!error && session) {
+        try {
+          await fetch("/api/email/results", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email,
+              outcome: resultData.outcome,
+              result_json: resultData,
+              quiz_session_id: session.id,
+              franchise_interest: resultData.franchise_interest,
+            }),
+          });
+          setEmailSent(true);
+        } catch {
+          // ignore
+        }
+      }
+    } catch {
+      setSaveError("Unable to save. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
+  }, [email, caslConsent, supabase]);
+
+  // Derived
+  const pct = Math.round(((cur + 1) / visibleQuestions.length) * 100);
+  const currentSection = q ? SECTIONS[q.section_index] : "";
+
+  const filteredCountries =
+    countrySearch.length > 0
+      ? TREATY_COUNTRIES.filter((c) =>
+          c.toLowerCase().startsWith(countrySearch.toLowerCase())
+        ).slice(0, 8)
+      : [];
+
+  const isCountry = q?.type === "searchable_country";
+  const isMulti = q?.type === "multiselect";
+  const isSelect = q?.type === "select";
+
+  // ---------------------------------------------------------------------------
+  // Render: loading
+  // ---------------------------------------------------------------------------
+  if (!authChecked) {
     return (
-      <div className="min-h-screen bg-[#f8f9ff] flex items-center justify-center">
-        <div className="text-[#004ac6]">Loading...</div>
+      <div style={{ background: "#0a0a0a", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", maxWidth: "100%", margin: "0 auto" }}>
+        <div style={{ color: "rgba(201,168,76,0.6)", fontSize: "13px", letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: "'DM Sans', sans-serif" }}>
+          Loading...
+        </div>
       </div>
     );
   }
 
-  // Stop screen
-  if (stopScreen) {
+  // ---------------------------------------------------------------------------
+  // Render: hard stop
+  // ---------------------------------------------------------------------------
+  if (stopCode) {
+    const stopText = HARD_STOPS[stopCode] || "Based on your answers, we are unable to proceed. Please consult a qualified immigration attorney.";
+    const stopTitle = (() => {
+      const titles: Record<string, string> = {
+        "PR-01": "Citizenship in a treaty country required",
+        "PR-02": "Loan-funded investments require legal review",
+        "PR-03": "Investment capital required",
+        "PR-04": "Investment below threshold",
+        "PR-05": "Documentation required",
+        "PR-06": "Active management required",
+        "PR-06b": "Three or more partners changes your E-2 classification",
+        "PR-07": "This business type does not qualify",
+        "PR-08": "Serious convictions require legal assessment",
+        "PR-09": "U.S. presence without valid status",
+        "PR-PASSIVE-INVEST": "This investment structure does not qualify",
+        "PR-NONPROFIT": "Non-profit organisations do not qualify",
+      };
+      return titles[stopCode] || "Not eligible at this time";
+    })();
+
     return (
-      <div className="min-h-screen bg-[#f8f9ff] flex flex-col">
-        <header className="w-full sticky top-0 z-50 bg-white border-b border-[#c3c6d7]">
-          <div className="flex justify-between items-center h-16 px-4 max-w-xl mx-auto">
-            <Link href="/" className="flex items-center gap-2">
-              <span className="text-xl font-bold text-[#004ac6]">e2go.app</span>
-            </Link>
+      <div style={{ background: "#0a0a0a", minHeight: "100vh", fontFamily: "'DM Sans', system-ui, sans-serif", color: "#f5f0e8", maxWidth: "100%", margin: "0 auto" }}>
+        <div style={{ padding: "clamp(12px, 4vw, 18px) clamp(16px, 5vw, 40px)", borderBottom: "1px solid rgba(201,168,76,0.1)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ fontSize: "17px", color: "#C9A84C", fontWeight: 300 }}>e2go<span style={{ color: "rgba(245,240,232,0.9)" }}>.app</span></div>
+        </div>
+        <div style={{ padding: "clamp(32px, 5vw, 56px) clamp(16px, 5vw, 40px)", maxWidth: "560px" }}>
+          <div style={{ width: "44px", height: "44px", border: "1px solid rgba(220,60,60,0.3)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "24px", color: "rgba(220,60,60,0.65)", fontSize: "20px" }}>✕</div>
+          <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "28px", fontWeight: 300, color: "#f5f0e8", marginBottom: "12px", lineHeight: 1.3 }}>{stopTitle}</div>
+          <div style={{ fontSize: "14px", color: "rgba(245,240,232,0.76)", lineHeight: 1.7, marginBottom: "28px", maxWidth: "460px" }}>{stopText}</div>
+          <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+            <button
+              onClick={() => {
+                setStopCode(null);
+                setCur(0);
+                setAnswers({});
+                setWarningCodes([]);
+                setAttorneyFlags([]);
+                setFranchiseInterest(false);
+                setSelectedIdx(null);
+                setWarnMsg(null);
+                setSelectedCountry(null);
+                setCountrySearch("");
+                setHardStopsTriggered([]);
+                localStorage.removeItem("e2go_quiz_draft");
+              }}
+              style={{ padding: "11px 24px", background: "transparent", border: "1px solid rgba(201,168,76,0.35)", color: "#C9A84C", fontSize: "12px", cursor: "pointer", letterSpacing: "0.07em", textTransform: "uppercase", fontFamily: "'DM Sans', sans-serif", borderRadius: 0 }}
+            >
+              Start over
+            </button>
+            <button style={{ padding: "11px 24px", background: "transparent", border: "1px solid rgba(201,168,76,0.15)", color: "rgba(245,240,232,0.70)", fontSize: "12px", cursor: "pointer", letterSpacing: "0.07em", textTransform: "uppercase", fontFamily: "'DM Sans', sans-serif", borderRadius: 0 }}>
+              Find an attorney →
+            </button>
           </div>
-        </header>
-
-        <main className="flex-1 flex items-center justify-center px-4 py-12">
-          <div className="max-w-md w-full text-center">
-            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <svg className="w-8 h-8 text-red-600" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
-              </svg>
-            </div>
-            <h1 className="text-2xl font-bold text-[#0b1c30] mb-4">
-              Application Not Eligible
-            </h1>
-            <p className="text-[#434655] mb-8">
-              {stopScreen.message}
-            </p>
-            <p className="text-sm text-[#737686] mb-8">
-              Based on your responses, the E-2 visa may not be the right path for you at this time. We recommend speaking with a qualified immigration attorney to explore your options.
-            </p>
-            <div className="space-y-3">
-              <button className="w-full bg-[#004ac6] text-white font-medium py-4 rounded-lg hover:bg-[#00337d] transition-colors">
-                Find a qualified immigration lawyer
-              </button>
-              <button
-                onClick={() => {
-                  setStopScreen(null);
-                  setCurrentIndex(0);
-                  setAnswers({});
-                }}
-                className="w-full border border-[#004ac6] text-[#004ac6] font-medium py-4 rounded-lg hover:bg-[#e5eeff] transition-colors"
-              >
-                Start over
-              </button>
-            </div>
-          </div>
-        </main>
-
-        <footer className="py-4 text-center text-xs text-[#737686]">
-          e2go.app · The American Dream Edition
-        </footer>
+        </div>
       </div>
     );
   }
 
-  // Currency input display
-  const getCurrencyUSD = () => {
-    if (!currencyValue) return "";
-    const amount = parseFloat(currencyValue);
-    if (isNaN(amount)) return "";
-    // Use live rate if available, fallback to 0.73
-    const rate = cadUsdRate || 0.73;
-    const usd = currencyToggle === "CAD" ? amount * rate : amount;
-    return usd.toLocaleString("en-US", { style: "currency", currency: "USD" });
-  };
-
-  // Get rate display
-  const getRateDisplay = () => {
-    if (rateError || !cadUsdRate) return null;
+  // ---------------------------------------------------------------------------
+  // Render: email gate
+  // ---------------------------------------------------------------------------
+  if (showEmailGate) {
     return (
-      <span className="text-xs text-[#737686]">
-        Rate: 1 CAD = {cadUsdRate.toFixed(4)} USD
-      </span>
-    );
-  };
-
-  return (
-    <div className="min-h-screen bg-[#f8f9ff] flex flex-col">
-      {/* Header */}
-      <header className="w-full sticky top-0 z-50 bg-white border-b border-[#c3c6d7]">
-        <div className="flex justify-between items-center h-16 px-4 max-w-xl mx-auto">
-          <Link href="/" className="flex items-center gap-2">
-            <svg className="w-6 h-6 text-[#004ac6]" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 2L2 7v10l10 5 10-5V7L12 2z" />
-            </svg>
-            <span className="text-xl font-bold text-[#004ac6]">e2go.app</span>
-          </Link>
-          <button className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-[#eff4ff] transition-colors">
-            <svg className="w-6 h-6 text-[#434655]" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-            </svg>
-          </button>
+      <div style={{ background: "#0a0a0a", minHeight: "100vh", fontFamily: "'DM Sans', system-ui, sans-serif", color: "#f5f0e8", maxWidth: "100%", margin: "0 auto" }}>
+        <div style={{ padding: "clamp(12px, 4vw, 18px) clamp(16px, 5vw, 40px)", borderBottom: "1px solid rgba(201,168,76,0.1)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ fontSize: "17px", color: "#C9A84C", fontWeight: 300 }}>e2go<span style={{ color: "rgba(245,240,232,0.9)" }}>.app</span></div>
         </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="flex-1 flex flex-col max-w-xl mx-auto w-full px-4 py-8">
-        {/* Progress Section */}
-        <div className="mb-8">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-sm font-medium text-[#004ac6]">{getCurrentSection()}</span>
-            <span className="text-sm text-[#737686]">
-              {currentIndex + 1} of {visibleQuestions.length}
-            </span>
-          </div>
-          <div className="h-2 bg-[#e5eeff] rounded-full overflow-hidden">
-            <div
-              className="h-full bg-[#004ac6] rounded-full transition-all duration-300"
-              style={{ width: `${((currentIndex + 1) / visibleQuestions.length) * 100}%` }}
-            />
-          </div>
-        </div>
-
-        {/* Question */}
-        {currentQuestion && (
-          <div
-            className={`flex-1 transition-opacity duration-200 ${isAnimating ? "opacity-0" : "opacity-100"}`}
-          >
-            <div className="flex items-start gap-2 mb-6">
-              <h1 className="text-xl font-semibold text-[#0b1c30] flex-1">
-                {currentQuestion.question}
-              </h1>
-              {currentQuestion.tooltip && (
-                <button
-                  onClick={() => setShowTooltip(!showTooltip)}
-                  className="w-6 h-6 flex items-center justify-center rounded-full bg-[#e5eeff] text-[#004ac6] text-sm font-bold hover:bg-[#dce9ff] transition-colors flex-shrink-0"
-                >
-                  i
-                </button>
-              )}
-            </div>
-
-            {/* Tooltip */}
-            {showTooltip && currentQuestion.tooltip && (
-              <div className="mb-6 p-4 bg-[#eff4ff] rounded-lg border border-[#dce9ff]">
-                <p className="text-sm text-[#434655]">{currentQuestion.tooltip}</p>
+        <div style={{ padding: "clamp(32px, 5vw, 56px) clamp(16px, 5vw, 40px)", maxWidth: "480px" }}>
+          {emailSent ? (
+            /* Confirmation screen after email submitted */
+            <>
+              <div style={{ width: "44px", height: "44px", border: "1px solid rgba(93,202,165,0.3)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "24px", color: "#5DCAA5", fontSize: "20px" }}>✓</div>
+              <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "32px", fontWeight: 300, color: "#f5f0e8", marginBottom: "12px", lineHeight: 1.3 }}>Check your email</div>
+              <div style={{ fontSize: "14px", color: "rgba(245,240,232,0.78)", lineHeight: 1.7, marginBottom: "28px" }}>
+                We sent a link to <span style={{ color: "#C9A84C" }}>{email}</span>. Click it to view your full results.
               </div>
-            )}
+              <div style={{ padding: "14px 16px", background: "rgba(201,168,76,0.04)", border: "1px solid rgba(201,168,76,0.12)", fontSize: "12px", color: "rgba(245,240,232,0.72)", lineHeight: 1.6 }}>
+                The link expires in 24 hours. Check your spam folder if you don&apos;t see it.
+              </div>
+            </>
+          ) : (
+            /* Email input form */
+            <>
+              <div style={{ fontSize: "10px", letterSpacing: "0.18em", textTransform: "uppercase", color: "rgba(201,168,76,0.6)", marginBottom: "16px" }}>Your results are ready</div>
+              <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "32px", fontWeight: 300, color: "#f5f0e8", marginBottom: "8px", lineHeight: 1.3 }}>Enter your email and we&apos;ll send you a link to view them.</div>
+              <div style={{ fontSize: "14px", color: "rgba(245,240,232,0.74)", marginBottom: "32px", lineHeight: 1.6 }}>Your full eligibility result is waiting. We&apos;ll email you a secure link.</div>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="your@email.com"
+                style={{ width: "100%", padding: "13px 16px", background: "rgba(201,168,76,0.02)", border: "1px solid rgba(201,168,76,0.2)", color: "#f5f0e8", fontSize: "14px", fontFamily: "'DM Sans', sans-serif", borderRadius: 0, outline: "none", marginBottom: "12px" }}
+              />
+              <div
+                style={{ display: "flex", alignItems: "flex-start", gap: "10px", marginBottom: "24px", cursor: "pointer" }}
+                onClick={() => setCaslConsent(!caslConsent)}
+              >
+                <div style={{ width: "16px", height: "16px", border: `1px solid ${caslConsent ? "#C9A84C" : "rgba(201,168,76,0.3)"}`, background: caslConsent ? "#C9A84C" : "transparent", flexShrink: 0, marginTop: "2px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  {caslConsent && <span style={{ color: "#0a0a0a", fontSize: "11px" }}>✓</span>}
+                </div>
+                <div style={{ fontSize: "12px", color: "rgba(245,240,232,0.72)", lineHeight: 1.6 }}>Send me occasional updates about the E-2 process. You can unsubscribe at any time.</div>
+              </div>
+              {saveError && <div style={{ fontSize: "13px", color: "rgba(220,60,60,0.8)", marginBottom: "12px" }}>{saveError}</div>}
+              <button
+                onClick={handleEmailSubmit}
+                disabled={!email.includes("@") || isSaving}
+                style={{ width: "100%", padding: "14px", background: "#C9A84C", border: "none", color: "#0a0a0a", fontSize: "13px", fontWeight: 500, cursor: email.includes("@") && !isSaving ? "pointer" : "not-allowed", letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: "'DM Sans', sans-serif", borderRadius: 0, opacity: email.includes("@") && !isSaving ? 1 : 0.35 }}
+              >
+                {isSaving ? "Sending..." : "Send my results"}
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
 
-            {/* Select Options */}
-            {currentQuestion.type === "select" && (
-              <div className="space-y-3">
-                {currentQuestion.options?.map((option) => (
-                  <button
-                    key={option}
-                    onClick={() => handleAnswer(option)}
-                    className={`w-full text-left p-4 rounded-lg border transition-all ${
-                      answers[currentQuestion.id] === option
-                        ? "border-[#004ac6] bg-[#eff4ff] shadow-sm"
-                        : "border-[#c3c6d7] bg-white hover:border-[#737686]"
-                    }`}
+  // ---------------------------------------------------------------------------
+  // Render: no question
+  // ---------------------------------------------------------------------------
+  if (!q) {
+    return (
+      <div style={{ background: "#0a0a0a", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: "#f5f0e8", fontFamily: "'DM Sans', sans-serif" }}>
+        <div style={{ color: "rgba(201,168,76,0.6)", fontSize: "13px", letterSpacing: "0.08em", textTransform: "uppercase" }}>Loading...</div>
+      </div>
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Render: main quiz
+  // ---------------------------------------------------------------------------
+  return (
+    <div style={{ background: "#0a0a0a", minHeight: "100vh", fontFamily: "'DM Sans', system-ui, sans-serif", color: "#f5f0e8", maxWidth: "100%", margin: "0 auto" }}>
+      {/* Header */}
+      <div style={{ padding: "clamp(12px, 4vw, 18px) clamp(16px, 5vw, 40px)", borderBottom: "1px solid rgba(201,168,76,0.1)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ fontSize: "17px", color: "#C9A84C", fontWeight: 300 }}>e2go<span style={{ color: "rgba(245,240,232,0.9)" }}>.app</span></div>
+        <div style={{ flex: 1, maxWidth: "clamp(100px, 30vw, 240px)", margin: "0 clamp(12px, 3vw, 24px)" }}>
+          <div style={{ height: "1px", background: "rgba(201,168,76,0.15)" }}>
+            <div style={{ height: "100%", background: "#C9A84C", width: `${pct}%`, transition: "width 0.5s cubic-bezier(.4,0,.2,1)" }} />
+          </div>
+          <div style={{ fontSize: "10px", color: "rgba(245,240,232,0.65)", marginTop: "5px", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+            Question {cur + 1} of {visibleQuestions.length}
+          </div>
+        </div>
+        <div
+          style={{ fontSize: "11px", color: "rgba(245,240,232,0.78)", letterSpacing: "0.07em", textTransform: "uppercase", cursor: "pointer", transition: "color 0.15s" }}
+          onClick={() => setShowEmailGate(true)}
+          onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(245,240,232,0.85)")}
+          onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(245,240,232,0.78)")}
+        >
+          Save & exit
+        </div>
+      </div>
+
+      {/* Section tabs */}
+      <div style={{ display: "flex", gap: 0, padding: "0 clamp(16px, 5vw, 40px)", borderBottom: "1px solid rgba(201,168,76,0.08)", overflowX: "auto", whiteSpace: "nowrap" }}>
+        {SECTIONS.map((s, i) => (
+          <div
+            key={s}
+            onClick={
+              i < q.section_index
+                ? () => {
+                    const firstQ = visibleQuestions.findIndex((x) => x.section_index === i);
+                    if (firstQ !== -1) {
+                      setCur(firstQ);
+                      setSelectedIdx(null);
+                      setWarnMsg(null);
+                      setMultiSel([]);
+                    }
+                  }
+                : undefined
+            }
+            onMouseEnter={i < q.section_index ? (e) => (e.currentTarget.style.color = "rgba(245,240,232,0.65)") : undefined}
+            onMouseLeave={i < q.section_index ? (e) => (e.currentTarget.style.color = "rgba(245,240,232,0.74)") : undefined}
+            style={{
+              fontSize: "10px",
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+              color: i === q.section_index ? "#C9A84C" : i < q.section_index ? "rgba(245,240,232,0.74)" : "rgba(245,240,232,0.72)",
+              padding: "10px 0",
+              marginRight: "18px",
+              borderBottom: `2px solid ${i === q.section_index ? "#C9A84C" : i < q.section_index ? "rgba(201,168,76,0.25)" : "transparent"}`,
+              transition: "all 0.2s",
+              whiteSpace: "nowrap",
+              cursor: i < q.section_index ? "pointer" : "default",
+            }}
+          >
+            {s}
+          </div>
+        ))}
+      </div>
+
+      {/* Section label */}
+      <div style={{ padding: "0 clamp(16px, 5vw, 40px)", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
+        <div style={{ fontSize: "10px", letterSpacing: "0.12em", textTransform: "uppercase", color: "#C9A84C", padding: "10px 0" }}>
+          Section {q.section_index + 1} of {SECTIONS.length} — {currentSection}
+        </div>
+      </div>
+
+      {/* Question content */}
+      <div style={{ padding: "clamp(28px, 5vw, 44px) clamp(16px, 5vw, 40px) 32px", maxWidth: "580px", width: "100%", opacity: isAnimating ? 0 : 1, transition: "opacity 0.15s" }}>
+        {/* Question type badge */}
+        <div style={{ display: "inline-flex", alignItems: "center", gap: "5px", fontSize: "10px", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(201,168,76,0.7)", marginBottom: "18px" }}>
+          <div style={{ width: "3px", height: "3px", borderRadius: "50%", background: "#C9A84C" }} />
+          {q.is_sub ? "Follow-up" : currentSection}
+        </div>
+
+        {/* Question text */}
+        <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "30px", fontWeight: 300, color: "#f5f0e8", lineHeight: 1.3, marginBottom: "8px", letterSpacing: "-0.01em" }}>
+          {q.question}
+        </div>
+
+        {/* Helper text */}
+        {q.helper_text && (
+          <div style={{ fontSize: "13px", color: "rgba(245,240,232,0.78)", lineHeight: 1.65, marginBottom: "28px", maxWidth: "460px" }}>
+            {q.helper_text}
+          </div>
+        )}
+
+        {/* Warning message */}
+        {warnMsg && (
+          <div style={{ display: "flex", gap: "9px", padding: "11px 14px", border: "1px solid rgba(201,168,76,0.22)", background: "rgba(201,168,76,0.04)", marginBottom: "16px" }}>
+            <div style={{ color: "#C9A84C", fontSize: "14px", flexShrink: 0 }}>!</div>
+            <div style={{ fontSize: "12px", color: "rgba(245,240,232,0.78)", lineHeight: 1.6 }}>{warnMsg}</div>
+          </div>
+        )}
+
+        {/* Country search */}
+        {isCountry && (
+          <>
+            <input
+              value={countrySearch}
+              onChange={(e) => {
+                setCountrySearch(e.target.value);
+                setSelectedCountry(null);
+                setHighlightedIdx(-1);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "ArrowDown") {
+                  e.preventDefault();
+                  setHighlightedIdx((prev) => Math.min(prev + 1, filteredCountries.length - 1));
+                }
+                if (e.key === "ArrowUp") {
+                  e.preventDefault();
+                  setHighlightedIdx((prev) => Math.max(prev - 1, 0));
+                }
+                if (e.key === "Enter" && highlightedIdx >= 0) {
+                  e.preventDefault();
+                  const country = filteredCountries[highlightedIdx];
+                  // Fix C: Treaty country validation
+                  if (!TREATY_COUNTRIES.includes(country)) {
+                    setHardStopsTriggered((prev) => [...prev, "PR-NON-TREATY"]);
+                    setStopCode("PR-NON-TREATY");
+                    return;
+                  }
+                  setSelectedCountry(country);
+                  setCountrySearch(country);
+                  setAnswers((prev) => ({ ...prev, [q.id]: country }));
+                  setTimeout(() => advance(), 300);
+                }
+                if (e.key === "Escape") {
+                  setCountrySearch("");
+                  setHighlightedIdx(-1);
+                }
+              }}
+              placeholder="Search your country..."
+              style={{ width: "100%", maxWidth: "420px", padding: "13px 16px", background: "rgba(201,168,76,0.02)", border: "1px solid rgba(201,168,76,0.2)", color: "#f5f0e8", fontSize: "14px", fontFamily: "'DM Sans', sans-serif", borderRadius: 0, outline: "none", marginBottom: "8px" }}
+            />
+            {filteredCountries.length > 0 && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "4px", marginBottom: "20px", background: "#0a0a0a", border: "1px solid rgba(201,168,76,0.2)", zIndex: 50, position: "relative" }}>
+                {filteredCountries.map((c, idx) => (
+                  <div
+                    key={c}
+                    id={`country-option-${idx}`}
+                    onClick={() => {
+                      // Fix C: Treaty country validation
+                      if (!TREATY_COUNTRIES.includes(c)) {
+                        setHardStopsTriggered((prev) => [...prev, "PR-NON-TREATY"]);
+                        setStopCode("PR-NON-TREATY");
+                        return;
+                      }
+                      setSelectedCountry(c);
+                      setCountrySearch(c);
+                      setAnswers((prev) => ({ ...prev, [q.id]: c }));
+                      setTimeout(() => advance(), 300);
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = "rgba(201,168,76,0.08)";
+                      e.currentTarget.style.color = "#f5f0e8";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = highlightedIdx === idx ? "rgba(201,168,76,0.15)" : selectedCountry === c ? "rgba(201,168,76,0.08)" : "#0a0a0a";
+                      e.currentTarget.style.color = "#f5f0e8";
+                    }}
+                    style={{ padding: "10px 14px", background: highlightedIdx === idx ? "rgba(201,168,76,0.15)" : selectedCountry === c ? "rgba(201,168,76,0.08)" : "#0a0a0a", border: `1px solid ${selectedCountry === c ? "rgba(201,168,76,0.4)" : "rgba(201,168,76,0.1)"}`, color: "#f5f0e8", fontSize: "13px", cursor: "pointer", transition: "all 0.12s", borderRadius: 0 }}
                   >
-                    <span className="text-[#0b1c30]">{option}</span>
-                  </button>
+                    {c}
+                  </div>
                 ))}
               </div>
             )}
+          </>
+        )}
 
-            {/* Multiselect Options */}
-            {currentQuestion.type === "multiselect" && (
-              <div className="space-y-3">
-                {currentQuestion.options?.map((option) => {
-                  const selected = answers[currentQuestion.id]?.includes(option);
-                  return (
-                    <button
-                      key={option}
-                      onClick={() => {
-                        const current = (answers[currentQuestion.id] as string[]) || [];
-                        const updated = selected
-                          ? current.filter((a) => a !== option)
-                          : [...current, option];
-                        setAnswers({ ...answers, [currentQuestion.id]: updated });
-                      }}
-                      className={`w-full text-left p-4 rounded-lg border transition-all flex items-center gap-3 ${
-                        selected
-                          ? "border-[#004ac6] bg-[#eff4ff] shadow-sm"
-                          : "border-[#c3c6d7] bg-white hover:border-[#737686]"
-                      }`}
-                    >
-                      <div
-                        className={`w-5 h-5 rounded border flex items-center justify-center ${
-                          selected ? "bg-[#004ac6] border-[#004ac6]" : "border-[#737686]"
-                        }`}
-                      >
-                        {selected && (
-                          <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                            <path
-                              fillRule="evenodd"
-                              d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                        )}
-                      </div>
-                      <span className="text-[#0b1c30]">{option}</span>
-                    </button>
-                  );
-                })}
-                <button
-                  onClick={handleMultiselectContinue}
-                  disabled={!((answers[currentQuestion.id] as string[]) || []).length}
-                  className="w-full bg-[#004ac6] text-white font-medium py-4 rounded-lg hover:bg-[#00337d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed mt-6"
-                >
-                  Continue
-                </button>
-              </div>
-            )}
-
-            {/* Currency Input */}
-            {currentQuestion.type === "currency" && (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex gap-2 flex-1">
-                  <button
-                    onClick={() => setCurrencyToggle("USD")}
-                    className={`flex-1 py-2 rounded-lg border font-medium transition-all ${
-                      currencyToggle === "USD"
-                        ? "border-[#004ac6] bg-[#eff4ff] text-[#004ac6]"
-                        : "border-[#c3c6d7] text-[#434655]"
-                    }`}
-                  >
-                    USD
-                  </button>
-                  <button
-                    onClick={() => setCurrencyToggle("CAD")}
-                    className={`flex-1 py-2 rounded-lg border font-medium transition-all ${
-                      currencyToggle === "CAD"
-                        ? "border-[#004ac6] bg-[#eff4ff] text-[#004ac6]"
-                        : "border-[#c3c6d7] text-[#434655]"
-                    }`}
-                  >
-                    CAD
-                  </button>
-                  </div>
-                  {rateLoading ? (
-                    <span className="text-xs text-[#737686]">Loading rate...</span>
-                  ) : rateError ? (
-                    <span className="text-xs text-amber-600">Enter amount in USD</span>
-                  ) : (
-                    getRateDisplay()
-                  )}
-                </div>
-
-                <input
-                  type="number"
-                  value={currencyValue}
-                  onChange={(e) => setCurrencyValue(e.target.value)}
-                  placeholder="Enter amount"
-                  className="w-full p-4 rounded-lg border border-[#c3c6d7] bg-white text-[#0b1c30] text-lg focus:outline-none focus:border-[#004ac6] focus:ring-1 focus:ring-[#004ac6]"
-                />
-
-                {currencyValue && (
-                  <div className="flex justify-between items-center p-3 bg-[#eff4ff] rounded-lg">
-                    <span className="text-sm text-[#434655]">USD equivalent:</span>
-                    <span className="font-medium text-[#004ac6]">{getCurrencyUSD()}</span>
-                  </div>
-                )}
-
-                {proportionalityFlag && (
-                  <div
-                    className={`p-3 rounded-lg ${
-                      proportionalityFlag === "W-PROP-STRONG"
-                        ? "bg-red-50 border border-red-200"
-                        : "bg-amber-50 border border-amber-200"
-                    }`}
-                  >
-                    <p className={`text-sm ${proportionalityFlag === "W-PROP-STRONG" ? "text-red-700" : "text-amber-700"}`}>
-                      {proportionalityFlag === "W-PROP-STRONG"
-                        ? "This amount is below the recommended threshold for E-2 investment. Strong risk flag."
-                        : "This amount is below the clean threshold. Consider this a soft advisory."}
-                    </p>
-                  </div>
-                )}
-
-                <button
-                  onClick={handleCurrencyContinue}
-                  disabled={!currencyValue}
-                  className="w-full bg-[#004ac6] text-white font-medium py-4 rounded-lg hover:bg-[#00337d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed mt-6"
-                >
-                  Continue
-                </button>
-              </div>
-            )}
-
-            {/* Text/Email Input */}
-            {currentQuestion.type === "text" && (
-              <div className="space-y-4">
-                <input
-                  type={currentQuestion.validation === "email" ? "email" : "text"}
-                  value={emailValue}
-                  onChange={(e) => setEmailValue(e.target.value)}
-                  placeholder={currentQuestion.validation === "email" ? "your@email.com" : "Enter your answer"}
-                  className="w-full p-4 rounded-lg border border-[#c3c6d7] bg-white text-[#0b1c30] text-lg focus:outline-none focus:border-[#004ac6] focus:ring-1 focus:ring-[#004ac6]"
-                />
-
-                <button
-                  onClick={handleTextContinue}
-                  disabled={!emailValue}
-                  className="w-full bg-[#004ac6] text-white font-medium py-4 rounded-lg hover:bg-[#00337d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed mt-6"
-                >
-                  Continue
-                </button>
-              </div>
-            )}
-
-            {/* Back Button */}
-            {currentIndex > 0 && (
+        {/* Select options */}
+        {isSelect && displayOpts.length > 0 && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "7px", marginBottom: "28px" }}>
+            {displayOpts.map((o, i) => (
               <button
-                onClick={handleBack}
-                className="w-full mt-4 text-[#737686] font-medium py-3 hover:text-[#004ac6] transition-colors"
+                key={i}
+                onClick={() => handleSelectOpt(i)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  padding: "13px 16px",
+                  background: selectedIdx === i ? "rgba(201,168,76,0.09)" : "rgba(201,168,76,0.02)",
+                  border: `1px solid ${selectedIdx === i ? "#C9A84C" : "rgba(201,168,76,0.14)"}`,
+                  color: selectedIdx === i ? "#f5f0e8" : "rgba(245,240,232,0.75)",
+                  fontSize: "14px",
+                  cursor: "pointer",
+                  textAlign: "left",
+                  borderRadius: 0,
+                  fontFamily: "'DM Sans', system-ui, sans-serif",
+                  transition: "all 0.14s",
+                  gap: "12px",
+                }}
               >
-                ← Back
+                <span>{o.text}</span>
+                <div style={{ width: "16px", height: "16px", border: `1px solid ${selectedIdx === i ? "#C9A84C" : "rgba(201,168,76,0.35)"}`, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  {selectedIdx === i && <div style={{ width: "7px", height: "7px", background: "#C9A84C" }} />}
+                </div>
               </button>
-            )}
+            ))}
           </div>
         )}
-      </main>
 
-      {/* Footer */}
-      <footer className="py-4 text-center text-xs text-[#737686]">
-        e2go.app · The American Dream Edition
-      </footer>
+        {/* Multi-select options */}
+        {isMulti && q.options.length > 0 && (
+          <>
+            <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.65)", marginBottom: "14px", letterSpacing: "0.04em" }}>Select all that apply</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "7px", marginBottom: "28px" }}>
+              {q.options.map((o, i) => {
+                const sel = multiSel.includes(i);
+                return (
+                  <button
+                    key={i}
+                    onClick={() => {
+                      // Mutual exclusion logic
+                      if (q.id === "Q0-10") {
+                        const isNoneOption = i === q.options.length - 1; // last option = "None"
+                        if (isNoneOption) {
+                          // Selecting "None" deselects all others
+                          setMultiSel(sel ? [] : [i]);
+                        } else {
+                          // Selecting any tie deselects "None"
+                          setMultiSel((prev) => {
+                            const filtered = prev.filter((x) => x !== q.options.length - 1);
+                            return sel ? filtered.filter((x) => x !== i) : [...filtered, i];
+                          });
+                        }
+                      } else if (q.id === "Q0-06") {
+                        const isLoanOption = i === q.options.length - 1; // last option = business loan
+                        if (isLoanOption) {
+                          // Business loan = hard stop, select only this
+                          setMultiSel([i]);
+                        } else {
+                          // Deselect loan if selecting anything else
+                          setMultiSel((prev) => {
+                            const filtered = prev.filter((x) => x !== q.options.length - 1);
+                            return sel ? filtered.filter((x) => x !== i) : [...filtered, i];
+                          });
+                        }
+                      } else {
+                        setMultiSel((prev) => (sel ? prev.filter((x) => x !== i) : [...prev, i]));
+                      }
+                    }}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "13px 16px",
+                      background: sel ? "rgba(201,168,76,0.09)" : "rgba(201,168,76,0.02)",
+                      border: `1px solid ${sel ? "#C9A84C" : "rgba(201,168,76,0.14)"}`,
+                      color: sel ? "#f5f0e8" : "rgba(245,240,232,0.75)",
+                      fontSize: "14px",
+                      cursor: "pointer",
+                      textAlign: "left",
+                      borderRadius: 0,
+                      fontFamily: "'DM Sans', system-ui, sans-serif",
+                      transition: "all 0.14s",
+                      gap: "12px",
+                    }}
+                  >
+                    <span>{o.text}</span>
+                    <div style={{ width: "16px", height: "16px", border: `1px solid ${sel ? "#C9A84C" : "rgba(201,168,76,0.35)"}`, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      {sel && <div style={{ width: "7px", height: "7px", background: "#C9A84C" }} />}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        )}
+
+        {/* Warning continue anyway button */}
+        {(isSelect || isCountry) && warnMsg && (
+          <div style={{ display: "flex", alignItems: "center", gap: "14px", marginTop: "4px" }}>
+            <button
+              onClick={() => {
+                const nextIdx = cur + 1;
+                if (nextIdx >= visibleQuestions.length) {
+                  handleComplete(answers, warningCodes, attorneyFlags, franchiseInterest, hardStopsTriggered, franchiseReferralRequested);
+                } else {
+                  advance();
+                }
+              }}
+              style={{ padding: "11px 26px", background: "#C9A84C", border: "none", color: "#0a0a0a", fontSize: "12px", fontWeight: 500, cursor: "pointer", letterSpacing: "0.07em", textTransform: "uppercase", fontFamily: "'DM Sans', sans-serif", borderRadius: 0 }}
+            >
+              Continue anyway
+            </button>
+          </div>
+        )}
+
+        {/* Tooltip */}
+        {q.tooltip && (
+          <div style={{ display: "flex", gap: "8px", marginTop: "22px", padding: "11px 14px", border: "1px solid rgba(201,168,76,0.18)", background: "rgba(201,168,76,0.02)" }}>
+            <div style={{ fontSize: "13px", color: "rgba(201,168,76,0.82)", flexShrink: 0 }}>i</div>
+            <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.70)", lineHeight: 1.65 }}>{q.tooltip}</div>
+          </div>
+        )}
+
+        {/* Bottom navigation */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginTop: '32px',
+          paddingTop: '20px',
+          borderTop: '1px solid rgba(201,168,76,0.08)',
+        }}>
+          {cur > 0 ? (
+            <button
+              onClick={() => { setCur(c => c - 1); setSelectedIdx(null); setWarnMsg(null); setMultiSel([]); }}
+              style={{
+                background: 'transparent', border: 'none',
+                color: 'rgba(245,240,232,0.76)', fontSize: '13px',
+                letterSpacing: '0.04em', cursor: 'pointer',
+                padding: '8px 0', fontFamily: "'DM Sans', sans-serif",
+                display: 'flex', alignItems: 'center', gap: '6px',
+              }}
+            >← Back</button>
+          ) : <div />}
+
+          {isMulti && multiSel.length > 0 && (
+            <button onClick={handleMultiContinue} style={{
+              padding: '11px 26px', background: '#C9A84C',
+              border: 'none', color: '#0a0a0a', fontSize: '12px',
+              fontWeight: 500, cursor: 'pointer', letterSpacing: '0.07em',
+              textTransform: 'uppercase', fontFamily: "'DM Sans', sans-serif",
+              borderRadius: 0,
+            }}>Continue →</button>
+          )}
+        </div>
+      </div>
     </div>
+  );
+}
+
+export default function QuizPage() {
+  return (
+    <Suspense fallback={null}>
+      <QuizInner />
+    </Suspense>
   );
 }

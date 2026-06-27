@@ -3,17 +3,211 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #1a1a1a;
+  --obsidian: #0a0a0a;
+  --gold: #C9A84C;
+  --gold-dim: rgba(201,168,76,0.12);
+  --gold-border: rgba(201,168,76,0.20);
+  --teal: #C9A84C;
+  --bg: #0a0a0a;
+  --text-primary: #f5f0e8;
+  --text-secondary: rgba(245,240,232,0.60);
+  --text-muted: rgba(245,240,232,0.68);
+  --card-border: rgba(201,168,76,0.12);
+  --input-border: rgba(201,168,76,0.20);
+  --input-focus: #C9A84C;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
+  background: var(--obsidian);
+  color: var(--text-primary);
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 300;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── Noise texture ── */
+.noise-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+}
+
+/* ── Gold radial pulse ── */
+.gold-pulse {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 30%, rgba(201,168,76,0.03) 0%, transparent 60%);
+  animation: goldPulse 8s ease-in-out infinite alternate;
+}
+
+@keyframes goldPulse {
+  0% { opacity: 0.6; transform: scale(1); }
+  100% { opacity: 1; transform: scale(1.1); }
+}
+
+/* ── Fade animations ── */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.fade-in-up {
+  animation: fadeInUp 0.6s ease-out forwards;
+}
+
+.fade-in {
+  animation: fadeIn 0.4s ease-out forwards;
+}
+
+/* ── Hero headline animation ── */
+.hero-headline {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+/* ── Gold button pulse ── */
+@keyframes goldPulseGlow {
+  0%, 100% { box-shadow: 0 0 20px rgba(201,168,76,0.2); }
+  50% { box-shadow: 0 0 35px rgba(201,168,76,0.35); }
+}
+
+.btn-gold-animate {
+  animation: goldPulseGlow 3s ease-in-out infinite;
+}
+
+/* ── Ask E2go "alive" panel — hero centerpiece ── */
+/* Ambient glow: a static gold halo whose opacity breathes. Animating opacity
+   only keeps it on the compositor (no layout/paint thrash). Sits behind the
+   panel as a sibling layer so the panel's own borders stay crisp. */
+@keyframes e2AskBreathe {
+  0%, 100% { opacity: 0.38; }
+  50% { opacity: 1; }
+}
+.e2-ask-glow {
+  box-shadow:
+    0 0 34px 2px rgba(201, 168, 76, 0.28),
+    0 0 0 1px rgba(201, 168, 76, 0.22);
+  animation: e2AskBreathe 3.4s ease-in-out infinite;
+}
+
+/* Live "we're online" dot — a presence pulse (scale + opacity, GPU-safe). */
+@keyframes e2LiveDot {
+  0%, 100% { opacity: 0.5; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.18); }
+}
+.e2-livedot {
+  animation: e2LiveDot 1.7s ease-in-out infinite;
+}
+
+/* Blinking caret for the self-typing teaser prompt. */
+@keyframes e2Caret {
+  0%, 45% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+.e2-caret {
+  animation: e2Caret 1.05s step-end infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .e2-ask-glow { animation: none; opacity: 0.65; }
+  .e2-livedot { animation: none; opacity: 0.95; transform: none; }
+  .e2-caret { animation: none; opacity: 1; }
+}
+
+/* ── Count-up animation ── */
+@keyframes countUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Nav scroll styles ── */
+.nav-scroll {
+  background: rgba(10,10,10,0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(201,168,76,0.15);
+}
+
+/* ── Gold checkmark ── */
+.gold-check {
+  color: var(--gold);
+}
+
+/* ── Card styles ── */
+.card {
+  background: rgba(201,168,76,0.02);
+  border: 1px solid rgba(201,168,76,0.12);
+}
+
+.card:hover {
+  background: rgba(201,168,76,0.04);
+}
+
+/* ── Responsive utilities ── */
+@media (max-width: 768px) {
+  .mobile-hidden {
+    display: none;
+  }
+}
+
+/* ── Hidden scrollbar — horizontal chip rows (SectionNav mobile) ── */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
   }
+}
+
+/* ── Animated gradient border (BorderRotate component) ── */
+@property --gradient-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+@keyframes gradient-rotate {
+  from { --gradient-angle: 0deg; }
+  to { --gradient-angle: 360deg; }
+}
+.gradient-border-auto {
+  animation: gradient-rotate
+    var(--animation-duration, 8s) linear infinite;
+}
+.gradient-border-hover { animation: none; }
+.gradient-border-hover:hover {
+  animation: gradient-rotate
+    var(--animation-duration, 8s) linear infinite;
+}
+.gradient-border-stop-hover {
+  animation: gradient-rotate
+    var(--animation-duration, 8s) linear infinite;
+}
+.gradient-border-stop-hover:hover {
+  animation-play-state: paused;
 }

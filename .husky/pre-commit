@@ -2,3 +2,13 @@
 . "$(dirname -- "$0")/_/husky.sh"
 
 npm test
+
+# Block commits that contain live API keys or Stripe secrets
+# Matches real key formats (40+ char alphanumeric after prefix) — not docs/comments
+STAGED=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|tsx|js|jsx|mjs|env)$' || true)
+if [ -n "$STAGED" ]; then
+  if git diff --cached -- $STAGED | grep -qE 'sk_live_[A-Za-z0-9]{20,}|gsk_[A-Za-z0-9]{20,}|re_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}'; then
+    echo "ERROR: Possible live API key detected in staged files. Remove it before committing."
+    exit 1
+  fi
+fi

@@ -27,6 +27,8 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     last_login_at TIMESTAMPTZ,
     login_count INTEGER DEFAULT 0,
     is_active BOOLEAN DEFAULT TRUE,
+    founding_member BOOLEAN DEFAULT FALSE,
+    guarantee_eligible BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -37,7 +39,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS public.applications (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
     principal_name TEXT,
     business_name TEXT,
     application_type TEXT CHECK (application_type IN ('solo', 'partnership')),
@@ -48,7 +50,16 @@ CREATE TABLE IF NOT EXISTS public.applications (
     family_type TEXT CHECK (family_type IN ('individual', 'couple', 'family')),
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
-    submitted_at TIMESTAMPTZ
+    submitted_at TIMESTAMPTZ,
+    lead_temperature INTEGER DEFAULT 0,
+    lead_stage TEXT DEFAULT 'unknown',
+    franchise_matching_triggered BOOLEAN DEFAULT FALSE,
+    attorney_warmth INTEGER DEFAULT 0,
+    cpa_warmth TEXT DEFAULT 'none',
+    banking_warmth TEXT DEFAULT 'none',
+    fx_warmth TEXT DEFAULT 'none',
+    multiunit_routing BOOLEAN DEFAULT FALSE,
+    growth_ambition TEXT DEFAULT 'unknown'
 );
 
 -- ============================================================================
@@ -60,7 +71,10 @@ CREATE TABLE IF NOT EXISTS public.answers (
     application_id UUID REFERENCES public.applications(id) ON DELETE CASCADE,
     question_key TEXT NOT NULL,
     answer_value TEXT,
-    answered_at TIMESTAMPTZ DEFAULT NOW()
+    skipped_by_user BOOLEAN DEFAULT FALSE,
+    privacy_category TEXT DEFAULT 'green',
+    answered_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE (application_id, question_key)
 );
 
 -- ============================================================================
@@ -470,13 +484,19 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- PROFILES
 DO $$ BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can view own profile' AND tablename = 'profiles') THEN
-        CREATE POLICY "Users can view own profile" ON public.profiles FOR SELECT USING (auth.uid() = id OR public.is_admin() = TRUE);
+        CREATE POLICY "Users can view own profile" ON public.profiles FOR SELECT TO authenticated USING (auth.uid() = id);
     END IF;
 END $$;
 
 DO $$ BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can update own profile' AND tablename = 'profiles') THEN
-        CREATE POLICY "Users can update own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id OR public.is_admin() = TRUE);
+        CREATE POLICY "Users can update own profile" ON public.profiles FOR UPDATE TO authenticated USING (auth.uid() = id);
+    END IF;
+END $$;
+
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can insert own profile' AND tablename = 'profiles') THEN
+        CREATE POLICY "Users can insert own profile" ON public.profiles FOR INSERT TO authenticated WITH CHECK (auth.uid() = id);
     END IF;
 END $$;
 

@@ -1,0 +1,325 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - generic [ref=e4]: e2go Design System v2
+    - generic [ref=e5]: Obsidian Gold — Component Reference
+    - generic [ref=e6]: This file is the canonical visual reference for every UI component in e2go. Claude Code must read this file before writing any CSS or component code. Match these components exactly — do not invent new styling.
+    - generic [ref=e7]: "Background: #0a0a0a · Primary accent: #C9A84C · Heading font: Cormorant Garamond · Body: DM Sans"
+  - generic [ref=e8]:
+    - generic [ref=e9]: "01"
+    - generic [ref=e10]: Design Tokens
+    - generic [ref=e11]: "LOCKED VALUES — No approximations. Background is #0a0a0a, not #060d1f."
+    - heading "Colors" [level=4] [ref=e12]
+    - generic [ref=e13]:
+      - generic [ref=e16]:
+        - text: "--obsidian"
+        - text: "#0a0a0a"
+      - generic [ref=e19]:
+        - text: "--gold"
+        - text: "#C9A84C"
+      - generic [ref=e22]:
+        - text: "--gold-light"
+        - text: "#D4BC6A"
+      - generic [ref=e25]:
+        - text: "--text-primary"
+        - text: "#f5f0e8"
+      - generic [ref=e28]:
+        - text: "--gold-border"
+        - text: 20% opacity
+      - generic [ref=e31]:
+        - text: input bg
+        - text: 4% opacity
+    - heading "Typography" [level=4] [ref=e32]
+    - generic [ref=e33]:
+      - generic [ref=e34]:
+        - generic [ref=e35]: Cormorant Garamond
+        - generic [ref=e36]: Headings — 300/400 weight, italic for emphasis
+      - generic [ref=e37]:
+        - generic [ref=e38]: DM Sans
+        - generic [ref=e39]: Body — 300/400/500 weight
+    - heading "Component Specs" [level=4] [ref=e40]
+    - generic [ref=e41]:
+      - generic [ref=e42]: "Button radius: 0"
+      - generic [ref=e43]: "Card radius: 0"
+      - generic [ref=e44]: "Input radius: 0"
+      - generic [ref=e45]: No glassmorphism
+      - generic [ref=e46]: No blur effects
+      - generic [ref=e47]: "Gold border: 20%"
+  - generic [ref=e48]:
+    - generic [ref=e49]: "02"
+    - generic [ref=e50]: Typography Scale
+    - generic [ref=e51]: All text styles rendered live. Cormorant Garamond headings with italic contrast.
+    - generic [ref=e52]:
+      - generic [ref=e53]:
+        - text: Your visa,
+        - emphasis [ref=e54]: styled right.
+      - generic [ref=e55]: Your Complete Application Package
+      - generic [ref=e56]: Personal Document Checklist
+      - generic [ref=e57]: Investment Details
+      - generic [ref=e58]: Section A — Personal
+      - generic [ref=e59]: Answer the questions. We build every document your consulate needs — formatted, cross-checked, and ready to submit.
+      - generic [ref=e60]: The E-2 visa is available to citizens of countries that have a qualifying treaty with the United States.
+      - generic [ref=e61]: This field is optional. Skip if not applicable.
+      - generic [ref=e62]: Privacy Category
+    - generic [ref=e63]:
+      - generic [ref=e64]: "display: Cormorant 56px 300 italic"
+      - generic [ref=e65]: "h1: Cormorant 42px 300"
+      - generic [ref=e66]: "h2: Cormorant 32px 300"
+      - generic [ref=e67]: "h3: Cormorant 24px 400 italic"
+      - generic [ref=e68]: "eyebrow: DM Sans 10px 500 gold uppercase"
+      - generic [ref=e69]: "body: DM Sans 16px 400"
+      - generic [ref=e70]: "body-small: DM Sans 14px 300 70%"
+      - generic [ref=e71]: "helper: DM Sans 13px 300 45%"
+      - generic [ref=e72]: "label: DM Sans 12px 500 uppercase 60%"
+  - generic [ref=e73]:
+    - generic [ref=e74]: "03"
+    - generic [ref=e75]: Buttons
+    - generic [ref=e76]: "Primary: sharp edges, gold bg, dark text. Ghost: transparent, gold border."
+    - generic [ref=e77]:
+      - generic [ref=e78]:
+        - button "Continue →" [ref=e79] [cursor=pointer]
+        - button "Back" [ref=e80] [cursor=pointer]
+        - button "Delete" [ref=e81] [cursor=pointer]
+      - button "Save and Continue →" [ref=e83] [cursor=pointer]
+      - generic [ref=e84]:
+        - button "Disabled" [disabled] [ref=e85]
+        - button "Disabled" [disabled] [ref=e86]
+    - generic [ref=e87]:
+      - generic [ref=e88]: "primary: #C9A84C bg, #0a0a0a text"
+      - generic [ref=e89]: "primary: 0 radius"
+      - generic [ref=e90]: "ghost: transparent, #C9A84C border"
+      - generic [ref=e91]: "hover: brightness 1.1"
+      - generic [ref=e92]: "disabled: 20% opacity"
+      - generic [ref=e93]: "transition: 200ms ease"
+  - generic [ref=e94]:
+    - generic [ref=e95]: "04"
+    - generic [ref=e96]: Form Fields
+    - generic [ref=e97]: "All field states rendered live. Input: 4% white bg, 20% gold border, gold on focus."
+    - generic [ref=e98]:
+      - generic [ref=e99]:
+        - generic [ref=e100]:
+          - text: Full Legal Name
+          - generic [ref=e102]: "*"
+        - textbox "Enter your full legal name" [ref=e103]
+      - generic [ref=e104]:
+        - generic [ref=e105]: Investment Amount
+        - textbox [ref=e107]: $150,000 USD
+        - generic [ref=e108]: Total capital invested in the business
+      - generic [ref=e109]:
+        - generic [ref=e110]:
+          - text: Passport Number
+          - generic [ref=e112]: "*"
+        - textbox [ref=e113]: INVALID
+        - generic [ref=e114]: This field is required
+      - generic [ref=e115]:
+        - generic [ref=e116]: Country of Citizenship
+        - textbox [ref=e118]: Japan
+        - generic [ref=e119]:
+          - generic [ref=e120] [cursor=pointer]: 🇯🇵 Japan
+          - generic [ref=e121] [cursor=pointer]: 🇯🇴 Jordan
+          - generic [ref=e122] [cursor=pointer]: 🇰🇷 South Korea
+      - generic [ref=e123]:
+        - generic [ref=e124]: Additional Notes
+        - textbox "Any additional information..." [ref=e126]
+        - generic [ref=e127]: Optional — provide any context that helps us prepare your application
+      - generic [ref=e128]:
+        - generic [ref=e129]: Document Type
+        - combobox [ref=e131]:
+          - option "Select a document type" [selected]
+          - option "Passport"
+          - option "Bank Statement"
+          - option "Business Contract"
+    - generic [ref=e132]:
+      - generic [ref=e133]: "input bg: rgba(255,255,255,0.04)"
+      - generic [ref=e134]: "input border: rgba(201,168,76,0.2)"
+      - generic [ref=e135]: "focus border: #C9A84C"
+      - generic [ref=e136]: "radius: 0"
+      - generic [ref=e137]: "label: DM Sans 12px 500 uppercase"
+      - generic [ref=e138]: "required: gold asterisk"
+      - generic [ref=e139]: "privacy dot: 8px circle"
+  - generic [ref=e140]:
+    - generic [ref=e141]: "05"
+    - generic [ref=e142]: Cards
+    - generic [ref=e143]: "Standard: 1px gold border 20% opacity. Section card: same + Cormorant heading + eyebrow."
+    - generic [ref=e144]:
+      - generic [ref=e145]:
+        - generic [ref=e146]:
+          - generic [ref=e147]: Application Status
+          - generic [ref=e148]: 7 of 12 tabs complete
+          - generic [ref=e149]: Continue where you left off or review your progress.
+        - generic [ref=e150]:
+          - generic [ref=e151]: Tab F — Investment Proof
+          - generic [ref=e152]: Investment Details
+          - generic [ref=e153]: Documents proving your investment in the U.S. business.
+      - generic [ref=e154]:
+        - generic [ref=e155]:
+          - generic [ref=e156]: Attention needed
+          - generic [ref=e157]: Some documents are missing. Please upload the required evidence before proceeding.
+        - generic [ref=e158]:
+          - generic [ref=e159]: Warning
+          - generic [ref=e160]: Your investment amount may be below the substantiality threshold for your business type.
+    - generic [ref=e161]:
+      - generic [ref=e162]: "card border: rgba(201,168,76,0.2)"
+      - generic [ref=e163]: "card bg: #0a0a0a"
+      - generic [ref=e164]: "radius: 0"
+      - generic [ref=e165]: "alert border-left: 3px solid #C9A84C"
+      - generic [ref=e166]: "warning border-left: 3px solid #f59e0b"
+  - generic [ref=e167]:
+    - generic [ref=e168]: "06"
+    - generic [ref=e169]: Navigation
+    - generic [ref=e170]: "Top nav: logo left, links center, CTA right. Sidebar: 280px, gold active border, completion rings."
+    - heading "Top Navigation" [level=4] [ref=e171]
+    - generic [ref=e173]:
+      - link "e2go.app" [ref=e174] [cursor=pointer]:
+        - /url: "#"
+      - generic [ref=e175]:
+        - link "Quiz" [ref=e176] [cursor=pointer]:
+          - /url: "#"
+        - link "Pricing" [ref=e177] [cursor=pointer]:
+          - /url: "#"
+        - link "Dashboard" [ref=e178] [cursor=pointer]:
+          - /url: "#"
+      - button "Sign in" [ref=e179] [cursor=pointer]
+    - heading "Sidebar Navigation (Module 3)" [level=4] [ref=e180]
+    - generic [ref=e182]:
+      - generic [ref=e183]:
+        - img [ref=e185]
+        - generic [ref=e188]:
+          - generic [ref=e189]: A — DS-160 Reference
+          - generic [ref=e190]: Complete
+      - generic [ref=e191]:
+        - img [ref=e193]
+        - generic [ref=e196]:
+          - generic [ref=e197]: B — Personal Checklist
+          - generic [ref=e198]: In progress
+      - generic [ref=e199]:
+        - img [ref=e201]
+        - generic [ref=e203]:
+          - generic [ref=e204]: C — Visa Category
+          - generic [ref=e205]: Not started
+    - generic [ref=e206]:
+      - generic [ref=e207]: "top nav: sticky, gold border-bottom"
+      - generic [ref=e208]: "sidebar width: 280px"
+      - generic [ref=e209]: "active: 3px gold left border"
+      - generic [ref=e210]: "active bg: rgba(201,168,76,0.06)"
+      - generic [ref=e211]: "completion ring: SVG circle"
+  - generic [ref=e212]:
+    - generic [ref=e213]: "07"
+    - generic [ref=e214]: Progress & Completion
+    - generic [ref=e215]: "Completion ring: SVG circle, gold stroke on dark track. Category pill: gold on dark. Linear: gold on #1a1a1a."
+    - generic [ref=e216]:
+      - generic [ref=e217]:
+        - generic [ref=e218]:
+          - generic [ref=e219]:
+            - img [ref=e220]
+            - generic [ref=e223]: ✓
+          - generic [ref=e224]: Complete
+        - generic [ref=e225]:
+          - img [ref=e227]
+          - generic [ref=e230]: In Progress
+        - generic [ref=e231]:
+          - img [ref=e233]
+          - generic [ref=e235]: Not Started
+      - generic [ref=e237]:
+        - generic [ref=e238]: Tab A — DS-160 Reference
+        - generic [ref=e239]: 21 of 21
+      - generic [ref=e243]:
+        - generic [ref=e244]: Tab B — Personal Checklist
+        - generic [ref=e245]: 3 of 7
+    - generic [ref=e248]:
+      - generic [ref=e249]: "ring stroke: var(--gold)"
+      - generic [ref=e250]: "ring track: rgba(245,240,232,0.1)"
+      - generic [ref=e251]: "full + check: complete state"
+      - generic [ref=e252]: "linear track: rgba(245,240,232,0.1)"
+      - generic [ref=e253]: "linear fill: var(--gold)"
+  - generic [ref=e254]:
+    - generic [ref=e255]: "08"
+    - generic [ref=e256]: Module 3 Form Pattern
+    - generic [ref=e257]: Full rendered example of one form section with all components.
+    - generic [ref=e259]:
+      - generic [ref=e260]: Tab F — Investment Proof
+      - generic [ref=e261]: Investment Details
+      - generic [ref=e263]:
+        - generic [ref=e264]: Your Progress
+        - generic [ref=e265]: 2 of 9
+      - generic [ref=e268]:
+        - generic [ref=e269]:
+          - text: Investment Type
+          - generic [ref=e271]: "*"
+        - combobox [ref=e272]:
+          - option "Select investment type" [selected]
+          - option "Existing Business"
+          - option "New Business"
+          - option "Franchise"
+      - generic [ref=e273]:
+        - generic [ref=e274]:
+          - text: Total Amount Invested
+          - generic [ref=e276]: "*"
+        - textbox "$150,000 USD" [ref=e277]
+        - generic [ref=e278]: Total capital invested in the U.S. business
+      - generic [ref=e281]: Saved ✓
+      - button "Save and Continue →" [ref=e282] [cursor=pointer]
+    - generic [ref=e283]:
+      - generic [ref=e284]: eyebrow + h2 section header
+      - generic [ref=e285]: progress bar above fields
+      - generic [ref=e286]: privacy dots on labels
+      - generic [ref=e287]: helper text below inputs
+      - generic [ref=e288]: autosave gold dot + saved text
+      - generic [ref=e289]: full-width primary CTA
+  - generic [ref=e290]:
+    - generic [ref=e291]: "09"
+    - generic [ref=e292]: Grain Texture & Decorative Elements
+    - generic [ref=e293]: Grain texture overlay, gold corner brackets, gold line dividers.
+    - generic [ref=e294]:
+      - generic [ref=e299]:
+        - generic [ref=e300]: Premium Document
+        - generic [ref=e301]: This card demonstrates the gold corner bracket decorative motif.
+      - generic [ref=e304]: This is a gold gradient divider line.
+    - generic [ref=e305]:
+      - generic [ref=e306]: "grain: CSS noise at 3% opacity"
+      - generic [ref=e307]: "corner brackets: 20px, 2px solid"
+      - generic [ref=e308]: "divider: linear-gradient gold"
+      - generic [ref=e309]: "position: fixed overlay"
+  - generic [ref=e310]:
+    - generic [ref=e311]: "10"
+    - generic [ref=e312]: Spacing & Layout Grid
+    - generic [ref=e313]: 12-column grid, 1280px max-width, 24px gutter. Component padding standards.
+    - generic [ref=e314]:
+      - heading "Spacing Scale" [level=4] [ref=e315]
+      - generic [ref=e316]:
+        - generic [ref=e317]: xs
+        - generic [ref=e318]: sm
+        - generic [ref=e319]: md
+        - generic [ref=e320]: lg
+        - generic [ref=e321]: xl
+        - generic [ref=e322]: 2xl
+        - generic [ref=e323]: 3xl
+      - heading "Grid" [level=4] [ref=e324]
+      - heading "Component Padding" [level=4] [ref=e330]
+      - generic [ref=e331]:
+        - generic [ref=e333]: "Button: 14px 28px"
+        - generic [ref=e335]: "Input: 14px 16px"
+        - generic [ref=e337]: "Card: 24px"
+    - generic [ref=e338]:
+      - generic [ref=e339]: "xs: 4px"
+      - generic [ref=e340]: "sm: 8px"
+      - generic [ref=e341]: "md: 16px"
+      - generic [ref=e342]: "lg: 24px"
+      - generic [ref=e343]: "xl: 32px"
+      - generic [ref=e344]: "2xl: 48px"
+      - generic [ref=e345]: "3xl: 64px"
+      - generic [ref=e346]: "max-width: 1280px"
+      - generic [ref=e347]: "gutter: 24px"
+  - generic [ref=e348]:
+    - generic [ref=e349]: ⚠️ What NOT to do
+    - generic [ref=e350]: Common mistakes to avoid
+    - generic [ref=e351]: These mistakes break the Obsidian Gold design system. Never do any of these.
+    - generic [ref=e352]:
+      - generic [ref=e353]: "❌ Navy blue background (#060d1f) — use #0a0a0a obsidian"
+      - generic [ref=e354]: "❌ Teal accent (#0D9488) — use #C9A84C gold"
+      - generic [ref=e355]: ❌ Playfair Display headings — use Cormorant Garamond
+      - generic [ref=e356]: ❌ Glassmorphism with blur — NO blur effects in Obsidian Gold
+      - generic [ref=e357]: "❌ Rounded corners on buttons/inputs — use sharp edges (radius: 0)"
+      - generic [ref=e358]: "❌ White card backgrounds — always #0a0a0a"
+      - generic [ref=e359]: ❌ Inter/Roboto for body text — use DM Sans
+      - generic [ref=e360]: ❌ Blue or purple gradients — never use these
+  - generic [ref=e361]: e2go Design Reference v2 · June 2026 · Obsidian Gold · Read this file before writing any CSS

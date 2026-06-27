@@ -1,0 +1,1180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>e2go Design Reference v2 — Obsidian Gold Design System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&display=swap" rel="stylesheet">
+<style>
+  /* ============================================
+     e2go DESIGN SYSTEM v2 — OBSIDIAN GOLD
+     Every component rendered live.
+     Claude Code must match these exactly.
+     ============================================ */
+
+  :root {
+    /* Obsidian Gold Colors */
+    --obsidian:         #0a0a0a;
+    --obsidian-mid:     #141414;
+    --gold:             #C9A84C;
+    --gold-light:       #D4BC6A;
+    --gold-dim:         rgba(201,168,76,0.15);
+    --gold-border:      rgba(201,168,76,0.2);
+    --gold-border-strong: rgba(201,168,76,0.5);
+    --gold-glow:        rgba(201,168,76,0.3);
+
+    /* Text */
+    --text-primary:     #f5f0e8;
+    --text-secondary:   rgba(245,240,232,0.65);
+    --text-muted:       rgba(245,240,232,0.45);
+    --text-dim:         rgba(245,240,232,0.25);
+
+    /* Typography */
+    --font-heading:     'Cormorant Garamond', Georgia, serif;
+    --font-body:        'DM Sans', system-ui, sans-serif;
+
+    /* Spacing */
+    --space-xs:   4px;
+    --space-sm:   8px;
+    --space-md:   16px;
+    --space-lg:   24px;
+    --space-xl:   32px;
+    --space-2xl:  48px;
+    --space-3xl:  64px;
+
+    /* Radius */
+    --radius-sm:  4px;
+    --radius-md:  8px;
+    --radius-lg:  12px;
+    --radius-xl:  16px;
+  }
+
+  /* Grain texture overlay */
+  .grain-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.03;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--obsidian);
+    color: var(--text-primary);
+    font-family: var(--font-body);
+    font-weight: 400;
+    font-size: 15px;
+    line-height: 1.6;
+    padding: var(--space-2xl);
+    min-height: 100vh;
+  }
+
+  /* Reference section headers */
+  .ref-section {
+    border-top: 1px solid var(--gold-border);
+    padding-top: var(--space-2xl);
+    margin-top: var(--space-2xl);
+  }
+  .ref-label {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: var(--space-sm);
+  }
+  .ref-title {
+    font-family: var(--font-heading);
+    font-size: 28px;
+    font-weight: 300;
+    color: var(--text-primary);
+    margin-bottom: var(--space-md);
+  }
+  .ref-note {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: var(--space-lg);
+    font-family: monospace;
+    background: rgba(201,168,76,0.05);
+    padding: var(--space-sm) var(--space-md);
+    border-radius: var(--radius-sm);
+    border-left: 2px solid var(--gold);
+  }
+
+  /* Demo background */
+  .demo-bg {
+    background: var(--obsidian);
+    border-radius: var(--radius-lg);
+    padding: var(--space-xl);
+    margin-bottom: var(--space-md);
+    border: 1px solid var(--gold-border);
+  }
+
+  /* ============================================
+     SECTION 01 — DESIGN TOKENS
+     ============================================ */
+  .color-chip {
+    width: 80px;
+    text-align: center;
+  }
+  .color-swatch {
+    width: 80px;
+    height: 48px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--gold-border);
+    margin-bottom: 6px;
+  }
+  .color-name {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-family: monospace;
+  }
+
+  /* ============================================
+     SECTION 02 — TYPOGRAPHY SCALE
+     ============================================ */
+  .type-display {
+    font-family: var(--font-heading);
+    font-size: 56px;
+    font-weight: 300;
+    font-style: italic;
+    line-height: 1.1;
+    color: var(--text-primary);
+    letter-spacing: -0.02em;
+  }
+  .type-display em {
+    color: var(--gold);
+  }
+  .type-h1 {
+    font-family: var(--font-heading);
+    font-size: 42px;
+    font-weight: 300;
+    line-height: 1.2;
+    color: var(--text-primary);
+    letter-spacing: -0.01em;
+  }
+  .type-h2 {
+    font-family: var(--font-heading);
+    font-size: 32px;
+    font-weight: 300;
+    line-height: 1.25;
+    color: var(--text-primary);
+  }
+  .type-h3 {
+    font-family: var(--font-heading);
+    font-size: 24px;
+    font-weight: 400;
+    font-style: italic;
+    line-height: 1.3;
+    color: var(--text-primary);
+  }
+  .type-eyebrow {
+    font-family: var(--font-body);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--gold);
+  }
+  .type-body {
+    font-family: var(--font-body);
+    font-size: 16px;
+    font-weight: 400;
+    color: var(--text-primary);
+    line-height: 1.7;
+  }
+  .type-body-small {
+    font-family: var(--font-body);
+    font-size: 14px;
+    font-weight: 300;
+    color: rgba(245,240,232,0.7);
+    line-height: 1.6;
+  }
+  .type-helper {
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 300;
+    color: rgba(245,240,232,0.45);
+    line-height: 1.5;
+  }
+  .type-label {
+    font-family: var(--font-body);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(245,240,232,0.6);
+  }
+
+  /* ============================================
+     SECTION 03 — BUTTONS
+     ============================================ */
+  .btn-primary {
+    background: var(--gold);
+    color: var(--obsidian);
+    border: none;
+    border-radius: 0;
+    padding: 14px 28px;
+    font-family: var(--font-body);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .btn-primary:hover {
+    background: var(--gold-light);
+    filter: brightness(1.1);
+  }
+  .btn-primary:disabled {
+    opacity: 0.2;
+    cursor: not-allowed;
+  }
+  .btn-primary.full-width {
+    width: 100%;
+    justify-content: center;
+    padding: 16px 32px;
+    font-size: 15px;
+  }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--gold);
+    border: 1px solid var(--gold);
+    border-radius: 0;
+    padding: 13px 26px;
+    font-family: var(--font-body);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .btn-ghost:hover {
+    background: var(--gold-dim);
+  }
+  .btn-ghost:disabled {
+    opacity: 0.2;
+    cursor: not-allowed;
+  }
+
+  .btn-destructive {
+    background: transparent;
+    color: #ef4444;
+    border: 1px solid rgba(239,68,68,0.4);
+    border-radius: 0;
+    padding: 13px 26px;
+    font-family: var(--font-body);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .btn-destructive:hover {
+    background: rgba(239,68,68,0.1);
+    border-color: rgba(239,68,68,0.6);
+  }
+
+  /* ============================================
+     SECTION 04 — FORM FIELDS
+     ============================================ */
+  .form-field {
+    margin-bottom: var(--space-lg);
+  }
+  .form-label {
+    font-family: var(--font-body);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(245,240,232,0.6);
+    margin-bottom: var(--space-sm);
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+  }
+  .form-label .required {
+    color: var(--gold);
+  }
+  .form-input {
+    width: 100%;
+    max-width: 480px;
+    padding: 14px 16px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(201,168,76,0.2);
+    border-radius: 0;
+    color: var(--text-primary);
+    font-family: var(--font-body);
+    font-size: 15px;
+    font-weight: 400;
+    outline: none;
+    transition: border-color 0.2s ease;
+  }
+  .form-input::placeholder {
+    color: rgba(245,240,232,0.25);
+  }
+  .form-input:focus {
+    border-color: var(--gold);
+    background: rgba(255,255,255,0.06);
+  }
+  .form-input.error {
+    border-color: #ef4444;
+  }
+  .form-input:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+  .form-helper {
+    font-size: 13px;
+    font-weight: 300;
+    color: rgba(245,240,232,0.45);
+    margin-top: var(--space-xs);
+  }
+  .form-error {
+    font-size: 13px;
+    font-weight: 400;
+    color: #ef4444;
+    margin-top: var(--space-xs);
+  }
+
+  /* Privacy dot */
+  .privacy-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+  .privacy-dot.red { background: #ef4444; }
+  .privacy-dot.amber { background: #f59e0b; }
+  .privacy-dot.green { background: #22c55e; }
+
+  /* Search dropdown */
+  .search-dropdown {
+    width: 100%;
+    max-width: 480px;
+    background: var(--obsidian-mid);
+    border: 1px solid var(--gold-border);
+    border-radius: 0;
+    margin-top: 2px;
+    overflow: hidden;
+  }
+  .search-result {
+    padding: 12px 16px;
+    font-size: 14px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    transition: background 0.15s;
+  }
+  .search-result:hover,
+  .search-result.active {
+    background: var(--gold-dim);
+    color: var(--text-primary);
+  }
+  .search-result:last-child { border-bottom: none; }
+
+  /* ============================================
+     SECTION 05 — CARDS
+     ============================================ */
+  .card {
+    background: var(--obsidian);
+    border: 1px solid rgba(201,168,76,0.2);
+    border-radius: 0;
+    padding: var(--space-lg);
+  }
+  .card-section {
+    background: var(--obsidian);
+    border: 1px solid rgba(201,168,76,0.2);
+    border-radius: 0;
+    padding: var(--space-lg);
+  }
+  .card-section .section-title {
+    font-family: var(--font-heading);
+    font-size: 24px;
+    font-weight: 400;
+    color: var(--text-primary);
+    margin-bottom: var(--space-xs);
+  }
+  .card-alert {
+    background: var(--obsidian);
+    border: 1px solid rgba(201,168,76,0.2);
+    border-left: 3px solid var(--gold);
+    padding: var(--space-md);
+  }
+  .card-warning {
+    background: var(--obsidian);
+    border: 1px solid rgba(201,168,76,0.2);
+    border-left: 3px solid #f59e0b;
+    padding: var(--space-md);
+  }
+
+  /* ============================================
+     SECTION 06 — NAVIGATION
+     ============================================ */
+  .nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-md) var(--space-xl);
+    background: var(--obsidian);
+    border-bottom: 1px solid var(--gold-border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .nav-logo {
+    font-family: var(--font-heading);
+    font-size: 22px;
+    font-weight: 400;
+    color: var(--text-primary);
+    text-decoration: none;
+  }
+  .nav-logo span { color: var(--gold); }
+  .nav-links {
+    display: flex;
+    gap: var(--space-xl);
+  }
+  .nav-link {
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 14px;
+    transition: color 0.2s;
+  }
+  .nav-link:hover { color: var(--text-primary); }
+
+  /* Sidebar nav */
+  .sidebar {
+    width: 280px;
+    background: var(--obsidian);
+    border-right: 1px solid var(--gold-border);
+    padding: var(--space-lg);
+    height: 100vh;
+    position: fixed;
+    left: 0;
+    top: 0;
+  }
+  .sidebar-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    padding: var(--space-md);
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 14px;
+    border-left: 3px solid transparent;
+    transition: all 0.2s;
+    margin-bottom: var(--space-xs);
+  }
+  .sidebar-item:hover {
+    background: rgba(201,168,76,0.04);
+    color: var(--text-primary);
+  }
+  .sidebar-item.active {
+    border-left-color: var(--gold);
+    background: rgba(201,168,76,0.06);
+    color: var(--text-primary);
+  }
+
+  /* ============================================
+     SECTION 07 — PROGRESS & COMPLETION
+     ============================================ */
+  .completion-ring {
+    width: 32px;
+    height: 32px;
+    position: relative;
+  }
+  .completion-ring svg {
+    transform: rotate(-90deg);
+  }
+  .completion-ring .track {
+    stroke: rgba(245,240,232,0.1);
+    fill: none;
+  }
+  .completion-ring .progress {
+    stroke: var(--gold);
+    fill: none;
+    stroke-linecap: round;
+  }
+  .progress-bar {
+    width: 100%;
+    height: 3px;
+    background: rgba(245,240,232,0.1);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    background: var(--gold);
+    border-radius: 2px;
+    transition: width 0.4s ease;
+  }
+
+  /* ============================================
+     SECTION 09 — DECORATIVE
+     ============================================ */
+  .gold-corner {
+    position: absolute;
+    width: 24px;
+    height: 24px;
+    border-color: var(--gold);
+    border-style: solid;
+  }
+  .gold-corner.top-left {
+    top: 0;
+    left: 0;
+    border-width: 2px 0 0 2px;
+  }
+  .gold-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    margin: var(--space-xl) 0;
+  }
+
+  /* ============================================
+     UTILITY
+     ============================================ */
+  .ref-row {
+    display: flex;
+    gap: var(--space-md);
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+  .spec-pill {
+    display: inline-block;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(201,168,76,0.15);
+    border-radius: var(--radius-sm);
+    padding: 3px 8px;
+    font-size: 11px;
+    color: rgba(245,240,232,0.4);
+    font-family: monospace;
+    margin: 2px;
+  }
+  .flex { display: flex; }
+  .flex-col { flex-direction: column; }
+  .gap-sm { gap: var(--space-sm); }
+  .gap-md { gap: var(--space-md); }
+  .gap-lg { gap: var(--space-lg); }
+  .items-center { align-items: center; }
+  .justify-between { justify-content: space-between; }
+  .mb-sm { margin-bottom: var(--space-sm); }
+  .mb-md { margin-bottom: var(--space-md); }
+  .mb-lg { margin-bottom: var(--space-lg); }
+  .mb-xl { margin-bottom: var(--space-xl); }
+</style>
+</head>
+<body>
+
+<div class="grain-overlay"></div>
+
+<div style="max-width:900px; margin:0 auto;">
+
+  <!-- HEADER -->
+  <div style="margin-bottom:48px;">
+    <div class="type-eyebrow" style="margin-bottom:12px;">e2go Design System v2</div>
+    <div class="type-h2" style="margin-bottom:8px;">Obsidian Gold — Component Reference</div>
+    <div class="type-body-small" style="max-width:560px;">
+      This file is the canonical visual reference for every UI component in e2go.
+      Claude Code must read this file before writing any CSS or component code.
+      Match these components exactly — do not invent new styling.
+    </div>
+    <div class="type-helper" style="margin-top:16px;">
+      Background: #0a0a0a · Primary accent: #C9A84C · Heading font: Cormorant Garamond · Body: DM Sans
+    </div>
+  </div>
+
+  <!-- SECTION 01 — DESIGN TOKENS -->
+  <div class="ref-section">
+    <div class="ref-label">01</div>
+    <div class="ref-title">Design Tokens</div>
+    <div class="ref-note">LOCKED VALUES — No approximations. Background is #0a0a0a, not #060d1f.</div>
+
+    <h4 style="font-size:12px; font-weight:500; color:var(--text-muted); margin-bottom:16px; text-transform:uppercase; letter-spacing:0.1em;">Colors</h4>
+    <div class="ref-row">
+      <div class="color-chip">
+        <div class="color-swatch" style="background:#0a0a0a;"></div>
+        <div class="color-name">--obsidian<br>#0a0a0a</div>
+      </div>
+      <div class="color-chip">
+        <div class="color-swatch" style="background:#C9A84C;"></div>
+        <div class="color-name">--gold<br>#C9A84C</div>
+      </div>
+      <div class="color-chip">
+        <div class="color-swatch" style="background:#D4BC6A;"></div>
+        <div class="color-name">--gold-light<br>#D4BC6A</div>
+      </div>
+      <div class="color-chip">
+        <div class="color-swatch" style="background:#f5f0e8;"></div>
+        <div class="color-name">--text-primary<br>#f5f0e8</div>
+      </div>
+      <div class="color-chip">
+        <div class="color-swatch" style="background:rgba(201,168,76,0.2);"></div>
+        <div class="color-name">--gold-border<br>20% opacity</div>
+      </div>
+      <div class="color-chip">
+        <div class="color-swatch" style="background:rgba(255,255,255,0.04);"></div>
+        <div class="color-name">input bg<br>4% opacity</div>
+      </div>
+    </div>
+
+    <h4 style="font-size:12px; font-weight:500; color:var(--text-muted); margin:32px 0 16px; text-transform:uppercase; letter-spacing:0.1em;">Typography</h4>
+    <div class="ref-row">
+      <div style="background:rgba(201,168,76,0.05); padding:12px 16px; border-radius:4px;">
+        <div style="font-family:'Cormorant Garamond',serif; font-size:20px; color:var(--text-primary);">Cormorant Garamond</div>
+        <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">Headings — 300/400 weight, italic for emphasis</div>
+      </div>
+      <div style="background:rgba(201,168,76,0.05); padding:12px 16px; border-radius:4px;">
+        <div style="font-family:'DM Sans',sans-serif; font-size:20px; color:var(--text-primary);">DM Sans</div>
+        <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">Body — 300/400/500 weight</div>
+      </div>
+    </div>
+
+    <h4 style="font-size:12px; font-weight:500; color:var(--text-muted); margin:32px 0 16px; text-transform:uppercase; letter-spacing:0.1em;">Component Specs</h4>
+    <div class="ref-row">
+      <span class="spec-pill">Button radius: 0</span>
+      <span class="spec-pill">Card radius: 0</span>
+      <span class="spec-pill">Input radius: 0</span>
+      <span class="spec-pill">No glassmorphism</span>
+      <span class="spec-pill">No blur effects</span>
+      <span class="spec-pill">Gold border: 20%</span>
+    </div>
+  </div>
+
+  <!-- SECTION 02 — TYPOGRAPHY SCALE -->
+  <div class="ref-section">
+    <div class="ref-label">02</div>
+    <div class="ref-title">Typography Scale</div>
+    <div class="ref-note">All text styles rendered live. Cormorant Garamond headings with italic contrast.</div>
+
+    <div class="demo-bg">
+      <div class="type-display mb-lg">Your visa, <em>styled right.</em></div>
+      <div class="type-h1 mb-md">Your Complete Application Package</div>
+      <div class="type-h2 mb-md">Personal Document Checklist</div>
+      <div class="type-h3 mb-md">Investment Details</div>
+      <div class="type-eyebrow mb-sm">Section A — Personal</div>
+      <div class="type-body mb-sm">Answer the questions. We build every document your consulate needs — formatted, cross-checked, and ready to submit.</div>
+      <div class="type-body-small mb-sm">The E-2 visa is available to citizens of countries that have a qualifying treaty with the United States.</div>
+      <div class="type-helper mb-sm">This field is optional. Skip if not applicable.</div>
+      <div class="type-label">Privacy Category</div>
+    </div>
+
+    <div>
+      <span class="spec-pill">display: Cormorant 56px 300 italic</span>
+      <span class="spec-pill">h1: Cormorant 42px 300</span>
+      <span class="spec-pill">h2: Cormorant 32px 300</span>
+      <span class="spec-pill">h3: Cormorant 24px 400 italic</span>
+      <span class="spec-pill">eyebrow: DM Sans 10px 500 gold uppercase</span>
+      <span class="spec-pill">body: DM Sans 16px 400</span>
+      <span class="spec-pill">body-small: DM Sans 14px 300 70%</span>
+      <span class="spec-pill">helper: DM Sans 13px 300 45%</span>
+      <span class="spec-pill">label: DM Sans 12px 500 uppercase 60%</span>
+    </div>
+  </div>
+
+  <!-- SECTION 03 — BUTTONS -->
+  <div class="ref-section">
+    <div class="ref-label">03</div>
+    <div class="ref-title">Buttons</div>
+    <div class="ref-note">Primary: sharp edges, gold bg, dark text. Ghost: transparent, gold border.</div>
+
+    <div class="demo-bg">
+      <div class="ref-row" style="align-items:center; margin-bottom:24px;">
+        <button class="btn-primary">Continue →</button>
+        <button class="btn-ghost">Back</button>
+        <button class="btn-destructive">Delete</button>
+      </div>
+      <div style="max-width:320px; margin-bottom:24px;">
+        <button class="btn-primary full-width">Save and Continue →</button>
+      </div>
+      <div class="ref-row" style="align-items:center;">
+        <button class="btn-primary" disabled>Disabled</button>
+        <button class="btn-ghost" disabled>Disabled</button>
+      </div>
+    </div>
+
+    <div>
+      <span class="spec-pill">primary: #C9A84C bg, #0a0a0a text</span>
+      <span class="spec-pill">primary: 0 radius</span>
+      <span class="spec-pill">ghost: transparent, #C9A84C border</span>
+      <span class="spec-pill">hover: brightness 1.1</span>
+      <span class="spec-pill">disabled: 20% opacity</span>
+      <span class="spec-pill">transition: 200ms ease</span>
+    </div>
+  </div>
+
+  <!-- SECTION 04 — FORM FIELDS -->
+  <div class="ref-section">
+    <div class="ref-label">04</div>
+    <div class="ref-title">Form Fields</div>
+    <div class="ref-note">All field states rendered live. Input: 4% white bg, 20% gold border, gold on focus.</div>
+
+    <div class="demo-bg">
+      <div class="form-field">
+        <label class="form-label">
+          <span class="privacy-dot green"></span>
+          Full Legal Name
+          <span class="required">*</span>
+        </label>
+        <input type="text" class="form-input" placeholder="Enter your full legal name" />
+      </div>
+
+      <div class="form-field">
+        <label class="form-label">
+          <span class="privacy-dot amber"></span>
+          Investment Amount
+        </label>
+        <input type="text" class="form-input" value="$150,000 USD" />
+        <div class="form-helper">Total capital invested in the business</div>
+      </div>
+
+      <div class="form-field">
+        <label class="form-label">
+          <span class="privacy-dot red"></span>
+          Passport Number
+          <span class="required">*</span>
+        </label>
+        <input type="text" class="form-input error" value="INVALID" />
+        <div class="form-error">This field is required</div>
+      </div>
+
+      <div class="form-field">
+        <label class="form-label">
+          <span class="privacy-dot green"></span>
+          Country of Citizenship
+        </label>
+        <input type="text" class="form-input" value="Japan" />
+        <div class="search-dropdown">
+          <div class="search-result active">🇯🇵 Japan</div>
+          <div class="search-result">🇯🇴 Jordan</div>
+          <div class="search-result">🇰🇷 South Korea</div>
+        </div>
+      </div>
+
+      <div class="form-field">
+        <label class="form-label">
+          <span class="privacy-dot green"></span>
+          Additional Notes
+        </label>
+        <textarea class="form-input" rows="3" placeholder="Any additional information..."></textarea>
+        <div class="form-helper">Optional — provide any context that helps us prepare your application</div>
+      </div>
+
+      <div class="form-field">
+        <label class="form-label">
+          <span class="privacy-dot green"></span>
+          Document Type
+        </label>
+        <select class="form-input">
+          <option value="">Select a document type</option>
+          <option value="passport">Passport</option>
+          <option value="bank-statement">Bank Statement</option>
+          <option value="contract">Business Contract</option>
+        </select>
+      </div>
+    </div>
+
+    <div>
+      <span class="spec-pill">input bg: rgba(255,255,255,0.04)</span>
+      <span class="spec-pill">input border: rgba(201,168,76,0.2)</span>
+      <span class="spec-pill">focus border: #C9A84C</span>
+      <span class="spec-pill">radius: 0</span>
+      <span class="spec-pill">label: DM Sans 12px 500 uppercase</span>
+      <span class="spec-pill">required: gold asterisk</span>
+      <span class="spec-pill">privacy dot: 8px circle</span>
+    </div>
+  </div>
+
+  <!-- SECTION 05 — CARDS -->
+  <div class="ref-section">
+    <div class="ref-label">05</div>
+    <div class="ref-title">Cards</div>
+    <div class="ref-note">Standard: 1px gold border 20% opacity. Section card: same + Cormorant heading + eyebrow.</div>
+
+    <div class="demo-bg">
+      <div class="ref-row" style="gap:24px; flex-wrap:wrap;">
+        <div class="card" style="max-width:320px;">
+          <div class="type-label mb-sm">Application Status</div>
+          <div class="type-h3">7 of 12 tabs complete</div>
+          <div class="type-body-small" style="margin-top:12px;">Continue where you left off or review your progress.</div>
+        </div>
+
+        <div class="card-section" style="max-width:320px;">
+          <div class="type-eyebrow mb-sm">Tab F — Investment Proof</div>
+          <div class="section-title">Investment Details</div>
+          <div class="type-body-small" style="margin-top:12px;">Documents proving your investment in the U.S. business.</div>
+        </div>
+      </div>
+
+      <div class="ref-row" style="margin-top:24px; gap:24px;">
+        <div class="card-alert" style="max-width:320px;">
+          <div class="type-label mb-sm">Attention needed</div>
+          <div class="type-body-small">Some documents are missing. Please upload the required evidence before proceeding.</div>
+        </div>
+
+        <div class="card-warning" style="max-width:320px;">
+          <div class="type-label mb-sm" style="color:#f59e0b;">Warning</div>
+          <div class="type-body-small">Your investment amount may be below the substantiality threshold for your business type.</div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <span class="spec-pill">card border: rgba(201,168,76,0.2)</span>
+      <span class="spec-pill">card bg: #0a0a0a</span>
+      <span class="spec-pill">radius: 0</span>
+      <span class="spec-pill">alert border-left: 3px solid #C9A84C</span>
+      <span class="spec-pill">warning border-left: 3px solid #f59e0b</span>
+    </div>
+  </div>
+
+  <!-- SECTION 06 — NAVIGATION -->
+  <div class="ref-section">
+    <div class="ref-label">06</div>
+    <div class="ref-title">Navigation</div>
+    <div class="ref-note">Top nav: logo left, links center, CTA right. Sidebar: 280px, gold active border, completion rings.</div>
+
+    <h4 style="font-size:12px; font-weight:500; color:var(--text-muted); margin-bottom:16px; text-transform:uppercase; letter-spacing:0.1em;">Top Navigation</h4>
+    <div class="demo-bg" style="padding:0; overflow:hidden; border-radius:0;">
+      <div class="nav" style="position:relative;">
+        <a class="nav-logo" href="#">e2go<span>.app</span></a>
+        <div class="nav-links">
+          <a href="#" class="nav-link">Quiz</a>
+          <a href="#" class="nav-link">Pricing</a>
+          <a href="#" class="nav-link">Dashboard</a>
+        </div>
+        <button class="btn-primary" style="padding:10px 20px; font-size:13px;">Sign in</button>
+      </div>
+    </div>
+
+    <h4 style="font-size:12px; font-weight:500; color:var(--text-muted); margin:32px 0 16px; text-transform:uppercase; letter-spacing:0.1em;">Sidebar Navigation (Module 3)</h4>
+    <div class="demo-bg" style="padding:0; overflow:hidden; max-width:320px;">
+      <div style="background:#0a0a0a; border:1px solid rgba(201,168,76,0.2); border-right:none; padding:16px;">
+        <div style="display:flex; align-items:center; gap:12px; padding:12px; border-left:3px solid var(--gold); background:rgba(201,168,76,0.06);">
+          <div class="completion-ring">
+            <svg width="32" height="32" viewBox="0 0 32 32">
+              <circle class="track" cx="16" cy="16" r="14" stroke-width="2"/>
+              <circle class="progress" cx="16" cy="16" r="14" stroke-width="2" stroke-dasharray="88" stroke-dashoffset="0"/>
+            </svg>
+          </div>
+          <div>
+            <div style="font-size:14px; color:var(--text-primary); font-weight:500;">A — DS-160 Reference</div>
+            <div style="font-size:12px; color:var(--text-muted);">Complete</div>
+          </div>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:12px; padding:12px; border-left:3px solid transparent;">
+          <div class="completion-ring">
+            <svg width="32" height="32" viewBox="0 0 32 32">
+              <circle class="track" cx="16" cy="16" r="14" stroke-width="2"/>
+              <circle class="progress" cx="16" cy="16" r="14" stroke-width="2" stroke-dasharray="88" stroke-dashoffset="44"/>
+            </svg>
+          </div>
+          <div>
+            <div style="font-size:14px; color:var(--text-primary); font-weight:500;">B — Personal Checklist</div>
+            <div style="font-size:12px; color:var(--text-muted);">In progress</div>
+          </div>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:12px; padding:12px; border-left:3px solid transparent;">
+          <div class="completion-ring">
+            <svg width="32" height="32" viewBox="0 0 32 32">
+              <circle class="track" cx="16" cy="16" r="14" stroke-width="2"/>
+            </svg>
+          </div>
+          <div>
+            <div style="font-size:14px; color:var(--text-secondary); font-weight:400;">C — Visa Category</div>
+            <div style="font-size:12px; color:var(--text-muted);">Not started</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <span class="spec-pill">top nav: sticky, gold border-bottom</span>
+      <span class="spec-pill">sidebar width: 280px</span>
+      <span class="spec-pill">active: 3px gold left border</span>
+      <span class="spec-pill">active bg: rgba(201,168,76,0.06)</span>
+      <span class="spec-pill">completion ring: SVG circle</span>
+    </div>
+  </div>
+
+  <!-- SECTION 07 — PROGRESS & COMPLETION -->
+  <div class="ref-section">
+    <div class="ref-label">07</div>
+    <div class="ref-title">Progress & Completion</div>
+    <div class="ref-note">Completion ring: SVG circle, gold stroke on dark track. Category pill: gold on dark. Linear: gold on #1a1a1a.</div>
+
+    <div class="demo-bg">
+      <div class="ref-row" style="align-items:center; gap:32px; margin-bottom:32px;">
+        <div style="text-align:center;">
+          <div class="completion-ring" style="width:64px; height:64px;">
+            <svg width="64" height="64" viewBox="0 0 64 64">
+              <circle class="track" cx="32" cy="32" r="28" stroke-width="3"/>
+              <circle class="progress" cx="32" cy="32" r="28" stroke-width="3" stroke-dasharray="176" stroke-dashoffset="0"/>
+            </svg>
+            <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); color:var(--gold); font-size:18px; font-weight:500;">✓</div>
+          </div>
+          <div style="font-size:12px; color:var(--text-muted); margin-top:8px;">Complete</div>
+        </div>
+
+        <div style="text-align:center;">
+          <div class="completion-ring" style="width:64px; height:64px;">
+            <svg width="64" height="64" viewBox="0 0 64 64">
+              <circle class="track" cx="32" cy="32" r="28" stroke-width="3"/>
+              <circle class="progress" cx="32" cy="32" r="28" stroke-width="3" stroke-dasharray="176" stroke-dashoffset="88"/>
+            </svg>
+          </div>
+          <div style="font-size:12px; color:var(--text-muted); margin-top:8px;">In Progress</div>
+        </div>
+
+        <div style="text-align:center;">
+          <div class="completion-ring" style="width:64px; height:64px;">
+            <svg width="64" height="64" viewBox="0 0 64 64">
+              <circle class="track" cx="32" cy="32" r="28" stroke-width="3"/>
+            </svg>
+          </div>
+          <div style="font-size:12px; color:var(--text-muted); margin-top:8px;">Not Started</div>
+        </div>
+      </div>
+
+      <div class="mb-lg">
+        <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+          <span class="type-label">Tab A — DS-160 Reference</span>
+          <span style="font-size:13px; color:var(--text-muted);">21 of 21</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-bar-fill" style="width:100%;"></div>
+        </div>
+      </div>
+
+      <div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+          <span class="type-label">Tab B — Personal Checklist</span>
+          <span style="font-size:13px; color:var(--text-muted);">3 of 7</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-bar-fill" style="width:43%;"></div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <span class="spec-pill">ring stroke: var(--gold)</span>
+      <span class="spec-pill">ring track: rgba(245,240,232,0.1)</span>
+      <span class="spec-pill">full + check: complete state</span>
+      <span class="spec-pill">linear track: rgba(245,240,232,0.1)</span>
+      <span class="spec-pill">linear fill: var(--gold)</span>
+    </div>
+  </div>
+
+  <!-- SECTION 08 — MODULE 3 FORM PATTERN -->
+  <div class="ref-section">
+    <div class="ref-label">08</div>
+    <div class="ref-title">Module 3 Form Pattern</div>
+    <div class="ref-note">Full rendered example of one form section with all components.</div>
+
+    <div class="demo-bg">
+      <div style="max-width:560px; margin:0 auto;">
+        <!-- Section Header -->
+        <div class="type-eyebrow mb-sm">Tab F — Investment Proof</div>
+        <div class="type-h2 mb-lg">Investment Details</div>
+
+        <!-- Progress -->
+        <div style="margin-bottom:32px;">
+          <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+            <span class="type-label">Your Progress</span>
+            <span style="font-size:13px; color:var(--text-muted);">2 of 9</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-bar-fill" style="width:22%;"></div>
+          </div>
+        </div>
+
+        <!-- Form Field 1 -->
+        <div class="form-field">
+          <label class="form-label">
+            <span class="privacy-dot red"></span>
+            Investment Type
+            <span class="required">*</span>
+          </label>
+          <select class="form-input">
+            <option value="">Select investment type</option>
+            <option value="existing">Existing Business</option>
+            <option value="new">New Business</option>
+            <option value="franchise">Franchise</option>
+          </select>
+        </div>
+
+        <!-- Form Field 2 -->
+        <div class="form-field">
+          <label class="form-label">
+            <span class="privacy-dot red"></span>
+            Total Amount Invested
+            <span class="required">*</span>
+          </label>
+          <input type="text" class="form-input" placeholder="$150,000 USD" />
+          <div class="form-helper">Total capital invested in the U.S. business</div>
+        </div>
+
+        <!-- Autosave Indicator -->
+        <div style="display:flex; align-items:center; gap:8px; margin:16px 0 24px;">
+          <div style="width:6px; height:6px; border-radius:50%; background:var(--gold);"></div>
+          <span style="font-size:12px; color:var(--text-muted);">Saved ✓</span>
+        </div>
+
+        <!-- CTA -->
+        <button class="btn-primary full-width">Save and Continue →</button>
+      </div>
+    </div>
+
+    <div>
+      <span class="spec-pill">eyebrow + h2 section header</span>
+      <span class="spec-pill">progress bar above fields</span>
+      <span class="spec-pill">privacy dots on labels</span>
+      <span class="spec-pill">helper text below inputs</span>
+      <span class="spec-pill">autosave gold dot + saved text</span>
+      <span class="spec-pill">full-width primary CTA</span>
+    </div>
+  </div>
+
+  <!-- SECTION 09 — GRAIN TEXTURE & DECORATIVE -->
+  <div class="ref-section">
+    <div class="ref-label">09</div>
+    <div class="ref-title">Grain Texture & Decorative Elements</div>
+    <div class="ref-note">Grain texture overlay, gold corner brackets, gold line dividers.</div>
+
+    <div class="demo-bg" style="position:relative; overflow:hidden;">
+      <!-- Gold corner brackets -->
+      <div style="position:absolute; top:16px; left:16px; width:20px; height:20px; border-color:var(--gold); border-style:solid; border-width:2px 0 0 2px;"></div>
+      <div style="position:absolute; top:16px; right:16px; width:20px; height:20px; border-color:var(--gold); border-style:solid; border-width:2px 2px 0 0;"></div>
+      <div style="position:absolute; bottom:16px; left:16px; width:20px; height:20px; border-color:var(--gold); border-style:solid; border-width:0 0 2px 2px;"></div>
+      <div style="position:absolute; bottom:16px; right:16px; width:20px; height:20px; border-color:var(--gold); border-style:solid; border-width:0 2px 2px 0;"></div>
+
+      <div style="text-align:center; padding:32px;">
+        <div class="type-h3" style="margin-bottom:16px;">Premium Document</div>
+        <div class="type-body-small">This card demonstrates the gold corner bracket decorative motif.</div>
+      </div>
+
+      <!-- Gold divider -->
+      <div class="gold-divider"></div>
+
+      <div style="text-align:center; padding:16px;">
+        <div class="type-body-small">This is a gold gradient divider line.</div>
+      </div>
+    </div>
+
+    <div>
+      <span class="spec-pill">grain: CSS noise at 3% opacity</span>
+      <span class="spec-pill">corner brackets: 20px, 2px solid</span>
+      <span class="spec-pill">divider: linear-gradient gold</span>
+      <span class="spec-pill">position: fixed overlay</span>
+    </div>
+  </div>
+
+  <!-- SECTION 10 — SPACING & LAYOUT -->
+  <div class="ref-section">
+    <div class="ref-label">10</div>
+    <div class="ref-title">Spacing & Layout Grid</div>
+    <div class="ref-note">12-column grid, 1280px max-width, 24px gutter. Component padding standards.</div>
+
+    <div class="demo-bg">
+      <h4 style="font-size:12px; font-weight:500; color:var(--text-muted); margin-bottom:16px; text-transform:uppercase; letter-spacing:0.1em;">Spacing Scale</h4>
+      <div style="display:flex; gap:8px; align-items:flex-end; margin-bottom:32px;">
+        <div style="width:4px; height:4px; background:var(--gold);">xs</div>
+        <div style="width:8px; height:8px; background:var(--gold);">sm</div>
+        <div style="width:16px; height:16px; background:var(--gold);">md</div>
+        <div style="width:24px; height:24px; background:var(--gold);">lg</div>
+        <div style="width:32px; height:32px; background:var(--gold);">xl</div>
+        <div style="width:48px; height:48px; background:var(--gold);">2xl</div>
+        <div style="width:64px; height:64px; background:var(--gold);">3xl</div>
+      </div>
+
+      <h4 style="font-size:12px; font-weight:500; color:var(--text-muted); margin-bottom:16px; text-transform:uppercase; letter-spacing:0.1em;">Grid</h4>
+      <div style="display:grid; grid-template-columns:repeat(12, 1fr); gap:24px; margin-bottom:32px;">
+        <div style="grid-column:span 3; height:40px; background:rgba(201,168,76,0.1); border:1px solid var(--gold-border);"></div>
+        <div style="grid-column:span 3; height:40px; background:rgba(201,168,76,0.1); border:1px solid var(--gold-border);"></div>
+        <div style="grid-column:span 3; height:40px; background:rgba(201,168,76,0.1); border:1px solid var(--gold-border);"></div>
+        <div style="grid-column:span 3; height:40px; background:rgba(201,168,76,0.1); border:1px solid var(--gold-border);"></div>
+      </div>
+
+      <h4 style="font-size:12px; font-weight:500; color:var(--text-muted); margin-bottom:16px; text-transform:uppercase; letter-spacing:0.1em;">Component Padding</h4>
+      <div class="ref-row">
+        <div style="padding:8px; background:var(--gold-border);">
+          <div style="padding:12px; background:#0a0a0a; border:1px solid var(--gold); font-size:11px; color:var(--text-muted);">Button: 14px 28px</div>
+        </div>
+        <div style="padding:8px; background:var(--gold-border);">
+          <div style="padding:16px; background:#0a0a0a; border:1px solid var(--gold); font-size:11px; color:var(--text-muted);">Input: 14px 16px</div>
+        </div>
+        <div style="padding:8px; background:var(--gold-border);">
+          <div style="padding:24px; background:#0a0a0a; border:1px solid var(--gold); font-size:11px; color:var(--text-muted);">Card: 24px</div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <span class="spec-pill">xs: 4px</span>
+      <span class="spec-pill">sm: 8px</span>
+      <span class="spec-pill">md: 16px</span>
+      <span class="spec-pill">lg: 24px</span>
+      <span class="spec-pill">xl: 32px</span>
+      <span class="spec-pill">2xl: 48px</span>
+      <span class="spec-pill">3xl: 64px</span>
+      <span class="spec-pill">max-width: 1280px</span>
+      <span class="spec-pill">gutter: 24px</span>
+    </div>
+  </div>
+
+  <!-- WHAT NOT TO DO -->
+  <div class="ref-section" style="border-color:rgba(239,68,68,0.2);">
+    <div class="ref-label" style="color:#ef4444;">⚠️ What NOT to do</div>
+    <div class="ref-title">Common mistakes to avoid</div>
+    <div class="ref-note" style="border-color:#ef4444; color:rgba(245,240,232,0.6);">
+      These mistakes break the Obsidian Gold design system. Never do any of these.
+    </div>
+    <div style="display:flex; flex-direction:column; gap:10px;">
+      <div style="padding:12px 16px; background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.2); border-radius:4px; font-size:13px; color:rgba(245,240,232,0.7);">
+        ❌ Navy blue background (#060d1f) — use #0a0a0a obsidian
+      </div>
+      <div style="padding:12px 16px; background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.2); border-radius:4px; font-size:13px; color:rgba(245,240,232,0.7);">
+        ❌ Teal accent (#0D9488) — use #C9A84C gold
+      </div>
+      <div style="padding:12px 16px; background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.2); border-radius:4px; font-size:13px; color:rgba(245,240,232,0.7);">
+        ❌ Playfair Display headings — use Cormorant Garamond
+      </div>
+      <div style="padding:12px 16px; background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.2); border-radius:4px; font-size:13px; color:rgba(245,240,232,0.7);">
+        ❌ Glassmorphism with blur — NO blur effects in Obsidian Gold
+      </div>
+      <div style="padding:12px 16px; background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.2); border-radius:4px; font-size:13px; color:rgba(245,240,232,0.7);">
+        ❌ Rounded corners on buttons/inputs — use sharp edges (radius: 0)
+      </div>
+      <div style="padding:12px 16px; background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.2); border-radius:4px; font-size:13px; color:rgba(245,240,232,0.7);">
+        ❌ White card backgrounds — always #0a0a0a
+      </div>
+      <div style="padding:12px 16px; background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.2); border-radius:4px; font-size:13px; color:rgba(245,240,232,0.7);">
+        ❌ Inter/Roboto for body text — use DM Sans
+      </div>
+      <div style="padding:12px 16px; background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.2); border-radius:4px; font-size:13px; color:rgba(245,240,232,0.7);">
+        ❌ Blue or purple gradients — never use these
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:48px; padding-top:24px; border-top:1px solid rgba(201,168,76,0.1); font-size:12px; color:rgba(245,240,232,0.25);">
+    e2go Design Reference v2 · June 2026 · Obsidian Gold · Read this file before writing any CSS
+  </div>
+
+</div>
+</body>
+</html>

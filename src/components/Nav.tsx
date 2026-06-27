@@ -1,47 +1,54 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
+
 interface Profile {
   id: string;
   email: string;
+  first_name?: string;
+  last_name?: string;
   full_name?: string;
   tier?: string;
 }
-import type { Session } from "@supabase/supabase-js";
+
+interface Application {
+  id: string;
+  source: string | null;
+}
 
 export default function Nav() {
   const [user, setUser] = useState<Profile | null>(null);
-  const [supabase] = useState(() => createBrowserSupabaseClient());
+  const [application, setApplication] = useState<Application | null>(null);
+  const [isSimulatorOnly, setIsSimulatorOnly] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const pathname = usePathname();
+  const router = useRouter();
+  const supabase = createBrowserSupabaseClient();
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
+    };
+    if (dropdownOpen) document.addEventListener("mousedown", handleOutside);
+    return () => document.removeEventListener("mousedown", handleOutside);
+  }, [dropdownOpen]);
 
   useEffect(() => {
-    // Check current session
-    const checkSession = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      if (session?.user) {
-        // Fetch user profile from our users table
-        const { data: userData } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", session.user.id)
-          .single();
-
-        setUser(userData);
-      }
-      setLoading(false);
-    };
-
-    checkSession();
-
-    // Listen for auth changes
+    // onAuthStateChange fires INITIAL_SESSION on mount with the current auth
+    // state — no need for an explicit getSession() call, which would acquire
+    // the GoTrueClient navigator.locks lock and race with page-level auth checks.
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event: string, session: Session | null) => {
+    } = supabase.auth.onAuthStateChange(async (event: string, session: { user?: { id: string } } | null) => {
       if (session?.user) {
         const { data: userData } = await supabase
           .from("profiles")
@@ -50,71 +57,328 @@ export default function Nav() {
           .single();
 
         setUser(userData);
+
+        // Fetch all applications to detect simulator-only accounts.
+        // Simulator-only users (source = 'simulator_standalone') must not see
+        // Dashboard, My Application, or Documents — they haven't paid for those.
+        const { data: allApps } = await supabase
+          .from("applications")
+          .select("id, source")
+          .eq("user_id", session.user.id)
+          .order("created_at", { ascending: false });
+
+        if (allApps && allApps.length > 0) {
+          const simOnly = allApps.every(
+            (a: Application) => a.source === "simulator_standalone"
+          );
+          setIsSimulatorOnly(simOnly);
+
+          if (!simOnly) {
+            // Use the most recent non-simulator app for the Documents link
+            const regularApp = allApps.find(
+              (a: Application) => a.source !== "simulator_standalone"
+            );
+            if (regularApp) setApplication(regularApp);
+          }
+        } else {
+          setIsSimulatorOnly(false);
+        }
       } else {
         setUser(null);
+        setApplication(null);
+        setIsSimulatorOnly(false);
       }
       setLoading(false);
     });
 
     return () => subscription.unsubscribe();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [supabase]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    window.location.href = "/";
+    router.push("/");
+    setMobileMenuOpen(false);
+    setDropdownOpen(false);
   };
 
+  const isActive = (path: string) => pathname === path;
+
+  if (loading) return null;
+
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-b border-[#c3c6d7]">
-      <div className="flex justify-between items-center h-16 px-4 md:px-8 max-w-6xl mx-auto">
-        <Link href="/" className="flex items-center gap-2">
-          <svg className="w-6 h-6 text-[#004ac6]" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 2L2 7v10l10 5 10-5V7L12 2z" />
-          </svg>
-          <span className="text-xl font-bold text-[#004ac6]">e2go.app</span>
+    <header
+      className="fixed top-0 left-0 right-0 z-50"
+      style={{
+        background: "rgba(10,10,10,0.95)",
+        borderBottom: "1px solid rgba(201,168,76,0.1)",
+      }}
+    >
+      <div className="flex justify-between items-center h-16 px-4 md:px-8 max-w-7xl mx-auto">
+        <Link
+          href={user ? "/dashboard" : "/"}
+          className="flex items-center gap-2"
+          style={{ textDecoration: "none" }}
+        >
+          <span className="text-xl font-medium tracking-tight text-[#f5f0e8]" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
+            e2go<span className="text-[#C9A84C]">.app</span>
+          </span>
         </Link>
-        <div className="flex items-center gap-4">
-          {!loading && (
+
+        <div className="hidden md:flex items-center gap-6">
+          {!user ? (
             <>
-              {user ? (
-                <>
-                  <span className="hidden md:block text-sm text-[#434655]">
-                    {user.email}
-                  </span>
-                  <button
-                    onClick={handleSignOut}
-                    className="text-sm text-[#434655] hover:text-[#004ac6] transition-colors"
-                  >
-                    Sign Out
-                  </button>
-                  <Link
-                    href="/dashboard"
-                    className="hidden md:block text-sm text-[#004ac6] hover:underline"
-                  >
-                    Dashboard
-                  </Link>
-                </>
-              ) : (
-                <>
-                  <Link
-                    href="/login"
-                    className="hidden md:block text-sm text-[#434655] hover:text-[#004ac6] transition-colors"
-                  >
-                    Sign In
-                  </Link>
-                  <Link
-                    href="/quiz"
-                    className="bg-[#004ac6] text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-[#00337d] transition-colors"
-                  >
-                    Get Started
-                  </Link>
-                </>
+              <Link
+                href="/#how-it-works"
+                className="text-sm transition-colors"
+                style={{ color: isActive("/#how-it-works") ? "#C9A84C" : "rgba(245,240,232,0.75)" }}
+                onMouseEnter={e => e.currentTarget.style.color = "#f5f0e8"}
+                onMouseLeave={e => e.currentTarget.style.color = isActive("/#how-it-works") ? "#C9A84C" : "rgba(245,240,232,0.75)"}
+              >
+                How it works
+              </Link>
+              <Link
+                href="/learn"
+                className="text-sm transition-colors"
+                style={{ color: isActive("/learn") ? "#C9A84C" : "rgba(245,240,232,0.75)" }}
+                onMouseEnter={e => e.currentTarget.style.color = "#f5f0e8"}
+                onMouseLeave={e => e.currentTarget.style.color = isActive("/learn") ? "#C9A84C" : "rgba(245,240,232,0.75)"}
+              >
+                Learn
+              </Link>
+              <Link
+                href="/modules"
+                className="text-sm transition-colors"
+                style={{ color: isActive("/modules") ? "#C9A84C" : "rgba(245,240,232,0.75)" }}
+                onMouseEnter={e => e.currentTarget.style.color = "#f5f0e8"}
+                onMouseLeave={e => e.currentTarget.style.color = isActive("/modules") ? "#C9A84C" : "rgba(245,240,232,0.75)"}
+              >
+                Modules
+              </Link>
+              <Link
+                href="/pricing"
+                className="text-sm transition-colors"
+                style={{ color: isActive("/pricing") ? "#C9A84C" : "rgba(245,240,232,0.75)" }}
+                onMouseEnter={e => e.currentTarget.style.color = "#f5f0e8"}
+                onMouseLeave={e => e.currentTarget.style.color = isActive("/pricing") ? "#C9A84C" : "rgba(245,240,232,0.75)"}
+              >
+                Pricing
+              </Link>
+              <Link
+                href="/simulator"
+                className="text-sm transition-colors"
+                style={{ color: isActive("/simulator") ? "#C9A84C" : "rgba(245,240,232,0.75)" }}
+                onMouseEnter={e => e.currentTarget.style.color = "#f5f0e8"}
+                onMouseLeave={e => e.currentTarget.style.color = isActive("/simulator") ? "#C9A84C" : "rgba(245,240,232,0.75)"}
+              >
+                Simulator
+              </Link>
+              <Link
+                href="/login"
+                className="text-sm transition-colors"
+                style={{ color: "rgba(245,240,232,0.78)" }}
+                onMouseEnter={e => e.currentTarget.style.color = "#f5f0e8"}
+                onMouseLeave={e => e.currentTarget.style.color = "rgba(245,240,232,0.76)"}
+              >
+                Log in
+              </Link>
+              <Link
+                href="/quiz"
+                className="text-sm transition-colors"
+                style={{
+                  padding: "8px 18px",
+                  border: "1px solid rgba(201,168,76,0.5)",
+                  color: "#C9A84C",
+                  fontSize: "11px",
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                  background: "transparent",
+                  borderRadius: 0,
+                }}
+                onMouseEnter={e => e.currentTarget.style.borderColor = "#C9A84C"}
+                onMouseLeave={e => e.currentTarget.style.borderColor = "rgba(201,168,76,0.5)"}
+              >
+                Check eligibility
+              </Link>
+            </>
+          ) : (
+            <>
+              {!isSimulatorOnly && !pathname.startsWith('/simulator') && (
+                <Link href="/dashboard" className="text-sm transition-colors" style={{ color: isActive("/dashboard") ? "#C9A84C" : "rgba(245,240,232,0.75)" }}
+                  onMouseEnter={e => e.currentTarget.style.color = "#f5f0e8"}
+                  onMouseLeave={e => e.currentTarget.style.color = isActive("/dashboard") ? "#C9A84C" : "rgba(245,240,232,0.75)"}
+                >
+                  Dashboard
+                </Link>
               )}
+              {!isSimulatorOnly && !pathname.startsWith('/simulator') && (
+                <Link href="/apply" className="text-sm transition-colors" style={{ color: pathname.startsWith("/apply") ? "#C9A84C" : "rgba(245,240,232,0.75)" }}
+                  onMouseEnter={e => e.currentTarget.style.color = "#f5f0e8"}
+                  onMouseLeave={e => e.currentTarget.style.color = pathname.startsWith("/apply") ? "#C9A84C" : "rgba(245,240,232,0.75)"}
+                >
+                  My Application
+                </Link>
+              )}
+              {!isSimulatorOnly && !pathname.startsWith('/simulator') && (
+                <Link href="/gap-analysis" className="text-sm transition-colors" style={{ color: pathname.startsWith("/gap-analysis") ? "#C9A84C" : "rgba(245,240,232,0.75)" }}
+                  onMouseEnter={e => e.currentTarget.style.color = "#f5f0e8"}
+                  onMouseLeave={e => e.currentTarget.style.color = pathname.startsWith("/gap-analysis") ? "#C9A84C" : "rgba(245,240,232,0.75)"}
+                >
+                  Gap Analysis
+                </Link>
+              )}
+              {!isSimulatorOnly && !pathname.startsWith('/simulator') && (
+                <Link href="/fdd" className="text-sm transition-colors" style={{ color: pathname.startsWith("/fdd") ? "#C9A84C" : "rgba(245,240,232,0.75)" }}
+                  onMouseEnter={e => e.currentTarget.style.color = "#f5f0e8"}
+                  onMouseLeave={e => e.currentTarget.style.color = pathname.startsWith("/fdd") ? "#C9A84C" : "rgba(245,240,232,0.75)"}
+                >
+                  FDD Analysis
+                </Link>
+              )}
+              {!isSimulatorOnly && !pathname.startsWith('/simulator') && application && (
+                <Link href={`/documents/${application.id}`} className="text-sm transition-colors" style={{ color: pathname.startsWith("/documents") ? "#C9A84C" : "rgba(245,240,232,0.75)" }}
+                  onMouseEnter={e => e.currentTarget.style.color = "#f5f0e8"}
+                  onMouseLeave={e => e.currentTarget.style.color = pathname.startsWith("/documents") ? "#C9A84C" : "rgba(245,240,232,0.75)"}
+                >
+                  Documents
+                </Link>
+              )}
+              <Link href="/simulator" className="text-sm transition-colors" style={{ color: pathname.startsWith("/simulator") ? "#C9A84C" : "rgba(245,240,232,0.75)" }}
+                onMouseEnter={e => e.currentTarget.style.color = "#f5f0e8"}
+                onMouseLeave={e => e.currentTarget.style.color = pathname.startsWith("/simulator") ? "#C9A84C" : "rgba(245,240,232,0.75)"}
+              >
+                Simulator
+              </Link>
+
+              <div className="relative" ref={dropdownRef}>
+                <button
+                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                  className="flex items-center gap-2 text-sm transition-colors"
+                  style={{ color: "rgba(245,240,232,0.78)" }}
+                >
+                  <span>{user?.first_name ? user.first_name : 'Account'}</span>
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" className="transition-transform" style={{ transform: dropdownOpen ? "rotate(180deg)" : "rotate(0deg)" }}>
+                    <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="square" />
+                  </svg>
+                </button>
+
+                {dropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-44 bg-[#0a0a0a] border border-[rgba(201,168,76,0.2)] shadow-lg z-50">
+                    <Link
+                      href="/settings"
+                      className="block px-4 py-3 text-sm text-[rgba(245,240,232,0.65)] hover:bg-[rgba(201,168,76,0.06)] hover:text-[#f5f0e8] transition-colors"
+                      onClick={() => setDropdownOpen(false)}
+                    >
+                      Settings
+                    </Link>
+                    <div className="border-t border-[rgba(201,168,76,0.1)]" />
+                    <button
+                      onClick={handleSignOut}
+                      className="w-full text-left px-4 py-3 text-sm text-[rgba(245,240,232,0.65)] hover:bg-[rgba(201,168,76,0.06)] hover:text-[#f5f0e8] transition-colors"
+                    >
+                      Log out
+                    </button>
+                  </div>
+                )}
+              </div>
             </>
           )}
         </div>
+
+        <button
+          className="md:hidden flex flex-col gap-1.5 p-2"
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          aria-label="Toggle mobile menu"
+        >
+          <span className={`block w-6 h-0.5 bg-[#C9A84C] transition-transform ${mobileMenuOpen ? "rotate-45 translate-y-2" : ""}`} />
+          <span className={`block w-6 h-0.5 bg-[#C9A84C] transition-opacity ${mobileMenuOpen ? "opacity-0" : "opacity-100"}`} />
+          <span className={`block w-6 h-0.5 bg-[#C9A84C] transition-transform ${mobileMenuOpen ? "-rotate-45 -translate-y-2" : ""}`} />
+        </button>
       </div>
+
+      {/* Mobile Menu */}
+      {mobileMenuOpen && (
+        <div className="md:hidden border-t border-[rgba(201,168,76,0.1)] px-4 pb-6 pt-2" style={{ background: "rgba(10,10,10,0.98)" }}>
+          {!user ? (
+            <div className="flex flex-col gap-4">
+              <Link href="/#how-it-works" className="text-sm py-2" style={{ color: "rgba(245,240,232,0.75)" }} onClick={() => setMobileMenuOpen(false)}>
+                How it works
+              </Link>
+              <Link href="/learn" className="text-sm py-2" style={{ color: "rgba(245,240,232,0.75)" }} onClick={() => setMobileMenuOpen(false)}>
+                Learn
+              </Link>
+              <Link href="/pricing" className="text-sm py-2" style={{ color: "rgba(245,240,232,0.75)" }} onClick={() => setMobileMenuOpen(false)}>
+                Pricing
+              </Link>
+              <Link href="/simulator" className="text-sm py-2" style={{ color: "rgba(245,240,232,0.75)" }} onClick={() => setMobileMenuOpen(false)}>
+                Simulator
+              </Link>
+              <Link href="/login" className="text-sm py-2" style={{ color: "rgba(245,240,232,0.78)" }} onClick={() => setMobileMenuOpen(false)}>
+                Log in
+              </Link>
+              <Link
+                href="/quiz"
+                className="text-sm font-medium py-3 text-center transition-colors"
+                style={{
+                  padding: "8px 18px",
+                  border: "1px solid rgba(201,168,76,0.5)",
+                  color: "#C9A84C",
+                  fontSize: "11px",
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                  background: "transparent",
+                  borderRadius: 0,
+                  marginTop: "4px",
+                }}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Check eligibility
+              </Link>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-4">
+              {!isSimulatorOnly && !pathname.startsWith('/simulator') && (
+                <Link href="/dashboard" className="text-sm py-2" style={{ color: pathname === "/dashboard" ? "#C9A84C" : "rgba(245,240,232,0.75)" }} onClick={() => setMobileMenuOpen(false)}>
+                  Dashboard
+                </Link>
+              )}
+              {!isSimulatorOnly && !pathname.startsWith('/simulator') && (
+                <Link href="/apply" className="text-sm py-2" style={{ color: pathname.startsWith("/apply") ? "#C9A84C" : "rgba(245,240,232,0.75)" }} onClick={() => setMobileMenuOpen(false)}>
+                  My Application
+                </Link>
+              )}
+              {!isSimulatorOnly && !pathname.startsWith('/simulator') && (
+                <Link href="/gap-analysis" className="text-sm py-2" style={{ color: pathname.startsWith("/gap-analysis") ? "#C9A84C" : "rgba(245,240,232,0.75)" }} onClick={() => setMobileMenuOpen(false)}>
+                  Gap Analysis
+                </Link>
+              )}
+              {!isSimulatorOnly && !pathname.startsWith('/simulator') && (
+                <Link href="/fdd" className="text-sm py-2" style={{ color: pathname.startsWith("/fdd") ? "#C9A84C" : "rgba(245,240,232,0.75)" }} onClick={() => setMobileMenuOpen(false)}>
+                  FDD Analysis
+                </Link>
+              )}
+              {!isSimulatorOnly && !pathname.startsWith('/simulator') && application && (
+                <Link href={`/documents/${application.id}`} className="text-sm py-2" style={{ color: pathname.startsWith("/documents") ? "#C9A84C" : "rgba(245,240,232,0.75)" }} onClick={() => setMobileMenuOpen(false)}>
+                  Documents
+                </Link>
+              )}
+              <Link href="/simulator" className="text-sm py-2" style={{ color: pathname.startsWith("/simulator") ? "#C9A84C" : "rgba(245,240,232,0.75)" }} onClick={() => setMobileMenuOpen(false)}>
+                Simulator
+              </Link>
+              <div style={{ height: '1px', background: 'rgba(201,168,76,0.1)' }} />
+              <Link href="/settings" className="text-sm py-2" style={{ color: "rgba(245,240,232,0.76)" }} onClick={() => setMobileMenuOpen(false)}>
+                Settings
+              </Link>
+              <button
+                onClick={handleSignOut}
+                className="text-left text-sm py-2 transition-colors"
+                style={{ color: "rgba(245,240,232,0.76)" }}
+              >
+                Log out
+              </button>
+            </div>
+          )}
+        </div>
+      )}
     </header>
   );
 }

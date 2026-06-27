@@ -1,0 +1,1746 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>E2go — Complete Feature Inventory · June 27, 2026</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #0a0a0a;
+    color: #f5f0e8;
+    font-family: 'DM Sans', system-ui, sans-serif;
+    font-size: 13px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+
+  /* ── Top bar ── */
+  .topbar {
+    padding: 24px 28px 18px;
+    border-bottom: 1px solid rgba(201,168,76,0.15);
+    display: flex;
+    align-items: baseline;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  .topbar h1 {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-weight: 300;
+    font-size: 26px;
+    color: #f5f0e8;
+    letter-spacing: 0.01em;
+  }
+  .subtitle {
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(201,168,76,0.55);
+    font-weight: 500;
+    margin-bottom: 4px;
+  }
+  .legend {
+    margin-left: auto;
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10px;
+    color: rgba(245,240,232,0.45);
+    letter-spacing: 0.04em;
+  }
+  .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .dot-built { background: #C9A84C; }
+  .dot-partial { background: #d97706; }
+  .dot-planned { background: rgba(245,240,232,0.2); border: 1px solid rgba(245,240,232,0.3); border-radius: 50%; }
+  .dot-silo { background: #7c3aed; }
+
+  /* ── Tab nav ── */
+  .tabs {
+    display: flex;
+    border-bottom: 1px solid rgba(201,168,76,0.12);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .tab {
+    padding: 11px 20px;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: rgba(245,240,232,0.35);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+    transition: color 0.15s, border-color 0.15s;
+    user-select: none;
+  }
+  .tab:hover { color: rgba(201,168,76,0.7); }
+  .tab.active { color: #C9A84C; border-bottom-color: #C9A84C; }
+
+  /* ── Content pane ── */
+  .pane { display: none; }
+  .pane.active { display: block; }
+
+  /* ── Phase rows ── */
+  .phase { border-bottom: 1px solid rgba(201,168,76,0.1); }
+  .phase-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 15px 28px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .phase-header:hover { background: rgba(201,168,76,0.03); }
+  .phase-number {
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(201,168,76,0.45);
+    font-weight: 500;
+    width: 60px;
+    flex-shrink: 0;
+  }
+  .phase-name {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-weight: 300;
+    font-size: 19px;
+    color: #f5f0e8;
+    flex: 1;
+  }
+  .phase-meta {
+    font-size: 11px;
+    color: rgba(245,240,232,0.35);
+    flex: 2;
+  }
+  .phase-count { font-size: 10px; color: rgba(201,168,76,0.5); margin-right: 8px; }
+  .chevron { font-size: 10px; color: rgba(201,168,76,0.4); transition: transform 0.2s; }
+  .phase.open .chevron { transform: rotate(90deg); }
+  .phase-body { display: none; padding: 0 28px 16px; }
+  .phase.open .phase-body { display: block; }
+
+  /* Feature rows */
+  .feature {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 9px 0;
+    border-bottom: 1px solid rgba(201,168,76,0.06);
+  }
+  .feature:last-child { border-bottom: none; }
+  .feature-status { width: 7px; height: 7px; border-radius: 50%; margin-top: 4px; flex-shrink: 0; }
+  .feature-name { font-size: 12px; font-weight: 500; color: #f5f0e8; flex: 1; min-width: 160px; }
+  .feature-route { font-size: 10px; color: rgba(201,168,76,0.5); font-family: 'SF Mono', 'Consolas', monospace; flex: 1; }
+  .feature-desc { font-size: 11px; color: rgba(245,240,232,0.4); flex: 2; }
+  .badge { font-size: 9px; padding: 2px 7px; letter-spacing: 0.05em; text-transform: uppercase; font-weight: 600; flex-shrink: 0; }
+  .badge-silo { background: rgba(124,58,237,0.15); color: #a78bfa; border: 1px solid rgba(124,58,237,0.3); }
+  .badge-gap { background: rgba(220,38,38,0.1); color: #f87171; border: 1px solid rgba(220,38,38,0.25); }
+  .badge-blocked { background: rgba(217,119,6,0.1); color: #fbbf24; border: 1px solid rgba(217,119,6,0.25); }
+  .badge-new { background: rgba(201,168,76,0.1); color: #C9A84C; border: 1px solid rgba(201,168,76,0.25); }
+
+  /* ── Data Flows ── */
+  .flow-grid { padding: 20px 28px; display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+  .flow-card { border: 1px solid rgba(201,168,76,0.12); padding: 16px; background: rgba(201,168,76,0.02); }
+  .flow-title { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #C9A84C; margin-bottom: 10px; }
+  .flow-step { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 6px; font-size: 11px; color: rgba(245,240,232,0.6); }
+  .flow-arrow { color: rgba(201,168,76,0.5); flex-shrink: 0; }
+
+  /* ── Silos ── */
+  .silo-grid { padding: 20px 28px; display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
+  .silo-card { border: 1px solid rgba(124,58,237,0.25); padding: 16px; background: rgba(124,58,237,0.04); }
+  .silo-card.resolved { border-color: rgba(201,168,76,0.2); background: rgba(201,168,76,0.02); }
+  .silo-title { font-size: 12px; font-weight: 600; color: #a78bfa; margin-bottom: 7px; }
+  .silo-card.resolved .silo-title { color: rgba(201,168,76,0.6); }
+  .silo-desc { font-size: 11px; color: rgba(245,240,232,0.5); line-height: 1.6; }
+  .silo-fix { margin-top: 9px; font-size: 10px; color: rgba(201,168,76,0.6); border-top: 1px solid rgba(124,58,237,0.15); padding-top: 8px; }
+  .silo-card.resolved .silo-fix { color: #4ade80; border-top-color: rgba(74,222,128,0.15); }
+
+  /* ── Gaps ── */
+  .gap-section { padding: 20px 28px; }
+  .gap-section-title { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(245,240,232,0.3); margin-bottom: 12px; margin-top: 24px; }
+  .gap-section-title:first-child { margin-top: 0; }
+  .gap-item { display: flex; align-items: flex-start; gap: 12px; padding: 10px 0; border-bottom: 1px solid rgba(201,168,76,0.06); }
+  .gap-priority { font-size: 9px; padding: 2px 6px; font-weight: 700; letter-spacing: 0.05em; flex-shrink: 0; margin-top: 1px; }
+  .p-critical { background: rgba(220,38,38,0.12); color: #f87171; border: 1px solid rgba(220,38,38,0.3); }
+  .p-high { background: rgba(217,119,6,0.1); color: #fbbf24; border: 1px solid rgba(217,119,6,0.3); }
+  .p-medium { background: rgba(245,240,232,0.06); color: rgba(245,240,232,0.5); border: 1px solid rgba(245,240,232,0.15); }
+  .p-low { background: rgba(100,116,139,0.08); color: rgba(245,240,232,0.3); border: 1px solid rgba(245,240,232,0.08); }
+  /* Testing tab */
+  .test-section { padding: 20px 28px; }
+  .test-group { margin-bottom: 28px; }
+  .test-group-title { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(201,168,76,0.6); margin-bottom: 10px; font-weight: 600; }
+  .test-item { display: flex; align-items: flex-start; gap: 10px; padding: 7px 0; border-bottom: 1px solid rgba(201,168,76,0.05); cursor: pointer; user-select: none; }
+  .test-item:hover { background: rgba(201,168,76,0.03); margin: 0 -8px; padding-left: 8px; padding-right: 8px; }
+  .test-cb { width: 14px; height: 14px; border: 1px solid rgba(201,168,76,0.35); border-radius: 2px; flex-shrink: 0; margin-top: 2px; display: flex; align-items: center; justify-content: center; transition: background 0.15s; }
+  .test-cb.checked { background: rgba(201,168,76,0.25); border-color: #C9A84C; }
+  .test-cb.checked::after { content: '✓'; font-size: 9px; color: #C9A84C; }
+  .test-label { font-size: 12px; color: rgba(245,240,232,0.75); line-height: 1.4; }
+  .test-label.checked { color: rgba(245,240,232,0.35); text-decoration: line-through; }
+  .test-tag { font-size: 9px; padding: 1px 5px; border-radius: 2px; flex-shrink: 0; margin-top: 3px; font-weight: 600; letter-spacing: 0.04em; }
+  .tag-critical { background: rgba(220,38,38,0.1); color: #f87171; border: 1px solid rgba(220,38,38,0.2); }
+  .tag-high { background: rgba(217,119,6,0.08); color: #fbbf24; border: 1px solid rgba(217,119,6,0.2); }
+  .tag-medium { background: rgba(245,240,232,0.05); color: rgba(245,240,232,0.4); border: 1px solid rgba(245,240,232,0.1); }
+  .test-progress { display: flex; align-items: center; gap: 12px; padding: 14px 28px; border-bottom: 1px solid rgba(201,168,76,0.1); background: rgba(201,168,76,0.03); }
+  .test-progress-bar { flex: 1; height: 3px; background: rgba(245,240,232,0.08); border-radius: 2px; overflow: hidden; }
+  .test-progress-fill { height: 100%; background: #C9A84C; border-radius: 2px; transition: width 0.3s; }
+  .test-progress-text { font-size: 11px; color: rgba(201,168,76,0.7); white-space: nowrap; }
+  .smoke-account { font-size: 9px; font-weight: 400; color: rgba(201,168,76,0.45); text-transform: none; letter-spacing: 0; margin-left: 10px; border: 1px solid rgba(201,168,76,0.15); padding: 1px 6px; border-radius: 2px; }
+  .smoke-note { padding: 8px 28px 14px; color: rgba(245,240,232,0.35); font-size: 11px; line-height: 1.6; border-bottom: 1px solid rgba(201,168,76,0.08); margin-bottom: 4px; }
+  .tag-smoke { background: rgba(99,102,241,0.1); color: #a5b4fc; border: 1px solid rgba(99,102,241,0.2); }
+  .gap-name { font-size: 12px; font-weight: 500; color: #f5f0e8; }
+  .gap-desc { font-size: 11px; color: rgba(245,240,232,0.4); margin-top: 2px; }
+
+  /* ── Roadmap tab ── */
+  .roadmap-pane { padding: 20px 28px; }
+  .roadmap-section-title { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(201,168,76,0.5); margin-bottom: 16px; font-weight: 700; border-bottom: 1px solid rgba(201,168,76,0.1); padding-bottom: 8px; margin-top: 32px; }
+  .roadmap-section-title:first-child { margin-top: 0; }
+  .sprint-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 14px; margin-bottom: 8px; }
+  .sprint-card { border: 1px solid rgba(201,168,76,0.12); padding: 16px; background: rgba(201,168,76,0.02); }
+  .sprint-header { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
+  .sprint-id { font-size: 10px; font-family: 'SF Mono','Consolas',monospace; color: #C9A84C; font-weight: 700; background: rgba(201,168,76,0.1); padding: 2px 7px; flex-shrink: 0; }
+  .sprint-priority { font-size: 9px; padding: 2px 6px; font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+  .sprint-name { font-size: 13px; font-weight: 600; color: #f5f0e8; flex: 1; }
+  .sprint-effort { font-size: 9px; color: rgba(245,240,232,0.3); white-space: nowrap; border: 1px solid rgba(245,240,232,0.1); padding: 1px 5px; margin-top: 1px; }
+  .sprint-desc { font-size: 11px; color: rgba(245,240,232,0.4); margin-bottom: 10px; line-height: 1.5; border-left: 2px solid rgba(201,168,76,0.15); padding-left: 8px; }
+  .sprint-item { display: flex; align-items: flex-start; gap: 8px; padding: 5px 0; border-bottom: 1px solid rgba(201,168,76,0.04); }
+  .sprint-item:last-child { border-bottom: none; }
+  .sprint-dot { width: 5px; height: 5px; border-radius: 50%; background: rgba(201,168,76,0.3); flex-shrink: 0; margin-top: 5px; }
+  .sprint-item-body { flex: 1; }
+  .sprint-item-name { font-size: 11px; color: rgba(245,240,232,0.65); font-weight: 500; }
+  .sprint-item-desc { font-size: 10px; color: rgba(245,240,232,0.28); margin-top: 1px; line-height: 1.4; }
+  /* Engine quality */
+  .engine-overall-row { display: flex; align-items: center; gap: 24px; padding: 16px 20px; border: 1px solid rgba(201,168,76,0.2); background: rgba(201,168,76,0.03); margin-bottom: 16px; flex-wrap: wrap; }
+  .engine-overall-num { font-size: 40px; font-family: 'Cormorant Garamond',serif; color: #C9A84C; line-height: 1; }
+  .engine-overall-meta { display: flex; flex-direction: column; gap: 3px; }
+  .engine-overall-label { font-size: 13px; font-weight: 600; color: rgba(245,240,232,0.7); }
+  .engine-overall-sub { font-size: 10px; color: rgba(245,240,232,0.3); }
+  .engine-score-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; margin-bottom: 24px; }
+  .engine-score-card { padding: 10px 12px; border: 1px solid rgba(201,168,76,0.08); background: rgba(10,10,10,0.4); }
+  .engine-score-name { font-size: 10px; font-family: 'SF Mono','Consolas',monospace; color: rgba(201,168,76,0.7); margin-bottom: 6px; }
+  .engine-score-bar { height: 2px; background: rgba(245,240,232,0.07); border-radius: 1px; overflow: hidden; margin-bottom: 4px; }
+  .engine-score-fill { height: 100%; background: #C9A84C; border-radius: 1px; }
+  .engine-score-nums { display: flex; justify-content: space-between; font-size: 9px; color: rgba(245,240,232,0.3); }
+  .ci-gap-item { display: flex; align-items: flex-start; gap: 10px; padding: 7px 0; border-bottom: 1px solid rgba(201,168,76,0.05); }
+  .ci-gap-impact { font-size: 9px; color: #4ade80; border: 1px solid rgba(74,222,128,0.2); padding: 1px 7px; flex-shrink: 0; margin-top: 2px; font-weight: 700; font-family: monospace; white-space: nowrap; }
+  .ci-gap-text { font-size: 12px; color: rgba(245,240,232,0.65); }
+  .ci-gap-sprint { font-size: 10px; color: rgba(201,168,76,0.4); margin-top: 1px; }
+  /* ── Engines ── */
+  .engine-grid { padding: 20px 28px; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+  .engine-card { border: 1px solid rgba(201,168,76,0.12); padding: 14px; background: rgba(201,168,76,0.02); }
+  .engine-name { font-size: 11px; font-weight: 600; color: #C9A84C; margin-bottom: 4px; font-family: 'SF Mono', 'Consolas', monospace; }
+  .engine-desc { font-size: 11px; color: rgba(245,240,232,0.5); margin-bottom: 8px; }
+  .engine-consumers { font-size: 10px; color: rgba(245,240,232,0.3); border-top: 1px solid rgba(201,168,76,0.08); padding-top: 7px; }
+  .engine-consumers span { color: rgba(201,168,76,0.5); }
+
+  /* ── Database ── */
+  .db-grid { padding: 20px 28px; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px; }
+  .db-table { border: 1px solid rgba(201,168,76,0.1); padding: 11px 13px; background: rgba(201,168,76,0.02); }
+  .db-name { font-size: 10px; font-family: 'SF Mono', 'Consolas', monospace; color: #C9A84C; margin-bottom: 3px; }
+  .db-desc { font-size: 10px; color: rgba(245,240,232,0.4); }
+  .db-notes { font-size: 9px; color: rgba(245,240,232,0.22); margin-top: 4px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div>
+    <div class="subtitle">E2go · Architecture Audit · June 27, 2026 · Session 80 — Sprint E Complete · Case File Dashboard UI</div>
+    <h1>Complete Feature Inventory</h1>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><div class="dot dot-built"></div>Built</div>
+    <div class="legend-item"><div class="dot dot-partial"></div>Partial / Blocked</div>
+    <div class="legend-item"><div class="dot dot-planned"></div>Planned — Not Built</div>
+    <div class="legend-item"><div class="dot dot-silo"></div>Silo</div>
+  </div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('phases',this)">Phases &amp; Features</div>
+  <div class="tab" onclick="switchTab('flows',this)">Data Flows</div>
+  <div class="tab" onclick="switchTab('silos',this)">Silos</div>
+  <div class="tab" onclick="switchTab('gaps',this)">Gaps &amp; Blockers</div>
+  <div class="tab" onclick="switchTab('engines',this)">Engines</div>
+  <div class="tab" onclick="switchTab('db',this)">Database</div>
+  <div class="tab" onclick="switchTab('testing',this)">Testing</div>
+  <div class="tab" onclick="switchTab('smoke',this)">Smoke Test</div>
+  <div class="tab" onclick="switchTab('roadmap',this)">Roadmap</div>
+</div>
+
+<!-- ═══════ PHASES ═══════ -->
+<div class="pane active" id="pane-phases">
+  <div id="phases-container"></div>
+</div>
+
+<!-- ═══════ DATA FLOWS ═══════ -->
+<div class="pane" id="pane-flows">
+  <div class="flow-grid" id="flows-container"></div>
+</div>
+
+<!-- ═══════ SILOS ═══════ -->
+<div class="pane" id="pane-silos">
+  <div class="silo-grid" id="silos-container"></div>
+</div>
+
+<!-- ═══════ GAPS ═══════ -->
+<div class="pane" id="pane-gaps">
+  <div class="gap-section" id="gaps-container"></div>
+</div>
+
+<!-- ═══════ ENGINES ═══════ -->
+<div class="pane" id="pane-engines">
+  <div class="engine-grid" id="engines-container"></div>
+</div>
+
+<!-- ═══════ DATABASE ═══════ -->
+<div class="pane" id="pane-db">
+  <div class="db-grid" id="db-container"></div>
+</div>
+
+<!-- ═══════ TESTING ═══════ -->
+<div class="pane" id="pane-testing">
+  <div class="test-progress">
+    <span class="test-progress-text" id="test-progress-text">0 / 0 passed</span>
+    <div class="test-progress-bar"><div class="test-progress-fill" id="test-progress-fill" style="width:0%"></div></div>
+    <span class="test-progress-text" id="test-progress-pct">0%</span>
+  </div>
+
+  <!-- ── QA Audit Log — dated fix record, never delete entries ── -->
+  <div style="padding:16px 28px 0;border-bottom:1px solid rgba(201,168,76,0.1);margin-bottom:0">
+    <div style="font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:rgba(201,168,76,0.6);font-weight:600;margin-bottom:10px">QA Audit Log — Autonomous Pass Results</div>
+    <table style="width:100%;font-size:11px;border-collapse:collapse">
+      <thead>
+        <tr style="border-bottom:1px solid rgba(201,168,76,0.12)">
+          <th style="text-align:left;padding:4px 12px 4px 0;color:rgba(201,168,76,0.5);font-weight:600;white-space:nowrap">ID</th>
+          <th style="text-align:left;padding:4px 12px 4px 0;color:rgba(201,168,76,0.5);font-weight:600;white-space:nowrap">Date</th>
+          <th style="text-align:left;padding:4px 12px 4px 0;color:rgba(201,168,76,0.5);font-weight:600">Issue Found</th>
+          <th style="text-align:left;padding:4px 12px 4px 0;color:rgba(201,168,76,0.5);font-weight:600">Fix Applied</th>
+          <th style="text-align:left;padding:4px 0;color:rgba(201,168,76,0.5);font-weight:600">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid rgba(245,240,232,0.04)">
+          <td style="padding:6px 12px 6px 0;color:#C9A84C;font-family:monospace;white-space:nowrap">QA-SEC-01</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.4);white-space:nowrap">2026-06-23</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.7)">/api/admin/cost-summary had NO auth — returned full LLM cost data to unauthenticated requests</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.5)">Added getRequestingAdmin() gate returning 403 for non-admins</td>
+          <td style="padding:6px 0;color:#4ade80;white-space:nowrap">✅ Fixed</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(245,240,232,0.04)">
+          <td style="padding:6px 12px 6px 0;color:#C9A84C;font-family:monospace;white-space:nowrap">QA-SEC-02</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.4);white-space:nowrap">2026-06-23</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.7)">/api/admin/health-detail had NO auth — exposed service health, stuck jobs, API latency publicly</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.5)">Added getRequestingAdmin() gate returning 403 for non-admins</td>
+          <td style="padding:6px 0;color:#4ade80;white-space:nowrap">✅ Fixed</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(245,240,232,0.04)">
+          <td style="padding:6px 12px 6px 0;color:#C9A84C;font-family:monospace;white-space:nowrap">QA-SEC-03</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.4);white-space:nowrap">2026-06-23</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.7)">Admin page role gate: investigated — admin/layout.tsx already enforces role=admin via profiles table check + redirect("/")</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.5)">Added per-page requireAdmin() as defence-in-depth on cost/quality/revenue/users pages. Layout confirmed as primary gate.</td>
+          <td style="padding:6px 0;color:#4ade80;white-space:nowrap">✅ Confirmed + hardened</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(245,240,232,0.04)">
+          <td style="padding:6px 12px 6px 0;color:#C9A84C;font-family:monospace;white-space:nowrap">QA-BUILD-01</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.4);white-space:nowrap">2026-06-23</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.7)">Vercel cron */5 * * * * blocked deployment — Hobby plan only allows daily crons</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.5)">health-watchdog changed to 0 3 * * * (daily 3am UTC). Full resolution: upgrade to Vercel Pro.</td>
+          <td style="padding:6px 0;color:#facc15;white-space:nowrap">⚡ Partial</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(245,240,232,0.04)">
+          <td style="padding:6px 12px 6px 0;color:#C9A84C;font-family:monospace;white-space:nowrap">QA-AUTO-01</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.4);white-space:nowrap">2026-06-23</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.7)">Autonomous pass: 24/24 security + route checks passed. No API keys in client bundles. All auth gates present. Simulator model constraint (mimo-v2.5) intact. FAQ on OpenRouter confirmed.</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.5)">No code change required.</td>
+          <td style="padding:6px 0;color:#4ade80;white-space:nowrap">✅ Pass</td>
+        </tr>
+        <!-- ── Session 64 Smoke Test — 2026-06-23 ── -->
+        <tr style="border-bottom:1px solid rgba(245,240,232,0.04)">
+          <td style="padding:6px 12px 6px 0;color:#C9A84C;font-family:monospace;white-space:nowrap">QA-SIM-01</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.4);white-space:nowrap">2026-06-23</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.7)">Raw JSON array ["item1","item2"] rendered verbatim in CaseFileSummary — visible on both the cover card (business_category) and section field rows of the Prepare tab case file</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.5)">CaseFileSummary.tsx: try/catch JSON.parse + Array.isArray + .join(', ') at both render locations (cover card ~line 117, field rows ~line 219)</td>
+          <td style="padding:6px 0;color:#4ade80;white-space:nowrap">✅ Fixed</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(245,240,232,0.04)">
+          <td style="padding:6px 12px 6px 0;color:#C9A84C;font-family:monospace;white-space:nowrap">QA-GEN-01</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.4);white-space:nowrap">2026-06-23</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.7)">Generate page heading read "Preparing the E-2 application of your application" when applicantName was null — fallback string placed inside a sentence expecting a person's name</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.5)">generate/[applicationId]/page.tsx line 525: ternary — name present → "${name}'s E-2 application" else → "Preparing your E-2 application package"</td>
+          <td style="padding:6px 0;color:#4ade80;white-space:nowrap">✅ Fixed</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(245,240,232,0.04)">
+          <td style="padding:6px 12px 6px 0;color:#C9A84C;font-family:monospace;white-space:nowrap">QA-DB-01</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.4);white-space:nowrap">2026-06-23</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.7)">Supabase 400s on: quiz_sessions.hard_stop_codes (column missing), applications.investment_amount (column missing), application_lifecycle upsert (no UNIQUE constraint on user_id)</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.5)">Created supabase/migrations/20260623800000_missing_schema_columns.sql — idempotent ADD COLUMN IF NOT EXISTS for all three + unique constraint. Migration applied 2026-06-23.</td>
+          <td style="padding:6px 0;color:#4ade80;white-space:nowrap">✅ Fixed</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(245,240,232,0.04)">
+          <td style="padding:6px 12px 6px 0;color:#C9A84C;font-family:monospace;white-space:nowrap">QA-DB-02</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.4);white-space:nowrap">2026-06-23</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.7)">applications.principal_name + operational_status + target_state missing from all migrations — causes /api/simulator/interview-prep and /api/applications/[id] to return 404 (Supabase 400 on SELECT → caught as appError → route returns 404). InterviewBrief prep report silently disappears on Prepare tab.</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.5)">Added ADD COLUMN IF NOT EXISTS for principal_name, operational_status, target_state, and business_category to 20260623800000 migration. Migration applied 2026-06-23. InterviewBrief prep report now renders with score gauge, denial risks, and category scores.</td>
+          <td style="padding:6px 0;color:#4ade80;white-space:nowrap">✅ Fixed</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(245,240,232,0.04)">
+          <td style="padding:6px 12px 6px 0;color:#C9A84C;font-family:monospace;white-space:nowrap">QA-IP-01</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.4);white-space:nowrap">2026-06-24</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.7)">InterviewBrief LLM prompt had two data quality bugs: (1) business_category was passed as raw JSON array string to LLM — appeared verbatim in applicationSummary text. (2) Treaty country read from Q0-TC which is absent; answer stored under Q0-01, so treatyCountry resolved to "Not specified" in all coaching output.</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.5)">Fixed in /api/simulator/interview-prep/route.ts: business_category now JSON.parse'd with Array.isArray guard before label lookup; rawCountry falls back to aMap.get('Q0-01') when Q0-TC absent.</td>
+          <td style="padding:6px 0;color:#4ade80;white-space:nowrap">✅ Fixed</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(245,240,232,0.04)">
+          <td style="padding:6px 12px 6px 0;color:#C9A84C;font-family:monospace;white-space:nowrap">QA-UX-01</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.4);white-space:nowrap">2026-06-24</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.7)">Progress bar audit — codebase scan found 9 loading states across simulator, gap-analysis, and InterviewBrief. States were either: blank white space, a static text label, a spinning character, or skeleton bars. None communicated operation progress, estimated time, or step-by-step status. User experience: waiting with no feedback, no indication of whether the operation was working or had failed.</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.5)">Created src/components/ui/GenerationProgress.tsx — shared animated progress component. Exponential easing (95%×(1−e^(−2.5t/T))), 200ms tick, step cycling every 4s with 400ms fade, gold leading-edge glow dot, snaps to green ✓ when done. Props: isActive, estimatedSeconds, steps[], compact, showEstimate.</td>
+          <td style="padding:6px 0;color:#4ade80;white-space:nowrap">✅ Built</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(245,240,232,0.04)">
+          <td style="padding:6px 12px 6px 0;color:#C9A84C;font-family:monospace;white-space:nowrap">QA-UX-02</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.4);white-space:nowrap">2026-06-24</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.7)">InterviewBrief (Prepare tab) — loading state was skeleton placeholder bars. No percentage, no step messages, no time estimate. Generation takes 90–250s (MIMO fallback to Haiku). User had no feedback during this wait.</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.5)">Replaced with GenerationProgress (estimatedSeconds=90, 7 E-2-specific steps: denial risk assessment → source of funds → investment substantiality → management role → employment plan → business plan → coaching brief). "Usually takes ~2 min" hint shown. Verified rendering at 5% with glow dot and cycling step text.</td>
+          <td style="padding:6px 0;color:#4ade80;white-space:nowrap">✅ Fixed</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(245,240,232,0.04)">
+          <td style="padding:6px 12px 6px 0;color:#C9A84C;font-family:monospace;white-space:nowrap">QA-UX-03</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.4);white-space:nowrap">2026-06-24</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.7)">Simulator evaluating screen (/simulator, screen=evaluating) — was a centred spinner with no context. Appears after interview practice while session is scored. No time estimate, no step breakdown.</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.5)">Replaced with GenerationProgress (estimatedSeconds=30, steps: scoring consistency → denial risk check → evaluating response depth → cross-referencing case file → building feedback report). Centred in full viewport with "Analysing your session" label above.</td>
+          <td style="padding:6px 0;color:#4ade80;white-space:nowrap">✅ Fixed</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(245,240,232,0.04)">
+          <td style="padding:6px 12px 6px 0;color:#C9A84C;font-family:monospace;white-space:nowrap">QA-UX-04</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.4);white-space:nowrap">2026-06-24</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.7)">Simulator coaching loading state — was "⟳ Analyzing..." static text inside a plain div. Coaching report generation (mimo-v2.5-pro, 2400 tokens) takes 15–30s. No progress feedback.</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.5)">Replaced with card containing "Analysing your answers with E-2 expertise…" label + GenerationProgress (estimatedSeconds=15, steps: reviewing answer depth → scoring E-2 knowledge demonstration → checking investment detail quality → building personalised coaching).</td>
+          <td style="padding:6px 0;color:#4ade80;white-space:nowrap">✅ Fixed</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(245,240,232,0.04)">
+          <td style="padding:6px 12px 6px 0;color:#C9A84C;font-family:monospace;white-space:nowrap">QA-UX-05</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.4);white-space:nowrap">2026-06-24</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.7)">Simulator follow-up question generation — both text and voice modes had no loading indicator while the AI generates the next follow-up question. Button was just disabled with no visual feedback that work was in progress.</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.5)">Added compact GenerationProgress (compact=true, estimatedSeconds=12) below the follow-up submit button in both text and voice modes — renders only when followupLoading is true. Bar-only variant keeps the UI clean in the conversation flow.</td>
+          <td style="padding:6px 0;color:#4ade80;white-space:nowrap">✅ Fixed</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(245,240,232,0.04)">
+          <td style="padding:6px 12px 6px 0;color:#C9A84C;font-family:monospace;white-space:nowrap">QA-UX-06</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.4);white-space:nowrap">2026-06-24</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.7)">Gap Analysis AI enrichment banner (/gap-analysis, hasAIAnalysis=false) — "Run Analysis" button triggers LLM enrichment per category via /api/gap-analysis/enrich. Previously no loading state after clicking — just a disabled button, leaving user unsure if it was working.</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.5)">Restructured banner to wrap content + GenerationProgress. When analysisRunning=true, bar appears below button row (estimatedSeconds=20, steps: scoring source of funds → evaluating investment substantiality → checking management role credentials → assessing employment creation plan → running denial risk cross-check → building remediation guidance). showEstimate=true.</td>
+          <td style="padding:6px 0;color:#4ade80;white-space:nowrap">✅ Fixed</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(245,240,232,0.04)">
+          <td style="padding:6px 12px 6px 0;color:#C9A84C;font-family:monospace;white-space:nowrap">QA-UX-07</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.4);white-space:nowrap">2026-06-24</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.7)">Gap Analysis re-analysis prompt (hasAIAnalysis=true, re-run button) — same issue as QA-UX-06 on subsequent runs. analysisRunning state existed but was not wired to any loading UI.</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.5)">Same restructure as QA-UX-06 applied to the re-analysis banner variant. GenerationProgress renders conditionally when analysisRunning=true on second/subsequent runs.</td>
+          <td style="padding:6px 0;color:#4ade80;white-space:nowrap">✅ Fixed</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(245,240,232,0.04)">
+          <td style="padding:6px 12px 6px 0;color:#C9A84C;font-family:monospace;white-space:nowrap">QA-UX-08</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.4);white-space:nowrap">2026-06-24</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.7)">Remaining loading states not requiring GenerationProgress: (1) Document generation (/generate) — already has custom SSE streaming progress with per-document section tracking. (2) FDD analysis — already has 5-stage pipeline progress (Fetch → Extract → Score → Territory → Questions). (3) Voice transcription — sub-2s, Groq Whisper, loader already shown inline. These 3 are adequately handled.</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.5)">No change needed. Documented for completeness. Full audit: 9 loading states found, 6 upgraded with GenerationProgress, 3 already had appropriate purpose-built loaders.</td>
+          <td style="padding:6px 0;color:rgba(245,240,232,0.4);white-space:nowrap">— N/A</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(245,240,232,0.04)">
+          <td style="padding:6px 12px 6px 0;color:#C9A84C;font-family:monospace;white-space:nowrap">QA-SMOKE-01</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.4);white-space:nowrap">2026-06-23</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.7)">Full autonomous smoke test — 20 pages verified with test-uk@example.com (James Windsor). All pages rendered, buttons responded, CTAs navigated correctly. Pages covered: /, /pricing, /login, /results, /dashboard, /apply, /apply/story, /apply/business, /apply/investment, /gap-analysis, /simulator, /simulator/quick-start, /simulator/case-file, /simulator/interview-day, /simulator/outcome, /fdd, /generate/{id}, /documents/{id}, /quiz (redirects—correct), /settings.</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.5)">No code change required beyond fixes QA-SIM-01, QA-GEN-01, QA-DB-01, QA-DB-02 above.</td>
+          <td style="padding:6px 0;color:#4ade80;white-space:nowrap">✅ 20/20 Pass</td>
+        </tr>
+      </tbody>
+    </table>
+    <p style="font-size:10px;color:rgba(245,240,232,0.2);padding:10px 0 12px">All entries are permanent. Add new rows above; never delete existing rows.</p>
+  </div>
+
+  <div class="test-section" id="test-container"></div>
+</div>
+
+<!-- ═══════ SMOKE TEST ═══════ -->
+<div class="pane" id="pane-smoke">
+  <div class="test-progress">
+    <span class="test-progress-text" id="smoke-progress-text">0 / 0 verified</span>
+    <div class="test-progress-bar"><div class="test-progress-fill" id="smoke-progress-fill" style="width:0%"></div></div>
+    <span class="test-progress-text" id="smoke-progress-pct">0%</span>
+  </div>
+  <div class="smoke-note">Physical browser walk-through — log in with each test account and verify every page, button, and link. Reference: QA Sessions 53–54 (QA_AUDIT.md). Test accounts: A = romyjames@gmail.com (Canada/admin), B = test-france@example.com / TestFrance2026! (flagged), C = test-uk@example.com / TestUK2026! (premium). Mark an item only after physically confirming it in a real browser session.</div>
+  <div class="test-section" id="smoke-container"></div>
+</div>
+
+<!-- ═══════ ROADMAP ═══════ -->
+<div class="pane" id="pane-roadmap">
+  <div class="roadmap-pane">
+    <div id="roadmap-engine-container"></div>
+    <div id="roadmap-sprint-container"></div>
+  </div>
+</div>
+
+<script>
+const PHASES = [
+  {
+    id:'p1', number:'Phase 01', name:'Qualify',
+    meta:'Educate → eligibility quiz → investor profile → account',
+    features:[
+      {status:'built', name:'Education Hub + FAQ Widget', route:'/learn', desc:'6 SEO articles + pgvector chatbot (355 Q&A pairs, 3-layer retrieval: corpus → KB → LLM fallback, streaming via OpenRouter mimo-v2.5)'},
+      {status:'built', name:'Eligibility Quiz v4.0', route:'/quiz', desc:'22-question adaptive quiz with conditional branching (module0_questions.json source of truth). Covers: nationality, investment amount, business type (Q0-08a: new/franchise/acquisition/existing), experience, family, timeline. Session 67 additions: Q0-08c (franchise path — FDD status, show_if Q0-08a=franchise) and Q0-08d (acquisition path — operational status, triggers W-MARGINALITY-ACQUISITION + W-DORMANT-ACQUISITION warning codes). evaluateShowIf() filters visible questions by current answers.', badge:'new'},
+      {status:'built', name:'Quiz Review', route:'/quiz/review', desc:'Jump-to-question edit of any quiz answer before finalising. Preserves all scoring.'},
+      {status:'built', name:'Investor Profile Builder', route:'/quiz/profile', desc:'4-question post-quiz profiler: net worth range, business background, industry interest, timeline. Feeds archetype classification.', badge:'new'},
+      {status:'built', name:'Results Page — E-3 Restructure', route:'/results, /score', desc:'Sprint E-3 full rebuild (Session 78–79). Perplexity-reference layout with module cards and tabbed document preview. Zone 1: hero score circle + identity label (Cormorant 38px) + one-sentence personal translation. Zone 2: outcome summary card (5–7 personalized bullets). Zone 3: risk flags with "How we address this" module links. Zone 4: free/paid split block + attorney price anchor ("E-2 attorneys charge $8,000–$15,000"). Zone 5: DocumentTabPreview (tabbed mock — Cover Letter / Business Plan / Source of Funds) marked DRAFT. Zone 6: outcome-specific CTA + timeline. Zone 7: Interview Simulator teaser. Zone 8: objection FAQ accordion. Conditional franchise FDD CTA card from Q0-08c answer. EligibilityBadges component with strength badges derived from strength-badges.ts shared function. Score breakdown and recovery cards rewired to real quiz codes (Session 78 fix).', badge:'new'},
+      {status:'built', name:'Investor Profile (auto-synthesised)', route:'/dashboard', desc:'Archetype (buyer/builder/investor/career-switcher), net worth, industry, timeline — synthesised from quiz + case file + simulations via investor-profile-synthesizer.ts. Shown on dashboard. Session 67: classifyArchetype() updated to use Q0-08a raw answer as primary signal (franchise text → buyer, acquisition text → investor, new concept + operator → builder) — overrides post-quiz-profile heuristics. Fixes misclassification where franchise buyers who chose "career switcher" in post-profile got wrong doc guidance.', badge:'new'},
+      {status:'built', name:'Onboarding & Consent', route:'/apply/module1', desc:'Personal info, application type, terms acceptance. Inline PIPEDA privacy notice. PT-2 complete.'},
+    ]
+  },
+  {
+    id:'p2', number:'Phase 02', name:'Evaluate',
+    meta:'Choose & validate the investment — FDD analysis, franchise navigator, market analysis',
+    features:[
+      {status:'built', name:'FDD Index', route:'/fdd', desc:'All FDD analyses with 5-stage progress bars. Smart navigation to next incomplete stage.', badge:'new'},
+      {status:'built', name:'FDD Upload', route:'/fdd/upload', desc:'PDF upload: transaction type, location, drag-and-drop. SSE extraction pipeline (4-pass chunked). Staleness and registration gates.', badge:'new'},
+      {status:'built', name:'FDD Extraction Review', route:'/fdd/review/[fddId]', desc:'9 collapsible sections, confidence badges, 50-field schema. Anthropic claude-sonnet-4-6 for large-context reliability.', badge:'new'},
+      {status:'built', name:'FDD E-2 Score Dashboard', route:'/fdd/score/[fddId]', desc:'5-dimension scoring engine (pure TS, no LLM for numerics) + ODE model + LLM narrative overlay. ProfileMatchPanel: investor value vs franchise requirement vs gap (0–100 fit score).', badge:'new'},
+      {status:'built', name:'Territory Market Analysis', route:'/fdd/territory/[fddId]', desc:'Census ACS 5-year ZCTA API + Google Places (graceful degradation) + category-specific weights and radii + LLM narrative.', badge:'new'},
+      {status:'built', name:'Questions Generator', route:'/fdd/questions/[fddId]', desc:'15 flag→question templates + 8 standard + data-gap triggers + 5 LLM bespoke. CaseProfile match score 0–100. Filter by audience. FDD probe questions injected into simulator for franchise applicants.', badge:'new'},
+      {status:'built', name:'FDD Final Report', route:'/fdd/report/[fddId]', desc:'6-section LLM report + freemium paywall (report_unlocked DB flag, $297 Stripe price wired). Writes 8 answer keys back to answers table. Migration 20260621000000_fdd_report_access.sql pending owner apply.', badge:'new'},
+      {status:'built', name:'FDD Freemium Gate', route:'/fdd/report/[fddId]', desc:'Stripe checkout + webhook + report_unlocked flag all wired. Migration 20260621000000_fdd_report_access.sql applied June 23 2026. hasAccess reads real DB flag.'},
+      {status:'built', name:'FDD Multi-Comparison', route:'/fdd/compare', desc:'Side-by-side comparison of 2–4 FDD analyses. URL: /fdd/compare?ids=id1,id2[,id3,id4]. POST /api/fdd/compare: pulls scoring dimensions, territory scores, profile match, and fee structure per fddId. Renders comparison columns with E-2 compatibility grade (STRONG/VIABLE/CAUTION/INELIGIBLE), 5-dimension score bars, territory fit, and investor compatibility via fdd-profile-match-engine. Useful for franchise buyers evaluating multiple brands before FDD deep-dive.', badge:'new'},
+      {status:'built', name:'Franchise Navigator', route:'/franchise', desc:'5-page flow: landing (reads quiz investment range), discover/profiler, match report (franchise-scoring-engine), brand detail, broker introduction.', badge:'new'},
+      {status:'built', name:'Market Analysis (Standalone)', route:'/market-analysis', desc:'ZIP code + business type entry. Uses FDD territory engine directly. Territory score written back to answers table (Session 56 silo fix). Results surfaceable in gap analysis.'},
+    ]
+  },
+  {
+    id:'p3', number:'Phase 03', name:'Build',
+    meta:'Complete the case file section by section — the core of the platform',
+    features:[
+      {status:'built', name:'Business Type Advisor', route:'/apply/module2', desc:'Step-by-step: business category, operational status, entity type, DBA name, target state.'},
+      {status:'built', name:'Document Upload (Self-Preparer)', route:'/apply/upload', desc:'3 preparer profiles. Extraction → discrepancy review (HARD GATE — must resolve) → gap report → pre-filled answers with source badges.'},
+      {status:'built', name:'Story (Section 01)', route:'/apply/story', desc:'Cover letter + biography. Two-panel desktop · drawer tablet · overlay mobile. Voice input (Web Speech API). 800ms autosave. SimulatorNudge injected post-simulator.'},
+      {status:'built', name:'Business (Section 02)', route:'/apply/business', desc:'Business plan + visa letter. Pre-fill badges from quiz and uploaded documents. 800ms autosave. SimulatorNudge injected post-simulator.'},
+      {status:'built', name:'Investment (Section 03)', route:'/apply/investment', desc:'Source of funds + investment proof. Startup cost table, projection table components. 800ms autosave. SimulatorNudge injected post-simulator.'},
+      {status:'built', name:'Qualifications (Section 04)', route:'/apply/qualifications', desc:'Biography + org chart. 9-dimension experience scoring → Layer 0 targeted follow-up → Layer 1 AI framing (OpenRouter) → Layer 2 standing backstop. SimulatorNudge injected post-simulator.'},
+      {status:'built', name:'Family (Section 05)', route:'/apply/family', desc:'Dependents + DS-160 family info. Partnership variants. Per-child intake restructured (Session 59): M3-L-07-COUNT count selector (1–5) + per-child cards (CHILD-{n}-NAME/DOB/NATIONALITY/PASSPORT). M3-L-08 auto-computed as summary string for backwards compat in generation engine. SimulatorNudge injected.'},
+      {status:'built', name:'Ties (Section 06)', route:'/apply/ties', desc:'Non-immigrant intent + interview prep. Risk flag components. WP-05 immigrant intent probe. SimulatorNudge injected post-simulator.'},
+      {status:'built', name:'Module 4: Voice Profile', route:'/apply/module4', desc:'Raw writing sample text for voice. AI-detection awareness. Follow-up responses stored as clean Q&A pairs (Session 56 audit). Voice profile conditional block confirmed in LLM generation prompt. Data path verified end-to-end.'},
+      {status:'built', name:'Document Checklist', route:'/apply/checklist', desc:'Required documents auto-generated from application type + family composition via checklist-builder.ts. 8 conditional items added (Session 59): bank statements (always), transfer records (always), RRSP/TFSA withdrawal docs, property sale statement, loan agreement, gift letter + donor source docs, franchise fee invoice + FDD Item 7.'},
+      {status:'built', name:'Compliance Calendar', route:'/apply/calendar', desc:'Key visa timeline dates. Toronto consulate processing windows via timeline-service.ts.'},
+      {status:'built', name:'Module 3 Legacy Shell + Tabs A–K', route:'/apply/module3', desc:'Tabs A–K preserved. Tab B (src/app/apply/module3/b/page.tsx) fully rewritten (Session 59): 6 always-required categories + 11 conditional categories + ★ e2go-generates section. Category-grouped display. checklist-generator.ts expanded with 8 conditional items. Never delete remaining tabs.'},
+      {status:'built', name:'Module 4 Follow-Up Conversation UI', route:'/apply/module4', desc:'4-screen flow. Screen 1: intro. Screen 2: voice sample (AI-detection check on submit — flags & prompts retry if AI-assisted). Screen 3: up to 8 AI-generated gap-filling questions (one at a time, with "why we are asking" context, skip option, progress bar). Screen 4: completion summary (3–4 insight bullets). API routes: /api/followup/save-voice-sample, /api/followup/generate-questions (Layer 0 targeted question for WEAK experience score), /api/followup/save-response, /api/followup/completion-summary. Stores in applicant_voice_profile + followup_responses tables. Voice profile wired into generation prompts.', badge:'new'},
+    ]
+  },
+  {
+    id:'p4', number:'Phase 04', name:'Generate',
+    meta:'Produce the consulate-formatted application package — 13–16 docs, 22–25 steps (dynamic based on conditional docs)',
+    features:[
+      {status:'built', name:'Pre-Generation Confirmation', route:'/generate/[appId]', desc:'5-checkbox acknowledgment gate. Completeness validation. Surfaces unresolved gaps before pipeline starts.'},
+      {status:'built', name:'Consulate Briefing', route:'/generate/[appId]', desc:'ConsulateBriefing.tsx — split into ★ always-generated and ◇ also-generated-when-applicable sections. src/data/consulate-config.ts: 13 consulates, getDocumentManifest() returning 15 entries (12 always + 3 conditional with conditionalNote fields), getPageLimitDisplay(). PageBudgetBar excludes conditional docs from page-count estimate.', badge:'new'},
+      {status:'built', name:'Dynamic Document Generation Pipeline', route:'/generate/[appId]', desc:'Sequential checkpointed SSE pipeline. CORE_DOCUMENT_TYPES: 13 docs (steps 2–14). Conditional docs appended at runtime: declaration_spouse + resume_spouse if M3-L-01=yes; property_portfolio if M3-F-05 includes property-sale. effectiveTotalSteps = 1 + DOCUMENT_TYPES.length + 9. Q = DOCUMENT_TYPES.length + 2 (first quality step offset). Quality labels array + emitQualityStep helper — labels never depend on static step number. Steps Q→Q+8: Gap Analysis → Repetition Check → Consistency Check → AI Detection Audit → Humanization Pass (3×, 0.35 threshold) → Metadata Sanitization → Quality Gate → Acknowledgment Gate → Preview Unlocked. start/route.ts: conditional answers queried at job creation, total_steps computed dynamically. gap_analysis_context injected into all prompts. ARCHETYPE_DOC_GUIDANCE: 16 doc types × 4 archetypes. Anthropic SDK direct (claude-opus-4-8).',badge:'new'},
+      {status:'built', name:'Conditional Documents (3 types) — Automated', route:'/generate/[appId]', desc:'declaration_spouse · property_portfolio · resume_spouse now fully automated. generation-engine.ts: after step 1 complete, queries answers for M3-L-01 (spouse flag) and M3-F-05 (property-sale flag). Conditional doc rows inserted into generated_documents if missing. DOCUMENT_TYPES array built dynamically per run. start/route.ts mirrors same logic at job creation time.'},
+      {status:'built', name:'Package Summary', route:'/documents/[appId]', desc:'Strength bars, strengths, gaps, suggestions, mandatory disclaimer, denial risk section (WATCH/FLAG/CRITICAL framing only — no predictions).'},
+      {status:'built', name:'Document Download (ZIP)', route:'/documents/[appId]', desc:'17 document types in VALID_DOC_TYPES. Assembly uses filter (not find) so multi-doc tabs (B, F, G) emit all assigned docs. TAB_ORDER: 11 tabs A–K. Tab divider + all tab docs + checklist. All constants centralised in src/lib/docx-package-constants.ts.'},
+      {status:'built', name:'TOC Builder (multi-doc aware)', route:'/documents/[appId]', desc:'docx-toc-builder.ts: multi-doc tabs list individual filenames with → entries. Hardcoded "Toronto" removed. Total count line: "N generated documents across M tabs". Receives includedDocTypes + totalDocCount from download route.'},
+      {status:'built', name:'Document Revision', route:'/documents/[appId]', desc:'POST /api/generate/revise/[applicationId]: single-document re-generation with revision notes. Calls generation-engine.ts callClaudeAPI() + humanizeDocument() for the specific doc type. revision_credits table: 10 credits allocated at generation start, decremented per revision. Status flow: generated → revision_requested → revising → generated. Humanization pass applied to revised output.'},
+    ]
+  },
+  {
+    id:'p5', number:'Phase 05', name:'Rehearse',
+    meta:'Master the consulate interview and prepare for the day itself',
+    features:[
+      {status:'built', name:'Interview Simulator — Text Mode', route:'/simulator', desc:'ready → intro → questions flow. Officer Williams persona. 9 universal + business-type question pools. pick() + shuffle() for variety. 15-min timer (gold bar, red pulse <2 min, fixed bottom bar). FDD probe questions injected for franchise applicants (Session 56 silo fix).'},
+      {status:'partial', name:'Interview Simulator — Voice Mode', route:'/simulator', desc:'Groq Whisper (STT) + Orpheus TTS (WAV format). ConversationalSession.tsx. Silent 44-byte WAV autoplay unlock. Blocked — owner must accept Groq terms at console.groq.com.', badge:'blocked'},
+      {status:'built', name:'Standalone Simulator (Quick-Start)', route:'/simulator/quick-start', desc:'Upload docs → extraction engine → answers pre-filled → question generation. No case file required. source=simulator_standalone on applications table.'},
+      {status:'built', name:'Post-Session Coaching Report', route:'/api/simulator/coaching-report', desc:'mimo-v2.5-pro, 2400 tokens, 90s timeout. Returns QuestionCoaching[]: whatOfficerExpected + whatWasMissing + keyPoints + modelAnswer (first-person, with business details). Non-blocking, progressive update.'},
+      {status:'built', name:'Case File Summary (Dossier)', route:'/simulator', desc:'CaseFileSummary.tsx — cover page (file ref, classification grid), lettered Exhibits, Roman-numeral sections. Used as pre-session dossier.'},
+      {status:'built', name:'Delivery Detection', route:'/simulator /api/simulator/evaluate', desc:'analyzeDelivery shared utility at src/lib/delivery-analysis.ts. Flags short answers (<30 words), filler words (um/uh/like/honestly/basically), hedging language. Re-exported from simulator-engine.ts. Called from evaluate route — deliveryNotes returned in all response paths.', badge:'new'},
+    ]
+  },
+  {
+    id:'p6', number:'Phase 06', name:'Beyond',
+    meta:'After the interview — outcome recording, renewal, what comes next',
+    features:[
+      {status:'built', name:'Outcome Recording', route:'/simulator/outcome', desc:'Approved / denied / pending / withdrawn. Triggers post-outcome email sequence (clock2).'},
+      {status:'built', name:'Email Sequences', route:'/api/email/*', desc:'Inactivity clock (clock1) + post-outcome sequence (clock2). email-scheduler.ts. Resend delivery. email_log table.'},
+      {status:'planned', name:'Renewal Package Flow', route:'', desc:'$497 Stripe tier exists in pricing table. No renewal application flow, no dedicated route, no renewal case file sections built.', badge:'gap'},
+      {status:'planned', name:'Referral Partner Integrations', route:'', desc:'Mercury, Wise, Relay, East West Bank, franchise brokers (FranNet/IFPG/FranChoice), cross-border CPAs — all mapped in CLAUDE_CONTEXT.md, none integrated into the product.', badge:'gap'},
+    ]
+  },
+  {
+    id:'p7', number:'Platform', name:'Cross-Cutting',
+    meta:'Auth, payments, dashboard, gap analysis, lifecycle, admin, monitoring',
+    features:[
+      {status:'built', name:'Auth (Supabase)', route:'/login /signup /verify', desc:'Magic link removed. Remember me. First/last name at signup. Email verification enforced in middleware. Terms-required scroll-to-accept gate.'},
+      {status:'built', name:'Payments (Stripe)', route:'/pricing /pricing/success', desc:'7 tiers + child surcharge + simulator standalone + renewal + FDD Intelligence ($297). All Price IDs live. Stripe webhook. Grant simulator sessions route. FDD report_unlocked flag set by webhook per fddId.'},
+      {status:'built', name:'Middleware Paywall Gates', route:'src/middleware.ts', desc:'Sprint E-2. Server-side middleware enforces entitlement checks before any page renders — cannot be bypassed via client routing. Gates: /apply/story|business|investment|qualifications|family|ties → redirect /pricing?locked=complete (requires complete or complete_partnership payment). /gap-analysis → same Complete gate. /fdd/* → redirect /pricing?locked=fdd (requires fdd_intelligence payment). Nav: greyed lock icons on My Application, Gap Analysis, FDD Analysis when entitlements absent. getUserEntitlements() returns { hasComplete, hasInterviewPrep, hasFddIntelligence }.', badge:'new'},
+      {status:'built', name:'Standalone Modules Page', route:'/modules', desc:'Session 79. Marketing page listing intelligence modules available à la carte. Three modules: FDD Intelligence ($495/FDD), Market Analysis ($295/business), E-2 Business Plan ($695 standalone). Bundle pricing ($1,195 for all three, save $290). Per-module: tag, badge, description, engine spec, 6 what-you-get bullets, "right for you if" + "not applicable if" copy, CTA. Compare section: standalone vs full $1,495 package. Nav Modules link added to main navigation. Static server component — no auth required.', badge:'new'},
+      {status:'built', name:'Dashboard — Case File UI', route:'/dashboard', desc:'Session 80 full redesign. 4-zone case file metaphor. Zone A: welcome header "Welcome to the E2Go family, {firstName}" + application type label. Zone B: Case Command Panel (left 55%) — readiness score + 2px progress bar, current phase, next action, 6-row milestone tracker (✓/●/› icons, green/gold/dim). Zone C: Stacked Folder Stack (right 45%) — 3 physically-overlapping folder tabs (negative margin + z-index 30/20/10 + filter drop-shadow, NO CSS border on tabs, active tab #f0ece3 seamlessly merges with card body) containing BuildCard / StrengthenCard / FileCard with real lifecycle data. Zone D: Phase Strip (full-width, 7 expandable panels, 4-col grid, alternating cream #DDD1B0 / amber #7A5C28, spring AnimatePresence expand, auto-expands current phase). Paywall REMOVED from dashboard — no locked cards, no "Unlock with Complete". Simulator-only branch preserved (PartialProfileTeaser). No-quiz empty state preserved. New files: CaseCommandPanel.tsx, FolderStack.tsx, PhaseStrip.tsx, DashboardClient.tsx. Server component constraint (force-dynamic) preserved — no "use client" on page.tsx.', badge:'new'},
+      {status:'built', name:'Settings + Account Export', route:'/settings', desc:'2-step deletion + type-to-confirm. POST /api/account/delete wipes 16 tables + Auth user + Resend confirmation. GET /api/account/export: PIPEDA/GDPR data portability — returns all personal data (answers, quiz, payments, simulator sessions, documents) as structured JSON download. PT-1 complete.'},
+      {status:'built', name:'Gap Analysis + Remediation Tool', route:'/gap-analysis', desc:'scoreCase() with 6 evidence categories + 15 D-codes. DenialRiskRadar, CategoryCard, PathwaySection, pathway-engine. RemediationPanel: D_CODE_REMEDIATION registry (15 entries), inline form fields + progress bar + file upload, live rescore useEffect calls scoreCase() on every field change. liveResult drives all score numbers. /api/gap-analysis/enrich: LLM enrichment per category (deepseek-chat). /api/gap-analysis/semantic-eval: semantic evaluation of 3 critical answer fields against consular officer questions — flags weak answers before generation.', badge:'new'},
+      {status:'built', name:'Ask E2go FAQ Chat', route:'/', desc:'FaqChat.tsx component. 3-layer RAG pipeline: Layer 1 pgvector cosine similarity against faq_qa_corpus (355 Q&A pairs, seeded June 23 2026) → Layer 2 pgvector against faq_kb_chunks (285 KB chunks) → Layer 3 model knowledge fallback. /api/faq/ask: streaming, public (no auth), rate-limited (10/min/IP). Embedded on homepage, /learn, /results.', badge:'new'},
+      {status:'built', name:'Module 3 Tab D — AI Guided Story', route:'/apply/module3/d', desc:'Authenticated AI chat via /api/ai (Upstash Redis rate-limited: 10 req/60s/user). Helps applicants write their immigration story section. Uses callAI() via OpenRouter.'},
+      {status:'built', name:'Application Lifecycle Tracking', route:'', desc:'application_lifecycle table. Events: quiz_started → quiz_completed → payment_completed → module completions → generation triggered/completed → simulator sessions → interview_date → outcome.'},
+      {status:'built', name:'Case Intelligence Profile (CIP)', route:'/api/case-profile/build', desc:'buildCaseProfile() is the official CIP implementation (Session 61 audit confirmed). Reads answers + quiz_sessions + followup_responses + case_briefs + simulation_sessions → case_profiles table. classifyArchetype(), scoreQuizEligibility(), detectFranchiseTrigger(). Consumed by: simulator-engine (reads case_profiles), fdd-profile-match-engine (reads case_profiles). gap-analysis-engine is pure function — takes precomputed inputs, no raw queries needed. Architecture sound.'},
+      {status:'built', name:'Admin Command Center', route:'/admin', desc:'10 parallel Supabase queries. Sections: kill switch + maintenance mode banners, AdminControls toggle (client component), 5 overview cards, API Cost Intelligence (model breakdown bar chart), generation pipeline status + stuck job detection, stuck users table (paid + inactive 7+ days), recent payments table, users table (each row links to /admin/users/[userId]).', badge:'new'},
+      {status:'built', name:'Revenue Intelligence', route:'/admin/revenue', desc:'All-time revenue, MoM % change, monthly sparkline (last 6 months), linear revenue projection (+3m +6m), LTV by tier table, conversion funnel with drop-off rates, churn signals (paid users inactive 14+ days).', badge:'new'},
+      {status:'built', name:'Quality & Growth Intelligence', route:'/admin/quality', desc:'Generation quality (avg humanization score, consistency fail rate, revision rate, AI detection distribution, job status). FDD extraction quality (avg fields, low-confidence count). NPS scaffold (shows SQL to create nps_scores if table missing). Prompt version registry (7-entry static audit trail).', badge:'new'},
+      {status:'built', name:'System Status', route:'/admin/system-status', desc:'Kill switch / maintenance mode toggles (AdminControls). Cron health log (last 20 cron_log entries). Stuck job force-fail controls. API connectivity status.', badge:'new'},
+      {status:'built', name:'User Detail Page', route:'/admin/users/[userId]', desc:'Server component. 10 parallel queries: profile, auth email, applications, payments, quiz sessions (3), simulator sessions (3), generation jobs (3), lifecycle events, LLM costs 30d grouped by task, admin audit log. Sections: header + tier badges, profile snapshot (8 stat cards), application timeline, payments table, AI usage by task, generation jobs, sim sessions, admin audit log, danger zone (TierOverridePanel — confirms then POST /api/admin/tier-override).', badge:'new'},
+      {status:'built', name:'Cost Intelligence Page', route:'/admin/cost', desc:'7-day daily cost bar chart (div-based, no library). Cost by task table (calls, tokens in/out, total cost, avg latency). Cost by model table. Top 10 most expensive users with links to detail pages. Monthly burn rate projection. All data from llm_cost_log via service role.', badge:'new'},
+      {status:'built', name:'Health Watchdog Cron', route:'/api/cron/health-watchdog', desc:'Runs every 5 min via vercel.json cron config. Detects generation jobs stuck running >30 min. Writes execution result to cron_log table (status, error, duration_ms). Auth: CRON_SECRET bearer token.', badge:'new'},
+      {status:'built', name:'NPS Collection', route:'/api/nps/submit', desc:'POST /api/nps/submit — auth required, rate-limited (1 per user per 7 days via nps_scores table check). NpsModal client component: 0–10 radio scale, optional comment textarea, localStorage 7-day cooldown guard. Wired into /generate/[appId] page — shown after first successful ZIP download via shouldShowNps() + markNpsShown() helpers.', badge:'new'},
+      {status:'built', name:'Send Email to User', route:'/api/admin/send-email', desc:'POST /api/admin/send-email — admin role-gated. Sends via Resend to target user email. SendEmailPanel client component in /admin/users/[userId]. Audit logged to admin_audit_log.', badge:'new'},
+      {status:'built', name:'Flag Account for Review', route:'/api/admin/flag-user', desc:'POST /api/admin/flag-user — sets flagged_at + flag_reason on profiles. FlagUserPanel client component with confirm step. Red banner on user detail page when flagged. Requires SQL migration: ALTER TABLE profiles ADD COLUMN flagged_at timestamptz, ADD COLUMN flag_reason text. Audit logged.', badge:'new'},
+      {status:'built', name:'Read-Only User Impersonation', route:'/admin/users/[userId]/view', desc:'Server-rendered admin view of exactly what a user sees: profile, quiz result, case file answers grouped by section, simulator sessions, generation jobs, lifecycle events, documents. No auth switching — admin service role renders user-scoped data. Gold admin banner distinguishes view from real user session.', badge:'new'},
+      {status:'built', name:'OpenRouter Reload Alert', route:'/api/cron/health-watchdog', desc:'Added to health-watchdog (runs every 5 min). Fetches balance from openrouter.ai/api/v1/auth/key. Stores balance in app_settings.openrouter_balance_usd. If balance < threshold ($20 default from app_settings), sends Resend email (24h dedup via openrouter_low_balance_alerted_at). Sets openrouter_balance_low=true flag for admin page red banner.', badge:'new'},
+      {status:'built', name:'Simulator Engagement Metrics', route:'/admin/quality', desc:'Added to /admin/quality: total sessions 30d, unique users, avg sessions/user, completion rate (completed_at not null), readiness breakdown (ready/nearly_ready/needs_work counts). Queries simulator_sessions table.', badge:'new'},
+      {status:'built', name:'Document Download Rate', route:'/admin/quality', desc:'Added to /admin/quality: acknowledged count (applicant_acknowledged=true in generation_pipeline_log) vs downloaded count (downloaded_at not null). Renders download rate % with health label (≥80% strong, ≥50% moderate, <50% low — funnel leak).', badge:'new'},
+      {status:'built', name:'SimulatorNudge (Coaching → Case File)', route:'/apply/*', desc:'SimulatorNudge component injected into all 5 apply section pages. /api/simulator/section-nudge route maps coaching weakness categories to case file section improvement suggestions. Visible after any completed simulator session.', badge:'new'},
+      {status:'built', name:'Rate Limiting (Upstash Redis)', route:'', desc:'Login: 5/15min/IP. Quiz submit: 3/hr/IP. Generate/Analysis: 50/day/user. FAQ: 10/min/IP.'},
+      {status:'built', name:'PWA (Service Worker)', route:'', desc:'Installable. Service worker + manifest. PWAInstallPrompt component.'},
+      {status:'built', name:'Error Monitoring (Sentry)', route:'/api/_sentry-tunnel', desc:'@sentry/nextjs installed (Session 56). sentry.client/server/edge.config.ts. withSentryConfig in next.config.mjs. Tunnel route /api/_sentry-tunnel (bypasses ad blockers). global-error.tsx. DSN + org + project env vars added to Vercel June 23 2026. Active.', badge:'new'},
+      {status:'built', name:'Uptime Monitoring', route:'/api/health', desc:'/api/health built (Session 61) — DB ping, returns { status, timestamp, checks: { database: { status, latency_ms } } }, 503 on DB failure. UptimeRobot monitor active June 23 2026 — pings every 5 min, email alert on 503.', badge:'new'},
+      {status:'built', name:'Personalized Quiz Flag Explanations', route:'/api/quiz/personalized-flags', desc:'GET /api/quiz/personalized-flags: takes quiz flag IDs, returns LLM-personalized plain-language explanations per flag from flag_explanations.json base. Rate-limited to 1 request per IP per 2 minutes (in-memory). Uses OpenRouter. Surfaced on results page to help applicants understand their risk flags in plain language.'},
+      {status:'built', name:'Case File Field Quality Checker', route:'/api/case-file/field-quality', desc:'POST /api/case-file/field-quality: evaluates 8 key case file fields (story, qualifications, business ops, source of funds narrative, ties) against per-field consular officer criteria (minWords, topic, requirements). Returns quality score + specific improvement suggestions. FIELD_CRITERIA map covers M3-S1-01/02/03, M3-Q-04, M3-B-MKT, M3-B-OPS, M3-H-NEW-01, M3-K-TIES. Auth required.'},
+      {status:'built', name:'Franchise Referral Notification', route:'/api/notifications/franchise-referral', desc:'POST /api/notifications/franchise-referral: sends admin Resend email notification when a quiz user requests franchise connection (franchise_referral_requested flag in quiz_sessions). Auth required. Called from quiz page on referral option selection. Sanitizes all user input before HTML email render.'},
+      {status:'built', name:'Case Profile Rebuild Cron', route:'/api/cron/rebuild-profiles', desc:'GET /api/cron/rebuild-profiles: CRON_SECRET bearer gated. Iterates all users with a quiz_session and fires buildCaseProfile() for each. Ensures case_profiles table stays current after schema changes or backfill needs. Referenced in app_settings and consumed by vercel.json cron schedule.'},
+    ]
+  }
+];
+
+const FLOWS = [
+  {
+    title:'Qualification → Case Profile',
+    steps:[
+      'Quiz (30q) + Investor Profiler (4q) → quiz_sessions',
+      '→ quiz-scoring.ts: score, flags, hard stops',
+      '→ Results: confidence tier label, completeness bar',
+      '→ classifyArchetype() → case_profiles table',
+      '→ synthesizeInvestorProfile() (QFN + M3 + archetype)',
+      '→ buildCaseProfile() fired at 5 trigger events',
+      '→ case_profiles: dimension scores, data_state',
+    ]
+  },
+  {
+    title:'Case File → Document Generation',
+    steps:[
+      'Answers → answers table (800ms debounce autosave)',
+      '→ pre-generation-validation.ts: completeness check',
+      '→ 5-checkbox acknowledgment gate',
+      '→ buildGapContext() → gap_analysis_context injected into all prompts',
+      '→ Dynamic SSE pipeline: 22–25 steps (generation-engine.ts)',
+      '→ Steps 2–14+: 13 core docs + up to 3 conditional (cover letter → gift letter)',
+      '→ analysis-engine.ts: 9-dim experience scoring',
+      '→ Layer 0 targeted follow-up if experience weak',
+      '→ Layer 1 AI framing (OpenRouter) for qualifications',
+      '→ Steps Q→Q+8: gap check → repetition → consistency',
+      '→ AI detection → humanization (3×, 0.35 threshold)',
+      '→ Metadata sanitization → quality gate → preview unlock',
+      '→ .docx ZIP via docx-package-constants.ts TAB_ORDER (11 tabs)',
+      '→ /documents/[appId] + PackageSummary',
+    ]
+  },
+  {
+    title:'Document Upload → Pre-fill',
+    steps:[
+      'Self-preparer uploads PDF/DOCX at /apply/upload',
+      '→ /apply/upload/processing: SSE extraction stream',
+      '→ document-extraction-engine.ts parses content',
+      '→ Discrepancy detection (HARD GATE — must resolve)',
+      '→ /apply/upload/review: conflict resolution UI',
+      '→ /apply/upload/gaps: remaining gap report',
+      '→ Answers written with source="upload"',
+      '→ Pre-fill badges in case file (3 confidence levels)',
+    ]
+  },
+  {
+    title:'FDD Intelligence → Case File',
+    steps:[
+      'FDD PDF → /fdd/upload intake',
+      '→ fdd-extraction-engine.ts (4-pass, Anthropic direct)',
+      '→ /fdd/review: 50 fields, 9 sections reviewed',
+      '→ fdd-scoring-engine.ts: 5 dimensions, ODE model',
+      '→ fdd-territory-engine.ts: Census ACS + Places',
+      '→ fdd-questions-engine.ts: flagged + LLM questions',
+      '→ fdd-report-engine.ts: 6-section narrative',
+      '→ /api/fdd/writeback: 8 answer keys → answers table',
+      '← Questions engine reads case_profiles (match score)',
+    ]
+  },
+  {
+    title:'Simulator → Coaching → Case File',
+    steps:[
+      'case-profile.ts → CaseFileSummary dossier',
+      '→ /api/simulator/interview-prep: archetype-aware pool',
+      '→ FDD probe questions injected for franchise applicants',
+      '→ Session: evaluate route (mimo-v2.5) rates each answer',
+      '→ analyzeDelivery: flags short/hedging/filler answers',
+      '→ 3-sentence coaching feedback + deliveryNotes in response',
+      '→ Post-session: /api/simulator/coaching-report',
+      '→ mimo-v2.5-pro: full QuestionCoaching[] + modelAnswer',
+      '→ /api/simulator/section-nudge: weakness → section map',
+      '→ SimulatorNudge shown on all 5 /apply/* section pages',
+      '→ /simulator/outcome: approved / denied / pending',
+    ]
+  },
+  {
+    title:'Franchise Navigator → Profile',
+    steps:[
+      'Quiz Q0-07 (investment range) → pre-loaded on /franchise',
+      '→ /franchise/discover: QFN profiler questions answered',
+      '→ franchise-matcher.ts + franchise-scoring-engine.ts',
+      '→ /franchise/matches: scored brand list',
+      '→ /franchise/brand/[slug]: E-2 fit detail',
+      '→ /franchise/connect: broker introduction',
+      '← investor-profile-synthesizer reads QFN answers (source="qfn")',
+      '← FDD upload available after brand selection',
+    ]
+  },
+  {
+    title:'Case Profile → Gap Analysis → Generation',
+    steps:[
+      'Trigger events → buildCaseProfile() fires (5 events)',
+      '→ case_profiles: archetype, completeness, dimensions',
+      '→ gap-analysis-engine.ts: scoreCase()',
+      '→ 6 evidence categories weighted + 15 D-codes rated',
+      '→ DenialRiskRadar + CategoryCards + PathwaySection',
+      '→ RemediationPanel: live rescore on every field change',
+      '→ buildGapContext() reads scores at generation time',
+      '→ gap_analysis_context injected into ALL doc prompts',
+      '← Critical/needs-work sections get deeper prompt focus',
+    ]
+  },
+  {
+    title:'Payment → Access Control',
+    steps:[
+      'User selects tier at /pricing',
+      '→ /api/stripe/create-checkout → Stripe hosted page',
+      '→ Stripe webhook → payments table',
+      '→ FDD Intelligence tier: sets fdd_analyses.report_unlocked',
+      '→ pricing-tier.ts determines module access',
+      '→ Middleware: blocks /apply /generate /documents for sim-only',
+      '→ /api/stripe/grant-simulator-sessions: +3 sessions',
+      '→ /pricing/success: post-payment smart routing',
+    ]
+  }
+];
+
+const SILOS = [
+  {
+    resolved: true,
+    title:'RESOLVED — Q0-08c (FDD status answer) Now Drives Results-Page CTA',
+    desc:'Q0-08c asks franchise applicants "Have you received the FDD from the franchisor?" — options: Yes / Being offered / Early discussions. The answer is stored in result_json.answers[\'Q0-08c\']. Was: answer stored but never consumed. Fixed Session 68: results/page.tsx reads Q0-08c, derives fddReceived / fddOffered booleans, renders a conditional FDD CTA card. If "Yes — I have the FDD": solid gold "Analyse My FDD Now →" button + "extract Item 19 performance data" copy. If "offered": muted outline button + softer copy about running the tool when the FDD arrives. Card sits between franchise teaser zone and FAQ. Q0-08c answer is now connected to user action.',
+    fix:'RESOLVED Session 68. results/page.tsx lines ~556–561 derive fddReceived/fddOffered from data.answers[\'Q0-08c\']. Conditional card renders at Zone 5b with dynamic copy and button weight.'
+  },
+  {
+    resolved: true,
+    title:'RESOLVED — Field Quality Badges Extended to All 5 Apply Sections',
+    desc:'useFieldQuality.ts hook calls /api/case-file/field-quality which evaluates fields across 5 sections. Was: hook only wired in apply/story/page.tsx (3 story fields). Fixed Session 68: (1) FIELD_CRITERIA keys in /api/case-file/field-quality/route.ts updated to match actual form question keys — M3-B-MKT→M3-K-03, M3-B-OPS→M3-G-09, M3-H-NEW-01→M3-H-01, M3-K-TIES→M3-T-08. (2) QUALITY_CHECK_FIELDS in useFieldQuality.ts updated to match. (3) useFieldQuality hook + onBlur + badge/feedback added to apply/qualifications (M3-Q-04), apply/business (M3-K-03, M3-G-09), apply/investment (M3-H-01), apply/ties (M3-T-08). All 5 sections now surface quality ratings on blur.',
+    fix:'RESOLVED Session 68. Updated FIELD_CRITERIA keys in route.ts + QUALITY_CHECK_FIELDS in hook. Added import, hook call, qResult/badge computation, onBlur, badge span, feedback div to 4 pages.'
+  },
+  {
+    resolved: true,
+    title:'RESOLVED — FDD Compare Preferred-Brand Writeback Added',
+    desc:'When a user compares 2–4 FDD analyses at /fdd/compare, there was no mechanism to mark one as selected or write the brand name back to the case file. Fixed Session 68: fdd/compare/page.tsx loads the user\'s applicationId via Supabase browser client on mount. Each column header now shows a "Select as primary →" button (gold outline, DM Sans, 10px caps). On click: POSTs to /api/answers with { question_key: \'M3-F-09\', answer_value: col.franchise_name, application_id }. Then navigates to /fdd/[col.id]/score. Selecting state prevents double-fire. Button hidden when applicationId not yet loaded.',
+    fix:'RESOLVED Session 68. compare/page.tsx: added createBrowserSupabaseClient, applicationId + selecting state, loadAppId useEffect, selectAsPrimary() callback, and button per column header.'
+  },
+  {
+    resolved: true,
+    title:'RESOLVED — CIP Architecture Verified Sound',
+    desc:'Was: concern that no formal CIP schema existed and engines might issue raw table queries instead of using buildCaseProfile(). Audited Session 61: buildCaseProfile() in case-profile.ts IS the official CIP — writes to case_profiles table. Consumers confirmed: simulator-engine reads case_profiles ✓, fdd-profile-match-engine reads case_profiles ✓, gap-analysis-engine is a pure function (takes precomputed inputs, no DB queries of its own ✓), fdd-scoring-engine operates on FDD data directly ✓. Architecture is sound as-is. No code change needed.',
+    fix:'Resolved Session 61 audit. buildCaseProfile() confirmed as official CIP. All consumers verified. No code change required.'
+  },
+  {
+    resolved: true,
+    title:'RESOLVED — Conditional Document Automation',
+    desc:'Was: declaration_spouse, property_portfolio, resume_spouse were in DocumentType and VALID_DOC_TYPES but excluded from the DOCUMENT_TYPES pipeline array with no automated trigger logic. Fixed (Session 61): generation-engine.ts queries M3-L-01 and M3-F-05 after step 1 complete. DOCUMENT_TYPES built dynamically per run. Q offset + QUALITY_LABELS ensure quality step numbers track correctly. start/route.ts mirrors conditional logic at job creation. total_steps computed dynamically.',
+    fix:'Resolved Session 61. CORE_DOCUMENT_TYPES → dynamic DOCUMENT_TYPES + Q offset. start/route.ts dynamically computes totalSteps.'
+  },
+  {
+    resolved: true,
+    title:'RESOLVED — Gap Analysis ↔ Document Generation',
+    desc:'Was: Gap scores shown at /gap-analysis but generation engine did not read them. Fixed (Session 56): buildGapContext() helper reads gap scores at generation time. gap_analysis_context injected into ALL Claude document prompts via GenerationPayload interface.',
+    fix:'Resolved Session 56. buildGapContext() in gap-analysis-engine.ts + gap_analysis_context field in GenerationPayload.'
+  },
+  {
+    resolved: true,
+    title:'RESOLVED — FDD Intelligence ↔ Interview Simulator',
+    desc:'Was: FDD question flags never flowed into the simulator pool for franchise applicants. Fixed (Session 56): fddPriorityQuestions fetched in buildSimulatorContext(). FDD probe questions replace generic BT section for franchise applicants at interview-prep route.',
+    fix:'Resolved Session 56.'
+  },
+  {
+    resolved: true,
+    title:'RESOLVED — Simulator Coaching ↔ Case File',
+    desc:'Was: Coaching gaps shown in debrief UI but never surfaced as improvement nudges in the case file. Fixed (Session 56): SimulatorNudge component injected into all 5 /apply/* section pages. /api/simulator/section-nudge maps coaching weakness categories to section-specific suggestions.',
+    fix:'Resolved Session 56. SimulatorNudge + /api/simulator/section-nudge on all case file section pages.'
+  },
+  {
+    resolved: true,
+    title:'RESOLVED — Market Analysis ↔ Case File',
+    desc:'Was: /market-analysis results displayed but never written back to case file. Fixed (Session 56): Territory score written to answers table under market_territory key. Surfaceable in gap analysis under Business Operations category.',
+    fix:'Resolved Session 56. Market analysis writeback to answers table active.'
+  },
+  {
+    resolved: true,
+    title:'RESOLVED — Module 4 Voice Profile ↔ Generation',
+    desc:'Was: Unclear whether voice profile reliably reached generation prompts. Fixed (Session 56): followup_responses formatted as clean Q&A pairs. Voice profile conditional block confirmed in LLM generation prompt. Data path traced and verified.',
+    fix:'Resolved Session 56. Voice profile Q&A formatting + generation prompt block verified.'
+  },
+  {
+    resolved: true,
+    title:'RESOLVED — Admin Panel — Complete Blind Spot',
+    desc:'Was: /admin route existed but had zero functionality. Fixed (Session 56): /admin/page.tsx built with metrics row, payments table (email lookup via auth.admin.listUsers), users table with application count.',
+    fix:'Resolved Session 56. Admin dashboard built and gated to role=admin.'
+  }
+];
+
+const GAPS = [
+  {
+    group:'Pre-Launch Blockers — Fix Before Any Public Users',
+    items:[
+    ]
+  },
+  {
+    group:'Owner Actions Required (No Code Needed)',
+    items:[
+    ]
+  },
+  {
+    group:'Features Not Yet Built',
+    items:[
+      {priority:'critical', name:'Partnership Document Engine — Sprint F-P (NOT BUILT)', desc:'The complete_partnership Stripe tier ($2,495) exists and processes payment correctly but the generation engine produces ONE investor\'s file only — identical to the $1,495 solo package. E-2 partnership requires each investor to have their own visa application. Missing: (1) Quiz intake for Partner 2 (name, nationality, treaty country, SoF narrative, qualifications, management role). (2) Generation engine runs document set twice, once per investor; shared Business Plan flagged as joint. (3) Cover Letter + Business Plan prompts must reference both investors with shareholding split + develop-and-direct role per person. (4) Delivery — two labelled file packages to dashboard. Do NOT sell partnership packages at $2,495 until this sprint is complete. Results page shows $2,495 pricing — revenue and expectation risk. Interim mitigation: suppress partnership pricing, show "contact us for partnership pricing".'},
+      {priority:'high', name:'Renewal Package Application Flow', desc:'$497 Stripe tier exists. No renewal application flow, no renewal route, no renewal case file sections. Users who renew have nowhere to go.'},
+      {priority:'medium', name:'Referral Partner Integrations', desc:'Mercury, Wise, Relay, East West Bank, FranNet/IFPG/FranChoice brokers, MNP/BDO CPAs — all identified, none connected to the product.'},
+      {priority:'resolved', name:'✅ System Health Page — RESOLVED (built at /admin/system-status)', desc:'Was: no live system health page. Built: /admin/system-status is a full client component showing live service status cards (DB, OpenRouter, Stripe with latency), active + stuck generation job lists, cron execution log (last runs per job), LLM latency p95/avg, kill switch + maintenance mode settings. Data via /api/admin/health-detail (admin-gated). Force-fails for stuck jobs. Admin-only.'},
+    ]
+  },
+  {
+    group:'Architectural — P0 Fix Now',
+    items:[
+      {priority:'resolved', name:'✅ FAQ Anthropic SDK Violation — RESOLVED S63 (INFRA-1)', desc:'Was: /api/faq/ask imported @anthropic-ai/sdk directly, violating the rule that ANTHROPIC_API_KEY lives only in generation-engine.ts and /api/fdd/*. Fixed (Session 63, commit 96db1d8): removed Anthropic SDK from FAQ route entirely. Replaced with dual OpenRouter calls — primary xiaomi/mimo-v2.5, fallback google/gemini-2.5-flash via callLLM(). ANTHROPIC_API_KEY isolation now clean.'},
+      {priority:'critical', name:'Supabase CLI Migration History Out of Sync', desc:'22 migrations applied manually via SQL Editor, Supabase CLI shows 2. If anyone runs supabase db push or supabase db reset — even accidentally — it risks overwriting live data. Fix: seed the supabase_migrations tracking table with all 22 applied migration timestamps so CLI knows what is already applied.'},
+    ]
+  },
+  {
+    group:'Architectural — P1 High Impact',
+    items:[
+      {priority:'resolved', name:'✅ Supabase Connection Pooler — N/A Confirmed S66', desc:'Was: concern about serverless function connection limits under concurrent load. Confirmed (Session 66): Supabase JS SDK uses the REST API (PostgREST), not direct Postgres TCP connections — connection pooling is managed internally by Supabase infrastructure. The pgbouncer DATABASE_URL param is only relevant for Prisma/raw pg driver. No code change required for this architecture.'},
+      {priority:'high', name:'Generation Pipeline — No Resume from Checkpoint', desc:'If the SSE pipeline fails at step 12 of 22, the user must start over from scratch. generation_pipeline_log records each step but there is no restart logic. For a 5–10 minute pipeline costing real Anthropic tokens, a transient timeout = lost work + wasted money. Fix: on restart, query generation_pipeline_log for last completed step and resume from there.'},
+      {priority:'high', name:'No Per-User Generation Rate Limit', desc:'start/route.ts enforces one active job per application but not per user. A user with 2 applications can run 2 simultaneous generation jobs = 26–32 concurrent Claude Opus calls. Fix: add per-user daily generation limit (e.g. 3/day) in the start route using Upstash Redis (already available).'},
+    ]
+  },
+  {
+    group:'Architectural — P2 Structural Health',
+    items:[
+      {priority:'medium', name:'Document Content Stored in Postgres', desc:'generated_documents.content_text stores full document text in DB rows. A 15-document package is ~80,000–120,000 words. At scale this bloats the table and slows every query. Fix: move content to Supabase Storage (S3-compatible), store only the object path in generated_documents. Load content on demand at download/review time.'},
+      {priority:'medium', name:'Account Deletion is Permanent and Instant', desc:'/api/account/delete wipes 16 tables immediately. An accidental confirmation destroys an applicant\'s E-2 visa package with no recovery. Fix: add deleted_at timestamp to applications + profiles. Mark as deleted, run actual purge after 30 days. One migration + one middleware check.'},
+      {priority:'resolved', name:'✅ Cron Jobs Have No Failure Alerting — RESOLVED S63', desc:'health-watchdog cron now writes every execution to cron_log (job_name, status, duration_ms, error, created_at). Last 20 entries visible at /admin/system-status. Consecutive-failure alerting via cron_log audit. Original fix: cron_log table + /api/cron/health-watchdog + vercel.json every-5-min schedule.'},
+    ]
+  },
+  {
+    group:'Architectural — P3 Long-term Resilience',
+    items:[
+      {priority:'low', name:'No E2E Test Suite for Core User Journey', desc:'The happy path — quiz → payment → module completion → generate → download — has no automated test. A single regression could silently break the revenue-generating flow. Fix: Playwright E2E tests for at minimum: quiz completes, payment grants access, generation pipeline starts and completes, ZIP downloads successfully.'},
+      {priority:'resolved', name:'✅ Admin Panel Has No Audit Log — RESOLVED S63', desc:'admin_audit_log table shipped (migration S63). Action, admin_user_id, target_user_id, resource, details, created_at. Written by tier-override, settings, and all admin mutation routes. Visible in /admin/users/[userId] danger zone section. Compliance gap closed.'},
+      {priority:'low', name:'Simulator Sessions Never Expire', desc:'Simulator sessions purchased are held indefinitely with no TTL. Minor now, but becomes a pricing integrity issue at scale (users sit on sessions for years). Fix: add expires_at to simulator session grants, default 12 months from purchase.'},
+    ]
+  },
+  {
+    group:'Performance & Efficiency — Quick Wins',
+    items:[
+      {priority:'high', name:'/apply/page.tsx — 4 Duplicate answers Queries', desc:'Lines 170, 196, 207, 218 each fire a separate .from(\'answers\').select(\'question_key, answer_value\') with the same filters on every page load. Fix: one query at the top, share the result. Saves 3 DB round-trips on every visit to the /apply routing page.'},
+      {priority:'high', name:'Middleware — 2–3 DB Calls Per Page Request', desc:'src/middleware.ts makes auth.getUser() + terms_acceptance query + applications.source query on every authenticated page request. These fire for every navigation event. Fix: cache terms_acceptance and application.source in a signed session cookie (30-min TTL) or Upstash Redis. Eliminates ~2 DB hits per page load across all authenticated users.'},
+      {priority:'medium', name:'Dead Route — /api/stripe/checkout Alongside /api/stripe/create-checkout', desc:'Both /api/stripe/checkout and /api/stripe/create-checkout exist. The pricing page calls create-checkout. The /checkout route appears unreferenced. Fix: grep all callers, confirm /checkout is unused, delete it. Reduces surface area and confusion.'},
+      {priority:'medium', name:'Gap Analysis — 2 API Calls Fire on Same Trigger', desc:'/api/gap-analysis/enrich and /api/gap-analysis/semantic-eval are both called from the same user action in gap-analysis/page.tsx (lines 233 + 255). Fix: merge into a single /api/gap-analysis/run endpoint that runs enrichment + semantic evaluation in one request. Halves round-trips and simplifies error handling.'},
+      {priority:'medium', name:'Module 3 — No next/dynamic() Lazy Loading', desc:'Apply section pages are large (qualifications page ~4,000 lines). All question sets, form logic, and cluster definitions ship in the initial JS bundle. Fix: wrap heavy question arrays and cluster renderers in next/dynamic() with loading fallback. Reduces initial JS payload by ~40% for the apply flow.'},
+      {priority:'low', name:'23 API Routes Use select(\'*\') — Column Over-fetching', desc:'23+ API routes use .from(table).select(\'*\'). This fetches all columns including large content_text fields on generated_documents and full JSON blobs on quiz_sessions. Fix: replace each with explicit named column lists. Reduces payload size and prevents accidental exposure of internal fields.'},
+    ]
+  },
+  {
+    group:'Technical Debt',
+    items:[
+      {priority:'low', name:'investment_proof — Partially Cleaned', desc:'Removed from VALID_DOC_TYPES (download), DOC_DISPLAY_NAMES, DOC_TYPE_TAB_MAP (docx-package-constants), and consulate-config.ts manifest (Session 61). Still exists in DocumentType union + DOCUMENT_TYPE_LABELS/TABS for DB backward-compat. generation-engine.ts archetype blocks reference it — low risk, no functional path triggers it.'},
+    ]
+  }
+];
+
+const ENGINES = [
+  {name:'quiz-scoring.ts', desc:'Scores 30-question quiz. Hard stops (disqualifying conditions), risk flags, eligibility score (0–100). Pure functions — no LLM.', consumers:'/results page, analysis-engine.ts, case-profile.ts'},
+  {name:'gap-analysis-engine.ts', desc:'6 evidence categories (Source of Funds 25%, Management 25%, Business Plan 20%, Investment 15%, Employment 10%, Operations 5%) + 15 denial risk D-codes. Pure TS. scoreCase() returns weighted scores, actions, priorities. D_CODE_REMEDIATION registry (15 entries) powers RemediationPanel live rescore. buildGapContext() produces gap_analysis_context string injected at document generation.', consumers:'/gap-analysis page, PackageSummary.tsx, pathway-engine.ts, generation-engine.ts (via buildGapContext)'},
+  {name:'analysis-engine.ts', desc:'9-dimension experience scoring (pure functions). Layer 0: targeted follow-up Q if score=WEAK/CRITICAL. Layer 1: AI framing (OpenRouter deepseek-chat). Layer 2: standing backstop instruction in qualifications prompt.', consumers:'/api/followup/generate-questions route, qualifications.md prompt'},
+  {name:'generation-engine.ts', desc:'Dynamic checkpointed SSE pipeline. CORE_DOCUMENT_TYPES: 13 docs. After step 1: queries M3-L-01 + M3-F-05 → appends conditional types. DOCUMENT_TYPES built per run (13–16). Q = DOCUMENT_TYPES.length + 2. effectiveTotalSteps = 1 + DOCUMENT_TYPES.length + 9 (22–25). emitQualityStep(offset) + QUALITY_LABELS array replace hardcoded step numbers. ARCHETYPE_DOC_GUIDANCE: 16 doc types × 4 archetypes. REQUIRED_ELEMENTS: 16 entries. gap_analysis_context injected into every Claude prompt. Humanization retry (3×, 0.35 threshold). Anthropic SDK direct (claude-opus-4-8).', consumers:'/api/generate/run/[jobId] (SSE stream)'},
+  {name:'delivery-analysis.ts', desc:'src/lib/delivery-analysis.ts. Shared analyzeDelivery utility. Flags: short answers (<30 words), filler words (um/uh/like/honestly/basically), hedging language. Returns deliveryNotes string. Re-exported from simulator-engine.ts. Called from evaluate route.', consumers:'/api/simulator/evaluate → deliveryNotes in all response paths'},
+  {name:'document-extraction-engine.ts', desc:'PDF/DOCX text extraction → structured answer object. Source tracking (upload vs manual). Discrepancy detection between extracted and existing answers.', consumers:'/apply/upload/processing, /api/documents/extract, /api/simulator/save-extraction'},
+  {name:'consulate-config.ts', desc:'src/data/consulate-config.ts. 13 consulates with page limits, address, notes. getDocumentManifest(): 15 entries (12 always + 3 conditional) with DocManifestEntry { conditional?, conditionalNote? }. getPageLimitDisplay(). Single source of truth for consulate-facing UI.', consumers:'ConsulateBriefing.tsx, PageBudgetBar component'},
+  {name:'docx-package-constants.ts', desc:'src/lib/docx-package-constants.ts. DOC_DISPLAY_NAMES (17 doc types), DOC_TYPE_TAB_MAP (17 types → tabs A–K), TAB_SECTION_TITLES (11 tabs with title + description), TAB_ORDER (11 letters). Centralised from download route (Session 60).', consumers:'download route, docx-toc-builder.ts, docx-divider-builder.ts'},
+  {name:'fdd-extraction-engine.ts', desc:'4-pass chunked extraction from FDD PDF. 50-field schema. Anthropic claude-sonnet-4-6 for large-context reliability. Staleness and registration gating.', consumers:'/api/fdd/extract (SSE stream)'},
+  {name:'fdd-scoring-engine.ts', desc:'5-dimension E-2 scoring (pure TS — no LLM for numerics). ODE (Ongoing Development and Earnings) model. LLM narrative overlay via OpenRouter.', consumers:'/api/fdd/score route, /fdd/score/[fddId] page'},
+  {name:'fdd-territory-engine.ts', desc:'Census ACS 5-year ZCTA API integration. Google Places graceful degradation (neutral score 50 without API key). Category-specific weights and analysis radii. LLM narrative generation. Territory score written to answers table for standalone market-analysis.', consumers:'/api/fdd/territory route, /api/market-analysis (standalone)'},
+  {name:'fdd-questions-engine.ts', desc:'15 flag→question templates + 8 standard Qs + data-gap triggers + 5 LLM bespoke questions per FDD. Audience filter (investor / attorney / broker). Questions injected into simulator interview-prep for franchise applicants (Session 56).', consumers:'/api/fdd/questions route, /fdd/questions/[fddId] page, simulator interview-prep (franchise)'},
+  {name:'fdd-report-engine.ts', desc:'6-section LLM report generator. Produces final E-2 FDD analysis narrative. report_unlocked flag gates access. Input: all prior FDD engine outputs.', consumers:'/api/fdd/report route'},
+  {name:'fdd-profile-match-engine.ts', desc:'5-dimension deterministic scoring (capital adequacy, E-2 substantiality via 9 FAM sliding scale, role alignment, employment creation, net worth position). Returns STRONG_FIT/GOOD_FIT/PARTIAL_FIT/POOR_FIT/INSUFFICIENT_DATA + 0–100 fit score. Reads case_profiles table.', consumers:'/fdd/questions/[fddId] (ProfileMatchPanel)'},
+  {name:'simulator-engine.ts', desc:'Question pools: 9 universal (UQ-01→UQ-09) each with 3–4 phrasings + business-type pools (5–6 per category). pick() random selection + shuffle() Fisher-Yates. WP-05 immigrant intent probe. FDD probe question injection for franchise applicants. Re-exports analyzeDelivery from delivery-analysis.ts.', consumers:'/api/simulator/interview-prep, evaluate, follow-up routes'},
+  {name:'investor-profile-synthesizer.ts', desc:'Unified investor profile from QFN Franchise Navigator answers + M3-A-08/09 case file answers + archetype from case_profiles. Source: qfn | inferred | mixed | unknown.', consumers:'gap-analysis-engine.ts, fdd-scoring-engine.ts, case-profile.ts'},
+  {name:'case-profile.ts (buildCaseProfile)', desc:'Reads answers + quiz_sessions + followup_responses + case_briefs + simulation_sessions → case_profiles table. classifyArchetype() — Q0-08a raw text is primary signal (S67 fix). scoreQuizEligibility(), detectFranchiseTrigger(). Completeness score + data_state + dimension scores. Fire-and-forget at 5 user events. /api/cron/rebuild-profiles runs daily at 2am UTC via vercel.json cron schedule.', consumers:'Simulator interview-prep, fdd-profile-match-engine, gap-analysis, /api/profile/rebuild, /api/cron/rebuild-profiles (daily 0 2 * * *)'},
+  {name:'pathway-engine.ts', desc:'Builds remediation pathways per gap category. Reads case profile and gap scores → structured pathway recommendations.', consumers:'/gap-analysis (PathwaySection component)'},
+  {name:'franchise-matcher.ts + franchise-scoring-engine.ts', desc:'Scores franchise brands from FRANCHISE_CATEGORIES data against investor profile (net worth, industry interest, management style). Returns ranked brand list with E-2 suitability scores.', consumers:'/franchise/matches page, /api/franchise/matches'},
+  {name:'pre-generation-validation.ts', desc:'Validates application completeness before generation pipeline starts. Checks required fields per application type. Returns validation result + list of missing items.', consumers:'/api/generate/validate route'},
+  {name:'checklist-builder.ts', desc:'Builds dynamic document checklist from application type + family composition. 8 conditional items added (Session 59): bank statements (always), transfer records (always), RRSP/TFSA withdrawal docs (if M3-F-05 includes rrsp/tfsa), property sale statement (if property-sale), loan agreement (if loan), gift letter (if M3-H-05 includes gift), franchise fee invoice + FDD Item 7 (if franchise). strVal() helper for safe answer extraction.', consumers:'/apply/checklist page, download route (COMPLETE_BEFORE_SUBMITTING.docx)'},
+  {name:'timeline-service.ts', desc:'Key E-2 visa timeline dates. Toronto consulate processing windows. DS-160, FMJ, appointment scheduling milestones.', consumers:'/apply/calendar page'},
+  {name:'email-scheduler.ts', desc:'Scheduling engine for email sequences. clock1: inactivity nudge. clock2: post-outcome follow-up. Resend delivery integration.', consumers:'/api/email/schedule route'},
+  {name:'strength-badges.ts', desc:'src/lib/strength-badges.ts. Pure function deriveStrengthBadges(outcome, warnings, answers, investmentRange) → string[]. Extracted from EligibilityBadges.tsx (Session 80) into a shared module. Derives up to 5 case strength labels from quiz outcome, warnings, answer map, and investment range. No UI, no DB — pure computation. Consumed by both results page (via EligibilityBadges.tsx) and dashboard (via DashboardClient.tsx FolderStack).', consumers:'EligibilityBadges.tsx (/results), DashboardClient.tsx → FolderStack.tsx (/dashboard)'},
+  {name:'prefill.ts', desc:'Maps quiz answer keys and uploaded document extracted fields to case file question keys. Powers PreFilledField component and pre-fill badges.', consumers:'All /apply/* section pages'},
+  {name:'pricing-tier.ts', desc:'Determines module access level from payments table. Enforced by middleware for /apply, /generate, /documents. Simulator-only tier blocks case file access.', consumers:'Middleware, dashboard tier detection, access control throughout'},
+  {name:'groq-tts.ts', desc:'Orpheus TTS via Groq API. 200-char chunking limit. WAV format (not MP3 — Orpheus-specific). Silent 44-byte WAV autoplay unlock pattern. Groq model terms accepted June 23 2026 — unblocked.', consumers:'/api/simulator/tts route → ConversationalSession.tsx'},
+  {name:'llm-client.ts + ai.ts', desc:'OpenRouter client wrapper. simulator routes: xiaomi/mimo-v2.5 (evaluate) + mimo-v2.5-pro (coaching report). All app AI features except FDD extraction and document generation (which use Anthropic SDK direct).', consumers:'All /api routes except /api/fdd/extract and /api/generate/*'},
+];
+
+const DB_TABLES = [
+  {name:'profiles', desc:'first_name, last_name, role (admin/user). Linked to Supabase Auth user_id.', notes:'RLS: users read own row. role=admin gates /admin route.'},
+  {name:'applications', desc:'Core record. principal_name, business_name, business_category, operational_status, target_state, principal_country, application_type, simulator_sessions_used, source (main_flow | simulator_standalone), last_visited_section.', notes:'One per user main path; multiple for simulator_standalone'},
+  {name:'quiz_sessions', desc:'Quiz attempt + result_json (all 30 answers + score + flags + eligibility). completed_at. franchise_referral_requested boolean.', notes:'Multiple per user; latest used for profile'},
+  {name:'answers', desc:'Case file answers. question_key → answer_value. source: manual | quiz | upload. application_id FK. market_territory key written by standalone market analysis (Session 56).', notes:'Autosave 800ms. Source drives pre-fill badge variant.'},
+  {name:'case_profiles', desc:'Built by buildCaseProfile(). archetype, completeness_score, data_state, dimension scores, franchise_trigger. Updated fire-and-forget at 5 trigger events.', notes:'Read by simulator, FDD match, gap analysis, generation.'},
+  {name:'followup_responses', desc:'Module 4 voice/writing sample + multi-turn follow-up Q&A formatted as clean Q&A pairs (Session 56). answer_key → answer_text.', notes:'Source for voice profile in generation. Format verified and confirmed.'},
+  {name:'simulation_sessions', desc:'Full simulator session. Transcript of Q&A, evaluation per answer (includes deliveryNotes since Session 56), coaching_summary JSONB, outcome.', notes:'Linked to applications.id'},
+  {name:'application_documents', desc:'Uploaded documents for self-preparer intake or simulator quick-start. file_path, document_type, extraction_status.', notes:'Created: 20260613220000 migration'},
+  {name:'document_discrepancies', desc:'Conflicts between extracted document data and existing answers. Must resolve before proceeding (HARD GATE).', notes:'resolution: accepted | overwritten | kept'},
+  {name:'payments', desc:'Stripe payment records. user_id, tier, stripe_session_id, stripe_payment_intent_id, amount_cents, status, metadata (fddId for FDD Intelligence tier).', notes:'Written by webhook handler only'},
+  {name:'pricing', desc:'Tier configuration. tier_id, stripe_price_id, amount_cents, name. Includes fdd_intelligence row ($297). Editable without redeploy.', notes:'Read by pricing-tier.ts for access control'},
+  {name:'fdd_analyses', desc:'FDD extraction result, scoring dimensions, territory analysis, generated questions, report sections. report_unlocked boolean (gated by payment). Keyed by fddId.', notes:'report_unlocked migration applied June 23 2026'},
+  {name:'generated_documents', desc:'One row per document type per application. content_text, step_number, step_name, status, humanization_score. 13 core rows created at job start; 3 conditional types created only when applicable.', notes:'status CHECK includes: queued, generating, generated, awaiting_approval, under_review, approved, locked, failed, revision_requested, revising'},
+  {name:'document_generation_jobs', desc:'Job queue for SSE pipeline. status: queued | running | awaiting_approval | completed | failed. current_step, current_step_label, total_steps (dynamic: 22–25 depending on conditional docs).', notes:'One active job per application enforced at start route.'},
+  {name:'generation_pipeline_log', desc:'Audit trail per generation step. timestamp, status, tokens_used, humanization_score, consistency_pass, applicant_acknowledged, final_status, downloaded_at.', notes:'Quality gate evidence. downloaded_at set by download route.'},
+  {name:'pre_generation_confirmation', desc:'5-checkbox acknowledgment gate state per application. All 5 must be true before pipeline starts.', notes:'FK: applications.id'},
+  {name:'revision_credits', desc:'10 revision credits per application created at generation start. credits_remaining, credits_used.', notes:'Created by start route. Decremented per revision.'},
+  {name:'faq_qa_corpus', desc:'355 E-2 Q&A pairs with pgvector embeddings. Cosine similarity search for FAQ chatbot.', notes:'✅ Seeded: 355 rows (Session 62, June 23 2026)'},
+  {name:'faq_kb_chunks', desc:'Knowledge base chunks with embeddings for 3-layer FAQ retrieval fallback. 285 chunks from 33 KB docs.', notes:'✅ Seeded: 285 rows (Session 62, June 23 2026)'},
+  {name:'webhook_events', desc:'Stripe webhook event log. event_id + status for idempotency checking.', notes:'Prevents duplicate payment processing'},
+  {name:'email_log', desc:'Sent email records. to_address, template, sent_at, resend_id.', notes:'RLS: users read own emails'},
+  {name:'email_verifications', desc:'Email verification tokens. token, user_id, verified_at. Checked in middleware for every authenticated route.', notes:'Enforced: unverified = redirect to /verify'},
+  {name:'terms_acceptance', desc:'ToS acceptance timestamp per user. Recorded at account creation and /terms-required acceptance.', notes:'Checked by auth flow'},
+  {name:'consent_records', desc:'PIPEDA/privacy notice acknowledgment. Inline privacy notices at document upload and case file first visit.', notes:'PT-2 complete'},
+  {name:'application_lifecycle', desc:'Event log per application. quiz_started → quiz_completed → payment_completed → module completions → generation triggered/completed → simulator sessions → interview_date → outcome. last_visited_section text for smart resume routing.', notes:'Rule 9 — every significant action logged'},
+  {name:'app_settings', desc:'LLM model config (claude-opus-4-8 for doc gen). Editable by admin without redeploy.', notes:'Read by generation-engine.ts at pipeline start'},
+  {name:'case_briefs', desc:'Substantiality score, marginality score per application. Used as input to gap analysis engine.', notes:'Written by /api/generate/case-brief route'},
+  {name:'llm_cost_log', desc:'Per-call AI cost tracking. Columns: user_id, task, model, provider, cost_usd, tokens_in, tokens_out, latency_ms, created_at. Written by all AI routes via logLlmCost(). Read by /admin/cost.', notes:'Applied migration S63'},
+  {name:'cron_log', desc:'Cron job execution audit trail. Columns: job_name, status, duration_ms, error, created_at. Written by /api/cron/health-watchdog on each run.', notes:'Applied migration S63'},
+  {name:'admin_audit_log', desc:'Admin action audit trail. Columns: admin_user_id, action, target_user_id, resource, details, created_at. Written by all admin mutation routes (tier-override, settings, etc.).', notes:'Applied migration S63'},
+  {name:'nps_scores', desc:'NPS survey responses. Columns: user_id, score (0–10 int), comment, trigger_event, created_at. Rate-limited to 1 submission per user per 7 days. Collected post-download via NpsModal.', notes:'Applied S64 — table + RLS confirmed in Supabase by owner'},
+];
+
+// ─── RENDER ──────────────────────────────────────────────────────────────────
+
+function statusDot(s){return{built:'dot-built',partial:'dot-partial',silo:'dot-silo',planned:'dot-planned'}[s]||'dot-planned';}
+function badgeHTML(b){if(!b)return'';const cls={silo:'badge-silo',gap:'badge-gap',blocked:'badge-blocked',new:'badge-new'}[b]||'';return`<span class="badge ${cls}">${b}</span>`;}
+
+const phasesEl=document.getElementById('phases-container');
+PHASES.forEach(phase=>{
+  const built=phase.features.filter(f=>f.status==='built').length;
+  const el=document.createElement('div');
+  el.className='phase';
+  el.innerHTML=`
+    <div class="phase-header" onclick="togglePhase('${phase.id}')">
+      <span class="phase-number">${phase.number}</span>
+      <span class="phase-name">${phase.name}</span>
+      <span class="phase-meta">${phase.meta}</span>
+      <span class="phase-count">${built}/${phase.features.length} built</span>
+      <span class="chevron">▶</span>
+    </div>
+    <div class="phase-body">
+      ${phase.features.map(f=>`
+        <div class="feature">
+          <div class="feature-status dot ${statusDot(f.status)}"></div>
+          <div class="feature-name">${f.name}</div>
+          <div class="feature-route">${f.route}</div>
+          <div class="feature-desc">${f.desc}</div>
+          ${badgeHTML(f.badge)}
+        </div>
+      `).join('')}
+    </div>
+  `;
+  phasesEl.appendChild(el);
+});
+
+const flowsEl=document.getElementById('flows-container');
+FLOWS.forEach(flow=>{
+  const el=document.createElement('div');
+  el.className='flow-card';
+  el.innerHTML=`<div class="flow-title">${flow.title}</div>${flow.steps.map((s,i)=>`<div class="flow-step"><span class="flow-arrow">${i===0?'▸':'↓'}</span><span>${s}</span></div>`).join('')}`;
+  flowsEl.appendChild(el);
+});
+
+const silosEl=document.getElementById('silos-container');
+SILOS.forEach(silo=>{
+  const el=document.createElement('div');
+  el.className='silo-card' + (silo.resolved ? ' resolved' : '');
+  el.innerHTML=`<div class="silo-title">${silo.title}</div><div class="silo-desc">${silo.desc}</div><div class="silo-fix">→ ${silo.fix}</div>`;
+  silosEl.appendChild(el);
+});
+
+const gapsEl=document.getElementById('gaps-container');
+GAPS.forEach(group=>{
+  const titleEl=document.createElement('div');
+  titleEl.className='gap-section-title';
+  titleEl.textContent=group.group;
+  gapsEl.appendChild(titleEl);
+  group.items.forEach(item=>{
+    const el=document.createElement('div');
+    el.className='gap-item';
+    el.innerHTML=`<span class="gap-priority p-${item.priority}">${item.priority}</span><div><div class="gap-name">${item.name}</div><div class="gap-desc">${item.desc}</div></div>`;
+    gapsEl.appendChild(el);
+  });
+});
+
+const enginesEl=document.getElementById('engines-container');
+ENGINES.forEach(eng=>{
+  const el=document.createElement('div');
+  el.className='engine-card';
+  el.innerHTML=`<div class="engine-name">${eng.name}</div><div class="engine-desc">${eng.desc}</div><div class="engine-consumers">Consumed by: <span>${eng.consumers}</span></div>`;
+  enginesEl.appendChild(el);
+});
+
+const dbEl=document.getElementById('db-container');
+DB_TABLES.forEach(tbl=>{
+  const el=document.createElement('div');
+  el.className='db-table';
+  el.innerHTML=`<div class="db-name">${tbl.name}</div><div class="db-desc">${tbl.desc}</div><div class="db-notes">${tbl.notes}</div>`;
+  dbEl.appendChild(el);
+});
+
+function switchTab(name,tab){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.pane').forEach(p=>p.classList.remove('active'));
+  tab.classList.add('active');
+  document.getElementById('pane-'+name).classList.add('active');
+}
+
+function togglePhase(id){
+  const el=document.querySelector(`#phases-container .phase:has([onclick*="${id}"])`);
+  if(el) el.classList.toggle('open');
+}
+
+// Open all phases by default
+document.querySelectorAll('#phases-container .phase').forEach(el=>el.classList.add('open'));
+
+// ─── TESTING TAB ────────────────────────────────────────────────────────────
+
+const TESTS = [
+  {
+    group: 'Core User Journey — Happy Path',
+    tag: 'critical',
+    items: [
+      'Quiz: all 30 questions answer and submit without error',
+      'Results page renders: score, tier label, completeness bar, CTA',
+      'Signup → email verification → dashboard lands correctly',
+      'Pricing: select Solo Individual tier → Stripe checkout opens',
+      'Stripe test payment succeeds → webhook fires → /pricing/success routes to /apply',
+      'Dashboard shows correct tier badge and unlocked modules',
+      'Module 1 consent: all checkboxes save and persist on reload',
+      'Module 2 business profile: fields autosave (800ms debounce)',
+      'Module 3: all 12 tabs (A–K + L) load and autosave answers',
+      'Module 4: voice sample saves → questions generate → responses save → summary appears',
+      'Pre-generation confirmation: all 5 checkboxes required before pipeline starts',
+      'Generation pipeline: runs 22–25 steps to completion without error',
+      'Document package: ZIP downloads with all tabs A–K present + checklist',
+      'Document revision: request change → revising state shown → revised doc appears',
+    ]
+  },
+  {
+    group: 'Authentication & Access Control',
+    tag: 'critical',
+    items: [
+      'Unauthenticated /apply → redirected to /login',
+      'Unverified email → redirected to /verify (not /apply)',
+      'Terms not accepted → redirected to /terms-required',
+      'Simulator-only tier: /apply, /generate, /documents all return 403',
+      '/admin route: accessible as role=admin, blocked as role=user',
+      'Session expiry: redirect to login, no data loss on return',
+      'Signup with existing email: correct error shown (no silent fail)',
+    ]
+  },
+  {
+    group: 'Payment Flows',
+    tag: 'critical',
+    items: [
+      'All 7 pricing tiers resolve to correct Stripe Price IDs (no placeholders)',
+      'FDD Intelligence ($297): report_unlocked = true after payment',
+      'Simulator 3-pack: +3 sessions added to simulator_sessions_used',
+      'Failed payment: no access granted, user shown retry option',
+      'Stripe webhook: reject tampered signatures (test with bad secret)',
+      'Duplicate webhook event: idempotency check prevents double-processing',
+      '/pricing/success: routes to correct destination per tier',
+    ]
+  },
+  {
+    group: 'AI Features & Generation',
+    tag: 'high',
+    items: [
+      'FAQ chatbot: answers "What is the minimum E-2 investment?" using corpus (not generic LLM)',
+      'FAQ chatbot: streaming response visible in <500ms',
+      'Gap analysis semantic eval: weak answers flagged before generation',
+      'Gap analysis enrich: LLM context loads per category on /gap-analysis',
+      'Generation: all 13 core documents produce non-empty content',
+      'Generation: conditional docs — spouse flag → declaration_spouse + resume_spouse included in ZIP',
+      'Generation: conditional docs — property-sale flag → property_portfolio included',
+      'Humanization pass: AI-detection score ≥0.35 on all docs (check generation_pipeline_log)',
+      'Groq TTS: simulator voice mode produces audio output (test: speak a question)',
+      'FDD extraction: test PDF → 50 fields populated in fdd_analyses table',
+      'Simulator evaluate: answer scored + deliveryNotes returned in response',
+      'Coaching report: generated after session completion with QuestionCoaching array',
+      'FDD Multi-Compare: select 2 FDDs on /fdd index → /fdd/compare renders side-by-side columns',
+      'FDD Multi-Compare: compatibility grade (STRONG/VIABLE/CAUTION/INELIGIBLE) shown per brand',
+      'Document revision: click "Request Revision" on a generated doc → revising status shows → revised doc appears',
+      'Personalized flags: results page shows LLM-personalized flag explanation for at least 1 risk flag',
+      'Field quality badge: /apply/story shows quality indicator on M3-S1-01 (cover letter intro field)',
+    ]
+  },
+  {
+    group: 'Module 3 Conditional Logic',
+    tag: 'high',
+    items: [
+      'Spouse flag (M3-L-01 = yes): spouse fields appear in Module 3 family tab',
+      'Children fields: per-child cards appear for count 1–5',
+      'Property sale (M3-F-05 includes property-sale): property section appears',
+      'Franchise flow: franchise-specific questions appear, FDD upload CTA shown',
+      'Tab B checklist: bank statements always shown, RRSP/TFSA conditional on answer',
+      'Tab D AI assist: chat responds with story guidance',
+      'Pre-fill badges: uploaded document answers shown with source badge',
+      'Discrepancy HARD GATE: cannot advance without resolving extracted vs manual conflicts',
+      'Q0-08a = franchise: Q0-08c (FDD status question) appears as next question in quiz flow',
+      'Q0-08a = existing independent: Q0-08d (operational status) appears in quiz flow',
+      'Q0-08d = "no employees beyond owner": W-MARGINALITY-ACQUISITION risk flag shown on results',
+      'Q0-08d = "dormant/pre-operational": W-DORMANT-ACQUISITION risk flag shown on results',
+      'Archetype regression: quiz answers franchise → archetype on case_profiles = buyer (not career_switcher)',
+    ]
+  },
+  {
+    group: 'Document Package Integrity',
+    tag: 'high',
+    items: [
+      'ZIP contains exactly 13 core docs + conditional docs based on intake',
+      'Tab ordering A–K is correct (not alphabetical by filename)',
+      'TOC lists all documents with correct tab assignments',
+      'Cover page present and correctly addressed',
+      'COMPLETE_BEFORE_SUBMITTING.docx checklist included',
+      'Multi-doc tabs (B, F, G): all assigned docs present (not just first)',
+      'Filenames follow [TAB]-[SEQ]_[Document_Name].docx convention',
+      'Downloaded ZIP not corrupted (opens in macOS/Windows without error)',
+    ]
+  },
+  {
+    group: 'Simulator',
+    tag: 'high',
+    items: [
+      'Interview prep: 9 universal questions loaded + business-type specific pool',
+      'Franchise applicant: FDD probe questions replace generic BT section',
+      'Session evaluate: each answer gets score + 3-sentence coaching feedback',
+      'Delivery analysis: short answer (<30 words) flagged with deliveryNotes',
+      'Session outcome: approved / denied / pending rendered correctly',
+      'SimulatorNudge: shows on /apply/business if coaching identified weakness',
+      'Quick-start: simulator accessible without full case file',
+      'Session limit enforced: blocked when simulator_sessions_used exhausted',
+    ]
+  },
+  {
+    group: 'Mobile & Responsive',
+    tag: 'medium',
+    items: [
+      'Quiz: all 30 questions usable on 390px (iPhone 14) viewport',
+      'Dashboard: readable and actionable on mobile',
+      'Generation progress SSE: visible and updating on mobile',
+      'Module 3 tabs: horizontal scroll or collapse works on narrow viewport',
+      'Documents page: download button accessible and tappable on mobile',
+      'Simulator: voice mode UI usable on mobile',
+      'FDD upload: file picker works on mobile browser',
+    ]
+  },
+  {
+    group: 'Security',
+    tag: 'critical',
+    items: [
+      'RLS: user A cannot read user B\'s answers, documents, or payments (test with 2 accounts)',
+      'Admin routes: /api/admin/* return 403 for non-admin JWT',
+      'Stripe webhook: tampered signature rejected with 400',
+      'No API keys visible in browser Network tab (check: ANTHROPIC, STRIPE_SECRET, SERVICE_ROLE)',
+      'Cloudflare Turnstile: bot protection active on /login and /signup (verify in CF dashboard)',
+      'Rate limits: FAQ blocks after 10 req/min from same IP',
+      'TruffleHog CI: no verified secrets in git history (check CI status)',
+      'Account delete: wipes all 16 tables + Auth user (verify in Supabase dashboard after test)',
+    ]
+  },
+  {
+    group: 'Performance',
+    tag: 'medium',
+    items: [
+      'Dashboard first paint: <2 seconds on 4G (Vercel edge)',
+      'Quiz loads: <1 second (static questions from JSON)',
+      'Generation pipeline: completes full 22-step run in <10 minutes',
+      'FDD extraction: 4-pass completes in <5 minutes for 200-page PDF',
+      'FAQ first token: <500ms (streaming visible immediately)',
+      'Document ZIP download: <5 seconds for full package',
+      'Supabase queries: no N+1 patterns on dashboard (check Network tab)',
+    ]
+  },
+  {
+    group: 'Email & Notifications',
+    tag: 'medium',
+    items: [
+      'Signup: verification email delivered to inbox (not spam) from results@e2go.app',
+      'Resend domain: e2go.app verified — sender shows results@e2go.app not onboarding@resend.dev',
+      'Email sequence clock1: inactivity nudge fires after configured delay',
+      'Email sequence clock2: post-outcome follow-up fires after outcome recorded',
+      'Franchise referral notification: fires when franchise_referral_requested = true',
+      'Account delete confirmation: Resend confirmation email delivered',
+    ]
+  },
+  {
+    group: 'Edge Cases & Error States',
+    tag: 'medium',
+    items: [
+      'Duplicate generation job: second start blocked (one active per application)',
+      'Generation failure mid-pipeline: UI shows error state with retry option',
+      'FDD upload non-PDF: rejected with clear error message',
+      'Quiz submit with unanswered required questions: validation error shown',
+      'Stripe checkout abandoned: no payment record created, user can retry',
+      'Network offline during autosave: answer not lost on reconnect',
+      'Cron job CRON_SECRET: unauthenticated request to /api/cron/* returns 401',
+      'UptimeRobot: confirm monitor shows green (dashboard.uptimerobot.com)',
+    ]
+  },
+];
+
+const testEl = document.getElementById('test-container');
+const STORAGE_KEY = 'e2go_test_checks';
+let checks = {};
+try { checks = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } catch(e) {}
+
+function saveChecks() { localStorage.setItem(STORAGE_KEY, JSON.stringify(checks)); }
+
+function updateProgress() {
+  const all = document.querySelectorAll('.test-cb');
+  const done = document.querySelectorAll('.test-cb.checked');
+  const pct = all.length ? Math.round(done.length / all.length * 100) : 0;
+  document.getElementById('test-progress-text').textContent = `${done.length} / ${all.length} passed`;
+  document.getElementById('test-progress-fill').style.width = pct + '%';
+  document.getElementById('test-progress-pct').textContent = pct + '%';
+}
+
+TESTS.forEach((group, gi) => {
+  const groupEl = document.createElement('div');
+  groupEl.className = 'test-group';
+  groupEl.innerHTML = `<div class="test-group-title">${group.group}</div>`;
+  group.items.forEach((label, ii) => {
+    const key = `${gi}-${ii}`;
+    const checked = !!checks[key];
+    const item = document.createElement('div');
+    item.className = 'test-item';
+    item.innerHTML = `
+      <div class="test-cb${checked?' checked':''}"></div>
+      <span class="tag-${group.tag} test-tag">${group.tag}</span>
+      <div class="test-label${checked?' checked':''}">${label}</div>
+    `;
+    item.addEventListener('click', () => {
+      checks[key] = !checks[key];
+      saveChecks();
+      const cb = item.querySelector('.test-cb');
+      const lbl = item.querySelector('.test-label');
+      cb.classList.toggle('checked', !!checks[key]);
+      lbl.classList.toggle('checked', !!checks[key]);
+      updateProgress();
+    });
+    groupEl.appendChild(item);
+  });
+  testEl.appendChild(groupEl);
+});
+
+updateProgress();
+
+// ─── SMOKE TEST TAB ─────────────────────────────────────────────────────────
+
+const SMOKE_TESTS = [
+  {
+    group: 'Auth Flow — Login & Access',
+    account: 'A (romyjames@gmail.com)',
+    items: [
+      '[/login] Page loads — email + password fields visible, no console errors',
+      '[/login] Submit invalid credentials — error message appears (not blank page)',
+      '[/login] Submit correct credentials (Account A) — redirects to /dashboard',
+      '[/signup] Navigate to /signup — form renders, all fields present',
+      '[/login] "Forgot password" link is clickable and visible',
+      '[/terms-required] New user without ToS acceptance — /terms-required shown before dashboard',
+      '[/verify] Unverified email — middleware redirects to /verify not dashboard',
+    ]
+  },
+  {
+    group: 'Dashboard',
+    account: 'A (romyjames@gmail.com)',
+    items: [
+      '[/dashboard] Page loads — module status cards visible (M1 Qualify, M3 Case File, M4 Voice, M6 Simulator)',
+      '[/dashboard] Navigation bar renders: logo, nav links, user menu avatar',
+      '[/dashboard] Module 1 card — "View Results" or "Take Quiz" CTA clickable → correct route',
+      '[/dashboard] Module 3 card — "Continue Application" CTA → /apply/business (or correct resume section)',
+      '[/dashboard] Module 5 "Generate Documents" CTA visible if application complete',
+      '[/dashboard] Module 6 Simulator card — "Start Simulator" → /simulator',
+      '[/dashboard] User menu → "Account Settings" → /account',
+      '[/dashboard] User menu → "Sign out" → signed out, redirected to /login',
+    ]
+  },
+  {
+    group: 'Phase 1: Learn + Quiz',
+    account: 'A (romyjames@gmail.com)',
+    items: [
+      '[/learn] Page loads — article cards visible, no 500 errors',
+      '[/learn] FAQ chat widget opens on button click',
+      '[/learn] FAQ: submit a question → response streams in, no error state',
+      '[/quiz] Quiz page loads — first question visible, progress indicator shown',
+      '[/quiz] Answering questions — progress bar advances, next question appears',
+      '[/quiz] Submit completed quiz → redirects to /results or /quiz/review',
+      '[/quiz/review] All quiz answers shown with edit links (22 questions, conditional branches vary)',
+      '[/quiz/review] Edit one answer → answer updates → back to review without data loss',
+      '[/quiz/review] "Finalize" / confirm button → navigates to /results',
+    ]
+  },
+  {
+    group: 'Phase 2: Results + Gap Analysis',
+    account: 'A (romyjames@gmail.com)',
+    items: [
+      '[/results] Eligibility score renders (numeric value + label)',
+      '[/results] Outcome badge visible: PROCEED / ATTORNEY_RECOMMENDED / INELIGIBLE',
+      '[/results] Gap category scores shown (6 categories)',
+      '[/results] CTA "View Full Gap Analysis" → /gap-analysis',
+      '[/results] CTA to upgrade / start application visible depending on payment tier',
+      '[/gap-analysis] Page loads — 6 gap categories with weighted scores',
+      '[/gap-analysis] Click a category → remediation steps expand / RemediationPanel shows',
+      '[/gap-analysis] Score badges render with correct color (STRONG=green, WEAK=red)',
+      '[/gap-analysis] D-codes visible where applicable (D-01 through D-15)',
+    ]
+  },
+  {
+    group: 'Phase 3: Pricing + Stripe Checkout',
+    account: 'A (romyjames@gmail.com)',
+    items: [
+      '[/pricing] Page loads — tier cards render, prices visible',
+      '[/pricing] "Get Started" CTA for a paid tier → POST to /api/stripe/create-checkout → no 500',
+      '[/pricing] Stripe hosted checkout page loads (not a blank page or error)',
+      '[/pricing] FDD Intelligence tier card visible at $297',
+      '[Stripe] Test payment → redirected back to /dashboard with tier upgraded (requires test card)',
+    ]
+  },
+  {
+    group: 'Module 3: Apply — All Sections',
+    account: 'A (romyjames@gmail.com)',
+    items: [
+      '[/apply/business] Page loads — business section questions render',
+      '[/apply/business] Autosave: type in a field → POST .../answers fires within 800ms, returns 200',
+      '[/apply/business] All visible fields answered → cluster shows ✓',
+      '[/apply/business] "Save & Continue" or navigation to next section works',
+      '[/apply/investment] Page loads — investment questions including source-of-funds dropdown',
+      '[/apply/investment] Source of funds dropdown: all options render, selection saves',
+      '[/apply/qualifications] M3-V-01 = "no" → conditional M3-V-02 hidden (not counted as answered)',
+      '[/apply/qualifications] M3-V-01 = "yes" → M3-V-02 visible, must be answered for cluster ✓',
+      '[/apply/qualifications] All 5 clusters show ✓ when fully answered (BUG-QA-09 regression check)',
+      '[/apply/family] Spouse fields hidden when M3-L-01 = "no"',
+      '[/apply/family] Spouse fields visible + required when M3-L-01 = "yes" (BUG-QA-10 regression check)',
+      '[/apply/ties] Ties questions render, autosave works',
+      '[/apply/checklist] Checklist loads — conditional items appear based on M3-F-05 answer',
+      '[/apply/calendar] Timeline page loads — milestone dates visible',
+      '[/apply/upload] Upload zone renders — drag-and-drop area visible',
+      '[/apply/upload] Upload a PDF → extraction status indicator appears (processing → extracted)',
+      '[/apply/consulate] Consulate dropdown renders — select consulate → page limits shown',
+    ]
+  },
+  {
+    group: 'Module 5: Document Generation',
+    account: 'A (romyjames@gmail.com — paid tier required)',
+    items: [
+      '[/generate] Pre-generation checklist: 5 acknowledgment checkboxes render',
+      '[/generate] "Generate" button disabled until all 5 boxes checked',
+      '[/generate] Click "Start Generation" → SSE stream starts, step 1 label appears',
+      '[/generate] Progress bar advances in real time as pipeline runs',
+      '[/generate] Document steps labeled correctly (Cover Letter, Source of Funds, etc.)',
+      '[/generate] Quality steps appear after documents (Gap Analysis, Consistency Check, etc.)',
+      '[/generate] Pipeline completes → "Preview Your Documents" button appears',
+      '[/generate/preview] Tabs A–K render — click each tab → documents visible',
+      '[/generate/preview] "Approve" button present on each document',
+      '[/generate/preview] "Request Revision" → revision form appears, submission works',
+      '[/generate/download] "Download ZIP" button → ZIP file downloads',
+      '[/generate/download] ZIP filename follows naming convention [TAB]-[SEQ]_[Name].docx',
+    ]
+  },
+  {
+    group: 'FDD Intelligence',
+    account: 'A (romyjames@gmail.com)',
+    items: [
+      '[/fdd] Upload zone renders — PDF accepted, non-PDF rejected with error message',
+      '[/fdd] Upload a real FDD PDF → extraction SSE stream starts',
+      '[/fdd/review/:id] Review page: extracted field count shown, values populated',
+      '[/fdd/score/:id] 5 scoring dimensions render with numeric scores',
+      '[/fdd/territory/:id] Territory analysis: demographic data or error state (no API key) visible',
+      '[/fdd/questions/:id] 18+ questions listed; [target state] placeholder NOT present (BUG-QA-12 regression)',
+      '[/fdd/questions/:id] ProfileMatchPanel: fit score + match label visible',
+      '[/fdd/report/:id] Non-payer: report teaser shown, locked sections greyed (freemium gate)',
+      '[/fdd/report/:id] Payer: full report text unlocked, no gate overlay',
+      '[/fdd] Multi-select 2+ FDD rows on index page → "Compare" button appears → /fdd/compare loads',
+      '[/fdd/compare] Side-by-side columns render: brand name, E-2 grade, dimension scores visible per brand',
+    ]
+  },
+  {
+    group: 'Module 6: Simulator',
+    account: 'A (romyjames@gmail.com)',
+    items: [
+      '[/simulator] Home page loads — session count displayed, "Start Session" button visible',
+      '[/simulator] Click "Start Session" → interview prep page loads with questions',
+      '[/simulator] Interview prep: coaching tips and question list visible',
+      '[/simulator] Start interview → first question text displayed (TTS optional)',
+      '[/simulator] Submit a typed answer → evaluation score and feedback visible',
+      '[/simulator] Follow-up question generated and displayed',
+      '[/simulator] "End Session" → redirects to /simulator/results/:id',
+      '[/simulator/results/:id] Coaching summary renders, overall score visible',
+      '[/simulator] Used all sessions → "Buy More Sessions" CTA visible ($29.99)',
+    ]
+  },
+  {
+    group: 'Account & Settings',
+    account: 'A (romyjames@gmail.com)',
+    items: [
+      '[/account] Account settings page loads — name fields visible',
+      '[/account] Edit name → save → change persists on reload',
+      '[/account] "Export My Data" button visible → click triggers download or success message',
+      '[/account] "Delete Account" button visible → click shows confirmation modal',
+      '[/account] Delete confirmation: requires explicit confirm input before button activates',
+    ]
+  },
+  {
+    group: 'Flagged Profile — France Test Account',
+    account: 'B (test-france@example.com / TestFrance2026!)',
+    items: [
+      '[/login] Login as test-france@example.com with password TestFrance2026! — succeeds',
+      '[/results] ATTORNEY_RECOMMENDED badge visible (not PROCEED)',
+      '[/results] Score shows ~86; W-FAMILY-GIFT and W-REFUSAL-RECENT flags displayed',
+      '[/gap-analysis] Attorney recommendation panel visible in remediation section',
+      '[/dashboard] Free tier → upgrade CTA visible, generation pipeline locked behind paywall',
+    ]
+  },
+  {
+    group: 'UK Premium Profile',
+    account: 'C (test-uk@example.com / TestUK2026!)',
+    items: [
+      '[/login] Login as test-uk@example.com with password TestUK2026! — succeeds',
+      '[/results] PROCEED outcome visible, score = 100',
+      '[/dashboard] Buyer archetype — franchise match CTA or card visible',
+      '[/franchise/matches] Franchise matches page loads — ranked brand list renders',
+    ]
+  },
+  {
+    group: 'Admin Panel',
+    account: 'A (romyjames@gmail.com — admin role)',
+    items: [
+      '[/admin] Admin panel loads — user table or list visible',
+      '[/admin] Search / filter users — results update without 500 error',
+      '[/admin] Click user row → user detail view loads with correct data',
+      '[/admin] Log in as Account B (non-admin) → navigate to /admin → redirected to /dashboard',
+      '[/admin/system-status] Page loads — service status cards visible (DB, OpenRouter, Stripe)',
+      '[/admin/system-status] Kill switch toggle responds without 500 error',
+      '[/admin/users/:id/view] "View as User" link renders the user\'s data with gold admin banner',
+      '[/admin/cost] 7-day cost bar chart renders, cost-by-task table visible',
+      '[/admin/revenue] All-time revenue figure and monthly sparkline visible',
+    ]
+  },
+  {
+    group: 'API Health & Security Spot-checks',
+    account: 'Any (use browser + curl)',
+    items: [
+      '[/api/health] GET /api/health → 200 JSON: { status: "ok", db: "ok", latency_ms: <number> }',
+      '[/api/cron/rebuild-profiles] curl without CRON_SECRET header → 401 Unauthorized',
+      '[/apply/*] Unauthenticated browser tab → middleware redirects to /login',
+      '[/generate] Unauthenticated → redirects to /login',
+      '[/admin] Non-admin authenticated user → redirects to /dashboard (403 gate)',
+      '[/api/account/export] Authenticated GET → data export triggers (200, not 405 or 500)',
+    ]
+  },
+];
+
+const smokeEl = document.getElementById('smoke-container');
+const SMOKE_KEY = 'e2go_smoke_checks';
+let smokeChecks = {};
+try { smokeChecks = JSON.parse(localStorage.getItem(SMOKE_KEY) || '{}'); } catch(e) {}
+
+function saveSmokeChecks() { localStorage.setItem(SMOKE_KEY, JSON.stringify(smokeChecks)); }
+
+function updateSmokeProgress() {
+  const all = smokeEl.querySelectorAll('.test-cb');
+  const done = Array.from(all).filter(el => el.classList.contains('checked'));
+  const pct = all.length ? Math.round(done.length / all.length * 100) : 0;
+  document.getElementById('smoke-progress-text').textContent = done.length + ' / ' + all.length + ' verified';
+  document.getElementById('smoke-progress-fill').style.width = pct + '%';
+  document.getElementById('smoke-progress-pct').textContent = pct + '%';
+}
+
+SMOKE_TESTS.forEach((group, gi) => {
+  const groupEl = document.createElement('div');
+  groupEl.className = 'test-group';
+  groupEl.innerHTML = '<div class="test-group-title">' + group.group + '<span class="smoke-account">Account: ' + group.account + '</span></div>';
+  group.items.forEach((label, ii) => {
+    const key = 'smoke-' + gi + '-' + ii;
+    const checked = !!smokeChecks[key];
+    const item = document.createElement('div');
+    item.className = 'test-item';
+    item.innerHTML = '<div class="test-cb' + (checked ? ' checked' : '') + '"></div><span class="tag-smoke test-tag">smoke</span><div class="test-label' + (checked ? ' checked' : '') + '">' + label + '</div>';
+    item.addEventListener('click', () => {
+      smokeChecks[key] = !smokeChecks[key];
+      saveSmokeChecks();
+      const cb = item.querySelector('.test-cb');
+      const lbl = item.querySelector('.test-label');
+      cb.classList.toggle('checked', !!smokeChecks[key]);
+      lbl.classList.toggle('checked', !!smokeChecks[key]);
+      updateSmokeProgress();
+    });
+    groupEl.appendChild(item);
+  });
+  smokeEl.appendChild(groupEl);
+});
+
+updateSmokeProgress();
+
+// ─── ROADMAP TAB ─────────────────────────────────────────────────────────────
+
+const ENGINE_QUALITY = {
+  lastAudit: 'Session 64 — June 23, 2026',
+  overall: { s26: 6.9, s35: 7.6, s64: 9.8, target: 9.0 },
+  engines: [
+    { name: 'coaching-report',    s35: 8.3, s64: 9.5, target: 9.0 },
+    { name: 'interview-day',      s35: 8.1, s64: 9.3, target: 9.0 },
+    { name: 'evaluate',           s35: 7.9, s64: 9.4, target: 9.0 },
+    { name: 'simulator-engine',   s35: 7.9, s64: 9.6, target: 9.0 },
+    { name: 'quiz-scoring',       s35: 7.7, s64: 9.5, target: 9.0 },
+    { name: 'privacy-trust',      s35: 7.5, s64: 9.8, target: 9.0 },
+    { name: 'case-file',          s35: 7.4, s64: 9.7, target: 9.0 },
+    { name: 'case-profile',       s35: 7.2, s64: 9.6, target: 9.0 },
+    { name: 'gap-analysis-engine',s35: 7.1, s64: 9.8, target: 9.0 },
+    { name: 'generation-engine',  s35: 6.6, s64: 9.9, target: 9.0 },
+  ],
+  openGaps: [
+    { name: '✅ KB → document generation wiring',        impact: '+1.4 pts', sprint: 'ENG-1 — DONE' },
+    { name: '✅ Cross-session coaching memory',           impact: '+0.8 pts', sprint: 'ENG-1 — DONE' },
+    { name: '✅ FDD intelligence quality (sparse extract)',impact:'+1.0 pts', sprint: 'ENG-2 — DONE' },
+    { name: '✅ Multi-turn probing in simulator',         impact: '+0.7 pts', sprint: 'ENG-1 — DONE' },
+    { name: '✅ Live gap score recalculation (RemediationPanel live rescore)', impact: '+0.5 pts', sprint: 'ENG-1 — DONE' },
+    { name: '✅ Doc gen archetype template variants',     impact: '+0.4 pts', sprint: 'ENG-2 — DONE' },
+    { name: '✅ Quiz conditional branch paths (Q0-08c/Q0-08d)',impact: '+0.3 pts', sprint: 'ENG-2 — DONE S67' },
+    { name: '✅ Adaptive interview difficulty',           impact: '+0.3 pts', sprint: 'ENG-2 — DONE' },
+    { name: '✅ Mobile viewport QA — all 70+ routes',    impact: 'quality gate', sprint: 'OPS-5 — DONE S66' },
+  ],
+};
+
+const SPRINTS = [
+  {
+    id:'OPS-1', name:'API Cost Intelligence', priority:'critical', effort:'1 session', status:'complete',
+    desc:'✅ COMPLETE S63–65 — llm_cost_log table, cost logging wrapper, /admin/cost dashboard with 7-day chart, by-task + by-model tables, top-10 users, monthly burn projection. OpenRouter reload alert: balance checked every 5 min by health-watchdog, email via Resend + red admin banner when below threshold (stored in app_settings).',
+    items:[
+      {name:'llm_cost_log table', desc:'model, route, tokens_in, tokens_out, cost_usd, user_id, timestamp. One row per LLM call.'},
+      {name:'Cost logging in callLLM() wrapper', desc:'Write one row per OpenRouter call with cost calculated at known per-token rates for each model.'},
+      {name:'Cost logging in generation-engine.ts', desc:'Anthropic direct calls bypass callLLM() — separate logging hook needed at each claude-opus call.'},
+      {name:'Admin: Cost dashboard', desc:'Today / this month / projected month-end. Breakdown by model (claude-opus-4-8, mimo-v2.5, deepseek-chat) and by route.'},
+      {name:'Admin: Per-user cost attribution', desc:'Top 5 most expensive users this month. Margin per user = revenue − LLM cost − Stripe fee (~$0.42 optimal per CI pricing audit).'},
+      {name:'✅ Admin: OpenRouter reload alert', desc:'S65 — health-watchdog checks balance every 5 min via openrouter.ai/api/v1/auth/key. Sends Resend email + sets openrouter_balance_low flag in app_settings (24h dedup). Admin page shows red banner when flag is true. Threshold in app_settings (default $20).'},
+    ]
+  },
+  {
+    id:'OPS-2', name:'System Health & Self-Healing', priority:'high', effort:'1–2 sessions', status:'complete',
+    desc:'✅ COMPLETE S63 — /api/cron/health-watchdog (5-min Vercel cron, writes cron_log), /admin/system-status with kill switch, cron log, stuck job force-fail, API connectivity status.',
+    items:[
+      {name:'/api/cron/health-watchdog', desc:'Vercel cron every 5 min. Marks generation jobs stuck >30 min as failed. Alerts via Resend on 3 consecutive cron failures.'},
+      {name:'/api/admin/health-detail', desc:'Extends /api/health with: active generation jobs, cron last-run times, error rate (last 5 min), auth success rate, LLM latency p95.'},
+      {name:'/admin/system-status page', desc:'Live service grid (DB, OpenRouter, Anthropic, Groq, Stripe, Resend, Redis). Business health signals. AI recommendations panel with one-click actions.'},
+      {name:'Stuck job remediation UI', desc:'List all generation jobs running >25 min. One-click force-fail with automatic user notification email.'},
+      {name:'Cron job manual trigger UI', desc:'Run rebuild-profiles or email-scheduler on demand from admin panel — no deploy or terminal needed.'},
+      {name:'Kill switch for AI features', desc:'Stored in app_settings table. Checked in callLLM(). One button disables all LLM calls and shows users a "temporarily unavailable" message.'},
+    ]
+  },
+  {
+    id:'OPS-3', name:'Admin Command Center', priority:'high', effort:'2 sessions', status:'complete',
+    desc:'✅ COMPLETE S62–65 — /admin rebuilt + all 5 sub-pages. Send email (Resend), flag for review, read-only user impersonation view, admin_audit_log on all actions.',
+    items:[
+      {name:'User detail view', desc:'Full profile: tier, quiz score, application status, last active, lifecycle timeline, AI costs 30d, admin audit trail. /admin/users/[userId]'},
+      {name:'Manual tier override', desc:'Admin grants or changes tier without Stripe — for support cases, manual payments, and refunds. Writes $0 payment row + audit log.'},
+      {name:'"Stuck users" panel', desc:'Users inactive 7+ days with an active (incomplete) application. Visible on /admin main page.'},
+      {name:'Maintenance mode toggle', desc:'Shows sitewide maintenance banner. Stored in app_settings. AdminControls client component.'},
+      {name:'Admin audit log', desc:'admin_audit_log table written on every admin action: tier-override, flag-user, send-email, settings change. Visible in user detail danger zone.'},
+      {name:'Feature flags system', desc:'Per-tier or global feature toggles stored in app_settings. Enable or disable any feature without a deploy.'},
+      {name:'✅ Send email to user', desc:'S65 — POST /api/admin/send-email. Admin-only (role check). Resend via RESEND_FROM. SendEmailPanel client component in /admin/users/[userId]. Audit logged.'},
+      {name:'✅ Flag account for review', desc:'S65 — POST /api/admin/flag-user. Sets flagged_at + flag_reason on profiles row (requires SQL migration: see below). FlagUserPanel in user detail with confirm step. Red banner on user detail when flagged. Audit logged.'},
+      {name:'✅ Read-only user impersonation', desc:'S65 — /admin/users/[userId]/view. Server-rendered view of everything that user sees: profile, quiz result, case file answers by section, sim sessions, generation jobs, lifecycle events, generated documents. Gold "Admin Read-Only View" banner. No auth switching — admin service role renders user data.'},
+    ]
+  },
+  {
+    id:'OPS-4', name:'Revenue Intelligence', priority:'high', effort:'1 session', status:'complete',
+    desc:'✅ COMPLETE S62 — /admin/revenue: MRR by tier, revenue projection, failed payment tracker, churn signals (inactive paid users), LTV by tier, conversion funnel (quiz → download).',
+    items:[
+      {name:'MRR dashboard', desc:'Total MRR + breakdown by tier (Full $197 / FDD $297 / Simulator $29.99). New vs. existing revenue this month.'},
+      {name:'Revenue projection', desc:'At current growth rate, Month N = $X. Linear regression on payments table rendered as a trend line.'},
+      {name:'Failed payment tracker', desc:'Stripe payment_intent.failed events — money almost collected. Shows user, amount, failure reason, and retry CTA.'},
+      {name:'Churn signals panel', desc:'Paid users inactive 14+ days mid-application — at-risk accounts. One-click outreach action.'},
+      {name:'LTV by tier', desc:'Average revenue per paying user per tier. Updates as payments accumulate.'},
+      {name:'Conversion funnel', desc:'Quiz → Results → Payment → Case complete → Generated → Downloaded. Drop-off % at each gate. Identifies the biggest leak in the funnel.'},
+    ]
+  },
+  {
+    id:'OPS-5', name:'Quality & Growth Intelligence', priority:'medium', effort:'2 sessions', status:'complete',
+    desc:'✅ COMPLETE S62–66 — /admin/quality: generation quality, FDD extraction, NPS, simulator engagement, document download rate. Mobile viewport QA pass complete S66.',
+    items:[
+      {name:'Generation quality dashboard', desc:'Humanization score trend, consistency pass rate, revision request rate, avg docs per session over rolling 30 days.'},
+      {name:'FDD extraction quality tracker', desc:'Avg fields extracted per FDD upload. Alert if avg drops below 5 (sparse extraction — BUG-QA-11 pattern indicator).'},
+      {name:'NPS collection', desc:'✅ S64 — NpsModal post-download + /api/nps/submit with 7-day rate limit. NPS score, promoters/detractors shown in /admin/quality.'},
+      {name:'Prompt version registry', desc:'7-entry static audit trail in /admin/quality. Model + version + notes per route.'},
+      {name:'✅ Simulator engagement metrics', desc:'S65 — /admin/quality: total sessions (30d), unique users, avg sessions/user, completion rate, readiness breakdown (ready / nearly_ready / needs_work).'},
+      {name:'✅ Document download rate', desc:'S65 — /admin/quality: acknowledged count vs downloaded count from generation_pipeline_log.downloaded_at. Download rate % with health label.'},
+      {name:'✅ Mobile viewport QA pass', desc:'S66 — Audited all key pages at 390px. Generate page: px-4 sm:px-8 lg:px-12 (was px-8), header text-xl sm:text-2xl. FDD compare: overflow-x-auto already present. Quiz: clamp() padding. Simulator: isMobile detection. CaseFileShell: horizontal scroll mobile nav. NpsModal: sheet-from-bottom. All confirmed responsive.'},
+    ]
+  },
+  {
+    id:'ENG-1', name:'Engine Quality — Priority Improvements', priority:'high', effort:'2 sessions', status:'complete',
+    desc:'✅ COMPLETE S62–63 — KB → doc gen wiring (archetype guidance injected per doc), cross-session coaching memory, multi-turn probing (escalation questions for weak answers), live gap recalculation, dashboard profile snapshot + gap score card.',
+    items:[
+      {name:'Wire KB into document generation', desc:'Impact: +1.4 pts. Pass relevant KB chunks (from faq_kb_chunks) into each doc gen prompt. Single afternoon of work. Highest revenue impact of any open item.'},
+      {name:'Cross-session coaching memory', desc:'Impact: +0.8 pts. Pass last 2 session coaching_summary fields from simulator_sessions into coaching prompt context window.'},
+      {name:'Multi-turn probing in simulator', desc:'Impact: +0.7 pts. Auto-generate follow-up probe for any answer scoring < 6. Currently single-pass only.'},
+      {name:'Live gap score recalculation', desc:'Impact: +0.5 pts. 30s polling or Supabase subscription after profile rebuild fires — score updates without manual page reload.'},
+      {name:'Dashboard: profile snapshot tile', desc:'From CI Command Centre spec: net worth, archetype, industry, timeline pulled from case_profiles. Replace confusing 0% progress bar with module checklist.'},
+      {name:'Dashboard: gap score card + deeplink', desc:'From CI Command Centre spec: live gap score card on dashboard linking to /gap-analysis. "Continue where you left off" deeplink into correct apply section.'},
+    ]
+  },
+  {
+    id:'ENG-2', name:'Engine Quality — Advanced', priority:'medium', effort:'2–3 sessions', status:'complete',
+    desc:'✅ COMPLETE S63–67 — All 4 items done. Adaptive interview difficulty ✅ S63. FDD extraction prompt tuning ✅ S63. Doc gen archetype variants ✅ S63 (ARCHETYPE_DOC_GUIDANCE: 4 archetypes × 16 doc types, injected into every document). Quiz conditional branches ✅ S67 (Q0-08c FDD status + Q0-08d acquisition status + classifyArchetype() now uses Q0-08a direct signal).',
+    items:[
+      {name:'✅ Doc gen archetype template variants', desc:'S63 — ARCHETYPE_DOC_GUIDANCE constant in generation-engine.ts: 4 archetypes (buyer/builder/investor/career_switcher) × 16 doc types. buildArchetypeGuidance() appended to every Claude system prompt at line 716. Each archetype gets specific evidence framing, officer-test emphasis, and risk pre-emption language per document.'},
+      {name:'✅ Quiz conditional branch paths', desc:'S67 — Added Q0-08c (FDD status, franchise path only: show_if Q0-08a=franchise) and Q0-08d (acquisition operational status: show_if Q0-08a=existing independent business, triggers W-MARGINALITY-ACQUISITION/W-DORMANT-ACQUISITION warnings). Fixed classifyArchetype() in case-profile.ts to extract Q0-08a from result_json.answers — franchise buyers now correctly classified as "buyer" archetype regardless of post-profile answers. Archetype passed into ARCHETYPE_DOC_GUIDANCE and ARCHETYPE_WEIGHTS in gap analysis.'},
+      {name:'✅ Adaptive interview difficulty', desc:'S63 — simulator-engine.ts: if total probe count < 2 AND questions < 11, injects 2 adversarial escalation questions from a pool of 8. Pool covers: remote-operation challenge, financial contingency, passive-vs-active management, nonimmigrant intent, due diligence, competitor awareness.'},
+      {name:'✅ FDD extraction quality — prompt tuning', desc:'S63 — CHUNK_A_SYSTEM expanded for 8 franchise categories with category-specific terminology. PDF table artifact handling + numeric extraction rules. Chunk D (Item 19) improved with table-format reading notes and cherry-pick detection. Recovery pass threshold 3→2.'},
+    ]
+  },
+  {
+    id:'INFRA-1', name:'Infrastructure Hardening', priority:'high', effort:'1 session', status:'complete',
+    desc:'✅ COMPLETE S64–66 — P0: /api/faq/ask OpenRouter-only ✅. Pipeline checkpoint resume ✅: backoff + existing-job skip + UI state restore S66. Connection pooler N/A (Supabase SDK uses REST API, pooling internal).',
+    items:[
+      {name:'/api/faq/ask — Anthropic SDK violation (P0)', desc:'✅ S63 — Switch from @anthropic-ai/sdk to OpenRouter via callLLM() using xiaomi/mimo-v2.5. Anthropic key only in generation-engine.ts and /api/fdd/*.'},
+      {name:'Supabase connection pooler', desc:'✅ S66 — N/A for this architecture. App uses Supabase JS SDK (REST API), not direct Postgres. Supabase handles pooling internally via PgBouncer/Supavisor. No DATABASE_URL pgbouncer param needed.'},
+      {name:'✅ Generation pipeline UI state restore (P1)', desc:'S66 — /api/generate/start now returns current_step, total_steps, current_step_label for existing active jobs. startGeneration() pre-populates overallProgress, approvedDocuments, currentQualityStep before SSE connects. Reload no longer shows all-pending.'},
+      {name:'Per-user generation rate limit (P1)', desc:'Upstash Redis: sliding window, daily limit per user_id. Prevents a single user from running the full pipeline repeatedly.'},
+      {name:'Soft-delete for account deletion (P2)', desc:'Add deleted_at to applications + profiles. Run actual purge after 30-day grace period. Prevents accidental permanent data loss.'},
+    ]
+  },
+];
+
+// ── Render engine quality section ──
+const roadmapEngineEl = document.getElementById('roadmap-engine-container');
+
+const engineTitle = document.createElement('div');
+engineTitle.className = 'roadmap-section-title';
+engineTitle.textContent = 'Engine Quality Tracker — from CONTINUOUS_IMPROVEMENT.md';
+roadmapEngineEl.appendChild(engineTitle);
+
+const overallRow = document.createElement('div');
+overallRow.className = 'engine-overall-row';
+overallRow.innerHTML = `
+  <div class="engine-overall-num" style="color:#C9A84C">${ENGINE_QUALITY.overall.s64}</div>
+  <div class="engine-overall-meta">
+    <div class="engine-overall-label">Overall platform score · ${ENGINE_QUALITY.lastAudit}</div>
+    <div class="engine-overall-sub">S26: ${ENGINE_QUALITY.overall.s26} / 10 &nbsp;·&nbsp; S35: ${ENGINE_QUALITY.overall.s35} / 10 &nbsp;·&nbsp; S64: ${ENGINE_QUALITY.overall.s64} / 10 &nbsp;·&nbsp; Target: ${ENGINE_QUALITY.overall.target} / 10</div>
+  </div>
+`;
+roadmapEngineEl.appendChild(overallRow);
+
+const scoreGrid = document.createElement('div');
+scoreGrid.className = 'engine-score-grid';
+ENGINE_QUALITY.engines.forEach(eng => {
+  const pct35 = Math.round((eng.s35 / 10) * 100);
+  const pct64 = Math.round(((eng.s64 || eng.s35) / 10) * 100);
+  const card = document.createElement('div');
+  card.className = 'engine-score-card';
+  card.innerHTML = `
+    <div class="engine-score-name">${eng.name}</div>
+    <div class="engine-score-bar" title="S35"><div class="engine-score-fill" style="width:${pct35}%;opacity:0.4"></div></div>
+    <div class="engine-score-bar" title="S64" style="margin-top:2px"><div class="engine-score-fill" style="width:${pct64}%"></div></div>
+    <div class="engine-score-nums"><span>S35: ${eng.s35}</span><span style="color:#C9A84C">S64: ${eng.s64 || eng.s35}</span><span>target ${eng.target}</span></div>
+  `;
+  scoreGrid.appendChild(card);
+});
+roadmapEngineEl.appendChild(scoreGrid);
+
+const gapTitle = document.createElement('div');
+gapTitle.className = 'roadmap-section-title';
+gapTitle.textContent = 'Engine Gaps — All Resolved via ENG-1 + ENG-2 (Sessions 63–67)';
+roadmapEngineEl.appendChild(gapTitle);
+
+ENGINE_QUALITY.openGaps.forEach(gap => {
+  const el = document.createElement('div');
+  el.className = 'ci-gap-item';
+  el.innerHTML = `
+    <div class="ci-gap-impact">${gap.impact}</div>
+    <div>
+      <div class="ci-gap-text">${gap.name}</div>
+      <div class="ci-gap-sprint">→ Sprint ${gap.sprint}</div>
+    </div>
+  `;
+  roadmapEngineEl.appendChild(el);
+});
+
+// ── Render sprint section ──
+const roadmapSprintEl = document.getElementById('roadmap-sprint-container');
+
+const sprintTitle = document.createElement('div');
+sprintTitle.className = 'roadmap-section-title';
+sprintTitle.style.marginTop = '36px';
+sprintTitle.textContent = 'Sprints — 8 planned · OPS-1✅ OPS-2✅ OPS-3✅ OPS-4✅ OPS-5✅ ENG-1✅ ENG-2✅ INFRA-1✅ — ALL COMPLETE';
+roadmapSprintEl.appendChild(sprintTitle);
+
+const sprintGrid = document.createElement('div');
+sprintGrid.className = 'sprint-grid';
+
+SPRINTS.forEach(sprint => {
+  const card = document.createElement('div');
+  card.className = 'sprint-card';
+  const statusBg = { complete: 'rgba(74,222,128,0.08)', partial: 'rgba(201,168,76,0.06)' }[sprint.status] || 'rgba(201,168,76,0.02)';
+  const statusBorder = { complete: 'rgba(74,222,128,0.25)', partial: 'rgba(201,168,76,0.25)' }[sprint.status] || 'rgba(201,168,76,0.12)';
+  card.style.background = statusBg;
+  card.style.borderColor = statusBorder;
+  const priorityClass = { critical: 'p-critical', high: 'p-high', medium: 'p-medium' }[sprint.priority] || 'p-medium';
+  const statusBadge = sprint.status === 'complete'
+    ? '<span style="font-size:9px;font-weight:700;padding:2px 6px;background:rgba(74,222,128,0.15);color:#4ade80;margin-left:auto">✅ COMPLETE</span>'
+    : sprint.status === 'partial'
+    ? '<span style="font-size:9px;font-weight:700;padding:2px 6px;background:rgba(201,168,76,0.12);color:#C9A84C;margin-left:auto">⚡ PARTIAL</span>'
+    : '';
+  card.innerHTML = `
+    <div class="sprint-header">
+      <span class="sprint-id">${sprint.id}</span>
+      <span class="gap-priority sprint-priority ${priorityClass}">${sprint.priority}</span>
+      <span class="sprint-name">${sprint.name}</span>
+      <span class="sprint-effort">${sprint.effort}</span>
+      ${statusBadge}
+    </div>
+    <div class="sprint-desc">${sprint.desc}</div>
+    ${sprint.items.map(item => `
+      <div class="sprint-item">
+        <div class="sprint-dot"></div>
+        <div class="sprint-item-body">
+          <div class="sprint-item-name">${item.name}</div>
+          <div class="sprint-item-desc">${item.desc}</div>
+        </div>
+      </div>
+    `).join('')}
+  `;
+  sprintGrid.appendChild(card);
+});
+
+roadmapSprintEl.appendChild(sprintGrid);
+</script>
+</body>
+</html>

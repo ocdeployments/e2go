@@ -1,10 +1,12 @@
 # Tabs B through E — Personal, Visa Category, Cover Letter, Ownership
 ## Module 3 Interview Engine
-*Version 1.0 | May 28, 2026*
+*Version 1.1 | May 31, 2026*
 
 ---
 
 # TAB B — Personal Documents Checklist
+
+**Batch:** 1 — Generated immediately after payment
 
 ## Purpose
 
@@ -25,10 +27,10 @@ All items are generated conditionally based on prior answers:
 |----------|-----------|-------|
 | Passport biographical page (photocopy) | Always | Current valid passport |
 | Two passport-style photographs | Always | Must meet U.S. visa photo standards |
-| Canadian birth certificate | Always | Certified copy |
+| Birth certificate | Always | Certified copy |
 | DS-160 confirmation page (barcode page) | Always | Printed from ceac.state.gov after submission |
 | DS-156E form | Principal applicant only | Completed and signed |
-| MRV fee receipt | Always | From ais.usvisa-info.com/en-ca/niv |
+| MRV fee receipt | Always | From your consulate appointment portal |
 | Appointment confirmation letter | Always | From scheduling portal |
 | Marriage certificate | If married | Certified/notarized copy |
 | Divorce certificate | If previously divorced | Certified/notarized copy |
@@ -40,14 +42,29 @@ All items are generated conditionally based on prior answers:
 
 **No questions are asked in Tab B.** All items are auto-generated.
 
+### QB-READINESS
+**Question:** "How many of these documents do you already have in hand?"
+**Type:** select
+**Options:**
+- Most of them — I am fairly well organized
+- About half — I have some work to do
+- Very few — I am earlier in the process than I thought
+- I am not sure
+**output_feeds:** dashboard_urgency, checklist_prioritization
+**lead_signal:**
+- "Most of them" → stage=D, temperature+2
+- "Very few" → stage=A, temperature-1, nurture_sequence=true
+
 ---
 
 # TAB C — Visa Category Confirmation Letter
 
+**Batch:** 2 — Generated after business formation confirmed
+
 ## Purpose
 
 Tab C generates a short formal letter confirming the applicant is applying
-under the E-2 Treaty Investor classification, the treaty basis (Canada),
+under the E-2 Treaty Investor classification, the treaty basis (from Module 0),
 and the nature of the enterprise. This letter sits behind Tab C in the binder.
 
 **Output:** One-page Visa Category Confirmation Letter — generated entirely
@@ -57,7 +74,7 @@ from prior answers. No new questions required.
 
 The letter is auto-generated from:
 - Applicant full name (from QA-01)
-- Canadian citizenship (from Q0-01)
+- Treaty country nationality (from Q0-01)
 - Business name (from QA-51)
 - Business type and description (from QA-53)
 - Investment amount (from QA-56)
@@ -69,6 +86,8 @@ The letter is auto-generated from:
 ---
 
 # TAB D — Cover Letter Generator
+
+**Batch:** 2 — Generated after business formation confirmed
 
 ## Purpose
 
@@ -114,10 +133,10 @@ cover letters.
 targets, and how you will establish the business.
 
 ### QD-05
-**Question:** Why do you intend to return to Canada when your E-2 status ends?
+**Question:** Why do you intend to return to your home country when your E-2 status ends?
 **Type:** textarea
 **Tooltip:** This addresses the non-immigrant intent requirement. Describe
-your ties to Canada — family, property, financial interests — and your
+your ties to your home country — family, property, financial interests — and your
 intention to depart the U.S. when the business ceases to operate or your
 status ends.
 
@@ -130,6 +149,35 @@ cover letter should address directly?
 that changed from original plan, a gap in employment. Better to address it
 proactively than leave it for the officer to question.
 
+### QD-03 REVISED
+**Question:** "What drew you to this particular type of business?"
+**Type:** multiselect (up to 2)
+**Options:**
+- Personal experience or passion for this field
+- I researched the market and the numbers made sense
+- Someone I trust recommended it
+- It fits E-2 requirements and I can run it
+- I am still deciding — I have not committed to a type yet
+**output_feeds:** cover_letter_paragraph_3, investor_narrative
+**lead_signal:**
+- "Still deciding" → franchise_matching_trigger=true, temperature-1
+- "Personal experience" → conviction=high, temperature+1
+- "Numbers made sense" → analytical_buyer=true
+
+### QD-07
+**Question:** "Is there anything about your background or application a consulate officer might question? What is your explanation?"
+**Type:** textarea
+**Has N/A option:** Yes — "Nothing unusual"
+**output_feeds:** cover_letter_proactive_rebuttal
+**lead_signal:** if answered with content → complexity+1
+
+### QD-08
+**Question:** "What has changed since your prior visa refusal that strengthens this new application?"
+**Type:** textarea
+**Show if:** Q0-11 = prior refusal
+**output_feeds:** cover_letter_prior_refusal_paragraph
+**lead_signal:** attorney_warmth+1
+
 ## Cover Letter Structure (LLM Generation Target)
 
 | Paragraph | Content |
@@ -140,7 +188,7 @@ proactively than leave it for the officer to question.
 | 4 | Substantiality — investment as % of total cost, proportionality argument |
 | 5 | Non-marginality — revenue projections, hiring plan, economic contribution |
 | 6 | Applicant qualifications — experience, skills, active role |
-| 7 | Non-immigrant intent — Canadian ties, intent to depart |
+| 7 | Non-immigrant intent — home country ties, intent to depart |
 | 8 | Closing — request for favorable consideration |
 
 **Generation rule:** Every paragraph must reference the applicant's specific
@@ -149,6 +197,8 @@ data. No sentence can be generic enough to apply to any other applicant.
 ---
 
 # TAB E — Ownership Structure
+
+**Batch:** 2 — Generated after business formation confirmed
 
 ## Purpose
 
@@ -195,6 +245,40 @@ the IRS and is required for banking, hiring, and tax filing.
 **Question:** When was the business entity formed or registered?
 **Type:** date
 **Has N/A option:** Yes — "Not yet formed"
+
+### QE-05 BRANCH
+**Question:** "Your LLC must be formed before several documents can be generated. Would you like help with this?"
+**Type:** select
+**Options:**
+- Show me how to form an LLC in [target state from Q0-STATE]
+- Connect me with a registered agent service
+- I will handle it myself
+**Routing:**
+- "Connect me" → llc_formation_referral=true, referral_type=registered_agent
+- lead_signal: temperature+1 (taking action)
+
+### QE-NEW-01
+**Question:** "Has a Membership Interest Ledger been prepared confirming your ownership percentage?"
+**Type:** select
+**Options:** Yes / Not yet / I am not sure what this is
+**Branch:** "Not yet" or "Not sure" → add to checklist + advisory:
+  "The Membership Interest Ledger is a corporate record showing who
+  owns what percentage of the LLC. Your registered agent or attorney
+  produces this when the LLC is formed."
+**output_feeds:** ownership_narrative, document_checklist
+**denial_prevention:** D-13
+
+### QE-NEW-02
+**Question:** "Does your Operating Agreement explicitly state that each partner independently retains full management rights and can block major decisions?"
+**Type:** select
+**Options:** Yes / Not sure / Not yet — still being drafted
+**Branch:** "Not sure" or "Not yet" → ATTORNEY_RECOMMENDED advisory:
+  "The Negative Control doctrine requires each E-2 partner to have
+  genuine independent control. This must be explicit in the Operating
+  Agreement. Have your attorney confirm this language before submission."
+**output_feeds:** ownership_narrative
+**denial_prevention:** D-13
+**lead_signal:** attorney_warmth+1
 
 ### QE-06
 **Question:** Do you own 100% of the business?

@@ -1,0 +1,318 @@
+"use client";
+
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+
+const sectionHeading = {
+  fontFamily: "'DM Sans', sans-serif",
+  fontWeight: 500,
+  fontSize: "14px",
+  letterSpacing: "0.08em",
+  textTransform: "uppercase" as const,
+  color: "#C9A84C",
+  marginTop: "40px",
+  marginBottom: "16px",
+};
+
+const bodyText = {
+  fontFamily: "'DM Sans', sans-serif",
+  fontWeight: 300,
+  fontSize: "14px",
+  lineHeight: 1.8,
+  color: "rgba(245,240,232,0.75)",
+};
+
+const warningBlock = {
+  ...bodyText,
+  color: "#f5f0e8",
+  borderLeft: "2px solid #C9A84C",
+  paddingLeft: "16px",
+  marginBottom: "16px",
+};
+
+export default function TermsOfServicePage() {
+  const searchParams = useSearchParams();
+  const returnTo = searchParams.get("returnTo") || "/";
+
+  return (
+    <div className="min-h-screen flex flex-col" style={{ background: "#0a0a0a" }}>
+      <header
+        className="sticky top-0 z-50"
+        style={{ background: "#0a0a0a", borderBottom: "1px solid rgba(201,168,76,0.2)" }}
+      >
+        <div className="flex justify-between items-center h-16 px-4 max-w-4xl mx-auto w-full">
+          <Link href="/" className="flex items-center gap-2">
+            <span
+              className="text-xl font-bold"
+              style={{ color: "#C9A84C", fontFamily: "'Cormorant Garamond', serif", fontWeight: 300 }}
+            >
+              e2go<span style={{ color: "#f5f0e8" }}>.app</span>
+            </span>
+          </Link>
+          <Link href={returnTo} style={{ color: "rgba(245,240,232,0.7)", fontSize: "14px", textDecoration: "none" }}>
+            ← Back
+          </Link>
+        </div>
+      </header>
+
+      <main className="flex-1 px-4 py-12 max-w-3xl mx-auto w-full">
+        <h1
+          style={{
+            fontFamily: "'Cormorant Garamond', serif",
+            fontWeight: 300,
+            fontStyle: "italic",
+            fontSize: "32px",
+            color: "#f5f0e8",
+            marginBottom: "8px",
+          }}
+        >
+          Terms of Service
+        </h1>
+        <p style={{ ...bodyText, fontSize: "13px", color: "rgba(245,240,232,0.76)", marginBottom: "8px" }}>
+          Last updated: June 2026
+        </p>
+        <p style={{ ...bodyText, fontSize: "13px", color: "rgba(245,240,232,0.76)", marginBottom: "32px" }}>
+          Company: E2Pathway Inc., a Texas limited liability company
+          <br />
+          DBA: e2go &nbsp;|&nbsp; hello@e2go.app &nbsp;|&nbsp; legal@e2go.app &nbsp;|&nbsp; privacy@e2go.app
+        </p>
+
+        <div style={bodyText}>
+          <p style={{ marginBottom: "16px" }}>
+            By creating an account or using e2go at e2go.app, you agree to these Terms. If you do not agree, do not use the platform.
+          </p>
+
+          {/* Section 1 */}
+          <h2 style={sectionHeading}>1. What e2go Is</h2>
+          <p style={{ marginBottom: "16px" }}>
+            e2go is a self-guided software platform that helps E-2 Treaty Investor visa applicants organize their information, build their application package, and prepare for their consulate interview.
+          </p>
+          <p style={{ marginBottom: "16px" }}>
+            We provide tools, document templates, AI-assisted document drafts, and interview preparation resources.
+          </p>
+          <p style={{ marginBottom: "16px" }}>
+            <strong style={{ color: "#f5f0e8" }}>We are not a law firm. We do not provide legal advice.</strong> No attorney-client relationship is formed by using this platform.
+          </p>
+
+          {/* Section 2 */}
+          <h2 style={sectionHeading}>2. What e2go Does Not Do</h2>
+          <p style={{ marginBottom: "12px" }}>e2go does NOT:</p>
+          <ul style={{ marginLeft: "20px", marginBottom: "16px", listStyleType: "disc" }}>
+            <li style={{ marginBottom: "8px" }}>Give legal advice or legal opinions on your specific situation</li>
+            <li style={{ marginBottom: "8px" }}>Act as an immigration representative or accredited representative under 8 C.F.R. §1292</li>
+            <li style={{ marginBottom: "8px" }}>Guarantee visa approval — consular decisions are made by U.S. consular officers using their full discretion</li>
+            <li style={{ marginBottom: "8px" }}>File documents on your behalf or communicate with any government authority on your behalf</li>
+            <li style={{ marginBottom: "8px" }}>Substitute for a licensed immigration attorney</li>
+          </ul>
+          <div style={warningBlock}>
+            <p>
+              If your situation involves prior visa refusals, criminal history, complex ownership structures, or other factors flagged by the platform, consult a licensed immigration attorney before submitting your application. The platform will tell you when this applies to you.
+            </p>
+          </div>
+
+          {/* Section 3 */}
+          <h2 style={sectionHeading}>3. AI-Generated Documents — Your Responsibility</h2>
+          <p style={{ marginBottom: "16px" }}>
+            Documents generated by e2go are produced by artificial intelligence based on the information you provide. You acknowledge that:
+          </p>
+          <p style={{ marginBottom: "16px" }}>
+            <strong style={{ color: "#f5f0e8" }}>AI documents may contain errors.</strong> AI systems generate text based on patterns. They do not exercise legal judgment. A document can read fluently and still contain a material error.
+          </p>
+          <p style={{ marginBottom: "16px" }}>
+            <strong style={{ color: "#f5f0e8" }}>You must review every document before submitting it.</strong> Before submitting anything to a consulate, embassy, or government authority, you must read every word, verify every fact, correct any errors, and ensure the document accurately represents your situation. This is not optional — it is your legal responsibility.
+          </p>
+          <p style={{ marginBottom: "16px" }}>
+            <strong style={{ color: "#f5f0e8" }}>Accuracy is your responsibility.</strong> e2go&apos;s responsibility ends at the point of download. What you submit is yours.
+          </p>
+          <p style={{ marginBottom: "16px" }}>
+            <strong style={{ color: "#f5f0e8" }}>Regulations change.</strong> Immigration law and consular practice change frequently. e2go makes reasonable efforts to stay current but does not guarantee that documents reflect requirements at the exact time of your submission.
+          </p>
+
+          {/* Section 4 */}
+          <h2 style={sectionHeading}>4. User Accounts</h2>
+          <p style={{ marginBottom: "12px" }}>To use the platform you must:</p>
+          <ul style={{ marginLeft: "20px", marginBottom: "16px", listStyleType: "disc" }}>
+            <li style={{ marginBottom: "8px" }}>Be at least 18 years old and legally capable of entering into contracts</li>
+            <li style={{ marginBottom: "8px" }}>Provide accurate, current, and complete information</li>
+            <li style={{ marginBottom: "8px" }}>Keep your password secure and not share your account</li>
+            <li style={{ marginBottom: "8px" }}>Notify us immediately at hello@e2go.app of any unauthorized account access</li>
+            <li style={{ marginBottom: "8px" }}>Use the platform only for your own E-2 visa preparation — not for preparing documents on behalf of others</li>
+          </ul>
+          <p style={{ marginBottom: "16px" }}>You are responsible for all activity under your account.</p>
+
+          {/* Section 5 */}
+          <h2 style={sectionHeading}>5. Payment and Refunds</h2>
+          <p style={{ marginBottom: "16px" }}>
+            <strong style={{ color: "#f5f0e8" }}>Payment processing</strong> is handled by Stripe, Inc. e2go does not store your card details.
+          </p>
+          <p style={{ marginBottom: "12px" }}>Refunds:</p>
+          <ul style={{ marginLeft: "20px", marginBottom: "16px", listStyleType: "disc" }}>
+            <li style={{ marginBottom: "8px" }}>Before document generation begins: full refund within 72 hours of purchase if you contact hello@e2go.app and no documents have been generated.</li>
+            <li style={{ marginBottom: "8px" }}>After document generation begins: no refund is available. AI generation consumes the service at the moment it runs.</li>
+            <li style={{ marginBottom: "8px" }}>Visa denial is not grounds for a refund. Consular decisions are entirely outside e2go&apos;s control.</li>
+            <li style={{ marginBottom: "8px" }}>Technical failures preventing document delivery: contact support and we will resolve or refund at our discretion.</li>
+          </ul>
+          <p style={{ marginBottom: "16px" }}>
+            We reserve the right to update pricing. Existing subscribers will receive 30 days notice before any price change takes effect.
+          </p>
+
+          {/* Section 6 */}
+          <h2 style={sectionHeading}>6. Privacy and Your Data</h2>
+
+          <p style={{ marginBottom: "8px", color: "#f5f0e8", fontWeight: 400 }}>6.1 What we collect</p>
+          <p style={{ marginBottom: "16px" }}>
+            We collect information you provide: name, email, business details, investment information, immigration history, and other information needed to build your application package. We also collect usage data (pages visited, features used) to improve the platform.
+          </p>
+
+          <p style={{ marginBottom: "8px", color: "#f5f0e8", fontWeight: 400 }}>6.2 How we use it</p>
+          <p style={{ marginBottom: "8px" }}>We use your information to:</p>
+          <ul style={{ marginLeft: "20px", marginBottom: "16px", listStyleType: "disc" }}>
+            <li style={{ marginBottom: "8px" }}>Generate your application documents</li>
+            <li style={{ marginBottom: "8px" }}>Operate and improve the platform</li>
+            <li style={{ marginBottom: "8px" }}>Send transactional emails related to your account</li>
+            <li style={{ marginBottom: "8px" }}>Respond to support requests</li>
+            <li style={{ marginBottom: "8px" }}>Comply with applicable law</li>
+          </ul>
+          <p style={{ marginBottom: "16px" }}>
+            We do not sell your personal information. We do not share it with government authorities except as required by law.
+          </p>
+
+          <p style={{ marginBottom: "8px", color: "#f5f0e8", fontWeight: 400 }}>6.3 AI processing</p>
+          <p style={{ marginBottom: "16px" }}>
+            Your information is processed by third-party AI providers (including Anthropic, OpenRouter, and Groq) under data processing agreements. Your application data is not used to train AI models.
+          </p>
+
+          <p style={{ marginBottom: "8px", color: "#f5f0e8", fontWeight: 400 }}>6.4 Security</p>
+          <p style={{ marginBottom: "16px" }}>
+            Your data is encrypted in transit and at rest. We conduct regular security reviews. Our infrastructure is hosted on enterprise-grade cloud services.
+          </p>
+
+          <p style={{ marginBottom: "8px", color: "#f5f0e8", fontWeight: 400 }}>6.5 Your rights</p>
+          <p style={{ marginBottom: "16px" }}>
+            Depending on where you are located, you may have rights to access, correct, delete, or export your personal data. Contact privacy@e2go.app to exercise any of these rights. We respond within 30 days.
+          </p>
+
+          <p style={{ marginBottom: "8px", color: "#f5f0e8", fontWeight: 400 }}>6.6 Applicable privacy laws</p>
+          <p style={{ marginBottom: "16px" }}>
+            e2go is operated from Texas, United States. We acknowledge the following additional obligations:
+          </p>
+          <p style={{ marginBottom: "16px" }}>
+            <strong style={{ color: "#f5f0e8" }}>Canadian users (PIPEDA and provincial laws):</strong> Canada&apos;s Personal Information Protection and Electronic Documents Act (PIPEDA) applies to personal data we collect from Canadian residents. Quebec residents are also protected by Law 25. British Columbia and Alberta residents are protected by their respective provincial PIPA statutes. We comply with meaningful consent, limited collection, and security requirements under these laws.
+          </p>
+          <p style={{ marginBottom: "16px" }}>
+            <strong style={{ color: "#f5f0e8" }}>Quebec users:</strong> French language communications are available on request at hello@e2go.app, consistent with Quebec&apos;s Charter of the French Language.
+          </p>
+          <p style={{ marginBottom: "16px" }}>
+            <strong style={{ color: "#f5f0e8" }}>California users (CCPA/CPRA):</strong> California residents have rights under the California Consumer Privacy Act, including the right to know what personal information we collect, the right to delete it, and the right to opt out of sale (we do not sell personal information). Contact privacy@e2go.app.
+          </p>
+          <p style={{ marginBottom: "16px" }}>
+            <strong style={{ color: "#f5f0e8" }}>EU and EEA users (GDPR):</strong> If you are in the European Economic Area, you have rights under the General Data Protection Regulation including access, rectification, erasure, portability, and the right to object to processing. Our legal basis for processing your data is the performance of the contract you entered into by creating an account. Contact privacy@e2go.app.
+          </p>
+
+          <p style={{ marginBottom: "8px", color: "#f5f0e8", fontWeight: 400 }}>6.7 CASL — Canadian Anti-Spam Law</p>
+          <p style={{ marginBottom: "12px" }}>If you are in Canada:</p>
+          <ul style={{ marginLeft: "20px", marginBottom: "16px", listStyleType: "disc" }}>
+            <li style={{ marginBottom: "8px" }}>Transactional emails (account activity, document delivery) are sent as part of the service and do not require separate marketing consent.</li>
+            <li style={{ marginBottom: "8px" }}>Marketing emails (product updates, tips, newsletters) are only sent if you explicitly opt in during signup. You may withdraw consent at any time by clicking unsubscribe or emailing hello@e2go.app.</li>
+            <li style={{ marginBottom: "8px" }}>We retain records of your consent.</li>
+          </ul>
+
+          {/* Section 7 */}
+          <h2 style={sectionHeading}>7. Intellectual Property</h2>
+          <p style={{ marginBottom: "16px" }}>
+            The e2go platform, software, methodology, design, and original content are owned by E2Pathway Inc. and protected by U.S. and international intellectual property law.
+          </p>
+          <p style={{ marginBottom: "8px" }}>You may:</p>
+          <ul style={{ marginLeft: "20px", marginBottom: "16px", listStyleType: "disc" }}>
+            <li style={{ marginBottom: "8px" }}>Use the platform tools and templates for your own E-2 visa application</li>
+            <li style={{ marginBottom: "8px" }}>Download and retain documents you generate</li>
+            <li style={{ marginBottom: "8px" }}>Share your experience with the platform</li>
+          </ul>
+          <p style={{ marginBottom: "8px" }}>You may not:</p>
+          <ul style={{ marginLeft: "20px", marginBottom: "16px", listStyleType: "disc" }}>
+            <li style={{ marginBottom: "8px" }}>Reproduce, distribute, or sell any e2go proprietary content</li>
+            <li style={{ marginBottom: "8px" }}>Use the platform to prepare documents on behalf of others for compensation</li>
+            <li style={{ marginBottom: "8px" }}>Use automated tools to scrape or download platform content</li>
+            <li style={{ marginBottom: "8px" }}>Reverse engineer or attempt to access the platform&apos;s source code</li>
+            <li style={{ marginBottom: "8px" }}>Use e2go to build a competing service</li>
+          </ul>
+
+          {/* Section 8 */}
+          <h2 style={sectionHeading}>8. Disclaimer of Warranties</h2>
+          <div style={warningBlock}>
+            <p style={{ marginBottom: "12px" }}>
+              THE PLATFORM IS PROVIDED &quot;AS IS&quot; AND &quot;AS AVAILABLE&quot; WITHOUT WARRANTY OF ANY KIND. WE DO NOT WARRANT THAT THE PLATFORM WILL BE ERROR-FREE, UNINTERRUPTED, OR THAT ANY DOCUMENT GENERATED WILL BE LEGALLY SUFFICIENT FOR ANY PURPOSE.
+            </p>
+            <p>
+              VISA APPROVAL IS NEVER GUARANTEED. ALL CONSULAR DECISIONS ARE MADE BY U.S. GOVERNMENT OFFICERS EXERCISING INDEPENDENT DISCRETION.
+            </p>
+          </div>
+
+          {/* Section 9 */}
+          <h2 style={sectionHeading}>9. Limitation of Liability</h2>
+          <div style={warningBlock}>
+            <p style={{ marginBottom: "12px" }}>
+              TO THE MAXIMUM EXTENT PERMITTED BY LAW, e2go SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, INCLUDING VISA DENIAL, LOSS OF BUSINESS OPPORTUNITY, IMMIGRATION STATUS CONSEQUENCES, OR THE COST OF RETAINING LEGAL COUNSEL TO CORRECT APPLICATION MATERIALS.
+            </p>
+            <p style={{ marginBottom: "12px" }}>
+              OUR TOTAL LIABILITY FOR ANY CLAIM ARISING FROM THESE TERMS OR YOUR USE OF THE PLATFORM SHALL NOT EXCEED THE AMOUNT YOU PAID e2go IN THE 12 MONTHS BEFORE THE CLAIM AROSE.
+            </p>
+            <p>
+              Some jurisdictions do not allow certain liability exclusions. In those jurisdictions our liability is limited to the maximum extent permitted by applicable law.
+            </p>
+          </div>
+
+          {/* Section 10 */}
+          <h2 style={sectionHeading}>10. Indemnification</h2>
+          <p style={{ marginBottom: "16px" }}>
+            You agree to defend and hold harmless e2go, its officers, employees, and agents from claims arising from your use of the platform, information you provide that is false or inaccurate, or your violation of these Terms.
+          </p>
+
+          {/* Section 11 */}
+          <h2 style={sectionHeading}>11. Governing Law and Disputes</h2>
+          <p style={{ marginBottom: "16px" }}>
+            These Terms are governed by the laws of the State of Texas, United States.
+          </p>
+          <p style={{ marginBottom: "16px" }}>
+            Any dispute that cannot be resolved informally shall be settled by binding arbitration under the American Arbitration Association Consumer Arbitration Rules, conducted in Texas or by video conference. Each party bears its own costs. Class actions and class arbitrations are not permitted.
+          </p>
+          <p style={{ marginBottom: "16px" }}>
+            Nothing in this section limits rights you may have under mandatory consumer protection laws in your jurisdiction.
+          </p>
+
+          {/* Section 12 */}
+          <h2 style={sectionHeading}>12. Changes to These Terms</h2>
+          <p style={{ marginBottom: "16px" }}>
+            We may update these Terms. Material changes will be communicated by email and by notice on the platform at least 14 days before taking effect. Continued use after the effective date constitutes acceptance.
+          </p>
+
+          {/* Section 13 */}
+          <h2 style={sectionHeading}>13. Contact</h2>
+          <p style={{ marginBottom: "8px" }}>
+            <strong style={{ color: "#f5f0e8" }}>General:</strong> hello@e2go.app
+          </p>
+          <p style={{ marginBottom: "8px" }}>
+            <strong style={{ color: "#f5f0e8" }}>Legal:</strong> legal@e2go.app
+          </p>
+          <p style={{ marginBottom: "8px" }}>
+            <strong style={{ color: "#f5f0e8" }}>Privacy:</strong> privacy@e2go.app
+          </p>
+          <p style={{ marginBottom: "16px" }}>
+            <strong style={{ color: "#f5f0e8" }}>Support:</strong> support@e2go.app
+          </p>
+          <p style={{ marginBottom: "16px" }}>
+            E2Pathway Inc.
+            <br />
+            Texas, United States
+          </p>
+        </div>
+
+        <div className="mt-12 pt-8" style={{ borderTop: "1px solid rgba(201,168,76,0.2)" }}>
+          <Link href={returnTo} style={{ color: "#C9A84C", fontSize: "14px", textDecoration: "none" }}>
+            ← Back
+          </Link>
+        </div>
+      </main>
+    </div>
+  );
+}

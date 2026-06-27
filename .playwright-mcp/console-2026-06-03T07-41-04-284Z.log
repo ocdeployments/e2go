@@ -1,0 +1,7 @@
+[     423ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom.development.js:38559
+[     664ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/icons/icon-192.png:0
+[     665ms] [LOG] Service Worker registered: http://localhost:3000/ @ webpack-internal:///(app-pages-browser)/./src/components/ServiceWorkerRegistration.tsx:13
+[     665ms] [LOG] Service Worker registered: http://localhost:3000/ @ webpack-internal:///(app-pages-browser)/./src/components/ServiceWorkerRegistration.tsx:13
+[     696ms] [WARNING] Error while trying to use the following icon from the Manifest: http://localhost:3000/icons/icon-192.png (Download error or resource isn't a valid image) @ http://localhost:3000/:0
+[    3698ms] [WARNING] The resource http://localhost:3000/_next/static/media/e18f83c737786aa7-s.p.woff2 was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally. @ http://localhost:3000/:0
+[    3698ms] [WARNING] The resource http://localhost:3000/_next/static/media/7b89a4fd5e90ede0-s.p.woff2 was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally. @ http://localhost:3000/:0

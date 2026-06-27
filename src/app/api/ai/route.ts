@@ -22,7 +22,6 @@ async function checkRateLimitWithRedis(userId: string): Promise<boolean> {
       const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN;
 
       if (!redisUrl || !redisToken) {
-        console.log("[AI] Redis not configured, failing open");
         return true;
       }
 
@@ -53,16 +52,16 @@ export async function POST(request: NextRequest) {
     // Create server-side Supabase client to verify authentication
     const supabase = await createSupabaseServerClient();
 
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    const { data: { user }, error: sessionError } = await supabase.auth.getUser();
 
-    if (sessionError || !session?.user) {
+    if (sessionError || !user) {
       return NextResponse.json(
         { error: "Authentication required" },
         { status: 401 }
       );
     }
 
-    const userId = session.user.id;
+    const userId = user.id;
 
     // Check rate limit with Redis
     const allowed = await checkRateLimitWithRedis(userId);
@@ -74,12 +73,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Parse request body
+    // Parse request body — systemPrompt is server-side only
     const body = await request.json();
-    const { systemPrompt, userPrompt, system, prompt } = body;
+    const { userPrompt, prompt } = body;
 
-    // Support both parameter formats for backwards compatibility
-    const finalSystemPrompt = systemPrompt || system || "You are a helpful assistant.";
     const finalUserPrompt = userPrompt || prompt;
 
     if (!finalUserPrompt) {
@@ -90,7 +87,7 @@ export async function POST(request: NextRequest) {
     }
 
     const result = await callAI({
-      systemPrompt: finalSystemPrompt,
+      systemPrompt: "You are a helpful assistant.",
       userPrompt: finalUserPrompt,
     });
 

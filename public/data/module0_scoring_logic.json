@@ -1,12 +1,12 @@
 {
   "module": "0",
   "document": "scoring_and_routing_logic",
-  "version": "1.1",
-  "last_updated": "2026-05-28",
+  "version": "3.0",
+  "last_updated": "2026-05-31",
   "evaluation_order": [
-    "1. Hard stops \u2014 any single hard stop = DO_NOT_PROCEED immediately",
-    "2. Attorney-recommended flags \u2014 accumulate",
-    "3. Risk flags \u2014 accumulate",
+    "1. Hard stops — any single hard stop = DO_NOT_PROCEED immediately",
+    "2. Attorney-recommended flags — accumulate",
+    "3. Risk flags — accumulate",
     "4. Final outcome from accumulated flags"
   ],
   "outcomes": {
@@ -19,203 +19,138 @@
     {
       "code": "PR-01",
       "question": "Q0-01",
-      "trigger": [
-        "I am a permanent resident of Canada, but not a Canadian citizen",
-        "I am not a Canadian citizen"
-      ]
+      "trigger": ["non_treaty_country"],
+      "note": "Q0-01 is a searchable_select - system checks selected country against treaty_countries.json"
     },
     {
       "code": "PR-02",
       "question": "Q0-03",
-      "trigger": [
-        "I am currently in the United States without valid status"
-      ]
+      "trigger": ["In the United States — without valid status"]
     },
     {
       "code": "PR-03",
       "question": "Q0-04",
-      "trigger": [
-        "No \u2014 I do not currently have funds available for the investment"
-      ]
+      "trigger": ["I do not have funds available right now"]
     },
     {
       "code": "PR-04",
       "question": "Q0-07",
-      "trigger": [
-        "Yes \u2014 a loan secured by the assets of the business I am investing in"
-      ]
-    },
-    {
-      "code": "PR-05",
-      "question": "Q0-08",
-      "trigger": [
-        "I will mainly be a passive investor"
-      ]
+      "trigger": ["Yes — a loan that would be backed by the U.S. business itself"]
     },
     {
       "code": "PR-06",
       "question": "Q0-09",
-      "trigger": [
-        "More than two equal owners"
-      ]
+      "trigger": ["With more than one other person"]
     },
     {
       "code": "PR-07",
-      "question": "Q0-10",
-      "trigger": [
-        "Passive real estate holding or rental-only investment"
-      ]
+      "question": "Q0-10_sub",
+      "trigger": ["A property rental or investment business"]
     },
     {
-      "code": "PR-08",
-      "question": "Q0-10",
-      "trigger": [
-        "Cannabis or marijuana-related activity"
-      ]
+      "code": "PR-THIRD-COUNTRY",
+      "question": "Q0-03",
+      "trigger": ["In another country"],
+      "message": "As of September 6, 2025, E-2 visa applications must be filed at a consulate in your country of nationality or legal residence. Third-country processing is no longer available."
     },
     {
-      "code": "PR-09",
-      "question": "Q0-10",
-      "trigger": [
-        "A business where I would not be actively involved in management"
-      ]
+      "code": "PR-PASSIVE-INVEST",
+      "question": "Q0-09a",
+      "trigger": ["It is a stock portfolio or financial investment"],
+      "message": "A stock portfolio or financial investment does not qualify for E-2. The E-2 requires a real and operating commercial enterprise."
+    },
+    {
+      "code": "PR-NONPROFIT",
+      "question": "Q0-09a",
+      "trigger": ["It is a non-profit or charitable organisation"],
+      "message": "Non-profit organisations are explicitly excluded from E-2 investor classification under 9 FAM 402.9-6(C)."
     }
   ],
   "attorney_flags": [
     {
       "code": "W-02",
       "question": "Q0-03",
-      "trigger": [
-        "I am currently in the United States and I am not sure whether my status is valid"
-      ]
+      "trigger": ["In the United States — I am not sure of my status"],
+      "level": "attorney_recommended"
     },
     {
       "code": "W-03",
       "question": "Q0-03",
-      "trigger": [
-        "I am in another country"
-      ]
+      "trigger": ["In another country"],
+      "level": "do_not_proceed",
+      "stop_code": "PR-THIRD-COUNTRY",
+      "message": "As of September 6, 2025, E-2 visa applications must be filed at a consulate in your country of nationality or legal residence. Processing at a third-country consulate is no longer permitted. If you are temporarily abroad, you will need to apply when you return home. An immigration attorney can advise on your specific situation."
     },
     {
-      "code": "W-07",
-      "question": "Q0-06",
-      "trigger": [
-        "No \u2014 I cannot clearly document the source or movement of funds",
-        "I am not sure"
-      ]
+      "code": "W-E2-DENIED",
+      "question": "Q0-E2",
+      "trigger": ["Yes — my application was denied"],
+      "level": "attorney_recommended"
+    },
+    {
+      "code": "W-E2-PENDING",
+      "question": "Q0-E2",
+      "trigger": ["Yes — my application is still pending or under review"],
+      "level": "attorney_recommended"
     },
     {
       "code": "W-08",
       "question": "Q0-07",
-      "trigger": [
-        "Yes \u2014 but I am not sure how the loan is secured"
-      ]
+      "trigger": ["I am not sure how the loan would be structured"],
+      "level": "attorney_recommended"
     },
     {
       "code": "W-09",
       "question": "Q0-08",
-      "trigger": [
-        "I am not sure yet"
-      ]
+      "trigger": ["As a manager — I will oversee the business and hire people to run daily operations"],
+      "level": "attorney_recommended"
     },
     {
-      "code": "W-10",
-      "question": "Q0-09",
-      "trigger": [
-        "Two owners but not 50/50",
-        "I am not sure yet"
-      ]
-    },
-    {
-      "code": "W-12",
-      "question": "Q0-12",
-      "trigger": [
-        "Yes",
-        "I am not sure"
-      ]
-    },
-    {
-      "code": "W-14",
-      "question": "Q0-14",
-      "trigger": [
-        "No",
-        "I am not sure"
-      ],
-      "condition": "Q0-09 = Two equal 50/50 owners"
-    },
-    {
-      "code": "W-15",
-      "question": "Q0-15",
-      "trigger": [
-        "No",
-        "I am not sure"
-      ],
-      "condition": "Q0-09 = Two equal 50/50 owners"
-    },
-    {
-      "code": "W-16",
-      "question": "Q0-17",
-      "trigger": [
-        "No"
-      ],
-      "condition": "Q0-16 includes spouse"
-    },
-    {
-      "code": "W-18",
-      "question": "Q0-19",
-      "trigger": [
-        "Yes",
-        "I am not sure"
-      ],
-      "condition": "Q0-16 includes children"
-    },
-    {
-      "code": "W-19",
-      "question": "Q0-20",
-      "trigger": [
-        "Yes",
-        "I am not sure"
-      ],
-      "condition": "Q0-16 includes any dependent"
+      "code": "W-PROP-STRONG",
+      "question": "Q0-05",
+      "trigger": "amount_usd < 75000",
+      "level": "attorney_recommended"
     },
     {
       "code": "W-11-RECENT",
       "question": "Q0-11",
-      "trigger": [
-        "Yes \u2014 one refusal, within the last 5 years"
-      ],
+      "trigger": ["Yes — once, in the last 5 years"],
       "level": "attorney_recommended"
     },
     {
       "code": "W-11-MULTIPLE",
       "question": "Q0-11",
-      "trigger": [
-        "Yes \u2014 more than one refusal"
-      ],
+      "trigger": ["Yes — more than once"],
+      "level": "attorney_recommended"
+    },
+    {
+      "code": "W-11-UNSURE",
+      "question": "Q0-11",
+      "trigger": ["I am not sure"],
+      "level": "attorney_recommended"
+    },
+    {
+      "code": "W-12",
+      "question": "Q0-12",
+      "trigger": ["Yes", "I am not sure"],
       "level": "attorney_recommended"
     },
     {
       "code": "W-13-RECENT",
       "question": "Q0-13",
-      "trigger": [
-        "Yes \u2014 a minor conviction within the last 10 years"
-      ],
+      "trigger": ["Yes — a minor matter, in the last 10 years"],
       "level": "attorney_recommended"
     },
     {
       "code": "W-13-SERIOUS",
       "question": "Q0-13",
-      "trigger": [
-        "Yes \u2014 a serious conviction (any time)"
-      ],
+      "trigger": ["Yes — something more serious"],
       "level": "attorney_recommended"
     },
     {
       "code": "W-13-UNSURE",
       "question": "Q0-13",
-      "trigger": [
-        "I am not sure"
-      ],
+      "trigger": ["I am not sure"],
       "level": "attorney_recommended"
     },
     {
@@ -224,82 +159,129 @@
       "trigger": "confirmed_ties == 0",
       "level": "attorney_recommended",
       "note": "Composite: calculated after Q0-NI-01, Q0-NI-02, Q0-NI-03"
+    },
+    {
+      "code": "W-COMMONLAW",
+      "question": "Q0-16_sub",
+      "trigger": ["We are in a common-law or de facto relationship"],
+      "level": "attorney_recommended"
+    },
+    {
+      "code": "W-17-NATIONALITY",
+      "question": "Q0-17",
+      "trigger": ["No — they are not", "I am not sure"],
+      "level": "attorney_recommended"
+    },
+    {
+      "code": "W-18-OVER21",
+      "question": "Q0-19",
+      "trigger": ["One or more are 21 or older"],
+      "level": "attorney_recommended"
+    },
+    {
+      "code": "W-18-MARRIED",
+      "question": "Q0-19",
+      "trigger": ["One or more are married"],
+      "level": "attorney_recommended"
+    },
+    {
+      "code": "W-19",
+      "question": "Q0-20",
+      "trigger": ["Yes", "I am not sure"],
+      "level": "attorney_recommended"
+    },
+    {
+      "code": "W-TRUST-01",
+      "question": "Q0-14c",
+      "trigger": ["Through a family trust or other trust structure", "Through a combination of the above"],
+      "level": "attorney_recommended",
+      "note": "Trust ownership adds complexity to treaty-national ownership analysis"
+    },
+    {
+      "code": "W-CONTROL-UNSURE",
+      "question": "Q0-14d",
+      "trigger": ["I am not sure"],
+      "level": "attorney_recommended",
+      "note": "Below-50% ownership without confirmed control rights"
+    },
+    {
+      "code": "W-EVISA-NATIONALITY",
+      "question": "Q0-14e",
+      "trigger": ["I am not sure — we need to decide this"],
+      "level": "attorney_recommended",
+      "note": "Mixed-nationality partnership needs clear E-visa nationality designation"
+    },
+    {
+      "code": "W-PLANNING-STAGE",
+      "question": "Q0-05a",
+      "trigger": ["In the planning stage — I have not yet secured the funds"],
+      "level": "attorney_recommended",
+      "note": "Applicant not yet in the process of investing under 9 FAM"
+    },
+    {
+      "code": "W-PROP-STRONG-30",
+      "question": "Q0-business-cost",
+      "trigger": "proportionality < 30%",
+      "level": "attorney_recommended",
+      "note": "Investment below 30% of total business cost — substantiality will be heavily scrutinised"
     }
   ],
   "risk_flags": [
     {
       "code": "W-01",
       "question": "Q0-02",
-      "trigger": [
-        "No",
-        "I am not sure"
-      ]
+      "trigger": ["It has expired but I am still a citizen", "No — I do not have one"]
     },
     {
       "code": "W-04",
       "question": "Q0-04",
-      "trigger": [
-        "No \u2014 funds are available, but nothing has been committed yet"
-      ]
+      "trigger": ["I have the funds but I have not chosen a business yet", "I am still figuring out the finances"]
+    },
+    {
+      "code": "W-15",
+      "question": "Q0-15",
+      "trigger": ["No — they will be more of a silent partner", "We have not decided yet"],
+      "level": "risk_flag"
     },
     {
       "code": "W-06",
       "question": "Q0-06",
-      "trigger": [
-        "Mostly \u2014 I have most of the documentation, but there may be gaps"
-      ]
+      "trigger": ["Yes — but parts of it may be harder to document", "I have the money but I have not thought about the paper trail yet"]
     },
     {
-      "code": "W-17",
-      "question": "Q0-18",
-      "trigger": [
-        "No",
-        "I am not sure"
-      ],
-      "condition": "Q0-16 includes dependents"
+      "code": "W-PROP-SOFT",
+      "question": "Q0-05",
+      "trigger": "75000 <= amount_usd <= 149999",
+      "level": "risk_flag"
     },
     {
       "code": "W-11-OLD",
       "question": "Q0-11",
-      "trigger": [
-        "Yes \u2014 one refusal, more than 5 years ago"
-      ],
+      "trigger": ["Yes — once, more than 5 years ago"],
       "level": "risk_flag"
     },
     {
       "code": "W-13-OLD",
       "question": "Q0-13",
-      "trigger": [
-        "Yes \u2014 a minor conviction, more than 10 years ago"
-      ],
+      "trigger": ["Yes — a minor matter, more than 10 years ago"],
       "level": "risk_flag"
     },
     {
       "code": "W-NI-01",
       "question": "Q0-NI-01",
-      "trigger": [
-        "Yes \u2014 I own Canadian property but may sell it before moving",
-        "No \u2014 I do not own Canadian real estate",
-        "Not applicable"
-      ],
+      "trigger": ["Yes — but I am thinking of selling before I move"],
       "level": "risk_flag"
     },
     {
       "code": "W-NI-02",
       "question": "Q0-NI-02",
-      "trigger": [
-        "No \u2014 my immediate family will come with me",
-        "I do not have immediate family"
-      ],
+      "trigger": ["No — all close family is moving with me"],
       "level": "risk_flag"
     },
     {
       "code": "W-NI-03",
       "question": "Q0-NI-03",
-      "trigger": [
-        "No \u2014 I plan to close or transfer all accounts",
-        "I am not sure yet"
-      ],
+      "trigger": ["No — I plan to close everything and move it all", "I am not sure"],
       "level": "risk_flag"
     },
     {
@@ -310,18 +292,84 @@
       "note": "Composite: calculated after Q0-NI-01, Q0-NI-02, Q0-NI-03"
     },
     {
-      "code": "W-PROP-SOFT",
-      "question": "Q0-05",
-      "trigger": "75000 <= amount_usd <= 149999",
-      "level": "risk_flag",
-      "denial_risk": "D-01"
+      "code": "W-17-PASSPORT",
+      "question": "Q0-18",
+      "trigger": ["No — one or more passports are expired or missing", "I am not sure"]
     },
     {
-      "code": "W-PROP-STRONG",
-      "question": "Q0-05",
-      "trigger": "amount_usd < 75000",
+      "code": "W-18-AGEOUT",
+      "question": "Q0-19",
+      "trigger": ["One or more are close to turning 21 (within the next 2–3 years)"],
+      "level": "risk_flag"
+    },
+    {
+      "code": "W-TIMELINE-URGENT",
+      "question": "Q0-TIMELINE",
+      "trigger": ["Within the next 3 months"],
+      "level": "risk_flag"
+    },
+    {
+      "code": "W-TARGET-URGENT",
+      "question": "Q0-target-date",
+      "trigger": ["Within 6 months"],
       "level": "risk_flag",
-      "denial_risk": "D-01"
+      "note": "Ambitious timeline — applicant needs to start immediately"
+    },
+    {
+      "code": "W-NO-BIZ-IDENTIFIED",
+      "question": "Q0-business-type",
+      "trigger": ["I have not identified a specific business yet"],
+      "level": "risk_flag",
+      "note": "Business must be identified before application can be filed"
+    },
+    {
+      "code": "W-HOLDCO-01",
+      "question": "Q0-14c",
+      "trigger": ["Through a holding company or corporation"],
+      "level": "risk_flag",
+      "note": "Holding company ownership — verify effective ownership percentage through chain"
+    },
+    {
+      "code": "W-NO-CONTROL",
+      "question": "Q0-14d",
+      "trigger": ["No — my control is based on ownership percentage only"],
+      "level": "risk_flag",
+      "note": "Below-50% ownership without documented control rights — may not meet develop and direct requirement"
+    },
+    {
+      "code": "W-INVEST-PARTIAL",
+      "question": "Q0-05a",
+      "trigger": ["Partially committed — some funds committed, remainder being transferred", "Not yet committed — I have the funds available but not yet deployed"],
+      "level": "risk_flag",
+      "note": "Investment not yet fully committed — documentation of deployment timeline needed"
+    },
+    {
+      "code": "W-REAL-ESTATE",
+      "question": "Q0-09a",
+      "trigger": ["It is a real estate investment or property holding"],
+      "level": "risk_flag",
+      "note": "Real estate — must demonstrate active operations, not passive holding"
+    },
+    {
+      "code": "W-BIZ-STRUCTURE-UNSURE",
+      "question": "Q0-09a",
+      "trigger": ["I am not sure of the structure"],
+      "level": "risk_flag",
+      "note": "Business structure unclear — must confirm active for-profit enterprise"
+    },
+    {
+      "code": "W-OWNERSHIP-UNSURE",
+      "question": "Q0-14c",
+      "trigger": ["I am not sure"],
+      "level": "risk_flag",
+      "note": "Ownership structure unclear — must confirm treaty-national ownership percentage"
+    },
+    {
+      "code": "W-PROP-SOFT-30",
+      "question": "Q0-business-cost",
+      "trigger": "30% <= proportionality < 50%",
+      "level": "risk_flag",
+      "note": "Investment 30-49% of total business cost — proportionality may be questioned"
     }
   ],
   "investment_thresholds_usd": {
@@ -338,9 +386,11 @@
       "max_usd": 74999,
       "flag": "W-PROP-STRONG"
     },
-    "currency_conversion": "Convert CAD to USD using daily cached rate before applying thresholds. Display rate used to user.",
-    "note": "No statutory minimum. Thresholds are advisory only based on observed practice."
+    "currency_conversion": "Convert to USD using daily cached rate before applying thresholds. Display rate used to user.",
+    "note": "No statutory minimum. Thresholds are advisory based on observed consulate practice."
   },
+  "currency_supported": ["USD", "CAD", "EUR", "GBP", "AUD", "JPY", "CNY", "INR", "MXN", "BRL"],
+  "currency_rates_api": "https://open.er-api.com/v6/latest/{currency}",
   "session_record_fields": [
     "id",
     "session_token",
@@ -354,6 +404,9 @@
     "family_type",
     "investment_amount",
     "investment_currency",
+    "target_state",
+    "target_timeline",
+    "nationality",
     "acknowledged_risk",
     "completed_at"
   ],
@@ -367,30 +420,69 @@
     "risk_flags_present": "Show persistent risk notes at relevant tabs"
   },
   "non_immigrant_intent_composite": {
-    "description": "After Q0-NI-01, Q0-NI-02, Q0-NI-03 \u2014 count confirmed ties",
+    "description": "After Q0-NI-01, Q0-NI-02, Q0-NI-03 — count confirmed ties to home country",
     "tie_confirmed_answers": {
       "Q0-NI-01": [
-        "Yes \u2014 I own Canadian property and will keep it"
+        "Yes — and I plan to keep it"
       ],
       "Q0-NI-02": [
-        "Yes \u2014 close family will remain in Canada",
-        "Mixed \u2014 some family in Canada, some coming with me"
+        "Yes — immediate family will remain (spouse, children, parents)",
+        "Yes — extended family will remain (siblings, grandparents, other relatives)",
+        "Some family will stay, some will come with me"
       ],
       "Q0-NI-03": [
-        "Yes \u2014 I will keep active Canadian financial accounts",
-        "Partially \u2014 I will keep some accounts active"
+        "Yes — I plan to keep my accounts open",
+        "Probably — I have not decided yet"
       ]
     },
     "scoring": {
-      "2_or_3_ties": "proceed_cleanly",
+      "3_ties": "intent_risk = low",
+      "2_ties": "intent_risk = medium",
       "1_tie": "risk_flag:W-NI-WEAK",
       "0_ties": "attorney_recommended:W-NI-NONE"
     }
   },
-  "version_notes": [
-    "Q0-11: W-11 split \u2192 W-11-OLD (risk flag), W-11-RECENT (attorney), W-11-MULTIPLE (attorney). Trigger strings match questions JSON v2.1 exactly.",
-    "Q0-13: W-13 split \u2192 W-13-OLD (risk flag), W-13-RECENT (attorney), W-13-SERIOUS (attorney), W-13-UNSURE (attorney). Trigger strings match questions JSON v2.1 exactly.",
-    "Non-immigrant intent composite added: Q0-NI-01/02/03 individual flags + tie-count composite \u2192 W-NI-WEAK (risk) / W-NI-NONE (attorney).",
-    "Investment threshold floor corrected: $75K (not $100K/$50K). W-05 removed. W-PROP-SOFT ($75K\u2013$149,999) and W-PROP-STRONG (<$75K) now in risk_flags and investment_thresholds_usd."
+  "treaty_country_check": {
+    "description": "Q0-01 validates selected country against treaty_countries.json",
+    "data_file": "treaty_countries.json",
+    "special_cases": {
+      "iran": {
+        "has_treaty": true,
+        "but_embassy_closed": true,
+        "routing": "DO_NOT_PROCEED"
+      },
+      "taiwan": {
+        "has_treaty": true,
+        "treaty_name": "Republic of China (Taiwan)",
+        "routing": "PROCEED"
+      }
+    }
+  },
+  "proportionality_scoring": {
+    "description": "Investment proportionality test — compares Q0-05 investment amount to Q0-business-cost total. Uses midpoint of investment range.",
+    "investment_range_midpoints": {
+      "Over $150,000": 175000,
+      "$100,000 – $150,000": 125000,
+      "$75,000 – $100,000": 87500,
+      "$50,000 – $75,000": 62500,
+      "Under $50,000": 35000
+    },
+    "thresholds": {
+      "clean": { "min_pct": 50, "flag": null, "note": "No flag" },
+      "soft": { "min_pct": 30, "max_pct": 49, "flag": "W-PROP-SOFT-30", "level": "risk_flag", "note": "30-49% — risk flag with advisory" },
+      "strong": { "max_pct": 29, "flag": "W-PROP-STRONG-30", "level": "attorney_recommended", "note": "Below 30% — officer will scrutinise substantiality" }
+    },
+    "skip_if": "Q0-business-type = 'I have not identified a specific business yet'"
+  },
+  "session_record_fields": [
+    "Q0-01 now checks against treaty_countries.json instead of static options",
+    "Added Q0-E2: Prior E-2 application history (W-E2-DENIED, W-E2-PENDING)",
+    "Added Q0-STATE: Target U.S. state selector",
+    "Added Q0-TIMELINE: Target submission timeline (W-TIMELINE-URGENT)",
+    "Q0-10 now has sub_question for business type details",
+    "Q0-16 has sub_question for spouse relationship type (W-COMMONLAW)",
+    "Non-immigrant intent questions now use [home country] instead of Canada",
+    "Currency support expanded to 10 currencies",
+    "Stage-aware routing: W-04 now triggers for Stage A/B users with uncommitted funds"
   ]
 }

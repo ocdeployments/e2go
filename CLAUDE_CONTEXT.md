@@ -1,6 +1,31 @@
-# CLAUDE_CONTEXT.md — e2go.app
+# CLAUDE_CONTEXT.md — E2go
 ## Master Context for Every Claude Code Session
-**Version:** Session 1 Final — May 29, 2026
+**Version:** June 27, 2026 — Session 80. Dashboard Case File UI redesign complete (4 zones: welcome, command panel, folder stack, phase strip). Paywall removed from dashboard entirely. Sprint E (all 7 sub-sprints) complete. /modules page added. Build clean on dev (0ccafb6).
+
+## SPRINT STATUS
+- OPS-1 (API Cost Intelligence): ✅ COMPLETE — llm_cost_log, cost logging in callLLM(), /admin/cost page
+- OPS-2 (System Health): ✅ COMPLETE — health-watchdog cron (5 min), /admin/system-status, kill switch, cron_log
+- OPS-3 (Admin Command Center): ✅ COMPLETE — /admin rebuilt, /admin/users/[userId], tier override, admin_audit_log
+- OPS-4 (Revenue Intelligence): ✅ COMPLETE — /admin/revenue, MoM, projection, churn signals, funnel
+- OPS-5 (Quality & Growth): ✅ COMPLETE — /admin/quality + NPS + simulator metrics + doc download rate + mobile QA pass (S66)
+- ENG-1 (Engine Quality Priority): ✅ COMPLETE — KB→docgen, coaching memory, multi-turn probing all confirmed built
+- ENG-2 (Engine Quality Advanced): ✅ COMPLETE — FDD prompt tuning (+1.0pts), adaptive difficulty (+0.3pts), Q0-08c/Q0-08d quiz branches, archetype classifier Q0-08a primary signal (S67)
+- INFRA-1 (Infrastructure Hardening): ✅ COMPLETE — FAQ Anthropic violation fixed, SSE backoff + existing-job skip + UI state restore (S66), connection pooler N/A confirmed
+- Sprint E-1 (Critical breaks): ✅ COMPLETE — 10 dead-end fixes (login, ToS, Save & Exit, pricing, upload, calendar, navigator, simulator)
+- Sprint E-2 (Paywall): ✅ COMPLETE — middleware server-side gates on /apply/* + /gap-analysis + /fdd/* + Nav greyed lock icons
+- Sprint E-3 (Results page): ✅ COMPLETE — full E-3 restructure, Perplexity-reference layout, DocumentTabPreview, attorney price anchor, module cards
+- Sprint E-4 (Quiz fixes): ✅ COMPLETE — question rewording, multi-select, conditional logic, cookie banner
+- Sprint E-5 (Dashboard overhaul): ✅ COMPLETE — superseded by Session 80 Case File UI redesign
+- Sprint E-6 (Pricing): ✅ COMPLETE — founding member counter removed, auth-aware header, features list updated
+- Sprint E-7 (Franchise Navigator): ✅ COMPLETE — brand removal, categories, FDD multi-zip, broker flow
+
+## KEY RULES — NEVER BREAK
+- ANTHROPIC_API_KEY: ONLY in generation-engine.ts + /api/fdd/* routes
+- callLLM(): OpenRouter only — never route through Anthropic SDK
+- Simulator routes: ONLY xiaomi/mimo-v2.5 or xiaomi/mimo-v2.5-pro
+- Dashboard: server component — never add "use client"
+- createServiceClient(): only in server-side API routes
+- Branch: dev — never commit to main
 **Read this entire file before doing anything.**
 **Then read BUILD_TRACKER.md.**
 
@@ -9,50 +34,122 @@
 ## SESSION COMMANDS
 
 ### "start session"
-When the user types "start session", you must:
-1. Read this entire CLAUDE_CONTEXT.md file
-2. Read BUILD_TRACKER.md completely
-3. Report back:
+When the user types "start session":
+1. Read CLAUDE_CONTEXT.md fully
+2. Read BUILD_TRACKER.md fully
+3. Read docs/DESIGN_REFERENCE.html if any UI work is planned
+4. Report:
    - What was completed last session
    - What is currently broken or incomplete
    - What the next priority task is
-   - Current app status (routes, any known errors)
-4. Confirm all 10 standing build rules are loaded
-5. Ask: "Ready to confirm and begin?"
+   - Current route count and any known errors
+5. Confirm all standing build rules are loaded
+6. Ask: "Ready to confirm and begin?"
 Do not start any work until the user confirms.
 
 ### "end session"
-When the user types "end session", you must:
+When the user types "end session":
 1. Update BUILD_TRACKER.md:
-   - Mark all completed items as ✅
-   - Add new bugs to Known Issues section
-   - Add new features discovered to New Features section
-   - Update Session Log with date, session number,
-     everything completed, key decisions made,
-     what was left incomplete
-   - Update "Claude Code priorities for next session"
-     with top 5 tasks in priority order
-2. Update CLAUDE_CONTEXT.md if any standing rules changed
-3. Run npm run build — confirm clean
+   - Mark completed items ✅
+   - Add new bugs to Known Issues
+   - Update Session Log with date, completed work, decisions
+   - Update next session priorities
+2. Update CLAUDE_CONTEXT.md if any rules changed
+3. Run: npm run build — confirm clean
 4. Report: "Session complete. Here is what was accomplished: [summary]"
-5. Confirm both files are saved to the project
+5. Confirm both files saved
 
-These are the only two session management commands.
-Every session starts with "start session".
-Every session ends with "end session".
-No exceptions.
+---
+
+## AGENT ACTIVATION — MANDATORY
+
+Agency agents are installed at ~/.claude/agents/.
+208 agents available. Use exact filename minus .md extension to activate.
+Activate by stating the agent name at the very beginning of the prompt.
+
+IMPORTANT: testing-evidence-collector and testing-reality-checker
+both require Playwright screenshots internally. DO NOT use these agents
+— they reintroduce the $1/screenshot cost we eliminated. Use the
+agents listed below instead.
+
+### Every build session — always activate:
+**engineering-code-reviewer**
+Reads code and confirms logic is correct before marking anything done.
+Checks that claimed features are actually implemented, not just compiling.
+Proof it requires: correct code logic + curl 200 + DB write confirmed.
+"Build clean" alone is never sufficient.
+
+### UI sessions (quiz, case file, results, login, any visual component):
+**engineering-frontend-developer**
+Enforces the UI build sequence:
+Lazyweb research → Firecrawl reference → build → verification.
+Reads DESIGN_REFERENCE.html before writing any component.
+Enforces Obsidian Gold — zero border-radius, no glassmorphism.
+
+### Surgical fix sessions (individual question fixes, scoring, API routes):
+**engineering-minimal-change**
+Smallest change that solves the problem. Nothing else touched.
+Does not refactor unrelated code. Does not rename while in there.
+Does not "improve" things that weren't broken.
+Use for: quiz question fixes, scoring changes, bug fixes.
+
+### After major feature additions (new routes, auth changes, DB changes):
+**security-appsec-engineer**
+Exact filename: security-appsec-engineer.md
+Conducts threat modeling, STRIDE analysis, secure code review.
+Checks: auth on every route, RLS on every new DB column,
+input validation, parameterized queries, no secrets in client code.
+Does NOT use Playwright — pure code review and curl verification.
+Run after Sessions 3 and 5 of QUIZ_EXECUTION_PLAN.md.
+Run any time new API routes, auth logic, or DB writes are added.
+
+### Platform audit sessions:
+**security-appsec-engineer** + **engineering-code-reviewer**
+Together these two cover: security gaps + false completions.
+Use for full platform scans. No screenshots required.
+
+### Planning sessions (prioritisation, scope decisions):
+**product-sprint-prioritizer**
+Enforces execution order. Says no to scope that doesn't belong.
+Use when deciding what to build next, not when building.
+
+### Example session start commands:
+
+Standard build session:
+  "Use agents engineering-code-reviewer and
+   engineering-frontend-developer.
+   Read docs/QUIZ_IMPROVEMENT_MASTER.md..."
+
+Surgical fix session:
+  "Use agents engineering-code-reviewer and
+   engineering-minimal-change.
+   Start session..."
+
+Security/audit session:
+  "Use agents security-appsec-engineer and
+   engineering-code-reviewer.
+   No Playwright. No screenshots.
+   Verify everything through code review and curl only..."
 
 ---
 
 ## PRODUCT OVERVIEW
 
-**App name:** e2go.app
-**What it is:** Self-service U.S. E-2 Treaty Investor visa preparation platform
-**Who it serves:** Canadian citizens applying via the Toronto consulate
+**App name:** E2go (capital E, lowercase go)
+**Domain:** e2go.app
+**What it is:** Self-service U.S. E-2 Treaty Investor visa
+  preparation platform producing complete, consulate-formatted
+  application packages
+**Who it serves:** Applicants from all 82 treaty countries globally.
+  Primary market: Canadian applicants via Toronto consulate.
 **What it replaces:** $6,500–$15,000 immigration attorney engagement
-**What it produces:** A complete, consulate-formatted E-2 application package
-**Legal position:** Preparation and document drafting tool — NOT a law firm
-**Critical rule:** Never use language suggesting the app replaces legal counsel
+**What it produces:** Complete E-2 application package as .docx files
+  (ZIP download). Applicant converts to PDF locally before submitting.
+**Legal position:** Preparation and document drafting tool — NOT a
+  law firm. Never use language suggesting the app replaces legal counsel.
+**Core principle:** "What most people need first isn't a lawyer.
+  It's clarity." People arrive confused, not ready for legal services.
+  E2go bridges that gap.
 
 ---
 
@@ -61,531 +158,911 @@ No exceptions.
 | Layer | Technology |
 |---|---|
 | Frontend | Next.js 14 App Router · TypeScript · Tailwind CSS |
-| Database + Auth | Supabase (PostgreSQL + Auth) |
-| AI Features | MiniMax M1 via OpenRouter |
+| Database + Auth | Supabase (PostgreSQL + Auth + Storage) |
+| AI — App features | OpenRouter (xiaomi/mimo-v2.5 via OPENROUTER_API_KEY) |
+| AI — Document generation | Anthropic API direct (ANTHROPIC_API_KEY) |
+| AI — Simulator evaluation | OpenRouter (xiaomi/mimo-v2.5 or mimo-v2.5-pro ONLY via OPENROUTER_API_KEY) |
+| AI — FAQ Q&A | OpenRouter (xiaomi/mimo-v2.5 via OPENROUTER_API_KEY) |
+| Voice transcription | Groq Whisper (GROQ_API_KEY) |
+| Voice TTS | Groq PlayAI TTS (GROQ_API_KEY — same key) |
+| FAQ vector search | Supabase pgvector (faq_qa_corpus, faq_kb_chunks) |
+| Rate limiting | Upstash Redis (UPSTASH_REDIS_REST_URL/TOKEN) |
 | Email | Resend |
-| Payments | Stripe (not yet integrated) |
+| Payments | Stripe (integrated, all 7 tiers live) |
 | Hosting | Vercel |
-| Error Monitoring | Sentry (planned) |
-| PDF Generation | WeasyPrint serverless (planned) |
+| PWA | Service worker + manifest — installable |
 
-**AI routing:** All MiniMax/OpenRouter calls via src/app/api/ai/route.ts
-OPENROUTER_API_KEY is server-side only — never in browser code.
+**CRITICAL API KEY RULE — READ EVERY SESSION:**
+- OPENROUTER_API_KEY → ALL app AI features (simulator, analysis,
+  follow-up, extraction engine, classification)
+- ANTHROPIC_API_KEY → document generation AND FDD extraction/scoring
+  (src/lib/generation-engine.ts AND src/lib/fdd-extraction-engine.ts,
+  src/lib/fdd-scoring-engine.ts, src/app/api/fdd/* routes)
+  FDD routes use claude-sonnet-4-6 via Anthropic SDK directly — this is
+  a deliberate exception for large-context reliability.
+- GROQ_API_KEY → voice transcription + TTS only
+  (src/lib/groq-transcription.ts, src/lib/groq-tts.ts,
+  src/app/api/simulator/tts/route.ts,
+  src/app/api/simulator/transcribe/route.ts)
 
-**MiniMax model string:** minimax/MiniMax-Text-01
-**OpenRouter base URL:** https://openrouter.ai/api/v1
+DO NOT switch any existing OpenRouter calls to the Anthropic API.
+FDD routes ARE an approved exception — they already use Anthropic directly.
+DO NOT expose any API key in browser/client code.
+
+**SIMULATOR MODEL CONSTRAINT — LOCKED (June 16, 2026):**
+ALL simulator routes (evaluate, follow-up, coaching-report, case-summary)
+MUST use ONLY: `xiaomi/mimo-v2.5` or `xiaomi/mimo-v2.5-pro`
+NEVER use minimax, deepseek, or any other model for simulator routes.
+This was explicitly corrected by the user and is non-negotiable.
 
 ---
 
-## PROJECT STRUCTURE
+## PROJECT PATH
 
 ```
 ~/E2-go/
-├── CLAUDE_CONTEXT.md          ← this file — read every session
-├── BUILD_TRACKER.md           ← build status — read every session
-├── src/
-│   ├── app/
-│   │   ├── page.tsx           (landing /)
-│   │   ├── layout.tsx
-│   │   ├── globals.css
-│   │   ├── quiz/page.tsx      (/quiz)
-│   │   ├── results/page.tsx   (/results)
-│   │   ├── pricing/page.tsx   (/pricing)
-│   │   ├── dashboard/page.tsx (/dashboard)
-│   │   ├── login/page.tsx     (/login)
-│   │   ├── signup/page.tsx    (/signup)
-│   │   └── api/
-│   │       ├── ai/route.ts    (MiniMax API — server only)
-│   │       └── test/route.ts  (Supabase connection test)
-│   ├── components/
-│   │   ├── Nav.tsx
-│   │   └── Footer.tsx
-│   ├── lib/
-│   │   ├── supabase.ts        (Supabase client)
-│   │   └── ai.ts              (OpenRouter client — planned)
-│   └── middleware.ts          (auth route protection)
-├── public/
-│   ├── flag.png               (hero background — from StichFiles/Flagscreen.png)
-│   └── data/
-│       ├── module0_questions.json      ← LOCKED v2.1 — do not modify
-│       └── module0_scoring_logic.json  ← LOCKED v1.1 — do not modify
-└── docs/
-    ├── stitch/                (10 Stitch HTML design files — visual references)
-    ├── schema_complete.sql    (complete database schema — idempotent)
-    ├── INTERVIEW_SIMULATOR_SPEC.md (to be created)
-    └── spec/                  (4-volume product specification)
 ```
+
+Branch: dev (never commit to main directly)
+Repo: github.com/ocdeployments/e2go
 
 ---
 
-## ENVIRONMENT VARIABLES
+## ROUTE MAP (60 routes as of June 19, 2026)
 
-File: ~/E2-go/.env.local (never commit this file)
+### Public routes
+- / — Landing page (self-contained HomeClient.tsx, FAQ CTA section)
+- /quiz — Eligibility quiz v4.0
+- /quiz/review — Edit quiz answers (jump-to-question)
+- /results — Quiz results with score, flags, timeline
+- /pricing — Pricing tiers
+- /pricing/success — Post-payment confirmation
+- /login — Auth (flag SVG left panel, loading state on submit)
+- /signup — Auth
+- /forgot-password — Auth
+- /verify — Email verification
+- /learn — Education hub + Ask E2go FAQ widget (6 SEO articles)
+- /learn/[6 sub-pages] — E-2 educational articles
+- /about — About page
+- /support — Support
+- /privacy — Privacy policy
+- /terms — Terms of service
+- /terms-required — Scroll-to-accept ToS page
 
-```
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-OPENROUTER_API_KEY=your_openrouter_key
-MINIMAX_MODEL=minimax/MiniMax-Text-01
-```
+### Authenticated routes
+- /dashboard — Application dashboard
+- /settings — Account settings (data deletion, 2-step confirmation + type-to-confirm)
+- /score — Application confidence score
+- /simulator — Interview simulator (text + voice, teaser if no case file)
+- /simulator/quick-start — Standalone simulator document upload intake
+- /apply — Case file overview (personalised header, 6 section cards)
+- /apply/overview — Redirects to /apply (query-preserving shim)
+- /apply/story — Section 01: Your story
+- /apply/business — Section 02: Your business
+- /apply/investment — Section 03: Your investment
+- /apply/qualifications — Section 04: Your qualifications
+- /apply/family — Section 05: Your family
+- /apply/ties — Section 06: Your ties
+- /apply/upload — Document upload (self-preparer intake)
+- /apply/upload/processing — Extraction progress (SSE)
+- /apply/upload/review — Discrepancy resolution
+- /apply/upload/gaps — Gap report
+- /apply/module1 — Onboarding + consent
+- /apply/module2 — Business type advisor
+- /apply/module3 — Module 3 shell (8 tabs: A B C D E I J K)
+- /apply/module3/[a,b,c,d,e,i,j,k] — Individual tabs (fallback)
+- /apply/module4 — Voice sample / writing style
+- /apply/checklist — Document checklist
+- /apply/calendar — Compliance calendar
+- /generate/[applicationId] — Document generation (SSE pipeline)
+- /documents/[applicationId] — Document download
+
+### FDD Intelligence (authenticated, protected by middleware)
+- /fdd — FDD index (all analyses, 5-stage progress bars, smart navigation)
+- /fdd/upload — PDF upload intake (transaction type, location, drag-and-drop)
+- /fdd/review/[fddId] — Extraction review (9 collapsible sections, confidence badges)
+- /fdd/score/[fddId] — E-2 scoring dashboard (5 dimensions, ODE model, flags, narrative)
+- /fdd/territory/[fddId] — Territory market analysis (Census ACS, category weights, narrative)
+- /fdd/questions/[fddId] — Questions generator (flag→question map, profile match, filter by audience)
+- /fdd/report/[fddId] — Final report + freemium teaser (hasAccess gate, platform integration)
+
+### Admin (never linked publicly — middleware-gated to role=admin)
+- /admin — Command center (10 parallel queries, kill switch, overview cards, cost chart, stuck users, recent payments)
+- /admin/revenue — Revenue intelligence (MoM, projection, LTV by tier, churn signals, conversion funnel)
+- /admin/quality — Quality & growth (generation quality, FDD extraction, NPS data, prompt version registry)
+- /admin/system-status — System health (kill switch toggle, cron log, stuck job remediation, API status)
+- /admin/users/[userId] — User detail (profile, payments, AI costs, sim sessions, tier override)
+- /admin/cost — Cost intelligence (7-day chart, cost by task, cost by model, top 10 users, burn projection)
 
 ---
 
-## MODULE MAP
+## DESIGN SYSTEM — LOCKED (Obsidian Gold)
 
 ```
-FREE (no account required)
-└── Module 0: Eligibility Quiz — 22 questions, JSON-driven
-              Hard stops PR-01–PR-09
-              Outcomes: PROCEED / PROCEED_RISK /
-                        ATTORNEY_RECOMMENDED / DO_NOT_PROCEED
-
-PAID — STANDARD ($247–$647 one-time)
-├── Module 1: Onboarding + Consent
-├── Module 2: Business Type Advisor
-├── Module 3: Document Interview Engine (Tabs A–L, ~250 questions)
-├── Module 4: Application Confidence Score (8 dimensions, 0–100)
-├── Module 5: Interview Simulator (AI-powered, personalized)
-└── Module 6: Document Generation Pipeline + PDF Export
-
-COMPLETE TIER UPGRADES
-├── Module 7: LLC Formation Wizard (50-state)
-├── Module 8: U.S. Banking Setup Guide
-├── Module 9: Canadian Departure Tax Planner
-├── Module 10: Interview Simulator Voice Mode (Whisper API)
-└── Module 11: Full Referral Engine UI
-
-POST-APPROVAL (separate purchase)
-├── Module 12: Compliance Calendar ($29/year)
-├── Module 13: Renewal Module ($97–$147)
-├── Module 14: Green Card Pathway Roadmap (TBD)
-└── Module 15: Community Forum (TBD)
+Background:    #0a0a0a
+Gold accent:   #C9A84C
+Text primary:  #f5f0e8
+Surface:       rgba(201,168,76,0.03)
+Border:        rgba(201,168,76,0.12)
+Heading font:  Cormorant Garamond 300 (light + italic weight contrast)
+Body font:     DM Sans 300/400/500
+Border radius: 0 — NO rounded corners anywhere, ever
 ```
+
+**MANDATORY before any UI work:**
+Read docs/DESIGN_REFERENCE.html — it is the canonical component
+library. Never skip this step.
+
+**Violations that are never acceptable:**
+- Rounded corners (border-radius > 0)
+- Glassmorphism (backdrop-filter: blur)
+- Box shadows
+- Blue borders on selected states (use gold #C9A84C)
+- Gradients on UI elements
+- External image URLs (Unsplash etc) — use SVG or local images
+- Emoji icons in UI
 
 ---
 
-## KEY DATA FILES
+## PRICING — LOCKED (Updated June 9, 2026)
 
-Before building any feature, read the relevant spec file:
+| Tier | Price |
+|---|---|
+| Solo individual | $550 |
+| Solo + spouse | $697 |
+| Solo + family (up to 2 kids) | $750 |
+| Solo + family (3–5 kids) | $797 |
+| Partnership (no families) | $997 |
+| Partnership two couples | $1,297 |
+| Partnership two families | $1,397 |
+| Extra child surcharge | +$50 (dynamic Stripe, no fixed Price ID) |
+| Interview Simulator standalone | $197 |
+| Simulator additional sessions | $29.99 |
+| Renewal package | $497 |
 
-| File | Contents | When to read |
+Simulator included in all packages AND available standalone.
+All Stripe Price IDs live in .env.local as STRIPE_PRICE_* vars.
+Current live Price IDs (June 10, 2026):
+- STRIPE_PRICE_SOLO_NONE: price_1TgewyF7Ggk3LUEyIkxlp1ry
+- STRIPE_PRICE_SOLO_SPOUSE: price_1TgewyF7Ggk3LUEybTTTUG95
+- STRIPE_PRICE_SOLO_FAMILY_SMALL: price_1TgewzF7Ggk3LUEym0UKbRa0
+- STRIPE_PRICE_SOLO_FAMILY_LARGE: price_1TgewzF7Ggk3LUEyjErIbBO8
+- STRIPE_PRICE_PARTNERSHIP_NONE: price_1TgewzF7Ggk3LUEyUbjuK8R4
+- STRIPE_PRICE_PARTNERSHIP_COUPLES: price_1Tgex0F7Ggk3LUEyPEleDScH
+- STRIPE_PRICE_PARTNERSHIP_FAMILIES: price_1Tgex0F7Ggk3LUEyJJD6U7ot
+- STRIPE_PRICE_SIMULATOR_3PACK: price_1Tgex0F7Ggk3LUEyhOhKvmKz
+- STRIPE_PRICE_RENEWAL: price_1Tgex1F7Ggk3LUEykVcoLswI
+- STRIPE_PRICE_CHILD_SURCHARGE: price_1Tgex1F7Ggk3LUEymMJnQQH5
+
+---
+
+## KEY DATA FILES — READ BEFORE TOUCHING
+
+| File | What it is | Rule |
 |---|---|---|
-| public/data/module0_questions.json | All Module 0 questions v2.1 | Before touching quiz |
-| public/data/module0_scoring_logic.json | Scoring engine v1.1 | Before touching results |
-| docs/stitch/landing.html | Landing page design | Before editing landing |
-| docs/stitch/quiz.html | Quiz screen design | Before editing quiz |
-| docs/stitch/results.html | Results screen design | Before editing results |
-| docs/stitch/interview-engine.html | Question screen design | Before building Module 3 |
-| docs/stitch/dashboard.html | Dashboard design | Before editing dashboard |
-| docs/stitch/pricing.html | Pricing screen design | Before editing pricing |
-| docs/stitch/features.html | Features section design | Before editing features |
-| docs/stitch/sources.html | Sources section design | Before editing sources |
-| docs/stitch/testimonials.html | Testimonials design | Before editing testimonials |
-| docs/spec/ | 4-volume product specification | Before building any module |
+| public/data/module0_questions.json | Quiz questions v4.0 | Read before touching quiz |
+| public/data/module0_scoring_logic.json | Scoring engine | Read before touching results |
+| docs/DESIGN_REFERENCE.html | Canonical UI components | Read before any UI work |
+| docs/DOCUMENT_UPLOAD_SPEC.md | Document upload spec | Read before touching upload |
+| docs/INTERVIEW_SIMULATOR_SPEC.md | Simulator spec | Read before touching simulator |
+| docs/sessions/ | All session files | Reference before building |
+| docs/IDEAS.md | All product decisions | Reference for context |
+| docs/sessions/SESSION_CASEFILE_REDESIGN.md | Case file redesign full spec | Read before touching any /apply/* section |
+
+---
+
+## STANDING BUILD RULES (confirm every session)
+
+### RULE 0 — VERIFICATION APPROACH
+Never use Playwright for screenshots — it pulls Gemini via OpenRouter
+and costs approximately $1 per screenshot. This is not acceptable.
+
+Verify with these free methods instead:
+
+1. Build check — must be clean, zero errors:
+   npm run build
+
+2. TypeScript check — no type errors:
+   npx tsc --noEmit
+
+3. Page renders — confirms no runtime crash:
+   curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/[route]
+   Must return 200.
+
+4. API route responds:
+   curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/api/[route]
+
+5. Data writes — confirm answer/record saved to Supabase:
+   npx supabase db query "SELECT * FROM [table] ORDER BY created_at DESC LIMIT 3"
+
+6. Open for owner visual check:
+   open http://localhost:3000/[route]
+   Owner confirms visually in Chrome. This is the only step
+   that requires human eyes — agent handles everything else.
+
+The agent must never mark a task complete based only on
+"build clean." Each task requires the appropriate verification
+from the list above before being marked done.
+
+### RULE 1 — DESIGN SYSTEM COMPLIANCE
+Read docs/DESIGN_REFERENCE.html before writing any component.
+Zero border-radius everywhere. No glassmorphism. No blue selection
+borders. No rounded corners. No external image URLs in UI.
+
+### RULE 1A — NEW TABLES (added S63–S64)
+Four new tables are live in Supabase:
+- llm_cost_log — per-call AI cost tracking (model, route, tokens, cost_usd, latency_ms)
+- cron_log — cron execution audit (job_name, status, duration_ms, error)
+- admin_audit_log — admin action log (action, admin_user_id, target_user_id, resource)
+- nps_scores — NPS responses (user_id, score 0–10, comment, trigger_event) — 7-day rate limit enforced server-side
+All four have RLS enabled. Read via service role client only.
+
+### RULE 2 — API KEY ROUTING
+OPENROUTER_API_KEY → all app AI features.
+ANTHROPIC_API_KEY → generation-engine.ts ONLY.
+GROQ_API_KEY → transcription and TTS ONLY.
+Never expose any key in browser code.
+
+### RULE 3 — DOCUMENT GENERATION PIPELINE
+Generate ONE document at a time. Never parallel.
+Checkpointed — save to DB before next document starts.
+15-step pipeline in exact order (see BUILD_TRACKER.md).
+Cover Letter always first (Step 1) and finalised last (Step 15).
+Steps 11-14 enhanced per Spec4: humanization retry loop (3 attempts, threshold 0.35),
+REQUIRED_ELEMENTS completeness check, CONSISTENCY_FIELDS cross-doc validation,
+metadata sanitization logging, 5-checkbox acknowledgment gate before download.
+Pipeline audit trail written to generation_pipeline_log table.
+S15 (Document Package Download) — ✅ COMPLETE. Full pipeline feature-complete.
+
+### RULE 3A — QUALITY-GATE FAILURE HANDLING (added June 13, 2026)
+
+A check that fails on EVERY run regardless of input quality is not a
+check — it's a bug. Before any quality-gate check is added or
+modified, confirm it can distinguish a genuinely bad document from a
+correct one. If a "failure" cannot be explained in terms of what's
+WRONG with the document (only in terms of "this number isn't equal to
+that other number"), the check is measuring the wrong thing.
+
+When a check DOES fail for real reasons, failures fall into three
+types — handle each differently, never with silent overwrite:
+
+- TYPE 0 (the check itself is wrong) — fix the check. Never "fix" the
+  document to satisfy a bad check.
+- TYPE 1 (data exists elsewhere in the case file, just not in this
+  prompt's context) — fix the prompt-builder to include it. No
+  applicant involvement.
+- TYPE 2 (data genuinely doesn't exist yet — only the applicant has
+  it) — becomes a `[bracketed placeholder]` in the output (existing
+  mechanism), or a ONE-ROUND applicant clarification if the gap
+  blocks generation entirely (Category A, Spec1). One round only,
+  then resolve to bracket — never loop indefinitely.
+
+If a re-prompted document comes back with the LLM declining to
+proceed / asking for clarification rather than producing corrected
+content — that response is a SIGNAL the check fired on a TYPE 0 case,
+or a real gap needs human/applicant input. NEVER treat that response
+as if it were a finished replacement document and overwrite
+`content_text` with it. The previous good `content_text` stays unless
+a genuinely improved version is produced.
+
+**Tone, whenever the system surfaces ANY question to the applicant**
+(pre-generation confirmation, clarification, revision): the person on
+the other side may be tired, doing this late at night, or simply not
+recall an exact figure. Every prompt is a consultant double-checking
+before drafting — never an error message, never implying the
+applicant did something wrong. State the consequence honestly (e.g.
+"every document will use this exact figure") rather than manufacturing
+urgency. If the applicant confirms an unusual answer once, accept it
+and move on — do not ask again.
+
+See `Spec1_Analysis_Engine.md` (Category A + "Display to User") for
+the pre-generation application of this rule, and
+`Spec4_Quality_Gate_Pipeline.md` Stage 4 for the post-generation
+application.
+
+### RULE 4 — DATABASE SAFETY
+Never DROP TABLE. Always CREATE TABLE IF NOT EXISTS.
+Always ALTER TABLE ... ADD COLUMN IF NOT EXISTS.
+Never modify existing column types — add new columns only.
+All tables must have RLS enabled.
+
+### RULE 5 — ANSWER AUTOSAVE
+Every Module 3 / case file answer saved within 2 seconds.
+Debounce: 800ms. Never let an answer be lost.
+
+### RULE 6 — MOBILE FIRST
+Every component tested at 390px before 1440px.
+Minimum touch target: 44px height.
+No horizontal scroll at any breakpoint.
+
+### RULE 7 — FULL OUTPUT
+Never truncate file output. Always write the complete file.
+If a file is long, write it in sections — never use "..." or
+"rest of file unchanged."
+
+### RULE 8 — NO PLAYWRIGHT, NO MAGIC MCP
+Do not use Playwright — costs ~$1 per screenshot via OpenRouter/Gemini.
+Use the free verification stack in Rule 0 instead.
+Do not invoke Magic MCP — out of credits.
+Build components manually using DESIGN_REFERENCE.html.
+
+### RULE 9 — LIFECYCLE TRACKING
+Every significant user action updates application_lifecycle table.
+Key events: quiz_started, quiz_completed, payment_completed,
+module completion timestamps, generation triggered/completed,
+simulator sessions, interview_date, outcome.
+
+### RULE 10 — BUILD TRACKER UPDATE
+At end of every session ("end session"):
+- Mark completed items ✅
+- Add new bugs to Known Issues
+- Update Session Log
+- Update next session priorities (top 5)
+- Run npm run build — must be clean
+
+### RULE 11 — CASE FILE DATA PROTECTION
+When rebuilding any /apply/* section page, audit all data hooks
+before touching any code. Document every useEffect, onChange, and
+auto-save call. Verify answers table writes still fire after rebuild.
+Never commit a section page without confirming data writes work.
+
+### RULE 12 — VOICE INPUT SCOPE
+useSpeechInput hook applies to TextArea component in /apply/* sections only.
+Never add mic button to /apply/module4 — that page has its own
+separate voice/writing sample system with AI detection.
 
 ---
 
 ## ARCHITECTURE DECISIONS — LOCKED
 
-Do not change these without explicit instruction:
-
 | Decision | Rule |
 |---|---|
-| Paywall timing | Triggers AFTER Module 3 completes, before document generation. Show 1–2 page preview. Free to collect answers, pay to download. |
-| Document generation | Sequential — ONE document at a time. Checkpointed. Never parallel. |
-| Supabase auth | Use auth.users. Create public.profiles — not public.users. |
-| AI calls | Server-side only via /api/ai/route.ts. Never client-side. |
-| Data storage | Answers only. Never store passports, bank statements, or tax documents. |
-| Document ownership | Each fact lives in exactly one document. No repetition across tabs. |
-| Form terminology | All questions use exact DS-160 / U.S. government terminology. |
-| Interview limits | 2 simulator sessions included per application. Extra: $9.99/3-bundle. |
-| Stats | Only real government data. No fabricated approval rates or case counts. |
+| Paywall timing | After Module 3, before document generation |
+| Document format | .docx output (not PDF) — applicant converts locally |
+| Document generation | Sequential, checkpointed, 15-step pipeline |
+| Cover letter | Always Step 1, finalised Step 15 |
+| Page limit | 50 pages per TAB (not 50 total) — Toronto consulate |
+| AI model | claude-opus-4-8 for document generation (from app_settings) |
+| Voice profile | Raw writing sample text passed directly — no JSON extraction |
+| Experience scoring | 9-dimension keyword-based scoring (pure functions, no LLM) |
+| Experience framing | Three-layer: Layer 0 (targeted follow-up) → Layer 1 (AI framing) → Layer 2 (standing backstop) |
+| AI detection threshold | 0.35 — below this = pass |
+| Prompt storage | /prompts/v1/documents/ |
+| Partnership routing | Two separate independent packages |
+| Module 3 old tabs | Kept as fallback — never delete a-e, i, j, k |
+| Module 3 new sections | Six case file sections at /apply/* are primary |
+| Quiz questions | module0_questions.json is source of truth — do not hardcode |
+| Case file layout | Two-panel desktop · drawer tablet · overlay mobile |
+| Voice input in case file | Web Speech API — mic on all textareas in /apply/* sections, NOT on /apply/module4 |
 
 ---
 
-## PRICING
+## MODULE 3 — CASE FILE STRUCTURE
 
-### B2C Application Pricing
+The Document Interview was redesigned from 12 tabs (A–L) into
+6 document-building sections. Old tabs A, B, C, D, E, I, J, K
+remain as fallback. Old tabs F, G, H, L were deleted June 10
+(superseded by new case file sections).
 
-| Tier | Coverage | Price |
+**New six-section structure:**
+- /apply/story — Section 01: Cover letter + Biography
+- /apply/business — Section 02: Business plan + Visa letter
+- /apply/investment — Section 03: Source of funds + Investment proof
+- /apply/qualifications — Section 04: Biography + Org chart
+- /apply/family — Section 05: Dependents + DS-160 family
+- /apply/ties — Section 06: Non-immigrant intent + Interview prep
+
+**Module 3 shell (/apply/module3):**
+Now has 8 tabs: A B C D E I J K (router.push dynamic).
+F, G, H, L removed from TABS array June 10.
+
+---
+
+## CASE FILE UX REDESIGN — COMPLETE (June 10, 2026)
+
+**Status:** ✅ Built and committed. Commits a9dfcb9–9172b2c.
+
+All 6 section pages rebuilt with two-panel layout.
+CaseFileShell.tsx shared component — desktop/tablet/mobile responsive.
+Voice input working. Mic permission bug fixed.
+All variants preserved: partnership, COS, family sub-paths.
+Data writes verified on all 6 sections.
+
+---
+
+## DOCUMENT UPLOAD — SELF-PREPARER INTAKE
+
+Self-preparers can upload existing documents at the start of the
+case file. The platform extracts structured answers, detects
+discrepancies (hard gate — must resolve before proceeding),
+and shows a gap report.
+
+**Three self-preparer profiles:**
+- Independent preparer (drafting documents, no lawyer yet)
+- Pre-lawyer preparer (near-complete, about to engage attorney)
+- Lawyer dropout (has partial professional docs, stopped)
+
+**Pricing:** Same as from-scratch applicants — no new tier.
+
+**Flow:** /apply/upload → /apply/upload/processing →
+  /apply/upload/review (if discrepancies) → /apply/upload/gaps → /apply
+
+**Pre-fill badge variants:**
+- "From your eligibility check" — gold (from quiz)
+- "From your documents" — amber (high confidence upload)
+- "From your documents — please verify" — amber-orange (medium)
+- Low confidence → no pre-fill, hint text shown below field
+
+---
+
+## THREE-MODULE PRODUCT ARCHITECTURE (Locked June 16, 2026)
+
+Three purchasable modules — each standalone or bundled:
+
+| Module | Route | Status |
 |---|---|---|
-| Solo Individual | 1 investor | $247 |
-| Solo Couple | 1 investor + spouse | $297 |
-| Solo Family (≤2 kids) | 1 investor + spouse + up to 2 children | $347 |
-| Solo Extended (3–5 kids) | 1 investor + spouse + 3–5 children | $397 |
-| Partnership — No Families | 2 investors only | $447 |
-| Partnership — Two Couples | 2 investors + 2 spouses | $547 |
-| Partnership — Two Full Families | 2 investors + 2 spouses + up to 4 kids | $647 |
+| Interview Simulator | /simulator | Built |
+| Gap Analysis | /gap-analysis | Designed — not yet built |
+| Document Generation | /generate/[appId] | Built |
 
-**Add-ons:** +$25/extra dependent · +$19/3 extra exports · +$9.99/3 simulator sessions · $97–$147 renewal · $29/year compliance calendar
+### Case Intelligence Profile (CIP) — shared data model
 
-### B2B Subscription Pricing
+A single unified data object fed by all intake sources and consumed by all
+three modules. Ensures gap analysis intelligence benefits document generation
+and simulator question quality.
 
-| Product | Tier | Price | Volume |
-|---|---|---|---|
-| e2go Legal (Attorneys) | Starter | $299/month | 10 leads |
-| e2go Legal (Attorneys) | Growth | $499/month | 25 leads |
-| e2go Legal (Attorneys) | Practice | $799/month | Unlimited + API |
-| e2go Broker (Franchises) | Starter | $399/month | 15 profiles |
-| e2go Broker (Franchises) | Growth | $699/month | 40 profiles |
-| e2go Broker (Franchises) | Agency | $999/month | Unlimited + territory exclusivity |
+**CIP data sources:** document extraction (any format) + quiz answers + follow-up Q&A + case file answers
+
+**Not yet built** — this is the target architecture. Current state: data lives in separate tables (answers, quiz_sessions, followup_responses, case_briefs).
+
+### Adaptive Intake Pattern (locked June 16, 2026)
+
+1. Accept any document format (formal docs, rough drafts, notes — LLM normalizes)
+2. Extract all extractable fields → show pre-filled confirmation card
+3. For missing fields: "Do you have a document for X?" before asking the question directly
+4. Ask bare questions ONLY for data that can't be extracted or documented
+5. Never duplicate questions already answered in uploaded documents
+
+### Gap Analysis — planned architecture (not yet built)
+
+Six E-2 evidence categories with scoring weights:
+- Source of Funds — 25%
+- Management Role — 25%
+- Business Plan & Viability — 20%
+- Investment Amount — 15%
+- Employment Creation — 10%
+- Business Operations — 5%
+
+Goal: bridge the case from current state to a state with a reasonable
+chance of approval. Scores existing evidence → identifies gaps → prompts
+for documents first → asks questions if no document → recalculates.
 
 ---
 
-## ROUTES
+## INTERVIEW SIMULATOR
 
-| Route | Auth Required | Notes |
+Route: /simulator
+Two modes: text and voice.
+Voice: Groq Whisper transcription + Orpheus (canopylabs/orpheus-v1-english) TTS.
+⚠️ Voice blocked until owner accepts Groq terms at console.groq.com
+Session limit: 2 included, $29.99 additional sessions.
+Timer: 15 minutes per session. Fixed bottom bar with depleting progress bar.
+Turns red with pulse animation at < 2 minutes. Applies to BOTH voice and text modes.
+Timer starts when user clicks "Begin interview" — NOT on mount.
+Evaluation: OpenRouter xiaomi/mimo-v2.5 rates answers strong/weak/inconsistent.
+Debrief: readiness indicator + strong answers + needs-work + inconsistencies.
+Post-session coaching report: deep analysis via xiaomi/mimo-v2.5-pro (Session 22).
+
+**Phase flow (Session 21 — locked):**
+'ready' → 'intro' → 'questions'
+- ready: Pre-session screen with speaker/mic test, "Begin interview" button
+- intro: Officer Williams warm welcome, "please introduce yourself"
+- questions: Formal E-2 interview questions with VAD recording
+
+**TTS audio (fixed Session 21):**
+- `groq-tts.ts`: MIME type is `data:audio/wav;base64,` (was mp3 — silent failure)
+- `tts/route.ts`: `response_format: 'wav'` (Orpheus only accepts wav)
+- Browser autoplay unlock: silent 44-byte WAV played synchronously during "Begin interview" click
+
+**Question generation (Session 22 — locked):**
+- 9 universal questions (UQ-01 → UQ-09) each have a pool of 3-4 alternative phrasings
+- `pick<T>()` randomly selects one phrasing per session → questions never feel identical
+- `shuffle<T>()` Fisher-Yates shuffles business-type pools; caller takes first 3 of 5-6
+- Business type categories: food/beverage, healthcare, retail, franchise, cleaning,
+  IT/consulting, transport/logistics, construction + generic fallback
+- New WP-05 probe added for immigrant intent risk (fires when flag = moderate/high)
+- Business type questions personalized with context vars (investment amount, business name)
+
+**Post-session coaching report (Session 22):**
+- Route: POST `/api/simulator/coaching-report`
+- Model: `xiaomi/mimo-v2.5-pro`, max_tokens: 2400, timeout: 90s
+- Fires non-blocking after session completes; updates coaching cards progressively
+- Returns `QuestionCoaching[]`: `questionId`, `whatOfficerExpected`, `whatWasMissing`,
+  `keyPoints[]`, `modelAnswer` (first-person, uses real business details), `documentReference`
+- Model answer disclaimer: "This is a guide to the level of detail and structure expected
+  — not a script. Officers can tell when answers are memorized."
+- Falls back to original `specificSuggestion` silently if API fails
+
+**Evaluate route prompt (Session 22 fix):**
+- Previously had "2 sentences max" / "1 sentence" constraints → shallow generic feedback
+- Now: 3-sentence feedback (officer expectation + answer quality + specific gap)
+- Suggestion: 2 sentences (exactly what to say differently + how to frame correctly)
+- max_tokens raised to 400
+
+**Standalone path:** /simulator/quick-start — for users without a completed
+case file. Upload documents (cover letter, business plan) → extraction
+engine populates answers → simulator generates questions from those answers.
+Uses source='simulator_standalone' on applications table.
+
+**Nervousness/delivery detection (Session 22 — conceptual, not yet built):**
+- Can flag: filler words (um/uh/like/you know), very short answers (<30 words),
+  hedging language (I think/maybe/probably) from existing transcripts
+- Frame as "delivery confidence coaching" — NOT lie detection (pseudoscience)
+- Would add `deliveryNotes` field to `AnswerEvaluation` type and evaluate route
+- No new API cost (uses existing transcript text)
+
+**TTS in Module 3 intake (Session 22 — conceptual, feasibility confirmed):**
+- Technically reusable from existing Groq pipeline
+- Uses Groq tokens (TTS + STT) — not free; daily TPD limit is 3,600/day on free tier
+- Worth adding if intake completion rate is a problem; defer until post-launch
+
+---
+
+## MIDDLEWARE AUTH PROTECTION
+
+Protected routes (require Supabase session):
+/dashboard, /apply/, /admin, /simulator, /score,
+/settings, /generate/, /documents/, /fdd/
+
+Rate limits (production only):
+- /login: 5 per 15 min per IP
+- /api/quiz/submit, /api/email/results: 3 per hour per IP
+- /api/generate/*, /api/analysis/*: 50 per day per user
+
+---
+
+## KNOWN ISSUES (Updated June 16, 2026)
+
+| Issue | Priority | Status |
 |---|---|---|
-| / | No | Landing page |
-| /quiz | No | Module 0 — free |
-| /results | No | Reads localStorage |
-| /pricing | No | Paywall screen |
-| /learn/* | No | SEO education hub |
-| /blog/* | No | SEO content |
-| /login | No | |
-| /signup | No | |
-| /dashboard | YES | Redirect to /login if not authenticated |
-| /apply/* | YES | Module 3 interview engine |
-| /score | YES | Confidence score |
-| /simulator | YES | Interview simulator |
-| /export | YES | PDF generation |
-| /generating | YES | Document generation progress |
-| /support | No | Public support page |
-| /support/new | No | Submit ticket |
-| /support/tickets | YES | User's ticket history |
-| /admin | YES + ADMIN ROLE | Hidden — never linked publicly |
-| /partner/attorney | YES + PARTNER ROLE | Attorney portal |
-| /partner/broker | YES + PARTNER ROLE | Broker portal |
+| **Groq TTS audio MIME + format** | **FIXED** | Session 21 — groq-tts.ts now uses `data:audio/wav;base64,`, tts/route.ts uses `response_format: 'wav'` |
+| **Browser autoplay blocking TTS** | **FIXED** | Session 21 — silent WAV unlock on "Begin interview" click; ready phase gates auto-start |
+| **Simulator loading flicker** | **FIXED** | Session 21 — loading guard now `!sessionInfo \|\| hasCaseFile === null` |
+| **Groq TTS voice mode still blocked (owner action)** | **HIGH** | `canopylabs/orpheus-v1-english` returns 400 model_terms_required — org admin must accept at console.groq.com/playground?model=canopylabs%2Forpheus-v1-english |
+| **seed-test-applicant.ts grabs current auth user** | **HIGH** | Do NOT run until a `--user-id` param is added — will re-break account linkage |
+| **004_answers_source_update.sql not applied** | **MEDIUM** | Document upload source tracking broken until migration applied in Supabase SQL Editor |
+| **FAQ corpus not confirmed seeded** | **MEDIUM** | Run `npx tsx scripts/seed-faq-corpus.ts` + `seed-faq-kb-chunks.ts`; until done, all FAQ queries hit LLM fallback only |
+| **getSession() security warnings** | MEDIUM | Multiple files use `.getSession()` — Supabase recommends `.getUser()`; sweep needed |
+| Generation engine: approval gate, setState, empty boxes | MEDIUM | docs/sessions/SESSION_PLAN_GENERATION_FIXES.md |
+| Bracket highlighting regex + checklist builder | MEDIUM | Regex only matches [BRACKET FORMAT] tags, not descriptive brackets like [passport number] |
+| Supabase CLI migration history out of sync | MEDIUM | ~22 migrations applied manually, CLI shows 2 — never use db push without SQL Editor verification |
+| Resend domain verification unknown | MEDIUM | Check Resend dashboard; if e2go.app verified, revert sender to results@e2go.app |
+| Stripe API version outdated (2024-06-20) | LOW | Upgrade apiVersion in scripts/stripe-setup.ts |
+| Quiz nationality selector curl/browser verification | LOW | Works in browser |
+| Fast Refresh occasional hot reload errors | LOW | Non-blocking |
 
 ---
 
-## DESIGN SYSTEM
+## REFERRAL PARTNERS — STATUS
 
-**Font:** Inter (all weights)
-**Primary color:** #004ac6 (navy blue)
-**Style:** Minimalist-Corporate · High Contrast · 8px grid
-**Reference:** All Stitch HTML files in docs/stitch/
-**Flag photo:** /flag.png (hero background — opacity 0.3, mix-blend-multiply)
-
-**Document formatting (generated docs):**
-- Font: Times New Roman 12pt
-- Margins: 1 inch all sides
-- Line spacing: 1.5 narrative / single tables
-- Sections: Roman numerals
-- Dates: January 15, 2026 (never 01/15/26)
-- Dollars: $187,500 USD (always commas + USD)
-- Header: Tab reference | Applicant name | Date
-- Footer: "Prepared with e2go.app | Not legal advice"
-
----
-
-## LEGAL CONSTRAINTS — NEVER VIOLATE
-
-- Never say the app replaces a lawyer
-- Never say "no lawyer required"
-- Never claim legal advice is being provided
-- Every screen must treat the app as a preparation tool only
-- All AI-generated content needs disclaimers
-- Hard stop screens must be warm and human — never cold error pages
-- Attorney referral must be offered immediately on all attorney-flagged cases
-- Standard disclaimer: "e2go.app is a preparation tool, not a law firm. Nothing on this platform constitutes legal advice."
-
----
-
-## REAL STATISTICS — USE ONLY THESE
-
-Never invent statistics. Use only:
-- 54,364 E-2 visas issued FY2024 (Source: U.S. Dept. of State)
-- 90% global E-2 approval rate FY2024
-- $815 USD MRV fee (current consulate application fee)
-- 3–6 weeks typical Toronto consulate processing time
-- 2–5 years standard initial E-2 visa validity
-- Unlimited renewals if status maintained
-
----
-
-## STANDING BUILD RULES
-
-Apply every one of these to every task in every session.
-Never skip any of them.
-
-### RULE 1 — SEO ON EVERY PAGE
-Every page gets SEO metadata at the same time it is built.
-Never build a page without adding:
-- export const metadata with title and description
-- Open Graph tags (og:title, og:description, og:url, og:image)
-- Canonical URL
-- robots: noindex for authenticated / tool pages (/quiz, /results, /dashboard, /apply/*, /admin, /login, /signup)
-- JSON-LD schema where applicable (landing, /learn pages, /blog pages)
-
-metadataBase is set in src/app/layout.tsx as https://e2go.app
-
-Page SEO targets:
-- / → "E-2 Visa Preparation for Canadians | e2go.app"
-- /pricing → "E-2 Visa Application Pricing | e2go.app"
-- /learn → "E-2 Visa Guide for Canadians | e2go.app"
-- /learn/what-is-e2-visa → "What is the E-2 Visa? | e2go.app"
-- /learn/requirements → "E-2 Visa Requirements for Canadians | e2go.app"
-- /learn/investment → "How Much to Invest for an E-2 Visa | e2go.app"
-- /learn/businesses → "What Businesses Qualify for E-2 Visa | e2go.app"
-- /learn/canada → "E-2 Visa for Canadians — Complete Guide | e2go.app"
-
-### RULE 2 — DATABASE SAFETY
-- NEVER use DROP TABLE in any script
-- NEVER use TRUNCATE in any script
-- NEVER use DELETE without a specific WHERE clause
-- ALWAYS use CREATE TABLE IF NOT EXISTS
-- ALWAYS use CREATE INDEX IF NOT EXISTS
-- ALWAYS show the complete SQL to the user before running anything against Supabase
-- The schema script docs/schema_complete.sql must remain fully idempotent
-
-### RULE 3 — ANSWER AUTO-SAVE
-Every question answer in Module 3 must be saved to Supabase within 2 seconds of the user advancing to the next question. Never rely on end-of-tab or end-of-session saves. The answers table is the source of truth — not React state. On user return: detect last saved question, resume exactly there. Display: "Welcome back. You left off at [Tab], Question [N]. Ready to continue?"
-
-### RULE 4 — NO AI KEYS IN BROWSER
-All MiniMax/OpenRouter API calls go through src/app/api/ai/route.ts server-side only. The OPENROUTER_API_KEY must never appear in client-side code or be exposed to the browser under any circumstances.
-
-### RULE 5 — DS-160 TERMINOLOGY
-Every question in Module 3 must use exact DS-160 and U.S. government form terminology. Reference: docs/spec/module3_tab_a.md is the gold standard. Before writing any Module 3 question, verify the corresponding DS-160 field. Key rules:
-- "E-2 Treaty Investor" not "E2 visa"
-- "Nonimmigrant status" not "visa status"
-- "Admitted" not "entered" · "Departed" not "left"
-- "Refused" not "denied" (DS-160 uses "refused")
-- Marital status options exactly: Single / Married / Common Law Marriage / Civil Union / Divorced / Legally Separated / Widowed
-
-### RULE 6 — DESCRIPTIVE QUESTIONS
-Every question in Module 3 requires all 5 elements:
-1. Question text — plain English, specific (not "Marital status:" but "What is your current marital status?")
-2. Tooltip — why we're asking and what it feeds
-3. Option labels — descriptive (not "Yes/No" but "Yes — I have been refused / No — I have never been refused")
-4. Helper text — what the officer looks for
-5. Inline warning — where the answer has risk implications
-
-### RULE 7 — DUAL-PURPOSE QUESTIONS
-Every Module 2 and Module 3 question must pass:
-- Test 1: Does this strengthen the visa application?
-- Test 2: Does this also qualify/segment/route the lead?
-If Test 1 only → ask it. If Test 2 only → do NOT ask it.
-Commercial insight is always a byproduct of good visa preparation — never the driver.
-Document each question: visa purpose + DS-160 reference + commercial byproduct (if any) + tooltip text.
-
-### RULE 8 — DOCUMENT GENERATION SAFETY
-- Generate ONE document at a time — never parallel
-- Save each completed document to database immediately after it completes
-- Never regenerate a document already saved and marked complete
-- User never sees a document below quality threshold
-- Quality gate must pass before any preview is shown
-- On failure: auto-retry 3x, then background retry, then admin queue — never show error to user
-
-### RULE 9 — LIFECYCLE TRACKING
-Every significant user action must update the application_lifecycle table with a timestamp. Key events to record:
-- first_visit_at, quiz_started_at, quiz_completed_at, quiz_outcome
-- account_created_at, payment_completed_at, tier_purchased
-- module1–6 started_at and completed_at
-- generation_triggered_at, generation_completed_at
-- simulator_first_run_at, simulator_sessions_total, simulator_best_score
-- interview_date, outcome_recorded_at, outcome, approval_date
-- total_journey_days (first_visit_at to approval_date)
-
-### RULE 10 — BUILD TRACKER UPDATE
-At the end of every session (triggered by "end session"):
-- Mark all completed items as ✅ in BUILD_TRACKER.md
-- Add new bugs to Known Issues with priority and fix
-- Add new features discovered to New Features section
-- Update Session Log with date, session number, completed work, decisions made
-- Update "Claude Code priorities for next session" with top 5 tasks
-
-### RULE 11 — ONE FILE PER COMMIT
-Every commit describes exactly one file changed and why. No exceptions. Grouping multiple changes into one commit is prohibited. Commit message format: `filename: change description`
-
-### RULE 12 — VERIFY WITH RAW OUTPUT
-Every completed task ends with a raw verification command (git log --oneline, grep, tsc --noEmit). A paragraph saying "done" is never sufficient proof. Show the actual command output.
-
-### RULE 13 — THREE STATES PER FEATURE
-Before building any feature, spec the loading state, success state, and empty/error state. If you cannot describe all three, do not build it yet.
-
-### RULE 14 — QA SNAPSHOT BEFORE EVERY PUSH
-Before any git push, run npm run qa manually and review the full output — not just pass/fail. Look for:
-- Dead buttons (onClick handlers that don't fire)
-- Orphaned pages (routes with no navigation path to them)
-- Broken links (404s in the network tab)
-- Silent failures (actions that complete but don't update state)
-
-The pre-push hook tells you pass/fail.
-The manual qa run tells you what to investigate before it becomes a production bug.
-
-Rule: never push solely because the hook passed. Review the output.
-
----
-
-## DOCUMENT GENERATION PIPELINE
-
-Generate ONE document at a time in this exact order:
-
-```
-Step 1  → Cover Letter (Tab D)        → save to DB → continue
-Step 2  → Source of Funds (Tab H)     → save to DB → continue
-Step 3  → Investment Proof (Tab F)    → save to DB → continue
-Step 4  → Business Plan (Tab K)       → save to DB → continue
-Step 5  → Qualifications (Tab J)      → save to DB → continue
-Step 6  → DS-160 Reference (Tab A)    → save to DB → continue
-Step 7  → Gap analysis (all docs)     → save gap report
-Step 8  → Repetition checker          → save clean versions
-Step 9  → Consistency checker         → lock final versions
-Step 10 → Quality gate                → pass/fail per document
-Step 11 → Preview unlocked for user
-```
-
-Crash recovery:
-- Scenario A (transient): auto-retry 3x — 30s, 2min, 5min
-- Scenario B (one doc fails): others complete, retry failed doc every 15min for 24hrs, email user when recovered
-- Scenario C (complete failure): preserve all completed docs, show "We'll email you when ready", auto-create support ticket, human review within 2 hours
-
-Generation UI: NOT a spinner. Narrative progress screen showing each step completing in real time via Server-Sent Events. Conversational gap-fill questions woven in during generation.
-
----
-
-## REFERRAL ENGINE
-
-5 referral categories — all require explicit CASL consent captured at Module 1:
-
-| Category | Trigger | Fee |
+| Partner | Programme | Status |
 |---|---|---|
-| Business Opportunity | Module 2 — no business selected | $150–$300/intro or 10–15% revenue share |
-| Immigration Attorney | Attorney flag in quiz | $200–$400/intro |
-| Cross-Border Banking | Module 8 or no US account | $100–$200/opened account |
-| Cross-Border CPA | Module 9 or post-approval | $150–$250/intro |
-| Real Estate | Tab G (commercial) / Post-approval (residential) | $150–$1,000/intro |
-
-Smart routing for business opportunity leads:
-- business_selected = YES → route DIRECT to franchisor (fee: $5,000–$15,000/closed deal)
-- business_selected = NO → route to franchise broker (fee: $150–$300/intro)
-
-All referrals use double opt-in: contact details released only after applicant responds to introduction email.
-
----
-
-## B2B SUBSCRIPTION PRODUCTS (Phase 2)
-
-Two separate partner portals:
-- e2go Legal (/partner/attorney) — pre-qualified E-2 leads for immigration attorneys
-- e2go Broker (/partner/broker) — pre-qualified investor profiles for franchise brokers
-
-One lead → one subscriber (never broadcast). 48-hour response window before lead rotates. Partner agreement (DPA) required before dashboard access.
+| Mercury | Bank account opening — remote | Apply now (self-serve) |
+| Wise | CAD→USD transfer affiliate | Apply now (self-serve) |
+| Relay | Bank account opening — backup | Apply now (self-serve) |
+| East West Bank | Cross-border banking | Apply at 10 users |
+| Knightsbridge FX | Currency transfer | Apply at launch |
+| OFX | Currency transfer | Apply at launch |
+| RBC / TD cross-border | Banking referral | Apply at 50 users |
+| Immigration attorneys | Warm leads (no fee) | Email now |
+| Franchise brokers | FranNet, IFPG, FranChoice | Email now |
+| Cross-border CPAs | MNP, BDO | Formalise at 20 users |
 
 ---
 
-## UX RESILIENCE RULES
+## SESSION LOG (summary — see BUILD_TRACKER.md for full log)
 
-These behaviors are required — never cut corners on them:
+**June 9–10, 2026 — Full build session — ALL BLOCKERS RESOLVED:**
+- Quiz v4.0 → v6.0: all 30 bugs fixed, test fixtures written
+- Interview simulator: complete — Groq TTS, transcription, timer,
+  $29.99 purchase, design fixes
+- Module 3 case file redesign: 6 sections, all components, pre-fill
+- Document upload: Session A (extraction) + Session B (UI) complete
+- Auth image slider: Unsplash URLs removed, flag SVG
+- Route cleanup: 53 → 47 routes, dead pages removed, middleware hardened
+- Pricing updated: $550–$1,397 (old founding member pricing retired)
+- E2go rebrand: capital E, lowercase go throughout
+- Stripe Price IDs recreated at new amounts — all 10 tiers live
+- Payments migration applied ✅
+- Login page flag gradient fixed — left panel now visible
+- Voice-to-text input built + mic bug fixed (getUserMedia pre-check)
+- Case file UX redesign COMPLETE — two-panel layout, voice input,
+  all variants preserved, data writes verified, build clean
+  Commits: a9dfcb9 → 9172b2c
 
-1. **Answer auto-save** — every Module 3 answer saved within 2 seconds
-2. **Session resume** — "Welcome back. You left off at Tab F, Question 8."
-3. **Payment failure** — calm message + retry + recovery email within 15 minutes
-4. **Hard stop screens** — warm, human, specific — never cold error pages. Offer attorney referral immediately.
-5. **Document preview** — quality gate must pass first. Show strongest sections first.
-6. **Post-payment** — celebration screen, not just a download button
-7. **Interview score framing** — never lead with a number. "You've identified 4 areas to strengthen."
-8. **Outcome recording** — approved/refused/processing. Celebration on approval. Compassion on refusal.
-9. **Re-engagement emails** — Day 3, 7, 14 (Preparation Paralysis copy), 30 after signup with no progress
+**June 10, 2026 — Auth, Quiz, Results — Session 1 (commit 400d1dc):**
+- Auth: magic link removed, remember me, first/last name at signup
+- Email verification enforced in middleware
+- Navbar shows first name when logged in
+- Results page personalised, score/flags contradiction fixed
+- Smart post-login routing by application state
+- Quiz questions: Q0-05, Q0-06, Q0-08c/d, Q0-09, Q0-10 updated
+- Email results button: loading/success/error states
+- Draft expiry: 7 days → 24 hours
+
+**June 12, 2026 — Security fixes (42 fixes, 6 groups):**
+- Groups 1-6: Auth bypass removed, API auth added, admin gating,
+  input validation, Stripe tier validation, accessibility,
+  generation engine fixes, email/RLS/scoring fixes
+- Commits: 7741935, 7821b8b, 78f5d26, 5bf7623, a6a2d04, f6138bd
+
+**June 12, 2026 — Post-verification-wall cleanup (Groups 5-14):**
+- Warning timing, double-click debounce, email validation,
+  session linking, Q0-03a simplification, Stripe success fix,
+  post-login UX improvements, CI cleanup
+- Commits: 6c72ee0, aab6c10, 61d8be8, 90de0a8, 00fdb14
+
+**June 12, 2026 — Group 15: Terms-required dead-end fixed:**
+- Rewrote /terms-required with scroll-to-accept UI
+- Middleware now passes ?next param through terms gate
+- ToS acceptance recorded at email-verify account creation
+- Commit: 6edf6dc
+
+**June 13, 2026 — Session 7: Three-Layer Experience/Framing Pipeline:**
+- Layer 0: Targeted follow-up questions when experience_score = WEAK/CRITICAL
+  - Fixed business-type lookup (Q0-business-type key + quiz_sessions fallback)
+  - Added targeted experience-gap question using operational-needs table
+  - Stays within Spec2's 8-question cap
+- Layer 1: 9-dimension experience scoring + OpenRouter AI framing calls
+  - calculateExperienceScore() — 9 pure dimension scorer functions
+  - generateFramingDecisions() — real OpenRouter call (deepseek/deepseek-chat)
+  - Graceful degradation: empty/failed → proceeds, doesn't block
+- Layer 2: Hardened generation prompt with standing backstop instruction
+  - qualifications.md updated: Layer 1 framing interpolation + standing instruction
+  - Spec3 updated to match
+- business-operational-needs.ts created — 12 franchise categories
+- experience-pipeline-fixtures.ts — 5 synthetic fixtures, all pass
+- Files: analysis-engine.ts, followup/generate-questions/route.ts,
+  business-operational-needs.ts, qualifications.md, Spec3_Generation_Prompts.md
+- Build: clean ✅
+
+**June 13, 2026 — Session 8: Cover Page Data Source Fix:**
+- Fixed personal_info JSONB query (column doesn't exist) → real column sources
+- applicantName: `applications.principal_name`
+- businessName: `applications.business_name`
+- nationality: `quiz_sessions.result_json.country`
+- passportNumber: not collected — bracket placeholder remains correct
+- File: `src/app/api/generate/download/[applicationId]/route.ts`
+- Commit: 6da0f6d
+- Build: clean ✅
+
+**June 13, 2026 — Session 9: Post-Generation Package Summary:**
+- 5-section summary screen on `/documents/[applicationId]` (permanent section, NOT a gate)
+- Sections: strength bars, strengths, gaps, suggestions, mandatory disclaimer
+- Bonus: denial risk awareness section (WATCH/FLAG/CRITICAL only)
+- Zero denial-prediction language — all text uses "may" framing
+- Chen verified: experience STRONG, not flagged
+- Fixture 5 verified: WEAK surfaced gracefully, actionable suggestion given
+- Files created: `PackageSummary.tsx`, `case-brief/[applicationId]/route.ts`, `package-summary-verification.ts`
+- File modified: `documents/[applicationId]/page.tsx`
+- Build: clean ✅
+
+**June 12, 2026 — Walsh & Pollard citation fix:**
+- Removed incorrect "Matter of Walsh and Pollard, 8 I&N Dec. 288"
+  from live prompt (cover_letter.md), spec (Spec3), and docs
+- Replaced with 9 FAM 402.9-6(D) proportionality standard
+- Deleted 6 dead hyphenated prompt files
+- Grep sweep: zero remaining incorrect citations in live files
+- Build: clean ✅
+
+**June 13, 2026 — Session 10: Closeout gaps from Sessions 7-9:**
+- Live framing call test (Fixture 3, Fixture 5) — Layer 1 verified
+- Section 5.5 denial-language audit confirmed clean
+- Chen franchise_training_offset verified correct per spec
+- TODO/placeholder scan across Sessions 4-9 code
+- Build: clean ✅
+
+**June 13, 2026 — Session 11: Ask E2go FAQ Widget:**
+- 355 Q&A pairs embedded via pgvector (faq_qa_corpus table)
+- 3-layer retrieval: corpus cosine similarity → KB → model fallback
+- Streaming responses via xiaomi/mimo-v2.5 via OpenRouter
+- Rate limiting: 10 req/min per IP via Upstash Redis
+- FaqWidget.tsx on homepage (later moved to /learn)
+- API route: /api/faq/ask
+- Build: clean ✅
+
+**June 13, 2026 — Session 12: Login + Simulator UX:**
+- Login submit flicker fixed — full-panel loading state from click to redirect
+- Simulator teaser page — "complete case file" or "upload documents" paths
+- IDEAS.md 12G gating logic unchanged
+- Build: clean ✅
+
+**June 13, 2026 — Session 13: Account Linkage Investigation:**
+- Investigated account ↔ Chen application linkage
+- Application ownership via user_id confirmed working
+- Build: clean ✅
+
+**June 13, 2026 — Session 14: Standalone Simulator Upload:**
+- Quick-start route: /simulator/quick-start
+- Document upload → extraction → answers → simulator question generation
+- Reuses existing extraction engine (no rebuild)
+- source='simulator_standalone' on applications table
+- application_documents + document_discrepancies tables created
+- Migration: 20260613240000_simulator_quick_start_tables.sql
+- Build: clean ✅
+
+**June 13, 2026 — Sessions 15-18: FAQ Widget Polish:**
+- Session 15: Widget moved from homepage to /learn, homepage gets CTA
+- Session 16: Animated gradient border at idle, thinking indicator during stream
+- Session 17: Widget moved to top of /learn page
+- Session 18: Scrollable answer container (max-height + overflow)
+- Build: clean ✅
+
+**June 13, 2026 — Session 19: Commit Audit:**
+- All Sessions 14-18 changes committed and pushed
+- Migration filename collision check confirmed distinct
+- Build: clean ✅
+
+**June 13, 2026 — Sessions 25-30: UX fixes:**
+- Session 25: Nav on authenticated layouts
+- Session 26: Login quiz-session linkage fix
+- Sessions 27-29: Dashboard loading state, Supabase singleton fix
+- Sessions 28-30: Simulator loading state, duplicate GoTrueClient resolved
+- Build: clean ✅
+
+**June 15, 2026 — Session 20: Simulator Enhancement:**
+- DBA/franchise naming: `operatingName` added to SimulatorContext (types + engine); `targetState` null-safe
+- Evaluate route: DBA-aware `businessLine` in prompt; explicit instruction not to flag trade-name divergence
+- Case-summary route: enriched with `operatingName`, `targetState`, `businessCategory`, `investmentAmount`
+- CaseFileSummary.tsx: full dossier redesign — cover page (file ref, classification grid), lettered Exhibits, Roman-numeral sections
+- Gap-resolution flow: `simulator-gaps.ts`, `CaseGapsForm.tsx`, `case-gaps/` route; case-file page shows gap form first
+- TTS migration: `playai-tts` (decommissioned) → `canopylabs/orpheus-v1-english` (Orpheus) with 200-char chunking; `groq-transcription.ts` deleted; voice-status endpoint added; timer/warning display restricted to voice mode only
+- Tier separation: simulator-only dashboard + middleware block on /apply, /generate/, /documents/
+- Homepage copy updated; simulator scored 4/10 — Tier 1/2/3 roadmap delivered
+- Build: clean ✅ | ⚠️ TTS voice mode blocked — see KNOWN ISSUES
+
+**June 16, 2026 — Session 22: Simulator Coaching System + Question Variety:**
+- Evaluate route prompt rewritten: removed "2 sentences max" → 3-sentence coaching-quality
+  feedback; 2-sentence suggestions with specific E-2 framing direction; max_tokens → 400
+- New `/api/simulator/coaching-report` route: POST, xiaomi/mimo-v2.5-pro, 2400 tokens,
+  90s timeout; processes all weak/inconsistent answers together; returns `QuestionCoaching[]`
+  with `whatOfficerExpected`, `whatWasMissing`, `keyPoints[]`, `modelAnswer`, `documentReference`
+- Model answer added to coaching cards: first-person, uses real business details, disclaimer
+  shown: "guide to level of detail — not a script"
+- Question variety: `pick()` + `shuffle()` helpers; 9 universal questions now have pools of
+  3-4 phrasings; business type pools expanded to 5-6 per category, randomly sampled to 3
+- New WP-05 probe for immigrant intent risk; 8 business type categories with personalized vars
+- Timer redesign: both voice (ConversationalSession.tsx) and text (page.tsx) now show
+  `position: fixed, bottom: 0` bar with depleting gold progress bar + 22px digital countdown;
+  turns red + pulses at < 2 minutes; paddingBottom: 56px added to page containers
+- `CoachingSummary` type: `needsWork[]` and `inconsistencies[]` now include `questionId` and
+  `originalAnswer`; `QuestionCoaching` type now includes `modelAnswer: string`
+- `fetchCoachingReport()` added to page.tsx: non-blocking async, fires after session complete,
+  progressively updates via setCoachingSummary; coachingLoading state threads to SessionComplete
+- `generateCoachingSummary()` type declarations fixed to match enriched interface
+- Build: clean ✅
+
+**June 19, 2026 — Session 36: Phase C complete (FDD-1 through FDD-5):**
+- FDD-1: FDD upload + SSE extraction pipeline + review UI (commit 6441f5e)
+- FDD-2: 5-dimension E-2 scoring engine (pure TS) + ODE model + LLM narrative + score dashboard (commit 59faec6)
+- FDD-3: Territory market analysis — Census ACS 5-year ZCTA API, category-specific weights and radii, Google Places graceful degradation, LLM narrative (commit e16043b)
+- FDD-4: Questions generator — 15 flag→question templates, 8 standard, data-gap triggers, 5 LLM bespoke, CaseProfile match score (0-100), filter tabs by audience, copy-all (commit 1d8e0a5)
+- FDD-5: Final report (6 sections LLM), freemium teaser (hasAccess gate + 3 locked questions), 8 answer keys written to user's application, FDD index page with 5-stage progress bars (commit 4d58970)
+- Lint/middleware: all ESLint errors resolved, /fdd/ added to middleware, clean build 119 pages (commit ec37352)
+- BUILD_TRACKER updated: FDD-3/4/5 marked complete with full session log (commit 144ec48)
+- Branch: dev. Build clean ✅.
+
+**June 19, 2026 — Session 35: Phase A + B complete (EU-3 through PT-2):**
+- EU-3: ARCHETYPE_WEIGHTS in scoreCase(); 4 archetypes × 6 categories; franchise/pre-start override priority; all 3 callers updated — Commits 5d083a5
+- EU-4: Fire-and-forget buildCaseProfile() at 5 events + POST /api/profile/rebuild route — Commit e4a5281
+- EU-5: PartialProfileTeaser component — 4 locked score cards + upgrade CTA on simulator-only dashboard — Commit c4f5729
+- EU-6: Results completeness bar + confidence tier labels (quiz-derived / case-file-reported / document-confirmed / fully-verified) — Commit 74b5194
+- PT-1: /settings rebuilt with 2-step confirmation + type-to-confirm; POST /api/account/delete wipes 16 tables + Supabase Auth user + Resend confirmation email — Commit 55a7c1b
+- PT-2: Inline privacy notices at document upload (UploadClient) and case file first visit (apply/page.tsx) — Commit 835987e
+- All builds clean. Branch: dev. Phase D (QA) is next.
+
+**June 16, 2026 — Session 21: Audio Fix + Ready Screen + Architecture:**
+- TTS audio FIXED: `groq-tts.ts` MIME type changed to `data:audio/wav;base64,`; `tts/route.ts` `response_format` changed to `'wav'` (Orpheus only accepts wav)
+- Browser autoplay policy FIXED: added 'ready' phase to ConversationalSession; silent 44-byte WAV unlock on "Begin interview" click permanently unlocks audio for the page session
+- Simulator loading flicker FIXED: loading guard in page.tsx now `!sessionInfo || hasCaseFile === null`
+- Pre-interview ready screen: speaker test, mic test, "Begin interview" button; session timer now starts on button click (not on mount)
+- Three-module product architecture locked: Simulator | Gap Analysis | Document Generation
+- Case Intelligence Profile (CIP) concept locked: shared data model fed by all intake sources, consumed by all modules
+- Adaptive intake pattern locked: document-first extraction → pre-filled confirmation → "do you have a document for X?" → bare questions last
+- Gap Analysis architecture planned: 6 evidence categories, scoring weights, remediation loop
+- Process flow widget designed (HTML/JS); React component conversion pending
+- Build: clean ✅
+
+**June 24, 2026 — Session 69: Page transitions + login animation:**
+- PageTransition component: fade+slide on every route change (220ms, Framer Motion v12 `motion/react`)
+- Login animated submit overlay: AnimatePresence fade-in over form, GenerationProgress with 3 auth steps
+- motion.button with whileTap scale on Sign In button; animated error message slide-in
+- GenerationProgress 9-state audit: 6 upgraded, 3 kept as spinners; QA-UX-01–08 added to FEATURE_INVENTORY
+- Commits: 3b92519, 527bd8c — Build: clean ✅
+
+**Next session priorities (as of June 19, 2026 — Phase A + B + C complete):**
+
+**Owner actions (pending — unblock these before launch):**
+1. [USER ACTION] Accept Groq TTS terms at console.groq.com — voice mode blocked
+2. [USER ACTION] Run SQL: `UPDATE pricing SET stripe_price_id = 'price_1Tim5fF7Ggk3LUEy2JGRRKrB', amount_cents = 2999 WHERE tier_id = 'simulator_3pack';`
+3. [USER ACTION] Update Vercel env STRIPE_PRICE_SIMULATOR_3PACK → price_1Tim5fF7Ggk3LUEy2JGRRKrB
+4. [USER ACTION] Refund $197 test charge in Stripe dashboard
+5. [USER ACTION] Run FAQ seed scripts: `npx tsx scripts/seed-faq-corpus.ts` + `seed-faq-kb-chunks.ts`
+6. [USER ACTION] Confirm FDD pricing (placeholder $297 in teaser) — unblocks FDD freemium gate wiring
+7. [USER ACTION] Add GOOGLE_PLACES_API_KEY to .env.local — enables real competitor data in territory analysis
+
+**Code sessions (in order):**
+1. Phase D — QA-A: Public pages audit (/, /quiz, /results, /pricing, /learn, auth pages)
+2. Phase D — QA-B: Authenticated case file audit (dashboard, /apply/*, /settings, /score)
+3. Phase D — QA-C: Simulator + generation + API routes audit
+4. FDD freemium gate: wire hasAccess in /fdd/report/[fddId]/page.tsx to payment check
+5. Generation engine fixes — docs/sessions/SESSION_PLAN_GENERATION_FIXES.md
+6. SESSION22_SENTRY_ERROR_TRACKING (pre-launch blocker — no error visibility)
+
+**Unexecuted sessions from prior audit (never built, no session files yet):**
+- SESSION21_INTERVIEW_PREP_KIT — now REPLACED by the coaching report system (Session 22)
+- SESSION22_SENTRY_ERROR_TRACKING — error monitoring, pre-launch requirement
+- SESSION23_UPTIME_MONITORING — uptime monitoring
+- MODULE4_FOLLOWUP_UI — Module 4 follow-up conversation UI (Spec2_Followup_Conversation.md)
 
 ---
 
-## NEWSLETTER — "THE E-2 INSIDER"
+## MASTER SPRINT PLAN (Approved June 19, 2026)
 
-Cadence: every 2 weeks · Max 400 words · One value item · One CTA
-Platform: Resend · CASL opt-in only · Unsubscribe on every email
+See BUILD_TRACKER.md section "MASTER SPRINT PLAN" for full detail.
 
-4 segments: Pre-Application · In Application · Post-Approval · Referred Out
+### Phase A — Engine Unification — ✅ COMPLETE (June 19, 2026)
 
----
-
-## EDUCATION HUB — /learn
-
-Top-of-funnel SEO. Tone: educational, calm, no sales language.
-8 sub-pages targeting: "E-2 visa Canada", "E-2 visa for Canadians", "how much to invest E-2 visa", "E-2 visa requirements Canada", "E-2 visa businesses that qualify", "Toronto consulate E-2 visa"
-
----
-
-## SUPPORT TICKETING
-
-Routes: /support · /support/new · /support/tickets
-"Get Help" button fixed position on all authenticated pages.
-Auto-create support ticket on document generation Scenario C failure.
-
----
-
-## ADMIN PANEL
-
-Route: /admin — never linked publicly, admin role required.
-Contains: User stats, application pipeline, ticket management, API credit monitoring, revenue tracking, feature flags, maintenance mode.
-API credit monitoring tracks: tokens per user, per module, per feature, daily burn rate, projected monthly cost, alert threshold.
-
----
-
-## LIFECYCLE TRACKING
-
-Table: application_lifecycle
-Tracks every milestone from first_visit_at through approval_date.
-Computed metric: total_journey_days = first_visit_at to approval_date.
-This data generates publishable statistics after 50+ outcomes and is a core valuation asset.
-
----
-
-## CONTENT LIBRARY
-
-### PIECE 001 — "The Preparation Paralysis"
-Use for: Day 14 re-engagement email · /learn "Are you ready?" section · Newsletter Issue 3 · LinkedIn/Reddit
-
-> "Something I've been noticing across my DMs this month: The people who are most prepared are often the ones most paralyzed. I've spoken this week with people who have their funds sourced, their business model outlined, a state shortlisted, and a lawyer's number saved in their phone. Everything except the one thing that actually moves things forward — starting. It's not laziness; it's a form of fear that hides within preparation. One more question, one more piece of research, one more person to ask. I'm not judging it. I see it in every case type, every nationality, every income level. The research phase can quietly become a place to live."
-
-CTA: "Your application is exactly where you left it." · "The quiz takes 10 minutes." · "One click to continue."
-
----
-
-## KNOWN ISSUES AS OF SESSION 3 END
-
-| Issue | Priority | Fix |
+| ID | Status | What it does |
 |---|---|---|
-| Dev server port 3001 vs tests | LOW | Update tests to use 3001 for dev |
-| Quiz currency rate slow to load | LOW | Accept fallback UX |
+| EU-1 | ✅ | Expanded `buildCaseProfile()` — reads answers + docs + sim sessions; completeness_score, data_state, dimension scores |
+| EU-2 | ✅ | Archetype-aware question pools + gap-targeted probes in interview-prep |
+| EU-3 | ✅ | `ARCHETYPE_WEIGHTS` per archetype in `scoreCase()`; franchise/pre-start overrides take priority |
+| EU-4 | ✅ | Fire-and-forget `buildCaseProfile()` triggers at 5 events + `POST /api/profile/rebuild` route |
+| EU-5 | ✅ | `PartialProfileTeaser` — 4 locked score cards + upgrade CTA on simulator-only dashboard |
+| EU-6 | ✅ | Completeness bar + confidence tier labels on results page (quiz-derived → fully verified) |
 
----
+**Rule:** All connections fall back gracefully to current behavior if profile is sparse.
 
-## SESSION LOG
+### Phase B — Privacy & Trust — ✅ COMPLETE (June 19, 2026)
 
-### Session 1 — May 29, 2026
-**Completed:**
-- Module 0 questions v2.1 + scoring logic v1.1 finalized — JSON files locked
-- Stitch design library — 10 screens complete in docs/stitch/
-- Next.js scaffold — App Router, TypeScript, Tailwind
-- All 5 core pages built: Landing, Quiz, Results, Pricing, Dashboard
-- Nav + Footer shared components
-- Supabase connected — {"connected":true} confirmed
-- Database schema generated — users conflict being resolved
-- CLAUDE_CONTEXT.md + BUILD_TRACKER.md created
+| ID | Status | What it does |
+|---|---|---|
+| PT-1 | ✅ | `/settings` rebuilt with 2-step deletion UI (type-to-confirm); `POST /api/account/delete` wipes 16 tables + Auth user; Resend confirmation email |
+| PT-2 | ✅ | Inline privacy notices at document upload (`UploadClient`) and case file first visit (`apply/page.tsx`) |
 
-**Key decisions:**
-- Paywall moved to post-Module 3
-- Interview simulator: 2 sessions included, $9.99/bundle extra
-- Document generation: sequential + checkpointed
-- Referral engine: 5 categories + real estate + relocation layer
-- Smart lead routing: hot leads (business known) → direct to franchisor
-- Franchise brokerage: e2go can operate directly — no license required
-- B2B subscription products: attorney + broker portals (Phase 2)
-- /learn education hub: 8 SEO-targeted sub-pages
-- Lifecycle tracking: application_lifecycle table — start collecting from day 1
-- "start session" / "end session" commands established
-- 10 standing build rules established
+### Phase C — FDD Intelligence — ✅ COMPLETE (June 19, 2026)
 
-**Session 2 priorities:**
-1. Fix database schema (profiles table, all tables with RLS, lifecycle table)
-2. Wire auth — login/signup to Supabase
-3. Wire auth middleware — protect /dashboard, /apply/*
-4. Wire quiz scoring engine to results page
-5. Wire quiz save to Supabase (quiz_sessions + application_lifecycle)
-6. Wire answer auto-save on every question
-7. Add security headers to next.config.mjs
-8. Build OpenRouter/MiniMax client (src/lib/ai.ts + /api/ai/route.ts)
-9. Add SEO metadata to all existing pages
-10. Test full flow: signup → quiz → results → pricing → dashboard
+Separate paid add-on. Franchise clients upload FDD (Franchise Disclosure Document) for AI-powered E-2 analysis.
+
+| ID | Status | What it does |
+|---|---|---|
+| FDD-DESIGN | ✅ | 50-field extraction schema, 5-dimension scoring rubric, ODE model, territory spec, questions spec |
+| FDD-1 | ✅ | PDF ingestion + 4-pass chunked extraction + SSE stream + staleness/registration gate + DB schema + upload/review UI |
+| FDD-2 | ✅ | 5-dimension E-2 scoring engine (pure TS, no LLM for numerics) + ODE model + LLM narrative + score dashboard |
+| FDD-3 | ✅ | Territory market analysis: Census ACS 5-year + Google Places (graceful degradation) + category weights + narrative |
+| FDD-4 | ✅ | Questions generator: 15 flag→question templates + 8 standard + data-gap triggers + 5 LLM bespoke + CaseProfile match |
+| FDD-5 | ✅ | Final report + freemium teaser (hasAccess gate) + 8 answer keys written back to user's application |
+
+**Freemium gate:** `hasAccess` in `/fdd/report/[fddId]/page.tsx` is currently `true` for all auth users. Wire to payment check when FDD pricing is confirmed ($297 placeholder in teaser). Gate structure is built.
+**Google Places:** `GOOGLE_PLACES_API_KEY` not in .env.local — competition scoring uses neutral fallback (score 50). Add key to enable real competitor data.
+**Multi-FDD comparison:** deprioritized, not built.
+
+### Phase D — QA (3 sprints, run AFTER EU-1 through EU-6 are complete)
+
+Agent writes expected behavior spec from BUILD_TRACKER + spec files before executing — no separate doc from owner needed.
+
+| ID | What it covers |
+|---|---|
+| QA-A | All public routes (/, /quiz, /results, /pricing, /learn, /about, /login, /signup, etc.) — render, links, form submissions, hard stops, copy quality, mobile 390px, console errors |
+| QA-B | All authenticated case file routes (/dashboard, /apply/*, /score, /settings) — auth gates, data display, autosave, pre-fill, empty states. Requires seeded test account. |
+| QA-C | Simulator + generation + API routes (/simulator, /gap-analysis, /generate/*, /documents/*, all /api/*) — voice/text modes, document pipeline, ZIP download, payment gating, API auth on every route |
+
+Deliverable per sprint: report listing ✅ pass / ⚠️ issue / ❌ broken per page and item with reproduction steps.
+
+### Phase E — Legal & Compliance
+
+| ID | What it is | Priority |
+|---|---|---|
+| LC-1 | PIPEDA compliance review — audit /privacy against Canadian law; add explicit "no AI training on your data" statement; GDPR awareness for EU treaty country users. Build with PT-2. | BEFORE LAUNCH |
+| LC-SOC2 | SOC 2 — DEFERRED. Not needed until first enterprise client (law firm, corporate immigration dept, franchise broker network) asks for it. Cost: $15K–$50K. Tool when ready: Vanta or Drata. Revisit 12-18 months post-launch. | DEFERRED |

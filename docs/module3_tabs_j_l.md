@@ -1,10 +1,12 @@
 # Tabs J through L — Qualifications, Business Plan, Family Dependents
 ## Module 3 Interview Engine
-*Version 1.0 | May 28, 2026 | Source: U.S. Embassy Toronto, FAM 9 FAM 402.9*
+*Version 1.1 | May 31, 2026 | Source: U.S. Embassy Toronto, FAM 9 FAM 402.9*
 
 ---
 
 # TAB J — Applicant Qualifications & Organizational Chart
+
+**Batch:** 1 — Generated immediately after payment
 
 ## Purpose
 
@@ -73,6 +75,27 @@ operated it.
 responsibilities.
 **Type:** textarea
 
+### QJ-NEW-01
+**Question:** "If you do not have direct experience in this specific industry, what skills from your background directly prepare you to manage this business successfully?"
+**Type:** textarea
+**Tooltip:** "Many successful E-2 investors come from unrelated industries. The key is connecting your management, operational, or people skills to what running this business actually requires day to day."
+**output_feeds:** qualifications_summary, cover_letter_paragraph_6
+**lead_signal:** self_aware=true → quality+1
+
+### QJ-CONFIDENCE
+**Question:** "How confident do you feel about your ability to successfully run this type of business?"
+**Type:** select
+**Options:**
+- Very confident — I have done this kind of work before
+- Fairly confident — I have transferable skills
+- Somewhat uncertain — I am counting on the franchise system
+- Honestly unsure — I am still figuring out if this is right for me
+**output_feeds:** narrative_tone_calibration (internal — not in document)
+**lead_signal:**
+- "Very confident" → temperature+1, urgency_up=true
+- "Honestly unsure" → temperature-1, franchise_rematch_trigger=true, nurture_sequence=true
+**Note:** This answer calibrates the AI generation tone for the qualifications narrative — confident vs supported-by-system framing. Never shown in documents. Never disclosed to user.
+
 ---
 
 ## Organizational Chart (Auto-Generated)
@@ -112,6 +135,8 @@ Co-Owner / Director (50%) Co-Owner / Director (50%)
 ---
 
 # TAB K — Business Plan Generator
+
+**Batch:** 2 — Generated after business formation confirmed
 
 ## Purpose
 
@@ -229,9 +254,40 @@ of approximately 85,000 households."
 proprietary systems, and franchisor brand resources. This strengthens
 the business viability section.
 
+### QK-NEW-01
+**Question:** "Does your FDD Item 19 contain financial performance representations for comparable units? If yes, what is the average gross sales for comparable franchisees?"
+**Type:** select + currency
+**Options:**
+- Yes — average gross sales: [currency input USD]
+- My FDD Item 19 does not contain financial representations
+- I have not reviewed Item 19 yet
+**Branch:**
+- "Not reviewed yet" → advisory:
+  "FDD Item 19 is the most credible source for revenue projections in a franchise E-2 application. Review it before finalizing your business plan projections."
+**output_feeds:** business_plan_financials, substantiality_memorandum
+**denial_prevention:** D-06
+**lead_signal:**
+- FDD reviewed with data → sophistication+2
+
+### QK-NEW-02
+**Question:** "How do you see this business in five years?"
+**Type:** select
+**Options:**
+- One location running well — that is my goal
+- Two or three locations once the first is stable
+- Multiple locations — I want to build something significant
+- I am not sure yet — one step at a time
+**output_feeds:** business_plan_vision_section
+**lead_signal:**
+- "Multiple locations" → growth_ambition=high, multiunit_routing=true, lifetime_value=high, temperature+1
+- "One location" → standard routing
+**Note:** multiunit_routing=true feeds higher-value franchise leads and flags for B2B broker portal as premium profile.
+
 ---
 
 # TAB L — Family Dependents
+
+**Batch:** 1 — Generated immediately after payment
 
 ## Purpose
 
@@ -324,6 +380,22 @@ refusals, or criminal history in any country?
 **Options:** No / Yes / I am not sure
 **Branch:** Yes / Not sure → attorney flag W-19 confirmed
 
+### QL-AGE-OUT-ENGAGEMENT
+**Question:** "[Child name] will be [calculated age] when you expect visa approval. E-2 dependent status ends at 21. Have you thought about their long-term immigration pathway?"
+**Type:** select
+**Options:**
+- Yes — we have a plan in place
+- I was aware but have not planned yet
+- I did not realize this was an issue
+**Branch:**
+- "Not planned" or "Did not realize" →
+  Advisory: "If your child will be 21 before you obtain permanent residency, they will need independent immigration status. Planning should start no later than age 20. An immigration attorney can review options including F-1 student visa, their own E-2, or green card pathways."
+  Options: Connect me with an attorney / I will research this
+  "Connect me" → attorney_referral_trigger=true, urgency=high
+**output_feeds:** compliance_calendar_child_ageout_alert
+**lead_signal:**
+- "Did not realize" → attorney_warmth+2, urgency=high
+
 ---
 
 ## Tab L Document Checklist (Auto-Generated Per Dependent)
@@ -351,18 +423,18 @@ refusals, or criminal history in any country?
 | Tab | Name | Questions | Output |
 |-----|------|-----------|--------|
 | A | DS-160 Reference Generator | 58 | DS-160 + DS-156E reference sheets |
-| B | Personal Documents Checklist | 0 (auto-generated) | Personalized document checklist |
+| B | Personal Documents Checklist | 1 (QB-READINESS) | Personalized document checklist |
 | C | Visa Category Confirmation | 0 (auto-generated) | One-page classification letter |
-| D | Cover Letter Generator | 6 | Full application cover letter |
-| E | Ownership Structure | 7–11 (solo/partner) | Ownership narrative |
-| F | Investment Proof | 11 | Investment narrative + doc checklist |
-| G | Real Business Evidence | 8 | Business evidence narrative + checklist |
-| H | Source and Path of Funds | 6 | Funds flow narrative + doc checklist |
-| I | Non-Marginality Evidence | 8 | Non-marginality narrative + projections |
-| J | Qualifications + Org Chart | 6 | Qualifications narrative + org chart |
-| K | Business Plan Generator | 10 | Complete 5-year business plan |
-| L | Family Dependents | 6–13 (per dependent) | Dependent cover letters + checklists |
-| **Total** | | **~130–150 base (excl. branches)** | |
+| D | Cover Letter Generator | 9 | Full application cover letter |
+| E | Ownership Structure | 11–15 (solo/partner) | Ownership narrative |
+| F | Investment Proof | 13 | Investment narrative + doc checklist |
+| G | Real Business Evidence | 10 | Business evidence narrative + checklist |
+| H | Source and Path of Funds | 7 | Funds flow narrative + doc checklist |
+| I | Non-Marginality Evidence | 12 | Non-marginality narrative + projections |
+| J | Qualifications + Org Chart | 8 | Qualifications narrative + org chart |
+| K | Business Plan Generator | 12 | Complete 5-year business plan |
+| L | Family Dependents | 6–15 (per dependent) | Dependent cover letters + checklists |
+| **Total** | | **~150–180 base (excl. branches)** | |
 
 ---
 

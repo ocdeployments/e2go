@@ -1,0 +1,7 @@
+[    2361ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom.development.js:38559
+[    2521ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/icons/icon-192.png:0
+[    2551ms] [WARNING] Error while trying to use the following icon from the Manifest: http://localhost:3000/icons/icon-192.png (Download error or resource isn't a valid image) @ http://localhost:3000/pricing:0
+[    2554ms] [LOG] Service Worker registered: http://localhost:3000/ @ webpack-internal:///(app-pages-browser)/./src/components/ServiceWorkerRegistration.tsx:13
+[    2554ms] [LOG] Service Worker registered: http://localhost:3000/ @ webpack-internal:///(app-pages-browser)/./src/components/ServiceWorkerRegistration.tsx:13
+[    2687ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/components/react-dev-overlay/app/hot-reloader-client.js:186
+[    3147ms] [LOG] [Fast Refresh] done in 460ms @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/components/react-dev-overlay/app/hot-reloader-client.js:43
