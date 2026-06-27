@@ -7,6 +7,21 @@ import PhaseStrip from "@/components/dashboard/PhaseStrip";
 import type { PhaseData } from "@/components/dashboard/PhaseStrip";
 import { deriveStrengthBadges } from "@/lib/strength-badges";
 
+const NEXT_ACTION_WHY: Record<string, string> = {
+  Onboarding:
+    "Completing this pre-fills your details across all 15 consulate documents.",
+  "Business Profile":
+    "Completing this builds your investor archetype and Business Plan foundation.",
+  "Investment & Documents":
+    "Completing this generates your Source of Funds statement and startup cost schedule.",
+  "Gap Analysis":
+    "Running this reveals weaknesses before your consulate does and lifts every document score.",
+  "Document Generation":
+    "Generating your package produces 15 consulate-ready files in one step.",
+  "Interview Preparation":
+    "Practising builds the confidence and precision your consulate interview demands.",
+};
+
 interface DashboardClientProps {
   firstName: string | null;
   applicationLabel: string | null;
@@ -24,6 +39,9 @@ interface DashboardClientProps {
   showFranchiseNavigator: boolean;
   isSimulatorOnly: boolean;
   simulatorData: { sessionsUsed: number; sessionsPurchased: number } | null;
+  sectionCompletionMap: { qualifications: boolean; family: boolean; ties: boolean };
+  generatedDocCount: number;
+  fddCount: number;
 }
 
 function deriveCurrentPhase(
@@ -106,7 +124,8 @@ function buildPhases(
   caseCompletenessScore: number | null,
   investmentRange: string | null,
   simulatorData: { sessionsUsed: number; sessionsPurchased: number } | null,
-  currentPhaseName: string
+  currentPhaseName: string,
+  generatedDocCount: number
 ): PhaseData[] {
   const m1 = Boolean(lifecycle?.module1_completed_at);
   const m2 = Boolean(lifecycle?.module2_completed_at);
@@ -173,8 +192,8 @@ function buildPhases(
       title: "Generation",
       contentType: "generation",
       contentData: {
-        done: m4,
-        docCount: null,
+        done: generatedDocCount > 0,
+        docCount: generatedDocCount,
       },
       isCurrentPhase: currentPhaseName === "Document Generation",
     },
@@ -210,8 +229,10 @@ export default function DashboardClient({
   showFranchiseNavigator,
   isSimulatorOnly,
   simulatorData,
+  sectionCompletionMap,
+  generatedDocCount,
+  fddCount,
 }: DashboardClientProps) {
-  // Detect franchise path from quiz answers
   const isFranchisePath =
     /franchise/i.test(quizAnswers["Q0-08a"] ?? "") ||
     /franchise/i.test(quizAnswers["Q0-08"] ?? "");
@@ -225,6 +246,7 @@ export default function DashboardClient({
 
   const currentPhase = deriveCurrentPhase(lifecycle);
   const nextAction = deriveNextAction(lifecycle);
+  const nextActionWhy = NEXT_ACTION_WHY[currentPhase];
   const milestones = buildMilestones(quizCompleted, lifecycle);
   const phases = buildPhases(
     quizCompleted,
@@ -234,14 +256,14 @@ export default function DashboardClient({
     caseCompletenessScore,
     investmentRange,
     simulatorData,
-    currentPhase
+    currentPhase,
+    generatedDocCount
   );
 
   // ── Simulator-only branch ────────────────────────────────────────────────────
   if (isSimulatorOnly) {
     return (
       <div>
-        {/* Welcome header */}
         <div style={{ marginBottom: "32px" }}>
           <div
             style={{
@@ -485,6 +507,19 @@ export default function DashboardClient({
             {applicationLabel}
           </div>
         )}
+        {generatedDocCount > 0 && (
+          <div
+            style={{
+              fontSize: "12px",
+              color: "rgba(201,168,76,0.6)",
+              fontFamily: "'DM Sans', sans-serif",
+              marginTop: "6px",
+              letterSpacing: "0.01em",
+            }}
+          >
+            {generatedDocCount} of 15 documents ready
+          </div>
+        )}
       </div>
 
       {/* Franchise Navigator banner */}
@@ -562,20 +597,14 @@ export default function DashboardClient({
         </div>
       )}
 
-      {/* Zones B + C — Two-column */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "55fr 45fr",
-          gap: "20px",
-          alignItems: "stretch",
-        }}
-      >
+      {/* Zones B + C — Two-column, stacks to single on mobile */}
+      <div className="dashboard-grid">
         {/* Zone B — Case Command Panel */}
         <CaseCommandPanel
           score={progress}
           currentPhase={currentPhase}
           nextAction={nextAction}
+          nextActionWhy={nextActionWhy}
           milestones={milestones}
         />
 
@@ -585,6 +614,10 @@ export default function DashboardClient({
           entitlements={entitlements}
           isFranchisePath={isFranchisePath}
           simulatorData={simulatorData}
+          sectionCompletionMap={sectionCompletionMap}
+          gapScore={caseCompletenessScore}
+          fddCount={fddCount}
+          generatedDocCount={generatedDocCount}
         />
       </div>
 
