@@ -1,6 +1,170 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 27, 2026 — Session 82: Dashboard intelligence layer + Sprint F spec locked.
+**Last Updated:** June 27, 2026 — Session 83: Sprint G plan locked (Dashboard redesign G-1/G-2 + Interview Prep Kit G-3). Sprint F-1/F-2 queued after G.
+
+---
+
+## Sprint G — Dashboard Redesign + Interview Preparation Kit (NEXT 3 SESSIONS)
+
+### Sprint G-1 — Dashboard: Intelligence Strip Fix + Phase Strip Removal
+
+**Goal:** Strip always shows real data. Remove the redundant PhaseStrip. Simplify CaseCommandPanel.
+
+**Files to edit:**
+- `src/components/dashboard/DashboardClient.tsx` — ProfileIntelligenceStrip, remove PhaseStrip call at line 1208
+- `src/components/dashboard/CaseCommandPanel.tsx` — remove milestone tracker rows
+- `src/components/dashboard/PhaseStrip.tsx` — delete file (and remove import)
+
+**ProfileIntelligenceStrip — progressive cell logic:**
+
+| Cell | Day 1 (quiz only) | Source | After business profile | After gap analysis |
+|---|---|---|---|---|
+| 1 | E-2 Outcome ("STRONG" / "BORDERLINE") | quizOutcome | → Investor Archetype | stays |
+| 2 | Investment Range ("$250K–$500K") | investmentRange | stays | → Case Readiness % |
+| 3 | Application Type ("Solo E-2 Investor") | quizAnswers derived | stays | → Primary Risk Area |
+| 4 | Current Stage | lifecycle | updates | updates |
+
+Logic: cell swaps to the richer value only when that richer value is available. Never shows a placeholder. Day 1 always has 4 real cells from quiz data.
+
+**Application type derivation** (Cell 3, Day 1): read `applications.application_type` or derive from `quiz_sessions.result_json`. Values: "Solo E-2 Investor" / "Solo + Spouse" / "Solo + Family" / "Partnership".
+
+**CaseCommandPanel simplification:** Remove the `milestones` prop and milestone tracker rows entirely. Keep: readiness score circle + progress bar + current phase label + next action + nextActionWhy sentence. The milestone tracker job moves to the FolderStack numbered checklist in G-2.
+
+**Build time estimate:** 2 hours.
+
+---
+
+### Sprint G-2 — Dashboard: Folder Stack Redesign
+
+**Goal:** FolderStack tabs become the single source of truth for application status. Three tabs, each with a distinct job, no overlap with CaseCommandPanel.
+
+**Tab names (was 3 tabs — Build/Strengthen/File — now 4):**
+- Tab 1: **My Application**
+- Tab 2: **My Analysis**
+- Tab 3: **My Preparation** (new — interview simulator + prep kit + coaching)
+- Tab 4: **My Package** (documents only — generation + download + revision)
+
+**"My Application" tab — numbered checklist:**
+Replaces BuildCard's current section rows. Each row is a step with number, title, status chip, link.
+
+| # | Step | Status source | Link |
+|---|---|---|---|
+| 01 | Onboarding | lifecycle.module1_completed_at | /apply/story |
+| 02 | Business Profile | lifecycle.module2_completed_at | /apply/business |
+| 03 | Your Story | lifecycle.module3_completed_at (or answers M3-S prefix) | /apply/story |
+| 04 | Your Business | answers M3-B prefix present | /apply/business |
+| 05 | Your Investment | answers M3-H prefix present | /apply/investment |
+| 06 | Your Qualifications | sectionCompletionMap.qualifications | /apply/qualifications |
+| 07 | Your Family | sectionCompletionMap.family | /apply/family |
+| 08 | Your Ties | sectionCompletionMap.ties | /apply/ties |
+| 09 | Voice Profile | lifecycle.module4_completed_at | /apply/module4 |
+
+Status chips: ✓ Complete (green) / ● In Progress (amber) / ○ Not started (dim)
+
+**"My Analysis" tab — real scores per tool:**
+Replaces StrengthenCard. Each row shows actual data, not just a tool name.
+
+| Tool | When gap ran | When not run |
+|---|---|---|
+| Gap Analysis | "87% · Run again →" | "Not yet run → Start now" |
+| FDD Intelligence (franchise only) | "2 analyses run · View →" | "Upload your FDD →" |
+| Market Analysis | "Territory score: 74 · View →" | "Run analysis →" |
+
+**"My Preparation" tab — interview readiness (NEW 4th tab):**
+Everything related to getting ready for the consulate interview. Nothing about documents.
+
+| Item | Content |
+|---|---|
+| Interview Prep Kit | "Generate my kit →" or "View kit · Last generated X days ago" — links to /simulator/prep-kit |
+| Interview Simulator | "N sessions remaining · Practice now →" + last session readiness badge |
+| Coaching Report | "View last session →" if a completed session exists, else hidden |
+
+**"My Package" tab — documents only:**
+Exclusively document generation. No simulator content.
+
+| Item | Content |
+|---|---|
+| Document Package | "X of 15 documents ready · Download →" or "Generate your package →" |
+| Revision Credits | "X of 10 revisions remaining" if generation is complete |
+| Consulate Briefing | "Toronto · 50 pages per tab" — links to /apply/generate for the briefing screen |
+
+**Files to edit:**
+- `src/components/dashboard/FolderStack.tsx` — rebuild CARDS labels + BuildCard + StrengthenCard + FileCard
+- `src/components/dashboard/DashboardClient.tsx` — remove milestones prop from CaseCommandPanel call
+
+**Build time estimate:** 3 hours.
+
+---
+
+### Sprint G-3 — Interview Case Dossier
+
+**New feature.** A personalized revision dossier — not a Q&A sheet. The client may sign their franchise agreement months before the consulate interview. This kit rebuilds their entire case in their hands before they walk in. Built from their own submitted data, tested against the 15 real E-2 denial factors (D-01→D-15), and printable for day-of use.
+
+**Route:** `/simulator/prep-kit`
+**API:** `POST /api/simulator/prep-kit`
+
+**Data sources (all already in DB):**
+- `quiz_sessions.result_json` → outcome, treaty country, investment range, flags, dependents
+- `case_profiles` → archetype, 3 dimension scores, completeness_score
+- `answers` (ALL for this application) → M3-* narrative answers, QF-* investment figures, QA-FDD-* FDD writebacks, QMA-* market writebacks, QA-NEW-* FDD platform integration
+- `applications` → business_name, business_category, operational_status, target_state, principal_name
+- `fdd_analyses` (franchise path) → extracted_fields (50 fields), e2_score (ScoringResult + flags), territory_analysis, final_report
+- `simulator_sessions` (latest completed) → coaching_notes, readiness_indicator, strong_count, needs_work_count
+- `gap-analysis-engine.ts` → `scoreCase()` — pure function, run in Node.js, pass results to LLM
+
+**Design rule:** LLM writes narrative only. Every number, score, and D-code finding is pre-computed in Node.js. The model formats and explains — it does not derive.
+
+**7 Kit Sections:**
+
+1. **Your Case at a Glance** — facts snapshot: business name, treaty country, investment, archetype, application type, quiz outcome, FDD compatibility (franchise), territory rating. 2-minute review before entering the building.
+
+2. **What's Working in Your Favour** — 3–6 case strengths from dimension scores + gap categories + FDD data. Plain English: "Your investment of $X constitutes 82% of total enterprise cost — well above the substantiality threshold."
+
+3. **Your Denial Risk Register (Core)** — run `scoreCase()` in Node → 15 D-code findings. For each D-code where risk = 'high' or 'moderate':
+   - What the officer is looking for (the legal test)
+   - Your case's position (personalized finding from scoreCase)
+   - What you need to be able to say (mitigation, first-person)
+   - Risk chip: High / Moderate
+
+4. **Your Business: Know This Cold** — from M3-B answers + FDD fields + QMA market data:
+   - What the business does, location/territory, franchise system mechanics
+   - Your management role described in the terms officers expect
+   - Staffing plan + market viability data (competitor density, population fit)
+
+5. **Your Investment: Know the Numbers** — from QF-* + FDD Item 7:
+   - Total invested / enterprise cost / at-risk %
+   - Line-by-line breakdown (franchise fee / build-out / equipment / working capital)
+   - Source of funds chronology: origin → U.S. deployment
+   - What's committed (irrevocable) vs. what's in the business account
+   - FDD ODE timeline if applicable
+
+6. **Months May Have Passed: Catch Up** — the unique section:
+   - Key dates: franchise agreement, wires, LLC formation, lease, any updates since filing
+   - If simulator sessions exist: coaching notes surface here ("Last time you struggled with X")
+   - Documents to physically bring (from application type + family)
+   - Checklist of facts that may have changed since the application was filed
+
+7. **The 9 Interview Questions** — UQ-01→UQ-09 + applicable WP probes, with personalized answer frameworks using real numbers and facts. One section of seven, not the whole kit.
+
+**API route logic:**
+1. Auth + applicationId lookup
+2. Parallel queries: quiz_sessions, case_profiles, answers (all), applications, fdd_analyses, simulator_sessions
+3. Run `scoreCase()` synchronously → denialFactors[]
+4. Assemble structured data object → single LLM call
+5. Model: `xiaomi/mimo-v2.5-pro`, max_tokens: 4500, timeout: 120s
+6. Cache result in `interview_prep_kits` table
+
+**New table:** `interview_prep_kits`
+- `application_id` FK (unique), `kit_json` JSONB, `generated_at` timestamptz, `model_used` text
+- Re-generate: older than 7 days OR manual "Regenerate" button
+
+**Display:**
+- Screen: Obsidian Gold dark, sections collapsible
+- Print: `@media print` — white bg, black text, section page-breaks
+- "Print / Save as PDF" → `window.print()`
+- Entry points: Dashboard "My Preparation" tab + `/simulator` page
+
+**Build time estimate:** 5–6 hours.
 
 ---
 

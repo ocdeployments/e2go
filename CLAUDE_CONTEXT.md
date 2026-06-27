@@ -1,6 +1,6 @@
 # CLAUDE_CONTEXT.md — E2go
 ## Master Context for Every Claude Code Session
-**Version:** June 27, 2026 — Session 82. Dashboard intelligence layer added (Profile strip, Gap priorities, Simulator snapshot). Sprint F spec locked. Build clean on dev.
+**Version:** June 27, 2026 — Session 83. Sprint G plan locked: dashboard redesign (G-1, G-2) + Interview Prep Kit (G-3). Sprint F-1/F-2 queued after G.
 
 ## SPRINT STATUS
 - OPS-1 (API Cost Intelligence): ✅ COMPLETE — llm_cost_log, cost logging in callLLM(), /admin/cost page
@@ -18,8 +18,11 @@
 - Sprint E-5 (Dashboard overhaul): ✅ COMPLETE — superseded by Session 80 Case File UI redesign
 - Sprint E-6 (Pricing): ✅ COMPLETE — founding member counter removed, auth-aware header, features list updated
 - Sprint E-7 (Franchise Navigator): ✅ COMPLETE — brand removal, categories, FDD multi-zip, broker flow
-- Sprint F-1 (Section Shell + Sidebar): 🔜 NEXT — layout wrapper for /apply, /gap-analysis, /simulator with 7-step left rail
-- Sprint F-2 (Section Task Panels): 🔜 QUEUED — per-section checklist panels (right side) surfacing specific to-dos per page
+- Sprint G-1 (Dashboard: Intelligence Strip Fix): 🔜 NEXT — Progressive cells (no placeholders), remove PhaseStrip, simplify CaseCommandPanel
+- Sprint G-2 (Dashboard: Folder Stack Redesign): 🔜 QUEUED — 4 tabs: My Application (9-step checklist) / My Analysis (scores) / My Preparation (simulator + prep kit) / My Package (documents only)
+- Sprint G-3 (Interview Preparation Kit): 🔜 QUEUED — /simulator/prep-kit + /api/simulator/prep-kit. Personalized Q&A guide for all 9 UQ questions + WP probes. mimo-v2.5-pro. Printable format.
+- Sprint F-1 (Section Shell + Sidebar): 🔜 QUEUED after G — layout wrapper for /apply, /gap-analysis, /simulator with 7-step left rail
+- Sprint F-2 (Section Task Panels): 🔜 QUEUED after F-1 — per-section checklist panels surfacing specific to-dos per page
 
 ## KEY RULES — NEVER BREAK
 - ANTHROPIC_API_KEY: ONLY in generation-engine.ts + /api/fdd/* routes
