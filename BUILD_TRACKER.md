@@ -1,6 +1,61 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 27, 2026 — Session 83: Sprint G plan locked (Dashboard redesign G-1/G-2 + Interview Prep Kit G-3). Sprint F-1/F-2 queued after G.
+**Last Updated:** June 27, 2026 — Session 84: Sprints G-1/G-2/G-3 + F-1/F-2 all complete. Build clean 144 pages. 5 commits pushed to dev. Owner actions remain (FAQ migration, Sentry DSN, Cloudflare Turnstile, Resend domain, FAQ seed scripts).
+
+---
+
+## Session 84 — Sprints G-1/G-2/G-3 + F-1/F-2 Complete ✅
+
+**Branch:** dev. Build clean 144 pages. TypeScript clean. 5 commits.
+
+**Commits:**
+- `3456be1` — feat(sprint-g3): Interview Case Dossier — /simulator/prep-kit + API route + DB migration
+- `3ee8634` — feat(sprint-f1): SectionLayout — 7-step left rail for /apply and /gap-analysis
+- `0f12791` — feat(sprint-f2): Section task panels — collapsible checklist banner in SectionLayout
+- (G-1/G-2 committed previous session — see Session 83 below)
+
+**What shipped:**
+
+**Sprint G-3 — Interview Case Dossier:**
+- New `interview_prep_kits` table — `application_id` UNIQUE, `kit_json` JSONB, RLS enabled, service-role write policy
+- `POST /api/simulator/prep-kit` — parallel fetches all case data → `scoreCase()` pre-computation → xiaomi/mimo-v2.5-pro single call (4500 tokens, 120s) → upsert cache
+- `GET /api/simulator/prep-kit` — returns cached kit without regenerating (7-day cache)
+- `/simulator/prep-kit` page — 7 collapsible sections: Case at a Glance / Strengths / Denial Risk Register / Business / Investment / Catch-Up / 9 Interview Questions + WP probes
+- `@media print` CSS — white background, page-breaks per section, no-print controls
+- WP probe detection: WP-01→WP-05 triggered by scoreCase() dimension scores
+
+**Sprint F-1 — SectionLayout shell:**
+- `SectionLayout.tsx` — client component; 200px sticky left rail (desktop); mobile hamburger → full-screen drawer; auto-hides on CaseFileShell pages (HIDE_SIDEBAR_PREFIXES array)
+- `/apply/layout.tsx` — async server component; parallel fetches quiz/lifecycle/app docs; derives 7-step done states
+- `/gap-analysis/layout.tsx` — same pattern; preserves `<Nav />` above SectionLayout
+- Steps: Eligibility → Onboarding → Business → Investment → Gap Analysis → Generate → Interview
+
+**Sprint F-2 — Per-section task panels:**
+- 4 task configs wired into SectionLayout: /apply (3 tasks), /gap-analysis (3 tasks), /simulator (3 tasks), /simulator/prep-kit (3 dossier tasks)
+- Collapsible banner above content area; collapsed by default; › toggle; 3 tasks with checkbox outline + hint text
+- Does NOT appear on CaseFileShell pages (SectionLayout returns children directly on those pages)
+
+**Known Issues resolved this session:**
+- `getSession()` → `getUser()`: already clean (no `.getSession()` calls remain — verified via grep)
+- `seed-test-applicant.ts` auth grab: file no longer exists; replaced by `seed-test-profiles.mjs` (idempotent, uses explicit user IDs)
+- Stripe API version: already updated to `2026-05-27.dahlia` (Session 56)
+- Bracket regex: resolved Session 27 — both `docx-builder.ts` and `checklist-builder.ts` use `/\[[^\[\]]+\]/g`
+
+**⚠️ Owner actions still required:**
+1. Apply FAQ pgvector migration via SQL Editor — `20260613200000_faq_pgvector_tables.sql` + `20260613210000_faq_search_functions.sql`
+2. Run FAQ seed scripts (after migration): `npx tsx scripts/seed-faq-corpus.ts` + `seed-faq-kb-chunks.ts`
+3. Add NEXT_PUBLIC_SENTRY_DSN + SENTRY_DSN + SENTRY_ORG + SENTRY_PROJECT to Vercel env
+4. Add NEXT_PUBLIC_CF_TURNSTILE_SITE_KEY + CF_TURNSTILE_SECRET_KEY to Vercel (Cloudflare Turnstile)
+5. Add CRON_SECRET env var to Vercel (any random string — activates nightly CaseProfile rebuild)
+6. Rotate OpenAI API key (platform.openai.com → revoke + recreate → update .env.local + Vercel)
+7. Check Resend domain verification — if e2go.app is verified, revert sender to results@e2go.app
+8. Refund $197 test charge in Stripe dashboard
+9. Apply migration `supabase/migrations/20260627100000_interview_prep_kits.sql` via SQL Editor
+
+**Next sprint candidates:**
+- Dashboard `/simulator` layout — wire SectionLayout into simulator pages (SimulatorNav complexity blocked F-1)
+- Sprint H (next): TBD based on user priority
+- Generation engine: approval gate / setState / empty box issue — investigate in docs/sessions/ if still reproducible
 
 ---
 
@@ -3367,11 +3422,11 @@ npx tsx scripts/seed-faq-corpus.ts && npx tsx scripts/seed-faq-kb-chunks.ts
 1. ~~**Groq TTS voice mode blocked**~~ — ✅ RESOLVED June 16, 2026. Groq Orpheus terms accepted; audio MIME/format fixed in Session 21.
 2. **Generation engine: approval gate, setState, empty boxes** — MEDIUM. File: docs/sessions/SESSION_PLAN_GENERATION_FIXES.md
 3. ~~**Bracket highlighting regex + checklist builder**~~ — ✅ RESOLVED Sprint 1 (Session 27, commit 653c066). `docx-builder.ts` and `checklist-builder.ts` both use `/\[[^\[\]]+\]/g` which matches any `[descriptive bracket]`. LLM reference brackets (`[from Tab X]`, `[insert here]`) stripped in Step 12 via `LLM_REFERENCE_BRACKET_REGEX`. No further action needed.
-4. **getSession() security warnings** — MEDIUM. Multiple files use Supabase `.getSession()` — Supabase now recommends `.getUser()` instead. Flag in console; not a hard failure but should be swept.
-5. **seed-test-applicant.ts grabs current auth user** — HIGH risk if run again. The seed script uses the currently-logged-in user's ID rather than an explicit `user_id` param. Running it again will re-break account linkage. Needs a `--user-id` flag added before next use.
+4. ~~**getSession() security warnings**~~ — ✅ RESOLVED Session 84. Full grep confirms zero `.getSession()` calls remain in src/; all routes use `.getUser()`.
+5. ~~**seed-test-applicant.ts grabs current auth user**~~ — ✅ MOOT Session 84. File no longer exists; replaced by `scripts/seed-test-profiles.mjs` which uses explicit user IDs and is idempotent.
 6. ~~**004_answers_source_update.sql not applied**~~ — ✅ CLOSED. File never existed (incorrect reference in BUILD_TRACKER). Investigation confirms the document upload code does NOT write `'document_upload'` to `answers.source` — uses default `'user_entry'`. PreFillBadge uses it only in UI display layer, not DB. No DB error is occurring. Low-priority if code starts writing that value in future.
 7. **Supabase CLI migration history out of sync** — MEDIUM. `supabase migration list` shows 2 of 24; ~22 applied manually via SQL Editor. Do not rely on `db push` without verifying via SQL Editor first.
-8. **Stripe API version outdated (2024-06-20)** — LOW. Upgrade `apiVersion` in `scripts/stripe-setup.ts` when convenient.
+8. ~~**Stripe API version outdated (2024-06-20)**~~ — ✅ RESOLVED Session 56. `scripts/stripe-setup.ts` now uses `2026-05-27.dahlia`.
 9. **Resend domain verification unknown** — MEDIUM. If `e2go.app` is verified in Resend dashboard, revert sender to `results@e2go.app`.
 10. **FAQ pgvector tables missing — seed scripts BLOCKED** — HIGH. `faq_qa_corpus`, `faq_kb_chunks`, `faq_query_log` tables confirmed missing via REST API. `20260613200000_faq_pgvector_tables.sql` and `20260613210000_faq_search_functions.sql` were never applied. Apply both via SQL Editor, then run seed scripts. Combined SQL: see OWNER MANUAL ACTIONS below.
 11. **OpenAI API key needs rotation** — MEDIUM. Key was exposed in chat transcript in Session 28. Go to platform.openai.com → API keys → revoke + recreate → update in `.env.local` and Vercel env vars.
