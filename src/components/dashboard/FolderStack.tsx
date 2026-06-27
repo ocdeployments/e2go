@@ -8,15 +8,19 @@ interface FolderStackProps {
   entitlements: { hasComplete: boolean; hasFdd: boolean };
   isFranchisePath: boolean;
   simulatorData: { sessionsUsed: number; sessionsPurchased: number } | null;
+  sectionCompletionMap: { qualifications: boolean; family: boolean; ties: boolean };
+  gapScore: number | null;
+  fddCount: number;
+  generatedDocCount: number;
 }
 
 const SECTION_CARDS = [
-  { number: "01", title: "Your Story", href: "/apply/story", lifecycleKey: null },
-  { number: "02", title: "Your Business", href: "/apply/business", lifecycleKey: "module2_completed_at" },
-  { number: "03", title: "Your Investment", href: "/apply/investment", lifecycleKey: "module3_completed_at" },
-  { number: "04", title: "Your Qualifications", href: "/apply/qualifications", lifecycleKey: null },
-  { number: "05", title: "Your Family", href: "/apply/family", lifecycleKey: null },
-  { number: "06", title: "Your Ties", href: "/apply/ties", lifecycleKey: null },
+  { number: "01", title: "Your Story", href: "/apply/story" },
+  { number: "02", title: "Your Business", href: "/apply/business" },
+  { number: "03", title: "Your Investment", href: "/apply/investment" },
+  { number: "04", title: "Your Qualifications", href: "/apply/qualifications" },
+  { number: "05", title: "Your Family", href: "/apply/family" },
+  { number: "06", title: "Your Ties", href: "/apply/ties" },
 ];
 
 const CARDS = [
@@ -82,6 +86,10 @@ export default function FolderStack({
   entitlements,
   isFranchisePath,
   simulatorData,
+  sectionCompletionMap,
+  gapScore,
+  fddCount,
+  generatedDocCount,
 }: FolderStackProps) {
   const [activeIndex, setActiveIndex] = useState(0);
 
@@ -98,13 +106,13 @@ export default function FolderStack({
 
   // First incomplete section href
   const firstIncompleteHref =
-    !module1Done
-      ? "/apply/story"
-      : !module2Done
-      ? "/apply/business"
-      : !module3Done
-      ? "/apply/investment"
-      : "/apply/generate";
+    !module1Done ? "/apply/story" :
+    !module2Done ? "/apply/business" :
+    !module3Done ? "/apply/investment" :
+    !sectionCompletionMap.qualifications ? "/apply/qualifications" :
+    !sectionCompletionMap.family ? "/apply/family" :
+    !sectionCompletionMap.ties ? "/apply/ties" :
+    "/apply/generate";
 
   return (
     <div style={{ display: "flex", flexDirection: "column" }}>
@@ -168,10 +176,10 @@ export default function FolderStack({
           >
             {activeIndex === 0 && (
               <BuildCard
-                lifecycle={lifecycle}
                 module1Done={module1Done}
                 module2Done={module2Done}
                 module3Done={module3Done}
+                sectionCompletionMap={sectionCompletionMap}
                 firstIncompleteHref={firstIncompleteHref}
               />
             )}
@@ -179,10 +187,15 @@ export default function FolderStack({
               <StrengthenCard
                 entitlements={entitlements}
                 isFranchisePath={isFranchisePath}
+                gapScore={gapScore}
+                fddCount={fddCount}
               />
             )}
             {activeIndex === 2 && (
-              <FileCard simulatorData={simulatorData} />
+              <FileCard
+                simulatorData={simulatorData}
+                generatedDocCount={generatedDocCount}
+              />
             )}
           </motion.div>
         </AnimatePresence>
@@ -252,30 +265,36 @@ export default function FolderStack({
 // ── Card contents ──────────────────────────────────────────────────────────────
 
 function BuildCard({
-  lifecycle,
   module1Done,
   module2Done,
   module3Done,
+  sectionCompletionMap,
   firstIncompleteHref,
 }: {
-  lifecycle: Record<string, string | null> | null;
   module1Done: boolean;
   module2Done: boolean;
   module3Done: boolean;
+  sectionCompletionMap: { qualifications: boolean; family: boolean; ties: boolean };
   firstIncompleteHref: string;
 }) {
-  const allDone = module1Done && module2Done && module3Done;
+  const allDone =
+    module1Done &&
+    module2Done &&
+    module3Done &&
+    sectionCompletionMap.qualifications &&
+    sectionCompletionMap.family &&
+    sectionCompletionMap.ties;
 
   const sectionStatuses = SECTION_CARDS.map((s, i) => {
     let status: "done" | "in-progress" | "upcoming";
     if (i === 0) status = module1Done ? "done" : "in-progress";
     else if (i === 1) status = module2Done ? "done" : module1Done ? "in-progress" : "upcoming";
     else if (i === 2) status = module3Done ? "done" : module2Done ? "in-progress" : "upcoming";
-    else status = "upcoming";
+    else if (i === 3) status = sectionCompletionMap.qualifications ? "done" : "upcoming";
+    else if (i === 4) status = sectionCompletionMap.family ? "done" : "upcoming";
+    else status = sectionCompletionMap.ties ? "done" : "upcoming";
     return { ...s, status };
   });
-
-  void lifecycle; // lifecycle available if needed for deeper checks
 
   return (
     <div style={{ padding: "20px 22px 22px" }}>
@@ -469,16 +488,24 @@ function BuildCard({
 function StrengthenCard({
   entitlements,
   isFranchisePath,
+  gapScore,
+  fddCount,
 }: {
   entitlements: { hasComplete: boolean; hasFdd: boolean };
   isFranchisePath: boolean;
+  gapScore: number | null;
+  fddCount: number;
 }) {
+  const gapRan = gapScore != null && gapScore > 0;
+  const fddRan = fddCount > 0;
+
   const tools = [
     {
       label: "Gap Analysis",
       description: "Identify weaknesses before your consulate does",
       href: "/gap-analysis",
-      cta: "Run analysis →",
+      cta: gapRan ? `${gapScore}% · Run again →` : "Not yet run →",
+      ctaStrong: gapRan,
       available: entitlements.hasComplete,
     },
     ...(isFranchisePath
@@ -487,7 +514,8 @@ function StrengthenCard({
             label: "FDD Intelligence",
             description: "50-field FDD extraction + E-2 suitability scoring",
             href: "/fdd",
-            cta: "Analyse FDD →",
+            cta: fddRan ? `${fddCount} analysis run · View →` : "Analyse FDD →",
+            ctaStrong: fddRan,
             available: entitlements.hasFdd || entitlements.hasComplete,
           },
         ]
@@ -497,6 +525,7 @@ function StrengthenCard({
       description: "Real Census + BLS data injected into your Business Plan",
       href: "/market-analysis",
       cta: "Run analysis →",
+      ctaStrong: false,
       available: entitlements.hasComplete,
     },
   ];
@@ -586,11 +615,12 @@ function StrengthenCard({
               style={{
                 fontSize: "10px",
                 fontFamily: "'DM Sans', sans-serif",
-                color: "#1a1208",
+                color: tool.ctaStrong ? "#2E7D5E" : "#1a1208",
                 fontWeight: 600,
                 letterSpacing: "0.04em",
                 flexShrink: 0,
-                opacity: 0.65,
+                opacity: tool.ctaStrong ? 1 : 0.65,
+                whiteSpace: "nowrap",
               }}
             >
               {tool.cta}
@@ -619,8 +649,10 @@ function StrengthenCard({
 
 function FileCard({
   simulatorData,
+  generatedDocCount,
 }: {
   simulatorData: { sessionsUsed: number; sessionsPurchased: number } | null;
+  generatedDocCount: number;
 }) {
   const sessionsRemaining = simulatorData
     ? Math.max(simulatorData.sessionsPurchased - simulatorData.sessionsUsed, 0)
@@ -629,9 +661,13 @@ function FileCard({
   const items = [
     {
       label: "Document Generation",
-      description: "15 consulate-formatted documents",
+      description:
+        generatedDocCount > 0
+          ? `${generatedDocCount} of 15 documents ready`
+          : "15 consulate-formatted documents",
       href: "/apply/generate",
-      cta: "Generate →",
+      cta: generatedDocCount > 0 ? "Continue →" : "Generate →",
+      ctaStrong: generatedDocCount > 0,
     },
     {
       label: "Interview Simulator",
@@ -641,12 +677,14 @@ function FileCard({
           : "3 sessions included",
       href: "/simulator",
       cta: "Start →",
+      ctaStrong: false,
     },
     {
       label: "Consulate Submission",
       description: "Submission package assembly",
       href: "/apply/submit",
       cta: "Prepare →",
+      ctaStrong: false,
     },
   ];
 
@@ -675,13 +713,13 @@ function FileCard({
             fontSize: "9px",
             letterSpacing: "0.1em",
             textTransform: "uppercase",
-            color: "#3A2800",
-            border: "1px solid rgba(58,40,0,0.2)",
+            color: generatedDocCount > 0 ? "#2E7D5E" : "#3A2800",
+            border: `1px solid ${generatedDocCount > 0 ? "rgba(46,125,94,0.25)" : "rgba(58,40,0,0.2)"}`,
             padding: "3px 8px",
             fontFamily: "'DM Sans', sans-serif",
           }}
         >
-          Final Stage
+          {generatedDocCount > 0 ? `${generatedDocCount} / 15 Ready` : "Final Stage"}
         </div>
       </div>
 
@@ -735,11 +773,11 @@ function FileCard({
               style={{
                 fontSize: "10px",
                 fontFamily: "'DM Sans', sans-serif",
-                color: "#1a1208",
+                color: item.ctaStrong ? "#2E7D5E" : "#1a1208",
                 fontWeight: 600,
                 letterSpacing: "0.04em",
                 flexShrink: 0,
-                opacity: 0.65,
+                opacity: item.ctaStrong ? 1 : 0.65,
               }}
             >
               {item.cta}
