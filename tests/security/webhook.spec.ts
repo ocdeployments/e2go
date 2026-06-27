@@ -1,10 +1,8 @@
 import { test, expect } from '@playwright/test';
 
-const BASE = 'http://localhost:3000';
-
 test.describe('Stripe Webhook Security', () => {
   test('No signature header returns 400', async ({ request }) => {
-    const response = await request.post(`${BASE}/api/stripe/webhook`, {
+    const response = await request.post('/api/stripe/webhook', {
       data: { type: 'checkout.session.completed' },
     });
     expect(response.status()).toBe(400);
@@ -13,7 +11,7 @@ test.describe('Stripe Webhook Security', () => {
   });
 
   test('Invalid signature returns 400', async ({ request }) => {
-    const response = await request.post(`${BASE}/api/stripe/webhook`, {
+    const response = await request.post('/api/stripe/webhook', {
       headers: {
         'stripe-signature': 'invalid_signature_xyz',
       },
@@ -28,7 +26,7 @@ test.describe('Stripe Webhook Security', () => {
     // Mock a valid signature by sending to a non-existent endpoint that accepts any body
     // In production, this would be a real Stripe-signed event
     // For testing, we verify the allowlist logic by checking the route rejects unknown types
-    const response = await request.post(`${BASE}/api/stripe/webhook`, {
+    const response = await request.post('/api/stripe/webhook', {
       headers: {
         // This won't pass real verification but tests the structure
         'stripe-signature': 'test',
@@ -44,7 +42,7 @@ test.describe('Stripe Webhook Security', () => {
 
   test('Webhook endpoint exists and responds', async ({ request }) => {
     // Basic sanity check that the endpoint exists
-    const response = await request.post(`${BASE}/api/stripe/webhook`, {
+    const response = await request.post('/api/stripe/webhook', {
       headers: {
         'stripe-signature': 'invalid',
       },

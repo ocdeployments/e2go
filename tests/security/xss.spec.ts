@@ -11,7 +11,7 @@ const XSS_PAYLOADS = [
 test.describe('XSS Protection', () => {
   for (const payload of XSS_PAYLOADS) {
     test(`XSS payload blocked: ${payload.substring(0,40)}`, async ({ page }) => {
-      await page.goto('http://localhost:3000/quiz');
+      await page.goto('http://localhost:3001/quiz');
       await page.waitForLoadState('networkidle');
       const inputs = page.locator('input[type="text"], textarea');
       const count = await inputs.count();
