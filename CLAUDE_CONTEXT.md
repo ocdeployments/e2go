@@ -1,6 +1,6 @@
 # CLAUDE_CONTEXT.md — E2go
 ## Master Context for Every Claude Code Session
-**Version:** June 24, 2026 — Session 69. Page transitions (PageTransition component), login animated submit overlay (AnimatePresence + GenerationProgress), GenerationProgress 9-state audit complete. All 8 sprints remain complete. Build clean on dev (527bd8c).
+**Version:** June 27, 2026 — Session 80. Dashboard Case File UI redesign complete (4 zones: welcome, command panel, folder stack, phase strip). Paywall removed from dashboard entirely. Sprint E (all 7 sub-sprints) complete. /modules page added. Build clean on dev (0ccafb6).
 
 ## SPRINT STATUS
 - OPS-1 (API Cost Intelligence): ✅ COMPLETE — llm_cost_log, cost logging in callLLM(), /admin/cost page
@@ -11,6 +11,13 @@
 - ENG-1 (Engine Quality Priority): ✅ COMPLETE — KB→docgen, coaching memory, multi-turn probing all confirmed built
 - ENG-2 (Engine Quality Advanced): ✅ COMPLETE — FDD prompt tuning (+1.0pts), adaptive difficulty (+0.3pts), Q0-08c/Q0-08d quiz branches, archetype classifier Q0-08a primary signal (S67)
 - INFRA-1 (Infrastructure Hardening): ✅ COMPLETE — FAQ Anthropic violation fixed, SSE backoff + existing-job skip + UI state restore (S66), connection pooler N/A confirmed
+- Sprint E-1 (Critical breaks): ✅ COMPLETE — 10 dead-end fixes (login, ToS, Save & Exit, pricing, upload, calendar, navigator, simulator)
+- Sprint E-2 (Paywall): ✅ COMPLETE — middleware server-side gates on /apply/* + /gap-analysis + /fdd/* + Nav greyed lock icons
+- Sprint E-3 (Results page): ✅ COMPLETE — full E-3 restructure, Perplexity-reference layout, DocumentTabPreview, attorney price anchor, module cards
+- Sprint E-4 (Quiz fixes): ✅ COMPLETE — question rewording, multi-select, conditional logic, cookie banner
+- Sprint E-5 (Dashboard overhaul): ✅ COMPLETE — superseded by Session 80 Case File UI redesign
+- Sprint E-6 (Pricing): ✅ COMPLETE — founding member counter removed, auth-aware header, features list updated
+- Sprint E-7 (Franchise Navigator): ✅ COMPLETE — brand removal, categories, FDD multi-zip, broker flow
 
 ## KEY RULES — NEVER BREAK
 - ANTHROPIC_API_KEY: ONLY in generation-engine.ts + /api/fdd/* routes

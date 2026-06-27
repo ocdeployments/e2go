@@ -4,6 +4,23 @@
 
 ---
 
+## Session 79 — Modules Page + Nav + Misc Polish ✅
+
+**Commits:** `f973e7e` (brand spelling, 58 files) · `87e2a04` (results E-3 restructure) · `0ccafb6` (Session 79 misc)
+
+**What shipped:**
+- `/modules` page — standalone modules marketing page (FDD Intelligence $495, Market Analysis $295, E-2 Business Plan $695, bundle $1,195)
+- Nav: Modules link added to main navigation
+- Brand spelling: `E2go` → `e2go` standardised across 58 files
+- Results E-3 restructure committed: DocumentTabPreview, module cards, attorney price anchor, score breakdown wired to real quiz codes
+- Module 3 sub-pages (b, c, d, j) updated; email templates clock1/clock2 updated
+- HomeClient, quiz, signup, terms, privacy, reset-password minor polish
+- **Critical gap discovered:** Partnership Document Engine (Sprint F-P) — $2,495 tier accepted payments but generation engine only produces one investor's file. Do not sell partnership until Sprint F-P is built.
+
+**Still TODO:** Wire 7 new document types into generation engine (Task #8)
+
+---
+
 ## Session 80 — Dashboard Case File Redesign ✅
 
 **Commit:** `6b51f1c` — feat(dashboard): Case file UI redesign — 4 zones, folder stack, phase strip
