@@ -1,22 +1,12 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 import { getUserEntitlements } from "@/lib/entitlements";
-import { PartialProfileTeaser } from "@/components/PartialProfileTeaser";
-import EligibilityBadges from "@/components/dashboard/EligibilityBadges";
-import JourneySpine from "@/components/dashboard/JourneySpine";
-import LockedSectionCards from "@/components/dashboard/LockedSectionCards";
+import DashboardClient from "@/components/dashboard/DashboardClient";
 
 // Opt out of RSC router cache — dashboard is user-specific and must never
 // serve a stale payload from a previous user's session after account switching.
 export const dynamic = 'force-dynamic';
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-/**
- * Derives a human-readable application type label from quiz result_json.
- * Prefers the `dependents` field; falls back to `application_type`.
- */
 function deriveApplicationLabel(
   dependents: string | undefined,
   applicationTypeFallback: string | null
@@ -33,7 +23,6 @@ function deriveApplicationLabel(
     default:
       break;
   }
-  // Fallback from application_type column
   if (applicationTypeFallback) {
     const t = applicationTypeFallback.toLowerCase();
     if (t === "partnership" || t === "spousal_partnership") return "E-2 Partnership Application";
@@ -50,7 +39,6 @@ export default async function DashboardPage() {
     redirect('/login');
   }
 
-  // Fetch profile, quiz, applications, case profile, and entitlements in parallel
   const [
     { data: profile },
     { data: quizData },
@@ -78,29 +66,17 @@ export default async function DashboardPage() {
     getUserEntitlements(authUser.id, supabase),
   ]);
 
-  // Lifecycle and timeline are only relevant if quiz exists
   let lifecycle: Record<string, string | null> | null = null;
-  let timeline: { workingTargetDate: string | null; confirmedInterviewDate: string | null } | null = null;
 
   if (quizData) {
-    const [{ data: life }, { data: app }] = await Promise.all([
+    const [{ data: life }] = await Promise.all([
       supabase
         .from("application_lifecycle")
         .select("*")
         .eq("user_id", authUser.id)
         .maybeSingle(),
-      supabase
-        .from("applications")
-        .select("working_target_date, confirmed_interview_date")
-        .eq("user_id", authUser.id)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle(),
     ]);
     lifecycle = life;
-    timeline = app
-      ? { workingTargetDate: app.working_target_date, confirmedInterviewDate: app.confirmed_interview_date }
-      : null;
   }
 
   const isSimulatorOnly = Boolean(
@@ -118,7 +94,6 @@ export default async function DashboardPage() {
         )
       : null;
 
-  // Progress from lifecycle milestones.
   let progress = 0;
   {
     let completed = 0;
@@ -132,7 +107,13 @@ export default async function DashboardPage() {
     progress = Math.round((completed / total) * 100);
   }
 
-  const user = profile as { email?: string; first_name?: string; last_name?: string; tier?: string } | null;
+  const user = profile as {
+    email?: string;
+    first_name?: string;
+    last_name?: string;
+    tier?: string;
+  } | null;
+
   const quiz = quizData as {
     id: string;
     outcome: string;
@@ -143,19 +124,15 @@ export default async function DashboardPage() {
       warnings?: string[];
       dependents?: string;
       investment_range?: string;
-    } | null
+    } | null;
   } | null;
+
   const caseProfile = cpData as {
     archetype?: string | null;
     completeness_score?: number | null;
-    net_worth_range?: string | null;
-    industry_interest?: string | null;
-    timeline_goal?: string | null;
-    data_state?: string | null;
   } | null;
 
-  // Detect Franchise Navigator trigger from quiz answers
-  const quizAnswers = quiz?.result_json?.answers ?? {};
+  const quizAnswers: Record<string, string> = (quiz?.result_json?.answers ?? {}) as Record<string, string>;
   const quizWarnings: string[] = quiz?.result_json?.warnings ?? [];
   const dependents = quiz?.result_json?.dependents;
   const investmentRange = quiz?.result_json?.investment_range ?? (quizAnswers["Q0-07"] as string | undefined) ?? null;
@@ -164,880 +141,34 @@ export default async function DashboardPage() {
     quizAnswers['Q0-08'] === 'I am still searching — I have not chosen yet' ||
     quizAnswers['Q0-08b'] === 'Yes — please connect me';
 
-  // Application type label — E-5-02
   const applicationLabel = quiz
     ? deriveApplicationLabel(dependents, quiz.application_type)
     : null;
 
-  // Journey stages — E-5-04
-  const JOURNEY_STAGES = [
-    {
-      id: 'quiz',
-      label: 'Eligibility Quiz',
-      short: '01',
-      done: Boolean(quiz?.completed_at),
-      isCurrent: false,
-    },
-    {
-      id: 'case',
-      label: 'Case File',
-      short: '02',
-      done: Boolean(lifecycle?.module3_completed_at),
-      isCurrent: false,
-    },
-    {
-      id: 'generate',
-      label: 'Documents',
-      short: '03',
-      done: Boolean(lifecycle?.module4_completed_at),
-      isCurrent: false,
-    },
-    {
-      id: 'interview',
-      label: 'Interview Prep',
-      short: '04',
-      done: Boolean(lifecycle?.module5_completed_at),
-      isCurrent: false,
-    },
-    {
-      id: 'submit',
-      label: 'Submit',
-      short: '05',
-      done: false,
-      isCurrent: false,
-    },
-  ];
-
-  // Mark the first incomplete stage as current
-  let foundCurrent = false;
-  const journeyStages = JOURNEY_STAGES.map((s) => {
-    if (!s.done && !foundCurrent) {
-      foundCurrent = true;
-      return { ...s, isCurrent: true };
-    }
-    return s;
-  });
-
   return (
     <div className="min-h-screen" style={{ background: "#0a0a0a" }}>
-      <main className="pt-20 pb-16 px-4 md:px-8 max-w-5xl mx-auto">
-
-        {/* ── E-5-01: Greeting ────────────────────────────────────────────── */}
-        <div style={{ marginBottom: "24px" }}>
-          <div
-            style={{
-              fontSize: "10px",
-              letterSpacing: "0.14em",
-              textTransform: "uppercase",
-              color: "rgba(201,168,76,0.5)",
-              fontFamily: "'DM Sans', sans-serif",
-              fontWeight: 500,
-              marginBottom: "6px",
-            }}
-          >
-            Application Dashboard
-          </div>
-          <h1
-            style={{
-              fontFamily: "'Cormorant Garamond', Georgia, serif",
-              fontWeight: 300,
-              fontSize: "clamp(28px, 5vw, 40px)",
-              color: "#f5f0e8",
-              margin: 0,
-              lineHeight: 1.15,
-            }}
-          >
-            {user?.first_name ? `Welcome back, ${user.first_name}.` : "Welcome back."}
-          </h1>
-
-          {/* E-5-02: Application type label */}
-          {applicationLabel && (
-            <div
-              style={{
-                marginTop: "8px",
-                fontSize: "13px",
-                color: "rgba(245,240,232,0.55)",
-                fontFamily: "'DM Sans', sans-serif",
-                letterSpacing: "0.02em",
-              }}
-            >
-              {applicationLabel}
-            </div>
-          )}
-        </div>
-
-        {isSimulatorOnly ? (
-          <>
-            {/* ── Simulator-only subscriber dashboard ──────────────────── */}
-            <section className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-              <div
-                style={{
-                  padding: "24px",
-                  background: "rgba(201,168,76,0.02)",
-                  border: "1px solid rgba(201,168,76,0.12)",
-                }}
-              >
-                <h3
-                  className="text-sm font-medium mb-2"
-                  style={{ color: "rgba(245,240,232,0.6)" }}
-                >
-                  Interview Simulator
-                </h3>
-                <p
-                  className="text-2xl font-bold"
-                  style={{
-                    color: "#f5f0e8",
-                    fontFamily: "'Cormorant Garamond', serif",
-                    fontWeight: 300,
-                  }}
-                >
-                  {simulatorData
-                    ? `${Math.max(simulatorData.sessionsPurchased - simulatorData.sessionsUsed, 0)} session${Math.max(simulatorData.sessionsPurchased - simulatorData.sessionsUsed, 0) === 1 ? "" : "s"} remaining`
-                    : "Ready to practice"}
-                </p>
-                {simulatorData && (
-                  <p className="text-sm mt-1" style={{ color: "rgba(245,240,232,0.74)" }}>
-                    {simulatorData.sessionsUsed} of {simulatorData.sessionsPurchased} used
-                  </p>
-                )}
-                <Link
-                  href="/simulator"
-                  className="inline-block mt-3 text-sm font-medium px-4 py-2"
-                  style={{
-                    background: "#C9A84C",
-                    color: "#0a0a0a",
-                  }}
-                >
-                  Go to practice interview →
-                </Link>
-              </div>
-
-              <div
-                style={{
-                  padding: "24px",
-                  background: "rgba(201,168,76,0.02)",
-                  border: "1px solid rgba(201,168,76,0.12)",
-                }}
-              >
-                <h3
-                  className="text-sm font-medium mb-2"
-                  style={{ color: "rgba(245,240,232,0.6)" }}
-                >
-                  About your plan
-                </h3>
-                <p
-                  className="text-sm"
-                  style={{ color: "rgba(245,240,232,0.6)", lineHeight: 1.7 }}
-                >
-                  You&rsquo;re on the standalone Interview Simulator. Each practice session draws on
-                  the documents you&rsquo;ve uploaded to ask the kind of questions a consular
-                  officer would.
-                </p>
-              </div>
-            </section>
-
-            {/* Profile teaser — drives conversion from simulator-only to full platform */}
-            <PartialProfileTeaser />
-          </>
-        ) : quiz ? (
-          <>
-            {/* ── E-5-03: Eligibility strength badges ─────────────────── */}
-            <EligibilityBadges
-              outcome={quiz.outcome}
-              warnings={quizWarnings}
-              answers={quizAnswers}
-              investmentRange={investmentRange}
-            />
-
-            {/* ── E-5-04: Journey progress roadmap ────────────────────── */}
-            <JourneySpine stages={journeyStages} />
-
-            {/* ── Status Cards ─────────────────────────────────────────── */}
-            <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              {/* Application Progress */}
-              <div
-                style={{
-                  padding: "24px",
-                  background: "rgba(201,168,76,0.02)",
-                  border: "1px solid rgba(201,168,76,0.12)",
-                }}
-              >
-                <h3
-                  className="text-sm font-medium mb-2"
-                  style={{ color: "rgba(245,240,232,0.6)" }}
-                >
-                  Application Progress
-                </h3>
-                <p
-                  className="text-2xl font-bold"
-                  style={{
-                    color: "#f5f0e8",
-                    fontFamily: "'Cormorant Garamond', serif",
-                    fontWeight: 300,
-                  }}
-                >
-                  {progress > 0 ? `${progress}% Complete` : "Not Started"}
-                </p>
-                {progress > 0 && (
-                  <div
-                    className="w-full h-2 mt-2"
-                    style={{ background: "rgba(201,168,76,0.15)" }}
-                  >
-                    <div
-                      className="h-2 transition-all"
-                      style={{ width: `${progress}%`, background: "#C9A84C" }}
-                    />
-                  </div>
-                )}
-              </div>
-
-              {/* Eligibility Status */}
-              <div
-                style={{
-                  padding: "24px",
-                  background: "rgba(201,168,76,0.02)",
-                  border: "1px solid rgba(201,168,76,0.12)",
-                }}
-              >
-                <h3
-                  className="text-sm font-medium mb-2"
-                  style={{ color: "rgba(245,240,232,0.6)" }}
-                >
-                  Eligibility Status
-                </h3>
-                <p
-                  className="text-2xl font-bold"
-                  style={{
-                    color: "#f5f0e8",
-                    fontFamily: "'Cormorant Garamond', serif",
-                    fontWeight: 300,
-                  }}
-                >
-                  {quiz.outcome === "PROCEED"
-                    ? "Eligible to proceed"
-                    : quiz.outcome === "ATTORNEY_RECOMMENDED"
-                    ? "Attorney recommended"
-                    : quiz.outcome.startsWith("PR-")
-                    ? "Not eligible"
-                    : quiz.outcome.toLowerCase().replace(/_/g, " ")}
-                </p>
-                {/* E-5-02: Application type label in card */}
-                {applicationLabel && (
-                  <p className="text-sm mt-1" style={{ color: "rgba(245,240,232,0.74)" }}>
-                    {applicationLabel}
-                  </p>
-                )}
-              </div>
-
-              {/* Interview Timeline */}
-              <div
-                style={{
-                  padding: "24px",
-                  background: "rgba(201,168,76,0.02)",
-                  border: "1px solid rgba(201,168,76,0.12)",
-                }}
-              >
-                <h3
-                  className="text-sm font-medium mb-2"
-                  style={{ color: "rgba(245,240,232,0.6)" }}
-                >
-                  Interview Timeline
-                </h3>
-                {timeline?.confirmedInterviewDate ? (
-                  <>
-                    <p
-                      className="text-xl font-bold flex items-center gap-2"
-                      style={{
-                        color: "#C9A84C",
-                        fontFamily: "'Cormorant Garamond', serif",
-                        fontWeight: 300,
-                      }}
-                    >
-                      Interview confirmed
-                    </p>
-                    <p className="text-sm mt-1" style={{ color: "rgba(245,240,232,0.8)" }}>
-                      {new Date(timeline.confirmedInterviewDate).toLocaleDateString("en-US", {
-                        month: "long",
-                        day: "numeric",
-                        year: "numeric",
-                      })}
-                    </p>
-                  </>
-                ) : timeline?.workingTargetDate ? (
-                  <>
-                    <p
-                      className="text-xl font-bold"
-                      style={{
-                        color: "#f5f0e8",
-                        fontFamily: "'Cormorant Garamond', serif",
-                        fontWeight: 300,
-                      }}
-                    >
-                      {new Date(timeline.workingTargetDate).toLocaleDateString("en-US", {
-                        month: "long",
-                        day: "numeric",
-                        year: "numeric",
-                      })}
-                    </p>
-                    <p className="text-xs mt-1" style={{ color: "rgba(245,240,232,0.74)" }}>
-                      Target move date (planning)
-                    </p>
-                    <Link
-                      href="/apply/calendar"
-                      className="inline-block mt-2 text-xs"
-                      style={{ color: "#C9A84C" }}
-                    >
-                      Confirm interview date →
-                    </Link>
-                  </>
-                ) : (
-                  <>
-                    <p
-                      className="text-lg font-semibold"
-                      style={{
-                        color: "rgba(245,240,232,0.4)",
-                        fontFamily: "'Cormorant Garamond', serif",
-                        fontWeight: 300,
-                      }}
-                    >
-                      Not set
-                    </p>
-                    <Link
-                      href="/apply/calendar"
-                      className="inline-block mt-2 text-xs"
-                      style={{ color: "#C9A84C" }}
-                    >
-                      Set your timeline →
-                    </Link>
-                  </>
-                )}
-              </div>
-
-              {/* Next Step */}
-              <div
-                style={{
-                  padding: "24px",
-                  background: entitlements.hasComplete
-                    ? "rgba(201,168,76,0.04)"
-                    : "#C9A84C",
-                  border: entitlements.hasComplete
-                    ? "1px solid rgba(201,168,76,0.2)"
-                    : "none",
-                }}
-              >
-                <h3
-                  className="text-sm font-medium mb-2"
-                  style={{
-                    color: entitlements.hasComplete
-                      ? "rgba(245,240,232,0.6)"
-                      : "rgba(10,10,10,0.6)",
-                  }}
-                >
-                  Next Step
-                </h3>
-                <p
-                  className="text-lg font-semibold"
-                  style={{
-                    color: entitlements.hasComplete ? "#f5f0e8" : "#0a0a0a",
-                    fontFamily: "'Cormorant Garamond', serif",
-                    fontWeight: 300,
-                  }}
-                >
-                  {!entitlements.hasComplete
-                    ? "Unlock your application"
-                    : progress < 100
-                    ? "Continue building your case"
-                    : "Ready to generate"}
-                </p>
-                <Link
-                  href={entitlements.hasComplete ? "/apply" : "/pricing"}
-                  className="inline-block mt-3 text-sm font-medium px-4 py-2 transition-colors"
-                  style={{
-                    background: entitlements.hasComplete ? "#C9A84C" : "#0a0a0a",
-                    color: entitlements.hasComplete ? "#0a0a0a" : "#C9A84C",
-                  }}
-                >
-                  {entitlements.hasComplete
-                    ? "Continue my application →"
-                    : "View pricing →"}
-                </Link>
-              </div>
-            </section>
-
-            {/* ── E-5-06 / E-5-07 / E-5-08: Section Cards ────────────── */}
-            {/* For unpaid users: locked cards with hover-reveal (E-5-06, E-5-08)  */}
-            {/* For paid users: navigable section links                            */}
-            {/* E-5-07: No raw errors — contextual locked state instead            */}
-            <LockedSectionCards hasComplete={entitlements.hasComplete} />
-
-            {/* ── Franchise Navigator banner ───────────────────────────── */}
-            {showFranchiseNavigator && (
-              <section
-                style={{
-                  marginBottom: "32px",
-                  padding: "28px 24px",
-                  background: "rgba(201,168,76,0.03)",
-                  border: "1px solid rgba(201,168,76,0.25)",
-                  borderLeft: "3px solid #C9A84C",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "flex-start",
-                    justifyContent: "space-between",
-                    gap: "24px",
-                    flexWrap: "wrap",
-                  }}
-                >
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <span
-                      style={{
-                        fontSize: "10px",
-                        letterSpacing: "0.12em",
-                        textTransform: "uppercase",
-                        color: "#C9A84C",
-                        fontFamily: "'DM Sans', sans-serif",
-                        fontWeight: 500,
-                      }}
-                    >
-                      Recommended next step
-                    </span>
-                    <h2
-                      style={{
-                        fontSize: "18px",
-                        fontFamily: "'Cormorant Garamond', serif",
-                        fontWeight: 300,
-                        color: "#f5f0e8",
-                        margin: "6px 0 10px",
-                      }}
-                    >
-                      Find the right business for your E-2
-                    </h2>
-                    <p
-                      style={{
-                        fontSize: "13px",
-                        color: "rgba(245,240,232,0.6)",
-                        lineHeight: 1.7,
-                        marginBottom: "8px",
-                        maxWidth: "520px",
-                      }}
-                    >
-                      You indicated you haven&rsquo;t selected a business yet. The Franchise Navigator
-                      matches you to E-2 eligible businesses based on your investment range,
-                      professional background, and target location.
-                    </p>
-                    <p
-                      style={{
-                        fontSize: "11px",
-                        color: "rgba(245,240,232,0.68)",
-                        fontFamily: "'DM Sans', sans-serif",
-                        marginBottom: "18px",
-                      }}
-                    >
-                      Free — brokers are paid by franchisors, never by you.
-                    </p>
-                    <Link
-                      href="/franchise"
-                      style={{
-                        display: "inline-block",
-                        padding: "10px 20px",
-                        background: "#C9A84C",
-                        color: "#0a0a0a",
-                        fontSize: "12px",
-                        letterSpacing: "0.06em",
-                        textTransform: "uppercase",
-                        fontFamily: "'DM Sans', sans-serif",
-                        textDecoration: "none",
-                        fontWeight: 500,
-                      }}
-                    >
-                      Launch Franchise Navigator →
-                    </Link>
-                  </div>
-                </div>
-              </section>
-            )}
-
-            {/* ── Module Checklist ─────────────────────────────────────── */}
-            <section
-              style={{
-                padding: "24px",
-                background: "rgba(201,168,76,0.02)",
-                border: "1px solid rgba(201,168,76,0.12)",
-                marginBottom: "32px",
-              }}
-            >
-              <h2
-                className="text-lg font-semibold mb-4"
-                style={{
-                  color: "#f5f0e8",
-                  fontFamily: "'Cormorant Garamond', serif",
-                  fontWeight: 300,
-                }}
-              >
-                Application Checklist
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {[
-                  {
-                    label: "Eligibility Quiz",
-                    href: "/results",
-                    done: !!quizData?.completed_at,
-                    desc: "Confirm E-2 eligibility",
-                  },
-                  {
-                    label: "Onboarding",
-                    href: "/apply/module1",
-                    done: !!lifecycle?.module1_completed_at,
-                    desc: "Personal info & timeline",
-                  },
-                  ...(showFranchiseNavigator
-                    ? [
-                        {
-                          label: "Franchise Navigator",
-                          href: "/franchise",
-                          done: false,
-                          desc: "Find your E-2 business match",
-                        },
-                      ]
-                    : []),
-                  {
-                    label: "Business Information",
-                    href: "/apply/business",
-                    done: !!lifecycle?.module2_completed_at,
-                    desc: "Business description & structure",
-                  },
-                  {
-                    label: "Investment & Documents",
-                    href: "/apply/investment",
-                    done: !!lifecycle?.module3_completed_at,
-                    desc: "Source of funds & supporting docs",
-                  },
-                  {
-                    label: "Gap Analysis",
-                    href: "/gap-analysis",
-                    done: !!lifecycle?.module4_completed_at,
-                    desc: "Identify case weaknesses",
-                  },
-                  {
-                    label: "Interview Simulator",
-                    href: "/simulator",
-                    done: !!lifecycle?.module5_completed_at,
-                    desc: "Practice your consular interview",
-                  },
-                ].map((step) => (
-                  <Link
-                    key={step.label}
-                    href={step.href}
-                    className="flex items-start gap-3 p-3 transition-colors"
-                    style={{
-                      background: step.done ? "rgba(201,168,76,0.06)" : "transparent",
-                      border: `1px solid ${step.done ? "rgba(201,168,76,0.3)" : "rgba(201,168,76,0.12)"}`,
-                      textDecoration: "none",
-                    }}
-                  >
-                    <span
-                      style={{
-                        minWidth: 20,
-                        height: 20,
-                        borderRadius: "50%",
-                        background: step.done ? "#C9A84C" : "transparent",
-                        border: `1.5px solid ${step.done ? "#C9A84C" : "rgba(201,168,76,0.4)"}`,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        marginTop: 2,
-                        flexShrink: 0,
-                      }}
-                    >
-                      {step.done && (
-                        <span style={{ color: "#0a0a0a", fontSize: 11, fontWeight: 700 }}>
-                          ✓
-                        </span>
-                      )}
-                    </span>
-                    <div>
-                      <p
-                        className="text-sm font-medium"
-                        style={{ color: step.done ? "#C9A84C" : "#f5f0e8" }}
-                      >
-                        {step.label}
-                      </p>
-                      <p className="text-xs" style={{ color: "rgba(245,240,232,0.74)" }}>
-                        {step.desc}
-                      </p>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </section>
-
-            {/* ── Profile Snapshot ─────────────────────────────────────── */}
-            {caseProfile && (
-              <section
-                style={{
-                  padding: "24px",
-                  background: "rgba(201,168,76,0.02)",
-                  border: "1px solid rgba(201,168,76,0.12)",
-                  marginBottom: "32px",
-                }}
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <h2
-                    className="text-lg font-semibold"
-                    style={{
-                      color: "#f5f0e8",
-                      fontFamily: "'Cormorant Garamond', serif",
-                      fontWeight: 300,
-                    }}
-                  >
-                    Your Investor Profile
-                  </h2>
-                  {caseProfile.completeness_score != null && (
-                    <span
-                      className="text-sm px-3 py-1"
-                      style={{
-                        background: "rgba(201,168,76,0.12)",
-                        border: "1px solid rgba(201,168,76,0.3)",
-                        color: "#C9A84C",
-                      }}
-                    >
-                      {Math.round(caseProfile.completeness_score)}% complete
-                    </span>
-                  )}
-                </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {caseProfile.archetype && (
-                    <div>
-                      <p
-                        className="text-xs mb-1"
-                        style={{
-                          color: "rgba(245,240,232,0.74)",
-                          textTransform: "uppercase",
-                          letterSpacing: "0.08em",
-                        }}
-                      >
-                        Investor type
-                      </p>
-                      <p className="text-sm font-medium capitalize" style={{ color: "#f5f0e8" }}>
-                        {caseProfile.archetype.replace(/_/g, " ")}
-                      </p>
-                    </div>
-                  )}
-                  {caseProfile.industry_interest && (
-                    <div>
-                      <p
-                        className="text-xs mb-1"
-                        style={{
-                          color: "rgba(245,240,232,0.74)",
-                          textTransform: "uppercase",
-                          letterSpacing: "0.08em",
-                        }}
-                      >
-                        Industry
-                      </p>
-                      <p className="text-sm font-medium capitalize" style={{ color: "#f5f0e8" }}>
-                        {caseProfile.industry_interest.replace(/_/g, " ")}
-                      </p>
-                    </div>
-                  )}
-                  {caseProfile.net_worth_range && (
-                    <div>
-                      <p
-                        className="text-xs mb-1"
-                        style={{
-                          color: "rgba(245,240,232,0.74)",
-                          textTransform: "uppercase",
-                          letterSpacing: "0.08em",
-                        }}
-                      >
-                        Net worth range
-                      </p>
-                      <p className="text-sm font-medium" style={{ color: "#f5f0e8" }}>
-                        {caseProfile.net_worth_range}
-                      </p>
-                    </div>
-                  )}
-                  {caseProfile.timeline_goal && (
-                    <div>
-                      <p
-                        className="text-xs mb-1"
-                        style={{
-                          color: "rgba(245,240,232,0.74)",
-                          textTransform: "uppercase",
-                          letterSpacing: "0.08em",
-                        }}
-                      >
-                        Target timeline
-                      </p>
-                      <p className="text-sm font-medium capitalize" style={{ color: "#f5f0e8" }}>
-                        {caseProfile.timeline_goal.replace(/_/g, " ")}
-                      </p>
-                    </div>
-                  )}
-                </div>
-                {caseProfile.completeness_score != null &&
-                  caseProfile.completeness_score < 80 && (
-                    <div className="mt-4 pt-4" style={{ borderTop: "1px solid rgba(201,168,76,0.1)" }}>
-                      <Link href="/gap-analysis" className="text-sm" style={{ color: "#C9A84C" }}>
-                        View your gap analysis to strengthen this profile →
-                      </Link>
-                    </div>
-                  )}
-              </section>
-            )}
-
-            {/* ── Quick Actions ────────────────────────────────────────── */}
-            <section
-              style={{
-                padding: "24px",
-                background: "rgba(201,168,76,0.02)",
-                border: "1px solid rgba(201,168,76,0.12)",
-              }}
-            >
-              <h2
-                className="text-lg font-semibold mb-4"
-                style={{
-                  color: "#f5f0e8",
-                  fontFamily: "'Cormorant Garamond', serif",
-                  fontWeight: 300,
-                }}
-              >
-                Quick Actions
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {showFranchiseNavigator && (
-                  <Link
-                    href="/franchise"
-                    className="p-4 transition-colors"
-                    style={{
-                      border: "1px solid #C9A84C",
-                      color: "#f5f0e8",
-                      background: "rgba(201,168,76,0.04)",
-                    }}
-                  >
-                    <p className="font-medium" style={{ color: "#C9A84C" }}>
-                      Franchise Navigator
-                    </p>
-                    <p className="text-sm" style={{ color: "rgba(245,240,232,0.74)" }}>
-                      Find your E-2 business match
-                    </p>
-                  </Link>
-                )}
-                <Link
-                  href="/apply/checklist"
-                  className="p-4 transition-colors"
-                  style={{ border: "1px solid rgba(201,168,76,0.2)", color: "#f5f0e8" }}
-                >
-                  <p className="font-medium" style={{ color: "#f5f0e8" }}>
-                    Document Checklist
-                  </p>
-                  <p className="text-sm" style={{ color: "rgba(245,240,232,0.74)" }}>
-                    View required documents
-                  </p>
-                </Link>
-                <Link
-                  href="/gap-analysis"
-                  className="p-4 transition-colors"
-                  style={{ border: "1px solid rgba(201,168,76,0.2)", color: "#f5f0e8" }}
-                >
-                  <p className="font-medium" style={{ color: "#f5f0e8" }}>
-                    Gap Analysis
-                  </p>
-                  <p className="text-sm" style={{ color: "rgba(245,240,232,0.74)" }}>
-                    See what&apos;s missing in your case
-                  </p>
-                </Link>
-                <Link
-                  href="/fdd"
-                  className="p-4 transition-colors"
-                  style={{ border: "1px solid rgba(201,168,76,0.2)", color: "#f5f0e8" }}
-                >
-                  <p className="font-medium" style={{ color: "#f5f0e8" }}>
-                    FDD Analysis
-                  </p>
-                  <p className="text-sm" style={{ color: "rgba(245,240,232,0.74)" }}>
-                    Analyse your franchise disclosure
-                  </p>
-                </Link>
-                <Link
-                  href="/support"
-                  className="p-4 transition-colors"
-                  style={{ border: "1px solid rgba(201,168,76,0.2)", color: "#f5f0e8" }}
-                >
-                  <p className="font-medium" style={{ color: "#f5f0e8" }}>
-                    Get Help
-                  </p>
-                  <p className="text-sm" style={{ color: "rgba(245,240,232,0.74)" }}>
-                    Contact support
-                  </p>
-                </Link>
-              </div>
-            </section>
-          </>
-        ) : (
-          /* ── E-5-07: Empty state — no quiz (contextual, not raw error) ── */
-          <section
-            style={{
-              padding: "40px",
-              background: "rgba(201,168,76,0.02)",
-              border: "1px solid rgba(201,168,76,0.12)",
-              textAlign: "center",
-            }}
-          >
-            <div
-              style={{
-                fontFamily: "'Cormorant Garamond', serif",
-                fontWeight: 300,
-                fontSize: "22px",
-                color: "#f5f0e8",
-                marginBottom: "12px",
-              }}
-            >
-              Start Your E-2 Application
-            </div>
-            <p
-              style={{
-                fontSize: "14px",
-                color: "rgba(245,240,232,0.62)",
-                marginBottom: "8px",
-                fontFamily: "'DM Sans', sans-serif",
-                lineHeight: 1.6,
-              }}
-            >
-              Take the eligibility quiz to see if you qualify for the E-2 treaty investor visa.
-              It takes about 5 minutes and pre-fills your case file automatically.
-            </p>
-            <p
-              style={{
-                fontSize: "12px",
-                color: "rgba(245,240,232,0.38)",
-                marginBottom: "24px",
-                fontFamily: "'DM Sans', sans-serif",
-              }}
-            >
-              Complete the quiz first to unlock your application dashboard.
-            </p>
-            <Link
-              href="/quiz"
-              style={{
-                display: "inline-block",
-                padding: "12px 28px",
-                background: "#C9A84C",
-                color: "#0a0a0a",
-                fontSize: "12px",
-                fontWeight: 600,
-                letterSpacing: "0.1em",
-                textTransform: "uppercase",
-                fontFamily: "'DM Sans', sans-serif",
-                textDecoration: "none",
-              }}
-            >
-              Take the eligibility quiz →
-            </Link>
-          </section>
-        )}
+      <main className="pt-20 pb-20 px-4 md:px-8 max-w-5xl mx-auto">
+        <DashboardClient
+          firstName={user?.first_name ?? null}
+          applicationLabel={applicationLabel}
+          tier={user?.tier ?? null}
+          progress={progress}
+          quizCompleted={Boolean(quiz?.completed_at)}
+          quizOutcome={quiz?.outcome ?? null}
+          quizAnswers={quizAnswers}
+          quizWarnings={quizWarnings}
+          investmentRange={investmentRange}
+          caseArchetype={caseProfile?.archetype ?? null}
+          caseCompletenessScore={caseProfile?.completeness_score ?? null}
+          lifecycle={lifecycle}
+          entitlements={{
+            hasComplete: entitlements.hasComplete,
+            hasFdd: entitlements.hasFddIntelligence,
+          }}
+          showFranchiseNavigator={showFranchiseNavigator}
+          isSimulatorOnly={isSimulatorOnly}
+          simulatorData={simulatorData}
+        />
       </main>
     </div>
   );
