@@ -250,23 +250,37 @@ function ProfileIntelligenceStrip({
   dimensionScores: DimensionScores | null;
   currentPhase: string;
 }) {
-  const archetypeKey = archetype ?? "";
-  const archetypeLabel = ARCHETYPE_LABEL[archetypeKey] ?? "Not yet set";
-  const archetypeDesc = ARCHETYPE_DESC[archetypeKey] ?? "Complete your business profile to unlock your archetype.";
+  const hasArchetype = archetype !== null && archetype in ARCHETYPE_LABEL;
+  const hasScore = completenessScore !== null;
 
-  let primaryRisk = "Run Gap Analysis";
-  let primaryRiskDesc = "Your gap score hasn't been computed yet.";
+  let primaryRisk: string;
+  let primaryRiskDesc: string;
+  let primaryRiskHref: string;
+  let primaryRiskFilled: boolean;
+
   if (dimensionScores) {
     const dims = [
-      { name: "Source of Funds", desc: "Traceable fund flow and deployment evidence.", score: dimensionScores.sourceOfFunds },
-      { name: "Management Role", desc: "Active management authority and day-to-day control.", score: dimensionScores.managementRole },
-      { name: "Business Plan", desc: "Employment creation, non-marginality, and viability.", score: dimensionScores.businessPlan },
+      { name: "Source of Funds", desc: "Your highest-risk evidence gap. Address this before generating your package.", href: "/apply/investment", score: dimensionScores.sourceOfFunds },
+      { name: "Management Role", desc: "Officers look for day-to-day control — this is your most common verbal probe.", href: "/apply/business", score: dimensionScores.managementRole },
+      { name: "Business Plan", desc: "Employment creation and non-marginality must be evidenced, not projected.", href: "/apply/business", score: dimensionScores.businessPlan },
     ].filter((d) => d.score !== null);
     if (dims.length > 0) {
       const lowest = dims.reduce((a, b) => (a.score! < b.score! ? a : b));
       primaryRisk = lowest.name;
       primaryRiskDesc = lowest.desc;
+      primaryRiskHref = lowest.href;
+      primaryRiskFilled = true;
+    } else {
+      primaryRisk = "Run gap analysis";
+      primaryRiskDesc = "Surfaces your highest denial risk before the consulate sees it.";
+      primaryRiskHref = "/gap-analysis";
+      primaryRiskFilled = false;
     }
+  } else {
+    primaryRisk = "Run gap analysis";
+    primaryRiskDesc = "Surfaces your highest denial risk before the consulate sees it.";
+    primaryRiskHref = "/gap-analysis";
+    primaryRiskFilled = false;
   }
 
   const eyebrow: React.CSSProperties = {
@@ -277,20 +291,49 @@ function ProfileIntelligenceStrip({
     fontFamily: "'DM Sans', sans-serif",
     marginBottom: "6px",
   };
-  const val: React.CSSProperties = {
-    fontFamily: "'Cormorant Garamond', Georgia, serif",
-    fontSize: "18px",
-    fontWeight: 300,
-    color: "#f5f0e8",
-    marginBottom: "5px",
-    lineHeight: 1.15,
-  };
-  const desc: React.CSSProperties = {
-    fontSize: "11px",
-    color: "rgba(245,240,232,0.45)",
-    fontFamily: "'DM Sans', sans-serif",
-    lineHeight: 1.5,
-  };
+
+  const cells = [
+    {
+      label: "Investor Archetype",
+      filled: hasArchetype,
+      value: hasArchetype ? ARCHETYPE_LABEL[archetype!] : "Complete business profile",
+      detail: hasArchetype
+        ? ARCHETYPE_DESC[archetype!]
+        : "Your archetype shapes your entire application narrative and document tone.",
+      href: hasArchetype ? null : "/apply/business",
+      cta: hasArchetype ? null : "Go to Business Profile →",
+    },
+    {
+      label: "Case Readiness",
+      filled: hasScore,
+      value: hasScore ? `${completenessScore}%` : "Build your case file",
+      detail: hasScore
+        ? completenessScore! >= 75
+          ? "Strong trajectory. Close remaining evidence gaps before generating."
+          : completenessScore! >= 50
+          ? "Good foundation. Several sections still need your attention."
+          : "Case needs work. Prioritise the sections marked below."
+        : "Your readiness score updates automatically as you complete each section.",
+      href: hasScore ? null : "/apply/story",
+      cta: hasScore ? null : "Start with Your Story →",
+    },
+    {
+      label: "Primary Risk Area",
+      filled: primaryRiskFilled,
+      value: primaryRiskFilled ? primaryRisk : "Gap analysis not yet run",
+      detail: primaryRiskDesc,
+      href: primaryRiskFilled ? null : primaryRiskHref,
+      cta: primaryRiskFilled ? null : "Run gap analysis →",
+    },
+    {
+      label: "Current Stage",
+      filled: true,
+      value: currentPhase,
+      detail: NEXT_ACTION_WHY[currentPhase] ?? "",
+      href: null,
+      cta: null,
+    },
+  ];
 
   return (
     <div
@@ -302,47 +345,58 @@ function ProfileIntelligenceStrip({
         marginBottom: "28px",
       }}
     >
-      {[
-        {
-          label: "Investor Archetype",
-          value: archetypeLabel,
-          detail: archetypeDesc,
-        },
-        {
-          label: "Case Readiness",
-          value: completenessScore != null ? `${completenessScore}%` : "Not scored",
-          detail:
-            completenessScore == null
-              ? "Complete your case file to generate a score."
-              : completenessScore >= 75
-              ? "Strong trajectory. Close remaining evidence gaps."
-              : completenessScore >= 50
-              ? "Good foundation. Several sections need attention."
-              : "Needs work. Focus on the priorities below.",
-        },
-        {
-          label: "Primary Risk Area",
-          value: primaryRisk,
-          detail: primaryRiskDesc,
-        },
-        {
-          label: "Current Stage",
-          value: currentPhase,
-          detail: NEXT_ACTION_WHY[currentPhase] ?? "",
-        },
-      ].map((cell, i) => (
+      {cells.map((cell, i) => (
         <div
           key={i}
           style={{
             padding: "16px 18px",
             borderRight: "1px solid rgba(201,168,76,0.15)",
             borderBottom: "1px solid rgba(201,168,76,0.15)",
-            background: i === 0 ? "rgba(201,168,76,0.03)" : "transparent",
+            background: cell.filled
+              ? i === 0 ? "rgba(201,168,76,0.03)" : "transparent"
+              : "rgba(255,255,255,0.01)",
           }}
         >
           <div style={eyebrow}>{cell.label}</div>
-          <div style={val}>{cell.value}</div>
-          <div style={desc}>{cell.detail}</div>
+          <div
+            style={{
+              fontFamily: cell.filled
+                ? "'Cormorant Garamond', Georgia, serif"
+                : "'DM Sans', sans-serif",
+              fontSize: cell.filled ? "18px" : "13px",
+              fontWeight: cell.filled ? 300 : 500,
+              color: cell.filled ? "#f5f0e8" : "rgba(245,240,232,0.55)",
+              marginBottom: "5px",
+              lineHeight: 1.2,
+            }}
+          >
+            {cell.value}
+          </div>
+          <div
+            style={{
+              fontSize: "11px",
+              color: "rgba(245,240,232,0.42)",
+              fontFamily: "'DM Sans', sans-serif",
+              lineHeight: 1.5,
+              marginBottom: cell.cta ? "8px" : 0,
+            }}
+          >
+            {cell.detail}
+          </div>
+          {cell.cta && cell.href && (
+            <a
+              href={cell.href}
+              style={{
+                fontSize: "10px",
+                color: "#C9A84C",
+                fontFamily: "'DM Sans', sans-serif",
+                textDecoration: "none",
+                letterSpacing: "0.04em",
+              }}
+            >
+              {cell.cta}
+            </a>
+          )}
         </div>
       ))}
     </div>
@@ -1033,7 +1087,7 @@ export default function DashboardClient({
         )}
       </div>
 
-      {/* Profile Intelligence Strip */}
+      {/* Profile Intelligence Strip — always visible; empty states show what to do next */}
       <ProfileIntelligenceStrip
         archetype={caseArchetype}
         completenessScore={caseCompletenessScore}
