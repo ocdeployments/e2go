@@ -1,6 +1,37 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 27, 2026 — Session 81: Paywall nav removal committed; FolderStack spring animation upgrade; wiring 7 new doc types into generation engine.
+**Last Updated:** June 27, 2026 — Session 82: Dashboard 7-fix sprint complete — live data wired, non-functional buttons removed, phase chips added.
+
+---
+
+## Session 82 — Dashboard Journey Data Wiring ✅
+
+**Commits:**
+- `2040722` — feat(sprint-e3): Wire live dashboard data — section completion, doc count, tool scores
+- `f9233f2` — feat(sprint-e3): Add dashboard-grid CSS class for responsive two-column layout
+- `ce51d88` — feat(sprint-e3): Add nextActionWhy sentence and remove non-functional buttons
+- `fb2cd43` — feat(sprint-e3): Wire DashboardClient — next action why, doc count anchor, live props
+- `d1cc135` — feat(sprint-e3): FolderStack — live section completion, tool scores, doc count
+- `a0b0d1b` — feat(sprint-e3): PhaseStrip — done/active/upcoming chips on phase headers
+
+**What shipped:**
+- Sections 4–6 (Qualifications, Family, Ties) now detect actual completion via `answers` table (M3-Q/M3-L/M3-T prefix query) — no longer permanently "upcoming"
+- Live document count from `generated_documents` table — Phase 06 and FileCard show real X/15 count
+- Gap Analysis score wired: FolderStack Strengthen card shows real `caseCompletenessScore%` or "Not yet run →"
+- FDD count from `fdd_analyses` table — shows "X analysis run · View →" when run
+- `nextActionWhy` sentence added below next action in CaseCommandPanel (phase → consequence map)
+- Zone A: "X of 15 documents ready" sub-line when docs generated
+- Removed non-functional "View Milestone" button and "···" column from CaseCommandPanel milestone rows
+- Phase strip done/active chips: ✓ (green #5DCAA5) for done phases, amber 5px dot for active phase
+- Mobile-responsive two-column layout via `.dashboard-grid` CSS class (stacks at 768px)
+
+**Build:** 142 pages, TypeScript clean. Security tests: 26/26 passed.
+
+**Key schema facts:**
+- `answers` table: keyed by `application_id` + `question_key` (M3-Q=Qualifications, M3-L=Family, M3-T=Ties)
+- `generated_documents`: has `application_id` (not just `user_id`)
+- `fdd_analyses`: has `user_id` (query directly by user)
+- `primaryAppId` = first non-simulator application for the user
 
 ---
 
