@@ -27,7 +27,7 @@ export function ComparisonSection() {
             color: '#C9A84C',
             marginBottom: '16px',
           }}>
-            Why E2go
+            Why e2go
           </p>
           <h2 style={{
             fontFamily: '"Cormorant Garamond", serif',
@@ -49,7 +49,7 @@ export function ComparisonSection() {
             lineHeight: 1.7,
           }}>
             Most people spend months asking the wrong people the wrong questions.
-            E2go puts everything in one place — in the right order, from day one.
+            e2go puts everything in one place — in the right order, from day one.
           </p>
         </div>
 
@@ -62,7 +62,7 @@ export function ComparisonSection() {
           border: '1px solid rgba(201,168,76,0.12)',
         }}>
 
-          {/* === E2GO COLUMN === */}
+          {/* === e2go COLUMN === */}
           <div style={{ background: '#0a0a0a', padding: '40px' }}>
             <div style={{ marginBottom: '32px' }}>
               <span style={{
@@ -78,7 +78,7 @@ export function ComparisonSection() {
                 display: 'inline-block',
                 marginBottom: '16px',
               }}>
-                The E2go path
+                The e2go path
               </span>
               <h3 style={{
                 fontFamily: '"Cormorant Garamond", serif',
@@ -529,7 +529,7 @@ export function ComparisonSection() {
   )
 }
 
-// ─── E2GO STEPS (7 steps — added business formation as step 3) ───────────────
+// ─── e2go STEPS (7 steps — added business formation as step 3) ───────────────
 
 const e2goSteps = [
   {
@@ -630,7 +630,7 @@ const featureGroups: FeatureGroup[] = [
       { name: 'Eligibility quiz', note: 'score out of 100' },
       { name: 'Risk flags + timeline estimate' },
       { name: 'Denial-risk engine', note: '15 factors across 6 categories' },
-      { name: 'Ask E2go knowledge base', note: 'instant answers from real E-2 rules' },
+      { name: 'Ask e2go knowledge base', note: 'instant answers from real E-2 rules' },
     ],
   },
   {

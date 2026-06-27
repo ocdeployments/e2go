@@ -57,7 +57,7 @@ export default function ResetPassword() {
       <main style={{ minHeight: "100vh", background: "#0a0a0a", display: "flex", alignItems: "center", justifyContent: "center", padding: "24px" }}>
         <div style={{ maxWidth: "400px", width: "100%", padding: "40px", background: "rgba(201,168,76,0.02)", border: "1px solid rgba(201,168,76,0.12)" }}>
           <Link href="/" style={{ textDecoration: "none" }}>
-            <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "24px", fontWeight: 300, color: "#C9A84C", marginBottom: "24px", textAlign: "center" }}>E2go</h1>
+            <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "24px", fontWeight: 300, color: "#C9A84C", marginBottom: "24px", textAlign: "center" }}>e2go</h1>
           </Link>
           <p style={{ fontFamily: "'DM Sans', sans-serif", color: "#ef4444", fontSize: "14px", textAlign: "center", marginBottom: "24px" }}>
             This reset link has expired or is invalid. Please request a new one.
@@ -75,7 +75,7 @@ export default function ResetPassword() {
       <main style={{ minHeight: "100vh", background: "#0a0a0a", display: "flex", alignItems: "center", justifyContent: "center", padding: "24px" }}>
         <div style={{ maxWidth: "400px", width: "100%", padding: "40px", background: "rgba(201,168,76,0.02)", border: "1px solid rgba(201,168,76,0.12)", textAlign: "center" as const }}>
           <Link href="/" style={{ textDecoration: "none" }}>
-            <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "24px", fontWeight: 300, color: "#C9A84C", marginBottom: "24px" }}>E2go</h1>
+            <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "24px", fontWeight: 300, color: "#C9A84C", marginBottom: "24px" }}>e2go</h1>
           </Link>
           <div style={{ width: "48px", height: "48px", background: "rgba(201,168,76,0.08)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
             <svg width="24" height="24" viewBox="0 0 24 24" fill="#C9A84C">
@@ -96,7 +96,7 @@ export default function ResetPassword() {
     <main style={{ minHeight: "100vh", background: "#0a0a0a", display: "flex", alignItems: "center", justifyContent: "center", padding: "24px" }}>
       <div style={{ maxWidth: "400px", width: "100%", padding: "40px", background: "rgba(201,168,76,0.02)", border: "1px solid rgba(201,168,76,0.12)" }}>
         <Link href="/" style={{ textDecoration: "none" }}>
-          <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "24px", fontWeight: 300, color: "#C9A84C", marginBottom: "24px", textAlign: "center" as const }}>E2go</h1>
+          <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "24px", fontWeight: 300, color: "#C9A84C", marginBottom: "24px", textAlign: "center" as const }}>e2go</h1>
         </Link>
 
         <p style={{ fontFamily: "'DM Sans', sans-serif", color: "rgba(245,240,232,0.70)", fontSize: "14px", textAlign: "center" as const, marginBottom: "24px" }}>

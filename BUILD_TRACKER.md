@@ -1,6 +1,27 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 26, 2026 — Session 78: Sprint E complete. E-3 (12) + E-4 (8) + E-5 (8) + E-7 (7) all committed to dev. Build clean. 47 journey audit issues resolved. NOT YET DEPLOYED — pull dev to test locally.
+**Last Updated:** June 27, 2026 — Session 80: Dashboard Case File UI redesign complete. 4 zones (welcome, command panel, folder stack, phase strip). Paywall removed from dashboard. Build clean. Committed to dev.
+
+---
+
+## Session 80 — Dashboard Case File Redesign ✅
+
+**Commit:** `6b51f1c` — feat(dashboard): Case file UI redesign — 4 zones, folder stack, phase strip
+
+**What shipped:**
+- Zone A: Welcome header — "Welcome to the E2Go family, {firstName}." · application type sub-line
+- Zone B: Case Command Panel (left, 55%) — readiness score + progress bar, current phase, next action, 6-row milestone tracker with ✓/●/› status icons
+- Zone C: Folder Stack (right, 45%) — 3 physically-overlapping folder tabs (negative margin + z-index + drop-shadow), cream active card, dark peeking strips; Build Your Case / Strengthen Your Case / File Your Application with real lifecycle data
+- Zone D: Phase Strip (full-width) — 7 expandable panels in 4-column grid, alternating cream #DDD1B0 / amber #7A5C28, spring expand animation, auto-expands current phase
+- Paywall entirely removed from dashboard — no "Unlock with Complete", no "View pricing →"
+- Simulator-only branch preserved (PartialProfileTeaser); no-quiz empty state preserved
+
+**New files:** `CaseCommandPanel.tsx`, `FolderStack.tsx`, `PhaseStrip.tsx`, `DashboardClient.tsx`, `src/lib/strength-badges.ts`
+**Modified:** `dashboard/page.tsx` (server component preserved), `EligibilityBadges.tsx` (imports shared strength-badges.ts)
+
+**Design tokens locked:** active tab `#f0ece3` = card body (seamless), tab overlap `margin-right: -16px` + z-index 30/20/10 + `filter: drop-shadow()`, NO CSS border on tabs, PhaseStrip cream `#DDD1B0` / amber `#7A5C28`
+
+**Still TODO:** Wire 7 new document types into generation engine (Task #8, paused before dashboard sprint)
 
 ---
 
@@ -24,6 +45,31 @@
 - **OPQ-2:** Broker handoff mechanism — currently defaults to email romyjames@gmail.com. Confirm or replace.
 - **OPQ-3:** Industry categories list — confirm full set beyond cleaning/renovation.
 - **Deployment:** All E-sprint fixes are on dev branch only. Must deploy before live testing reflects changes.
+
+---
+
+## ⚠️ CRITICAL GAP — Sprint F-P: Partnership Document Engine (NOT BUILT)
+
+**Discovered:** Session 79 (June 27, 2026)
+
+**The problem:** The `complete_partnership` Stripe tier ($2,495) exists and processes payment correctly, but the generation engine produces **one investor's file only** — identical output to the $1,495 solo package. There is no second investor in the system anywhere.
+
+**What E-2 partnership actually requires:**
+- Each investor needs their own visa application with their own documents
+- Shared: Business Plan (one document for the business)
+- Per-investor: Cover Letter, Source of Funds, Declaration, Qualifications Narrative, Resume, Fund Flow Chronology, Net Worth Statement, Non-Immigrant Intent
+- Cover Letter must name both investors and establish each one's shareholding split + develop-and-direct role
+
+**What's missing (sprint scope):**
+1. Quiz — intake for Partner 2 (name, nationality, treaty country, SoF narrative, qualifications, management role)
+2. Generation engine — run document set twice, once per investor; shared BP flagged as joint
+3. Prompts — Cover Letter, Business Plan must reference both investors
+4. Delivery — two labelled file packages output to dashboard
+
+**Do not sell partnership packages at $2,495 until this sprint is complete.**
+Results page currently shows $2,495 pricing for partnership applicants — this is a revenue and expectation risk.
+
+**Interim mitigation option:** Suppress partnership pricing on results page (show $1,495 + "contact us for partnership pricing") until engine is ready.
 
 ### E-1 — All 10 critical breaks ✅
 

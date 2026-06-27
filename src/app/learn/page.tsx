@@ -4,10 +4,10 @@ import Breadcrumb from "@/components/Breadcrumb";
 import FaqWidget from "@/components/landing/FaqWidget";
 
 export const metadata: Metadata = {
-  title: "Learn About the E-2 Visa — Articles & Answers | E2go",
+  title: "Learn About the E-2 Visa — Articles & Answers | e2go",
   description: "E-2 Treaty Investor Visa guides, answers, and resources. Read articles on requirements, process, and timelines — or ask a question and get an instant answer.",
   openGraph: {
-    title: "Learn About the E-2 Visa — Articles & Answers | E2go",
+    title: "Learn About the E-2 Visa — Articles & Answers | e2go",
     description: "E-2 Treaty Investor Visa guides, answers, and resources. Articles plus instant AI-powered answers.",
     type: "website",
     url: "https://e2go.app/learn",
@@ -71,7 +71,7 @@ export default function Learn() {
       <div className="max-w-4xl mx-auto">
         <Breadcrumb items={[{ label: "Home", href: "/" }, { label: "Learn" }]} />
 
-        {/* Ask E2go widget — Session 15/17: moved to top */}
+        {/* Ask e2go widget — Session 15/17: moved to top */}
         <div id="ask" className="-mx-4 md:-mx-10 lg:-mx-16 mb-12 md:mb-16">
           <FaqWidget />
         </div>

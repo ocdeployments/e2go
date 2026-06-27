@@ -12,17 +12,17 @@ export default function HomeClient() {
     {
       n: "01",
       t: "Rushing to invest before confirming fit",
-      d: "The costliest mistake in the E-2 process is committing capital to a business before confirming that the investment structure, the business model, and your qualifications will survive consular scrutiny. The right sequence is: assess first, invest second, document third. E2go is built around that sequence.",
+      d: "The costliest mistake in the E-2 process is committing capital to a business before confirming that the investment structure, the business model, and your qualifications will survive consular scrutiny. The right sequence is: assess first, invest second, document third. e2go is built around that sequence.",
     },
     {
       n: "02",
       t: "Getting legal help too early — or too late",
-      d: "Too early means paying fees before you know whether your business structure is E-2 compliant. Too late means arriving at the consulate hoping for the best. The right moment is after the strategy is confirmed and before the application is filed. E2go handles the strategy. A consultant reviews and signs off.",
+      d: "Too early means paying fees before you know whether your business structure is E-2 compliant. Too late means arriving at the consulate hoping for the best. The right moment is after the strategy is confirmed and before the application is filed. e2go handles the strategy. A consultant reviews and signs off.",
     },
     {
       n: "03",
       t: "Over-relying on free advice without context",
-      d: "Facebook groups and Reddit threads cannot tell you whether your specific business, at your specific investment level, with your specific background, will survive scrutiny at your specific consulate. Context is everything. E2go's consulate intelligence covers 82 treaty country consulates and tracks adjudication patterns by post.",
+      d: "Facebook groups and Reddit threads cannot tell you whether your specific business, at your specific investment level, with your specific background, will survive scrutiny at your specific consulate. Context is everything. e2go's consulate intelligence covers 82 treaty country consulates and tracks adjudication patterns by post.",
     },
   ];
 
@@ -34,7 +34,7 @@ export default function HomeClient() {
         <div className="px-4 md:px-10 lg:px-16">
           <div className="flex items-center justify-between h-16 md:h-20">
             <Link href="/" className="font-['Cormorant_Garamond',Georgia,serif] text-xl md:text-2xl font-light text-[#C9A84C]">
-              E2go<span className="text-[rgba(245,240,232,0.8)]">.app</span>
+              e2go<span className="text-[rgba(245,240,232,0.8)]">.app</span>
             </Link>
             <div className="hidden md:flex items-center gap-7">
               {[["/#how-it-works","How it works"],["/learn","Learn"],["/pricing","Pricing"],["/simulator","Simulator"]].map(([href,label]) => (
@@ -131,7 +131,7 @@ export default function HomeClient() {
             </h1>
             <p className="text-sm md:text-base text-[rgba(245,240,232,0.76)] leading-relaxed max-w-xl mb-3"
               style={{textShadow:'0 1px 10px rgba(0,0,0,0.95)'}}>
-              Consultants give you Zoom calls. Lawyers give you invoices. E2go gets you
+              Consultants give you Zoom calls. Lawyers give you invoices. e2go gets you
               visa-ready — from eligibility check to a complete, consulate-ready
               application package. One platform. No middlemen. A fraction of the cost.
             </p>
@@ -279,7 +279,7 @@ export default function HomeClient() {
           <div className="border border-[rgba(201,168,76,0.15)] bg-[rgba(201,168,76,0.02)] p-6 md:p-7 md:min-w-[210px]">
             <div className="text-[10px] tracking-[0.15em] uppercase text-[rgba(201,168,76,0.45)] mb-2">Standalone</div>
             <div className="font-['Cormorant_Garamond',Georgia,serif] text-4xl md:text-5xl font-light text-[#C9A84C] leading-none mb-2">$197</div>
-            <div className="text-[11px] text-[rgba(245,240,232,0.72)] leading-relaxed">3 sessions · Included free in every E2go package</div>
+            <div className="text-[11px] text-[rgba(245,240,232,0.72)] leading-relaxed">3 sessions · Included free in every e2go package</div>
           </div>
         </div>
       </section>
@@ -307,7 +307,7 @@ export default function HomeClient() {
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-0">
           {[
-            { q: "I had spoken to two consultants and walked away more confused than when I started. E2go was the first thing that actually explained what the consulate needed to see and why.", a: "Marco T.", c: "Italy", t: "Franchise applicant" },
+            { q: "I had spoken to two consultants and walked away more confused than when I started. e2go was the first thing that actually explained what the consulate needed to see and why.", a: "Marco T.", c: "Italy", t: "Franchise applicant" },
             { q: "The source of funds section alone would have taken days with a consultant. The engine asked me the right questions and built the narrative from my answers.", a: "Aisha K.", c: "United Kingdom", t: "Solo applicant" },
             { q: "I downloaded the package on a Friday. By Monday I had reviewed every document. My consultant said it was the cleanest first draft she had ever seen from a self-prepared applicant.", a: "David L.", c: "Canada", t: "Partnership applicant" },
           ].map((t,i) => (
@@ -348,9 +348,9 @@ export default function HomeClient() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8 md:mb-10">
           <div>
             <div className="font-['Cormorant_Garamond',Georgia,serif] text-xl font-light text-[#C9A84C] mb-2">
-              E2go<span className="text-[rgba(245,240,232,0.76)]">.app</span>
+              e2go<span className="text-[rgba(245,240,232,0.76)]">.app</span>
             </div>
-            <p className="text-xs text-[rgba(245,240,232,0.65)] leading-relaxed">© 2026 E2go.app. All rights reserved.</p>
+            <p className="text-xs text-[rgba(245,240,232,0.65)] leading-relaxed">© 2026 e2go.app. All rights reserved.</p>
           </div>
           <div className="flex flex-wrap gap-x-6 gap-y-2 md:justify-end">
             {[["/#how-it-works","How it works"],["/learn","Learn"],["/pricing","Pricing"],["/simulator","Simulator"],["/support","Support"]].map(([href,label]) => (
@@ -361,10 +361,10 @@ export default function HomeClient() {
         {/* Legal — the closing word: full width, last thing on the page */}
         <div className="border-t border-[rgba(201,168,76,0.08)] pt-6">
           <p className="text-[10px] text-[rgba(245,240,232,0.65)] leading-relaxed max-w-4xl">
-            E2go.app is a self-service document-preparation platform — not a law firm. It does
+            e2go.app is a self-service document-preparation platform — not a law firm. It does
             not provide legal advice, legal representation, or immigration services, and no
             attorney–client relationship is formed by using it. All generated documents are
-            drafts you must review before submission. Franchise brokers in the E2go network are
+            drafts you must review before submission. Franchise brokers in the e2go network are
             compensated by the franchisor, not by you. If you would like an attorney
             recommendation we can point you in the right direction — that decision is yours.
           </p>

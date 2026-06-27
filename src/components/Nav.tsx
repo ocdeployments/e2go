@@ -164,6 +164,15 @@ export default function Nav() {
                 Learn
               </Link>
               <Link
+                href="/modules"
+                className="text-sm transition-colors"
+                style={{ color: isActive("/modules") ? "#C9A84C" : "rgba(245,240,232,0.75)" }}
+                onMouseEnter={e => e.currentTarget.style.color = "#f5f0e8"}
+                onMouseLeave={e => e.currentTarget.style.color = isActive("/modules") ? "#C9A84C" : "rgba(245,240,232,0.75)"}
+              >
+                Modules
+              </Link>
+              <Link
                 href="/pricing"
                 className="text-sm transition-colors"
                 style={{ color: isActive("/pricing") ? "#C9A84C" : "rgba(245,240,232,0.75)" }}

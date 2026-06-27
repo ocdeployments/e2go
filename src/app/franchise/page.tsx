@@ -59,7 +59,7 @@ export default function FranchiseLandingPage() {
         {/* Header */}
         <div style={{ marginBottom: '56px' }}>
           <span style={{ fontSize: '10px', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(201,168,76,0.6)', fontFamily: "'DM Sans', sans-serif", fontWeight: 500 }}>
-            E2go · Franchise Navigator
+            e2go · Franchise Navigator
           </span>
           <h1 style={{ fontSize: '36px', fontFamily: "'Cormorant Garamond', serif", fontWeight: 300, color: '#f5f0e8', margin: '12px 0 16px', lineHeight: 1.2 }}>
             {firstName ? `${firstName}, find` : 'Find'} the right business<br />
@@ -151,7 +151,7 @@ export default function FranchiseLandingPage() {
           </h3>
           <p style={{ fontSize: '12px', color: 'rgba(245,240,232,0.78)', lineHeight: 1.8, fontFamily: "'DM Sans', sans-serif", margin: 0 }}>
             Franchise consultants are paid a placement fee by franchisors when a deal closes — not by you.
-            E2go does not charge you for the introduction and does not receive a commission.
+            e2go does not charge you for the introduction and does not receive a commission.
             You will never be asked to pay a broker for a referral. If any broker asks you for upfront fees,
             contact us immediately.
           </p>

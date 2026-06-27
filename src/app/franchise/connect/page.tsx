@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createBrowserSupabaseClient } from '@/lib/supabase';
 
-const CONSENT_TEXT = `I consent to E2go sharing my investment range, target business category, citizenship, target state, and contact information with a specialist E-2 franchise consultant. I understand this service is free — the consultant is paid by franchisors, not by me. I can withdraw this consent at any time by contacting support@e2go.app.`;
+const CONSENT_TEXT = `I consent to e2go sharing my investment range, target business category, citizenship, target state, and contact information with a specialist E-2 franchise consultant. I understand this service is free — the consultant is paid by franchisors, not by me. I can withdraw this consent at any time by contacting support@e2go.app.`;
 
 interface ProfileSummary {
   firstName: string | null;
@@ -237,7 +237,7 @@ export default function FranchiseConnectPage() {
         <div style={{ marginBottom: '32px', padding: '14px 16px', border: '1px solid rgba(34,197,94,0.15)', background: 'rgba(34,197,94,0.04)' }}>
           <p style={{ fontSize: '12px', color: 'rgba(34,197,94,0.8)', lineHeight: 1.7, fontFamily: "'DM Sans', sans-serif", margin: 0 }}>
             <strong>This consultation is free to you.</strong> Franchise consultants are paid by franchisors
-            when a deal closes — not by you and not by E2go. If any consultant asks you for upfront fees
+            when a deal closes — not by you and not by e2go. If any consultant asks you for upfront fees
             or retainers, contact us at support@e2go.app immediately.
           </p>
         </div>

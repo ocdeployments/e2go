@@ -28,7 +28,7 @@ export default function PrivacyPolicyPage() {
 
         <div style={{ color: "rgba(245,240,232,0.75)", fontFamily: "'DM Sans', sans-serif", fontWeight: 300, lineHeight: 1.7, fontSize: "15px" }}>
           <p className="mb-6">
-            E2Pathway Inc. (&apos;Company&apos;, &apos;we&apos;, &apos;us&apos;, &apos;our&apos;) is committed to protecting your privacy. This Privacy Policy explains how we collect, use, store, and share information when you use the E2go application (&apos;App&apos;).
+            E2Pathway Inc. (&apos;Company&apos;, &apos;we&apos;, &apos;us&apos;, &apos;our&apos;) is committed to protecting your privacy. This Privacy Policy explains how we collect, use, store, and share information when you use the e2go application (&apos;App&apos;).
           </p>
           <p className="mb-6">
             This policy is designed to comply with the Personal Information Protection and Electronic Documents Act (PIPEDA) and applicable Canadian provincial privacy laws.
@@ -40,7 +40,7 @@ export default function PrivacyPolicyPage() {
           <ul className="list-disc ml-6 mb-4 space-y-2">
             <li><strong>Account Information:</strong> Full legal name, email address, password (stored as a hashed value — never in plain text), province of residence.</li>
             <li><strong>Application Data:</strong> Date of birth, passport number (stored encrypted; displayed as last 4 digits only), passport expiry date, home address, phone number, employment history, education history, business information, investment amounts and fund source descriptions, financial institution names and partial account references, family and dependent information, social media handles, interview date and outcome.</li>
-            <li><strong>Payment Information:</strong> Payment processing is handled by Stripe. E2go does not store full card numbers, CVC codes, or bank account details. We receive only a tokenized payment reference from Stripe.</li>
+            <li><strong>Payment Information:</strong> Payment processing is handled by Stripe. e2go does not store full card numbers, CVC codes, or bank account details. We receive only a tokenized payment reference from Stripe.</li>
           </ul>
 
           <h3 className="text-lg mb-2 mt-4 font-medium" style={{ color: "#f5f0e8" }}>Information Collected Automatically</h3>
@@ -175,7 +175,7 @@ export default function PrivacyPolicyPage() {
           <p className="mb-4">If you use the interview simulator in voice mode, your audio is transcribed by Groq Inc. (groq.com), a third-party service located in the United States. Audio is sent to Groq solely for the purpose of converting speech to text. Groq does not retain audio or transcription data after processing — Zero Data Retention is enabled on our account. By using voice mode, you consent to this processing. You may use text mode at any time as an alternative that does not involve audio transmission.</p>
 
           <h2 className="text-2xl mb-4 mt-8" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#f5f0e8", fontWeight: 400 }}>12. AI PROCESSING — NO TRAINING USE</h2>
-          <p className="mb-4"><strong>Your data is never used to train AI models.</strong> When you use E2go, your information is processed by AI systems (large language models) solely to generate your specific output — a coaching report, gap analysis, interview script, or application document. Your inputs are not stored by these AI providers beyond the duration of the API call, and they are not used as training data for any AI model, including ours. This applies to all AI features: the eligibility quiz, simulator, gap analysis, FDD analysis, and document generation.</p>
+          <p className="mb-4"><strong>Your data is never used to train AI models.</strong> When you use e2go, your information is processed by AI systems (large language models) solely to generate your specific output — a coaching report, gap analysis, interview script, or application document. Your inputs are not stored by these AI providers beyond the duration of the API call, and they are not used as training data for any AI model, including ours. This applies to all AI features: the eligibility quiz, simulator, gap analysis, FDD analysis, and document generation.</p>
           <p className="mb-4">AI providers used and their data practices:</p>
           <ul className="list-disc pl-6 mb-4 space-y-1" style={{ color: "rgba(245,240,232,0.75)" }}>
             <li><strong>Anthropic (Claude):</strong> Used for document generation. Anthropic&apos;s API does not use submitted prompts for model training. Zero Data Retention (ZDR) applies.</li>
