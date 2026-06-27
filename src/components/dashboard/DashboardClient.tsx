@@ -244,11 +244,13 @@ function ProfileIntelligenceStrip({
   completenessScore,
   dimensionScores,
   currentPhase,
+  canAccessModules,
 }: {
   archetype: string | null;
   completenessScore: number | null;
   dimensionScores: DimensionScores | null;
   currentPhase: string;
+  canAccessModules: boolean;
 }) {
   const hasArchetype = archetype !== null && archetype in ARCHETYPE_LABEL;
   const hasScore = completenessScore !== null;
@@ -300,8 +302,8 @@ function ProfileIntelligenceStrip({
       detail: hasArchetype
         ? ARCHETYPE_DESC[archetype!]
         : "Your archetype shapes your entire application narrative and document tone.",
-      href: hasArchetype ? null : "/apply/business",
-      cta: hasArchetype ? null : "Go to Business Profile →",
+      href: (!hasArchetype && canAccessModules) ? "/apply/business" : null,
+      cta: (!hasArchetype && canAccessModules) ? "Go to Business Profile →" : null,
     },
     {
       label: "Case Readiness",
@@ -314,16 +316,16 @@ function ProfileIntelligenceStrip({
           ? "Good foundation. Several sections still need your attention."
           : "Case needs work. Prioritise the sections marked below."
         : "Your readiness score updates automatically as you complete each section.",
-      href: hasScore ? null : "/apply/story",
-      cta: hasScore ? null : "Start with Your Story →",
+      href: (!hasScore && canAccessModules) ? "/apply/story" : null,
+      cta: (!hasScore && canAccessModules) ? "Start with Your Story →" : null,
     },
     {
       label: "Primary Risk Area",
       filled: primaryRiskFilled,
       value: primaryRiskFilled ? primaryRisk : "Gap analysis not yet run",
       detail: primaryRiskDesc,
-      href: primaryRiskFilled ? null : primaryRiskHref,
-      cta: primaryRiskFilled ? null : "Run gap analysis →",
+      href: (!primaryRiskFilled && canAccessModules) ? primaryRiskHref : null,
+      cta: (!primaryRiskFilled && canAccessModules) ? "Run gap analysis →" : null,
     },
     {
       label: "Current Stage",
@@ -1093,6 +1095,7 @@ export default function DashboardClient({
         completenessScore={caseCompletenessScore}
         dimensionScores={dimensionScores}
         currentPhase={currentPhase}
+        canAccessModules={entitlements.hasComplete}
       />
 
       {/* Franchise Navigator banner */}
