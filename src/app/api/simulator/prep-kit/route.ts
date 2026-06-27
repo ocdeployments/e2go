@@ -42,12 +42,23 @@ export async function POST(request: NextRequest) {
   // Resolve primary application
   const { data: allApps } = await supabase
     .from('applications')
-    .select('id, source, business_name, business_category, operational_status, target_state, principal_name, simulator_sessions_used')
+    .select('id, source, business_name, business_category, operational_status, target_state, principal_name, simulator_sessions_used, simulator_sessions_purchased')
     .eq('user_id', user.id);
 
   const primaryApp = (allApps ?? []).find((a: { source: string | null }) => a.source !== 'simulator_standalone');
   if (!primaryApp) {
     return NextResponse.json({ error: 'No primary application found. Complete the eligibility quiz first.' }, { status: 404 });
+  }
+
+  // Entitlement gate — Interview Case Dossier is bundled with the Simulator module.
+  // Users need simulator_sessions_purchased > 0 on any application (meaning they own a
+  // Complete package or purchased the Simulator add-on).
+  const totalPurchased = (allApps ?? []).reduce(
+    (s: number, a: { simulator_sessions_purchased: number | null }) => s + (a.simulator_sessions_purchased ?? 0),
+    0
+  );
+  if (totalPurchased === 0) {
+    return NextResponse.json({ error: 'simulator_not_purchased' }, { status: 403 });
   }
 
   // Serve cached kit if still fresh
@@ -429,8 +440,16 @@ export async function GET(_request: NextRequest) {
 
   const { data: allApps } = await supabase
     .from('applications')
-    .select('id, source')
+    .select('id, source, simulator_sessions_purchased')
     .eq('user_id', user.id);
+
+  const totalPurchased = (allApps ?? []).reduce(
+    (s: number, a: { simulator_sessions_purchased: number | null }) => s + (a.simulator_sessions_purchased ?? 0),
+    0
+  );
+  if (totalPurchased === 0) {
+    return NextResponse.json({ error: 'simulator_not_purchased' }, { status: 403 });
+  }
 
   const primaryApp = (allApps ?? []).find((a: { source: string | null }) => a.source !== 'simulator_standalone');
   if (!primaryApp) {

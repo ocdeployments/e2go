@@ -531,7 +531,7 @@ function ResultsPageInner() {
     },
     {
       q: "What's included in the $1,495 package?",
-      a: "Gap Analysis (6 evidence categories), 15 consulate-formatted documents including Cover Letter, Business Plan, Source of Funds Statement, Market Analysis, Qualifications Narrative, Non-Immigrant Intent Statement, and 9 more. FDD Analysis is included for franchise buyers. Also includes 3 Interview Simulator sessions (additional sessions available), and 10 document revision credits. All formatted for your specific consulate.",
+      a: "Gap Analysis (6 evidence categories), 15 consulate-formatted documents including Cover Letter, Business Plan, Source of Funds Statement, Market Analysis, Qualifications Narrative, Non-Immigrant Intent Statement, and 9 more. FDD Analysis is included for franchise buyers. Also includes 3 Interview Simulator sessions, Interview Case Dossier (personalised 7-section revision document tested against all 15 denial factors), and 10 document revision credits. All formatted for your specific consulate.",
     },
   ];
 
@@ -1139,7 +1139,7 @@ function ResultsPageInner() {
                     { icon: "✓", color: "#5DCAA5", text: flagsToShow.length > 0 ? `${flagsToShow.length} risk area${flagsToShow.length > 1 ? "s" : ""} identified` : "Clean profile", dim: true },
                     { icon: "✓", color: "#5DCAA5", text: "Consulate adjudication profiled", dim: true },
                     { icon: "→", color: "#C9A84C", text: "15 engineered documents", dim: false },
-                    { icon: "→", color: "#C9A84C", text: "3 interview simulations", dim: false },
+                    { icon: "→", color: "#C9A84C", text: "3 interview simulations + Case Dossier", dim: false },
                   ] as Array<{ icon: string; color: string; text: string; dim: boolean }>).map((row, i) => (
                     <div key={i} style={{ display: "flex", gap: "7px", alignItems: "center", fontSize: "11px" }}>
                       <span style={{ color: row.color, flexShrink: 0 }}>{row.icon}</span>
@@ -1196,7 +1196,7 @@ function ResultsPageInner() {
                 E2Go is designed to be with you from the very first step — quiz, gap analysis, consulate matching, and a complete submission-ready file. If you&apos;re already mid-process and only need a specific piece, each module is available individually.
               </div>
 
-              <div className="step-cards-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "12px" }}>
+              <div className="step-cards-grid" style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "12px" }}>
                 {/* FDD Intelligence */}
                 {isFranchisePath ? (
                   <div style={{ border: "1px solid rgba(201,168,76,0.35)", padding: "22px", background: "rgba(201,168,76,0.02)", display: "flex", flexDirection: "column" as const }}>
@@ -1249,10 +1249,28 @@ function ResultsPageInner() {
                     <span style={{ fontSize: "12px", fontFamily: "'Cormorant Garamond', Georgia, serif", color: "#C9A84C", fontWeight: 300 }}>$695</span>
                   </div>
                 </div>
+
+                {/* Interview Preparation */}
+                <div style={{ border: "1px solid rgba(201,168,76,0.3)", padding: "22px", background: "rgba(201,168,76,0.02)", display: "flex", flexDirection: "column" as const }}>
+                  <div style={{ fontSize: "9px", letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "#C9A84C", marginBottom: "10px" }}>All applicants — pre-interview</div>
+                  <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "18px", fontWeight: 300, color: "#f5f0e8", marginBottom: "8px" }}>Interview Preparation</div>
+                  <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.6)", lineHeight: 1.65, marginBottom: "10px", flex: 1 }}>
+                    3 unscripted AI consular officer sessions that probe your weakest denial-factor scores. Includes the Interview Case Dossier — a personalised 7-section revision document built from your case data, tested against all 15 E-2 denial factors, and printable for the day of the interview.
+                  </div>
+                  <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" as const, marginBottom: "12px" }}>
+                    {["3 simulator sessions", "Interview Case Dossier", "Coaching report", "Day-of checklist"].map((f) => (
+                      <span key={f} style={{ fontSize: "9px", color: "rgba(201,168,76,0.7)", border: "1px solid rgba(201,168,76,0.2)", padding: "2px 7px", letterSpacing: "0.05em", fontFamily: "'DM Sans', sans-serif" }}>{f}</span>
+                    ))}
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <Link href="/simulator" style={{ fontSize: "11px", color: "#C9A84C", textDecoration: "none", fontFamily: "'DM Sans', sans-serif" }}>Start preparing →</Link>
+                    <span style={{ fontSize: "12px", fontFamily: "'Cormorant Garamond', Georgia, serif", color: "#C9A84C", fontWeight: 300 }}>$197</span>
+                  </div>
+                </div>
               </div>
 
               <div style={{ marginTop: "16px", fontSize: "10px", color: "rgba(245,240,232,0.3)", lineHeight: 1.6 }}>
-                All three modules are included in the Complete Package ($1,495). Purchasing individually costs more.{" "}
+                All four modules are included in the Complete Package ($1,495). Purchasing individually costs more.{" "}
                 <Link href="/modules" style={{ color: "rgba(201,168,76,0.55)", textDecoration: "none" }}>See full module details →</Link>
               </div>
             </div>

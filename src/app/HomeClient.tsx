@@ -266,11 +266,23 @@ export default function HomeClient() {
             <h2 className="font-['Cormorant_Garamond',Georgia,serif] text-3xl md:text-4xl font-light text-[#f5f0e8] mb-4 leading-tight">
               Already have your documents? Practice your interview.
             </h2>
-            <p className="text-sm text-[rgba(245,240,232,0.76)] leading-relaxed mb-7 max-w-xl">
+            <p className="text-sm text-[rgba(245,240,232,0.76)] leading-relaxed mb-5 max-w-xl">
               An AI consular officer reads your application, finds where you are weak,
               and probes it across three unscripted sessions — so nothing at the real
               interview is a surprise.
             </p>
+            <div className="flex flex-col gap-2 mb-7 max-w-xl">
+              {[
+                "3 unscripted AI consular officer sessions",
+                "Interview Case Dossier — 7-section personalised revision document",
+                "Coaching report + weak-point probe questions after each session",
+              ].map((f, i) => (
+                <div key={i} className="flex gap-2 items-start">
+                  <span className="text-[#C9A84C] text-xs mt-0.5 flex-shrink-0">→</span>
+                  <span className="text-[11px] text-[rgba(245,240,232,0.65)]">{f}</span>
+                </div>
+              ))}
+            </div>
             <Link href="/simulator"
               className="inline-flex w-full sm:w-auto text-center px-8 py-4 bg-[#C9A84C] text-[#0a0a0a] text-xs font-medium tracking-widest uppercase hover:opacity-85 transition-opacity min-h-[44px] items-center justify-center">
               Start interview preparation →
@@ -279,7 +291,7 @@ export default function HomeClient() {
           <div className="border border-[rgba(201,168,76,0.15)] bg-[rgba(201,168,76,0.02)] p-6 md:p-7 md:min-w-[210px]">
             <div className="text-[10px] tracking-[0.15em] uppercase text-[rgba(201,168,76,0.45)] mb-2">Standalone</div>
             <div className="font-['Cormorant_Garamond',Georgia,serif] text-4xl md:text-5xl font-light text-[#C9A84C] leading-none mb-2">$197</div>
-            <div className="text-[11px] text-[rgba(245,240,232,0.72)] leading-relaxed">3 sessions · Included free in every e2go package</div>
+            <div className="text-[11px] text-[rgba(245,240,232,0.72)] leading-relaxed">3 sessions + Case Dossier · Included in every e2go package</div>
           </div>
         </div>
       </section>

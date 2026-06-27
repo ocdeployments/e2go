@@ -412,6 +412,81 @@ function Section7({ data }: { data: PrepKit["section7"] }) {
   );
 }
 
+// ── Upsell gate ───────────────────────────────────────────────────────────────
+function PrepKitUpsell() {
+  return (
+    <div
+      style={{
+        minHeight: "100vh",
+        background: T.bg,
+        padding: "60px 24px",
+        maxWidth: "640px",
+        margin: "0 auto",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        textAlign: "center",
+      }}
+    >
+      <div style={{ ...eyebrow, marginBottom: "16px" }}>Interview Preparation Kit</div>
+      <div style={{ fontFamily: T.heading, fontSize: "32px", fontWeight: 300, color: T.text, lineHeight: 1.15, marginBottom: "14px" }}>
+        Interview Case Dossier
+      </div>
+      <div style={{ fontSize: "14px", fontFamily: T.body, color: T.textDim, lineHeight: 1.65, maxWidth: "480px", marginBottom: "32px" }}>
+        The Interview Case Dossier is bundled with the Interview Simulator module. It builds a personalised 7-section
+        revision document from your case data, tested against all 15 E-2 denial factors — ready to print before you walk in.
+      </div>
+      <div
+        style={{
+          border: `1px solid rgba(201,168,76,0.2)`,
+          background: "rgba(201,168,76,0.03)",
+          padding: "24px 28px",
+          marginBottom: "28px",
+          textAlign: "left",
+          width: "100%",
+          maxWidth: "440px",
+        }}
+      >
+        <div style={{ ...eyebrow, marginBottom: "12px" }}>What&apos;s included in the Simulator module</div>
+        {[
+          "3 unscripted AI consular officer sessions",
+          "Interview Case Dossier — 7-section revision document",
+          "Personalised answer frameworks for 9 universal questions",
+          "Weak-point probes triggered by your lowest D-code scores",
+          "Coaching report after each session",
+          "Day-of checklist and documents-to-carry list",
+        ].map((item, i) => (
+          <div key={i} style={{ display: "flex", gap: "8px", alignItems: "flex-start", marginBottom: "8px" }}>
+            <span style={{ color: T.gold, flexShrink: 0, marginTop: "1px" }}>→</span>
+            <span style={{ fontSize: "12px", fontFamily: T.body, color: T.text, lineHeight: 1.5 }}>{item}</span>
+          </div>
+        ))}
+      </div>
+      <a
+        href="/simulator"
+        style={{
+          display: "inline-block",
+          padding: "16px 36px",
+          background: T.gold,
+          color: T.bg,
+          fontSize: "11px",
+          fontWeight: 600,
+          letterSpacing: "0.1em",
+          fontFamily: T.body,
+          textDecoration: "none",
+          textTransform: "uppercase",
+        }}
+      >
+        Go to Interview Simulator →
+      </a>
+      <div style={{ marginTop: "14px", fontSize: "11px", fontFamily: T.body, color: T.textMuted }}>
+        Included in all e2go Complete packages · Available as a standalone add-on
+      </div>
+    </div>
+  );
+}
+
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function PrepKitPage() {
   const [kit, setKit] = useState<PrepKit | null>(null);
@@ -419,11 +494,16 @@ export default function PrepKitPage() {
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notEntitled, setNotEntitled] = useState(false);
 
   const fetchCached = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch("/api/simulator/prep-kit");
+      if (res.status === 403) {
+        setNotEntitled(true);
+        return;
+      }
       const data = await res.json() as { kit: PrepKit | null; generated_at: string | null };
       setKit(data.kit);
       setGeneratedAt(data.generated_at);
@@ -457,6 +537,8 @@ export default function PrepKitPage() {
   useEffect(() => {
     fetchCached();
   }, [fetchCached]);
+
+  if (notEntitled) return <PrepKitUpsell />;
 
   const daysOld = generatedAt
     ? Math.floor((Date.now() - new Date(generatedAt).getTime()) / (1000 * 60 * 60 * 24))
