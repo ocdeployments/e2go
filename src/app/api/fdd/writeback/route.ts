@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     ]);
 
     if (!analysis) return NextResponse.json({ error: 'FDD analysis not found' }, { status: 404 });
-    if (!app?.id) return NextResponse.json({ error: 'No case file found — start your E-2 application first' }, { status: 422 });
+    if (!app?.id) return NextResponse.json({ error: 'NO_APPLICATION' }, { status: 422 });
 
     const fields = (analysis.extracted_fields ?? {}) as FddExtractedFields;
     const scoring = analysis.e2_score as ScoringResult | null;

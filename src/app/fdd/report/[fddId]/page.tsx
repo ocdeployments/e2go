@@ -662,7 +662,7 @@ interface ImportModalProps {
 }
 
 function ImportModal({ fddId, onClose }: ImportModalProps) {
-  const [state, setState] = useState<'confirm' | 'loading' | 'done' | 'error'>('confirm');
+  const [state, setState] = useState<'confirm' | 'loading' | 'done' | 'error' | 'not_applicable'>('confirm');
   const [groups, setGroups] = useState<ImportGroup[]>([]);
   const [totalWritten, setTotalWritten] = useState(0);
   const [errorMsg, setErrorMsg] = useState('');
@@ -676,7 +676,10 @@ function ImportModal({ fddId, onClose }: ImportModalProps) {
         body: JSON.stringify({ fdd_id: fddId }),
       });
       const json = await res.json() as { preview?: { total_written: number; groups: ImportGroup[] }; error?: string };
-      if (!res.ok) throw new Error(json.error ?? 'Import failed');
+      if (!res.ok) {
+        if (json.error === 'NO_APPLICATION') { setState('not_applicable'); return; }
+        throw new Error(json.error ?? 'Import failed');
+      }
       setGroups(json.preview?.groups ?? []);
       setTotalWritten(json.preview?.total_written ?? 0);
       setState('done');
@@ -772,9 +775,40 @@ function ImportModal({ fddId, onClose }: ImportModalProps) {
             </>
           )}
 
+          {state === 'not_applicable' && (
+            <>
+              <p className="text-[#C9A84C] text-xs tracking-widest uppercase mb-3">Feature Note</p>
+              <h2 className="font-['Cormorant_Garamond'] text-2xl font-light text-white mb-3">
+                Built for E-2 applicants
+              </h2>
+              <p className="text-white/55 text-sm leading-relaxed mb-6">
+                E2Go is designed for E-2 treaty investor applicants. The case file import connects your FDD analysis to your E-2 application — so your investment figures, territory data, and compatibility scores flow directly into your documents.
+              </p>
+              <p className="text-white/40 text-sm leading-relaxed mb-6">
+                Since your account isn&apos;t linked to an E-2 application yet, this feature isn&apos;t available. The rest of the FDD analysis — scoring, territory maps, and due diligence questions — works without one.
+              </p>
+              <div className="flex gap-3">
+                <a
+                  href="/apply"
+                  className="flex-1 bg-[#C9A84C] text-[#0a0a0a] font-semibold py-3 text-sm text-center hover:bg-[#d4b55a] transition-colors"
+                  style={{ borderRadius: 0 }}
+                >
+                  Start E-2 application
+                </a>
+                <button
+                  onClick={onClose}
+                  className="border border-white/15 text-white/50 px-5 py-3 text-sm hover:border-white/30 hover:text-white/70 transition-colors"
+                  style={{ borderRadius: 0 }}
+                >
+                  Close
+                </button>
+              </div>
+            </>
+          )}
+
           {state === 'error' && (
             <>
-              <p className="text-red-400 text-sm mb-4">{errorMsg}</p>
+              <p className="text-white/60 text-sm mb-4">{errorMsg}</p>
               <button
                 onClick={onClose}
                 className="text-white/40 text-xs hover:text-white/60"
