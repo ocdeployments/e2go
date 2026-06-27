@@ -56,7 +56,7 @@ export default async function DashboardPage() {
       .maybeSingle(),
     supabase
       .from("applications")
-      .select("source, simulator_sessions_used, simulator_sessions_purchased")
+      .select("id, source, simulator_sessions_used, simulator_sessions_purchased")
       .eq("user_id", authUser.id),
     supabase
       .from("case_profiles")
@@ -65,19 +65,6 @@ export default async function DashboardPage() {
       .maybeSingle(),
     getUserEntitlements(authUser.id, supabase),
   ]);
-
-  let lifecycle: Record<string, string | null> | null = null;
-
-  if (quizData) {
-    const [{ data: life }] = await Promise.all([
-      supabase
-        .from("application_lifecycle")
-        .select("*")
-        .eq("user_id", authUser.id)
-        .maybeSingle(),
-    ]);
-    lifecycle = life;
-  }
 
   const isSimulatorOnly = Boolean(
     allApps && allApps.length > 0 && allApps.every((a: { source: string | null }) => a.source === "simulator_standalone")
@@ -93,6 +80,57 @@ export default async function DashboardPage() {
           { sessionsUsed: 0, sessionsPurchased: 0 }
         )
       : null;
+
+  let lifecycle: Record<string, string | null> | null = null;
+  let sectionCompletionMap = { qualifications: false, family: false, ties: false };
+  let generatedDocCount = 0;
+  let fddCount = 0;
+
+  if (quizData) {
+    // Find the primary E-2 application ID (non-simulator) for answer/doc queries
+    const primaryAppId =
+      !isSimulatorOnly && allApps && allApps.length > 0
+        ? (allApps as Array<{ id: string; source: string | null }>).find(
+            (a) => a.source !== "simulator_standalone"
+          )?.id ?? null
+        : null;
+
+    const [lifecycleRes, fddRes] = await Promise.all([
+      supabase
+        .from("application_lifecycle")
+        .select("*")
+        .eq("user_id", authUser.id)
+        .maybeSingle(),
+      supabase
+        .from("fdd_analyses")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", authUser.id),
+    ]);
+    lifecycle = lifecycleRes.data;
+    fddCount = fddRes.count ?? 0;
+
+    if (primaryAppId) {
+      const [docRes, answerRes] = await Promise.all([
+        supabase
+          .from("generated_documents")
+          .select("id", { count: "exact", head: true })
+          .eq("application_id", primaryAppId),
+        supabase
+          .from("answers")
+          .select("question_key")
+          .eq("application_id", primaryAppId),
+      ]);
+      generatedDocCount = docRes.count ?? 0;
+      const answerKeys = (
+        answerRes.data as Array<{ question_key: string }> | null ?? []
+      ).map((r) => r.question_key);
+      sectionCompletionMap = {
+        qualifications: answerKeys.some((k) => k.startsWith("M3-Q")),
+        family: answerKeys.some((k) => k.startsWith("M3-L")),
+        ties: answerKeys.some((k) => k.startsWith("M3-T")),
+      };
+    }
+  }
 
   let progress = 0;
   {
@@ -168,6 +206,9 @@ export default async function DashboardPage() {
           showFranchiseNavigator={showFranchiseNavigator}
           isSimulatorOnly={isSimulatorOnly}
           simulatorData={simulatorData}
+          sectionCompletionMap={sectionCompletionMap}
+          generatedDocCount={generatedDocCount}
+          fddCount={fddCount}
         />
       </main>
     </div>
