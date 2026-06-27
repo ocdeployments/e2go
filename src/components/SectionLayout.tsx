@@ -58,6 +58,171 @@ function shouldHideSidebar(pathname: string): boolean {
   );
 }
 
+// ── Task panel ─────────────────────────────────────────────────────────────────
+interface TaskItem { label: string; hint: string }
+
+const SECTION_TASKS: Record<string, { heading: string; tasks: TaskItem[] }> = {
+  "/apply": {
+    heading: "Application Checklist",
+    tasks: [
+      { label: "Complete all 6 case file sections", hint: "Business profile, investment, qualifications, family, ties" },
+      { label: "Run Gap Analysis after Investment", hint: "Surfaces the top denial risks before document generation" },
+      { label: "Generate your 15-document package", hint: "Sequential pipeline — all sections must be filled first" },
+    ],
+  },
+  "/gap-analysis": {
+    heading: "Gap Analysis Tasks",
+    tasks: [
+      { label: "Run the full analysis", hint: "Scores all 15 E-2 denial factors against your submitted data" },
+      { label: "Fix the top 3 D-code findings", hint: "Upload evidence or complete the flagged case file sections" },
+      { label: "Re-run to confirm improvement", hint: "Score updates immediately after every change" },
+    ],
+  },
+  "/simulator": {
+    heading: "Interview Preparation Tasks",
+    tasks: [
+      { label: "Complete the universal question track", hint: "9 UQ questions + applicable weak-point probes" },
+      { label: "Generate your Interview Case Dossier", hint: "Revision document with all 15 D-code findings" },
+      { label: "Review your coaching report", hint: "Personalised feedback from your last simulator session" },
+    ],
+  },
+  "/simulator/prep-kit": {
+    heading: "Dossier Tasks",
+    tasks: [
+      { label: "Generate your personalised dossier", hint: "Built from your case data, FDD intelligence, and market scores" },
+      { label: "Review all 7 sections", hint: "Pay special attention to Section 03 (Denial Risk Register)" },
+      { label: "Print or save as PDF for the interview", hint: "Use the Print button — brings all sections into one printable document" },
+    ],
+  },
+};
+
+function getTasksForPath(pathname: string) {
+  // Exact match first, then prefix match
+  for (const [key, val] of Object.entries(SECTION_TASKS)) {
+    if (pathname === key || pathname.startsWith(key + "/") || pathname.startsWith(key + "?")) {
+      // Don't show /simulator tasks on /simulator/prep-kit (more specific key takes priority)
+      if (key === "/simulator" && pathname !== "/simulator") continue;
+      return val;
+    }
+  }
+  return null;
+}
+
+function TaskPanel({ heading, tasks }: { heading: string; tasks: TaskItem[] }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div
+      style={{
+        borderBottom: `1px solid rgba(201,168,76,0.10)`,
+        background: "rgba(201,168,76,0.025)",
+      }}
+    >
+      <button
+        onClick={() => setOpen((v) => !v)}
+        style={{
+          width: "100%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "10px 20px",
+          background: "transparent",
+          border: "none",
+          cursor: "pointer",
+          gap: "12px",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <span
+            style={{
+              fontSize: "9px",
+              letterSpacing: "0.12em",
+              textTransform: "uppercase",
+              color: "rgba(201,168,76,0.55)",
+              fontFamily: "'DM Sans', sans-serif",
+              fontWeight: 500,
+            }}
+          >
+            {heading}
+          </span>
+          <span
+            style={{
+              fontSize: "9px",
+              fontFamily: "'DM Sans', sans-serif",
+              color: "rgba(245,240,232,0.25)",
+              background: "rgba(201,168,76,0.08)",
+              border: "1px solid rgba(201,168,76,0.12)",
+              padding: "1px 6px",
+              letterSpacing: "0.06em",
+            }}
+          >
+            {tasks.length} tasks
+          </span>
+        </div>
+        <span
+          style={{
+            color: "rgba(201,168,76,0.4)",
+            fontSize: "12px",
+            transform: open ? "rotate(90deg)" : "none",
+            transition: "transform 0.15s",
+            flexShrink: 0,
+          }}
+        >
+          ›
+        </span>
+      </button>
+      {open && (
+        <div
+          style={{
+            padding: "4px 20px 12px",
+            display: "flex",
+            gap: "20px",
+            flexWrap: "wrap",
+          }}
+        >
+          {tasks.map((t, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: "8px", minWidth: "160px", flex: "1 1 160px" }}>
+              <span
+                style={{
+                  width: "14px",
+                  height: "14px",
+                  border: "1px solid rgba(201,168,76,0.25)",
+                  flexShrink: 0,
+                  marginTop: "2px",
+                  display: "block",
+                }}
+              />
+              <div>
+                <div
+                  style={{
+                    fontSize: "11px",
+                    fontFamily: "'DM Sans', sans-serif",
+                    color: "rgba(245,240,232,0.75)",
+                    fontWeight: 500,
+                    marginBottom: "2px",
+                    lineHeight: 1.3,
+                  }}
+                >
+                  {t.label}
+                </div>
+                <div
+                  style={{
+                    fontSize: "10px",
+                    fontFamily: "'DM Sans', sans-serif",
+                    color: "rgba(245,240,232,0.35)",
+                    lineHeight: 1.4,
+                  }}
+                >
+                  {t.hint}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const T = {
   bg:       "#0a0a0a",
@@ -248,6 +413,7 @@ export default function SectionLayout({
   const pathname = usePathname();
   const activeStepId = getActiveStepId(pathname);
   const hidden = shouldHideSidebar(pathname);
+  const taskConfig = getTasksForPath(pathname);
 
   // If this page manages its own navigation (CaseFileShell pages), just render children
   if (hidden) {
@@ -364,6 +530,7 @@ export default function SectionLayout({
 
         {/* Main content */}
         <div style={{ flex: 1, minWidth: 0 }}>
+          {taskConfig && <TaskPanel heading={taskConfig.heading} tasks={taskConfig.tasks} />}
           {children}
         </div>
       </div>
