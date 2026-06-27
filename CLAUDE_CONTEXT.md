@@ -1,6 +1,6 @@
 # CLAUDE_CONTEXT.md — E2go
 ## Master Context for Every Claude Code Session
-**Version:** June 27, 2026 — Session 80. Dashboard Case File UI redesign complete (4 zones: welcome, command panel, folder stack, phase strip). Paywall removed from dashboard entirely. Sprint E (all 7 sub-sprints) complete. /modules page added. Build clean on dev (0ccafb6).
+**Version:** June 27, 2026 — Session 82. Dashboard intelligence layer added (Profile strip, Gap priorities, Simulator snapshot). Sprint F spec locked. Build clean on dev.
 
 ## SPRINT STATUS
 - OPS-1 (API Cost Intelligence): ✅ COMPLETE — llm_cost_log, cost logging in callLLM(), /admin/cost page
@@ -18,6 +18,8 @@
 - Sprint E-5 (Dashboard overhaul): ✅ COMPLETE — superseded by Session 80 Case File UI redesign
 - Sprint E-6 (Pricing): ✅ COMPLETE — founding member counter removed, auth-aware header, features list updated
 - Sprint E-7 (Franchise Navigator): ✅ COMPLETE — brand removal, categories, FDD multi-zip, broker flow
+- Sprint F-1 (Section Shell + Sidebar): 🔜 NEXT — layout wrapper for /apply, /gap-analysis, /simulator with 7-step left rail
+- Sprint F-2 (Section Task Panels): 🔜 QUEUED — per-section checklist panels (right side) surfacing specific to-dos per page
 
 ## KEY RULES — NEVER BREAK
 - ANTHROPIC_API_KEY: ONLY in generation-engine.ts + /api/fdd/* routes

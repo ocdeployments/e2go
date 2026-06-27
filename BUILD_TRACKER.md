@@ -1,6 +1,70 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 27, 2026 — Session 82: Dashboard 7-fix sprint complete — live data wired, non-functional buttons removed, phase chips added.
+**Last Updated:** June 27, 2026 — Session 82: Dashboard intelligence layer + Sprint F spec locked.
+
+---
+
+## Session 82 — Dashboard Intelligence Layer ✅
+
+**Commits (intelligence upgrade):**
+- `[pending]` — feat(sprint-f): Dashboard Profile Intelligence strip, Gap Priorities panel, Simulator Snapshot card
+
+**What shipped (intelligence layer):**
+- Profile Intelligence Strip — 4 cells: Investor Archetype, Case Readiness %, Primary Risk Area (derived from lowest dimension score), Current Stage. Sits between welcome header and B+C grid.
+- Gap Priorities Panel — surfaces dimension scores below threshold as triage rows with Critical/High/Moderate severity chips + Fix → links. Only renders when gaps exist. Disappears when all 3 dimensions score 75+.
+- Simulator Snapshot Card — appears only after first completed simulator session. Shows readiness indicator badge, Strong/Needs Work counts, top 3 coaching focus items from coaching_notes.top3NextSession.
+- page.tsx: expanded case_profiles query to include source_of_funds_score, management_role_score, business_plan_score. Added simulator_sessions query (latest completed session by user_id).
+
+**New data shape:**
+- dimensionScores: { sourceOfFunds, managementRole, businessPlan } — from case_profiles, null if gap analysis never run
+- simulatorSnapshot: { readinessIndicator, top3[], strongCount, needsWorkCount } — from simulator_sessions, null if no completed session
+
+---
+
+## Sprint F — Section Shell + Sidebar Navigation (NEXT)
+
+**Decision confirmed:** Dashboard stays as command center (no sidebar). Sidebar appears only when user enters a section page.
+
+**Architecture:**
+```
+Dashboard (/dashboard)       → no sidebar, stays as command center
+Section pages (/apply/*)     → SectionLayout with 7-step left rail
+Gap analysis (/gap-analysis) → SectionLayout with 7-step left rail  
+Simulator (/simulator)       → SectionLayout with 7-step left rail
+```
+
+**Sprint F-1: Section Layout Shell**
+File: `src/app/apply/layout.tsx` (new)
+File: `src/app/gap-analysis/layout.tsx` (new)
+File: `src/app/simulator/layout.tsx` (new)
+File: `src/components/SectionLayout.tsx` (new — shared shell)
+
+SectionLayout props:
+- `steps` — 7 journey steps with live status fetched server-side
+- `children` — page content slot
+
+Left rail (240px, collapses to icon-only below 1024px, full-screen drawer on mobile):
+- 7 steps: Eligibility → Onboarding → Business → Investment → Gap Analysis → Generate → Interview
+- Each step: status chip (✓/#/○) + step name + optional sub-label
+- Active step highlighted in amber
+- Each step links to its page
+- Status derived from application_lifecycle + quiz session (same queries as dashboard)
+
+Right side: the existing page content, unchanged.
+
+**Sprint F-2: Section Task Panels**
+Per-section checklist shown as a collapsible right panel or inline card at top of page content.
+- /apply/story → "Upload passport copy, Confirm treaty country, Add work history"
+- /apply/business → "Set operating model, Add employment plan, Confirm active management"
+- /apply/investment → "Add source of funds chain, Confirm deployment, Upload bank evidence"
+- /gap-analysis → "Run full analysis, Fix top 3 D-codes, Re-run to confirm improvement"
+- /simulator → "Complete universal track, Run franchise session, Read coaching report"
+
+**Build order for Sprint F:**
+1. Create SectionLayout.tsx — left rail with static step list, no data yet
+2. Add layout.tsx files under /apply, /gap-analysis, /simulator — wrap with SectionLayout
+3. Wire step status from application_lifecycle query in each layout server component
+4. Sprint F-2: add task panel per section (collapsible, right rail or top card)
 
 ---
 
