@@ -1,10 +1,7 @@
 "use client";
 import { PartialProfileTeaser } from "@/components/PartialProfileTeaser";
 import CaseCommandPanel from "@/components/dashboard/CaseCommandPanel";
-import type { MilestoneRow } from "@/components/dashboard/CaseCommandPanel";
 import FolderStack from "@/components/dashboard/FolderStack";
-import PhaseStrip from "@/components/dashboard/PhaseStrip";
-import type { PhaseData } from "@/components/dashboard/PhaseStrip";
 import { deriveStrengthBadges } from "@/lib/strength-badges";
 
 const NEXT_ACTION_WHY: Record<string, string> = {
@@ -107,154 +104,44 @@ function deriveNextAction(
   return "Practice your interview";
 }
 
-function buildMilestones(
-  quizCompleted: boolean,
-  lifecycle: Record<string, string | null> | null
-): MilestoneRow[] {
-  const m1 = Boolean(lifecycle?.module1_completed_at);
-  const m2 = Boolean(lifecycle?.module2_completed_at);
-  const m3 = Boolean(lifecycle?.module3_completed_at);
-  const m4 = Boolean(lifecycle?.module4_completed_at);
-  const m5 = Boolean(lifecycle?.module5_completed_at);
 
-  return [
-    {
-      id: "quiz",
-      label: "Eligibility Quiz",
-      phase: "Case File",
-      status: quizCompleted ? "done" : "upcoming",
-    },
-    {
-      id: "onboarding",
-      label: "Onboarding",
-      phase: "Business Profile",
-      status: m1 ? "done" : quizCompleted ? "in-progress" : "upcoming",
-    },
-    {
-      id: "business",
-      label: "Business Profile",
-      phase: "Investment Docs",
-      status: m2 ? "done" : m1 ? "in-progress" : "upcoming",
-    },
-    {
-      id: "investment",
-      label: "Investment & Docs",
-      phase: "Gap Analysis",
-      status: m3 ? "done" : m2 ? "in-progress" : "upcoming",
-    },
-    {
-      id: "generation",
-      label: "Document Generation",
-      phase: "Interview Prep",
-      status: m4 ? "done" : m3 ? "in-progress" : "upcoming",
-    },
-    {
-      id: "simulator",
-      label: "Interview Simulator",
-      phase: "Submit",
-      status: m5 ? "done" : m4 ? "in-progress" : "upcoming",
-    },
-  ];
-}
-
-function buildPhases(
-  quizCompleted: boolean,
-  quizOutcome: string | null,
-  lifecycle: Record<string, string | null> | null,
-  caseArchetype: string | null,
-  caseCompletenessScore: number | null,
-  investmentRange: string | null,
-  simulatorData: { sessionsUsed: number; sessionsPurchased: number } | null,
-  currentPhaseName: string,
-  generatedDocCount: number
-): PhaseData[] {
-  const m1 = Boolean(lifecycle?.module1_completed_at);
-  const m2 = Boolean(lifecycle?.module2_completed_at);
-  const m3 = Boolean(lifecycle?.module3_completed_at);
-  const m4 = Boolean(lifecycle?.module4_completed_at);
-  const m5 = Boolean(lifecycle?.module5_completed_at);
-
-  return [
-    {
-      id: "eligibility",
-      number: "01",
-      title: "Eligibility",
-      contentType: "eligibility",
-      contentData: { outcome: quizOutcome ?? "", done: quizCompleted },
-      isCurrentPhase: currentPhaseName === "Onboarding" && !quizCompleted,
-    },
-    {
-      id: "onboarding",
-      number: "02",
-      title: "Onboarding",
-      contentType: "onboarding",
-      contentData: { done: m1 },
-      isCurrentPhase: currentPhaseName === "Onboarding",
-    },
-    {
-      id: "business",
-      number: "03",
-      title: "Business Profile",
-      contentType: "business",
-      contentData: { done: m2, archetype: caseArchetype },
-      isCurrentPhase: currentPhaseName === "Business Profile",
-    },
-    {
-      id: "investment",
-      number: "04",
-      title: "Investment & Docs",
-      contentType: "investment",
-      contentData: { done: m3, investmentRange },
-      isCurrentPhase: currentPhaseName === "Investment & Documents",
-    },
-    {
-      id: "gap",
-      number: "05",
-      title: "Gap Analysis",
-      contentType: "gap",
-      contentData: { done: m4, completenessScore: caseCompletenessScore },
-      isCurrentPhase: currentPhaseName === "Gap Analysis",
-    },
-    {
-      id: "generation",
-      number: "06",
-      title: "Generation",
-      contentType: "generation",
-      contentData: { done: generatedDocCount > 0, docCount: generatedDocCount },
-      isCurrentPhase: currentPhaseName === "Document Generation",
-    },
-    {
-      id: "interview",
-      number: "07",
-      title: "Interview Prep",
-      contentType: "interview",
-      contentData: {
-        done: m5,
-        sessionsUsed: simulatorData?.sessionsUsed ?? null,
-        sessionsPurchased: simulatorData?.sessionsPurchased ?? 3,
-      },
-      isCurrentPhase: currentPhaseName === "Interview Preparation",
-    },
-  ];
-}
 
 // ── Profile Intelligence Strip ────────────────────────────────────────────────
+// Progressive cells: always shows real data from quiz on Day 1.
+// Swaps to richer values as the client completes more work.
 function ProfileIntelligenceStrip({
   archetype,
   completenessScore,
   dimensionScores,
   currentPhase,
-  canAccessModules,
+  quizOutcome,
+  investmentRange,
+  applicationLabel,
 }: {
   archetype: string | null;
   completenessScore: number | null;
   dimensionScores: DimensionScores | null;
   currentPhase: string;
-  canAccessModules: boolean;
+  quizOutcome: string | null;
+  investmentRange: string | null;
+  applicationLabel: string | null;
 }) {
   const hasArchetype = archetype !== null && archetype in ARCHETYPE_LABEL;
   const hasScore = completenessScore !== null;
 
+  // Format quiz outcome for Day-1 display in Cell 1
+  function formatOutcome(o: string | null): string {
+    if (!o) return "Pending";
+    const map: Record<string, string> = {
+      strong: "Strong — Eligible",
+      borderline: "Borderline — Review",
+      caution: "Caution — Concerns",
+      ineligible: "Ineligible",
+    };
+    return map[o.toLowerCase()] ?? o.charAt(0).toUpperCase() + o.slice(1);
+  }
+
+  // Derive primary risk area from dimension scores
   let primaryRisk: string;
   let primaryRiskDesc: string;
   let primaryRiskHref: string;
@@ -273,15 +160,15 @@ function ProfileIntelligenceStrip({
       primaryRiskHref = lowest.href;
       primaryRiskFilled = true;
     } else {
-      primaryRisk = "Run gap analysis";
-      primaryRiskDesc = "Surfaces your highest denial risk before the consulate sees it.";
-      primaryRiskHref = "/gap-analysis";
+      primaryRisk = applicationLabel ?? "Solo E-2 Investor";
+      primaryRiskDesc = "Your application configuration — who is included on the visa petition.";
+      primaryRiskHref = "/apply/story";
       primaryRiskFilled = false;
     }
   } else {
-    primaryRisk = "Run gap analysis";
-    primaryRiskDesc = "Surfaces your highest denial risk before the consulate sees it.";
-    primaryRiskHref = "/gap-analysis";
+    primaryRisk = applicationLabel ?? "Solo E-2 Investor";
+    primaryRiskDesc = "Your application configuration — who is included on the visa petition.";
+    primaryRiskHref = "/apply/story";
     primaryRiskFilled = false;
   }
 
@@ -294,39 +181,66 @@ function ProfileIntelligenceStrip({
     marginBottom: "6px",
   };
 
+  // Cell 1: Archetype when available, E-2 Outcome on Day 1
+  const cell1 = hasArchetype
+    ? {
+        label: "Investor Archetype",
+        value: ARCHETYPE_LABEL[archetype!],
+        detail: ARCHETYPE_DESC[archetype!],
+        href: null,
+        cta: null,
+      }
+    : {
+        label: "E-2 Outcome",
+        value: formatOutcome(quizOutcome),
+        detail: "Your initial eligibility assessment based on treaty country, investment range, and business type.",
+        href: "/results",
+        cta: "View full results →",
+      };
+
+  // Cell 2: Case Readiness when available, Investment Range on Day 1
+  const cell2 = hasScore
+    ? {
+        label: "Case Readiness",
+        value: `${completenessScore}%`,
+        detail:
+          completenessScore! >= 75
+            ? "Strong trajectory. Close remaining evidence gaps before generating."
+            : completenessScore! >= 50
+            ? "Good foundation. Several sections still need your attention."
+            : "Case needs work. Prioritise the sections marked below.",
+        href: null,
+        cta: null,
+      }
+    : {
+        label: "Investment Range",
+        value: investmentRange ?? "Not provided",
+        detail: "Your declared investment range. Case readiness score updates as you complete each section.",
+        href: null,
+        cta: null,
+      };
+
+  // Cell 3: Primary Risk Area when gap analysis run, Application Type on Day 1
+  const cell3 = primaryRiskFilled
+    ? {
+        label: "Primary Risk Area",
+        value: primaryRisk,
+        detail: primaryRiskDesc,
+        href: primaryRiskHref,
+        cta: "Fix this gap →",
+      }
+    : {
+        label: "Application Type",
+        value: primaryRisk,
+        detail: primaryRiskDesc,
+        href: null,
+        cta: null,
+      };
+
   const cells = [
-    {
-      label: "Investor Archetype",
-      filled: hasArchetype,
-      value: hasArchetype ? ARCHETYPE_LABEL[archetype!] : "Complete business profile",
-      detail: hasArchetype
-        ? ARCHETYPE_DESC[archetype!]
-        : "Your archetype shapes your entire application narrative and document tone.",
-      href: (!hasArchetype && canAccessModules) ? "/apply/business" : null,
-      cta: (!hasArchetype && canAccessModules) ? "Go to Business Profile →" : null,
-    },
-    {
-      label: "Case Readiness",
-      filled: hasScore,
-      value: hasScore ? `${completenessScore}%` : "Build your case file",
-      detail: hasScore
-        ? completenessScore! >= 75
-          ? "Strong trajectory. Close remaining evidence gaps before generating."
-          : completenessScore! >= 50
-          ? "Good foundation. Several sections still need your attention."
-          : "Case needs work. Prioritise the sections marked below."
-        : "Your readiness score updates automatically as you complete each section.",
-      href: (!hasScore && canAccessModules) ? "/apply/story" : null,
-      cta: (!hasScore && canAccessModules) ? "Start with Your Story →" : null,
-    },
-    {
-      label: "Primary Risk Area",
-      filled: primaryRiskFilled,
-      value: primaryRiskFilled ? primaryRisk : "Gap analysis not yet run",
-      detail: primaryRiskDesc,
-      href: (!primaryRiskFilled && canAccessModules) ? primaryRiskHref : null,
-      cta: (!primaryRiskFilled && canAccessModules) ? "Run gap analysis →" : null,
-    },
+    { ...cell1, filled: true },
+    { ...cell2, filled: true },
+    { ...cell3, filled: true },
     {
       label: "Current Stage",
       filled: true,
@@ -815,18 +729,6 @@ export default function DashboardClient({
   const currentPhase = deriveCurrentPhase(lifecycle);
   const nextAction = deriveNextAction(lifecycle);
   const nextActionWhy = NEXT_ACTION_WHY[currentPhase];
-  const milestones = buildMilestones(quizCompleted, lifecycle);
-  const phases = buildPhases(
-    quizCompleted,
-    quizOutcome,
-    lifecycle,
-    caseArchetype,
-    caseCompletenessScore,
-    investmentRange,
-    simulatorData,
-    currentPhase,
-    generatedDocCount
-  );
 
   // ── Simulator-only branch ─────────────────────────────────────────────────
   if (isSimulatorOnly) {
@@ -1095,7 +997,9 @@ export default function DashboardClient({
         completenessScore={caseCompletenessScore}
         dimensionScores={dimensionScores}
         currentPhase={currentPhase}
-        canAccessModules={entitlements.hasComplete}
+        quizOutcome={quizOutcome}
+        investmentRange={investmentRange}
+        applicationLabel={applicationLabel}
       />
 
       {/* Franchise Navigator banner */}
@@ -1180,7 +1084,6 @@ export default function DashboardClient({
           currentPhase={currentPhase}
           nextAction={nextAction}
           nextActionWhy={nextActionWhy}
-          milestones={milestones}
         />
         <FolderStack
           lifecycle={lifecycle}
@@ -1191,6 +1094,8 @@ export default function DashboardClient({
           gapScore={caseCompletenessScore}
           fddCount={fddCount}
           generatedDocCount={generatedDocCount}
+          quizCompleted={quizCompleted}
+          hasCoachingReport={(simulatorData?.sessionsUsed ?? 0) > 0}
         />
       </div>
 
@@ -1204,8 +1109,6 @@ export default function DashboardClient({
         <SimulatorSnapshotCard snapshot={simulatorSnapshot} />
       )}
 
-      {/* Zone D — Phase Strip */}
-      <PhaseStrip phases={phases} />
     </div>
   );
 }

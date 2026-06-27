@@ -1,19 +1,11 @@
 "use client";
 import type { CSSProperties } from "react";
 
-export interface MilestoneRow {
-  id: string;
-  label: string;
-  phase: string;
-  status: "done" | "in-progress" | "upcoming";
-}
-
 interface CaseCommandPanelProps {
   score: number;
   currentPhase: string;
   nextAction: string;
   nextActionWhy?: string;
-  milestones: MilestoneRow[];
 }
 
 export default function CaseCommandPanel({
@@ -21,7 +13,6 @@ export default function CaseCommandPanel({
   currentPhase,
   nextAction,
   nextActionWhy,
-  milestones,
 }: CaseCommandPanelProps) {
   const eyebrow: CSSProperties = {
     fontSize: "9px",
@@ -83,12 +74,9 @@ export default function CaseCommandPanel({
           display: "grid",
           gridTemplateColumns: "1fr 1fr",
           gap: "20px",
-          marginBottom: "22px",
-          paddingBottom: "22px",
-          borderBottom: "1px solid rgba(201,168,76,0.1)",
         }}
       >
-        {/* Left: score */}
+        {/* Left: readiness score */}
         <div>
           <div
             style={{
@@ -158,7 +146,7 @@ export default function CaseCommandPanel({
           </div>
         </div>
 
-        {/* Right: phase + action */}
+        {/* Right: current phase + next action */}
         <div>
           <div style={eyebrow}>Current Phase</div>
           <div
@@ -199,132 +187,6 @@ export default function CaseCommandPanel({
             </div>
           )}
         </div>
-      </div>
-
-      {/* Milestone Tracker heading */}
-      <div
-        style={{
-          marginBottom: "12px",
-        }}
-      >
-        <div
-          style={{
-            fontSize: "11px",
-            fontFamily: "'DM Sans', sans-serif",
-            color: "rgba(245,240,232,0.7)",
-            fontWeight: 500,
-          }}
-        >
-          Milestone Tracker
-        </div>
-      </div>
-
-      {/* Column headers */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "16px 1fr auto",
-          gap: "8px",
-          paddingBottom: "8px",
-          borderBottom: "1px solid rgba(201,168,76,0.15)",
-          marginBottom: "4px",
-        }}
-      >
-        <div />
-        <div
-          style={{
-            fontSize: "9px",
-            letterSpacing: "0.12em",
-            textTransform: "uppercase",
-            color: "rgba(245,240,232,0.38)",
-            fontFamily: "'DM Sans', sans-serif",
-          }}
-        >
-          Milestone
-        </div>
-        <div
-          style={{
-            fontSize: "9px",
-            letterSpacing: "0.12em",
-            textTransform: "uppercase",
-            color: "rgba(245,240,232,0.38)",
-            fontFamily: "'DM Sans', sans-serif",
-            textAlign: "right",
-          }}
-        >
-          Required Phase
-        </div>
-      </div>
-
-      {/* Milestone rows */}
-      <div>
-        {milestones.map((m) => {
-          const icon =
-            m.status === "done"
-              ? "✓"
-              : m.status === "in-progress"
-              ? "●"
-              : "›";
-          const iconColor =
-            m.status === "done"
-              ? "#5DCAA5"
-              : m.status === "in-progress"
-              ? "#C9A84C"
-              : "rgba(245,240,232,0.25)";
-          const labelColor =
-            m.status === "done"
-              ? "rgba(245,240,232,0.65)"
-              : m.status === "in-progress"
-              ? "#f5f0e8"
-              : "rgba(245,240,232,0.38)";
-
-          return (
-            <div
-              key={m.id}
-              style={{
-                display: "grid",
-                gridTemplateColumns: "16px 1fr auto",
-                gap: "8px",
-                alignItems: "center",
-                padding: "9px 0",
-                borderBottom: "1px solid rgba(201,168,76,0.06)",
-              }}
-            >
-              <span
-                style={{
-                  fontSize: m.status === "done" ? "11px" : "10px",
-                  color: iconColor,
-                  lineHeight: 1,
-                  textAlign: "center",
-                  fontWeight: m.status === "done" ? 700 : 400,
-                }}
-              >
-                {icon}
-              </span>
-              <span
-                style={{
-                  fontSize: "11px",
-                  fontFamily: "'DM Sans', sans-serif",
-                  color: labelColor,
-                  lineHeight: 1.3,
-                }}
-              >
-                {m.label}
-              </span>
-              <span
-                style={{
-                  fontSize: "10px",
-                  fontFamily: "'DM Sans', sans-serif",
-                  color: "rgba(245,240,232,0.28)",
-                  textAlign: "right",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {m.phase}
-              </span>
-            </div>
-          );
-        })}
       </div>
     </div>
   );
