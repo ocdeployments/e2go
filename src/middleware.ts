@@ -173,11 +173,27 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  // Gate case-building and intelligence routes behind paid entitlements
+  // Gate case-building and intelligence routes behind paid entitlements.
+  // Admin users (role=admin) bypass all payment gates — they have full access.
   const COMPLETE_GATED = ['/apply/story', '/apply/business', '/apply/investment', '/apply/qualifications', '/apply/family', '/apply/ties', '/gap-analysis'];
   const FDD_GATED = ['/fdd/'];
 
-  if (user && COMPLETE_GATED.some(r => pathname.startsWith(r))) {
+  const needsPaymentCheck = user && (
+    COMPLETE_GATED.some(r => pathname.startsWith(r)) ||
+    FDD_GATED.some(r => pathname.startsWith(r))
+  );
+
+  let isAdmin = false;
+  if (needsPaymentCheck) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user!.id)
+      .single();
+    isAdmin = profile?.role === 'admin';
+  }
+
+  if (user && !isAdmin && COMPLETE_GATED.some(r => pathname.startsWith(r))) {
     const { data: payment } = await supabase
       .from('payments')
       .select('id')
@@ -191,7 +207,7 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  if (user && FDD_GATED.some(r => pathname.startsWith(r))) {
+  if (user && !isAdmin && FDD_GATED.some(r => pathname.startsWith(r))) {
     const { data: payment } = await supabase
       .from('payments')
       .select('id')

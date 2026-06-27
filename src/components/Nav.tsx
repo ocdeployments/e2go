@@ -23,8 +23,6 @@ export default function Nav() {
   const [user, setUser] = useState<Profile | null>(null);
   const [application, setApplication] = useState<Application | null>(null);
   const [isSimulatorOnly, setIsSimulatorOnly] = useState(false);
-  const [hasComplete, setHasComplete] = useState(false);
-  const [hasFdd, setHasFdd] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -60,20 +58,6 @@ export default function Nav() {
 
         setUser(userData);
 
-        // Check entitlements for nav lock states
-        const { data: payments } = await supabase
-          .from("payments")
-          .select("payment_type")
-          .eq("user_id", session.user.id)
-          .eq("status", "completed")
-          .in("payment_type", ["complete", "complete_partnership", "fdd_intelligence", "fdd_intelligence_loyalty"]);
-
-        if (payments) {
-          const types = new Set(payments.map((p: { payment_type: string }) => p.payment_type));
-          setHasComplete(types.has("complete") || types.has("complete_partnership"));
-          setHasFdd(types.has("fdd_intelligence") || types.has("fdd_intelligence_loyalty"));
-        }
-
         // Fetch all applications to detect simulator-only accounts.
         // Simulator-only users (source = 'simulator_standalone') must not see
         // Dashboard, My Application, or Documents — they haven't paid for those.
@@ -103,8 +87,6 @@ export default function Nav() {
         setUser(null);
         setApplication(null);
         setIsSimulatorOnly(false);
-        setHasComplete(false);
-        setHasFdd(false);
       }
       setLoading(false);
     });
@@ -229,49 +211,28 @@ export default function Nav() {
                 </Link>
               )}
               {!isSimulatorOnly && !pathname.startsWith('/simulator') && (
-                hasComplete ? (
-                  <Link href="/apply" className="text-sm transition-colors" style={{ color: pathname.startsWith("/apply") ? "#C9A84C" : "rgba(245,240,232,0.75)" }}
-                    onMouseEnter={e => e.currentTarget.style.color = "#f5f0e8"}
-                    onMouseLeave={e => e.currentTarget.style.color = pathname.startsWith("/apply") ? "#C9A84C" : "rgba(245,240,232,0.75)"}
-                  >
-                    My Application
-                  </Link>
-                ) : (
-                  <Link href="/pricing?locked=complete" className="text-sm flex items-center gap-1" style={{ color: "rgba(245,240,232,0.35)", cursor: "pointer" }} title="Unlock with Complete — $1,495">
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                    My Application
-                  </Link>
-                )
+                <Link href="/apply" className="text-sm transition-colors" style={{ color: pathname.startsWith("/apply") ? "#C9A84C" : "rgba(245,240,232,0.75)" }}
+                  onMouseEnter={e => e.currentTarget.style.color = "#f5f0e8"}
+                  onMouseLeave={e => e.currentTarget.style.color = pathname.startsWith("/apply") ? "#C9A84C" : "rgba(245,240,232,0.75)"}
+                >
+                  My Application
+                </Link>
               )}
               {!isSimulatorOnly && !pathname.startsWith('/simulator') && (
-                hasComplete ? (
-                  <Link href="/gap-analysis" className="text-sm transition-colors" style={{ color: pathname.startsWith("/gap-analysis") ? "#C9A84C" : "rgba(245,240,232,0.75)" }}
-                    onMouseEnter={e => e.currentTarget.style.color = "#f5f0e8"}
-                    onMouseLeave={e => e.currentTarget.style.color = pathname.startsWith("/gap-analysis") ? "#C9A84C" : "rgba(245,240,232,0.75)"}
-                  >
-                    Gap Analysis
-                  </Link>
-                ) : (
-                  <Link href="/pricing?locked=complete" className="text-sm flex items-center gap-1" style={{ color: "rgba(245,240,232,0.35)" }} title="Unlock with Complete — $1,495">
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                    Gap Analysis
-                  </Link>
-                )
+                <Link href="/gap-analysis" className="text-sm transition-colors" style={{ color: pathname.startsWith("/gap-analysis") ? "#C9A84C" : "rgba(245,240,232,0.75)" }}
+                  onMouseEnter={e => e.currentTarget.style.color = "#f5f0e8"}
+                  onMouseLeave={e => e.currentTarget.style.color = pathname.startsWith("/gap-analysis") ? "#C9A84C" : "rgba(245,240,232,0.75)"}
+                >
+                  Gap Analysis
+                </Link>
               )}
               {!isSimulatorOnly && !pathname.startsWith('/simulator') && (
-                hasFdd ? (
-                  <Link href="/fdd" className="text-sm transition-colors" style={{ color: pathname.startsWith("/fdd") ? "#C9A84C" : "rgba(245,240,232,0.75)" }}
-                    onMouseEnter={e => e.currentTarget.style.color = "#f5f0e8"}
-                    onMouseLeave={e => e.currentTarget.style.color = pathname.startsWith("/fdd") ? "#C9A84C" : "rgba(245,240,232,0.75)"}
-                  >
-                    FDD Analysis
-                  </Link>
-                ) : (
-                  <Link href="/pricing?locked=fdd" className="text-sm flex items-center gap-1" style={{ color: "rgba(245,240,232,0.35)" }} title="Unlock FDD Intelligence — $575">
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                    FDD Analysis
-                  </Link>
-                )
+                <Link href="/fdd" className="text-sm transition-colors" style={{ color: pathname.startsWith("/fdd") ? "#C9A84C" : "rgba(245,240,232,0.75)" }}
+                  onMouseEnter={e => e.currentTarget.style.color = "#f5f0e8"}
+                  onMouseLeave={e => e.currentTarget.style.color = pathname.startsWith("/fdd") ? "#C9A84C" : "rgba(245,240,232,0.75)"}
+                >
+                  FDD Analysis
+                </Link>
               )}
               {!isSimulatorOnly && !pathname.startsWith('/simulator') && application && (
                 <Link href={`/documents/${application.id}`} className="text-sm transition-colors" style={{ color: pathname.startsWith("/documents") ? "#C9A84C" : "rgba(245,240,232,0.75)" }}
