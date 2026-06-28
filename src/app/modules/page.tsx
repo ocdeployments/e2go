@@ -57,7 +57,7 @@ const MODULES = [
     headline: "E-2 Business Plan",
     price: "$695",
     priceNote: "one-time · standalone",
-    href: "/quiz",
+    href: "/results",
     badge: "Archetype-tailored",
     description:
       "The Business Plan is the most scrutinised document in an E-2 file. Attorneys charge $3,000–$5,000 for one. Ours is produced by claude-opus-4-8 in hours — with your gap analysis, investor archetype, and market data all loaded into a single structured prompt. Formatted to your consulate's confirmed page limits.",
@@ -81,7 +81,7 @@ const BUNDLE = {
   headline: "All Three Modules",
   price: "$1,195",
   priceNote: "FDD + Market Analysis + Business Plan · save $290",
-  href: "/quiz",
+  href: "/results",
   items: ["FDD Intelligence ($495)", "Market Analysis ($295)", "E-2 Business Plan ($695)"],
 };
 
@@ -96,7 +96,7 @@ export default function ModulesPage() {
           </span>
         </Link>
         <div style={{ display: "flex", gap: "24px", alignItems: "center" }}>
-          <Link href="/quiz" style={{ fontSize: "11px", color: "rgba(245,240,232,0.65)", textDecoration: "none", letterSpacing: "0.08em", textTransform: "uppercase" }}>Full Package</Link>
+          <Link href="/results" style={{ fontSize: "11px", color: "rgba(245,240,232,0.65)", textDecoration: "none", letterSpacing: "0.08em", textTransform: "uppercase" }}>Full Package</Link>
           <Link href="/quiz" style={{ fontSize: "11px", color: "#C9A84C", textDecoration: "none", letterSpacing: "0.08em", textTransform: "uppercase", padding: "8px 16px", border: "1px solid rgba(201,168,76,0.4)" }}>Start Free Assessment</Link>
         </div>
       </div>
@@ -195,7 +195,7 @@ export default function ModulesPage() {
             <Link href={BUNDLE.href} style={{ display: "inline-block", padding: "15px 30px", background: "#C9A84C", color: "#0a0a0a", fontSize: "12px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", textDecoration: "none" }}>
               Get the Bundle
             </Link>
-            <Link href="/quiz" style={{ fontSize: "12px", color: "rgba(201,168,76,0.8)", textDecoration: "none" }}>
+            <Link href="/results" style={{ fontSize: "12px", color: "rgba(201,168,76,0.8)", textDecoration: "none" }}>
               Or get everything (15 docs + simulator) for $1,495 →
             </Link>
           </div>

@@ -66,10 +66,10 @@ export default function QuizReview() {
             .from("quiz_sessions")
             .select("result_json")
             .eq("user_id", user.id)
-            .not("outcome", "is", null)
+            .not("completed_at", "is", null)
             .order("completed_at", { ascending: false })
             .limit(1)
-            .single();
+            .maybeSingle();
           const dbAnswers = (session?.result_json as Record<string, unknown>)?.answers;
           if (dbAnswers && typeof dbAnswers === "object") {
             setAnswers(dbAnswers as Record<string, string | string[]>);

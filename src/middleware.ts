@@ -41,88 +41,49 @@ export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() || 'unknown-ip';
 
-  // Rate limit login route: 5 attempts per IP per 15 minutes (production only)
+  // Rate limit login route
   if ((pathname === '/login' || pathname === '/api/auth/v1/token') && process.env.NODE_ENV === 'production') {
     if (loginLimiter) {
       const { success } = await loginLimiter.limit(ip);
-      if (!success) {
-        return NextResponse.json(
-          { error: 'Too many attempts. Please wait a few minutes and try again.' },
-          { status: 429 }
-        );
-      }
+      if (!success) return NextResponse.json({ error: 'Too many attempts. Please wait a few minutes and try again.' }, { status: 429 });
     } else {
       const allowed = devCheckRateLimit(`login:${ip}`, 5, 15 * 60 * 1000);
-      if (!allowed) {
-        return NextResponse.json(
-          { error: 'Too many attempts. Please wait a few minutes and try again.' },
-          { status: 429 }
-        );
-      }
+      if (!allowed) return NextResponse.json({ error: 'Too many attempts. Please wait a few minutes and try again.' }, { status: 429 });
     }
   }
 
-  // Rate limit quiz route completions: 3 completions per IP per hour
+  // Rate limit quiz submission
   if (pathname === '/api/quiz/submit' || pathname === '/api/email/results') {
     if (quizLimiter) {
       const { success } = await quizLimiter.limit(ip);
-      if (!success) {
-        return NextResponse.json(
-          { error: 'Too many attempts. Please wait a few minutes and try again.' },
-          { status: 429 }
-        );
-      }
+      if (!success) return NextResponse.json({ error: 'Too many attempts. Please wait a few minutes and try again.' }, { status: 429 });
     } else {
       const allowed = devCheckRateLimit(`quiz:${ip}`, 3, 60 * 60 * 1000);
-      if (!allowed) {
-        return NextResponse.json(
-          { error: 'Too many attempts. Please wait a few minutes and try again.' },
-          { status: 429 }
-        );
-      }
+      if (!allowed) return NextResponse.json({ error: 'Too many attempts. Please wait a few minutes and try again.' }, { status: 429 });
     }
   }
 
-  // Note: /api/generate and /api/analysis rate limiting is enforced inside each route
-  // using Upstash Redis keyed on the verified session user.id — not here.
-  // A header-based limit here was bypassable by spoofing x-user-id.
-
-  let supabaseResponse = NextResponse.next({
-    request: req,
-  });
+  let supabaseResponse = NextResponse.next({ request: req });
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll() {
-          return req.cookies.getAll();
-        },
+        getAll() { return req.cookies.getAll(); },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => {
-            req.cookies.set(name, value);
-          });
-          supabaseResponse = NextResponse.next({
-            request: req,
-          });
-          cookiesToSet.forEach(({ name, value, options }) => {
-            supabaseResponse.cookies.set(name, value, options);
-          });
+          cookiesToSet.forEach(({ name, value }) => req.cookies.set(name, value));
+          supabaseResponse = NextResponse.next({ request: req });
+          cookiesToSet.forEach(({ name, value, options }) => supabaseResponse.cookies.set(name, value, options));
         },
       },
     }
   );
 
-  // getUser() validates the JWT against the Supabase Auth server on every
-  // request — unlike getSession() which trusts the cookie without verification
-  // and lets expired/forged tokens through to protected pages.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Validate JWT server-side on every request
+  const { data: { user } } = await supabase.auth.getUser();
 
-  // Enforce email verification — redirect to /verify if email not confirmed
-  // Exception: /verify itself and /api/auth/* routes must not redirect (infinite loop)
+  // Enforce email verification
   if (user && !user.email_confirmed_at) {
     const isVerifyRoute = pathname === '/verify';
     const isApiAuthRoute = pathname.startsWith('/api/auth');
@@ -131,32 +92,76 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  // Protected routes that require authentication
-  const protectedRoutes = [
+  // ---------------------------------------------------------------------------
+  // Route classification
+  // ---------------------------------------------------------------------------
+
+  // Requires authentication only (quiz and results are free)
+  const AUTH_ROUTES = [
     '/dashboard',
-    '/apply/',
     '/admin',
-    '/simulator',
     '/score',
     '/settings',
     '/generate/',
     '/documents/',
-    '/fdd/',
-    '/gap-analysis',
-    '/market-analysis',
   ];
 
-  // Auth routes - redirect to dashboard if already logged in
-  const authRoutes = ['/login', '/signup'];
+  // Requires a paid application — redirects to /results if not paid
+  const PAID_ROUTES = [
+    '/case-profile',
+    '/apply',
+    '/fdd',
+    '/gap-analysis',
+    '/market-analysis',
+    '/simulator',
+  ];
 
-  // Check if accessing a protected route without a verified user
-  if (!user && protectedRoutes.some((route) => pathname.startsWith(route))) {
+  // Auth pages — redirect to /case-profile if already signed in
+  const AUTH_PAGES = ['/login', '/signup'];
+
+  // ---------------------------------------------------------------------------
+  // Auth guard
+  // ---------------------------------------------------------------------------
+  const needsAuth = [...AUTH_ROUTES, ...PAID_ROUTES].some(r => pathname.startsWith(r));
+  if (!user && needsAuth) {
     const redirectUrl = new URL('/login', req.url);
     redirectUrl.searchParams.set('next', pathname);
     return NextResponse.redirect(redirectUrl);
   }
 
-  // Gate /apply routes on terms acceptance (must be after auth check)
+  // ---------------------------------------------------------------------------
+  // Payment gate — authenticated users must have a paid application
+  // ---------------------------------------------------------------------------
+  if (user && PAID_ROUTES.some(r => pathname.startsWith(r))) {
+    const { data: apps } = await supabase
+      .from('applications')
+      .select('payment_status, source')
+      .eq('user_id', user.id);
+
+    // Full package: any paid application that isn't simulator-standalone
+    const hasFullAccess = apps?.some(
+      a => a.payment_status === 'paid' && a.source !== 'simulator_standalone'
+    ) ?? false;
+
+    // Simulator-only: has a standalone simulator purchase
+    const hasSimulatorAccess = apps?.some(a => a.source === 'simulator_standalone') ?? false;
+
+    if (!hasFullAccess) {
+      if (hasSimulatorAccess && pathname.startsWith('/simulator')) {
+        // Simulator-only subscriber on their permitted route — pass through
+      } else if (hasSimulatorAccess) {
+        // Simulator-only subscriber trying to reach a case-building route
+        return NextResponse.redirect(new URL('/simulator', req.url));
+      } else {
+        // No purchase yet — send to results/pricing page
+        return NextResponse.redirect(new URL('/results', req.url));
+      }
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Terms acceptance gate — /apply routes only
+  // ---------------------------------------------------------------------------
   const TERMS_VERSION = '1.0';
   if (user && pathname.startsWith('/apply')) {
     const { data: acceptance } = await supabase
@@ -173,45 +178,10 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  // Dashboard access = already paid. No payment gate on application-building routes.
-  // FDD Intelligence is a separate add-on — still gated independently.
-  const FDD_GATED = ['/fdd/'];
-
-  if (user && FDD_GATED.some(r => pathname.startsWith(r))) {
-    const { data: payment } = await supabase
-      .from('payments')
-      .select('id')
-      .eq('user_id', user.id)
-      .eq('status', 'completed')
-      .in('payment_type', ['fdd_intelligence', 'fdd_intelligence_loyalty'])
-      .limit(1)
-      .maybeSingle();
-    if (!payment) {
-      return NextResponse.redirect(new URL('/pricing?locked=fdd', req.url));
-    }
-  }
-
-  // Block standalone simulator subscribers from case-building / document-
-  // generation routes and the main application dashboard. They only purchased
-  // the interview simulator — /simulator is their home.
-  const SIMULATOR_BLOCKED_ROUTES = ['/apply', '/generate/', '/documents/', '/dashboard'];
-  if (user && SIMULATOR_BLOCKED_ROUTES.some((route) => pathname.startsWith(route))) {
-    const { data: apps } = await supabase
-      .from('applications')
-      .select('source')
-      .eq('user_id', user.id);
-
-    const simulatorOnly = Boolean(
-      apps && apps.length > 0 && apps.every((a) => a.source === 'simulator_standalone')
-    );
-
-    if (simulatorOnly) {
-      return NextResponse.redirect(new URL('/simulator', req.url));
-    }
-  }
-
-  // Redirect verified users away from auth pages
-  if (user && authRoutes.includes(pathname)) {
+  // ---------------------------------------------------------------------------
+  // Redirect signed-in users away from auth pages
+  // ---------------------------------------------------------------------------
+  if (user && AUTH_PAGES.includes(pathname)) {
     return NextResponse.redirect(new URL('/case-profile', req.url));
   }
 
@@ -220,21 +190,19 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
+    // Case profile — paid users only
+    '/case-profile',
+    '/case-profile/:path*',
+    // Application building — paid users only
     '/dashboard/:path*',
     '/apply/:path*',
     '/admin/:path*',
-    '/login',
-    '/signup',
-    '/simulator',
-    '/simulator/:path*',
     '/score',
     '/settings',
     '/generate/:path*',
     '/documents/:path*',
-    '/api/quiz/submit',
-    '/api/email/results',
-    '/api/generate/:path*',
-    '/api/analysis/:path*',
+    // Intelligence modules — paid users only
+    '/fdd',
     '/fdd/:path*',
     '/api/fdd/:path*',
     '/gap-analysis',
@@ -242,5 +210,16 @@ export const config = {
     '/market-analysis',
     '/market-analysis/:path*',
     '/api/market-analysis',
+    // Simulator — paid or simulator-standalone
+    '/simulator',
+    '/simulator/:path*',
+    // Auth pages
+    '/login',
+    '/signup',
+    // Rate-limited API routes
+    '/api/quiz/submit',
+    '/api/email/results',
+    '/api/generate/:path*',
+    '/api/analysis/:path*',
   ],
 };
