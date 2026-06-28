@@ -1,6 +1,6 @@
 # CLAUDE_CONTEXT.md — E2go
 ## Master Context for Every Claude Code Session
-**Version:** June 28, 2026 — Session 87. Sprint H complete. /case-profile standalone page live. Gap-analysis noApplication fix. FDD + Market intelligence sections split. Build clean at 145 pages.
+**Version:** June 28, 2026 — Session 88. Navigation consolidated; /dashboard retired (redirect → /case-profile); Sections 07 (Documents) + 08 (Tools & Learn) added to /case-profile hub. TS clean.
 
 ## SPRINT STATUS
 - OPS-1 (API Cost Intelligence): ✅ COMPLETE — llm_cost_log, cost logging in callLLM(), /admin/cost page
@@ -32,6 +32,7 @@
 - Sprint H-6 (Case Profile — Standalone Page): ✅ COMPLETE — Session 87 (/case-profile full-page record with sidebar nav, 6 sections, 60+ fields, field status system — NOT a dashboard tab as originally planned)
 - Sprint H-7 (Case Profile API + DB): ✅ COMPLETE — Session 87 (case_profile_view migration, /api/dashboard/case-profile route, QMA-* market data, FDD + Market intelligence subsections split)
 - Gap Analysis noApplication fix: ✅ COMPLETE — Session 87 (quiz done but no application → "Begin onboarding" CTA instead of quiz link)
+- Sprint I-1 (Navigation Hub Migration): ✅ COMPLETE — Session 88 (/dashboard retired → redirect to /case-profile; Nav restructured with Application ▾ / Intelligence ▾ dropdowns; Sections 07 + 08 added to /case-profile; all dashboard back-links removed; logo + all auth redirects point to /case-profile)
 
 ## KEY RULES — NEVER BREAK
 - ANTHROPIC_API_KEY: ONLY in generation-engine.ts + /api/fdd/* routes

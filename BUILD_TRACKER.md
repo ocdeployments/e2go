@@ -1,6 +1,55 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 28, 2026 — Session 87: /case-profile standalone page live; gap-analysis noApplication fix; FDD + Market intelligence split; Nav wired. Build clean at 145 pages.
+**Last Updated:** June 28, 2026 — Session 88: Navigation consolidated; /dashboard retired (→ redirect); /case-profile becomes primary hub with Sections 07 (Documents) + 08 (Tools & Learn). Build clean.
+
+---
+
+## Session 88 — Navigation Hub Migration (June 28, 2026)
+
+**Branch:** dev. All commits pushed to origin/dev.
+
+### What was built
+
+**1. /case-profile is now the primary authenticated home**
+- Logo link: `user ? "/case-profile" : "/"`
+- Login default redirect: `/dashboard` → `/case-profile`
+- Auth callback default: `/dashboard` → `/case-profile`
+- Middleware redirect for authenticated users hitting auth pages: `/dashboard` → `/case-profile`
+- `/dashboard/page.tsx` replaced with `redirect('/case-profile')` — bookmarks preserved
+
+**2. Navigation consolidation — `src/components/Nav.tsx`**
+- Dashboard removed from primary nav entirely
+- **Application ▾** dropdown: Case File (`/apply`) · Gap Analysis (`/gap-analysis`) · Checklist (`/apply/checklist`)
+- **Intelligence ▾** dropdown: FDD Analysis (`/fdd`) · Market Analysis (`/market-analysis`) · Franchise Navigator (`/franchise`, franchise users only)
+- Documents: always visible primary link (`/documents/{id}` or `/documents`)
+- My Case Profile moved into Account dropdown (logo also links there)
+- Outside-click handler unified across all three dropdowns
+- isFranchise detection via parallel quiz_sessions fetch (Q0-08a === 'franchise')
+
+**3. Case Profile — Section 07: Documents & Package**
+- Always visible in sidebar; grayed until application exists; locked message until docs generated
+- 5 doc package fields: Business Plan · Cover Letter · Personal Statement · Investment Evidence Memo · Financial Projections Y1–Y3
+- 2 pipeline fields: Documents Generated (count), Download Package
+- CTA routes to `/generate/{id}` if no docs, `/documents/{id}` if docs exist, `/apply/story` if no application
+- s7Have / s7Total wired into overview strip
+
+**4. Case Profile — Section 08: Tools & Learn**
+- 2 tools fields: Submission Checklist (`/apply/checklist`) · Case Timeline (`/apply/calendar`)
+- 4 learn fields: E-2 Knowledge Hub · Investment Benchmarks · Denial Reasons & Prevention · Country Guides
+- Always visible, always module status (gold hollow dot)
+
+**5. Case Profile — hub cleanup**
+- Inner sticky breadcrumb bar ("← Dashboard · My E-2 Case Record") removed
+- All "← Dashboard" / "← Back to Dashboard" links removed from sidebar and footer
+- Completeness overview strip: 6 → 8 columns (Documents + Tools added)
+- Franchise Navigator field added to Section 03 Business (franchise users only)
+- paddingTop: 80px (accounts for fixed main Nav — no inner topbar)
+
+### Commits this session
+- `7040a3e` feat(nav+case-profile): Make /case-profile the primary hub; remove dashboard
+
+### Build Status — Session 88
+TypeScript: ✓ no errors. Dev server: ✓ started clean. Full build: run at start of Session 89.
 
 ---
 
