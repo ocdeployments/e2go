@@ -187,9 +187,14 @@ export async function GET() {
     }
   }
 
+  // user_metadata is set at signup (first_name, last_name in signUp options.data)
+  // and is always available regardless of RLS or profiles row state.
+  const metaFirst = (user.user_metadata?.first_name as string | null) ?? null;
+  const metaLast  = (user.user_metadata?.last_name  as string | null) ?? null;
+
   const response: CaseProfileResponse = {
-    firstName: profile?.first_name ?? null,
-    lastName: profile?.last_name ?? null,
+    firstName: profile?.first_name ?? metaFirst,
+    lastName:  profile?.last_name  ?? metaLast,
     treatyCountry: quizAnswers?.['Q0-01'] ?? null,
     businessType: quizAnswers?.['Q0-08a'] ?? null,
 
