@@ -7,11 +7,12 @@ import Stripe from 'stripe';
 const VALID_TIERS = ['complete', 'complete_partnership', 'fdd_intelligence'] as const;
 type Tier = typeof VALID_TIERS[number];
 
-// Tier → env var for the Stripe price ID
+// Tier → Stripe price ID.
+// Falls back to the old env var names that predate the "complete" tier rename.
 const PRICE_ENV: Record<Tier, string> = {
-  complete:               process.env.STRIPE_PRICE_COMPLETE              || '',
-  complete_partnership:   process.env.STRIPE_PRICE_COMPLETE_PARTNERSHIP  || '',
-  fdd_intelligence:       process.env.STRIPE_PRICE_FDD_INTELLIGENCE      || '',
+  complete:             process.env.STRIPE_PRICE_COMPLETE        || process.env.STRIPE_PRICE_SOLO        || '',
+  complete_partnership: process.env.STRIPE_PRICE_COMPLETE_PARTNERSHIP || process.env.STRIPE_PRICE_PARTNERSHIP || '',
+  fdd_intelligence:     process.env.STRIPE_PRICE_FDD_INTELLIGENCE || '',
 };
 
 // Tiers that must create/reference an applications record
