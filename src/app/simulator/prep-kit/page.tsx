@@ -413,76 +413,234 @@ function Section7({ data }: { data: PrepKit["section7"] }) {
 }
 
 // ── Upsell gate ───────────────────────────────────────────────────────────────
+// What the dossier pulls from — shown in the data requirements gate
+const DOSSIER_DATA_SOURCES = [
+  {
+    section: "Business profile",
+    what: "Business name, category, operational status, target state",
+    where: "/apply/business",
+    step: "Step 3 — Business Profile",
+  },
+  {
+    section: "Investment & source of funds",
+    what: "Total invested, breakdown of use of funds, traceable origin of capital",
+    where: "/apply/investment",
+    step: "Step 4 — Investment & Documents",
+  },
+  {
+    section: "Your management role",
+    what: "Day-to-day responsibilities, staffing plan, ownership structure",
+    where: "/apply/business",
+    step: "Step 3 — Business Profile",
+  },
+  {
+    section: "Qualifications & background",
+    what: "Work history, relevant skills, industry experience",
+    where: "/apply/qualifications",
+    step: "Step 5 — Your Qualifications",
+  },
+  {
+    section: "Personal & visa story",
+    what: "Country ties, intent to return, visa history",
+    where: "/apply/story",
+    step: "Step 2 — Onboarding",
+  },
+];
+
 function PrepKitUpsell() {
   return (
     <div
       style={{
         minHeight: "100vh",
         background: T.bg,
-        padding: "60px 24px",
-        maxWidth: "640px",
+        padding: "48px 24px 80px",
+        maxWidth: "700px",
         margin: "0 auto",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        textAlign: "center",
       }}
     >
-      <div style={{ ...eyebrow, marginBottom: "16px" }}>Interview Preparation Kit</div>
-      <div style={{ fontFamily: T.heading, fontSize: "32px", fontWeight: 300, color: T.text, lineHeight: 1.15, marginBottom: "14px" }}>
-        Interview Case Dossier
+      {/* Header */}
+      <div style={{ marginBottom: "32px" }}>
+        <div style={{ ...eyebrow, marginBottom: "10px" }}>Interview Preparation</div>
+        <div style={{ fontFamily: T.heading, fontSize: "32px", fontWeight: 300, color: T.text, lineHeight: 1.1, marginBottom: "12px" }}>
+          Interview Case Dossier
+        </div>
+        <p style={{ fontSize: "14px", fontFamily: T.body, color: T.textDim, lineHeight: 1.7, maxWidth: "580px", margin: 0 }}>
+          The Interview Case Dossier is a personalised 7-section revision document you read through
+          before walking into your consulate interview. It is independent of the Interview Simulator —
+          it summarises your business, investment, denial risks, and the key arguments of your case
+          in a format designed for study, not practice sessions.
+        </p>
       </div>
-      <div style={{ fontSize: "14px", fontFamily: T.body, color: T.textDim, lineHeight: 1.65, maxWidth: "480px", marginBottom: "32px" }}>
-        The Interview Case Dossier is bundled with the Interview Simulator module. It builds a personalised 7-section
-        revision document from your case data, tested against all 15 E-2 denial factors — ready to print before you walk in.
-      </div>
+
+      {/* What it covers */}
       <div
         style={{
-          border: `1px solid rgba(201,168,76,0.2)`,
-          background: "rgba(201,168,76,0.03)",
-          padding: "24px 28px",
+          border: `1px solid ${T.border}`,
+          padding: "20px 24px",
           marginBottom: "28px",
-          textAlign: "left",
-          width: "100%",
-          maxWidth: "440px",
+          background: T.surface,
         }}
       >
-        <div style={{ ...eyebrow, marginBottom: "12px" }}>What&apos;s included in the Simulator module</div>
-        {[
-          "3 unscripted AI consular officer sessions",
-          "Interview Case Dossier — 7-section revision document",
-          "Personalised answer frameworks for 9 universal questions",
-          "Weak-point probes triggered by your lowest D-code scores",
-          "Coaching report after each session",
-          "Day-of checklist and documents-to-carry list",
-        ].map((item, i) => (
-          <div key={i} style={{ display: "flex", gap: "8px", alignItems: "flex-start", marginBottom: "8px" }}>
-            <span style={{ color: T.gold, flexShrink: 0, marginTop: "1px" }}>→</span>
-            <span style={{ fontSize: "12px", fontFamily: T.body, color: T.text, lineHeight: 1.5 }}>{item}</span>
-          </div>
-        ))}
+        <div style={{ ...eyebrow, marginBottom: "12px" }}>What the dossier covers</div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+          {[
+            "Case snapshot — key facts and figures",
+            "Your strongest arguments — evidenced",
+            "Denial risk analysis — all 15 E-2 factors",
+            "Business narrative — what you will say",
+            "Investment breakdown and source chronology",
+            "Interview day checklist and documents to carry",
+            "9 universal questions with answer frameworks",
+          ].map((item, i) => (
+            <div key={i} style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}>
+              <span style={{ color: T.goldLabel, fontSize: "11px", flexShrink: 0, marginTop: "2px" }}>→</span>
+              <span style={{ fontSize: "12px", fontFamily: T.body, color: T.text, lineHeight: 1.5 }}>{item}</span>
+            </div>
+          ))}
+        </div>
       </div>
-      <a
-        href="/simulator"
+
+      {/* Data requirements */}
+      <div style={{ marginBottom: "28px" }}>
+        <div style={{ fontFamily: T.heading, fontSize: "20px", fontWeight: 300, color: T.text, marginBottom: "6px" }}>
+          To generate your dossier, we need your case data
+        </div>
+        <p style={{ fontSize: "13px", fontFamily: T.body, color: T.textDim, lineHeight: 1.65, marginBottom: "18px" }}>
+          The dossier is built from the information you file in your case. Since your case file isn&apos;t
+          complete yet, the dossier cannot generate a meaningful document. Complete the sections below,
+          then return here to generate.
+        </p>
+        <div style={{ display: "flex", flexDirection: "column", gap: "1px" }}>
+          {DOSSIER_DATA_SOURCES.map((source) => (
+            <a
+              key={source.section}
+              href={source.where}
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr auto",
+                gap: "16px",
+                alignItems: "center",
+                padding: "12px 16px",
+                background: "rgba(255,255,255,0.01)",
+                border: `1px solid ${T.border}`,
+                textDecoration: "none",
+              }}
+            >
+              <div>
+                <div style={{ fontSize: "12px", fontFamily: T.body, color: T.text, fontWeight: 500, marginBottom: "2px" }}>
+                  {source.section}
+                </div>
+                <div style={{ fontSize: "11px", fontFamily: T.body, color: T.textMuted, lineHeight: 1.4 }}>
+                  {source.what}
+                </div>
+              </div>
+              <div style={{ textAlign: "right" as const, flexShrink: 0 }}>
+                <div style={{ fontSize: "9px", letterSpacing: "0.06em", textTransform: "uppercase" as const, color: T.goldLabel, fontFamily: T.body, marginBottom: "2px" }}>
+                  {source.step}
+                </div>
+                <span style={{ fontSize: "11px", color: T.goldLabel, fontFamily: T.body }}>Fill in →</span>
+              </div>
+            </a>
+          ))}
+        </div>
+      </div>
+
+      {/* Alternative path */}
+      <div
         style={{
-          display: "inline-block",
-          padding: "16px 36px",
-          background: T.gold,
-          color: T.bg,
-          fontSize: "11px",
-          fontWeight: 600,
-          letterSpacing: "0.1em",
-          fontFamily: T.body,
-          textDecoration: "none",
-          textTransform: "uppercase",
+          border: `1px solid rgba(201,168,76,0.12)`,
+          padding: "22px 24px",
+          background: "rgba(201,168,76,0.02)",
+          marginBottom: "24px",
         }}
       >
-        Go to Interview Simulator →
-      </a>
-      <div style={{ marginTop: "14px", fontSize: "11px", fontFamily: T.body, color: T.textMuted }}>
-        Included in all e2go Complete packages · Available as a standalone add-on
+        <div style={{ fontFamily: T.heading, fontSize: "18px", fontWeight: 300, color: T.text, marginBottom: "8px" }}>
+          Already have your documents prepared?
+        </div>
+        <p style={{ fontSize: "13px", fontFamily: T.body, color: T.textDim, lineHeight: 1.65, marginBottom: "18px" }}>
+          If your business plan, investment breakdown, or source of funds statement already exists as a file,
+          upload it and the system will extract the relevant data. This works best for text-based documents —
+          not scanned images. Extracted data pre-fills your case file so you do not need to re-enter it manually.
+        </p>
+
+        {/* Accepted formats */}
+        <div style={{ marginBottom: "16px" }}>
+          <div style={{ ...eyebrow, marginBottom: "8px" }}>Accepted formats</div>
+          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" as const }}>
+            {["PDF (text-based)", "DOCX", "DOC", "TXT"].map((fmt) => (
+              <span key={fmt} style={{
+                fontSize: "10px",
+                fontFamily: T.body,
+                color: T.text,
+                border: `1px solid rgba(201,168,76,0.2)`,
+                padding: "3px 10px",
+                letterSpacing: "0.04em",
+              }}>{fmt}</span>
+            ))}
+          </div>
+        </div>
+
+        {/* What extracts well */}
+        <div style={{ marginBottom: "18px" }}>
+          <div style={{ ...eyebrow, marginBottom: "8px" }}>Documents that extract reliably</div>
+          <div style={{ display: "flex", flexDirection: "column" as const, gap: "5px" }}>
+            {[
+              "Business plan or executive summary",
+              "Investment breakdown / use of funds schedule",
+              "Source of funds statement or bank records (text PDF)",
+              "Franchise Disclosure Document (FDD)",
+              "Lease agreement or letter of intent",
+            ].map((doc, i) => (
+              <div key={i} style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}>
+                <span style={{ color: T.green, fontSize: "11px", flexShrink: 0, marginTop: "1px" }}>✓</span>
+                <span style={{ fontSize: "12px", fontFamily: T.body, color: T.textDim, lineHeight: 1.4 }}>{doc}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Limitation note */}
+        <div style={{
+          padding: "10px 14px",
+          border: "1px solid rgba(184,115,51,0.2)",
+          background: "rgba(184,115,51,0.04)",
+          marginBottom: "18px",
+          fontSize: "11px",
+          fontFamily: T.body,
+          color: "rgba(184,115,51,0.9)",
+          lineHeight: 1.55,
+        }}>
+          <strong style={{ fontWeight: 600 }}>Note:</strong> Scanned documents (image-only PDFs, photos of bank statements)
+          cannot be extracted automatically. Convert them to text-searchable PDFs before uploading,
+          or enter the information manually using the case file links above.
+        </div>
+
+        <a
+          href="/apply/upload"
+          style={{
+            display: "inline-block",
+            padding: "10px 22px",
+            background: "transparent",
+            border: `1px solid rgba(201,168,76,0.3)`,
+            color: T.goldLabel,
+            fontSize: "11px",
+            fontWeight: 600,
+            letterSpacing: "0.08em",
+            textTransform: "uppercase" as const,
+            fontFamily: T.body,
+            textDecoration: "none",
+          }}
+        >
+          Upload your documents →
+        </a>
       </div>
+
+      <a
+        href="/dashboard"
+        style={{ fontSize: "12px", fontFamily: T.body, color: T.textMuted, textDecoration: "none" }}
+      >
+        ← Back to Dashboard
+      </a>
     </div>
   );
 }
@@ -495,6 +653,7 @@ export default function PrepKitPage() {
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notEntitled, setNotEntitled] = useState(false);
+  const [requirements, setRequirements] = useState<{ met: boolean; missing: string[] } | null>(null);
 
   const fetchCached = useCallback(async () => {
     setLoading(true);
@@ -504,9 +663,10 @@ export default function PrepKitPage() {
         setNotEntitled(true);
         return;
       }
-      const data = await res.json() as { kit: PrepKit | null; generated_at: string | null };
+      const data = await res.json() as { kit: PrepKit | null; generated_at: string | null; requirements?: { met: boolean; missing: string[] } };
       setKit(data.kit);
       setGeneratedAt(data.generated_at);
+      if (data.requirements) setRequirements(data.requirements);
     } catch {
       // no cached kit
     } finally {
@@ -537,6 +697,18 @@ export default function PrepKitPage() {
   useEffect(() => {
     fetchCached();
   }, [fetchCached]);
+
+  // During the initial fetch, show nothing — avoids flashing the generate button
+  // before we know whether the user is entitled or requirements are met.
+  if (loading && !kit) {
+    return (
+      <div style={{ minHeight: "100vh", background: T.bg, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ fontSize: "12px", fontFamily: T.body, color: T.textMuted, letterSpacing: "0.06em" }}>
+          Loading…
+        </div>
+      </div>
+    );
+  }
 
   if (notEntitled) return <PrepKitUpsell />;
 
@@ -624,18 +796,21 @@ export default function PrepKitPage() {
             )}
             <button
               onClick={() => generate(Boolean(kit))}
-              disabled={generating}
+              disabled={generating || (!kit && requirements !== null && !requirements.met)}
+              title={!kit && requirements && !requirements.met ? "Complete the required steps below before generating" : undefined}
               style={{
                 padding: "8px 18px",
-                background: generating ? "rgba(201,168,76,0.1)" : T.gold,
+                background: generating || (!kit && requirements !== null && !requirements.met)
+                  ? "rgba(201,168,76,0.1)"
+                  : T.gold,
                 border: `1px solid ${T.gold}`,
-                color: generating ? T.goldLabel : "#0a0a0a",
+                color: generating || (!kit && requirements !== null && !requirements.met) ? T.goldLabel : "#0a0a0a",
                 fontFamily: T.body,
                 fontSize: "11px",
                 fontWeight: 600,
                 letterSpacing: "0.08em",
-                cursor: generating ? "not-allowed" : "pointer",
-                opacity: generating ? 0.7 : 1,
+                cursor: generating || (!kit && requirements !== null && !requirements.met) ? "not-allowed" : "pointer",
+                opacity: generating || (!kit && requirements !== null && !requirements.met) ? 0.5 : 1,
               }}
             >
               {generating ? "Generating…" : kit ? "Regenerate" : "Generate my dossier"}
@@ -752,40 +927,89 @@ export default function PrepKitPage() {
         {!loading && !generating && !kit && !error && (
           <div
             style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              padding: "80px 24px",
               border: `1px solid ${T.border}`,
-              textAlign: "center",
-              gap: "12px",
+              overflow: "hidden",
             }}
           >
-            <div style={{ fontFamily: T.heading, fontSize: "24px", fontWeight: 300, color: T.text }}>
-              Your dossier hasn&apos;t been generated yet
-            </div>
-            <div style={{ fontSize: "13px", fontFamily: T.body, color: T.textDim, maxWidth: "440px", lineHeight: 1.6 }}>
-              Click Generate to build your personalised revision document. The more case data you&apos;ve added,
-              the richer the dossier will be.
-            </div>
-            <button
-              onClick={() => generate(false)}
-              style={{
-                marginTop: "12px",
-                padding: "12px 28px",
-                background: T.gold,
-                border: "none",
-                color: "#0a0a0a",
-                fontFamily: T.body,
-                fontSize: "12px",
-                fontWeight: 600,
-                letterSpacing: "0.1em",
-                textTransform: "uppercase",
-                cursor: "pointer",
-              }}
-            >
-              Generate my dossier
-            </button>
+            {/* Requirements gate — shown when not all modules are complete */}
+            {requirements && !requirements.met ? (
+              <div style={{ padding: "40px 32px" }}>
+                <div style={{ fontFamily: T.heading, fontSize: "24px", fontWeight: 300, color: T.text, marginBottom: "10px" }}>
+                  Complete your case file first
+                </div>
+                <div style={{ fontSize: "13px", fontFamily: T.body, color: T.textDim, lineHeight: 1.6, marginBottom: "24px" }}>
+                  The dossier is built from your application data. To generate a meaningful document,
+                  complete the steps below — the more you&apos;ve filed, the more precise your preparation will be.
+                </div>
+                <div style={{ marginBottom: "28px" }}>
+                  <div style={{ fontSize: "9px", letterSpacing: "0.12em", textTransform: "uppercase" as const, color: T.goldLabel, fontFamily: T.body, marginBottom: "12px" }}>
+                    Required before generating
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column" as const, gap: "1px" }}>
+                    {requirements.missing.map((step, i) => (
+                      <div key={i} style={{ display: "flex", gap: "12px", alignItems: "flex-start", padding: "10px 14px", background: "rgba(248,113,113,0.04)", border: "1px solid rgba(248,113,113,0.15)" }}>
+                        <span style={{ color: "#f87171", fontSize: "12px", flexShrink: 0, marginTop: "1px" }}>○</span>
+                        <span style={{ fontSize: "13px", fontFamily: T.body, color: T.text, lineHeight: 1.5 }}>{step}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <a
+                  href="/apply/story"
+                  style={{
+                    display: "inline-block",
+                    padding: "12px 24px",
+                    background: T.gold,
+                    color: "#0a0a0a",
+                    fontFamily: T.body,
+                    fontSize: "11px",
+                    fontWeight: 600,
+                    letterSpacing: "0.1em",
+                    textTransform: "uppercase" as const,
+                    textDecoration: "none",
+                  }}
+                >
+                  Continue your case file →
+                </a>
+              </div>
+            ) : (
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  padding: "80px 24px",
+                  textAlign: "center",
+                  gap: "12px",
+                }}
+              >
+                <div style={{ fontFamily: T.heading, fontSize: "24px", fontWeight: 300, color: T.text }}>
+                  Your dossier hasn&apos;t been generated yet
+                </div>
+                <div style={{ fontSize: "13px", fontFamily: T.body, color: T.textDim, maxWidth: "440px", lineHeight: 1.6 }}>
+                  Click Generate to build your personalised revision document. The more case data you&apos;ve added,
+                  the richer the dossier will be.
+                </div>
+                <button
+                  onClick={() => generate(false)}
+                  style={{
+                    marginTop: "12px",
+                    padding: "12px 28px",
+                    background: T.gold,
+                    border: "none",
+                    color: "#0a0a0a",
+                    fontFamily: T.body,
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    letterSpacing: "0.1em",
+                    textTransform: "uppercase" as const,
+                    cursor: "pointer",
+                  }}
+                >
+                  Generate my dossier
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>

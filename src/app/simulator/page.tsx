@@ -2000,6 +2000,47 @@ function SimulatorTeaser() {
           >
             Upload your documents instead →
           </a>
+
+          {/* Document list for upload path */}
+          <div style={{
+            marginTop: '16px',
+            padding: '16px 20px',
+            background: 'rgba(201,168,76,0.03)',
+            border: '1px solid rgba(201,168,76,0.12)',
+            textAlign: 'left' as const,
+            maxWidth: '320px',
+            width: '100%',
+          }}>
+            <div style={{
+              fontSize: '9px',
+              letterSpacing: '0.12em',
+              textTransform: 'uppercase' as const,
+              color: 'rgba(201,168,76,0.65)',
+              fontFamily: "'DM Sans', sans-serif",
+              marginBottom: '10px',
+            }}>
+              Recommended documents to upload
+            </div>
+            {[
+              'Business plan or executive summary',
+              'Source of funds statement or bank records',
+              'Investment breakdown / proof of investment',
+              'Franchise Disclosure Document (if franchise)',
+              'Lease agreement or letter of intent',
+              'Previous DS-160 or visa petition (if renewal)',
+              'Any prior attorney correspondence',
+            ].map((doc, i) => (
+              <div key={i} style={{
+                display: 'flex',
+                gap: '8px',
+                alignItems: 'flex-start',
+                marginBottom: i < 6 ? '7px' : 0,
+              }}>
+                <span style={{ color: 'rgba(201,168,76,0.5)', fontSize: '11px', flexShrink: 0, marginTop: '2px' }}>→</span>
+                <span style={{ fontSize: '12px', color: 'rgba(245,240,232,0.6)', fontFamily: "'DM Sans', sans-serif", lineHeight: 1.4 }}>{doc}</span>
+              </div>
+            ))}
+          </div>
         </div>
 
         <div style={{ marginTop: '24px' }}>

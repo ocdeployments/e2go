@@ -453,14 +453,37 @@ export async function GET(_request: NextRequest) {
 
   const primaryApp = (allApps ?? []).find((a: { source: string | null }) => a.source !== 'simulator_standalone');
   if (!primaryApp) {
-    return NextResponse.json({ kit: null });
+    return NextResponse.json({ kit: null, requirements: { met: false, missing: ['Complete the eligibility quiz to create your application'] } });
   }
 
-  const { data: cached } = await supabase
-    .from('interview_prep_kits')
-    .select('kit_json, generated_at')
-    .eq('application_id', primaryApp.id)
-    .maybeSingle();
+  const [cachedRes, lifecycleRes] = await Promise.all([
+    supabase
+      .from('interview_prep_kits')
+      .select('kit_json, generated_at')
+      .eq('application_id', primaryApp.id)
+      .maybeSingle(),
+    supabase
+      .from('application_lifecycle')
+      .select('module1_completed_at, module2_completed_at, module3_completed_at')
+      .eq('user_id', user.id)
+      .maybeSingle(),
+  ]);
 
-  return NextResponse.json({ kit: cached?.kit_json ?? null, generated_at: cached?.generated_at ?? null });
+  const lifecycle = lifecycleRes.data as {
+    module1_completed_at: string | null;
+    module2_completed_at: string | null;
+    module3_completed_at: string | null;
+  } | null;
+
+  const missing: string[] = [];
+  if (!lifecycle?.module1_completed_at) missing.push('Complete onboarding — your personal and visa story (Step 2)');
+  if (!lifecycle?.module2_completed_at) missing.push('Add your business profile — business details and market position (Step 3)');
+  if (!lifecycle?.module3_completed_at) missing.push('Add investment details and supporting documents (Step 4)');
+
+  const cached = cachedRes.data;
+  return NextResponse.json({
+    kit: cached?.kit_json ?? null,
+    generated_at: cached?.generated_at ?? null,
+    requirements: { met: missing.length === 0, missing },
+  });
 }
