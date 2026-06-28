@@ -6,6 +6,7 @@ export const dynamic = 'force-dynamic';
 export interface CaseProfileResponse {
   // Identity
   firstName: string | null;
+  middleName: string | null;
   lastName: string | null;
   treatyCountry: string | null;
   businessType: string | null; // franchise | own_business
@@ -47,6 +48,8 @@ export interface CaseProfileResponse {
 
   // Extended quiz data
   quizAnswers: Record<string, string> | null;
+  applicationTypeRaw: string | null; // 'partnership' | 'spousal_partnership' | 'individual' | null
+  dependents: string | null; // 'just_me' | 'spouse_only' | 'spouse_and_children' | 'children_only'
   generatedDocCount: number;
 
   // Market analysis (QMA-* answers)
@@ -81,13 +84,13 @@ export async function GET() {
   ] = await Promise.all([
     supabase
       .from('profiles')
-      .select('first_name, last_name')
+      .select('first_name, middle_name, last_name')
       .eq('id', userId)
       .single(),
 
     supabase
       .from('quiz_sessions')
-      .select('outcome, result_json, completed_at')
+      .select('outcome, application_type, result_json, completed_at')
       .eq('user_id', userId)
       .not('completed_at', 'is', null)
       .order('completed_at', { ascending: false })
@@ -146,8 +149,8 @@ export async function GET() {
       .maybeSingle(),
   ]);
 
-  const profile = profileResult.data;
-  const quiz = quizResult.data;
+  const profile = profileResult.data as { first_name: string | null; middle_name: string | null; last_name: string | null } | null;
+  const quiz = quizResult.data as { outcome: string | null; application_type: string | null; result_json: Record<string, unknown> | null; completed_at: string | null } | null;
   const cp = caseProfileResult.data;
   const lc = lifecycleResult.data;
   const fddCount = fddCountResult.count ?? 0;
@@ -156,8 +159,9 @@ export async function GET() {
   const prepKit = prepKitResult.data;
   const app = appResult.data;
 
-  const quizResultJson = quiz?.result_json as Record<string, unknown> | null ?? null;
+  const quizResultJson = quiz?.result_json ?? null;
   const quizAnswers = (quizResultJson?.answers as Record<string, string> | null) ?? null;
+  const quizDependents = (quizResultJson?.dependents as string | null) ?? null;
 
   // Fetch market analysis answers if the user has an application
   let marketScore: number | null = null;
@@ -193,8 +197,9 @@ export async function GET() {
   const metaLast  = (user.user_metadata?.last_name  as string | null) ?? null;
 
   const response: CaseProfileResponse = {
-    firstName: profile?.first_name ?? metaFirst,
-    lastName:  profile?.last_name  ?? metaLast,
+    firstName:  profile?.first_name  ?? metaFirst,
+    middleName: profile?.middle_name ?? null,
+    lastName:   profile?.last_name   ?? metaLast,
     treatyCountry: quizAnswers?.['Q0-01'] ?? null,
     businessType: quizAnswers?.['Q0-08a'] ?? null,
 
@@ -226,8 +231,10 @@ export async function GET() {
     prepKitId: prepKit?.id ?? null,
     prepKitCreatedAt: prepKit?.created_at ?? null,
 
-    quizAnswers: quizAnswers,
-    generatedDocCount: 0, // wired in Module 5
+    quizAnswers:        quizAnswers,
+    applicationTypeRaw: quiz?.application_type ?? null,
+    dependents:         quizDependents,
+    generatedDocCount:  0, // wired in Module 5
 
     marketScore,
     marketRating,
