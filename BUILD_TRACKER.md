@@ -1,6 +1,57 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 28, 2026 — Session 86: Sprint H fully implemented. H-1 through H-7 complete. Build clean at 144 pages.
+**Last Updated:** June 28, 2026 — Session 87: /case-profile standalone page live; gap-analysis noApplication fix; FDD + Market intelligence split; Nav wired. Build clean at 145 pages.
+
+---
+
+## Session 87 — Standalone Case Profile + Intelligence Fixes (June 28, 2026)
+
+**Branch:** dev. All commits pushed to origin/dev.
+
+### What was built
+
+**1. /case-profile — Standalone full-page case record**
+User rejected the original H-6 "My Case Profile tab inside FolderStack" approach — it felt like a squeezed dashboard. Rebuilt as a dedicated route with full-page layout.
+- `src/app/case-profile/page.tsx` — server auth guard (force-dynamic)
+- `src/app/case-profile/layout.tsx` — includes Nav (why it had no navbar before)
+- `src/components/CaseProfilePage.tsx` — full client component (~1,600 lines):
+  - IntersectionObserver sidebar (`rootMargin: "-15% 0px -75% 0px"`) tracks active section
+  - 6 sections: 01 Application Progress · 02 The Investor · 03 The Business · 04 The Investment · 05 Case Intelligence · 06 Interview Readiness
+  - Field status system: `have` (green dot) / `module` (gold hollow) / `needed` (red + REQUIRED badge) / `optional` (grey hollow)
+  - Application Progress at top: 7-step milestone tracker (quiz → onboarding → business → investment → gap → docs → interview) with active step callout and solid gold CTA button
+  - Section CTAs upgraded to prominent outlined gold buttons
+  - 60+ fields inventoried across all 6 sections
+- Nav updated: "My Case" link added (desktop + mobile), hidden for simulator-only and /simulator/* routes
+- `src/components/dashboard/CaseRecordSection.tsx` — narrative summary for dashboard sidebar (still used in DashboardClient)
+
+**2. /api/dashboard/case-profile — Data API**
+- `src/app/api/dashboard/case-profile/route.ts` — authenticated GET, `CaseProfileResponse` typed DTO
+- Queries 9 tables in parallel: profiles, quiz_sessions, case_profiles, application_lifecycle, fdd_analyses, simulator_sessions, interview_prep_kits, applications
+- Secondary sequential query for QMA-* market analysis answers (if application exists)
+- Returns: identity, quiz data, scores, lifecycle milestones, FDD count, simulator state, prep kit, market analysis scores
+
+**3. Case Intelligence — FDD Intelligence + Market Analysis split**
+Previously the section showed ONE subsection: "FDD Intelligence" OR "Market Intelligence" based on `isFranchise`.
+Now shows:
+- **Gap Analysis** subsection — always shown (scores + priority gaps)
+- **FDD Intelligence** subsection — franchise users only (FDD Item 19, E-2 Suitability Rating)
+- **Market Analysis** subsection — always shown for all users (Territory Score, ZIP/State, Competitor Count, Market Verdict, Industry Benchmark, Valuation Benchmark — wired to live QMA-* values when market analysis has been run)
+
+**4. Gap Analysis noApplication bug fix**
+- `src/app/gap-analysis/page.tsx`
+- Root cause: user completed quiz (quiz_sessions row exists) but hasn't started onboarding (no applications row). Page hit `setNoApplication(true)` early and showed "Start eligibility quiz →" — wrong CTA for someone who already did the quiz.
+- Fix: added `quizAlreadyDone` state + secondary quiz_sessions check in the early-return path
+- Empty state now branches: quiz done → "Begin your case file" + "Begin onboarding →" → `/apply/story`; quiz not done → original "Start eligibility quiz →"
+
+### Commits this session
+- `8b63ae3` feat(sprint-g4): Prep-kit data gate, dossier sections, simulator entitlement wiring
+- `be4fb00` feat(sprint-h1): Dashboard refactor — remove Case Profile tile, wire CaseRecordSection
+- `8f5d892` feat(sprint-h2): /case-profile — standalone full-page case record, sidebar nav, FDD + market intelligence
+- `f2607ec` fix(gap-analysis): Show 'Begin onboarding' CTA when quiz done but no application row exists
+- `d6a4e27` docs(session85): Update BUILD_TRACKER
+
+### Build Status — Session 87
+`npm run build` → ✓ Compiled · ✓ Types pass · ✓ 145 pages (was 144)
 
 ---
 

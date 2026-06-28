@@ -1,6 +1,6 @@
 # CLAUDE_CONTEXT.md — E2go
 ## Master Context for Every Claude Code Session
-**Version:** June 28, 2026 — Session 85. Sprint H plan locked: dashboard UX redesign + My Case Profile tab (H-1 through H-7). Sprints G-1/G-2/G-3 + F-1/F-2 all complete as of Session 84.
+**Version:** June 28, 2026 — Session 87. Sprint H complete. /case-profile standalone page live. Gap-analysis noApplication fix. FDD + Market intelligence sections split. Build clean at 145 pages.
 
 ## SPRINT STATUS
 - OPS-1 (API Cost Intelligence): ✅ COMPLETE — llm_cost_log, cost logging in callLLM(), /admin/cost page
@@ -21,15 +21,17 @@
 - Sprint G-1 (Dashboard: Intelligence Strip Fix): ✅ COMPLETE — Session 83
 - Sprint G-2 (Dashboard: Folder Stack Redesign): ✅ COMPLETE — Session 83
 - Sprint G-3 (Interview Preparation Kit): ✅ COMPLETE — Session 84 (/simulator/prep-kit + API + DB migration + 7 collapsible sections)
+- Sprint G-4 (Prep-kit data gate + dossier sections): ✅ COMPLETE — Session 87 (data requirements gate, DOSSIER_DATA_SOURCES list, entitlement wiring)
 - Sprint F-1 (Section Shell + Sidebar): ✅ COMPLETE — Session 84 (SectionLayout 7-step left rail for /apply + /gap-analysis)
 - Sprint F-2 (Section Task Panels): ✅ COMPLETE — Session 84 (collapsible checklist banner per section)
-- Sprint H-1 (formatOutcome Bug Fix): 🔜 NEXT — PROCEED_RISK raw DB enum visible to paying users; add PROCEED/PROCEED_RISK/ATTORNEY_RECOMMENDED to formatOutcome() map in DashboardClient.tsx
-- Sprint H-2 (Dashboard Header Redesign): 🔜 QUEUED — Replace generic welcome with aspirational "Let's build your E-2 application, [name]"; advisory sentence encourages, contains no data points
-- Sprint H-3 (CaseCommandPanel Hierarchy): 🔜 QUEUED — "Begin Onboarding →" gold CTA as dominant element; 17% demoted; 4-phase journey roadmap replaces flat list; adaptive franchise/own-business; live indicators on dynamic fields
-- Sprint H-4 (Bottom Strip — Macro Buckets): 🔜 QUEUED — Replace 4-card intelligence strip with 4 workstream completion buckets (Profile/Business/Application/Interview); no repeated data; primary risk removed
-- Sprint H-5 (FolderStack Architecture): 🔜 QUEUED — Add "My Case Profile" as first tab; 3-tier step list (complete struck/dimmed · active expanded with CTA · future progressively fading); tab lock badges "after step X"
-- Sprint H-6 (My Case Profile Tab — Shell): 🔜 QUEUED — New CaseProfileTab component; 6 sections (Identity strip, Investor, Business, Investment, Case Intelligence 7-dim, Interview Readiness); progressive empty state skeleton
-- Sprint H-7 (My Case Profile Tab — DB): 🔜 QUEUED — case_profile_view migration joining all 12 sources; /api/dashboard/case-profile route; wire into CaseProfileTab
+- Sprint H-1 (formatOutcome Bug Fix): ✅ COMPLETE — Session 86 (PROCEED/PROCEED_RISK/ATTORNEY_RECOMMENDED added to vocabulary map)
+- Sprint H-2 (Dashboard Header Redesign): ✅ COMPLETE — Session 86 ("Let's build your E-2 application, [name]" + advisory sentence)
+- Sprint H-3 (CaseCommandPanel Hierarchy): ✅ COMPLETE — Session 86 (gold CTA dominant; 4-phase roadmap; adaptive franchise/own-business)
+- Sprint H-4 (WorkstreamStrip): ✅ COMPLETE — Session 86 (4 macro completion buckets replacing intelligence strip)
+- Sprint H-5 (FolderStack Architecture): ✅ COMPLETE — Session 86 (5-tab structure, 3-tier step rows, progressive fading)
+- Sprint H-6 (Case Profile — Standalone Page): ✅ COMPLETE — Session 87 (/case-profile full-page record with sidebar nav, 6 sections, 60+ fields, field status system — NOT a dashboard tab as originally planned)
+- Sprint H-7 (Case Profile API + DB): ✅ COMPLETE — Session 87 (case_profile_view migration, /api/dashboard/case-profile route, QMA-* market data, FDD + Market intelligence subsections split)
+- Gap Analysis noApplication fix: ✅ COMPLETE — Session 87 (quiz done but no application → "Begin onboarding" CTA instead of quiz link)
 
 ## KEY RULES — NEVER BREAK
 - ANTHROPIC_API_KEY: ONLY in generation-engine.ts + /api/fdd/* routes
@@ -243,6 +245,7 @@ Repo: github.com/ocdeployments/e2go
 
 ### Authenticated routes
 - /dashboard — Application dashboard
+- /case-profile — Standalone full-page case record (6 sections, 60+ fields, field status inventory, FDD + market intelligence, sidebar nav)
 - /settings — Account settings (data deletion, 2-step confirmation + type-to-confirm)
 - /score — Application confidence score
 - /simulator — Interview simulator (text + voice, teaser if no case file)
