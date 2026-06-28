@@ -1206,8 +1206,8 @@ function ResultsPageInner() {
                       5 engines extract the 50 fields that matter from your FDD — Item 7 investment validation, Item 19 unit economics, territory density, officer red flags. Findings inject directly into your case documents.
                     </div>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <Link href="/fdd" style={{ fontSize: "11px", color: "#C9A84C", textDecoration: "none", fontFamily: "'DM Sans', sans-serif" }}>
-                        {fddReceived ? "Analyse my FDD →" : "Learn more →"}
+                      <Link href="/modules" style={{ fontSize: "11px", color: "#C9A84C", textDecoration: "none", fontFamily: "'DM Sans', sans-serif" }}>
+                        {fddReceived ? "Get FDD Intelligence →" : "Learn more →"}
                       </Link>
                       <span style={{ fontSize: "12px", fontFamily: "'Cormorant Garamond', Georgia, serif", color: "#C9A84C", fontWeight: 300 }}>$495</span>
                     </div>
@@ -1232,7 +1232,7 @@ function ResultsPageInner() {
                     Census ACS 5-year + BLS employment data for your exact sector and geography. TAM/SAM sizing, competitive landscape, industry benchmarks — embedded into your Business Plan, not appended as an afterthought.
                   </div>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <Link href="/market-analysis" style={{ fontSize: "11px", color: "#C9A84C", textDecoration: "none", fontFamily: "'DM Sans', sans-serif" }}>Learn more →</Link>
+                    <Link href="/modules" style={{ fontSize: "11px", color: "#C9A84C", textDecoration: "none", fontFamily: "'DM Sans', sans-serif" }}>Learn more →</Link>
                     <span style={{ fontSize: "12px", fontFamily: "'Cormorant Garamond', Georgia, serif", color: "#C9A84C", fontWeight: 300 }}>$295</span>
                   </div>
                 </div>
@@ -1263,7 +1263,7 @@ function ResultsPageInner() {
                     ))}
                   </div>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <Link href="/simulator" style={{ fontSize: "11px", color: "#C9A84C", textDecoration: "none", fontFamily: "'DM Sans', sans-serif" }}>Start preparing →</Link>
+                    <Link href="/modules" style={{ fontSize: "11px", color: "#C9A84C", textDecoration: "none", fontFamily: "'DM Sans', sans-serif" }}>Learn more →</Link>
                     <span style={{ fontSize: "12px", fontFamily: "'Cormorant Garamond', Georgia, serif", color: "#C9A84C", fontWeight: 300 }}>$197</span>
                   </div>
                 </div>

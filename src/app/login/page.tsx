@@ -168,9 +168,10 @@ function LoginForm() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex flex-col md:flex-row">
-      {/* Animated overlay — fades in over the form on submit */}
+      {/* Animated overlay — stays visible through 'success' so the login UI
+          never flashes back into view while window.location.href resolves */}
       <AnimatePresence>
-        {status === 'loading' && (
+        {(status === 'loading' || status === 'success') && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
