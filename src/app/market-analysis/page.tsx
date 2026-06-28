@@ -159,9 +159,14 @@ const INITIAL_FORM: FormState = {
   state: '',
 };
 
+function parseZips(raw: string): string[] {
+  return raw.split(/[,\s]+/).map(z => z.trim()).filter(z => z.length > 0);
+}
+
 export default function MarketAnalysisPage() {
   const [form, setForm] = useState<FormState>(INITIAL_FORM);
   const [analysis, setAnalysis] = useState<TerritoryAnalysis | null>(null);
+  const [territoryZips, setTerritoryZips] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState<Partial<FormState>>({});
@@ -170,8 +175,17 @@ export default function MarketAnalysisPage() {
     const errs: Partial<FormState> = {};
     if (!form.businessName.trim()) errs.businessName = 'Business name is required';
     if (!form.businessCategory)    errs.businessCategory = 'Select a business category';
-    if (!/^\d{5}$/.test(form.zip)) errs.zip = 'Enter a valid 5-digit ZIP code';
     if (!form.state)               errs.state = 'Select a state';
+
+    const zips = parseZips(form.zip);
+    if (zips.length === 0) {
+      errs.zip = 'Enter at least one 5-digit ZIP code';
+    } else if (zips.some(z => !/^\d{5}$/.test(z))) {
+      errs.zip = 'Each ZIP code must be exactly 5 digits — separate multiple ZIPs with commas';
+    } else if (zips.length > 5) {
+      errs.zip = 'Enter up to 5 ZIP codes for a territory';
+    }
+
     setFieldErrors(errs);
     return Object.keys(errs).length === 0;
   }
@@ -183,21 +197,24 @@ export default function MarketAnalysisPage() {
     setError('');
     setAnalysis(null);
 
+    const zips = parseZips(form.zip);
+    setTerritoryZips(zips);
+
     try {
+      // Run analysis on the primary (first) ZIP — this is what the engine scores
       const res = await fetch('/api/market-analysis', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           businessName:     form.businessName.trim(),
           businessCategory: form.businessCategory,
-          zip:              form.zip.trim(),
+          zip:              zips[0],
           state:            form.state,
         }),
       });
       const json = await res.json() as TerritoryAnalysis & { error?: string };
       if (!res.ok) throw new Error(json.error ?? 'Analysis failed');
       setAnalysis(json);
-      // Scroll to results
       setTimeout(() => {
         document.getElementById('results')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 100);
@@ -285,23 +302,24 @@ export default function MarketAnalysisPage() {
                 )}
               </div>
 
-              {/* ZIP Code */}
+              {/* ZIP Code(s) */}
               <div>
                 <label className="block text-white/50 text-xs tracking-widest uppercase mb-2">
-                  Target ZIP Code
+                  Territory ZIP Codes
                 </label>
                 <input
                   type="text"
-                  inputMode="numeric"
-                  maxLength={5}
                   value={form.zip}
-                  onChange={e => handleChange('zip', e.target.value.replace(/\D/g, ''))}
-                  placeholder="10001"
+                  onChange={e => handleChange('zip', e.target.value.replace(/[^\d,\s]/g, ''))}
+                  placeholder="10001 or 10001, 10002, 10003"
                   className={`w-full bg-white/5 border text-white text-sm px-4 py-3 placeholder-white/20 outline-none focus:border-[#C9A84C]/60 transition-colors ${
                     fieldErrors.zip ? 'border-red-500/60' : 'border-white/10'
                   }`}
                   style={{ borderRadius: 0 }}
                 />
+                <p className="text-white/25 text-xs mt-1.5">
+                  Separate multiple ZIPs with commas — up to 5 for a franchise territory. Analysis runs on the primary (first) ZIP.
+                </p>
                 {fieldErrors.zip && (
                   <p className="text-red-400 text-xs mt-1">{fieldErrors.zip}</p>
                 )}
@@ -374,11 +392,16 @@ export default function MarketAnalysisPage() {
                   <span className="text-2xl text-white/30 ml-2">/100</span>
                 </p>
                 <p className="text-white/50 text-sm mt-1">
-                  {analysis.target_zip}, {analysis.target_state}
+                  {territoryZips.length > 1 ? territoryZips.join(', ') : analysis.target_zip}, {analysis.target_state}
                   {' · '}
                   {CATEGORIES.find(c => c.value === analysis.franchise_category)?.label ?? analysis.franchise_category}
                   {' · '}
                   {analysis.radius_miles}mi radius
+                  {territoryZips.length > 1 && (
+                    <span className="block text-white/30 text-xs mt-1">
+                      Scored on primary ZIP {analysis.target_zip} — {territoryZips.length}-ZIP territory
+                    </span>
+                  )}
                 </p>
               </div>
               <div className="text-right">

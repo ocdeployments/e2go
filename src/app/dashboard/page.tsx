@@ -92,14 +92,15 @@ export default async function DashboardPage() {
     needsWorkCount: number;
   } | null = null;
 
+  // Find the primary E-2 application ID (non-simulator) for answer/doc queries
+  const primaryAppId =
+    !isSimulatorOnly && allApps && allApps.length > 0
+      ? (allApps as Array<{ id: string; source: string | null }>).find(
+          (a) => a.source !== "simulator_standalone"
+        )?.id ?? null
+      : null;
+
   if (quizData) {
-    // Find the primary E-2 application ID (non-simulator) for answer/doc queries
-    const primaryAppId =
-      !isSimulatorOnly && allApps && allApps.length > 0
-        ? (allApps as Array<{ id: string; source: string | null }>).find(
-            (a) => a.source !== "simulator_standalone"
-          )?.id ?? null
-        : null;
 
     const [lifecycleRes, fddRes, simRes] = await Promise.all([
       supabase
@@ -253,6 +254,7 @@ export default async function DashboardPage() {
           fddCount={fddCount}
           dimensionScores={dimensionScores}
           simulatorSnapshot={simulatorSnapshot}
+          applicationId={primaryAppId ?? null}
         />
       </main>
     </div>

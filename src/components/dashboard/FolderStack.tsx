@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import Link from "next/link";
 
@@ -14,70 +14,23 @@ interface FolderStackProps {
   generatedDocCount: number;
   quizCompleted: boolean;
   hasCoachingReport: boolean;
+  applicationId: string | null;
 }
 
 const CARDS = [
-  {
-    id: "application",
-    label: "My Application",
-    summary: "9-step case file checklist",
-  },
-  {
-    id: "analysis",
-    label: "My Analysis",
-    summary: "Gap · FDD · Market scores",
-  },
-  {
-    id: "preparation",
-    label: "My Preparation",
-    summary: "Interview kit · Simulator",
-  },
-  {
-    id: "package",
-    label: "My Package",
-    summary: "Documents · Download",
-  },
+  { id: "application",   label: "My Application",  summary: "9-step case file checklist" },
+  { id: "analysis",      label: "My Analysis",     summary: "Gap · FDD · Market scores" },
+  { id: "preparation",   label: "My Prep",         summary: "Interview kit · Simulator" },
+  { id: "package",       label: "My Package",      summary: "Documents · Download" },
 ];
 
-// Tab styles for the 3 visible folder tabs (front → back)
-const TAB_STYLE = [
-  {
-    background: "#f0ece3",
-    color: "#1a1208",
-    fontWeight: 600,
-    paddingTop: "10px",
-    paddingBottom: "12px",
-    paddingLeft: "18px",
-    paddingRight: "24px",
-    marginRight: "-16px",
-    zIndex: 30,
-    filter: "drop-shadow(3px 0 3px rgba(0,0,0,0.55))",
-  },
-  {
-    background: "#8A6B35",
-    color: "rgba(245,240,232,0.78)",
-    fontWeight: 400,
-    paddingTop: "7px",
-    paddingBottom: "12px",
-    paddingLeft: "24px",
-    paddingRight: "24px",
-    marginRight: "-16px",
-    zIndex: 20,
-    filter: "drop-shadow(2px 0 3px rgba(0,0,0,0.4))",
-  },
-  {
-    background: "#4A3318",
-    color: "rgba(245,240,232,0.38)",
-    fontWeight: 400,
-    paddingTop: "6px",
-    paddingBottom: "12px",
-    paddingLeft: "24px",
-    paddingRight: "24px",
-    marginRight: "0",
-    zIndex: 10,
-    filter: undefined,
-  },
-] as const;
+// Design tokens
+const GOLD = "#C9A84C";
+const GOLD_DIM = "rgba(201,168,76,0.55)";
+const CREAM = "#f5f0e8";
+const CARD_BG = "#111007";
+const BORDER = "rgba(201,168,76,0.15)";
+const CARD_MIN_HEIGHT = 420;
 
 export default function FolderStack({
   lifecycle,
@@ -90,16 +43,22 @@ export default function FolderStack({
   generatedDocCount,
   quizCompleted,
   hasCoachingReport,
+  applicationId,
 }: FolderStackProps) {
   const [activeIndex, setActiveIndex] = useState(0);
 
-  // 4 tabs: active + next 3 in order
-  const tabOrder = [
-    activeIndex,
-    (activeIndex + 1) % 4,
-    (activeIndex + 2) % 4,
-    (activeIndex + 3) % 4,
-  ];
+  useEffect(() => {
+    const saved = localStorage.getItem("dashboard_active_tab");
+    if (saved) {
+      const idx = CARDS.findIndex((c) => c.id === saved);
+      if (idx !== -1) setActiveIndex(idx);
+    }
+  }, []);
+
+  function handleTabChange(idx: number) {
+    setActiveIndex(idx);
+    localStorage.setItem("dashboard_active_tab", CARDS[idx].id);
+  }
 
   const module1Done = Boolean(lifecycle?.module1_completed_at);
   const module2Done = Boolean(lifecycle?.module2_completed_at);
@@ -109,39 +68,39 @@ export default function FolderStack({
 
   return (
     <div style={{ display: "flex", flexDirection: "column" }}>
-      {/* Tab row — 3 visible overlapping tabs */}
+      {/* Tab row — 5 tabs */}
       <div style={{ display: "flex", alignItems: "flex-end" }}>
-        {tabOrder.slice(0, 3).map((cardIdx, position) => {
-          const card = CARDS[cardIdx];
-          const ts = TAB_STYLE[position];
-
+        {CARDS.map((card, cardIdx) => {
+          const isActive = cardIdx === activeIndex;
           return (
             <button
               key={card.id}
-              onClick={() => setActiveIndex(cardIdx)}
+              onClick={() => handleTabChange(cardIdx)}
               style={{
-                borderRadius: "8px 8px 0 0",
-                position: "relative",
+                flex: 1,
+                borderRadius: "6px 6px 0 0",
                 cursor: "pointer",
-                border: "none",
-                background: ts.background,
-                color: ts.color,
-                fontWeight: ts.fontWeight,
-                paddingTop: ts.paddingTop,
-                paddingBottom: ts.paddingBottom,
-                paddingLeft: ts.paddingLeft,
-                paddingRight: ts.paddingRight,
-                marginRight: ts.marginRight,
-                zIndex: ts.zIndex,
-                filter: ts.filter,
+                border: `1px solid ${isActive ? GOLD : BORDER}`,
+                borderBottom: "none",
+                background: isActive ? GOLD : cardIdx < activeIndex ? "#1C1408" : "#160F05",
+                paddingTop: isActive ? "11px" : "8px",
+                paddingBottom: "13px",
+                paddingLeft: "6px",
+                paddingRight: "6px",
+                zIndex: isActive ? 30 : 10,
+                position: "relative",
                 fontFamily: "'DM Sans', sans-serif",
-                fontSize: "11px",
-                letterSpacing: "0.02em",
+                fontSize: "9px",
+                letterSpacing: "0.03em",
                 whiteSpace: "nowrap",
-                transition: "color 0.15s",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                transition: "background 0.15s, padding-top 0.1s",
               }}
             >
-              {card.label}
+              <span style={{ color: isActive ? "#0a0a0a" : GOLD_DIM, fontWeight: isActive ? 700 : 400 }}>
+                {card.label}
+              </span>
             </button>
           );
         })}
@@ -150,21 +109,20 @@ export default function FolderStack({
       {/* Active card body */}
       <div
         style={{
-          background: "#f0ece3",
-          color: "#1a1208",
-          border: "1px solid rgba(201,168,76,0.35)",
+          background: CARD_BG,
+          border: `1px solid ${GOLD}`,
           borderTop: "none",
           position: "relative",
           zIndex: 25,
-          minHeight: "280px",
+          minHeight: `${CARD_MIN_HEIGHT}px`,
         }}
       >
         <AnimatePresence mode="wait">
           <motion.div
             key={activeIndex}
-            initial={{ opacity: 0, y: -4, scale: 0.985 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 3, scale: 0.99 }}
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 3 }}
             transition={{ type: "spring", stiffness: 280, damping: 28 }}
           >
             {CARDS[activeIndex].id === "application" && (
@@ -193,98 +151,59 @@ export default function FolderStack({
               />
             )}
             {CARDS[activeIndex].id === "package" && (
-              <PackageCard generatedDocCount={generatedDocCount} />
+              <PackageCard generatedDocCount={generatedDocCount} applicationId={applicationId} />
             )}
           </motion.div>
         </AnimatePresence>
       </div>
-
-      {/* Peeking strips for the 3 inactive cards */}
-      {tabOrder.slice(1).map((cardIdx, i) => {
-        const card = CARDS[cardIdx];
-        const opacity = i === 0 ? "0.18" : i === 1 ? "0.1" : "0.06";
-        const labelOpacity = i === 0 ? "0.65" : i === 1 ? "0.35" : "0.2";
-        const summaryOpacity = i === 0 ? "0.35" : i === 1 ? "0.18" : "0.1";
-        const bg = i === 0 ? "#1C1408" : i === 1 ? "#110D07" : "#0D0A05";
-
-        return (
-          <button
-            key={card.id}
-            onClick={() => setActiveIndex(cardIdx)}
-            style={{
-              width: "100%",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              padding: "11px 22px",
-              background: bg,
-              border: `1px solid rgba(201,168,76,${opacity})`,
-              borderTop: "none",
-              cursor: "pointer",
-              textAlign: "left",
-              transition: "background 0.15s",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
-              <span
-                style={{
-                  fontFamily: "'Cormorant Garamond', Georgia, serif",
-                  fontSize: "14px",
-                  color: `rgba(245,240,232,${labelOpacity})`,
-                  fontWeight: 300,
-                }}
-              >
-                {card.label}
-              </span>
-              <span
-                style={{
-                  fontSize: "10px",
-                  color: `rgba(245,240,232,${summaryOpacity})`,
-                  fontFamily: "'DM Sans', sans-serif",
-                  letterSpacing: "0.03em",
-                }}
-              >
-                {card.summary}
-              </span>
-            </div>
-            <span
-              style={{
-                color: `rgba(201,168,76,${i === 0 ? "0.45" : i === 1 ? "0.25" : "0.15"})`,
-                fontSize: "14px",
-                flexShrink: 0,
-              }}
-            >
-              ›
-            </span>
-          </button>
-        );
-      })}
     </div>
   );
 }
 
-// ── Card contents ──────────────────────────────────────────────────────────────
+// ── Shared helpers ─────────────────────────────────────────────────────────────
 
-const STEP_STATUS_COLORS = {
-  done: { icon: "#2E7D5E", text: 0.6, label: "Complete", labelColor: "rgba(46,125,94,0.7)" },
-  "in-progress": { icon: "#8A4A00", text: 1, label: "In Progress", labelColor: "rgba(138,74,0,0.8)" },
-  upcoming: { icon: "rgba(26,18,8,0.25)", text: 0.38, label: "Not started", labelColor: "rgba(26,18,8,0.22)" },
-};
-
-function StepRow({
-  number,
-  title,
-  href,
-  status,
-}: {
-  number: string;
+function CardHeader({ title, badge, badgeGreen = false }: {
   title: string;
-  href: string;
-  status: "done" | "in-progress" | "upcoming";
+  badge: string;
+  badgeGreen?: boolean;
 }) {
-  const s = STEP_STATUS_COLORS[status];
-  const icon = status === "done" ? "✓" : status === "in-progress" ? "●" : "○";
+  return (
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
+      <div style={{
+        fontFamily: "'Cormorant Garamond', Georgia, serif",
+        fontSize: "18px",
+        fontWeight: 300,
+        color: CREAM,
+      }}>
+        {title}
+      </div>
+      <div style={{
+        fontSize: "9px",
+        letterSpacing: "0.1em",
+        textTransform: "uppercase",
+        color: badgeGreen ? "#5DCAA5" : GOLD_DIM,
+        border: `1px solid ${badgeGreen ? "rgba(93,202,165,0.3)" : BORDER}`,
+        background: badgeGreen ? "rgba(93,202,165,0.06)" : "rgba(201,168,76,0.04)",
+        padding: "3px 8px",
+        fontFamily: "'DM Sans', sans-serif",
+      }}>
+        {badge}
+      </div>
+    </div>
+  );
+}
 
+function Divider() {
+  return <div style={{ height: "1px", background: BORDER, marginBottom: "14px" }} />;
+}
+
+function RowLink({ href, label, description, cta, ctaGreen }: {
+  href: string;
+  label: string;
+  description: string;
+  cta: string;
+  ctaGreen: boolean;
+}) {
   return (
     <Link
       href={href}
@@ -292,127 +211,138 @@ function StepRow({
         display: "flex",
         justifyContent: "space-between",
         alignItems: "center",
-        padding: "7px 0",
-        borderBottom: "1px solid rgba(26,18,8,0.06)",
+        padding: "10px 0",
+        borderBottom: `1px solid ${BORDER}`,
         textDecoration: "none",
-        gap: "10px",
+        gap: "12px",
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: "8px", minWidth: 0 }}>
-        <span
-          style={{
-            fontSize: "9px",
-            color: "rgba(26,18,8,0.3)",
-            fontFamily: "'DM Sans', sans-serif",
-            width: "18px",
-            flexShrink: 0,
-            fontWeight: 500,
-          }}
-        >
-          {number}
-        </span>
-        <span
-          style={{
-            fontSize: status === "done" ? "11px" : "9px",
-            color: s.icon,
-            width: "12px",
-            textAlign: "center",
-            flexShrink: 0,
-            fontWeight: status === "done" ? 700 : 400,
-          }}
-        >
-          {icon}
-        </span>
-        <span
-          style={{
-            fontSize: "12px",
-            fontFamily: "'DM Sans', sans-serif",
-            color: `rgba(26,18,8,${s.text})`,
-            fontWeight: status === "in-progress" ? 500 : 400,
-          }}
-        >
-          {title}
-        </span>
+      <div style={{ minWidth: 0 }}>
+        <div style={{
+          fontSize: "12px",
+          fontFamily: "'DM Sans', sans-serif",
+          color: CREAM,
+          fontWeight: 500,
+          marginBottom: "2px",
+        }}>
+          {label}
+        </div>
+        <div style={{
+          fontSize: "10px",
+          fontFamily: "'DM Sans', sans-serif",
+          color: "rgba(245,240,232,0.42)",
+          lineHeight: 1.4,
+        }}>
+          {description}
+        </div>
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: "6px", flexShrink: 0 }}>
-        <span
-          style={{
-            fontSize: "9px",
-            letterSpacing: "0.06em",
-            textTransform: "uppercase",
-            color: s.labelColor,
-            fontFamily: "'DM Sans', sans-serif",
-          }}
-        >
-          {s.label}
-        </span>
-        {status === "in-progress" && (
-          <span style={{ color: "rgba(138,74,0,0.7)", fontSize: "12px" }}>→</span>
-        )}
-      </div>
+      <span style={{
+        fontSize: "10px",
+        fontFamily: "'DM Sans', sans-serif",
+        color: ctaGreen ? "#5DCAA5" : GOLD_DIM,
+        fontWeight: 600,
+        letterSpacing: "0.04em",
+        flexShrink: 0,
+        whiteSpace: "nowrap",
+      }}>
+        {cta}
+      </span>
     </Link>
   );
 }
 
-function cardHeader(title: string, badge: string, badgeGreen = false) {
+// ── Three-tier step row ────────────────────────────────────────────────────────
+function StepRow({ number, title, href, status, upcomingIndex = 0 }: {
+  number: string;
+  title: string;
+  href: string;
+  status: "done" | "in-progress" | "upcoming";
+  upcomingIndex?: number;
+}) {
+  if (status === "done") {
+    return (
+      <div style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "8px",
+        padding: "6px 0",
+        borderBottom: `1px solid ${BORDER}`,
+        opacity: 0.4,
+      }}>
+        <span style={{ fontSize: "9px", color: "rgba(245,240,232,0.3)", fontFamily: "'DM Sans', sans-serif", width: "18px", flexShrink: 0, fontWeight: 500 }}>
+          {number}
+        </span>
+        <span style={{ fontSize: "11px", color: "#5DCAA5", width: "12px", textAlign: "center", fontWeight: 700 }}>✓</span>
+        <span style={{ fontSize: "12px", fontFamily: "'DM Sans', sans-serif", color: CREAM, textDecoration: "line-through" }}>
+          {title}
+        </span>
+      </div>
+    );
+  }
+
+  if (status === "in-progress") {
+    return (
+      <Link
+        href={href}
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          padding: "11px 12px",
+          marginLeft: "-12px",
+          marginRight: "-12px",
+          borderBottom: `1px solid ${BORDER}`,
+          borderLeft: `2px solid ${GOLD}`,
+          background: "rgba(201,168,76,0.04)",
+          textDecoration: "none",
+          gap: "4px",
+        }}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <span style={{ fontSize: "9px", color: "rgba(245,240,232,0.3)", fontFamily: "'DM Sans', sans-serif", width: "18px" }}>{number}</span>
+            <span style={{ fontSize: "9px", color: GOLD, width: "12px", textAlign: "center" }}>●</span>
+            <span style={{ fontSize: "13px", fontFamily: "'DM Sans', sans-serif", color: CREAM, fontWeight: 600 }}>{title}</span>
+          </div>
+          <span style={{ fontSize: "10px", color: GOLD, fontFamily: "'DM Sans', sans-serif", fontWeight: 700, flexShrink: 0, letterSpacing: "0.04em" }}>
+            Continue →
+          </span>
+        </div>
+        <div style={{ fontSize: "10px", color: "rgba(245,240,232,0.38)", fontFamily: "'DM Sans', sans-serif", paddingLeft: "38px" }}>
+          In progress — click to continue
+        </div>
+      </Link>
+    );
+  }
+
+  // Upcoming — progressively fading
+  const opacity = Math.max(0.12, 0.5 - upcomingIndex * 0.09);
   return (
-    <div
+    <Link
+      href={href}
       style={{
         display: "flex",
-        justifyContent: "space-between",
         alignItems: "center",
-        marginBottom: "16px",
+        gap: "8px",
+        padding: "7px 0",
+        borderBottom: `1px solid rgba(201,168,76,0.06)`,
+        opacity,
+        textDecoration: "none",
       }}
     >
-      <div
-        style={{
-          fontFamily: "'Cormorant Garamond', Georgia, serif",
-          fontSize: "18px",
-          fontWeight: 300,
-          color: "#1a1208",
-        }}
-      >
+      <span style={{ fontSize: "9px", color: "rgba(245,240,232,0.2)", fontFamily: "'DM Sans', sans-serif", width: "18px", flexShrink: 0, fontWeight: 500 }}>
+        {number}
+      </span>
+      <span style={{ fontSize: "9px", color: "rgba(245,240,232,0.18)", width: "12px", textAlign: "center" }}>○</span>
+      <span style={{ fontSize: "12px", fontFamily: "'DM Sans', sans-serif", color: CREAM }}>
         {title}
-      </div>
-      <div
-        style={{
-          fontSize: "9px",
-          letterSpacing: "0.1em",
-          textTransform: "uppercase",
-          color: badgeGreen ? "#2E7D5E" : "#5A3B00",
-          border: `1px solid ${badgeGreen ? "rgba(46,125,94,0.3)" : "rgba(90,59,0,0.25)"}`,
-          background: badgeGreen ? "rgba(46,125,94,0.06)" : "rgba(90,59,0,0.06)",
-          padding: "3px 8px",
-          fontFamily: "'DM Sans', sans-serif",
-        }}
-      >
-        {badge}
-      </div>
-    </div>
+      </span>
+    </Link>
   );
 }
 
-function divider() {
-  return (
-    <div
-      style={{
-        height: "1px",
-        background: "rgba(26,18,8,0.1)",
-        marginBottom: "14px",
-      }}
-    />
-  );
-}
-
-// ── Tab 1: My Application ──────────────────────────────────────────────────────
+// ── Tab 1: My Application (3-tier step list) ──────────────────────────────────
 function ApplicationCard({
-  quizCompleted,
-  module1Done,
-  module2Done,
-  module3Done,
-  module4Done,
-  module5Done,
-  sectionCompletionMap,
+  quizCompleted, module1Done, module2Done, module3Done, module4Done, module5Done, sectionCompletionMap,
 }: {
   quizCompleted: boolean;
   module1Done: boolean;
@@ -428,39 +358,44 @@ function ApplicationCard({
     return "upcoming";
   }
 
-  const steps: { number: string; title: string; href: string; status: "done" | "in-progress" | "upcoming" }[] = [
-    { number: "01", title: "Eligibility Quiz", href: "/quiz", status: quizCompleted ? "done" : "in-progress" },
-    { number: "02", title: "Onboarding", href: "/apply/story", status: deriveStatus(module1Done, quizCompleted) },
-    { number: "03", title: "Business Profile", href: "/apply/business", status: deriveStatus(module2Done, module1Done) },
-    { number: "04", title: "Investment & Documents", href: "/apply/investment", status: deriveStatus(module3Done, module2Done) },
-    { number: "05", title: "Your Qualifications", href: "/apply/qualifications", status: deriveStatus(sectionCompletionMap.qualifications, module3Done) },
-    { number: "06", title: "Your Family", href: "/apply/family", status: deriveStatus(sectionCompletionMap.family, sectionCompletionMap.qualifications) },
-    { number: "07", title: "Country Ties", href: "/apply/ties", status: deriveStatus(sectionCompletionMap.ties, sectionCompletionMap.family) },
-    { number: "08", title: "Voice Profile", href: "/apply/module4", status: deriveStatus(module4Done, sectionCompletionMap.ties) },
-    { number: "09", title: "Document Generation", href: "/apply/generate", status: deriveStatus(module5Done, module4Done) },
+  const steps = [
+    { number: "01", title: "Eligibility Quiz",       href: quizCompleted ? "/quiz/review" : "/quiz",  status: quizCompleted ? "done" as const : "in-progress" as const },
+    { number: "02", title: "Onboarding",             href: "/apply/story",          status: deriveStatus(module1Done, quizCompleted) },
+    { number: "03", title: "Business Profile",       href: "/apply/business",       status: deriveStatus(module2Done, module1Done) },
+    { number: "04", title: "Investment & Documents", href: "/apply/investment",     status: deriveStatus(module3Done, module2Done) },
+    { number: "05", title: "Qualifications",         href: "/apply/qualifications", status: deriveStatus(sectionCompletionMap.qualifications, module3Done) },
+    { number: "06", title: "Family",                 href: "/apply/family",         status: deriveStatus(sectionCompletionMap.family, sectionCompletionMap.qualifications) },
+    { number: "07", title: "Country Ties",           href: "/apply/ties",           status: deriveStatus(sectionCompletionMap.ties, sectionCompletionMap.family) },
+    { number: "08", title: "Voice Profile",          href: "/apply/module4",        status: deriveStatus(module4Done, sectionCompletionMap.ties) },
+    { number: "09", title: "Document Generation",    href: "/apply/generate",       status: deriveStatus(module5Done, module4Done) },
   ];
 
   const doneCount = steps.filter((s) => s.status === "done").length;
   const allDone = doneCount === steps.length;
 
+  // Compute upcomingIndex for progressive fading
+  let upcomingCounter = 0;
+  const stepsWithIndex = steps.map((s) => ({
+    ...s,
+    upcomingIndex: s.status === "upcoming" ? upcomingCounter++ : 0,
+  }));
+
   return (
     <div style={{ padding: "20px 22px 22px" }}>
-      {cardHeader("My Application", allDone ? "Complete" : `${doneCount} / ${steps.length}`, allDone)}
-      {divider()}
-      <div
-        style={{
-          fontSize: "8px",
-          letterSpacing: "0.14em",
-          textTransform: "uppercase",
-          color: "rgba(26,18,8,0.45)",
-          fontFamily: "'DM Sans', sans-serif",
-          marginBottom: "10px",
-        }}
-      >
+      <CardHeader title="My Application" badge={allDone ? "Complete" : `${doneCount} / ${steps.length}`} badgeGreen={allDone} />
+      <Divider />
+      <div style={{
+        fontSize: "8px",
+        letterSpacing: "0.14em",
+        textTransform: "uppercase",
+        color: "rgba(201,168,76,0.45)",
+        fontFamily: "'DM Sans', sans-serif",
+        marginBottom: "10px",
+      }}>
         Case File Steps
       </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: "1px" }}>
-        {steps.map((s) => (
+      <div style={{ display: "flex", flexDirection: "column" }}>
+        {stepsWithIndex.map((s) => (
           <StepRow key={s.number} {...s} />
         ))}
       </div>
@@ -469,12 +404,7 @@ function ApplicationCard({
 }
 
 // ── Tab 2: My Analysis ────────────────────────────────────────────────────────
-function AnalysisCard({
-  entitlements,
-  isFranchisePath,
-  gapScore,
-  fddCount,
-}: {
+function AnalysisCard({ entitlements, isFranchisePath, gapScore, fddCount }: {
   entitlements: { hasComplete: boolean; hasFdd: boolean };
   isFranchisePath: boolean;
   gapScore: number | null;
@@ -492,18 +422,14 @@ function AnalysisCard({
       ctaGreen: gapRan,
       available: entitlements.hasComplete,
     },
-    ...(isFranchisePath
-      ? [
-          {
-            label: "FDD Intelligence",
-            description: "50-field FDD extraction + E-2 suitability scoring",
-            href: "/fdd",
-            cta: fddRan ? `${fddCount} analysis run · View →` : "Upload your FDD →",
-            ctaGreen: fddRan,
-            available: entitlements.hasFdd || entitlements.hasComplete,
-          },
-        ]
-      : []),
+    ...(isFranchisePath ? [{
+      label: "FDD Intelligence",
+      description: "50-field FDD extraction + E-2 suitability scoring",
+      href: "/fdd",
+      cta: fddRan ? `${fddCount} analysis run · View →` : "Upload your FDD →",
+      ctaGreen: fddRan,
+      available: entitlements.hasFdd || entitlements.hasComplete,
+    }] : []),
     {
       label: "Market Analysis",
       description: "Real Census + BLS data injected into your Business Plan",
@@ -516,86 +442,31 @@ function AnalysisCard({
 
   return (
     <div style={{ padding: "20px 22px 22px" }}>
-      {cardHeader("My Analysis", `${tools.length} Tools`)}
-      {divider()}
+      <CardHeader title="My Analysis" badge={`${tools.length} Tools`} />
+      <Divider />
       <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
         {tools.map((tool) => (
-          <Link
-            key={tool.label}
-            href={tool.href}
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              padding: "10px 0",
-              borderBottom: "1px solid rgba(26,18,8,0.07)",
-              textDecoration: "none",
-              gap: "12px",
-            }}
-          >
-            <div style={{ minWidth: 0 }}>
-              <div
-                style={{
-                  fontSize: "12px",
-                  fontFamily: "'DM Sans', sans-serif",
-                  color: "#1a1208",
-                  fontWeight: 500,
-                  marginBottom: "2px",
-                }}
-              >
-                {tool.label}
-              </div>
-              <div
-                style={{
-                  fontSize: "10px",
-                  fontFamily: "'DM Sans', sans-serif",
-                  color: "rgba(26,18,8,0.5)",
-                  lineHeight: 1.4,
-                }}
-              >
-                {tool.description}
-              </div>
-            </div>
-            <span
-              style={{
-                fontSize: "10px",
-                fontFamily: "'DM Sans', sans-serif",
-                color: tool.ctaGreen ? "#2E7D5E" : "#1a1208",
-                fontWeight: 600,
-                letterSpacing: "0.04em",
-                flexShrink: 0,
-                opacity: tool.ctaGreen ? 1 : 0.65,
-                whiteSpace: "nowrap",
-              }}
-            >
-              {tool.cta}
-            </span>
-          </Link>
+          <RowLink key={tool.label} href={tool.href} label={tool.label} description={tool.description} cta={tool.cta} ctaGreen={tool.ctaGreen} />
         ))}
       </div>
-      <div
-        style={{
-          marginTop: "14px",
-          padding: "8px 10px",
-          background: "rgba(26,18,8,0.05)",
-          border: "1px solid rgba(26,18,8,0.08)",
-          fontSize: "10px",
-          color: "rgba(26,18,8,0.5)",
-          fontFamily: "'DM Sans', sans-serif",
-          lineHeight: 1.5,
-        }}
-      >
+      <div style={{
+        marginTop: "14px",
+        padding: "8px 10px",
+        background: "rgba(201,168,76,0.04)",
+        border: `1px solid ${BORDER}`,
+        fontSize: "10px",
+        color: "rgba(245,240,232,0.38)",
+        fontFamily: "'DM Sans', sans-serif",
+        lineHeight: 1.5,
+      }}>
         Findings are injected directly into your 15 generated documents
       </div>
     </div>
   );
 }
 
-// ── Tab 3: My Preparation ─────────────────────────────────────────────────────
-function PreparationCard({
-  simulatorData,
-  hasCoachingReport,
-}: {
+// ── Tab 3: My Prep ────────────────────────────────────────────────────────────
+function PreparationCard({ simulatorData, hasCoachingReport }: {
   simulatorData: { sessionsUsed: number; sessionsPurchased: number } | null;
   hasCoachingReport: boolean;
 }) {
@@ -606,91 +477,36 @@ function PreparationCard({
   const items = [
     {
       label: "Interview Case Dossier",
-      description: "Your personalised revision document — business, investment, denial risks, and the 9 interview questions with guidance tailored to your case.",
+      description: "Your personalised revision document — business, investment, denial risks, and the 9 interview questions tailored to your case.",
       href: "/simulator/prep-kit",
       cta: "Generate my dossier →",
       ctaGreen: false,
     },
     {
       label: "Interview Simulator",
-      description:
-        sessionsRemaining != null
-          ? `${sessionsRemaining} session${sessionsRemaining !== 1 ? "s" : ""} remaining`
-          : "3 sessions included with your package",
+      description: sessionsRemaining != null
+        ? `${sessionsRemaining} session${sessionsRemaining !== 1 ? "s" : ""} remaining`
+        : "3 sessions included with your package",
       href: "/simulator",
       cta: sessionsRemaining === 0 ? "Add sessions →" : "Practice now →",
       ctaGreen: false,
     },
-    ...(hasCoachingReport
-      ? [
-          {
-            label: "Coaching Report",
-            description: "Your last session — what to focus on before the real interview.",
-            href: "/simulator",
-            cta: "View report →",
-            ctaGreen: true,
-          },
-        ]
-      : []),
+    ...(hasCoachingReport ? [{
+      label: "Coaching Report",
+      description: "Your last session — what to focus on before the real interview.",
+      href: "/simulator",
+      cta: "View report →",
+      ctaGreen: true,
+    }] : []),
   ];
 
   return (
     <div style={{ padding: "20px 22px 22px" }}>
-      {cardHeader("My Preparation", "Interview Ready")}
-      {divider()}
+      <CardHeader title="My Preparation" badge="Interview Ready" />
+      <Divider />
       <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
         {items.map((item) => (
-          <Link
-            key={item.label}
-            href={item.href}
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              padding: "10px 0",
-              borderBottom: "1px solid rgba(26,18,8,0.07)",
-              textDecoration: "none",
-              gap: "12px",
-            }}
-          >
-            <div style={{ minWidth: 0 }}>
-              <div
-                style={{
-                  fontSize: "12px",
-                  fontFamily: "'DM Sans', sans-serif",
-                  color: "#1a1208",
-                  fontWeight: 500,
-                  marginBottom: "2px",
-                }}
-              >
-                {item.label}
-              </div>
-              <div
-                style={{
-                  fontSize: "10px",
-                  fontFamily: "'DM Sans', sans-serif",
-                  color: "rgba(26,18,8,0.5)",
-                  lineHeight: 1.4,
-                }}
-              >
-                {item.description}
-              </div>
-            </div>
-            <span
-              style={{
-                fontSize: "10px",
-                fontFamily: "'DM Sans', sans-serif",
-                color: item.ctaGreen ? "#2E7D5E" : "#1a1208",
-                fontWeight: 600,
-                letterSpacing: "0.04em",
-                flexShrink: 0,
-                opacity: item.ctaGreen ? 1 : 0.65,
-                whiteSpace: "nowrap",
-              }}
-            >
-              {item.cta}
-            </span>
-          </Link>
+          <RowLink key={item.label} href={item.href} label={item.label} description={item.description} cta={item.cta} ctaGreen={item.ctaGreen} />
         ))}
       </div>
     </div>
@@ -698,32 +514,29 @@ function PreparationCard({
 }
 
 // ── Tab 4: My Package ─────────────────────────────────────────────────────────
-function PackageCard({ generatedDocCount }: { generatedDocCount: number }) {
+function PackageCard({ generatedDocCount, applicationId }: { generatedDocCount: number; applicationId: string | null }) {
   const hasDocuments = generatedDocCount > 0;
+  const generateHref = applicationId ? `/generate/${applicationId}` : "/apply/checklist";
 
   const items = [
     {
       label: "Document Package",
-      description: hasDocuments
-        ? `${generatedDocCount} of 15 documents ready`
-        : "15 consulate-formatted documents across 11 tabs",
-      href: "/apply/generate",
+      description: hasDocuments ? `${generatedDocCount} of 15 documents ready` : "15 consulate-formatted documents across 11 tabs",
+      href: generateHref,
       cta: hasDocuments ? `${generatedDocCount} / 15 · Continue →` : "Generate your package →",
       ctaGreen: hasDocuments,
     },
     {
       label: "Download Package",
-      description: hasDocuments
-        ? "ZIP file — all tabs A–K ready to submit"
-        : "Available once all documents are generated",
-      href: "/apply/generate",
+      description: hasDocuments ? "ZIP file — all tabs A–K ready to submit" : "Available once all documents are generated",
+      href: generateHref,
       cta: hasDocuments ? "Download ZIP →" : "Pending",
       ctaGreen: false,
     },
     {
       label: "Consulate Submission",
       description: "Assembly checklist + DS-160 reference + cover page",
-      href: "/apply/submit",
+      href: "/apply/checklist",
       cta: "Prepare →",
       ctaGreen: false,
     },
@@ -731,68 +544,13 @@ function PackageCard({ generatedDocCount }: { generatedDocCount: number }) {
 
   return (
     <div style={{ padding: "20px 22px 22px" }}>
-      {cardHeader(
-        "My Package",
-        hasDocuments ? `${generatedDocCount} / 15 Ready` : "Final Stage",
-        hasDocuments
-      )}
-      {divider()}
+      <CardHeader title="My Package" badge={hasDocuments ? `${generatedDocCount} / 15 Ready` : "Final Stage"} badgeGreen={hasDocuments} />
+      <Divider />
       <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
         {items.map((item) => (
-          <Link
-            key={item.label}
-            href={item.href}
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              padding: "10px 0",
-              borderBottom: "1px solid rgba(26,18,8,0.07)",
-              textDecoration: "none",
-              gap: "12px",
-            }}
-          >
-            <div style={{ minWidth: 0 }}>
-              <div
-                style={{
-                  fontSize: "12px",
-                  fontFamily: "'DM Sans', sans-serif",
-                  color: "#1a1208",
-                  fontWeight: 500,
-                  marginBottom: "2px",
-                }}
-              >
-                {item.label}
-              </div>
-              <div
-                style={{
-                  fontSize: "10px",
-                  fontFamily: "'DM Sans', sans-serif",
-                  color: "rgba(26,18,8,0.5)",
-                  lineHeight: 1.4,
-                }}
-              >
-                {item.description}
-              </div>
-            </div>
-            <span
-              style={{
-                fontSize: "10px",
-                fontFamily: "'DM Sans', sans-serif",
-                color: item.ctaGreen ? "#2E7D5E" : "#1a1208",
-                fontWeight: 600,
-                letterSpacing: "0.04em",
-                flexShrink: 0,
-                opacity: item.ctaGreen ? 1 : 0.65,
-                whiteSpace: "nowrap",
-              }}
-            >
-              {item.cta}
-            </span>
-          </Link>
+          <RowLink key={item.label} href={item.href} label={item.label} description={item.description} cta={item.cta} ctaGreen={item.ctaGreen} />
         ))}
       </div>
     </div>
   );
 }
-

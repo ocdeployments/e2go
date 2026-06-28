@@ -1,6 +1,7 @@
 "use client";
 import { PartialProfileTeaser } from "@/components/PartialProfileTeaser";
 import CaseCommandPanel from "@/components/dashboard/CaseCommandPanel";
+import CaseRecordSection from "@/components/dashboard/CaseRecordSection";
 import FolderStack from "@/components/dashboard/FolderStack";
 import { deriveStrengthBadges } from "@/lib/strength-badges";
 
@@ -17,20 +18,6 @@ const NEXT_ACTION_WHY: Record<string, string> = {
     "Generating your package produces 15 consulate-ready files in one step.",
   "Interview Preparation":
     "Practising builds the confidence and precision your consulate interview demands.",
-};
-
-const ARCHETYPE_LABEL: Record<string, string> = {
-  buyer: "Buyer",
-  builder: "Builder",
-  career_switcher: "Career Switcher",
-  investor: "Investor",
-};
-
-const ARCHETYPE_DESC: Record<string, string> = {
-  buyer: "Franchise-forward, acquisition-oriented case profile.",
-  builder: "Startup or new-business operator case profile.",
-  career_switcher: "Professional pivoting into U.S. business ownership.",
-  investor: "Capital-first, delegation-model case profile.",
 };
 
 const READINESS_LABEL: Record<string, string> = {
@@ -80,6 +67,7 @@ interface DashboardClientProps {
   fddCount: number;
   dimensionScores: DimensionScores | null;
   simulatorSnapshot: SimulatorSnapshot | null;
+  applicationId: string | null;
 }
 
 function deriveCurrentPhase(
@@ -106,218 +94,6 @@ function deriveNextAction(
 
 
 
-// ── Profile Intelligence Strip ────────────────────────────────────────────────
-// Progressive cells: always shows real data from quiz on Day 1.
-// Swaps to richer values as the client completes more work.
-function ProfileIntelligenceStrip({
-  archetype,
-  completenessScore,
-  dimensionScores,
-  currentPhase,
-  quizOutcome,
-  investmentRange,
-  applicationLabel,
-}: {
-  archetype: string | null;
-  completenessScore: number | null;
-  dimensionScores: DimensionScores | null;
-  currentPhase: string;
-  quizOutcome: string | null;
-  investmentRange: string | null;
-  applicationLabel: string | null;
-}) {
-  const hasArchetype = archetype !== null && archetype in ARCHETYPE_LABEL;
-  const hasScore = completenessScore !== null;
-
-  // Format quiz outcome for Day-1 display in Cell 1
-  function formatOutcome(o: string | null): string {
-    if (!o) return "Pending";
-    const map: Record<string, string> = {
-      strong: "Strong — Eligible",
-      borderline: "Borderline — Review",
-      caution: "Caution — Concerns",
-      ineligible: "Ineligible",
-    };
-    return map[o.toLowerCase()] ?? o.charAt(0).toUpperCase() + o.slice(1);
-  }
-
-  // Derive primary risk area from dimension scores
-  let primaryRisk: string;
-  let primaryRiskDesc: string;
-  let primaryRiskHref: string;
-  let primaryRiskFilled: boolean;
-
-  if (dimensionScores) {
-    const dims = [
-      { name: "Source of Funds", desc: "Your highest-risk evidence gap. Address this before generating your package.", href: "/apply/investment", score: dimensionScores.sourceOfFunds },
-      { name: "Management Role", desc: "Officers look for day-to-day control — this is your most common verbal probe.", href: "/apply/business", score: dimensionScores.managementRole },
-      { name: "Business Plan", desc: "Employment creation and non-marginality must be evidenced, not projected.", href: "/apply/business", score: dimensionScores.businessPlan },
-    ].filter((d) => d.score !== null);
-    if (dims.length > 0) {
-      const lowest = dims.reduce((a, b) => (a.score! < b.score! ? a : b));
-      primaryRisk = lowest.name;
-      primaryRiskDesc = lowest.desc;
-      primaryRiskHref = lowest.href;
-      primaryRiskFilled = true;
-    } else {
-      primaryRisk = applicationLabel ?? "Solo E-2 Investor";
-      primaryRiskDesc = "Your application configuration — who is included on the visa petition.";
-      primaryRiskHref = "/apply/story";
-      primaryRiskFilled = false;
-    }
-  } else {
-    primaryRisk = applicationLabel ?? "Solo E-2 Investor";
-    primaryRiskDesc = "Your application configuration — who is included on the visa petition.";
-    primaryRiskHref = "/apply/story";
-    primaryRiskFilled = false;
-  }
-
-  const eyebrow: React.CSSProperties = {
-    fontSize: "9px",
-    letterSpacing: "0.12em",
-    textTransform: "uppercase" as const,
-    color: "rgba(201,168,76,0.65)",
-    fontFamily: "'DM Sans', sans-serif",
-    marginBottom: "6px",
-  };
-
-  // Cell 1: Archetype when available, E-2 Outcome on Day 1
-  const cell1 = hasArchetype
-    ? {
-        label: "Investor Archetype",
-        value: ARCHETYPE_LABEL[archetype!],
-        detail: ARCHETYPE_DESC[archetype!],
-        href: null,
-        cta: null,
-      }
-    : {
-        label: "E-2 Outcome",
-        value: formatOutcome(quizOutcome),
-        detail: "Your initial eligibility assessment based on treaty country, investment range, and business type.",
-        href: "/results",
-        cta: "View full results →",
-      };
-
-  // Cell 2: Case Readiness when available, Investment Range on Day 1
-  const cell2 = hasScore
-    ? {
-        label: "Case Readiness",
-        value: `${completenessScore}%`,
-        detail:
-          completenessScore! >= 75
-            ? "Strong trajectory. Close remaining evidence gaps before generating."
-            : completenessScore! >= 50
-            ? "Good foundation. Several sections still need your attention."
-            : "Case needs work. Prioritise the sections marked below.",
-        href: null,
-        cta: null,
-      }
-    : {
-        label: "Investment Range",
-        value: investmentRange ?? "Not provided",
-        detail: "Your declared investment range. Case readiness score updates as you complete each section.",
-        href: null,
-        cta: null,
-      };
-
-  // Cell 3: Primary Risk Area when gap analysis run, Application Type on Day 1
-  const cell3 = primaryRiskFilled
-    ? {
-        label: "Primary Risk Area",
-        value: primaryRisk,
-        detail: primaryRiskDesc,
-        href: primaryRiskHref,
-        cta: "Fix this gap →",
-      }
-    : {
-        label: "Application Type",
-        value: primaryRisk,
-        detail: primaryRiskDesc,
-        href: null,
-        cta: null,
-      };
-
-  const cells = [
-    { ...cell1, filled: true },
-    { ...cell2, filled: true },
-    { ...cell3, filled: true },
-    {
-      label: "Current Stage",
-      filled: true,
-      value: currentPhase,
-      detail: NEXT_ACTION_WHY[currentPhase] ?? "",
-      href: null,
-      cta: null,
-    },
-  ];
-
-  return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(4, 1fr)",
-        borderTop: "1px solid rgba(201,168,76,0.15)",
-        borderLeft: "1px solid rgba(201,168,76,0.15)",
-        marginBottom: "28px",
-      }}
-    >
-      {cells.map((cell, i) => (
-        <div
-          key={i}
-          style={{
-            padding: "16px 18px",
-            borderRight: "1px solid rgba(201,168,76,0.15)",
-            borderBottom: "1px solid rgba(201,168,76,0.15)",
-            background: cell.filled
-              ? i === 0 ? "rgba(201,168,76,0.03)" : "transparent"
-              : "rgba(255,255,255,0.01)",
-          }}
-        >
-          <div style={eyebrow}>{cell.label}</div>
-          <div
-            style={{
-              fontFamily: cell.filled
-                ? "'Cormorant Garamond', Georgia, serif"
-                : "'DM Sans', sans-serif",
-              fontSize: cell.filled ? "18px" : "13px",
-              fontWeight: cell.filled ? 300 : 500,
-              color: cell.filled ? "#f5f0e8" : "rgba(245,240,232,0.55)",
-              marginBottom: "5px",
-              lineHeight: 1.2,
-            }}
-          >
-            {cell.value}
-          </div>
-          <div
-            style={{
-              fontSize: "11px",
-              color: "rgba(245,240,232,0.42)",
-              fontFamily: "'DM Sans', sans-serif",
-              lineHeight: 1.5,
-              marginBottom: cell.cta ? "8px" : 0,
-            }}
-          >
-            {cell.detail}
-          </div>
-          {cell.cta && cell.href && (
-            <a
-              href={cell.href}
-              style={{
-                fontSize: "10px",
-                color: "#C9A84C",
-                fontFamily: "'DM Sans', sans-serif",
-                textDecoration: "none",
-                letterSpacing: "0.04em",
-              }}
-            >
-              {cell.cta}
-            </a>
-          )}
-        </div>
-      ))}
-    </div>
-  );
-}
 
 // ── Gap Priorities Panel ─────────────────────────────────────────────────────
 function GapPrioritiesPanel({
@@ -714,6 +490,7 @@ export default function DashboardClient({
   fddCount,
   dimensionScores,
   simulatorSnapshot,
+  applicationId,
 }: DashboardClientProps) {
   const isFranchisePath =
     /franchise/i.test(quizAnswers["Q0-08a"] ?? "") ||
@@ -757,7 +534,7 @@ export default function DashboardClient({
               lineHeight: 1.1,
             }}
           >
-            {firstName ? `Welcome to the E2Go family, ${firstName}.` : "Welcome back."}
+            {firstName ? `Welcome back, ${firstName}.` : "Welcome back."}
           </h1>
           {applicationLabel && (
             <div
@@ -876,7 +653,7 @@ export default function DashboardClient({
               lineHeight: 1.1,
             }}
           >
-            {firstName ? `Welcome to the E2Go family, ${firstName}.` : "Welcome."}
+            {firstName ? `Let's build your E-2 application, ${firstName}.` : "Let's build your E-2 application."}
           </h1>
         </div>
         <div
@@ -937,70 +714,30 @@ export default function DashboardClient({
   // ── Full dashboard — quiz completed, paying customer ──────────────────────
   return (
     <div>
-      {/* Zone A — Welcome header */}
-      <div style={{ marginBottom: "20px" }}>
-        <div
-          style={{
-            fontSize: "9px",
-            letterSpacing: "0.18em",
-            textTransform: "uppercase",
-            color: "rgba(201,168,76,0.5)",
-            fontFamily: "'DM Sans', sans-serif",
-            marginBottom: "8px",
-          }}
-        >
-          E-2 Application Dashboard
+      {/* Zone A — Case header */}
+      <div style={{ marginBottom: "24px" }}>
+        <div style={{
+          fontSize: "8px",
+          letterSpacing: "0.18em",
+          textTransform: "uppercase",
+          color: "rgba(201,168,76,0.4)",
+          fontFamily: "'DM Sans', sans-serif",
+          marginBottom: "6px",
+        }}>
+          E-2 Investor Record
         </div>
-        <h1
-          style={{
-            fontFamily: "'Cormorant Garamond', Georgia, serif",
-            fontWeight: 300,
-            fontSize: "clamp(26px, 4vw, 38px)",
-            color: "#f5f0e8",
-            margin: "0 0 6px",
-            lineHeight: 1.1,
-          }}
-        >
-          {firstName
-            ? `Welcome to the E2Go family, ${firstName}.`
-            : "Welcome to the E2Go family."}
+        <h1 style={{
+          fontFamily: "'Cormorant Garamond', Georgia, serif",
+          fontWeight: 300,
+          fontSize: "clamp(28px, 4vw, 42px)",
+          color: "#f5f0e8",
+          margin: 0,
+          lineHeight: 1.05,
+        }}>
+          {firstName ? `My E-2 Case — ${firstName}` : "My E-2 Case"}
         </h1>
-        {applicationLabel && (
-          <div
-            style={{
-              fontSize: "13px",
-              color: "rgba(245,240,232,0.5)",
-              fontFamily: "'DM Sans', sans-serif",
-              letterSpacing: "0.02em",
-            }}
-          >
-            {applicationLabel}
-          </div>
-        )}
-        {generatedDocCount > 0 && (
-          <div
-            style={{
-              fontSize: "12px",
-              color: "rgba(201,168,76,0.6)",
-              fontFamily: "'DM Sans', sans-serif",
-              marginTop: "4px",
-            }}
-          >
-            {generatedDocCount} of 15 documents ready
-          </div>
-        )}
       </div>
 
-      {/* Profile Intelligence Strip — always visible; empty states show what to do next */}
-      <ProfileIntelligenceStrip
-        archetype={caseArchetype}
-        completenessScore={caseCompletenessScore}
-        dimensionScores={dimensionScores}
-        currentPhase={currentPhase}
-        quizOutcome={quizOutcome}
-        investmentRange={investmentRange}
-        applicationLabel={applicationLabel}
-      />
 
       {/* Franchise Navigator banner */}
       {showFranchiseNavigator && (
@@ -1077,14 +814,39 @@ export default function DashboardClient({
         </div>
       )}
 
-      {/* Zones B + C */}
+      {/* Zones B + C — left column is the full case record; right is the work area */}
       <div className="dashboard-grid">
-        <CaseCommandPanel
-          score={progress}
-          currentPhase={currentPhase}
-          nextAction={nextAction}
-          nextActionWhy={nextActionWhy}
-        />
+        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+          <CaseCommandPanel
+            score={progress}
+            currentPhase={currentPhase}
+            nextAction={nextAction}
+            nextActionWhy={nextActionWhy}
+            applicationLabel={applicationLabel}
+            treatyCountry={(quizAnswers["Q0-01"] as string | undefined) ?? null}
+            quizOutcome={quizOutcome}
+            investmentRange={investmentRange}
+            generatedDocCount={generatedDocCount}
+            dimensionScores={dimensionScores}
+            isFranchisePath={isFranchisePath}
+          />
+          <CaseRecordSection
+            firstName={firstName}
+            quizOutcome={quizOutcome}
+            investmentRange={investmentRange}
+            quizAnswers={quizAnswers}
+            caseArchetype={caseArchetype}
+            isFranchisePath={isFranchisePath}
+            fddCount={fddCount}
+            lifecycle={lifecycle}
+            caseCompletenessScore={caseCompletenessScore}
+            dimensionScores={dimensionScores}
+            simulatorSnapshot={simulatorSnapshot}
+            sectionCompletionMap={sectionCompletionMap}
+            generatedDocCount={generatedDocCount}
+            quizCompleted={quizCompleted}
+          />
+        </div>
         <FolderStack
           lifecycle={lifecycle}
           entitlements={entitlements}
@@ -1096,6 +858,7 @@ export default function DashboardClient({
           generatedDocCount={generatedDocCount}
           quizCompleted={quizCompleted}
           hasCoachingReport={(simulatorData?.sessionsUsed ?? 0) > 0}
+          applicationId={applicationId}
         />
       </div>
 
