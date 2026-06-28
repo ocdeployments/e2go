@@ -212,7 +212,7 @@ export async function middleware(req: NextRequest) {
 
   // Redirect verified users away from auth pages
   if (user && authRoutes.includes(pathname)) {
-    return NextResponse.redirect(new URL('/dashboard', req.url));
+    return NextResponse.redirect(new URL('/case-profile', req.url));
   }
 
   return supabaseResponse;

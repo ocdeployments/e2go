@@ -9,7 +9,7 @@ import GenerationProgress from "@/components/ui/GenerationProgress";
 
 function LoginForm() {
   const searchParams = useSearchParams();
-  const next = searchParams.get("next") || "/dashboard";
+  const next = searchParams.get("next") || "/case-profile";
 
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState("");
@@ -107,7 +107,7 @@ function LoginForm() {
 
       if (user) {
         // Smart routing: if ?next is set, honour it; otherwise route by state
-        if (next && next !== '/dashboard') {
+        if (next && next !== '/case-profile') {
           window.location.href = next;
         } else {
           // 1. No quiz session → /quiz
@@ -153,7 +153,7 @@ function LoginForm() {
           }
         }
       } else {
-        window.location.href = next ?? '/dashboard';
+        window.location.href = next ?? '/case-profile';
       }
     } catch (err) {
       if (!timedOut) {

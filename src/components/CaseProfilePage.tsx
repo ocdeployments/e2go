@@ -48,6 +48,8 @@ const NAV_SECTIONS = [
   { id: "investment",  num: "04", label: "The Investment" },
   { id: "intelligence",num: "05", label: "Case Intelligence" },
   { id: "interview",   num: "06", label: "Interview Readiness" },
+  { id: "documents",   num: "07", label: "Documents" },
+  { id: "resources",   num: "08", label: "Tools & Learn" },
 ];
 
 // ── Sidebar ────────────────────────────────────────────────────────────────────
@@ -113,23 +115,6 @@ function Sidebar({ active }: { active: string }) {
         );
       })}
 
-      {/* Divider + back link */}
-      <div style={{
-        height: "1px",
-        background: INNER,
-        margin: "16px 0 12px",
-      }} />
-      <Link href="/dashboard" style={{
-        display: "block",
-        padding: "8px 12px",
-        fontSize: "10px",
-        fontFamily: "'DM Sans', sans-serif",
-        color: "rgba(201,168,76,0.35)",
-        textDecoration: "none",
-        letterSpacing: "0.04em",
-      }}>
-        ← Dashboard
-      </Link>
     </nav>
   );
 }
@@ -766,6 +751,13 @@ export default function CaseProfilePage() {
       note: "Extracted from FDD during analysis",
       href: "/fdd",
     },
+    {
+      label: "Franchise Navigator",
+      value: null,
+      status: "module",
+      note: "Explore and compare franchise opportunities ranked by E-2 suitability",
+      href: "/franchise",
+    },
   ] : [
     {
       label: "Business Description",
@@ -1138,6 +1130,129 @@ export default function CaseProfilePage() {
   const s6Have  = [...simFields, ...dossierFields].filter(f => f.status === "have").length;
   const s6Total = simFields.length + dossierFields.length;
 
+  // ── SECTION 7: DOCUMENTS & PACKAGE ─────────────────────────────────────────
+
+  const hasApplication = Boolean(data.applicationId);
+  const hasDocs        = data.generatedDocCount > 0;
+
+  const docStatus: Status = hasDocs ? "have" : hasApplication ? "module" : "optional";
+  const docNote = (active: string, locked = "Complete your case file first to unlock") =>
+    hasApplication ? active : locked;
+  const docHref = hasApplication
+    ? (hasDocs ? `/documents/${data.applicationId}` : `/generate/${data.applicationId}`)
+    : undefined;
+
+  const docPackageFields: FieldDef[] = [
+    {
+      label: "Business Plan",
+      value: hasDocs ? "Generated" : null,
+      status: docStatus,
+      note: docNote("Generated from your business profile, investment details, and voice profile"),
+      href: docHref,
+    },
+    {
+      label: "Cover Letter",
+      value: hasDocs ? "Generated" : null,
+      status: docStatus,
+      note: docNote("Formal letter to the consulate introducing your E-2 petition"),
+      href: docHref,
+    },
+    {
+      label: "Personal Statement",
+      value: hasDocs ? "Generated" : null,
+      status: docStatus,
+      note: docNote("First-person narrative — generated from onboarding and voice profile"),
+      href: docHref,
+    },
+    {
+      label: "Investment Evidence Memo",
+      value: hasDocs ? "Generated" : null,
+      status: docStatus,
+      note: docNote("Source of funds narrative with evidence trail for the consulate"),
+      href: docHref,
+    },
+    {
+      label: "Financial Projections (Y1–Y3)",
+      value: hasDocs ? "Generated" : null,
+      status: docStatus,
+      note: docNote("Three-year revenue and expense model — referenced in the business plan"),
+      href: docHref,
+    },
+  ];
+
+  const pipelineFields: FieldDef[] = [
+    {
+      label: "Documents Generated",
+      value: hasDocs ? `${data.generatedDocCount} of 15 ready` : null,
+      status: hasDocs ? "have" : hasApplication ? "module" : "optional",
+      note: docNote("Run generation to produce your full document package"),
+      href: hasApplication && !hasDocs ? `/generate/${data.applicationId}` : docHref,
+    },
+    {
+      label: "Download Package",
+      value: hasDocs ? "Available" : null,
+      status: hasDocs ? "have" : hasApplication ? "module" : "optional",
+      note: docNote("Download all documents as a ZIP archive"),
+      href: hasDocs ? `/documents/${data.applicationId}` : undefined,
+    },
+  ];
+
+  const s7Have  = [...docPackageFields, ...pipelineFields].filter(f => f.status === "have").length;
+  const s7Total = docPackageFields.length + pipelineFields.length;
+
+  // ── SECTION 8: TOOLS & LEARN ────────────────────────────────────────────────
+
+  const toolsFields: FieldDef[] = [
+    {
+      label: "Submission Checklist",
+      value: null,
+      status: "module",
+      note: "Step-by-step checklist of everything to gather before filing",
+      href: "/apply/checklist",
+    },
+    {
+      label: "Case Timeline",
+      value: null,
+      status: "module",
+      note: "Estimated schedule from today to interview day with milestone dates",
+      href: "/apply/calendar",
+    },
+  ];
+
+  const learnFields: FieldDef[] = [
+    {
+      label: "E-2 Visa Knowledge Hub",
+      value: null,
+      status: "module",
+      note: "6 in-depth guides · FAQ widget · consulate tips — everything you need to know",
+      href: "/learn",
+    },
+    {
+      label: "Investment Benchmarks",
+      value: null,
+      status: "module",
+      note: "How much is enough? Industry data and real case examples by business type",
+      href: "/learn/how-much-to-invest-e2",
+    },
+    {
+      label: "Denial Reasons & Prevention",
+      value: null,
+      status: "module",
+      note: "The most common E-2 denial reasons and how to address them in your case",
+      href: "/learn/e2-visa-denial-reasons",
+    },
+    {
+      label: "Country Guides",
+      value: null,
+      status: "module",
+      note: "Canada, UK, France and more — consulate tips and treaty specifics by nationality",
+      href: "/learn",
+    },
+  ];
+
+  const s8Have  = 0;
+  const s8Total = toolsFields.length + learnFields.length;
+
   // ── Overview totals ──────────────────────────────────────────────────────────
 
   const overview = [
@@ -1147,6 +1262,8 @@ export default function CaseProfilePage() {
     { label: "Investment",   have: s4Have,        total: s4Total },
     { label: "Intelligence", have: s5Have,        total: s5Total },
     { label: "Interview",    have: s6Have,        total: s6Total },
+    { label: "Documents",    have: s7Have,        total: s7Total },
+    { label: "Tools",        have: s8Have,        total: s8Total },
   ];
 
   const totalHave  = overview.reduce((a, b) => a + b.have, 0);
@@ -1157,35 +1274,8 @@ export default function CaseProfilePage() {
   return (
     <div style={{ minHeight: "100vh", background: "#0a0a0a", paddingBottom: "80px" }}>
 
-      {/* Top nav bar */}
-      <div style={{
-        borderBottom: `1px solid ${INNER}`,
-        padding: "14px 32px",
-        display: "flex",
-        alignItems: "center",
-        gap: "16px",
-        background: "rgba(17,16,7,0.8)",
-        position: "sticky",
-        top: 0,
-        zIndex: 10,
-      }}>
-        <Link href="/dashboard" style={{
-          fontSize: "10px",
-          letterSpacing: "0.08em",
-          color: "rgba(201,168,76,0.4)",
-          fontFamily: "'DM Sans', sans-serif",
-          textDecoration: "none",
-        }}>
-          ← Dashboard
-        </Link>
-        <span style={{ color: "rgba(245,240,232,0.08)", fontSize: "10px" }}>|</span>
-        <span style={{ fontSize: "10px", color: "rgba(245,240,232,0.18)", fontFamily: "'DM Sans', sans-serif" }}>
-          My E-2 Case Record
-        </span>
-      </div>
-
-      {/* Full-width header area */}
-      <div style={{ maxWidth: "1060px", margin: "0 auto", padding: "40px 32px 0" }}>
+      {/* Full-width header area — paddingTop accounts for the fixed main Nav */}
+      <div style={{ maxWidth: "1060px", margin: "0 auto", padding: "80px 32px 0" }}>
 
         {/* Page header */}
         <div style={{ marginBottom: "28px" }}>
@@ -1257,7 +1347,7 @@ export default function CaseProfilePage() {
           <div style={{
             flex: 3,
             display: "grid",
-            gridTemplateColumns: "repeat(6, 1fr)",
+            gridTemplateColumns: "repeat(8, 1fr)",
             gap: "8px",
             alignItems: "center",
           }}>
@@ -1498,15 +1588,55 @@ export default function CaseProfilePage() {
               <Sub title="Interview Dossier" fields={dossierFields} />
             </SectionCard>
 
+            {/* ── 07 DOCUMENTS & PACKAGE ──────────────────────────── */}
+            <SectionCard
+              id="documents"
+              number="07"
+              title="Documents & Package"
+              description={hasApplication
+                ? hasDocs
+                  ? "Your document package is ready — review and download below"
+                  : "Trigger document generation once your case file sections are complete"
+                : "Complete your case file to unlock the document generation pipeline"}
+              haveCount={s7Have}
+              totalCount={s7Total}
+              ctaLabel={hasApplication
+                ? hasDocs ? "View Documents" : "Generate Documents"
+                : "Start Your Case File"}
+              ctaHref={hasApplication
+                ? hasDocs ? `/documents/${data.applicationId}` : `/generate/${data.applicationId}`
+                : "/apply/story"}
+            >
+              {!hasApplication && (
+                <div style={{ padding: "12px 16px", background: "rgba(0,0,0,0.25)", border: `1px solid ${INNER}`, marginBottom: "16px" }}>
+                  <div style={{ fontSize: "10px", fontFamily: "'DM Sans', sans-serif", color: "rgba(245,240,232,0.28)", lineHeight: 1.7 }}>
+                    Document generation unlocks once your case file is started. Complete Sections 02–04 (Investor · Business · Investment) to progress to the generation step.
+                  </div>
+                </div>
+              )}
+              <Sub title="Document Package" fields={docPackageFields} />
+              <Sub title="Generation Status" fields={pipelineFields} />
+            </SectionCard>
+
+            {/* ── 08 TOOLS & LEARN ────────────────────────────────── */}
+            <SectionCard
+              id="resources"
+              number="08"
+              title="Tools & Resources"
+              description="Submission checklist, case timeline, and E-2 visa knowledge hub with guides and FAQs"
+              haveCount={s8Have}
+              totalCount={s8Total}
+            >
+              <Sub title="Case Tools" fields={toolsFields} />
+              <Sub title="Knowledge Hub" fields={learnFields} />
+            </SectionCard>
+
             {/* Footer note */}
             <div style={{ textAlign: "center", padding: "24px 0", borderTop: `1px solid ${INNER}`, marginTop: "8px" }}>
-              <p style={{ fontSize: "11px", fontFamily: "'DM Sans', sans-serif", color: "rgba(245,240,232,0.18)", lineHeight: 1.7, margin: "0 0 12px" }}>
+              <p style={{ fontSize: "11px", fontFamily: "'DM Sans', sans-serif", color: "rgba(245,240,232,0.18)", lineHeight: 1.7, margin: 0 }}>
                 Fields marked <span style={{ color: "rgba(248,113,113,0.45)", fontStyle: "italic" }}>Required</span> represent schema gaps — future modules will collect them.{" "}
                 Fields marked <span style={{ color: "rgba(201,168,76,0.38)", fontStyle: "italic" }}>Collects from step</span> populate automatically as you complete each module.
               </p>
-              <Link href="/dashboard" style={{ fontSize: "10px", letterSpacing: "0.1em", color: "rgba(201,168,76,0.45)", fontFamily: "'DM Sans', sans-serif", textDecoration: "none" }}>
-                ← Back to Dashboard
-              </Link>
             </div>
 
           </div>{/* end content */}
