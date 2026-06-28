@@ -50,6 +50,8 @@ function GapAnalysisInner() {
   const searchParams = useSearchParams();
 
   const [loading, setLoading] = useState(true);
+  const [noApplication, setNoApplication] = useState(false);
+  const [quizAlreadyDone, setQuizAlreadyDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<GapAnalysisResult | null>(null);
   const [businessName, setBusinessName] = useState<string | null>(null);
@@ -142,7 +144,19 @@ function GapAnalysisInner() {
             .eq('user_id', user.id)
             .order('created_at', { ascending: false })
             .limit(1);
-          if (!apps?.length) { setError('No application found. Create a case file first.'); setLoading(false); return; }
+          if (!apps?.length) {
+            const { data: quizCheck } = await supabase
+              .from('quiz_sessions')
+              .select('id')
+              .eq('user_id', user.id)
+              .not('completed_at', 'is', null)
+              .limit(1)
+              .maybeSingle();
+            setQuizAlreadyDone(Boolean(quizCheck));
+            setNoApplication(true);
+            setLoading(false);
+            return;
+          }
           resolvedId = apps[0].id;
         }
         setAppId(resolvedId);
@@ -308,6 +322,50 @@ function GapAnalysisInner() {
   // ── Loading / Error ────────────────────────────────────────────────────────
 
   if (loading) return <LoadingScreen />;
+
+  if (noApplication) {
+    return (
+      <div style={{ ...styles.page, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ maxWidth: '520px', textAlign: 'center' as const, padding: '0 24px' }}>
+          <p style={{ fontSize: '10px', letterSpacing: '0.12em', textTransform: 'uppercase' as const, color: 'rgba(201,168,76,0.6)', marginBottom: '16px', fontFamily: "'DM Sans', sans-serif" }}>
+            Gap Analysis
+          </p>
+          <h2 style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: '36px', fontWeight: 300, color: '#f5f0e8', marginBottom: '16px', lineHeight: 1.2 }}>
+            {quizAlreadyDone ? 'Begin your case file' : 'Start your case file first'}
+          </h2>
+          <p style={{ fontSize: '14px', color: 'rgba(245,240,232,0.55)', lineHeight: 1.6, marginBottom: '32px', fontFamily: "'DM Sans', sans-serif" }}>
+            {quizAlreadyDone
+              ? "You've completed the eligibility quiz. Begin your onboarding to create your case file — Gap Analysis activates once your application is started."
+              : 'Gap Analysis evaluates your E-2 application across 7 immigration law dimensions. Complete the eligibility quiz to get started.'}
+          </p>
+          <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' as const }}>
+            {quizAlreadyDone ? (
+              <Link href="/apply/story" style={{
+                display: 'inline-block', padding: '12px 28px', background: '#C9A84C',
+                color: '#0a0a0a', fontSize: '11px', letterSpacing: '0.08em',
+                textTransform: 'uppercase' as const, fontFamily: "'DM Sans', sans-serif", fontWeight: 600,
+                textDecoration: 'none',
+              }}>
+                Begin onboarding →
+              </Link>
+            ) : (
+              <Link href="/quiz" style={{
+                display: 'inline-block', padding: '12px 28px', background: '#C9A84C',
+                color: '#0a0a0a', fontSize: '11px', letterSpacing: '0.08em',
+                textTransform: 'uppercase' as const, fontFamily: "'DM Sans', sans-serif", fontWeight: 600,
+                textDecoration: 'none',
+              }}>
+                Start eligibility quiz →
+              </Link>
+            )}
+            <Link href="/dashboard" style={{ display: 'inline-block', padding: '12px 24px', border: '1px solid rgba(201,168,76,0.3)', color: 'rgba(245,240,232,0.65)', fontSize: '11px', letterSpacing: '0.08em', textTransform: 'uppercase' as const, fontFamily: "'DM Sans', sans-serif", textDecoration: 'none' }}>
+              ← Dashboard
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (error) {
     return (
