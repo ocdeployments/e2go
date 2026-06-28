@@ -211,27 +211,11 @@ export default function Nav() {
                 </Link>
               )}
               {!isSimulatorOnly && !pathname.startsWith('/simulator') && (
-                <Link href="/apply" className="text-sm transition-colors" style={{ color: pathname.startsWith("/apply") ? "#C9A84C" : "rgba(245,240,232,0.75)" }}
+                <Link href="/case-profile" className="text-sm transition-colors" style={{ color: isActive("/case-profile") ? "#C9A84C" : "rgba(245,240,232,0.75)" }}
                   onMouseEnter={e => e.currentTarget.style.color = "#f5f0e8"}
-                  onMouseLeave={e => e.currentTarget.style.color = pathname.startsWith("/apply") ? "#C9A84C" : "rgba(245,240,232,0.75)"}
+                  onMouseLeave={e => e.currentTarget.style.color = isActive("/case-profile") ? "#C9A84C" : "rgba(245,240,232,0.75)"}
                 >
-                  My Application
-                </Link>
-              )}
-              {!isSimulatorOnly && !pathname.startsWith('/simulator') && (
-                <Link href="/gap-analysis" className="text-sm transition-colors" style={{ color: pathname.startsWith("/gap-analysis") ? "#C9A84C" : "rgba(245,240,232,0.75)" }}
-                  onMouseEnter={e => e.currentTarget.style.color = "#f5f0e8"}
-                  onMouseLeave={e => e.currentTarget.style.color = pathname.startsWith("/gap-analysis") ? "#C9A84C" : "rgba(245,240,232,0.75)"}
-                >
-                  Gap Analysis
-                </Link>
-              )}
-              {!isSimulatorOnly && !pathname.startsWith('/simulator') && (
-                <Link href="/fdd" className="text-sm transition-colors" style={{ color: pathname.startsWith("/fdd") ? "#C9A84C" : "rgba(245,240,232,0.75)" }}
-                  onMouseEnter={e => e.currentTarget.style.color = "#f5f0e8"}
-                  onMouseLeave={e => e.currentTarget.style.color = pathname.startsWith("/fdd") ? "#C9A84C" : "rgba(245,240,232,0.75)"}
-                >
-                  FDD Analysis
+                  My Case
                 </Link>
               )}
               {!isSimulatorOnly && !pathname.startsWith('/simulator') && application && (
@@ -342,18 +326,8 @@ export default function Nav() {
                 </Link>
               )}
               {!isSimulatorOnly && !pathname.startsWith('/simulator') && (
-                <Link href="/apply" className="text-sm py-2" style={{ color: pathname.startsWith("/apply") ? "#C9A84C" : "rgba(245,240,232,0.75)" }} onClick={() => setMobileMenuOpen(false)}>
-                  My Application
-                </Link>
-              )}
-              {!isSimulatorOnly && !pathname.startsWith('/simulator') && (
-                <Link href="/gap-analysis" className="text-sm py-2" style={{ color: pathname.startsWith("/gap-analysis") ? "#C9A84C" : "rgba(245,240,232,0.75)" }} onClick={() => setMobileMenuOpen(false)}>
-                  Gap Analysis
-                </Link>
-              )}
-              {!isSimulatorOnly && !pathname.startsWith('/simulator') && (
-                <Link href="/fdd" className="text-sm py-2" style={{ color: pathname.startsWith("/fdd") ? "#C9A84C" : "rgba(245,240,232,0.75)" }} onClick={() => setMobileMenuOpen(false)}>
-                  FDD Analysis
+                <Link href="/case-profile" className="text-sm py-2" style={{ color: pathname === "/case-profile" ? "#C9A84C" : "rgba(245,240,232,0.75)" }} onClick={() => setMobileMenuOpen(false)}>
+                  My Case
                 </Link>
               )}
               {!isSimulatorOnly && !pathname.startsWith('/simulator') && application && (
