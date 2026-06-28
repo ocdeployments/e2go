@@ -7,21 +7,29 @@ import quizData from "@/data/module0_questions.json";
 interface QuizQuestion {
   id: string;
   question: string;
-  section: string;
+  section: string;       // internal key: "eligibility", "home_ties", etc.
+  section_index: number; // index into quizData.sections display array
   is_sub: boolean;
   parent: string | null;
 }
 
 // Build lookup from the single source of truth — the quiz JSON.
-// This ensures sub-questions are never silently dropped.
+// Use section_index → quizData.sections to get the Title Case display name
+// (q.section is lowercase "home_ties"; quizData.sections has "Home Ties").
 const ALL_QUESTIONS = quizData.questions as QuizQuestion[];
+const SECTION_DISPLAY = quizData.sections as string[];
+
 const QUESTIONS_MAP: Record<string, { q: string; section: string; is_sub: boolean }> =
   Object.fromEntries(
-    ALL_QUESTIONS.map(q => [q.id, { q: q.question, section: q.section, is_sub: q.is_sub }])
+    ALL_QUESTIONS.map(q => [q.id, {
+      q: q.question,
+      section: SECTION_DISPLAY[q.section_index] ?? q.section,
+      is_sub: q.is_sub,
+    }])
   );
 
-// Section display order matches quiz flow
-const SECTION_ORDER = ["Eligibility", "Investment", "Family", "Business", "Professional", "History", "Home Ties"];
+// Order comes from the JSON sections array — same source as the map keys
+const SECTION_ORDER = SECTION_DISPLAY;
 
 export default function QuizReview() {
   const router = useRouter();

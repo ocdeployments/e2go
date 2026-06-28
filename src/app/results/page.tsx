@@ -363,6 +363,8 @@ function ResultsPageInner() {
   const [flagSaveStatus, setFlagSaveStatus] = useState<Record<string, "idle" | "saving" | "saved">>({});
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const flagDebounceRefs = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!data) return;
@@ -462,7 +464,39 @@ function ResultsPageInner() {
   const targetDateMsg = getTargetDateMessage(data.answers?.["Q0-target-date"] as string);
   const scoreColor = score >= 70 ? "#C9A84C" : score >= 40 ? "#f59e0b" : "rgba(245,240,232,0.68)";
   const band = getBandConfig(outcome);
-  const ctaHref = isLoggedIn ? "/apply" : `/pricing?tier=${data.application_type}`;
+  const handleCheckout = async (tierId: string = 'complete') => {
+    if (!isLoggedIn) {
+      window.location.href = '/login?next=/results';
+      return;
+    }
+    setCheckoutLoading(true);
+    setCheckoutError(null);
+    try {
+      const resolvedTier = tierId === 'complete' && (data.application_type === 'partnership' || data.application_type === 'spousal_partnership')
+        ? 'complete_partnership'
+        : tierId;
+      const res = await fetch('/api/checkout/initiate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tierId: resolvedTier }),
+      });
+      const json = await res.json() as { alreadyPaid?: boolean; url?: string; error?: string };
+      if (json.alreadyPaid) {
+        window.location.href = '/case-profile';
+        return;
+      }
+      if (json.url) {
+        window.location.href = json.url;
+        return;
+      }
+      setCheckoutError(json.error || 'Something went wrong. Please try again.');
+    } catch {
+      setCheckoutError('Connection error. Please try again.');
+    } finally {
+      setCheckoutLoading(false);
+    }
+  };
+
   const displayNameFromEmail = quizEmail ? (quizEmail.split("@")[0].charAt(0).toUpperCase() + quizEmail.split("@")[0].slice(1)) : null;
   const FALLBACK_NAMES = ["Alex", "Jordan", "Morgan", "Taylor", "Casey", "Riley"];
   const displayName = userName || displayNameFromEmail || FALLBACK_NAMES[score % FALLBACK_NAMES.length];
@@ -1167,9 +1201,18 @@ function ResultsPageInner() {
 
               {/* CTA */}
               <div style={{ display: "flex", flexDirection: "column" as const, alignItems: "flex-end", justifyContent: "flex-end", flexShrink: 0 }}>
-                <Link href={ctaHref} style={{ display: "block", padding: "17px 30px", background: "#C9A84C", color: "#0a0a0a", fontSize: "12px", fontWeight: 600, letterSpacing: "0.08em", fontFamily: "'DM Sans', sans-serif", textDecoration: "none", textAlign: "center" as const, whiteSpace: "nowrap" as const }}>
-                  {isPartnership ? "Build Our Partnership Case" : "Build My Case with E2Go"}
-                </Link>
+                <button
+                  onClick={() => handleCheckout('complete')}
+                  disabled={checkoutLoading}
+                  style={{ display: "block", padding: "17px 30px", background: checkoutLoading ? "rgba(201,168,76,0.6)" : "#C9A84C", color: "#0a0a0a", fontSize: "12px", fontWeight: 600, letterSpacing: "0.08em", fontFamily: "'DM Sans', sans-serif", border: "none", cursor: checkoutLoading ? "not-allowed" : "pointer", textAlign: "center" as const, whiteSpace: "nowrap" as const }}
+                >
+                  {checkoutLoading ? "Preparing checkout…" : isPartnership ? "Build Our Partnership Case" : "Build My Case with E2Go"}
+                </button>
+                {checkoutError && (
+                  <div style={{ marginTop: "8px", fontSize: "11px", color: "#f87171", maxWidth: "240px", textAlign: "right" as const }}>
+                    {checkoutError}
+                  </div>
+                )}
                 <div style={{ display: "flex", gap: "14px", marginTop: "10px" }}>
                   <span style={{ fontSize: "10px", color: "rgba(245,240,232,0.38)" }}>✓ No subscription</span>
                   <span style={{ fontSize: "10px", color: "rgba(245,240,232,0.38)" }}>✓ Documents yours forever</span>

@@ -147,7 +147,24 @@ export async function middleware(req: NextRequest) {
     const hasSimulatorAccess = apps?.some(a => a.source === 'simulator_standalone') ?? false;
 
     if (!hasFullAccess) {
-      if (hasSimulatorAccess && pathname.startsWith('/simulator')) {
+      // FDD standalone buyers can access /fdd routes even without a full package
+      if (pathname.startsWith('/fdd')) {
+        const { data: fddPayment } = await supabase
+          .from('payments')
+          .select('id')
+          .eq('user_id', user.id)
+          .in('payment_type', ['fdd_intelligence', 'fdd_intelligence_loyalty'])
+          .eq('status', 'completed')
+          .limit(1)
+          .maybeSingle();
+        if (fddPayment) {
+          // FDD standalone purchase — allow through
+        } else if (hasSimulatorAccess) {
+          return NextResponse.redirect(new URL('/simulator', req.url));
+        } else {
+          return NextResponse.redirect(new URL('/results', req.url));
+        }
+      } else if (hasSimulatorAccess && pathname.startsWith('/simulator')) {
         // Simulator-only subscriber on their permitted route — pass through
       } else if (hasSimulatorAccess) {
         // Simulator-only subscriber trying to reach a case-building route

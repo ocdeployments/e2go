@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { CheckoutButton } from "@/components/checkout/CheckoutButton";
 
 export const metadata: Metadata = {
   title: "Standalone Modules — FDD Analysis, Market Analysis, Business Plan | e2go",
@@ -14,6 +15,7 @@ const MODULES = [
     price: "$495",
     priceNote: "one-time · per FDD",
     href: "/fdd",
+    checkoutTierId: "fdd_intelligence",
     badge: "Unique to e2go",
     description:
       "Most franchise buyers receive a 200-page Franchise Disclosure Document and have no idea what an immigration officer will look for in it. Five dedicated engines extract, score, and cross-reference the items that matter — then inject those findings directly into your application documents.",
@@ -36,6 +38,7 @@ const MODULES = [
     price: "$295",
     priceNote: "one-time · per business",
     href: "/market-analysis",
+    checkoutTierId: undefined,
     badge: "Consulate-ready output",
     description:
       "A consular officer reading your Business Plan expects real market evidence. Generic claims about growing industries fail. The Market Analysis engine pulls real data for your exact sector and geography — then injects it directly into your Business Plan's market sections.",
@@ -58,6 +61,7 @@ const MODULES = [
     price: "$695",
     priceNote: "one-time · standalone",
     href: "/results",
+    checkoutTierId: undefined,
     badge: "Archetype-tailored",
     description:
       "The Business Plan is the most scrutinised document in an E-2 file. Attorneys charge $3,000–$5,000 for one. Ours is produced by claude-opus-4-8 in hours — with your gap analysis, investor archetype, and market data all loaded into a single structured prompt. Formatted to your consulate's confirmed page limits.",
@@ -163,9 +167,17 @@ export default function ModulesPage() {
 
               {/* CTA row */}
               <div style={{ padding: "16px 32px 20px", display: "flex", gap: "14px", alignItems: "center" }}>
-                <Link href={mod.href} style={{ display: "inline-block", padding: "13px 24px", background: "#C9A84C", color: "#0a0a0a", fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", textDecoration: "none" }}>
-                  Get {mod.headline}
-                </Link>
+                {mod.checkoutTierId ? (
+                  <CheckoutButton
+                    tierId={mod.checkoutTierId}
+                    label={`Get ${mod.headline}`}
+                    redirectOnAuth="/modules"
+                  />
+                ) : (
+                  <Link href={mod.href} style={{ display: "inline-block", padding: "13px 24px", background: "#C9A84C", color: "#0a0a0a", fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", textDecoration: "none" }}>
+                    Get {mod.headline}
+                  </Link>
+                )}
                 <span style={{ fontSize: "10px", color: "rgba(245,240,232,0.35)" }}>or get all three for $1,195 →</span>
               </div>
             </div>
