@@ -1,6 +1,130 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 27, 2026 — Session 84: Sprints G-1/G-2/G-3 + F-1/F-2 all complete. Build clean 144 pages. 5 commits pushed to dev. Owner actions remain (FAQ migration, Sentry DSN, Cloudflare Turnstile, Resend domain, FAQ seed scripts).
+**Last Updated:** June 28, 2026 — Session 86: Sprint H fully implemented. H-1 through H-7 complete. Build clean at 144 pages.
+
+---
+
+## Session 86 — Sprint H Implementation (June 28, 2026)
+
+**Branch:** dev. All 7 Sprint H sub-sprints implemented and build verified clean.
+
+### H-1 ✅ formatOutcome() Bug Fix — DONE
+Added quiz engine vocab (`proceed`, `proceed_risk`, `attorney_recommended`) to OUTCOME_MAP in `CaseCommandPanel.tsx` and to `formatOutcome()` in `DashboardClient.tsx`. Raw enum no longer visible to paying users.
+
+### H-2 ✅ Dashboard Header Redesign — DONE
+Full-dashboard header: "Let's build your E-2 application, [firstName]." + aspirational advisory sentence. No-quiz variant updated to match.
+
+### H-3 ✅ CaseCommandPanel Hierarchy Inversion — DONE
+CTA is now dominant first element (full-width gold button). 4-phase journey roadmap (adaptive: franchise vs own-business). Assessment pill and readiness % demoted below CTA. `isFranchisePath` prop added to interface and wired through.
+
+### H-4 ✅ WorkstreamStrip — DONE
+ProfileIntelligenceStrip replaced with WorkstreamStrip (4 macro buckets: Your Profile · Your Business · Your Application · Your Interview). No data duplication. Props match DashboardClient available data.
+
+### H-5 ✅ FolderStack Architecture — DONE
+5-tab structure: My Case Profile · My Application · My Analysis · My Prep · My Package. 3-tier StepRow (done/in-progress/upcoming with progressive fading). CaseProfileTab rendered as first tab. localStorage key preserved.
+
+### H-6 ✅ CaseProfileTab.tsx — DONE
+New component at `src/components/dashboard/CaseProfileTab.tsx`. Fetches `/api/dashboard/case-profile`. 6 sections: The Investor · The Business · The Investment · Case Intelligence (dimension bars) · Application Milestones · Interview Readiness. Progressive empty states with "Populates from Step X" hints.
+
+### H-7 ✅ DB View + API Route — DONE
+- Migration: `supabase/migrations/20260628100000_case_profile_view.sql` — `case_profile_view` joins profiles, quiz_sessions, case_profiles, applications, application_lifecycle, fdd_analyses (with count), simulator_sessions, interview_prep_kits
+- API: `src/app/api/dashboard/case-profile/route.ts` — authenticated GET, returns `CaseProfileResponse` typed DTO
+
+### Build Status — Session 86
+`npm run build` → ✓ Compiled · ✓ Types pass · ✓ 144 pages
+
+---
+
+## Session 85 — Sprint H Design Sprint (June 28, 2026)
+
+**Branch:** dev. No code changes this session — UX design and product decisions only. Sprint H plan locked.
+
+**What happened:**
+Full dashboard UX audit. Built 3 iterative mockups. Identified 7 structural improvements to the dashboard. Defined Sprint H with 7 sub-sprints covering the formatOutcome bug, dashboard header, CaseCommandPanel hierarchy, bottom strip, FolderStack architecture, and a brand-new "My Case Profile" tab.
+
+### Sprint H — Locked Decisions
+
+**H-1 · formatOutcome() Bug Fix (P0 — 30 min)**
+`PROCEED_RISK` is showing as a raw DB enum string to paying users because the `formatOutcome()` vocabulary map in `DashboardClient.tsx` uses `strong/borderline/caution/ineligible` but the quiz engine produces `PROCEED/PROCEED_RISK/ATTORNEY_RECOMMENDED`. Fix: add the correct vocab to the map. This is live and visible on every paid dashboard session.
+
+**H-2 · Dashboard Header Redesign**
+- From: "Welcome to the E2Go family." (generic)
+- To: "Let's build your E-2 application, [first_name]." (aspirational, action-oriented)
+- Advisory sentence: encouragement + trajectory only — no data points in the header (data belongs in panels)
+- Pattern: "The hardest part is deciding to start — and you've done that."
+
+**H-3 · CaseCommandPanel Hierarchy Inversion**
+- "Begin Onboarding →" gold CTA is the FIRST and dominant element (full-width gold button)
+- 17% readiness score demoted to a supporting metric below the CTA
+- "Case at a glance" section: Country · Investment · Assessment pill (inline, compact)
+- "Your Journey Ahead" — 4-phase sequential roadmap replaces flat feature list:
+  - Phase 1: Discovery (franchise selection, if needed) — adaptive: hidden for own-business clients
+  - Phase 2: Intelligence (gap analysis + FDD + market analysis) — unlocks after case file complete; FDD hidden for own-business clients
+  - Phase 3: Application (15 consulate-formatted documents, auto-generate)
+  - Phase 4: Interview (case dossier + AI simulator practice)
+- Live indicators (pulsing green dot) on dynamic fields (readiness %, assessment pill)
+- Remove ProfileIntelligenceStrip floating band — its data moves into Case at a glance
+
+**H-4 · Bottom Strip — 4 Macro Completion Buckets**
+Replaces the 4-card intelligence strip which was repeating data already shown elsewhere.
+- Your Profile: % with bar — "who you are as an investor" (onboarding, qualifications, ties)
+- Your Business: status — franchise selection available; FDD + market unlock after case file
+- Your Application: locked — gap analysis + 15 docs unlock when case file is built
+- Your Interview: Simulator open now / Dossier after case file
+Primary risk area REMOVED from all surfaces — too early to flag from a 15-question quiz.
+
+**H-5 · FolderStack Tab Architecture**
+- New tab order: My Case Profile · My Application · My Analysis · My Prep · My Package
+- 3-tier step list in My Application:
+  - Step 1 COMPLETE: struck through, dimmed (opacity 0.4), compressed
+  - Step 2 IN PROGRESS: expanded, "Continue →" CTA inline, gold left border
+  - Steps 3–9 NOT STARTED: progressively fading (0.5 → 0.12 opacity)
+- Tab lock badges: "after step 2", "after step 5" etc on locked tabs so user knows why
+
+**H-6 · My Case Profile Tab — Component**
+New component: `CaseProfileTab.tsx`. First tab in FolderStack (position 0).
+- Identity strip (always populated from quiz): Name · Country · Assessment pill · Readiness %
+- The Investor: personal data, family, country ties (from Onboarding, Family, Country Ties)
+- The Business: entity name, industry, employees, FDD status, territory (from Business Profile, FDD, Market Analysis)
+- The Investment: precise amount, source of funds, at-risk status (from Investment section + docs)
+- Case Intelligence: 7 dimension bars from gap analysis — each with label + status + 1-line note
+- Interview Readiness: simulator sessions, dossier status, narrative profile
+- Empty state design: skeleton shows "Populates from Step X" on each unpopulated field so client knows what to complete
+
+**H-7 · My Case Profile Tab — DB View + API**
+- New DB view: `case_profile_view` — joins all 12 sources without new storage
+  - profiles, applications, quiz_sessions/quiz_answers, application_answers (all modules), gap_analysis_results, fdd_analysis_results, market_analysis_results, simulator_sessions, interview_prep_kits
+- New API route: `GET /api/dashboard/case-profile`
+- Wire into CaseProfileTab as its data source
+
+### Data Deduplication Rules (locked)
+- Investment amount: appears ONCE — left panel "Case at a glance" only
+- Assessment: appears ONCE — left panel pill + My Case Profile tab
+- 17% readiness: appears ONCE — left panel (removed from bottom strip)
+- Primary risk: REMOVED entirely until gap analysis is complete
+
+### Non-Franchise (Own Business) Client Journey
+- Phase 1 (Discovery/franchise selection): hidden from roadmap
+- FDD Intelligence: hidden, not greyed (not applicable, not locked)
+- Business Profile step 3: different prompt set (describe existing business, not franchise)
+- Intelligence phase: Gap analysis + Market analysis only
+- Detection: from quiz_answers Q0-08a value
+
+### ⚠️ Owner Actions Still Required (carried from Session 84)
+1. Apply FAQ pgvector migration via SQL Editor
+2. Run FAQ seed scripts after migration
+3. Add NEXT_PUBLIC_SENTRY_DSN + SENTRY_DSN + SENTRY_ORG + SENTRY_PROJECT to Vercel env
+4. Add NEXT_PUBLIC_CF_TURNSTILE_SITE_KEY + CF_TURNSTILE_SECRET_KEY to Vercel
+5. Add CRON_SECRET env var to Vercel
+6. Rotate OpenAI API key
+7. Check Resend domain verification
+8. Refund $197 test charge in Stripe dashboard
+9. Apply migration `supabase/migrations/20260627100000_interview_prep_kits.sql` via SQL Editor
+
+### Next Sprint
+Start with H-1 (formatOutcome fix — 30 min, one-line change, P0).
+Then H-2 → H-3 → H-4 → H-5 → H-6 → H-7 in sequence.
+H-6 and H-7 are the largest items — plan a full session for each.
 
 ---
 
