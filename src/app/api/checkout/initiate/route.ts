@@ -90,13 +90,10 @@ export async function POST(request: NextRequest) {
     if (existingApp) {
       applicationId = existingApp.id;
     } else {
+      // payment_status defaults to 'unpaid' per DB constraint — do not set 'pending'
       const { data: newApp, error: insertError } = await supabase
         .from('applications')
-        .insert({
-          user_id: user.id,
-          payment_status: 'pending',
-          source: 'standard',
-        })
+        .insert({ user_id: user.id })
         .select('id')
         .single();
 
@@ -106,12 +103,6 @@ export async function POST(request: NextRequest) {
       }
 
       applicationId = newApp.id;
-
-      // Bootstrap lifecycle row
-      await supabase.from('application_lifecycle').upsert(
-        { user_id: user.id, application_id: applicationId },
-        { onConflict: 'user_id' }
-      );
     }
   }
 
