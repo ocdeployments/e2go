@@ -69,16 +69,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid file' }, { status: 400 });
     }
 
-    const allowedTypes = ['audio/webm', 'audio/wav', 'audio/mp3', 'audio/ogg'];
-    if (!allowedTypes.includes(audioFile.type)) {
+    const baseType = audioFile.type.split(';')[0].trim();
+    const allowedTypes = ['audio/webm', 'audio/wav', 'audio/mp3', 'audio/ogg', 'audio/mp4'];
+    if (!allowedTypes.includes(baseType)) {
       return NextResponse.json({ error: 'Invalid file type' }, { status: 400 });
     }
 
     // Primary: Groq Whisper (faster inference)
     if (GROQ_API_KEY) {
       try {
-        const text = await transcribeWithGroq(audioFile);
-        return NextResponse.json({ text });
+        const transcript = await transcribeWithGroq(audioFile);
+        return NextResponse.json({ transcript });
       } catch (groqError) {
         console.warn('[transcribe] Groq STT failed, falling back to OpenAI Whisper:', groqError);
       }
@@ -87,8 +88,8 @@ export async function POST(request: NextRequest) {
     // Fallback: OpenAI Whisper
     if (OPENAI_API_KEY) {
       try {
-        const text = await transcribeWithOpenAI(audioFile);
-        return NextResponse.json({ text });
+        const transcript = await transcribeWithOpenAI(audioFile);
+        return NextResponse.json({ transcript });
       } catch (openaiError) {
         console.error('[transcribe] OpenAI Whisper also failed:', openaiError);
       }
