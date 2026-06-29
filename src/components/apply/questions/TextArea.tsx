@@ -61,24 +61,14 @@ export default function TextArea({ value, onChange, onBlur, placeholder, disable
     localStorage.setItem('e2go_voice_notice_dismissed', 'true');
   }, []);
 
-  const handleMicClick = useCallback(async () => {
+  const handleMicClick = useCallback(() => {
     if (listening) {
       stopListening();
       return;
     }
-
-    // Pre-check microphone permission before starting speech recognition
-    if (typeof navigator !== 'undefined' && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        // Stop the stream immediately — we just needed the permission prompt
-        stream.getTracks().forEach((track) => track.stop());
-      } catch {
-        // Permission denied — don't start recognition
-        return;
-      }
-    }
-
+    // Web Speech API requests mic permission internally on start() — no getUserMedia pre-check needed.
+    // A separate getUserMedia call causes the browser to scan all audio devices including any
+    // previously-paired Continuity devices, triggering macOS disconnect notifications.
     startListening();
   }, [listening, startListening, stopListening]);
 
