@@ -36,9 +36,9 @@ const MODULES = [
     tag: "All business types",
     headline: "Market Analysis",
     price: "$295",
-    priceNote: "one-time · per business",
+    priceNote: "standalone · or included in full package",
     href: "/market-analysis",
-    checkoutTierId: undefined,
+    checkoutTierId: "complete",
     badge: "Consulate-ready output",
     description:
       "A consular officer reading your Business Plan expects real market evidence. Generic claims about growing industries fail. The Market Analysis engine pulls real data for your exact sector and geography — then injects it directly into your Business Plan's market sections.",
@@ -59,9 +59,9 @@ const MODULES = [
     tag: "All business types",
     headline: "E-2 Business Plan",
     price: "$695",
-    priceNote: "one-time · standalone",
+    priceNote: "standalone · or included in full package",
     href: "/results",
-    checkoutTierId: undefined,
+    checkoutTierId: "complete",
     badge: "Archetype-tailored",
     description:
       "The Business Plan is the most scrutinised document in an E-2 file. Attorneys charge $3,000–$5,000 for one. Ours is produced by claude-opus-4-8 in hours — with your gap analysis, investor archetype, and market data all loaded into a single structured prompt. Formatted to your consulate's confirmed page limits.",
@@ -166,19 +166,25 @@ export default function ModulesPage() {
               </div>
 
               {/* CTA row */}
-              <div style={{ padding: "16px 32px 20px", display: "flex", gap: "14px", alignItems: "center" }}>
-                {mod.checkoutTierId ? (
+              <div style={{ padding: "16px 32px 20px", display: "flex", gap: "14px", alignItems: "center", flexWrap: "wrap" }}>
+                {mod.id === "fdd" ? (
                   <CheckoutButton
-                    tierId={mod.checkoutTierId}
-                    label={`Get ${mod.headline}`}
+                    tierId="fdd_intelligence"
+                    label="Get FDD Intelligence — $495"
                     redirectOnAuth="/modules"
                   />
                 ) : (
-                  <Link href={mod.href} style={{ display: "inline-block", padding: "13px 24px", background: "#C9A84C", color: "#0a0a0a", fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", textDecoration: "none" }}>
-                    Get {mod.headline}
-                  </Link>
+                  <div>
+                    <CheckoutButton
+                      tierId="complete"
+                      label={`Get ${mod.headline} — included in full package`}
+                      redirectOnAuth="/modules"
+                    />
+                    <div style={{ marginTop: "5px", fontSize: "9px", color: "rgba(245,240,232,0.35)", letterSpacing: "0.05em" }}>
+                      Standalone pricing coming soon · full package ($1,495) includes this + 12 other documents
+                    </div>
+                  </div>
                 )}
-                <span style={{ fontSize: "10px", color: "rgba(245,240,232,0.35)" }}>or get all three for $1,195 →</span>
               </div>
             </div>
           ))}
@@ -204,11 +210,13 @@ export default function ModulesPage() {
             ))}
           </div>
           <div style={{ display: "flex", gap: "16px", alignItems: "center", flexWrap: "wrap" }}>
-            <Link href={BUNDLE.href} style={{ display: "inline-block", padding: "15px 30px", background: "#C9A84C", color: "#0a0a0a", fontSize: "12px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", textDecoration: "none" }}>
-              Get the Bundle
-            </Link>
+            <CheckoutButton
+              tierId="complete"
+              label="Get the Bundle — included in full package"
+              redirectOnAuth="/modules"
+            />
             <Link href="/results" style={{ fontSize: "12px", color: "rgba(201,168,76,0.8)", textDecoration: "none" }}>
-              Or get everything (15 docs + simulator) for $1,495 →
+              See full package details →
             </Link>
           </div>
         </div>

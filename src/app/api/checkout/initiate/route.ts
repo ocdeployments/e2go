@@ -115,12 +115,8 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  // Get customer email
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('email')
-    .eq('id', user.id)
-    .maybeSingle();
+  // Stripe rejects empty string for customer_email — use auth email or omit
+  const customerEmail = user.email || undefined;
 
   let session: Stripe.Checkout.Session;
   try {
@@ -130,7 +126,7 @@ export async function POST(request: NextRequest) {
       mode: 'payment',
       success_url: `${appUrl}/case-profile?payment=success`,
       cancel_url: `${appUrl}/results`,
-      customer_email: profile?.email || '',
+      ...(customerEmail ? { customer_email: customerEmail } : {}),
       metadata: {
         applicationId: applicationId ?? '',
         userId: user.id,
