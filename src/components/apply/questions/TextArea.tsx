@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
-import useSpeechInput from '@/hooks/useSpeechInput';
 
 interface TextAreaProps {
   value: string;
@@ -12,28 +11,16 @@ interface TextAreaProps {
   disabled?: boolean;
 }
 
-// Module-level: track whether the unsupported browser notice has been shown this page load
-let noticeShownThisPageLoad = false;
-
 export default function TextArea({ value, onChange, onBlur, placeholder, disabled }: TextAreaProps) {
   const [focused, setFocused] = useState(false);
-  const [showVoiceNotice, setShowVoiceNotice] = useState(false);
+  const [recording, setRecording] = useState(false);
+  const [transcribing, setTranscribing] = useState(false);
+  const [micError, setMicError] = useState<string | null>(null);
+
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  const handleSpeechResult = useCallback(
-    (transcript: string, isFinal: boolean) => {
-      if (isFinal) {
-        const trimmed = value.trim();
-        const newValue = trimmed ? `${trimmed} ${transcript.trim()}` : transcript.trim();
-        onChange(newValue);
-      }
-    },
-    [value, onChange]
-  );
-
-  const { supported, listening, startListening, stopListening } = useSpeechInput({
-    onResult: handleSpeechResult,
-  });
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const streamRef = useRef<MediaStream | null>(null);
 
   // Auto-resize textarea based on content
   useEffect(() => {
@@ -43,38 +30,104 @@ export default function TextArea({ value, onChange, onBlur, placeholder, disable
     el.style.height = `${el.scrollHeight}px`;
   }, [value]);
 
-  // Show one-time voice notice for unsupported browsers (once per page load)
+  // Cleanup on unmount
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    if (supported) return;
+    return () => {
+      streamRef.current?.getTracks().forEach(t => t.stop());
+    };
+  }, []);
 
-    const dismissed = localStorage.getItem('e2go_voice_notice_dismissed');
-    if (dismissed === 'true') return;
-    if (noticeShownThisPageLoad) return;
+  const startRecording = useCallback(async () => {
+    setMicError(null);
+    try {
+      // Prefer built-in Mac mic to avoid Continuity/iPhone devices
+      let deviceId: string | undefined;
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const audioInputs = devices.filter(d => d.kind === 'audioinput');
+        const builtIn = audioInputs.find(d =>
+          /built.?in|macbook|internal/i.test(d.label)
+        );
+        deviceId = builtIn?.deviceId;
+      } catch { /* fall through to default device */ }
 
-    noticeShownThisPageLoad = true;
-    setShowVoiceNotice(true);
-  }, [supported]);
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: deviceId ? { deviceId: { exact: deviceId } } : true,
+      });
+      streamRef.current = stream;
 
-  const dismissNotice = useCallback(() => {
-    setShowVoiceNotice(false);
-    localStorage.setItem('e2go_voice_notice_dismissed', 'true');
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+        ? 'audio/webm;codecs=opus'
+        : MediaRecorder.isTypeSupported('audio/webm')
+          ? 'audio/webm'
+          : 'audio/mp4';
+
+      const recorder = new MediaRecorder(stream, { mimeType });
+      mediaRecorderRef.current = recorder;
+      chunksRef.current = [];
+
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data);
+      };
+
+      recorder.onstop = async () => {
+        stream.getTracks().forEach(t => t.stop());
+        streamRef.current = null;
+
+        const blob = new Blob(chunksRef.current, { type: mimeType });
+        if (blob.size < 1000) {
+          // Too small — likely no audio captured
+          setTranscribing(false);
+          return;
+        }
+
+        setTranscribing(true);
+        try {
+          const form = new FormData();
+          form.append('file', blob, 'recording.webm');
+          const res = await fetch('/api/simulator/transcribe', { method: 'POST', body: form });
+          const json = await res.json() as { transcript?: string; error?: string };
+          if (json.transcript) {
+            const trimmed = value.trim();
+            onChange(trimmed ? `${trimmed} ${json.transcript.trim()}` : json.transcript.trim());
+          }
+        } catch {
+          setMicError('Transcription failed. Please try again or type your answer.');
+        } finally {
+          setTranscribing(false);
+        }
+      };
+
+      recorder.start();
+      setRecording(true);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes('Permission') || msg.includes('denied') || msg.includes('NotAllowed')) {
+        setMicError('Microphone access denied. Check browser settings.');
+      } else {
+        setMicError('Could not access microphone. Please type your answer.');
+      }
+    }
+  }, [value, onChange]);
+
+  const stopRecording = useCallback(() => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+    }
+    setRecording(false);
   }, []);
 
   const handleMicClick = useCallback(() => {
-    if (listening) {
-      stopListening();
-      return;
+    if (recording) {
+      stopRecording();
+    } else {
+      startRecording();
     }
-    // Web Speech API requests mic permission internally on start() — no getUserMedia pre-check needed.
-    // A separate getUserMedia call causes the browser to scan all audio devices including any
-    // previously-paired Continuity devices, triggering macOS disconnect notifications.
-    startListening();
-  }, [listening, startListening, stopListening]);
+  }, [recording, startRecording, stopRecording]);
 
-  // Word count
   const wordCount = value.trim() ? value.trim().split(/\s+/).length : 0;
   const hasMinimumWords = wordCount >= 20;
+  const micSupported = typeof window !== 'undefined' && !!navigator.mediaDevices?.getUserMedia;
 
   return (
     <div>
@@ -91,12 +144,12 @@ export default function TextArea({ value, onChange, onBlur, placeholder, disable
         style={{
           minHeight: '110px',
           backgroundColor: 'rgba(201,168,76,0.02)',
-          border: listening
+          border: recording
             ? '1px solid #C9A84C'
             : focused
               ? '1px solid rgba(201,168,76,0.45)'
               : '1px solid rgba(201,168,76,0.15)',
-          boxShadow: listening ? '0 0 0 1px rgba(201,168,76,0.15)' : 'none',
+          boxShadow: recording ? '0 0 0 1px rgba(201,168,76,0.15)' : 'none',
           color: '#f5f0e8',
           fontFamily: "'DM Sans', sans-serif",
           fontWeight: 300,
@@ -109,27 +162,27 @@ export default function TextArea({ value, onChange, onBlur, placeholder, disable
 
       {/* Voice input bar */}
       <div className="mt-2 flex items-center gap-2.5">
-        {/* Mic button */}
-        {supported && !disabled && (
+        {micSupported && !disabled && (
           <button
             type="button"
             onClick={handleMicClick}
+            disabled={transcribing}
             className="inline-flex items-center gap-1.5 transition-all"
             style={{
-              background: listening ? 'rgba(201,168,76,0.05)' : 'transparent',
-              border: `1px solid ${listening ? '#C9A84C' : 'rgba(201,168,76,0.22)'}`,
-              color: listening ? '#C9A84C' : 'rgba(245,240,232,0.72)',
+              background: recording ? 'rgba(201,168,76,0.05)' : 'transparent',
+              border: `1px solid ${recording ? '#C9A84C' : 'rgba(201,168,76,0.22)'}`,
+              color: recording ? '#C9A84C' : transcribing ? 'rgba(245,240,232,0.4)' : 'rgba(245,240,232,0.72)',
               fontFamily: "'DM Sans', sans-serif",
               fontSize: '11px',
               fontWeight: 400,
               letterSpacing: '0.08em',
               padding: '6px 14px',
-              cursor: 'pointer',
+              cursor: transcribing ? 'default' : 'pointer',
               borderRadius: 0,
-              animation: listening ? 'mic-pulse 1.5s ease-in-out infinite' : 'none',
+              animation: recording ? 'mic-pulse 1.5s ease-in-out infinite' : 'none',
             }}
           >
-            {listening ? (
+            {recording ? (
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="1" y1="1" x2="23" y2="23" />
                 <path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6" />
@@ -145,12 +198,12 @@ export default function TextArea({ value, onChange, onBlur, placeholder, disable
                 <line x1="8" y1="23" x2="16" y2="23" />
               </svg>
             )}
-            {listening ? 'Stop recording' : 'Speak your answer'}
+            {transcribing ? 'Transcribing…' : recording ? 'Stop recording' : 'Speak your answer'}
           </button>
         )}
 
-        {/* Waveform indicator (while listening) */}
-        {listening && (
+        {/* Waveform indicator (while recording) */}
+        {recording && (
           <div className="flex items-center gap-[3px]">
             {[0, 1, 2, 3].map((i) => (
               <span
@@ -174,7 +227,7 @@ export default function TextArea({ value, onChange, onBlur, placeholder, disable
                 color: '#C9A84C',
               }}
             >
-              Listening — click to stop
+              Recording — click to stop
             </span>
           </div>
         )}
@@ -193,6 +246,13 @@ export default function TextArea({ value, onChange, onBlur, placeholder, disable
         </span>
       </div>
 
+      {/* Error message */}
+      {micError && (
+        <div style={{ marginTop: '6px', fontSize: '11px', color: '#f87171', fontFamily: "'DM Sans', sans-serif" }}>
+          {micError}
+        </div>
+      )}
+
       {/* Pulse animation keyframes */}
       <style jsx>{`
         @keyframes mic-pulse {
@@ -204,40 +264,6 @@ export default function TextArea({ value, onChange, onBlur, placeholder, disable
           50% { transform: scaleY(1); }
         }
       `}</style>
-
-      {/* One-time unsupported browser notice */}
-      {showVoiceNotice && (
-        <div
-          className="mt-1.5 flex items-start justify-between gap-3"
-          style={{
-            fontSize: '12px',
-            fontWeight: 300,
-            color: 'rgba(245,240,232,0.72)',
-            fontFamily: "'DM Sans', sans-serif",
-          }}
-        >
-          <span>
-            Voice input works in Chrome and Edge. You can type your answers instead.
-          </span>
-          <button
-            type="button"
-            onClick={dismissNotice}
-            aria-label="Dismiss voice input notice"
-            style={{
-              background: 'none',
-              border: 'none',
-              color: 'rgba(245,240,232,0.72)',
-              cursor: 'pointer',
-              padding: '0 2px',
-              fontSize: '14px',
-              lineHeight: 1,
-              flexShrink: 0,
-            }}
-          >
-            &times;
-          </button>
-        </div>
-      )}
     </div>
   );
 }
