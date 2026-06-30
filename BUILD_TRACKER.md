@@ -1,6 +1,66 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 30, 2026 — Session 93: Architecture reconciliation (no code changes — option 4 holds). Corrected the "engines are siloed / generation is blind" overstatement against the documented flow in `docs/FEATURE_INVENTORY.html`; recorded the pending-decisions register (D1–D6) and the greenlit "genuine learning from experience" backlog; updated the inventory's gaps/engines/silos/flows to match verified code. See the Session 93 block below.
+**Last Updated:** June 30, 2026 — Session 94: Sprint J-1 complete (CIC-0–4.1). All D1–D6 decisions resolved. Both migrations applied in Supabase. Build clean.
+
+---
+
+## Session 94 — Sprint J-1 Complete: CIC-3 + CIC-4.1 + Decisions D1–D6 (June 30, 2026)
+
+**Branch:** dev. **Build:** ✅ clean. **Migrations applied in Supabase:** ✅ both (outcome_capture + case_model_d1_merge).
+
+### Completed this session
+
+**CIC-3.1 — Gap analysis consuming CPU comprehension** ✅
+- `src/lib/gap-analysis-engine.ts`: exports `LedgerFact`, `CpuGapContext`; `scoreCase()` gained 7th optional `cpuContext` param; `applyCpuContext()` enriches evidence[] and flags `denialFactors` with ⚑ after scoring
+- `src/lib/generation-engine.ts`: `buildGenerationPayload()` fetches `case_theory` + `document_intelligence.ledger` in a single `Promise.all`; `buildCpuGapContext()` maps ledger facts → `LedgerFact[]` and derives `activeDenialCodes` from unproven dimension verdicts; passes `cpuGapContext` as 5th arg to `buildGapContext()`; removed duplicate downstream case_theory fetch
+
+**CIC-3.2 — FDD auto-seed from document imports** ✅
+- `src/lib/cic-fdd-seed.ts` (NEW): `seedFddAnalysisFromUpload()` — persists FDD PDF to `application-documents` bucket + seeds pending `fdd_analyses` row; idempotent on (application_id, original_filename); storage rollback on DB insert failure; only FDDs are stored (all other imports keep file_path='')
+- `src/app/api/apply/parse-document/route.ts`: non-blocking FDD seed added after CIC fire-and-forget block (only when resolvedDocType==='fdd' && isPdf)
+
+**CIC-3.3 — Simulator prep-kit steered by Case Theory** ✅
+- `src/app/api/simulator/prep-kit/route.ts`: 6th parallel fetch for `case_theory.dimension_verdicts + directives`; `cpuWeakDimensions` (weak/missing/contradicted); `cpuPrepDirectives` (engine='simulator_prep' OR weak dimension); `CPU_DIM_TO_WP` map (source_of_funds→WP-03, investment→WP-01, operations→WP-02, background→WP-04); WP probe selection unions legacy score triggers with `cpuForcedProbeIds`; dossier rule leads with CPU weak dimensions
+
+**CIC-4.1 — Documents page rebuild** ✅
+- `src/app/documents/[applicationId]/page.tsx`: full rewrite — three parallel fetches (documents, package-manifest, change-impact); change-impact banner (urgency colour-coded, dismissable); package progress strip with live bar; document cards (CERTIFIED green / AWAITING CERTIFICATION amber); download gate: `manifest.packageReady && allAcknowledged`; `outcomes_consent` checkbox (D6 third-point consent)
+- `src/types/generation.ts`: added `client_certified`, `certified_at`, `client_regen_note`, `verifier_result` to `GeneratedDocument`
+
+**D1 — case_profiles ↔ case_model merge (phase 1)** ✅
+- `src/lib/case-profile.ts`: after writing to `case_profiles`, now also upserts to `case_model` (archetype, eligibility_score, source/management/business scores, completeness_score, franchise_triggered)
+- Migration `20260630170000_case_model_d1_merge.sql` applied ✅
+
+**D2 — quiz-scoring.ts deleted** ✅ (zero callers confirmed)
+
+**D3 — upstream flow kept inside CIC-2** ✅ (default accepted)
+
+**D4 — outcome capture table** ✅
+- `src/app/api/dashboard/outcome/route.ts` (NEW): POST upserts outcome, GET fetches current outcome; auth via Bearer; ownership check; `consent_given` from POST body only
+- Migration `20260630160000_outcome_capture.sql` applied ✅
+
+**D5 — post-outcome survey questions** — PENDING Romy's domain input
+
+**D6 — three-point consent model** — PARTIAL
+- Point 3 (before download): ✅ built in CIC-4.1 (`outcomes_consent` checkbox in documents page)
+- Point 1 (signup): ❌ not yet built
+- Point 2 (terms update / existing users): ❌ not yet built
+
+### What's next
+
+**D6-signup** — Add `outcomes_consent` checkbox to signup page; persist to `profiles` or metadata table.
+
+**D6-terms-update** — Banner/modal shown on next login for existing users when terms version bumps.
+
+**D5** — Romy to define survey question set (outcome, consulate, denial codes, officer probes, decisive dimensions, timeline). Gating CIC-5 cross-client learning.
+
+**CIC-5** (gated on D5 + D6 full) — outcome survey delivery, anonymization, outcome-indexed case library (2nd RAG corpus).
+
+**D1 Phase 2** (follow-on sprint) — migrate ~14 `case_profiles` readers to use `case_model/case_theory`; then drop backward-compat sync and eventually `case_profiles`.
+
+### Owner actions still required (carried from prior sessions)
+- CIC-0.4: apply `20260630100000_case_intelligence_core.sql`, set `OPENAI_API_KEY`, run `npx tsx scripts/seed-kb-corpus.ts` (unblocks CIC-1.6 → CIC-2)
+- Apply `supabase/migrations/20260627100000_interview_prep_kits.sql`
+- Apply `20260629100000_uploaded_documents.sql` (if not yet done — from Session 90)
+- All Session 89 env var / Stripe / Resend items (items 1–12 in Session 89 block below)
 
 ---
 
