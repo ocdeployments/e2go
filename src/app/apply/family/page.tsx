@@ -328,9 +328,6 @@ export default function FamilyPage() {
             <AdvisoryBlock>If you are unsure whether your spouse will apply, you can still complete this section now and update later. Spouse EAD applications can be filed separately or concurrently with your E-2.</AdvisoryBlock>
           )}
 
-          {answers['M3-L-06']?.value === 'yes' && (
-            <AdvisoryBlock>EAD applications for E-2 dependents can take 3–5 months to process. Your spouse should file Form I-765 concurrently with or after the I-539. Work authorization is not automatic — your spouse must receive the EAD card before starting work.</AdvisoryBlock>
-          )}
         </div>
       )}
 

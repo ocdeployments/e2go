@@ -14,7 +14,7 @@ import { createClient } from '@supabase/supabase-js';
 
 const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
 
-type TaskType = 'evaluate' | 'coaching' | 'faq' | 'prep';
+type TaskType = 'evaluate' | 'coaching' | 'faq' | 'prep' | 'extract';
 
 interface LLMMessage {
   role: 'system' | 'user' | 'assistant';
@@ -37,6 +37,7 @@ const OPENROUTER_MODELS: Record<TaskType, string[]> = {
   coaching: ['xiaomi/mimo-v2.5-pro', 'google/gemini-2.5-pro'],
   faq:      ['xiaomi/mimo-v2.5', 'google/gemini-2.5-flash'],
   prep:     ['xiaomi/mimo-v2.5', 'xiaomi/mimo-v2.5-pro'],
+  extract:  ['xiaomi/mimo-v2.5-pro', 'google/gemini-2.5-pro'],
 };
 
 // Anthropic fallback models per task
@@ -45,6 +46,7 @@ const ANTHROPIC_MODELS: Record<TaskType, string> = {
   coaching: 'claude-sonnet-4-6',
   faq:      'claude-haiku-4-5-20251001',
   prep:     'claude-haiku-4-5-20251001',
+  extract:  'claude-haiku-4-5-20251001',
 };
 
 // Model pricing: USD per 1M tokens (input / output). Verified June 17, 2026.

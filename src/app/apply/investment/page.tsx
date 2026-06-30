@@ -12,6 +12,7 @@ import TextArea from '@/components/apply/questions/TextArea';
 import { useFieldQuality, getQualityBadgeStyle } from '@/hooks/useFieldQuality';
 import OptionButton from '@/components/apply/questions/OptionButton';
 import PreFillBadge from '@/components/apply/questions/PreFillBadge';
+import CurrencyInput from '@/components/apply/questions/CurrencyInput';
 import AdvisoryBlock from '@/components/apply/questions/AdvisoryBlock';
 import RiskFlag from '@/components/apply/questions/RiskFlag';
 import ClusterDivider from '@/components/apply/questions/ClusterDivider';
@@ -66,7 +67,7 @@ const INVESTMENT_OVERVIEW_QUESTIONS: QuestionField[] = [
     { value: 'partial', label: 'Partially — some funds still held' },
     { value: 'no', label: 'No — committed but not yet spent' },
   ]},
-  { key: 'M3-F-NET', type: 'currency', label: 'Approximate net worth in CAD (not including primary residence)' },
+  { key: 'M3-F-NET', type: 'currency', label: 'Approximate net worth in CAD (including primary residence)' },
 ];
 
 const SOURCE_OF_FUNDS_QUESTIONS: QuestionField[] = [
@@ -230,6 +231,30 @@ export default function InvestmentPage() {
               answerMap[row.question_key] = { value: String(row.answer_value), source: null };
             }
           });
+
+          // Pre-fill total invested from quiz eligibility check if not already answered
+          if (!answerMap['M3-F-02']?.value) {
+            const { data: quizSession } = await supabase
+              .from('quiz_sessions')
+              .select('result_json')
+              .eq('user_id', user.id)
+              .order('created_at', { ascending: false })
+              .limit(1)
+              .maybeSingle();
+            const investmentRange = (quizSession?.result_json as Record<string, unknown>)?.investment_range as string | undefined;
+            const QUIZ_MIDPOINTS: Record<string, number> = {
+              'Over $150,000': 175000,
+              '$100,000 – $150,000': 125000,
+              '$75,000 – $100,000': 87500,
+              '$50,000 – $75,000': 62500,
+              'Under $50,000': 35000,
+            };
+            const midpoint = investmentRange ? QUIZ_MIDPOINTS[investmentRange] : undefined;
+            if (midpoint) {
+              answerMap['M3-F-02'] = { value: String(midpoint), source: 'quiz' };
+            }
+          }
+
           setAnswers(answerMap);
 
           // Load saved financial projections from JSON blob
@@ -354,6 +379,8 @@ export default function InvestmentPage() {
                   </div>
                 )}
               </>
+            ) : q.type === 'currency' ? (
+              <CurrencyInput value={answer?.value || ''} onChange={(val) => handleAnswerChange(q.key, val)} />
             ) : (
               <TextInput value={answer?.value || ''} onChange={(val) => handleAnswerChange(q.key, val)} />
             )}

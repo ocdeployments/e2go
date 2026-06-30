@@ -141,12 +141,10 @@ export async function GET() {
 
     supabase
       .from('applications')
-      .select('id')
+      .select('id, payment_status')
       .eq('user_id', userId)
       .neq('source', 'simulator_standalone')
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle(),
+      .order('created_at', { ascending: false }),
   ]);
 
   const profile = profileResult.data as { first_name: string | null; middle_name: string | null; last_name: string | null } | null;
@@ -157,7 +155,9 @@ export async function GET() {
   const latestFdd = fddLatestResult.data;
   const sim = simResult.data;
   const prepKit = prepKitResult.data;
-  const app = appResult.data;
+  // Prefer paid application over unpaid; fall back to most recent
+  const allApps = (appResult.data ?? []) as { id: string; payment_status: string }[];
+  const app = allApps.find(a => a.payment_status === 'paid') ?? allApps[0] ?? null;
 
   const quizResultJson = quiz?.result_json ?? null;
   const quizAnswers = (quizResultJson?.answers as Record<string, string> | null) ?? null;

@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
+import Link from 'next/link';
+import type { SectionCompletion, SectionStatus } from '@/app/api/apply/section-completion/route';
 
 interface ClusterItem {
   id: string;
@@ -32,6 +34,15 @@ const SECTION_NAMES: Record<number, string> = {
   6: 'Your Ties',
 };
 
+const SECTION_TABS = [
+  { id: 'story',          label: 'Story',          href: '/apply/story' },
+  { id: 'business',       label: 'Business',       href: '/apply/business' },
+  { id: 'investment',     label: 'Investment',     href: '/apply/investment' },
+  { id: 'qualifications', label: 'Qualifications', href: '/apply/qualifications' },
+  { id: 'family',         label: 'Family',         href: '/apply/family' },
+  { id: 'ties',           label: 'Ties',           href: '/apply/ties' },
+] as const;
+
 export default function CaseFileShell({
   sectionNumber,
   sectionTitle,
@@ -46,18 +57,38 @@ export default function CaseFileShell({
   previewContent,
 }: CaseFileShellProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const [previewOpen, setPreviewOpen] = useState(false);
   const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
+  const [sectionCompletion, setSectionCompletion] = useState<SectionCompletion>({
+    story: 'none', business: 'none', investment: 'none',
+    qualifications: 'none', family: 'none', ties: 'none',
+  });
+
+  useEffect(() => {
+    fetch('/api/apply/section-completion')
+      .then(r => r.json())
+      .then((d: SectionCompletion) => setSectionCompletion(d))
+      .catch(() => {});
+  }, []);
 
   const nextSectionName = SECTION_NAMES[sectionNumber + 1] || '';
+
+  const activeClusterIndex = clusters.findIndex(c => c.id === activeClusterId);
+  const isLastCluster = activeClusterIndex < 0 || activeClusterIndex === clusters.length - 1;
+  const nextCluster = isLastCluster ? null : clusters[activeClusterIndex + 1];
 
   const handleBack = useCallback(() => {
     router.push(prevSectionPath);
   }, [router, prevSectionPath]);
 
   const handleNext = useCallback(() => {
-    router.push(nextSectionPath);
-  }, [router, nextSectionPath]);
+    if (nextCluster) {
+      onClusterChange(nextCluster.id);
+    } else {
+      router.push(nextSectionPath);
+    }
+  }, [router, nextSectionPath, nextCluster, onClusterChange]);
 
   // Close preview on escape
   useEffect(() => {
@@ -185,10 +216,60 @@ export default function CaseFileShell({
               padding: '7px 16px',
             }}
           >
-            {sectionNumber < 6 ? `Next: ${nextSectionName} →` : 'Back to Case File →'}
+            {nextCluster
+            ? `Next: ${nextCluster.label} →`
+            : sectionNumber < 6
+              ? `Next: ${nextSectionName} →`
+              : 'Back to Case File →'
+          }
           </button>
         </div>
       </header>
+
+      {/* ── Section tab nav ── */}
+      <div
+        className="shrink-0 flex overflow-x-auto border-b scrollbar-none"
+        style={{
+          borderColor: 'rgba(201,168,76,0.10)',
+          backgroundColor: '#0a0a0a',
+          height: '36px',
+        }}
+      >
+        {SECTION_TABS.map((tab) => {
+          const isActive = pathname === tab.href || pathname.startsWith(tab.href + '/');
+          const status: SectionStatus = sectionCompletion[tab.id];
+          return (
+            <Link
+              key={tab.id}
+              href={tab.href}
+              className="shrink-0 flex items-center gap-1.5 px-4 border-b-2 whitespace-nowrap transition-colors"
+              style={{
+                borderColor: isActive ? '#C9A84C' : 'transparent',
+                fontFamily: "'DM Sans', sans-serif",
+                fontSize: '11px',
+                fontWeight: isActive ? 500 : 300,
+                letterSpacing: '0.04em',
+                color: isActive
+                  ? '#C9A84C'
+                  : status === 'complete'
+                    ? 'rgba(245,240,232,0.55)'
+                    : 'rgba(245,240,232,0.28)',
+                textDecoration: 'none',
+              }}
+            >
+              {status === 'complete' && !isActive && (
+                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'rgba(201,168,76,0.55)', flexShrink: 0 }}>
+                  <path d="M5 13l4 4L19 7" />
+                </svg>
+              )}
+              {status === 'partial' && !isActive && (
+                <span style={{ width: '5px', height: '5px', borderRadius: '50%', backgroundColor: 'rgba(245,240,232,0.25)', flexShrink: 0, display: 'inline-block' }} />
+              )}
+              {tab.label}
+            </Link>
+          );
+        })}
+      </div>
 
       {/* ── Main body ── */}
       <div className="flex min-h-0 flex-1">
@@ -333,7 +414,7 @@ export default function CaseFileShell({
 
         {/* ── Mobile cluster pill strip ── */}
         <div
-          className="fixed top-[52px] left-0 right-0 z-30 flex overflow-x-auto border-b lg:hidden"
+          className="fixed top-[88px] left-0 right-0 z-30 flex overflow-x-auto border-b lg:hidden"
           style={{
             borderColor: 'rgba(201,168,76,0.10)',
             backgroundColor: '#0a0a0a',
@@ -364,7 +445,7 @@ export default function CaseFileShell({
 
         {/* ── Question panel (center) ── */}
         <main
-          className="min-w-0 flex-1 overflow-y-auto pt-[44px] lg:pt-0"
+          className="min-w-0 flex-1 overflow-y-auto pt-[80px] lg:pt-0"
           style={{ padding: '32px 36px' }}
         >
           <div className="mx-auto" style={{ maxWidth: '640px' }}>

@@ -206,7 +206,7 @@ export default function Nav() {
                   </button>
                   {appOpen && (
                     <div className="absolute left-0 mt-2 w-44 bg-[#0a0a0a] border border-[rgba(201,168,76,0.2)] shadow-lg z-50">
-                      <Link href="/apply"          className={dropdownItem} style={{ color: DIM_MED }} onClick={closeAll}>Case File</Link>
+                      <Link href="/case-profile"   className={dropdownItem} style={{ color: DIM_MED }} onClick={closeAll}>Case File</Link>
                       <Link href="/gap-analysis"   className={dropdownItem} style={{ color: DIM_MED }} onClick={closeAll}>Gap Analysis</Link>
                       <Link href="/apply/checklist" className={dropdownItem} style={{ color: DIM_MED }} onClick={closeAll}>Checklist</Link>
                     </div>
@@ -319,7 +319,7 @@ export default function Nav() {
               {showApp && (
                 <>
                   <div style={{ color: "rgba(201,168,76,0.4)", fontSize: "9px", letterSpacing: "0.1em", textTransform: "uppercase", paddingTop: "6px" }}>Application</div>
-                  <Link href="/apply"           className="text-sm py-1 pl-3" style={{ color: isActive("/apply") ? GOLD : DIM_MED }}           onClick={closeAll}>Case File</Link>
+                  <Link href="/case-profile"    className="text-sm py-1 pl-3" style={{ color: isActive("/case-profile") ? GOLD : DIM_MED }}    onClick={closeAll}>Case File</Link>
                   <Link href="/gap-analysis"    className="text-sm py-1 pl-3" style={{ color: isActive("/gap-analysis") ? GOLD : DIM_MED }}    onClick={closeAll}>Gap Analysis</Link>
                   <Link href="/apply/checklist" className="text-sm py-1 pl-3" style={{ color: isActive("/apply/checklist") ? GOLD : DIM_MED }} onClick={closeAll}>Checklist</Link>
                 </>

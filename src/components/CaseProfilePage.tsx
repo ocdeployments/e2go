@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { CaseProfileResponse } from "@/app/api/dashboard/case-profile/route";
+import DocumentImportHub from "@/components/apply/DocumentImportHub";
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
 const GOLD    = "#C9A84C";
@@ -68,14 +69,13 @@ const ARCHETYPE_LABEL: Record<string, string> = {
 
 // ── Sidebar nav sections ───────────────────────────────────────────────────────
 const NAV_SECTIONS = [
-  { id: "progress",    num: "01", label: "Application Progress" },
-  { id: "investor",    num: "02", label: "The Investor" },
-  { id: "business",    num: "03", label: "The Business" },
-  { id: "investment",  num: "04", label: "The Investment" },
-  { id: "intelligence",num: "05", label: "Case Intelligence" },
-  { id: "interview",   num: "06", label: "Interview Readiness" },
-  { id: "documents",   num: "07", label: "Documents" },
-  { id: "resources",   num: "08", label: "Tools & Learn" },
+  { id: "investor",    num: "01", label: "The Investor" },
+  { id: "business",    num: "02", label: "The Business" },
+  { id: "investment",  num: "03", label: "The Investment" },
+  { id: "intelligence",num: "04", label: "Case Intelligence" },
+  { id: "interview",   num: "05", label: "Interview Readiness" },
+  { id: "documents",   num: "06", label: "Documents" },
+  { id: "resources",   num: "07", label: "Tools & Learn" },
 ];
 
 // ── Sidebar ────────────────────────────────────────────────────────────────────
@@ -878,7 +878,7 @@ export default function CaseProfilePage() {
     { label: "Business Profile",       done: m2Done,   href: "/apply/business" },
     { label: "Investment & Documents", done: m3Done,   href: "/apply/investment" },
     { label: "Gap Analysis",           done: m4Done,   href: "/gap-analysis" },
-    { label: "Document Generation",    done: m5Done,   href: "/apply/generate" },
+    { label: "Document Generation",    done: m5Done,   href: data.applicationId ? `/generate/${data.applicationId}` : "/apply/module4" },
     { label: "Interview Preparation",  done: simDone,  href: "/simulator" },
   ];
 
@@ -1519,22 +1519,6 @@ export default function CaseProfilePage() {
   const s8Have  = 0;
   const s8Total = toolsFields.length + learnFields.length;
 
-  // ── Overview totals ──────────────────────────────────────────────────────────
-
-  const overview = [
-    { label: "Progress",     have: milestoneDone, total: milestones.length },
-    { label: "Investor",     have: s1Have,        total: s1Total },
-    { label: "Business",     have: s3Have,        total: s3Total },
-    { label: "Investment",   have: s4Have,        total: s4Total },
-    { label: "Intelligence", have: s5Have,        total: s5Total },
-    { label: "Interview",    have: s6Have,        total: s6Total },
-    { label: "Documents",    have: s7Have,        total: s7Total },
-    { label: "Tools",        have: s8Have,        total: s8Total },
-  ];
-
-  const totalHave  = overview.reduce((a, b) => a + b.have, 0);
-  const totalTotal = overview.reduce((a, b) => a + b.total, 0);
-
   // ── Render ───────────────────────────────────────────────────────────────────
 
   return (
@@ -1586,70 +1570,54 @@ export default function CaseProfilePage() {
           )}
         </div>
 
-        {/* Completeness overview strip */}
-        <div style={{
-          background: CARD_BG,
-          border: `1px solid ${BORDER}`,
-          padding: "16px 20px",
-          marginBottom: "20px",
-          display: "flex",
-          gap: "0",
-          alignItems: "stretch",
-        }}>
-          <div style={{ flex: 1, paddingRight: "20px", borderRight: `1px solid ${INNER}`, marginRight: "20px" }}>
-            <div style={{ ...eyebrow, marginBottom: "4px" }}>Case Completeness</div>
-            <div style={{ display: "flex", alignItems: "baseline", gap: "4px" }}>
-              <span style={{ fontSize: "28px", fontFamily: "'Cormorant Garamond', serif", fontWeight: 300, color: GOLD }}>
-                {totalHave}
+        {/* ── Journey progress — the single source of truth ───────────────── */}
+        <div style={{ background: CARD_BG, border: `1px solid ${BORDER}`, padding: "20px 24px", marginBottom: "12px" }}>
+          <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: "20px" }}>
+            <div style={{ ...eyebrow }}>Your Application</div>
+            <div style={{ display: "flex", alignItems: "baseline", gap: "6px" }}>
+              <span style={{ fontSize: "13px", fontFamily: "'DM Sans', sans-serif", color: "rgba(245,240,232,0.55)" }}>
+                Step {activeIndex < 0 ? milestones.length : activeIndex + 1} of {milestones.length}
               </span>
-              <span style={{ fontSize: "13px", color: "rgba(245,240,232,0.25)", fontFamily: "'DM Sans', sans-serif" }}>
-                / {totalTotal} fields
+              <span style={{ width: "60px", height: "2px", background: "rgba(245,240,232,0.06)", display: "inline-block" }}>
+                <span style={{ display: "block", height: "100%", width: `${Math.round((milestoneDone / milestones.length) * 100)}%`, background: GOLD }} />
               </span>
             </div>
-            <div style={{ height: "2px", background: "rgba(245,240,232,0.05)", marginTop: "6px" }}>
-              <div style={{ height: "100%", width: `${Math.round((totalHave / totalTotal) * 100)}%`, background: GOLD }} />
+          </div>
+
+          {/* 7-step strip */}
+          <div style={{ position: "relative" }}>
+            <div style={{ position: "absolute", top: "5px", left: "40px", right: "40px", height: "1px", background: "rgba(245,240,232,0.05)" }} />
+            <div style={{ display: "grid", gridTemplateColumns: `repeat(${milestones.length}, 1fr)`, gap: "4px" }}>
+              {milestones.map((m, i) => (
+                <Milestone key={m.label} label={m.label} done={m.done} active={i === activeIndex} href={m.href} />
+              ))}
             </div>
           </div>
-          <div style={{
-            flex: 3,
-            display: "grid",
-            gridTemplateColumns: "repeat(8, 1fr)",
-            gap: "8px",
-            alignItems: "center",
-          }}>
-            {overview.map(({ label, have, total }) => {
-              const pct = total > 0 ? Math.round((have / total) * 100) : 0;
-              const col = pct >= 70 ? GREEN : pct >= 25 ? GOLD : "rgba(248,113,113,0.55)";
-              return (
-                <div key={label} style={{ textAlign: "center" }}>
-                  <div style={{ fontSize: "8px", letterSpacing: "0.1em", textTransform: "uppercase", color: "rgba(245,240,232,0.25)", fontFamily: "'DM Sans', sans-serif", marginBottom: "5px" }}>
-                    {label}
-                  </div>
-                  <div style={{ height: "3px", background: "rgba(245,240,232,0.05)", marginBottom: "4px" }}>
-                    <div style={{ height: "100%", width: `${pct}%`, background: col }} />
-                  </div>
-                  <div style={{ fontSize: "10px", fontFamily: "'DM Sans', sans-serif", color: have > 0 ? col : "rgba(245,240,232,0.15)", fontWeight: 600 }}>
-                    {have}/{total}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+
+          {/* Next step action */}
+          {activeIndex >= 0 ? (
+            <div style={{ marginTop: "20px", padding: "14px 18px", background: "rgba(201,168,76,0.05)", borderLeft: "2px solid rgba(201,168,76,0.45)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px", flexWrap: "wrap" }}>
+              <div>
+                <div style={{ fontSize: "8px", letterSpacing: "0.12em", color: "rgba(201,168,76,0.5)", fontFamily: "'DM Sans', sans-serif", marginBottom: "3px" }}>NEXT STEP</div>
+                <div style={{ fontSize: "14px", fontFamily: "'DM Sans', sans-serif", color: CREAM }}>{milestones[activeIndex].label}</div>
+              </div>
+              <Link href={milestones[activeIndex].href} style={{ display: "inline-flex", alignItems: "center", gap: "8px", padding: "10px 22px", background: GOLD, color: "#0a0a0a", fontSize: "11px", fontFamily: "'DM Sans', sans-serif", fontWeight: 700, letterSpacing: "0.09em", textTransform: "uppercase", textDecoration: "none", flexShrink: 0 }}>
+                Continue →
+              </Link>
+            </div>
+          ) : (
+            <div style={{ marginTop: "20px", padding: "14px 18px", background: "rgba(93,202,165,0.05)", borderLeft: `2px solid ${GREEN}`, fontSize: "13px", fontFamily: "'DM Sans', sans-serif", color: CREAM }}>
+              All steps complete — your case file is submission-ready.
+            </div>
+          )}
         </div>
 
-        {/* Legend */}
-        <div style={{ display: "flex", gap: "20px", marginBottom: "28px", flexWrap: "wrap" }}>
-          {[
-            { fill: GREEN,           border: GREEN,                      label: "We have this" },
-            { fill: "transparent",   border: "rgba(201,168,76,0.5)",     label: "Collects from a step" },
-            { fill: "transparent",   border: "rgba(248,113,113,0.6)",    label: "Required — not yet in schema" },
-            { fill: "transparent",   border: "rgba(245,240,232,0.18)",   label: "Optional / strengthens case" },
-          ].map(({ fill, border, label }) => (
-            <div key={label} style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-              <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: fill, border: `1.5px solid ${border}`, display: "inline-block", flexShrink: 0 }} />
-              <span style={{ fontSize: "10px", fontFamily: "'DM Sans', sans-serif", color: "rgba(245,240,232,0.32)" }}>{label}</span>
-            </div>
-          ))}
+        {/* ── Import from a document — prominent fast-fill ─────────────────── */}
+        <div style={{ marginBottom: "28px" }}>
+          <DocumentImportHub
+            applicationId={data.applicationId}
+            onFieldsApplied={() => {}}
+          />
         </div>
 
         {/* ── Sidebar + content layout ─────────────────────────────────── */}
@@ -1661,102 +1629,10 @@ export default function CaseProfilePage() {
           {/* Section content */}
           <div style={{ flex: 1, minWidth: 0 }}>
 
-            {/* ── 01 APPLICATION PROGRESS ─────────────────────────────── */}
-            <div id="progress" style={{ background: CARD_BG, border: `1px solid ${BORDER}`, marginBottom: "12px" }}>
-              <div style={{
-                padding: "18px 24px 14px",
-                borderBottom: `1px solid ${BORDER}`,
-                display: "flex",
-                alignItems: "flex-start",
-                justifyContent: "space-between",
-              }}>
-                <div>
-                  <div style={{ ...eyebrow, marginBottom: "4px" }}>01</div>
-                  <div style={{ fontSize: "20px", fontFamily: "'Cormorant Garamond', serif", fontWeight: 300, color: CREAM }}>
-                    Application Progress
-                  </div>
-                  <div style={{ fontSize: "11px", fontFamily: "'DM Sans', sans-serif", color: "rgba(245,240,232,0.32)", marginTop: "4px" }}>
-                    Seven-step build sequence — from eligibility quiz to submission-ready
-                  </div>
-                </div>
-                <div style={{ textAlign: "right", flexShrink: 0 }}>
-                  <div style={{ fontSize: "18px", fontFamily: "'Cormorant Garamond', serif", fontWeight: 300, color: milestoneDone > 0 ? GOLD : "rgba(245,240,232,0.2)" }}>
-                    {milestoneDone}<span style={{ fontSize: "12px", color: "rgba(245,240,232,0.25)" }}>/{milestones.length}</span>
-                  </div>
-                  <div style={{ width: "60px", height: "2px", background: "rgba(245,240,232,0.06)", marginTop: "4px", marginLeft: "auto" }}>
-                    <div style={{ height: "100%", width: `${Math.round((milestoneDone / milestones.length) * 100)}%`, background: GOLD }} />
-                  </div>
-                  <div style={{ fontSize: "9px", fontFamily: "'DM Sans', sans-serif", color: "rgba(245,240,232,0.2)", marginTop: "3px" }}>steps complete</div>
-                </div>
-              </div>
-
-              <div style={{ padding: "24px 24px 20px" }}>
-                <div style={{ position: "relative" }}>
-                  <div style={{
-                    position: "absolute",
-                    top: "5px",
-                    left: "40px",
-                    right: "40px",
-                    height: "1px",
-                    background: "rgba(245,240,232,0.05)",
-                  }} />
-                  <div style={{ display: "grid", gridTemplateColumns: `repeat(${milestones.length}, 1fr)`, gap: "4px" }}>
-                    {milestones.map((m, i) => (
-                      <Milestone
-                        key={m.label}
-                        label={m.label}
-                        done={m.done}
-                        active={i === activeIndex}
-                        href={m.href}
-                      />
-                    ))}
-                  </div>
-                </div>
-
-                {activeIndex >= 0 && (
-                  <div style={{
-                    marginTop: "20px",
-                    padding: "12px 16px",
-                    background: "rgba(201,168,76,0.04)",
-                    borderLeft: "2px solid rgba(201,168,76,0.4)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                  }}>
-                    <div>
-                      <div style={{ fontSize: "8px", letterSpacing: "0.12em", color: "rgba(201,168,76,0.5)", fontFamily: "'DM Sans', sans-serif", marginBottom: "2px" }}>
-                        NEXT STEP
-                      </div>
-                      <div style={{ fontSize: "13px", fontFamily: "'DM Sans', sans-serif", color: CREAM }}>
-                        {milestones[activeIndex].label}
-                      </div>
-                    </div>
-                    <Link href={milestones[activeIndex].href} style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "8px",
-                      padding: "10px 20px",
-                      background: GOLD,
-                      color: "#0a0a0a",
-                      fontSize: "11px",
-                      fontFamily: "'DM Sans', sans-serif",
-                      fontWeight: 700,
-                      letterSpacing: "0.09em",
-                      textTransform: "uppercase",
-                      textDecoration: "none",
-                      flexShrink: 0,
-                    }}>
-                      {milestones[activeIndex].label} →
-                    </Link>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* ── 02 THE INVESTOR ─────────────────────────────────────── */}
+            {/* ── 01 THE INVESTOR ─────────────────────────────────────── */}
             <SectionCard
               id="investor"
-              number="02"
+              number="01"
               title="The Investor"
               description="Personal identity, treaty eligibility, background, and U.S. intent"
               haveCount={s1Have}
@@ -1858,10 +1734,10 @@ export default function CaseProfilePage() {
               </div>
             </SectionCard>
 
-            {/* ── 03 THE BUSINESS ─────────────────────────────────────── */}
+            {/* ── 02 THE BUSINESS ─────────────────────────────────────── */}
             <SectionCard
               id="business"
-              number="03"
+              number="02"
               title="The Business"
               description={isFranchise
                 ? "Franchise entity, investor role, and FDD intelligence"
@@ -1876,10 +1752,10 @@ export default function CaseProfilePage() {
               <Sub title={isFranchise ? "Franchise Intelligence" : "Business Intelligence"} fields={franchiseFields} />
             </SectionCard>
 
-            {/* ── 04 THE INVESTMENT ───────────────────────────────────── */}
+            {/* ── 03 THE INVESTMENT ───────────────────────────────────── */}
             <SectionCard
               id="investment"
-              number="04"
+              number="03"
               title="The Investment"
               description="Capital committed, breakdown by category, source of funds, and supporting documentation"
               haveCount={s4Have}
@@ -1893,10 +1769,10 @@ export default function CaseProfilePage() {
               <Sub title="Supporting Documentation" fields={docsFields} />
             </SectionCard>
 
-            {/* ── 05 CASE INTELLIGENCE ────────────────────────────────── */}
+            {/* ── 04 CASE INTELLIGENCE ────────────────────────────────── */}
             <SectionCard
               id="intelligence"
-              number="05"
+              number="04"
               title="Case Intelligence"
               description="Gap analysis scores, FDD findings, market analysis, and evidence priority map"
               haveCount={s5Have}
@@ -1920,10 +1796,10 @@ export default function CaseProfilePage() {
               <Sub title="Market Analysis" fields={marketFields} />
             </SectionCard>
 
-            {/* ── 06 INTERVIEW READINESS ──────────────────────────────── */}
+            {/* ── 05 INTERVIEW READINESS ──────────────────────────────── */}
             <SectionCard
               id="interview"
-              number="06"
+              number="05"
               title="Interview Readiness"
               description="AI simulator sessions, coaching notes, and personalised interview dossier"
               haveCount={s6Have}
@@ -1943,10 +1819,10 @@ export default function CaseProfilePage() {
               <Sub title="Interview Dossier" fields={dossierFields} />
             </SectionCard>
 
-            {/* ── 07 DOCUMENTS & PACKAGE ──────────────────────────── */}
+            {/* ── 06 DOCUMENTS & PACKAGE ──────────────────────────── */}
             <SectionCard
               id="documents"
-              number="07"
+              number="06"
               title="Documents & Package"
               description={hasApplication
                 ? hasDocs
@@ -1969,14 +1845,15 @@ export default function CaseProfilePage() {
                   </div>
                 </div>
               )}
+
               <Sub title="Document Package" fields={docPackageFields} />
               <Sub title="Generation Status" fields={pipelineFields} />
             </SectionCard>
 
-            {/* ── 08 TOOLS & LEARN ────────────────────────────────── */}
+            {/* ── 07 TOOLS & LEARN ────────────────────────────────── */}
             <SectionCard
               id="resources"
-              number="08"
+              number="07"
               title="Tools & Resources"
               description="Submission checklist, case timeline, and E-2 visa knowledge hub with guides and FAQs"
               haveCount={s8Have}
