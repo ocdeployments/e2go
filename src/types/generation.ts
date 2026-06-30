@@ -159,6 +159,11 @@ export interface GeneratedDocument {
   approved_at: string | null;
   created_at: string;
   updated_at: string;
+  // CIC-P.4 fields
+  client_certified?: boolean | null;
+  certified_at?: string | null;
+  client_regen_note?: string | null;
+  verifier_result?: { overall?: 'pass' | 'fail' | 'pass_with_notes'; correctionBrief?: string | null } | null;
 }
 
 export interface RevisionNote {
