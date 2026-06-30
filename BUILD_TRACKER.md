@@ -1,6 +1,127 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 29, 2026 — Session 90: Sprint I-3 (Tab Nav) + Sprint I-4 (Document Import Hub + AI Parsing) complete. All /apply/* sections now have 6-tab section nav with live completion state. DocumentImportHub: 6 doc types, Anthropic PDF extraction, per-field review + accept/skip, upserts to answers with source=document_upload.
+**Last Updated:** June 30, 2026 — Session 93: Architecture reconciliation (no code changes — option 4 holds). Corrected the "engines are siloed / generation is blind" overstatement against the documented flow in `docs/FEATURE_INVENTORY.html`; recorded the pending-decisions register (D1–D6) and the greenlit "genuine learning from experience" backlog; updated the inventory's gaps/engines/silos/flows to match verified code. See the Session 93 block below.
+
+---
+
+## Session 93 — Architecture Reconciliation + Pending-Decisions Register (June 30, 2026)
+
+**Branch:** dev. **No code changed** — documentation only (option 4 locked: delete/migrate nothing until the new path runs clean). Files touched: `docs/FEATURE_INVENTORY.html`, this tracker, `docs/sessions/SPRINT_J1_CASE_INTELLIGENCE_CORE.md`.
+
+### The correction (verified in code)
+An earlier characterization — "the engines are siloed; generation is blind to FDD & market findings" — was **OVERSTATED**. The inventory's `SILOS` array (Sessions 56–68, all resolved) plus a code re-read show a working, if crude, shared bus: **the flat `answers` table**.
+- FDD writeback upserts 8 keys, `source='fdd_intelligence'` — `src/app/api/fdd/writeback/route.ts:55`.
+- Market analysis upserts **QMA-prefixed** territory keys (NOT a single `market_territory` key — that label was stale) — `src/app/api/market-analysis/route.ts:37`.
+- Simulator coaching + voice profile also write back to `answers`.
+- Generation reads the **entire** set via `.from('answers').select('*')` — `src/lib/generation-engine.ts:545`.
+- So findings **do** flow today, as flat answer values.
+
+### What genuinely remains open (the honest, narrower gap)
+1. `case_theory` (the structured, reasoned, provenance-tagged replacement) is built but consumed **only** by the `/case-profile` dashboard — no engine reads it. (CIC-2 gate.)
+2. Generation's gap context is **degraded**: `scoreCase(application, answers, [], undefined, undefined, archetype)` at `generation-engine.ts:494` passes empty docs/brief/sim. Raw answer values are present; the reasoned gap context is thin.
+3. Two parallel client models: older `case_profiles` (CIP) and new `case_model` — not unified.
+4. Two parallel document pipelines: `document-extraction-engine.ts` (legacy/superseded) vs `parse-document/route.ts` (S91).
+5. `quiz-scoring.ts` is **orphaned** — zero importers; live scoring is inline in `quiz/page.tsx` + `case-profile.ts scoreQuizEligibility()`.
+
+**Reframed CIC-2 value:** not "build cross-engine wiring that doesn't exist," but **"upgrade the existing flat `answers` bus to structured `case_model` / `case_theory`."**
+
+### Pending Decisions — awaiting owner (mirrored in FEATURE_INVENTORY.html → Gaps)
+- **D1** — `case_profiles` ↔ `case_model` consolidation timing (coexist via shadow-write until CIC-2 proves clean; option 4).
+- **D2** — `quiz-scoring.ts` deletion: now vs. batched with the consolidation sweep.
+- **D3** — upstream flow (gap/FDD → business plan & package): keep inside CIC-2 (recommended, preserves the CIC-1.6 quality gate) vs. pull a thin slice forward.
+- **D4** — stand up the outcome-capture table now vs. wait for survey design (recommend: build schema now, it's additive).
+- **D5** — outcome survey question design — **needs Romy's E-2 domain input** (outcome, consulate, denial codes, officer probes, decisive dimensions, timeline).
+- **D6** — anonymization & consent model for cross-client learning (privacy gate before any real data enters a shared corpus).
+
+### Greenlit, not yet built — "Genuine learning from experience"
+- **Client Outcome Survey + outcome-capture table** — closes the feedback loop; delivered via `email-scheduler` clock2. Gated on D5.
+- **Anonymized outcome-indexed case library (2nd RAG corpus)** — distinct from `kb_chunks` (authored doctrine); retrievable at reason-time. Sequenced as **CIC-5** in the J-1 sprint doc. Gated on outcome capture + D6. Honest limit: advisory-only until N is statistically meaningful.
+
+### Still pending owner action (carried from S92)
+- **CIC-0.4** — apply `20260630100000_case_intelligence_core.sql`, set `OPENAI_API_KEY`, run `npx tsx scripts/seed-kb-corpus.ts`. Unblocks CIC-1.6 → CIC-2.
+
+### Session-count estimate (given to owner, end of Session 93)
+Calibrated against actual velocity so far (CIC-0 = 1 session; CIC-1's 5 sub-tasks = 1 session, Session 92):
+- CIC-1.6 (verify on a seeded test account): ~0.5 session, folds into the next session's start. Blocked on CIC-0.4.
+- **CIC-2** (2.1 inject brief into generation, 2.2 LLM-as-critic verifier, 2.3 reject/regen gating loop + retry guard): **1–2 sessions**. This is the keystone step.
+- CIC-3 (3.1 gap analysis evidence + denial codes, 3.2 FDD auto-seed, 3.3 territory/simulator-prep directives): 1–2 sessions.
+- CIC-4 (4.1 package-level gating): ~1 session, often rides with CIC-3.
+- CIC-5 (5.1–5.4 outcome table, survey delivery, anonymization, learned case library): 1–2 sessions to *build*; gated on D4/D5/D6 and on real outcome data accruing post-launch (calendar time, not session time) before it's actually useful.
+- **Full remaining backlog: ~4–6 sessions.**
+
+### Next session priority
+Owner to action CIC-0.4 (migration + API key + KB seed) when ready. Once seeded, next session opens with CIC-1.6 verification on a seeded test account, then proceeds into CIC-2 if reasoning quality holds. D1–D6 decisions remain open and don't block CIC-2 start (D3 is the only one CIC-2-adjacent — default is "keep inside CIC-2" unless owner says otherwise).
+
+---
+
+## Session 92 — Case Intelligence Core: CIC-0 + CIC-1 (June 30, 2026)
+
+**Branch:** dev. **Full session log:** `docs/sessions/SPRINT_J1_CASE_INTELLIGENCE_CORE.md` (build sequence, locked decisions, hard boundaries — read that doc, not this summary, before continuing CIC work).
+
+### CIC-1 — Read-only brain ✅ (1.1–1.5 code-complete)
+
+**Fixed — `src/app/api/apply/parse-document/route.ts`**
+- CIC-1.1 wiring gap: `comprehendApplicationDocuments` was imported but never called. Now sequenced fire-and-forget after `extracted_json` persists, chained before `buildCaseIntelligence` (which reads the comprehension ledger).
+
+**New — `src/lib/case-intelligence-core.ts`**
+- `assembleCaseModel(applicationId, userId)` (Faculty 1 — PERCEIVE): reads quiz_sessions, applications, answers, document_intelligence ledger, followup_responses, simulator_sessions, case_briefs into a provenance-tagged `case_model` (9 dimensions, `data_state` computed from signal/fact counts).
+- `generateCaseTheory(applicationId, userId, caseModel)` (Faculty 2 GROUND + Faculty 3 REASON): per-dimension `retrieveDoctrine()` calls, then reasons as a **five-expert panel** — senior immigration consultant, senior E-2 consular officer, senior immigration attorney, senior franchise development consultant, senior market analyst — synthesized into one `case_theory` (narrative, transferable skills, numbers strategy, per-dimension verdicts with **persona-tagged creative gap-fill suggestions**, directives for downstream engines, doctrine citations derived from retrieval — never LLM-asserted).
+- Hard boundaries preserved: numbers never invented (Case Model facts only, framed not recomputed), every claim traceable to a fact or KB citation, graceful no-uncited-doctrine fallback while KB is unseeded.
+- `buildCaseIntelligence(applicationId, userId)`: orchestration entrypoint (assemble → reason).
+
+**Wired — `/api/answers`, `/api/simulator/outcome`** — `buildCaseIntelligence` fires fire-and-forget alongside the existing `buildCaseProfile` call (simulator route guarded on optional `applicationId`).
+
+**Modified — `src/app/api/dashboard/case-profile/route.ts`**
+- Added `CaseTheoryUI` type + `caseTheory` field to `CaseProfileResponse`. Fetches `case_theory` row in parallel with the existing QMA market-analysis query; maps to UI shape or `null` if no row exists yet (expected — KB unseeded, most accounts pre-CIC).
+
+**Modified — `src/components/CaseProfilePage.tsx`**
+- New `CaseTheoryBlock` component (narrative, numbers strategy, transferable skills, per-dimension verdict cards with gap-fill suggestions tagged by persona) rendered conditionally in the existing "04 Case Intelligence" section. Matches existing Obsidian Gold tokens — no new design language introduced.
+
+**Verified:** `npx tsc --noEmit` + `npm run build` clean. Live-checked `/api/dashboard/case-profile` against a real (unpaid, KB-unseeded) test account — 200 OK, `caseTheory: null`, zero console errors. Confirmed `/case-profile` is correctly payment-gated by `middleware.ts` (PAID_ROUTES) — unpaid accounts bounce to `/results`, which is expected behavior, not a CIC bug.
+
+**Not done (by design, gated):** `case_theory` is NOT wired into `generation-engine.ts`, `gap-analysis-engine.ts`, or any other peripheral engine — that's CIC-2, explicitly deferred until CIC-1.6 (verification on a seeded test account) passes.
+
+**Owner action still required (CIC-0.4, blocks CIC-1.6):** apply `20260630100000_case_intelligence_core.sql`, set `OPENAI_API_KEY`, run `npx tsx scripts/seed-kb-corpus.ts` to seed the 177-doc KB corpus — without it, doctrine citations stay empty (the reasoning prompt is instructed not to assert uncited legal standards, so this degrades gracefully but isn't a full test).
+
+---
+
+## Session 91 — DocumentImportHub Upgrade + Comprehension Engine Spec (June 30, 2026)
+
+**Branch:** dev.
+
+### Sprint I-4+ (DocumentImportHub Session 91 Upgrade) ✅
+
+**Modified — `src/app/api/apply/parse-document/route.ts`** (full rewrite)
+- `extractFDDSections(buffer)`: reads full PDF text (no 32K truncation), position-based section splice for Cover + Items 1,2,3,4,5,6,7,11,12,17,19,20,21. 80K char cap on full text. Second occurrence heuristic (skips TOC). Item 17 (renewal/termination) added; Item 9 removed.
+- `detectDocumentType(textSample, userId)`: 20-token LLM call (task: 'extract'), returns validated doc type string or 'resume' fallback. Used when docType='auto'.
+- `COMPREHENSIVE_SCHEMAS`: 11 doc types — fdd (80 fields, 4000 maxTokens), resume, financial_statement, investment_records, business_plan, territory_analysis, passport, franchise_agreement, lease_agreement, acquisition_financials, government_form.
+- `INTAKE_FIELD_MAP`: 3 false-conflict-causing entries removed — `most_recent_title → M3-Q-00` (resume: job title ≠ franchise type), `investment_mid → M3-F-02` (fdd: system avg investment ≠ client capital), `hq_location → M3-B-02` (fdd: franchisor HQ ≠ target location).
+- `FIELD_LABELS`: human-readable labels for all keys incl. new ones (M3-A-DOB, M3-A-NATIONALITY, M3-A-PASSPORT, M3-A-PASSPORT-EXP, M3-A-BIRTH-COUNTRY, M3-FA-DATE, M3-G-ADDRESS, M3-G-RENT, M3-G-LEASE-TERM, M3-ACQ-REASON).
+- `ParseDocumentResponse`: added `totalFields: number` field.
+- POST handler: validates docType ('auto' allowed), FDD→extractFDDSections, PDF→extractTextFromBuffer, else raw UTF-8. Resolves docType if 'auto'. Counts totalFields (non-null, non-empty, non-array-empty values). Stores full extracted_json + updates doc_type to resolved type.
+
+**Modified — `src/components/apply/DocumentImportHub.tsx`**
+- `DOC_TYPE_OPTIONS`: 12 options. First: 'auto' / "Detect automatically". Added passport, franchise_agreement, lease_agreement, acquisition_financials, government_form. investment_records hint updated with bank statement advisory.
+- `QueuedFile` interface: added `totalFields?: number` and `resolvedDocType?: string`.
+- Default docType changed from 'resume' → 'auto'.
+- `SOURCE_PRIORITY` map: 21 question keys with authoritative source order.
+- `normalizeForComparison()`: strips $/%,, entity suffixes (LLC/Inc/Ltd/Corp/Co), lowercases.
+- `mergeFields()`: uses `item.resolvedDocType ?? item.docType` as source, applies SOURCE_PRIORITY (winner reordered to first), falls back to normalized comparison only when no priority defined.
+- Result cards show dual counter: "9 intake fields · 62 total fields stored" (green intake, gold total).
+- Auto-detect shows "· detected as Franchise Disclosure Document" in dim text.
+- File input `accept`: `.pdf,.docx,.txt,.csv`.
+
+### Document Comprehension Engine — Sprint J-1 (Spec Only as of Session 91 — see Session 92 above for the build)
+
+**Architecture:**
+- Stage 1 — Comprehension: per-document LLM reads extracted_json + raw text, writes narrative memo to `uploaded_documents.comprehension_memo TEXT`. Example: "This FDD is for a home care franchise. Item 7 investment range $94K–$176K is the national system average, NOT this client's capital. Franchise fee: $55,000. Royalty: 5%."
+- Stage 2 — Reconciliation: multi-document LLM pass reads all memos together, resolves apparent conflicts with reasoning, produces final field values with source attribution and confidence scores. Only surfaces genuine conflict (two equally authoritative sources disagree on something material) to client.
+- Cost: ~2000 tokens in / 500 out per session. ~$0.001 per upload at MIMO pricing.
+- Downstream wiring: answers table (enriched values), generation-engine.ts (comprehension context injected into doc prompts), gap-analysis-engine.ts (evidence quality signal), buildCaseProfile in case-profile.ts (reads memos).
+
+**Owner actions still required:**
+- Apply `20260629100000_uploaded_documents.sql` migration in Supabase SQL Editor if not already done (from Session 90)
+- All previously logged owner action items still pending
 
 ---
 

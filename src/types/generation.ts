@@ -211,6 +211,7 @@ export interface GenerationPayload {
   follow_up_responses: Record<string, unknown>;
   qfn_investor_profile?: string;
   gap_analysis_context?: string;
+  case_theory_brief?: string;
 }
 
 export interface InvestmentBreakdownData {

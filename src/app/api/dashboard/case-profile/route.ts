@@ -59,6 +59,24 @@ export interface CaseProfileResponse {
   marketState: string | null;
   marketCompetitorCount: number | null;
   marketVerdict: string | null;
+
+  // Case Theory (CIC-1.3 — Case Intelligence Core reasoning, read-only)
+  caseTheory: CaseTheoryUI | null;
+}
+
+export interface CaseTheoryUI {
+  narrative: string;
+  transferableSkills: { skill: string; evidence: string; framing: string }[];
+  numbersStrategy: { figure: string; value: string; foregroundBecause: string; denialRiskAddressed: string }[];
+  dimensionVerdicts: Record<string, {
+    status: 'proven' | 'weak' | 'missing' | 'contradicted';
+    evidenceSummary: string;
+    gap: string | null;
+    gapFillSuggestions: { persona: string; suggestion: string }[];
+  }>;
+  directives: { engine: string; dimension: string; instruction: string; doctrineRef: string | null }[];
+  doctrineCitations: { kbChunkId: string; sourceFile: string; dimension: string | null }[];
+  builtAt: string | null;
 }
 
 export async function GET() {
@@ -170,13 +188,21 @@ export async function GET() {
   let marketState: string | null = null;
   let marketCompetitorCount: number | null = null;
   let marketVerdict: string | null = null;
+  let caseTheory: CaseTheoryUI | null = null;
 
   if (app?.id) {
-    const { data: qmaRows } = await supabase
-      .from('answers')
-      .select('question_key, answer_value')
-      .eq('application_id', app.id)
-      .in('question_key', ['QMA-SCORE', 'QMA-RATING', 'QMA-ZIP', 'QMA-STATE', 'QMA-COMPETITOR-COUNT', 'QMA-VERDICT']);
+    const [{ data: qmaRows }, { data: theoryRow }] = await Promise.all([
+      supabase
+        .from('answers')
+        .select('question_key, answer_value')
+        .eq('application_id', app.id)
+        .in('question_key', ['QMA-SCORE', 'QMA-RATING', 'QMA-ZIP', 'QMA-STATE', 'QMA-COMPETITOR-COUNT', 'QMA-VERDICT']),
+      supabase
+        .from('case_theory')
+        .select('narrative, transferable_skills, numbers_strategy, dimension_verdicts, directives, doctrine_citations, built_at')
+        .eq('application_id', app.id)
+        .maybeSingle(),
+    ]);
 
     if (qmaRows?.length) {
       const qma: Record<string, string> = Object.fromEntries(
@@ -188,6 +214,18 @@ export async function GET() {
       marketState         = qma['QMA-STATE']             ?? null;
       marketCompetitorCount = qma['QMA-COMPETITOR-COUNT'] ? Number(qma['QMA-COMPETITOR-COUNT']) : null;
       marketVerdict       = qma['QMA-VERDICT']           ?? null;
+    }
+
+    if (theoryRow?.narrative) {
+      caseTheory = {
+        narrative: theoryRow.narrative,
+        transferableSkills: theoryRow.transferable_skills ?? [],
+        numbersStrategy: theoryRow.numbers_strategy ?? [],
+        dimensionVerdicts: theoryRow.dimension_verdicts ?? {},
+        directives: theoryRow.directives ?? [],
+        doctrineCitations: theoryRow.doctrine_citations ?? [],
+        builtAt: theoryRow.built_at ?? null,
+      };
     }
   }
 
@@ -242,6 +280,8 @@ export async function GET() {
     marketState,
     marketCompetitorCount,
     marketVerdict,
+
+    caseTheory,
   };
 
   return NextResponse.json(response);

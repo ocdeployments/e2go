@@ -84,6 +84,7 @@ export async function POST(request: NextRequest) {
     answersRes,
     fddRes,
     simRes,
+    caseTheoryRes,
   ] = await Promise.all([
     supabase
       .from('quiz_sessions')
@@ -115,6 +116,14 @@ export async function POST(request: NextRequest) {
       .not('completed_at', 'is', null)
       .order('completed_at', { ascending: false })
       .limit(1)
+      .maybeSingle(),
+    // CIC-3.3 — the CPU's Case Theory: dimension verdicts + directives. The CPU
+    // emits directives tagged engine='simulator_prep' specifically to steer this
+    // dossier toward the dimensions its reasoning found weakest.
+    supabase
+      .from('case_theory')
+      .select('dimension_verdicts, directives')
+      .eq('application_id', primaryApp.id)
       .maybeSingle(),
   ]);
 
@@ -160,6 +169,40 @@ export async function POST(request: NextRequest) {
     completed_at?: string | null;
   } | null;
 
+  // CIC-3.3 — Case Theory overlay. The CPU's per-dimension verdicts tell us which
+  // dimensions its reasoning could NOT yet prove; its directives are the concrete,
+  // doctrine-grounded coaching tasks for this dossier. Both are descriptive — no
+  // numbers are derived here.
+  const caseTheory = caseTheoryRes.data as {
+    dimension_verdicts?: Record<string, { status?: string; gap?: string | null }> | null;
+    directives?: Array<{ engine: string; dimension: string; instruction: string; doctrineRef: string | null }> | null;
+  } | null;
+
+  const UNPROVEN = new Set(['weak', 'missing', 'contradicted']);
+  const cpuWeakDimensions = Object.entries(caseTheory?.dimension_verdicts ?? {})
+    .filter(([, v]) => v?.status && UNPROVEN.has(v.status))
+    .map(([dimension, v]) => ({ dimension, status: v.status as string, gap: v.gap ?? null }));
+  const cpuWeakDimSet = new Set(cpuWeakDimensions.map((d) => d.dimension));
+
+  // Directives the CPU aimed at this engine (plus any cross-engine directive on a
+  // weak dimension), surfaced verbatim so the dossier executes the CPU's plan.
+  const cpuPrepDirectives = (caseTheory?.directives ?? [])
+    .filter((d) => d.engine === 'simulator_prep' || cpuWeakDimSet.has(d.dimension))
+    .map((d) => ({ dimension: d.dimension, instruction: d.instruction, doctrineRef: d.doctrineRef }));
+
+  // CIC-3.3 — map CPU weak dimensions to the interview probes that pressure-test
+  // them, so the practice probe set is driven by the CPU's verdict, not only the
+  // legacy per-engine scores.
+  const CPU_DIM_TO_WP: Record<string, string> = {
+    source_of_funds: 'WP-03',
+    investment:      'WP-01',
+    operations:      'WP-02',
+    background:      'WP-04',
+  };
+  const cpuForcedProbeIds = new Set(
+    cpuWeakDimensions.map((d) => CPU_DIM_TO_WP[d.dimension]).filter((id): id is string => Boolean(id))
+  );
+
   // Run scoreCase() synchronously — all computation happens in Node.js, not LLM
   const gapResult = scoreCase(
     primaryApp as { business_name?: string; business_category?: string; operational_status?: string; target_state?: string; principal_name?: string; simulator_sessions_used?: number | null },
@@ -172,8 +215,10 @@ export async function POST(request: NextRequest) {
     caseProfile?.archetype ?? null
   );
 
-  // Determine which WP probes apply
+  // Determine which WP probes apply — legacy score triggers OR a CPU weak-dimension
+  // directive (CIC-3.3) forcing the probe in.
   const applicableWpProbes = Object.entries(WP_QUESTIONS).filter(([id]) => {
+    if (cpuForcedProbeIds.has(id)) return true;
     if (id === 'WP-01') return (gapResult.categories.find(c => c.id === 'investment')?.score ?? 100) < 70;
     if (id === 'WP-02') return (gapResult.categories.find(c => c.id === 'employment')?.score ?? 100) < 70;
     if (id === 'WP-03') return (caseProfile?.source_of_funds_score ?? 100) < 70;
@@ -255,6 +300,12 @@ export async function POST(request: NextRequest) {
     simulatorNeedsWorkCount: simSession?.needs_work_count ?? null,
     simulatorTop3: simSession?.coaching_notes?.top3NextSession ?? [],
     lastSimulatorDate: simSession?.completed_at ?? null,
+
+    // Case Intelligence Core overlay (CIC-3.3) — the CPU's verdict on which
+    // dimensions remain unproven and its concrete coaching directives for this
+    // dossier. Lead the revision focus with these.
+    cpuWeakDimensions,
+    cpuPriorityDirectives: cpuPrepDirectives,
 
     // Questions to answer
     universalQuestions: Object.entries(UQ_QUESTIONS).map(([id, text]) => ({ id, text })),
@@ -371,6 +422,7 @@ Important rules:
 - The highRisk and moderateRisk arrays must use only D-codes from the pre-computed lists above.
 - Section 7 must cover all 9 universal questions plus any applicable WP probes.
 - Answer frameworks must reference real case details (business name, investment amount, archetype, etc.).
+- CASE-INTELLIGENCE PRIORITY (cpuWeakDimensions / cpuPriorityDirectives): these are the dimensions the case-intelligence reasoning could NOT yet prove and its specific coaching instructions for this client. Lead section 3 (risk register) and section 6 (revision focus) with these dimensions, and weave each cpuPriorityDirective's instruction into the relevant answer framework in section 7. These are the highest-leverage things this client must shore up before the interview — do not bury them.
 - Return only the JSON object — no markdown fences, no explanation.`;
 
   // Call LLM with 120s timeout

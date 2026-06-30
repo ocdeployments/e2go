@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { buildCaseProfile } from '@/lib/case-profile';
+import { buildCaseIntelligence } from '@/lib/case-intelligence-core';
 
 export async function POST(request: NextRequest) {
   const supabase = await createSupabaseServerClient();
@@ -51,6 +52,9 @@ export async function POST(request: NextRequest) {
 
   // Trigger profile rebuild fire-and-forget (simulator session adds data confidence)
   buildCaseProfile(user.id).catch(() => {});
+  if (body.applicationId) {
+    buildCaseIntelligence(body.applicationId, user.id).catch(() => {});
+  }
 
   return NextResponse.json({ id: data.id });
 }

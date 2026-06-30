@@ -29,6 +29,7 @@ interface LLMOptions {
   signal?: AbortSignal;
   userId?: string;
   route?: string;
+  timeoutMs?: number;
 }
 
 // Per-task model chains — OpenRouter tries each in order on failure
@@ -37,7 +38,7 @@ const OPENROUTER_MODELS: Record<TaskType, string[]> = {
   coaching: ['xiaomi/mimo-v2.5-pro', 'google/gemini-2.5-pro'],
   faq:      ['xiaomi/mimo-v2.5', 'google/gemini-2.5-flash'],
   prep:     ['xiaomi/mimo-v2.5', 'xiaomi/mimo-v2.5-pro'],
-  extract:  ['xiaomi/mimo-v2.5-pro', 'google/gemini-2.5-pro'],
+  extract:  ['google/gemini-2.5-pro', 'z-ai/glm-5.2'],
 };
 
 // Anthropic fallback models per task
@@ -53,6 +54,7 @@ const ANTHROPIC_MODELS: Record<TaskType, string> = {
 const MODEL_COSTS: Record<string, { in: number; out: number }> = {
   'xiaomi/mimo-v2.5':          { in: 0.14,  out: 0.28  },
   'xiaomi/mimo-v2.5-pro':      { in: 0.435, out: 0.87  },
+  'z-ai/glm-5.2':              { in: 1.30,  out: 1.85  },
   'google/gemini-2.5-flash':   { in: 0.30,  out: 2.50  },
   'google/gemini-2.5-pro':     { in: 1.25,  out: 10.00 },
   'claude-haiku-4-5-20251001': { in: 0.80,  out: 4.00  },
@@ -103,9 +105,11 @@ async function callOpenRouter(options: LLMOptions): Promise<string> {
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) throw new Error('OPENROUTER_API_KEY not set');
 
-  // 30s hard timeout — MIMO silent failures reach Anthropic fallback in ~30s, not ~250s
+  // 30s hard timeout by default — MIMO silent failures reach Anthropic fallback in ~30s,
+  // not ~250s. Callers with structurally large prompts (e.g. CIC's multi-dimension doctrine
+  // synthesis) can override via options.timeoutMs.
   const timeoutController = new AbortController();
-  const timeoutId = setTimeout(() => timeoutController.abort(), 30_000);
+  const timeoutId = setTimeout(() => timeoutController.abort(), options.timeoutMs ?? 30_000);
 
   // Compose with any caller-supplied signal
   const onExternalAbort = () => timeoutController.abort();

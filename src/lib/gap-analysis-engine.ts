@@ -45,6 +45,74 @@ export interface GapAnalysisResult {
 }
 
 // =============================================================================
+// CIC-3.1 — Case Intelligence Core context
+// The CPU (case-intelligence-core) supplies the gap engine with substantive,
+// document-derived evidence (from the document_intelligence ledger) and the set
+// of denial codes its reasoning flagged as ACTIVE for this specific client.
+// These ENRICH the descriptive output (evidence strings, finding annotations);
+// they never recompute scores — deterministic scoring stays untouched.
+// =============================================================================
+
+export interface LedgerFact {
+  dimension: string;   // CPU dimension (source_of_funds | investment | business | ...)
+  label: string;
+  value: string;
+  significance?: string;
+}
+
+export interface CpuGapContext {
+  ledger?: LedgerFact[];
+  activeDenialCodes?: string[];
+}
+
+// Map CPU Case-Model dimensions → gap-engine category ids. Identity has no gap
+// category (it is not an E-2 evidentiary axis), so it is intentionally absent.
+const DIMENSION_TO_GAP_CATEGORY: Record<string, string> = {
+  source_of_funds: 'source_of_funds',
+  investment:      'investment_amount',
+  business:        'business_plan',
+  franchise:       'business_plan',
+  operations:      'business_operations',
+  location:        'business_operations',
+  background:      'management_role',
+};
+
+// Apply CPU enrichment in place: substantive ledger facts become leading evidence
+// on their category; CPU-flagged denial codes get an annotated finding so the
+// downstream consumer foregrounds them. Scores/risk levels are NOT modified.
+function applyCpuContext(
+  categories: GapCategory[],
+  denialFactors: DenialRiskFactor[],
+  cpu: CpuGapContext
+): void {
+  if (cpu.ledger?.length) {
+    const byCategory = new Map<string, GapCategory>(categories.map(c => [c.id, c]));
+    for (const fact of cpu.ledger) {
+      const catId = DIMENSION_TO_GAP_CATEGORY[fact.dimension];
+      if (!catId) continue;
+      const cat = byCategory.get(catId);
+      if (!cat) continue;
+      const value = (fact.value ?? '').trim();
+      if (!value) continue;
+      const line = `${fact.label}: ${value}`;
+      // Substantive doc-derived facts lead; dedupe against existing evidence.
+      if (!cat.evidence.some(e => e.toLowerCase() === line.toLowerCase())) {
+        cat.evidence.unshift(line);
+      }
+    }
+  }
+
+  if (cpu.activeDenialCodes?.length) {
+    const active = new Set(cpu.activeDenialCodes);
+    for (const f of denialFactors) {
+      if (active.has(f.code) && !f.finding.startsWith('⚑')) {
+        f.finding = `⚑ CPU flags this as an active risk for this client's case theory. ${f.finding}`;
+      }
+    }
+  }
+}
+
+// =============================================================================
 // INPUT TYPES
 // =============================================================================
 
@@ -970,7 +1038,8 @@ export function scoreCase(
   documents: DocumentRow[],
   caseBrief?: CaseBriefRow,
   simulator?: SimulatorData,
-  archetype?: string | null
+  archetype?: string | null,
+  cpuContext?: CpuGapContext
 ): GapAnalysisResult {
   const am = buildAnswerMap(answers);
 
@@ -1056,6 +1125,9 @@ export function scoreCase(
     cat.weightedScore = Math.round((cat.score * cat.weight) / 100);
     overallScore += cat.weightedScore;
   }
+
+  // CIC-3.1 — enrich (not rescore) with CPU ledger evidence + active denial flags.
+  if (cpuContext) applyCpuContext(categories, denialFactors, cpuContext);
 
   const highRiskCount = denialFactors.filter(f => f.risk === 'high').length;
   const moderateRiskCount = denialFactors.filter(f => f.risk === 'moderate').length;

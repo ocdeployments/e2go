@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import type { CaseProfileResponse } from "@/app/api/dashboard/case-profile/route";
+import type { CaseProfileResponse, CaseTheoryUI } from "@/app/api/dashboard/case-profile/route";
 import DocumentImportHub from "@/components/apply/DocumentImportHub";
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
@@ -398,6 +398,132 @@ function ScoreBar({ label, score }: { label: string; score: number | null }) {
       <div style={{ height: "2px", background: "rgba(245,240,232,0.06)" }}>
         <div style={{ height: "100%", width: `${score ?? 0}%`, background: color, transition: "width 0.6s ease" }} />
       </div>
+    </div>
+  );
+}
+
+// ── Case Theory (CIC-1.3 — read-only reasoning output) ──────────────────────────
+const DIMENSION_LABEL: Record<string, string> = {
+  identity: "Identity", source_of_funds: "Source of Funds", investment: "Investment",
+  business: "Business", location: "Location", franchise: "Franchise",
+  operations: "Operations", background: "Background", other: "Other",
+};
+
+const VERDICT_STATUS: Record<string, { label: string; color: string }> = {
+  proven:        { label: "Proven",        color: GREEN },
+  weak:          { label: "Weak",          color: GOLD },
+  missing:       { label: "Missing",       color: "#f87171" },
+  contradicted:  { label: "Contradicted",  color: "#fb7185" },
+};
+
+function CaseTheoryBlock({ theory }: { theory: CaseTheoryUI }) {
+  const verdictEntries = Object.entries(theory.dimensionVerdicts);
+  return (
+    <div style={{ marginBottom: "20px" }}>
+      <div style={{ fontSize: "8px", letterSpacing: "0.18em", textTransform: "uppercase", color: "rgba(201,168,76,0.4)", fontFamily: "'DM Sans', sans-serif", marginBottom: "10px" }}>
+        Case Theory — AI Strategic Analysis
+      </div>
+
+      <div style={{ padding: "16px", background: "rgba(0,0,0,0.3)", border: `1px solid ${INNER}`, marginBottom: "16px" }}>
+        <p style={{ fontSize: "12.5px", fontFamily: "'DM Sans', sans-serif", color: "rgba(245,240,232,0.65)", lineHeight: 1.7, margin: 0 }}>
+          {theory.narrative}
+        </p>
+      </div>
+
+      {theory.numbersStrategy.length > 0 && (
+        <div style={{ marginBottom: "16px" }}>
+          <div style={{ fontSize: "8px", letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(201,168,76,0.38)", fontFamily: "'DM Sans', sans-serif", fontWeight: 600, marginBottom: "8px" }}>
+            Numbers Strategy
+          </div>
+          {theory.numbersStrategy.map((n, i) => (
+            <div key={i} style={{ padding: "10px 12px", background: "rgba(0,0,0,0.2)", border: `1px solid ${INNER}`, marginBottom: "6px" }}>
+              <div style={{ fontSize: "11px", fontFamily: "'DM Sans', sans-serif", color: CREAM, fontWeight: 600, marginBottom: "3px" }}>
+                {n.figure}: <span style={{ color: GOLD }}>{n.value}</span>
+              </div>
+              <div style={{ fontSize: "10.5px", fontFamily: "'DM Sans', sans-serif", color: "rgba(245,240,232,0.45)", lineHeight: 1.5 }}>
+                {n.foregroundBecause}
+              </div>
+              {n.denialRiskAddressed && (
+                <div style={{ fontSize: "10px", fontFamily: "'DM Sans', sans-serif", color: "rgba(248,113,113,0.5)", marginTop: "3px", fontStyle: "italic" }}>
+                  Rebuts: {n.denialRiskAddressed}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {theory.transferableSkills.length > 0 && (
+        <div style={{ marginBottom: "16px" }}>
+          <div style={{ fontSize: "8px", letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(201,168,76,0.38)", fontFamily: "'DM Sans', sans-serif", fontWeight: 600, marginBottom: "8px" }}>
+            Transferable Skills
+          </div>
+          {theory.transferableSkills.map((s, i) => (
+            <div key={i} style={{ marginBottom: "8px" }}>
+              <div style={{ fontSize: "11px", fontFamily: "'DM Sans', sans-serif", color: CREAM, fontWeight: 600 }}>{s.skill}</div>
+              <div style={{ fontSize: "10.5px", fontFamily: "'DM Sans', sans-serif", color: "rgba(245,240,232,0.45)", lineHeight: 1.5 }}>{s.framing}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {verdictEntries.length > 0 && (
+        <div>
+          <div style={{ fontSize: "8px", letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(201,168,76,0.38)", fontFamily: "'DM Sans', sans-serif", fontWeight: 600, marginBottom: "8px" }}>
+            Per-Dimension Verdicts &amp; Gap-Fill Suggestions
+          </div>
+          {verdictEntries.map(([dim, v]) => {
+            const statusInfo = VERDICT_STATUS[v.status] ?? VERDICT_STATUS.weak;
+            return (
+              <div key={dim} style={{ padding: "12px 14px", background: "rgba(0,0,0,0.2)", border: `1px solid ${INNER}`, marginBottom: "8px" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px" }}>
+                  <span style={{ fontSize: "11.5px", fontFamily: "'DM Sans', sans-serif", color: CREAM, fontWeight: 600 }}>
+                    {DIMENSION_LABEL[dim] ?? dim}
+                  </span>
+                  <span style={{
+                    fontSize: "8px", letterSpacing: "0.1em", textTransform: "uppercase",
+                    color: statusInfo.color, border: `1px solid ${statusInfo.color}33`, padding: "2px 7px",
+                    fontFamily: "'DM Sans', sans-serif", fontWeight: 600,
+                  }}>
+                    {statusInfo.label}
+                  </span>
+                </div>
+                {v.evidenceSummary && (
+                  <p style={{ fontSize: "10.5px", fontFamily: "'DM Sans', sans-serif", color: "rgba(245,240,232,0.5)", lineHeight: 1.6, margin: "0 0 6px" }}>
+                    {v.evidenceSummary}
+                  </p>
+                )}
+                {v.gap && (
+                  <p style={{ fontSize: "10.5px", fontFamily: "'DM Sans', sans-serif", color: "rgba(248,113,113,0.6)", lineHeight: 1.6, margin: "0 0 8px", fontStyle: "italic" }}>
+                    Gap: {v.gap}
+                  </p>
+                )}
+                {v.gapFillSuggestions?.length > 0 && (
+                  <div style={{ marginTop: "6px", paddingTop: "8px", borderTop: `1px solid ${INNER}` }}>
+                    {v.gapFillSuggestions.map((g, i) => (
+                      <div key={i} style={{ display: "flex", gap: "8px", marginBottom: "6px", alignItems: "baseline" }}>
+                        <span style={{ fontSize: "8px", letterSpacing: "0.06em", color: "rgba(201,168,76,0.45)", fontFamily: "'DM Sans', sans-serif", whiteSpace: "nowrap", textTransform: "uppercase" }}>
+                          {g.persona}
+                        </span>
+                        <span style={{ fontSize: "10.5px", fontFamily: "'DM Sans', sans-serif", color: "rgba(245,240,232,0.55)", lineHeight: 1.5 }}>
+                          {g.suggestion}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {theory.builtAt && (
+        <div style={{ fontSize: "9px", fontFamily: "'DM Sans', sans-serif", color: "rgba(245,240,232,0.2)", marginTop: "10px" }}>
+          Analysis generated {new Date(theory.builtAt).toLocaleDateString()}
+          {theory.doctrineCitations.length > 0 ? ` · grounded in ${theory.doctrineCitations.length} doctrine source${theory.doctrineCitations.length === 1 ? "" : "s"}` : ""}
+        </div>
+      )}
     </div>
   );
 }
@@ -1789,6 +1915,7 @@ export default function CaseProfilePage() {
                   <ScoreBar label="Business Plan"          score={data.businessPlanScore} />
                 </div>
               )}
+              {data.caseTheory && <CaseTheoryBlock theory={data.caseTheory} />}
               <Sub title="Gap Analysis" fields={gapFields} />
               {isFranchise && fddIntelFields.length > 0 && (
                 <Sub title="FDD Intelligence" fields={fddIntelFields} />

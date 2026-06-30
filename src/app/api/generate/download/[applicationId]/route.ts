@@ -30,6 +30,7 @@ import {
   TAB_SECTION_TITLES,
   TAB_ORDER,
 } from '@/lib/docx-package-constants';
+import { buildPackageManifest } from '@/lib/cic-package-manifest';
 import type { DocumentType } from '@/types/generation';
 
 const VALID_DOC_TYPES: DocumentType[] = [
@@ -103,25 +104,36 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
-    // 3. Gate check — must be acknowledged AND released
-    const { data: pipelineLog, error: logError } = await supabase
-      .from('generation_pipeline_log')
-      .select('applicant_acknowledged, final_status')
-      .eq('application_id', applicationId)
-      .eq('applicant_acknowledged', true)
-      .eq('final_status', 'RELEASED')
-      .limit(1)
-      .single();
-
-    if (logError || !pipelineLog) {
+    // 3. CIC-P.4 completeness gate — all generated docs certified, zero outstanding
+    const manifest = await buildPackageManifest(applicationId);
+    if (!manifest.packageReady) {
+      const reasons: string[] = [];
+      if (manifest.outstandingCount > 0) {
+        reasons.push(`${manifest.outstandingCount} required item(s) still outstanding`);
+      }
+      const uncertified = manifest.tabs.filter(
+        t => t.source === 'generated' && t.status !== 'certified'
+      );
+      if (uncertified.length > 0) {
+        reasons.push(`${uncertified.length} generated document(s) not yet certified by client`);
+      }
       return NextResponse.json(
         {
-          error:
-            'Documents not yet released. Please complete the acknowledgment step first.',
+          error: 'Package not ready for download.',
+          reasons,
+          certifiedCount: manifest.certifiedCount,
+          outstandingCount: manifest.outstandingCount,
+          totalTabs: manifest.totalTabs,
         },
         { status: 403 }
       );
     }
+
+    // Log download intent for audit trail
+    await supabase
+      .from('generation_pipeline_log')
+      .update({ downloaded_at: new Date().toISOString() })
+      .eq('application_id', applicationId);
 
     // 4. Read all 6 documents
     const { data: documents, error: docsError } = await supabase
@@ -281,15 +293,7 @@ export async function GET(
       Buffer.from(checklistBuffer)
     );
 
-    // 8. Log the download event
-    const now = new Date().toISOString();
-    await supabase
-      .from('generation_pipeline_log')
-      .update({ downloaded_at: now })
-      .eq('application_id', applicationId)
-      .eq('applicant_acknowledged', true);
-
-    // 9. Generate ZIP as arraybuffer and return
+    // 8. Generate ZIP as arraybuffer and return
     const zipBlob = await zip.generateAsync({ type: 'arraybuffer' });
 
     return new NextResponse(zipBlob as ArrayBuffer, {

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { isValidQuestionKey, QUESTION_KEY_REGEX } from '@/lib/questionKeyValidator';
 import { buildCaseProfile } from '@/lib/case-profile';
+import { buildCaseIntelligence } from '@/lib/case-intelligence-core';
 
 export async function POST(request: NextRequest) {
   try {
@@ -69,6 +70,7 @@ export async function POST(request: NextRequest) {
 
     // Trigger profile rebuild fire-and-forget (updates dimension scores as case file grows)
     buildCaseProfile(user.id).catch(() => {});
+    buildCaseIntelligence(application_id, user.id).catch(() => {});
 
     return NextResponse.json({
       saved: true,
