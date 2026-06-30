@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>E2go — Complete Feature Inventory · June 28, 2026 · Session 87</title>
+<title>E2go — Complete Feature Inventory · June 29, 2026 · Session 90</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -539,10 +539,12 @@ const PHASES = [
       {status:'built', name:'Document Upload (Self-Preparer)', route:'/apply/upload', desc:'3 preparer profiles. Extraction → discrepancy review (HARD GATE — must resolve) → gap report → pre-filled answers with source badges.'},
       {status:'built', name:'Story (Section 01)', route:'/apply/story', desc:'Cover letter + biography. Two-panel desktop · drawer tablet · overlay mobile. Voice input (Web Speech API). 800ms autosave. SimulatorNudge injected post-simulator.'},
       {status:'built', name:'Business (Section 02)', route:'/apply/business', desc:'Business plan + visa letter. Pre-fill badges from quiz and uploaded documents. 800ms autosave. SimulatorNudge injected post-simulator.'},
-      {status:'built', name:'Investment (Section 03)', route:'/apply/investment', desc:'Source of funds + investment proof. Startup cost table, projection table components. 800ms autosave. SimulatorNudge injected post-simulator.'},
-      {status:'built', name:'Qualifications (Section 04)', route:'/apply/qualifications', desc:'Biography + org chart. 9-dimension experience scoring → Layer 0 targeted follow-up → Layer 1 AI framing (OpenRouter) → Layer 2 standing backstop. SimulatorNudge injected post-simulator.'},
-      {status:'built', name:'Family (Section 05)', route:'/apply/family', desc:'Dependents + DS-160 family info. Partnership variants. Per-child intake restructured (Session 59): M3-L-07-COUNT count selector (1–5) + per-child cards (CHILD-{n}-NAME/DOB/NATIONALITY/PASSPORT). M3-L-08 auto-computed as summary string for backwards compat in generation engine. SimulatorNudge injected.'},
-      {status:'built', name:'Ties (Section 06)', route:'/apply/ties', desc:'Non-immigrant intent + interview prep. Risk flag components. WP-05 immigrant intent probe. SimulatorNudge injected post-simulator.'},
+      {status:'built', name:'Investment (Section 03)', route:'/apply/investment', desc:'Source of funds + investment proof. Startup cost table, projection table components. 800ms autosave. SimulatorNudge injected post-simulator. Session 89 (Sprint I-2): M3-F-02 now pre-filled from quiz_sessions.result_json.investment_range via QUIZ_MIDPOINTS map. Net worth label corrected to "including primary residence". Currency fields (total invested, net worth, liquid assets) use new CurrencyInput component.', badge:'new'},
+      {status:'built', name:'CurrencyInput Component', route:'src/components/apply/questions/CurrencyInput.tsx', desc:'Session 89 (Sprint I-2). New question type component. $ prefix always visible. Comma-formatted display on blur via toLocaleString. Raw numeric string stored for math compatibility. Shows formatted value when !focused, raw value when focused. Used in /apply/investment and /apply/ties.', badge:'new'},
+      {status:'built', name:'Qualifications (Section 04)', route:'/apply/qualifications', desc:'Biography + org chart. 9-dimension experience scoring → Layer 0 targeted follow-up → Layer 1 AI framing (OpenRouter) → Layer 2 standing backstop. SimulatorNudge injected post-simulator. Session 89 (Sprint I-2): M3-Q-00 added (franchise/business type, first question). M3-Q-01 changed to multi-select ("Education completed — select all that apply"). DS-160 education split into 5 fields: M3-Q-02A (field of study) · M3-Q-02B (degree/cert name) · M3-Q-02C (institution + city) · M3-Q-02D (year completed) · M3-Q-02E (additional quals, optional). M3-Q-05 rewording to include transferable skills. M3-Q-06 skills: healthcare/caregiving + customer service added; "none" option = "No direct experience — transferable skills only".', badge:'new'},
+      {status:'built', name:'Family (Section 05)', route:'/apply/family', desc:'Dependents + DS-160 family info. Partnership variants. Per-child intake restructured (Session 59): M3-L-07-COUNT count selector (1–5) + per-child cards (CHILD-{n}-NAME/DOB/NATIONALITY/PASSPORT). M3-L-08 auto-computed as summary string for backwards compat in generation engine. SimulatorNudge injected. Session 89 (Sprint I-2): EAD advisory block removed (was shown when M3-L-06 = \'yes\' — advisory mid-form is disruptive; belongs in checklist). Children clusters 2–4 now reachable via fixed CaseFileShell Next button.', badge:'new'},
+      {status:'built', name:'Ties (Section 06)', route:'/apply/ties', desc:'Non-immigrant intent + interview prep. Risk flag components. WP-05 immigrant intent probe. SimulatorNudge injected post-simulator. Session 89 (Sprint I-2): "List your major assets" textarea (M3-T-02) replaced with structured per-row repeater. Each row: TextInput (description) + CurrencyInput (value) + remove button. "Add another asset" button. serializeAssets() converts rows to human-readable string for backward compat with generation engine.', badge:'new'},
+      {status:'built', name:'CaseFileShell — Cluster Navigation Fix', route:'src/components/apply/CaseFileShell.tsx', desc:'Session 89 (Sprint I-2). "Next" button now advances to the NEXT CLUSTER within the active section before advancing to the next SECTION. nextCluster derived from clusters.findIndex + clusters[activeClusterIndex + 1]. Button label: "Next: {cluster.label} →" within section; "Next: {sectionName} →" at last cluster. Side effect fix: Family > Children clusters were already implemented but the old Next was bypassing them, jumping directly from Spouse to Ties. Now accessible.', badge:'new'},
       {status:'built', name:'Module 4: Voice Profile', route:'/apply/module4', desc:'Raw writing sample text for voice. AI-detection awareness. Follow-up responses stored as clean Q&A pairs (Session 56 audit). Voice profile conditional block confirmed in LLM generation prompt. Data path verified end-to-end.'},
       {status:'built', name:'Document Checklist', route:'/apply/checklist', desc:'Required documents auto-generated from application type + family composition via checklist-builder.ts. 8 conditional items added (Session 59): bank statements (always), transfer records (always), RRSP/TFSA withdrawal docs, property sale statement, loan agreement, gift letter + donor source docs, franchise fee invoice + FDD Item 7.'},
       {status:'built', name:'Compliance Calendar', route:'/apply/calendar', desc:'Key visa timeline dates. Toronto consulate processing windows via timeline-service.ts.'},
@@ -1655,72 +1657,99 @@ const SPRINTS = [
     ]
   },
   {
-    id:'H-1', name:'formatOutcome() Bug Fix', priority:'critical', effort:'30 min', status:'partial',
-    desc:'🔜 NEXT — P0 bug: PROCEED_RISK (quiz engine vocab) shows as raw DB enum string to paying users. formatOutcome() in DashboardClient.tsx maps strong/borderline/caution/ineligible but quiz engine produces PROCEED/PROCEED_RISK/ATTORNEY_RECOMMENDED. One-line fix to the vocabulary map. Visible on every paid dashboard session.',
+    id:'H-1', name:'formatOutcome() Bug Fix', priority:'critical', effort:'30 min', status:'complete',
+    desc:'✅ COMPLETE (Session 86) — Fixed PROCEED_RISK showing as raw DB enum. Added quiz engine vocab (PROCEED/PROCEED_RISK/ATTORNEY_RECOMMENDED) to OUTCOME_MAP in CaseCommandPanel.tsx and formatOutcome() in DashboardClient.tsx.',
     items:[
-      {name:'Fix formatOutcome() vocabulary map', desc:'Add PROCEED → "Strong — Eligible", PROCEED_RISK → "Eligible — strengthen key areas", ATTORNEY_RECOMMENDED → "Complex case — legal guidance recommended" to the map in DashboardClient.tsx.'},
-      {name:'Verify assessment pill renders correctly', desc:'Confirm the gold pill in CaseCommandPanel shows the human-readable label, not the raw enum string.'},
+      {name:'Fix formatOutcome() vocabulary map', desc:'Added PROCEED → "Strong — Eligible", PROCEED_RISK → "Eligible — strengthen key areas", ATTORNEY_RECOMMENDED → "Complex case — legal guidance recommended".'},
+      {name:'Verify assessment pill renders correctly', desc:'Gold pill in CaseCommandPanel confirmed showing human-readable label.'},
     ]
   },
   {
-    id:'H-2', name:'Dashboard Header Redesign', priority:'high', effort:'1 hour', status:'partial',
-    desc:'🔜 QUEUED — Replace generic "Welcome to the E2Go family" with aspirational case-specific header. New H1: "Let\'s build your E-2 application, [first_name]." Advisory sentence: encouragement + trajectory only — no data points. Pattern: "The hardest part is deciding to start — and you\'ve done that." Canada is a Treaty country; your path is open.',
+    id:'H-2', name:'Dashboard Header Redesign', priority:'high', effort:'1 hour', status:'complete',
+    desc:'✅ COMPLETE (Session 86) — Replaced generic "Welcome to the E2Go family" with aspirational "Let\'s build your E-2 application, [firstName]." Advisory sentence added: encouragement + trajectory only.',
     items:[
-      {name:'Aspirational H1 with first name', desc:'"Let\'s build your E-2 application, Romy." — action-oriented, inclusive ("let\'s"), mirrors user\'s own language about the experience.'},
-      {name:'Advisory sentence — encouragement only', desc:'No investment amount, no assessment status, no country. Only forward-looking motivation. Data belongs in the panels.'},
+      {name:'Aspirational H1 with first name', desc:'"Let\'s build your E-2 application, Romy." — done.'},
+      {name:'Advisory sentence', desc:'Forward-looking motivation only. No data points in header.'},
     ]
   },
   {
-    id:'H-3', name:'CaseCommandPanel Hierarchy Inversion', priority:'high', effort:'3 hours', status:'partial',
-    desc:'🔜 QUEUED — CTA inverted to dominant element. "Begin Onboarding →" full-width gold button is the first thing in the panel. 17% score demoted to supporting metric below CTA. Case at a glance: Country · Investment · Assessment pill (inline, compact). 4-phase journey roadmap replaces flat feature list. Adaptive: Phase 1 hidden for own-business clients; FDD hidden (not greyed). Live pulsing green indicator on dynamic fields. Remove floating ProfileIntelligenceStrip.',
+    id:'H-3', name:'CaseCommandPanel Hierarchy Inversion', priority:'high', effort:'3 hours', status:'complete',
+    desc:'✅ COMPLETE (Session 86) — CTA is now dominant first element (full-width gold button). 4-phase journey roadmap. Assessment pill and readiness % demoted below CTA. isFranchisePath prop added. ProfileIntelligenceStrip removed.',
     items:[
-      {name:'Gold CTA as dominant element', desc:'"Begin Onboarding →" full-width gold button at top of panel. Unlock text below: "Completing this unlocks Business Profile and auto-fills all 15 documents."'},
-      {name:'17% readiness demoted', desc:'Small serif number below CTA. Bar at 17% width. Sub-label: "1 of 9 steps · rises with each step." No longer the visual anchor.'},
-      {name:'Case at a glance (inline, compact)', desc:'One-line: Country · Investment. Assessment pill below with live dot. "Reflects quiz · deepens as case file fills" sub-label.'},
-      {name:'4-phase journey roadmap', desc:'Sequential timeline with connecting line. Phase 1 Discovery (franchise, if needed) · Phase 2 Intelligence (gap+FDD+market, after case file) · Phase 3 Application (15 docs auto-generate) · Phase 4 Interview (dossier + simulator). Each phase: dim dot + phase name + 1-line content + unlock condition. Phases 2-4 progressively dimmer.'},
-      {name:'Adaptive franchise/own-business detection', desc:'Read quiz_answers Q0-08a. If own-business: Phase 1 hidden entirely. FDD hidden from Phase 2 (not just dimmed — not applicable). Business Profile step 3 uses different prompts.'},
-      {name:'Live indicators on dynamic fields', desc:'Pulsing green dot next to "Case readiness" and "Case at a glance" section headers. Sub-label: "Updates each step."'},
+      {name:'Gold CTA as dominant element', desc:'Done — full-width gold button at top of panel.'},
+      {name:'4-phase journey roadmap', desc:'Done — Discovery (franchise) · Intelligence · Application · Interview. Adaptive: Phase 1 hidden for own-business.'},
     ]
   },
   {
-    id:'H-4', name:'Bottom Strip — 4 Macro Completion Buckets', priority:'high', effort:'2 hours', status:'partial',
-    desc:'🔜 QUEUED — Replace 4-card intelligence strip (which repeats data already shown in left panel) with 4 workstream completion buckets. Each bucket = a major E-2 workstream, not a granular metric. Primary risk area removed — too early to flag from 15-question quiz. Data deduplication rules: investment amount once (left panel only), assessment once (left panel pill), 17% once (left panel).',
+    id:'H-4', name:'WorkstreamStrip — 4 Macro Buckets', priority:'high', effort:'2 hours', status:'complete',
+    desc:'✅ COMPLETE (Session 86) — ProfileIntelligenceStrip replaced with WorkstreamStrip (4 macro buckets: Your Profile · Your Business · Your Application · Your Interview). No data duplication. Primary risk area removed.',
     items:[
-      {name:'Your Profile bucket', desc:'17% readiness with bar. Sub-label: "Who you are as an investor — onboarding, qualifications, ties." No duplicate of left panel percentage — bucket shows which profile sections are done vs pending.'},
-      {name:'Your Business bucket', desc:'Status: "franchise selection available now / FDD + territory intelligence unlock after your case file." Not started state. Sub-label describes the workstream.'},
-      {name:'Your Application bucket', desc:'"Building case file" locked state. "Gap analysis + 15 documents auto-generate when your case file is complete." Progress bar when partially complete.'},
-      {name:'Your Interview bucket', desc:'"Simulator open" with "Sim: ready" badge. "Start practicing now — case dossier unlocks when your application is built." Simulator session count when sessions exist.'},
-      {name:'Remove primary risk area', desc:'Removed from all dashboard surfaces. Only appears in gap analysis after sufficient data. Flagging "Management role" from a 15-question quiz is premature and potentially alarming.'},
+      {name:'4 workstream buckets', desc:'Done — Your Profile / Business / Application / Interview.'},
+      {name:'Remove primary risk area', desc:'Removed from all dashboard surfaces.'},
     ]
   },
   {
-    id:'H-5', name:'FolderStack Architecture — Tab Redesign', priority:'high', effort:'2 hours', status:'partial',
-    desc:'🔜 QUEUED — Add "My Case Profile" as new first tab. New tab order: My Case Profile · My Application · My Analysis · My Prep · My Package. Three-tier step list in My Application: COMPLETE (struck/dimmed, compressed) · IN PROGRESS (expanded, gold left border, Continue CTA) · NOT STARTED (progressively fading, 0.5 → 0.12 opacity). Tab lock badges on non-active tabs showing "after step X" so users understand why tabs are greyed.',
+    id:'H-5', name:'FolderStack Architecture — Tab Redesign', priority:'high', effort:'2 hours', status:'complete',
+    desc:'✅ COMPLETE (Session 86) — 5-tab structure: My Case Profile · My Application · My Analysis · My Prep · My Package. 3-tier StepRow (done/in-progress/upcoming). Tab lock badges. localStorage key preserved.',
     items:[
-      {name:'My Case Profile tab (position 0)', desc:'New CaseProfileTab component slotted as first tab. Always visible. Day 1: skeleton with quiz data populated. Fills progressively as case file is completed.'},
-      {name:'Three-tier step list', desc:'Step 1 COMPLETE: text-decoration:line-through + opacity 0.4 + "DONE" badge. Step 2 IN PROGRESS: expanded card with gold left border, serif step name, description, inline "Continue →" CTA. Steps 3-9: progressively fading from 0.5 to 0.12 opacity — just the step number, dot, and name.'},
-      {name:'Tab lock badges', desc:'"after step 2", "after step 3", "after step 5" badges on non-available tabs so users understand unlock conditions rather than wondering why tabs are inactive.'},
+      {name:'My Case Profile tab (position 0)', desc:'Done — CaseProfileTab component slotted as first tab.'},
+      {name:'Three-tier step list', desc:'Done — COMPLETE (struck/dimmed) · IN PROGRESS (gold border, CTA) · NOT STARTED (fading).'},
     ]
   },
   {
-    id:'H-6', name:'My Case Profile Tab — Component Shell', priority:'high', effort:'4 hours', status:'partial',
-    desc:'🔜 QUEUED — New CaseProfileTab.tsx component. First tab in the FolderStack dashboard. A living case dossier that populates progressively from 12 data sources. 6 sections always visible from day 1; each section shows empty state skeleton with "Populates from Step X" hints when data is absent. Becomes the one-stop summary of everything known about the client: personal, family, business, investment, case strength, interview readiness.',
+    id:'H-6', name:'My Case Profile Tab — Component Shell', priority:'high', effort:'4 hours', status:'complete',
+    desc:'✅ COMPLETE (Session 87) — New CaseProfileTab.tsx. Fetches /api/dashboard/case-profile. 6 sections: The Investor · The Business · The Investment · Case Intelligence (dimension bars) · Application Milestones · Interview Readiness. Progressive empty states. Rebuilt in Session 87 as standalone /case-profile page.',
     items:[
-      {name:'Identity strip (always populated from quiz)', desc:'Name · Nationality · Assessment pill (live) · Readiness % (live). Always visible from day 1. Assessment and readiness update dynamically.'},
-      {name:'The Investor section', desc:'Full name (after Onboarding) · DOB · Nationality · Management experience (after Qualifications) · Education · Spouse on petition (from quiz) · Dependents (after Family) · Country ties (after Country Ties). Empty fields: "After [Step]" in italics.'},
-      {name:'The Business section', desc:'Business type (from quiz) · Entity name · Industry · US employees · Territory · FDD assessed · Business plan summary. Empty fields show source: "After Business Profile (Step 3)".'},
-      {name:'The Investment section', desc:'Declared range (from quiz) · Precise amount · Source of funds · Funds lawful? · At-risk status · Wire/escrow docs. Empty fields: "After Investment & Documents (Step 4)".'},
-      {name:'Case Intelligence — 7 dimension bars', desc:'Treaty compliance · Investment amount · Source of funds · Management role · Non-marginal enterprise · At-risk capital · Investor intent. Day 1: 2 bars partially populated from quiz (treaty, investment). Rest show "Pending" with note: "Full scoring available after Business Profile."'},
-      {name:'Interview Readiness section', desc:'Simulator (available now, 0 sessions) · Interview dossier (locked until application built) · Narrative profile (after Voice Profile step). Each cell shows current status and unlock condition.'},
+      {name:'Identity strip + 6 sections', desc:'Done — 60+ fields inventoried.'},
+      {name:'Progressive empty states', desc:'Done — "Populates from Step X" hints on each unpopulated field.'},
     ]
   },
   {
-    id:'H-7', name:'My Case Profile Tab — DB View + API', priority:'medium', effort:'3 hours', status:'partial',
-    desc:'🔜 QUEUED — New database view case_profile_view aggregating all 12 data sources without new storage. New API route GET /api/dashboard/case-profile returning the aggregated profile. Wired into CaseProfileTab. Sources: profiles, applications, quiz_sessions, application_answers (all modules), gap_analysis_results, fdd_analysis_results, market_analysis_results, simulator_sessions, interview_prep_kits.',
+    id:'H-7', name:'My Case Profile Tab — DB View + API', priority:'medium', effort:'3 hours', status:'complete',
+    desc:'✅ COMPLETE (Session 87) — case_profile_view migration + GET /api/dashboard/case-profile. 9 parallel table fetches + sequential QMA-* market answers. Returns CaseProfileResponse typed DTO.',
     items:[
-      {name:'case_profile_view DB migration', desc:'SQL view joining profiles + applications + quiz_sessions + application_answers + gap_analysis_results + fdd_analysis_results + market_analysis_results + simulator_sessions + interview_prep_kits. No new tables. Pure aggregation of existing data.'},
-      {name:'GET /api/dashboard/case-profile route', desc:'Auth required. Queries case_profile_view for the authenticated user\'s application. Returns structured JSON with all 6 sections\' data. Handles missing sections gracefully (null values trigger empty state in component).'},
-      {name:'Wire into CaseProfileTab', desc:'CaseProfileTab fetches from /api/dashboard/case-profile on mount. Maps null fields to empty state skeleton. Maps populated fields to the correct section sub-components.'},
+      {name:'case_profile_view DB migration', desc:'Done — supabase/migrations/20260628100000_case_profile_view.sql.'},
+      {name:'GET /api/dashboard/case-profile', desc:'Done — authenticated GET, typed DTO.'},
+    ]
+  },
+  {
+    id:'I-1', name:'Navigation Consolidation', priority:'high', effort:'3 hours', status:'complete',
+    desc:'✅ COMPLETE (Session 88) — Full nav restructure. Application ▾ (Case File · Gap Analysis · Checklist) · Intelligence ▾ (FDD · Market · Franchise Navigator [franchise only]) · Documents · Simulator · Account ▾ (My Case Profile · Settings · Log out). Dashboard removed from nav. Logo → /case-profile. isFranchise via parallel quiz_sessions fetch. Outside-click unified across all dropdown pairs. /dashboard replaced with redirect(\'/case-profile\').',
+    items:[
+      {name:'Application + Intelligence dropdown groups', desc:'Done — Application ▾ (Case File / Gap Analysis / Checklist) · Intelligence ▾ (FDD / Market / Franchise Navigator).'},
+      {name:'/dashboard → /case-profile redirect', desc:'Done — bookmarks preserved, old URL redirects cleanly.'},
+    ]
+  },
+  {
+    id:'I-2', name:'Form UX Audit Sprint', priority:'high', effort:'4 hours', status:'complete',
+    desc:'✅ COMPLETE (Session 89) — Full voice audit of all /apply/* sections. 7 categories of fixes across investment prefill, currency formatting, DS-160 education split, qualifications expansion, EAD advisory removal, cluster navigation, structured assets, and voice STT pipeline.',
+    items:[
+      {name:'CurrencyInput component', desc:'New src/components/apply/questions/CurrencyInput.tsx — $ prefix, comma format on blur, raw numeric storage.'},
+      {name:'Investment quiz prefill', desc:'M3-F-02 pre-filled from quiz_sessions.result_json.investment_range via QUIZ_MIDPOINTS. Net worth label corrected to "including primary residence".'},
+      {name:'DS-160 education split', desc:'5 separate fields: M3-Q-02A (field of study) · M3-Q-02B (degree name) · M3-Q-02C (institution) · M3-Q-02D (year) · M3-Q-02E (additional). M3-Q-01 now multi-select.'},
+      {name:'Qualifications expansions', desc:'M3-Q-00 franchise type added. M3-Q-05 rewording for transferable skills. M3-Q-06 skills added healthcare + customer service. "none" → "No direct experience — transferable skills only".'},
+      {name:'Family EAD advisory removed', desc:'Advisory block (conditional on M3-L-06 = yes) removed from mid-form. Belongs in checklist.'},
+      {name:'CaseFileShell cluster navigation', desc:'Next button advances through clusters before sections. Side effect: Family > Children clusters (2–4) now reachable.'},
+      {name:'Ties structured asset repeater', desc:'Blank M3-T-02 textarea replaced with per-row description + CurrencyInput repeater.'},
+      {name:'Voice STT fixes', desc:'Transcribe route: baseType = audioFile.type.split(\';\')[0].trim() fixes WebM codec suffix. Returns { transcript } not { text }.'},
+    ]
+  },
+  {
+    id:'I-3', name:'Tab Navigation on Case File', priority:'high', effort:'4 hours', status:'complete',
+    desc:'Session 90 ✅ — Unified 6-tab row injected into CaseFileShell. All /apply/* sections now show Story · Business · Investment · Qualifications · Family · Ties tabs at top. Active: gold text + 2px gold bottom border via usePathname(). Completion indicators: ✓ (complete) / dot (partial) / blank (none). Live status from GET /api/apply/section-completion. Mobile: cluster strip offset adjusted (52→88px). Zero changes to individual section pages.',
+    items:[
+      {name:'GET /api/apply/section-completion', desc:'NEW — src/app/api/apply/section-completion/route.ts. Counts answers per section via prefix map. Thresholds: story 5, business 6, investment 4, qualifications 4, family 3, ties 3. Returns SectionCompletion type. Cache-Control: private max-age=30.'},
+      {name:'CaseFileShell tabs', desc:'MODIFIED — src/components/apply/CaseFileShell.tsx. 36px tab row between topbar and body. Self-fetches section completion on mount. Uses Link for navigation. Mobile offsets updated.'},
+    ]
+  },
+  {
+    id:'I-4', name:'Document Upload + AI Parsing Hub', priority:'high', effort:'8 hours', status:'complete',
+    desc:'Session 90 ✅ — Full pipeline: file upload → Anthropic PDF extraction → per-field review → upsert to answers. 6 doc types supported. Pre-fills fields across /apply/* sections with source=document_upload. Entry point: collapsed banner on /apply page. Owner action: apply uploaded_documents migration.',
+    items:[
+      {name:'DB migration', desc:'NEW — supabase/migrations/20260629100000_uploaded_documents.sql. Table uploaded_documents: user_id, application_id, file_name, doc_type (6-value enum), extraction_status, extracted_json, fields_accepted, fields_total. RLS 4 policies + 2 indexes + updated_at trigger.'},
+      {name:'POST /api/apply/parse-document', desc:'NEW — src/app/api/apply/parse-document/route.ts. Accepts file + docType + applicationId. PDF: Anthropic beta Documents API (claude-opus-4-8, pdfs-2024-09-25). Text/DOCX: standard messages.create(). Per-docType prompt + field schema. Returns {docId, fields: ExtractedField[], docType}.'},
+      {name:'DocumentImportHub', desc:'NEW — src/components/apply/DocumentImportHub.tsx. Stage machine: idle→uploading→reviewing→saving→done|error. Doc type selector (6 tiles). Hidden file input (PDF/DOCX/TXT, 20MB max). Review: per-field checkbox accept/skip, "Apply N fields" CTA. Upserts answers with source=document_upload. Callback onFieldsApplied(count).'},
+      {name:'Wired to /apply/page.tsx', desc:'MODIFIED — applicationId state added; DocumentImportHub rendered below DocumentUploadCard. Passes applicationId and onFieldsApplied.'},
     ]
   },
 ];
@@ -1785,7 +1814,7 @@ const roadmapSprintEl = document.getElementById('roadmap-sprint-container');
 const sprintTitle = document.createElement('div');
 sprintTitle.className = 'roadmap-section-title';
 sprintTitle.style.marginTop = '36px';
-sprintTitle.textContent = 'Sprints — 15 total · OPS-1✅ OPS-2✅ OPS-3✅ OPS-4✅ OPS-5✅ ENG-1✅ ENG-2✅ INFRA-1✅ complete · H-1🔜 H-2🔜 H-3🔜 H-4🔜 H-5🔜 H-6🔜 H-7🔜 NEXT';
+sprintTitle.textContent = 'Sprints — 21 total · OPS-1✅ OPS-2✅ OPS-3✅ OPS-4✅ OPS-5✅ ENG-1✅ ENG-2✅ INFRA-1✅ F-1✅ F-2✅ G-1✅ G-2✅ G-3✅ H-1✅ H-2✅ H-3✅ H-4✅ H-5✅ H-6✅ H-7✅ I-1✅ I-2✅ I-3✅ I-4✅ complete · Session 90 done';
 roadmapSprintEl.appendChild(sprintTitle);
 
 const sprintGrid = document.createElement('div');

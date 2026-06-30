@@ -1,6 +1,200 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 28, 2026 — Session 88: Navigation consolidated; /dashboard retired (→ redirect); /case-profile becomes primary hub with Sections 07 (Documents) + 08 (Tools & Learn). Build clean.
+**Last Updated:** June 29, 2026 — Session 90: Sprint I-3 (Tab Nav) + Sprint I-4 (Document Import Hub + AI Parsing) complete. All /apply/* sections now have 6-tab section nav with live completion state. DocumentImportHub: 6 doc types, Anthropic PDF extraction, per-field review + accept/skip, upserts to answers with source=document_upload.
+
+---
+
+## Session 90 — Sprint I-3 (Tab Nav) + Sprint I-4 (Document Import Hub) (June 29, 2026)
+
+**Branch:** dev.
+
+### Sprint I-3: Apply Section Tab Navigation ✅
+
+**New API — `src/app/api/apply/section-completion/route.ts`**
+- GET endpoint returns `SectionCompletion` — `{ story, business, investment, qualifications, family, ties }` each `'none'|'partial'|'complete'`
+- Counts answers per section via question_key prefix map; threshold per section (5/6/4/4/3/3)
+- Cache-Control: private, max-age=30
+
+**Modified — `src/components/apply/CaseFileShell.tsx`**
+- 6-tab row (36px) injected below topbar on all /apply/* sections; zero changes to section pages
+- Active tab: gold text + 2px gold bottom border; detected via `usePathname()`
+- Completion indicators: ✓ checkmark (complete) · dim dot (partial) · nothing (none)
+- Self-fetches /api/apply/section-completion on mount
+- Mobile offsets updated: cluster strip `top-[52px]→top-[88px]`; content `pt-[44px]→pt-[80px]`
+
+### Sprint I-4: Document Import Hub ✅
+
+**New migration — `supabase/migrations/20260629100000_uploaded_documents.sql`**
+- `uploaded_documents` table: user_id, application_id, file_name, doc_type (6 types), extraction_status, extracted_json, fields_accepted, fields_total
+- RLS: 4 policies, 2 indexes, updated_at trigger
+
+**New API — `src/app/api/apply/parse-document/route.ts`**
+- POST: accepts `file` + `docType` + optional `applicationId` as multipart/form-data
+- 6 doc types: resume, fdd, investment_records, business_plan, financial_statement, territory_analysis
+- PDF path: Anthropic `claude-opus-4-8` via beta Documents API (`pdfs-2024-09-25` beta)
+- Text path: decode to UTF-8, pass as context to standard `messages.create()`
+- Returns `{ docId, fields: ExtractedField[], docType }` — only non-null extracted fields
+- Inserts/updates `uploaded_documents` record with extraction status + field counts
+
+**New component — `src/components/apply/DocumentImportHub.tsx`**
+- Collapsed entry point ("Import from a document") → expands inline
+- Stage machine: idle → uploading → reviewing → saving → done | error
+- Doc type selector (6 tiles with hint text) + hidden file input (PDF/DOCX/TXT)
+- Review step: per-field checkbox, accept/skip toggle, "Apply N fields" CTA
+- On apply: upserts to `answers` table with `source: 'document_upload'`; updates `fields_accepted` count
+- Callback: `onFieldsApplied(count)` for parent refresh
+
+**Wired into — `src/app/apply/page.tsx`**
+- Added `applicationId` state; resolves from first non-simulator application
+- `<DocumentImportHub applicationId={applicationId} />` rendered below DocumentUploadCard
+
+### Owner actions still required
+- Apply `20260629100000_uploaded_documents.sql` migration in Supabase SQL Editor (NEW)
+- All previously logged owner action items still pending (items 1–12 from Session 89)
+
+---
+
+## Session 89 — Form UX Sprint + Sprint I-3/I-4 Definitions (June 29, 2026)
+
+**Branch:** dev.
+
+### What was built — Sprint I-2: Form UX Audit Fixes ✅
+
+Full voice audit of all /apply/* sections surfaced 7 categories of fixes.
+
+**1. CurrencyInput — `src/components/apply/questions/CurrencyInput.tsx` (NEW)**
+- `$` prefix always visible; comma-formatted display on blur; raw numeric string stored internally
+- `toDisplay()` uses `toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })`
+- Shows formatted value when !focused, raw value when focused (avoids reformatting during typing)
+- Used in /apply/investment and /apply/ties
+
+**2. Investment (`/apply/investment`)**
+- Quiz prefill wired for M3-F-02: reads `quiz_sessions.result_json.investment_range` on load → maps to midpoint via QUIZ_MIDPOINTS → upserts with `source: 'quiz'`; skipped if user already has a value
+- QUIZ_MIDPOINTS: `'Over $150,000' → 175000 | '$100,000–$150,000' → 125000 | '$75,000–$100,000' → 87500 | '$50,000–$75,000' → 62500 | 'Under $50,000' → 35000`
+- Net worth label corrected: "not including primary residence" → "including primary residence"
+- Total invested + net worth + liquid assets fields now render via CurrencyInput
+
+**3. Qualifications (`/apply/qualifications`)**
+- `M3-Q-00` (NEW): franchise/business type free-text field; first question in BACKGROUND_QUESTIONS
+- `M3-Q-01`: changed from `type: 'single'` → `type: 'multi'`; label: "Education completed (select all that apply)"
+- DS-160 education split — old single combined field removed; replaced with 5 fields:
+  - `M3-Q-02A`: Field of study
+  - `M3-Q-02B`: Degree, diploma or certification name
+  - `M3-Q-02C`: Institution name and city
+  - `M3-Q-02D`: Year completed (number input)
+  - `M3-Q-02E`: Additional qualifications (textarea, optional)
+- `M3-Q-05` label: "Years of professional experience (direct or transferable)"
+- `M3-Q-06` (Skills): added healthcare/caregiving + customer service options; "none" option: "No direct experience — transferable skills only"; helperText added
+
+**4. Family (`/apply/family`)**
+- Removed EAD advisory block (was conditional on `M3-L-06 === 'yes'`) — advisory in the middle of a form is disruptive; appropriate location is checklist, not intake
+
+**5. CaseFileShell — `src/components/apply/CaseFileShell.tsx`**
+- Fixed "Next" button: now advances to next CLUSTER within the active section before advancing to the next SECTION
+- `nextCluster = isLastCluster ? null : clusters[activeClusterIndex + 1]`
+- Button label: `"Next: {cluster.label} →"` within section; `"Next: {sectionName} →"` at last cluster
+- **Side effect fix:** Family > Children section was already implemented (CHILDREN_QUESTIONS + dynamic repeater) but the old Next button was jumping from cluster 1 (spouse) straight to Ties, bypassing clusters 2–4. Now fixed.
+
+**6. Ties (`/apply/ties`)**
+- Replaced blank textarea M3-T-02 with structured per-row asset repeater
+- `assetRows` state: `Array<{ description: string; value: string }>`; initialized from saved M3-T-02 on load
+- Each row: TextInput (asset description) + CurrencyInput (approximate value USD) + "×" remove button
+- "Add another asset" button appends a blank row
+- `serializeAssets()` converts rows to "description — approx. $value" format for backward compat with generation engine
+
+**7. Voice STT (prior session — code complete, push pending)**
+- `src/app/api/simulator/transcribe/route.ts`: `baseType = audioFile.type.split(';')[0].trim()` — fixes silent failure when browser sends `audio/webm;codecs=opus`
+- Response changed from `{ text }` to `{ transcript }` to match client read path in TextArea.tsx
+
+### Commits this session
+Pending push to origin/dev (stop dev server first — pre-push hook runs `npm run build`).
+
+### Build Status — Session 89
+TypeScript: ✓ clean (`npx tsc --noEmit` — 0 errors). Full build: run before push.
+
+### ⚠️ Owner Actions Still Required (carried forward)
+1. Apply FAQ pgvector migration via SQL Editor
+2. Run FAQ seed scripts after migration
+3. Add NEXT_PUBLIC_SENTRY_DSN + SENTRY_DSN + SENTRY_ORG + SENTRY_PROJECT to Vercel
+4. Add NEXT_PUBLIC_CF_TURNSTILE_SITE_KEY + CF_TURNSTILE_SECRET_KEY to Vercel
+5. Add CRON_SECRET env var to Vercel
+6. Rotate OpenAI API key
+7. Check Resend domain verification
+8. Refund $197 test charge in Stripe
+9. Apply migration `supabase/migrations/20260627100000_interview_prep_kits.sql`
+10. Create Stripe $1,495 price → set `STRIPE_PRICE_COMPLETE` env var
+11. Accept Groq TTS terms at console.groq.com
+12. Remove brand/company names from Module 2 Franchise Navigator copy
+
+---
+
+## Sprint I-3 — Tab Navigation on Apply Case Form ✅ (Session 90)
+
+**Goal:** Replace the current section-by-section linear flow with a unified tabbed interface. All 6 case file sections (Story / Business / Investment / Qualifications / Family / Ties) are visible as tabs at the top. The left sidebar shows clusters for the active tab with completion indicators. Users can jump between sections without losing progress.
+
+### Design spec
+- 6 tabs at the top of the case file: Story · Business · Investment · Qualifications · Family · Ties
+- Active tab: gold bottom border, full opacity; inactive: 35% opacity, hoverable
+- Left sidebar (per tab): shows clusters for that section only; dots: `○` not started · `●` in progress · `✓` complete
+- Cluster completion: derived from answer count for question keys in that cluster
+- "Next" button: advances cluster → then switches to next tab (not next URL)
+- Mobile: tabs horizontal-scroll; sidebar collapses to accordion above content
+
+### Architecture: URL-preserving
+- Keep existing routes `/apply/story`, `/apply/business`, etc. — middleware gates work unchanged
+- `src/app/apply/layout.tsx` injects `SectionTabNav` above all /apply/* pages
+- `SectionTabNav` reads current pathname to set active tab; clicking a tab pushes to that section's URL
+- Completion indicators fetched via `GET /api/apply/section-completion` (reads answers table by key prefix)
+
+### Key files
+- `src/components/apply/SectionTabNav.tsx` — 6-tab horizontal nav (NEW)
+- `src/app/apply/layout.tsx` — inject SectionTabNav
+- `src/components/apply/CaseFileShell.tsx` — accept `sectionCompletion` prop for sidebar dots
+- `GET /api/apply/section-completion` — returns per-section completion state
+
+### Section → answer key prefix map
+```
+story:          M3-S- or M3-A-
+business:       M3-B-
+investment:     M3-F-
+qualifications: M3-Q-
+family:         M3-L-
+ties:           M3-T- or M3-K-
+```
+
+**Effort:** 4 hours.
+
+---
+
+## Sprint I-4 — Document Upload + AI Parsing Hub ✅ (Session 90)
+
+**Goal:** Users upload existing documents (resume, FDD, investment records, territory analysis, business plan, personal financial statement). AI extracts structured data from each and pre-fills the corresponding answer fields across all /apply/* sections. Each extracted field is reviewable and editable before being accepted.
+
+### Document types + field targets
+| Document | Pre-fills |
+|---|---|
+| Resume | M3-Q-05 (experience), M3-Q-06 (skills), M3-Q-02A/B/C/D (education), M3-Q-00 (business type) |
+| FDD / Franchise Disclosure | M3-B-* (business), M3-F-02 (investment amount), M3-Q-00 (franchise type) |
+| Investment / bank records | M3-F-02 (invested), M3-F-03 (source of funds), M3-F-05 (asset types) |
+| Territory analysis | QMA-* (market analysis answers) |
+| Business plan | M3-B-* (entity/industry/employees), M3-S-* (story) |
+| Personal financial statement | M3-F-04 (net worth), M3-T-01/02/03 (ties/assets) |
+
+### Architecture
+- Entry: "Import Documents" button on `/case-profile` Section 07 + tab within case profile
+- Upload: Supabase Storage bucket `uploaded-docs` (private, RLS user-scoped)
+- Extraction: POST `/api/apply/parse-document` → Anthropic Documents API (`claude-opus-4-8`, base64 PDF) → JSON keyed by answer field codes
+- LLM prompt: per doc type with explicit JSON output schema; returns null for undetected fields
+- Pre-fill: upsert into `answers` with `source: 'uploaded_document'` (new source type — no schema change)
+- Edit flow: review modal; extracted value vs current value side-by-side; accept/reject per field; bulk accept-all
+- `PreFillBadge` gets new variant: `source === 'uploaded_document'` → "From your document" label
+
+### New DB objects
+- Bucket: `uploaded-docs`
+- Table: `uploaded_documents (id, user_id, application_id, file_path, doc_type, extraction_status, extracted_json, created_at)`
+- Migration: `supabase/migrations/20260629100000_uploaded_documents.sql`
+
+**Effort:** 6–8 hours (2 sessions).
 
 ---
 
