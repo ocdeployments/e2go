@@ -293,6 +293,29 @@ export async function buildCaseProfile(userId: string): Promise<CaseProfile> {
     createdAt = inserted?.created_at ?? createdAt;
   }
 
+  // D1 — sync denormalized scores into case_model (the CIC canonical table).
+  // case_profiles stays populated for the ~14 existing readers during migration;
+  // this keeps case_model in sync so new readers can use it. Phase 2 will drop
+  // the case_profiles sync once all readers are confirmed migrated.
+  if (application?.id) {
+    await supabase.from('case_model').upsert(
+      {
+        application_id:      application.id,
+        user_id:             userId,
+        archetype,
+        eligibility_score:   eligibilityScore,
+        source_of_funds_score: sourceOfFundsScore,
+        management_role_score:  managementRoleScore,
+        business_plan_score:    businessPlanScore,
+        completeness_score:     completenessScore,
+        franchise_triggered:    franchiseTrigger,
+        // dimensions / signals_present / data_state are written by assembleCaseModel() —
+        // default to empty objects so this upsert doesn't overwrite them.
+      },
+      { onConflict: 'application_id', ignoreDuplicates: false }
+    );
+  }
+
   return {
     userId,
     quizSessionId:      session?.id ?? null,

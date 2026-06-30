@@ -80,6 +80,7 @@ export default function DocumentsReviewPage() {
     reviewed: false,
     attorney: false,
     responsible: false,
+    outcomes_consent: false, // D6 — consent to share anonymised outcome for learning
   });
   const [downloadState, setDownloadState] = useState<
     "locked" | "ready" | "downloading" | "complete"
@@ -613,6 +614,10 @@ export default function DocumentsReviewPage() {
                 {
                   key: "responsible" as const,
                   text: "I accept full responsibility for the accuracy of the information I provided",
+                },
+                {
+                  key: "outcomes_consent" as const,
+                  text: "I consent to e2go using my anonymised case outcome (approved / denied / RFE) to improve guidance for future E-2 applicants. No personal details are shared. I can withdraw consent at any time in Settings.",
                 },
               ].map(({ key, text }) => (
                 <label key={key} className="flex cursor-pointer items-start gap-3">

@@ -72,7 +72,13 @@ Status key: ⬜ not started · 🔶 in progress · ✅ done · ⛔ blocked
 - ⬜ **5.3** Anonymization + consent model (Decision **D6**, privacy gate) — strip PII, generalize figures to bands, drop re-identifying free-text; consent basis (terms update / opt-in) settled before any real data enters a shared corpus.
 - ⬜ **5.4** Anonymized, outcome-indexed **case library** as a SECOND RAG corpus alongside `kb_chunks` (which is authored doctrine, not learned-from-outcomes). Retrieved at reason-time: "clients like this, at this consulate, with this profile, were approved/denied because…". Honest limit: advisory-only until N is statistically meaningful — never deterministic.
 
-> **Decision register (Session 93):** D1 consolidation timing · D2 quiz-scoring.ts delete now/batch · D3 upstream flow inside CIC-2 vs pull-forward · D4 outcome-capture now/wait · D5 survey question design (owner) · D6 anonymization/consent. Full text mirrored in `docs/FEATURE_INVENTORY.html` → Gaps → "Pending Decisions" and in `BUILD_TRACKER.md` Session 93.
+> **Decision register — resolved 2026-06-30 (Session 94):**
+> - **D1 ✅ merge** — phase 1 done: migration `20260630170000_case_model_d1_merge.sql` adds archetype/score columns to `case_model`; `buildCaseProfile()` now syncs them after writing `case_profiles` (backward-compat sync). Phase 2 (drop `case_profiles` writes + migrate ~14 readers to `case_model`) is a follow-on sprint.
+> - **D2 ✅ delete** — `src/lib/quiz-scoring.ts` deleted (zero callers confirmed).
+> - **D3 ✅** — decision noted: `assembleCaseModel()` is the canonical upstream; `case_profiles` is deprecated-in-place (writes still happen for reader compat; reads should migrate to `case_model/case_theory`).
+> - **D4 ✅ build now** — `application_outcomes` table + RLS + `/api/dashboard/outcome` (GET/POST upsert). Migration `20260630160000_outcome_capture.sql`. Apply in Supabase SQL editor.
+> - **D5 ⏳ pending** — survey question design needs owner input (what questions to ask post-outcome). Will design question set when Romy provides domain guidance.
+> - **D6 ✅ three-point consent** — (1) signup checkbox [pending], (2) terms-update prompt on next login [pending], (3) before-download checkbox in `/documents` gate [built — `acknowledgments.outcomes_consent`]. `application_outcomes.consent_given` only set true when client explicitly ticks. No data enters CIC-5.4 corpus without `consent_given=true` AND `anonymized_at` set (CIC-5.3 not yet built).
 
 ---
 
