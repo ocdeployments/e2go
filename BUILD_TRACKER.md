@@ -1,6 +1,6 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** July 2, 2026 — Session 102 cont. pt.2: Sprint R COMPLETE — generation pipeline + documents viewer built. All 4 renewal routes live. Build clean.
+**Last Updated:** July 2, 2026 — Session 102 cont. pt.3: Sprint F-P COMPLETE — Partnership Document Engine built. 6 Investor 2 document types, Partner 2 intake, generation pipeline injection. Build clean 175 pages. ⚠️ $2,495 tier can now be sold.
 
 ---
 
@@ -37,9 +37,22 @@
 | `/renewal/documents` viewer | 95d71b8 | Tabbed (Cover Letter / BP Update / Template 6 / Checklist), copy + download per tab, Regenerate button, polling for generating state |
 | Case profile §08 renewal card | 0c7813f | Static card → `/renewal` |
 
+### Sprint F-P — Partnership Document Engine — ✅ COMPLETE
+
+| Item | Commit | Detail |
+|------|--------|--------|
+| P2 DocumentType union | c6de740 | 6 new types: `cover_letter_p2`, `source_of_funds_p2`, `declaration_p2`, `qualifications_p2`, `nonimmigrant_intent_p2`, `resume_p2`. Labels, tabs, DOC_TYPE_DIMENSIONS, REQUIRED_ELEMENTS, `missing_elements` all updated. |
+| Generation engine injection | 84ce72a | `runGenerationPipeline()` detects `complete_partnership` payment → adds P2 doc types to conditionalDocTypes → loads `P2-*` answers once → for `_p2` doc types: prepends P2 context block to system_prompt + overrides module_3_answers with P2 data. FILE_ALIASES map P2 types → existing P1 prompt files. |
+| generate/start route | bf29c91 | Checks `complete_partnership` payment via Promise.all; adds 6 P2 types to conditionalDocTypes; creates generated_documents rows for P2 docs. |
+| `/api/partner2/intake` GET+PATCH | e32be6c | Payment-gated, ownership-verified. GET returns P2-* answers. PATCH upserts on `application_id,question_key`. Whitelist of allowed P2-* keys. |
+| `/apply/partner2` intake form | 3bbe312 | 8 questions (P2-NAME, P2-NATIONALITY, P2-SHARES, P2-INVEST, P2-ROLE, P2-SOF, P2-QUALS, P2-INTENT). Auto-save 800ms debounce. Redirects to `/case-profile` on all 8 complete. |
+| §09 Partner 2 card | 527a28b | CaseProfilePage: shows §09 only when `isPartnership`. Links to `/apply/partner2?applicationId=...`. |
+
+**⚠️ $2,495 complete_partnership tier is now safe to sell.**
+
 ### Remaining backlog (priority order)
-1. Partnership Document Engine (Sprint F-P — CRITICAL, do not sell $2,495 tier until built)
-2. Supabase CLI migration history sync (22 applied, CLI shows 2 — cosmetic, not blocking)
+1. Supabase CLI migration history sync (22 applied, CLI shows 2 — cosmetic, not blocking)
+2. Results page partnership suppression — confirm $2,495 is now showing (was suppressed in Session 81 Session 81 mitigation commit `6ce16fe`)
 
 ### Owner actions required — Sprint R
 - Apply `supabase/migrations/20260702100000_renewal_intakes.sql` in Supabase SQL Editor (full table + RLS + trigger)
