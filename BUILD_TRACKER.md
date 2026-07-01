@@ -1,6 +1,6 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 30, 2026 — Session 95 cont.: P0 + P1 audit fixes complete. 12 migrations total (2 pending owner apply). Build clean (156 pages).
+**Last Updated:** June 30, 2026 — Session 95 cont.2: P2 audit fixes complete (M4, M8, M6). Build clean (156 pages).
 
 ---
 
@@ -68,18 +68,21 @@
 - Apply `supabase/migrations/20260630200000_rls_admin_log_tables.sql` ← H4
 - Apply `supabase/migrations/20260630210000_case_intelligence_locks.sql` ← H6
 
-### What's next — P2
+### P2 fixes (Session 95 cont.2) ✅
+
+| Fix | File | Detail |
+|-----|------|--------|
+| M4 — Flush on unmount | `lib/use-autosave-flush.ts` (NEW) + 6 apply pages | `useAutosaveFlush` hook flushes pending debounces on beforeunload and React unmount across story/business/investment/qualifications/family/ties |
+| M8 — Refund revokes access | `api/stripe/webhook/route.ts` | `charge.refunded` now revokes FDD (`report_unlocked=false`) and deducts 3 simulator sessions via Stripe PI metadata lookup |
+| M6 — Threshold unification | `lib/e2-thresholds.ts` (NEW) | Single canonical 9 FAM 402.9-6(D) sliding-scale table; both `fdd-profile-match-engine.ts` and `fdd-scoring-engine.ts` delegate to it |
+
+### What's next — P2 remaining
 
 - H2: Figure provenance deterministic — extract numbers from draft, assert each exists in case_model
-- M3: Legacy `/apply/upload` pipeline fate — remove nav entry + delete `document-extraction-engine.ts`, or migrate onto M3-*
-- M4: Flush-on-unmount (beforeunload/visibilitychange) across all `/apply/*` pages beyond module3/j + module3/d
-- M6: One `substantialityThreshold(totalCost)` shared by both FDD engines (currently duplicated)
-- M8: Refunds revoke FDD + simulator access (currently only revokes `complete` tier)
+- M3: Legacy pipeline fate — `document-extraction-engine.ts` still has 2 live importers (case-summary + gap-report routes); decide keep-or-delete
 - Architecture: typed DB schema mirror (Zod per table) — makes N1/N2-class column drift a compile error
-
 - D6 Points 1+2: signup consent checkbox + existing-user terms-update banner
 - D5: Owner to define outcome survey question set
-- S1: Add auth to `verify-payment` (defense-in-depth — non-critical)
 - S2: Test removing `unsafe-eval` from CSP
 - CIC-5: gated on D5 + D6 full
 
