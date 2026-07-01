@@ -1,6 +1,6 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 30, 2026 — Session 95: QA audit sweep FULLY COMPLETE. All 16 findings resolved. All 10 migrations applied in Supabase. Build clean (156 pages).
+**Last Updated:** June 30, 2026 — Session 95 cont.: P0 + P1 audit fixes complete. 12 migrations total (2 pending owner apply). Build clean (156 pages).
 
 ---
 
@@ -45,7 +45,37 @@
 | Rate-limit fails closed | `lib/rate-limit.ts` | `generate` profile blocks (not allows) when Upstash unconfigured |
 | `onFieldsApplied` no-op | `components/CaseProfilePage.tsx` | Now calls `reloadProfile()` so have/total counts update after document import |
 
-### What's next
+### P0 fixes (Session 95 cont.) ✅
+
+| Fix | File | Detail |
+|-----|------|--------|
+| H5 — SSE IDOR | `api/generate/progress/[jobId]/route.ts` | Added `.eq('user_id', user.id)` to job query — any authed user who knew a jobId could stream another user's pipeline |
+| C1 — verify-payment auth | `api/stripe/verify-payment/route.ts` | Requires `getUser()` session; userId derived from cookie not body; ownership check on Stripe metadata userId |
+| C2 — checkpoint resume | `lib/generation-engine.ts` | Loads already-approved docs at pipeline start and skips them — interrupted runs no longer re-spend Claude credits |
+| H4 — RLS log tables | `migrations/20260630200000_rls_admin_log_tables.sql` | RLS + FORCE on llm_cost_log, admin_audit_log, cron_log — service-role only |
+
+### P1 fixes (Session 95 cont.) ✅
+
+| Fix | File | Detail |
+|-----|------|--------|
+| H3 — Webhook idempotency | `api/stripe/webhook/route.ts` | INSERT first, catch 23505 unique constraint as dedup gate — removes SELECT+INSERT TOCTOU race |
+| M1 — Rate-limit /run | `api/generate/run/[jobId]/route.ts` | generate profile now checked on both /start and /run — was bypassable |
+| M2 — Sentry wiring | `lib/llm-client.ts` | `Sentry.captureException` in callLLM all-providers-failed path |
+| H6 — CIC build lock | `lib/case-intelligence-core.ts` + `migrations/20260630210000_case_intelligence_locks.sql` | `acquire_case_intelligence_lock` RPC with 30s TTL prevents concurrent CPU builds per application |
+
+### Owner actions required
+
+- Apply `supabase/migrations/20260630200000_rls_admin_log_tables.sql` ← H4
+- Apply `supabase/migrations/20260630210000_case_intelligence_locks.sql` ← H6
+
+### What's next — P2
+
+- H2: Figure provenance deterministic — extract numbers from draft, assert each exists in case_model
+- M3: Legacy `/apply/upload` pipeline fate — remove nav entry + delete `document-extraction-engine.ts`, or migrate onto M3-*
+- M4: Flush-on-unmount (beforeunload/visibilitychange) across all `/apply/*` pages beyond module3/j + module3/d
+- M6: One `substantialityThreshold(totalCost)` shared by both FDD engines (currently duplicated)
+- M8: Refunds revoke FDD + simulator access (currently only revokes `complete` tier)
+- Architecture: typed DB schema mirror (Zod per table) — makes N1/N2-class column drift a compile error
 
 - D6 Points 1+2: signup consent checkbox + existing-user terms-update banner
 - D5: Owner to define outcome survey question set
