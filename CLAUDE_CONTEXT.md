@@ -1,6 +1,6 @@
 # CLAUDE_CONTEXT.md — E2go
 ## Master Context for Every Claude Code Session
-**Version:** July 1, 2026 — Session 100. D6 consent complete: signup checkbox (Point 1) + existing-user banner (Point 2) + migration built (owner must apply). Sensai Health in franchise catalog. S2 done: unsafe-eval removed from main CSP. DocumentAuditPanel placeholder regex now catches lowercase forms. Build clean. Owner action: apply `20260701200000_profiles_outcomes_consent.sql` in Supabase SQL Editor. Next priority: Phase D QA audit (public routes → authenticated routes → API routes), then account deletion soft-delete.
+**Version:** July 1, 2026 — Session 101. Middleware DB caching via Upstash Redis (2–3 DB hits/request eliminated). Account soft-delete with 30-day grace period + recovery page. Simulator session TTL migration. 8 AI routes missing kill-switch enforcement fixed. select(*) optimized on generation hot paths. 2 migrations for owner to apply. Build clean, 26/26 security tests pass. Next: Gap Analysis 2-call merge, Module 3 lazy loading, Partnership Document Engine (Sprint F-P).
 
 ## SPRINT STATUS
 - OPS-1 (API Cost Intelligence): ✅ COMPLETE — llm_cost_log, cost logging in callLLM(), /admin/cost page

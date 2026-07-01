@@ -1,6 +1,49 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** July 1, 2026 — Session 100: D6 consent Points 1+2 live (signup checkbox + existing-user banner + migration), Sensai Health in franchise catalog, S2 unsafe-eval removed from main CSP, placeholder regex broadened to catch lowercase markers. Build clean. Owner still needs to apply `20260701200000_profiles_outcomes_consent.sql` in Supabase SQL Editor.
+**Last Updated:** July 1, 2026 — Session 101: Middleware DB caching, account soft-delete (30-day grace period + recovery page), simulator session TTL, kill-switch enforcement on 8 AI routes, select(*) optimization on hot generation routes. Build clean, 26/26 security tests pass. Two new migrations for owner to apply.
+
+---
+
+## Session 101 — Backlog Execution Wave 1 (July 1, 2026)
+
+**Branch:** dev. **Build:** ✅ clean (26/26 security tests pass). **Push:** ✅ 2bb552b.
+
+### Completed
+
+| Item | Status | Detail |
+|------|--------|--------|
+| Middleware DB caching | ✅ DONE | `src/middleware.ts` — payment gate + terms cached in Upstash Redis (30-min TTL). Cache invalidated by Stripe webhook on payment (c/s completed + refunded) and by accept-terms on acceptance. Eliminates 2–3 DB hits per authenticated page load. AccessCache includes `{full, sim, fdd, deleted}` for soft-delete check. |
+| Stripe webhook cache invalidation | ✅ DONE | `src/app/api/stripe/webhook/route.ts` — deletes `mw:access:{userId}` on checkout.session.completed and charge.refunded. |
+| Accept-terms cache warming | ✅ DONE | `src/app/api/auth/accept-terms/route.ts` — sets `mw:terms:{userId}:1.0` = 1 immediately after upsert (TTL 30 min). |
+| Account deletion soft-delete | ✅ DONE | `src/app/api/account/delete/route.ts` — stamps `profiles.deleted_at = NOW()` instead of wiping data. Sends "scheduled for deletion in 30 days" email. Invalidates middleware cache. |
+| Account restore API | ✅ DONE | NEW: `src/app/api/account/restore/route.ts` — POST clears `deleted_at`, invalidates `mw:access` cache. |
+| Account recovery page | ✅ DONE | NEW: `src/app/account-recovery/page.tsx` — shows purge date, "Cancel deletion" button, sign-out option. Middleware redirects soft-deleted users here on PAID_ROUTES. |
+| Settings soft-delete messaging | ✅ DONE | `src/app/settings/page.tsx` — post-delete state now shows "scheduled for deletion on [date]" with 30-day grace info. |
+| Soft-delete migration | ✅ BUILT — owner must apply | `supabase/migrations/20260701210000_profiles_soft_delete.sql` — adds `deleted_at TIMESTAMPTZ` + index to `profiles`. |
+| Simulator session TTL | ✅ BUILT — owner must apply | `supabase/migrations/20260701220000_simulator_sessions_ttl.sql` — adds `expires_at` as generated column (`started_at + 12 months`) to `simulator_sessions`. |
+| select(*) optimization — hot paths | ✅ DONE | `generate/progress/[jobId]`: 6 explicit columns (SSE polled every 2s). `generate/run/[jobId]`: 4 explicit columns. |
+| Kill-switch enforcement | ✅ DONE | Added `isKillSwitchEnabled()` to 8 routes missed in Sprint 98: `simulator/evaluate`, `simulator/follow-up`, `simulator/prep-kit`, `simulator/coaching-report`, `simulator/interview-prep`, `gap-analysis/enrich`, `faq/ask`, `case-file/field-quality`. |
+| Dead route investigation | ✅ CONFIRMED — not dead | `/api/stripe/checkout` (HEAD/GET only) is a Stripe config health probe, not a duplicate. `/api/stripe/create-checkout` handles actual checkout. |
+
+### Owner actions required — CRITICAL
+- Apply `supabase/migrations/20260701210000_profiles_soft_delete.sql` in Supabase SQL Editor → adds `profiles.deleted_at` column. **Without this: soft-delete route fails, recovery page shows wrong state.**
+- Apply `supabase/migrations/20260701220000_simulator_sessions_ttl.sql` in Supabase SQL Editor → adds `expires_at` to `simulator_sessions`.
+
+### Owner actions still pending from Session 100
+- Apply `supabase/migrations/20260701200000_profiles_outcomes_consent.sql` (outcomes consent columns) if not yet done.
+- Confirm Resend domain verification (flip sender to results@e2go.app if verified).
+- Confirm FDD pricing ($297 placeholder).
+- D5 outcome survey questions (blocks CIC-5 cross-client learning).
+
+### Remaining backlog (priority order)
+1. Phase D QA-B — authenticated case file audit (/dashboard, /apply/*, /settings, /score) — partial progress this session
+2. Phase D QA-C — simulator + generation + API routes audit — started (kill-switch gaps found and closed)
+3. Gap Analysis 2-call merge into single `/api/gap-analysis/run` endpoint
+4. Module 3 `next/dynamic()` lazy loading (apply section pages ~4,000 lines)
+5. Remaining select(*) → explicit columns (18 routes remain, FDD routes are largest)
+6. Generation pipeline checkpoint resume (complex, no plan yet)
+7. Partnership Document Engine (Sprint F-P — CRITICAL, do not sell $2,495 tier until built)
+8. Renewal Package Flow ($497 tier exists, no flow)
 
 ---
 

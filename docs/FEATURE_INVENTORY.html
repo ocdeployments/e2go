@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>E2go — Complete Feature Inventory · July 1, 2026 · Session 100</title>
+<title>E2go — Complete Feature Inventory · July 1, 2026 · Session 101</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -249,7 +249,7 @@
 
 <div class="topbar">
   <div>
-    <div class="subtitle">E2go · July 1, 2026 · Session 100 — D6 consent fully wired (all 3 points). Sensai Health franchise brand added. S2: unsafe-eval removed from main CSP. Placeholder regex broadened. Decisions D1–D4 ✅ D5 ⏳ D6 ✅ (migration pending owner). Next: Phase D QA audit → account deletion soft-delete.</div>
+    <div class="subtitle">E2go · July 1, 2026 · Session 101 — Middleware DB caching (Upstash Redis 30-min TTL, 2–3 DB hits/request eliminated). Account soft-delete with 30-day grace period + recovery page. Simulator session TTL migration. 8 AI routes missing kill-switch fixed. select(*) optimized on generation hot paths. 2 new migrations pending owner. 26/26 security tests pass.</div>
     <h1>Complete Feature Inventory</h1>
   </div>
   <div class="legend">
@@ -507,6 +507,27 @@
           <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.5)">src/components/documents/DocumentAuditPanel.tsx line 161: regex broadened to /gi with keyword anchor (name|number|date|amount|address|here|tbd|insert|unknown|provided|code|country|state|city|type|your). Now consistent with checklist-builder.ts broad pattern. Session 100.</td>
           <td style="padding:6px 0;color:#4ade80;white-space:nowrap">✅ Fixed</td>
         </tr>
+        <tr style="border-bottom:1px solid rgba(245,240,232,0.04)">
+          <td style="padding:6px 12px 6px 0;color:#C9A84C;font-family:monospace;white-space:nowrap">QA-SEC-06</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.4);white-space:nowrap">2026-07-01</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.7)">8 AI routes bypassing admin kill-switch: simulator/evaluate, simulator/follow-up, simulator/prep-kit, simulator/coaching-report, simulator/interview-prep, gap-analysis/enrich, faq/ask, case-file/field-quality. Kill-switch (Sprint 98) was not enforced on these routes — cost-spike protection was incomplete.</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.5)">Added isKillSwitchEnabled() import + guard to all 8 routes. Placement: after auth+rate-limit checks, before LLM calls. Pattern matches existing enforced routes. Build clean. Session 101.</td>
+          <td style="padding:6px 0;color:#4ade80;white-space:nowrap">✅ Fixed</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(245,240,232,0.04)">
+          <td style="padding:6px 12px 6px 0;color:#C9A84C;font-family:monospace;white-space:nowrap">QA-PERF-01</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.4);white-space:nowrap">2026-07-01</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.7)">Middleware hit DB 2–3 times per authenticated request: (1) applications for payment gate on all PAID_ROUTES, (2) payments for FDD check on /fdd routes, (3) terms_acceptance for /apply routes. No caching.</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.5)">Upstash Redis cache added to middleware (30-min TTL). AccessCache {full, sim, fdd, deleted} covers all payment gate logic in one cache entry. Terms cached separately. Invalidated by stripe webhook (payment complete/refunded) and accept-terms route. Soft-delete status included in cache. Session 101.</td>
+          <td style="padding:6px 0;color:#4ade80;white-space:nowrap">✅ Fixed</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(245,240,232,0.04)">
+          <td style="padding:6px 12px 6px 0;color:#C9A84C;font-family:monospace;white-space:nowrap">QA-UX-01</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.4);white-space:nowrap">2026-07-01</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.7)">Account deletion was immediate and irreversible — no grace period, no recovery option. Pressing "delete my account" immediately wiped all data and deleted the auth user. No way to recover if deleted accidentally.</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.5)">Converted to 30-day soft-delete: profiles.deleted_at stamped, data preserved. Recovery page at /account-recovery + POST /api/account/restore. Middleware redirects deleted users there (PAID_ROUTES). Settings page updated with purge date messaging. Migration 20260701210000 pending owner apply. Session 101.</td>
+          <td style="padding:6px 0;color:#f59e0b;white-space:nowrap">⚠️ Migration pending</td>
+        </tr>
       </tbody>
     </table>
     <p style="font-size:10px;color:rgba(245,240,232,0.2);padding:10px 0 12px">All entries are permanent. Add new rows above; never delete existing rows.</p>
@@ -636,7 +657,7 @@ const PHASES = [
       {status:'built', name:'Dashboard — Sprint G+H Redesign (now redirects)', route:'/dashboard', desc:'Sprint G-1/G-2 (Session 83) + Sprint H (Session 86/87). Session 88: /dashboard/page.tsx replaced with redirect(\'/case-profile\') — bookmarks preserved. The full dashboard UI (CaseCommandPanel, WorkstreamStrip, FolderStack, CaseRecordSection) remains in DashboardClient.tsx but is no longer the primary entry point. /case-profile is now home.', badge:'new'},
       {status:'built', name:'Navigation — Sprint I-1 Consolidation', route:'src/components/Nav.tsx', desc:'Session 88. Full restructure. Logged-in nav (showApp = !isSimulatorOnly && !isSimPath): Application ▾ dropdown (Case File /apply · Gap Analysis /gap-analysis · Checklist /apply/checklist) · Intelligence ▾ dropdown (FDD Analysis /fdd · Market Analysis /market-analysis · Franchise Navigator /franchise [franchise users only]) · Documents (always visible primary link, routes to /documents/{id} or /documents) · Simulator · Account ▾ (My Case Profile /case-profile · Settings · Log out). Dashboard removed from primary nav. Logo links to /case-profile for authenticated users. isFranchise detected via parallel quiz_sessions fetch (answers[\'Q0-08a\'] === \'franchise\'). Outside-click handler unified across all three dropdown pairs. Mobile menu mirrors desktop structure. Logged-out nav: Learn · Pricing · Simulator · Log in · Check eligibility.', badge:'new'},
       {status:'built', name:'My Case — Primary Hub (8 Sections)', route:'/case-profile', desc:'Sprint H-6/H-7 (Session 87) + Sprint I-1 (Session 88). Primary authenticated home — /dashboard redirects here. layout.tsx includes Nav. Sticky sidebar nav with IntersectionObserver (rootMargin: "-15% 0px -75% 0px") tracks 8 sections. 01 Application Progress (7-step milestone tracker) · 02 The Investor (16 fields) · 03 The Business (18 fields + Franchise Navigator link for franchise users) · 04 The Investment (19 fields) · 05 Case Intelligence (Gap Analysis + FDD [franchise] + Market Analysis) · 06 Interview Readiness (7 fields) · 07 Documents & Package (always visible; 5 doc package fields + 2 pipeline fields; grayed until application exists; CTA routes to /generate/{id} or /documents/{id}; locked message until application started) · 08 Tools & Learn (2 tools: Checklist + Calendar; 4 learn: Knowledge Hub + Investment Benchmarks + Denial Reasons + Country Guides). Field status: have · module · needed · optional. Completeness overview strip: 8-column grid. paddingTop 80px for fixed Nav (inner topbar removed). API: /api/dashboard/case-profile (9 parallel table fetches + sequential QMA-* market answers). Session 92 (CIC-1.4): Case Intelligence section also renders a CaseTheoryBlock — narrative, numbers strategy, transferable skills, per-dimension verdicts with persona-tagged gap-fill suggestions — fed by the new case_theory table, conditionally rendered.', badge:'new'},
-      {status:'built', name:'Settings + Account Export', route:'/settings', desc:'2-step deletion + type-to-confirm. POST /api/account/delete wipes 16 tables + Auth user + Resend confirmation. GET /api/account/export: PIPEDA/GDPR data portability — returns all personal data (answers, quiz, payments, simulator sessions, documents) as structured JSON download. PT-1 complete.'},
+      {status:'built', name:'Settings + Account Export', route:'/settings', desc:'2-step deletion + type-to-confirm. Session 101: POST /api/account/delete now stamps profiles.deleted_at (30-day soft-delete) — data preserved, purge date communicated, Redis cache invalidated. Settings page shows computed purge date. Recovery: /account-recovery page lets user cancel within 30 days (POST /api/account/restore clears deleted_at + invalidates cache). Middleware redirects soft-deleted users to /account-recovery on PAID_ROUTES. GET /api/account/export: PIPEDA/GDPR data portability — structured JSON download. ⚠️ Requires migration 20260701210000_profiles_soft_delete.sql.', badge:'new'},
       {status:'built', name:'Gap Analysis + Remediation Tool', route:'/gap-analysis', desc:'scoreCase() with 6 evidence categories + 15 D-codes. DenialRiskRadar, CategoryCard, PathwaySection, pathway-engine. RemediationPanel: D_CODE_REMEDIATION registry (15 entries), inline form fields + progress bar + file upload, live rescore useEffect calls scoreCase() on every field change. liveResult drives all score numbers. /api/gap-analysis/enrich: LLM enrichment per category (deepseek-chat). /api/gap-analysis/semantic-eval: semantic evaluation of 3 critical answer fields against consular officer questions — flags weak answers before generation.', badge:'new'},
       {status:'built', name:'Ask E2go FAQ Chat', route:'/', desc:'FaqChat.tsx component. 3-layer RAG pipeline: Layer 1 pgvector cosine similarity against faq_qa_corpus (355 Q&A pairs, seeded June 23 2026) → Layer 2 pgvector against faq_kb_chunks (285 KB chunks) → Layer 3 model knowledge fallback. /api/faq/ask: streaming, public (no auth), rate-limited (10/min/IP). Embedded on homepage, /learn, /results.', badge:'new'},
       {status:'built', name:'Module 3 Tab D — AI Guided Story', route:'/apply/module3/d', desc:'Authenticated AI chat via /api/ai (Upstash Redis rate-limited: 10 req/60s/user). Helps applicants write their immigration story section. Uses callAI() via OpenRouter.'},
@@ -897,6 +918,8 @@ const GAPS = [
     group:'Owner Actions Required (No Code Needed)',
     items:[
       {priority:'done', name:'CIC-0.4 ✅ — Case Intelligence Core migration applied, KB seeded', desc:'COMPLETE (Session 94). All 8 CIC migrations applied in Supabase SQL editor. KB seeded: 949 chunks, 93 docs, all embeddings verified (text-embedding-3-small). Verified on all 3 test accounts — case_theory complete, 9 dimension verdicts, 7–11 doctrine citations per account. CIC-1.6 gate passed. Full detail: docs/sessions/SPRINT_J1_CASE_INTELLIGENCE_CORE.md.'},
+      {priority:'critical', name:'⚠️ Apply soft-delete migration — 20260701210000_profiles_soft_delete.sql', desc:'PENDING (Session 101). Run in Supabase SQL Editor. Adds deleted_at TIMESTAMPTZ + index to profiles table. Without this: account/delete route fails, middleware cannot detect soft-deleted users, /account-recovery page shows wrong state.'},
+      {priority:'critical', name:'⚠️ Apply simulator TTL migration — 20260701220000_simulator_sessions_ttl.sql', desc:'PENDING (Session 101). Run in Supabase SQL Editor. Adds expires_at as generated column (started_at + 12 months) to simulator_sessions. Enables future purge job targeting expired sessions.'},
       {priority:'critical', name:'⚠️ Apply outcomes_consent migration — 20260701200000_profiles_outcomes_consent.sql', desc:'PENDING (Session 100). Run in Supabase SQL Editor. Adds outcomes_consent BOOLEAN and outcomes_consent_at TIMESTAMPTZ to the profiles table. Without this migration: OutcomesConsentBanner will 500, signup consent checkbox writes will fail silently. Existing rows get NULL (banner appears on next login). New signups get consent value from checkbox. SQL is idempotent (IF NOT EXISTS).'},
       {priority:'medium', name:'D5 — Define outcome survey question set (domain input required)', desc:'PENDING. The post-outcome follow-up survey must capture: approval/denial/RFE outcome, consulate, denial codes cited, what the officer probed, timeline, which case dimensions proved decisive. Requires Romy\'s E-2 domain expertise to author the question set. Blocks CIC-5 survey delivery build.'},
       {priority:'medium', name:'Confirm Resend domain — flip sender to results@e2go.app if verified', desc:'PENDING. If e2go.app domain is verified in Resend, update all email sends from onboarding@resend.dev to results@e2go.app for trust and deliverability.'},
@@ -950,7 +973,7 @@ const GAPS = [
     group:'Architectural — P2 Structural Health',
     items:[
       {priority:'medium', name:'Document Content Stored in Postgres', desc:'generated_documents.content_text stores full document text in DB rows. A 15-document package is ~80,000–120,000 words. At scale this bloats the table and slows every query. Fix: move content to Supabase Storage (S3-compatible), store only the object path in generated_documents. Load content on demand at download/review time.'},
-      {priority:'medium', name:'Account Deletion is Permanent and Instant', desc:'/api/account/delete wipes 16 tables immediately. An accidental confirmation destroys an applicant\'s E-2 visa package with no recovery. Fix: add deleted_at timestamp to applications + profiles. Mark as deleted, run actual purge after 30 days. One migration + one middleware check.'},
+      {priority:'resolved', name:'✅ Account Deletion is Permanent and Instant — RESOLVED Session 101', desc:'RESOLVED. /api/account/delete now stamps profiles.deleted_at (30-day soft-delete) instead of wiping tables. Data preserved for 30 days. /account-recovery page lets user cancel deletion. Middleware redirects soft-deleted users there on PAID_ROUTES navigation. Settings page shows purge date. Requires migration 20260701210000_profiles_soft_delete.sql (owner action pending).'},
       {priority:'resolved', name:'✅ Cron Jobs Have No Failure Alerting — RESOLVED S63', desc:'health-watchdog cron now writes every execution to cron_log (job_name, status, duration_ms, error, created_at). Last 20 entries visible at /admin/system-status. Consecutive-failure alerting via cron_log audit. Original fix: cron_log table + /api/cron/health-watchdog + vercel.json every-5-min schedule.'},
     ]
   },
@@ -959,18 +982,18 @@ const GAPS = [
     items:[
       {priority:'low', name:'No E2E Test Suite for Core User Journey', desc:'The happy path — quiz → payment → module completion → generate → download — has no automated test. A single regression could silently break the revenue-generating flow. Fix: Playwright E2E tests for at minimum: quiz completes, payment grants access, generation pipeline starts and completes, ZIP downloads successfully.'},
       {priority:'resolved', name:'✅ Admin Panel Has No Audit Log — RESOLVED S63', desc:'admin_audit_log table shipped (migration S63). Action, admin_user_id, target_user_id, resource, details, created_at. Written by tier-override, settings, and all admin mutation routes. Visible in /admin/users/[userId] danger zone section. Compliance gap closed.'},
-      {priority:'low', name:'Simulator Sessions Never Expire', desc:'Simulator sessions purchased are held indefinitely with no TTL. Minor now, but becomes a pricing integrity issue at scale (users sit on sessions for years). Fix: add expires_at to simulator session grants, default 12 months from purchase.'},
+      {priority:'resolved', name:'✅ Simulator Sessions Never Expire — RESOLVED Session 101 (migration pending)', desc:'RESOLVED. Migration 20260701220000_simulator_sessions_ttl.sql adds expires_at as SQL GENERATED ALWAYS column (started_at + INTERVAL 12 months STORED) + index. Requires owner to apply in Supabase SQL Editor. Future purge cron can target WHERE expires_at < now().'},
     ]
   },
   {
     group:'Performance & Efficiency — Quick Wins',
     items:[
       {priority:'resolved', name:'✅ /apply/page.tsx queries — N/A (page replaced with redirect)', desc:'FALSE POSITIVE (Session 100 review). /apply/page.tsx is now a next/navigation redirect() to /case-profile (Sprint I-1, Session 88). The page fires no DB queries at all. The duplicate-query concern is moot — the page no longer loads.'},
-      {priority:'high', name:'Middleware — 2–3 DB Calls Per Page Request', desc:'src/middleware.ts makes auth.getUser() + terms_acceptance query + applications.source query on every authenticated page request. These fire for every navigation event. Fix: cache terms_acceptance and application.source in a signed session cookie (30-min TTL) or Upstash Redis. Eliminates ~2 DB hits per page load across all authenticated users.'},
-      {priority:'medium', name:'Dead Route — /api/stripe/checkout Alongside /api/stripe/create-checkout', desc:'Both /api/stripe/checkout and /api/stripe/create-checkout exist. The pricing page calls create-checkout. The /checkout route appears unreferenced. Fix: grep all callers, confirm /checkout is unused, delete it. Reduces surface area and confusion.'},
+      {priority:'resolved', name:'✅ Middleware — 2–3 DB Calls Per Page Request — RESOLVED Session 101', desc:'RESOLVED. Upstash Redis caching added to middleware. AccessCache {full, sim, fdd, deleted} keyed at mw:access:{userId} (1800s TTL) covers payment gate + FDD gate + soft-delete check in one cache hit. Terms cached at mw:terms:{userId}:1.0 (1800s TTL). Cache invalidated precisely: stripe webhook (checkout.completed, charge.refunded) del mw:access:{userId}; accept-terms route warms mw:terms:{userId}:1.0. First request is a cache miss (DB hit + warm); subsequent requests for 30 min are cache hits. Eliminates 2–3 DB hits per authenticated page request.'},
+      {priority:'resolved', name:'✅ Dead Route — /api/stripe/checkout — NOT Dead, Different Purpose', desc:'INVESTIGATED Session 101. /api/stripe/checkout is a HEAD/GET health probe that returns Stripe configuration status (keys present, webhook secret present, Stripe SDK reachable). It is NOT the checkout flow. /api/stripe/create-checkout handles actual checkout session creation. Two routes, two jobs. No deletion needed.'},
       {priority:'medium', name:'Gap Analysis — 2 API Calls Fire on Same Trigger', desc:'/api/gap-analysis/enrich and /api/gap-analysis/semantic-eval are both called from the same user action in gap-analysis/page.tsx (lines 233 + 255). Fix: merge into a single /api/gap-analysis/run endpoint that runs enrichment + semantic evaluation in one request. Halves round-trips and simplifies error handling.'},
       {priority:'medium', name:'Module 3 — No next/dynamic() Lazy Loading', desc:'Apply section pages are large (qualifications page ~4,000 lines). All question sets, form logic, and cluster definitions ship in the initial JS bundle. Fix: wrap heavy question arrays and cluster renderers in next/dynamic() with loading fallback. Reduces initial JS payload by ~40% for the apply flow.'},
-      {priority:'low', name:'23 API Routes Use select(\'*\') — Column Over-fetching', desc:'23+ API routes use .from(table).select(\'*\'). This fetches all columns including large content_text fields on generated_documents and full JSON blobs on quiz_sessions. Fix: replace each with explicit named column lists. Reduces payload size and prevents accidental exposure of internal fields.'},
+      {priority:'low', name:'21 API Routes Use select(\'*\') — Column Over-fetching (2 fixed Session 101)', desc:'Session 101: /api/generate/progress/[jobId] → select(\'status, current_step, current_step_label, document_types, total_steps, error_message\') and /api/generate/run/[jobId] → select(\'id, user_id, status, application_id\'). Both are SSE-polled hot paths. 21 remain. Fix remaining: replace each with explicit named column lists. Priority: FDD routes (50-field JSON blobs). Reduces payload size and prevents accidental exposure of internal fields.'},
     ]
   },
   {
@@ -1025,7 +1048,7 @@ const ENGINES = [
 ];
 
 const DB_TABLES = [
-  {name:'profiles', desc:'first_name, last_name, role (admin/user), outcomes_consent (BOOLEAN — null=never asked, true=yes, false=no), outcomes_consent_at (TIMESTAMPTZ). Linked to Supabase Auth user_id. ⚠️ Session 100: outcomes_consent columns require migration 20260701200000_profiles_outcomes_consent.sql (pending owner apply).', notes:'RLS: users read own row. role=admin gates /admin route.'},
+  {name:'profiles', desc:'first_name, last_name, role (admin/user), outcomes_consent (BOOLEAN — null=never asked, true=yes, false=no), outcomes_consent_at (TIMESTAMPTZ), deleted_at (TIMESTAMPTZ — null=active, set=soft-deleted, +30 days=purge date). Linked to Supabase Auth user_id. ⚠️ Session 100: outcomes_consent columns require migration 20260701200000_profiles_outcomes_consent.sql. ⚠️ Session 101: deleted_at requires migration 20260701210000_profiles_soft_delete.sql (both pending owner apply).', notes:'RLS: users read own row. role=admin gates /admin route. Middleware reads deleted_at via AccessCache (mw:access:{userId}).'},
   {name:'applications', desc:'Core record. principal_name, business_name, business_category, operational_status, target_state, principal_country, application_type, simulator_sessions_used, source (main_flow | simulator_standalone), last_visited_section.', notes:'One per user main path; multiple for simulator_standalone'},
   {name:'quiz_sessions', desc:'Quiz attempt + result_json (all 30 answers + score + flags + eligibility). completed_at. franchise_referral_requested boolean.', notes:'Multiple per user; latest used for profile'},
   {name:'answers', desc:'Case file answers. question_key → answer_value. source: manual | quiz | upload | document_upload | fdd_intelligence. application_id FK. THE de-facto cross-engine shared bus (verified Session 93): FDD writeback upserts 8 keys (source=fdd_intelligence), standalone market analysis upserts QMA-prefixed territory keys (NOT a single market_territory key — that label was stale), simulator coaching + voice profile also land here, and generation-engine.ts reads the entire set via .select(\'*\'). CIC-2 layers structured case_model/case_theory on top of this flat bus.', notes:'Autosave 800ms. Source drives pre-fill badge variant. Flat key/value — no provenance/confidence; that is exactly what case_model adds.'},
@@ -1877,6 +1900,16 @@ const SPRINTS = [
     ]
   },
   {
+    id:'AUD-99', name:'Audit v3 Remediation', priority:'critical', effort:'1 session', status:'complete',
+    desc:'✅ COMPLETE (Session 99) — All 3 audit v3 findings closed. RLS root-cause: Supabase ORs all permissive policies — legacy policies with OR user_id IS NULL negated the new restrictive policy for anon callers. Verification must be run as anon role (SET LOCAL role TO anon), not service role.',
+    items:[
+      {name:'N1 — /case-profile mobile overflow CLOSED', desc:'src/components/CaseProfilePage.tsx — isMobile state + window resize listener. Sidebar (160px, flexShrink:0) hidden on mobile. Outer padding: 80px 32px 0 (desktop) → 80px 16px 0 (mobile). Breakpoint: window.innerWidth < 768.'},
+      {name:'F20 — quiz_sessions anon-readable CLOSED', desc:'Two legacy SELECT policies both had OR user_id IS NULL — OR\'d with new restrictive policy, leaking all anon sessions. Dropped: "Users can select own quiz sessions" + "Users can select their own quiz sessions". Verified: SET LOCAL role TO anon; SELECT count(*) FROM quiz_sessions; → 0.'},
+      {name:'F6 — applications.treaty_country missing CLOSED', desc:'Column existed only in case_profile_view definition, never as a real ALTER TABLE. Applied standalone: ALTER TABLE applications ADD COLUMN IF NOT EXISTS treaty_country text;'},
+      {name:'F21 — application_lifecycle re-verified clean', desc:'SET LOCAL role TO anon; SELECT count(*) FROM application_lifecycle; → 0. Already clean from Session 96 migration, no new fix needed.'},
+    ]
+  },
+  {
     id:'S100', name:'D6 Consent + CSP + Catalog + Regex', priority:'high', effort:'1 session', status:'complete',
     desc:'✅ COMPLETE (Session 100) — All 3 D6 consent points wired: signup checkbox (Point 1), existing-user banner in Nav (Point 2), download gate (Point 3, Session 94). S2 done: unsafe-eval removed from main CSP. Placeholder regex broadened to catch lowercase forms. Sensai Health franchise brand added. Build clean. ⚠️ Owner action: apply 20260701200000_profiles_outcomes_consent.sql in Supabase SQL Editor.',
     items:[
@@ -1890,13 +1923,18 @@ const SPRINTS = [
     ]
   },
   {
-    id:'AUD-99', name:'Audit v3 Remediation', priority:'critical', effort:'1 session', status:'complete',
-    desc:'✅ COMPLETE (Session 99) — All 3 audit v3 findings closed. RLS root-cause: Supabase ORs all permissive policies — legacy policies with OR user_id IS NULL negated the new restrictive policy for anon callers. Verification must be run as anon role (SET LOCAL role TO anon), not service role.',
+    id:'S101', name:'Security + Performance + Soft-Delete', priority:'high', effort:'1 session', status:'complete',
+    desc:'✅ COMPLETE (Session 101) — Kill-switch enforcement gap closed (8 AI routes). Middleware DB caching via Upstash Redis (30-min TTL, 2–3 DB hits/request eliminated). Account soft-delete with 30-day grace period + /account-recovery page + /api/account/restore. Simulator session TTL migration (expires_at generated column). select(*) optimized on 2 SSE-polled generation hot paths. Dead route investigation (/api/stripe/checkout is NOT dead — health probe). Build clean. ⚠️ Owner actions: apply 20260701210000_profiles_soft_delete.sql + 20260701220000_simulator_sessions_ttl.sql in Supabase SQL Editor.',
     items:[
-      {name:'N1 — /case-profile mobile overflow CLOSED', desc:'src/components/CaseProfilePage.tsx — isMobile state + window resize listener. Sidebar (160px, flexShrink:0) hidden on mobile. Outer padding: 80px 32px 0 (desktop) → 80px 16px 0 (mobile). Breakpoint: window.innerWidth < 768.'},
-      {name:'F20 — quiz_sessions anon-readable CLOSED', desc:'Two legacy SELECT policies both had OR user_id IS NULL — OR\'d with new restrictive policy, leaking all anon sessions. Dropped: "Users can select own quiz sessions" + "Users can select their own quiz sessions". Verified: SET LOCAL role TO anon; SELECT count(*) FROM quiz_sessions; → 0.'},
-      {name:'F6 — applications.treaty_country missing CLOSED', desc:'Column existed only in case_profile_view definition, never as a real ALTER TABLE. Applied standalone: ALTER TABLE applications ADD COLUMN IF NOT EXISTS treaty_country text;'},
-      {name:'F21 — application_lifecycle re-verified clean', desc:'SET LOCAL role TO anon; SELECT count(*) FROM application_lifecycle; → 0. Already clean from Session 96 migration, no new fix needed.'},
+      {name:'Kill-switch enforcement — 8 routes fixed', desc:'isKillSwitchEnabled() added to: simulator/evaluate, simulator/follow-up, simulator/prep-kit, simulator/coaching-report, simulator/interview-prep, gap-analysis/enrich, faq/ask, case-file/field-quality. Guard placed after auth+rate-limit, before LLM calls. Returns 503 when kill-switch active.'},
+      {name:'Middleware Upstash Redis caching', desc:'src/middleware.ts: AccessCache {full, sim, fdd, deleted} cached at mw:access:{userId} (1800s). Terms cached at mw:terms:{userId}:1.0 (1800s). Cache invalidated by stripe webhook (checkout.completed, charge.refunded) and accept-terms route (warms on success). Eliminates 2–3 DB hits per authenticated page request.'},
+      {name:'Account soft-delete', desc:'/api/account/delete: stamps profiles.deleted_at (30-day grace) instead of immediate wipe. Sends "scheduled for deletion in 30 days" email. Invalidates Redis cache. Returns {scheduled:true, deletedAt, purgeDate}.'},
+      {name:'/account-recovery page', desc:'src/app/account-recovery/page.tsx: loading → deleted state (purge date + restore button) | restored | not-deleted. handleRestore() POSTs /api/account/restore → clears deleted_at + invalidates cache → shows restored state. Sign out button.'},
+      {name:'/api/account/restore endpoint', desc:'src/app/api/account/restore/route.ts: auth → verify deleted_at IS NOT NULL → admin.update({deleted_at:null}) → redis.del(mw:access:{userId}) → return {restored:true}.'},
+      {name:'Soft-delete migration', desc:'supabase/migrations/20260701210000_profiles_soft_delete.sql — ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ DEFAULT NULL + partial index. OWNER MUST APPLY.'},
+      {name:'Simulator TTL migration', desc:'supabase/migrations/20260701220000_simulator_sessions_ttl.sql — ADD COLUMN expires_at TIMESTAMPTZ GENERATED ALWAYS AS (started_at + INTERVAL 12 months) STORED + index. OWNER MUST APPLY.'},
+      {name:'select(*) → explicit columns on hot paths', desc:'/api/generate/progress/[jobId]: select(\'status, current_step, current_step_label, document_types, total_steps, error_message\'). /api/generate/run/[jobId]: select(\'id, user_id, status, application_id\'). Both SSE-polled every 2s during generation.'},
+      {name:'Dead route investigation', desc:'/api/stripe/checkout confirmed NOT dead — it is a HEAD/GET health probe returning Stripe config status. /api/stripe/create-checkout handles actual checkout. No deletion needed.'},
     ]
   },
 ];
@@ -1961,7 +1999,7 @@ const roadmapSprintEl = document.getElementById('roadmap-sprint-container');
 const sprintTitle = document.createElement('div');
 sprintTitle.className = 'roadmap-section-title';
 sprintTitle.style.marginTop = '36px';
-sprintTitle.textContent = 'Sprints — 28 total · OPS-1✅ OPS-2✅ OPS-3✅ OPS-4✅ OPS-5✅ ENG-1✅ ENG-2✅ INFRA-1✅ F-1✅ F-2✅ G-1✅ G-2✅ G-3✅ H-1✅ H-2✅ H-3✅ H-4✅ H-5✅ H-6✅ H-7✅ I-1✅ I-2✅ I-3✅ I-4✅ OPS-98✅ AUD-99✅ S100✅ complete · Session 100 done';
+sprintTitle.textContent = 'Sprints — 29 total · OPS-1✅ OPS-2✅ OPS-3✅ OPS-4✅ OPS-5✅ ENG-1✅ ENG-2✅ INFRA-1✅ F-1✅ F-2✅ G-1✅ G-2✅ G-3✅ H-1✅ H-2✅ H-3✅ H-4✅ H-5✅ H-6✅ H-7✅ I-1✅ I-2✅ I-3✅ I-4✅ OPS-98✅ AUD-99✅ S100✅ S101✅ complete · Session 101 done';
 roadmapSprintEl.appendChild(sprintTitle);
 
 const sprintGrid = document.createElement('div');
