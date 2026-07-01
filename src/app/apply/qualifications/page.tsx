@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { useAutosaveFlush } from '@/lib/use-autosave-flush';
 import { useTrackSectionVisit } from "@/hooks/useTrackSectionVisit";
 import { createBrowserSupabaseClient } from '@/lib/supabase';
 import CaseFileShell from '@/components/apply/CaseFileShell';
@@ -194,6 +195,8 @@ export default function QualificationsPage() {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [applicationId, setApplicationId] = useState<string | null>(null);
   const debounceRef = useRef<Record<string, NodeJS.Timeout>>({});
+  const flushRef = useRef<Record<string, () => void>>({});
+  useAutosaveFlush(debounceRef, flushRef);
 
   useEffect(() => {
     const HASH_TO_CLUSTER: Record<string, string> = {
@@ -261,8 +264,9 @@ export default function QualificationsPage() {
 
   const handleAnswerChange = useCallback((key: string, value: string) => {
     setAnswers((prev) => ({ ...prev, [key]: { value, source: prev[key]?.source ?? null } }));
+    flushRef.current[key] = () => saveAnswer(key, value);
     if (debounceRef.current[key]) clearTimeout(debounceRef.current[key]);
-    debounceRef.current[key] = setTimeout(() => saveAnswer(key, value), 800);
+    debounceRef.current[key] = setTimeout(() => { saveAnswer(key, value); delete flushRef.current[key]; }, 800);
   }, [saveAnswer]);
 
   const clusterStatuses = CLUSTERS.map((cluster) => {

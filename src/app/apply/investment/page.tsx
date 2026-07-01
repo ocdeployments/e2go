@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { useAutosaveFlush } from '@/lib/use-autosave-flush';
 import { useTrackSectionVisit } from "@/hooks/useTrackSectionVisit";
 import { createBrowserSupabaseClient } from '@/lib/supabase';
 import CaseFileShell from '@/components/apply/CaseFileShell';
@@ -189,6 +190,8 @@ export default function InvestmentPage() {
   const [applicationId, setApplicationId] = useState<string | null>(null);
   const [projections, setProjections] = useState<Array<{ year: number; revenue: string; netIncome: string; employees: string }>>([]);
   const debounceRef = useRef<Record<string, NodeJS.Timeout>>({});
+  const flushRef = useRef<Record<string, () => void>>({});
+  useAutosaveFlush(debounceRef, flushRef);
   const projSaveRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -306,8 +309,9 @@ export default function InvestmentPage() {
 
   const handleAnswerChange = useCallback((key: string, value: string) => {
     setAnswers((prev) => ({ ...prev, [key]: { value, source: prev[key]?.source ?? null } }));
+    flushRef.current[key] = () => saveAnswer(key, value);
     if (debounceRef.current[key]) clearTimeout(debounceRef.current[key]);
-    debounceRef.current[key] = setTimeout(() => saveAnswer(key, value), 800);
+    debounceRef.current[key] = setTimeout(() => { saveAnswer(key, value); delete flushRef.current[key]; }, 800);
   }, [saveAnswer]);
 
   const clusterStatuses = CLUSTERS.map((cluster) => {

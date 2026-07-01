@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { useAutosaveFlush } from '@/lib/use-autosave-flush';
 import { useTrackSectionVisit } from "@/hooks/useTrackSectionVisit";
 import { createBrowserSupabaseClient } from '@/lib/supabase';
 import CaseFileShell from '@/components/apply/CaseFileShell';
@@ -186,6 +187,8 @@ export default function BusinessPage() {
   const [isFranchise, setIsFranchise] = useState(false);
   const [startupCosts, setStartupCosts] = useState<Array<{ id: string; category: string; description: string; amount: string }>>([]);
   const debounceRef = useRef<Record<string, NodeJS.Timeout>>({});
+  const flushRef = useRef<Record<string, () => void>>({});
+  useAutosaveFlush(debounceRef, flushRef);
   const costsSaveRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -301,8 +304,9 @@ export default function BusinessPage() {
         source: prev[key]?.source ?? null,
       },
     }));
+    flushRef.current[key] = () => saveAnswer(key, value);
     if (debounceRef.current[key]) clearTimeout(debounceRef.current[key]);
-    debounceRef.current[key] = setTimeout(() => saveAnswer(key, value), 800);
+    debounceRef.current[key] = setTimeout(() => { saveAnswer(key, value); delete flushRef.current[key]; }, 800);
   }, [saveAnswer]);
 
   const clusterStatuses = CLUSTERS

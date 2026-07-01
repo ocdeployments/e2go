@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { useAutosaveFlush } from '@/lib/use-autosave-flush';
 import { useTrackSectionVisit } from "@/hooks/useTrackSectionVisit";
 import { createBrowserSupabaseClient } from '@/lib/supabase';
 import CaseFileShell from '@/components/apply/CaseFileShell';
@@ -119,6 +120,8 @@ export default function TiesPage() {
   const [applicationId, setApplicationId] = useState<string | null>(null);
   const [assetRows, setAssetRows] = useState<Array<{ description: string; value: string }>>([{ description: '', value: '' }]);
   const debounceRef = useRef<Record<string, NodeJS.Timeout>>({});
+  const flushRef = useRef<Record<string, () => void>>({});
+  useAutosaveFlush(debounceRef, flushRef);
 
   useEffect(() => {
     const loadData = async () => {
@@ -185,8 +188,9 @@ export default function TiesPage() {
 
   const handleAnswerChange = useCallback((key: string, value: string) => {
     setAnswers((prev) => ({ ...prev, [key]: { value, source: prev[key]?.source ?? null } }));
+    flushRef.current[key] = () => saveAnswer(key, value);
     if (debounceRef.current[key]) clearTimeout(debounceRef.current[key]);
-    debounceRef.current[key] = setTimeout(() => saveAnswer(key, value), 800);
+    debounceRef.current[key] = setTimeout(() => { saveAnswer(key, value); delete flushRef.current[key]; }, 800);
   }, [saveAnswer]);
 
   const serializeAssets = useCallback((rows: Array<{ description: string; value: string }>) => {
@@ -200,8 +204,9 @@ export default function TiesPage() {
     setAssetRows((prev) => {
       const next = prev.map((row, i) => i === index ? { ...row, [field]: val } : row);
       const serialized = serializeAssets(next);
+      flushRef.current['M3-T-02'] = () => saveAnswer('M3-T-02', serialized);
       if (debounceRef.current['M3-T-02']) clearTimeout(debounceRef.current['M3-T-02']);
-      debounceRef.current['M3-T-02'] = setTimeout(() => saveAnswer('M3-T-02', serialized), 800);
+      debounceRef.current['M3-T-02'] = setTimeout(() => { saveAnswer('M3-T-02', serialized); delete flushRef.current['M3-T-02']; }, 800);
       return next;
     });
   }, [saveAnswer, serializeAssets]);
@@ -215,8 +220,9 @@ export default function TiesPage() {
       const next = prev.filter((_, i) => i !== index);
       const final = next.length > 0 ? next : [{ description: '', value: '' }];
       const serialized = serializeAssets(final);
+      flushRef.current['M3-T-02'] = () => saveAnswer('M3-T-02', serialized);
       if (debounceRef.current['M3-T-02']) clearTimeout(debounceRef.current['M3-T-02']);
-      debounceRef.current['M3-T-02'] = setTimeout(() => saveAnswer('M3-T-02', serialized), 800);
+      debounceRef.current['M3-T-02'] = setTimeout(() => { saveAnswer('M3-T-02', serialized); delete flushRef.current['M3-T-02']; }, 800);
       return final;
     });
   }, [saveAnswer, serializeAssets]);

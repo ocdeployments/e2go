@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { useAutosaveFlush } from '@/lib/use-autosave-flush';
 import { useTrackSectionVisit } from "@/hooks/useTrackSectionVisit";
 import { createBrowserSupabaseClient } from '@/lib/supabase';
 import CaseFileShell from '@/components/apply/CaseFileShell';
@@ -119,6 +120,8 @@ export default function FamilyPage() {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [applicationId, setApplicationId] = useState<string | null>(null);
   const debounceRef = useRef<Record<string, NodeJS.Timeout>>({});
+  const flushRef = useRef<Record<string, () => void>>({});
+  useAutosaveFlush(debounceRef, flushRef);
 
   useEffect(() => {
     const loadData = async () => {
@@ -174,8 +177,9 @@ export default function FamilyPage() {
 
   const handleAnswerChange = useCallback((key: string, value: string) => {
     setAnswers((prev) => ({ ...prev, [key]: { value, source: prev[key]?.source ?? null } }));
+    flushRef.current[key] = () => saveAnswer(key, value);
     if (debounceRef.current[key]) clearTimeout(debounceRef.current[key]);
-    debounceRef.current[key] = setTimeout(() => saveAnswer(key, value), 800);
+    debounceRef.current[key] = setTimeout(() => { saveAnswer(key, value); delete flushRef.current[key]; }, 800);
   }, [saveAnswer]);
 
   // Sync M3-L-08 summary whenever any per-child field changes (backwards compat for generation engine)
@@ -193,8 +197,9 @@ export default function FamilyPage() {
     const summary = lines.join('\n');
     if (summary && summary !== (answers['M3-L-08']?.value || '')) {
       setAnswers(prev => ({ ...prev, 'M3-L-08': { value: summary, source: prev['M3-L-08']?.source ?? null } }));
+      flushRef.current['M3-L-08'] = () => saveAnswer('M3-L-08', summary);
       if (debounceRef.current['M3-L-08']) clearTimeout(debounceRef.current['M3-L-08']);
-      debounceRef.current['M3-L-08'] = setTimeout(() => saveAnswer('M3-L-08', summary), 1200);
+      debounceRef.current['M3-L-08'] = setTimeout(() => { saveAnswer('M3-L-08', summary); delete flushRef.current['M3-L-08']; }, 1200);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [answers['M3-L-07-COUNT']?.value, ...Array.from({ length: 5 }, (_, i) => [
