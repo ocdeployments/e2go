@@ -10,6 +10,8 @@ CREATE TABLE IF NOT EXISTS public.renewal_intakes (
   answers         JSONB       NOT NULL DEFAULT '{}',
   status          TEXT        NOT NULL DEFAULT 'draft'
                               CHECK (status IN ('draft', 'complete', 'generating', 'generated')),
+  documents       JSONB,   -- generated output: {cover_letter, bp_update, template6, checklist}
+  generated_at    TIMESTAMPTZ,
   created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
