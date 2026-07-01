@@ -20,6 +20,7 @@ import { wrapUserContent } from './prompt-sanitizer';
 import { INTERVIEW_KNOWLEDGE_BASE } from './interview-knowledge-base';
 import { verifyCaseTheoryCompliance, type VerifierResult } from './cic-verifier';
 import { runCanonicalConsistencySweep } from './cic-consistency-sweep';
+import { checkFigureProvenance } from './figure-provenance';
 
 const PROMPTS_DIR = join(process.cwd(), 'prompts', 'v1', 'documents');
 
@@ -2096,6 +2097,14 @@ export async function runGenerationPipeline(
 
           const content = await callClaudeAPI(payload);
 
+          // H2 — Deterministic figure provenance check (free, no LLM).
+          // Runs before the LLM verifier so orphan figures are surfaced immediately.
+          const provenanceResult = checkFigureProvenance(content, caseTheoryForVerifier?.numbers_strategy);
+          const provenanceBrief = provenanceResult.clean ? '' : provenanceResult.correctionBrief;
+          if (!provenanceResult.clean) {
+            console.warn(`[PROVENANCE] ${provenanceResult.orphans.length} orphan figure(s) in ${docType} draft — injecting correction brief`);
+          }
+
           // CIC-2.2 — verifier loop. Runs before the draft reaches the client.
           // Max 3 attempts: if verifier fails, regenerate with corrective feedback and re-verify.
           // Null verifier result (no case_theory, or verifier LLM failed) → treat as pass.
@@ -2103,7 +2112,9 @@ export async function runGenerationPipeline(
           let finalContent = content;
           let verifierResult: VerifierResult | null = null;
           let verifierAttempts = 0;
-          let currentPayload = payload;
+          let currentPayload = provenanceBrief
+            ? { ...payload, case_theory_brief: provenanceBrief + (payload.case_theory_brief ? '\n\n' + payload.case_theory_brief : '') }
+            : payload;
 
           if (caseTheoryForVerifier) {
             for (let attempt = 0; attempt < MAX_VERIFIER_RETRIES; attempt++) {
