@@ -1942,6 +1942,9 @@ const SPRINTS = [
   },{
     id:'S102', name:'Phase D QA Audit + select(*) Remediation', priority:'high', effort:'1 session', status:'complete',
     desc:'✅ COMPLETE (Session 102) — QA-SEC-07: soft-deleted users could access AUTH_ROUTES (/dashboard /settings /admin /generate/ /documents/ /franchise/) — middleware soft-delete check added for AUTH_ROUTES using Redis cache. QA-SEC-08: quiz/personalized-flags (public LLM route) had no kill-switch — added isKillSwitchEnabled() guard. 18 API routes converted from select(*) to explicit columns (fdd/*, generate/*, documents/*, followup/*, dashboard/*, simulator/outcome, profile/family-members, stripe/verify-payment, gap-analysis/run). Admin routes (Sprint 98) security verified: all check role=admin via service client. Franchise + track routes: auth confirmed. Gap-analysis/run ownership check confirmed. Kill-switch exemptions documented (health-watchdog + admin/health-detail). Build clean 167 pages.',
+  },{
+    id:'SPRINT-R', name:'Renewal Module (Sprint R)', priority:'high', effort:'1 session', status:'complete',
+    desc:'✅ COMPLETE (Session 102 cont.) — Renewal Module MVP: /renewal entry page (purchase CTA + Path A/B explainer + feature list), /renewal/intake (15-question auto-saving quiz: path selection, Template 6 baseline pre-populated from M3-I-PROJECTIONS, Group R1 business performance RQ-01–RQ-10, Group R2 personal info RQ-11–RQ-15, Path B extras RQ-B01/B02/B03, conditional show/hide on ownership change + immigration issue), /api/renewal/intake GET+PATCH (payment-gated, ownership-verified), /api/renewal/baseline GET (fetches original projections for Template 6 comparison), renewal_intakes migration (RLS + auto-touch trigger), CaseProfilePage §08 Renewal card. /renewal added to AUTH_ROUTES in middleware. Build clean. ⚠️ Owner action: apply 20260702100000_renewal_intakes.sql. Next: /api/renewal/generate (Template 6 + cover letter + BP update + checklist).',
     items:[
       {name:'Kill-switch enforcement — 8 routes fixed', desc:'isKillSwitchEnabled() added to: simulator/evaluate, simulator/follow-up, simulator/prep-kit, simulator/coaching-report, simulator/interview-prep, gap-analysis/enrich, faq/ask, case-file/field-quality. Guard placed after auth+rate-limit, before LLM calls. Returns 503 when kill-switch active.'},
       {name:'Middleware Upstash Redis caching', desc:'src/middleware.ts: AccessCache {full, sim, fdd, deleted} cached at mw:access:{userId} (1800s). Terms cached at mw:terms:{userId}:1.0 (1800s). Cache invalidated by stripe webhook (checkout.completed, charge.refunded) and accept-terms route (warms on success). Eliminates 2–3 DB hits per authenticated page request.'},
@@ -2016,7 +2019,7 @@ const roadmapSprintEl = document.getElementById('roadmap-sprint-container');
 const sprintTitle = document.createElement('div');
 sprintTitle.className = 'roadmap-section-title';
 sprintTitle.style.marginTop = '36px';
-sprintTitle.textContent = 'Sprints — 30 total · OPS-1✅ OPS-2✅ OPS-3✅ OPS-4✅ OPS-5✅ ENG-1✅ ENG-2✅ INFRA-1✅ F-1✅ F-2✅ G-1✅ G-2✅ G-3✅ H-1✅ H-2✅ H-3✅ H-4✅ H-5✅ H-6✅ H-7✅ I-1✅ I-2✅ I-3✅ I-4✅ OPS-98✅ AUD-99✅ S100✅ S101✅ S102✅ complete · Session 102 done';
+sprintTitle.textContent = 'Sprints — 31 total · OPS-1✅ OPS-2✅ OPS-3✅ OPS-4✅ OPS-5✅ ENG-1✅ ENG-2✅ INFRA-1✅ F-1✅ F-2✅ G-1✅ G-2✅ G-3✅ H-1✅ H-2✅ H-3✅ H-4✅ H-5✅ H-6✅ H-7✅ I-1✅ I-2✅ I-3✅ I-4✅ OPS-98✅ AUD-99✅ S100✅ S101✅ S102✅ SPRINT-R✅ complete · Session 102 done';
 roadmapSprintEl.appendChild(sprintTitle);
 
 const sprintGrid = document.createElement('div');

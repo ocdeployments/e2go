@@ -1,6 +1,6 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** July 1, 2026 — Session 102: Phase D QA audit — 3 security gaps found and closed (soft-delete bypass on AUTH_ROUTES, missing kill-switch on public LLM route, kill-switch exemptions documented). select(*) remediation completed across 18 routes. Build clean, 167 pages.
+**Last Updated:** July 2, 2026 — Session 102 cont.: Sprint R (Renewal Module) built — entry page, 15-question intake quiz, 3 API routes, migration. QA: 2 security gaps closed. Build clean.
 
 ---
 
@@ -25,9 +25,12 @@
 | Gap analysis 2-call merge | ✅ DONE (Session 101) | `gap-analysis/run` merges N enrich + 1 semantic-eval into single server-side `Promise.all`. Client now makes 1 call instead of N+1. |
 
 ### Remaining backlog (priority order)
-1. Renewal Package Flow ($497 tier exists, no flow) — spec at docs/RENEWAL_MODULE_SPEC.md
+1. Renewal document generation — `/api/renewal/generate` (Template 6 + cover letter + BP update + checklist). Intake is live; generation is next.
 2. Partnership Document Engine (Sprint F-P — CRITICAL, do not sell $2,495 tier until built)
 3. Supabase CLI migration history sync (22 applied, CLI shows 2 — cosmetic, not blocking)
+
+### Owner actions required — Session 102
+- Apply `supabase/migrations/20260702100000_renewal_intakes.sql` in Supabase SQL Editor (renewal intake table + RLS)
 
 *Note: "Generation pipeline checkpoint resume" (C2) was already implemented in generation-engine.ts lines 2013-2034 — approvedSet skips re-generating docs from prior interrupted runs. Removed from backlog.*
 
