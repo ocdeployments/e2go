@@ -5,6 +5,7 @@
 // ============================================================================
 
 import type { FddExtractedFields } from '@/types/fdd';
+import { substantialityPassThreshold } from '@/lib/e2-thresholds';
 
 export type ProfileMatchGrade = 'pass' | 'viable' | 'caution' | 'fail' | 'unknown';
 
@@ -56,17 +57,8 @@ function gradeToScore(g: ProfileMatchGrade): number {
 }
 
 // ============================================================================
-// 9 FAM 402.9-6(D) sliding-scale substantiality threshold
-// Returns minimum % of total investment the investor must bring in own funds.
-// ============================================================================
-function substantialityThreshold(totalInvestment: number): number {
-  if (totalInvestment <= 75_000)   return 0.85;
-  if (totalInvestment <= 150_000)  return 0.75;
-  if (totalInvestment <= 300_000)  return 0.65;
-  if (totalInvestment <= 500_000)  return 0.55;
-  if (totalInvestment <= 1_000_000) return 0.45;
-  return 0.35;
-}
+// Delegated to e2-thresholds.ts — canonical 9 FAM 402.9-6(D) sliding scale.
+const substantialityThreshold = substantialityPassThreshold;
 
 // ============================================================================
 // Dimension 1 — Capital Adequacy

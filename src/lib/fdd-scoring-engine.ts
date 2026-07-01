@@ -11,6 +11,7 @@ import type {
   FddRegistrationStatus,
   FddStaleStatus,
 } from '@/types/fdd';
+import { substantialityPassThreshold, substantialityWarnThreshold } from '@/lib/e2-thresholds';
 
 // ============================================================================
 // Score types
@@ -236,12 +237,8 @@ function scoreDimension2(
     const ratio = investorLiquidCapital / totalMin;
     const totalCost = totalMin;
 
-    let passThreshold: number;
-    let warnThreshold: number;
-    if (totalCost < 100_000) { passThreshold = 0.90; warnThreshold = 0.75; }
-    else if (totalCost < 500_000) { passThreshold = 0.75; warnThreshold = 0.50; }
-    else if (totalCost < 2_000_000) { passThreshold = 0.50; warnThreshold = 0.30; }
-    else { passThreshold = 0.30; warnThreshold = 0.20; }
+    const passThreshold = substantialityPassThreshold(totalCost);
+    const warnThreshold = substantialityWarnThreshold(totalCost);
 
     const propResult: DimensionResult =
       ratio >= passThreshold ? 'pass' :
