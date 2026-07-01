@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 interface RenewalIntake {
@@ -104,6 +105,7 @@ const CONDITIONAL_SHOW: Record<string, { key: string; values: string[] }> = {
 };
 
 export default function RenewalIntakePage() {
+  const router = useRouter();
   const [intake, setIntake] = useState<RenewalIntake | null>(null);
   const [projections, setProjections] = useState<ProjectionRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -159,10 +161,13 @@ export default function RenewalIntakePage() {
         }),
       });
       setSavedAt(new Date());
+      if (updates.status === 'complete') {
+        router.push('/renewal/documents');
+      }
     } finally {
       setSaving(false);
     }
-  }, [intake]);
+  }, [intake, router]);
 
   function setAnswer(key: string, value: string) {
     if (!intake) return;
