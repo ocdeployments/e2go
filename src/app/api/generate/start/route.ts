@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { checkRateLimit } from '@/lib/rate-limit';
+import { isKillSwitchEnabled } from '@/lib/kill-switch';
 
 function getSupabase() {
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
@@ -28,6 +29,10 @@ export async function POST(request: Request) {
         { error: 'Too many generation requests. Please wait before starting another document package.' },
         { status: 429, headers: { 'Retry-After': String(rl.reset) } }
       );
+    }
+
+    if (await isKillSwitchEnabled()) {
+      return NextResponse.json({ error: 'AI features are temporarily unavailable. Please try again shortly.' }, { status: 503 });
     }
 
     const supabase = getSupabase();

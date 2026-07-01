@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { checkRateLimit } from '@/lib/rate-limit';
+import { isKillSwitchEnabled } from '@/lib/kill-switch';
 import Anthropic from '@anthropic-ai/sdk';
 import { scoreFdd } from '@/lib/fdd-scoring-engine';
 import { synthesizeInvestorProfile } from '@/lib/investor-profile-synthesizer';
@@ -26,6 +27,10 @@ export async function POST(request: NextRequest) {
         { error: 'Too many FDD requests. Please wait before scoring another analysis.' },
         { status: 429, headers: { 'Retry-After': String(rl.reset) } }
       );
+    }
+
+    if (await isKillSwitchEnabled()) {
+      return NextResponse.json({ error: 'AI features are temporarily unavailable. Please try again shortly.' }, { status: 503 });
     }
 
     const { fdd_id } = await request.json() as { fdd_id: string };

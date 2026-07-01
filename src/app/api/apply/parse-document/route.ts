@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { checkRateLimit } from '@/lib/rate-limit';
+import { isKillSwitchEnabled } from '@/lib/kill-switch';
 import { extractTextFromBuffer } from '@/lib/text-extraction';
 import { callLLM } from '@/lib/llm-client';
 import { comprehendApplicationDocuments } from '@/lib/document-comprehension-engine';
@@ -828,6 +829,10 @@ export async function POST(request: NextRequest) {
         { error: 'Too many document parse requests. Please wait before uploading another document.' },
         { status: 429, headers: { 'Retry-After': String(rl.reset) } }
       );
+    }
+
+    if (await isKillSwitchEnabled()) {
+      return NextResponse.json({ error: 'AI features are temporarily unavailable. Please try again shortly.' }, { status: 503 });
     }
 
     const formData = await request.formData();

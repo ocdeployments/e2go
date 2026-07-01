@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { checkRateLimit } from '@/lib/rate-limit';
+import { isKillSwitchEnabled } from '@/lib/kill-switch';
 import { extractFddText, extractFdd } from '@/lib/fdd-extraction-engine';
 import type { FddSSEEvent } from '@/types/fdd';
 
@@ -31,6 +32,12 @@ export async function POST(request: NextRequest) {
         const rl = await checkRateLimit(user.id, 'fdd');
         if (!rl.allowed) {
           send({ event: 'error', data: { message: 'Rate limit exceeded. Please wait before extracting another FDD.' } });
+          controller.close();
+          return;
+        }
+
+        if (await isKillSwitchEnabled()) {
+          send({ event: 'error', data: { message: 'AI features are temporarily unavailable. Please try again shortly.' } });
           controller.close();
           return;
         }

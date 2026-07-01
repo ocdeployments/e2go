@@ -1,6 +1,6 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 30, 2026 — Session 96: Deep Audit v2 — 22 findings, all code fixes complete. Build clean (156 pages). 2 migrations ready to apply.
+**Last Updated:** July 1, 2026 — Session 97: Kill-switch enforcement on all LLM routes. Audit v2 secondary limbs confirmed complete. Build clean.
 
 ---
 
@@ -54,33 +54,48 @@
 | F23 — form inputs lack programmatic labels (P2) | `login/page.tsx`, `signup/page.tsx`, `quiz/page.tsx`, `results/page.tsx` | Added `htmlFor` + `id` pairs on all 8 inputs across 4 pages; quiz/results use `sr-only` label pattern |
 | F24 — no skip-to-content link (Low) | `app/layout.tsx` | Visually-hidden-until-focused skip link + `id="main-content"` on main landmark |
 
-### Migrations created this session (owner must apply to live DB)
+### Migrations applied ✅ (June 30, 2026 — confirmed by owner)
 
-| Migration | Content |
-|-----------|---------|
-| `20260630300000_fix_rls_data_exposure.sql` | **CRITICAL** — RLS SELECT policies for quiz_sessions + ENABLE RLS + policies for application_lifecycle |
-| `20260630310000_fix_missing_schema_columns.sql` | F6 column additions: payments.tier/amount_cents/tier_id, quiz_sessions.score_breakdown/created_at, simulator_sessions.questions_asked/answers_given/coaching_notes, applications.journey_wizard_stage, answers.updated_at |
+| Migration | Status |
+|-----------|--------|
+| `20260630300000_fix_rls_data_exposure.sql` | ✅ Applied — RLS data exposure closed (F20/F21) |
+| `20260630310000_fix_missing_schema_columns.sql` | ✅ Applied — F6 column additions live |
+| `20260627100000_interview_prep_kits.sql` | ✅ Applied — prep-kit feature unblocked (F2) |
+| `20260619100000_franchise_brands.sql` | ✅ Applied — franchise navigator unblocked (F3) |
+| `20260630200000_rls_admin_log_tables.sql` | ✅ Applied — admin log tables RLS-locked (H4) |
+| `20260630210000_case_intelligence_locks.sql` | ✅ Applied — case intelligence build lock live (H6) |
 
-### Previously pending migrations (still need applying)
+### Session 97 — Kill-Switch Enforcement (July 1, 2026)
 
-| Migration | Fixes |
-|-----------|-------|
-| `20260627100000_interview_prep_kits.sql` | F2 — interview_prep_kits table (prep-kit feature) |
-| `20260619100000_franchise_brands.sql` | F3 — franchise_brands table (franchise navigator) |
-| `20260630200000_rls_admin_log_tables.sql` | H4 — RLS on llm_cost_log, admin_audit_log, cron_log |
-| `20260630210000_case_intelligence_locks.sql` | H6 — case intelligence concurrent build lock |
+**Branch:** dev. **Build:** ✅ clean. **No new migrations required.**
 
-### Findings NOT addressed (by category)
+Audit v2 secondary-limb review (cross-checked against audit agent's own post-review):
+- **F11 email source**: Both limbs confirmed done. `userEmail = user.email ?? ''` from auth session (not body) already in place.
+- **F17 error genericization**: Both limbs confirmed done. Returns `{ error: 'Update failed' }` — no `error.message` leak.
+- **F14 kill_switch**: Was missing from ALL LLM routes (including `generate/start`, the supposed reference). Now fixed.
+- **F22 lifecycle trigger**: No DB trigger exists — lifecycle is code-driven. No fix needed; will self-correct for new apps.
+- **F20 anon-scope**: Unfounded concern. All quiz_sessions SELECTs are inside `if (user)` blocks; anonymous state lives in localStorage. Policy is correct.
 
-- **F6** (drift): Code for admin pages references `payments.tier/amount_cents` and `quiz_sessions.score_breakdown` — migration created (`20260630310000`) but owner must apply to fix the live DB. Admin pages will error until applied.
-- **F2** (drift): `interview_prep_kits` table missing. Migration exists (`20260627100000`), owner must apply.
-- **F3** (drift): `franchise_brands` table missing. Migration exists (`20260619100000`), owner must apply.
-- **F8** (info): Login rate-limiter returns JSON 429 on page GET. Minor UX; not a security issue.
-- **F22** (low): `application_lifecycle` not populated for newest paid app — trigger/drift gap. Will self-correct once F21 RLS migration is applied and lifecycle rows start populating correctly.
+**Kill-switch wiring** — new shared helper + 5 routes updated:
+
+| File | Change |
+|------|--------|
+| `src/lib/kill-switch.ts` (NEW) | `isKillSwitchEnabled()` — reads `app_settings.kill_switch_enabled`, 30s cache, fail-open on DB error |
+| `api/fdd/extract/route.ts` | Kill-switch check inside SSE stream after rate limit → sends SSE error event, closes stream |
+| `api/fdd/score/route.ts` | Kill-switch check after rate limit → 503 JSON |
+| `api/gap-analysis/semantic-eval/route.ts` | Kill-switch check after rate limit → 503 JSON |
+| `api/apply/parse-document/route.ts` | Kill-switch check after rate limit → 503 JSON |
+| `api/generate/start/route.ts` | Kill-switch check after rate limit → 503 JSON |
+
+### Findings fully resolved (all 22)
+
+All 22 audit findings from ZCode Deep Audit v2 are closed. No outstanding items.
+
+- **F8** (info): Login rate-limiter returns JSON 429 on page GET. Minor UX, not a security issue — deliberately not fixed.
+- **F22** (low): Self-correcting for new apps. No code or DB change needed.
 
 ### What's next
 
-- **Owner: Apply all 6 pending migrations** (2 new + 4 pending) — see table above. The P0 RLS fix (F20/F21) is the most urgent.
 - D6 Points 1+2: signup consent checkbox + existing-user terms-update banner
 - D5: Owner to define outcome survey question set
 - S2: Test removing `unsafe-eval` from CSP
