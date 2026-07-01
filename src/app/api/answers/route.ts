@@ -50,6 +50,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
+    // Validate and sanitize answer_value
+    const MAX_ANSWER_LENGTH = 10_000;
+    let sanitizedValue: string | null = null;
+    if (answer_value !== null && answer_value !== undefined) {
+      if (typeof answer_value !== 'string') {
+        return NextResponse.json({ error: 'answer_value must be a string' }, { status: 400 });
+      }
+      const trimmed = answer_value.trim();
+      if (trimmed.length > MAX_ANSWER_LENGTH) {
+        return NextResponse.json(
+          { error: `answer_value exceeds maximum length of ${MAX_ANSWER_LENGTH} characters` },
+          { status: 400 }
+        );
+      }
+      sanitizedValue = trimmed.length > 0 ? trimmed : null;
+    }
+
     // Upsert to answers table
     // Note: user_id and source columns require migrations 001/002 — omit until applied
     const { data, error } = await supabase
@@ -58,7 +75,7 @@ export async function POST(request: NextRequest) {
         {
           application_id,
           question_key,
-          answer_value,
+          answer_value: sanitizedValue,
           answered_at: new Date().toISOString(),
         },
         {

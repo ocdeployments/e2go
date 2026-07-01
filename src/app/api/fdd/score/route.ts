@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { createServiceClient } from '@/lib/supabase-service';
+import { checkRateLimit } from '@/lib/rate-limit';
 import Anthropic from '@anthropic-ai/sdk';
 import { scoreFdd } from '@/lib/fdd-scoring-engine';
 import { synthesizeInvestorProfile } from '@/lib/investor-profile-synthesizer';
@@ -17,6 +18,14 @@ export async function POST(request: NextRequest) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const rl = await checkRateLimit(user.id, 'fdd');
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: 'Too many FDD requests. Please wait before scoring another analysis.' },
+        { status: 429, headers: { 'Retry-After': String(rl.reset) } }
+      );
     }
 
     const { fdd_id } = await request.json() as { fdd_id: string };

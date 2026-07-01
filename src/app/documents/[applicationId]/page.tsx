@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
+import { createBrowserSupabaseClient } from "@/lib/supabase";
 import PackageSummary from "@/components/PackageSummary";
 import DocumentAuditPanel from "@/components/documents/DocumentAuditPanel";
 import {
@@ -39,10 +40,10 @@ interface ChangeImpactReport {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function getAuthToken(): string | null {
+async function getAuthToken(): Promise<string | null> {
   try {
-    const stored = localStorage.getItem("supabase_user");
-    return stored ? (JSON.parse(stored) as { id: string }).id : null;
+    const { data: { session } } = await createBrowserSupabaseClient().auth.getSession();
+    return session?.access_token ?? null;
   } catch {
     return null;
   }
@@ -100,7 +101,7 @@ export default function DocumentsReviewPage() {
   const fetchAll = useCallback(async () => {
     try {
       setLoading(true);
-      const token = getAuthToken();
+      const token = await getAuthToken();
 
       const [docsRes, manifestRes, impactRes] = await Promise.all([
         fetch(`/api/generate/documents/${applicationId}`),
@@ -142,7 +143,7 @@ export default function DocumentsReviewPage() {
   const certifyDocument = async (documentType: DocumentType) => {
     setCertifying(documentType);
     try {
-      const token = getAuthToken();
+      const token = await getAuthToken();
       const res = await fetch("/api/dashboard/certify-document", {
         method: "POST",
         headers: {
@@ -162,7 +163,7 @@ export default function DocumentsReviewPage() {
         )
       );
       // Refresh manifest to update packageReady
-      const token2 = getAuthToken();
+      const token2 = await getAuthToken();
       const mRes = await fetch(
         `/api/dashboard/package-manifest?applicationId=${applicationId}`,
         { headers: token2 ? { Authorization: `Bearer ${token2}` } : {} }
@@ -181,7 +182,7 @@ export default function DocumentsReviewPage() {
     if (!regenForm.documentType) return;
     setRegenForm((prev) => ({ ...prev, submitting: true }));
     try {
-      const token = getAuthToken();
+      const token = await getAuthToken();
       const res = await fetch("/api/dashboard/request-regeneration", {
         method: "POST",
         headers: {
@@ -215,7 +216,7 @@ export default function DocumentsReviewPage() {
   const dismissImpact = async () => {
     setDismissingImpact(true);
     try {
-      const token = getAuthToken();
+      const token = await getAuthToken();
       await fetch(`/api/dashboard/change-impact?applicationId=${applicationId}`, {
         method: "DELETE",
         headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -651,7 +652,7 @@ export default function DocumentsReviewPage() {
                   if (downloadState !== "ready") return;
                   setDownloadState("downloading");
                   try {
-                    const token = getAuthToken();
+                    const token = await getAuthToken();
                     const res = await fetch(
                       `/api/generate/download/${applicationId}`,
                       { headers: token ? { Authorization: `Bearer ${token}` } : {} }

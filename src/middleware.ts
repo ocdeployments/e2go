@@ -104,6 +104,7 @@ export async function middleware(req: NextRequest) {
     '/settings',
     '/generate/',
     '/documents/',
+    '/franchise/',
   ];
 
   // Requires a paid application — redirects to /results if not paid

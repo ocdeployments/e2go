@@ -38,7 +38,7 @@ export default function useAutoSave({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           question_key: Object.keys(answer)[0] || '',
-          answer_value: answer[Object.keys(answer)[0] || ''] || null,
+          answer_value: answer[Object.keys(answer)[0] || ''] ?? null,
           application_id: applicationId,
         }),
       });

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
+import { checkRateLimit } from '@/lib/rate-limit';
 import { extractTextFromBuffer } from '@/lib/text-extraction';
 import { callLLM } from '@/lib/llm-client';
 import { comprehendApplicationDocuments } from '@/lib/document-comprehension-engine';
@@ -819,6 +820,14 @@ export async function POST(request: NextRequest) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const rl = await checkRateLimit(user.id, 'parse-doc');
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: 'Too many document parse requests. Please wait before uploading another document.' },
+        { status: 429, headers: { 'Retry-After': String(rl.reset) } }
+      );
     }
 
     const formData = await request.formData();

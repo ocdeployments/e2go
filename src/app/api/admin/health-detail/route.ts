@@ -122,7 +122,7 @@ export async function GET() {
     }),
     // Stripe: check if last webhook arrived in last 24h
     admin
-      .from('webhook_events')
+      .from('processed_webhook_events')
       .select('created_at')
       .order('created_at', { ascending: false })
       .limit(1),

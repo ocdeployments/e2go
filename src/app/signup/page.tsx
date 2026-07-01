@@ -216,10 +216,11 @@ function SignupForm() {
               <form onSubmit={handleSignup} className="space-y-4">
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
                   <div>
-                    <label className="block text-sm font-medium mb-1" style={{ color: "rgba(245,240,232,0.6)" }}>
+                    <label htmlFor="signup-first-name" className="block text-sm font-medium mb-1" style={{ color: "rgba(245,240,232,0.6)" }}>
                       First name
                     </label>
                     <input
+                      id="signup-first-name"
                       type="text"
                       value={firstName}
                       onChange={(e) => setFirstName(e.target.value)}
@@ -230,10 +231,11 @@ function SignupForm() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1" style={{ color: "rgba(245,240,232,0.6)" }}>
+                    <label htmlFor="signup-last-name" className="block text-sm font-medium mb-1" style={{ color: "rgba(245,240,232,0.6)" }}>
                       Last name
                     </label>
                     <input
+                      id="signup-last-name"
                       type="text"
                       value={lastName}
                       onChange={(e) => setLastName(e.target.value)}
@@ -246,10 +248,11 @@ function SignupForm() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1" style={{ color: "rgba(245,240,232,0.6)" }}>
+                  <label htmlFor="signup-email" className="block text-sm font-medium mb-1" style={{ color: "rgba(245,240,232,0.6)" }}>
                     Email
                   </label>
                   <input
+                    id="signup-email"
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -261,10 +264,11 @@ function SignupForm() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1" style={{ color: "rgba(245,240,232,0.6)" }}>
+                  <label htmlFor="signup-password" className="block text-sm font-medium mb-1" style={{ color: "rgba(245,240,232,0.6)" }}>
                     Password
                   </label>
                   <input
+                    id="signup-password"
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -277,10 +281,11 @@ function SignupForm() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1" style={{ color: "rgba(245,240,232,0.6)" }}>
+                  <label htmlFor="signup-confirm-password" className="block text-sm font-medium mb-1" style={{ color: "rgba(245,240,232,0.6)" }}>
                     Confirm Password
                   </label>
                   <input
+                    id="signup-confirm-password"
                     type="password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}

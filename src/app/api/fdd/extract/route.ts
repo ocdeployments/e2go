@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { createServiceClient } from '@/lib/supabase-service';
+import { checkRateLimit } from '@/lib/rate-limit';
 import { extractFddText, extractFdd } from '@/lib/fdd-extraction-engine';
 import type { FddSSEEvent } from '@/types/fdd';
 
@@ -23,6 +24,13 @@ export async function POST(request: NextRequest) {
       try {
         if (authError || !user) {
           send({ event: 'error', data: { message: 'Unauthorized' } });
+          controller.close();
+          return;
+        }
+
+        const rl = await checkRateLimit(user.id, 'fdd');
+        if (!rl.allowed) {
+          send({ event: 'error', data: { message: 'Rate limit exceeded. Please wait before extracting another FDD.' } });
           controller.close();
           return;
         }

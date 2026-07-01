@@ -190,7 +190,7 @@ export default function TabJPage() {
           .select('answer_value')
           .eq('application_id', existingApp.id)
           .eq('question_key', 'QA-51')
-          .single();
+          .maybeSingle();
 
         setBusinessName(bizData?.answer_value || 'your business');
 
@@ -211,7 +211,7 @@ export default function TabJPage() {
           .select('answer_value')
           .eq('application_id', existingApp.id)
           .eq('question_key', 'QJ-ORG-CONFIRMED')
-          .single();
+          .maybeSingle();
 
         if (confirmData?.answer_value === 'true') {
           setScreenState('completion');

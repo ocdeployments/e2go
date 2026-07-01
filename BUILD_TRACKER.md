@@ -1,6 +1,90 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 30, 2026 — Session 95 cont.3: H2 + M3 complete. Build clean (156 pages).
+**Last Updated:** June 30, 2026 — Session 96: Deep Audit v2 — 22 findings, all code fixes complete. Build clean (156 pages). 2 migrations ready to apply.
+
+---
+
+## Session 96 — Deep Audit v2 Remediation (June 30, 2026)
+
+**Branch:** dev. **Build:** ✅ clean (156 pages). **Migrations to apply:** 2 new + 4 pending.
+
+### Audit findings addressed (22 total — ZCode Deep Audit v2)
+
+**False positives confirmed (0 fixes needed):**
+- F1 — `application-documents` bucket name is correct (storage, not DB table). All 7 refs are `.storage.from()` calls. DB already uses `application_documents` underscore. ✅ Not a bug.
+- F5 — broker_referrals + broker_requests already wrapped in try-catch with graceful-skip. ✅ Already handled.
+
+**Sprint A — P0 Security (RLS + Auth)**
+
+| Fix | File | Detail |
+|-----|------|--------|
+| F20 — quiz_sessions anon-readable (P0) | `migrations/20260630300000_fix_rls_data_exposure.sql` | SELECT policy: `auth.uid() = user_id OR (user_id IS NULL AND email = auth.jwt() ->> 'email')` — blocks cross-user reads; preserves post-login session linking |
+| F21 — application_lifecycle anon-readable (P1) | same migration | ENABLE ROW LEVEL SECURITY + SELECT/ALL policy scoped to `auth.uid() = user_id` |
+| F9 — getAuthToken returns UUID not JWT (P0) | `app/documents/[applicationId]/page.tsx` | Replaced localStorage UUID read with `createBrowserSupabaseClient().auth.getSession()` → real JWT access_token; all 6 call sites updated to await |
+
+**Sprint B — P1 Auth & Code Fixes**
+
+| Fix | File | Detail |
+|-----|------|--------|
+| F17 — profile/name always 500 (P1) | `api/profile/name/route.ts` | Switched from upsert (fails under RLS) to `.update().eq('id', user.id)` via service client; returns generic error (no schema leak) |
+| F15 — GET /api/admin/settings no auth (P2) | `api/admin/settings/route.ts` | Added `getRequestingAdmin()` gate to GET — now 403 for unauthenticated callers |
+| F16 — email/schedule session-fallback privilege escalation (P2) | `api/email/schedule/route.ts` | Session fallback now requires `profiles.role === 'admin'`; any non-admin authenticated user gets 403 |
+| F14 — 4 LLM endpoints no rate-limit (P1) | `lib/rate-limit.ts` + 4 routes | Added `fdd` (3/60m), `semantic-eval` (10/10m), `parse-doc` (10/10m), `notification` (3/60m) profiles; fail-closed extended to `fdd`; all 4 endpoints now call `checkRateLimit` |
+
+**Sprint C — P2 Code Fixes**
+
+| Fix | File | Detail |
+|-----|------|--------|
+| F4 — webhook_events table name (P2) | `api/admin/health-detail/route.ts:125` | Renamed `webhook_events` → `processed_webhook_events` |
+| F10 — .single() on 0-row reads (Low) | `apply/module3/c,d,j + generate/[applicationId]` | 5 `.single()` → `.maybeSingle()` (PGRST116 errors fixed for new users with no answers yet) |
+| F7 — franchise routes lose ?next (P2) | `middleware.ts` | Added `/franchise/` to `AUTH_ROUTES` — unauth redirects now include `?next=` for return navigation |
+
+**Sprint D — Data Quality**
+
+| Fix | File | Detail |
+|-----|------|--------|
+| F18 — unbounded answer_value (P2) | `api/answers/route.ts` | typeof string check, trim, reject whitespace-only → null, 10k char cap |
+| F19 — autosave `||` coerces 0/false to null (Low) | `hooks/useAutoSave.ts` | `|| null` → `?? null` |
+| F11 — franchise-referral no rate-limit (P2) | `api/notifications/franchise-referral/route.ts` | Added `checkRateLimit(user.id, 'notification')` (3/60m); use session `user.email` instead of body `userEmail` |
+
+**Sprint E — Accessibility**
+
+| Fix | File | Detail |
+|-----|------|--------|
+| F23 — form inputs lack programmatic labels (P2) | `login/page.tsx`, `signup/page.tsx`, `quiz/page.tsx`, `results/page.tsx` | Added `htmlFor` + `id` pairs on all 8 inputs across 4 pages; quiz/results use `sr-only` label pattern |
+| F24 — no skip-to-content link (Low) | `app/layout.tsx` | Visually-hidden-until-focused skip link + `id="main-content"` on main landmark |
+
+### Migrations created this session (owner must apply to live DB)
+
+| Migration | Content |
+|-----------|---------|
+| `20260630300000_fix_rls_data_exposure.sql` | **CRITICAL** — RLS SELECT policies for quiz_sessions + ENABLE RLS + policies for application_lifecycle |
+| `20260630310000_fix_missing_schema_columns.sql` | F6 column additions: payments.tier/amount_cents/tier_id, quiz_sessions.score_breakdown/created_at, simulator_sessions.questions_asked/answers_given/coaching_notes, applications.journey_wizard_stage, answers.updated_at |
+
+### Previously pending migrations (still need applying)
+
+| Migration | Fixes |
+|-----------|-------|
+| `20260627100000_interview_prep_kits.sql` | F2 — interview_prep_kits table (prep-kit feature) |
+| `20260619100000_franchise_brands.sql` | F3 — franchise_brands table (franchise navigator) |
+| `20260630200000_rls_admin_log_tables.sql` | H4 — RLS on llm_cost_log, admin_audit_log, cron_log |
+| `20260630210000_case_intelligence_locks.sql` | H6 — case intelligence concurrent build lock |
+
+### Findings NOT addressed (by category)
+
+- **F6** (drift): Code for admin pages references `payments.tier/amount_cents` and `quiz_sessions.score_breakdown` — migration created (`20260630310000`) but owner must apply to fix the live DB. Admin pages will error until applied.
+- **F2** (drift): `interview_prep_kits` table missing. Migration exists (`20260627100000`), owner must apply.
+- **F3** (drift): `franchise_brands` table missing. Migration exists (`20260619100000`), owner must apply.
+- **F8** (info): Login rate-limiter returns JSON 429 on page GET. Minor UX; not a security issue.
+- **F22** (low): `application_lifecycle` not populated for newest paid app — trigger/drift gap. Will self-correct once F21 RLS migration is applied and lifecycle rows start populating correctly.
+
+### What's next
+
+- **Owner: Apply all 6 pending migrations** (2 new + 4 pending) — see table above. The P0 RLS fix (F20/F21) is the most urgent.
+- D6 Points 1+2: signup consent checkbox + existing-user terms-update banner
+- D5: Owner to define outcome survey question set
+- S2: Test removing `unsafe-eval` from CSP
+- CIC-5: gated on D5 + D6 full
 
 ---
 

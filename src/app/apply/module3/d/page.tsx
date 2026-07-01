@@ -216,14 +216,14 @@ export default function TabDPage() {
           .select('answer_value')
           .eq('application_id', existingApp.id)
           .eq('question_key', 'QD-CONFIRMED')
-          .single();
+          .maybeSingle();
 
         const { data: letterData } = await supabase
           .from('answers')
           .select('answer_value')
           .eq('application_id', existingApp.id)
           .eq('question_key', 'QD-GENERATED-LETTER')
-          .single();
+          .maybeSingle();
 
         if (confirmData?.answer_value === 'true') {
           setGeneratedLetter(letterData?.answer_value || null);

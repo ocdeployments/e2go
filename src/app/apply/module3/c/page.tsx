@@ -84,7 +84,7 @@ export default function TabCPage() {
           .select('answer_value')
           .eq('application_id', existingApp.id)
           .eq('question_key', 'QC-CONFIRMED')
-          .single();
+          .maybeSingle();
 
         if (confirmData?.answer_value === 'true') {
           setLetterConfirmed(true);

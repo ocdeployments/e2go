@@ -5,26 +5,34 @@
  * Without Upstash configured, all limits fail open (allow) — add Upstash to enable enforcement.
  *
  * Profiles:
- *   faq        — 10 req / 10 min   (public search widget)
- *   evaluate   — 30 req / 10 min   (simulator: ~10 questions × 3 retries)
- *   coaching   — 6 req / 60 min    (one report per session, small buffer)
- *   tts        — 60 req / 10 min   (voice: question audio per interview)
- *   transcribe — 60 req / 10 min   (voice: answer audio per interview)
- *   generate   — 4 req / 60 min    (doc gen: expensive Anthropic call)
+ *   faq           — 10 req / 10 min   (public search widget)
+ *   evaluate      — 30 req / 10 min   (simulator: ~10 questions × 3 retries)
+ *   coaching      — 6 req / 60 min    (one report per session, small buffer)
+ *   tts           — 60 req / 10 min   (voice: question audio per interview)
+ *   transcribe    — 60 req / 10 min   (voice: answer audio per interview)
+ *   generate      — 4 req / 60 min    (doc gen: expensive Anthropic call)
+ *   fdd           — 3 req / 60 min    (FDD extract + score: expensive LLM pipeline)
+ *   semantic-eval — 10 req / 10 min   (gap analysis semantic evaluation)
+ *   parse-doc     — 10 req / 10 min   (document parse/comprehension)
+ *   notification  — 3 req / 60 min    (admin-inbox notifications, e.g. franchise referral)
  */
 
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 
-export type RateLimitProfile = 'faq' | 'evaluate' | 'coaching' | 'tts' | 'transcribe' | 'generate';
+export type RateLimitProfile = 'faq' | 'evaluate' | 'coaching' | 'tts' | 'transcribe' | 'generate' | 'fdd' | 'semantic-eval' | 'parse-doc' | 'notification';
 
 const PROFILES: Record<RateLimitProfile, { requests: number; window: string }> = {
-  faq:        { requests: 10,  window: '10 m' },
-  evaluate:   { requests: 30,  window: '10 m' },
-  coaching:   { requests: 6,   window: '60 m' },
-  tts:        { requests: 60,  window: '10 m' },
-  transcribe: { requests: 60,  window: '10 m' },
-  generate:   { requests: 4,   window: '60 m' },
+  faq:           { requests: 10,  window: '10 m' },
+  evaluate:      { requests: 30,  window: '10 m' },
+  coaching:      { requests: 6,   window: '60 m' },
+  tts:           { requests: 60,  window: '10 m' },
+  transcribe:    { requests: 60,  window: '10 m' },
+  generate:      { requests: 4,   window: '60 m' },
+  fdd:           { requests: 3,   window: '60 m' },
+  'semantic-eval': { requests: 10, window: '10 m' },
+  'parse-doc':   { requests: 10,  window: '10 m' },
+  notification:  { requests: 3,   window: '60 m' },
 };
 
 const limiters = new Map<RateLimitProfile, Ratelimit>();
@@ -78,10 +86,10 @@ export async function checkRateLimit(
   const limiter = getLimiter(profile);
 
   if (!limiter) {
-    // Upstash not configured — fail CLOSED on generation (cost-critical), open on faq/prep
-    const isGenerationProfile = profile === 'generate';
-    if (isGenerationProfile) {
-      console.error('[rate-limit] Upstash not configured — blocking generation to prevent unbounded cost. Set UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN.');
+    // Upstash not configured — fail CLOSED on cost-critical profiles, open on others
+    const costCritical: RateLimitProfile[] = ['generate', 'fdd'];
+    if (costCritical.includes(profile)) {
+      console.error(`[rate-limit] Upstash not configured — blocking ${profile} to prevent unbounded cost. Set UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN.`);
       return { allowed: false, remaining: 0, reset: 0 };
     }
     return { allowed: true, remaining: 999, reset: 0 };

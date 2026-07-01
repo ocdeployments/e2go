@@ -284,10 +284,11 @@ function LoginForm() {
 
               <form onSubmit={handleLogin} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1" style={{ color: "rgba(245,240,232,0.6)" }}>
+                  <label htmlFor="login-email" className="block text-sm font-medium mb-1" style={{ color: "rgba(245,240,232,0.6)" }}>
                     Email
                   </label>
                   <input
+                    id="login-email"
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -299,10 +300,11 @@ function LoginForm() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1" style={{ color: "rgba(245,240,232,0.6)" }}>
+                  <label htmlFor="login-password" className="block text-sm font-medium mb-1" style={{ color: "rgba(245,240,232,0.6)" }}>
                     Password
                   </label>
                   <input
+                    id="login-password"
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}

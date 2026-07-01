@@ -425,7 +425,7 @@ export default function GenerateProgressPage() {
           .from('applicant_voice_profile')
           .select('voice_sample_raw')
           .eq('user_id', user.id)
-          .single();
+          .maybeSingle();
         if (data?.voice_sample_raw) {
           const words = data.voice_sample_raw.trim().split(/\s+/).filter(Boolean).length;
           setVoiceWordCount(words);

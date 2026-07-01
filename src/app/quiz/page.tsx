@@ -935,7 +935,9 @@ function QuizInner() {
               <div style={{ fontSize: "10px", letterSpacing: "0.18em", textTransform: "uppercase", color: "rgba(201,168,76,0.6)", marginBottom: "16px" }}>Your results are ready</div>
               <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "32px", fontWeight: 300, color: "#f5f0e8", marginBottom: "8px", lineHeight: 1.3 }}>Enter your email and we&apos;ll send you a link to view them.</div>
               <div style={{ fontSize: "14px", color: "rgba(245,240,232,0.74)", marginBottom: "32px", lineHeight: 1.6 }}>Your full eligibility result is waiting. We&apos;ll email you a secure link.</div>
+              <label htmlFor="quiz-email" className="sr-only">Email address</label>
               <input
+                id="quiz-email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
+import { createServiceClient } from '@/lib/supabase-service';
 
 export async function PATCH(req: Request) {
   const supabase = await createSupabaseServerClient();
@@ -26,15 +27,16 @@ export async function PATCH(req: Request) {
     );
   }
 
-  const { error } = await supabase
+  // Use service client so the UPDATE bypasses RLS — the regular client can't
+  // see the caller's own profile row under the current RLS configuration.
+  const service = createServiceClient();
+  const { error } = await service
     .from('profiles')
-    .upsert(
-      { id: user.id, first_name: firstName, middle_name: middleName, last_name: lastName },
-      { onConflict: 'id' }
-    );
+    .update({ first_name: firstName, middle_name: middleName, last_name: lastName })
+    .eq('id', user.id);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'Update failed' }, { status: 500 });
   }
 
   return NextResponse.json({ success: true, firstName, middleName, lastName });

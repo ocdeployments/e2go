@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 import { createSupabaseServerClient } from '@/lib/supabase-server';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 const resend = process.env.RESEND_API_KEY
   ? new Resend(process.env.RESEND_API_KEY)
@@ -24,7 +25,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { sessionId, userEmail, franchiseName } = await req.json();
+    const rl = await checkRateLimit(user.id, 'notification');
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please wait before sending another referral.' },
+        { status: 429, headers: { 'Retry-After': String(rl.reset) } }
+      );
+    }
+
+    const { sessionId, franchiseName } = await req.json();
+    // Use session email (from auth) not body email — prevents forged sender identity
+    const userEmail = user.email ?? '';
 
     if (!resend) {
       console.warn("[franchise-referral] Resend not configured — skipping email");
