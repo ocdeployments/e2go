@@ -360,7 +360,14 @@ async function checkDeprecationWarning(response: unknown): Promise<void> {
 export async function loadPrompt(documentType: DocumentType): Promise<string> {
   // b01 is the canonical merged prompt replacing both source_of_funds.md and investment_proof.md
   const FILE_ALIASES: Partial<Record<DocumentType, string>> = {
-    source_of_funds: 'b01_source_and_application_of_funds',
+    source_of_funds:    'b01_source_and_application_of_funds',
+    // P2 docs reuse P1 prompt files — the generation engine prepends a partnership context block
+    cover_letter_p2:      'cover_letter',
+    source_of_funds_p2:   'b01_source_and_application_of_funds',
+    declaration_p2:       'declaration_principal',
+    qualifications_p2:    'qualifications',
+    nonimmigrant_intent_p2: 'nonimmigrant_intent',
+    resume_p2:            'resume_principal',
   };
   const fileName = FILE_ALIASES[documentType] ?? documentType;
   const filePath = join(PROMPTS_DIR, `${fileName}.md`);
@@ -460,6 +467,13 @@ const DOC_TYPE_DIMENSIONS: Partial<Record<DocumentType, Dimension[]>> = {
   declaration_spouse:    ['identity'],
   nonimmigrant_intent:   ['other', 'identity'],
   ds160_reference:       ['identity', 'other'],
+  // Partnership — Investor 2 (same dimension relevance as P1 equivalents)
+  cover_letter_p2:        ALL_DIMENSIONS,
+  source_of_funds_p2:     ['source_of_funds', 'investment'],
+  declaration_p2:         ['identity', 'other'],
+  qualifications_p2:      ['background', 'business', 'franchise'],
+  nonimmigrant_intent_p2: ['other', 'identity'],
+  resume_p2:              ['background', 'business'],
 };
 
 interface CaseTheoryRow {
@@ -1595,6 +1609,13 @@ const REQUIRED_ELEMENTS: Record<DocumentType, string[]> = {
     'gift_amount',
     'irrevocability',
   ],
+  // Partnership — Investor 2
+  cover_letter_p2:          ['applicant_name', 'business_name', 'investment_amount', 'treaty_country'],
+  source_of_funds_p2:       ['source_description', 'timeline', 'amount'],
+  declaration_p2:           ['applicant_name', 'treaty_country', 'investment_amount'],
+  qualifications_p2:        ['applicant_background', 'experience', 'education'],
+  nonimmigrant_intent_p2:   ['home_country_ties', 'return_intent'],
+  resume_p2:                ['applicant_name', 'employment', 'education'],
 };
 
 function extractKeyElements(text: string): string[] {
@@ -1653,6 +1674,13 @@ export function runGapAnalysis(documents: GeneratedDocument[]): GapAnalysisResul
     resume_principal: [],
     resume_spouse: [],
     gift_letter: [],
+    // Partnership — Investor 2
+    cover_letter_p2: [],
+    source_of_funds_p2: [],
+    declaration_p2: [],
+    qualifications_p2: [],
+    nonimmigrant_intent_p2: [],
+    resume_p2: [],
   };
 
   const recommendations: string[] = [];
@@ -1958,6 +1986,39 @@ export async function runGenerationPipeline(
       conditionalDocTypes.push('property_portfolio');
     }
 
+    // Sprint F-P: Add Investor 2 document types for complete_partnership buyers
+    const { data: partnershipPayment } = await supabase
+      .from('payments')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('payment_type', 'complete_partnership')
+      .eq('status', 'completed')
+      .limit(1)
+      .maybeSingle();
+
+    const isPartnership = !!partnershipPayment;
+
+    if (isPartnership) {
+      conditionalDocTypes.push(
+        'cover_letter_p2', 'source_of_funds_p2', 'declaration_p2',
+        'qualifications_p2', 'nonimmigrant_intent_p2', 'resume_p2'
+      );
+    }
+
+    // Load P2-* answers once for the whole pipeline run (empty map for solo applications)
+    const p2Answers: Record<string, string> = {};
+    if (isPartnership) {
+      const { data: p2Rows } = await supabase
+        .from('answers')
+        .select('question_key, answer_value')
+        .eq('application_id', applicationId)
+        .like('question_key', 'P2-%');
+      for (const row of (p2Rows ?? [])) {
+        const r = row as Record<string, string>;
+        if (r.question_key && r.answer_value) p2Answers[r.question_key] = r.answer_value;
+      }
+    }
+
     const DOCUMENT_TYPES = [...CORE_DOCUMENT_TYPES, ...conditionalDocTypes];
     const Q = DOCUMENT_TYPES.length + 2;
     const effectiveTotalSteps = 1 + DOCUMENT_TYPES.length + 9;
@@ -2065,6 +2126,56 @@ export async function runGenerationPipeline(
 
         try {
           const payload = await buildGenerationPayload(applicationId, docType, caseBrief);
+
+          // Sprint F-P: Inject Partner 2 context for _p2 document types
+          const isP2Doc = docType.endsWith('_p2');
+          if (isP2Doc && Object.keys(p2Answers).length > 0) {
+            const p2Name       = p2Answers['P2-NAME']       ?? 'Investor 2';
+            const p2Nation     = p2Answers['P2-NATIONALITY'] ?? '';
+            const p2Shares     = p2Answers['P2-SHARES']     ?? '';
+            const p2Invest     = p2Answers['P2-INVEST']     ?? '';
+            const p2Role       = p2Answers['P2-ROLE']       ?? '';
+            const p2Sof        = p2Answers['P2-SOF']        ?? '';
+            const p2Quals      = p2Answers['P2-QUALS']      ?? '';
+            const p2Intent     = p2Answers['P2-INTENT']     ?? '';
+            const p1Name = (caseBrief as unknown as Record<string, unknown>).principal_name as string || 'Investor 1';
+
+            const p2Block = `
+⚠️ PARTNERSHIP APPLICATION — INVESTOR 2 DOCUMENT
+This is a partnership E-2 application with two investors: ${p1Name} (Investor 1) and ${p2Name} (Investor 2).
+This specific document is generated for INVESTOR 2 ONLY. Use the following data for Investor 2 — do NOT use Investor 1's personal information for personal sections.
+
+INVESTOR 2 DATA:
+- Full legal name: ${p2Name}
+- Nationality / Treaty country: ${p2Nation}
+- Ownership share: ${p2Shares}
+- Personal investment amount: $${p2Invest}
+- Management role and day-to-day activities: ${p2Role}
+- Source of funds narrative: ${p2Sof}
+- Professional background and qualifications: ${p2Quals}
+- Home country ties / non-immigrant intent: ${p2Intent}
+
+The business is a joint venture between both investors. When referencing the business, you may note that ${p1Name} is the co-investor and ${p2Name} is Investor 2. The Business Plan was prepared for both investors jointly.
+Generate the document using Investor 2's identity, name, nationality, source of funds, qualifications, and intent data above.
+
+---
+
+`;
+            payload.system_prompt = p2Block + payload.system_prompt;
+
+            // Override module_3_answers so field-level extraction picks up P2 data
+            payload.module_3_answers = {
+              ...payload.module_3_answers,
+              'P2-NAME': p2Name,
+              'P2-NATIONALITY': p2Nation,
+              'P2-SHARES': p2Shares,
+              'P2-INVEST': p2Invest,
+              'P2-ROLE': p2Role,
+              'P2-SOF': p2Sof,
+              'P2-QUALS': p2Quals,
+              'P2-INTENT': p2Intent,
+            };
+          }
 
           // Prepend client regen note (if this is a client-requested regeneration)
           if (clientRegenNote && payload.case_theory_brief !== undefined) {
