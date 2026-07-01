@@ -1,6 +1,6 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** July 2, 2026 — Session 102 cont.: Sprint R (Renewal Module) built — entry page, 15-question intake quiz, 3 API routes, migration. QA: 2 security gaps closed. Build clean.
+**Last Updated:** July 2, 2026 — Session 102 cont. pt.2: Sprint R COMPLETE — generation pipeline + documents viewer built. All 4 renewal routes live. Build clean.
 
 ---
 
@@ -24,13 +24,25 @@
 | Module 3 lazy loading | ✅ PARKED | App Router page-level code splitting already covers this; `next/dynamic()` adds no value without heavy 3rd-party deps. |
 | Gap analysis 2-call merge | ✅ DONE (Session 101) | `gap-analysis/run` merges N enrich + 1 semantic-eval into single server-side `Promise.all`. Client now makes 1 call instead of N+1. |
 
-### Remaining backlog (priority order)
-1. Renewal document generation — `/api/renewal/generate` (Template 6 + cover letter + BP update + checklist). Intake is live; generation is next.
-2. Partnership Document Engine (Sprint F-P — CRITICAL, do not sell $2,495 tier until built)
-3. Supabase CLI migration history sync (22 applied, CLI shows 2 — cosmetic, not blocking)
+### Sprint R — Renewal Module — ✅ COMPLETE
 
-### Owner actions required — Session 102
-- Apply `supabase/migrations/20260702100000_renewal_intakes.sql` in Supabase SQL Editor (renewal intake table + RLS)
+| Item | Commit | Detail |
+|------|--------|--------|
+| `renewal_intakes` migration (with documents + generated_at) | c004e8b | Owner must apply in SQL Editor — table, RLS, trigger |
+| `/api/renewal/intake` GET + PATCH | 0c7813f | Load/create intake; merge-patch answers without wiping |
+| `/api/renewal/baseline` GET | 0c7813f | Fetch original application projections + business name |
+| `/api/renewal/generate` POST | a2f3958 | Cover letter + BP update (LLM, mimo-v2.5-pro via 'coaching' task) + Template 6 (programmatic) + checklist (static, path-specific). Rate-limited via 'generate' profile. Kill-switch gated. |
+| `/renewal` entry page | 0c7813f | Server component — detects purchase, creates intake, redirects |
+| `/renewal/intake` 15-question quiz | 0c7813f | Auto-save, baseline pre-population, 70% completion gate, redirect to `/renewal/documents` on mark complete |
+| `/renewal/documents` viewer | 95d71b8 | Tabbed (Cover Letter / BP Update / Template 6 / Checklist), copy + download per tab, Regenerate button, polling for generating state |
+| Case profile §08 renewal card | 0c7813f | Static card → `/renewal` |
+
+### Remaining backlog (priority order)
+1. Partnership Document Engine (Sprint F-P — CRITICAL, do not sell $2,495 tier until built)
+2. Supabase CLI migration history sync (22 applied, CLI shows 2 — cosmetic, not blocking)
+
+### Owner actions required — Sprint R
+- Apply `supabase/migrations/20260702100000_renewal_intakes.sql` in Supabase SQL Editor (full table + RLS + trigger)
 
 *Note: "Generation pipeline checkpoint resume" (C2) was already implemented in generation-engine.ts lines 2013-2034 — approvedSet skips re-generating docs from prior interrupted runs. Removed from backlog.*
 
