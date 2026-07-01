@@ -589,6 +589,22 @@ export const FRANCHISE_BRANDS: FranchiseBrand[] = [
     e2Notes: 'Food truck model has lower lease cost but needs officer education on mobile commercial premises. Restaurant location preferred for E-2.',
     item19Present: false,
   },
+  // ─── Fitness / Wellness ───────────────────────────────────────────────────
+  {
+    slug: 'sensai-health',
+    name: 'Sensai Health',
+    category: 'fitness_wellness',
+    investMin: 200000,
+    investMax: 450000,
+    liquidMin: 120000,
+    staffingAt12Months: { min: 5, max: 10 },
+    homeBased: false,
+    e2CompatScore: 'A',
+    renewalStrengthScore: 82,
+    description: 'Preventive health and wellness franchise offering personalized diagnostics, concierge lab services, and proactive care programs.',
+    e2Notes: 'Strong E-2 fit: staffed commercial premises, recurring membership model, and clear management role for the investor. Healthcare services category has solid consular track record.',
+    item19Present: false,
+  },
 ];
 
 // ─── Helper: get brand by slug ────────────────────────────────────────────────
