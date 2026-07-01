@@ -103,11 +103,21 @@ export async function POST(request: Request) {
     }
 
     // Determine conditional doc types from intake answers
-    const { data: condAnswers } = await supabase
-      .from('answers')
-      .select('question_key, answer_value')
-      .eq('application_id', applicationId)
-      .in('question_key', ['M3-L-01', 'M3-F-05']);
+    const [{ data: condAnswers }, { data: partnerPayment }] = await Promise.all([
+      supabase
+        .from('answers')
+        .select('question_key, answer_value')
+        .eq('application_id', applicationId)
+        .in('question_key', ['M3-L-01', 'M3-F-05']),
+      supabase
+        .from('payments')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('payment_type', 'complete_partnership')
+        .eq('status', 'completed')
+        .limit(1)
+        .maybeSingle(),
+    ]);
 
     const condMap: Record<string, string> = {};
     for (const row of (condAnswers ?? [])) {
@@ -121,6 +131,14 @@ export async function POST(request: Request) {
     }
     if (typeof condMap['M3-F-05'] === 'string' && condMap['M3-F-05'].includes('property-sale')) {
       conditionalDocTypes.push('property_portfolio');
+    }
+
+    // Sprint F-P: Add Investor 2 documents for complete_partnership buyers
+    if (partnerPayment) {
+      conditionalDocTypes.push(
+        'cover_letter_p2', 'source_of_funds_p2', 'declaration_p2',
+        'qualifications_p2', 'nonimmigrant_intent_p2', 'resume_p2'
+      );
     }
 
     const coreDocTypes = [
