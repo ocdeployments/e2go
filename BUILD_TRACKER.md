@@ -1,6 +1,6 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 30, 2026 — Session 95 cont.2: P2 audit fixes complete (M4, M8, M6). Build clean (156 pages).
+**Last Updated:** June 30, 2026 — Session 95 cont.3: H2 + M3 complete. Build clean (156 pages).
 
 ---
 
@@ -76,10 +76,16 @@
 | M8 — Refund revokes access | `api/stripe/webhook/route.ts` | `charge.refunded` now revokes FDD (`report_unlocked=false`) and deducts 3 simulator sessions via Stripe PI metadata lookup |
 | M6 — Threshold unification | `lib/e2-thresholds.ts` (NEW) | Single canonical 9 FAM 402.9-6(D) sliding-scale table; both `fdd-profile-match-engine.ts` and `fdd-scoring-engine.ts` delegate to it |
 
-### What's next — P2 remaining
+### P2 remaining (Session 95 cont.3) ✅
 
-- H2: Figure provenance deterministic — extract numbers from draft, assert each exists in case_model
-- M3: Legacy pipeline fate — `document-extraction-engine.ts` still has 2 live importers (case-summary + gap-report routes); decide keep-or-delete
+| Fix | File | Detail |
+|-----|------|--------|
+| H2 — Figure provenance | `lib/figure-provenance.ts` (NEW) + `lib/generation-engine.ts` | Deterministic regex extraction of dollar/pct/headcount figures from draft; orphans injected as correction brief before LLM verifier runs (free, no LLM cost) |
+| M3 — Legacy label extraction | `data/question-labels.ts` (NEW) | `QUESTION_LABELS`/`SECTION_MAP`/`SECTION_LABELS` moved to data file; engine re-exports for BC; `case-summary` now imports direct — simulator no longer depends on extraction engine |
+
+### What's next
+
+
 - Architecture: typed DB schema mirror (Zod per table) — makes N1/N2-class column drift a compile error
 - D6 Points 1+2: signup consent checkbox + existing-user terms-update banner
 - D5: Owner to define outcome survey question set
