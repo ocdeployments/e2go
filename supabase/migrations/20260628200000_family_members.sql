@@ -42,6 +42,15 @@ CREATE INDEX IF NOT EXISTS idx_family_members_user_id   ON public.family_members
 CREATE INDEX IF NOT EXISTS idx_family_members_type      ON public.family_members(member_type);
 CREATE INDEX IF NOT EXISTS idx_family_members_sort      ON public.family_members(user_id, sort_order);
 
+-- Create shared updated_at helper if not already present
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$;
+
 DROP TRIGGER IF EXISTS update_family_members_timestamp ON public.family_members;
 CREATE TRIGGER update_family_members_timestamp
   BEFORE UPDATE ON public.family_members
