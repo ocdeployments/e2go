@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { getQuestionKnowledge, buildKnowledgeBlock } from '@/lib/interview-knowledge-base';
 import { checkRateLimit } from '@/lib/rate-limit';
+import { isKillSwitchEnabled } from '@/lib/kill-switch';
 import { callLLM } from '@/lib/llm-client';
 import type { SimulatorContext, QuestionCoaching } from '@/types/simulator';
 
@@ -56,6 +57,10 @@ export async function POST(request: NextRequest) {
       { error: 'Too many requests. Please wait before generating another coaching report.' },
       { status: 429, headers: { 'Retry-After': String(rl.reset) } }
     );
+  }
+
+  if (await isKillSwitchEnabled()) {
+    return NextResponse.json({ error: 'AI features are temporarily unavailable. Please try again shortly.' }, { status: 503 });
   }
 
   if (!process.env.OPENROUTER_API_KEY && !process.env.ANTHROPIC_API_KEY) {

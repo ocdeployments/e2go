@@ -13,6 +13,7 @@
 import { NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { isKillSwitchEnabled } from "@/lib/kill-switch";
 import { buildFaqPrompt } from "@/lib/faq-system-prompt";
 
 // ---------------------------------------------------------------------------
@@ -266,6 +267,10 @@ export async function POST(req: NextRequest) {
           },
         }
       );
+    }
+
+    if (await isKillSwitchEnabled()) {
+      return Response.json({ error: 'service_unavailable', message: 'AI features are temporarily unavailable. Please try again shortly.' }, { status: 503 });
     }
 
     // ---- Parse body ----
