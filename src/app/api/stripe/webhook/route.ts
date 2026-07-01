@@ -148,7 +148,7 @@ export async function POST(request: NextRequest) {
 
       const { data: payment } = await supabase
         .from('payments')
-        .select('id, application_id, payment_type')
+        .select('id, application_id, payment_type, user_id')
         .eq('stripe_payment_intent_id', paymentIntentId)
         .single();
 
@@ -158,12 +158,43 @@ export async function POST(request: NextRequest) {
           .update({ status: 'refunded', refunded_at: new Date().toISOString() })
           .eq('id', payment.id);
 
-        // Only revoke application access on Complete refund
-        if (payment.payment_type === 'complete' && payment.application_id) {
+        // Retrieve PaymentIntent metadata to get tierId/fddId
+        const pi = await stripe.paymentIntents.retrieve(paymentIntentId);
+        const tierId = pi.metadata?.tierId ?? payment.payment_type;
+        const fddId = pi.metadata?.fddId;
+
+        if ((tierId === 'complete' || tierId === 'complete_partnership') && payment.application_id) {
           await supabase
             .from('applications')
             .update({ payment_status: 'refunded' })
             .eq('id', payment.application_id);
+
+        } else if (
+          (tierId === 'fdd_intelligence' || tierId === 'fdd_intelligence_loyalty') &&
+          fddId && payment.user_id
+        ) {
+          // Revoke FDD report access
+          await supabase
+            .from('fdd_analyses')
+            .update({ report_unlocked: false })
+            .eq('id', fddId)
+            .eq('user_id', payment.user_id);
+
+        } else if (tierId === 'simulator_3pack' && payment.application_id) {
+          // Deduct 3 sessions from the pack that was refunded
+          const { data: currentApp } = await supabase
+            .from('applications')
+            .select('simulator_sessions_purchased')
+            .eq('id', payment.application_id)
+            .single();
+          if (currentApp) {
+            await supabase
+              .from('applications')
+              .update({
+                simulator_sessions_purchased: Math.max(0, (currentApp.simulator_sessions_purchased ?? 0) - 3),
+              })
+              .eq('id', payment.application_id);
+          }
         }
       }
       break;
