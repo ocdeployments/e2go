@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { runGenerationPipeline } from '@/lib/generation-engine';
+import { checkRateLimit } from '@/lib/rate-limit';
 import type { GenerationStep } from '@/types/generation';
 
 export const runtime = 'nodejs';
@@ -25,6 +26,15 @@ export async function POST(
     const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // M1: Rate-limit /run as well as /start — prevents bypass by calling run directly
+    const rl = await checkRateLimit(user.id, 'generate');
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: 'Too many generation requests. Please wait before retrying.' },
+        { status: 429, headers: { 'Retry-After': String(rl.reset) } }
+      );
     }
 
     const supabase = getSupabase();

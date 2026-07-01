@@ -52,15 +52,20 @@ export async function POST(request: NextRequest) {
 
   const supabase = getSupabase();
 
-  // Idempotency — prevent replay attacks
-  const { data: existing } = await supabase
+  // H3: Idempotency — INSERT first; unique constraint on stripe_event_id catches duplicates atomically.
+  // No SELECT+INSERT race: the DB enforces uniqueness, not application logic.
+  const { error: dedupError } = await supabase
     .from('processed_webhook_events')
-    .select('id')
-    .eq('stripe_event_id', event.id)
-    .single();
+    .insert({ stripe_event_id: event.id, processed_at: new Date().toISOString() });
 
-  if (existing) {
-    return NextResponse.json({ received: true, duplicate: true });
+  if (dedupError) {
+    if (dedupError.code === '23505') {
+      // Duplicate delivery — already processed
+      return NextResponse.json({ received: true, duplicate: true });
+    }
+    // DB error — log and return 200 to avoid Stripe retry storm
+    console.error('[webhook] Event dedup insert failed:', dedupError.message);
+    return NextResponse.json({ received: true });
   }
 
   switch (event.type) {
@@ -173,10 +178,6 @@ export async function POST(request: NextRequest) {
       break;
     }
   }
-
-  await supabase
-    .from('processed_webhook_events')
-    .insert({ stripe_event_id: event.id, processed_at: new Date().toISOString() });
 
   return NextResponse.json({ received: true });
 }

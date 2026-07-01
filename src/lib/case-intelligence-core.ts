@@ -640,8 +640,10 @@ export async function generateCaseTheory(
 // ── Orchestration entrypoint ─────────────────────────────────────────────────
 
 export interface CaseIntelligenceOutcome {
-  model: CaseModelResult;
-  theory: CaseTheoryOutcome;
+  status?: 'skipped';
+  applicationId?: string;
+  model?: CaseModelResult;
+  theory?: CaseTheoryOutcome;
 }
 
 /**
@@ -658,6 +660,19 @@ export async function buildCaseIntelligence(
   triggeredByDocType?: string,
 ): Promise<CaseIntelligenceOutcome> {
   const supabase = serviceClient();
+
+  // H6: Per-application build lock — prevents concurrent CPU builds for the same application.
+  // Upsert a lock row; if another build holds the lock (locked_at within 30s), skip this run.
+  const LOCK_TTL_S = 30;
+  const { data: lockRows } = await supabase.rpc('acquire_case_intelligence_lock', {
+    p_application_id: applicationId,
+    p_ttl_seconds: LOCK_TTL_S,
+  });
+  if (!lockRows || (Array.isArray(lockRows) && lockRows.length === 0)) {
+    // Another build is in progress — skip to avoid double-spend
+    console.info(`[CIC] buildCaseIntelligence skipped — lock held for ${applicationId}`);
+    return { status: 'skipped', applicationId };
+  }
 
   // CIC-P.5: snapshot the current dimension_verdicts BEFORE re-reasoning
   // so we can compare after and detect which documents are now stale.
@@ -692,6 +707,12 @@ export async function buildCaseIntelligence(
       newVerdicts as Record<string, { status: string; evidenceSummary?: string; gap?: string | null }> | null,
     ).catch(err => console.error('[CIC-P.5] impact compute error:', err));
   }
+
+  // H6: Release the lock regardless of outcome
+  await supabase
+    .from('case_intelligence_locks')
+    .delete()
+    .eq('application_id', applicationId);
 
   return { model, theory };
 }

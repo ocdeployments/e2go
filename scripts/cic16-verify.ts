@@ -38,6 +38,7 @@ async function main() {
     console.log('userId:', userId, '| applicationId:', applicationId);
 
     const result = await buildCaseIntelligence(applicationId, userId);
+    if (!result.model || !result.theory) { console.log('Build skipped (lock held)'); continue; }
     console.log('Case Model dataState:', result.model.dataState, '| signals:', JSON.stringify(result.model.signalsPresent));
     console.log('Case Theory status:', result.theory.status, '| dims covered:', result.theory.dimensionsCovered, '| directives:', result.theory.directiveCount);
 

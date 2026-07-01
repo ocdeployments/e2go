@@ -11,6 +11,7 @@
 
 import Anthropic from '@anthropic-ai/sdk';
 import { createClient } from '@supabase/supabase-js';
+import * as Sentry from '@sentry/nextjs';
 
 const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
 
@@ -221,7 +222,9 @@ export async function callLLM(options: LLMOptions): Promise<string | null> {
     console.info(`[llm-client] Anthropic fallback succeeded for task=${options.task}`);
     return content;
   } catch (err) {
-    console.error(`[llm-client] All providers failed for task=${options.task}:`, err instanceof Error ? err.message : err);
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(`[llm-client] All providers failed for task=${options.task}:`, message);
+    Sentry.captureException(err, { extra: { task: options.task, route: options.route } });
   }
 
   return null;
