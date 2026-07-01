@@ -1,6 +1,57 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** July 1, 2026 — Session 97: Kill-switch enforcement on all LLM routes. Audit v2 secondary limbs confirmed complete. Build clean.
+**Last Updated:** July 1, 2026 — Session 98: Admin intelligence suite + geographic tracking + support tickets + franchise funnel. Build clean (163 pages). 2 migrations pending apply.
+
+---
+
+## Session 98 — Admin Intelligence Suite + Geo Tracking (July 1, 2026)
+
+**Branch:** dev. **Build:** ✅ clean (163 pages). **Push:** ✅ 26/26 security tests passed.
+
+### ⚠️ MIGRATIONS TO APPLY (owner must run before next deploy)
+
+| Migration | What it creates |
+|-----------|-----------------|
+| `20260701100000_support_tickets.sql` | `support_tickets` table — replaces the mailto-only /support page |
+| `20260701110000_franchise_tracking.sql` | `broker_requests`, `broker_referrals`, `franchise_brand_views`, `login_events` — **fixes 2-table data loss: all franchise broker connections have been silently dropped since launch** |
+
+### Critical data loss fixed
+
+`broker_requests` and `broker_referrals` tables never existed in any migration. Every franchise broker connection request submitted since the feature was built has been silently dropped (try-catch swallowed the insert error). These tables are now created by the migration. The try-catch wrappers have been removed from both write paths.
+
+### New pages built
+
+| Page | URL | Description |
+|------|-----|-------------|
+| Support inbox | `/admin/support` | Full ticket inbox — open/in_progress/resolved counts, message preview, priority dot |
+| Franchise funnel | `/admin/franchise` | Brand page views by brand, broker requests, referral conversion rate, recent requests table |
+| Engine intelligence | `/admin/intelligence` | CIC verifier pass rate, token efficiency by task, FAM score averages, simulator readiness distribution |
+| Geographic intelligence | `/admin/geography` | Country breakdown, top cities globally, Canada drilled to city + province, UK drilled to city + region |
+
+### New API routes
+
+| Route | Purpose |
+|-------|---------|
+| `POST /api/support/submit` | Save ticket to DB + email admin via Resend |
+| `POST /api/franchise/brand-view` | Log franchise brand page visit |
+| `POST /api/track/session` | Capture geo on email/password logins (password-login path) |
+
+### Geo tracking architecture
+
+Uses **Vercel edge headers** (`x-vercel-ip-country`, `x-vercel-ip-city`, `x-vercel-ip-region`) — zero external API, zero cost. Fields: `country` (ISO code), `country_name`, `city`, `region` (province/state code), `login_type`.
+
+- OAuth/magic-link logins → captured in `auth/callback`
+- Email/password logins → login page fires `POST /api/track/session` fire-and-forget after successful auth
+- `src/lib/geo.ts` — shared helper + country name map (40 E-2 treaty countries) + CA/GB region maps
+
+### Admin dashboard updates
+
+- 8 metric cards: total revenue, revenue today, paid customers, total users, docs today, logins today, open tickets (red if >0), LLM cost month
+- Nav links added: Support (with red badge when tickets open), Franchise, Intelligence, Geography
+
+### Support form
+
+`/support` page rewritten from a mailto link to a full tracked form with category selector, subject, message, character counter, error state, and confirmation screen.
 
 ---
 
