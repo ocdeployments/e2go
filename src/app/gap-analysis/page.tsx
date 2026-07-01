@@ -238,42 +238,33 @@ function GapAnalysisInner() {
         setCachedSim(simData);
         setCachedArchetype(resolvedArchetype);
 
-        // Fire LLM enrichment for weak categories — async, non-blocking
+        // Single merged LLM call: enrichment + semantic eval in one round-trip
         const weakCategories = scored.categories.filter(c => c.score < 70);
         if (weakCategories.length > 0) {
           setEnrichingIds(new Set(weakCategories.map(c => c.id)));
-          Promise.all(weakCategories.map(async (cat) => {
-            try {
-              const res = await fetch('/api/gap-analysis/enrich', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  categoryId: cat.id, categoryName: cat.name,
-                  gaps: cat.gaps || [], evidence: cat.evidence || [],
-                  score: cat.score, businessName: app.business_name,
-                  businessCategory: (app as any).business_category,
-                  operationalStatus: (app as any).operational_status,
-                }),
-              });
-              if (res.ok) {
-                const { categoryId, enrichment } = await res.json();
-                if (enrichment) setEnrichments(prev => ({ ...prev, [categoryId]: enrichment }));
-              }
-            } catch { /* Non-fatal */ } finally {
-              setEnrichingIds(prev => { const next = new Set(prev); next.delete(cat.id); return next; });
-            }
-          }));
         }
-
-        // Fire semantic eval — async, non-blocking
-        fetch('/api/gap-analysis/semantic-eval', {
+        fetch('/api/gap-analysis/run', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ applicationId: resolvedId }),
+          body: JSON.stringify({
+            applicationId: resolvedId,
+            weakCategories: weakCategories.map(cat => ({
+              id: cat.id, name: cat.name,
+              gaps: cat.gaps || [], evidence: cat.evidence || [],
+              score: cat.score, businessName: app.business_name,
+              businessCategory: (app as any).business_category,
+              operationalStatus: (app as any).operational_status,
+            })),
+          }),
         })
           .then(r => r.ok ? r.json() : null)
-          .then(data => { if (data?.results) setSemanticResults(data.results); })
-          .catch(() => {});
+          .then(data => {
+            if (!data) return;
+            if (data.enrichments) setEnrichments(data.enrichments);
+            if (data.semanticResults) setSemanticResults(data.semanticResults);
+          })
+          .catch(() => {})
+          .finally(() => setEnrichingIds(new Set()));
 
       } catch (err: any) {
         setError(err.message || 'Failed to load gap analysis');

@@ -20,19 +20,20 @@
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 
-export type RateLimitProfile = 'faq' | 'evaluate' | 'coaching' | 'tts' | 'transcribe' | 'generate' | 'fdd' | 'semantic-eval' | 'parse-doc' | 'notification';
+export type RateLimitProfile = 'faq' | 'evaluate' | 'coaching' | 'tts' | 'transcribe' | 'generate' | 'fdd' | 'semantic-eval' | 'parse-doc' | 'notification' | 'gap-analysis-run';
 
 const PROFILES: Record<RateLimitProfile, { requests: number; window: string }> = {
-  faq:           { requests: 10,  window: '10 m' },
-  evaluate:      { requests: 30,  window: '10 m' },
-  coaching:      { requests: 6,   window: '60 m' },
-  tts:           { requests: 60,  window: '10 m' },
-  transcribe:    { requests: 60,  window: '10 m' },
-  generate:      { requests: 4,   window: '60 m' },
-  fdd:           { requests: 3,   window: '60 m' },
-  'semantic-eval': { requests: 10, window: '10 m' },
-  'parse-doc':   { requests: 10,  window: '10 m' },
-  notification:  { requests: 3,   window: '60 m' },
+  faq:                { requests: 10,  window: '10 m' },
+  evaluate:           { requests: 30,  window: '10 m' },
+  coaching:           { requests: 6,   window: '60 m' },
+  tts:                { requests: 60,  window: '10 m' },
+  transcribe:         { requests: 60,  window: '10 m' },
+  generate:           { requests: 4,   window: '60 m' },
+  fdd:                { requests: 3,   window: '60 m' },
+  'semantic-eval':    { requests: 10,  window: '10 m' },
+  'parse-doc':        { requests: 10,  window: '10 m' },
+  notification:       { requests: 3,   window: '60 m' },
+  'gap-analysis-run': { requests: 10,  window: '10 m' },
 };
 
 const limiters = new Map<RateLimitProfile, Ratelimit>();
