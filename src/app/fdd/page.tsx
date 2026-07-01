@@ -121,9 +121,11 @@ export default function FddIndexPage() {
   async function loadAnalyses() {
     setLoading(true);
     const supabase = createBrowserSupabaseClient();
+    // Exclude heavy JSONB columns not needed for the list:
+    // extracted_fields (50-field corpus) and profile_match — franchise name falls back to original_filename
     const { data, error: err } = await supabase
       .from('fdd_analyses')
-      .select('*')
+      .select('id, created_at, original_filename, file_size_bytes, page_count, extraction_status, extraction_error, extraction_progress, overall_compatibility, flag_count, fdd_stale, fdd_age_months, state_registration_status, target_city, target_state, target_zip, transaction_type, investor_liquid_capital, investor_net_worth, e2_score, territory_analysis, questions, final_report')
       .order('created_at', { ascending: false })
       .limit(20);
 

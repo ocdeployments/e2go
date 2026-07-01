@@ -120,7 +120,7 @@ export default function TabJPage() {
   const [businessName, setBusinessName] = useState<string>('');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [showNoMgmtAdvisory, setShowNoMgmtAdvisory] = useState(false);
-  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const saveTimeoutRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
 
   const currentQuestion = QUESTIONS[currentIndex];
   const isLastQuestion = currentIndex === QUESTIONS.length - 1;
@@ -224,6 +224,12 @@ export default function TabJPage() {
     init();
   }, [router, supabase]);
 
+  // Flush pending debounced saves on unmount so keystrokes aren't lost
+  useEffect(() => {
+    const timeouts = saveTimeoutRef.current;
+    return () => { timeouts.forEach(t => clearTimeout(t)); };
+  }, []);
+
   // Debounced save
   const saveAnswer = useCallback(async (key: string, value: string) => {
     if (!applicationId) return;
@@ -256,8 +262,9 @@ export default function TabJPage() {
       setShowNoMgmtAdvisory(value === 'No');
     }
 
-    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-    saveTimeoutRef.current = setTimeout(() => saveAnswer(key, value), 800);
+    const existing = saveTimeoutRef.current.get(key);
+    if (existing) clearTimeout(existing);
+    saveTimeoutRef.current.set(key, setTimeout(() => saveAnswer(key, value), 800));
   };
 
   // Navigation handlers

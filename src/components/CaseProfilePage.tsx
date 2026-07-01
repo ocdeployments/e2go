@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { CaseProfileResponse, CaseTheoryUI } from "@/app/api/dashboard/case-profile/route";
 import DocumentImportHub from "@/components/apply/DocumentImportHub";
@@ -582,7 +582,7 @@ export default function CaseProfilePage() {
   const [memberForm, setMemberForm]         = useState<MemberFormState>(emptyMemberForm);
   const [memberSaving, setMemberSaving]     = useState(false);
 
-  useEffect(() => {
+  const reloadProfile = useCallback(() => {
     Promise.all([
       fetch("/api/dashboard/case-profile").then(r => r.json()),
       fetch("/api/profile/family-members").then(r => r.json()),
@@ -594,6 +594,8 @@ export default function CaseProfilePage() {
       })
       .catch(() => setLoading(false));
   }, []);
+
+  useEffect(() => { reloadProfile(); }, [reloadProfile]);
 
   // Track active section via IntersectionObserver
   useEffect(() => {
@@ -1742,7 +1744,7 @@ export default function CaseProfilePage() {
         <div style={{ marginBottom: "28px" }}>
           <DocumentImportHub
             applicationId={data.applicationId}
-            onFieldsApplied={() => {}}
+            onFieldsApplied={() => reloadProfile()}
           />
         </div>
 

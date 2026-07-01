@@ -51,7 +51,7 @@ export async function GET(
               stepLabel: 'Error',
               status: 'failed',
               documentsComplete: 0,
-              totalDocuments: 6,
+              totalDocuments: 0,
               error: 'Job not found',
             });
             clearInterval(interval);
@@ -66,31 +66,35 @@ export async function GET(
             .eq('job_id', jobId)
             .in('status', ['approved', 'awaiting_approval']);
 
-          // Get currently generating document
+          // Get currently generating document (no content_text — fetched on demand)
           const { data: currentDoc } = await supabase
             .from('generated_documents')
-            .select('document_type, content_text')
+            .select('document_type')
             .eq('job_id', jobId)
             .eq('status', 'generating')
             .single();
 
-          // Get document awaiting approval
+          // Get document awaiting approval (no content_text — fetched on demand)
           const { data: awaitingDoc } = await supabase
             .from('generated_documents')
-            .select('document_type, content_text')
+            .select('document_type')
             .eq('job_id', jobId)
             .eq('status', 'awaiting_approval')
             .single();
+
+          // Derive totalDocuments from the job's document_types array (actual planned count)
+          const plannedDocs = Array.isArray(job.document_types) ? (job.document_types as string[]).length : 0;
+          const totalDocuments = plannedDocs > 0 ? plannedDocs : (job.total_steps ?? 13);
 
           send({
             step: job.current_step,
             stepLabel: job.current_step_label || '',
             status: job.status,
             documentsComplete: count || 0,
-            totalDocuments: 6,
+            totalDocuments,
             awaitingApproval: job.status === 'awaiting_approval',
             currentDocument: awaitingDoc?.document_type || currentDoc?.document_type || undefined,
-            currentDocumentText: awaitingDoc?.content_text || currentDoc?.content_text || undefined,
+            currentDocumentText: undefined,
             error: job.error_message || undefined,
           });
 

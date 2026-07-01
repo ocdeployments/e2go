@@ -79,7 +79,7 @@ export interface CaseTheoryUI {
   builtAt: string | null;
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   const supabase = await createSupabaseServerClient();
   const { data: { user }, error: authError } = await supabase.auth.getUser();
 
@@ -88,6 +88,7 @@ export async function GET() {
   }
 
   const userId = user.id;
+  const requestedAppId = new URL(request.url).searchParams.get('applicationId');
 
   const [
     profileResult,
@@ -173,9 +174,13 @@ export async function GET() {
   const latestFdd = fddLatestResult.data;
   const sim = simResult.data;
   const prepKit = prepKitResult.data;
-  // Prefer paid application over unpaid; fall back to most recent
+  // N3 FIX: Honor the applicationId param when provided. Fall back to
+  // paid-first selection to preserve backwards-compat with callers that omit it.
   const allApps = (appResult.data ?? []) as { id: string; payment_status: string }[];
-  const app = allApps.find(a => a.payment_status === 'paid') ?? allApps[0] ?? null;
+  const app = (requestedAppId ? allApps.find(a => a.id === requestedAppId) : null)
+    ?? allApps.find(a => a.payment_status === 'paid')
+    ?? allApps[0]
+    ?? null;
 
   const quizResultJson = quiz?.result_json ?? null;
   const quizAnswers = (quizResultJson?.answers as Record<string, string> | null) ?? null;

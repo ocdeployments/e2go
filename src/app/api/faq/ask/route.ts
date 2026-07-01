@@ -269,8 +269,13 @@ export async function POST(req: NextRequest) {
     }
 
     // ---- Parse body ----
-    const body = await req.json();
-    const query: string = (body.query || "").trim();
+    let body: Record<string, unknown>;
+    try {
+      body = await req.json() as Record<string, unknown>;
+    } catch {
+      return Response.json({ error: 'invalid_json', message: 'Request body is not valid JSON.' }, { status: 400 });
+    }
+    const query: string = ((body.query as string) || "").trim();
 
     if (!query) {
       return Response.json({ error: "missing_query" }, { status: 400 });

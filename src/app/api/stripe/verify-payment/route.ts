@@ -63,6 +63,16 @@ export async function POST(request: NextRequest) {
           { onConflict: 'stripe_session_id' }
         );
 
+        // C1 FIX: Also update applications.payment_status immediately so middleware
+        // grants access without waiting for the async Stripe webhook (race condition fix).
+        // The webhook may re-update this row later — both writes are idempotent.
+        if (applicationIdFromMeta) {
+          await supabase
+            .from('applications')
+            .update({ payment_status: 'paid' })
+            .eq('id', applicationIdFromMeta);
+        }
+
         return NextResponse.json({
           verified: true,
           payment: {

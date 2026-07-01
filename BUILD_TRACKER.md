@@ -1,6 +1,59 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 30, 2026 — Session 94: Sprint J-1 complete (CIC-0–4.1). All D1–D6 decisions resolved. Both migrations applied in Supabase. Build clean.
+**Last Updated:** June 30, 2026 — Session 95: QA audit fixes complete (CIC-P.2–P.5 + security sweep). Build clean.
+
+---
+
+## Session 95 — QA Audit Fixes + CIC-P.2–P.5 (June 30, 2026)
+
+**Branch:** dev. **Build:** ✅ clean. **No new migrations required.**
+
+### Completed this session
+
+**CIC-P.2 — Cross-document canonical consistency sweep** ✅
+- `src/lib/cic-consistency-sweep.ts` (NEW): Phase 1 regex extraction (8 canonical fields, critical/warning severity); Phase 2 Gemini semantic sweep; integrated into `generation-engine.ts` quality gate
+- `src/app/api/dashboard/consistency-sweep/route.ts` (NEW): `GET ?applicationId=`
+- Migration `20260630130000_generation_jobs_consistency.sql` applied ✅
+
+**CIC-P.3 — Intra-document flow directives** ✅
+- `src/lib/cic-verifier.ts`: `DOC_SECTION_CONTRACTS` for 5 doc types (cover_letter 8 sections, business_plan 7, source_of_funds 4, qualifications 4, marginality_rebuttal 5); section contract enforcement + argument density rule in verifier prompt; `flowIssues[]` added to `VerifierResult`
+- Verifier figure-check: canonical figures block from `numbers_strategy` injected as ground truth — verifier was previously "vibes" checking figures with no reference
+- Verifier null fix: `verifierResult===null` (LLM outage) now explicitly warns + breaks vs silent pass
+
+**CIC-P.4 — Package assembly gate + client certification API** ✅
+- `src/app/api/dashboard/certify-document/route.ts` (NEW): POST sets `client_certified`, merges `locked_passages[]`
+- `src/app/api/dashboard/request-regeneration/route.ts` (NEW): POST clears cert, stores `client_regen_note`, queues regen job
+- `src/lib/generation-engine.ts`: `waitForApproval` replaced with immediate pass-through (CIC-P.4 async model — no 5-min server poll); download gate upgraded to `buildPackageManifest().packageReady`
+- Migration `20260630140000_cic_p4_package_assembly.sql` applied ✅
+
+**CIC-P.5 — Change impact tracking** ✅
+- `src/lib/cic-change-impact.ts` (NEW): verdict diffing → impacted doc map → urgency scoring; stored on `case_theory.impact_report`
+- `src/app/api/dashboard/change-impact/route.ts` (NEW): GET returns impact report; DELETE dismisses
+- Migration `20260630150000_case_theory_impact_report.sql` applied ✅
+
+**QA/Security audit fixes** ✅
+
+| Fix | File | Detail |
+|-----|------|--------|
+| C1 — Stripe payment race | `api/stripe/verify-payment/route.ts` | Writes `payment_status='paid'` immediately; no longer waits for webhook |
+| N3 — Dead `applicationId` param | `api/dashboard/case-profile/route.ts` | GET now honors `?applicationId=` query param |
+| N4 — `/fdd` payload bloat | `app/fdd/page.tsx` | `select('*')` → named columns; excludes `extracted_fields` + `profile_match` JSONB (heavy) |
+| N5 — Wrong status codes | `api/answers/route.ts`, `api/faq/ask/route.ts` | Invalid JSON → 400 with `invalid_json` error code |
+| Autosave race — module3/j | `apply/module3/j/page.tsx` | Per-key `Map<string, NodeJS.Timeout>` debounce (was single shared ref) |
+| Autosave race — module3/d | `apply/module3/d/page.tsx` | Same per-key debounce fix |
+| SSE content bloat | `api/generate/progress/[jobId]/route.ts` | Strips `content_text` from 2s polls; total docs derived from `job.document_types.length` |
+| Rate-limit fails closed | `lib/rate-limit.ts` | `generate` profile blocks (not allows) when Upstash unconfigured |
+| `onFieldsApplied` no-op | `components/CaseProfilePage.tsx` | Now calls `reloadProfile()` so have/total counts update after document import |
+
+### What's next
+
+- N1: Apply `supabase/migrations/20260628200000_family_members.sql` (family section 500s — if not yet applied)
+- N2: Apply `supabase/migrations/20260623800000_missing_schema_columns.sql` (gap-analysis 400s — if not yet applied)
+- D6 Points 1+2: signup consent checkbox + existing-user terms-update banner
+- D5: Owner to define outcome survey question set
+- S1: Add auth to `verify-payment` (defense-in-depth — non-critical)
+- S2: Test removing `unsafe-eval` from CSP
+- CIC-5: gated on D5 + D6 full
 
 ---
 

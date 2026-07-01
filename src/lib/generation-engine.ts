@@ -1852,45 +1852,12 @@ export async function runGenerationPipeline(
     });
   };
 
-  // Polling function to wait for document approval
+  // CIC-P.4: Async client certification model — no server-side blocking.
+  // Documents are delivered to awaiting_client status immediately; clients
+  // certify via POST /api/dashboard/certify-document. The pipeline continues.
   const waitForApproval = async (
-    docType: DocumentType,
-    maxWaitMs = 300000 // 5 minutes max
+    _docType: DocumentType
   ): Promise<{ approved: boolean; revisionRequested: boolean }> => {
-    const startTime = Date.now();
-    const pollInterval = 2000; // 2 seconds
-    let warningSent = false;
-
-    while (Date.now() - startTime < maxWaitMs) {
-      const elapsedMs = Date.now() - startTime;
-      const elapsedSeconds = Math.floor(elapsedMs / 1000);
-
-      // At 4 minutes, log warning before auto-approve
-      if (elapsedSeconds >= 240 && !warningSent) {
-        console.warn(`[generation-engine] Approval timeout warning for ${docType} — auto-approving in 60s`);
-        warningSent = true;
-      }
-
-      const { data: doc } = await supabase
-        .from('generated_documents')
-        .select('status')
-        .eq('job_id', jobId)
-        .eq('document_type', docType)
-        .single();
-
-      if (doc?.status === 'approved') {
-        return { approved: true, revisionRequested: false };
-      }
-      if (doc?.status === 'revision_requested') {
-        return { approved: false, revisionRequested: true };
-      }
-
-      // Wait before next poll
-      await new Promise(resolve => setTimeout(resolve, pollInterval));
-    }
-
-    // Timeout - auto-approve to not hang forever
-    console.warn(`[generation-engine] Auto-approving ${docType} after timeout`);
     return { approved: true, revisionRequested: false };
   };
 
@@ -1953,7 +1920,7 @@ export async function runGenerationPipeline(
     // Null when case_theory doesn't exist yet (sparse account) — verifier treats null as pass.
     const { data: caseTheoryForVerifier } = await supabase
       .from('case_theory')
-      .select('narrative, dimension_verdicts, directives')
+      .select('narrative, numbers_strategy, dimension_verdicts, directives')
       .eq('application_id', applicationId)
       .maybeSingle();
 
@@ -2131,8 +2098,15 @@ export async function runGenerationPipeline(
                 userId,
               );
 
-              // null = verifier LLM failed; treat as pass (don't block client)
-              if (!verifierResult || verifierResult.overall !== 'fail') break;
+              // null = verifier LLM failed (not the same as a pass).
+              // Log it and ship the draft — we never block the client on a verifier outage —
+              // but record verifier_attempts so the dashboard can flag "unverified" documents.
+              if (verifierResult === null) {
+                console.warn(`[VERIFIER] LLM failed on attempt ${attempt + 1} for ${docType} — shipping unverified draft`);
+                break;
+              }
+
+              if (verifierResult.overall !== 'fail') break;
 
               if (attempt < MAX_VERIFIER_RETRIES - 1) {
                 // Regenerate with corrective feedback prepended to the user message.

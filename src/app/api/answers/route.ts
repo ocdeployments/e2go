@@ -14,8 +14,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = await request.json();
-    const { question_key, answer_value, application_id } = body;
+    let body: Record<string, unknown>;
+    try {
+      body = await request.json() as Record<string, unknown>;
+    } catch {
+      return NextResponse.json({ error: 'invalid_json', message: 'Request body is not valid JSON.' }, { status: 400 });
+    }
+    const { question_key, answer_value, application_id } = body as { question_key?: string; answer_value?: string; application_id?: string };
 
     // Validate required fields
     if (!question_key || !application_id) {

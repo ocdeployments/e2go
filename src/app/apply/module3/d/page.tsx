@@ -113,7 +113,7 @@ export default function TabDPage() {
   const [generationStep, setGenerationStep] = useState(0);
   const [hasComplexCase, setHasComplexCase] = useState(false);
   const [prefilledKeys, setPrefilledKeys] = useState<Set<string>>(new Set());
-  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const saveTimeoutRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
 
   const currentQuestion = QUESTIONS[currentIndex];
   const isLastQuestion = currentIndex === QUESTIONS.length - 1;
@@ -245,6 +245,12 @@ export default function TabDPage() {
     init();
   }, [router, supabase]);
 
+  // Flush pending debounced saves on unmount so keystrokes aren't lost
+  useEffect(() => {
+    const timeouts = saveTimeoutRef.current;
+    return () => { timeouts.forEach(t => clearTimeout(t)); };
+  }, []);
+
   // Debounced save function
   const saveAnswer = useCallback(async (key: string, value: string) => {
     if (!applicationId) return;
@@ -275,13 +281,9 @@ export default function TabDPage() {
     setAnswers(prev => ({ ...prev, [key]: value }));
     setPrefilledKeys(prev => { const next = new Set(prev); next.delete(key); return next; });
 
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
-
-    saveTimeoutRef.current = setTimeout(() => {
-      saveAnswer(key, value);
-    }, 800);
+    const existing = saveTimeoutRef.current.get(key);
+    if (existing) clearTimeout(existing);
+    saveTimeoutRef.current.set(key, setTimeout(() => saveAnswer(key, value), 800));
   };
 
   // Handle QD-06 N/A toggle

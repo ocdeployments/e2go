@@ -35,8 +35,14 @@ export interface VerifierResult {
   correctionBrief: string;        // formatted feedback for the generation engine on retry
 }
 
+export interface NumbersStrategyItem {
+  figure: string;
+  value: string;
+}
+
 interface CaseTheoryForVerifier {
   narrative?: string | null;
+  numbers_strategy?: NumbersStrategyItem[] | null;
   dimension_verdicts?: Record<string, {
     status: string;
     evidenceSummary?: string;
@@ -190,8 +196,18 @@ function buildVerifierPrompt(
       ].join('\n')
     : '(no structural contract defined for this document type)';
 
+  // Inject canonical figures so "figures_correct" has ground truth (not vibes)
+  const canonicalFigures = (theory.numbers_strategy ?? [])
+    .map(n => `  • ${n.figure}: ${n.value}`)
+    .join('\n');
+  const figuresBlock = canonicalFigures
+    ? `CANONICAL FIGURES (these are the CPU's ground truth — every number in the document must match):\n${canonicalFigures}`
+    : '(no canonical figures established yet — skip figure check)';
+
   return `DOCUMENT TYPE: ${documentType}
 TONE TARGET: ${toneTarget}
+
+${figuresBlock}
 
 DIRECTIVES FOR THIS DOCUMENT (must be followed):
 ${directivesList}

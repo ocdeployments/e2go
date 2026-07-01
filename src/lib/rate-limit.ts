@@ -78,6 +78,12 @@ export async function checkRateLimit(
   const limiter = getLimiter(profile);
 
   if (!limiter) {
+    // Upstash not configured — fail CLOSED on generation (cost-critical), open on faq/prep
+    const isGenerationProfile = profile === 'generate';
+    if (isGenerationProfile) {
+      console.error('[rate-limit] Upstash not configured — blocking generation to prevent unbounded cost. Set UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN.');
+      return { allowed: false, remaining: 0, reset: 0 };
+    }
     return { allowed: true, remaining: 999, reset: 0 };
   }
 
