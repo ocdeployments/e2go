@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { getBrandBySlug, FRANCHISE_CATEGORIES } from '@/data/franchise-brands';
@@ -7,6 +8,15 @@ import { getBrandBySlug, FRANCHISE_CATEGORIES } from '@/data/franchise-brands';
 export default function FranchiseBrandPage() {
   const { slug } = useParams<{ slug: string }>();
   const brand = getBrandBySlug(slug);
+
+  useEffect(() => {
+    if (!slug) return;
+    fetch('/api/franchise/brand-view', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ brand_slug: slug, brand_name: brand?.name ?? slug }),
+    }).catch(() => {});
+  }, [slug, brand?.name]);
 
   if (!brand) {
     return (

@@ -96,6 +96,9 @@ export default async function AdminPage() {
     { data: stuckJobs },
     { data: settings },
     { data: recentLifecycle },
+    { data: openTickets },
+    { data: docsToday },
+    { data: loginsToday },
   ] = await Promise.all([
     admin.from('payments').select('id, user_id, tier, payment_type, amount_cents, amount_paid, status, completed_at, created_at').order('created_at', { ascending: false }).limit(100),
     admin.from('profiles').select('id, first_name, last_name, role, created_at').order('created_at', { ascending: false }).limit(200),
@@ -107,6 +110,9 @@ export default async function AdminPage() {
     admin.from('document_generation_jobs').select('id, application_id, current_step_label, updated_at').eq('status', 'running').lt('updated_at', stuckCutoff),
     admin.from('app_settings').select('key, value').in('key', ['kill_switch_enabled', 'maintenance_mode', 'openrouter_balance_low', 'openrouter_balance_usd', 'openrouter_reload_threshold']),
     admin.from('application_lifecycle').select('user_id, updated_at').order('updated_at', { ascending: false }),
+    admin.from('support_tickets').select('id').eq('status', 'open'),
+    admin.from('generated_documents').select('id').gte('created_at', todayStart).eq('status', 'completed'),
+    admin.from('login_events').select('id').gte('created_at', todayStart),
   ]);
 
   // ── Derived values ──────────────────────────────────────────────────────────
@@ -156,6 +162,11 @@ export default async function AdminPage() {
     })
     .slice(0, 10);
 
+  const openTicketsCount = openTickets?.length ?? 0;
+  const docsGeneratedToday = docsToday?.length ?? 0;
+  const loginsTodayCount = loginsToday?.length ?? 0;
+  const todayRevenue = typedPayments.filter(p => p.status === 'completed' && p.created_at && p.created_at >= todayStart).reduce((s, p) => s + (p.amount_cents ?? p.amount_paid ?? 0), 0);
+
   const killSwitchOn     = typedSettings['kill_switch_enabled']  === 'true';
   const maintenanceOn    = typedSettings['maintenance_mode'] === 'true';
   const orBalanceLow     = typedSettings['openrouter_balance_low'] === 'true';
@@ -179,8 +190,20 @@ export default async function AdminPage() {
           <Link href="/admin/cost" className="text-xs text-zinc-400 border border-zinc-800 px-3 py-1.5 hover:border-[#C9A84C]/30 hover:text-[#C9A84C] transition-colors">
             Cost →
           </Link>
+          <Link href="/admin/support" className={`text-xs border px-3 py-1.5 transition-colors ${openTicketsCount > 0 ? 'text-red-400 border-red-500/30 hover:bg-red-950/20' : 'text-zinc-400 border-zinc-800 hover:border-[#C9A84C]/30 hover:text-[#C9A84C]'}`}>
+            Support {openTicketsCount > 0 ? `(${openTicketsCount}) →` : '→'}
+          </Link>
+          <Link href="/admin/franchise" className="text-xs text-zinc-400 border border-zinc-800 px-3 py-1.5 hover:border-[#C9A84C]/30 hover:text-[#C9A84C] transition-colors">
+            Franchise →
+          </Link>
+          <Link href="/admin/intelligence" className="text-xs text-zinc-400 border border-zinc-800 px-3 py-1.5 hover:border-[#C9A84C]/30 hover:text-[#C9A84C] transition-colors">
+            Intelligence →
+          </Link>
+          <Link href="/admin/geography" className="text-xs text-zinc-400 border border-zinc-800 px-3 py-1.5 hover:border-[#C9A84C]/30 hover:text-[#C9A84C] transition-colors">
+            Geography →
+          </Link>
           <Link href="/admin/system-status" className="text-xs text-[#C9A84C] border border-[#C9A84C]/20 px-3 py-1.5 hover:bg-[#C9A84C]/5 transition-colors">
-            System Status →
+            System →
           </Link>
         </div>
       </div>
@@ -210,12 +233,17 @@ export default async function AdminPage() {
       <AdminControls killSwitchOn={killSwitchOn} maintenanceOn={maintenanceOn} />
 
       {/* ── Overview metrics ── */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-12">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
         <MetricCard label="Total revenue"      value={`$${(totalRevenue / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}`} />
+        <MetricCard label="Revenue today"      value={`$${(todayRevenue / 100).toFixed(2)}`} />
         <MetricCard label="Paid customers"     value={String(completedPmts)} />
         <MetricCard label="Total users"        value={String(totalUsers)} />
-        <MetricCard label="LLM cost today"     value={`$${todayCostUsd.toFixed(4)}`} sub="actual" />
-        <MetricCard label="LLM cost this month" value={`$${monthCostUsd.toFixed(3)}`} sub={`proj $${projectedEnd.toFixed(2)}`} />
+      </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
+        <MetricCard label="Docs generated today" value={String(docsGeneratedToday)} />
+        <MetricCard label="Logins today"          value={String(loginsTodayCount)} />
+        <MetricCard label="Open tickets"          value={String(openTicketsCount)} warn={openTicketsCount > 0} />
+        <MetricCard label="LLM cost this month"   value={`$${monthCostUsd.toFixed(3)}`} sub={`proj $${projectedEnd.toFixed(2)}`} />
       </div>
 
       {/* ── LLM Cost Intelligence ── */}
@@ -395,11 +423,11 @@ export default async function AdminPage() {
   );
 }
 
-function MetricCard({ label, value, sub }: { label: string; value: string; sub?: string }) {
+function MetricCard({ label, value, sub, warn }: { label: string; value: string; sub?: string; warn?: boolean }) {
   return (
-    <div className="rounded-lg border border-zinc-800 bg-zinc-900/40 px-5 py-4">
+    <div className={`rounded-lg border px-5 py-4 ${warn ? 'border-red-500/30 bg-red-950/20' : 'border-zinc-800 bg-zinc-900/40'}`}>
       <p className="text-xs text-zinc-500 uppercase tracking-widest mb-1">{label}</p>
-      <p className="text-2xl font-semibold text-[#C9A84C]">{value}</p>
+      <p className={`text-2xl font-semibold ${warn ? 'text-red-400' : 'text-[#C9A84C]'}`}>{value}</p>
       {sub && <p className="text-xs text-zinc-600 mt-0.5">{sub}</p>}
     </div>
   );

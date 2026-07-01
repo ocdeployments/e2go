@@ -1,6 +1,8 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { NextResponse, type NextRequest } from 'next/server';
+import { createServiceClient } from '@/lib/supabase-service';
+import { extractGeo, COUNTRY_NAMES } from '@/lib/geo';
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
@@ -28,8 +30,23 @@ export async function GET(request: NextRequest) {
       }
     );
 
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    const { data: session, error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
+      const userId = session.user?.id;
+      if (userId) {
+        const geo = extractGeo(request.headers);
+        const service = createServiceClient();
+        void (async () => {
+          await service.from('login_events').insert({
+            user_id: userId,
+            country: geo.country,
+            country_name: geo.country ? (COUNTRY_NAMES[geo.country] ?? geo.country) : null,
+            city: geo.city,
+            region: geo.region,
+            login_type: 'oauth',
+          });
+        })();
+      }
       return NextResponse.redirect(`${origin}${next}`);
     }
   }

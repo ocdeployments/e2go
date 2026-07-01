@@ -96,26 +96,23 @@ export default function FranchiseConnectPage() {
       const appId = apps?.[0]?.id ?? null;
 
       // Store the referral record
-      // broker_referrals table may not exist yet — gracefully skip if it does not
-      try {
-        const packet = {
-          name: [profile.firstName, profile.lastName].filter(Boolean).join(' '),
-          email: profile.email,
-          investmentRange: profile.investmentRange,
-          citizenship: profile.citizenship,
-          targetState: profile.targetState,
-          consentAt: new Date().toISOString(),
-        };
+      const packet = {
+        name: [profile.firstName, profile.lastName].filter(Boolean).join(' '),
+        email: profile.email,
+        investmentRange: profile.investmentRange,
+        citizenship: profile.citizenship,
+        targetState: profile.targetState,
+        consentAt: new Date().toISOString(),
+      };
 
-        await supabase.from('broker_referrals').insert({
-          user_id: user.id,
-          application_id: appId,
-          packet,
-          consent_text: CONSENT_TEXT,
-          consent_at: new Date().toISOString(),
-          status: 'sent',
-        });
-      } catch { /* table may not exist yet — skip silently */ }
+      await supabase.from('broker_referrals').insert({
+        user_id: user.id,
+        application_id: appId,
+        packet,
+        consent_text: CONSENT_TEXT,
+        consent_at: new Date().toISOString(),
+        status: 'sent',
+      });
 
       // Save franchise interest as an answer for ERP visibility
       if (appId) {

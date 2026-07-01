@@ -105,6 +105,9 @@ function LoginForm() {
 
       setStatus('success');
 
+      // Fire-and-forget geo tracking for password logins (non-blocking)
+      fetch('/api/track/session', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ login_type: 'password' }) }).catch(() => {});
+
       if (user) {
         // Smart routing: if ?next is set, honour it; otherwise route by state
         if (next && next !== '/case-profile') {

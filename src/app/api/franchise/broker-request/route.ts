@@ -29,19 +29,13 @@ export async function POST(request: NextRequest) {
     const service = createServiceClient();
 
     // ── Persist to database ──
-    // Attempt to insert into broker_requests table.
-    // Migration in supabase/migrations will create this table.
-    try {
-      await service.from('broker_requests').insert({
-        user_id: user.id,
-        user_email: user.email ?? '',
-        user_name: displayName,
-        match_categories: matchCategories,
-        requested_at: timestamp,
-      });
-    } catch {
-      // Table may not exist yet — non-critical, email will still send
-    }
+    await service.from('broker_requests').insert({
+      user_id: user.id,
+      user_email: user.email ?? '',
+      user_name: displayName,
+      match_categories: matchCategories,
+      requested_at: timestamp,
+    });
 
     // Also flag the latest application record if the column exists
     try {
