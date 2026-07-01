@@ -1,6 +1,6 @@
 # CLAUDE_CONTEXT.md — E2go
 ## Master Context for Every Claude Code Session
-**Version:** June 30, 2026 — Session 95. Sprint J-1 QA audit sweep COMPLETE. All 16 audit findings resolved (14 in code, 2 migrations now applied). All 10 migrations applied. Build clean (156 pages). Next: D6 signup consent checkbox + terms-update banner for existing users, then CIC-5 (gated on D5 + full D6).
+**Version:** July 1, 2026 — Session 99. Audit v3 complete — all 3 findings closed (N1 mobile fix on /case-profile, F20 RLS legacy policy drop on quiz_sessions, F6 treaty_country column). Session 98 migrations applied (support_tickets + franchise_tracking/login_events live). Admin suite: 4 new pages (/admin/support, /admin/franchise, /admin/intelligence, /admin/geography). Geo tracking via Vercel edge headers (login_events). Build clean (163 pages). Next: D6 signup consent checkbox + terms-update banner, then CIC-5 (gated on D5 + full D6).
 
 ## SPRINT STATUS
 - OPS-1 (API Cost Intelligence): ✅ COMPLETE — llm_cost_log, cost logging in callLLM(), /admin/cost page

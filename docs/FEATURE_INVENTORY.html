@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>E2go — Complete Feature Inventory · June 30, 2026 · Session 94</title>
+<title>E2go — Complete Feature Inventory · July 1, 2026 · Session 99</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -1820,6 +1820,30 @@ const SPRINTS = [
       {name:'Wired to /apply/page.tsx', desc:'MODIFIED — applicationId state added; DocumentImportHub rendered below DocumentUploadCard. Passes applicationId and onFieldsApplied.'},
     ]
   },
+  {
+    id:'OPS-98', name:'Admin Intelligence Suite + Geo Tracking', priority:'high', effort:'1 session', status:'complete',
+    desc:'✅ COMPLETE (Session 98) — 4 new admin pages, geo tracking, support tickets, franchise funnel. Critical data loss fixed: broker_requests + broker_referrals never existed in any migration — all franchise broker connections silently dropped since launch. Now created by migration 20260701110000.',
+    items:[
+      {name:'/admin/support — Ticket Inbox', desc:'Tracked support inbox. Open/in-progress/resolved counts. Per-ticket: priority dot, status badge, user email, category, timestamp, message preview.'},
+      {name:'/admin/franchise — Funnel Analytics', desc:'Brand page views → broker requests → referrals funnel. Top brands bar chart. Conversion rate. Data: franchise_brand_views + broker_requests + broker_referrals.'},
+      {name:'/admin/intelligence — Engine Dashboard', desc:'CIC verifier pass rate. Token efficiency by task. FAM score averages. Simulator readiness distribution. Rate-limit hit counter.'},
+      {name:'/admin/geography — Geographic Intelligence', desc:'Country breakdown (all-time + 30d). Top cities globally. Canada: city + province. UK: city + England/Scotland/Wales/NIR. Source: Vercel edge headers — zero external API cost.'},
+      {name:'Geo tracking — src/lib/geo.ts', desc:'NEW — extractGeo() reads x-vercel-ip-country / x-vercel-ip-city / x-vercel-ip-region. COUNTRY_NAMES map (40 E-2 treaty countries). CA_REGIONS + GB_REGIONS maps. login_events table: country, country_name, city, region, login_type. OAuth/magic-link captured at auth/callback. Password logins: fire-and-forget POST /api/track/session.'},
+      {name:'Support form — /support rewrite', desc:'Category selector (bug/billing/document/account/general/other), subject, message (4000 char + counter), confirmation screen. POST /api/support/submit: DB save + Resend email to admin.'},
+      {name:'/admin dashboard — 8 metric cards', desc:'Total revenue · revenue today · paid customers · total users · docs today · logins today · open tickets (red if >0) · LLM cost month. Nav: Support (red badge), Franchise, Intelligence, Geography.'},
+      {name:'Migrations', desc:'20260701100000_support_tickets.sql · 20260701110000_franchise_tracking.sql (broker_requests, broker_referrals, franchise_brand_views, login_events). Both applied July 1, 2026.'},
+    ]
+  },
+  {
+    id:'AUD-99', name:'Audit v3 Remediation', priority:'critical', effort:'1 session', status:'complete',
+    desc:'✅ COMPLETE (Session 99) — All 3 audit v3 findings closed. RLS root-cause: Supabase ORs all permissive policies — legacy policies with OR user_id IS NULL negated the new restrictive policy for anon callers. Verification must be run as anon role (SET LOCAL role TO anon), not service role.',
+    items:[
+      {name:'N1 — /case-profile mobile overflow CLOSED', desc:'src/components/CaseProfilePage.tsx — isMobile state + window resize listener. Sidebar (160px, flexShrink:0) hidden on mobile. Outer padding: 80px 32px 0 (desktop) → 80px 16px 0 (mobile). Breakpoint: window.innerWidth < 768.'},
+      {name:'F20 — quiz_sessions anon-readable CLOSED', desc:'Two legacy SELECT policies both had OR user_id IS NULL — OR\'d with new restrictive policy, leaking all anon sessions. Dropped: "Users can select own quiz sessions" + "Users can select their own quiz sessions". Verified: SET LOCAL role TO anon; SELECT count(*) FROM quiz_sessions; → 0.'},
+      {name:'F6 — applications.treaty_country missing CLOSED', desc:'Column existed only in case_profile_view definition, never as a real ALTER TABLE. Applied standalone: ALTER TABLE applications ADD COLUMN IF NOT EXISTS treaty_country text;'},
+      {name:'F21 — application_lifecycle re-verified clean', desc:'SET LOCAL role TO anon; SELECT count(*) FROM application_lifecycle; → 0. Already clean from Session 96 migration, no new fix needed.'},
+    ]
+  },
 ];
 
 // ── Render engine quality section ──
@@ -1882,7 +1906,7 @@ const roadmapSprintEl = document.getElementById('roadmap-sprint-container');
 const sprintTitle = document.createElement('div');
 sprintTitle.className = 'roadmap-section-title';
 sprintTitle.style.marginTop = '36px';
-sprintTitle.textContent = 'Sprints — 21 total · OPS-1✅ OPS-2✅ OPS-3✅ OPS-4✅ OPS-5✅ ENG-1✅ ENG-2✅ INFRA-1✅ F-1✅ F-2✅ G-1✅ G-2✅ G-3✅ H-1✅ H-2✅ H-3✅ H-4✅ H-5✅ H-6✅ H-7✅ I-1✅ I-2✅ I-3✅ I-4✅ complete · Session 90 done';
+sprintTitle.textContent = 'Sprints — 23 total · OPS-1✅ OPS-2✅ OPS-3✅ OPS-4✅ OPS-5✅ ENG-1✅ ENG-2✅ INFRA-1✅ F-1✅ F-2✅ G-1✅ G-2✅ G-3✅ H-1✅ H-2✅ H-3✅ H-4✅ H-5✅ H-6✅ H-7✅ I-1✅ I-2✅ I-3✅ I-4✅ OPS-98✅ AUD-99✅ complete · Session 99 done';
 roadmapSprintEl.appendChild(sprintTitle);
 
 const sprintGrid = document.createElement('div');

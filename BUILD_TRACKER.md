@@ -1,6 +1,39 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** July 1, 2026 — Session 98: Admin intelligence suite + geographic tracking + support tickets + franchise funnel. Build clean (163 pages). 2 migrations pending apply.
+**Last Updated:** July 1, 2026 — Session 99: Audit v3 all findings closed (N1 mobile fix, F20 RLS legacy policy drop, F6 treaty_country). Session 98 migrations applied. Build clean (163 pages). No outstanding migrations.
+
+---
+
+## Session 99 — Audit v3 Remediation (July 1, 2026)
+
+**Branch:** dev. **Build:** ✅ clean (163 pages). **Session 98 migrations:** ✅ both applied.
+
+### Audit v3 — all 3 findings closed
+
+| Finding | Status | Fix |
+|---------|--------|-----|
+| N1 — /case-profile mobile overflow | ✅ CLOSED | `isMobile` state + resize listener in `src/components/CaseProfilePage.tsx`. Sidebar hidden on mobile. Padding reduced from `80px 32px 0` to `80px 16px 0` on ≤768px viewports. |
+| F20 — quiz_sessions anon-readable (regression) | ✅ CLOSED | Two legacy SELECT policies ("Users can select own quiz sessions" + "Users can select their own quiz sessions") both contained `OR user_id IS NULL` — OR'd with the new restrictive policy, leaking all anonymous sessions. Dropped both by name. Verified: `SET LOCAL role TO anon; SELECT count(*) FROM quiz_sessions;` → 0. |
+| F6 — applications.treaty_country column missing | ✅ CLOSED | Column existed only in a view definition (`20260628100000_case_profile_view.sql`), never as a real ALTER-TABLE column. Applied standalone: `ALTER TABLE applications ADD COLUMN IF NOT EXISTS treaty_country text;` |
+
+**F21 re-verified:** `SET LOCAL role TO anon; SELECT count(*) FROM application_lifecycle;` → 0. Already clean from Session 96 migration.
+
+**Root cause note (F20):** Supabase ORs all permissive policies. The new restrictive policy added in Session 96 was correct, but two pre-existing SELECT policies with `user_id IS NULL` branches negated it for anonymous callers. Verification must be run as `anon` role (not service role, which bypasses RLS).
+
+### Session 98 migrations confirmed applied
+
+| Migration | Status |
+|-----------|--------|
+| `20260701100000_support_tickets.sql` | ✅ Applied — support_tickets table live |
+| `20260701110000_franchise_tracking.sql` | ✅ Applied — broker_requests, broker_referrals, franchise_brand_views, login_events live |
+
+### What's next
+
+- D6 Points 1+2: signup consent checkbox + existing-user terms-update banner
+- D5: Owner to define outcome survey question set
+- S2: Test removing `unsafe-eval` from CSP
+- CIC-5: gated on D5 + D6 full
+- Sensai Health: add to `src/data/franchise-brands.ts`
 
 ---
 
