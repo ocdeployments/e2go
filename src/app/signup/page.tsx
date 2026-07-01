@@ -29,6 +29,9 @@ function SignupForm() {
   // CASL consent state
   const [caslConsent, setCaslConsent] = useState(false);
 
+  // D6 Point 1 — outcomes consent (optional)
+  const [outcomesConsent, setOutcomesConsent] = useState(false);
+
   // Cloudflare Turnstile CAPTCHA
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 
@@ -124,6 +127,8 @@ function SignupForm() {
             last_name: lastName.trim(),
             email: email,
             casl_consent: caslConsent,
+            outcomes_consent: outcomesConsent,
+            outcomes_consent_at: outcomesConsent ? new Date().toISOString() : null,
           }, { onConflict: 'id' });
 
         if (profileError) {
@@ -429,6 +434,22 @@ function SignupForm() {
                     style={{ fontSize: '12px', color: 'rgba(245,240,232,0.76)', lineHeight: '1.5' }}>
                     I&apos;d like to receive occasional tips and updates about E-2
                     visa preparation from e2go. (Optional — unsubscribe any time.)
+                  </label>
+                </div>
+
+                {/* D6 Point 1 — outcomes consent, optional */}
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', marginTop: '12px' }}>
+                  <input
+                    type="checkbox"
+                    id="outcomes-consent"
+                    checked={outcomesConsent}
+                    onChange={(e) => setOutcomesConsent(e.target.checked)}
+                    style={{ width: '16px', height: '16px', marginTop: '2px', accentColor: '#C9A84C', flexShrink: 0 }}
+                  />
+                  <label htmlFor="outcomes-consent"
+                    style={{ fontSize: '12px', color: 'rgba(245,240,232,0.76)', lineHeight: '1.5' }}>
+                    I agree to share my anonymized visa outcome with e2go to help improve
+                    guidance for future applicants. Your identity is never shared. (Optional.)
                   </label>
                 </div>
 

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
+import OutcomesConsentBanner from "@/components/OutcomesConsentBanner";
 
 interface Profile {
   id: string;
@@ -353,6 +354,8 @@ export default function Nav() {
           )}
         </div>
       )}
+      {/* D6 Point 2 — outcomes consent banner for existing users who haven't been asked */}
+      {user && <OutcomesConsentBanner />}
     </header>
   );
 }
