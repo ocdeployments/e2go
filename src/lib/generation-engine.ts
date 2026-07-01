@@ -2009,11 +2009,28 @@ export async function runGenerationPipeline(
         });
     }
 
+    // C2: Load already-approved docs from a prior interrupted run so we skip re-generating them
+    const { data: existingApproved } = await supabase
+      .from('generated_documents')
+      .select('document_type, content_text, verifier_result')
+      .eq('job_id', jobId)
+      .eq('status', 'approved');
+    const approvedSet = new Set((existingApproved ?? []).map(d => d.document_type as string));
+    for (const d of existingApproved ?? []) {
+      generatedDocs.push(d as unknown as GeneratedDocument);
+    }
+
     // Steps 2-9: Generate each document with sequential approval
     for (let i = 0; i < DOCUMENT_TYPES.length; i++) {
       const stepNum = i + 2;
       const docType = DOCUMENT_TYPES[i];
       const docLabel = DOCUMENT_TYPE_LABELS[docType];
+
+      // C2: Skip docs already approved in a previous run
+      if (approvedSet.has(docType)) {
+        emitStep(stepNum, 'complete');
+        continue;
+      }
 
       let documentApproved = false;
       let revisionLoopCount = 0;

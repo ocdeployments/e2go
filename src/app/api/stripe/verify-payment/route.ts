@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import Stripe from 'stripe';
+import { createSupabaseServerClient } from '@/lib/supabase-server';
 
 function getSupabase() {
   return createClient(
@@ -24,8 +25,16 @@ function getStripe(): Stripe | null {
  */
 export async function POST(request: NextRequest) {
   try {
+    // Require authenticated session — userId is derived server-side, never from body
+    const supabaseAuth = await createSupabaseServerClient();
+    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
-    const { applicationId, userId, sessionId } = body;
+    const { applicationId, sessionId } = body;
+    // userId deliberately not read from body — use session identity only
 
     // Mode 2: Stripe session fallback
     if (sessionId) {
@@ -43,14 +52,19 @@ export async function POST(request: NextRequest) {
 
         const supabase = getSupabase();
         const applicationIdFromMeta = session.metadata?.applicationId || null;
-        const userIdFromMeta = session.metadata?.userId || null;
         const tierId = session.metadata?.tierId || 'unknown';
+
+        // Verify ownership — session userId must match the authenticated user
+        const userIdFromMeta = session.metadata?.userId || null;
+        if (userIdFromMeta && userIdFromMeta !== user.id) {
+          return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        }
 
         // Upsert payment row — creates if missing, no-op if exists
         await supabase.from('payments').upsert(
           {
             application_id: applicationIdFromMeta,
-            user_id: userIdFromMeta,
+            user_id: user.id,
             stripe_session_id: session.id,
             stripe_payment_intent_id: (session.payment_intent as string) || null,
             stripe_price_id: session.metadata?.priceId || '',
@@ -87,8 +101,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Mode 1: Local database check (existing behavior)
-    if (!applicationId || !userId) {
+    // Mode 1: Local database check — userId from session, not body
+    if (!applicationId) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -101,7 +115,7 @@ export async function POST(request: NextRequest) {
       .from('payments')
       .select('*')
       .eq('application_id', applicationId)
-      .eq('user_id', userId)
+      .eq('user_id', user.id)
       .eq('status', 'completed')
       .single();
 

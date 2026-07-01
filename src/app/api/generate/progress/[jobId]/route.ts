@@ -43,6 +43,7 @@ export async function GET(
             .from('document_generation_jobs')
             .select('*')
             .eq('id', jobId)
+            .eq('user_id', user.id)
             .single();
 
           if (error || !job) {
