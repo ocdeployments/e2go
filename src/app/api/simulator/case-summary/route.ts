@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
-import { QUESTION_LABELS, SECTION_MAP, SECTION_LABELS } from '@/lib/document-extraction-engine';
+import { QUESTION_LABELS, SECTION_MAP, SECTION_LABELS } from '@/data/question-labels';
 import { getBusinessCategoryLabel } from '@/lib/business-categories';
 
 const DOC_TYPE_LABELS: Record<string, string> = {
