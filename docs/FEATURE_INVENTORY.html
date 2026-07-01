@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>E2go — Complete Feature Inventory · July 1, 2026 · Session 99</title>
+<title>E2go — Complete Feature Inventory · July 1, 2026 · Session 100</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -249,7 +249,7 @@
 
 <div class="topbar">
   <div>
-    <div class="subtitle">E2go · June 30, 2026 · Session 94 — Sprint J-1 COMPLETE. CIC-0 through CIC-4.1 + CIC-P.1–P.5 fully live. 949 KB chunks seeded. Verified on 3 test accounts. All 8 migrations applied. Decisions D1–D4 ✅ D5 ⏳ D6 partial. Next: D6 signup consent → CIC-5 cross-client learning.</div>
+    <div class="subtitle">E2go · July 1, 2026 · Session 100 — D6 consent fully wired (all 3 points). Sensai Health franchise brand added. S2: unsafe-eval removed from main CSP. Placeholder regex broadened. Decisions D1–D4 ✅ D5 ⏳ D6 ✅ (migration pending owner). Next: Phase D QA audit → account deletion soft-delete.</div>
     <h1>Complete Feature Inventory</h1>
   </div>
   <div class="legend">
@@ -472,6 +472,41 @@
           <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.5)">Created src/app/case-profile/layout.tsx including &lt;Nav /&gt;. Navbar, user name, Settings dropdown, and active "My Case" link now render correctly on the case profile page.</td>
           <td style="padding:6px 0;color:#4ade80;white-space:nowrap">✅ Fixed</td>
         </tr>
+        <tr style="border-bottom:1px solid rgba(245,240,232,0.04)">
+          <td style="padding:6px 12px 6px 0;color:#C9A84C;font-family:monospace;white-space:nowrap">QA-MOB-01</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.4);white-space:nowrap">2026-07-01</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.7)">Audit N1: /case-profile sidebar overflowed into content on mobile viewports (&lt;768px) — sticky 160px sidebar not hidden, content area unreadable on iPhone.</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.5)">src/components/CaseProfilePage.tsx: isMobile state + window resize listener. Sidebar hidden on mobile (display:none). Outer padding reduced from 80px 32px 0 → 80px 16px 0. Session 99.</td>
+          <td style="padding:6px 0;color:#4ade80;white-space:nowrap">✅ Fixed</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(245,240,232,0.04)">
+          <td style="padding:6px 12px 6px 0;color:#C9A84C;font-family:monospace;white-space:nowrap">QA-SEC-04</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.4);white-space:nowrap">2026-07-01</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.7)">Audit F20: quiz_sessions anon-readable regression. Two legacy SELECT policies ("Users can select own quiz sessions" + "Users can select their own quiz sessions") both contained OR user_id IS NULL — Supabase ORs all permissive policies, negating the Session 96 restrictive policy for anonymous callers.</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.5)">Dropped both legacy policies by exact name. Verified: SET LOCAL role TO anon; SELECT count(*) FROM quiz_sessions; → 0. Root cause: must always test RLS as anon role, not service role which bypasses RLS. Session 99.</td>
+          <td style="padding:6px 0;color:#4ade80;white-space:nowrap">✅ Fixed</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(245,240,232,0.04)">
+          <td style="padding:6px 12px 6px 0;color:#C9A84C;font-family:monospace;white-space:nowrap">QA-DB-03</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.4);white-space:nowrap">2026-07-01</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.7)">Audit F6: applications.treaty_country column missing. Column existed only in the case_profile_view SQL definition, never as a real ALTER TABLE — applications table had no such column, causing silent DB errors on any code that referenced it.</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.5)">Applied standalone: ALTER TABLE applications ADD COLUMN IF NOT EXISTS treaty_country text. Session 99.</td>
+          <td style="padding:6px 0;color:#4ade80;white-space:nowrap">✅ Fixed</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(245,240,232,0.04)">
+          <td style="padding:6px 12px 6px 0;color:#C9A84C;font-family:monospace;white-space:nowrap">QA-SEC-05</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.4);white-space:nowrap">2026-07-01</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.7)">S2: CSP for all main routes included 'unsafe-eval' in script-src — allows dynamic code execution via eval(), Function() constructor, and string-form setTimeout/setInterval. No functional use in the app (Next.js 14 doesn't require it).</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.5)">Removed 'unsafe-eval' from the "/(.*)" route CSP in next.config.mjs. Keystatic admin (/keystatic/:path*) keeps it — CMS requires it. Build clean. Session 100.</td>
+          <td style="padding:6px 0;color:#4ade80;white-space:nowrap">✅ Fixed</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(245,240,232,0.04)">
+          <td style="padding:6px 12px 6px 0;color:#C9A84C;font-family:monospace;white-space:nowrap">QA-DOC-01</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.4);white-space:nowrap">2026-07-01</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.7)">DocumentAuditPanel placeholder detection only matched ALL-CAPS bracket patterns like [PASSPORT NUMBER]. Descriptive lowercase placeholders like [passport number], [insert name here], [your country], [business name here] were silently missed — documents with unfilled lowercase markers passed the audit as clean.</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.5)">src/components/documents/DocumentAuditPanel.tsx line 161: regex broadened to /gi with keyword anchor (name|number|date|amount|address|here|tbd|insert|unknown|provided|code|country|state|city|type|your). Now consistent with checklist-builder.ts broad pattern. Session 100.</td>
+          <td style="padding:6px 0;color:#4ade80;white-space:nowrap">✅ Fixed</td>
+        </tr>
       </tbody>
     </table>
     <p style="font-size:10px;color:rgba(245,240,232,0.2);padding:10px 0 12px">All entries are permanent. Add new rows above; never delete existing rows.</p>
@@ -527,7 +562,7 @@ const PHASES = [
       {status:'built', name:'FDD Final Report', route:'/fdd/report/[fddId]', desc:'6-section LLM report + freemium paywall (report_unlocked DB flag, $297 Stripe price wired). Writes 8 answer keys back to answers table. Migration 20260621000000_fdd_report_access.sql pending owner apply.', badge:'new'},
       {status:'built', name:'FDD Freemium Gate', route:'/fdd/report/[fddId]', desc:'Stripe checkout + webhook + report_unlocked flag all wired. Migration 20260621000000_fdd_report_access.sql applied June 23 2026. hasAccess reads real DB flag.'},
       {status:'built', name:'FDD Multi-Comparison', route:'/fdd/compare', desc:'Side-by-side comparison of 2–4 FDD analyses. URL: /fdd/compare?ids=id1,id2[,id3,id4]. POST /api/fdd/compare: pulls scoring dimensions, territory scores, profile match, and fee structure per fddId. Renders comparison columns with E-2 compatibility grade (STRONG/VIABLE/CAUTION/INELIGIBLE), 5-dimension score bars, territory fit, and investor compatibility via fdd-profile-match-engine. Useful for franchise buyers evaluating multiple brands before FDD deep-dive.', badge:'new'},
-      {status:'built', name:'Franchise Navigator', route:'/franchise', desc:'5-page flow: landing (reads quiz investment range), discover/profiler, match report (franchise-scoring-engine), brand detail, broker introduction.', badge:'new'},
+      {status:'built', name:'Franchise Navigator', route:'/franchise', desc:'5-page flow: landing (reads quiz investment range), discover/profiler, match report (franchise-scoring-engine), brand detail, broker introduction. Session 100: Sensai Health added to catalog (fitness/wellness, $200K–$450K, E-2 score A, renewal strength 82, staffed commercial premises, recurring membership model).', badge:'new'},
       {status:'built', name:'Market Analysis (Standalone)', route:'/market-analysis', desc:'ZIP code + business type entry. Uses FDD territory engine directly. Territory score written back to answers table (Session 56 silo fix). Results surfaceable in gap analysis.'},
     ]
   },
@@ -593,7 +628,8 @@ const PHASES = [
     id:'p7', number:'Platform', name:'Cross-Cutting',
     meta:'Auth, payments, dashboard, gap analysis, lifecycle, admin, monitoring',
     features:[
-      {status:'built', name:'Auth (Supabase)', route:'/login /signup /verify', desc:'Magic link removed. Remember me. First/last name at signup. Email verification enforced in middleware. Terms-required scroll-to-accept gate.'},
+      {status:'built', name:'Auth (Supabase)', route:'/login /signup /verify', desc:'Magic link removed. Remember me. First/last name at signup. Email verification enforced in middleware. Terms-required scroll-to-accept gate. Session 100: D6 Point 1 outcomes consent checkbox added to signup — optional, writes outcomes_consent + outcomes_consent_at to profiles.'},
+      {status:'built', name:'Outcomes Consent Banner (D6 Point 2)', route:'src/components/OutcomesConsentBanner.tsx', desc:'Session 100. Existing-user consent prompt wired into Nav.tsx inside fixed header (auth users only). Fetches GET /api/profile/outcomes-consent on mount. Shows only when outcomes_consent === null (never asked — existing user). "Yes, I\'m in" → POST consent=true → hidden. "No thanks" → POST consent=false → hidden. Saving state prevents double-fire. API route: /api/profile/outcomes-consent (GET reads profiles.outcomes_consent, POST updates via admin client). Styled in Obsidian Gold.', badge:'new'},
       {status:'built', name:'Payments (Stripe)', route:'/pricing /pricing/success', desc:'7 tiers + child surcharge + simulator standalone + renewal + FDD Intelligence ($297). All Price IDs live. Stripe webhook. Grant simulator sessions route. FDD report_unlocked flag set by webhook per fddId.'},
       {status:'built', name:'Middleware Paywall Gates', route:'src/middleware.ts', desc:'Sprint E-2. Server-side middleware enforces entitlement checks before any page renders — cannot be bypassed via client routing. Gates: /apply/story|business|investment|qualifications|family|ties → redirect /pricing?locked=complete (requires complete or complete_partnership payment). /gap-analysis → same Complete gate. /fdd/* → redirect /pricing?locked=fdd (requires fdd_intelligence payment). Nav: greyed lock icons on My Application, Gap Analysis, FDD Analysis when entitlements absent. getUserEntitlements() returns { hasComplete, hasInterviewPrep, hasFddIntelligence }.', badge:'new'},
       {status:'built', name:'Standalone Modules Page', route:'/modules', desc:'Session 79. Marketing page listing intelligence modules available à la carte. Three modules: FDD Intelligence ($495/FDD), Market Analysis ($295/business), E-2 Business Plan ($695 standalone). Bundle pricing ($1,195 for all three, save $290). Per-module: tag, badge, description, engine spec, 6 what-you-get bullets, "right for you if" + "not applicable if" copy, CTA. Compare section: standalone vs full $1,495 package. Nav Modules link added to main navigation. Static server component — no auth required.', badge:'new'},
@@ -861,6 +897,10 @@ const GAPS = [
     group:'Owner Actions Required (No Code Needed)',
     items:[
       {priority:'done', name:'CIC-0.4 ✅ — Case Intelligence Core migration applied, KB seeded', desc:'COMPLETE (Session 94). All 8 CIC migrations applied in Supabase SQL editor. KB seeded: 949 chunks, 93 docs, all embeddings verified (text-embedding-3-small). Verified on all 3 test accounts — case_theory complete, 9 dimension verdicts, 7–11 doctrine citations per account. CIC-1.6 gate passed. Full detail: docs/sessions/SPRINT_J1_CASE_INTELLIGENCE_CORE.md.'},
+      {priority:'critical', name:'⚠️ Apply outcomes_consent migration — 20260701200000_profiles_outcomes_consent.sql', desc:'PENDING (Session 100). Run in Supabase SQL Editor. Adds outcomes_consent BOOLEAN and outcomes_consent_at TIMESTAMPTZ to the profiles table. Without this migration: OutcomesConsentBanner will 500, signup consent checkbox writes will fail silently. Existing rows get NULL (banner appears on next login). New signups get consent value from checkbox. SQL is idempotent (IF NOT EXISTS).'},
+      {priority:'medium', name:'D5 — Define outcome survey question set (domain input required)', desc:'PENDING. The post-outcome follow-up survey must capture: approval/denial/RFE outcome, consulate, denial codes cited, what the officer probed, timeline, which case dimensions proved decisive. Requires Romy\'s E-2 domain expertise to author the question set. Blocks CIC-5 survey delivery build.'},
+      {priority:'medium', name:'Confirm Resend domain — flip sender to results@e2go.app if verified', desc:'PENDING. If e2go.app domain is verified in Resend, update all email sends from onboarding@resend.dev to results@e2go.app for trust and deliverability.'},
+      {priority:'low', name:'Confirm FDD pricing ($297 placeholder)', desc:'PENDING. FDD Intelligence tier shows $297 in pricing table. Confirm final price before enabling freemium gate. Blocks final FDD paywall wiring.'},
     ]
   },
   {
@@ -871,7 +911,7 @@ const GAPS = [
       {priority:'done', name:'D3 ✅ — upstream flow kept inside CIC-2', desc:'RESOLVED Session 94. Gap/FDD findings feed generation via the structured case_theory brief + applyCpuContext() in gap-analysis-engine. CIC-2 is the canonical path; no thin pre-CIC-2 slice pulled forward.'},
       {priority:'done', name:'D4 ✅ — outcome capture built', desc:'RESOLVED Session 94. application_outcomes table (migration 20260630160000_outcome_capture.sql applied). /api/dashboard/outcome (GET/POST, auth via Bearer, ownership check, consent_given from POST body only). RLS on all CRUD. Consent required before data enters CIC-5 corpus.'},
       {priority:'high', name:'D5 ⏳ — outcome survey question design (needs owner domain input)', desc:'PENDING. The follow-up client survey must capture signals the system can learn from: approval/denial/RFE outcome, consulate, denial code(s) cited, what the officer probed, timeline, and which case dimensions proved decisive. Requires Romy\'s E-2 domain expertise to author the question set. Blocks CIC-5 survey delivery build.'},
-      {priority:'medium', name:'D6 ⚠️ partial — three-point consent (point 3 built, 1+2 pending)', desc:'PARTIAL (Session 94). Point 3 (before download): built — outcomes_consent checkbox in /documents package gate (acknowledgments.outcomes_consent). Point 1 (signup checkbox): NOT YET BUILT. Point 2 (terms-update prompt on next login for existing users): NOT YET BUILT. application_outcomes.consent_given set true only when client explicitly ticks. No data enters CIC-5.4 corpus without consent_given=true AND anonymized_at set.'},
+      {priority:'done', name:'D6 ✅ — three-point consent COMPLETE (migration pending owner apply)', desc:'COMPLETE Session 100. Point 1 (signup checkbox): src/app/signup/page.tsx — outcomesConsent state + optional checkbox after CASL block, writes outcomes_consent + outcomes_consent_at to profile at sign-up. Point 2 (existing-user banner): OutcomesConsentBanner.tsx — fetches GET /api/profile/outcomes-consent, shows only when null (never asked), "Yes, I\'m in" / "No thanks" → POST → hidden. Wired into Nav.tsx inside header for auth users only. API route: /api/profile/outcomes-consent (GET + POST, admin client). Point 3 (before download): built Session 94 — outcomes_consent checkbox in /documents package gate. ⚠️ OWNER ACTION: apply supabase/migrations/20260701200000_profiles_outcomes_consent.sql — adds outcomes_consent BOOLEAN + outcomes_consent_at TIMESTAMPTZ to profiles. Existing rows get NULL (banner shows on next login). application_outcomes.consent_given set true only when client explicitly ticks. No data enters CIC-5.4 corpus without consent_given=true AND anonymized_at set.'},
     ]
   },
   {
@@ -903,7 +943,7 @@ const GAPS = [
     items:[
       {priority:'resolved', name:'✅ Supabase Connection Pooler — N/A Confirmed S66', desc:'Was: concern about serverless function connection limits under concurrent load. Confirmed (Session 66): Supabase JS SDK uses the REST API (PostgREST), not direct Postgres TCP connections — connection pooling is managed internally by Supabase infrastructure. The pgbouncer DATABASE_URL param is only relevant for Prisma/raw pg driver. No code change required for this architecture.'},
       {priority:'high', name:'Generation Pipeline — No Resume from Checkpoint', desc:'If the SSE pipeline fails at step 12 of 22, the user must start over from scratch. generation_pipeline_log records each step but there is no restart logic. For a 5–10 minute pipeline costing real Anthropic tokens, a transient timeout = lost work + wasted money. Fix: on restart, query generation_pipeline_log for last completed step and resume from there.'},
-      {priority:'high', name:'No Per-User Generation Rate Limit', desc:'start/route.ts enforces one active job per application but not per user. A user with 2 applications can run 2 simultaneous generation jobs = 26–32 concurrent Claude Opus calls. Fix: add per-user daily generation limit (e.g. 3/day) in the start route using Upstash Redis (already available).'},
+      {priority:'resolved', name:'✅ Per-User Generation Rate Limit — RESOLVED (already existed)', desc:'FALSE POSITIVE (Session 100 review). checkRateLimit(user.id, "generate") already wired in /api/generate/start/route.ts — the "generate" profile enforces 4 requests / 60 min per user.id via Upstash Redis sliding window (src/lib/rate-limit.ts). The 1-active-job-per-application gate is an additional constraint. No fix needed.'},
     ]
   },
   {
@@ -925,7 +965,7 @@ const GAPS = [
   {
     group:'Performance & Efficiency — Quick Wins',
     items:[
-      {priority:'high', name:'/apply/page.tsx — 4 Duplicate answers Queries', desc:'Lines 170, 196, 207, 218 each fire a separate .from(\'answers\').select(\'question_key, answer_value\') with the same filters on every page load. Fix: one query at the top, share the result. Saves 3 DB round-trips on every visit to the /apply routing page.'},
+      {priority:'resolved', name:'✅ /apply/page.tsx queries — N/A (page replaced with redirect)', desc:'FALSE POSITIVE (Session 100 review). /apply/page.tsx is now a next/navigation redirect() to /case-profile (Sprint I-1, Session 88). The page fires no DB queries at all. The duplicate-query concern is moot — the page no longer loads.'},
       {priority:'high', name:'Middleware — 2–3 DB Calls Per Page Request', desc:'src/middleware.ts makes auth.getUser() + terms_acceptance query + applications.source query on every authenticated page request. These fire for every navigation event. Fix: cache terms_acceptance and application.source in a signed session cookie (30-min TTL) or Upstash Redis. Eliminates ~2 DB hits per page load across all authenticated users.'},
       {priority:'medium', name:'Dead Route — /api/stripe/checkout Alongside /api/stripe/create-checkout', desc:'Both /api/stripe/checkout and /api/stripe/create-checkout exist. The pricing page calls create-checkout. The /checkout route appears unreferenced. Fix: grep all callers, confirm /checkout is unused, delete it. Reduces surface area and confusion.'},
       {priority:'medium', name:'Gap Analysis — 2 API Calls Fire on Same Trigger', desc:'/api/gap-analysis/enrich and /api/gap-analysis/semantic-eval are both called from the same user action in gap-analysis/page.tsx (lines 233 + 255). Fix: merge into a single /api/gap-analysis/run endpoint that runs enrichment + semantic evaluation in one request. Halves round-trips and simplifies error handling.'},
@@ -939,6 +979,8 @@ const GAPS = [
       {priority:'low', name:'investment_proof — Partially Cleaned', desc:'Removed from VALID_DOC_TYPES (download), DOC_DISPLAY_NAMES, DOC_TYPE_TAB_MAP (docx-package-constants), and consulate-config.ts manifest (Session 61). Still exists in DocumentType union + DOCUMENT_TYPE_LABELS/TABS for DB backward-compat. generation-engine.ts archetype blocks reference it — low risk, no functional path triggers it.'},
       {priority:'done', name:'quiz-scoring.ts ✅ — Deleted Session 94 (zero importers confirmed)', desc:'src/lib/quiz-scoring.ts deleted. Zero importers confirmed before deletion. Live scoring is in quiz/page.tsx (inline) and case-profile.ts scoreQuizEligibility() — both self-contained.'},
       {priority:'done', name:'Generation gap context ✅ — Fixed Session 94 (CIC-2 + CIC-3.1)', desc:'RESOLVED. generation-engine.ts now fetches document_intelligence.ledger + case_theory in a single Promise.all. buildCpuGapContext() maps ledger facts → LedgerFact[] and derives activeDenialCodes from unproven dimension verdicts. buildGapContext() emits ACTIVE DENIAL RISKS (CPU-flagged, doc-relevant codes) + Evidence-on-file per weak category. Gap analysis stays pure/deterministic — applyCpuContext() runs AFTER all scoring, only enriches descriptive output.'},
+      {priority:'done', name:'S2 — unsafe-eval removed from main CSP ✅ Session 100', desc:'RESOLVED. next.config.mjs main route CSP (source: "/(.*)"): removed \'unsafe-eval\' from script-src. Keystatic admin (/keystatic/:path*) still allows unsafe-eval — it requires it. Build confirmed clean. Removes a browser code-execution attack surface from all authenticated routes.'},
+      {priority:'done', name:'DocumentAuditPanel placeholder regex ✅ Session 100', desc:'RESOLVED. src/components/documents/DocumentAuditPanel.tsx line 161: broadened regex from /\\[([A-Z][A-Z\\s/\'"- ]{2,})\\]/g (ALL-CAPS only) to also catch descriptive lowercase forms: [passport number], [insert name here], [your country], [business name here]. Keyword anchor list: name, number, date, amount, address, here, tbd, insert, unknown, provided, code, country, state, city, type, your. Matches checklist-builder.ts which was already using the broader /\\[[^\\[\\]]+\\]/g pattern.'},
     ]
   }
 ];
@@ -983,7 +1025,7 @@ const ENGINES = [
 ];
 
 const DB_TABLES = [
-  {name:'profiles', desc:'first_name, last_name, role (admin/user). Linked to Supabase Auth user_id.', notes:'RLS: users read own row. role=admin gates /admin route.'},
+  {name:'profiles', desc:'first_name, last_name, role (admin/user), outcomes_consent (BOOLEAN — null=never asked, true=yes, false=no), outcomes_consent_at (TIMESTAMPTZ). Linked to Supabase Auth user_id. ⚠️ Session 100: outcomes_consent columns require migration 20260701200000_profiles_outcomes_consent.sql (pending owner apply).', notes:'RLS: users read own row. role=admin gates /admin route.'},
   {name:'applications', desc:'Core record. principal_name, business_name, business_category, operational_status, target_state, principal_country, application_type, simulator_sessions_used, source (main_flow | simulator_standalone), last_visited_section.', notes:'One per user main path; multiple for simulator_standalone'},
   {name:'quiz_sessions', desc:'Quiz attempt + result_json (all 30 answers + score + flags + eligibility). completed_at. franchise_referral_requested boolean.', notes:'Multiple per user; latest used for profile'},
   {name:'answers', desc:'Case file answers. question_key → answer_value. source: manual | quiz | upload | document_upload | fdd_intelligence. application_id FK. THE de-facto cross-engine shared bus (verified Session 93): FDD writeback upserts 8 keys (source=fdd_intelligence), standalone market analysis upserts QMA-prefixed territory keys (NOT a single market_territory key — that label was stale), simulator coaching + voice profile also land here, and generation-engine.ts reads the entire set via .select(\'*\'). CIC-2 layers structured case_model/case_theory on top of this flat bus.', notes:'Autosave 800ms. Source drives pre-fill badge variant. Flat key/value — no provenance/confidence; that is exactly what case_model adds.'},
@@ -1835,6 +1877,19 @@ const SPRINTS = [
     ]
   },
   {
+    id:'S100', name:'D6 Consent + CSP + Catalog + Regex', priority:'high', effort:'1 session', status:'complete',
+    desc:'✅ COMPLETE (Session 100) — All 3 D6 consent points wired: signup checkbox (Point 1), existing-user banner in Nav (Point 2), download gate (Point 3, Session 94). S2 done: unsafe-eval removed from main CSP. Placeholder regex broadened to catch lowercase forms. Sensai Health franchise brand added. Build clean. ⚠️ Owner action: apply 20260701200000_profiles_outcomes_consent.sql in Supabase SQL Editor.',
+    items:[
+      {name:'D6 Point 1 — Signup consent checkbox', desc:'src/app/signup/page.tsx — outcomesConsent state + optional checkbox after CASL block. Writes outcomes_consent + outcomes_consent_at to profiles at sign-up (new users only).'},
+      {name:'D6 Point 2 — Existing-user banner', desc:'src/components/OutcomesConsentBanner.tsx — fetches GET /api/profile/outcomes-consent, shows only when null. "Yes, I\'m in" / "No thanks" → POST → hidden. Wired into Nav.tsx inside fixed header (auth users only).'},
+      {name:'D6 API route', desc:'src/app/api/profile/outcomes-consent/route.ts — GET returns outcomes_consent (null=never asked → show banner), POST updates via admin client. Auth gated via getUser().'},
+      {name:'D6 Migration', desc:'supabase/migrations/20260701200000_profiles_outcomes_consent.sql — ADD COLUMN IF NOT EXISTS outcomes_consent BOOLEAN, outcomes_consent_at TIMESTAMPTZ. OWNER MUST APPLY in Supabase SQL Editor.'},
+      {name:'S2 — unsafe-eval removed from main CSP', desc:'next.config.mjs: removed \'unsafe-eval\' from script-src on all routes (source: "/(.*)")). Keystatic admin (/keystatic/:path*) keeps it. Build clean.'},
+      {name:'Placeholder regex — DocumentAuditPanel', desc:'src/components/documents/DocumentAuditPanel.tsx line 161: regex now matches ALL-CAPS [PASSPORT NUMBER] AND descriptive lowercase [passport number], [insert name here], [your country], [business name here] via keyword anchor list.'},
+      {name:'Sensai Health franchise brand', desc:'src/data/franchise-brands.ts: slug sensai-health, fitness_wellness category, $200K–$450K, E-2 score A, renewal strength 82, staffed commercial premises, recurring membership model.'},
+    ]
+  },
+  {
     id:'AUD-99', name:'Audit v3 Remediation', priority:'critical', effort:'1 session', status:'complete',
     desc:'✅ COMPLETE (Session 99) — All 3 audit v3 findings closed. RLS root-cause: Supabase ORs all permissive policies — legacy policies with OR user_id IS NULL negated the new restrictive policy for anon callers. Verification must be run as anon role (SET LOCAL role TO anon), not service role.',
     items:[
@@ -1906,7 +1961,7 @@ const roadmapSprintEl = document.getElementById('roadmap-sprint-container');
 const sprintTitle = document.createElement('div');
 sprintTitle.className = 'roadmap-section-title';
 sprintTitle.style.marginTop = '36px';
-sprintTitle.textContent = 'Sprints — 23 total · OPS-1✅ OPS-2✅ OPS-3✅ OPS-4✅ OPS-5✅ ENG-1✅ ENG-2✅ INFRA-1✅ F-1✅ F-2✅ G-1✅ G-2✅ G-3✅ H-1✅ H-2✅ H-3✅ H-4✅ H-5✅ H-6✅ H-7✅ I-1✅ I-2✅ I-3✅ I-4✅ OPS-98✅ AUD-99✅ complete · Session 99 done';
+sprintTitle.textContent = 'Sprints — 28 total · OPS-1✅ OPS-2✅ OPS-3✅ OPS-4✅ OPS-5✅ ENG-1✅ ENG-2✅ INFRA-1✅ F-1✅ F-2✅ G-1✅ G-2✅ G-3✅ H-1✅ H-2✅ H-3✅ H-4✅ H-5✅ H-6✅ H-7✅ I-1✅ I-2✅ I-3✅ I-4✅ OPS-98✅ AUD-99✅ S100✅ complete · Session 100 done';
 roadmapSprintEl.appendChild(sprintTitle);
 
 const sprintGrid = document.createElement('div');
