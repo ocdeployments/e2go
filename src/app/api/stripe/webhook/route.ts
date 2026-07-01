@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
+import { Redis } from '@upstash/redis';
+
+// Invalidate middleware payment-access cache so users get correct access on next request
+const redis = process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
+  ? new Redis({ url: process.env.UPSTASH_REDIS_REST_URL, token: process.env.UPSTASH_REDIS_REST_TOKEN })
+  : null;
 
 const ALLOWED_EVENT_TYPES = [
   'checkout.session.completed',
@@ -130,6 +136,11 @@ export async function POST(request: NextRequest) {
       }
       // interview_prep and renewal: payment record update above is sufficient.
       // Entitlements are read from the payments table via getUserEntitlements().
+
+      // Invalidate middleware access cache so the user gets through on next navigation
+      if (userId && redis) {
+        await redis.del(`mw:access:${userId}`);
+      }
       break;
     }
 
@@ -195,6 +206,11 @@ export async function POST(request: NextRequest) {
               })
               .eq('id', payment.application_id);
           }
+        }
+
+        // Invalidate middleware access cache — refund may revoke access
+        if (payment.user_id && redis) {
+          await redis.del(`mw:access:${payment.user_id}`);
         }
       }
       break;
