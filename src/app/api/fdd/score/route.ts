@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     const service = createServiceClient();
     const { data: analysis, error: fetchErr } = await service
       .from('fdd_analyses')
-      .select('*')
+      .select('extracted_fields, fdd_stale, state_registration_status, investor_liquid_capital')
       .eq('id', fdd_id)
       .eq('user_id', user.id)
       .single();

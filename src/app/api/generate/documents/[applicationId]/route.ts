@@ -64,7 +64,7 @@ export async function GET(
 
     const { data: credits } = await supabase
       .from('revision_credits')
-      .select('*')
+      .select('id, user_id, application_id, credits_remaining, credits_used, updated_at')
       .eq('application_id', applicationId)
       .order('updated_at', { ascending: false })
       .limit(1)
@@ -195,7 +195,7 @@ export async function PATCH(
     if (documentId) {
       const { data: doc } = await supabase
         .from('generated_documents')
-        .select('*')
+        .select('id')
         .eq('id', documentId)
         .eq('application_id', applicationId)
         .single();
@@ -204,7 +204,7 @@ export async function PATCH(
       // Get the most recent document of this type for the application
       const { data: doc } = await supabase
         .from('generated_documents')
-        .select('*')
+        .select('id')
         .eq('application_id', applicationId)
         .eq('document_type', documentType)
         .order('created_at', { ascending: false })

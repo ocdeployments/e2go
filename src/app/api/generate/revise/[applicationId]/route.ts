@@ -55,7 +55,7 @@ export async function POST(
     // Check credits
     const { data: creditsRow } = await supabase
       .from('revision_credits')
-      .select('*')
+      .select('id, credits_remaining, credits_used')
       .eq('application_id', applicationId)
       .single();
 
@@ -66,7 +66,7 @@ export async function POST(
     // Load original document
     const { data: doc } = await supabase
       .from('generated_documents')
-      .select('*')
+      .select('id, document_type, content_text, revision_notes, revision_count')
       .eq('id', documentId)
       .eq('application_id', applicationId)
       .single();

@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
         // Fetch all document records
         const { data: documents, error: fetchError } = await supabase
           .from('application_documents')
-          .select('*')
+          .select('id, original_filename, storage_path, file_type, user_selected_document_type, document_summary')
           .eq('application_id', applicationId)
           .in('id', documentIds);
 

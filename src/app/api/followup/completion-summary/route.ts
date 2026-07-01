@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
     // Load all followup_responses for this application
     const { data: responses, error: responsesError } = await supabase
       .from('followup_responses')
-      .select('*')
+      .select('question_number, gap_category, question_text, answer_text')
       .eq('application_id', applicationId)
       .order('question_number', { ascending: true });
 

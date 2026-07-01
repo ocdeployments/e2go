@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     const service = createServiceClient();
     const { data: rows, error: dbErr } = await service
       .from('fdd_analyses')
-      .select('*')
+      .select('id, extracted_fields, e2_score, territory_analysis, profile_match, original_filename, overall_compatibility, flag_count, fdd_age_months')
       .eq('user_id', user.id)
       .in('id', fdd_ids);
 

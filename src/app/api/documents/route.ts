@@ -215,7 +215,7 @@ export async function GET(request: NextRequest) {
 
     const { data: documents, error } = await supabase
       .from('application_documents')
-      .select('*')
+      .select('id, application_id, user_id, original_filename, file_type, file_size_bytes, storage_path, user_selected_document_type, extraction_status, extraction_error, detected_document_type, detection_confidence, detection_reasoning, fields_extracted, document_summary, extracted_at, created_at, updated_at')
       .eq('application_id', applicationId)
       .eq('user_id', user.id)
       .order('created_at', { ascending: true });

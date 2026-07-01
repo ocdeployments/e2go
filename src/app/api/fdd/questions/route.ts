@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
     // Load the FDD analysis
     const { data: analysis, error: fetchErr } = await service
       .from('fdd_analyses')
-      .select('*')
+      .select('extracted_fields, fdd_stale, state_registration_status, investor_liquid_capital, investor_net_worth, target_state')
       .eq('id', fdd_id)
       .eq('user_id', user.id)
       .single();

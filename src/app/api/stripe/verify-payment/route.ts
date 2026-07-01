@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
 
     const { data: payment, error } = await supabase
       .from('payments')
-      .select('*')
+      .select('id, application_id, user_id, stripe_session_id, stripe_payment_intent_id, stripe_price_id, amount_paid, currency, status, payment_type, refund_eligible, refunded_at, created_at, completed_at')
       .eq('application_id', applicationId)
       .eq('user_id', user.id)
       .eq('status', 'completed')

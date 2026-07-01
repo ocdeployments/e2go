@@ -25,7 +25,7 @@ export async function GET() {
 
   const { data, error } = await supabase
     .from('family_members')
-    .select('*')
+    .select('id, user_id, member_type, first_name, middle_name, last_name, gender, date_of_birth, nationality, passport_number, role, sort_order, created_at, updated_at')
     .eq('user_id', user.id)
     .order('sort_order', { ascending: true })
     .order('created_at', { ascending: true });

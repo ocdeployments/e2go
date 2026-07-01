@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
         // Fetch the FDD record (verify ownership)
         const { data: fddRecord, error: fetchError } = await serviceClient
           .from('fdd_analyses')
-          .select('*')
+          .select('extraction_status, storage_path, target_state')
           .eq('id', fdd_id)
           .eq('user_id', user.id)
           .single();

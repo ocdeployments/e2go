@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
 
   const query = supabase
     .from('simulator_outcomes')
-    .select('*')
+    .select('id, user_id, application_id, simulator_session_id, outcome, interview_date, consulate, denial_reason, notes, created_at')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false });
 

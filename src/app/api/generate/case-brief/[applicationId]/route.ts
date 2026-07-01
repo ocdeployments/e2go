@@ -54,7 +54,7 @@ export async function GET(
     // Fetch latest case brief
     const { data: brief, error: briefError } = await supabase
       .from('case_briefs')
-      .select('*')
+      .select('id, application_id, user_id, created_at, updated_at, substantiality_score, fund_source_score, experience_score, marginality_income_score, marginality_contribution_score, intent_score, executive_role_score, ownership_control_score, denial_risks, kb_validation, framing_decisions, case_brief_json, status')
       .eq('application_id', applicationId)
       .order('created_at', { ascending: false })
       .limit(1)

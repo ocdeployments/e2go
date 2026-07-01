@@ -123,7 +123,7 @@ export async function GET(request: Request) {
 
   const { data } = await supabase
     .from('application_outcomes')
-    .select('*')
+    .select('id, application_id, user_id, created_at, updated_at, outcome, outcome_date, consulate, processing_days, denial_codes, officer_probes, decisive_dimensions, officer_notes, consent_given, anonymized_at')
     .eq('application_id', applicationId)
     .maybeSingle();
 

@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
     const service = createServiceClient();
 
     const [{ data: analysis }, { data: app }] = await Promise.all([
-      service.from('fdd_analyses').select('*').eq('id', fdd_id).eq('user_id', user.id).single(),
+      service.from('fdd_analyses').select('extracted_fields, e2_score, territory_analysis, final_report, target_state').eq('id', fdd_id).eq('user_id', user.id).single(),
       service.from('applications').select('id').eq('user_id', user.id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
     ]);
 
