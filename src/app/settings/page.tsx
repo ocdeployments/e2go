@@ -32,8 +32,9 @@ export default function SettingsPage() {
     }
   }
 
-  // Post-deletion state — session is gone, show confirmation and redirect option
+  // Post-deletion state — show 30-day grace period messaging
   if (deleteStep === 'done') {
+    const purgeDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
     return (
       <main style={{ background: '#0a0a0a', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'DM Sans', sans-serif", padding: '40px' }}>
         <div style={{ maxWidth: '480px', textAlign: 'center' }}>
@@ -43,11 +44,13 @@ export default function SettingsPage() {
             </svg>
           </div>
           <h1 style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontWeight: 300, fontSize: '28px', color: '#f5f0e8', marginBottom: '12px' }}>
-            Account deleted
+            Deletion scheduled
           </h1>
-          <p style={{ fontSize: '14px', color: 'rgba(245,240,232,0.76)', lineHeight: 1.7, marginBottom: '32px' }}>
-            Your account and all associated data have been permanently deleted.
-            A confirmation has been sent to your email address.
+          <p style={{ fontSize: '14px', color: 'rgba(245,240,232,0.76)', lineHeight: 1.7, marginBottom: '8px' }}>
+            Your account is scheduled for permanent deletion on <strong style={{ color: '#f5f0e8' }}>{purgeDate}</strong>.
+          </p>
+          <p style={{ fontSize: '13px', color: 'rgba(245,240,232,0.55)', lineHeight: 1.7, marginBottom: '32px' }}>
+            If you change your mind, log back in and visit your account recovery page before that date.
           </p>
           <button
             onClick={() => router.push('/')}
