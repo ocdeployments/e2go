@@ -1,6 +1,6 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** July 1, 2026 — Session 101: Middleware DB caching, account soft-delete (30-day grace period + recovery page), simulator session TTL, kill-switch enforcement on 8 AI routes, select(*) optimization on hot generation routes. Build clean, 26/26 security tests pass. Two new migrations for owner to apply.
+**Last Updated:** July 1, 2026 — Session 101: Middleware DB caching, account soft-delete (30-day grace period + recovery page), simulator session TTL, kill-switch enforcement on 8 AI routes, select(*) optimization on hot generation routes. Build clean, 26/26 security tests pass. Both Session 101 migrations applied by owner.
 
 ---
 
@@ -19,15 +19,13 @@
 | Account restore API | ✅ DONE | NEW: `src/app/api/account/restore/route.ts` — POST clears `deleted_at`, invalidates `mw:access` cache. |
 | Account recovery page | ✅ DONE | NEW: `src/app/account-recovery/page.tsx` — shows purge date, "Cancel deletion" button, sign-out option. Middleware redirects soft-deleted users here on PAID_ROUTES. |
 | Settings soft-delete messaging | ✅ DONE | `src/app/settings/page.tsx` — post-delete state now shows "scheduled for deletion on [date]" with 30-day grace info. |
-| Soft-delete migration | ✅ BUILT — owner must apply | `supabase/migrations/20260701210000_profiles_soft_delete.sql` — adds `deleted_at TIMESTAMPTZ` + index to `profiles`. |
-| Simulator session TTL | ✅ BUILT — owner must apply | `supabase/migrations/20260701220000_simulator_sessions_ttl.sql` — adds `expires_at` as generated column (`started_at + 12 months`) to `simulator_sessions`. |
+| Soft-delete migration | ✅ APPLIED | `supabase/migrations/20260701210000_profiles_soft_delete.sql` — `deleted_at TIMESTAMPTZ` + index applied to `profiles`. |
+| Simulator session TTL | ✅ APPLIED | `supabase/migrations/20260701220000_simulator_sessions_ttl.sql` — `expires_at TIMESTAMPTZ` + trigger + index applied to `simulator_sessions`. (Trigger approach used — GENERATED AS not viable for timestamptz + interval.) |
 | select(*) optimization — hot paths | ✅ DONE | `generate/progress/[jobId]`: 6 explicit columns (SSE polled every 2s). `generate/run/[jobId]`: 4 explicit columns. |
 | Kill-switch enforcement | ✅ DONE | Added `isKillSwitchEnabled()` to 8 routes missed in Sprint 98: `simulator/evaluate`, `simulator/follow-up`, `simulator/prep-kit`, `simulator/coaching-report`, `simulator/interview-prep`, `gap-analysis/enrich`, `faq/ask`, `case-file/field-quality`. |
 | Dead route investigation | ✅ CONFIRMED — not dead | `/api/stripe/checkout` (HEAD/GET only) is a Stripe config health probe, not a duplicate. `/api/stripe/create-checkout` handles actual checkout. |
 
-### Owner actions required — CRITICAL
-- Apply `supabase/migrations/20260701210000_profiles_soft_delete.sql` in Supabase SQL Editor → adds `profiles.deleted_at` column. **Without this: soft-delete route fails, recovery page shows wrong state.**
-- Apply `supabase/migrations/20260701220000_simulator_sessions_ttl.sql` in Supabase SQL Editor → adds `expires_at` to `simulator_sessions`.
+### ✅ Session 101 migrations — BOTH APPLIED
 
 ### Owner actions still pending from Session 100
 - Apply `supabase/migrations/20260701200000_profiles_outcomes_consent.sql` (outcomes consent columns) if not yet done.
