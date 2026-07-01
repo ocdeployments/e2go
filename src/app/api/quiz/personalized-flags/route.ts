@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { isKillSwitchEnabled } from '@/lib/kill-switch';
 import flagExplanations from '@/data/flag_explanations.json';
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
@@ -28,6 +29,10 @@ export async function POST(request: NextRequest) {
   }
 
   if (!OPENROUTER_API_KEY) {
+    return NextResponse.json({ explanations: {} });
+  }
+
+  if (await isKillSwitchEnabled()) {
     return NextResponse.json({ explanations: {} });
   }
 

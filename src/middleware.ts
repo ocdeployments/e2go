@@ -156,6 +156,29 @@ export async function middleware(req: NextRequest) {
   }
 
   // ---------------------------------------------------------------------------
+  // Soft-delete guard for AUTH_ROUTES
+  // PAID_ROUTES handle this within their own cache block below.
+  // ---------------------------------------------------------------------------
+  if (user && AUTH_ROUTES.some(r => pathname.startsWith(r))) {
+    const cachedAccess = redis ? await redis.get<AccessCache>(accessCacheKey(user.id)) : null;
+    if (cachedAccess?.deleted) {
+      return NextResponse.redirect(new URL('/account-recovery', req.url));
+    }
+    if (!cachedAccess) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('deleted_at')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (profile?.deleted_at) {
+        const access: AccessCache = { full: false, sim: false, fdd: false, deleted: true };
+        if (redis) await redis.set(accessCacheKey(user.id), access, { ex: 86400 });
+        return NextResponse.redirect(new URL('/account-recovery', req.url));
+      }
+    }
+  }
+
+  // ---------------------------------------------------------------------------
   // Payment gate — authenticated users must have a paid application
   // Cached in Upstash Redis for 30 min; invalidated by stripe webhook on payment
   // ---------------------------------------------------------------------------
