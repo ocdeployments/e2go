@@ -20,7 +20,14 @@ export type DocumentType =
   | 'resume_principal'
   | 'resume_spouse'
   // DOC-6: Conditional documents (generated only when applicable)
-  | 'gift_letter';
+  | 'gift_letter'
+  // DOC-P: Partnership documents — generated for Investor 2 in complete_partnership applications
+  | 'cover_letter_p2'
+  | 'source_of_funds_p2'
+  | 'declaration_p2'
+  | 'qualifications_p2'
+  | 'nonimmigrant_intent_p2'
+  | 'resume_p2';
 
 export type GenerationJobStatus =
   | 'queued'
@@ -96,6 +103,13 @@ export const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {
   resume_principal: 'Principal Applicant Resume',
   resume_spouse: 'Spouse Resume',
   gift_letter: 'Gift Letter',
+  // Partnership — Investor 2
+  cover_letter_p2:          'Cover Letter — Investor 2',
+  source_of_funds_p2:       'Source of Funds — Investor 2',
+  declaration_p2:           'Investor 2 Declaration',
+  qualifications_p2:        'Investor 2 Biography & Qualifications',
+  nonimmigrant_intent_p2:   'Non-immigrant Intent — Investor 2',
+  resume_p2:                'Investor 2 Resume',
 };
 
 export const DOCUMENT_TYPE_TABS: Record<DocumentType, string> = {
@@ -116,6 +130,13 @@ export const DOCUMENT_TYPE_TABS: Record<DocumentType, string> = {
   resume_principal: 'Tab D',
   resume_spouse: 'Tab E',
   gift_letter: 'Tab B',
+  // Partnership — Investor 2
+  cover_letter_p2:          'Tab D (Investor 2)',
+  source_of_funds_p2:       'Tab B (Investor 2)',
+  declaration_p2:           'Tab G (Investor 2)',
+  qualifications_p2:        'Tab D (Investor 2)',
+  nonimmigrant_intent_p2:   'Tab G (Investor 2)',
+  resume_p2:                'Tab D (Investor 2)',
 };
 
 export interface GenerationStep {
