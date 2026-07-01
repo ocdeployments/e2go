@@ -42,7 +42,7 @@ export async function POST(
 
     const { data: job, error: jobError } = await supabase
       .from('document_generation_jobs')
-      .select('*')
+      .select('id, user_id, status, application_id')
       .eq('id', jobId)
       .single();
 

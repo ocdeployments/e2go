@@ -41,7 +41,7 @@ export async function GET(
         try {
           const { data: job, error } = await supabase
             .from('document_generation_jobs')
-            .select('*')
+            .select('status, current_step, current_step_label, document_types, total_steps, error_message')
             .eq('id', jobId)
             .eq('user_id', user.id)
             .single();
