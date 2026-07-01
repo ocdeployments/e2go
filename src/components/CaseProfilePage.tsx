@@ -2019,6 +2019,27 @@ export default function CaseProfilePage() {
               </div>
             </div>
 
+            {/* ── 09 PARTNER 2 (partnership applications only) ──── */}
+            {isPartnership && data.applicationId && (
+              <div style={{ background: 'rgba(201,168,76,0.04)', border: '1px solid rgba(201,168,76,0.15)', padding: '24px', marginBottom: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
+                  <div>
+                    <div style={{ fontSize: '8px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(201,168,76,0.5)', fontFamily: "'DM Sans', sans-serif", marginBottom: '4px' }}>09 · Partnership</div>
+                    <div style={{ fontSize: '18px', fontFamily: "'Cormorant Garamond', Georgia, serif", fontWeight: 300, color: CREAM, lineHeight: 1.2, marginBottom: '4px' }}>Investor 2 Information</div>
+                    <div style={{ fontSize: '11px', fontFamily: "'DM Sans', sans-serif", color: 'rgba(245,240,232,0.4)', lineHeight: 1.6 }}>
+                      Provide Partner 2&apos;s name, nationality, role, source of funds, and qualifications — required to generate Investor 2&apos;s separate document package.
+                    </div>
+                  </div>
+                  <a
+                    href={`/apply/partner2?applicationId=${data.applicationId}`}
+                    style={{ flexShrink: 0, background: 'rgba(201,168,76,0.12)', border: '1px solid rgba(201,168,76,0.3)', borderRadius: '6px', padding: '8px 16px', color: '#C9A84C', fontSize: '12px', fontFamily: "'DM Sans', sans-serif", fontWeight: 500, textDecoration: 'none', whiteSpace: 'nowrap', letterSpacing: '0.02em' }}
+                  >
+                    Complete →
+                  </a>
+                </div>
+              </div>
+            )}
+
             {/* Footer note */}
             <div style={{ textAlign: "center", padding: "24px 0", borderTop: `1px solid ${INNER}`, marginTop: "8px" }}>
               <p style={{ fontSize: "11px", fontFamily: "'DM Sans', sans-serif", color: "rgba(245,240,232,0.18)", lineHeight: 1.7, margin: 0 }}>
