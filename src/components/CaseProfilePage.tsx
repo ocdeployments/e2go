@@ -581,6 +581,14 @@ export default function CaseProfilePage() {
   const emptyMemberForm: MemberFormState = { first_name: "", middle_name: "", last_name: "", gender: "", date_of_birth: "", nationality: "", passport_number: "", role: "" };
   const [memberForm, setMemberForm]         = useState<MemberFormState>(emptyMemberForm);
   const [memberSaving, setMemberSaving]     = useState(false);
+  const [isMobile, setIsMobile]             = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
 
   const reloadProfile = useCallback(() => {
     Promise.all([
@@ -1653,7 +1661,7 @@ export default function CaseProfilePage() {
     <div style={{ minHeight: "100vh", background: "#0a0a0a", paddingBottom: "80px" }}>
 
       {/* Full-width header area — paddingTop accounts for the fixed main Nav */}
-      <div style={{ maxWidth: "1060px", margin: "0 auto", padding: "80px 32px 0" }}>
+      <div style={{ maxWidth: "1060px", margin: "0 auto", padding: isMobile ? "80px 16px 0" : "80px 32px 0" }}>
 
         {/* Page header */}
         <div style={{ marginBottom: "28px" }}>
@@ -1751,8 +1759,8 @@ export default function CaseProfilePage() {
         {/* ── Sidebar + content layout ─────────────────────────────────── */}
         <div style={{ display: "flex", gap: "40px", alignItems: "flex-start" }}>
 
-          {/* Sidebar */}
-          <Sidebar active={activeSection} />
+          {/* Sidebar — hidden on mobile (<768px) */}
+          {!isMobile && <Sidebar active={activeSection} />}
 
           {/* Section content */}
           <div style={{ flex: 1, minWidth: 0 }}>
