@@ -5,7 +5,7 @@ import { Ratelimit } from '@upstash/ratelimit';
 import { Redis } from '@upstash/redis';
 
 // ---------------------------------------------------------------------------
-// Rate limiting — Upstash Redis in production, in-memory fallback for dev
+// Redis — shared instance for rate limiting AND middleware caching
 // ---------------------------------------------------------------------------
 const redis = process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
   ? new Redis({
@@ -14,6 +14,31 @@ const redis = process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_RE
     })
   : null;
 
+// ---------------------------------------------------------------------------
+// Middleware cache — 30-min TTL, invalidated by webhook + accept-terms routes
+// ---------------------------------------------------------------------------
+const CACHE_TTL_SECONDS = 1800;
+
+interface AccessCache {
+  full: boolean;     // paid non-simulator application exists
+  sim: boolean;      // simulator-standalone purchase exists
+  fdd: boolean;      // standalone fdd_intelligence payment exists
+  deleted?: boolean; // soft-deleted accounts — redirected to /account-recovery
+}
+
+/** Exported so stripe webhook + payment routes can call invalidation */
+export function accessCacheKey(userId: string): string {
+  return `mw:access:${userId}`;
+}
+
+/** Exported so accept-terms route can call invalidation */
+export function termsCacheKey(userId: string, version: string): string {
+  return `mw:terms:${userId}:${version}`;
+}
+
+// ---------------------------------------------------------------------------
+// Rate limiting — Upstash Redis in production, in-memory fallback for dev
+// ---------------------------------------------------------------------------
 const loginLimiter = redis
   ? new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(5, '15 m'), prefix: 'rl:login' })
   : null;
@@ -132,24 +157,38 @@ export async function middleware(req: NextRequest) {
 
   // ---------------------------------------------------------------------------
   // Payment gate — authenticated users must have a paid application
+  // Cached in Upstash Redis for 30 min; invalidated by stripe webhook on payment
   // ---------------------------------------------------------------------------
   if (user && PAID_ROUTES.some(r => pathname.startsWith(r))) {
-    const { data: apps } = await supabase
-      .from('applications')
-      .select('payment_status, source')
-      .eq('user_id', user.id);
+    let access: AccessCache | null = null;
 
-    // Full package: any paid application that isn't simulator-standalone
-    const hasFullAccess = apps?.some(
-      a => a.payment_status === 'paid' && a.source !== 'simulator_standalone'
-    ) ?? false;
+    if (redis) {
+      access = await redis.get<AccessCache>(accessCacheKey(user.id));
+    }
 
-    // Simulator-only: has a standalone simulator purchase
-    const hasSimulatorAccess = apps?.some(a => a.source === 'simulator_standalone') ?? false;
+    if (!access) {
+      // Cache miss — fetch soft-delete status and payment status in parallel
+      const [{ data: apps }, { data: profile }] = await Promise.all([
+        supabase.from('applications').select('payment_status, source').eq('user_id', user.id),
+        supabase.from('profiles').select('deleted_at').eq('user_id', user.id).maybeSingle(),
+      ]);
 
-    if (!hasFullAccess) {
-      // FDD standalone buyers can access /fdd routes even without a full package
-      if (pathname.startsWith('/fdd')) {
+      if (profile?.deleted_at) {
+        // Soft-deleted — cache with long TTL and redirect
+        access = { full: false, sim: false, fdd: false, deleted: true };
+        if (redis) await redis.set(accessCacheKey(user.id), access, { ex: 86400 });
+        return NextResponse.redirect(new URL('/account-recovery', req.url));
+      }
+
+      const hasFullAccess = apps?.some(
+        a => a.payment_status === 'paid' && a.source !== 'simulator_standalone'
+      ) ?? false;
+
+      const hasSimulatorAccess = apps?.some(a => a.source === 'simulator_standalone') ?? false;
+
+      // Pre-fetch FDD status so /fdd route checks also skip the DB on cache hit
+      let hasFddAccess = false;
+      if (!hasFullAccess) {
         const { data: fddPayment } = await supabase
           .from('payments')
           .select('id')
@@ -158,16 +197,32 @@ export async function middleware(req: NextRequest) {
           .eq('status', 'completed')
           .limit(1)
           .maybeSingle();
-        if (fddPayment) {
+        hasFddAccess = !!fddPayment;
+      }
+
+      access = { full: hasFullAccess, sim: hasSimulatorAccess, fdd: hasFddAccess };
+
+      if (redis) {
+        await redis.set(accessCacheKey(user.id), access, { ex: CACHE_TTL_SECONDS });
+      }
+    }
+
+    if (access.deleted) {
+      return NextResponse.redirect(new URL('/account-recovery', req.url));
+    }
+
+    if (!access.full) {
+      if (pathname.startsWith('/fdd')) {
+        if (access.fdd) {
           // FDD standalone purchase — allow through
-        } else if (hasSimulatorAccess) {
+        } else if (access.sim) {
           return NextResponse.redirect(new URL('/simulator', req.url));
         } else {
           return NextResponse.redirect(new URL('/results', req.url));
         }
-      } else if (hasSimulatorAccess && pathname.startsWith('/simulator')) {
+      } else if (access.sim && pathname.startsWith('/simulator')) {
         // Simulator-only subscriber on their permitted route — pass through
-      } else if (hasSimulatorAccess) {
+      } else if (access.sim) {
         // Simulator-only subscriber trying to reach a case-building route
         return NextResponse.redirect(new URL('/simulator', req.url));
       } else {
@@ -179,17 +234,34 @@ export async function middleware(req: NextRequest) {
 
   // ---------------------------------------------------------------------------
   // Terms acceptance gate — /apply routes only
+  // Cached in Upstash Redis for 30 min; invalidated by /api/auth/accept-terms
   // ---------------------------------------------------------------------------
   const TERMS_VERSION = '1.0';
   if (user && pathname.startsWith('/apply')) {
-    const { data: acceptance } = await supabase
-      .from('terms_acceptance')
-      .select('terms_version')
-      .eq('user_id', user.id)
-      .eq('terms_version', TERMS_VERSION)
-      .single();
+    let termsAccepted = false;
 
-    if (!acceptance) {
+    if (redis) {
+      const cached = await redis.get<number>(termsCacheKey(user.id, TERMS_VERSION));
+      termsAccepted = cached === 1;
+    }
+
+    if (!termsAccepted) {
+      const { data: acceptance } = await supabase
+        .from('terms_acceptance')
+        .select('terms_version')
+        .eq('user_id', user.id)
+        .eq('terms_version', TERMS_VERSION)
+        .single();
+
+      if (acceptance) {
+        termsAccepted = true;
+        if (redis) {
+          await redis.set(termsCacheKey(user.id, TERMS_VERSION), 1, { ex: CACHE_TTL_SECONDS });
+        }
+      }
+    }
+
+    if (!termsAccepted) {
       const termsUrl = new URL('/terms-required', req.url);
       termsUrl.searchParams.set('next', pathname);
       return NextResponse.redirect(termsUrl);
