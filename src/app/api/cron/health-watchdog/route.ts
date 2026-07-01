@@ -92,6 +92,8 @@ export async function GET(request: NextRequest) {
     }
 
     // ── 3. OpenRouter balance check ────────────────────────────────────────
+    // No kill-switch here — this is a billing API call (/auth/key), not LLM inference.
+    // The watchdog intentionally runs regardless of kill-switch state.
     const orKey = process.env.OPENROUTER_API_KEY;
     if (orKey) {
       try {

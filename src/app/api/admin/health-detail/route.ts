@@ -11,6 +11,8 @@ function getAdmin() {
   return createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } });
 }
 
+// No kill-switch on this route by design — it's the admin diagnostic tool for diagnosing kill-switch
+// situations (probes LLM to verify if the service is actually up before toggling the kill-switch off).
 // FIXED 2026-06-23: route had no auth — exposed service health + stuck job data publicly (QA-SEC-02)
 async function getRequestingAdmin(): Promise<string | null> {
   const cookieStore = await cookies();
