@@ -1,6 +1,6 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** June 30, 2026 — Session 95: QA audit fixes complete (CIC-P.2–P.5 + security sweep). Build clean.
+**Last Updated:** June 30, 2026 — Session 95: QA audit sweep FULLY COMPLETE. All 16 findings resolved. All 10 migrations applied in Supabase. Build clean (156 pages).
 
 ---
 
@@ -47,8 +47,6 @@
 
 ### What's next
 
-- N1: Apply `supabase/migrations/20260628200000_family_members.sql` (family section 500s — if not yet applied)
-- N2: Apply `supabase/migrations/20260623800000_missing_schema_columns.sql` (gap-analysis 400s — if not yet applied)
 - D6 Points 1+2: signup consent checkbox + existing-user terms-update banner
 - D5: Owner to define outcome survey question set
 - S1: Add auth to `verify-payment` (defense-in-depth — non-critical)
@@ -114,6 +112,8 @@
 - Apply `supabase/migrations/20260627100000_interview_prep_kits.sql`
 - Apply `20260629100000_uploaded_documents.sql` (if not yet done — from Session 90)
 - All Session 89 env var / Stripe / Resend items (items 1–12 in Session 89 block below)
+- ~~N1: family_members migration~~ ✅ applied Session 95
+- ~~N2: missing_schema_columns migration~~ ✅ applied Session 95
 
 ---
 
