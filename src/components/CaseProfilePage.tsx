@@ -2000,6 +2000,25 @@ export default function CaseProfilePage() {
               <Sub title="Knowledge Hub" fields={learnFields} />
             </SectionCard>
 
+            {/* ── 08 RENEWAL ──────────────────────────────────────── */}
+            <div style={{ background: 'rgba(201,168,76,0.04)', border: '1px solid rgba(201,168,76,0.15)', padding: '24px', marginBottom: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
+                <div>
+                  <div style={{ fontSize: '8px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(201,168,76,0.5)', fontFamily: "'DM Sans', sans-serif", marginBottom: '4px' }}>08</div>
+                  <div style={{ fontSize: '18px', fontFamily: "'Cormorant Garamond', Georgia, serif", fontWeight: 300, color: CREAM, lineHeight: 1.2, marginBottom: '4px' }}>Renewal Package</div>
+                  <div style={{ fontSize: '11px', fontFamily: "'DM Sans', sans-serif", color: 'rgba(245,240,232,0.4)', lineHeight: 1.6 }}>
+                    Prepare your E-2 renewal application — actual vs. projected performance, updated cover letter, current ties narrative, and path-specific checklist.
+                  </div>
+                </div>
+                <a
+                  href="/renewal"
+                  style={{ flexShrink: 0, background: 'rgba(201,168,76,0.12)', border: '1px solid rgba(201,168,76,0.3)', borderRadius: '6px', padding: '8px 16px', color: '#C9A84C', fontSize: '12px', fontFamily: "'DM Sans', sans-serif", fontWeight: 500, textDecoration: 'none', whiteSpace: 'nowrap', letterSpacing: '0.02em' }}
+                >
+                  Open →
+                </a>
+              </div>
+            </div>
+
             {/* Footer note */}
             <div style={{ textAlign: "center", padding: "24px 0", borderTop: `1px solid ${INNER}`, marginTop: "8px" }}>
               <p style={{ fontSize: "11px", fontFamily: "'DM Sans', sans-serif", color: "rgba(245,240,232,0.18)", lineHeight: 1.7, margin: 0 }}>

@@ -130,6 +130,7 @@ export async function middleware(req: NextRequest) {
     '/generate/',
     '/documents/',
     '/franchise/',
+    '/renewal',
   ];
 
   // Requires a paid application — redirects to /results if not paid

@@ -25,10 +25,11 @@
 | Gap analysis 2-call merge | ✅ DONE (Session 101) | `gap-analysis/run` merges N enrich + 1 semantic-eval into single server-side `Promise.all`. Client now makes 1 call instead of N+1. |
 
 ### Remaining backlog (priority order)
-1. Generation pipeline checkpoint resume (complex, no plan yet)
+1. Renewal Package Flow ($497 tier exists, no flow) — spec at docs/RENEWAL_MODULE_SPEC.md
 2. Partnership Document Engine (Sprint F-P — CRITICAL, do not sell $2,495 tier until built)
-3. Renewal Package Flow ($497 tier exists, no flow)
-4. Supabase CLI migration history sync (22 applied, CLI shows 2 — cosmetic, not blocking)
+3. Supabase CLI migration history sync (22 applied, CLI shows 2 — cosmetic, not blocking)
+
+*Note: "Generation pipeline checkpoint resume" (C2) was already implemented in generation-engine.ts lines 2013-2034 — approvedSet skips re-generating docs from prior interrupted runs. Removed from backlog.*
 
 ### Owner actions still pending from Session 100
 - Apply `supabase/migrations/20260701200000_profiles_outcomes_consent.sql` (outcomes consent columns) if not yet done.
