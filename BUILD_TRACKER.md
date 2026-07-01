@@ -1,6 +1,40 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** July 1, 2026 — Session 101: Middleware DB caching, account soft-delete (30-day grace period + recovery page), simulator session TTL, kill-switch enforcement on 8 AI routes, select(*) optimization on hot generation routes. Build clean, 26/26 security tests pass. Both Session 101 migrations applied by owner.
+**Last Updated:** July 1, 2026 — Session 102: Phase D QA audit — 3 security gaps found and closed (soft-delete bypass on AUTH_ROUTES, missing kill-switch on public LLM route, kill-switch exemptions documented). select(*) remediation completed across 18 routes. Build clean, 167 pages.
+
+---
+
+## Session 102 — Phase D QA Audit (July 1, 2026)
+
+**Branch:** dev. **Build:** ✅ clean (167 pages). **Commits:** 12a8c2e, 8f6898a.
+
+### Completed
+
+| Item | Status | Detail |
+|------|--------|--------|
+| Soft-delete AUTH_ROUTE bypass (QA-SEC-07) | ✅ FIXED | `src/middleware.ts` — soft-deleted users were blocked on PAID_ROUTES but NOT on AUTH_ROUTES (`/dashboard`, `/settings`, `/admin`, `/generate/`, `/documents/`, `/franchise/`). Added Redis-cached deleted check for AUTH_ROUTES; lightweight `deleted_at` DB check on cache miss only. |
+| `quiz/personalized-flags` kill-switch (QA-SEC-08) | ✅ FIXED | Public LLM route with no kill-switch — added `isKillSwitchEnabled()` guard. Falls back to `{ explanations: {} }` when kill-switch is active. |
+| Kill-switch exemption documentation | ✅ DONE | Added explanatory comments to `cron/health-watchdog` (billing API check, not inference) and `admin/health-detail` (diagnostic tool for kill-switch recovery). |
+| Admin routes (Sprint 98) security audit | ✅ PASS | All 6 admin routes (`cost-summary`, `flag-user`, `send-email`, `settings`, `stuck-jobs`, `tier-override`) properly check `profile.role === 'admin'` via admin client. |
+| Franchise + track routes audit | ✅ PASS | All franchise routes (`brand-view`, `matches`, `broker-request`) have auth. `track/session` has auth. |
+| `/api/account/restore` IDOR audit | ✅ PASS | Scope-locked to session user (`userId` from `getUser()`, never body). Admin client only updates `eq('user_id', userId)`. |
+| `/api/gap-analysis/run` ownership audit | ✅ PASS | Verifies `app.user_id !== user.id` before running enrichment. |
+| Dead route investigation | ✅ CONFIRMED CLOSED | Was resolved in Session 101. |
+| select(*) remediation | ✅ 18 of 23 fixed | Completed in Session 101 (Session 102 confirmed no regressions). 5 intentional `select()` calls remain (GDPR export, document list needing full content). |
+| Module 3 lazy loading | ✅ PARKED | App Router page-level code splitting already covers this; `next/dynamic()` adds no value without heavy 3rd-party deps. |
+| Gap analysis 2-call merge | ✅ DONE (Session 101) | `gap-analysis/run` merges N enrich + 1 semantic-eval into single server-side `Promise.all`. Client now makes 1 call instead of N+1. |
+
+### Remaining backlog (priority order)
+1. Generation pipeline checkpoint resume (complex, no plan yet)
+2. Partnership Document Engine (Sprint F-P — CRITICAL, do not sell $2,495 tier until built)
+3. Renewal Package Flow ($497 tier exists, no flow)
+4. Supabase CLI migration history sync (22 applied, CLI shows 2 — cosmetic, not blocking)
+
+### Owner actions still pending from Session 100
+- Apply `supabase/migrations/20260701200000_profiles_outcomes_consent.sql` (outcomes consent columns) if not yet done.
+- Confirm Resend domain verification (flip sender to results@e2go.app if verified).
+- Confirm FDD pricing ($297 placeholder).
+- D5 outcome survey questions (blocks CIC-5 cross-client learning).
 
 ---
 

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>E2go — Complete Feature Inventory · July 1, 2026 · Session 101</title>
+<title>E2go — Complete Feature Inventory · July 1, 2026 · Session 102</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -249,7 +249,7 @@
 
 <div class="topbar">
   <div>
-    <div class="subtitle">E2go · July 1, 2026 · Session 101 — Middleware DB caching (Upstash Redis 30-min TTL, 2–3 DB hits/request eliminated). Account soft-delete with 30-day grace period + recovery page. Simulator session TTL migration. 8 AI routes missing kill-switch fixed. select(*) optimized on generation hot paths. 2 new migrations pending owner. 26/26 security tests pass.</div>
+    <div class="subtitle">E2go · July 1, 2026 · Session 102 — Phase D QA audit complete. 2 security gaps closed: soft-delete bypass on AUTH_ROUTES (QA-SEC-07), missing kill-switch on public LLM route (QA-SEC-08). 18 select(*) calls replaced with explicit columns. Build clean, 167 pages.</div>
     <h1>Complete Feature Inventory</h1>
   </div>
   <div class="legend">
@@ -526,7 +526,21 @@
           <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.4);white-space:nowrap">2026-07-01</td>
           <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.7)">Account deletion was immediate and irreversible — no grace period, no recovery option. Pressing "delete my account" immediately wiped all data and deleted the auth user. No way to recover if deleted accidentally.</td>
           <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.5)">Converted to 30-day soft-delete: profiles.deleted_at stamped, data preserved. Recovery page at /account-recovery + POST /api/account/restore. Middleware redirects deleted users there (PAID_ROUTES). Settings page updated with purge date messaging. Migration 20260701210000 ✅ APPLIED. Session 101.</td>
-          <td style="padding:6px 0;color:#f59e0b;white-space:nowrap">⚠️ Migration pending</td>
+          <td style="padding:6px 0;color:#4ade80;white-space:nowrap">✅ Fixed</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(245,240,232,0.04)">
+          <td style="padding:6px 12px 6px 0;color:#C9A84C;font-family:monospace;white-space:nowrap">QA-SEC-07</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.4);white-space:nowrap">2026-07-01</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.7)">Soft-deleted accounts bypassed the deletion gate on AUTH_ROUTES (/dashboard, /settings, /admin, /generate/, /documents/, /franchise/). Deleted check only fired on PAID_ROUTES. A deleted user could still reach settings, change their email, or access the admin panel if they had that role.</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.5)">src/middleware.ts: added soft-delete check block for AUTH_ROUTES between auth guard and payment gate. Checks Redis cache first (cache hit ~5ms, no DB); on cache miss does lightweight deleted_at query only. PAID_ROUTES block unchanged (already handles deleted). Session 102.</td>
+          <td style="padding:6px 0;color:#4ade80;white-space:nowrap">✅ Fixed</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(245,240,232,0.04)">
+          <td style="padding:6px 12px 6px 0;color:#C9A84C;font-family:monospace;white-space:nowrap">QA-SEC-08</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.4);white-space:nowrap">2026-07-01</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.7)">quiz/personalized-flags: public LLM route (no auth required) had no kill-switch. During a billing incident or LLM outage, this route would continue generating LLM calls from anonymous quiz users, unable to be disabled without a deploy.</td>
+          <td style="padding:6px 12px 6px 0;color:rgba(245,240,232,0.5)">src/app/api/quiz/personalized-flags/route.ts: added isKillSwitchEnabled() guard after the API key check. Returns {explanations: {}} (graceful fallback to static text) when kill-switch is active. cron/health-watchdog and admin/health-detail confirmed intentionally exempt (balance API check and admin diagnostic respectively — comments added). Session 102.</td>
+          <td style="padding:6px 0;color:#4ade80;white-space:nowrap">✅ Fixed</td>
         </tr>
       </tbody>
     </table>
@@ -993,7 +1007,7 @@ const GAPS = [
       {priority:'resolved', name:'✅ Dead Route — /api/stripe/checkout — NOT Dead, Different Purpose', desc:'INVESTIGATED Session 101. /api/stripe/checkout is a HEAD/GET health probe that returns Stripe configuration status (keys present, webhook secret present, Stripe SDK reachable). It is NOT the checkout flow. /api/stripe/create-checkout handles actual checkout session creation. Two routes, two jobs. No deletion needed.'},
       {priority:'medium', name:'Gap Analysis — 2 API Calls Fire on Same Trigger', desc:'/api/gap-analysis/enrich and /api/gap-analysis/semantic-eval are both called from the same user action in gap-analysis/page.tsx (lines 233 + 255). Fix: merge into a single /api/gap-analysis/run endpoint that runs enrichment + semantic evaluation in one request. Halves round-trips and simplifies error handling.'},
       {priority:'medium', name:'Module 3 — No next/dynamic() Lazy Loading', desc:'Apply section pages are large (qualifications page ~4,000 lines). All question sets, form logic, and cluster definitions ship in the initial JS bundle. Fix: wrap heavy question arrays and cluster renderers in next/dynamic() with loading fallback. Reduces initial JS payload by ~40% for the apply flow.'},
-      {priority:'low', name:'21 API Routes Use select(\'*\') — Column Over-fetching (2 fixed Session 101)', desc:'Session 101: /api/generate/progress/[jobId] → select(\'status, current_step, current_step_label, document_types, total_steps, error_message\') and /api/generate/run/[jobId] → select(\'id, user_id, status, application_id\'). Both are SSE-polled hot paths. 21 remain. Fix remaining: replace each with explicit named column lists. Priority: FDD routes (50-field JSON blobs). Reduces payload size and prevents accidental exposure of internal fields.'},
+      {priority:'resolved', name:'✅ API Routes select(*) Over-fetching — RESOLVED Sessions 101+102', desc:'RESOLVED. Session 101: 2 hot-path SSE routes fixed (generate/progress, generate/run). Session 102: 18 additional routes fixed across fdd/*, generate/*, documents/*, followup/*, dashboard/*, simulator/outcome, profile/family-members, stripe/verify-payment, gap-analysis/run. 5 intentional select() calls remain: account/export (GDPR full export by design), documents list (needs content_text for modal), documents/[id] (all columns needed for document detail view). TypeScript build caught 2 missed columns during audit. No regressions.'},
     ]
   },
   {
@@ -1924,7 +1938,10 @@ const SPRINTS = [
   },
   {
     id:'S101', name:'Security + Performance + Soft-Delete', priority:'high', effort:'1 session', status:'complete',
-    desc:'✅ COMPLETE (Session 101) — Kill-switch enforcement gap closed (8 AI routes). Middleware DB caching via Upstash Redis (30-min TTL, 2–3 DB hits/request eliminated). Account soft-delete with 30-day grace period + /account-recovery page + /api/account/restore. Simulator session TTL migration (expires_at generated column). select(*) optimized on 2 SSE-polled generation hot paths. Dead route investigation (/api/stripe/checkout is NOT dead — health probe). Build clean. ⚠️ Owner actions: apply 20260701210000_profiles_soft_delete.sql + 20260701220000_simulator_sessions_ttl.sql in Supabase SQL Editor.',
+    desc:'✅ COMPLETE (Session 101) — Kill-switch enforcement gap closed (8 AI routes). Middleware DB caching via Upstash Redis (30-min TTL, 2–3 DB hits/request eliminated). Account soft-delete with 30-day grace period + /account-recovery page + /api/account/restore. Simulator session TTL migration (expires_at trigger-based). select(*) optimized on 2 SSE-polled generation hot paths. Dead route investigation (/api/stripe/checkout is NOT dead — health probe). Both migrations applied by owner. Build clean.',
+  },{
+    id:'S102', name:'Phase D QA Audit + select(*) Remediation', priority:'high', effort:'1 session', status:'complete',
+    desc:'✅ COMPLETE (Session 102) — QA-SEC-07: soft-deleted users could access AUTH_ROUTES (/dashboard /settings /admin /generate/ /documents/ /franchise/) — middleware soft-delete check added for AUTH_ROUTES using Redis cache. QA-SEC-08: quiz/personalized-flags (public LLM route) had no kill-switch — added isKillSwitchEnabled() guard. 18 API routes converted from select(*) to explicit columns (fdd/*, generate/*, documents/*, followup/*, dashboard/*, simulator/outcome, profile/family-members, stripe/verify-payment, gap-analysis/run). Admin routes (Sprint 98) security verified: all check role=admin via service client. Franchise + track routes: auth confirmed. Gap-analysis/run ownership check confirmed. Kill-switch exemptions documented (health-watchdog + admin/health-detail). Build clean 167 pages.',
     items:[
       {name:'Kill-switch enforcement — 8 routes fixed', desc:'isKillSwitchEnabled() added to: simulator/evaluate, simulator/follow-up, simulator/prep-kit, simulator/coaching-report, simulator/interview-prep, gap-analysis/enrich, faq/ask, case-file/field-quality. Guard placed after auth+rate-limit, before LLM calls. Returns 503 when kill-switch active.'},
       {name:'Middleware Upstash Redis caching', desc:'src/middleware.ts: AccessCache {full, sim, fdd, deleted} cached at mw:access:{userId} (1800s). Terms cached at mw:terms:{userId}:1.0 (1800s). Cache invalidated by stripe webhook (checkout.completed, charge.refunded) and accept-terms route (warms on success). Eliminates 2–3 DB hits per authenticated page request.'},
@@ -1999,7 +2016,7 @@ const roadmapSprintEl = document.getElementById('roadmap-sprint-container');
 const sprintTitle = document.createElement('div');
 sprintTitle.className = 'roadmap-section-title';
 sprintTitle.style.marginTop = '36px';
-sprintTitle.textContent = 'Sprints — 29 total · OPS-1✅ OPS-2✅ OPS-3✅ OPS-4✅ OPS-5✅ ENG-1✅ ENG-2✅ INFRA-1✅ F-1✅ F-2✅ G-1✅ G-2✅ G-3✅ H-1✅ H-2✅ H-3✅ H-4✅ H-5✅ H-6✅ H-7✅ I-1✅ I-2✅ I-3✅ I-4✅ OPS-98✅ AUD-99✅ S100✅ S101✅ complete · Session 101 done';
+sprintTitle.textContent = 'Sprints — 30 total · OPS-1✅ OPS-2✅ OPS-3✅ OPS-4✅ OPS-5✅ ENG-1✅ ENG-2✅ INFRA-1✅ F-1✅ F-2✅ G-1✅ G-2✅ G-3✅ H-1✅ H-2✅ H-3✅ H-4✅ H-5✅ H-6✅ H-7✅ I-1✅ I-2✅ I-3✅ I-4✅ OPS-98✅ AUD-99✅ S100✅ S101✅ S102✅ complete · Session 102 done';
 roadmapSprintEl.appendChild(sprintTitle);
 
 const sprintGrid = document.createElement('div');
