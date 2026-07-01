@@ -1,6 +1,26 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** July 1, 2026 — Session 99: Audit v3 all findings closed (N1 mobile fix, F20 RLS legacy policy drop, F6 treaty_country). Session 98 migrations applied. Build clean (163 pages). No outstanding migrations.
+**Last Updated:** July 1, 2026 — Session 100: D6 consent Points 1+2 live (signup checkbox + existing-user banner + migration), Sensai Health in franchise catalog, S2 unsafe-eval removed from main CSP, placeholder regex broadened to catch lowercase markers. Build clean. Owner still needs to apply `20260701200000_profiles_outcomes_consent.sql` in Supabase SQL Editor.
+
+---
+
+## Session 100 — D6 Consent + Sensai Health + CSP + Regex (July 1, 2026)
+
+**Branch:** dev. **Build:** ✅ clean. **Push:** ✅ c802d87.
+
+### Completed
+
+| Item | Status | Detail |
+|------|--------|--------|
+| D6 Point 1 — signup consent checkbox | ✅ DONE | `outcomesConsent` state + checkbox UI after CASL block in `src/app/signup/page.tsx`. Writes `outcomes_consent` + `outcomes_consent_at` to profile on sign-up. |
+| D6 Point 2 — existing-user banner | ✅ DONE | `OutcomesConsentBanner` component fetches `/api/profile/outcomes-consent` (GET); shows only when `outcomes_consent === null` (never asked). "Yes, I'm in" / "No thanks" → POST → hidden. Wired inside `<header>` in `Nav.tsx` (auth users only). |
+| D6 migration | ✅ BUILT — owner must apply | `supabase/migrations/20260701200000_profiles_outcomes_consent.sql` adds `outcomes_consent BOOLEAN` + `outcomes_consent_at TIMESTAMPTZ` to profiles. Existing rows get NULL (banner shows next login). Run in Supabase SQL Editor. |
+| Sensai Health franchise brand | ✅ DONE | Added to `src/data/franchise-brands.ts` — fitness/wellness, $200K–$450K, E-2 score A, renewal strength 82. |
+| S2 — Remove unsafe-eval from main CSP | ✅ DONE | `next.config.mjs` main route CSP now has `'unsafe-inline'` only. Keystatic admin still has `unsafe-eval`. Build confirmed clean. |
+| Placeholder regex — DocumentAuditPanel | ✅ DONE | `src/components/documents/DocumentAuditPanel.tsx` line 161 — regex now catches both ALL-CAPS (`[PASSPORT NUMBER]`) and descriptive lowercase forms (`[passport number]`, `[insert name here]`, `[your country]`). |
+
+### Owner action required
+- Apply `supabase/migrations/20260701200000_profiles_outcomes_consent.sql` in Supabase SQL Editor → adds `outcomes_consent` and `outcomes_consent_at` columns to `profiles`.
 
 ---
 

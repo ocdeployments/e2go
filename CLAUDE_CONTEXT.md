@@ -1,6 +1,6 @@
 # CLAUDE_CONTEXT.md — E2go
 ## Master Context for Every Claude Code Session
-**Version:** July 1, 2026 — Session 99. Audit v3 complete — all 3 findings closed (N1 mobile fix on /case-profile, F20 RLS legacy policy drop on quiz_sessions, F6 treaty_country column). Session 98 migrations applied (support_tickets + franchise_tracking/login_events live). Admin suite: 4 new pages (/admin/support, /admin/franchise, /admin/intelligence, /admin/geography). Geo tracking via Vercel edge headers (login_events). Build clean (163 pages). Next: D6 signup consent checkbox + terms-update banner, then CIC-5 (gated on D5 + full D6).
+**Version:** July 1, 2026 — Session 100. D6 consent complete: signup checkbox (Point 1) + existing-user banner (Point 2) + migration built (owner must apply). Sensai Health in franchise catalog. S2 done: unsafe-eval removed from main CSP. DocumentAuditPanel placeholder regex now catches lowercase forms. Build clean. Owner action: apply `20260701200000_profiles_outcomes_consent.sql` in Supabase SQL Editor. Next priority: Phase D QA audit (public routes → authenticated routes → API routes), then account deletion soft-delete.
 
 ## SPRINT STATUS
 - OPS-1 (API Cost Intelligence): ✅ COMPLETE — llm_cost_log, cost logging in callLLM(), /admin/cost page
