@@ -113,6 +113,11 @@ const ROWS: RowDef[] = [
         : fmt(c.ode_mid, '$')}
     </span>
   )},
+  { group: 'Financial Performance', label: 'Payback period', key: 'payback_years', render: (c, best) => (
+    <span className={best ? 'text-emerald-400' : 'text-white/80'}>
+      {c.payback_years !== null ? `${c.payback_years.toFixed(1)} yrs` : '—'}
+    </span>
+  )},
 
   // ── Territory ───────────────────────────────────────────────────────────
   { group: 'Territory', label: 'Territory score', key: 'territory_score', render: (c, best) => (
@@ -144,6 +149,11 @@ const ROWS: RowDef[] = [
   { group: 'System Health', label: 'Units closed (last yr)', key: 'units_closed_last_year', render: (c, best) => (
     <span className={best ? 'text-emerald-400' : c.units_closed_last_year !== null && c.units_closed_last_year > 20 ? 'text-red-400' : 'text-white/80'}>
       {fmt(c.units_closed_last_year)}
+    </span>
+  )},
+  { group: 'System Health', label: 'Franchisee survival rate', key: 'franchisee_survival_rate', render: (c, best) => (
+    <span className={best ? 'text-emerald-400' : 'text-white/80'}>
+      {fmtPct(c.franchisee_survival_rate)}
     </span>
   )},
   { group: 'System Health', label: 'FDD age (months)', key: 'fdd_age_months', render: (c) => (

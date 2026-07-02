@@ -63,6 +63,26 @@ function buildColumn(a: FddAnalysis): ComparisonColumn {
 
   const franchiseName = (fields.franchisor_legal_name?.value as string | null) ?? a.original_filename;
 
+  const investmentMin = fields.total_investment_min?.value as number | null;
+  const investmentMax = fields.total_investment_max?.value as number | null;
+  const odeMid = scoring?.ode?.ode_mid ?? null;
+  // Same formula as the FDD Report's payback period: investment midpoint / central ODE.
+  const paybackYears = (investmentMin != null && investmentMax != null && odeMid != null && odeMid > 0)
+    ? ((investmentMin + investmentMax) / 2) / odeMid
+    : null;
+
+  const totalUnits = fields.total_franchise_units_current?.value as number | null;
+  const unitsOpened = fields.units_opened_yr1?.value as number | null;
+  const unitsClosed = fields.units_closed_yr1?.value as number | null;
+  // Back out the start-of-year unit count from this year's net change, then
+  // express closures as a share of that base — the Item 20 "survival rate" convention.
+  const unitsAtStart = (totalUnits != null && unitsOpened != null && unitsClosed != null)
+    ? totalUnits + unitsClosed - unitsOpened
+    : null;
+  const franchiseeSurvivalRate = (unitsAtStart != null && unitsAtStart > 0 && unitsClosed != null)
+    ? Math.max(0, 1 - unitsClosed / unitsAtStart)
+    : null;
+
   return {
     id: a.id,
     franchise_name: franchiseName,
@@ -79,7 +99,7 @@ function buildColumn(a: FddAnalysis): ComparisonColumn {
     ode_low: scoring?.ode?.ode_low ?? null,
     ode_mid: scoring?.ode?.ode_mid ?? null,
     ode_high: scoring?.ode?.ode_high ?? null,
-    payback_years: null, // derived in report only
+    payback_years: paybackYears,
 
     e2_score: scoring?.overall ?? null,
     flag_count: a.flag_count ?? 0,
@@ -100,7 +120,7 @@ function buildColumn(a: FddAnalysis): ComparisonColumn {
     total_units: fields.total_franchise_units_current?.value as number | null,
     units_opened_last_year: fields.units_opened_yr1?.value as number | null,
     units_closed_last_year: fields.units_closed_yr1?.value as number | null,
-    franchisee_survival_rate: null,
+    franchisee_survival_rate: franchiseeSurvivalRate,
   };
 }
 
@@ -136,6 +156,7 @@ function computeBest(columns: ComparisonColumn[]): Partial<Record<keyof Comparis
   markLowest('royalty_pct');
   markLowest('flag_count');
   markLowest('competitors_nearby');
+  markLowest('payback_years');
 
   return best;
 }
