@@ -13,6 +13,7 @@ import TabPage from '@/components/module3/TabPage';
 import tabQuestions from '@/data/module3/tab-a.json';
 import { getPreFill } from '@/lib/prefill';
 import { FieldConfig, Section } from '@/types/module3';
+import { resolvePrimaryApplicationId } from '@/lib/resolve-application';
 
 interface QuestionConfig {
   key: string;
@@ -105,13 +106,8 @@ function TabAPageContent() {
         return;
       }
 
-      const { data: existingApp } = await supabase
-        .from('applications')
-        .select('id')
-        .eq('user_id', authUser.id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
+      const existingAppId = await resolvePrimaryApplicationId(supabase, authUser.id);
+      const existingApp = existingAppId ? { id: existingAppId } : null;
 
       if (existingApp) {
         setApplicationId(existingApp.id);
