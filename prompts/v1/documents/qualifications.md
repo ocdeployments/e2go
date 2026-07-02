@@ -1,6 +1,6 @@
 # Qualifications Summary Generation Prompt
 ## Document Type: qualifications
-## Tab Reference: Tab J
+## Tab Reference: Tab D
 ## Generation Order: Step 5
 
 ---

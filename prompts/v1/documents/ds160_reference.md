@@ -1,6 +1,6 @@
 # DS-160 Reference Generation Prompt
 ## Document Type: ds160_reference
-## Tab Reference: Tab A
+## Tab Reference: Tab D / E
 ## Generation Order: Step 6
 
 ---
