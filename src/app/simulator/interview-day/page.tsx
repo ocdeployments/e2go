@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { createBrowserSupabaseClient } from '@/lib/supabase';
+import { resolvePrimaryApplication } from '@/lib/resolve-application';
 import { getConsulateData, getEmbassyFinderUrl } from '@/lib/consulate-data';
 import { buildDocumentChecklist, type ChecklistSection, type CaseFlags } from '@/lib/document-checklist';
 import type { ConsulateCountryData } from '@/lib/consulate-data';
@@ -100,14 +101,17 @@ export default function InterviewDayPage() {
         setTop3NextSession(coachingNotes.top3NextSession);
       }
 
-      // Fetch the most recent application
-      const { data: app } = await supabase
-        .from('applications')
-        .select('id, application_type, treaty_country, investment_sources, prior_visa_denial, operational_status, business_category, has_partner')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
+      // Fetch the primary application (shared canonical rule)
+      const app = await resolvePrimaryApplication<{
+        id: string;
+        application_type: string | null;
+        treaty_country: string | null;
+        investment_sources: unknown;
+        prior_visa_denial: boolean | null;
+        operational_status: string | null;
+        business_category: string | null;
+        has_partner: boolean | null;
+      }>(supabase, user.id, 'id, application_type, treaty_country, investment_sources, prior_visa_denial, operational_status, business_category, has_partner');
 
       // Fetch answers for spouse/children flags
       let hasSpouse = false;
