@@ -1,12 +1,42 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** July 1, 2026 — Session 104: Full-app stitching audit + all 5 fixes implemented. Root cause of "everything randomly breaks" found and fixed: four conflicting "which application is THE application" rules across surfaces. New shared resolver (`src/lib/resolve-application.ts`) adopted in ~35 files. Also fixed: Q0-10 ties answer leaking into business category, consent banner overlapping page titles, /market-analysis dead end, verify-payment Redis cache race.
+**Last Updated:** July 2, 2026 — Session 105: Global top-level Nav bar shipped across `/franchise/*` and `/apply/*`, dead Module 3 UI (`TabShell.tsx`, `QuestionRenderer.tsx`) removed, and a genuine mobile horizontal-overflow bug in `TabPage.tsx` root-caused and fixed (flexbox `min-width: auto` default). Session 104's resolver work also finished — see below.
+
+---
+
+## Session 105 — Global Nav Integration + Dead Code Removal + Mobile Overflow Fix (July 2, 2026)
+
+**Branch:** dev. **Build:** ✅ `tsc --noEmit` clean + `npm run build` clean. Committed and pushed.
+
+### Global Nav bar extended app-wide
+
+`Nav.tsx` (fixed, 64px) now mounts on every top-level surface. New `src/app/franchise/layout.tsx` for `/franchise/*`; existing `src/app/apply/layout.tsx` updated for `/apply/*`. Every fixed/sticky element and root container in affected components repositioned +64px so nothing collides with or hides behind the header: `module1/page.tsx`, `module2/page.tsx`, `module3/page.tsx`, `checklist/page.tsx`, `CaseFileShell.tsx`, `calendar/page.tsx`, `upload/page.tsx`, `UploadClient.tsx`, `module4/page.tsx`, `TabPage.tsx`, `TabSidebar.tsx`.
+
+### Dead code removed
+
+- `src/components/module3/TabShell.tsx` — legacy one-question-at-a-time UI on a different (navy/glass/Playfair) design system. Confirmed zero importers anywhere in `src/app` before deletion.
+- `src/components/module3/QuestionRenderer.tsx` — only consumer was `TabShell.tsx`; confirmed dead once TabShell was removed.
+- The real, live Module 3 UI is `TabPage.tsx` + `TabSidebar.tsx` (category-based layout, matches the project's locked "never one-question-at-a-time" design rule).
+
+### Mobile horizontal-overflow bug — root-caused and fixed
+
+Found during Nav-integration verification on `/apply/module3/a`: page was rendering 867px wide on a 375px viewport (real horizontal scroll, clipped/cut-off content on mobile). Root cause: flexbox items default to `min-width: auto` (their max-content intrinsic width) unless `min-w-0` is explicitly set — `TabPage.tsx`'s `<main className="flex-1 flex flex-col">` had no `min-w-0`, so its content could force the whole row wider than the viewport even inside a `flex-1` container.
+
+Fix: added `min-w-0` to the `<main>` element and to the scrollable form-area `<div>` in `TabPage.tsx`. Verified live: `document.documentElement.scrollWidth` now exactly matches `clientWidth` (375===375) at 375×812, clean text wrapping, no clipped content.
+
+Also fixed `TabSidebar.tsx`'s desktop-only `<aside>`: was `h-screen sticky top-0` (didn't account for the new Nav), changed to `sticky top-16` with `height: calc(100vh - 64px)` — correct because `sticky` (unlike `fixed`) respects ancestor position, so this is the right pattern vs. adding ancestor padding (which would double-count height).
+
+Audited the other 7 touched pages for the same bug class via `scrollWidth`/`clientWidth` checks — all clean, bug was isolated to `TabPage.tsx`.
+
+### Session 104 resolver work — now fully wired
+
+Two shared helpers finish the "one canonical application" migration started in Session 104: `src/hooks/useApplicationGate.ts` and `src/components/apply/ApplicationNotReadyScreen.tsx`, adopted across `business/family/investment/ties/story/qualifications/module3` pages — replaces duplicated per-page "loading / not paid yet" boilerplate with one shared gate.
 
 ---
 
 ## Session 104 — Stitching Audit + 5-Part Fix (July 1, 2026)
 
-**Branch:** dev. **Build:** ✅ `tsc --noEmit` clean + `npm run build` clean (167 pages). Not yet committed.
+**Branch:** dev. **Build:** ✅ `tsc --noEmit` clean + `npm run build` clean (167 pages). Committed in Session 105.
 
 ### Audit (first half of session)
 
