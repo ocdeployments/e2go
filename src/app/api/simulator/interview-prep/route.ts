@@ -5,6 +5,7 @@ import { callLLM } from '@/lib/llm-client';
 import { getBusinessCategoryLabel } from '@/lib/business-categories';
 import { scoreCase } from '@/lib/gap-analysis-engine';
 import { INTERVIEW_KNOWLEDGE_BASE } from '@/lib/interview-knowledge-base';
+import { uploadedDocTypeLabel, summarizeExtractedJson } from '@/lib/uploaded-doc-labels';
 import type { GapAnalysisResult } from '@/lib/gap-analysis-engine';
 
 const CONSULATE_LABELS: Record<string, string> = {
@@ -225,18 +226,22 @@ export async function GET(request: NextRequest) {
 
     if (appError || !app) return NextResponse.json({ error: 'Application not found' }, { status: 404 });
 
-    // All answers + documents + case brief + archetype in parallel
-    const [answersRes, documentsRes, caseBriefRes, profileRes] = await Promise.all([
+    // All answers + documents + case brief + archetype + case theory in parallel
+    const [answersRes, documentsRes, caseBriefRes, profileRes, caseTheoryRes] = await Promise.all([
       supabase.from('answers').select('question_key, answer_value').eq('application_id', applicationId),
-      supabase.from('application_documents').select('detected_document_type, user_selected_document_type, document_summary').eq('application_id', applicationId),
+      supabase.from('uploaded_documents').select('doc_type, extracted_json').eq('application_id', applicationId).eq('extraction_status', 'complete'),
       supabase.from('case_briefs').select('substantiality_score, marginality_score').eq('application_id', applicationId).order('created_at', { ascending: false }).limit(1).single(),
       supabase.from('case_profiles').select('archetype').eq('user_id', user.id).maybeSingle(),
+      supabase.from('case_theory').select('narrative, numbers_strategy').eq('application_id', applicationId).maybeSingle(),
     ]);
 
     const answerRows = answersRes.data || [];
-    const docRows = documentsRes.data || [];
+    const rawDocs = documentsRes.data || [];
+    // Mapped to the legacy DocumentRow shape the gap-analysis engine's hasDoc() expects.
+    const docRows = rawDocs.map(d => ({ detected_document_type: d.doc_type }));
     const caseBrief = caseBriefRes.data ?? undefined;
     const archetype = profileRes.data?.archetype ?? null;
+    const caseTheory = caseTheoryRes.data as { narrative?: string | null; numbers_strategy?: unknown } | null;
 
     const aMap = new Map<string, string>();
     answerRows.forEach(a => { if (a.answer_value) aMap.set(a.question_key, a.answer_value); });
@@ -291,8 +296,11 @@ export async function GET(request: NextRequest) {
 
     const knowledgeSummary = buildKnowledgeSummary(isFranchise, isTorontoConsulate, highRiskCategoryIds);
 
-    const docList = docRows.filter(d => d.detected_document_type)
-      .map(d => `${d.detected_document_type}${d.document_summary ? ': ' + d.document_summary.slice(0, 80) : ''}`)
+    const docList = rawDocs
+      .map(d => {
+        const summary = summarizeExtractedJson(d.extracted_json as Record<string, unknown> | null, 80);
+        return `${uploadedDocTypeLabel(d.doc_type)}${summary ? ': ' + summary : ''}`;
+      })
       .join('\n');
 
     const highRiskLines = gapResult.denialFactors.filter(f => f.risk === 'high')
@@ -327,6 +335,10 @@ ${categoryGapsText || 'No significant gaps detected'}
 
 DOCUMENTS ON FILE:
 ${docList || 'No documents yet'}
+
+CASE THEORY (the client's strongest honest E-2 narrative, and which figures to foreground vs which denial risks to pre-empt):
+${caseTheory?.narrative || 'Not yet built'}
+${caseTheory?.numbers_strategy ? JSON.stringify(caseTheory.numbers_strategy) : ''}
 
 GOLD-STANDARD INTERVIEW COACHING REFERENCE:
 ${knowledgeSummary}
