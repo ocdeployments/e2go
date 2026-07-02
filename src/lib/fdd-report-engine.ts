@@ -14,7 +14,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import type { FddExtractedFields, FddFieldMeta } from '@/types/fdd';
 import type { ScoringResult, OdeAssessment } from '@/lib/fdd-scoring-engine';
-import type { TerritoryAnalysis } from '@/lib/fdd-territory-engine';
+import { classifyCategory, type TerritoryAnalysis } from '@/lib/fdd-territory-engine';
 
 const anthropic = new Anthropic();
 
@@ -316,12 +316,30 @@ Produce a legal risk assessment as this exact JSON schema:
 // Section 2 — Fee Structure Analysis (deterministic)
 // ============================================================================
 
+// Category-keyed royalty benchmarks — replaces a single QSR-only figure that
+// was previously applied to every franchise regardless of category. Ranges
+// reflect typical published royalty rates for each category; categories
+// match classifyCategory() in fdd-territory-engine.ts.
+const ROYALTY_BENCHMARK_BY_CATEGORY: Record<string, { label: string; low: number; high: number }> = {
+  qsr:             { label: 'QSR / food service', low: 0.05, high: 0.07 },
+  home_services:   { label: 'home services', low: 0.06, high: 0.10 },
+  senior_care:     { label: 'senior care', low: 0.05, high: 0.07 },
+  health_fitness:  { label: 'fitness / wellness', low: 0.06, high: 0.08 },
+  child_education: { label: 'education / child services', low: 0.08, high: 0.10 },
+  automotive:      { label: 'automotive', low: 0.05, high: 0.08 },
+  retail:          { label: 'retail', low: 0.04, high: 0.06 },
+  professional:    { label: 'professional / business services', low: 0.06, high: 0.10 },
+  default:         { label: 'this category', low: 0.05, high: 0.08 },
+};
+
 function generateFeeStructure(
   fields: FddExtractedFields,
   _ode: OdeAssessment
 ): FeeStructureAnalysis {
   const auv = n(fields.item19_auv) ?? n(fields.item19_median) ?? null;
   const royaltyPct = n(fields.royalty_rate_pct) ?? 0;
+  const category = classifyCategory(fields);
+  const benchmark = ROYALTY_BENCHMARK_BY_CATEGORY[category] ?? ROYALTY_BENCHMARK_BY_CATEGORY.default;
   const mktgPct = n(fields.marketing_fund_pct) ?? 0;
   const techFeeMonthly = n(fields.technology_fee_monthly) ?? 0;
   const cogsPct = n(fields.estimated_cogs_pct) ?? 0.30;
@@ -347,8 +365,8 @@ function generateFeeStructure(
       label: 'Less: Royalty',
       pct_of_gross: -(royaltyPct * 100),
       annual_on_auv: auv ? -(auv * royaltyPct) : null,
-      note: royaltyPct > 0.08 ? 'Above 8% — heavy royalty load for QSR category' :
-            royaltyPct > 0.06 ? 'Moderate royalty — typical range' :
+      note: royaltyPct > benchmark.high ? `Above ${(benchmark.high * 100).toFixed(0)}% — heavy royalty load for ${benchmark.label}` :
+            royaltyPct >= benchmark.low ? 'Moderate royalty — typical range for this category' :
             'Light royalty — positive for unit economics',
     },
     {
@@ -395,7 +413,7 @@ function generateFeeStructure(
   }
 
   const categoryBenchmark = royaltyPct > 0
-    ? `QSR industry median royalty is 5–7%. This franchise at ${(royaltyPct * 100).toFixed(1)}% is ${royaltyPct > 0.07 ? 'above' : royaltyPct < 0.05 ? 'below' : 'within'} that range. Combined with ${(mktgPct * 100).toFixed(1)}% marketing fund, total franchisor fee burden is ${(totalFranchisorPct * 100).toFixed(1)}% of gross revenue.`
+    ? `Typical royalty for ${benchmark.label} is ${(benchmark.low * 100).toFixed(0)}–${(benchmark.high * 100).toFixed(0)}%. This franchise at ${(royaltyPct * 100).toFixed(1)}% is ${royaltyPct > benchmark.high ? 'above' : royaltyPct < benchmark.low ? 'below' : 'within'} that range. Combined with ${(mktgPct * 100).toFixed(1)}% marketing fund, total franchisor fee burden is ${(totalFranchisorPct * 100).toFixed(1)}% of gross revenue.`
     : 'Fee structure not fully disclosed — obtain complete fee schedule before proceeding.';
 
   return {
