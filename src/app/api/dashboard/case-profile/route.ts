@@ -62,6 +62,18 @@ export interface CaseProfileResponse {
 
   // Case Theory (CIC-1.3 — Case Intelligence Core reasoning, read-only)
   caseTheory: CaseTheoryUI | null;
+
+  // Uploaded documents — extraction transparency for the client
+  documents: DocumentExtractionUI[];
+}
+
+export interface DocumentExtractionUI {
+  id: string;
+  fileName: string;
+  docType: string;
+  extractionStatus: 'pending' | 'processing' | 'complete' | 'failed';
+  fieldsTotal: number;
+  createdAt: string;
 }
 
 export interface CaseTheoryUI {
@@ -194,9 +206,10 @@ export async function GET(request: Request) {
   let marketCompetitorCount: number | null = null;
   let marketVerdict: string | null = null;
   let caseTheory: CaseTheoryUI | null = null;
+  let documents: DocumentExtractionUI[] = [];
 
   if (app?.id) {
-    const [{ data: qmaRows }, { data: theoryRow }] = await Promise.all([
+    const [{ data: qmaRows }, { data: theoryRow }, { data: docRows }] = await Promise.all([
       supabase
         .from('answers')
         .select('question_key, answer_value')
@@ -207,7 +220,21 @@ export async function GET(request: Request) {
         .select('narrative, transferable_skills, numbers_strategy, dimension_verdicts, directives, doctrine_citations, built_at')
         .eq('application_id', app.id)
         .maybeSingle(),
+      supabase
+        .from('uploaded_documents')
+        .select('id, file_name, doc_type, extraction_status, fields_total, created_at')
+        .eq('application_id', app.id)
+        .order('created_at', { ascending: false }),
     ]);
+
+    documents = (docRows ?? []).map(d => ({
+      id: d.id,
+      fileName: d.file_name,
+      docType: d.doc_type,
+      extractionStatus: d.extraction_status,
+      fieldsTotal: d.fields_total ?? 0,
+      createdAt: d.created_at,
+    }));
 
     if (qmaRows?.length) {
       const qma: Record<string, string> = Object.fromEntries(
@@ -287,6 +314,7 @@ export async function GET(request: Request) {
     marketVerdict,
 
     caseTheory,
+    documents,
   };
 
   return NextResponse.json(response);
