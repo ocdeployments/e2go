@@ -264,6 +264,24 @@ export default function DocumentsReviewPage() {
     return <span className={`${base} border-white/15 text-white/40`}>UNDER REVIEW</span>;
   };
 
+  // CIC-2.2 verifier outcome — surfaces silent degradations (WS2.8/E8): a
+  // document that shipped after the verifier LLM failed, or that never
+  // passed compliance, looked identical to a clean one before this badge.
+  const getVerifierBadge = (doc: GeneratedDocument) => {
+    const base = "text-[10px] font-medium uppercase tracking-wider px-2 py-0.5 border";
+    const result = doc.verifier_result;
+    if (result === undefined || result === null) {
+      return <span className={`${base} border-white/10 text-white/25`}>UNVERIFIED — VERIFIER UNAVAILABLE</span>;
+    }
+    if (result.overall === 'fail') {
+      return <span className={`${base} border-red-500/40 text-red-400`}>SHIPPED AFTER FAILED VERIFICATION</span>;
+    }
+    if (result.overall === 'pass_with_notes') {
+      return <span className={`${base} border-[#C9A84C]/40 text-[#C9A84C]`}>VERIFIED WITH NOTES</span>;
+    }
+    return <span className={`${base} border-[#22c55e]/40 text-[#22c55e]`}>CASE-THEORY VERIFIED</span>;
+  };
+
   // ─── Derived counts for progress strip ────────────────────────────────────
   const certifiedCount = manifest?.certifiedCount ?? 0;
   const totalGenerated = documents.length;
@@ -449,6 +467,7 @@ export default function DocumentsReviewPage() {
                       {docLabel(doc)}
                     </h3>
                     {getStatusBadge(doc)}
+                    {getVerifierBadge(doc)}
                   </div>
                   <div
                     className="flex flex-wrap gap-4 text-xs text-white/30"
