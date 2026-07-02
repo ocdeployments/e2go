@@ -51,6 +51,27 @@ const ANTHROPIC_MODELS: Record<TaskType, string> = {
   extract:  'claude-haiku-4-5-20251001',
 };
 
+// Reasoning models (e.g. gemini-2.5-pro) deduct hidden "thinking" tokens from
+// the same max_tokens budget as the visible answer, and some OpenRouter
+// endpoints make reasoning mandatory (cannot be disabled). Without headroom,
+// a small max_tokens budget gets consumed entirely by reasoning and the
+// model returns empty content — this silently broke document extraction
+// (max_tokens: 20 for type detection could never produce output). Every
+// OpenRouter call reserves this much extra budget for reasoning, capped via
+// the `reasoning` param so it can't run away either; non-reasoning models
+// ignore the field.
+const REASONING_TOKEN_BUDGET = 1500;
+
+// Per-task request timeout. Document extraction budgets more headroom
+// (larger prompts, reasoning-capped models) than short simulator calls.
+const DEFAULT_TIMEOUT_MS: Record<TaskType, number> = {
+  evaluate: 30_000,
+  coaching: 30_000,
+  faq:      30_000,
+  prep:     30_000,
+  extract:  45_000,
+};
+
 // Model pricing: USD per 1M tokens (input / output). Verified June 17, 2026.
 const MODEL_COSTS: Record<string, { in: number; out: number }> = {
   'xiaomi/mimo-v2.5':          { in: 0.14,  out: 0.28  },
@@ -102,15 +123,21 @@ function logCost(entry: {
   }).then(() => {}, () => {});
 }
 
-async function callOpenRouter(options: LLMOptions): Promise<string> {
+// Calls a single OpenRouter model. Loops in callOpenRouter() below so a
+// model returning HTTP 200 with empty content (e.g. reasoning starvation)
+// is treated as a failure and advances to the next model — OpenRouter's own
+// built-in `models` array fallback only triggers on hard errors, not on a
+// technically-successful-but-empty response, which is exactly the failure
+// mode that silently broke document extraction.
+async function callOpenRouterModel(model: string, options: LLMOptions): Promise<string> {
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) throw new Error('OPENROUTER_API_KEY not set');
 
-  // 30s hard timeout by default — MIMO silent failures reach Anthropic fallback in ~30s,
-  // not ~250s. Callers with structurally large prompts (e.g. CIC's multi-dimension doctrine
-  // synthesis) can override via options.timeoutMs.
   const timeoutController = new AbortController();
-  const timeoutId = setTimeout(() => timeoutController.abort(), options.timeoutMs ?? 30_000);
+  const timeoutId = setTimeout(
+    () => timeoutController.abort(),
+    options.timeoutMs ?? DEFAULT_TIMEOUT_MS[options.task]
+  );
 
   // Compose with any caller-supplied signal
   const onExternalAbort = () => timeoutController.abort();
@@ -123,6 +150,7 @@ async function callOpenRouter(options: LLMOptions): Promise<string> {
     }
   }
 
+  const contentBudget = options.max_tokens ?? 700;
   const t0 = Date.now();
   try {
     const response = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
@@ -134,28 +162,34 @@ async function callOpenRouter(options: LLMOptions): Promise<string> {
         'X-Title':       'e2go Interview Simulator',
       },
       body: JSON.stringify({
-        models:      OPENROUTER_MODELS[options.task],
+        model,
         messages:    options.messages,
         temperature: options.temperature ?? 0.3,
-        max_tokens:  options.max_tokens  ?? 700,
+        // Total budget must cover hidden reasoning tokens PLUS the visible
+        // answer — see REASONING_TOKEN_BUDGET comment above.
+        max_tokens:  contentBudget + REASONING_TOKEN_BUDGET,
+        reasoning:   { max_tokens: REASONING_TOKEN_BUDGET },
         stream:      false,
       }),
       signal: timeoutController.signal,
     });
 
-    if (!response.ok) throw new Error(`OpenRouter HTTP ${response.status}`);
+    if (!response.ok) {
+      const errBody = await response.text().catch(() => '');
+      throw new Error(`OpenRouter HTTP ${response.status} (${model})${errBody ? `: ${errBody.slice(0, 300)}` : ''}`);
+    }
 
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content;
-    if (!content) throw new Error('OpenRouter returned empty content');
+    if (!content) throw new Error(`OpenRouter returned empty content (${model}, finish_reason=${data.choices?.[0]?.finish_reason ?? 'unknown'})`);
 
-    const model     = data.model ?? OPENROUTER_MODELS[options.task][0];
+    const resolvedModel = data.model ?? model;
     const tokensIn  = data.usage?.prompt_tokens     ?? 0;
     const tokensOut = data.usage?.completion_tokens ?? 0;
     logCost({
       userId: options.userId, task: options.task, route: options.route,
-      provider: 'openrouter', model, tokensIn, tokensOut,
-      costUsd: calcCost(model, tokensIn, tokensOut),
+      provider: 'openrouter', model: resolvedModel, tokensIn, tokensOut,
+      costUsd: calcCost(resolvedModel, tokensIn, tokensOut),
       latencyMs: Date.now() - t0,
     });
 
@@ -166,6 +200,24 @@ async function callOpenRouter(options: LLMOptions): Promise<string> {
       options.signal.removeEventListener('abort', onExternalAbort);
     }
   }
+}
+
+// Tries every model in the task's OpenRouter chain in order, falling
+// through on any failure (HTTP error, timeout, or empty content).
+async function callOpenRouter(options: LLMOptions): Promise<string> {
+  const models = OPENROUTER_MODELS[options.task];
+  let lastErr: unknown = new Error('No OpenRouter models configured');
+
+  for (const model of models) {
+    try {
+      return await callOpenRouterModel(model, options);
+    } catch (err) {
+      lastErr = err;
+      console.warn(`[llm-client] ${model} failed for task=${options.task}:`, err instanceof Error ? err.message : err);
+    }
+  }
+
+  throw lastErr;
 }
 
 async function callAnthropic(options: LLMOptions): Promise<string> {
