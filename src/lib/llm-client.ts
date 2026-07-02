@@ -129,7 +129,12 @@ function logCost(entry: {
 // built-in `models` array fallback only triggers on hard errors, not on a
 // technically-successful-but-empty response, which is exactly the failure
 // mode that silently broke document extraction.
-async function callOpenRouterModel(model: string, options: LLMOptions): Promise<string> {
+interface LLMResult {
+  content: string;
+  model: string;
+}
+
+async function callOpenRouterModel(model: string, options: LLMOptions): Promise<LLMResult> {
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) throw new Error('OPENROUTER_API_KEY not set');
 
@@ -193,7 +198,7 @@ async function callOpenRouterModel(model: string, options: LLMOptions): Promise<
       latencyMs: Date.now() - t0,
     });
 
-    return content;
+    return { content, model: resolvedModel };
   } finally {
     clearTimeout(timeoutId);
     if (options.signal) {
@@ -204,7 +209,7 @@ async function callOpenRouterModel(model: string, options: LLMOptions): Promise<
 
 // Tries every model in the task's OpenRouter chain in order, falling
 // through on any failure (HTTP error, timeout, or empty content).
-async function callOpenRouter(options: LLMOptions): Promise<string> {
+async function callOpenRouter(options: LLMOptions): Promise<LLMResult> {
   const models = OPENROUTER_MODELS[options.task];
   let lastErr: unknown = new Error('No OpenRouter models configured');
 
@@ -220,7 +225,7 @@ async function callOpenRouter(options: LLMOptions): Promise<string> {
   throw lastErr;
 }
 
-async function callAnthropic(options: LLMOptions): Promise<string> {
+async function callAnthropic(options: LLMOptions): Promise<LLMResult> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error('ANTHROPIC_API_KEY not set');
 
@@ -252,7 +257,7 @@ async function callAnthropic(options: LLMOptions): Promise<string> {
     latencyMs: Date.now() - t0,
   });
 
-  return block.text;
+  return { content: block.text, model };
 }
 
 /**
@@ -261,6 +266,16 @@ async function callAnthropic(options: LLMOptions): Promise<string> {
  * Pass userId and route for cost attribution in llm_cost_log.
  */
 export async function callLLM(options: LLMOptions): Promise<string | null> {
+  const result = await callLLMWithMeta(options);
+  return result?.content ?? null;
+}
+
+/**
+ * Same two-provider fallback as callLLM, but also returns which model
+ * actually produced the response — needed by callers that persist
+ * `model_used` (e.g. interview_prep_kits) rather than hardcoding a guess.
+ */
+export async function callLLMWithMeta(options: LLMOptions): Promise<LLMResult | null> {
   // Layer 1: OpenRouter (handles model-level fallback via models array)
   try {
     return await callOpenRouter(options);
@@ -270,9 +285,9 @@ export async function callLLM(options: LLMOptions): Promise<string | null> {
 
   // Layer 2: Anthropic direct (different provider — survives OpenRouter outages)
   try {
-    const content = await callAnthropic(options);
+    const result = await callAnthropic(options);
     console.info(`[llm-client] Anthropic fallback succeeded for task=${options.task}`);
-    return content;
+    return result;
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error(`[llm-client] All providers failed for task=${options.task}:`, message);

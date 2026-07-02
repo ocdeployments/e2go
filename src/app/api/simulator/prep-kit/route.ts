@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { isKillSwitchEnabled } from '@/lib/kill-switch';
-import { callLLM } from '@/lib/llm-client';
+import { callLLMWithMeta } from '@/lib/llm-client';
 import { scoreCase } from '@/lib/gap-analysis-engine';
 import { rankApplications } from '@/lib/resolve-application';
 
@@ -444,8 +444,9 @@ Important rules:
   const timeout = setTimeout(() => controller.abort(), 120_000);
 
   let kitJson: Record<string, unknown>;
+  let modelUsed = 'unknown';
   try {
-    const content = await callLLM({
+    const result = await callLLMWithMeta({
       task: 'coaching',
       messages: [
         {
@@ -461,7 +462,9 @@ Important rules:
 
     clearTimeout(timeout);
 
-    if (!content) throw new Error('Empty LLM response');
+    if (!result?.content) throw new Error('Empty LLM response');
+    const content = result.content;
+    modelUsed = result.model;
 
     // Parse JSON — strip markdown fences if present
     const clean = content.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
@@ -485,7 +488,7 @@ Important rules:
     application_id: primaryApp.id,
     user_id: user.id,
     kit_json: kitJson,
-    model_used: 'xiaomi/mimo-v2.5-pro',
+    model_used: modelUsed,
     generated_at: new Date().toISOString(),
   }, { onConflict: 'application_id' });
 
