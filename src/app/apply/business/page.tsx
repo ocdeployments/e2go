@@ -17,6 +17,7 @@ import AdvisoryBlock from '@/components/apply/questions/AdvisoryBlock';
 import RiskFlag from '@/components/apply/questions/RiskFlag';
 import ClusterDivider from '@/components/apply/questions/ClusterDivider';
 import StartupCostTable from '@/components/apply/questions/StartupCostTable';
+import { resolvePrimaryApplicationId } from '@/lib/resolve-application';
 
 interface BizAnswer {
   value: string;
@@ -212,12 +213,8 @@ export default function BusinessPage() {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) { setLoading(false); return; }
 
-        const { data: apps } = await supabase
-          .from('applications')
-          .select('id')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(1);
+        const appsId = await resolvePrimaryApplicationId(supabase, user.id);
+        const apps = appsId ? [{ id: appsId }] : [];
 
         if (!apps || apps.length === 0) { setLoading(false); return; }
         const appId = apps[0].id;
