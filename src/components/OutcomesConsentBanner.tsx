@@ -34,10 +34,16 @@ export default function OutcomesConsentBanner() {
 
   return (
     <div
-      role="banner"
+      role="region"
+      aria-label="Outcome sharing consent"
       style={{
-        background: "rgba(201,168,76,0.06)",
-        borderBottom: "1px solid rgba(201,168,76,0.18)",
+        position: "fixed",
+        bottom: 0,
+        left: 0,
+        right: 0,
+        zIndex: 60,
+        background: "rgba(10,10,10,0.97)",
+        borderTop: "1px solid rgba(201,168,76,0.18)",
         padding: "12px 24px",
         display: "flex",
         alignItems: "center",
