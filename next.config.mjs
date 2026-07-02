@@ -18,6 +18,13 @@ const nextConfig = {
     ],
   },
   async headers() {
+    // Next.js Fast Refresh / HMR runtime relies on eval() in dev — 'unsafe-eval'
+    // must stay in dev only. Stripping it in prod (S2, Session 100) is the
+    // correct hardening; stripping it in dev breaks the dev server entirely.
+    const isDev = process.env.NODE_ENV !== 'production';
+    const mainScriptSrc = isDev
+      ? "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://openrouter.ai https://api.anthropic.com;"
+      : "script-src 'self' 'unsafe-inline' https://openrouter.ai https://api.anthropic.com;";
     return [
       {
         // Keystatic admin — looser CSP so the UI works
@@ -30,12 +37,12 @@ const nextConfig = {
         ],
       },
       {
-        // All other routes — your existing strict CSP
+        // All other routes — strict CSP in prod, unsafe-eval allowed in dev only
         source: '/(.*)',
         headers: [
           {
             key: 'Content-Security-Policy',
-            value: "default-src 'self'; script-src 'self' 'unsafe-inline' https://openrouter.ai https://api.anthropic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co https://openrouter.ai https://api.anthropic.com; img-src 'self' data: https:; frame-ancestors 'none';",
+            value: `default-src 'self'; ${mainScriptSrc} style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co https://openrouter.ai https://api.anthropic.com; img-src 'self' data: https:; frame-ancestors 'none';`,
           },
           {
             key: 'X-Frame-Options',
