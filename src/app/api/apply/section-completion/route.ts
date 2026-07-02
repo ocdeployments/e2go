@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
+import { resolvePrimaryApplicationId } from '@/lib/resolve-application';
 
 const SECTION_PREFIXES: Record<string, string[]> = {
   story:          ['M3-S1-', 'M3-A-'],
@@ -38,16 +39,9 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Find user's primary application (not simulator standalone)
-    const { data: apps } = await supabase
-      .from('applications')
-      .select('id, source')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
-
-    const primaryApp = (apps ?? []).find(
-      (a: { source: string | null }) => a.source !== 'simulator_standalone'
-    );
+    // Find user's primary application (shared canonical rule)
+    const primaryAppId = await resolvePrimaryApplicationId(supabase, user.id);
+    const primaryApp = primaryAppId ? { id: primaryAppId } : null;
 
     if (!primaryApp) {
       return NextResponse.json({
