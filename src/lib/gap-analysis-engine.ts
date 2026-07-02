@@ -133,6 +133,7 @@ interface AnswerRow {
 interface DocumentRow {
   detected_document_type?: string | null;
   user_selected_document_type?: string | null;
+  doc_type?: string | null; // uploaded_documents taxonomy (current pipeline)
 }
 
 interface CaseBriefRow {
@@ -164,7 +165,7 @@ function parseAmount(v: string | undefined | null): number {
 
 function hasDoc(docs: DocumentRow[], ...types: string[]): boolean {
   return docs.some(d => {
-    const t = (d.detected_document_type || d.user_selected_document_type || '').toLowerCase();
+    const t = (d.detected_document_type || d.user_selected_document_type || d.doc_type || '').toLowerCase();
     return types.some(target => t.includes(target.toLowerCase()));
   });
 }
@@ -191,8 +192,10 @@ function categoryPriority(score: number): GapCategory['priority'] {
   return 'critical';
 }
 
-// Parse Year N revenue from M3-I-PROJECTIONS JSON (serialised ProjectionTable).
-// Falls back to legacy quiz keys (QI-05 for Y1, QI-06 for Y3) for backward compat.
+// Parse Year N revenue from M3-I-PROJECTIONS JSON (serialised ProjectionTable) —
+// the only live revenue-by-year source. The QF-*/QI-* "quiz" key family is dead
+// code (defined only in unreachable /apply/module3/f,h,i,j pages); no fallback
+// to those keys exists because they were never real revenue fields to begin with.
 function getProjectionRevenue(am: Map<string, string>, year: number): number {
   const raw = am.get('M3-I-PROJECTIONS');
   if (raw) {
@@ -202,19 +205,16 @@ function getProjectionRevenue(am: Map<string, string>, year: number): number {
       if (row?.revenue) return parseAmount(row.revenue);
     } catch { /* ignore malformed */ }
   }
-  // Legacy fallback: quiz-generated keys (these are revenue, not employee counts)
-  if (year === 1) return parseAmount(getAnswer(am, 'QI-05'));
-  if (year === 3) return parseAmount(getAnswer(am, 'QI-06'));
   return 0;
 }
 
-// Total projected employees for Year 1 from M3-I-05 (FT) + M3-I-06 (PT).
-// Falls back to QI-03 quiz key. Does NOT read M3-I-03 (that's projection basis text).
+// Total projected employees for Year 1 from M3-I-05 (FT) + M3-I-06 (PT) —
+// both live text-typed number fields on /apply/investment. No fallback: M3-I-03
+// is the revenue-projection-basis multiselect, not an employee count.
 function getEmployeeY1(am: Map<string, string>): number {
   const ft = parseInt(getAnswer(am, 'M3-I-05') || '0') || 0;
   const pt = parseInt(getAnswer(am, 'M3-I-06') || '0') || 0;
-  if (ft > 0 || pt > 0) return ft + pt;
-  return parseInt(getAnswer(am, 'QI-03', 'M3-I-03') || '0') || 0;
+  return ft + pt;
 }
 
 // Marginal-by-design business types — inherently limited to supporting investor only
@@ -257,7 +257,10 @@ function scoreDenialFactors(
     let finding: string;
     let mitigation: string | null = null;
 
-    if (brief?.substantiality_score != null) {
+    // Live answers always win over a stale cached brief score — otherwise a
+    // user who just filled in QF-02/QF-03 sees "high priority" here while
+    // RemediationPanel (which only reads live answers) shows the item complete.
+    if (brief?.substantiality_score != null && !(investmentAmount > 0 && totalCost > 0)) {
       if (brief.substantiality_score >= 0.7) {
         risk = 'low';
         finding = `Analysis engine scores substantiality at ${Math.round(brief.substantiality_score * 100)}% — within acceptable range.`;
@@ -343,8 +346,8 @@ function scoreDenialFactors(
   // D-03 — Paper trail gaps
   {
     const paperTrail = getAnswer(am, 'QH-NEW-01', 'M3-H-NEW-01');
-    const hasBankDocs = hasDoc(docs, 'bank', 'statement');
-    const hasTransferDocs = hasDoc(docs, 'wire', 'transfer');
+    const hasBankDocs = hasDoc(docs, 'bank', 'statement', 'investment_records', 'financial_statement');
+    const hasTransferDocs = hasDoc(docs, 'wire', 'transfer', 'investment_records');
     let risk: DenialRiskFactor['risk'];
     let finding: string;
     let mitigation: string | null = null;
@@ -399,7 +402,8 @@ function scoreDenialFactors(
     let finding: string;
     let mitigation: string | null = null;
 
-    if (brief?.marginality_score != null) {
+    // Live answers always win over a stale cached brief score — see D-01 above.
+    if (brief?.marginality_score != null && !(revenueY3 > 0 && householdIncome > 0)) {
       if (brief.marginality_score >= 0.7) {
         risk = 'low';
         finding = `Non-marginality score: ${Math.round(brief.marginality_score * 100)}% — projections support a viable, growing enterprise.`;
@@ -490,16 +494,15 @@ function scoreDenialFactors(
 
   // D-07 — No credible hiring plan
   {
-    const hiringPlan = getAnswer(am, 'QI-NEW-01', 'M3-I-NEW-01');
-    const roleList = getAnswer(am, 'QI-04', 'M3-I-04');
+    const roleList = getAnswer(am, 'M3-I-07');
     let risk: DenialRiskFactor['risk'];
     let finding: string;
     let mitigation: string | null = null;
 
-    if (employeeY1 >= 2 && (hiringPlan || roleList)) {
+    if (employeeY1 >= 2 && roleList) {
       risk = 'low';
       finding = `${employeeY1} US employees projected with documented hiring plan or role descriptions.`;
-    } else if (employeeY1 >= 1 && (hiringPlan || roleList)) {
+    } else if (employeeY1 >= 1 && roleList) {
       risk = 'moderate';
       finding = `1 US employee with a hiring plan. Borderline — officers expect to see growth.`;
       mitigation = 'Add Year 2–3 hiring projections showing the business grows beyond 1 employee.';
@@ -659,7 +662,7 @@ function scoreDenialFactors(
   // D-12 — Loan secured by business assets only
   {
     const loanSecurity = getAnswer(am, 'QF-NEW-02', 'M3-F-NEW-02');
-    const sourceType = getAnswer(am, 'QF-03', 'M3-F-03', 'QF-source', 'M3-F-source');
+    const sourceType = getAnswer(am, 'M3-F-05');
     const hasLoan = sourceType?.toLowerCase().includes('loan') || loanSecurity !== null;
     let risk: DenialRiskFactor['risk'];
     let finding: string;
@@ -822,20 +825,22 @@ function scoreCategory(
   // Category-specific evidence and gap text
   switch (id) {
     case 'source_of_funds': {
-      const amount = parseAmount(getAnswer(am, 'QF-02', 'M3-F-02'));
-      const totalCost = parseAmount(getAnswer(am, 'QF-03', 'M3-F-03'));
-      const sourceType = getAnswer(am, 'QF-03', 'M3-F-03', 'QF-source');
-      const hasBankDocs = hasDoc(docs, 'bank', 'statement');
-      const hasTransferDocs = hasDoc(docs, 'wire', 'transfer');
-      const spent = parseAmount(getAnswer(am, 'QF-NEW-01', 'M3-F-NEW-01'));
+      const amount = parseAmount(getAnswer(am, 'M3-F-02'));
+      const totalCost = parseAmount(getAnswer(am, 'M3-F-03'));
+      const sourceType = getAnswer(am, 'M3-F-05');
+      const hasBankDocs = hasDoc(docs, 'bank', 'statement', 'investment_records', 'financial_statement');
+      const hasTransferDocs = hasDoc(docs, 'wire', 'transfer', 'investment_records');
+      const spentStatus = getAnswer(am, 'M3-F-NEW-01');
+      const spentConfirmed = spentStatus?.toLowerCase() === 'yes';
 
       if (amount > 0) evidence.push(`Investment: $${amount.toLocaleString()}`);
       else gaps.push('Investment amount not documented');
 
       if (totalCost > 0) evidence.push(`Total enterprise cost: $${totalCost.toLocaleString()}`);
-      else gaps.push('Total enterprise cost (QF-03) not filed — proportionality cannot be argued');
+      else gaps.push('Total enterprise cost not filed — proportionality cannot be argued');
 
-      if (spent > 0) evidence.push(`$${spent.toLocaleString()} deployed on business expenses`);
+      if (spentConfirmed) evidence.push('Funds confirmed deployed on business expenses');
+      else if (spentStatus) gaps.push('Funds not yet fully deployed on business expenses');
       else gaps.push('No record of how much has been spent or committed');
 
       if (hasBankDocs) evidence.push('Bank statements uploaded');
@@ -874,8 +879,8 @@ function scoreCategory(
 
     case 'business_plan': {
       const hasPlan = hasDoc(docs, 'business_plan', 'plan');
-      const revY1 = parseAmount(getAnswer(am, 'QI-05', 'M3-I-05'));
-      const revY3 = parseAmount(getAnswer(am, 'QI-06', 'M3-I-06'));
+      const revY1 = getProjectionRevenue(am, 1);
+      const revY3 = getProjectionRevenue(am, 3);
       const hasBasis = hasAnswer(am, 'QI-NEW-02', 'M3-I-NEW-02');
 
       if (hasPlan) evidence.push('Business plan document uploaded');
@@ -915,20 +920,14 @@ function scoreCategory(
     }
 
     case 'employment_creation': {
-      const countY1 = parseInt(getAnswer(am, 'QI-03', 'M3-I-03') || '0') || 0;
-      const countCurrent = parseInt(getAnswer(am, 'QI-02', 'M3-I-02') || '0') || 0;
-      const roleList = getAnswer(am, 'QI-04', 'M3-I-04');
-      const hiringPlan = getAnswer(am, 'QI-NEW-01', 'M3-I-NEW-01');
+      const countY1 = getEmployeeY1(am);
+      const roleList = getAnswer(am, 'M3-I-07');
 
-      if (countCurrent > 0) evidence.push(`${countCurrent} current US employee${countCurrent > 1 ? 's' : ''}`);
       if (countY1 > 0) evidence.push(`${countY1} US employee${countY1 > 1 ? 's' : ''} projected Year 1`);
       else { gaps.push('No US job creation projected'); actions.push('Add hiring projections'); }
 
       if (roleList && roleList.length > 10) evidence.push('Job roles documented');
       else { gaps.push('No job descriptions on file'); actions.push('List specific job titles, hours, and wages for each planned hire'); }
-
-      if (hiringPlan && hiringPlan.length > 20) evidence.push('Structured hiring timeline documented');
-      else gaps.push('No structured hiring timeline');
       break;
     }
 
