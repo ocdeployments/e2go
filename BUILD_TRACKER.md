@@ -1,6 +1,37 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** July 2, 2026 — Session 111: Phase 0/1 is now fully closed out. Implemented the two Session 110 leftovers — Anthropic prompt caching (E6b) and silent-degradation surfacing (E8: repetition-check regeneration trigger, verifier-status UI badges, FAQ RAG missing-key startup warning). Three commits, build clean. Phases 2–6 remain unscoped — see Session 110 below for the breakdown. Next up: Phase 2 (package integration), starting with the deterministic financial spine (A4).
+**Last Updated:** July 2, 2026 — Session 112: fixed a live data-integrity bug found while grounding Phase 2/A4 — `generation-engine.ts` and `gap-analysis-engine.ts` were reading a dead `QF-*`/`QI-*` answer-key family for investment/revenue/payroll data instead of the live `M3-F-*`/`M3-I-*` keys, and in several spots reading the wrong field outright (e.g. revenue parsed from employee-count fields). Two commits, build clean. User explicitly chose to fix this foundation before building `case-financials.ts` (Phase 2/A4) — that build is next.
+
+---
+
+## Session 112 — Answer-Key Resolution Audit (July 2, 2026)
+
+**Branch:** dev. Build clean (`npm run build`, `tsc --noEmit`). Two commits, one concern each.
+
+### Context
+While grounding the Phase 2/A4 deterministic financial spine (`case-financials.ts`), discovered the codebase has two parallel investment/revenue answer-key families: `QF-*`/`QI-*` (defined in `src/data/module3/tab-f.json`/`tab-i.json`, only ever rendered by `/apply/module3/f`, `/h`, `/i`, `/j` — none of which are linked from any live navigation; `h` immediately `router.replace`s to `/apply/investment`) and `M3-F-*`/`M3-I-*` (defined and actively saved by `/apply/investment/page.tsx`, which is the only investment-intake route reachable from `/apply/layout.tsx`, `/gap-analysis/layout.tsx`, `CaseProfilePage.tsx`, `DashboardClient.tsx`, and 20+ other real nav references). Confirmed `QF-*`/`QI-*` is dead code. Stopped and asked the user how to proceed rather than build `case-financials.ts` on unverified keys; user chose "fix key resolution first."
+
+### Fixed
+- **`generation-engine.ts` — `extractInvestmentBreakdown()`.** Was hardcoding `QF-02`/`QF-03`/`QF-NEW-01` with no fallback — meaning the "INVESTMENT BREAKDOWN" table injected into every document-generation prompt was silently showing `NOT PROVIDED` for every real user. Now reads `M3-F-02`/`M3-F-03`. The per-category dollar fields (`franchise_fee`, `leasehold_improvements`, `equipment_technology`, `educational_materials`, `working_capital`, `professional_fees`, `marketing_launch`) have no live source at all — `M3-F-04` only captures which deployment *categories* apply, not a dollar amount per category — so those stay `null` (not fabricated) and the selected categories are now surfaced as a `deployment_categories` text field instead. `at_risk_amount` also had no real dollar source (`M3-F-NEW-01` is a yes/partial/no status, not currency) — left `null`. Added `deployment_categories` to the shared `InvestmentBreakdownData` type (`src/types/generation.ts`). Also fixed the source-of-funds validation check (`QF-05` → `M3-F-05`).
+- **`gap-analysis-engine.ts` — D-code and category scoring.** Most `getAnswer(am, 'QF-*', 'M3-F-*')` call sites already had the M3- alias as a fallback and were functionally fine (since the QF-* alias never resolves against real data). But several sites read the *wrong field entirely*, not just a missing alias:
+  - `getProjectionRevenue()`'s "legacy fallback" read `QI-05`/`QI-06` as revenue — those are FT/PT hire-count fields, not revenue, and have no M3- equivalent as standalone revenue fields (the only live revenue-by-year source is the `M3-I-PROJECTIONS` JSON blob). Fallback removed.
+  - `getEmployeeY1()` fell back to `M3-I-03` (the revenue-projection-basis multiselect) as an employee count when FT/PT were both 0. Removed — 0 FT + 0 PT is a valid real answer, not missing data.
+  - The `business_plan` category block parsed Year 1/3 revenue directly from `M3-I-05`/`M3-I-06` (employee counts) instead of calling `getProjectionRevenue()`. Fixed.
+  - The `employment_creation` category block read `M3-I-03` (projection basis) as `countY1` and `M3-I-02` (a key that doesn't exist anywhere in the live schema) as `countCurrent`. Fixed to use `getEmployeeY1()`; `countCurrent` removed (no live source exists for "current" vs. "projected" headcount).
+  - `sourceType` in both the D-12 (loan-secured-by-business-assets) and `source_of_funds` category blocks read `M3-F-03` (total business cost, a dollar figure) and checked whether that dollar string `.includes('loan')` — never true. Fixed to read `M3-F-05` (the actual source-of-funds field).
+  - `roleList` in D-07 (hiring plan) and `employment_creation` read `M3-I-04` (annual salary/draw, a currency field) instead of `M3-I-07` (planned roles textarea). Fixed.
+  - `spent`/`spentAmount` in the `source_of_funds` block treated `M3-F-NEW-01` (a yes/partial/no status field) as a dollar amount via `parseAmount`. Fixed to check status directly.
+  - Removed a user-facing gap message that leaked the internal key code `(QF-03)` into client-visible text.
+
+### Not fixed (acknowledged, out of scope for this session)
+- `householdIncome` (line ~243) has no live answer key at all (`QI-07`/`QI-NEW-03`/`M3-I-NEW-03` — none exist in the live schema) — always resolves to 0/missing. This is a genuine intake gap, not a wrong-key bug; left as-is.
+- A handful of `hasAnswer()` checks (`M3-F-10`, `M3-I-NEW-01/02`, `M3-K-NEW-01`, `M3-F-NEW-02`) reference keys with no confirmed live source. These degrade safely (treated as "not documented," the conservative default) rather than reading wrong data, so were left alone rather than scope-creeping into a full intake-schema audit.
+
+### Next
+Build `src/lib/case-financials.ts` (Phase 2/A4 — deterministic financial spine: deployment/investment reconciliation, break-even, cash-flow/revenue ramp by year, headcount+payroll by year, proportionality ratio, net-worth math) now that the underlying keys are confirmed correct.
+
+### Dev server
+No server was running at end of session (`preview_list` returned `[]`) — nothing to restart.
 
 ---
 
