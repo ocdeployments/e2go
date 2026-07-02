@@ -4,6 +4,7 @@
 import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { createBrowserSupabaseClient } from '@/lib/supabase';
+import { resolvePrimaryApplicationId } from '@/lib/resolve-application';
 import Link from 'next/link';
 import {
   scoreCase,
@@ -138,13 +139,8 @@ function GapAnalysisInner() {
       try {
         let resolvedId = searchParams.get('applicationId');
         if (!resolvedId) {
-          const { data: apps } = await supabase
-            .from('applications')
-            .select('id, business_name')
-            .eq('user_id', user.id)
-            .order('created_at', { ascending: false })
-            .limit(1);
-          if (!apps?.length) {
+          const primaryId = await resolvePrimaryApplicationId(supabase, user.id);
+          if (!primaryId) {
             const { data: quizCheck } = await supabase
               .from('quiz_sessions')
               .select('id')
@@ -157,7 +153,7 @@ function GapAnalysisInner() {
             setLoading(false);
             return;
           }
-          resolvedId = apps[0].id;
+          resolvedId = primaryId;
         }
         setAppId(resolvedId);
 
