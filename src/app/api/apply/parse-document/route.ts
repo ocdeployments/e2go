@@ -8,6 +8,7 @@ import { comprehendApplicationDocuments } from '@/lib/document-comprehension-eng
 import { buildCaseIntelligence } from '@/lib/case-intelligence-core';
 import { seedFddAnalysisFromUpload } from '@/lib/cic-fdd-seed';
 import type { UploadFileType } from '@/types/document-upload';
+import { captureApiError } from '@/lib/capture-error';
 
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
 
@@ -791,7 +792,9 @@ export interface ParseDocumentResponse {
 // ─── POST handler ─────────────────────────────────────────────────────────────
 
 // ─── Auto document-type detection ────────────────────────────────────────────
-// Quick cheap LLM call (~20 tokens) used when client selects "Detect automatically".
+// Quick cheap LLM call used when client selects "Detect automatically".
+// max_tokens covers only the answer itself — llm-client reserves separate
+// headroom for any hidden reasoning tokens on top of this.
 
 async function detectDocumentType(textSample: string, userId: string): Promise<string> {
   const validTypes = Object.keys(COMPREHENSIVE_SCHEMAS).join(' | ');
@@ -799,7 +802,7 @@ async function detectDocumentType(textSample: string, userId: string): Promise<s
     task:       'extract',
     route:      '/api/apply/parse-document',
     userId,
-    max_tokens: 20,
+    max_tokens: 50,
     messages: [
       {
         role:    'system',
@@ -862,23 +865,6 @@ export async function POST(request: NextRequest) {
       appTargetState = (app as { target_state?: string | null }).target_state ?? null;
     }
 
-    const { data: docRecord, error: insertErr } = await supabase
-      .from('uploaded_documents')
-      .insert({
-        user_id:           user.id,
-        application_id:    appId || null,
-        file_path:         '',
-        file_name:         file.name,
-        doc_type:          docType,
-        extraction_status: 'processing',
-      })
-      .select('id')
-      .single();
-
-    if (insertErr || !docRecord) {
-      return NextResponse.json({ error: 'Failed to create upload record' }, { status: 500 });
-    }
-
     // ── Extract raw text ──────────────────────────────────────────────────────
 
     const arrayBuffer = await file.arrayBuffer();
@@ -892,8 +878,6 @@ export async function POST(request: NextRequest) {
         if (docType === 'fdd') {
           documentText = await extractFDDSections(buffer);
           if (!documentText.trim()) {
-            await supabase.from('uploaded_documents')
-              .update({ extraction_status: 'failed' }).eq('id', docRecord.id);
             return NextResponse.json(
               { error: 'This appears to be a scanned PDF — no extractable text. Please upload a text-based PDF version of the FDD.' },
               { status: 422 }
@@ -902,8 +886,6 @@ export async function POST(request: NextRequest) {
         } else {
           const result = await extractTextFromBuffer(buffer, 'pdf' as UploadFileType, file.name);
           if (result.isScanned) {
-            await supabase.from('uploaded_documents')
-              .update({ extraction_status: 'failed' }).eq('id', docRecord.id);
             return NextResponse.json(
               { error: 'This appears to be a scanned PDF — no extractable text. Try a different file.' },
               { status: 422 }
@@ -921,9 +903,7 @@ export async function POST(request: NextRequest) {
         documentText = buffer.toString('utf-8').slice(0, 30000);
       }
     } catch (extractErr) {
-      await supabase.from('uploaded_documents')
-        .update({ extraction_status: 'failed' }).eq('id', docRecord.id);
-      console.error('[parse-document] text extraction error:', extractErr);
+      captureApiError(extractErr, { route: 'parse-document', stage: 'text-extraction', userId: user.id, docType, fileName: file.name });
       return NextResponse.json(
         { error: 'Could not read this document — please try a different file' },
         { status: 422 }
@@ -931,10 +911,32 @@ export async function POST(request: NextRequest) {
     }
 
     // ── Resolve document type (auto-detect if needed) ─────────────────────────
+    // Must happen before the uploaded_documents insert below — the doc_type
+    // CHECK constraint does not accept 'auto' as a stored value.
 
     const resolvedDocType = docType === 'auto'
       ? await detectDocumentType(documentText, user.id)
       : docType;
+
+    const { data: docRecord, error: insertErr } = await supabase
+      .from('uploaded_documents')
+      .insert({
+        user_id:           user.id,
+        application_id:    appId || null,
+        file_path:         '',
+        file_name:         file.name,
+        doc_type:          resolvedDocType,
+        extraction_status: 'processing',
+      })
+      .select('id')
+      .single();
+
+    if (insertErr || !docRecord) {
+      captureApiError(insertErr ?? new Error('uploaded_documents insert returned no record'), {
+        route: 'parse-document', stage: 'uploaded_documents-insert', userId: user.id, docType, resolvedDocType, appId,
+      });
+      return NextResponse.json({ error: 'Failed to create upload record' }, { status: 500 });
+    }
 
     // ── LLM extraction ────────────────────────────────────────────────────────
 
@@ -960,7 +962,9 @@ export async function POST(request: NextRequest) {
     if (!rawText) {
       await supabase.from('uploaded_documents')
         .update({ extraction_status: 'failed' }).eq('id', docRecord.id);
-      console.error('[parse-document] LLM error: all providers failed');
+      captureApiError(new Error('all LLM providers failed'), {
+        route: 'parse-document', stage: 'llm-extraction', userId: user.id, docType: resolvedDocType, docId: docRecord.id,
+      });
       return NextResponse.json({ error: 'Extraction failed — please try again' }, { status: 502 });
     }
 
@@ -1015,7 +1019,7 @@ export async function POST(request: NextRequest) {
     if (appId) {
       comprehendApplicationDocuments(appId, user.id)
         .then(() => buildCaseIntelligence(appId, user.id, resolvedDocType))
-        .catch((err) => console.error('[parse-document] CIC pipeline error:', err));
+        .catch((err) => captureApiError(err, { route: 'parse-document', stage: 'cic-pipeline', userId: user.id, appId, docId: docRecord.id }));
 
       // CIC-3.2 — if the imported document is an FDD, auto-seed the FDD Intelligence
       // pipeline (persist the PDF + a pending fdd_analyses row) so the client never
@@ -1030,9 +1034,11 @@ export async function POST(request: NextRequest) {
           targetState:   appTargetState,
         })
           .then((res) => {
-            if (res.status === 'failed') console.error('[parse-document] FDD seed failed:', res.reason);
+            if (res.status === 'failed') {
+              captureApiError(new Error(`FDD seed failed: ${res.reason}`), { route: 'parse-document', stage: 'fdd-seed', userId: user.id, appId, docId: docRecord.id });
+            }
           })
-          .catch((err) => console.error('[parse-document] FDD seed error:', err));
+          .catch((err) => captureApiError(err, { route: 'parse-document', stage: 'fdd-seed', userId: user.id, appId, docId: docRecord.id }));
       }
     }
 
@@ -1044,7 +1050,7 @@ export async function POST(request: NextRequest) {
     } satisfies ParseDocumentResponse);
 
   } catch (err) {
-    console.error('[parse-document]', err);
+    captureApiError(err, { route: 'parse-document', stage: 'unhandled' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
