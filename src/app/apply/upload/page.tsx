@@ -5,6 +5,7 @@ import { useTrackSectionVisit } from "@/hooks/useTrackSectionVisit";
 import { useRouter } from 'next/navigation';
 import { createBrowserSupabaseClient } from '@/lib/supabase';
 import UploadClient from '@/components/apply/UploadClient';
+import { resolvePrimaryApplicationId } from '@/lib/resolve-application';
 
 export default function UploadPage() {
   useTrackSectionVisit("upload");
@@ -24,12 +25,8 @@ export default function UploadPage() {
           return;
         }
 
-        const { data: apps } = await supabase
-          .from('applications')
-          .select('id')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(1);
+        const appsId = await resolvePrimaryApplicationId(supabase, user.id);
+        const apps = appsId ? [{ id: appsId }] : [];
 
         if (apps && apps.length > 0) {
           setApplicationId(apps[0].id);
