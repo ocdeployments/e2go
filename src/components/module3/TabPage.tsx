@@ -109,7 +109,7 @@ export default function TabPage({
   });
 
   return (
-    <div className="flex min-h-screen" style={{ background: '#0a0a0a' }}>
+    <div className="flex" style={{ background: '#0a0a0a', minHeight: 'calc(100vh - 64px)', marginTop: '64px' }}>
       {!isMobile && (
         <TabSidebar
           sections={sectionProgress}
@@ -119,7 +119,7 @@ export default function TabPage({
         />
       )}
 
-      <main className="flex-1 flex flex-col">
+      <main className="flex-1 flex flex-col min-w-0">
         {isMobile && (
           <MobileStepper
             sections={sections}
@@ -156,7 +156,7 @@ export default function TabPage({
 
         <div
           ref={formAreaRef}
-          className="flex-1 overflow-y-auto px-6 py-8"
+          className="flex-1 overflow-y-auto px-6 py-8 min-w-0"
           style={{ maxWidth: '800px' }}
         >
           {sections.map((section) => (

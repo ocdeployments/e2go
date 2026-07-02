@@ -149,7 +149,7 @@ export default function UploadClient({ applicationId }: { applicationId: string 
   const canProcess = validFileCount > 0 && !uploading;
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-[#f5f0e8]">
+    <div className="min-h-screen bg-[#0a0a0a] text-[#f5f0e8] pt-16">
       <div className="mx-auto max-w-2xl px-5 py-12 sm:px-8">
         {/* Back link */}
         <a

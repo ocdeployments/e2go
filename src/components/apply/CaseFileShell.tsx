@@ -103,7 +103,7 @@ export default function CaseFileShell({
   }, []);
 
   return (
-    <div className="flex h-screen flex-col bg-[#0a0a0a]">
+    <div className="flex flex-col bg-[#0a0a0a]" style={{ height: 'calc(100vh - 64px)', marginTop: '64px' }}>
       {/* ── Topbar ── */}
       <header
         className="sticky top-0 z-40 flex shrink-0 items-center justify-between border-b px-5"
@@ -414,7 +414,7 @@ export default function CaseFileShell({
 
         {/* ── Mobile cluster pill strip ── */}
         <div
-          className="fixed top-[88px] left-0 right-0 z-30 flex overflow-x-auto border-b lg:hidden"
+          className="fixed top-[152px] left-0 right-0 z-30 flex overflow-x-auto border-b lg:hidden"
           style={{
             borderColor: 'rgba(201,168,76,0.10)',
             backgroundColor: '#0a0a0a',
@@ -445,7 +445,7 @@ export default function CaseFileShell({
 
         {/* ── Question panel (center) ── */}
         <main
-          className="min-w-0 flex-1 overflow-y-auto pt-[80px] lg:pt-0"
+          className="min-w-0 flex-1 overflow-y-auto pt-[144px] lg:pt-0"
           style={{ padding: '32px 36px' }}
         >
           <div className="mx-auto" style={{ maxWidth: '640px' }}>

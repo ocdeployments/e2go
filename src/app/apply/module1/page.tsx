@@ -264,20 +264,19 @@ export default function Module1Page() {
         backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`
       }} />
 
-      {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-10 bg-[#0a0a0a] border-b border-[rgba(201,168,76,0.2)]">
-        <div className="flex justify-between items-center h-16 px-6 md:px-12 max-w-4xl mx-auto">
-          <span className="font-['Cormorant_Garamond'] text-xl font-normal text-[#f5f0e8]">e2go<span className="text-[#C9A84C]">.app</span></span>
+      {/* Step indicator — sits below the global Nav */}
+      <header className="fixed top-16 left-0 right-0 z-10 bg-[#0a0a0a] border-b border-[rgba(201,168,76,0.2)]">
+        <div className="flex justify-end items-center h-10 px-6 md:px-12 max-w-4xl mx-auto">
           <div className="text-[10px] font-medium uppercase tracking-[0.18em] text-[rgba(245,240,232,0.72)]">Step {step} of 6</div>
         </div>
       </header>
 
       {/* Progress Bar */}
-      <div className="fixed top-16 left-0 right-0 h-[3px] bg-[rgba(245,240,232,0.1)] z-10">
+      <div className="fixed top-[104px] left-0 right-0 h-[3px] bg-[rgba(245,240,232,0.1)] z-10">
         <div className="h-full bg-[#C9A84C] transition-all duration-500" style={{ width: `${(step / 6) * 100}%` }} />
       </div>
 
-      <main className="relative z-10 pt-24 pb-12 px-6 md:px-12 max-w-4xl mx-auto">
+      <main className="relative z-10 pt-32 pb-12 px-6 md:px-12 max-w-4xl mx-auto">
         {/* SCREEN 1: Welcome + Application Type */}
         {step === 1 && (
           <div className="border border-[rgba(201,168,76,0.2)] bg-[#0a0a0a] p-8 md:p-12">

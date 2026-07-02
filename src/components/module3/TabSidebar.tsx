@@ -84,8 +84,9 @@ export default function TabSidebar({
   return (
     <aside
       ref={sidebarRef}
-      className="w-[280px] h-screen sticky top-0 flex flex-col"
+      className="w-[280px] sticky top-16 flex flex-col"
       style={{
+        height: 'calc(100vh - 64px)',
         background: '#0a0a0a',
         borderRight: '1px solid rgba(201,168,76,0.1)',
       }}

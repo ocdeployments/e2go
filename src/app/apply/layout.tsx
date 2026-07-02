@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 import SectionLayout, { type SectionStep } from "@/components/SectionLayout";
+import Nav from "@/components/Nav";
 
 export const metadata: Metadata = {
   title: "Application Workspace | e2go",
@@ -84,5 +85,10 @@ async function buildSteps(): Promise<SectionStep[]> {
 
 export default async function ApplyLayout({ children }: { children: React.ReactNode }) {
   const steps = await buildSteps();
-  return <SectionLayout steps={steps}>{children}</SectionLayout>;
+  return (
+    <>
+      <Nav />
+      <SectionLayout steps={steps}>{children}</SectionLayout>
+    </>
+  );
 }

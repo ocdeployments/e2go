@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useTrackSectionVisit } from "@/hooks/useTrackSectionVisit";
-import Link from "next/link";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import PreAppChecklist, { ChecklistItem } from "@/components/PreAppChecklist";
 import { generatePreAppChecklist } from "@/lib/checklist-generator";
@@ -84,23 +83,6 @@ export default function ChecklistPage() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-[#f5f0e8] font-[DM_Sans]">
-      {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-[#0a0a0a]/95 backdrop-blur-sm border-b border-[#C9A84C]/20">
-        <div className="flex justify-between items-center h-16 px-4 md:px-8 max-w-4xl mx-auto">
-          <Link href="/" className="flex items-center gap-2">
-            <svg className="w-6 h-6 text-[#C9A84C]" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 2L2 7v10l10 5 10-5V7L12 2z" />
-            </svg>
-            <span className="text-xl font-medium text-[#f5f0e8] font-['Cormorant_Garamond']">e2go.app</span>
-          </Link>
-          <div className="flex items-center gap-4">
-            <Link href="/dashboard" className="text-sm text-[#f5f0e8]/70 hover:text-[#C9A84C] transition-colors">
-              Dashboard
-            </Link>
-          </div>
-        </div>
-      </header>
-
       <main className="pt-24 pb-16 px-4">
         <div className="max-w-3xl mx-auto">
           {/* Hero */}

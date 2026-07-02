@@ -232,7 +232,7 @@ export default function Module4Page() {
   // Screen 1: Introduction
   if (screen === 1) {
     return (
-      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-6">
+      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-6 pt-16">
         <div className="max-w-xl w-full">
           <div className="text-center">
             <p className="text-[#C9A84C] uppercase tracking-wider text-xs font-medium mb-6" style={{ fontFamily: 'DM Sans, sans-serif' }}>
@@ -271,7 +271,7 @@ export default function Module4Page() {
   // Screen 2: Voice Sample
   if (screen === 2) {
     return (
-      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-6">
+      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-6 pt-16">
         <div className="max-w-xl w-full">
           <p className="text-[#C9A84C] uppercase tracking-wider text-xs font-medium mb-6" style={{ fontFamily: 'DM Sans, sans-serif' }}>
             STEP 1 OF 2 — YOUR VOICE
@@ -365,7 +365,7 @@ export default function Module4Page() {
   if (screen === 3) {
     if (questionsError) {
       return (
-        <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-6">
+        <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-6 pt-16">
           <div className="text-center max-w-md">
             <p className="text-[rgba(245,240,232,0.60)] text-lg italic mb-4" style={{ fontFamily: 'Cormorant Garamond, serif' }}>
               Something went wrong loading your questions.
@@ -384,7 +384,7 @@ export default function Module4Page() {
 
     if (isLoadingQuestions || questions.length === 0) {
       return (
-        <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-6">
+        <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-6 pt-16">
           <div className="text-center">
             <p className="text-[#C9A84C] uppercase tracking-wider text-xs font-medium mb-6" style={{ fontFamily: 'DM Sans, sans-serif' }}>
               STEP 2 OF 2
@@ -403,7 +403,7 @@ export default function Module4Page() {
     }
 
     return (
-      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-6">
+      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-6 pt-16">
         <div className="max-w-xl w-full">
           <p className="text-[#C9A84C] uppercase tracking-wider text-xs font-medium mb-2" style={{ fontFamily: 'DM Sans, sans-serif' }}>
             STEP 2 OF 2 — QUESTION {currentQuestionIndex + 1} OF {questions.length}
@@ -472,7 +472,7 @@ export default function Module4Page() {
   if (screen === 4) {
     if (isLoadingSummary) {
       return (
-        <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-6">
+        <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-6 pt-16">
           <div className="text-center">
             <p className="text-[rgba(245,240,232,0.60)] text-lg italic" style={{ fontFamily: 'Cormorant Garamond, serif' }}>
               Compiling your insights...
@@ -483,7 +483,7 @@ export default function Module4Page() {
     }
 
     return (
-      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-6">
+      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-6 pt-16">
         <div className="max-w-xl w-full">
           <p className="text-[#C9A84C] uppercase tracking-wider text-xs font-medium mb-4" style={{ fontFamily: 'DM Sans, sans-serif' }}>
             READY TO GENERATE
