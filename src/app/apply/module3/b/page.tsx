@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { createBrowserSupabaseClient } from '@/lib/supabase';
+import { resolvePrimaryApplicationId } from '@/lib/resolve-application';
 
 type ItemCategory = 'personal' | 'family' | 'investment' | 'entity' | 'franchise' | 'source_of_funds';
 
@@ -491,13 +492,8 @@ export default function TabBPage() {
         return;
       }
 
-      const { data: existingApp } = await supabase
-        .from('applications')
-        .select('id')
-        .eq('user_id', authUser.id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
+      const existingAppId = await resolvePrimaryApplicationId(supabase, authUser.id);
+      const existingApp = existingAppId ? { id: existingAppId } : null;
 
       if (existingApp) {
         setApplicationId(existingApp.id);
