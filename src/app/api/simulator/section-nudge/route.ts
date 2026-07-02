@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
+import { resolvePrimaryApplicationId } from '@/lib/resolve-application';
 
 // Question IDs that map to each case-file section.
 // A weak/inconsistent answer on any of these triggers a nudge on that section page.
@@ -42,14 +43,9 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Find the user's latest application
-    const { data: app } = await supabase
-      .from('applications')
-      .select('id')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+    // Find the user's primary application (shared canonical rule)
+    const primaryId = await resolvePrimaryApplicationId(supabase, user.id);
+    const app = primaryId ? { id: primaryId } : null;
 
     if (!app) {
       return NextResponse.json<SectionNudgeResponse>({
