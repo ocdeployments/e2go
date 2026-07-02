@@ -128,6 +128,20 @@ const DEFAULT_WEIGHTS: CategoryWeights = {
   population: 0.25, income: 0.30, competition: 0.20, demographic_fit: 0.15, labor_market: 0.10,
 };
 
+// Dimensions with data_available: false carry a neutral sentinel score (50/60)
+// rather than a real measurement — folding that into the weighted average would
+// silently drag or prop the overall score with a fabricated number. Exclude
+// unavailable dimensions and renormalize the remaining weights to sum to 1.0.
+function computeWeightedOverallScore(
+  dims: { score: DimensionScore; weight: number }[]
+): number {
+  const available = dims.filter(d => d.score.data_available);
+  if (available.length === 0) return 50;
+  const weightSum = available.reduce((sum, d) => sum + d.weight, 0);
+  const weighted = available.reduce((sum, d) => sum + d.score.score * d.weight, 0);
+  return Math.round(weighted / weightSum);
+}
+
 const RADIUS_BY_CATEGORY: Record<string, number> = {
   home_services: 15,
   senior_care:   15,
@@ -486,10 +500,13 @@ function scoreCompetition(
   category: string
 ): DimensionScore {
   if (competitors.source === 'unavailable' || competitors.nearby_count === null) {
+    // No fabricated score — data_available: false excludes this dimension from
+    // the weighted composite (see computeWeightedOverallScore) rather than
+    // silently contributing a neutral 50 to the overall territory score.
     return {
       score: 50,
       rating: 'VIABLE',
-      note: 'Competitive data unavailable — confirm competitor density through direct site visit and local research',
+      note: 'Competition not assessed — Google Places data unavailable for this ZIP. Confirm competitor density through direct site visit and local research before relying on the overall score.',
       data_available: false,
     };
   }
@@ -992,13 +1009,13 @@ export async function analyseTeritoryForBusiness(
   const demographicFitScore = scoreDemographicFit(census, category);
   const laborMarketScore = scoreLaborMarket(census, category, state);
 
-  const overallScore = Math.round(
-    populationScore.score     * weights.population +
-    incomeScore.score         * weights.income +
-    competitionScore.score    * weights.competition +
-    demographicFitScore.score * weights.demographic_fit +
-    laborMarketScore.score    * weights.labor_market
-  );
+  const overallScore = computeWeightedOverallScore([
+    { score: populationScore,     weight: weights.population },
+    { score: incomeScore,         weight: weights.income },
+    { score: competitionScore,    weight: weights.competition },
+    { score: demographicFitScore, weight: weights.demographic_fit },
+    { score: laborMarketScore,    weight: weights.labor_market },
+  ]);
 
   const overallRating = rateScore(overallScore);
 
@@ -1069,14 +1086,15 @@ export async function analyseTeritory(
   const demographicFitScore = scoreDemographicFit(census, category);
   const laborMarketScore = scoreLaborMarket(census, category, state);
 
-  // Weighted composite across all 5 dimensions
-  const overallScore = Math.round(
-    populationScore.score    * weights.population +
-    incomeScore.score        * weights.income +
-    competitionScore.score   * weights.competition +
-    demographicFitScore.score * weights.demographic_fit +
-    laborMarketScore.score   * weights.labor_market
-  );
+  // Weighted composite across the available dimensions (unavailable dimensions
+  // are excluded and the remaining weights renormalized — see computeWeightedOverallScore)
+  const overallScore = computeWeightedOverallScore([
+    { score: populationScore,     weight: weights.population },
+    { score: incomeScore,         weight: weights.income },
+    { score: competitionScore,    weight: weights.competition },
+    { score: demographicFitScore, weight: weights.demographic_fit },
+    { score: laborMarketScore,    weight: weights.labor_market },
+  ]);
 
   const overallRating = rateScore(overallScore);
 
