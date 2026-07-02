@@ -17,7 +17,9 @@ import AdvisoryBlock from '@/components/apply/questions/AdvisoryBlock';
 import RiskFlag from '@/components/apply/questions/RiskFlag';
 import ClusterDivider from '@/components/apply/questions/ClusterDivider';
 import StartupCostTable from '@/components/apply/questions/StartupCostTable';
-import { resolvePrimaryApplicationId } from '@/lib/resolve-application';
+import { useRouter } from 'next/navigation';
+import { useApplicationGate } from '@/hooks/useApplicationGate';
+import ApplicationNotReadyScreen from '@/components/apply/ApplicationNotReadyScreen';
 
 interface BizAnswer {
   value: string;
@@ -179,6 +181,8 @@ const ALL_QUESTION_SETS = [
 export default function BusinessPage() {
   useTrackSectionVisit("business");
   const { qualityMap, checkFieldQuality } = useFieldQuality();
+  const router = useRouter();
+  const { status: gateStatus, applicationId: gateAppId, retry } = useApplicationGate();
 
   const [loading, setLoading] = useState(true);
   const [activeCluster, setActiveCluster] = useState(1);
@@ -207,23 +211,16 @@ export default function BusinessPage() {
   }, []);
 
   useEffect(() => {
+    if (gateStatus !== 'ready' || !gateAppId) return;
     const loadData = async () => {
       try {
         const supabase = createBrowserSupabaseClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) { setLoading(false); return; }
-
-        const appsId = await resolvePrimaryApplicationId(supabase, user.id);
-        const apps = appsId ? [{ id: appsId }] : [];
-
-        if (!apps || apps.length === 0) { setLoading(false); return; }
-        const appId = apps[0].id;
-        setApplicationId(appId);
+        setApplicationId(gateAppId);
 
         const { data: existingAnswers } = await supabase
           .from('answers')
           .select('question_key, answer_value')
-          .eq('application_id', appId);
+          .eq('application_id', gateAppId);
 
         if (existingAnswers) {
           const answerMap: Record<string, BizAnswer> = {};
@@ -257,7 +254,7 @@ export default function BusinessPage() {
       }
     };
     loadData();
-  }, []);
+  }, [gateStatus, gateAppId]);
 
   // Auto-save startup costs as JSON whenever they change
   useEffect(() => {
@@ -382,7 +379,16 @@ export default function BusinessPage() {
     </div>
   );
 
-  if (loading) {
+  if (gateStatus === 'no-user') {
+    router.push('/login');
+    return null;
+  }
+
+  if (gateStatus === 'not-ready') {
+    return <ApplicationNotReadyScreen onRetry={retry} />;
+  }
+
+  if (loading || gateStatus === 'loading') {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#0a0a0a]">
         <p className="text-sm" style={{ color: 'rgba(245,240,232,0.68)', fontFamily: "'DM Sans', sans-serif" }}>Loading...</p>

@@ -18,7 +18,9 @@ import AdvisoryBlock from '@/components/apply/questions/AdvisoryBlock';
 import RiskFlag from '@/components/apply/questions/RiskFlag';
 import ClusterDivider from '@/components/apply/questions/ClusterDivider';
 import ProjectionTable from '@/components/apply/questions/ProjectionTable';
-import { resolvePrimaryApplicationId } from '@/lib/resolve-application';
+import { useRouter } from 'next/navigation';
+import { useApplicationGate } from '@/hooks/useApplicationGate';
+import ApplicationNotReadyScreen from '@/components/apply/ApplicationNotReadyScreen';
 
 interface InvAnswer {
   value: string;
@@ -183,6 +185,8 @@ const ALL_QUESTION_SETS = [
 export default function InvestmentPage() {
   useTrackSectionVisit("investment");
   const { qualityMap, checkFieldQuality } = useFieldQuality();
+  const router = useRouter();
+  const { status: gateStatus, applicationId: gateAppId, userId: gateUserId, retry } = useApplicationGate();
 
   const [loading, setLoading] = useState(true);
   const [activeClusterId, setActiveClusterId] = useState('cluster-1');
@@ -207,22 +211,16 @@ export default function InvestmentPage() {
   }, []);
 
   useEffect(() => {
+    if (gateStatus !== 'ready' || !gateAppId) return;
     const loadData = async () => {
       try {
         const supabase = createBrowserSupabaseClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) { setLoading(false); return; }
-
-        const appsId = await resolvePrimaryApplicationId(supabase, user.id);
-        const apps = appsId ? [{ id: appsId }] : [];
-
-        if (!apps || apps.length === 0) { setLoading(false); return; }
-        setApplicationId(apps[0].id);
+        setApplicationId(gateAppId);
 
         const { data: existingAnswers } = await supabase
           .from('answers')
           .select('question_key, answer_value')
-          .eq('application_id', apps[0].id);
+          .eq('application_id', gateAppId);
 
         if (existingAnswers) {
           const answerMap: Record<string, InvAnswer> = {};
@@ -237,7 +235,7 @@ export default function InvestmentPage() {
             const { data: quizSession } = await supabase
               .from('quiz_sessions')
               .select('result_json')
-              .eq('user_id', user.id)
+              .eq('user_id', gateUserId)
               .order('created_at', { ascending: false })
               .limit(1)
               .maybeSingle();
@@ -270,7 +268,7 @@ export default function InvestmentPage() {
       } catch { setLoading(false); }
     };
     loadData();
-  }, []);
+  }, [gateStatus, gateAppId, gateUserId]);
 
   // Auto-save financial projections as JSON whenever they change
   useEffect(() => {
@@ -392,7 +390,16 @@ export default function InvestmentPage() {
     </div>
   );
 
-  if (loading) {
+  if (gateStatus === 'no-user') {
+    router.push('/login');
+    return null;
+  }
+
+  if (gateStatus === 'not-ready') {
+    return <ApplicationNotReadyScreen onRetry={retry} />;
+  }
+
+  if (loading || gateStatus === 'loading') {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#0a0a0a]">
         <p className="text-sm" style={{ color: 'rgba(245,240,232,0.68)', fontFamily: "'DM Sans', sans-serif" }}>Loading...</p>

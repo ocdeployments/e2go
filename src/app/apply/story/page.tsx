@@ -15,7 +15,9 @@ import PreFillBadge from '@/components/apply/questions/PreFillBadge';
 import AdvisoryBlock from '@/components/apply/questions/AdvisoryBlock';
 import ClusterDivider from '@/components/apply/questions/ClusterDivider';
 import { useFieldQuality, getQualityBadgeStyle } from '@/hooks/useFieldQuality';
-import { resolvePrimaryApplicationId } from '@/lib/resolve-application';
+import { useRouter } from 'next/navigation';
+import { useApplicationGate } from '@/hooks/useApplicationGate';
+import ApplicationNotReadyScreen from '@/components/apply/ApplicationNotReadyScreen';
 
 interface StoryAnswer {
   value: string;
@@ -161,6 +163,8 @@ const FIELD_GUIDANCE: Record<string, string[]> = {
 
 export default function StoryPage() {
   useTrackSectionVisit("story");
+  const router = useRouter();
+  const { status: gateStatus, applicationId: gateAppId, retry } = useApplicationGate();
 
   const [loading, setLoading] = useState(true);
   const [activeCluster, setActiveCluster] = useState(1);
@@ -186,17 +190,11 @@ export default function StoryPage() {
   }, []);
 
   useEffect(() => {
+    if (gateStatus !== 'ready' || !gateAppId) return;
     const loadData = async () => {
       try {
         const supabase = createBrowserSupabaseClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) { setLoading(false); return; }
-
-        const appsId = await resolvePrimaryApplicationId(supabase, user.id);
-        const apps = appsId ? [{ id: appsId }] : [];
-
-        if (!apps || apps.length === 0) { setLoading(false); return; }
-        const appId = apps[0].id;
+        const appId = gateAppId;
         setApplicationId(appId);
 
         const { data: existingAnswers } = await supabase
@@ -223,7 +221,7 @@ export default function StoryPage() {
       }
     };
     loadData();
-  }, []);
+  }, [gateStatus, gateAppId]);
 
   const saveAnswer = useCallback(async (key: string, value: string) => {
     if (!applicationId) return;
@@ -289,7 +287,16 @@ export default function StoryPage() {
     </div>
   );
 
-  if (loading) {
+  if (gateStatus === 'no-user') {
+    router.push('/login');
+    return null;
+  }
+
+  if (gateStatus === 'not-ready') {
+    return <ApplicationNotReadyScreen onRetry={retry} />;
+  }
+
+  if (loading || gateStatus === 'loading') {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#0a0a0a]">
         <p className="text-sm" style={{ color: 'rgba(245,240,232,0.68)', fontFamily: "'DM Sans', sans-serif" }}>

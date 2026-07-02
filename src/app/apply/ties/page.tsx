@@ -17,7 +17,9 @@ import AdvisoryBlock from '@/components/apply/questions/AdvisoryBlock';
 import CurrencyInput from '@/components/apply/questions/CurrencyInput';
 import RiskFlag from '@/components/apply/questions/RiskFlag';
 import ClusterDivider from '@/components/apply/questions/ClusterDivider';
-import { resolvePrimaryApplicationId } from '@/lib/resolve-application';
+import { useRouter } from 'next/navigation';
+import { useApplicationGate } from '@/hooks/useApplicationGate';
+import ApplicationNotReadyScreen from '@/components/apply/ApplicationNotReadyScreen';
 
 interface TiesAnswer {
   value: string;
@@ -113,6 +115,8 @@ const ALL_QUESTION_SETS = [
 export default function TiesPage() {
   useTrackSectionVisit("ties");
   const { qualityMap, checkFieldQuality } = useFieldQuality();
+  const router = useRouter();
+  const { status: gateStatus, applicationId: gateAppId, retry } = useApplicationGate();
 
   const [loading, setLoading] = useState(true);
   const [activeClusterId, setActiveClusterId] = useState('cluster-1');
@@ -125,22 +129,16 @@ export default function TiesPage() {
   useAutosaveFlush(debounceRef, flushRef);
 
   useEffect(() => {
+    if (gateStatus !== 'ready' || !gateAppId) return;
     const loadData = async () => {
       try {
         const supabase = createBrowserSupabaseClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) { setLoading(false); return; }
-
-        const appsId = await resolvePrimaryApplicationId(supabase, user.id);
-        const apps = appsId ? [{ id: appsId }] : [];
-
-        if (!apps || apps.length === 0) { setLoading(false); return; }
-        setApplicationId(apps[0].id);
+        setApplicationId(gateAppId);
 
         const { data: existingAnswers } = await supabase
           .from('answers')
           .select('question_key, answer_value')
-          .eq('application_id', apps[0].id);
+          .eq('application_id', gateAppId);
 
         if (existingAnswers) {
           const answerMap: Record<string, TiesAnswer> = {};
@@ -166,7 +164,7 @@ export default function TiesPage() {
       } catch { setLoading(false); }
     };
     loadData();
-  }, []);
+  }, [gateStatus, gateAppId]);
 
   const saveAnswer = useCallback(async (key: string, value: string) => {
     if (!applicationId) return;
@@ -317,7 +315,16 @@ export default function TiesPage() {
     </div>
   );
 
-  if (loading) {
+  if (gateStatus === 'no-user') {
+    router.push('/login');
+    return null;
+  }
+
+  if (gateStatus === 'not-ready') {
+    return <ApplicationNotReadyScreen onRetry={retry} />;
+  }
+
+  if (loading || gateStatus === 'loading') {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#0a0a0a]">
         <p className="text-sm" style={{ color: 'rgba(245,240,232,0.68)', fontFamily: "'DM Sans', sans-serif" }}>Loading...</p>

@@ -16,7 +16,9 @@ import PreFillBadge from '@/components/apply/questions/PreFillBadge';
 import AdvisoryBlock from '@/components/apply/questions/AdvisoryBlock';
 import RiskFlag from '@/components/apply/questions/RiskFlag';
 import ClusterDivider from '@/components/apply/questions/ClusterDivider';
-import { resolvePrimaryApplicationId } from '@/lib/resolve-application';
+import { useRouter } from 'next/navigation';
+import { useApplicationGate } from '@/hooks/useApplicationGate';
+import ApplicationNotReadyScreen from '@/components/apply/ApplicationNotReadyScreen';
 
 interface QualAnswer {
   value: string;
@@ -189,6 +191,8 @@ const ALL_QUESTION_SETS = [
 export default function QualificationsPage() {
   useTrackSectionVisit("qualifications");
   const { qualityMap, checkFieldQuality } = useFieldQuality();
+  const router = useRouter();
+  const { status: gateStatus, applicationId: gateAppId, retry } = useApplicationGate();
 
   const [loading, setLoading] = useState(true);
   const [activeCluster, setActiveCluster] = useState('cluster-1');
@@ -212,22 +216,16 @@ export default function QualificationsPage() {
   }, []);
 
   useEffect(() => {
+    if (gateStatus !== 'ready' || !gateAppId) return;
     const loadData = async () => {
       try {
         const supabase = createBrowserSupabaseClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) { setLoading(false); return; }
-
-        const appsId = await resolvePrimaryApplicationId(supabase, user.id);
-        const apps = appsId ? [{ id: appsId }] : [];
-
-        if (!apps || apps.length === 0) { setLoading(false); return; }
-        setApplicationId(apps[0].id);
+        setApplicationId(gateAppId);
 
         const { data: existingAnswers } = await supabase
           .from('answers')
           .select('question_key, answer_value')
-          .eq('application_id', apps[0].id);
+          .eq('application_id', gateAppId);
 
         if (existingAnswers) {
           const answerMap: Record<string, QualAnswer> = {};
@@ -242,7 +240,7 @@ export default function QualificationsPage() {
       } catch { setLoading(false); }
     };
     loadData();
-  }, []);
+  }, [gateStatus, gateAppId]);
 
   const saveAnswer = useCallback(async (key: string, value: string) => {
     if (!applicationId) return;
@@ -362,7 +360,16 @@ export default function QualificationsPage() {
 
   const activeClusterNumber = parseInt(activeCluster.replace('cluster-', ''), 10);
 
-  if (loading) {
+  if (gateStatus === 'no-user') {
+    router.push('/login');
+    return null;
+  }
+
+  if (gateStatus === 'not-ready') {
+    return <ApplicationNotReadyScreen onRetry={retry} />;
+  }
+
+  if (loading || gateStatus === 'loading') {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#0a0a0a]">
         <p className="text-sm" style={{ color: 'rgba(245,240,232,0.68)', fontFamily: "'DM Sans', sans-serif" }}>Loading...</p>
