@@ -129,7 +129,7 @@ APPLICANT'S REVISION REQUEST (${changeTypeLabel}):
 ${description.trim()}`;
 
     const rawText = await callClaudeAPI(payload);
-    const humanizedText = await humanizeDocument(rawText, payload.voice_profile || '');
+    const humanizedText = await humanizeDocument(rawText, payload.voice_profile || '', undefined, payload.document_type);
 
     const revisionNote: RevisionNote = {
       timestamp: new Date().toISOString(),

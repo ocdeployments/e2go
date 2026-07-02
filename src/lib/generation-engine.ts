@@ -21,6 +21,7 @@ import { INTERVIEW_KNOWLEDGE_BASE } from './interview-knowledge-base';
 import { verifyCaseTheoryCompliance, type VerifierResult } from './cic-verifier';
 import { runCanonicalConsistencySweep } from './cic-consistency-sweep';
 import { checkFigureProvenance } from './figure-provenance';
+import { QUESTION_LABELS } from './question-registry.generated';
 
 const PROMPTS_DIR = join(process.cwd(), 'prompts', 'v1', 'documents');
 
@@ -51,6 +52,76 @@ const DOC_TYPE_QUESTION_MAP: Record<string, string[]> = {
   gift_letter: ['IQ-08', 'IQ-09'],
   exhibit_list: [],
 };
+
+// ---------------------------------------------------------------------------
+// Per-document output token budgets.
+// A flat 4000-token cap (~6-7 pages) made the Business Plan's own instructed
+// length (12-25 pages depending on consulate) physically impossible — every
+// plan silently shipped at forced-compression length. Budgets are sized to
+// each template's instructed maximum, not its minimum.
+// ---------------------------------------------------------------------------
+
+const DEFAULT_TOKEN_BUDGET = 5000;
+
+const DOC_TOKEN_BUDGETS: Partial<Record<string, number>> = {
+  business_plan:         16000,
+  cover_letter:          6000,
+  source_of_funds:       6000,
+  fund_flow_chronology:  6000,
+  visa_category:         6000,
+  marginality_rebuttal:  6000,
+  gift_letter:           4000,
+  resume_principal:      4000,
+  resume_spouse:         4000,
+  declaration_principal: 4000,
+  declaration_spouse:    4000,
+};
+
+export function getDocTokenBudget(documentType: string): number {
+  // _p2 variants share the base document's budget
+  const baseType = documentType.endsWith('_p2')
+    ? documentType.slice(0, -'_p2'.length)
+    : documentType;
+  return DOC_TOKEN_BUDGETS[baseType] ?? DOC_TOKEN_BUDGETS[documentType] ?? DEFAULT_TOKEN_BUDGET;
+}
+
+// Generation runs cool: figure fidelity and structural compliance dominate.
+// Humanization runs warm: its whole job is variation.
+const GENERATION_TEMPERATURE = 0.3;
+const HUMANIZATION_TEMPERATURE = 0.8;
+
+// ---------------------------------------------------------------------------
+// Denial-risk (D-code) routing.
+// The "DENIAL RISK FACTORS — MUST ADDRESS" block was previously injected only
+// for cover_letter and source_of_funds — the Marginality Rebuttal, the one
+// document whose entire purpose is rebutting denial grounds, never saw it.
+// Each document now receives exactly the risk codes it exists to answer.
+// 'all' = every critical/watch risk in the case brief (cover letter only).
+// ---------------------------------------------------------------------------
+
+const DOC_DCODE_MAP: Partial<Record<string, string[] | 'all'>> = {
+  cover_letter:          'all',
+  source_of_funds:       ['D-01', 'D-02', 'D-03', 'D-12'],
+  fund_flow_chronology:  ['D-02', 'D-03', 'D-12'],
+  net_worth_statement:   ['D-01', 'D-03', 'D-12'],
+  gift_letter:           ['D-03', 'D-12'],
+  investment_proof:      ['D-01', 'D-02'],
+  business_plan:         ['D-04', 'D-05', 'D-06', 'D-07', 'D-14'],
+  marginality_rebuttal:  ['D-04', 'D-06', 'D-07', 'D-14'],
+  visa_category:         ['D-01', 'D-02'],
+  qualifications:        ['D-08', 'D-11'],
+  nonimmigrant_intent:   ['D-15'],
+  declaration_principal: ['D-11', 'D-15'],
+  ds160_reference:       ['D-09'],
+  property_portfolio:    ['D-15'],
+};
+
+function getDocDCodeFilter(documentType: string): string[] | 'all' | undefined {
+  const baseType = documentType.endsWith('_p2')
+    ? documentType.slice(0, -'_p2'.length)
+    : documentType;
+  return DOC_DCODE_MAP[baseType] ?? DOC_DCODE_MAP[documentType];
+}
 
 // ---------------------------------------------------------------------------
 // Archetype-specific guidance injected into the system prompt
@@ -756,7 +827,8 @@ export async function buildGenerationPayload(
   const { data: answers } = await supabase
     .from('answers')
     .select('*')
-    .eq('application_id', applicationId);
+    .eq('application_id', applicationId)
+    .is('family_member_id', null);
 
   const { data: voiceProfile } = await supabase
     .from('applicant_voice_profile')
@@ -774,7 +846,12 @@ export async function buildGenerationPayload(
     for (const row of answers) {
       const r = row as Record<string, unknown>;
       const key = (r.question_key ?? r.question_id) as string | undefined;
-      if (key) module3Answers[key] = r.answer_value;
+      // P2-* rows belong to the partner/Investor-2 intake and carry
+      // family_member_id = NULL like principal answers, so they are not
+      // excluded by the query filter above. They are only relevant to
+      // partnership-package documents, which re-inject them explicitly
+      // via the p2Block mechanism further down the pipeline.
+      if (key && !key.startsWith('P2-')) module3Answers[key] = r.answer_value;
     }
   }
 
@@ -878,6 +955,24 @@ export async function buildGenerationPayload(
 // 4c. Call the Anthropic API
 // ---------------------------------------------------------------------------
 
+// Serializes module_3_answers as labeled { question, answer } triples instead
+// of bare { code: value } pairs — the model was previously left to guess what
+// "QF-05" or "M3-A-08" means. Falls back to the raw code when a question has
+// no entry in the generated registry (new/renamed field not yet regenerated).
+function formatLabeledAnswers(answers: Record<string, unknown>): string {
+  const entries = Object.entries(answers).filter(([, value]) =>
+    value !== null && value !== undefined && value !== ''
+  );
+  if (entries.length === 0) return '(no answers on file)';
+  return entries
+    .map(([code, value]) => {
+      const question = QUESTION_LABELS[code] ?? code;
+      const answerText = typeof value === 'object' ? JSON.stringify(value) : String(value);
+      return `Q: ${question}\nA: ${answerText}`;
+    })
+    .join('\n\n');
+}
+
 export async function callClaudeAPI(payload: GenerationPayload): Promise<string> {
   const anthropic = getAnthropic();
   const docLabel = DOCUMENT_TYPE_LABELS[payload.document_type];
@@ -901,13 +996,19 @@ export async function callClaudeAPI(payload: GenerationPayload): Promise<string>
     `If a figure is marked "NOT PROVIDED", state it is not yet confirmed — NEVER invent a number.`,
   ].filter(Boolean).join('\n') : '';
 
-  // Extract denial risk flags for D-code-aware documents (cover letter + source of funds)
+  // Extract denial risk flags and route each document exactly the D-codes it
+  // exists to answer (DOC_DCODE_MAP). Documents with no entry get no block.
   const brief = payload.case_brief as { critical_risks?: { code: string; reason: string }[]; watch_risks?: { code: string; reason: string }[] } | null;
-  const criticalRisks = brief?.critical_risks?.filter(r => r.code && r.reason) ?? [];
-  const watchRisks = brief?.watch_risks?.filter(r => r.code && r.reason) ?? [];
-  const dCodeBlock = (criticalRisks.length > 0 || watchRisks.length > 0) && (
-    payload.document_type === 'cover_letter' || payload.document_type === 'source_of_funds'
-  )
+  const dCodeFilter = getDocDCodeFilter(payload.document_type);
+  const matchesFilter = (r: { code: string }): boolean =>
+    dCodeFilter === 'all' || (Array.isArray(dCodeFilter) && dCodeFilter.includes(r.code));
+  const criticalRisks = dCodeFilter
+    ? (brief?.critical_risks?.filter(r => r.code && r.reason && matchesFilter(r)) ?? [])
+    : [];
+  const watchRisks = dCodeFilter
+    ? (brief?.watch_risks?.filter(r => r.code && r.reason && matchesFilter(r)) ?? [])
+    : [];
+  const dCodeBlock = (criticalRisks.length > 0 || watchRisks.length > 0)
     ? [
         'DENIAL RISK FACTORS — MUST ADDRESS IN THIS DOCUMENT:',
         'These are the top risk factors identified in this case. The document must proactively address each one.',
@@ -942,7 +1043,7 @@ export async function callClaudeAPI(payload: GenerationPayload): Promise<string>
     wrapUserContent(JSON.stringify(payload.case_brief, null, 2)),
     '',
     `APPLICANT MODULE 3 ANSWERS:`,
-    wrapUserContent(JSON.stringify(payload.module_3_answers, null, 2)),
+    wrapUserContent(formatLabeledAnswers(payload.module_3_answers)),
     '',
     ...(payload.qfn_investor_profile
       ? [`INVESTOR PROFILE CONTEXT (Franchise Navigator):`, wrapUserContent(payload.qfn_investor_profile), '']
@@ -967,7 +1068,8 @@ export async function callClaudeAPI(payload: GenerationPayload): Promise<string>
     const model = await getGenerationModel();
     const response = await anthropic.messages.create({
       model,
-      max_tokens: 4000,
+      max_tokens: getDocTokenBudget(payload.document_type),
+      temperature: GENERATION_TEMPERATURE,
       system: enrichedSystemPrompt,
       messages: [{ role: 'user', content: userMessage }],
     });
@@ -1042,7 +1144,8 @@ Rewrite the document addressing each issue above. Be more aggressive in varying 
 export async function humanizeDocument(
   rawContent: string,
   voiceProfile: string,
-  previousFeedback?: string
+  previousFeedback?: string,
+  documentType?: DocumentType
 ): Promise<string> {
   const anthropic = getAnthropic();
 
@@ -1063,7 +1166,8 @@ export async function humanizeDocument(
   const model = await getGenerationModel();
   const response = await anthropic.messages.create({
     model,
-    max_tokens: 4000,
+    max_tokens: documentType ? getDocTokenBudget(documentType) : DEFAULT_TOKEN_BUDGET,
+    temperature: HUMANIZATION_TEMPERATURE,
     system: systemPrompt,
     messages: [{ role: 'user', content: userMessage }],
   });
@@ -1078,36 +1182,84 @@ export async function humanizeDocument(
   return content.text;
 }
 
+// ---------------------------------------------------------------------------
+// E7 — Deterministic AI-detection replacement.
+//
+// The previous implementation asked the same model family that generated
+// the document to also judge whether it "sounds AI-written" — on only the
+// first 3000 characters. That's not a detector, it's a coin flip with
+// extra API cost. This scores three concrete, model-free stylometric
+// signals that directly mirror what HUMANIZATION_SYSTEM_PROMPT above is
+// instructed to fix, over the FULL document text:
+//   1. Density of known AI-vocabulary fingerprints
+//   2. Sentence-length uniformity (AI prose is unusually consistent)
+//   3. Repeated sentence-opening structure (parallel construction)
+// ---------------------------------------------------------------------------
+
+const AI_VOCABULARY_FINGERPRINTS = [
+  'it is worth noting', 'it should be noted', 'furthermore', 'in conclusion',
+  'in summary', 'moreover', 'additionally', 'comprehensive', 'crucial',
+  'notably', 'leveraging', 'utilize', 'utilizing', 'demonstrate', 'facilitate',
+  'holistic', 'robust', 'seamless', 'delve', 'underscore', 'testament to',
+  'plays a vital role', 'plays a crucial role', 'overall,',
+];
+
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+export function computeStylometricAIScore(documentText: string): number {
+  const text = documentText.trim();
+  if (!text) return 0;
+
+  const wordCount = text.split(/\s+/).filter(Boolean).length || 1;
+
+  // Signal 1: AI-vocabulary fingerprint density, normalized per 1000 words.
+  const lowerText = text.toLowerCase();
+  let fingerprintHits = 0;
+  for (const phrase of AI_VOCABULARY_FINGERPRINTS) {
+    const re = new RegExp(`\\b${escapeRegExp(phrase)}`, 'gi');
+    fingerprintHits += (lowerText.match(re) || []).length;
+  }
+  const fingerprintDensity = fingerprintHits / (wordCount / 1000);
+  const fingerprintScore = Math.min(1, fingerprintDensity / 8);
+
+  // Signal 2 & 3 need real sentences (skip fragments from headers/lists).
+  const sentences = text
+    .split(/(?<=[.!?])\s+/)
+    .map(s => s.trim())
+    .filter(s => s.split(/\s+/).length > 2);
+
+  let uniformityScore = 0;
+  let repeatedOpenerScore = 0;
+  if (sentences.length >= 4) {
+    const lengths = sentences.map(s => s.split(/\s+/).length);
+    const mean = lengths.reduce((a, b) => a + b, 0) / lengths.length;
+    const variance = lengths.reduce((a, b) => a + (b - mean) ** 2, 0) / lengths.length;
+    const stdDev = Math.sqrt(variance);
+    const coefficientOfVariation = mean > 0 ? stdDev / mean : 0;
+    // Human legal/business prose typically has CoV > ~0.4; tight, uniform
+    // AI-generated paragraphs often sit below ~0.3.
+    uniformityScore = coefficientOfVariation < 0.3 ? 1 - coefficientOfVariation / 0.3 : 0;
+
+    const openers = sentences.map(s => s.split(/\s+/).slice(0, 2).join(' ').toLowerCase());
+    const counts = new Map<string, number>();
+    for (const o of openers) counts.set(o, (counts.get(o) ?? 0) + 1);
+    const maxRepeat = Math.max(...counts.values());
+    repeatedOpenerScore = Math.min(1, Math.max(0, (maxRepeat - 1) / (sentences.length * 0.3)));
+  }
+
+  const score = fingerprintScore * 0.5 + uniformityScore * 0.3 + repeatedOpenerScore * 0.2;
+  return Math.round(Math.max(0, Math.min(1, score)) * 100) / 100;
+}
+
 /**
- * Run AI detection on a single document and return the score.
- * Used by the humanization retry loop.
+ * Score a single document for AI-writing patterns via deterministic
+ * stylometrics (see computeStylometricAIScore). Used by the humanization
+ * retry loop. Kept async for call-site compatibility — no LLM call is made.
  */
 export async function getAIDetectionScore(documentText: string): Promise<number> {
-  const anthropic = getAnthropic();
-  const model = await getGenerationModel();
-
-  const response = await anthropic.messages.create({
-    model,
-    max_tokens: 500,
-    system: `You are an AI detection tool. Analyze the following text and estimate how likely it was written by an AI.
-
-Respond with ONLY a JSON object in this exact format:
-{"ai_score": 0.0-1.0, "reasoning": "brief explanation"}
-
-Where ai_score is 0.0 (definitely human) to 1.0 (definitely AI).
-Consider: repetitive phrasing, formal structure, lack of personal voice, formulaic transitions.`,
-    messages: [{ role: 'user', content: `Analyze this document for AI writing patterns:\n\n${documentText.slice(0, 3000)}` }],
-  });
-
-  const respContent = response.content[0];
-  if (respContent.type === 'text') {
-    const match = respContent.text.match(/"ai_score"\s*:\s*([0-9.]+)/);
-    if (match) {
-      return parseFloat(match[1]);
-    }
-  }
-  // Default to 0 if parsing fails — don't block pipeline
-  return 0;
+  return computeStylometricAIScore(documentText);
 }
 
 // ---------------------------------------------------------------------------
@@ -1778,46 +1930,24 @@ const AI_DETECTION_THRESHOLD = 0.35;
 export async function runAIDetectionAudit(
   documents: GeneratedDocument[]
 ): Promise<void> {
-  const anthropic = getAnthropic();
+  const supabase = getSupabase();
 
   for (const doc of documents) {
     if (!doc.content_text) continue;
 
     try {
-      const model = await getGenerationModel();
-      const response = await anthropic.messages.create({
-        model,
-        max_tokens: 500,
-        system: `You are an AI detection tool. Analyze the following text and estimate how likely it was written by an AI.
+      const aiScore = computeStylometricAIScore(doc.content_text);
+      const passed = aiScore < AI_DETECTION_THRESHOLD;
 
-Respond with ONLY a JSON object in this exact format:
-{"ai_score": 0.0-1.0, "reasoning": "brief explanation"}
-
-Where ai_score is 0.0 (definitely human) to 1.0 (definitely AI).
-Consider: repetitive phrasing, formal structure, lack of personal voice, formulaic transitions.`,
-        messages: [{ role: 'user', content: `Analyze this document for AI writing patterns:\n\n${doc.content_text.slice(0, 3000)}` }],
-      });
-
-      const content = response.content[0];
-      if (content.type === 'text') {
-        const match = content.text.match(/"ai_score"\s*:\s*([0-9.]+)/);
-        if (match) {
-          const aiScore = parseFloat(match[1]);
-          const passed = aiScore < AI_DETECTION_THRESHOLD;
-
-          // Update document with AI detection results
-          const supabase = getSupabase();
-          await supabase
-            .from('generated_documents')
-            .update({
-              ai_detection_score: aiScore,
-              ai_detection_passed: passed,
-              updated_at: new Date().toISOString(),
-            })
-            .eq('job_id', doc.job_id)
-            .eq('document_type', doc.document_type);
-        }
-      }
+      await supabase
+        .from('generated_documents')
+        .update({
+          ai_detection_score: aiScore,
+          ai_detection_passed: passed,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('job_id', doc.job_id)
+        .eq('document_type', doc.document_type);
     } catch (err) {
       console.error(`AI detection failed for ${doc.document_type}:`, err);
       // Non-fatal - continue
@@ -2518,9 +2648,18 @@ Generate the document using Investor 2's identity, name, nationality, source of 
       let actualAttempts = 0;
       let finalScore: number | null = null;
 
+      // E4 — humanization rewrites verified content with no post-check today.
+      // Baseline the figures already present in the CIC-verified draft so we
+      // can tell "pre-existing orphan" apart from "orphan humanization just
+      // introduced" — only the latter should block shipping the rewrite.
+      const preHumanizeOrphanValues = new Set(
+        checkFigureProvenance(doc.content_text, caseTheoryForVerifier?.numbers_strategy)
+          .orphans.map(o => o.normalized)
+      );
+
       for (let attempt = 1; attempt <= HUMANIZATION_MAX_ATTEMPTS; attempt++) {
         try {
-          const humanized = await humanizeDocument(currentText, voiceProfile, lastFeedback);
+          const humanized = await humanizeDocument(currentText, voiceProfile, lastFeedback, doc.document_type);
           const wc = countWords(humanized);
           const pages = estimatePages(wc);
           actualAttempts = attempt;
@@ -2536,12 +2675,19 @@ Generate the document using Investor 2's identity, name, nationality, source of 
             { caseBrief: caseBriefData, investmentTotal }
           );
 
+          // E4 — re-run the deterministic figure check post-humanization. The
+          // rewrite pass can (and does) mangle a verified $250,000 into "a
+          // quarter million" or worse, silently invent a nearby number.
+          const postHumanizeProvenance = checkFigureProvenance(humanized, caseTheoryForVerifier?.numbers_strategy);
+          const newOrphans = postHumanizeProvenance.orphans.filter(o => !preHumanizeOrphanValues.has(o.normalized));
+          const figuresPassed = newOrphans.length === 0;
+
           const aiPassed = aiScore < DETECTION_THRESHOLD;
           const qualityPassed = qualityResult.passed;
           finalScore = aiScore;
 
-          if ((aiPassed && qualityPassed) || attempt === HUMANIZATION_MAX_ATTEMPTS) {
-            // Passed both checks or last attempt — accept this version
+          if (aiPassed && qualityPassed && figuresPassed) {
+            // Passed every check — accept this version
             await supabase
               .from('generated_documents')
               .update({
@@ -2556,17 +2702,40 @@ Generate the document using Investor 2's identity, name, nationality, source of 
               })
               .eq('job_id', jobId)
               .eq('document_type', doc.document_type);
-
-            if (!aiPassed || !qualityPassed) {
-              const reasons = [];
-              if (!aiPassed) reasons.push(`AI score ${aiScore} (threshold ${DETECTION_THRESHOLD})`);
-              if (!qualityPassed) reasons.push(`quality gate: ${qualityResult.failures.join(', ')}`);
-              console.warn(`[HUMANIZE] ${doc.document_type}: max attempts reached — ${reasons.join('; ')} — flagged for review`);
-            }
             break;
           }
 
-          // Build feedback combining AI detection and quality gate issues for next attempt
+          if (attempt === HUMANIZATION_MAX_ATTEMPTS) {
+            // Last attempt: never ship a rewrite that introduced hallucinated
+            // figures — fall back to the last figure-clean (pre-humanization)
+            // text instead of the cosmetically nicer but factually wrong one.
+            const safeText = figuresPassed ? humanized : currentText;
+            const safeWc = countWords(safeText);
+            await supabase
+              .from('generated_documents')
+              .update({
+                content_text: safeText,
+                word_count: safeWc,
+                page_estimate: estimatePages(safeWc),
+                ai_detection_score: aiScore,
+                ai_detection_passed: aiPassed,
+                quality_gate_passed: qualityPassed,
+                quality_gate_notes: qualityPassed ? [] : qualityResult.failures,
+                updated_at: new Date().toISOString(),
+              })
+              .eq('job_id', jobId)
+              .eq('document_type', doc.document_type);
+
+            const reasons = [];
+            if (!aiPassed) reasons.push(`AI score ${aiScore} (threshold ${DETECTION_THRESHOLD})`);
+            if (!qualityPassed) reasons.push(`quality gate: ${qualityResult.failures.join(', ')}`);
+            if (!figuresPassed) reasons.push(`${newOrphans.length} new orphan figure(s) introduced by humanization — reverted to pre-humanization text`);
+            console.warn(`[HUMANIZE] ${doc.document_type}: max attempts reached — ${reasons.join('; ')} — flagged for review`);
+            break;
+          }
+
+          // Build feedback combining AI detection, quality gate, and figure
+          // provenance issues for next attempt
           const feedbackParts: string[] = [];
           if (!aiPassed) {
             feedbackParts.push(`AI detection score: ${aiScore} (threshold: ${DETECTION_THRESHOLD}). The text still reads as AI-generated. Focus on: more varied sentence lengths, removing formal transitions, adding personal voice from the voice profile.`);
@@ -2574,10 +2743,13 @@ Generate the document using Investor 2's identity, name, nationality, source of 
           if (!qualityPassed) {
             feedbackParts.push(`Quality gate failures: ${qualityResult.failures.join('; ')}. Address each issue above.`);
           }
+          if (!figuresPassed) {
+            feedbackParts.push(`${postHumanizeProvenance.correctionBrief}\n\nThese figures were correct in the previous draft — you introduced or altered them while rewriting for tone. Restate every number EXACTLY as it appeared before; only change surrounding wording.`);
+          }
           lastFeedback = feedbackParts.join('\n\n');
           currentText = humanized;
 
-          console.log(`[HUMANIZE] ${doc.document_type}: attempt ${attempt} AI=${aiScore} quality=${qualityPassed ? 'pass' : 'fail'} — retrying`);
+          console.log(`[HUMANIZE] ${doc.document_type}: attempt ${attempt} AI=${aiScore} quality=${qualityPassed ? 'pass' : 'fail'} figures=${figuresPassed ? 'pass' : 'fail'} — retrying`);
         } catch (err) {
           console.error(`[HUMANIZE] ${doc.document_type} attempt ${attempt} failed:`, err);
           actualAttempts = attempt;
@@ -2626,8 +2798,9 @@ Generate the document using Investor 2's identity, name, nationality, source of 
         clean = clean.replace(/\*\*([^*]+)\*\*/g, '$1');  // Remove bold
         clean = clean.replace(/\*([^*]+)\*/g, '$1');  // Remove italic
         clean = clean.replace(/`{1,3}[^`]*`{1,3}/g, '');  // Remove code blocks
-        clean = clean.replace(/^\s*[-*+]\s+/gm, '');  // Remove list markers
-        clean = clean.replace(/^\s*\d+\.\s+/gm, '');  // Remove numbered lists
+        // NOTE: numbered/bulleted list markers are intentionally preserved —
+        // they are legitimate document structure (resumes, chronologies,
+        // itemized breakdowns), not AI-generation artifacts.
 
         // Clean up multiple blank lines
         clean = clean.replace(/\n{3,}/g, '\n\n');
