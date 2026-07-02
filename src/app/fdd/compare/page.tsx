@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { createBrowserSupabaseClient } from '@/lib/supabase';
 import type { CompareResponse, ComparisonColumn } from '@/types/fdd-compare';
+import { resolvePrimaryApplicationId } from '@/lib/resolve-application';
 
 // ============================================================================
 // FDD Compare Page — /fdd/compare?ids=id1,id2[,id3,id4]
@@ -166,7 +167,8 @@ function FddCompareContent() {
       const supabase = createBrowserSupabaseClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      const { data: app } = await supabase.from('applications').select('id').eq('user_id', user.id).order('created_at', { ascending: false }).limit(1).maybeSingle();
+      const appId = await resolvePrimaryApplicationId(supabase, user.id);
+      const app = appId ? { id: appId } : null;
       if (app?.id) setApplicationId(app.id);
     };
     loadAppId();
