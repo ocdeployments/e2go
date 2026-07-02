@@ -309,6 +309,14 @@ function buildKBContext(documentType: string, consulatePost: string): string {
   return lines.join('\n');
 }
 
+// E8/WS2.8 — fetchFAQKBContext degrades silently (empty string) per-call when
+// OPENAI_API_KEY is missing, so a misconfigured env var produced no signal
+// anywhere until someone noticed thinner documents. Warn once at module load
+// (i.e. once per server process) instead of staying silent indefinitely.
+if (!process.env.OPENAI_API_KEY) {
+  console.warn('[GENERATION-ENGINE] OPENAI_API_KEY is not set — FAQ knowledge-base context will be omitted from every generated document until this is configured.');
+}
+
 // Attempt to fetch relevant FAQ KB chunks from Supabase pgvector.
 // Gracefully returns empty string if OPENAI_API_KEY is absent or table is empty.
 async function fetchFAQKBContext(
@@ -2595,6 +2603,73 @@ Generate the document using Investor 2's identity, name, nationality, source of 
           ),
           notes: 'Excessive repetition detected between documents',
         });
+
+      // E8/WS2.8 — this used to be log-only, so a flagged near-duplicate pair
+      // shipped to the client unchanged. Regenerate the second document in
+      // each pair (deduped, one attempt each) with an explicit instruction to
+      // diverge from its sibling's language while keeping the same facts.
+      const regeneratedTypes = new Set<DocumentType>();
+      for (const pair of repetitionResult.duplicate_pairs) {
+        if (regeneratedTypes.has(pair.doc2)) continue;
+        regeneratedTypes.add(pair.doc2);
+
+        const docToFix = generatedDocs.find(d => d.document_type === pair.doc2);
+        if (!docToFix || !docToFix.content_text) continue;
+
+        try {
+          const regenPayload = await buildGenerationPayload(applicationId, pair.doc2, caseBrief);
+          const distinctivenessBrief = `CRITICAL: Your previous draft of this document was ${Math.round(pair.similarity * 100)}% textually similar to the ${DOCUMENT_TYPE_LABELS[pair.doc1]}. Every document in this package must cover its assigned ground in distinct language — do not reuse the same sentences, phrasing, or paragraph structure as the other document. Keep the same facts and figures, but write this one independently.`;
+          const correctedContent = await callClaudeAPI({
+            ...regenPayload,
+            case_theory_brief: distinctivenessBrief + (regenPayload.case_theory_brief ? '\n\n' + regenPayload.case_theory_brief : ''),
+          });
+
+          const wc = countWords(correctedContent);
+          const pages = estimatePages(wc);
+          let correctedJson: Record<string, unknown> | null = null;
+          const jsonMatch = correctedContent.match(/```json\s*\n([\s\S]*?)\n```/);
+          if (jsonMatch) {
+            try { correctedJson = JSON.parse(jsonMatch[1]); }
+            catch { correctedJson = { full_text: correctedContent }; }
+          } else {
+            try {
+              const parsed = JSON.parse(correctedContent);
+              if (typeof parsed === 'object' && parsed !== null) correctedJson = parsed;
+            } catch { correctedJson = { full_text: correctedContent }; }
+          }
+
+          await supabase
+            .from('generated_documents')
+            .update({
+              content_text: correctedContent,
+              content_json: correctedJson,
+              word_count: wc,
+              page_estimate: pages,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('job_id', jobId)
+            .eq('document_type', pair.doc2);
+
+          docToFix.content_text = correctedContent;
+          docToFix.content_json = correctedJson;
+          docToFix.word_count = wc;
+          docToFix.page_estimate = pages;
+
+          await supabase
+            .from('document_generation_log')
+            .insert({
+              application_id: applicationId,
+              document_type: pair.doc2,
+              stage: 'repetition_check',
+              attempt_number: 2,
+              passed: true,
+              flagged_sections: [],
+              notes: `Regenerated after ${Math.round(pair.similarity * 100)}% similarity with ${pair.doc1}`,
+            });
+        } catch (err) {
+          console.error(`[REPETITION] Regeneration failed for ${pair.doc2}:`, err);
+        }
+      }
     }
 
     emitQualityStep(1, 'complete');
