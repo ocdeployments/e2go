@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { createBrowserSupabaseClient } from '@/lib/supabase';
+import { resolvePrimaryApplication } from '@/lib/resolve-application';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -98,45 +99,10 @@ export default function InterviewSimulator() {
         }
         if (!cancelled) setUser(user);
 
-        // Get the user's application with the most case file data.
-        // Users can accumulate multiple application rows (e.g. repeated
-        // /simulator/quick-start runs each create a new 'simulator_standalone'
-        // row). Picking the most RECENTLY CREATED one can surface an empty
-        // duplicate instead of the real case file, so pick by answer count.
-        const { data: apps } = await supabase
-          .from('applications')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
-
-        let app: any = null;
-        if (apps && apps.length > 0) {
-          if (apps.length === 1) {
-            app = apps[0];
-          } else {
-            // Fetch answer counts for all apps in a single query instead of N sequential calls
-            const { data: answerRows } = await supabase
-              .from('answers')
-              .select('application_id')
-              .in('application_id', apps.map((a: any) => a.id));
-
-            const countMap = new Map<string, number>();
-            answerRows?.forEach((row: { application_id: string }) => {
-              countMap.set(row.application_id, (countMap.get(row.application_id) ?? 0) + 1);
-            });
-
-            let bestCount = -1;
-            for (const candidate of apps) {
-              const c = countMap.get(candidate.id) ?? 0;
-              const candidateIsStandalone = candidate.source === 'simulator_standalone';
-              const betterOnTie = c === bestCount && app && candidateIsStandalone === false && app.source === 'simulator_standalone';
-              if (c > bestCount || betterOnTie) {
-                bestCount = c;
-                app = candidate;
-              }
-            }
-          }
-        }
+        // Resolve the same primary application every other surface uses,
+        // so the simulator always interviews against the case the rest of
+        // the app is building.
+        const app = await resolvePrimaryApplication<Record<string, any>>(supabase, user.id);
 
         console.log('[SIM] application result:', app ? 'found' : 'not found');
 
