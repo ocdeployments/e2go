@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import Stripe from 'stripe';
+import { Redis } from '@upstash/redis';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
+
+const redis = process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
+  ? new Redis({ url: process.env.UPSTASH_REDIS_REST_URL, token: process.env.UPSTASH_REDIS_REST_TOKEN })
+  : null;
 
 function getSupabase() {
   return createClient(
@@ -85,6 +90,12 @@ export async function POST(request: NextRequest) {
             .from('applications')
             .update({ payment_status: 'paid' })
             .eq('id', applicationIdFromMeta);
+        }
+
+        // Invalidate middleware access cache so the user gets through on next
+        // navigation without waiting for the webhook (mirrors webhook behavior).
+        if (redis) {
+          await redis.del(`mw:access:${user.id}`);
         }
 
         return NextResponse.json({
