@@ -15,6 +15,7 @@ import PreFillBadge from '@/components/apply/questions/PreFillBadge';
 import AdvisoryBlock from '@/components/apply/questions/AdvisoryBlock';
 import ClusterDivider from '@/components/apply/questions/ClusterDivider';
 import { useFieldQuality, getQualityBadgeStyle } from '@/hooks/useFieldQuality';
+import { resolvePrimaryApplicationId } from '@/lib/resolve-application';
 
 interface StoryAnswer {
   value: string;
@@ -191,12 +192,8 @@ export default function StoryPage() {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) { setLoading(false); return; }
 
-        const { data: apps } = await supabase
-          .from('applications')
-          .select('id')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(1);
+        const appsId = await resolvePrimaryApplicationId(supabase, user.id);
+        const apps = appsId ? [{ id: appsId }] : [];
 
         if (!apps || apps.length === 0) { setLoading(false); return; }
         const appId = apps[0].id;
