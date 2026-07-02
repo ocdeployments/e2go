@@ -42,6 +42,10 @@ export interface SimulatorContext {
   businessPlanScore: number | null;
   // FDD priority questions for franchise applicants (fetched from fdd_analyses)
   fddPriorityQuestions?: { text: string; triggered_by: string; importance: string }[];
+  // Case Intelligence Core — the CPU's strongest honest E-2 narrative and which
+  // figures to foreground vs which denial risks to pre-empt (null until built)
+  caseTheoryNarrative: string | null;
+  caseTheoryNumbersStrategy: unknown | null;
   // Application metadata
   applicationType: string;
   createdAt: string;
