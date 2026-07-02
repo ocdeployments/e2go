@@ -107,6 +107,14 @@ export async function buildSimulatorContext(applicationId: string): Promise<Simu
     .eq('user_id', application.user_id)
     .maybeSingle();
 
+  // Fetch Case Intelligence Core's case theory — the CPU's narrative + numbers
+  // strategy (non-blocking; null until the CPU has built a theory for this case)
+  const { data: caseTheory } = await supabase
+    .from('case_theory')
+    .select('narrative, numbers_strategy')
+    .eq('application_id', applicationId)
+    .maybeSingle();
+
   // Fetch investment sources from Tab F
   const investmentSources: InvestmentSource[] = [];
   const fundFlowEvents: FundFlowEvent[] = [];
@@ -129,7 +137,6 @@ export async function buildSimulatorContext(applicationId: string): Promise<Simu
   // Business category
   const businessCategory = application.business_category ||
     answersMap.get('M2-CATEGORY') ||
-    answersMap.get('Q0-10') ||
     'general';
 
   // FDD priority questions — fetched for franchise applicants only (non-blocking)
@@ -205,6 +212,8 @@ export async function buildSimulatorContext(applicationId: string): Promise<Simu
     applicationType: application.application_type || 'solo',
     createdAt: application.created_at,
     fddPriorityQuestions: fddPriorityQuestions.length > 0 ? fddPriorityQuestions : undefined,
+    caseTheoryNarrative: caseTheory?.narrative ?? null,
+    caseTheoryNumbersStrategy: caseTheory?.numbers_strategy ?? null,
   };
 }
 
