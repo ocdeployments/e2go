@@ -1,6 +1,25 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** July 2, 2026 — Session 109: Implemented Phase 0 + Phase 1 engine fixes from the quality-uplift audit (`document-analysis.md`, `document-scorecard.md`, `generation-engine-review.md`, `agent-prompt-part1/2-*.md`). Six commits, build clean. See below for full detail. Session 108 (document/analysis inventory audit) and Session 107 (DS-160 intake) below.
+**Last Updated:** July 2, 2026 — Session 110: Closed out the remainder of Phase 0/1 from the quality-uplift audit (never-fabricate territory scoring, FDD Questions industry-fit wiring, FDD Comparison broken columns). D-code routing (WS2.6) was audited and found already complete — no fix needed. Three commits, build clean. Prompt caching (E6b) and silent-degradation surfacing (E8) intentionally deferred — see below. Session 109 (first Phase 0/1 batch) below.
+
+---
+
+## Session 110 — Phase 0/1 Close-out (July 2, 2026)
+
+**Branch:** dev. Build clean (`npm run build`, `tsc --noEmit`). Three commits, one concern each.
+
+### Fixed
+- **WS1.6 — never-fabricate territory competition score.** `src/lib/fdd-territory-engine.ts`: each of the 5 territory dimensions (population/income/competition/demographic-fit/labor-market) falls back to a sentinel score when its data source is unavailable, but the weighted composite folded that sentinel in unconditionally. Added `computeWeightedOverallScore()` which excludes dimensions with `data_available: false` and renormalizes the remaining weights, so a fabricated neutral score can no longer drag or prop the overall territory score. Applied at both `analyseTeritory` and `analyseTeritoryForBusiness`. Competition fallback note text now says "not assessed" instead of implying a real VIABLE rating.
+- **WS1 item 3 — FDD Questions dead industry-fit logic.** `computeProfileMatch` in `fdd-questions-engine.ts` reads `profile.industry_interest`, but `src/app/api/fdd/questions/route.ts` never populated that field on the `CaseProfileSubset` it built — every case scored 'neutral' or 'weak' on industry fit, never 'strong'. Fixed by fetching `post_quiz_profile.industry_interest` from `quiz_sessions` (same source `case-profile.ts` already uses) and passing it through.
+- **Phase 0 item 5 — FDD Comparison broken columns.** `src/app/api/fdd/compare/route.ts`: `payback_years` and `franchisee_survival_rate` were hardcoded to `null` in `buildColumn` and weren't even rendered as rows in the comparison table. Payback now computed as investment midpoint ÷ central ODE (same formula as the FDD Report); survival rate derived from Item 20 unit-count fields. Added both as visible rows in `src/app/fdd/compare/page.tsx` with best-value highlighting wired into `computeBest`.
+
+### Audited, found already correct
+- **Phase 1 item 9 / WS2.6 — D-code routing.** `DOC_DCODE_MAP` in `generation-engine.ts` already covers `marginality_rebuttal`, `nonimmigrant_intent`, `declaration_principal`, and `property_portfolio` per spec — this was fixed in an earlier session, not still broken. No changes made.
+
+### Deferred (not started this session)
+- **Phase 1 item 10 / WS2.5 (E6b) — Anthropic prompt caching.** Requires restructuring message payloads into content-block arrays with `cache_control` breakpoints, and the behavior differs between the OpenRouter and Anthropic-direct fallback paths in `llm-client.ts`. This touches the core generation call path directly — deferred pending a dedicated pass rather than folding into a mixed-bug-fix session.
+- **Phase 1 item 12 / WS2.8 (E8) — surface silent degradations.** Verifier-status badges in the document review UI, promoting the repetition-check from log-only to an actual regeneration trigger, and a FAQ RAG missing-API-key startup warning. Well-scoped but untouched this session.
+- **Phases 2–6** (package integration / master exhibit registry / deterministic financial spine / CPU Intelligence Pack / partnership coverage / analyses depth / golden-case verification loop) — per `agent-prompt-part1/2-*.md`, these are multi-day, multi-session workstreams (e.g. Phase 2's A4 alone requires a new `src/lib/case-financials.ts` deterministic financial model; Phase 3 requires encoding 23 expert directives into the CIC). Not started — worth scoping as their own dedicated sessions rather than attempting inline.
 
 ---
 
