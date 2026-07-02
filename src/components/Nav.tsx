@@ -143,6 +143,7 @@ export default function Nav() {
   if (loading) return null;
 
   return (
+    <>
     <header
       className="fixed top-0 left-0 right-0 z-50"
       style={{ background: "rgba(10,10,10,0.95)", borderBottom: "1px solid rgba(201,168,76,0.1)" }}
@@ -354,8 +355,9 @@ export default function Nav() {
           )}
         </div>
       )}
-      {/* D6 Point 2 — outcomes consent banner for existing users who haven't been asked */}
-      {user && <OutcomesConsentBanner />}
     </header>
+    {/* D6 Point 2 — outcomes consent banner; fixed to viewport bottom so it never overlaps page titles */}
+    {user && <OutcomesConsentBanner />}
+    </>
   );
 }
