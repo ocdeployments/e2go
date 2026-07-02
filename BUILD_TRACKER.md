@@ -1,6 +1,212 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** July 2, 2026 — Session 105: Global top-level Nav bar shipped across `/franchise/*` and `/apply/*`, dead Module 3 UI (`TabShell.tsx`, `QuestionRenderer.tsx`) removed, and a genuine mobile horizontal-overflow bug in `TabPage.tsx` root-caused and fixed (flexbox `min-width: auto` default). Session 104's resolver work also finished — see below.
+**Last Updated:** July 2, 2026 — Session 109: Implemented Phase 0 + Phase 1 engine fixes from the quality-uplift audit (`document-analysis.md`, `document-scorecard.md`, `generation-engine-review.md`, `agent-prompt-part1/2-*.md`). Six commits, build clean. See below for full detail. Session 108 (document/analysis inventory audit) and Session 107 (DS-160 intake) below.
+
+---
+
+## Session 109 — Phase 0 + Phase 1 Engine Fixes (July 2, 2026)
+
+**Branch:** dev. Build clean (`npm run build`). Six commits, one concern each.
+
+### Engine fixes (`src/lib/generation-engine.ts`)
+- Per-document-type token budgets and generation/humanization temperature constants applied at all call sites.
+- **P2-* leakage fix**: `buildGenerationPayload`'s `module3Answers` loop now excludes `P2-`-prefixed keys, so the 8 shared partnership document types (Business Plan, Net Worth Statement, Fund Flow Chronology, etc.) no longer get raw, unguided partner-2 answer fragments mixed into their prompt context. This resolves the "worse than a clean gap" half of Session 108's Gap 2 finding — the *unpredictable partial leakage* — though the underlying gap (shared docs still don't deliberately incorporate Investor 2 in a `complete_partnership` case) is unchanged and still needs its own workstream.
+- Module 3 answers are now serialized as labeled `Q: {question}\nA: {value}` text instead of raw `{code: value}` pairs, via a new build-time question registry (`scripts/generate-question-registry.mjs` → `src/lib/question-registry.generated.ts`, 140 entries) — the model no longer has to guess what "QF-05" means.
+- Sanitizer no longer strips numbered/bulleted list markers (was mangling resumes, chronologies, itemized breakdowns).
+- Post-humanization figure re-verification: re-runs the deterministic figure-provenance check after each humanization pass and rejects rewrites that introduce *new* hallucinated figures (pre-existing orphans from the CIC-verified draft are not blocked), falling back to the last figure-clean text on the final attempt.
+- AI-detection replaced: the LLM-judged score is gone, replaced by `computeStylometricAIScore()` — a deterministic score from AI-vocabulary fingerprint density, sentence-length uniformity, and repeated sentence-opener structure, evaluated over the full document (was previously truncated to first 3000 chars and LLM-judged, which was slow, costly, and non-deterministic).
+
+### Confirmed small bugs (WS1) — all fixed
+1. **Prep Kit `model_used` hardcoded** — `llm-client.ts` now exposes `callLLMWithMeta()` (returns `{content, model}`) alongside the unchanged `callLLM()`; `/api/simulator/prep-kit` persists the model that actually responded instead of a hardcoded guess.
+2. **FDD Questions `[X years / X miles]` placeholder** — shipped as literal unfilled text to users. Now filled from `post_termination_noncompete_years`/`_radius_miles` in the extraction schema at generation time (`fdd-questions-engine.ts`).
+3. **FDD Report QSR-only royalty benchmark** — every franchise category was benchmarked against a QSR 5–7% royalty median. Replaced with a category-keyed benchmark table (`fdd-report-engine.ts`), reusing the existing `classifyCategory()` classifier from `fdd-territory-engine.ts`.
+4. **Coaching-report silent failure** — every failure path (empty LLM content, JSON parse failure, thrown exception/timeout) returned the same `{coaching: []}` shape as "no weak answers, nothing to coach" — indistinguishable in the UI. API now sets `error: true` on genuine failures; `/simulator` tracks `coachingError` state and shows a retry affordance instead of silently rendering nothing.
+5. **Tab Reference mismatches** — `ds160_reference.md` (Tab A → Tab D/E), `business_plan.md` (Tab K → Tab C), `qualifications.md` (Tab J → Tab D), `nonimmigrant_intent.md` (missing tab prefix) all drifted from `DOCUMENT_TYPE_TABS`, the map the Binder Index is built from. Added `src/lib/__tests__/tab-consistency.test.ts` (22 tests, all passing) to catch future drift automatically. Dead `source_of_funds.md` prompt file removed (superseded by the merged `b01_source_and_application_of_funds.md`, aliased in `loadPrompt()`).
+
+### Not done this session (deferred / out of scope for Phase 0/1)
+- Session 108's Gap 1 (Market Analysis has no export path) and the rest of Gap 2 (shared partnership docs don't deliberately write for two investors) — Phase 2+ scope, not touched.
+- Phase 2 items from `agent-prompt-part2-intelligence-and-content.md` (WS4–WS6: intelligence/content workstreams) — not started.
+
+### Dev server
+Restarted (`preview_stop` → `preview_start`) at end of session per standing instruction.
+
+---
+
+## Session 108 — Document/Analysis Inventory Audit + Three Confirmed Gaps (July 2, 2026)
+
+**Branch:** dev. **Audit only — no code changes.**
+
+### Full inventory of what the app generates
+
+**Core E-2 application package** (`/generate/[applicationId]`, `.docx`, via `src/lib/generation-engine.ts`'s 15-step pipeline):
+1. Cover Letter
+2. Source of Funds Statement
+3. Business Plan
+4. Investor Biography & Qualifications
+5. DS-156E / DS-160 Reference
+6. Substantiality Memorandum (`visa_category`)
+7. Non-immigrant Intent Statement
+8. Non-Marginality Rebuttal
+9. Principal Applicant Declaration
+10. Spouse Declaration *(conditional — spouse on file)*
+11. Fund Flow Chronology
+12. Consolidated Net Worth Statement
+13. Property Portfolio Summary *(conditional)*
+14. Principal Applicant Resume
+15. Spouse Resume *(conditional)*
+16. Gift Letter *(conditional — gifted funds)*
+17–22. Investor 2 set *(`complete_partnership` only)* — Cover Letter, Source of Funds, Declaration, Biography & Qualifications, Non-immigrant Intent, Resume (`_p2` doc types)
+
+**Renewal package** (`/api/renewal/generate`): Updated Cover Letter, Business Plan Update, Template 6 (Actual vs. Projected Performance), Renewal Checklist.
+
+**Interview Preparation Kit** (`/simulator/prep-kit`) — 7-section dossier, has a real Print/Save-as-PDF export.
+
+**Analyses (in-app reports, not files):**
+1. Gap Analysis — 8-category case-readiness scoring, has Print/PDF
+2. Document Upload Gap Report — preliminary gaps from self-preparer uploads
+3. FDD Extraction Review — 9-section structured extraction with confidence badges
+4. FDD E-2 Scoring — 5-dimension compatibility score
+5. FDD Territory / Market Analysis — Census-based location viability (also reachable standalone via `/market-analysis`, not just FDD-attached)
+6. FDD Questions Generator — flag-derived question list
+7. FDD Final Report — consolidated report, freemium-gated
+8. FDD Comparison — side-by-side 2–4 FDDs
+9. Interview Simulator Coaching Report — per-session feedback, no export
+
+### Gap 1 — Market Analysis has no export path
+
+`analyseTeritoryForBusiness()` (`src/lib/fdd-territory-engine.ts:968`) produces genuinely report-shaped content — 5 scored dimensions (population, income, competition, demographic fit, labor market) from Census ACS + Google Places data, plus a 5-part Claude-written narrative (Market Overview, Economic Strength, Demographic Fit, Competitive Landscape, Verdict) and a target-market-sizing estimate. It's rendered only as an in-app page at `/market-analysis` (via `/api/market-analysis`) — grepped for `window.print`/`Print`/`download`/`PDF` in that page and found nothing. **No Print, no PDF, no DOCX.** Every other analysis with comparable narrative depth (Gap Analysis, FDD Final Report) already has an export path; Market Analysis doesn't. `market_analysis` is not in the `DocumentType` enum (`src/types/generation.ts`) and isn't part of the 15-step generation pipeline — it's fully standalone.
+
+### Gap 2 — Shared partnership documents don't incorporate Investor 2's data (confirmed at the prompt level, two independent passes)
+
+Only 6 of the 16 principal-side document types are partner-2-specific (`cover_letter_p2`, `source_of_funds_p2`, `declaration_p2`, `qualifications_p2`, `nonimmigrant_intent_p2`, `resume_p2`) — the personal/testimonial documents. The other **8 shared documents — Business Plan, DS-156E/DS-160 Reference, Substantiality Memorandum, Non-Marginality Rebuttal, Fund Flow Chronology, Net Worth Statement, Property Portfolio Summary, Gift Letter — are generated identically whether the case is solo or a `complete_partnership`.**
+
+The partnership context block (investor 2's name, nationality, ownership share, investment amount, role, source of funds, qualifications, intent — built at `generation-engine.ts:2131-2179`) is injected only when `docType.endsWith('_p2')` (line 2132). None of the 8 shared doc types end in `_p2`, so this branch never runs for them. Verified against the actual prompt templates (`prompts/v1/documents/business_plan.md`, `ds160_reference.md`, `fund_flow_chronology.md`, `net_worth_statement.md`, `property_portfolio.md`, etc.) — all are written exclusively in singular "the applicant" voice; `property_portfolio.md`'s only "Joint with ___" language refers to a spouse, never a co-investor.
+
+**Worse than a clean gap**: `buildGenerationPayload` (`generation-engine.ts:756-780`) fetches *all* `answers` rows for the application with no `question_key` filter and dumps them into the prompt as one undifferentiated JSON blob. Since `P2-*` answers live in that same table, raw partner-2 values (e.g. `P2-SOF`, `P2-INVEST`) are technically present in the context sent to the model for these 8 documents — but with no instruction on what to do with them. This means output is not consistently single-investor-framed; it's unpredictable, since the model may notice and use fragments of partner-2 data without guidance on how to synthesize it. Gap Analysis has the identical blind spot: it scores only principal answers, and `/gap-analysis/page.tsx:183` explicitly filters `.is('family_member_id', null)`, so a second investor's data would be excluded from case-readiness scoring even if it existed.
+
+**Practical effect**: a two-investor case's Business Plan, Net Worth Statement, and Fund Flow Chronology currently read/compute as if there's only one investor, with a real risk of inconsistent partial partner-2 leakage rather than a clean single-investor framing.
+
+### Gap 3 — Interview Prep Kit doesn't use all available case intelligence
+
+`src/app/api/simulator/prep-kit/route.ts` (563 lines) pulls quiz results, case profile scores, all principal `answers`, FDD scoring (`e2_score`, `territory_analysis` — but `extracted_fields`/`final_report` are fetched and never used), the single latest simulator session, and `case_theory` dimension verdicts. It re-derives Gap Analysis in-process via the bare `scoreCase()` scorer.
+
+**Not wired in, despite existing elsewhere in the app:**
+- Raw uploaded-document extraction data (`uploaded_documents`/`extracted_json`) — never queried.
+- Gap Analysis's LLM-enriched narrative + semantic ratings from `/api/gap-analysis/run` — prep kit only re-runs the deterministic scorer, missing the richer output.
+- 5 of 10 `QMA-*` Market Analysis fields (zip, state, business name, category, pop-per-competitor) — written by market-analysis but not read by prep-kit.
+- Session/quiz history — only the single latest row of each is fetched; no trend across retakes.
+
+### Next steps (not started — flagged for a future session, owner to prioritize)
+1. Add Print/PDF (or DOCX) export to Market Analysis.
+2. Make the 8 shared documents + Gap Analysis partnership-aware when `payment_type === 'complete_partnership'` — either inject a joint-context block (parallel to the existing `_p2` block) into these prompts, or explicitly instruct the model how to synthesize `P2-*` data already present in the blob. Gap Analysis needs to stop filtering out family-member-scoped answers when scoring partnership completeness.
+3. Wire Gap Analysis's enriched narrative, raw document extraction, and full `QMA-*` field set into the Interview Prep Kit prompt.
+
+---
+
+## Session 107 — Document-to-Person Routing + Case Profile Family Visibility (July 2, 2026) — Phase 1 + Phase 2, both complete
+
+**Branch:** dev. **Build:** ✅ `npm run build` clean, `tsc --noEmit -p .` clean.
+
+### Problem
+
+Document extraction always wrote to the principal's flat `answers` rows, even when a client uploaded a spouse's or child's passport, birth certificate, or resume — there was no way to route extracted data to the right person, and `/case-profile` had no visibility into per-family-member completion or documents.
+
+### Schema
+
+New migration `supabase/migrations/20260703000000_document_person_routing.sql`:
+- `answers` gains nullable `family_member_id uuid references family_members(id) on delete cascade`; the 2-column unique constraint on `(application_id, question_key)` is replaced with a 3-column unique index `(application_id, question_key, family_member_id)` — Postgres treats `NULL` as distinct, so principal rows (`family_member_id IS NULL`) keep their existing uniqueness guarantee without a `COALESCE` sentinel.
+- `uploaded_documents.doc_type` CHECK constraint widened from 6 to 13 values (fixes a live bug — `passport` and `government_form` uploads were silently failing the DB insert), plus new `birth_certificate`/`marriage_certificate` types.
+- `uploaded_documents` gains `owner_type text CHECK (owner_type IN ('principal','family_member')) DEFAULT 'principal'` and `owner_family_member_id uuid REFERENCES family_members(id) ON DELETE SET NULL`.
+- All 16 `onConflict: 'application_id,question_key'` call sites updated to the 3-column key across `module3/{b,c,d,j}`, `simulator/quick-start`, `partner2/intake`, `api/answers`, `api/market-analysis`, `api/simulator/{case-gaps,save-extraction,quick-start}`, `api/documents/{resolve-discrepancy,extract}`, `api/fdd/{writeback,report}`, `api/account/export`, `DocumentImportHub.tsx`.
+
+### `DocumentImportHub.tsx` — person-organized upload UI
+
+Rewritten around people, not a flat file queue: a section per person (principal + each `family_members` row) each with its own upload zone, doc-type queue, and an inline "Add a family member" mini-form. `mergeFields()` now groups by `${ownerKey}::${questionKey}` so a spouse's passport number can't collide with the principal's under the same `M3-*` question vocabulary. `handleApply()` includes `family_member_id` in every upserted row.
+
+Identity-mismatch handling is non-blocking: if extraction detects the document names someone other than the section it was dropped in, an inline suggestion appears ("This document also mentions X — Move to their section?") rather than either silently misfiling the data or hard-blocking the upload. `DOC_TYPE_OPTIONS` gained `birth_certificate` and `marriage_certificate` — both common triggers for discovering a spouse or child not yet in the app.
+
+### `/api/dashboard/case-profile` + `CaseProfilePage.tsx` — per-person visibility
+
+Response gains `familyMembers: FamilyMemberCaseUI[]` — each member's own answered-field count (of the 5 base fields: name×2, DOB, nationality, passport), extracted-answer count from routed documents, and their `uploaded_documents`. `MemberCard` now shows a completion badge and a toggleable per-person document list (`ExtractionTransparencyPanel` reused in a new `compact` mode rather than building a second component). Toggle state (`expandedMemberDocs`) is lifted to the parent `CaseProfilePage` component, not local to `MemberCard` — `MemberCard` is a function redefined on every parent render, so `useState` inside it would reset on every re-render.
+
+### Verification
+
+`npm run build` and `tsc --noEmit` clean. Live-verified the regression case (principal-only account, no family members): `/case-profile` renders correctly, `/api/dashboard/case-profile` returns a well-formed empty `familyMembers: []`, no console/network errors. **Not yet verified**: multi-person upload routing, unrecognized-person stub creation, identity-mismatch surfacing, and the 3-column unique-index/CHECK-constraint behavior against real data — these need either a test account with family members (`test-uk@example.com` per test-account seed) or real document files, neither of which were safely available against the live browser session used this session (it was bound to a real customer's authenticated account). Next session should pick this up directly.
+
+### Phase 2 — Shared question-set registry + Security & Background, Travel Companions, U.S. POC (same session, July 2, 2026)
+
+**Build:** ✅ `npm run build` clean, `tsc --noEmit -p .` clean.
+
+#### Registry + runner
+
+New `src/lib/ds160-question-sets.ts` — person-agnostic `QuestionField` definitions (same shape `family/page.tsx` already used), no per-person key suffixes: `SECURITY_HEALTH_QUESTIONS`, `SECURITY_CRIMINAL_QUESTIONS`, `SECURITY_MORAL_QUESTIONS`, `SECURITY_IMMIGRATION_QUESTIONS`, `SECURITY_SEVERE_QUESTIONS` (bundled as `SECURITY_SUB_AREAS`), `US_POC_QUESTIONS`, `TRAVEL_COMPANIONS_QUESTIONS`, `APPLICATION_CONTACT_QUESTIONS` (principal/E-2-petition-only, not yet wired to a route). All new keys use fresh prefixes (`M3-SEC-*`, `M3-POC-*`, `M3-TC-*`, `M3-AC-*`) scoped entirely via `answers.family_member_id` — one definition serves the principal and every dependent.
+
+New `src/components/apply/questions/QuestionSetRunner.tsx` — generic `{questions, applicationId, familyMemberId, onSaveStatusChange?}` component. Reuses the exact rendering + autosave pattern from `family/page.tsx` (existing `TextInput`/`TextArea`/`OptionButton`/`PreFillBadge` primitives, `showIf` conditional visibility, `useAutosaveFlush`) rather than inventing a second pattern. Loads/saves through `/api/answers`, always including `family_member_id`.
+
+#### New routes
+
+- `src/app/apply/security/[personId]/page.tsx` — `personId` = `'principal'` or a `family_members.id`. Sub-area tabs (health/criminal/moral/immigration/severe), an explicit non-legal-advice `AdvisoryBlock`, `QuestionSetRunner` scoped per sub-area + person.
+- `src/app/apply/dependent/[familyMemberId]/page.tsx` — per-dependent DS-160 landing page: Travel Companions + U.S. POC inline via two `QuestionSetRunner`s, plus a CTA into that person's Security & Background page.
+
+#### Case Profile entry points
+
+`CaseProfilePage.tsx` `MemberCard` gains a "Complete [Name]'s DS-160 details →" link for `spouse`/`child` members only (not co-investors — they don't file a dependent DS-160), linking to `/apply/dependent/[id]`. `ControlPanel.tsx`'s "Case File" category gains two tiles: "Family & Dependents" → `/apply/family`, "Security & Background" → `/apply/security/principal`.
+
+#### `/api/answers` fix (latent bug found while building the runner)
+
+`family_member_id` was already referenced in `onConflict` (from Phase 1's 16-site update) but the route never actually included it in the upsert payload — every scoped write was silently landing as `NULL` (i.e. always overwriting the principal's row regardless of who the caller said they were writing for). Fixed: request body now accepts `family_member_id`, validates the caller owns that `family_members` row (403 if not), and includes it in the upsert.
+
+#### Legacy `CHILD-{n}-*` backfill
+
+New `scripts/backfill-child-answers.mjs` (same style as `scripts/seed-test-profiles.mjs` — manual `.env.local` parsing, service-role `fetch` calls, no Supabase client dependency). Maps legacy `CHILD-{n}-NAME/DOB/NATIONALITY/PASSPORT` answers (written only by `family/page.tsx`) onto the corresponding `family_members` row (by `sort_order`/`created_at`) and inserts the canonical-key, `family_member_id`-scoped equivalent — legacy rows are left untouched as a read fallback. Dry-run by default; `--apply` to write. Run against production post-migration: **no legacy `CHILD-*` rows currently exist**, so there was nothing to backfill — script is built and verified working, ready if any surface later.
+
+#### Critical mid-session discovery: Phase 1 migration was never applied to production
+
+While dry-running the backfill script against live data, the script failed with `column answers.family_member_id does not exist` — despite `BUILD_TRACKER.md` (Session 107 Phase 1, above) claiming Phase 1 was "regression-tested live against a real account." The migration file existed correctly in `supabase/migrations/20260703000000_document_person_routing.sql` and `/api/answers`'s `onConflict` clause already referenced the 3-column key, but the SQL had never actually reached the production database. **Net effect: `/api/answers` upserts have plausibly been failing for every user (principal and dependent) since the Phase 1 `onConflict` change shipped**, not just the new Phase 2 code.
+
+`supabase db push` was inconclusive — local migration history has drifted from the remote tracking table (past schema changes were applied by hand via the Supabase dashboard SQL editor rather than the CLI), so an automated push risked rewriting migration history against production without a clear picture of true state. Rather than force it, the owner ran the migration SQL directly in the Supabase dashboard SQL editor and confirmed success. Re-running the backfill script's dry-run afterward confirmed the column now exists.
+
+**Action item for a future session**: reconcile `supabase/migrations/` against the actual remote migration history (`supabase migration repair` / `supabase db pull`) so future schema changes can go through `supabase db push` cleanly instead of manual dashboard SQL.
+
+#### Not done in Phase 2 (explicitly out of scope, flagged in the original plan)
+
+- Security & Background consent/access-logging/storage compliance posture — needs product/legal input, not a guess.
+- `APPLICATION_CONTACT_QUESTIONS` — defined in the registry but not yet wired to a route (principal-only, E-2-petition-specific; no natural landing page decided yet).
+- Deeper per-dependent fields beyond Travel Companions/U.S. POC/Security & Background (place of birth, passport dates, prior US travel, work/education) — deferred, per plan.
+- Principal's existing hardcoded Module 3 tabs were intentionally left unmigrated onto the new registry/runner.
+
+---
+
+## Session 106 — Case Profile Dead-End Fixes + Quick Access Control Panel (July 2, 2026)
+
+**Branch:** dev. **Build:** ✅ `tsc --noEmit` clean.
+
+### Problem
+
+Owner audit: the case profile displayed already-computed data (interview readiness, market analysis scores) but two CTAs led to dead ends that ignored that saved state, and — separately — real, working app surfaces (Checklist, Calendar, Franchise tools, Interview Prep) were reachable only as buried nested field rows deep inside detailed data sections, not felt as "things the app can do for you."
+
+### Fix 1 — Interview Dossier CTA
+
+Section 05 (Interview Readiness) `ctaHref` pointed to `/simulator` (blank session start) instead of `/simulator/prep-kit` (the actual personalized dossier already built and cached). Corrected in `src/components/CaseProfilePage.tsx`.
+
+### Fix 2 — Market Analysis blank-form-despite-saved-results
+
+`/market-analysis` had no applicationId-based prefill and its POST body never sent `applicationId` (relying on a risky "guess the user's latest application" server fallback), so a user with an already-computed market score landed on a blank form.
+- `src/app/api/market-analysis/route.ts`: new `GET` handler returns saved business name/category/zip/state for a given `applicationId`; `writeMarketScoreBack()` now also persists `QMA-BUSINESS-NAME`/`QMA-BUSINESS-CATEGORY` so they can be reloaded.
+- `src/app/market-analysis/page.tsx`: wrapped in `Suspense`, reads `applicationId` from the query string, prefills the form from the new GET route and auto-runs the analysis so the user sees existing results instead of a blank form. POST body now always includes `applicationId` when available.
+- `src/components/CaseProfilePage.tsx`: all `/market-analysis` hrefs now pass `?applicationId=`.
+- Chose prefill-via-query-param over a separate read-only results route since Market Analysis is also sold as a standalone paid module — one surface, not two to maintain.
+
+Audited every other route referenced from `CaseProfilePage.tsx` (`/quiz`, `/franchise`, `/apply/checklist`, `/apply/calendar`, `/learn` + articles, plus the core `/apply/*` pages) for the same bug class (destination loads saved state, not just "is it the right page") — all clean, no further dead ends found.
+
+### Quick Access control panel — every app surface reachable from one place
+
+New components:
+- `src/components/casefile/tokens.ts` — the six Obsidian Gold design tokens (`GOLD/CREAM/GREEN/CARD_BG/BORDER/INNER`), extracted out of `CaseProfilePage.tsx` so new case-profile components share one source of truth instead of copy-pasting hex values.
+- `src/components/casefile/ControlPanel.tsx` — a compact "Quick Access" panel, mounted once near the top of `/case-profile` (right after the "Your Application" progress card, before `DocumentImportHub`). Five category rows of tappable tiles: **Case File** (anchor-links to `#investor`/`#business`/`#investment`, scrolling to the existing sections rather than duplicating a destination), **Case Intelligence** (Gap Analysis, Market Analysis, plus FDD Review + Franchise Navigator when `isFranchise`), **Interview Prep** (Simulator, Prep Kit), **Documents** (Vault, Generate Package — omitted entirely if no `applicationId` yet), **Tools & Learn** (Checklist, Calendar, Knowledge Hub). Checklist and Calendar get a distinct green left-border accent, directly addressing "the checklist and calendar are not there" — they were always linked, just visually indistinguishable from ordinary data fields.
+- Visually distinct from the existing `SectionCard`/`FieldRow` system on purpose (no status dots, no progress bars, no REQUIRED badges) so it reads as navigation, not more data. Partner 2 and Renewal are deliberately left out of the panel — they stay as their existing prominent, stage-gated banners further down the page.
+
+**Verified live** (franchise test account): Case Intelligence category correctly expands to 4 tiles, Checklist/Calendar show the green accent, anchor tiles smooth-scroll to the correct section without breaking the sidebar's `IntersectionObserver` active-state, and mobile (375px) wraps cleanly with no horizontal overflow.
 
 ---
 
