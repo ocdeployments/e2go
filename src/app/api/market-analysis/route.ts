@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { analyseTeritoryForBusiness } from '@/lib/fdd-territory-engine';
 import type { TerritoryAnalysis } from '@/lib/fdd-territory-engine';
+import { resolvePrimaryApplicationId } from '@/lib/resolve-application';
 
 const VALID_CATEGORIES = [
   'qsr',
@@ -96,16 +97,9 @@ export async function POST(req: NextRequest) {
     // Use the provided applicationId, or fall back to the user's latest application.
     const resolveAndWriteBack = async () => {
       try {
-        let appId = applicationId;
+        let appId: string | null = applicationId ?? null;
         if (!appId) {
-          const { data: app } = await supabase
-            .from('applications')
-            .select('id')
-            .eq('user_id', user.id)
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .maybeSingle();
-          appId = app?.id ?? null;
+          appId = await resolvePrimaryApplicationId(supabase, user.id);
         }
         if (appId) {
           await writeMarketScoreBack(supabase, appId, analysis);
