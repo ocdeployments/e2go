@@ -1025,7 +1025,30 @@ export async function callClaudeAPI(payload: GenerationPayload): Promise<string>
   const staticKBContext = buildKBContext(payload.document_type, payload.consulate_post);
   const dynamicKBContext = await fetchFAQKBContext(payload.document_type, payload.consulate_post, archetype);
 
-  const userMessage = [
+  // Prompt caching (E6b): buildGenerationPayload is called once per document
+  // type per generation run, with the same case_brief/module_3_answers/
+  // investor-profile/voice-profile every time — up to ~19 calls per run, plus
+  // retries. Putting that identical content in its own leading block with a
+  // cache_control breakpoint lets Anthropic reuse it across every call in the
+  // run instead of re-billing/re-processing full price each time. Everything
+  // that varies by document type (KB context, D-code filter, case theory,
+  // follow-ups) stays in the second, uncached block.
+  const stableBlock = [
+    `APPLICANT CASE BRIEF:`,
+    wrapUserContent(JSON.stringify(payload.case_brief, null, 2)),
+    '',
+    `APPLICANT MODULE 3 ANSWERS:`,
+    wrapUserContent(formatLabeledAnswers(payload.module_3_answers)),
+    '',
+    ...(payload.qfn_investor_profile
+      ? [`INVESTOR PROFILE CONTEXT (Franchise Navigator):`, wrapUserContent(payload.qfn_investor_profile), '']
+      : []),
+    ...(payload.voice_profile
+      ? [`VOICE PROFILE (match this writing style in all documents):`, wrapUserContent(payload.voice_profile), '']
+      : []),
+  ].join('\n');
+
+  const variableBlock = [
     // CIC-2.1: Case Theory strategic brief leads the prompt — it establishes the
     // theory of the case before the LLM sees any raw answers. When absent (sparse
     // accounts with no case_theory yet), the section is simply omitted.
@@ -1039,18 +1062,6 @@ export async function callClaudeAPI(payload: GenerationPayload): Promise<string>
     dCodeBlock,
     ...(payload.gap_analysis_context ? [payload.gap_analysis_context, ''] : []),
     investmentBreakdownText,
-    `APPLICANT CASE BRIEF:`,
-    wrapUserContent(JSON.stringify(payload.case_brief, null, 2)),
-    '',
-    `APPLICANT MODULE 3 ANSWERS:`,
-    wrapUserContent(formatLabeledAnswers(payload.module_3_answers)),
-    '',
-    ...(payload.qfn_investor_profile
-      ? [`INVESTOR PROFILE CONTEXT (Franchise Navigator):`, wrapUserContent(payload.qfn_investor_profile), '']
-      : []),
-    ...(payload.voice_profile
-      ? [`VOICE PROFILE (match this writing style in all documents):`, wrapUserContent(payload.voice_profile), '']
-      : []),
     ...(Object.keys(payload.follow_up_responses).length > 0
       ? [`FOLLOW-UP CONVERSATION (applicant answers to targeted gap questions — use this content in the document):`, wrapUserContent(JSON.stringify(payload.follow_up_responses, null, 2)), '']
       : []),
@@ -1071,7 +1082,13 @@ export async function callClaudeAPI(payload: GenerationPayload): Promise<string>
       max_tokens: getDocTokenBudget(payload.document_type),
       temperature: GENERATION_TEMPERATURE,
       system: enrichedSystemPrompt,
-      messages: [{ role: 'user', content: userMessage }],
+      messages: [{
+        role: 'user',
+        content: [
+          { type: 'text', text: stableBlock, cache_control: { type: 'ephemeral' } },
+          { type: 'text', text: variableBlock },
+        ],
+      }],
     });
 
     // Check for deprecation warnings
@@ -1149,12 +1166,11 @@ export async function humanizeDocument(
 ): Promise<string> {
   const anthropic = getAnthropic();
 
-  let systemPrompt = HUMANIZATION_SYSTEM_PROMPT;
-
-  if (previousFeedback) {
-    systemPrompt += '\n\n' + HUMANIZATION_RETRY_PREFIX.replace('{feedback}', previousFeedback);
-  }
-
+  // HUMANIZATION_SYSTEM_PROMPT is byte-identical across every humanization
+  // call for every document and every user — the single highest-value prompt
+  // cache candidate in the engine. Keep it in its own cached block; the
+  // per-retry feedback (when present) goes in a second, uncached block so it
+  // doesn't invalidate the cached prefix.
   const userMessage = [
     'VOICE PROFILE:',
     wrapUserContent(voiceProfile),
@@ -1168,7 +1184,12 @@ export async function humanizeDocument(
     model,
     max_tokens: documentType ? getDocTokenBudget(documentType) : DEFAULT_TOKEN_BUDGET,
     temperature: HUMANIZATION_TEMPERATURE,
-    system: systemPrompt,
+    system: [
+      { type: 'text', text: HUMANIZATION_SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } },
+      ...(previousFeedback
+        ? [{ type: 'text' as const, text: HUMANIZATION_RETRY_PREFIX.replace('{feedback}', previousFeedback) }]
+        : []),
+    ],
     messages: [{ role: 'user', content: userMessage }],
   });
 
