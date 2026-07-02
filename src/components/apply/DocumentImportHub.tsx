@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback } from 'react';
 import { createBrowserSupabaseClient } from '@/lib/supabase';
+import { resolvePrimaryApplicationId } from '@/lib/resolve-application';
 import type { ExtractedField, ParseDocumentResponse } from '@/app/api/apply/parse-document/route';
 
 interface DocumentImportHubProps {
@@ -40,6 +41,9 @@ interface QueuedFile {
   resolvedDocType?: string;
   docId?: string | null;
   error?: string;
+  /** Upload progress 0-100. Reaches 100 once the file is fully uploaded;
+   *  server-side extraction continues after that with no further signal. */
+  progress?: number;
 }
 
 // ─── Merged-review types ─────────────────────────────────────────────────────
@@ -65,8 +69,14 @@ function uid() {
   return Math.random().toString(36).slice(2, 10);
 }
 
-function docTypeLabel(value: string): string {
+export function docTypeLabel(value: string): string {
   return DOC_TYPE_OPTIONS.find(o => o.value === value)?.label ?? value;
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 // Which document type is authoritative for each question key.
@@ -221,6 +231,57 @@ export default function DocumentImportHub({ applicationId, onFieldsApplied }: Do
 
   // ── Batch extraction ──────────────────────────────────────────────────────
 
+  // XHR (not fetch) so we get upload progress events for the per-file bar.
+  // Progress only tracks the upload leg — server-side LLM extraction after
+  // that has no signal, so the bar sits at 100% while status stays 'processing'.
+  function extractOne(index: number, updated: QueuedFile[]): Promise<void> {
+    return new Promise(resolve => {
+      const item = updated[index];
+      const fd = new FormData();
+      fd.append('file',    item.file);
+      fd.append('docType', item.docType);
+      if (applicationId) fd.append('applicationId', applicationId);
+
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', '/api/apply/parse-document');
+
+      xhr.upload.onprogress = e => {
+        if (!e.lengthComputable) return;
+        updated[index] = { ...updated[index], progress: Math.round((e.loaded / e.total) * 100) };
+        setQueue([...updated]);
+      };
+
+      xhr.onload = () => {
+        let data: (ParseDocumentResponse & { error?: string }) | null = null;
+        try { data = JSON.parse(xhr.responseText); } catch { /* fall through to error below */ }
+
+        if (xhr.status < 200 || xhr.status >= 300 || !data || data.error) {
+          updated[index] = { ...updated[index], status: 'error', error: data?.error ?? 'Extraction failed', progress: 100 };
+        } else {
+          updated[index] = {
+            ...updated[index],
+            status:          'done',
+            fields:          data.fields,
+            totalFields:     data.totalFields,
+            resolvedDocType: data.docType,
+            docId:           data.docId,
+            progress:        100,
+          };
+        }
+        setQueue([...updated]);
+        resolve();
+      };
+
+      xhr.onerror = () => {
+        updated[index] = { ...updated[index], status: 'error', error: 'Network error', progress: 100 };
+        setQueue([...updated]);
+        resolve();
+      };
+
+      xhr.send(fd);
+    });
+  }
+
   async function handleExtractAll() {
     if (queue.length === 0) return;
     setStage('processing');
@@ -229,37 +290,9 @@ export default function DocumentImportHub({ applicationId, onFieldsApplied }: Do
     const updated = [...queue];
 
     for (let i = 0; i < updated.length; i++) {
-      const item = updated[i];
-      // Mark processing
-      updated[i] = { ...item, status: 'processing' };
+      updated[i] = { ...updated[i], status: 'processing', progress: 0 };
       setQueue([...updated]);
-
-      const fd = new FormData();
-      fd.append('file',    item.file);
-      fd.append('docType', item.docType);
-      if (applicationId) fd.append('applicationId', applicationId);
-
-      try {
-        const res  = await fetch('/api/apply/parse-document', { method: 'POST', body: fd });
-        const data: ParseDocumentResponse & { error?: string } = await res.json();
-
-        if (!res.ok || data.error) {
-          updated[i] = { ...updated[i], status: 'error', error: data.error ?? 'Extraction failed' };
-        } else {
-          updated[i] = {
-            ...updated[i],
-            status:          'done',
-            fields:          data.fields,
-            totalFields:     data.totalFields,
-            resolvedDocType: data.docType,
-            docId:           data.docId,
-          };
-        }
-      } catch {
-        updated[i] = { ...updated[i], status: 'error', error: 'Network error' };
-      }
-
-      setQueue([...updated]);
+      await extractOne(i, updated);
     }
 
     // Build merged review from successful extractions
@@ -345,12 +378,7 @@ export default function DocumentImportHub({ applicationId, onFieldsApplied }: Do
 
       let appId = applicationId;
       if (!appId) {
-        const { data: apps } = await supabase
-          .from('applications')
-          .select('id, source')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
-        appId = (apps ?? []).find((a: { source: string | null }) => a.source !== 'simulator_standalone')?.id ?? null;
+        appId = await resolvePrimaryApplicationId(supabase, user.id);
       }
       if (!appId) { setErrorMsg('No active application found.'); setStage('error'); return; }
 
@@ -527,8 +555,11 @@ export default function DocumentImportHub({ applicationId, onFieldsApplied }: Do
                       </div>
 
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '12px', color: '#f5f0e8', fontWeight: 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: '6px' }}>
+                        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '12px', color: '#f5f0e8', fontWeight: 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: '2px' }}>
                           {item.file.name}
+                        </p>
+                        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '10px', color: 'rgba(245,240,232,0.3)', marginBottom: '6px' }}>
+                          {formatFileSize(item.file.size)}
                         </p>
                         {/* Per-file doc type */}
                         <select
@@ -612,9 +643,35 @@ export default function DocumentImportHub({ applicationId, onFieldsApplied }: Do
                     )}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '12px', color: item.status === 'error' ? 'rgba(248,113,113,0.8)' : '#f5f0e8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {item.file.name}
-                    </p>
+                    <div className="flex items-baseline gap-2">
+                      <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '12px', color: item.status === 'error' ? 'rgba(248,113,113,0.8)' : '#f5f0e8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {item.file.name}
+                      </p>
+                      <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '10px', color: 'rgba(245,240,232,0.3)', flexShrink: 0 }}>
+                        {formatFileSize(item.file.size)}
+                      </span>
+                    </div>
+
+                    {/* Per-file progress bar — tracks upload only; sits at 100%
+                        while server-side extraction runs with no further signal. */}
+                    {item.status === 'processing' && (
+                      <div style={{ marginTop: '6px' }}>
+                        <div style={{ width: '100%', height: '3px', backgroundColor: 'rgba(245,240,232,0.08)', overflow: 'hidden' }}>
+                          <div
+                            style={{
+                              width:           `${item.progress ?? 0}%`,
+                              height:          '100%',
+                              backgroundColor: '#C9A84C',
+                              transition:      'width 0.2s ease',
+                            }}
+                          />
+                        </div>
+                        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '10px', color: 'rgba(201,168,76,0.6)', marginTop: '3px' }}>
+                          {(item.progress ?? 0) < 100 ? `Uploading — ${item.progress ?? 0}%` : 'Extracting fields…'}
+                        </p>
+                      </div>
+                    )}
+
                     {item.status === 'done' && item.fields && (
                       <div style={{ marginTop: '3px', display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
                         <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '11px', color: 'rgba(74,222,128,0.8)' }}>
