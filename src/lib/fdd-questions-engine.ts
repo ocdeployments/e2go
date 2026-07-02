@@ -123,7 +123,10 @@ const FLAG_QUESTIONS: Record<string, Omit<GeneratedQuestion, 'id' | 'triggered_b
     category: 'Legal Terms',
   },
   noncompete: {
-    text: 'The post-termination non-compete is [X years / X miles]. Has this clause been enforced against former franchisees, and under what circumstances?',
+    // text is filled at runtime from fields.post_termination_noncompete_years /
+    // _radius_miles — see generateQuestions(); this template string is only
+    // used as a fallback when neither value was extracted.
+    text: 'The post-termination non-compete term and radius are not stated in the FDD I received. What are the exact terms, and has this clause been enforced against former franchisees, and under what circumstances?',
     ask_of: 'franchisor_dev_rep',
     importance: 'important',
     what_to_listen_for: 'They should be transparent about enforcement history. Your attorney should assess enforceability in your target state — many states will not enforce broad non-competes.',
@@ -385,10 +388,23 @@ export async function generateQuestions(
   for (const flag of scoring.flags) {
     const template = FLAG_QUESTIONS[flag.key];
     if (template) {
+      let text = template.text;
+      if (flag.key === 'noncompete') {
+        const years = fields.post_termination_noncompete_years?.value;
+        const miles = fields.post_termination_noncompete_radius_miles?.value;
+        if (years != null && miles != null) {
+          text = `The post-termination non-compete is ${years} year${years === 1 ? '' : 's'} / ${miles} mile${miles === 1 ? '' : 's'}. Has this clause been enforced against former franchisees, and under what circumstances?`;
+        } else if (years != null) {
+          text = `The post-termination non-compete term is ${years} year${years === 1 ? '' : 's'} (radius not stated in the FDD I received — please clarify). Has this clause been enforced against former franchisees, and under what circumstances?`;
+        } else if (miles != null) {
+          text = `The post-termination non-compete radius is ${miles} mile${miles === 1 ? '' : 's'} (term not stated in the FDD I received — please clarify). Has this clause been enforced against former franchisees, and under what circumstances?`;
+        }
+      }
       questions.push({
         id: makeId(),
         triggered_by: `flag:${flag.key}`,
         ...template,
+        text,
         importance: flag.severity === 'critical' ? 'critical' : template.importance,
       });
     }
