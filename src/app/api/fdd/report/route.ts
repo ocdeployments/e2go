@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { generateProfessionalReport } from '@/lib/fdd-report-engine';
+import { resolvePrimaryApplicationId } from '@/lib/resolve-application';
 import type { FddExtractedFields } from '@/types/fdd';
 import type { ScoringResult } from '@/lib/fdd-scoring-engine';
 import type { TerritoryAnalysis } from '@/lib/fdd-territory-engine';
@@ -99,14 +100,9 @@ async function writePlatformIntegration(
   report: FddProfessionalReport,
   analysis: Record<string, unknown>
 ): Promise<void> {
-  // Find the user's most recent application
-  const { data: app } = await service
-    .from('applications')
-    .select('id')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  // Find the user's primary application (shared canonical rule)
+  const appId = await resolvePrimaryApplicationId(service, userId);
+  const app = appId ? { id: appId } : null;
 
   if (!app?.id) return;
 
