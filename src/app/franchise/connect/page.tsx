@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createBrowserSupabaseClient } from '@/lib/supabase';
+import { resolvePrimaryApplication, resolvePrimaryApplicationId } from '@/lib/resolve-application';
 
 const CONSENT_TEXT = `I consent to e2go sharing my investment range, target business category, citizenship, target state, and contact information with a specialist E-2 franchise consultant. I understand this service is free — the consultant is paid by franchisors, not by me. I can withdraw this consent at any time by contacting support@e2go.app.`;
 
@@ -41,7 +42,7 @@ export default function FranchiseConnectPage() {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) { router.push('/login'); return; }
 
-        const [{ data: profileData }, { data: quizSession }, { data: apps }] = await Promise.all([
+        const [{ data: profileData }, { data: quizSession }, primaryApp] = await Promise.all([
           supabase.from('profiles').select('first_name, last_name').eq('id', user.id).single(),
           supabase
             .from('quiz_sessions')
@@ -50,12 +51,7 @@ export default function FranchiseConnectPage() {
             .order('id', { ascending: false })
             .limit(1)
             .single(),
-          supabase
-            .from('applications')
-            .select('id, target_state')
-            .eq('user_id', user.id)
-            .order('created_at', { ascending: false })
-            .limit(1),
+          resolvePrimaryApplication<{ id: string; target_state: string | null }>(supabase, user.id, 'id, target_state'),
         ]);
 
         const quizAnswers = (quizSession?.result_json as { answers?: Record<string, string> } | null)?.answers ?? {};
@@ -66,7 +62,7 @@ export default function FranchiseConnectPage() {
           email: user.email ?? null,
           investmentRange: quizAnswers['Q0-07'] ?? null,
           citizenship: quizAnswers['Q0-01'] ?? null,
-          targetState: apps?.[0]?.target_state ?? null,
+          targetState: primaryApp?.target_state ?? null,
           topCategory: null, // TODO: derive from matches when franchise_profiles table exists
         });
       } catch { /* continue */ }
@@ -86,12 +82,8 @@ export default function FranchiseConnectPage() {
       if (!user) throw new Error('Not authenticated');
 
       // Get latest application id
-      const { data: apps } = await supabase
-        .from('applications')
-        .select('id')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(1);
+      const appsId = await resolvePrimaryApplicationId(supabase, user.id);
+      const apps = appsId ? [{ id: appsId }] : [];
 
       const appId = apps?.[0]?.id ?? null;
 
