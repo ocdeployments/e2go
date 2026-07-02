@@ -48,6 +48,18 @@ export async function POST(request: NextRequest) {
       .limit(1)
       .maybeSingle();
 
+    // industry_interest lives on the quiz session's post_quiz_profile JSON
+    // (same source as buildCaseProfile in case-profile.ts), not on case_profiles —
+    // fetch it so computeProfileMatch's industry-fit scoring isn't always neutral.
+    const { data: quizSession } = await service
+      .from('quiz_sessions')
+      .select('post_quiz_profile')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const industryInterest = (quizSession?.post_quiz_profile as Record<string, string> | null)?.industry_interest ?? null;
+
     const fields = analysis.extracted_fields as FddExtractedFields;
     const staleStatus = analysis.fdd_stale ? 'fail' : 'current';
     const registrationStatus = analysis.state_registration_status ?? 'unknown';
@@ -95,6 +107,7 @@ export async function POST(request: NextRequest) {
       investor_net_worth: analysis.investor_net_worth as number | null,
       source_of_funds_score: caseProfile.source_of_funds_score as number | null,
       management_role_score: caseProfile.management_role_score as number | null,
+      industry_interest: industryInterest,
     } : null;
 
     const result = await generateQuestions(fields, scoring, profileSubset);
