@@ -17,6 +17,7 @@ import AdvisoryBlock from '@/components/apply/questions/AdvisoryBlock';
 import CurrencyInput from '@/components/apply/questions/CurrencyInput';
 import RiskFlag from '@/components/apply/questions/RiskFlag';
 import ClusterDivider from '@/components/apply/questions/ClusterDivider';
+import { resolvePrimaryApplicationId } from '@/lib/resolve-application';
 
 interface TiesAnswer {
   value: string;
@@ -130,12 +131,8 @@ export default function TiesPage() {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) { setLoading(false); return; }
 
-        const { data: apps } = await supabase
-          .from('applications')
-          .select('id')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(1);
+        const appsId = await resolvePrimaryApplicationId(supabase, user.id);
+        const apps = appsId ? [{ id: appsId }] : [];
 
         if (!apps || apps.length === 0) { setLoading(false); return; }
         setApplicationId(apps[0].id);
