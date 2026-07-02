@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useTrackSectionVisit } from "@/hooks/useTrackSectionVisit";
 import { useRouter } from 'next/navigation';
+import { resolvePrimaryApplicationId } from '@/lib/resolve-application';
 
 interface Question {
   id: string;
@@ -51,13 +52,8 @@ export default function Module4Page() {
         return;
       }
 
-      const { data: application } = await supabase
-        .from('applications')
-        .select('id')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
+      const applicationId = await resolvePrimaryApplicationId(supabase, user.id);
+      const application = applicationId ? { id: applicationId } : null;
 
       if (application) {
         setApplicationId(application.id);
