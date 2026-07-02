@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { createServiceClient } from '@/lib/supabase-service';
+import { resolvePrimaryApplicationId } from '@/lib/resolve-application';
 import { Resend } from 'resend';
 
 // TODO(OPQ-2): Change BROKER_NOTIFICATION_EMAIL to a CRM webhook or internal
@@ -37,20 +38,15 @@ export async function POST(request: NextRequest) {
       requested_at: timestamp,
     });
 
-    // Also flag the latest application record if the column exists
+    // Also flag the primary application record if the column exists
     try {
-      const { data: apps } = await service
-        .from('applications')
-        .select('id')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(1);
+      const appId = await resolvePrimaryApplicationId(service, user.id);
 
-      if (apps && apps.length > 0) {
+      if (appId) {
         await service
           .from('applications')
           .update({ broker_interest_requested: true })
-          .eq('id', apps[0].id);
+          .eq('id', appId);
       }
     } catch {
       // Column may not exist yet — non-critical
