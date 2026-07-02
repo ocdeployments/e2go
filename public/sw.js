@@ -53,6 +53,13 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Cache API only accepts http/https requests — extensions (chrome-extension://,
+  // moz-extension://, etc.) can trigger fetch events in the page context that
+  // would otherwise throw on cache.put().
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+    return;
+  }
+
   // Cache first only for explicit static assets (images, fonts, manifest, icons)
   if (request.method === 'GET') {
     event.respondWith(
