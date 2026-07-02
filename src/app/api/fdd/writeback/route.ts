@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { createServiceClient } from '@/lib/supabase-service';
+import { resolvePrimaryApplicationId } from '@/lib/resolve-application';
 import type { FddExtractedFields } from '@/types/fdd';
 import type { ScoringResult } from '@/lib/fdd-scoring-engine';
 import type { TerritoryAnalysis } from '@/lib/fdd-territory-engine';
@@ -34,10 +35,11 @@ export async function POST(request: NextRequest) {
 
     const service = createServiceClient();
 
-    const [{ data: analysis }, { data: app }] = await Promise.all([
+    const [{ data: analysis }, appId] = await Promise.all([
       service.from('fdd_analyses').select('extracted_fields, e2_score, territory_analysis, final_report, target_state').eq('id', fdd_id).eq('user_id', user.id).single(),
-      service.from('applications').select('id').eq('user_id', user.id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
+      resolvePrimaryApplicationId(service, user.id),
     ]);
+    const app = appId ? { id: appId } : null;
 
     if (!analysis) return NextResponse.json({ error: 'FDD analysis not found' }, { status: 404 });
     if (!app?.id) return NextResponse.json({ error: 'NO_APPLICATION' }, { status: 422 });
