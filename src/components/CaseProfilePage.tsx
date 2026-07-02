@@ -1,8 +1,8 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import type { CaseProfileResponse, CaseTheoryUI } from "@/app/api/dashboard/case-profile/route";
-import DocumentImportHub from "@/components/apply/DocumentImportHub";
+import type { CaseProfileResponse, CaseTheoryUI, DocumentExtractionUI } from "@/app/api/dashboard/case-profile/route";
+import DocumentImportHub, { docTypeLabel } from "@/components/apply/DocumentImportHub";
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
 const GOLD    = "#C9A84C";
@@ -382,6 +382,76 @@ function SectionCard({
 }
 
 // ── Score bar ──────────────────────────────────────────────────────────────────
+// ── Extraction transparency — show the client exactly what we pulled from
+// their documents and where it goes, so nothing feels like a black box ──────
+const EXTRACTION_STATUS_UI: Record<DocumentExtractionUI["extractionStatus"], { label: string; color: string }> = {
+  pending:    { label: "Queued",      color: "rgba(245,240,232,0.35)" },
+  processing: { label: "Extracting…", color: GOLD },
+  complete:   { label: "Extracted",   color: GREEN },
+  failed:     { label: "Failed",      color: "#f87171" },
+};
+
+const EXTRACTION_DESTINATIONS = [
+  { label: "Case Strategy",              detail: "AI reasoning that builds your narrative and denial-risk defense" },
+  { label: "Document Generation",        detail: "Cover letters, business plans, and supporting filings" },
+  { label: "Gap & Denial-Risk Analysis", detail: "Evidence scoring across every denial risk factor" },
+  { label: "Interview Simulator",        detail: "Prep questions grounded in your actual case file" },
+];
+
+function ExtractionTransparencyPanel({ documents }: { documents: DocumentExtractionUI[] }) {
+  if (documents.length === 0) return null;
+  return (
+    <div style={{ marginBottom: "28px", padding: "18px 20px", background: CARD_BG, border: `1px solid ${BORDER}` }}>
+      <div style={{ fontSize: "8px", letterSpacing: "0.18em", textTransform: "uppercase", color: "rgba(201,168,76,0.4)", fontFamily: "'DM Sans', sans-serif", marginBottom: "12px" }}>
+        What We&rsquo;ve Extracted From Your Documents
+      </div>
+
+      <div style={{ marginBottom: "16px" }}>
+        {documents.map(doc => {
+          const status = EXTRACTION_STATUS_UI[doc.extractionStatus];
+          return (
+            <div key={doc.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", padding: "10px 12px", background: "rgba(0,0,0,0.25)", border: `1px solid ${INNER}`, marginBottom: "6px" }}>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ fontSize: "11.5px", fontFamily: "'DM Sans', sans-serif", color: CREAM, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {doc.fileName}
+                </div>
+                <div style={{ fontSize: "10px", fontFamily: "'DM Sans', sans-serif", color: "rgba(245,240,232,0.45)", marginTop: "2px" }}>
+                  {docTypeLabel(doc.docType)}
+                  {doc.extractionStatus === "complete" && doc.fieldsTotal > 0 && (
+                    <span> &middot; {doc.fieldsTotal} data point{doc.fieldsTotal !== 1 ? "s" : ""} extracted</span>
+                  )}
+                </div>
+              </div>
+              <div style={{ fontSize: "9px", letterSpacing: "0.08em", textTransform: "uppercase", color: status.color, fontFamily: "'DM Sans', sans-serif", fontWeight: 600, flexShrink: 0 }}>
+                {status.label}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div style={{ fontSize: "8px", letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(201,168,76,0.38)", fontFamily: "'DM Sans', sans-serif", fontWeight: 600, marginBottom: "8px" }}>
+        Where This Data Goes
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "8px", marginBottom: "10px" }}>
+        {EXTRACTION_DESTINATIONS.map(d => (
+          <div key={d.label} style={{ padding: "8px 10px", background: "rgba(0,0,0,0.2)", border: `1px solid ${INNER}` }}>
+            <div style={{ fontSize: "10.5px", fontFamily: "'DM Sans', sans-serif", color: GOLD, fontWeight: 600, marginBottom: "2px" }}>
+              {d.label}
+            </div>
+            <div style={{ fontSize: "9.5px", fontFamily: "'DM Sans', sans-serif", color: "rgba(245,240,232,0.42)", lineHeight: 1.5 }}>
+              {d.detail}
+            </div>
+          </div>
+        ))}
+      </div>
+      <div style={{ fontSize: "10px", fontFamily: "'DM Sans', sans-serif", color: "rgba(245,240,232,0.32)", lineHeight: 1.6, fontStyle: "italic" }}>
+        Each document is parsed once. You never need to re-upload the same document for a different part of your case.
+      </div>
+    </div>
+  );
+}
+
 function ScoreBar({ label, score }: { label: string; score: number | null }) {
   const color = score == null ? "rgba(245,240,232,0.1)"
     : score >= 75 ? GREEN
@@ -1755,6 +1825,8 @@ export default function CaseProfilePage() {
             onFieldsApplied={() => reloadProfile()}
           />
         </div>
+
+        <ExtractionTransparencyPanel documents={data.documents} />
 
         {/* ── Sidebar + content layout ─────────────────────────────────── */}
         <div style={{ display: "flex", gap: "40px", alignItems: "flex-start" }}>
