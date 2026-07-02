@@ -5,6 +5,7 @@ import { createBrowserSupabaseClient } from '@/lib/supabase';
 import { ApplicationProvider, useApplication } from '@/contexts/ApplicationContext';
 import TabPage from '@/components/module3/TabPage';
 import { Section } from '@/types/module3';
+import { resolvePrimaryApplicationId } from '@/lib/resolve-application';
 
 const sections: Section[] = [
   {
@@ -77,13 +78,8 @@ function TabKContent() {
       const supabase = createBrowserSupabaseClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      const { data: app } = await supabase
-        .from('applications')
-        .select('id')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      const appId = await resolvePrimaryApplicationId(supabase, user.id);
+      const app = appId ? { id: appId } : null;
       if (app) setApplicationId(app.id);
     };
     load();
