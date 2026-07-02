@@ -4,6 +4,7 @@ import { createServiceClient } from '@/lib/supabase-service';
 import { isKillSwitchEnabled } from '@/lib/kill-switch';
 import { callLLM } from '@/lib/llm-client';
 import { scoreCase } from '@/lib/gap-analysis-engine';
+import { rankApplications } from '@/lib/resolve-application';
 
 // UQ question text (canonical labels — not session-randomized, for dossier)
 const UQ_QUESTIONS: Record<string, string> = {
@@ -44,13 +45,14 @@ export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => ({}));
   const forceRegenerate: boolean = body?.force === true;
 
-  // Resolve primary application
+  // Resolve primary application via the shared canonical rule
   const { data: allApps } = await supabase
     .from('applications')
-    .select('id, source, business_name, business_category, operational_status, target_state, principal_name, simulator_sessions_used, simulator_sessions_purchased')
+    .select('id, source, payment_status, created_at, business_name, business_category, operational_status, target_state, principal_name, simulator_sessions_used, simulator_sessions_purchased')
     .eq('user_id', user.id);
 
-  const primaryApp = (allApps ?? []).find((a: { source: string | null }) => a.source !== 'simulator_standalone');
+  const primaryId = rankApplications(allApps ?? [])?.id ?? null;
+  const primaryApp = (allApps ?? []).find((a: { id: string }) => a.id === primaryId);
   if (!primaryApp) {
     return NextResponse.json({ error: 'No primary application found. Complete the eligibility quiz first.' }, { status: 404 });
   }
@@ -127,7 +129,7 @@ export async function POST(request: NextRequest) {
     // dossier toward the dimensions its reasoning found weakest.
     supabase
       .from('case_theory')
-      .select('dimension_verdicts, directives')
+      .select('narrative, numbers_strategy, dimension_verdicts, directives')
       .eq('application_id', primaryApp.id)
       .maybeSingle(),
   ]);
@@ -179,6 +181,8 @@ export async function POST(request: NextRequest) {
   // doctrine-grounded coaching tasks for this dossier. Both are descriptive — no
   // numbers are derived here.
   const caseTheory = caseTheoryRes.data as {
+    narrative?: string | null;
+    numbers_strategy?: unknown;
     dimension_verdicts?: Record<string, { status?: string; gap?: string | null }> | null;
     directives?: Array<{ engine: string; dimension: string; instruction: string; doctrineRef: string | null }> | null;
   } | null;
@@ -312,6 +316,11 @@ export async function POST(request: NextRequest) {
     cpuWeakDimensions,
     cpuPriorityDirectives: cpuPrepDirectives,
 
+    // Full case theory — the CPU's raw narrative and numbers strategy, not just
+    // the abstracted verdict labels above. Ground section2/section5 in this.
+    caseTheoryNarrative: caseTheory?.narrative ?? null,
+    caseTheoryNumbersStrategy: caseTheory?.numbers_strategy ?? null,
+
     // Questions to answer
     universalQuestions: Object.entries(UQ_QUESTIONS).map(([id, text]) => ({ id, text })),
     applicableWpProbes: applicableWpProbes.map(([id, info]) => ({ id, trigger: info.trigger, text: info.text })),
@@ -325,7 +334,7 @@ This client will attend a consulate interview for an E-2 visa. This dossier is t
 CASE DATA (pre-computed — do not derive new numbers, use only what is here):
 ${JSON.stringify(caseContext, null, 2)}
 
-Produce a JSON object with exactly these 7 sections. Every section must use the client's real data — no placeholders. Write in second person ("you", "your"). Use plain English. Be specific with numbers and facts.
+Produce a JSON object with exactly these 7 sections. Every section must use the client's real data — no placeholders. Write in second person ("you", "your"). Use plain English. Be specific with numbers and facts. If caseTheoryNarrative or caseTheoryNumbersStrategy are present in the case data, ground section2 (strengths) and section5 (investment numbers) in them — they are the CPU's own reasoning about which figures to foreground and which honest narrative wins this case.
 
 Return ONLY valid JSON matching this structure:
 {
@@ -497,7 +506,7 @@ export async function GET(_request: NextRequest) {
 
   const { data: allApps } = await supabase
     .from('applications')
-    .select('id, source, simulator_sessions_purchased')
+    .select('id, source, payment_status, created_at, simulator_sessions_purchased')
     .eq('user_id', user.id);
 
   const totalPurchased = (allApps ?? []).reduce(
@@ -508,7 +517,8 @@ export async function GET(_request: NextRequest) {
     return NextResponse.json({ error: 'simulator_not_purchased' }, { status: 403 });
   }
 
-  const primaryApp = (allApps ?? []).find((a: { source: string | null }) => a.source !== 'simulator_standalone');
+  const primaryGetId = rankApplications(allApps ?? [])?.id ?? null;
+  const primaryApp = (allApps ?? []).find((a: { id: string }) => a.id === primaryGetId);
   if (!primaryApp) {
     return NextResponse.json({ kit: null, requirements: { met: false, missing: ['Complete the eligibility quiz to create your application'] } });
   }
