@@ -1,6 +1,22 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** July 2, 2026 — Session 110: Closed out the remainder of Phase 0/1 from the quality-uplift audit (never-fabricate territory scoring, FDD Questions industry-fit wiring, FDD Comparison broken columns). D-code routing (WS2.6) was audited and found already complete — no fix needed. Three commits, build clean. Prompt caching (E6b) and silent-degradation surfacing (E8) intentionally deferred — see below. Session 109 (first Phase 0/1 batch) below.
+**Last Updated:** July 2, 2026 — Session 111: Phase 0/1 is now fully closed out. Implemented the two Session 110 leftovers — Anthropic prompt caching (E6b) and silent-degradation surfacing (E8: repetition-check regeneration trigger, verifier-status UI badges, FAQ RAG missing-key startup warning). Three commits, build clean. Phases 2–6 remain unscoped — see Session 110 below for the breakdown. Next up: Phase 2 (package integration), starting with the deterministic financial spine (A4).
+
+---
+
+## Session 111 — Phase 1 Close-out: Prompt Caching + Silent-Degradation Surfacing (July 2, 2026)
+
+**Branch:** dev. Build clean (`npm run build`, `tsc --noEmit`). Three commits, one concern each.
+
+### Fixed
+- **Phase 1 item 10 / WS2.5 (E6b) — Anthropic prompt caching.** `src/lib/generation-engine.ts`: `callClaudeAPI()`'s user message is now split into a `stableBlock` (case brief, module 3 answers, investor/voice profile — byte-identical across the ~19 calls per generation run) marked with `cache_control: { type: 'ephemeral' }`, and a `variableBlock` (KB context, D-code filter, case theory, follow-ups) that varies per document type and stays uncached. `humanizeDocument()`'s `HUMANIZATION_SYSTEM_PROMPT` — identical across every humanization call for every document and every user — is now its own cached system block, with per-retry feedback in a separate uncached block. Confirmed via SDK type inspection (`@anthropic-ai/sdk@^0.100.1`) that `cache_control` is supported on the standard (non-beta) `TextBlockParam`. `llm-client.ts` (simulator/coaching/faq/prep/extract tasks) was deliberately left untouched — those calls are single-shot per task rather than repeated ~19x per run, so caching ROI is much lower there.
+- **Phase 1 item 12 / WS2.8 (E8) — surface silent degradations.** Three sub-fixes, all in the spirit of "never silently degrade, always signal":
+  - **Repetition check** (`generation-engine.ts`, quality step 1): was log-only — a flagged near-duplicate pair (≥70% similarity) shipped to the client unchanged with just a DB log row. Now regenerates the second document in each flagged pair (deduped, one attempt each) via `buildGenerationPayload` + `callClaudeAPI` with an explicit distinctiveness instruction ("keep the same facts, write independently"), and logs the successful regeneration.
+  - **FAQ RAG missing API key** (`generation-engine.ts`, `fetchFAQKBContext`): silently returned `''` per-call when `OPENAI_API_KEY` was absent, with no signal anywhere. Now warns once at module load (`console.warn`, once per server process) so a misconfigured env var is visible immediately instead of only showing up as "documents feel thinner."
+  - **Verifier status badges** (`src/app/documents/[applicationId]/page.tsx`): `verifier_result` (CIC-2.2 case-theory compliance check) was populated on every `generated_documents` row but only ever read by admin aggregate stats — a client had no way to tell a case-theory-verified document apart from one that shipped after the verifier LLM failed (`overall: null`/missing) or after failed compliance (`overall: 'fail'`, exhausted the 3-attempt retry loop). Added `getVerifierBadge()` next to the existing certification-status badge, covering all three states plus `pass_with_notes`.
+
+### Dev server
+No server was running at end of session (`preview_list` returned `[]`) — nothing to restart.
 
 ---
 
