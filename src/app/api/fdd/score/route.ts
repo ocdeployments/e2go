@@ -6,6 +6,7 @@ import { isKillSwitchEnabled } from '@/lib/kill-switch';
 import Anthropic from '@anthropic-ai/sdk';
 import { scoreFdd } from '@/lib/fdd-scoring-engine';
 import { synthesizeInvestorProfile } from '@/lib/investor-profile-synthesizer';
+import { resolvePrimaryApplication } from '@/lib/resolve-application';
 import type { FddExtractedFields, FddE2Score } from '@/types/fdd';
 
 const anthropic = new Anthropic();
@@ -59,13 +60,9 @@ export async function POST(request: NextRequest) {
     const investorLiquidCapital = analysis.investor_liquid_capital as number | null;
 
     // Build synthesized investor profile (QFN first, then inferred from M3/archetype/category)
-    const { data: apps } = await service
-      .from('applications')
-      .select('id, business_category, operational_status')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(1);
-    const latestApp = apps?.[0] ?? null;
+    const latestApp = await resolvePrimaryApplication<{ id: string; business_category: string | null; operational_status: string | null }>(
+      service, user.id, 'id, business_category, operational_status'
+    );
     const appId = latestApp?.id ?? null;
 
     const { data: caseProfileRow } = await service
