@@ -65,6 +65,7 @@ export default function InterviewSimulator() {
   const [isInFollowUp, setIsInFollowUp] = useState(false);
   const [followUpLoading, setFollowUpLoading] = useState(false);
   const [coachingLoading, setCoachingLoading] = useState(false);
+  const [coachingError, setCoachingError] = useState(false);
   const [loadTimedOut, setLoadTimedOut] = useState(false);
   // Captures ?session_id from Stripe redirect before URL is cleaned — processed once application loads
   const [pendingGrantSessionId, setPendingGrantSessionId] = useState<string | null>(() => {
@@ -528,6 +529,7 @@ export default function InterviewSimulator() {
     }
 
     setCoachingLoading(true);
+    setCoachingError(false);
     try {
       const res = await fetch('/api/simulator/coaching-report', {
         method: 'POST',
@@ -535,7 +537,7 @@ export default function InterviewSimulator() {
         body: JSON.stringify({ context: ctx, weakAnswers: toCoach, priorSessions }),
       });
       if (res.ok) {
-        const { coaching, top3NextSession } = await res.json();
+        const { coaching, top3NextSession, error } = await res.json();
         if (Array.isArray(coaching) && coaching.length > 0) {
           // Build a map by questionId for O(1) lookup; also keep array for index fallback
           const byId = new Map(coaching.map((c: any) => [c.questionId, c]));
@@ -553,10 +555,17 @@ export default function InterviewSimulator() {
               saveCoachingNotes(currentSession.id, top3NextSession).catch(() => {});
             }
           }
+        } else if (error) {
+          // API explicitly flagged a generation failure (as opposed to the
+          // legitimate "no weak answers" empty-array response) — surface it
+          // so the user sees a retry option instead of a silently blank report.
+          setCoachingError(true);
         }
+      } else {
+        setCoachingError(true);
       }
     } catch {
-      // Non-fatal — coaching cards just won't appear
+      setCoachingError(true);
     } finally {
       setCoachingLoading(false);
     }
@@ -780,6 +789,8 @@ export default function InterviewSimulator() {
           summary={coachingSummary}
           sessionNumber={currentSession?.sessionNumber}
           coachingLoading={coachingLoading}
+          coachingError={coachingError}
+          onRetryCoaching={() => context && fetchCoachingReport(coachingSummary, context)}
           applicationId={application?.id}
           onStartNew={() => {
             setScreen('start');
@@ -1619,6 +1630,8 @@ function SessionComplete({
   summary,
   sessionNumber,
   coachingLoading,
+  coachingError,
+  onRetryCoaching,
   applicationId,
   onStartNew,
   onBackToDashboard,
@@ -1626,6 +1639,8 @@ function SessionComplete({
   summary: CoachingSummary;
   sessionNumber?: number;
   coachingLoading: boolean;
+  coachingError?: boolean;
+  onRetryCoaching?: () => void;
   applicationId?: string;
   onStartNew: () => void;
   onBackToDashboard: () => void;
@@ -1727,6 +1742,37 @@ function SessionComplete({
               }}>
                 <div style={{ marginBottom: '8px', fontSize: '20px' }}>⟳</div>
                 Analyzing your answers with E-2 expertise...
+              </div>
+            )}
+
+            {!coachingLoading && coachingError && !summary.detailedCoaching && (
+              <div style={{
+                padding: '24px',
+                textAlign: 'center' as const,
+                border: '1px solid rgba(220,120,90,0.25)',
+                background: 'rgba(220,120,90,0.06)',
+                color: 'rgba(245,240,232,0.85)',
+                fontSize: '13px',
+              }}>
+                <div style={{ marginBottom: '10px' }}>
+                  Your detailed coaching report couldn&apos;t be generated. The suggestions below are still available.
+                </div>
+                {onRetryCoaching && (
+                  <button
+                    onClick={onRetryCoaching}
+                    style={{
+                      background: 'transparent',
+                      border: '1px solid rgba(201,168,76,0.4)',
+                      color: '#C9A84C',
+                      fontSize: '12px',
+                      padding: '8px 16px',
+                      cursor: 'pointer',
+                      letterSpacing: '0.04em',
+                    }}
+                  >
+                    Retry
+                  </button>
+                )}
               </div>
             )}
 

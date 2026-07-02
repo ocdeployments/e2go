@@ -202,7 +202,8 @@ Return ONLY a valid JSON object (no markdown, no prose) with this exact structur
     });
 
     if (!content) {
-      return NextResponse.json({ coaching: [] });
+      console.error('[coaching-report] Empty content from all providers');
+      return NextResponse.json({ coaching: [], error: true });
     }
 
     try {
@@ -225,13 +226,19 @@ Return ONLY a valid JSON object (no markdown, no prose) with this exact structur
       }
     } catch (parseError) {
       console.error('[coaching-report] JSON parse failed:', content.substring(0, 300), parseError);
+      return NextResponse.json({ coaching: [], error: true });
     }
 
-    return NextResponse.json({ coaching: [] });
+    // Response had content but neither JSON shape matched — treat as a
+    // generation failure, not "no coaching needed" (weakAnswers.length > 0
+    // was already guaranteed above, so an empty result here means the model
+    // didn't return usable output, not that coaching was unnecessary).
+    console.error('[coaching-report] Unrecognized response shape:', content.substring(0, 300));
+    return NextResponse.json({ coaching: [], error: true });
   } catch (error) {
     const isAbort = error instanceof DOMException && error.name === 'AbortError';
     console.error(`[coaching-report] ${isAbort ? 'TIMED OUT' : 'FAILED'}:`, error);
-    return NextResponse.json({ coaching: [] });
+    return NextResponse.json({ coaching: [], error: true });
   } finally {
     clearTimeout(timeout);
   }
