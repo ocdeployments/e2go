@@ -251,6 +251,7 @@ export interface InvestmentBreakdownData {
   professional_fees: number | null;
   marketing_launch: number | null;
   at_risk_amount: number | null;
+  deployment_categories: string | null;
 }
 
 export interface ConsistencyIssue {

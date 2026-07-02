@@ -471,6 +471,7 @@ interface InvestmentBreakdown {
   professional_fees: number | null;
   marketing_launch: number | null;
   at_risk_amount: number | null;
+  deployment_categories: string | null;
 }
 
 function extractInvestmentBreakdown(answers: Record<string, unknown>): InvestmentBreakdown {
@@ -484,20 +485,28 @@ function extractInvestmentBreakdown(answers: Record<string, unknown>): Investmen
     return null;
   };
 
-  // QF-02: Total invested to date
-  // QF-03: Total business cost
-  // QF-NEW-01: Amount spent on actual business expenses
+  // M3-F-02: Total invested to date (USD)
+  // M3-F-03: Total cost to establish the business (USD)
+  // M3-F-04: How the investment was deployed — a category multiselect, not a per-category
+  //   dollar breakdown, so there is no live source for franchise_fee/leasehold_improvements/
+  //   equipment_technology/educational_materials/working_capital/professional_fees/
+  //   marketing_launch as individual dollar figures. Left null rather than fabricated;
+  //   deployment_categories carries the selected categories as a text signal instead.
+  // No live field captures an "amount actually spent/at-risk" dollar figure
+  // (M3-F-NEW-01 is a yes/partial/no status, not a currency value) — left null.
+  const deploymentRaw = answers['M3-F-04'];
   return {
-    total_invested: getNumber('QF-02'),
-    total_business_cost: getNumber('QF-03'),
-    franchise_fee: getNumber('franchise_fee'),
-    leasehold_improvements: getNumber('leasehold_improvements'),
-    equipment_technology: getNumber('equipment_technology'),
-    educational_materials: getNumber('educational_materials'),
-    working_capital: getNumber('working_capital'),
-    professional_fees: getNumber('professional_fees'),
-    marketing_launch: getNumber('marketing_launch'),
-    at_risk_amount: getNumber('QF-NEW-01'),
+    total_invested: getNumber('M3-F-02'),
+    total_business_cost: getNumber('M3-F-03'),
+    franchise_fee: null,
+    leasehold_improvements: null,
+    equipment_technology: null,
+    educational_materials: null,
+    working_capital: null,
+    professional_fees: null,
+    marketing_launch: null,
+    at_risk_amount: null,
+    deployment_categories: typeof deploymentRaw === 'string' && deploymentRaw.trim().length > 0 ? deploymentRaw : null,
   };
 }
 
@@ -656,7 +665,7 @@ function validateContext(
   }
 
   // Check source of funds
-  const sourceOfFunds = module3Answers['QF-05'] || caseBriefData.source_of_funds;
+  const sourceOfFunds = module3Answers['M3-F-05'] || caseBriefData.source_of_funds;
   if (!sourceOfFunds) {
     missingFields.push('source_of_funds_summary');
   }
@@ -999,6 +1008,7 @@ export async function callClaudeAPI(payload: GenerationPayload): Promise<string>
     ib.working_capital !== null ? `  Working Capital: $${ib.working_capital.toLocaleString()}` : null,
     ib.professional_fees !== null ? `  Professional Fees: $${ib.professional_fees.toLocaleString()}` : null,
     ib.marketing_launch !== null ? `  Marketing & Launch: $${ib.marketing_launch.toLocaleString()}` : null,
+    ib.deployment_categories ? `  Deployment Categories Selected: ${ib.deployment_categories}` : null,
     '',
     `IMPORTANT: Use EXACT dollar amounts from this breakdown. Never estimate, round, or substitute any amounts.`,
     `If a figure is marked "NOT PROVIDED", state it is not yet confirmed — NEVER invent a number.`,
