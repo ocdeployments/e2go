@@ -15,6 +15,15 @@ import DenialRiskRadar from '@/components/gap-analysis/DenialRiskRadar';
 import CategoryCard from '@/components/gap-analysis/CategoryCard';
 import PathwaySection from '@/components/gap-analysis/PathwaySection';
 import { analyzePathways, buildPathwayInput, type PathwayAnalysisResult } from '@/lib/pathway-engine';
+import GenerationProgress from '@/components/ui/GenerationProgress';
+
+const AI_ANALYSIS_STEPS = [
+  'Reading your case file…',
+  'Cross-referencing USCIS denial precedent…',
+  'Scoring investment substantiality…',
+  'Assessing marginality and intent…',
+  'Building your denial risk briefing…',
+];
 
 const supabase = createBrowserSupabaseClient();
 
@@ -82,6 +91,7 @@ function GapAnalysisInner() {
   // Diff tracking — captures baseline risk levels on first load, computes improvements live
   const initialRisksRef = useRef<Map<string, string>>(new Map());
   const changedKeysRef = useRef<Set<string>>(new Set());
+  const enrichmentInFlightForRef = useRef<string | null>(null);
   const [showReanalysisPrompt, setShowReanalysisPrompt] = useState(false);
   const [resolvedCodes, setResolvedCodes] = useState<{ code: string; from: string; to: string }[]>([]);
 
@@ -236,31 +246,35 @@ function GapAnalysisInner() {
 
         // Single merged LLM call: enrichment + semantic eval in one round-trip
         const weakCategories = scored.categories.filter(c => c.score < 70);
-        if (weakCategories.length > 0) {
+        if (weakCategories.length > 0 && enrichmentInFlightForRef.current !== resolvedId) {
+          enrichmentInFlightForRef.current = resolvedId;
           setEnrichingIds(new Set(weakCategories.map(c => c.id)));
-        }
-        fetch('/api/gap-analysis/run', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            applicationId: resolvedId,
-            weakCategories: weakCategories.map(cat => ({
-              id: cat.id, name: cat.name,
-              gaps: cat.gaps || [], evidence: cat.evidence || [],
-              score: cat.score, businessName: app.business_name,
-              businessCategory: (app as any).business_category,
-              operationalStatus: (app as any).operational_status,
-            })),
-          }),
-        })
-          .then(r => r.ok ? r.json() : null)
-          .then(data => {
-            if (!data) return;
-            if (data.enrichments) setEnrichments(data.enrichments);
-            if (data.semanticResults) setSemanticResults(data.semanticResults);
+          fetch('/api/gap-analysis/run', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              applicationId: resolvedId,
+              weakCategories: weakCategories.map(cat => ({
+                id: cat.id, name: cat.name,
+                gaps: cat.gaps || [], evidence: cat.evidence || [],
+                score: cat.score, businessName: app.business_name,
+                businessCategory: (app as any).business_category,
+                operationalStatus: (app as any).operational_status,
+              })),
+            }),
           })
-          .catch(() => {})
-          .finally(() => setEnrichingIds(new Set()));
+            .then(r => r.ok ? r.json() : null)
+            .then(data => {
+              if (!data) return;
+              if (data.enrichments) setEnrichments(data.enrichments);
+              if (data.semanticResults) setSemanticResults(data.semanticResults);
+            })
+            .catch(() => {})
+            .finally(() => {
+              setEnrichingIds(new Set());
+              enrichmentInFlightForRef.current = null;
+            });
+        }
 
       } catch (err: any) {
         setError(err.message || 'Failed to load gap analysis');
@@ -478,6 +492,12 @@ function GapAnalysisInner() {
             >
               {analysisRunning ? 'Running analysis…' : 'Run AI analysis →'}
             </button>
+          </div>
+        )}
+
+        {analysisRunning && (
+          <div style={{ padding: '16px 24px', background: 'rgba(201,168,76,0.05)', border: '1px solid rgba(201,168,76,0.2)', marginBottom: '32px' }}>
+            <GenerationProgress isActive={analysisRunning} estimatedSeconds={35} steps={AI_ANALYSIS_STEPS} showEstimate />
           </div>
         )}
 

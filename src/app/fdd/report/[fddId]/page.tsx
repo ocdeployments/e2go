@@ -4,6 +4,14 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { createBrowserSupabaseClient } from '@/lib/supabase';
 import type { FddAnalysis, FddCompatibility, FddFinalReport, FddProfessionalReport } from '@/types/fdd';
+import GenerationProgress from '@/components/ui/GenerationProgress';
+
+const FDD_REPORT_STEPS = [
+  'Compiling business identity and financial sections…',
+  'Cross-referencing E-2 compatibility findings…',
+  'Building territory and litigation analysis…',
+  'Formatting your professional report…',
+];
 
 // ============================================================================
 // Type guards
@@ -930,15 +938,14 @@ export default function FddReportPage() {
   if (loading || generating) {
     return (
       <main className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
-        <div className="text-center max-w-xs">
-          <div className="w-10 h-10 border-2 border-[#C9A84C]/30 border-t-[#C9A84C] rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-white/40 text-sm">
-            {generating ? 'Compiling professional report...' : 'Loading...'}
-          </p>
-          {generating && (
-            <p className="text-white/25 text-xs mt-2">
-              8 analytical sections running in parallel · typically 25–40 seconds
-            </p>
+        <div className="text-center w-full max-w-sm px-6">
+          {generating ? (
+            <GenerationProgress isActive={generating} estimatedSeconds={32} steps={FDD_REPORT_STEPS} showEstimate />
+          ) : (
+            <>
+              <div className="w-10 h-10 border-2 border-[#C9A84C]/30 border-t-[#C9A84C] rounded-full animate-spin mx-auto mb-4" />
+              <p className="text-white/40 text-sm">Loading...</p>
+            </>
           )}
         </div>
       </main>

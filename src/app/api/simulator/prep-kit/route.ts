@@ -523,7 +523,7 @@ export async function GET(_request: NextRequest) {
     return NextResponse.json({ kit: null, requirements: { met: false, missing: ['Complete the eligibility quiz to create your application'] } });
   }
 
-  const [cachedRes, lifecycleRes] = await Promise.all([
+  const [cachedRes, lifecycleRes, answersRes] = await Promise.all([
     supabase
       .from('interview_prep_kits')
       .select('kit_json, generated_at')
@@ -531,21 +531,28 @@ export async function GET(_request: NextRequest) {
       .maybeSingle(),
     supabase
       .from('application_lifecycle')
-      .select('module1_completed_at, module2_completed_at, module3_completed_at')
+      .select('module1_completed_at, module2_completed_at')
       .eq('user_id', user.id)
       .maybeSingle(),
+    // module3_completed_at is never written anywhere in the app (Module 3's category
+    // subsections don't set it), so it can never gate this check — a direct read of
+    // whether investment/document answers actually exist is the real signal.
+    supabase
+      .from('answers')
+      .select('question_key')
+      .eq('application_id', primaryApp.id)
+      .limit(1),
   ]);
 
   const lifecycle = lifecycleRes.data as {
     module1_completed_at: string | null;
     module2_completed_at: string | null;
-    module3_completed_at: string | null;
   } | null;
 
   const missing: string[] = [];
   if (!lifecycle?.module1_completed_at) missing.push('Complete onboarding — your personal and visa story (Step 2)');
   if (!lifecycle?.module2_completed_at) missing.push('Add your business profile — business details and market position (Step 3)');
-  if (!lifecycle?.module3_completed_at) missing.push('Add investment details and supporting documents (Step 4)');
+  if (!answersRes.data || answersRes.data.length === 0) missing.push('Add investment details and supporting documents (Step 4)');
 
   const cached = cachedRes.data;
   return NextResponse.json({

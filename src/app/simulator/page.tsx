@@ -58,6 +58,7 @@ export default function InterviewSimulator() {
   const [purchaseLoading, setPurchaseLoading] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [hasCaseFile, setHasCaseFile] = useState<boolean | null>(null);
+  const [needsAnalysisOnly, setNeedsAnalysisOnly] = useState(false);
   const [caseFileReviewed, setCaseFileReviewed] = useState(false);
   const [voiceAvailable, setVoiceAvailable] = useState(false);
   const [followUpQuestion, setFollowUpQuestion] = useState<string | null>(null);
@@ -129,16 +130,21 @@ export default function InterviewSimulator() {
             // Standalone simulator: answers alone are sufficient
             if (!cancelled) setHasCaseFile(Boolean(answers && answers.length > 0));
           } else {
-            // Full Module 3 path: answers + case brief required
+            // Full Module 3 path: answers + case brief required. Case briefs are
+            // produced by running AI analysis on /gap-analysis — a single button,
+            // not a reason to send the user back through Module 3 from scratch.
             const { data: caseBrief } = await supabase
               .from('case_briefs')
               .select('id')
               .eq('application_id', app.id)
               .limit(1);
 
-            if (!cancelled) setHasCaseFile(
-              Boolean(answers && answers.length > 0 && caseBrief && caseBrief.length > 0)
-            );
+            const hasAnswers = Boolean(answers && answers.length > 0);
+            const hasBrief = Boolean(caseBrief && caseBrief.length > 0);
+            if (!cancelled) {
+              setHasCaseFile(hasAnswers && hasBrief);
+              setNeedsAnalysisOnly(hasAnswers && !hasBrief);
+            }
           }
         } else {
           // No application at all — cannot use simulator
@@ -674,7 +680,7 @@ export default function InterviewSimulator() {
   if (hasCaseFile === false) {
     return (
       <div style={styles.page}>
-        <SimulatorTeaser />
+        <SimulatorTeaser needsAnalysisOnly={needsAnalysisOnly} />
       </div>
     );
   }
@@ -1800,7 +1806,7 @@ function SessionComplete({
 // SIMULATOR TEASER (shown when case file data is insufficient)
 // =============================================================================
 
-function SimulatorTeaser() {
+function SimulatorTeaser({ needsAnalysisOnly = false }: { needsAnalysisOnly?: boolean }) {
   return (
     <div style={{
       minHeight: '100vh',
@@ -1846,7 +1852,7 @@ function SimulatorTeaser() {
           marginBottom: '16px',
           lineHeight: 1.1,
         }}>
-          Pressure-Test Your Interview Readiness
+          {needsAnalysisOnly ? 'Almost Ready — One Step Left' : 'Pressure-Test Your Interview Readiness'}
         </h1>
 
         <p style={{
@@ -1911,17 +1917,16 @@ function SimulatorTeaser() {
             lineHeight: 1.6,
             margin: 0,
           }}>
-            To unlock the simulator, complete your case file in Module 3 — your
-            business details, investment data, and supporting information. The more
-            complete your filing, the more realistic and useful your practice sessions
-            will be.
+            {needsAnalysisOnly
+              ? 'Your case data is in — you just need to run AI analysis so the simulator has a scored case file to interview you against. It takes under a minute.'
+              : 'To unlock the simulator, complete your case file in Module 3 — your business details, investment data, and supporting information. The more complete your filing, the more realistic and useful your practice sessions will be.'}
           </p>
         </div>
 
         {/* Two CTAs */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center' }}>
           <a
-            href="/apply"
+            href={needsAnalysisOnly ? '/gap-analysis' : '/apply'}
             style={{
               display: 'inline-block',
               padding: '16px 32px',
@@ -1936,77 +1941,81 @@ function SimulatorTeaser() {
               textAlign: 'center' as const,
             }}
           >
-            Complete your case file →
+            {needsAnalysisOnly ? 'Run AI analysis →' : 'Complete your case file →'}
           </a>
 
-          <span style={{
-            fontSize: '12px',
-            color: 'rgba(245,240,232,0.68)',
-            fontFamily: "'DM Sans', sans-serif",
-          }}>
-            — or —
-          </span>
-
-          <a
-            href="/simulator/quick-start"
-            style={{
-              display: 'inline-block',
-              padding: '14px 32px',
-              background: 'transparent',
-              color: '#C9A84C',
-              fontSize: '14px',
-              fontWeight: 500,
-              textDecoration: 'none',
-              fontFamily: "'DM Sans', sans-serif",
-              border: '1px solid rgba(201,168,76,0.3)',
-              width: '100%',
-              maxWidth: '320px',
-              textAlign: 'center' as const,
-            }}
-          >
-            Upload your documents instead →
-          </a>
-
-          {/* Document list for upload path */}
-          <div style={{
-            marginTop: '16px',
-            padding: '16px 20px',
-            background: 'rgba(201,168,76,0.03)',
-            border: '1px solid rgba(201,168,76,0.12)',
-            textAlign: 'left' as const,
-            maxWidth: '320px',
-            width: '100%',
-          }}>
-            <div style={{
-              fontSize: '9px',
-              letterSpacing: '0.12em',
-              textTransform: 'uppercase' as const,
-              color: 'rgba(201,168,76,0.65)',
-              fontFamily: "'DM Sans', sans-serif",
-              marginBottom: '10px',
-            }}>
-              Recommended documents to upload
-            </div>
-            {[
-              'Business plan or executive summary',
-              'Source of funds statement or bank records',
-              'Investment breakdown / proof of investment',
-              'Franchise Disclosure Document (if franchise)',
-              'Lease agreement or letter of intent',
-              'Previous DS-160 or visa petition (if renewal)',
-              'Any prior attorney correspondence',
-            ].map((doc, i) => (
-              <div key={i} style={{
-                display: 'flex',
-                gap: '8px',
-                alignItems: 'flex-start',
-                marginBottom: i < 6 ? '7px' : 0,
+          {!needsAnalysisOnly && (
+            <>
+              <span style={{
+                fontSize: '12px',
+                color: 'rgba(245,240,232,0.68)',
+                fontFamily: "'DM Sans', sans-serif",
               }}>
-                <span style={{ color: 'rgba(201,168,76,0.5)', fontSize: '11px', flexShrink: 0, marginTop: '2px' }}>→</span>
-                <span style={{ fontSize: '12px', color: 'rgba(245,240,232,0.6)', fontFamily: "'DM Sans', sans-serif", lineHeight: 1.4 }}>{doc}</span>
+                — or —
+              </span>
+
+              <a
+                href="/simulator/quick-start"
+                style={{
+                  display: 'inline-block',
+                  padding: '14px 32px',
+                  background: 'transparent',
+                  color: '#C9A84C',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  textDecoration: 'none',
+                  fontFamily: "'DM Sans', sans-serif",
+                  border: '1px solid rgba(201,168,76,0.3)',
+                  width: '100%',
+                  maxWidth: '320px',
+                  textAlign: 'center' as const,
+                }}
+              >
+                Upload your documents instead →
+              </a>
+
+              {/* Document list for upload path */}
+              <div style={{
+                marginTop: '16px',
+                padding: '16px 20px',
+                background: 'rgba(201,168,76,0.03)',
+                border: '1px solid rgba(201,168,76,0.12)',
+                textAlign: 'left' as const,
+                maxWidth: '320px',
+                width: '100%',
+              }}>
+                <div style={{
+                  fontSize: '9px',
+                  letterSpacing: '0.12em',
+                  textTransform: 'uppercase' as const,
+                  color: 'rgba(201,168,76,0.65)',
+                  fontFamily: "'DM Sans', sans-serif",
+                  marginBottom: '10px',
+                }}>
+                  Recommended documents to upload
+                </div>
+                {[
+                  'Business plan or executive summary',
+                  'Source of funds statement or bank records',
+                  'Investment breakdown / proof of investment',
+                  'Franchise Disclosure Document (if franchise)',
+                  'Lease agreement or letter of intent',
+                  'Previous DS-160 or visa petition (if renewal)',
+                  'Any prior attorney correspondence',
+                ].map((doc, i) => (
+                  <div key={i} style={{
+                    display: 'flex',
+                    gap: '8px',
+                    alignItems: 'flex-start',
+                    marginBottom: i < 6 ? '7px' : 0,
+                  }}>
+                    <span style={{ color: 'rgba(201,168,76,0.5)', fontSize: '11px', flexShrink: 0, marginTop: '2px' }}>→</span>
+                    <span style={{ fontSize: '12px', color: 'rgba(245,240,232,0.6)', fontFamily: "'DM Sans', sans-serif", lineHeight: 1.4 }}>{doc}</span>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            </>
+          )}
         </div>
 
         <div style={{ marginTop: '24px' }}>

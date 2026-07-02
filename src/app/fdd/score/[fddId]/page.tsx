@@ -8,6 +8,14 @@ import type { DimensionScore, OdeAssessment, TimingAssessment } from '@/lib/fdd-
 import { matchInvestorProfile } from '@/lib/fdd-profile-match-engine';
 import type { ProfileMatchResult } from '@/lib/fdd-profile-match-engine';
 import ProfileMatchPanel from '@/components/fdd/ProfileMatchPanel';
+import GenerationProgress from '@/components/ui/GenerationProgress';
+
+const FDD_SCORING_STEPS = [
+  'Reading extracted FDD fields…',
+  'Scoring ODE and marginality dimensions…',
+  'Checking timing and processing risk…',
+  'Generating your compatibility narrative…',
+];
 
 // ============================================================================
 // Types for persisted e2_score shape
@@ -342,15 +350,14 @@ export default function FddScorePage() {
   if (loading || scoring) {
     return (
       <main className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-10 h-10 border-2 border-[#C9A84C]/30 border-t-[#C9A84C] rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-white/40 text-sm">
-            {scoring ? 'Running E-2 compatibility analysis...' : 'Loading...'}
-          </p>
-          {scoring && (
-            <p className="text-white/25 text-xs mt-2">
-              Scoring 4 dimensions + generating narrative — takes 15–30 seconds
-            </p>
+        <div className="text-center w-full max-w-sm px-6">
+          {scoring ? (
+            <GenerationProgress isActive={scoring} estimatedSeconds={25} steps={FDD_SCORING_STEPS} showEstimate />
+          ) : (
+            <>
+              <div className="w-10 h-10 border-2 border-[#C9A84C]/30 border-t-[#C9A84C] rounded-full animate-spin mx-auto mb-4" />
+              <p className="text-white/40 text-sm">Loading...</p>
+            </>
           )}
         </div>
       </main>

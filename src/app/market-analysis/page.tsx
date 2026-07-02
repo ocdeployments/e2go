@@ -2,6 +2,13 @@
 
 import { useState } from 'react';
 import type { TerritoryAnalysis } from '@/lib/fdd-territory-engine';
+import GenerationProgress from '@/components/ui/GenerationProgress';
+
+const MARKET_ANALYSIS_STEPS = [
+  'Pulling Census ACS 5-year data for your ZIP…',
+  'Mapping the competitive landscape…',
+  'Scoring 5 territory dimensions…',
+];
 
 // ============================================================================
 // Market Analysis — /market-analysis
@@ -361,13 +368,12 @@ export default function MarketAnalysisPage() {
               >
                 {loading ? 'Analysing territory…' : 'Run Market Analysis'}
               </button>
-              {loading && (
-                <div className="flex items-center gap-2 text-white/40 text-xs">
-                  <div className="w-4 h-4 border border-[#C9A84C]/30 border-t-[#C9A84C] animate-spin" style={{ borderRadius: '50%' }} />
-                  Pulling Census data and scoring 5 dimensions…
-                </div>
-              )}
             </div>
+            {loading && (
+              <div className="mt-6">
+                <GenerationProgress isActive={loading} estimatedSeconds={12} steps={MARKET_ANALYSIS_STEPS} showEstimate />
+              </div>
+            )}
           </div>
         </form>
 

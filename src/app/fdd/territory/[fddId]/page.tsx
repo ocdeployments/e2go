@@ -5,6 +5,13 @@ import { useParams, useRouter } from 'next/navigation';
 import { createBrowserSupabaseClient } from '@/lib/supabase';
 import type { FddAnalysis } from '@/types/fdd';
 import type { TerritoryAnalysis, DimensionScore, TerritoryRating } from '@/lib/fdd-territory-engine';
+import GenerationProgress from '@/components/ui/GenerationProgress';
+
+const FDD_TERRITORY_STEPS = [
+  'Querying Census ACS 5-year data…',
+  'Mapping the competitive landscape…',
+  'Scoring territory dimensions…',
+];
 
 // ============================================================================
 // Helpers
@@ -219,15 +226,14 @@ export default function FddTerritoryPage() {
   if (loading || running) {
     return (
       <main className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
-        <div className="text-center max-w-xs">
-          <div className="w-10 h-10 border-2 border-[#C9A84C]/30 border-t-[#C9A84C] rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-white/40 text-sm">
-            {running ? 'Pulling Census and market data...' : 'Loading...'}
-          </p>
-          {running && (
-            <p className="text-white/25 text-xs mt-2 leading-relaxed">
-              Querying Census ACS 5-year + competitive landscape — typically 10–20 seconds
-            </p>
+        <div className="text-center w-full max-w-sm px-6">
+          {running ? (
+            <GenerationProgress isActive={running} estimatedSeconds={15} steps={FDD_TERRITORY_STEPS} showEstimate />
+          ) : (
+            <>
+              <div className="w-10 h-10 border-2 border-[#C9A84C]/30 border-t-[#C9A84C] rounded-full animate-spin mx-auto mb-4" />
+              <p className="text-white/40 text-sm">Loading...</p>
+            </>
           )}
         </div>
       </main>

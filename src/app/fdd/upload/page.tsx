@@ -1,8 +1,12 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { createBrowserSupabaseClient } from '@/lib/supabase';
+import { resolvePrimaryApplicationId } from '@/lib/resolve-application';
 import type { FddTransactionType, FddSSEEvent } from '@/types/fdd';
+
+const supabase = createBrowserSupabaseClient();
 
 const US_STATES = [
   'AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA',
@@ -16,6 +20,7 @@ const REGISTRATION_STATES = new Set([
 ]);
 
 type Phase = 'intake' | 'uploading' | 'extracting' | 'done' | 'error';
+type RecognitionState = 'checking' | 'existing_analysis' | 'existing_case_profile_doc' | 'none';
 
 interface ExtractionProgress {
   chunk: string;
@@ -47,6 +52,64 @@ export default function FddUploadPage() {
   const [targetCity, setTargetCity] = useState('');
   const [targetState, setTargetState] = useState('');
   const [targetZip, setTargetZip] = useState('');
+
+  // Cross-section document recognition — don't blindly show a blank upload
+  // form if the user already has an FDD on file somewhere in the app.
+  const [applicationId, setApplicationId] = useState<string | null>(null);
+  const [recognition, setRecognition] = useState<RecognitionState>('checking');
+  const [existingFdd, setExistingFdd] = useState<{ id: string; filename: string; createdAt: string } | null>(null);
+  const [existingCaseDoc, setExistingCaseDoc] = useState<{ filename: string; createdAt: string } | null>(null);
+  const [showIntakeAnyway, setShowIntakeAnyway] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { if (!cancelled) setRecognition('none'); return; }
+
+      const appId = await resolvePrimaryApplicationId(supabase, user.id);
+      if (!cancelled) setApplicationId(appId);
+
+      // 1. Has a dedicated FDD analysis already been run for this application?
+      const { data: fddRows } = await supabase
+        .from('fdd_analyses')
+        .select('id, original_filename, created_at, extraction_status')
+        .eq('user_id', user.id)
+        .eq('extraction_status', 'complete')
+        .order('created_at', { ascending: false })
+        .limit(1);
+      const fdd = fddRows?.[0];
+      if (fdd) {
+        if (!cancelled) {
+          setExistingFdd({ id: fdd.id, filename: fdd.original_filename, createdAt: fdd.created_at });
+          setRecognition('existing_analysis');
+        }
+        return;
+      }
+
+      // 2. Was an FDD already uploaded via the case profile hub (uploaded_documents),
+      // just never run through the dedicated FDD analysis pipeline?
+      if (appId) {
+        const { data: docRows } = await supabase
+          .from('uploaded_documents')
+          .select('file_name, created_at, extraction_status')
+          .eq('application_id', appId)
+          .eq('doc_type', 'fdd')
+          .eq('extraction_status', 'complete')
+          .order('created_at', { ascending: false })
+          .limit(1);
+        const doc = docRows?.[0];
+        if (doc && !cancelled) {
+          setExistingCaseDoc({ filename: doc.file_name, createdAt: doc.created_at });
+          setRecognition('existing_case_profile_doc');
+          return;
+        }
+      }
+
+      if (!cancelled) setRecognition('none');
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   const handleFileSelect = useCallback((file: File) => {
     if (!file.name.toLowerCase().endsWith('.pdf')) {
@@ -82,6 +145,7 @@ export default function FddUploadPage() {
     fd.append('target_city', targetCity);
     fd.append('target_state', targetState);
     fd.append('target_zip', targetZip);
+    if (applicationId) fd.append('application_id', applicationId);
 
     let fddId: string;
     try {
@@ -193,7 +257,64 @@ export default function FddUploadPage() {
           </p>
         </div>
 
-        {(phase === 'intake' || phase === 'error') && (
+        {phase === 'intake' && recognition === 'checking' && (
+          <div className="text-center py-16">
+            <div className="w-8 h-8 border-2 border-[#C9A84C]/30 border-t-[#C9A84C] rounded-full animate-spin mx-auto mb-4" />
+            <p className="text-white/40 text-sm">Checking your case file for an existing FDD...</p>
+          </div>
+        )}
+
+        {phase === 'intake' && recognition === 'existing_analysis' && existingFdd && !showIntakeAnyway && (
+          <div className="rounded-xl border border-[#C9A84C]/25 bg-[#C9A84C]/5 p-6 space-y-4">
+            <p className="text-xs text-[#C9A84C] uppercase tracking-widest">FDD already on file</p>
+            <p className="text-white text-sm leading-relaxed">
+              You already ran FDD analysis on <span className="font-medium">{existingFdd.filename}</span>{' '}
+              (uploaded {new Date(existingFdd.createdAt).toLocaleDateString()}). You can review that
+              analysis, or upload a new/updated FDD to replace it.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <button
+                onClick={() => router.push(`/fdd/report/${existingFdd.id}`)}
+                className="bg-[#C9A84C] text-[#0a0a0a] font-semibold px-5 py-3 rounded-lg text-sm hover:bg-[#d4b55a] transition-colors"
+              >
+                View FDD analysis →
+              </button>
+              <button
+                onClick={() => router.push(`/fdd/score/${existingFdd.id}`)}
+                className="border border-white/15 text-white/80 font-medium px-5 py-3 rounded-lg text-sm hover:border-white/30 transition-colors"
+              >
+                View E-2 score →
+              </button>
+              <button
+                onClick={() => setShowIntakeAnyway(true)}
+                className="text-white/50 text-sm px-3 py-3 hover:text-white/80 transition-colors"
+              >
+                Upload a different FDD instead
+              </button>
+            </div>
+          </div>
+        )}
+
+        {phase === 'intake' && recognition === 'existing_case_profile_doc' && existingCaseDoc && !showIntakeAnyway && (
+          <div className="rounded-xl border border-[#C9A84C]/25 bg-[#C9A84C]/5 p-6 space-y-4 mb-8">
+            <p className="text-xs text-[#C9A84C] uppercase tracking-widest">FDD found on your case profile</p>
+            <p className="text-white text-sm leading-relaxed">
+              We see you already uploaded <span className="font-medium">{existingCaseDoc.filename}</span>{' '}
+              to your case profile ({new Date(existingCaseDoc.createdAt).toLocaleDateString()}). That
+              upload pulled a few intake fields, but full FDD Intelligence — the 50-point extraction,
+              E-2 franchise score, and territory analysis — needs to process the file here. Re-select
+              the same file below to run it, or upload a different FDD.
+            </p>
+            <button
+              onClick={() => setShowIntakeAnyway(true)}
+              className="bg-[#C9A84C] text-[#0a0a0a] font-semibold px-5 py-3 rounded-lg text-sm hover:bg-[#d4b55a] transition-colors"
+            >
+              Continue to upload →
+            </button>
+          </div>
+        )}
+
+        {(phase === 'error' || (phase === 'intake' && (recognition === 'none' || showIntakeAnyway))) && (
           <div className="space-y-8">
 
             {/* Transaction type */}

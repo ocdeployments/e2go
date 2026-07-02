@@ -5,6 +5,13 @@ import { useParams, useRouter } from 'next/navigation';
 import { createBrowserSupabaseClient } from '@/lib/supabase';
 import type { FddAnalysis } from '@/types/fdd';
 import type { GeneratedQuestion, ProfileMatch, QuestionsResult, QuestionAudience } from '@/lib/fdd-questions-engine';
+import GenerationProgress from '@/components/ui/GenerationProgress';
+
+const FDD_QUESTIONS_STEPS = [
+  'Mapping FDD red flags to due-diligence questions…',
+  'Matching questions to your investor profile…',
+  'Drafting bespoke follow-ups…',
+];
 
 // ============================================================================
 // Helpers
@@ -218,15 +225,14 @@ export default function FddQuestionsPage() {
   if (loading || running) {
     return (
       <main className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
-        <div className="text-center max-w-xs">
-          <div className="w-10 h-10 border-2 border-[#C9A84C]/30 border-t-[#C9A84C] rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-white/40 text-sm">
-            {running ? 'Generating your due diligence questions...' : 'Loading...'}
-          </p>
-          {running && (
-            <p className="text-white/25 text-xs mt-2 leading-relaxed">
-              Mapping FDD flags → targeted questions + LLM bespoke analysis — 15–25 seconds
-            </p>
+        <div className="text-center w-full max-w-sm px-6">
+          {running ? (
+            <GenerationProgress isActive={running} estimatedSeconds={20} steps={FDD_QUESTIONS_STEPS} showEstimate />
+          ) : (
+            <>
+              <div className="w-10 h-10 border-2 border-[#C9A84C]/30 border-t-[#C9A84C] rounded-full animate-spin mx-auto mb-4" />
+              <p className="text-white/40 text-sm">Loading...</p>
+            </>
           )}
         </div>
       </main>
