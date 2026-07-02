@@ -1,6 +1,104 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** July 2, 2026 — Session 102 cont. pt.3: Sprint F-P COMPLETE — Partnership Document Engine built. 6 Investor 2 document types, Partner 2 intake, generation pipeline injection. Build clean 175 pages. ⚠️ $2,495 tier can now be sold.
+**Last Updated:** July 1, 2026 — Session 104: Full-app stitching audit + all 5 fixes implemented. Root cause of "everything randomly breaks" found and fixed: four conflicting "which application is THE application" rules across surfaces. New shared resolver (`src/lib/resolve-application.ts`) adopted in ~35 files. Also fixed: Q0-10 ties answer leaking into business category, consent banner overlapping page titles, /market-analysis dead end, verify-payment Redis cache race.
+
+---
+
+## Session 104 — Stitching Audit + 5-Part Fix (July 1, 2026)
+
+**Branch:** dev. **Build:** ✅ `tsc --noEmit` clean + `npm run build` clean (167 pages). Not yet committed.
+
+### Audit (first half of session)
+
+Owner request: "go through the whole app… confirm without a shadow of a doubt… the app needs to be stitched together so I can present it to a customer." Full route inventory (97 pages, 103 API routes), link check (0 dead links), data-flow trace, and live click-through with the UK test account. Result: 0 dead links, 0 console errors, all golden-path pages render — but **the simulator was interviewing against a different application (`dbe64922`) than every other surface (`a6fb9144`)** for the same user. Proven live.
+
+**Root cause:** four different rules for picking the user's primary application row:
+1. Latest created (~40 call sites)
+2. Most answers wins (`simulator/page.tsx`)
+3. Standalone-first (`simulator/case-file`, `SimulatorNav`)
+4. First non-standalone in unspecified order (`prep-kit`)
+
+Any user with >1 application row (quiz + simulator quick-start, re-signup, partner flows) gets different data on different pages — this is why "every time I change something, something else breaks."
+
+### Fix 1 — Canonical application resolver (the big one)
+
+New `src/lib/resolve-application.ts` — one rule everywhere: prefer non-standalone rows; within that pool prefer `payment_status='paid'`; latest `created_at` wins. Identical behavior for single-application customers.
+
+- `rankApplications(rows)` — pure ranking (used where the caller already has the rows, e.g. prep-kit)
+- `resolvePrimaryApplicationId(supabase, userId)` — id only
+- `resolvePrimaryApplication<T>(supabase, userId, select)` — full row with custom select
+
+**Migrated (~35 files):** all Module 3 section pages (a–f, i–k) + story/business/investment/qualifications/family/ties/upload/module4, `simulator/page.tsx` (replaced 38-line most-answers block), `simulator/case-file`, `SimulatorNav`, `simulator/interview-day`, `prep-kit` (POST+GET), `section-nudge`, `gap-analysis/page.tsx`, `DocumentImportHub`, `section-completion`, `api/market-analysis`, all 4 FDD routes (`writeback`, `score`, `questions`, `report`), `fdd/compare`, `franchise/matches`, `franchise/connect`, `franchise/discover`, `broker-request`.
+
+**Deliberately NOT changed:** `dashboard/case-profile` route (already paid-first non-standalone — equivalent), `renewal/intake` (deliberate paid-only filter), `simulator/quick-start` (intentionally targets standalone rows), checkout/pricing/admin/middleware (payment logic, not case selection).
+
+### Fixes 2–5
+
+| # | Fix | File(s) |
+|---|-----|---------|
+| 2 | Q0-10 (home-ties quiz answer) no longer used as businessCategory fallback — simulator questions no longer themed around e.g. "property in the UK" as a business | `src/lib/simulator-engine.ts` |
+| 3 | Outcomes consent banner moved out of the fixed nav header (it was growing the header over page titles on every page). Now a fixed bottom-of-viewport bar, opaque bg, z-60 | `Nav.tsx`, `OutcomesConsentBanner.tsx` |
+| 4 | `/market-analysis` dead end fixed — new `layout.tsx` mounts global Nav (same pattern as /fdd, /gap-analysis), page gets `pt-16` | `src/app/market-analysis/layout.tsx` (new), `page.tsx` |
+| 5 | `verify-payment` now deletes `mw:access:{userId}` Redis cache after marking paid (mirrors webhook) — kills the up-to-30-min post-payment lockout race when the webhook is slow | `api/stripe/verify-payment/route.ts` |
+
+### Live verification (UK test account)
+
+- `/simulator/case-file` now shows **REF. A6FB9144** — same application as case-profile/documents/gap-analysis. Cross-surface agreement confirmed live.
+- Consent banner pinned to viewport bottom (`position:fixed; bottom:0`), page titles clear.
+- `/market-analysis` renders with full global nav, h1 clears the header.
+- 0 console errors across checked pages.
+
+---
+
+## Session 103 — Document Extraction Transparency + Interview Prep/Simulator Audit (July 2, 2026)
+
+**Branch:** dev. **Build:** ✅ `tsc --noEmit` clean. Not yet committed.
+
+### Completed — Document Extraction Transparency Panel
+
+Owner request: "When the client uploads the document, tell them what we've been able to extract on the case profile page... that we will be using them in these areas. That's a confidence building measure. You just don't hide that information."
+
+| Item | Status | Detail |
+|------|--------|--------|
+| `/api/dashboard/case-profile` returns `documents[]` | ✅ DONE | Added a third parallel query (alongside existing QMA/case_theory queries) to `uploaded_documents` — id, file_name, doc_type, extraction_status, fields_total, created_at. New exported `DocumentExtractionUI` interface. |
+| `docTypeLabel()` exported from `DocumentImportHub.tsx` | ✅ DONE | Reused in the new panel instead of duplicating the 12-entry doc-type label map. |
+| `ExtractionTransparencyPanel` component | ✅ DONE | `CaseProfilePage.tsx` — renders immediately after the upload widget. Per-document card: filename, type label, status badge, "N data points extracted" when complete. "Where This Data Goes" 4-item grid: Case Strategy, Document Generation, Gap & Denial-Risk Analysis, Interview Simulator. Footer: "Each document is parsed once. You never need to re-upload the same document for a different part of your case." Returns `null` when the client has no documents yet (no empty-state box). |
+
+Verified visually in-browser (fetch-patched injected document data covering complete + processing states) — matches Obsidian Gold system, all copy renders correctly.
+
+### Audit finding — Interview Prep Kit + Interview Simulator NOT fully connected to document extraction
+
+Owner asked to confirm whether uploaded/extracted document data actually feeds interview prep material and the interview simulator. **Confirmed: both have real gaps**, traced file:line via a research agent.
+
+| Surface | Reads `uploaded_documents`? | Reads `case_theory`? | Uses legacy `application_documents`? |
+|---|---|---|---|
+| Prep Kit dossier — `src/app/api/simulator/prep-kit/route.ts` | No (indirect, via case_theory chain) | Partial — only `dimension_verdicts`/`directives`, NOT `narrative`/`numbers_strategy` | No |
+| Simulator question gen — `src/lib/simulator-engine.ts` | No | No | No |
+| Simulator live evaluation — `src/app/api/simulator/evaluate/route.ts` | No | No | **Yes** (line ~85) |
+| Simulator case-summary — `src/app/api/simulator/case-summary/route.ts` | No | No | **Yes**, incl. legacy `fields_extracted` column (line ~89) |
+| Simulator post-session brief — `src/app/api/simulator/interview-prep/route.ts` | No | No | **Yes** (line ~231, prompt block `DOCUMENTS ON FILE:`) |
+
+Root cause: current uploads go through `/api/apply/parse-document` → `uploaded_documents`. The three simulator surfaces above were built against the OLDER `application_documents` pipeline and were never migrated when the current pipeline replaced it — so any document a client uploads today through the live upload flow is **invisible to the interview simulator** unless its extracted fields were separately applied to the `answers` table. This narrows the Session 94 "RESOLVED — case_theory wired into all engines via CIC-2" claim in `docs/FEATURE_INVENTORY.html`: true for the prep-kit dossier's abstracted verdict layer, but the interview simulator itself was never actually connected.
+
+**Not yet fixed — recommended next steps:**
+1. Repoint `evaluate/route.ts`, `case-summary/route.ts`, `interview-prep/route.ts` from `application_documents` → `uploaded_documents`.
+2. Add `case_theory` (full row incl. `narrative`/`numbers_strategy`) to `simulator-engine.ts`'s `buildSimulatorContext()` and the interview-prep-brief prompt.
+3. Widen prep-kit's `case_theory` select to include `narrative`/`numbers_strategy` so raw document facts reach the prompt, not just abstracted verdict labels.
+
+Related, still-open background task: `task_9c293ff5` (two disconnected document-upload pipelines) — this finding is a direct downstream consequence of that same split.
+
+### 3-part fix — ✅ IMPLEMENTED (same session)
+
+| Item | Status | Detail |
+|---|---|---|
+| New `src/lib/uploaded-doc-labels.ts` | ✅ DONE | `uploadedDocTypeLabel()` — labels for the current 11-value `uploaded_documents.doc_type` taxonomy (replaces the legacy 8-value `application_documents` set). `summarizeExtractedJson()` — derives a short human-readable line from `extracted_json` since `uploaded_documents` has no `document_summary` column. |
+| Part 1 — repoint to `uploaded_documents` | ✅ DONE | `evaluate/route.ts` (doc evidence for live answer grounding), `case-summary/route.ts` (`documents[]` on the case-file review screen), `interview-prep/route.ts` (`DOCUMENTS ON FILE:` prompt block + `docRows` fed into `scoreCase()`, mapped to the legacy `DocumentRow` shape `gap-analysis-engine.ts`'s `hasDoc()` still expects). |
+| Part 2 — `case_theory` into `simulator-engine.ts` | ✅ DONE | `buildSimulatorContext()` now fetches `case_theory.narrative` + `numbers_strategy`; new `SimulatorContext.caseTheoryNarrative` / `caseTheoryNumbersStrategy` fields (`src/types/simulator.ts`). Also wired into the live-evaluation prompt in `evaluate/route.ts` (not just the interview-prep-brief prompt) so answers are judged against the CPU's actual narrative, not just abstracted scores. `interview-prep/route.ts` also gained its own `case_theory` fetch + prompt block. |
+| Part 3 — widen prep-kit's `case_theory` select | ✅ DONE | `prep-kit/route.ts` select widened from `dimension_verdicts, directives` to include `narrative, numbers_strategy`; both added to `caseContext` and referenced by name in the LLM instructions for section2 (strengths) and section5 (investment numbers). |
+
+**Build:** ✅ clean — `tsc --noEmit` + `npm run build` (167 pages). Not yet committed.
+
+**Known limitation carried forward, not in scope for this fix:** `gap-analysis-engine.ts`'s `DocumentRow`/`hasDoc()` still key off `detected_document_type` substrings tuned for the legacy doc-type vocabulary (e.g. `'bank'`, `'wire'`, `'article'`, `'operating agreement'`). The new `uploaded_documents.doc_type` values are mapped in for the same substring matching, but some legacy tokens (`bank`, `wire`, `article`, `formation`) have no clean equivalent in the new 11-value taxonomy, so a few `hasDoc()` checks in the gap engine will under-detect until that taxonomy is reconciled. Separate task from this fix.
 
 ---
 
