@@ -38,6 +38,7 @@ import { callLLM } from './llm-client';
 import { retrieveDoctrine, formatDoctrineForPrompt, type DoctrineChunk } from './doctrine-retrieval';
 import type { Dimension } from './document-comprehension-engine';
 import { computeFundSourceRiskProfile, computeDesperationRatio } from './cpu-risk-signals';
+import { computePriorRefusalModifier } from './cpu-case-modifiers';
 
 const DIMENSIONS: Dimension[] = [
   'identity', 'source_of_funds', 'investment', 'business',
@@ -212,6 +213,19 @@ export async function assembleCaseModel(applicationId: string, userId: string): 
         fact: 'desperation_ratio',
         value: `${Math.round(desperation.ratio * 100)}% of net worth invested (${desperation.tier})`,
         source: 'answer', sourceRef: 'cpu-risk-signals:D7', confidence: 'high',
+      });
+    }
+
+    // CPU 4E — D20 prior-refusal global modifier (cpu-case-modifiers.ts). Pushed
+    // to 'background' as a Case Model fact; REASON_SYSTEM/reasonPrompt() below
+    // turn a non-'none' tier into a binding case-wide instruction rather than
+    // leaving it as a Cover Letter footnote.
+    const refusalModifier = computePriorRefusalModifier(answersMap);
+    if (refusalModifier.tier !== 'none') {
+      push(dims, 'background', {
+        fact: 'prior_refusal_modifier',
+        value: refusalModifier.directive ?? `Unrecognized prior-refusal value: ${refusalModifier.raw}`,
+        source: 'answer', sourceRef: 'cpu-case-modifiers:D20', confidence: refusalModifier.tier === 'unknown' ? 'low' : 'high',
       });
     }
   }
@@ -390,6 +404,14 @@ HARD BOUNDARIES (non-negotiable):
 - Every dimension verdict and every strategic claim must be traceable to either a Case Model fact (cite its source/sourceRef) or a retrieved KB doctrine chunk (cite its [KB:source_file] tag). If no KB chunks were retrieved for a topic, say so plainly rather than asserting a legal standard you cannot cite — do not invent doctrine.
 - "missing" and "contradicted" are first-class, honest statuses. Surface what the case LACKS, not just what it has.
 - Gap-fill suggestions must be things a real applicant could actually go obtain or clarify — never a workaround that misrepresents facts.
+
+CPU INTELLIGENCE PACK — CASE-WIDE MODIFIERS (WS4, non-negotiable framing rules):
+- TWO-MINUTE RULE (D1): a real E-2 consular interview runs roughly two minutes. Every narrative and every "foregroundBecause" you write must be usable as something a nervous applicant could say out loud in under 20 seconds. If a strategic point cannot survive being said aloud that fast, it is not front-line material — push it into supporting-document detail instead of the narrative or numbersStrategy foreground text.
+- DISQUALIFICATION-FIRST FRAMING (D2): before building the affirmative case for any dimension, check whether a categorical denial risk applies to it (source-of-funds unlawful-source risk, non-treaty nationality, marginality, non-real/active enterprise, no develop-and-direct control). Where a Case Model fact carries a sourceRef tagged with a denial-code (D-code) pattern, treat rebutting THAT specific denial ground as the dimension's primary job, not a secondary note.
+- PRIOR-REFUSAL GLOBAL MODIFIER (D20): if any Case Model fact has sourceRef "cpu-case-modifiers:D20", its value is a BINDING instruction that applies to the entire Case Theory, not a background-dimension footnote — it must visibly shape the narrative and tighten every dimension verdict's evidence bar, exactly as that fact's text directs.
+- WHY-TRIANGLE (D17): the narrative must independently answer three separate questions — why THIS applicant, why THIS business, why NOW — and should not let a strong answer to one silently stand in for the other two.
+- SOCIAL-MEDIA / DIGITAL-FOOTPRINT CONSISTENCY (D19): where the Case Model contains any fact about the applicant's professional online presence (LinkedIn, company website, prior employer bios), the narrative and transferableSkills framing must be consistent with what a consular officer could independently find online — never assert a professional identity the digital record would contradict.
+- FRONT-LOAD BY REFUSAL PROBABILITY (D21): order dimensionVerdicts and numbersStrategy so the dimension carrying the highest denial risk (per the disqualification-first check above) is addressed first and most thoroughly, not last or thinnest.
 
 Reply with ONE valid JSON object only — no markdown fences, no prose outside the JSON.`;
 
