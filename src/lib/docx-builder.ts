@@ -12,8 +12,8 @@
  *  - H1: Bold, 12pt, ALL CAPS, underlined
  *  - H2: Bold, 12pt, title case
  *  - H3: Bold italic, 12pt
- *  - Header: Two-column — name left, "E-2 Treaty Investor Visa" right, thin rule
- *  - Footer: Name + Tab letter left, Page N right, thin rule
+ *  - Header: Two-column — name left, document title right, thin rule
+ *  - Footer: Name + Tab letter left, "Page N of M" right, thin rule
  *  - [bracket] placeholders highlighted yellow
  *  - No e2go branding, no AI metadata
  */
@@ -48,6 +48,31 @@ export const BRACKET_PLACEHOLDER_REGEX = /\[[^\[\]]+\]/g;
 
 /** Document type → Tab letter mapping for footers (imported from shared module) */
 import { DOC_TYPE_TAB_MAP } from '@/lib/docx-package-constants';
+/** Document type → human-readable title, for the page header (WS3.5) */
+import { DOCUMENT_TYPE_LABELS } from '@/types/generation';
+
+/** Document types whose truthfulness attestation must carry the exact 28 U.S.C. §1746 formula. */
+const DECLARATION_DOC_TYPES = new Set(['declaration_principal', 'declaration_spouse', 'declaration_p2']);
+/** The exact statutory formula — 28 U.S.C. §1746 unsworn declaration language. */
+const STATUTORY_DECLARATION_FORMULA =
+  'I declare under penalty of perjury under the laws of the United States of America ' +
+  'that the foregoing is true and correct. Executed on [date] at [place].';
+/** Matches the model's perjury paragraph, from its opening phrase to the next paragraph break. */
+const PERJURY_PARAGRAPH_REGEX = /I declare under penalty of perjury[\s\S]*?(?=\n\s*\n|$)/;
+
+/**
+ * WS3.5 (A8) — §1746 requires exact statutory wording; the model's paraphrase
+ * ("...to the best of my knowledge and belief...") does not satisfy it.
+ * Overwrite whatever perjury paragraph the model produced with the fixed
+ * formula rather than leaving compliance to the model's phrasing.
+ */
+function enforceStatutoryDeclaration(contentText: string, documentType: string): string {
+  if (!DECLARATION_DOC_TYPES.has(documentType)) return contentText;
+  if (PERJURY_PARAGRAPH_REGEX.test(contentText)) {
+    return contentText.replace(PERJURY_PARAGRAPH_REGEX, STATUTORY_DECLARATION_FORMULA);
+  }
+  return `${contentText.trimEnd()}\n\n${STATUTORY_DECLARATION_FORMULA}`;
+}
 
 interface DocxBuilderOptions {
   contentText: string;
@@ -197,6 +222,7 @@ function createWordTable(header: string[], data: string[][]): Table {
 
   const headerRow = new TableRow({
     tableHeader: true,
+    cantSplit: true,
     children: header.map(
       (cell) =>
         new TableCell({
@@ -222,6 +248,7 @@ function createWordTable(header: string[], data: string[][]): Table {
   const dataRows = data.map(
     (row) =>
       new TableRow({
+        cantSplit: true,
         children: row.map(
           (cell) =>
             new TableCell({
@@ -253,7 +280,8 @@ function createWordTable(header: string[], data: string[][]): Table {
  * Build a formatted Document from content_text.
  */
 export function buildDocument(options: DocxBuilderOptions): Document {
-  const { contentText, documentType, lastName } = options;
+  const { documentType, lastName } = options;
+  const contentText = enforceStatutoryDeclaration(options.contentText, documentType);
   const parsedLines = parseContentLines(contentText);
 
   // Cover letter uses business letter format; all others use formal legal format
@@ -264,6 +292,7 @@ export function buildDocument(options: DocxBuilderOptions): Document {
 
   const tabLetter = DOC_TYPE_TAB_MAP[documentType] || '';
   const tabLabel = tabLetter ? `Tab ${tabLetter}` : '';
+  const documentTitle = DOCUMENT_TYPE_LABELS[documentType as keyof typeof DOCUMENT_TYPE_LABELS] || 'E-2 Treaty Investor Visa';
 
   const children: (Paragraph | Table)[] = [];
 
@@ -432,7 +461,7 @@ export function buildDocument(options: DocxBuilderOptions): Document {
                     size: 20,
                   }),
                   new TextRun({
-                    text: 'E-2 Treaty Investor Visa',
+                    text: documentTitle,
                     font: 'Century Schoolbook',
                     size: 20, // 10pt
                   }),
@@ -497,6 +526,16 @@ export function buildDocument(options: DocxBuilderOptions): Document {
                   }),
                   new TextRun({
                     children: [PageNumber.CURRENT],
+                    font: 'Century Schoolbook',
+                    size: 20,
+                  }),
+                  new TextRun({
+                    text: ' of ',
+                    font: 'Century Schoolbook',
+                    size: 20,
+                  }),
+                  new TextRun({
+                    children: [PageNumber.TOTAL_PAGES],
                     font: 'Century Schoolbook',
                     size: 20,
                   }),
