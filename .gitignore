@@ -68,3 +68,8 @@ scripts/verify-session18.mjs
 
 # supabase local temp
 supabase/.temp/
+
+# real client test documents — local testing only, never commit
+docs/Anupama/
+docs/AssistingHands Documents/
+docs/Assisting Hands Home Care*.pdf
