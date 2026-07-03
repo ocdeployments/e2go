@@ -1,6 +1,21 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** July 3, 2026 — Session 119p: **Document pipeline read-side merge — gap report + case summary.** Two live document-upload pipelines (`uploaded_documents` / Pipeline A and `application_documents` / Pipeline B) both write real data, but `case-summary/route.ts` and `gap-report/route.ts` each read from only one — documents uploaded through the other pipeline silently vanished from those screens. Both routes now query both tables in parallel and merge results into `extractions`/`documentSummaries`. Write-path unification and `document_discrepancies` parity for Pipeline A intentionally left out of scope (owner's explicit call). Build clean, `tsc --noEmit` clean, 146/146 tests. Commit `bf69088`.
+**Last Updated:** July 3, 2026 — Session 119q: **WS6.1 DS-156E→DS-160 merge.** The dead `ds156e_guide.md` had real business/investment-field content (entity/EIN/NAICS, investment classification, ownership table, prior E-visa history) that was never reachable — no code path generated it. Merged into the live `ds160_reference.md` as a new PART 1, ahead of the existing DS-160 completion guide; wired explicit `M3-SEC-*` five-category security-question reflection (was generic "answer accurately"); added a PART 3 consistency checklist. Dead file deleted. Build clean, `tsc --noEmit` clean, 146/146 tests. Commit `bcec10a`.
+
+---
+
+## Session 119q — WS6.1: DS-156E→DS-160 merge (July 3, 2026)
+
+**Branch:** dev. Build clean, `tsc --noEmit` clean, 146/146 tests pass. Prompt-file-only change — no TypeScript/code touched, no new UI surface.
+
+**Context:** WS6.1 (spec §10) table row 3: `ds156e_guide.md` was a complete 307-line template covering DS-156E-specific business/investment fields (entity details, investment classification and amount, ownership table with functional-domain cross-reference, prior E-visa/treaty-investor history) but no code path ever generated it — it was dead weight sitting in the prompts directory. The live `ds160_reference.md` (actually generated for every applicant) only covered general DS-160 completion guidance and had no business/investment section at all, and its Security Background section (Section X) gave generic "answer each question accurately" instructions instead of reflecting the applicant's actual `M3-SEC-*` answers.
+
+**Built:**
+- `prompts/v1/documents/ds160_reference.md` — restructured into three parts: PART 1 (new) — DS-156E business/investment details merged in from the dead file (entity name/state/EIN/NAICS/address; investment classification/amount/date/percentage/role/compensation; ownership table with partner functional-domain cross-reference to the Org Chart exhibit; prior E-visa/treaty-investor history with a PIMS-misrepresentation warning); PART 2 — the existing DS-160 completion guide (Sections I–X), with Section X rewritten to explicitly walk each `M3-SEC-*` category (Health H-01–03, Criminal C-01–02, Moral M-01–03, Immigration I-01–03, Severe/Security S-01–05) with paired `-EXPLAIN` text and a `[CONFIRM WITH APPLICANT: ...]` flag for missing answers — explicitly instructed not to infer "No" by default; PART 3 (new) — a consistency checklist table cross-referencing investment amount, LLC name, EIN, business address, principal name/DOB/passport number, employer history, and prior denials against their source tabs.
+- `prompts/v1/documents/ds156e_guide.md` — deleted. Confirmed via grep that no code (`src/`) or prompt content referenced the filename (only unrelated UI checklist item IDs literally named `'ds156e'` exist in `module3/b/page.tsx`, `document-checklist.ts`, `checklist-generator.ts` — unaffected).
+- Header/metadata updated: title → "DS-156E / DS-160 Reference Generation Prompt"; Tab Reference → "Tab B (also covers Tab D-04/D-05 business/investment fields)"; new "WHAT THIS DOCUMENT IS" section distinguishing DS-156E (principal only) from DS-160 (every applicant); page estimate changed from "Under 5 pages" to "3–6 pages depending on family size."
+
+**Next:** 3 new documents (Org Chart/Management Structure Exhibit, Corporate Documents Guide, Lease/Premises Summary — none exist yet), then WS6.2 per-template upgrades (~12 templates). Then WS8 golden-case verification loop.
 
 ---
 
