@@ -14,6 +14,7 @@
 
 import { callLLM } from './llm-client';
 import type { DocumentType } from '@/types/generation';
+import { getSectionContract } from './section-contract-parser';
 
 export interface DirectiveCheck {
   directive: string;
@@ -92,58 +93,13 @@ const TONE_TARGETS: Partial<Record<DocumentType, string>> = {
   marginality_rebuttal:  'persuasive legal memorandum — data-heavy, forward-looking, rebuttal framing',
 };
 
-// ── CIC-P.3: Section structural contracts ────────────────────────────────────
-// Each entry defines: required sections in order, what each MUST establish,
-// and what it must NOT re-state from a prior section (no cross-section repetition).
-// Argument density rule: every body paragraph must carry a qualifying fact,
-// rebut a denial risk, or introduce evidence — no filler paragraphs.
-
-interface SectionContract {
-  name: string;       // section heading or descriptor
-  establishes: string;
-  mustNotRepeat?: string; // what belongs in a prior section and must not appear here
-}
-
-const DOC_SECTION_CONTRACTS: Partial<Record<DocumentType, SectionContract[]>> = {
-  cover_letter: [
-    { name: 'Opening / Treaty Basis',       establishes: 'applicant nationality, treaty country, E-2 category, and consulate', mustNotRepeat: undefined },
-    { name: 'Investment',                   establishes: 'total investment amount, at-risk nature, irrevocability, and source summary', mustNotRepeat: 'nationality or treaty basis' },
-    { name: 'Source of Funds',              establishes: 'lawful origin of every fund tranche and chain of title to U.S.', mustNotRepeat: 'investment amount (stated once above)' },
-    { name: 'Substantiality',               establishes: 'investment is substantial relative to total cost of the enterprise', mustNotRepeat: 'source of funds narrative' },
-    { name: 'Non-Marginality',              establishes: 'business will generate more than enough to support applicant; jobs created or projected', mustNotRepeat: 'raw investment figure (reference only)' },
-    { name: 'Active Management / Direction', establishes: 'applicant controls or directs the enterprise; operational role defined', mustNotRepeat: 'non-marginality job numbers' },
-    { name: 'Investor Qualifications',      establishes: 'transferable skills and expertise that make the applicant qualified to run this specific business', mustNotRepeat: 'management role description (no re-statement of title)' },
-    { name: 'Conclusion / Relief Sought',   establishes: 'specific visa category requested, duration, and accompanying dependents if any', mustNotRepeat: 'any substantive argument (conclusion only)' },
-  ],
-  business_plan: [
-    { name: 'Executive Summary',            establishes: 'business concept, investment amount, job creation summary, and treaty nationality', mustNotRepeat: undefined },
-    { name: 'Business Description',         establishes: 'products/services, business model, target market, competitive advantage', mustNotRepeat: 'investment figures (covered in Executive Summary)' },
-    { name: 'Market Analysis',              establishes: 'market size, demand data, competitive landscape, location rationale', mustNotRepeat: 'business concept (stated in Executive Summary)' },
-    { name: 'Operations Plan',              establishes: 'day-to-day operations, staffing, suppliers, premises, technology', mustNotRepeat: 'market data (that is Market Analysis territory)' },
-    { name: 'Management & Organization',    establishes: 'org chart, applicant role and title, key personnel, management hierarchy', mustNotRepeat: 'operations plan detail' },
-    { name: 'Financial Projections',        establishes: '3-5 year P&L, revenue assumptions, staffing milestones, job creation timeline', mustNotRepeat: 'investment amount (reference only — fully established in Executive Summary)' },
-    { name: 'Investment Plan',              establishes: 'use of proceeds, evidence funds are committed, timeline of expenditure', mustNotRepeat: 'revenue projections (those belong in Financial Projections)' },
-  ],
-  source_of_funds: [
-    { name: 'Introduction',                 establishes: 'total investment amount and that funds originate from lawful sources', mustNotRepeat: undefined },
-    { name: 'Source Narrative (per tranche)', establishes: 'each fund source with date, amount, origin event (sale / salary / savings / inheritance), documentation reference', mustNotRepeat: 'introduction totals (tranche detail only)' },
-    { name: 'Fund Transfer Chronology',     establishes: 'each wire or transfer from origin account to U.S. business account with dates and reference numbers', mustNotRepeat: 'source event narrative (that belongs above)' },
-    { name: 'Current Status',               establishes: 'funds are currently invested / committed / at risk in the U.S. enterprise', mustNotRepeat: 'origin story (already established)' },
-  ],
-  qualifications: [
-    { name: 'Professional Summary',         establishes: 'years of experience, industry, and relevance to the E-2 business', mustNotRepeat: undefined },
-    { name: 'Career History',               establishes: 'chronological roles with specific achievements demonstrating management and operational skills', mustNotRepeat: 'professional summary (no re-stating of the headline)' },
-    { name: 'Transferable Skills',          establishes: 'direct mapping of past skills and experience to the specific requirements of the U.S. enterprise', mustNotRepeat: 'career history titles (reference only)' },
-    { name: 'Education & Credentials',      establishes: 'formal qualifications, certifications, or training relevant to the business', mustNotRepeat: 'career history (education is its own section)' },
-  ],
-  marginality_rebuttal: [
-    { name: 'The Non-Marginality Standard', establishes: 'legal standard: business must generate income significantly beyond a living for the investor and family', mustNotRepeat: undefined },
-    { name: 'Job Creation Evidence',        establishes: 'current or projected U.S. worker jobs with timeline and job descriptions', mustNotRepeat: 'legal standard definition' },
-    { name: 'Revenue Projections',          establishes: 'year-by-year revenue and profit demonstrating the enterprise is not marginal', mustNotRepeat: 'job numbers (already stated)' },
-    { name: 'Community / Economic Impact',  establishes: 'taxes, local economic contribution, multiplier effects if applicable', mustNotRepeat: 'raw revenue figures' },
-    { name: 'Rebuttal Conclusion',          establishes: 'the business satisfies the non-marginality standard; request for approval', mustNotRepeat: 'any substantive argument (conclusion only)' },
-  ],
-};
+// ── CIC-P.3 / WS3.4: Section structural contracts ────────────────────────────
+// Required sections in order and what each MUST establish, parsed live from
+// each document's generation template (the single source of truth) via
+// getSectionContract() — see section-contract-parser.ts. This can never
+// drift from the templates because it isn't a separate hand-maintained copy.
+// Argument density rule (checked separately below): every body paragraph
+// must carry a qualifying fact, rebut a denial risk, or introduce evidence.
 
 const VERIFIER_SYSTEM = `You are a strict quality auditor for E-2 visa application documents.
 Your job is to verify whether a generated document followed its Case Theory directives exactly,
@@ -179,13 +135,13 @@ function buildVerifierPrompt(
     .filter(d => verdicts[d]?.status === 'contradicted')
     .map(d => d.toUpperCase());
 
-  // CIC-P.3: section structural contract for this document type
-  const sectionContracts = DOC_SECTION_CONTRACTS[documentType];
+  // CIC-P.3 / WS3.4: section structural contract, parsed live from the template
+  const sectionContracts = getSectionContract(documentType);
   const sectionContractBlock = sectionContracts
     ? [
         'REQUIRED SECTIONS IN ORDER (structural contract):',
         sectionContracts.map((s, i) =>
-          `  ${i + 1}. ${s.name}\n     MUST establish: ${s.establishes}${s.mustNotRepeat ? `\n     MUST NOT repeat: ${s.mustNotRepeat}` : ''}`
+          `  ${i + 1}. ${s.name}\n     MUST establish: ${s.establishes}`
         ).join('\n'),
         '',
         'ARGUMENT DENSITY RULE: Every body paragraph must carry at least one of:',
