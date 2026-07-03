@@ -1,6 +1,32 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** July 3, 2026 — Session 119f: **WS7 Coaching Report fixed.** Per owner instruction to prioritize WS4/7/8: WS4 closed out (Session 119), FDD Comparison (119b), Renewal Package (119c), Gap Analysis partnership fix (119d), Interview Prep Kit (119e), now Coaching Report (spec-scored 7.5) extends trend analysis from 2 to 5 prior sessions and adds the "Print / Save as PDF" export it was previously missing; confirmed LLM-failure surfacing was already fixed. Next: continue WS7's remaining analyses (FDD Final Report, FDD Extraction, FDD E-2 Scoring, FDD Questions, Territory/Market Analysis), then WS8 golden-case verification.
+**Last Updated:** July 3, 2026 — Session 119g: **WS7 FDD Final Report fixed; owner flagged WS6 must not be skipped.** Per owner instruction to prioritize WS4/7/8 (now explicitly including WS6): WS4 closed out (Session 119), FDD Comparison (119b), Renewal Package (119c), Gap Analysis partnership fix (119d), Interview Prep Kit (119e), Coaching Report (119f), now FDD Final Report (spec-scored 7.0) constrains the E-2 Deep-Dive's verdicts to the deterministic scoring engine (LLM elaborates, never re-adjudicates), strips fabricated FRANdata/IFA statistics from the analyst prompts, and collapses the duplicate platform-writeback logic into `src/lib/fdd-writeback.ts`. Next: remaining WS7 analyses, then WS6 (missing documents + per-template upgrades — untouched except the 116b substantiality fix), then WS8 golden-case verification.
+
+---
+
+## Session 119g — WS7: FDD Final Report — verdict integrity, stat fabrication, duplicate writeback (July 3, 2026)
+
+**Branch:** dev. Build clean, `tsc --noEmit` clean, 135/135 tests pass (no new tests — prompt-content and route-consolidation changes, no new scoring logic to unit-test).
+
+### Context
+Spec-scored 7.0, four listed fixes. Verified each against current code before writing anything:
+1. Category-keyed royalty benchmarks — **already fixed** (`ROYALTY_BENCHMARK_BY_CATEGORY` in `fdd-report-engine.ts`). No action.
+2. Constrain the E-2 Deep-Dive's verdicts to the deterministic scoring engine — **genuine gap**. `generateE2DeepDive()` fed the scoring engine's results into the prompt as context but let the LLM independently produce its own PASS/WARN/FAIL verdicts and overall verdict, with nothing validating agreement.
+3. Verify-and-footnote or strip the FRANdata/IFA statistics — **genuine gap**. Specific invented-looking figures ("22% higher closure rates," "35% higher probability of complete system collapse," "3x more likely") were baked into prompts, attributed to named research organizations, with no citation mechanism anywhere in the schema.
+4. Collapse the duplicate writeback into one shared module — **genuine gap**. `writePlatformIntegration()` (`api/fdd/report/route.ts`) and `deriveAnswerKeys()`/`buildPreview()` (`api/fdd/writeback/route.ts`) independently built and maintained the same ~20-key answer list.
+
+### Built
+- **`fdd-report-engine.ts`**:
+  - `generateE2DeepDive()` now overwrites the LLM's `overall_verdict` and all four per-dimension `verdict` fields with the deterministic `ScoringResult` after parsing — the LLM's narrative fields (regulatory basis, what the officer looks for, documentation required) are kept, but verdicts are never LLM-owned. Added `dimensionResultToVerdict()` mapping `'unknown' → 'WARN'` (never `'PASS'` — absence of a fail signal isn't evidence of a pass).
+  - Stripped every FRANdata/IFA-attributed statistic with an invented-looking precise figure (closure-rate %, collapse-probability %, validation-quality multiplier, Item 19 underperformance range) from the legal-risk, financial-performance, and system-health prompts. Replaced with the same qualitative reasoning, unattributed, with an explicit instruction not to cite a study or statistic the model wasn't given. Also hardened the shared `ANALYST_SYSTEM` prompt with an explicit "never invent a statistic, study finding, or named-source citation" instruction.
+- **`src/lib/fdd-writeback.ts`** (new) — `deriveFddAnswerKeys()`, `writeFddAnswerKeys()`, `buildFddWritebackPreview()`, extracted from the richer of the two duplicates (`writeback/route.ts`'s labeled/grouped version, since `report/route.ts`'s was a strict subset with no labels).
+- **`api/fdd/report/route.ts`** and **`api/fdd/writeback/route.ts`** — both now call the shared lib; no behavior change for either route's response shape.
+
+### Next
+WS7 remaining: FDD Extraction (7.0), FDD E-2 Scoring (7.0), FDD Questions (6.5), Territory/Market Analysis (6.5/6.0), Renewal Package (5.5), FDD Comparison (4.0 — already improved in 119b). Then WS6 (missing documents + per-template upgrades, flagged by owner as not to be skipped — WS6.2 substantiality fix already done in 116b, rest untouched: 3 dead templates to wire, 3 new documents to build, ~12 per-template upgrades). Then WS8 golden-case verification.
+
+### Dev server
+Not started this session — prompt content and server-side route consolidation only, no browser-observable change.
 
 ---
 
