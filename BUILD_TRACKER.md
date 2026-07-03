@@ -1,6 +1,36 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** July 3, 2026 — Session 119d: **WS7 Gap Analysis partnership blind spot fixed.** Per owner instruction to prioritize WS4/7/8: WS4 closed out (Session 119), FDD Comparison verdict shipped (Session 119b), Renewal Package reconciliation shipped (Session 119c), now Gap Analysis (the WS7 "crown jewel," spec-scored 8.5) no longer scores partnership cases as if Investor 2 doesn't exist. Next: continue WS7's remaining analyses, then WS8 golden-case verification.
+**Last Updated:** July 3, 2026 — Session 119e: **WS7 Interview Prep Kit's four unwired sources fixed.** Per owner instruction to prioritize WS4/7/8: WS4 closed out (Session 119), FDD Comparison (119b), Renewal Package (119c), Gap Analysis partnership fix (119d), now Interview Prep Kit (spec-scored 8.0) pulls uploaded-document extraction data, Gap Analysis's LLM-enriched narrative + semantic field ratings, the full QMA-* market field set, and multi-session trend history — previously only a bare deterministic re-score and the latest single session were visible to the dossier LLM. Next: continue WS7's remaining analyses, then WS8 golden-case verification.
+
+---
+
+## Session 119e — WS7: Interview Prep Kit's four unwired sources (July 3, 2026)
+
+**Branch:** dev. Build clean, `tsc --noEmit` clean, 135/135 tests pass (no new tests — this is prompt/context wiring around the already-tested `scoreCase()` engine, not new scoring logic).
+
+### Context
+Session 108's "Gap 3" writeup (referenced in the WS7 spec) identified `src/app/api/simulator/prep-kit/route.ts` as pulling only a fraction of the case intelligence the platform actually has: it fetched FDD `extracted_fields`/`final_report` but never used them meaningfully, read only the single latest `simulator_sessions` row, read only 5 of the 10 `QMA-*` market-analysis answer keys, and re-derived Gap Analysis via a bare `scoreCase()` call — never touching the LLM-enriched narrative or semantic field ratings the `/gap-analysis` page itself shows the user via `/api/gap-analysis/run`. Separately, `uploaded_documents`/`extracted_json` (the client's actual filed evidence — resume, bank records, business plan, etc.) was never queried by this route at all.
+
+### Built
+- **`src/lib/gap-analysis-enrichment.ts`** (new) — extracted `enrichCategory()`, `runSemanticEval()`, `SEMANTIC_FIELDS`, and the `WeakCategory`/`SemanticResult` types out of `/api/gap-analysis/run/route.ts` into a shared lib, so both that route and prep-kit call the identical enrichment logic instead of prep-kit re-implementing or skipping it.
+- **`/api/gap-analysis/run/route.ts`** — now imports from the shared lib; behavior unchanged, this is a pure extraction.
+- **`/api/simulator/prep-kit/route.ts`** — four wiring fixes:
+  1. Added an `uploaded_documents` query (`doc_type`, `extracted_json`, `extraction_status = 'complete'`) → `documentsOnFile` in the case context, so the dossier knows what's actually been filed.
+  2. After computing `gapResult`, runs `enrichCategory()` on every category scoring below 70 and `runSemanticEval()` for the 3 scrutinized fields (projection basis, management activities, source of funds) in parallel with the existing fetches — feeds `gapCategoryEnrichments` and `semanticFieldRatings` into the case context, the same narrative the client already sees on `/gap-analysis`.
+  3. Changed the `simulator_sessions` query from `.limit(1).maybeSingle()` to `.limit(5)`, building a `simulatorTrend` array (oldest→newest) instead of only ever seeing the latest snapshot.
+  4. Added the 5 previously-unread `QMA-*` keys (`QMA-ZIP`, `QMA-STATE`, `QMA-BUSINESS-NAME`, `QMA-BUSINESS-CATEGORY`, `QMA-POP-PER-COMPETITOR`) alongside the 5 already read.
+  - Updated the prompt's "Important rules" to explicitly instruct the LLM to ground section 3 (risk register) and section 7 (answer frameworks) in `gapCategoryEnrichments`/`semanticFieldRatings` rather than generic advice, section 4/6 in `documentsOnFile` (don't ask the client to gather what they've already uploaded), and section 6's `simulatorFeedback` in the `simulatorTrend` trajectory.
+- Confirmed the spec's separately-flagged "hardcoded model_used" bug (Part 1 WS1.4) is already fixed in current code — `modelUsed` is read from `callLLMWithMeta`'s actual `result.model`, not a hardcoded string; no action needed.
+
+### Deferred (still open from the spec's Interview Prep Kit item)
+- **"Consolidate or clearly differentiate the confusingly-named third 'Interview Brief' feature"** — not done. Confirmed there are genuinely two separate, actively-used features: `/simulator/prep-kit` (the "Interview Case Dossier," 7-section revision doc, this session's work) and `/simulator/interview-prep` (the "Interview Brief," consumed by `InterviewBrief.tsx` on `/simulator/case-file`, a shorter LLM-coached brief with its own independent `scoreCase()` call and prompt). Both are wired to live pages and both work correctly — the issue is naming/product-clarity, not a bug. Renaming or merging either touches user-facing copy and page routing, which is a product decision, not a mechanical fix; left for the owner to decide direction before touching it.
+- Did not extend `interview-prep/route.ts` (the Interview Brief) with the same four sources — it was out of scope for the Interview Prep Kit item specifically, and doing so before the naming/consolidation decision above risks duplicating work that gets thrown away if the two features are merged.
+
+### Next
+WS7 remaining: Coaching Report (7.5), FDD Final Report (7.0), FDD Extraction (7.0), FDD E-2 Scoring (7.0), FDD Questions (6.5), Territory/Market Analysis (6.5/6.0). Then WS8 golden-case verification.
+
+### Dev server
+Not started this session — no browser-observable UI rendering changed (server-side data wiring + prompt content only).
 
 ---
 
