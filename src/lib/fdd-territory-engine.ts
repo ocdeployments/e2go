@@ -12,6 +12,7 @@
 
 import Anthropic from '@anthropic-ai/sdk';
 import type { FddExtractedFields } from '@/types/fdd';
+import { computeOdeProxy, classifyOde } from '@/lib/fdd-ode-engine';
 
 const anthropic = new Anthropic();
 
@@ -798,14 +799,18 @@ function computeTargetMarketSizing(
   // Year 3: 8–12% of TAM
   const year3 = Math.round(tam * 0.10);
 
-  // Non-marginality check: E-2 requires the business generates more than the investor's livelihood.
-  // $65K owner income / year is the internal floor. ODE floor is roughly ODE > $65K.
-  // Since we don't have full ODE here, use AUV × (1 - 0.65) as a rough proxy.
+  // Non-marginality check: E-2 requires the business generates more than the
+  // investor's livelihood. This territory sizer doesn't have fee/rent/labor
+  // field data, so it approximates ODE off AUV using the same proxy margin
+  // and pass/warn/fail thresholds as the full waterfall in
+  // fdd-scoring-engine.ts (via shared fdd-ode-engine.ts) — kept in sync so
+  // the two engines can't silently diverge.
   let nonmarginality: TargetMarketSizing['nonmarginality_check'] = 'unknown';
   const referenceAuv = auv ?? year3;
   if (referenceAuv > 0) {
-    const proxyOde = Math.round(referenceAuv * 0.35); // rough: 35% ODE margin
-    nonmarginality = proxyOde >= 65_000 ? 'pass' : proxyOde >= 40_000 ? 'borderline' : 'fail';
+    const proxyOde = computeOdeProxy(referenceAuv);
+    const classification = classifyOde(proxyOde);
+    nonmarginality = classification === 'pass' ? 'pass' : classification === 'warn' ? 'borderline' : 'fail';
   }
 
   const segmentPct = census.total_population ? relevantSegment / census.total_population : null;

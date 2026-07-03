@@ -52,10 +52,11 @@ const COMPATIBILITY_CONFIG: Record<FddCompatibility, { label: string; color: str
 };
 
 const RESULT_CONFIG: Record<string, { dot: string; label: string }> = {
-  pass:    { dot: 'bg-emerald-400', label: 'Pass' },
-  warn:    { dot: 'bg-amber-400',   label: 'Review' },
-  fail:    { dot: 'bg-red-400',     label: 'Fail' },
-  unknown: { dot: 'bg-white/20',    label: 'Unknown' },
+  pass:          { dot: 'bg-emerald-400', label: 'Pass' },
+  warn:          { dot: 'bg-amber-400',   label: 'Review' },
+  fail:          { dot: 'bg-red-400',     label: 'Fail' },
+  unknown:       { dot: 'bg-white/20',    label: 'Unknown' },
+  manual_review: { dot: 'bg-sky-400',     label: 'Manual review' },
 };
 
 // ============================================================================
@@ -147,6 +148,21 @@ function OdePanel({ ode }: { ode: OdeAssessment }) {
         <p className="text-white/30 text-xs mt-2">
           Estimated from Item 19 AUV less royalties, marketing fees, rent, labor, and debt service. Not a guarantee of income.
         </p>
+      )}
+      {ode.assumptions.length > 0 && (
+        <div className="mt-4 pt-4 border-t border-white/5">
+          <p className="text-white/30 text-[10px] uppercase tracking-widest mb-2">
+            Where the FDD didn&apos;t disclose a figure, we assumed:
+          </p>
+          <div className="space-y-1">
+            {ode.assumptions.map(a => (
+              <div key={a.field} className="flex items-center justify-between">
+                <span className="text-white/40 text-xs">{a.label}</span>
+                <span className="text-white/60 text-xs">{a.used_value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
     </div>
   );

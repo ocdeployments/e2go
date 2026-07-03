@@ -12,12 +12,17 @@ import type {
   FddStaleStatus,
 } from '@/types/fdd';
 import { substantialityPassThreshold, substantialityWarnThreshold } from '@/lib/e2-thresholds';
+import { classifyOde, type OdeAssumption } from '@/lib/fdd-ode-engine';
 
 // ============================================================================
 // Score types
 // ============================================================================
 
-export type DimensionResult = 'pass' | 'warn' | 'fail' | 'unknown';
+// 'manual_review' = the check cannot be computed from FDD/extraction data at
+// all (not even a best-effort estimate) and must be confirmed by a human —
+// distinct from 'unknown' (a normal field just wasn't extracted) and from a
+// hardcoded 'pass'/'warn' standing in for a check we never actually ran.
+export type DimensionResult = 'pass' | 'warn' | 'fail' | 'unknown' | 'manual_review';
 
 export interface CheckResult {
   check: string;
@@ -39,6 +44,7 @@ export interface OdeAssessment {
   ode_high: number | null;
   result: DimensionResult;
   note: string;
+  assumptions: OdeAssumption[];
 }
 
 export interface TimingAssessment {
@@ -96,6 +102,7 @@ function checkResult(
 function worstOf(...results: DimensionResult[]): DimensionResult {
   if (results.includes('fail')) return 'fail';
   if (results.includes('warn')) return 'warn';
+  if (results.includes('manual_review')) return 'manual_review';
   if (results.includes('unknown')) return 'unknown';
   return 'pass';
 }
@@ -186,12 +193,18 @@ function scoreDimension1(
     'Refundability not confirmed'
   ));
 
-  // Visa holder acceptance (cannot determine from FDD — always flag)
+  // Visa holder acceptance — genuinely extracted when Chunk A finds explicit
+  // eligibility/citizenship language in the FDD; most FDDs never address
+  // this, in which case it is a manual-review item, not a computed result.
+  const visaHolders = bool(fields.accepts_nonimmigrant_visa_holders);
+  const visaResult: DimensionResult = visaHolders === true ? 'pass' : visaHolders === false ? 'fail' : 'manual_review';
   checks.push(checkResult(
     'Accepts non-immigrant visa holders',
-    'Must confirm directly',
-    'warn',
-    'Not disclosed in FDD. Confirm with franchisor before proceeding.'
+    visaHolders === true ? 'Yes — disclosed in FDD' : visaHolders === false ? 'No — disclosed in FDD' : 'Not disclosed',
+    visaResult,
+    visaHolders === true ? 'FDD states franchisees may hold non-immigrant visa status' :
+    visaHolders === false ? 'FDD restricts franchisee eligibility in a way that excludes visa holders — confirm with immigration counsel before proceeding' :
+    'Not disclosed in FDD — most FDDs are silent on this. Confirm directly with the franchisor before proceeding.'
   ));
 
   const overallResult = worstOf(...checks.map(c => c.result));
@@ -281,6 +294,7 @@ export function computeOde(
       ode_low: null, ode_mid: null, ode_high: null,
       result: 'warn',
       note: 'Item 19 absent — cannot model owner income from FDD data alone. Territory analysis required.',
+      assumptions: [],
     };
   }
 
@@ -293,12 +307,24 @@ export function computeOde(
       ode_low: null, ode_mid: null, ode_high: null,
       result: 'unknown',
       note: 'Item 19 present but revenue figures could not be extracted',
+      assumptions: [],
     };
   }
 
-  const royaltyPct = num(fields.royalty_rate_pct) ?? 0.06;
-  const mktgPct = num(fields.marketing_fund_pct) ?? 0.02;
-  const cogsPct = num(fields.estimated_cogs_pct) ?? 0.30;
+  const assumptions: OdeAssumption[] = [];
+
+  const royaltyField = num(fields.royalty_rate_pct);
+  const royaltyPct = royaltyField ?? 0.06;
+  if (royaltyField === null) assumptions.push({ field: 'royalty_rate_pct', label: 'Royalty rate', used_value: `${(royaltyPct * 100).toFixed(0)}%`, source: 'assumed' });
+
+  const mktgField = num(fields.marketing_fund_pct);
+  const mktgPct = mktgField ?? 0.02;
+  if (mktgField === null) assumptions.push({ field: 'marketing_fund_pct', label: 'Marketing fund contribution', used_value: `${(mktgPct * 100).toFixed(0)}%`, source: 'assumed' });
+
+  const cogsField = num(fields.estimated_cogs_pct);
+  const cogsPct = cogsField ?? 0.30;
+  if (cogsField === null) assumptions.push({ field: 'estimated_cogs_pct', label: 'Cost of goods sold', used_value: `${(cogsPct * 100).toFixed(0)}%`, source: 'assumed' });
+
   const derivedFeeField = (fields as Record<string, FddFieldMeta | undefined>)['total_ongoing_fee_pct'];
   const totalFeePct = (num(derivedFeeField) ?? (royaltyPct + mktgPct));
 
@@ -306,14 +332,34 @@ export function computeOde(
   // Rough heuristic: assume rent is 8% of mid-range investment
   const totalMid = ((num(fields.total_investment_min) ?? 0) + (num(fields.total_investment_max) ?? 0)) / 2;
   const estimatedRent = totalMid > 0 ? Math.round(totalMid * 0.08) : 30_000;
+  assumptions.push({
+    field: 'estimated_rent',
+    label: 'Annual rent',
+    used_value: `$${estimatedRent.toLocaleString()}`,
+    source: 'assumed', // always a heuristic — the FDD doesn't disclose a target-territory lease rate
+  });
 
   // Labor: typical FTE × $35K average (entry-level franchise worker) × 1.25 burden
-  const fte = num(fields.typical_fte_employees) ?? 3;
+  const fteField = num(fields.typical_fte_employees);
+  const fte = fteField ?? 3;
+  if (fteField === null) assumptions.push({ field: 'typical_fte_employees', label: 'Staffing (FTEs)', used_value: `${fte} employees`, source: 'assumed' });
   const estimatedLabor = Math.round(fte * 35_000 * 1.25);
 
-  // Debt service: investment amortized over 10 years at 8%
+  // Debt service: 10-year amortized payment at 8% APR (matches the standard
+  // SBA 7(a)/franchise-financing term, not an interest-only estimate — an
+  // interest-only figure understates the investor's real annual cash outlay).
   const investmentMid = totalMid > 0 ? totalMid : (num(fields.total_investment_min) ?? 150_000);
-  const debtService = Math.round(investmentMid * 0.08);
+  const annualRate = 0.08;
+  const amortYears = 10;
+  const debtService = Math.round(
+    investmentMid * (annualRate / (1 - Math.pow(1 + annualRate, -amortYears)))
+  );
+  assumptions.push({
+    field: 'debt_service',
+    label: 'Annual debt service (10-yr amortized @ 8%)',
+    used_value: `$${debtService.toLocaleString()}`,
+    source: 'assumed', // the FDD never discloses the investor's actual financing terms
+  });
 
   function calcOde(auv: number): number {
     const grossProfit = auv * (1 - cogsPct);
@@ -325,9 +371,7 @@ export function computeOde(
   const odeMid = calcOde(auvMid);
   const odeHigh = auvHigh ? calcOde(auvHigh) : null;
 
-  const result: DimensionResult =
-    odeMid > 65_000 ? 'pass' :
-    odeMid > 40_000 ? 'warn' : 'fail';
+  const result = classifyOde(odeMid);
 
   const note =
     result === 'pass'
@@ -336,7 +380,7 @@ export function computeOde(
       ? `Estimated net income (mid case): $${odeMid.toLocaleString()}/yr — marginal. Strong territory analysis needed.`
       : `Estimated net income (mid case): $${odeMid.toLocaleString()}/yr — below non-marginality threshold. Officer scrutiny likely.`;
 
-  return { ode_low: odeLow, ode_mid: odeMid, ode_high: odeHigh, result, note };
+  return { ode_low: odeLow, ode_mid: odeMid, ode_high: odeHigh, result, note, assumptions };
 }
 
 // ============================================================================
@@ -496,15 +540,18 @@ function scoreDimension4(fields: FddExtractedFields, investorProfile?: InvestorP
     'Term not extracted'
   ));
 
-  // Cannibalization check
+  // Cannibalization check — the FDD-disclosed separation radius is a real,
+  // extracted fact, but whether an existing same-brand unit actually falls
+  // inside it requires locating nearby units (Google Places data), which
+  // this engine does not have. So this is always manual review, never a
+  // computed pass.
   const nearestBrandMiles = num(fields.franchisor_minimum_separation_miles);
-  // We note this as informational — cannibalization requires Google Places data
   if (nearestBrandMiles !== null) {
     checks.push(checkResult(
       'Minimum unit separation',
       `${nearestBrandMiles} miles required`,
-      'pass',
-      'Minimum separation disclosed — verify nearest same-brand unit during territory analysis'
+      'manual_review',
+      `Franchisor requires ${nearestBrandMiles} miles of separation from existing units — verify no same-brand unit falls within that radius of the target territory during territory analysis (requires a map check, not disclosed by this engine)`
     ));
   }
 
