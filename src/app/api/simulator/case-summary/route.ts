@@ -73,15 +73,30 @@ export async function GET(request: NextRequest) {
       console.warn('Answer query error (non-fatal):', ansError.message);
     }
 
-    const { data: documents, error: docError } = await supabase
-      .from('uploaded_documents')
-      .select('id, file_name, doc_type, extracted_json, fields_total, extraction_status')
-      .eq('application_id', applicationId)
-      .order('created_at', { ascending: true });
+    // Two upload pipelines feed this screen: the current uploaded_documents
+    // taxonomy and the legacy application_documents pipeline (still live —
+    // gap-analysis remediation and quick-start onboarding write to it). Both
+    // must be read or documents uploaded through the legacy path silently
+    // vanish from the case file summary.
+    const [{ data: documents, error: docError }, { data: legacyDocuments, error: legacyDocError }] = await Promise.all([
+      supabase
+        .from('uploaded_documents')
+        .select('id, file_name, doc_type, extracted_json, fields_total, extraction_status')
+        .eq('application_id', applicationId)
+        .order('created_at', { ascending: true }),
+      supabase
+        .from('application_documents')
+        .select('id, original_filename, detected_document_type, fields_extracted, document_summary')
+        .eq('application_id', applicationId)
+        .order('created_at', { ascending: true }),
+    ]);
 
     if (docError) {
       // Non-fatal — table may not exist yet if migration is pending. Continue with empty list.
       console.warn('Document query error (non-fatal):', docError.message);
+    }
+    if (legacyDocError) {
+      console.warn('Legacy document query error (non-fatal):', legacyDocError.message);
     }
 
     // Group filled answers by section
@@ -107,15 +122,26 @@ export async function GET(request: NextRequest) {
       }))
       .filter(section => section.fields.length > 0);
 
-    const documentSummaries = (documents || []).map(doc => ({
-      id: doc.id,
-      filename: doc.file_name,
-      detectedType: doc.doc_type,
-      detectedTypeLabel: uploadedDocTypeLabel(doc.doc_type),
-      fieldsExtracted: doc.fields_total || 0,
-      summary: summarizeExtractedJson(doc.extracted_json as Record<string, unknown> | null),
-      status: doc.extraction_status,
-    }));
+    const documentSummaries = [
+      ...(documents || []).map(doc => ({
+        id: doc.id,
+        filename: doc.file_name,
+        detectedType: doc.doc_type,
+        detectedTypeLabel: uploadedDocTypeLabel(doc.doc_type),
+        fieldsExtracted: doc.fields_total || 0,
+        summary: summarizeExtractedJson(doc.extracted_json as Record<string, unknown> | null),
+        status: doc.extraction_status,
+      })),
+      ...(legacyDocuments || []).map(doc => ({
+        id: doc.id,
+        filename: doc.original_filename,
+        detectedType: doc.detected_document_type,
+        detectedTypeLabel: uploadedDocTypeLabel(doc.detected_document_type),
+        fieldsExtracted: doc.fields_extracted || 0,
+        summary: doc.document_summary || '',
+        status: 'complete',
+      })),
+    ];
 
     const totalFields = sections.reduce((sum, s) => sum + s.fields.length, 0);
 
