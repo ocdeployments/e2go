@@ -1,6 +1,25 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** July 3, 2026 — Session 119k: **WS7 Territory/Market Analysis fixed.** Per owner instruction to prioritize WS4/7/8 (now explicitly including WS6): WS4 closed out (Session 119), FDD Comparison (119b), Renewal Package (119c), Gap Analysis partnership fix (119d), Interview Prep Kit (119e), Coaching Report (119f), FDD Final Report (119g), FDD Extraction (119h), FDD E-2 Scoring (119i), FDD Questions (119j), now Territory/Market Analysis (spec-scored 6.5/6.0) parameterizes the hardcoded Census ACS vintage into a named constant and surfaces a human-readable source label in both UI surfaces (FDD-linked territory page and standalone `/market-analysis`), and adds a "Print / PDF" export button to both pages matching the existing `window.print()` convention from the FDD report page — two of the four spec-listed items (never-fabricate rule for competition scoring, shared ODE-proxy module) were confirmed already fixed by investigation. Both UI changes verified live in the browser (button renders, census-source text reads correctly, no console errors). Next: remaining WS7 analyses (Renewal Package re-check, FDD Comparison re-check), then WS6 (missing documents + per-template upgrades — untouched except the 116b substantiality fix), then WS8 golden-case verification.
+**Last Updated:** July 3, 2026 — Session 119l: **WS7 Renewal Package re-checked and upgraded.** Re-audit of the 119c "blocked" verdict found two of the four deferred spec fixes were buildable from data already collected: fix #3 (renewal-specific gap analysis) now ships as a deterministic module flagging marginality, ownership changes, >25% projection shortfalls, immigration issues, and thin develop-and-direct/ties answers — added as a fifth package document with its own tab and fed into the cover-letter prompt so HIGH flags are addressed rather than omitted; fix #4 (consulate handling) resolves the actual consulate from the original application's M3-I-11/M3-I-12 answers and parameterizes the Path A checklist, cover-letter prompt, and UI labels (Toronto remains the default). Fixes #1 (evidence upload cross-check) and #5 (expiry-aware checklist) remain genuinely blocked on new intake/upload infrastructure — owner scope decision. 11 new jest tests; 146/146 pass; build clean; entry-page label change verified live in browser. Next: FDD Comparison re-check (last WS7 item), then WS6 (owner: do not skip), then WS8.
+
+---
+
+## Session 119l — WS7: Renewal Package — renewal gap analysis + consulate-aware checklist (July 3, 2026)
+
+**Branch:** dev. Build clean, 146/146 tests pass (11 new). Verified live in preview browser: `/renewal` renders "Path A — Consular Renewal" with the new consulate sub-text, old hardcoded label gone.
+
+**Context:** Spec (WS7 §11) scores Renewal Package 5.5 with 5 fixes. 119c built #2 (promise-vs-delivery reconciliation) and marked #1/#3/#4/#5 blocked on missing intake fields. This re-check found that verdict too broad: #3 needs only existing intake answers (RQ-02/03/07/08/09/10/13/15 + reconciliation variances), and #4's consulate is already collected in the original application (M3-I-11/M3-I-12), which the renewal route already queries for projections.
+
+**Built:**
+- `src/lib/renewal-gap-analysis.ts` (new) — deterministic renewal-specific gap analysis. Flags: marginality (no employees + not profitable, high), no-employees (medium), hiring shortfall vs. original plan, revenue >25% under projection in any comparable year, ownership change (high — 50%/develop-and-direct re-verification), immigration issues since grant (high), thin current-role answer, thin home-country ties (consular path only). Same never-fabricate ground rule as renewal-reconciliation.ts; sorted high→low. Exports document builder + prompt summary.
+- `src/lib/__tests__/renewal-gap-analysis.test.ts` (new) — 11 tests: clean case produces zero gaps, each flag triggers on its condition, missing actuals never produce a shortfall flag, USCIS path skips the ties check, severity ordering.
+- `src/app/api/renewal/generate/route.ts` — fetches M3-I-11/M3-I-12 alongside projections; resolves consulate (other + free-text → that post, else Toronto); `buildChecklist(path, consulate)` names the actual post and appends a verify-local-procedures note for non-Toronto posts; cover-letter prompt gets the consulate name plus a KNOWN RISK FLAGS block with instruction to address HIGH flags using only stated facts; documents payload gains `gap_analysis`, `gaps`, `consulate`.
+- `src/app/renewal/documents/page.tsx` — fifth tab "Gap Analysis"; tab bar filters to keys present in the stored documents (older generations without gap_analysis degrade gracefully); Path A header shows the stored consulate.
+- `src/app/renewal/intake/page.tsx` + `RenewalEntryClient.tsx` — Path A labels de-hardcoded ("Consular Renewal", "your U.S. consulate — typically Toronto for Canadian investors"); stored path value `'toronto'` unchanged for data compatibility.
+
+**Still blocked (owner scope decision):** #1 evidence cross-check needs renewal-flow upload infrastructure; #5 expiry-aware checklist needs a visa-expiry intake field. Same status as WS4 D5/D6/D10.
+
+**Next:** FDD Comparison (4.0 — already improved in 119b, needs re-check against current spec fix-list — last WS7 item). Then WS6 (owner: do not skip). Then WS8.
 
 ---
 
