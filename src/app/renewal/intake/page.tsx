@@ -294,7 +294,7 @@ export default function RenewalIntakePage() {
           </p>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
             {[
-              { value: 'toronto', label: 'Path A — Toronto Consulate', sub: '5-year stamp · requires travel · interview required' },
+              { value: 'toronto', label: 'Path A — Consular Renewal', sub: '5-year stamp · interview at your U.S. consulate (typically Toronto) · requires travel' },
               { value: 'uscis', label: 'Path B — USCIS I-129', sub: '2-year extension · no travel · filed by mail' },
             ].map(opt => (
               <button

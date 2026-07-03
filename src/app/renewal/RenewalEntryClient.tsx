@@ -109,9 +109,9 @@ export default function RenewalEntryClient({ hasPurchased }: Props) {
                 <path d="M12 8v4l3 3" />
               </svg>
             </div>
-            <h3 style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: '18px', color: '#f5f0e8', fontWeight: 400, marginBottom: '8px' }}>Path A — Toronto Consulate</h3>
+            <h3 style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: '18px', color: '#f5f0e8', fontWeight: 400, marginBottom: '8px' }}>Path A — Consular Renewal</h3>
             <p style={{ fontSize: '13px', color: 'rgba(245,240,232,0.55)', lineHeight: 1.65 }}>
-              5-year stamp renewal at the U.S. Consulate in Toronto. Most common path — full interview with consular officer.
+              5-year stamp renewal at your U.S. consulate — typically Toronto for Canadian investors. Full interview with consular officer.
             </p>
           </div>
           <div style={{ background: 'rgba(245,240,232,0.03)', border: '1px solid rgba(245,240,232,0.08)', borderRadius: '8px', padding: '24px' }}>

@@ -5,6 +5,7 @@ import { checkRateLimit } from '@/lib/rate-limit';
 import { isKillSwitchEnabled } from '@/lib/kill-switch';
 import { callLLM } from '@/lib/llm-client';
 import { computeRenewalReconciliation } from '@/lib/renewal-reconciliation';
+import { computeRenewalGaps, buildGapAnalysisDocument, summarizeGapsForPrompt } from '@/lib/renewal-gap-analysis';
 
 // POST /api/renewal/generate
 // Generates the renewal document package (cover letter, BP update, Template 6, checklist)
@@ -72,7 +73,7 @@ PROMISE VS. DELIVERY
 ${reconciliationSummary}`;
 }
 
-function buildChecklist(path: string): string {
+function buildChecklist(path: string, consulate: string): string {
   if (path === 'uscis') {
     return `E-2 RENEWAL CHECKLIST — PATH B (USCIS I-129)
 
@@ -105,16 +106,29 @@ FILING INSTRUCTIONS
   • File at least 4–6 months before current I-94 expiry`;
   }
 
-  return `E-2 RENEWAL CHECKLIST — PATH A (TORONTO CONSULATE)
+  const isToronto = consulate.toLowerCase().includes('toronto');
+  const consulateHeader = isToronto ? 'TORONTO CONSULATE' : consulate.toUpperCase();
+  const appointmentLines = isToronto
+    ? `  ☐ Schedule interview at U.S. Consulate General Toronto (ustraveldocs.com/ca)
+  ☐ Pay MRV application fee ($205 USD)
+  ☐ Prepare for biometrics appointment (if required)`
+    : `  ☐ Schedule interview at the U.S. consulate serving your location — ${consulate}
+  ☐ Verify E-2 procedures for this post (ustraveldocs.com — posts differ on binder format, page limits, and pre-screening)
+  ☐ Pay MRV application fee ($205 USD)
+  ☐ Prepare for biometrics appointment (if required)`;
+
+  const postNote = isToronto
+    ? ''
+    : `\n  • This checklist reflects standard consular E-2 renewal practice — ${consulate} may impose its own document order, page limits, or advance-submission rules; confirm on the post's website before your appointment`;
+
+  return `E-2 RENEWAL CHECKLIST — PATH A (${consulateHeader})
 
 FORMS
   ☐ DS-160 Online Nonimmigrant Visa Application (new submission required)
   ☐ DS-156E Nonimmigrant Treaty Trader/Investor Application
 
 APPOINTMENT
-  ☐ Schedule interview at U.S. Consulate General Toronto (ustraveldocs.com/ca)
-  ☐ Pay MRV application fee ($205 USD)
-  ☐ Prepare for biometrics appointment (if required)
+${appointmentLines}
 
 CONSULATE BINDER — ARRANGE IN THIS ORDER
   Tab 1:  DS-160 confirmation page + interview appointment letter
@@ -135,10 +149,10 @@ TIPS
   • Arrive 15 minutes early — no phones or laptops inside the consulate
   • Bring originals AND photocopies of all documents
   • Officer may ask you to demonstrate the business is still actively operating
-  • Renewal interview is typically shorter than original — focus on performance data`;
+  • Renewal interview is typically shorter than original — focus on performance data${postNote}`;
 }
 
-async function generateCoverLetter(answers: RenewalAnswers, businessName: string, applicantName: string, reconciliationSummary: string): Promise<string | null> {
+async function generateCoverLetter(answers: RenewalAnswers, businessName: string, applicantName: string, reconciliationSummary: string, consulate: string, gapSummary: string): Promise<string | null> {
   const profitLabel: Record<string, string> = {
     'yes': 'consistently profitable',
     'yes-recently': 'recently profitable',
@@ -158,7 +172,7 @@ async function generateCoverLetter(answers: RenewalAnswers, businessName: string
 
 INVESTOR: ${applicantName || 'the applicant'}
 BUSINESS: ${businessName || 'the business'}
-RENEWAL PATH: ${answers.path === 'uscis' ? 'USCIS I-129 Status Extension (Path B)' : 'U.S. Consulate Toronto (Path A)'}
+RENEWAL PATH: ${answers.path === 'uscis' ? 'USCIS I-129 Status Extension (Path B)' : `U.S. Consulate ${consulate} (Path A)`}
 CURRENT PROFITABILITY: ${profitLabel[answers['RQ-07'] ?? ''] ?? 'not specified'}
 HIRING: ${hiringLabel[answers['RQ-10'] ?? ''] ?? 'not specified'}
 FULL-TIME EMPLOYEES NOW: ${answers['RQ-02'] ?? 'not provided'}
@@ -181,12 +195,16 @@ ${answers['RQ-13'] ?? 'Not provided.'}
 PROMISE VS. DELIVERY (cite these exact figures where relevant — do not invent others):
 ${reconciliationSummary}
 
+KNOWN RISK FLAGS (from the applicant's own answers — address the HIGH ones honestly and proactively in the letter; never invent mitigating facts not stated above):
+${gapSummary}
+
 Write a formal E-2 renewal cover letter (600–800 words). The letter must:
 1. Open by identifying the applicant, business, and that this is a renewal of E-2 treaty investor status
 2. Summarise business performance — growth since original application, current profitability status, employees. Where the promise-vs-delivery figures above are available, state the original projection next to the actual result explicitly (an officer checks this first).
 3. Address the develop-and-direct element — investor's active management role (use the current role description above)
 4. Address non-immigrant intent — Canadian ties retained (use the ties section above)
-5. Close with a request for renewal and statement of continued compliance
+5. Where a HIGH risk flag applies (ownership change, immigration issue, marginality), acknowledge it directly and frame the explanation using only the facts provided — officers read omission as concealment
+6. Close with a request for renewal and statement of continued compliance
 
 Format: formal business letter style, no markdown, no bullets inside the body. Use paragraph breaks only.
 Do not use placeholder brackets — if information is missing, write around it naturally.`;
@@ -315,13 +333,15 @@ export async function POST(request: NextRequest) {
   let projections: ProjectionRow[] = [];
   let businessName = '';
   let applicantName = '';
+  let consulateChoice = '';
+  let consulateOther = '';
 
   if (intake.application_id) {
     const { data: ansRows } = await svc
       .from('answers')
       .select('question_key, answer_value')
       .eq('application_id', intake.application_id)
-      .in('question_key', ['M3-I-PROJECTIONS', 'M3-E-01', 'M3-J-01', 'Q0-10']);
+      .in('question_key', ['M3-I-PROJECTIONS', 'M3-E-01', 'M3-J-01', 'Q0-10', 'M3-I-11', 'M3-I-12']);
 
     for (const row of ansRows ?? []) {
       if (row.question_key === 'M3-I-PROJECTIONS' && row.answer_value) {
@@ -331,6 +351,8 @@ export async function POST(request: NextRequest) {
       if ((row.question_key === 'M3-J-01' || row.question_key === 'Q0-10') && row.answer_value && !applicantName) {
         applicantName = row.answer_value;
       }
+      if (row.question_key === 'M3-I-11' && row.answer_value) consulateChoice = row.answer_value;
+      if (row.question_key === 'M3-I-12' && row.answer_value) consulateOther = row.answer_value;
     }
 
     // Fallback: get business_name from applications table
@@ -345,23 +367,34 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const reconciliation = computeRenewalReconciliation(projections, answers);
+    // Consulate from the original application's interview-prep answers
+    // (M3-I-11/M3-I-12); defaults to Toronto, the historical hardcoded post.
+    const consulate = (consulateChoice === 'other' && consulateOther.trim())
+      ? consulateOther.trim()
+      : 'Toronto, Canada';
 
-    // Generate 3 LLM documents in parallel + build 2 programmatically
+    const reconciliation = computeRenewalReconciliation(projections, answers);
+    const gaps = computeRenewalGaps(answers, reconciliation, intake.path);
+    const gapSummary = summarizeGapsForPrompt(gaps);
+
     const [coverLetter, bpUpdate] = await Promise.all([
-      generateCoverLetter(answers, businessName, applicantName, reconciliation.summary),
+      generateCoverLetter(answers, businessName, applicantName, reconciliation.summary, consulate, gapSummary),
       generateBPUpdate(answers, businessName, reconciliation.summary),
     ]);
 
     const template6 = buildTemplate6(answers, projections, reconciliation.summary);
-    const checklist = buildChecklist(intake.path);
+    const checklist = buildChecklist(intake.path, consulate);
+    const gapAnalysis = buildGapAnalysisDocument(gaps);
 
     const documents = {
       cover_letter: coverLetter ?? '',
       bp_update: bpUpdate ?? '',
       template6,
       checklist,
+      gap_analysis: gapAnalysis,
       reconciliation,
+      gaps,
+      consulate,
       generated_at: new Date().toISOString(),
       path: intake.path,
     };

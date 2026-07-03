@@ -9,6 +9,8 @@ interface Documents {
   bp_update: string;
   template6: string;
   checklist: string;
+  gap_analysis?: string;
+  consulate?: string;
   path: string;
   generated_at: string;
 }
@@ -20,13 +22,14 @@ interface IntakeData {
   documents: Documents | null;
 }
 
-type TabKey = 'cover_letter' | 'bp_update' | 'template6' | 'checklist';
+type TabKey = 'cover_letter' | 'bp_update' | 'template6' | 'checklist' | 'gap_analysis';
 
 const TAB_LABELS: Record<TabKey, string> = {
   cover_letter: 'Cover Letter',
   bp_update:    'Business Plan Update',
   template6:    'Template 6',
   checklist:    'Submission Checklist',
+  gap_analysis: 'Gap Analysis',
 };
 
 function CopyButton({ text }: { text: string }) {
@@ -178,7 +181,7 @@ export default function RenewalDocumentsPage() {
         {/* Header */}
         <div style={{ marginBottom: '40px' }}>
           <div style={{ fontSize: '8px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(201,168,76,0.5)', fontFamily: "'DM Sans', sans-serif", marginBottom: '10px' }}>
-            Renewal Package · {intake?.path === 'uscis' ? 'Path B — USCIS I-129' : 'Path A — Toronto Consulate'}
+            Renewal Package · {intake?.path === 'uscis' ? 'Path B — USCIS I-129' : `Path A — ${intake?.documents?.consulate ?? 'Toronto, Canada'} Consulate`}
           </div>
           <h1 style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontWeight: 300, fontSize: '36px', color: '#f5f0e8', lineHeight: 1.2, marginBottom: '12px' }}>
             Your renewal documents
@@ -204,7 +207,7 @@ export default function RenewalDocumentsPage() {
               Ready to generate
             </div>
             <p style={{ fontSize: '14px', color: 'rgba(245,240,232,0.55)', lineHeight: 1.7, maxWidth: '420px', margin: '0 auto 28px' }}>
-              Your intake is complete. Click below to generate your renewal document package — cover letter, business plan update, Template 6, and checklist.
+              Your intake is complete. Click below to generate your renewal document package — cover letter, business plan update, Template 6, submission checklist, and gap analysis.
             </p>
             {intake?.status !== 'complete' && (
               <p style={{ fontSize: '12px', color: 'rgba(248,113,113,0.7)', marginBottom: '20px' }}>
@@ -247,7 +250,7 @@ export default function RenewalDocumentsPage() {
           <>
             {/* Tab bar */}
             <div style={{ display: 'flex', gap: '2px', marginBottom: '28px', borderBottom: '1px solid rgba(245,240,232,0.07)', paddingBottom: '0' }}>
-              {(Object.keys(TAB_LABELS) as TabKey[]).map(tab => (
+              {(Object.keys(TAB_LABELS) as TabKey[]).filter(tab => docs[tab] !== undefined).map(tab => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
@@ -278,9 +281,9 @@ export default function RenewalDocumentsPage() {
                   {TAB_LABELS[activeTab]}
                 </span>
                 <div style={{ display: 'flex', gap: '8px' }}>
-                  <CopyButton text={docs[activeTab]} />
+                  <CopyButton text={docs[activeTab] ?? ''} />
                   <DownloadButton
-                    text={docs[activeTab]}
+                    text={docs[activeTab] ?? ''}
                     filename={`e2go-renewal-${activeTab.replace(/_/g, '-')}.txt`}
                   />
                 </div>
