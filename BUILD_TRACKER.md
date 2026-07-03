@@ -1,6 +1,34 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** July 2, 2026 — Session 113: built `src/lib/case-financials.ts`, the Phase 2/A4 deterministic financial spine. One commit, build clean. Next: WS3.1 (A1 exhibit registry) or WS3.2 (A2/A3 Binder Index).
+**Last Updated:** July 2, 2026 — Session 114: built `src/lib/exhibit-registry.ts`, the WS3.1/A1 master exhibit registry, wired it into every generation prompt's cached block, added a deterministic post-generation citation-provenance sweep, and fixed the b01 source-of-funds template's hardcoded Tab B drift. Two commits, build clean. Next: WS3.2 (A2/A3 Binder Index).
+
+---
+
+## Session 114 — Master Exhibit Registry (WS3.1/A1) (July 2, 2026)
+
+**Branch:** dev. Build clean (`npm run build`). Two commits, one concern each.
+
+### Context
+Every document previously generated its own "Supporting Documentation Index" independently — nothing guaranteed the Source of Funds narrative's "Tab D-2" and the Fund Flow Chronology's "Tab D-2" pointed at the same physical uploaded file, or that either exhibit existed at all. Built per `agent-prompt-part1-engine-and-package.md` Section 7 (WS3), continuing directly from a prior session that had started reading `case-financials.ts` / `cic-package-manifest.ts` for conventions.
+
+### Built
+- **`src/lib/exhibit-registry.ts`** — new file. `buildExhibitRegistry(applicationId)` reads `uploaded_documents` ordered by `created_at`, assigns canonical IDs (`{TabLetter}-{N}`) keyed off the existing `UPLOADED_DOC_TYPE_TAB_MAP` (docx-package-constants.ts — the single source of truth for tab letters unified in Session 113's predecessor commit 491cfc6). `formatExhibitRegistryText()` renders the registry as a prompt block instructing the model to cite only these IDs and never invent one. `checkExhibitConsistency()` is a deterministic (no LLM) post-generation sweep, structurally mirroring `figure-provenance.ts`'s `checkFigureProvenance()` — regex-extracts `Tab X-N` citations from generated text and flags orphans (cited but not in the registry) and unused exhibits (uploaded but never cited).
+- **`src/types/generation.ts`** — added `exhibit_registry: ExhibitRegistry` to `GenerationPayload`.
+- **`src/lib/generation-engine.ts`** — `buildGenerationPayload()` now fetches the registry in parallel with case theory/doc intelligence. `callClaudeAPI()` injects `formatExhibitRegistryText()` into the cached `stableBlock` (identical across all ~19 calls per application, consistent with Session 111's prompt-caching architecture) rather than the per-document `variableBlock`. `checkExhibitConsistency()` is folded into the existing "Quality step 2: Consistency check" block alongside `runCanonicalConsistencySweep` — deliberately not a new numbered quality step, since that would require renumbering ~7 downstream `Q + N` step references. Result persists to a new `document_generation_jobs.exhibit_consistency_result` column and orphan citations log to `document_generation_log` per document type.
+- **`supabase/migrations/20260702223751_generation_jobs_exhibit_consistency.sql`** — adds `exhibit_consistency_result jsonb` to `document_generation_jobs`, sibling to the existing `consistency_result` column. **Not applied** — no linked Supabase CLI project found (`supabase/` has no `config.toml`); owner must apply via the Supabase dashboard SQL editor, per the established pattern noted in Session 108's "Phase 1 migration was never applied to production" writeup.
+- **`prompts/v1/documents/b01_source_and_application_of_funds.md`** — fixed a genuine drift bug: the template hardcoded "Tab B-X" citations and a fixed B-1..B-10 exhibit index throughout, but `source_of_funds` is canonically tab **D** per `DOC_TYPE_TAB_MAP`. Rewrote all exhibit-citation instructions to be registry-driven (cite only IDs from the injected EXHIBIT REGISTRY block) instead of hardcoding any letter.
+
+### Verified
+`npm run build` clean, full page manifest generated with no type errors.
+
+### Owner action required
+Apply `supabase/migrations/20260702223751_generation_jobs_exhibit_consistency.sql` via the Supabase dashboard SQL editor (adds one nullable jsonb column — safe, no backfill needed).
+
+### Next
+WS3.2 — A2/A3 Binder Index: a deterministic one-page Master Exhibit Index/TOC document, and wiring the Cover Letter's document-list section to be generated from the package manifest rather than LLM-listed. Per `agent-prompt-part1-engine-and-package.md` Section 7.
+
+### Dev server
+No server was running at end of session — nothing to restart (backend/lib + prompt-template change only, not previewable).
 
 ---
 
