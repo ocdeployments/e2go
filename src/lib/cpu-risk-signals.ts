@@ -5,13 +5,29 @@
  *      dollars. The live intake (M3-F-05) only captures WHICH source types
  *      an applicant used, not per-transaction amounts or dates, so this
  *      computes a blended risk tier from the selected types — not the full
- *      per-deposit seasoning/round-trip checks (D5/D6/D8), which need new
+ *      per-deposit seasoning/round-trip checks (D5/D6), which need new
  *      intake fields this codebase does not yet collect.
  *
  * D7 — Desperation ratio: investment ÷ pre-investment net worth. Over ~80%
  *      invites "what do you live on, and what do you return to?" — when
  *      high, Net Worth and Nonimmigrant Intent must foreground retained
  *      assets and income sources.
+ *
+ * D5 (seasoning — funds on deposit long enough to not look staged) and D6
+ * (round-trip / layering detection across accounts) are CONFIRMED BLOCKED,
+ * not unimplemented: they require per-transaction deposit date/amount data
+ * that no Module 3 intake field collects today (M3-F-05 captures source
+ * TYPE only). Building deterministic logic against nonexistent data would
+ * mean fabricating the very signal these directives exist to detect —
+ * against the project's own never-fabricate rule. Building the real thing
+ * requires a new intake surface (a transaction ledger, e.g. "list each
+ * deposit and its date") — a product decision, not a code gap, so it is
+ * intentionally left undone pending that scope decision (session 119).
+ *
+ * D8 (FX discipline — never silently convert currencies) is ALREADY
+ * SATISFIED, not by this module, but by case-financials.ts's `fx_note`:
+ * amounts are carried in their reported currency with an explanatory note
+ * rather than a fabricated conversion rate (session 119 confirmation).
  *
  * Ground rule (same as case-financials.ts): never fabricate. Where intake
  * does not capture a figure, the result is null with an explanatory note.

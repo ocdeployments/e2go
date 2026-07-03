@@ -39,6 +39,8 @@ import { retrieveDoctrine, formatDoctrineForPrompt, type DoctrineChunk } from '.
 import type { Dimension } from './document-comprehension-engine';
 import { computeFundSourceRiskProfile, computeDesperationRatio } from './cpu-risk-signals';
 import { computePriorRefusalModifier } from './cpu-case-modifiers';
+import { computeCaseFinancials } from './case-financials';
+import { computeMarginalityWaterfall } from './cpu-marginality-waterfall';
 
 const DIMENSIONS: Dimension[] = [
   'identity', 'source_of_funds', 'investment', 'business',
@@ -228,6 +230,26 @@ export async function assembleCaseModel(applicationId: string, userId: string): 
         source: 'answer', sourceRef: 'cpu-case-modifiers:D20', confidence: refusalModifier.tier === 'unknown' ? 'low' : 'high',
       });
     }
+
+    // CPU 4D — D15 marginality living-wage waterfall + D16 5-year horizon
+    // guardrail (cpu-marginality-waterfall.ts), built on the WS3.3 financial
+    // spine (case-financials.ts). Family composition falls back from the
+    // Module 3 prefilled field to the original quiz answer (see prefill.ts).
+    const caseFinancials = computeCaseFinancials(answersMap);
+    const familyComposition =
+      (answersMap['M3-L-family'] as string | undefined) ??
+      (answersMap['QL-family'] as string | undefined) ??
+      (answersMap['Q0-03'] as string | undefined) ??
+      null;
+    const marginality = computeMarginalityWaterfall(caseFinancials, familyComposition);
+    if (marginality.result !== 'insufficient_data') {
+      push(dims, 'business', {
+        fact: 'marginality_waterfall',
+        value: `${marginality.result} — ${marginality.note}`,
+        source: 'answer', sourceRef: 'cpu-marginality-waterfall:D15-D16',
+        confidence: marginality.householdSize.confidence === 'known_minimum' ? 'high' : 'medium',
+      });
+    }
   }
 
   // ── Document evidence ledger (Faculty 1's document channel — CIC-1.1) ──────
@@ -412,6 +434,7 @@ CPU INTELLIGENCE PACK — CASE-WIDE MODIFIERS (WS4, non-negotiable framing rules
 - WHY-TRIANGLE (D17): the narrative must independently answer three separate questions — why THIS applicant, why THIS business, why NOW — and should not let a strong answer to one silently stand in for the other two.
 - SOCIAL-MEDIA / DIGITAL-FOOTPRINT CONSISTENCY (D19): where the Case Model contains any fact about the applicant's professional online presence (LinkedIn, company website, prior employer bios), the narrative and transferableSkills framing must be consistent with what a consular officer could independently find online — never assert a professional identity the digital record would contradict.
 - FRONT-LOAD BY REFUSAL PROBABILITY (D21): order dimensionVerdicts and numbersStrategy so the dimension carrying the highest denial risk (per the disqualification-first check above) is addressed first and most thoroughly, not last or thinnest.
+- CAREER-SWITCH DISCONNECT (D18): where the Case Model's background facts (M3-Q-04 professional background, M3-Q-05 years of experience, M3-Q-06 relevant skills) show no evident transferable link to the target business type (M3-Q-00 / business dimension facts), do not paper over the gap — name the disconnect explicitly in the relevant dimensionVerdict as "weak" or "missing" and propose concrete, honest ways to bridge it (e.g. specific training undertaken, relevant hobby/volunteer experience, a documented reason for the pivot). This is a judgment call about semantic relevance a keyword match cannot make reliably — it is intentionally handled here by you, not by a deterministic pre-check.
 
 Reply with ONE valid JSON object only — no markdown fences, no prose outside the JSON.`;
 
