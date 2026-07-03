@@ -144,11 +144,17 @@ function buildVerifierPrompt(
           `  ${i + 1}. ${s.name}\n     MUST establish: ${s.establishes}`
         ).join('\n'),
         '',
-        'ARGUMENT DENSITY RULE: Every body paragraph must carry at least one of:',
+    'ARGUMENT DENSITY RULE: Every body paragraph must carry at least one of:',
         '  (a) a qualifying fact about the investment, business, or applicant,',
         '  (b) a rebuttal of a known denial risk,',
         '  (c) a specific reference to an exhibit or evidence.',
         '  Flag any paragraph that does none of these as a flow issue.',
+        '',
+        'ADJECTIVE/NUMBER DENSITY RULE (D3): unqualified superlatives and vague strength claims',
+        '  ("excellent," "strong," "significant," "extensive," "robust," "substantial," "highly qualified")',
+        '  are empty unless a specific number, date, or named fact sits in the same sentence or the one',
+        '  immediately following it. Flag any such adjective/claim that has no supporting figure nearby',
+        '  as a flow issue — name the exact phrase and where it appears.',
       ].join('\n')
     : '(no structural contract defined for this document type)';
 
@@ -173,6 +179,12 @@ ${verdictsList}
 
 CONTRADICTED DIMENSIONS (must NOT be asserted in the document):
 ${contradictedDimensions.length > 0 ? contradictedDimensions.join(', ') : 'none'}
+
+TIES SYMMETRY RULE (D11): if this document type is cover_letter or nonimmigrant_intent and it lists
+home-country ties (family, property, employment/business continuity, community/civic), the exact set
+of ties named must match what the Case Theory's dimension verdict evidence establishes — never invent
+a tie the Case Model does not support, and never silently drop a documented tie the other ties-bearing
+document type would be expected to also carry. Flag any mismatch as a contradiction.
 
 ${sectionContractBlock}
 
