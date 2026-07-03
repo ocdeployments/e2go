@@ -1,6 +1,33 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** July 2, 2026 — Session 114: built `src/lib/exhibit-registry.ts`, the WS3.1/A1 master exhibit registry, wired it into every generation prompt's cached block, added a deterministic post-generation citation-provenance sweep, and fixed the b01 source-of-funds template's hardcoded Tab B drift. Two commits, build clean. Next: WS3.2 (A2/A3 Binder Index).
+**Last Updated:** July 3, 2026 — Session 115: built WS3.2 (A2/A3) — deterministic Master Exhibit Index and document index. Cover letter Section X now reproduces a code-computed tab-grouped document list instead of composing its own; the ZIP's table of contents now lists client-uploaded exhibits per tab (from the WS3.1 registry) alongside generated documents. One commit, build clean. Next: WS3.4 (A7 verifier contracts for all 19 doc types).
+
+---
+
+## Session 115 — Deterministic Master Exhibit Index (WS3.2/A2-A3) (July 3, 2026)
+
+**Branch:** dev. Build clean (`npm run build`, `tsc --noEmit`). One commit.
+
+### Context
+Per `agent-prompt-part1-engine-and-package.md` WS3.2: (1) the cover letter's Section X composed its own document list per-call, with nothing stopping it from drifting from what actually got generated, and (2) the ZIP's table of contents listed generated documents only — no attorney binder leads with an index that omits the client's uploaded evidence entirely. WS3.2's prerequisite (the tab-consistency unit test asserting template headers match `DOCUMENT_TYPE_TABS`) was already satisfied by a prior out-of-band commit (`f652359`).
+
+### Built
+- **`src/lib/docx-package-constants.ts`** — new `buildDeterministicDocumentIndex(documentTypes, labels)`: builds a tab-grouped `"Tab X — Label"` list from the canonical `DOC_TYPE_TAB_MAP`/`TAB_ORDER`, no LLM involved.
+- **`src/types/generation.ts`** — added optional `document_index_text?: string` to `GenerationPayload`.
+- **`src/lib/generation-engine.ts`** — `buildGenerationPayload()` takes a new optional `allDocumentTypes` param; when the document being generated is `cover_letter`/`cover_letter_p2` and that list is supplied, computes `document_index_text` via the new builder. `callClaudeAPI()` injects it into the per-document `variableBlock` as a "SECTION X — DOCUMENT INDEX: USE THIS EXACT LIST. DO NOT COMPOSE YOUR OWN." block. All three in-file call sites of `buildGenerationPayload` (main generation loop, repetition-regen, quality-gate-regen) now pass the run's `DOCUMENT_TYPES`.
+- **`src/app/api/generate/revise/[applicationId]/route.ts`** — when a client requests a revision to the cover letter specifically, fetches the application's actual `generated_documents` types and passes them through so a solo document revision still gets the correct index.
+- **`prompts/v1/documents/cover_letter.md`** — Section X instructions rewritten to reproduce the injected list verbatim, with a fallback (compose from context) only if the block is absent.
+- **`src/lib/docx-toc-builder.ts`** — `buildTableOfContents()` takes a new optional `exhibitsByTab` (the WS3.1 exhibit registry's `byTab`). Now iterates the union of tabs with generated docs *and* tabs with exhibits (a tab with only client-uploaded evidence and no generated document still appears), listing each exhibit by its canonical `Tab X-N` ID and filename beneath that tab's generated-document entries. TOTAL PACKAGE line now reports exhibit count alongside document count.
+- **`src/app/api/generate/download/[applicationId]/route.ts`** — calls `buildExhibitRegistry(applicationId)` and passes `exhibitsByTab: registry.byTab` into `buildTableOfContents()`, so the shipped ZIP's table of contents is now a genuine Master Exhibit Index.
+
+### Verified
+`npm run build` and `tsc --noEmit` both clean across the full project. (`npx vitest run` failed on unrelated `@/` path-alias resolution — no vitest config exists in this repo, `npm test` is a no-op stub; this is a pre-existing tooling gap, not a regression from this change.)
+
+### Next
+WS3.4 — A7 verifier contracts: `cic-verifier.ts`'s `DOC_SECTION_CONTRACTS` currently covers only 5 of 19 document types. Then WS3.5 (A8 production/rendering layer — page N of M, table row integrity, hardcoded §1746 declaration formula), then Part 2 (WS4–WS8).
+
+### Dev server
+No server was running at end of session — nothing to restart (backend/lib + prompt-template change only, not previewable).
 
 ---
 
