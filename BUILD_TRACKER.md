@@ -1,6 +1,24 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** July 3, 2026 — Session 116: built WS3.5 (A8) — production/rendering layer fixes. Footer now shows "Page N of M" (was N only); header shows the actual document title (was a fixed app-name string); table rows can no longer split across a page break; the Declaration's 28 U.S.C. §1746 attestation is now overwritten with the exact statutory formula rather than left to the model. Note: WS3.4 (A7 verifier contracts) was completed by a concurrent session (commit `c448fde`) before this session started, not by this session. One commit, build clean. Next: Part 2 — WS4 CPU Intelligence Pack, WS5 partnership docs, WS6 missing docs, WS7 analyses, WS8 golden-case verification.
+**Last Updated:** July 3, 2026 — Session 116: built WS3.5 (A8) — production/rendering layer fixes, then WS6.2 — corrected the Substantiality Memorandum's proportionality framing (9 FAM 402.9-6(D) sets no fixed thresholds; the prompt was presenting invented practitioner tiers as if they were the FAM's own regulation). Note: WS3.4 (A7 verifier contracts) and WS4B (D4/D7 funds intelligence) were completed by concurrent sessions (commits `c448fde`, `9a68dd2`) — not by this session; scope was reconciled before starting fresh work to avoid duplication. Two commits this session, build clean. Next: remaining WS4 clusters (4A/4C/4D/4E/4F), WS5 partnership docs, WS6 remaining items, WS7 analyses, WS8 golden-case verification.
+
+---
+
+## Session 116b — Substantiality Memo Legal-Accuracy Fix (WS6.2) (July 3, 2026)
+
+**Branch:** dev. Build clean. One commit (`c0e65f9`).
+
+### Context
+Per `agent-prompt-part2-intelligence-and-content.md` WS6.2: "the 4-tier proportionality table (100% under $100K, 75%+ to $500K, …) is a practitioner rule of thumb, NOT regulation — 9 FAM 402.9-6(D) explicitly declines bright-line percentages... Presenting invented tiers as FAM thresholds is discreditable, and once one table is wrong the whole memo's authority is suspect." Reading `prompts/v1/documents/visa_category.md` (generates the Substantiality Memorandum) confirmed the prompt instructed the model to compute "which 9 FAM proportionality tier" the ratio "falls within," attributing the practitioner benchmark table directly to the regulation.
+
+### Built
+- **`prompts/v1/documents/visa_category.md`**: reframed every reference to the proportionality tiers — the intro description, the worked example in the system prompt, the `## 9 FAM PROPORTIONALITY FRAMEWORK` section header/table/caveat, the Section III worked-example block, and the quality checklist — so the tiers are always presented as a "commonly-cited practitioner benchmark," explicitly never attributed to 9 FAM 402.9-6(D) itself. The FAM is now correctly described as setting a flexible sliding-scale test with no fixed percentage thresholds.
+
+### Next
+Part 2 remaining: WS4 clusters 4A/4C/4D/4E/4F (20 of 23 CPU Intelligence directives — 4B done by a concurrent session), WS5 partnership packages, WS6 remaining items (missing documents, per-template upgrades), WS7 analyses upgrades, WS8 golden-case verification loop.
+
+### Dev server
+No server was running at end of session — nothing to restart (prompt-template text change only, not previewable).
 
 ---
 
