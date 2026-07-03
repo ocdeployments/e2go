@@ -272,6 +272,38 @@ function FddCompareContent() {
           </div>
         )}
 
+        {data?.verdict && data.verdict.length >= 2 && (
+          <div className="mb-12 border border-[#C9A84C]/25 bg-[#C9A84C]/[0.03] p-6">
+            <p className="text-[#C9A84C] text-xs tracking-widest uppercase mb-4">
+              Verdict — ranked for your capital and territory
+            </p>
+            <div className="space-y-4">
+              {data.verdict.map(v => {
+                const col = data.columns.find(c => c.id === v.id);
+                if (!col) return null;
+                return (
+                  <div key={v.id} className="flex items-start gap-4">
+                    <span className={`font-['Cormorant_Garamond'] text-2xl leading-none w-8 shrink-0 ${v.rank === 1 ? 'text-emerald-400' : 'text-white/40'}`}>
+                      #{v.rank}
+                    </span>
+                    <div>
+                      <p className="text-white text-sm font-medium mb-1">{col.franchise_name}</p>
+                      {v.reasons.length > 0 ? (
+                        <p className="text-white/50 text-xs">{v.reasons.join(' · ')}</p>
+                      ) : (
+                        <p className="text-white/30 text-xs">Not enough scored data on file to explain this ranking.</p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <p className="text-white/20 text-xs mt-5 pt-4 border-t border-white/8">
+              A weighted ranking of the metrics below — not a new score. Reflects this comparison&rsquo;s relative strengths, not an absolute rating.
+            </p>
+          </div>
+        )}
+
         {data && (
           <div className="overflow-x-auto">
             <div className={`grid ${gridCols} min-w-[640px]`}>

@@ -46,7 +46,18 @@ export interface ComparisonColumn {
   franchisee_survival_rate: number | null;
 }
 
+export interface VerdictEntry {
+  id: string;
+  rank: number;
+  score: number; // weighted composite, informational only — not a standalone metric
+  reasons: string[]; // the factors that moved this column's score, best-driving first
+}
+
 export interface CompareResponse {
   columns: ComparisonColumn[];
   best: Partial<Record<keyof ComparisonColumn, string>>;
+  // Ranked verdict across the compared set, weighted by E-2 fit, financial
+  // performance, and territory strength. Null when fewer than 2 columns have
+  // enough scored data to rank meaningfully (see computeVerdict in the route).
+  verdict: VerdictEntry[] | null;
 }

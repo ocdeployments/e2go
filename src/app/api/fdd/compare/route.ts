@@ -5,9 +5,9 @@ import { matchInvestorProfile } from '@/lib/fdd-profile-match-engine';
 import type { FddAnalysis, FddExtractedFields } from '@/types/fdd';
 import type { ScoringResult } from '@/lib/fdd-scoring-engine';
 import type { TerritoryAnalysis } from '@/lib/fdd-territory-engine';
-import type { ComparisonColumn, CompareResponse } from '@/types/fdd-compare';
+import type { ComparisonColumn, CompareResponse, VerdictEntry } from '@/types/fdd-compare';
 
-export type { ComparisonColumn, CompareResponse };
+export type { ComparisonColumn, CompareResponse, VerdictEntry };
 
 export async function POST(request: NextRequest) {
   try {
@@ -44,7 +44,8 @@ export async function POST(request: NextRequest) {
       .filter((c): c is ComparisonColumn => Boolean(c));
 
     const best = computeBest(ordered);
-    return NextResponse.json({ columns: ordered, best });
+    const verdict = computeVerdict(ordered);
+    return NextResponse.json({ columns: ordered, best, verdict });
   } catch (err) {
     console.error('Compare error:', err);
     return NextResponse.json({ error: err instanceof Error ? err.message : 'Compare failed' }, { status: 500 });
@@ -159,4 +160,75 @@ function computeBest(columns: ComparisonColumn[]): Partial<Record<keyof Comparis
   markLowest('payback_years');
 
   return best;
+}
+
+// ============================================================================
+// Weighted verdict — ranks the compared set for THIS investor's case using
+// only fields already computed above (profile match against this investor's
+// capital, territory analysis against this investor's chosen location). This
+// is deliberately a ranking, not a new score: each category contributes
+// rank-based points (best in the compared set = +2, worst = -2) so the
+// verdict never depends on absolute scales that vary franchise to franchise.
+// ============================================================================
+
+const COMPAT_POINTS: Record<string, number> = { STRONG: 3, VIABLE: 2, CAUTION: 1, INELIGIBLE: -3 };
+const GRADE_POINTS: Record<string, number> = { pass: 2, viable: 1, caution: -1, fail: -3 };
+const PROFILE_POINTS: Record<string, number> = { STRONG_FIT: 2, GOOD_FIT: 1, PARTIAL_FIT: -1, POOR_FIT: -3 };
+
+function rankPoints(columns: ComparisonColumn[], key: keyof ComparisonColumn, higherIsBetter: boolean): Map<string, number> {
+  const points = new Map<string, number>();
+  const vals = columns.map(c => ({ id: c.id, v: c[key] as number | null })).filter(x => x.v !== null) as { id: string; v: number }[];
+  if (vals.length < 2) return points;
+  const sorted = [...vals].sort((a, b) => higherIsBetter ? b.v - a.v : a.v - b.v);
+  const n = sorted.length;
+  sorted.forEach((x, i) => {
+    // Evenly spaced from +2 (best) to -2 (worst); ties share the same rank slot.
+    const span = n > 1 ? 4 / (n - 1) : 0;
+    points.set(x.id, 2 - i * span);
+  });
+  return points;
+}
+
+function computeVerdict(columns: ComparisonColumn[]): VerdictEntry[] | null {
+  if (columns.length < 2) return null;
+
+  const odeRank = rankPoints(columns, 'ode_mid', true);
+  const paybackRank = rankPoints(columns, 'payback_years', false);
+  const territoryRank = rankPoints(columns, 'territory_score', true);
+  const flagsRank = rankPoints(columns, 'flag_count', false);
+
+  const entries: (VerdictEntry & { score: number })[] = columns.map(c => {
+    const factors: { label: string; points: number }[] = [];
+
+    const compatPts = c.compatibility ? COMPAT_POINTS[c.compatibility] ?? 0 : null;
+    if (compatPts !== null) factors.push({ label: `E-2 compatibility: ${c.compatibility}`, points: compatPts });
+
+    const capPts = c.capital_adequacy ? GRADE_POINTS[c.capital_adequacy] ?? 0 : null;
+    if (capPts !== null) factors.push({ label: `Capital adequacy for your case: ${c.capital_adequacy}`, points: capPts });
+
+    const subPts = c.e2_substantiality ? GRADE_POINTS[c.e2_substantiality] ?? 0 : null;
+    if (subPts !== null) factors.push({ label: `Substantiality fit: ${c.e2_substantiality}`, points: subPts });
+
+    const profPts = c.profile_overall ? PROFILE_POINTS[c.profile_overall] ?? 0 : null;
+    if (profPts !== null) factors.push({ label: `Investor profile match: ${(c.profile_overall ?? '').replace(/_/g, ' ')}`, points: profPts });
+
+    if (odeRank.has(c.id)) factors.push({ label: 'Estimated owner income vs. the compared set', points: odeRank.get(c.id)! });
+    if (paybackRank.has(c.id)) factors.push({ label: 'Payback period vs. the compared set', points: paybackRank.get(c.id)! });
+    if (territoryRank.has(c.id) && c.territory_score !== null) factors.push({ label: `Territory strength for your location (${c.territory_score}/100)`, points: territoryRank.get(c.id)! });
+    if (flagsRank.has(c.id)) factors.push({ label: `${c.flag_count} flag${c.flag_count === 1 ? '' : 's'} raised`, points: flagsRank.get(c.id)! });
+
+    const score = factors.reduce((sum, f) => sum + f.points, 0);
+    const reasons = factors
+      .filter(f => Math.abs(f.points) >= 1)
+      .sort((a, b) => Math.abs(b.points) - Math.abs(a.points))
+      .slice(0, 3)
+      .map(f => f.label);
+
+    return { id: c.id, rank: 0, score, reasons };
+  });
+
+  entries.sort((a, b) => b.score - a.score);
+  entries.forEach((e, i) => { e.rank = i + 1; });
+
+  return entries.map(({ id, rank, score, reasons }) => ({ id, rank, score: Math.round(score * 10) / 10, reasons }));
 }
