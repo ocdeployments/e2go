@@ -75,6 +75,7 @@ export interface TerritoryAnalysis {
   radius_miles: number;
 
   census: CensusData;
+  census_source: string; // discloses the ACS vintage so users know how current the data is
   competitors: CompetitorData;
 
   population_score: DimensionScore;
@@ -231,7 +232,12 @@ export function classifyCategory(fields: FddExtractedFields): string {
 // Census ACS 5-year API
 // ============================================================================
 
-const CENSUS_BASE = 'https://api.census.gov/data/2022/acs/acs5';
+// Bump when a newer ACS 5-year vintage is published (2023 data releases ~Dec 2024,
+// 2024 data releases ~Dec 2025) — single place to update, and the vintage is
+// surfaced to the user via `census_source` so nobody assumes it's current-year.
+const CENSUS_VINTAGE = '2022';
+const CENSUS_BASE = `https://api.census.gov/data/${CENSUS_VINTAGE}/acs/acs5`;
+const CENSUS_SOURCE_LABEL = `U.S. Census Bureau, American Community Survey 5-Year Estimates (${CENSUS_VINTAGE} vintage)`;
 
 const CENSUS_VARS = [
   'B01003_001E', // total population
@@ -1037,6 +1043,7 @@ export async function analyseTeritoryForBusiness(
     franchise_category: category,
     radius_miles: radiusMiles,
     census,
+    census_source: CENSUS_SOURCE_LABEL,
     competitors,
     population_score: populationScore,
     income_score: incomeScore,
@@ -1116,6 +1123,7 @@ export async function analyseTeritory(
     franchise_category: category,
     radius_miles: radiusMiles,
     census,
+    census_source: CENSUS_SOURCE_LABEL,
     competitors,
     population_score: populationScore,
     income_score: incomeScore,

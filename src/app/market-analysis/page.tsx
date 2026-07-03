@@ -437,7 +437,12 @@ function MarketAnalysisPageInner() {
             {/* Overall Score Banner */}
             <div className="border border-white/10 bg-white/[0.02] p-8 mb-8 flex items-center justify-between flex-wrap gap-6">
               <div>
-                <p className="text-[#C9A84C] text-xs tracking-widest uppercase mb-2">Overall Territory Score</p>
+                <div className="flex items-center gap-3 mb-2">
+                  <p className="text-[#C9A84C] text-xs tracking-widest uppercase">Overall Territory Score</p>
+                  <button onClick={() => window.print()} className="text-white/30 text-xs hover:text-white/50 transition-colors">
+                    Print / PDF
+                  </button>
+                </div>
                 <p className="font-['Cormorant_Garamond'] text-6xl font-light" style={{ color: overallColor }}>
                   {analysis.overall_score}
                   <span className="text-2xl text-white/30 ml-2">/100</span>
@@ -592,7 +597,7 @@ function MarketAnalysisPageInner() {
                   </div>
                 </div>
                 <p className="text-white/20 text-xs mt-4">
-                  Source: U.S. Census Bureau ACS 5-Year Estimates.
+                  Source: {analysis.census_source ?? 'U.S. Census Bureau ACS 5-Year Estimates.'}
                   {analysis.competitors.source === 'google_places' && ' Competitor data: Google Places API.'}
                   {analysis.competitors.source === 'unavailable' && ' Competitor count is a statistical estimate based on national density benchmarks.'}
                 </p>

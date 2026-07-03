@@ -83,7 +83,7 @@ function DimensionCard({
   );
 }
 
-function CensusTable({ census }: { census: TerritoryAnalysis['census'] }) {
+function CensusTable({ census, census_source }: { census: TerritoryAnalysis['census']; census_source?: string }) {
   const c = census as TerritoryAnalysis['census'] & {
     population_65_plus?: number | null;
     population_under_18?: number | null;
@@ -105,6 +105,7 @@ function CensusTable({ census }: { census: TerritoryAnalysis['census'] }) {
     <div className="border border-white/10 rounded-xl overflow-hidden">
       <div className="px-5 py-3 border-b border-white/10">
         <h3 className="text-white/40 text-xs uppercase tracking-widest">Census ACS 5-Year Data</h3>
+        {census_source && <p className="text-white/20 text-[10px] mt-1">{census_source}</p>}
       </div>
       <div className="divide-y divide-white/5">
         {rows.map(({ label, value }) => (
@@ -267,18 +268,23 @@ export default function FddTerritoryPage() {
       <div className="max-w-2xl mx-auto px-6 py-16 space-y-8">
 
         {/* Header */}
-        <div>
-          <p className="text-[#C9A84C] text-xs tracking-widest uppercase mb-3">Territory Market Analysis</p>
-          <h1 className="font-['Cormorant_Garamond'] text-4xl font-light text-white mb-2">
-            {franchisorName}
-          </h1>
-          <p className="text-white/40 text-sm">
-            ZIP {territory.target_zip}, {territory.target_state}
-            <span className="text-white/20"> · </span>
-            {CATEGORY_LABELS[territory.franchise_category] ?? territory.franchise_category}
-            <span className="text-white/20"> · </span>
-            {territory.radius_miles}-mile radius
-          </p>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-[#C9A84C] text-xs tracking-widest uppercase mb-3">Territory Market Analysis</p>
+            <h1 className="font-['Cormorant_Garamond'] text-4xl font-light text-white mb-2">
+              {franchisorName}
+            </h1>
+            <p className="text-white/40 text-sm">
+              ZIP {territory.target_zip}, {territory.target_state}
+              <span className="text-white/20"> · </span>
+              {CATEGORY_LABELS[territory.franchise_category] ?? territory.franchise_category}
+              <span className="text-white/20"> · </span>
+              {territory.radius_miles}-mile radius
+            </p>
+          </div>
+          <button onClick={() => window.print()} className="text-white/30 text-xs hover:text-white/50 transition-colors mt-1 shrink-0">
+            Print / PDF
+          </button>
         </div>
 
         {/* Overall badge */}
@@ -372,7 +378,7 @@ export default function FddTerritoryPage() {
         )}
 
         {/* Census data table */}
-        <CensusTable census={territory.census} />
+        <CensusTable census={territory.census} census_source={territory.census_source} />
 
         {/* Competitor data */}
         {territory.competitors.source === 'google_places' && territory.competitors.nearby_count !== null && (
