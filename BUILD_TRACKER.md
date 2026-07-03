@@ -1,6 +1,26 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** July 3, 2026 — Session 119g: **WS7 FDD Final Report fixed; owner flagged WS6 must not be skipped.** Per owner instruction to prioritize WS4/7/8 (now explicitly including WS6): WS4 closed out (Session 119), FDD Comparison (119b), Renewal Package (119c), Gap Analysis partnership fix (119d), Interview Prep Kit (119e), Coaching Report (119f), now FDD Final Report (spec-scored 7.0) constrains the E-2 Deep-Dive's verdicts to the deterministic scoring engine (LLM elaborates, never re-adjudicates), strips fabricated FRANdata/IFA statistics from the analyst prompts, and collapses the duplicate platform-writeback logic into `src/lib/fdd-writeback.ts`. Next: remaining WS7 analyses, then WS6 (missing documents + per-template upgrades — untouched except the 116b substantiality fix), then WS8 golden-case verification.
+**Last Updated:** July 3, 2026 — Session 119h: **WS7 FDD Extraction fixed.** Per owner instruction to prioritize WS4/7/8 (now explicitly including WS6): WS4 closed out (Session 119), FDD Comparison (119b), Renewal Package (119c), Gap Analysis partnership fix (119d), Interview Prep Kit (119e), Coaching Report (119f), FDD Final Report (119g), now FDD Extraction (spec-scored 7.0) adds a `_provenance` ('verbatim' | 'derived' | 'estimated') field alongside the existing `_conf` confidence rating so the review UI can badge *how* a value was obtained, not just how sure the model is; also fixes a latent bug where `accepts_nonimmigrant_visa_holders` was never actually asked for in the main extraction prompt and its "not assessed" fallback silently overwrote any real finding whenever no target state was set. Next: remaining WS7 analyses (FDD E-2 Scoring, FDD Questions, Territory/Market Analysis, Renewal Package re-check, FDD Comparison re-check), then WS6 (missing documents + per-template upgrades — untouched except the 116b substantiality fix), then WS8 golden-case verification.
+
+---
+
+## Session 119h — WS7: FDD Extraction — provenance tagging + accepts_nonimmigrant_visa_holders fix (July 3, 2026)
+
+**Branch:** dev. Build clean, `tsc --noEmit` clean, 135/135 tests pass (no new tests — schema/prompt changes to an LLM extraction pipeline, no new deterministic logic to unit-test).
+
+**Context:** Spec-scored 7.0. Fix list per `agent-prompt-part2-intelligence-and-content.md`: (1) citations must be page-anchored — confirmed already implemented (`_page`/`_quote` already flow through every chunk and render in the review UI); no-op. (2) Every field needs a provenance label distinguishing values quoted directly from the FDD vs. code-derived vs. LLM industry-norm estimates — genuinely missing, confirmed via grep that only `_conf` (confidence, a different axis) existed. (3) `accepts_nonimmigrant_visa_holders` — confirmed the field slot existed in `FddExtractedFields` and had a "not assessed" fallback wired, but the main FDD extraction prompt (`CHUNK_A_SYSTEM`/`extractChunkA()`) never actually asked the LLM to look for it — only a separate, unrelated intake route (`api/apply/parse-document/route.ts`) did. Genuine gap.
+
+**Built:**
+- `src/types/fdd.ts` — added `FddFieldProvenance = 'verbatim' | 'derived' | 'estimated'` type and optional `_provenance?: FddFieldProvenance` on `FddFieldMeta` (optional so pre-existing extracted records without it don't break; treat undefined as `'verbatim'`).
+- `src/lib/fdd-extraction-engine.ts`:
+  - `CHUNK_A_SYSTEM` (shared by all 4 chunks) now instructs the LLM on `_provenance` semantics — `'estimated'` only for the specific fields marked as industry-norm estimates, `'verbatim'` for everything else including "not disclosed" fields (nothing to estimate).
+  - Added `accepts_nonimmigrant_visa_holders` to Chunk A's actual extraction JSON schema — a genuine extraction attempt now happens, not just a fallback label.
+  - Tagged `estimated_cogs_pct` (Chunk A), `opening_day_employees` and `typical_time_to_open_months` (Chunk B) with explicit `"_provenance": "estimated"` in their schema entries.
+  - `computeDerivedFields()`: all six code-computed fields (`fdd_age_months`, `_registration_state_flag`, `item19_median_vs_mean_gap`, `covid_period_flag` ×2 branches, `total_ongoing_fee_pct`) now carry `_provenance: 'derived'`.
+  - Fixed a latent bug in the `accepts_nonimmigrant_visa_holders` fallback: it previously lived nested inside `if (targetState) {...}`, so the "not assessed" default only ever applied when a target state was set, and even then it unconditionally overwrote the field regardless of what Chunk A's LLM extraction actually found. Replaced with a standalone conditional, independent of `targetState`, that only falls back to "not assessed" when extraction genuinely found nothing.
+- `src/app/fdd/review/[fddId]/page.tsx` — added `provenanceBadge()` next to the existing `confidenceBadge()`; renders "Estimated" (sky) or "Derived" (neutral) chips inline with the confidence badge and page citation. `'verbatim'`/undefined renders nothing (expected common case, not worth badging).
+
+**Next:** FDD E-2 Scoring (7.0), FDD Questions (6.5), Territory/Market Analysis (6.5/6.0), Renewal Package (5.5), FDD Comparison (4.0 — already improved in 119b, needs re-check against current spec list). Then WS6 (owner: do not skip). Then WS8.
 
 ---
 
