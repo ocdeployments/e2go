@@ -28,6 +28,10 @@ export interface GeneratedQuestion {
   importance: QuestionImportance;
   what_to_listen_for: string;
   category: string;
+  // FDD page that triggered this question, when known — only populated for
+  // flag-derived questions (the scoring engine's FddFlag.page); standard
+  // due-diligence and data-gap questions aren't tied to a specific page.
+  page: number | null;
 }
 
 export interface ProfileMatch {
@@ -51,7 +55,7 @@ export interface QuestionsResult {
 // ============================================================================
 
 // Maps flag key → GeneratedQuestion template (text filled at runtime)
-const FLAG_QUESTIONS: Record<string, Omit<GeneratedQuestion, 'id' | 'triggered_by'>> = {
+const FLAG_QUESTIONS: Record<string, Omit<GeneratedQuestion, 'id' | 'triggered_by' | 'page'>> = {
   fdd_stale: {
     text: 'Is the FDD I received the current year disclosure? If not, can you provide the most recently updated FDD?',
     ask_of: 'franchisor_dev_rep',
@@ -173,7 +177,7 @@ const FLAG_QUESTIONS: Record<string, Omit<GeneratedQuestion, 'id' | 'triggered_b
 // Standard due diligence questions (always included)
 // ============================================================================
 
-const STANDARD_QUESTIONS: Omit<GeneratedQuestion, 'id'>[] = [
+const STANDARD_QUESTIONS: Omit<GeneratedQuestion, 'id' | 'page'>[] = [
   {
     text: 'Can you connect me with 10–15 current franchisees in markets similar to mine, including some who have been open less than 2 years?',
     ask_of: 'franchisor_dev_rep',
@@ -406,6 +410,7 @@ export async function generateQuestions(
         ...template,
         text,
         importance: flag.severity === 'critical' ? 'critical' : template.importance,
+        page: flag.page,
       });
     }
   }
@@ -420,6 +425,7 @@ export async function generateQuestions(
       importance: 'critical',
       what_to_listen_for: 'If they cannot or will not share any data, your only information source is franchisee validation calls. Without Item 19, financial modelling is purely speculative.',
       category: 'Financial Performance',
+      page: null,
     });
   }
 
@@ -432,6 +438,7 @@ export async function generateQuestions(
       importance: 'important',
       what_to_listen_for: 'Royalty on gross revenue (most common) vs. net revenue (rare) dramatically changes your cost structure. Confirm in writing.',
       category: 'Fees',
+      page: null,
     });
   }
 
@@ -444,6 +451,7 @@ export async function generateQuestions(
       importance: 'important',
       what_to_listen_for: 'Many costs are excluded from Item 7 by design (professional fees, travel, lost income during training). Press for a real first-year number including everything.',
       category: 'Investment',
+      page: null,
     });
   }
 
@@ -456,19 +464,20 @@ export async function generateQuestions(
       importance: 'critical',
       what_to_listen_for: 'For E-2 investors, the franchise must be structured through a U.S. entity. Any restriction on corporate ownership requires an attorney to resolve before signing.',
       category: 'E-2 Visa Compatibility',
+      page: null,
     });
   }
 
   // 3. Standard due diligence questions (always included)
   for (const q of STANDARD_QUESTIONS) {
-    questions.push({ id: makeId(), ...q });
+    questions.push({ id: makeId(), page: null, ...q });
   }
 
   // 4. LLM-generated bespoke questions (5 targeted to this specific FDD)
   try {
     const bespokeQuestions = await generateBespokeQuestions(fields, scoring);
     for (const q of bespokeQuestions) {
-      questions.push({ id: makeId(), ...q });
+      questions.push({ id: makeId(), page: null, ...q });
     }
   } catch (err) {
     console.error('Bespoke question generation error:', err);
@@ -494,7 +503,7 @@ export async function generateQuestions(
 async function generateBespokeQuestions(
   fields: FddExtractedFields,
   scoring: ScoringResult
-): Promise<Omit<GeneratedQuestion, 'id'>[]> {
+): Promise<Omit<GeneratedQuestion, 'id' | 'page'>[]> {
   const franchiseName = (fields.franchisor_legal_name?.value as string) ?? 'the franchise';
   const totalMin = fields.total_investment_min?.value as number | null;
   const auv = fields.item19_median?.value as number | null ?? fields.item19_auv?.value as number | null;

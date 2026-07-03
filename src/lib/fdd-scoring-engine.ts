@@ -57,6 +57,9 @@ export interface FddFlag {
   key: string;
   label: string;
   severity: 'critical' | 'important';
+  // FDD page the triggering field was extracted from, when known — lets
+  // downstream consumers (e.g. FDD Questions) cite where the flag came from.
+  page: number | null;
 }
 
 export interface ScoringResult {
@@ -88,6 +91,10 @@ function bool(meta: FddFieldMeta | undefined): boolean | null {
 function str(meta: FddFieldMeta | undefined): string | null {
   const v = meta?.value;
   return typeof v === 'string' ? v : null;
+}
+
+function page(meta: FddFieldMeta | undefined): number | null {
+  return meta?._page ?? null;
 }
 
 function checkResult(
@@ -617,77 +624,78 @@ function collectFlags(
   const flags: FddFlag[] = [];
 
   if (staleStatus !== 'current') {
-    flags.push({ key: 'fdd_stale', label: 'FDD may be outdated — request current version', severity: 'critical' });
+    flags.push({ key: 'fdd_stale', label: 'FDD may be outdated — request current version', severity: 'critical', page: null });
   }
 
   if (registrationStatus === 'fail') {
-    flags.push({ key: 'state_registration', label: 'Franchisor not confirmed registered in target state', severity: 'critical' });
+    flags.push({ key: 'state_registration', label: 'Franchisor not confirmed registered in target state', severity: 'critical', page: null });
   }
 
   const litigation = num(fields.franchisee_initiated_suits);
   if (litigation !== null && litigation >= 3) {
-    flags.push({ key: 'litigation', label: `${litigation} franchisee-initiated suits — systemic concern`, severity: 'important' });
+    flags.push({ key: 'litigation', label: `${litigation} franchisee-initiated suits — systemic concern`, severity: 'important', page: page(fields.franchisee_initiated_suits) });
   }
 
   if (bool(fields.franchisor_bankruptcy_history) === true) {
-    flags.push({ key: 'bankruptcy', label: 'Franchisor has bankruptcy history', severity: 'important' });
+    flags.push({ key: 'bankruptcy', label: 'Franchisor has bankruptcy history', severity: 'important', page: page(fields.franchisor_bankruptcy_history) });
   }
 
   if (bool(fields.item19_cherry_pick_flag) === true) {
-    flags.push({ key: 'cherry_pick', label: 'Item 19 appears to cherry-pick top performers', severity: 'important' });
+    flags.push({ key: 'cherry_pick', label: 'Item 19 appears to cherry-pick top performers', severity: 'important', page: page(fields.item19_cherry_pick_flag) });
   }
 
   if (bool(fields.item19_includes_franchisee_units) === false) {
-    flags.push({ key: 'company_only_i19', label: 'Item 19 covers company units only — not franchisee economics', severity: 'important' });
+    flags.push({ key: 'company_only_i19', label: 'Item 19 covers company units only — not franchisee economics', severity: 'important', page: page(fields.item19_includes_franchisee_units) });
   }
 
   // Mean/median gap > 30%
-  const medianVsMean = num((fields as Record<string, FddFieldMeta>)['item19_median_vs_mean_gap'] as FddFieldMeta | undefined);
+  const medianVsMeanField = (fields as Record<string, FddFieldMeta>)['item19_median_vs_mean_gap'] as FddFieldMeta | undefined;
+  const medianVsMean = num(medianVsMeanField);
   if (medianVsMean !== null && medianVsMean > 0.30) {
-    flags.push({ key: 'revenue_variability', label: `${Math.round(medianVsMean * 100)}% mean/median gap — high performance variability`, severity: 'important' });
+    flags.push({ key: 'revenue_variability', label: `${Math.round(medianVsMean * 100)}% mean/median gap — high performance variability`, severity: 'important', page: page(fields.item19_median) ?? page(fields.item19_mean) });
   }
 
   const wcMonths = num(fields.working_capital_months_covered);
   if (wcMonths !== null && wcMonths < 6) {
-    flags.push({ key: 'working_capital', label: `Item 7 WC estimate covers only ${wcMonths} months`, severity: 'important' });
+    flags.push({ key: 'working_capital', label: `Item 7 WC estimate covers only ${wcMonths} months`, severity: 'important', page: page(fields.working_capital_months_covered) });
   }
 
   if (bool(fields.renewal_on_current_terms) === false) {
-    flags.push({ key: 'renewal_terms', label: 'Renewal requires signing new (potentially worse) agreement', severity: 'important' });
+    flags.push({ key: 'renewal_terms', label: 'Renewal requires signing new (potentially worse) agreement', severity: 'important', page: page(fields.renewal_on_current_terms) });
   }
 
   const cureDays = num(fields.cure_period_days);
   if (cureDays !== null && cureDays < 10) {
-    flags.push({ key: 'cure_period', label: `Cure period only ${cureDays} days — aggressive enforcement risk`, severity: 'important' });
+    flags.push({ key: 'cure_period', label: `Cure period only ${cureDays} days — aggressive enforcement risk`, severity: 'important', page: page(fields.cure_period_days) });
   }
 
   const nonCompeteYears = num(fields.post_termination_noncompete_years);
   const nonCompeteMiles = num(fields.post_termination_noncompete_radius_miles);
   if ((nonCompeteYears !== null && nonCompeteYears > 2) || (nonCompeteMiles !== null && nonCompeteMiles > 50)) {
-    flags.push({ key: 'noncompete', label: 'Broad post-termination non-compete restricts exit options', severity: 'important' });
+    flags.push({ key: 'noncompete', label: 'Broad post-termination non-compete restricts exit options', severity: 'important', page: page(fields.post_termination_noncompete_years) ?? page(fields.post_termination_noncompete_radius_miles) });
   }
 
   if (bool(fields.fee_escalation_rights) === true) {
-    flags.push({ key: 'fee_escalation', label: 'Franchisor can raise fees unilaterally', severity: 'important' });
+    flags.push({ key: 'fee_escalation', label: 'Franchisor can raise fees unilaterally', severity: 'important', page: page(fields.fee_escalation_rights) });
   }
 
   if (bool(fields.ecommerce_carve_out) === true) {
-    flags.push({ key: 'ecommerce_carveout', label: 'E-commerce carve-out — franchisor can sell in your territory online', severity: 'important' });
+    flags.push({ key: 'ecommerce_carveout', label: 'E-commerce carve-out — franchisor can sell in your territory online', severity: 'important', page: page(fields.ecommerce_carve_out) });
   }
 
   if (bool(fields.transfer_to_entity_allowed) === false) {
-    flags.push({ key: 'entity_transfer', label: 'Cannot transfer to LLC/corporation — blocks standard E-2 structure', severity: 'critical' });
+    flags.push({ key: 'entity_transfer', label: 'Cannot transfer to LLC/corporation — blocks standard E-2 structure', severity: 'critical', page: page(fields.transfer_to_entity_allowed) });
   }
 
   if (bool(fields.right_of_first_refusal_on_sale) === true) {
-    flags.push({ key: 'rofr', label: 'Franchisor right of first refusal on sale limits exit flexibility', severity: 'important' });
+    flags.push({ key: 'rofr', label: 'Franchisor right of first refusal on sale limits exit flexibility', severity: 'important', page: page(fields.right_of_first_refusal_on_sale) });
   }
 
   // COVID period flag
   const covidFlag = (fields as Record<string, FddFieldMeta>)['covid_period_flag'];
   if (bool(covidFlag as FddFieldMeta) === true) {
     const fiscalYear = num(fields.item19_fiscal_year);
-    flags.push({ key: 'covid_data', label: `Item 19 data from ${fiscalYear ?? 'COVID period'} — may not reflect steady-state performance`, severity: 'important' });
+    flags.push({ key: 'covid_data', label: `Item 19 data from ${fiscalYear ?? 'COVID period'} — may not reflect steady-state performance`, severity: 'important', page: page(fields.item19_fiscal_year) });
   }
 
   return flags;

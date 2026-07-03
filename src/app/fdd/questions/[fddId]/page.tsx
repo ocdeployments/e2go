@@ -52,6 +52,9 @@ function QuestionCard({ question, index }: { question: GeneratedQuestion; index:
                 <span className="text-red-400 text-xs bg-red-400/10 px-2 py-0.5 rounded">Critical</span>
               )}
               <span className="text-white/25 text-xs">{question.category}</span>
+              {question.page !== null && (
+                <span className="text-white/25 text-xs bg-white/5 px-1.5 py-0.5 rounded">p. {question.page}</span>
+              )}
             </div>
             <p className="text-white/80 text-sm leading-relaxed">{question.text}</p>
           </div>
