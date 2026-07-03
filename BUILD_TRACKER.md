@@ -1,6 +1,36 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** July 2, 2026 — Session 112: fixed a live data-integrity bug found while grounding Phase 2/A4 — `generation-engine.ts` and `gap-analysis-engine.ts` were reading a dead `QF-*`/`QI-*` answer-key family for investment/revenue/payroll data instead of the live `M3-F-*`/`M3-I-*` keys, and in several spots reading the wrong field outright (e.g. revenue parsed from employee-count fields). Two commits, build clean. User explicitly chose to fix this foundation before building `case-financials.ts` (Phase 2/A4) — that build is next.
+**Last Updated:** July 2, 2026 — Session 113: built `src/lib/case-financials.ts`, the Phase 2/A4 deterministic financial spine. One commit, build clean. Next: WS3.1 (A1 exhibit registry) or WS3.2 (A2/A3 Binder Index).
+
+---
+
+## Session 113 — Deterministic Financial Spine (Phase 2/A4) (July 2, 2026)
+
+**Branch:** dev. Build clean (`npm run build`, `tsc --noEmit`). One commit.
+
+### Context
+With `M3-F-*`/`M3-I-*` key resolution confirmed correct in Session 112, built the Phase 2/A4 deterministic financial spine so the model is handed pre-computed, locked figures instead of re-deriving or estimating them inside document-generation prompts (per the project's "never fabricate" standard).
+
+### Built
+- **`src/lib/case-financials.ts`** — new file. `computeCaseFinancials(answers)` returns a `CaseFinancials` object:
+  - **Investment reconciliation:** total invested (`M3-F-02`), total business cost (`M3-F-03`), funding gap, proportionality ratio, deployment categories (`M3-F-04`), funds-deployed status (`M3-F-NEW-01`).
+  - **Revenue/net income/headcount by year:** parsed from the `M3-I-PROJECTIONS` JSON blob (the only live per-year source), plus Year 1→3 revenue growth %.
+  - **Break-even:** self-reported bucket (`M3-I-BREAKEVEN`) cross-checked against a computed value (first year with net income ≥ 0 in the projections table), flagged `consistent`/`inconsistent`/`insufficient_data`.
+  - **Headcount consistency:** intake FT+PT (`M3-I-05`/`M3-I-06`) vs. Year 1 headcount in the projections table, same three-way flag.
+  - **Payroll by year:** intentionally left `null` with an explanatory note — the live intake only captures headcounts and the owner's Year 1 draw (`M3-I-04`), no per-employee wage data exists, so computing a payroll total would mean fabricating a wage assumption.
+  - **Net worth:** CAD figure passthrough (`M3-F-NET`), USD conversion left `null` with a note — no dated FX rate source exists anywhere in this codebase.
+  - `formatCaseFinancialsText()` renders the object as a labeled, human-readable block for prompt injection, with an explicit "never alter or re-derive these numbers" instruction at the top and bottom.
+- **Wired into `generation-engine.ts`:** `buildGenerationPayload()` now computes `case_financials` alongside the existing `investment_breakdown`; `callClaudeAPI()`'s `variableBlock` injects `formatCaseFinancialsText()` output into every document-generation prompt.
+- **`src/types/generation.ts`:** added `CaseFinancials` import and `case_financials: CaseFinancials` field to `GenerationPayload`. Also caught and fixed a type drift bug found during this work — `InvestmentBreakdownData` (types/generation.ts) and `InvestmentBreakdown` (generation-engine.ts) were duplicate types missing `deployment_categories` on one side; added to both, confirmed no other drift via `tsc --noEmit`.
+
+### Verified
+Ran `computeCaseFinancials()` against a realistic answer set via `tsx` (investment split, 3-year projections, break-even bucket, headcount, owner draw, net worth) — all computed values matched expected math (funding gap, proportionality ratio, revenue growth %, break-even year, headcount cross-check), and payroll/FX fields correctly rendered as `null` with their notes rather than guessed values.
+
+### Next
+WS3.1 (A1 exhibit registry) or WS3.2 (A2/A3 Binder Index) — per `agent-prompt-part1-engine-and-package.md`. Ask user which to prioritize.
+
+### Dev server
+No server was running at end of session — nothing to restart (this was a pure backend/lib change, not previewable).
 
 ---
 
