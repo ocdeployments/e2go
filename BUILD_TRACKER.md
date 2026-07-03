@@ -1,6 +1,31 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** July 3, 2026 — Session 115: built WS3.2 (A2/A3) — deterministic Master Exhibit Index and document index. Cover letter Section X now reproduces a code-computed tab-grouped document list instead of composing its own; the ZIP's table of contents now lists client-uploaded exhibits per tab (from the WS3.1 registry) alongside generated documents. One commit, build clean. Next: WS3.4 (A7 verifier contracts for all 19 doc types).
+**Last Updated:** July 3, 2026 — Session 116: built WS3.5 (A8) — production/rendering layer fixes. Footer now shows "Page N of M" (was N only); header shows the actual document title (was a fixed app-name string); table rows can no longer split across a page break; the Declaration's 28 U.S.C. §1746 attestation is now overwritten with the exact statutory formula rather than left to the model. Note: WS3.4 (A7 verifier contracts) was completed by a concurrent session (commit `c448fde`) before this session started, not by this session. One commit, build clean. Next: Part 2 — WS4 CPU Intelligence Pack, WS5 partnership docs, WS6 missing docs, WS7 analyses, WS8 golden-case verification.
+
+---
+
+## Session 116 — Production/Rendering Layer Fixes (WS3.5/A8) (July 3, 2026)
+
+**Branch:** dev. Build clean (`npm run build`, `tsc --noEmit`). One commit.
+
+### Context
+Per `agent-prompt-part1-engine-and-package.md` WS3.5: "Unscored until real outputs are inspected. Requirements for consultant grade: every page carries applicant name + document title + page N of M; tables never break rows across pages; the Declaration's 28 U.S.C. §1746 block renders with the exact statutory formula... — hardcode the formula in the template, do not leave it to the model." Reading `docx-builder.ts` confirmed all three gaps existed: footer showed `Page N` only (no total), header showed a fixed `"E-2 Treaty Investor Visa"` string instead of the actual document title, `TableRow` instances had no `cantSplit`, and the Declaration templates' perjury paragraph was model-generated paraphrase ("...to the best of my knowledge and belief...") rather than the exact §1746 language.
+
+### Built
+- **`src/lib/docx-builder.ts`**:
+  - Footer: added `PageNumber.TOTAL_PAGES` after the existing `PageNumber.CURRENT`, rendering `"Page N of M"`.
+  - Header: replaced the fixed `"E-2 Treaty Investor Visa"` string with `DOCUMENT_TYPE_LABELS[documentType]` (imported from `@/types/generation`) — each document's header now names that specific document.
+  - `createWordTable()`: added `cantSplit: true` to both the header `TableRow` and every data `TableRow`, so a table row can no longer be split across a page boundary.
+  - New `enforceStatutoryDeclaration(contentText, documentType)`: for `declaration_principal`/`declaration_spouse`/`declaration_p2` only, regex-replaces the model's perjury paragraph (matched from `"I declare under penalty of perjury"` to the next paragraph break) with the fixed formula `"I declare under penalty of perjury under the laws of the United States of America that the foregoing is true and correct. Executed on [date] at [place]."` — appends it if the model omitted the attestation entirely. Called at the top of `buildDocument()` before line-parsing, so it applies regardless of model phrasing.
+
+### Verified
+`npm run build` and `tsc --noEmit` both clean. No UI surface to verify in a browser preview — this is server-side .docx generation invoked only from the download route.
+
+### Next
+Part 2 (`agent-prompt-part2-intelligence-and-content.md`) — Workstreams 4-8: CPU Intelligence Pack (23 directives), partnership documents, missing documents + per-template upgrades, analyses upgrades, and the golden-case verification loop.
+
+### Dev server
+No server was running at end of session — nothing to restart (backend/lib change only, not previewable).
 
 ---
 
