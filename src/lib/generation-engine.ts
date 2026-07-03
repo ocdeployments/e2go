@@ -25,8 +25,25 @@ import { QUESTION_LABELS } from './question-registry.generated';
 import { computeCaseFinancials, formatCaseFinancialsText } from './case-financials';
 import { buildExhibitRegistry, formatExhibitRegistryText, checkExhibitConsistency } from './exhibit-registry';
 import { buildDeterministicDocumentIndex } from './docx-package-constants';
+import { computeEnterpriseNationality, buildJointPartnershipBlock } from './partnership-analysis';
 
 const PROMPTS_DIR = join(process.cwd(), 'prompts', 'v1', 'documents');
+
+// WS5 5.2 — the 8 documents shared across a complete_partnership case that
+// need the joint-context block (business_plan, visa_category [Substantiality
+// Memo], marginality_rebuttal, fund_flow_chronology, net_worth_statement,
+// ds160_reference, gift_letter, property_portfolio) rather than the
+// single-investor _p2 context block.
+const JOINT_PARTNERSHIP_DOC_TYPES = new Set<DocumentType>([
+  'business_plan',
+  'visa_category',
+  'marginality_rebuttal',
+  'fund_flow_chronology',
+  'net_worth_statement',
+  'ds160_reference',
+  'gift_letter',
+  'property_portfolio',
+]);
 
 // ---------------------------------------------------------------------------
 // Knowledge Base context injection
@@ -2394,6 +2411,34 @@ Generate the document using Investor 2's identity, name, nationality, source of 
               'P2-QUALS': p2Quals,
               'P2-INTENT': p2Intent,
             };
+          }
+
+          // WS5 5.2 — joint-context block for the 8 documents shared across a
+          // complete_partnership case. Only the _p2-suffixed docs got a context
+          // block before this; the shared docs were written in single-investor
+          // voice with unguided P2-* leakage. Applies to the same CORE
+          // document types the spec calls out (Business Plan, Substantiality
+          // Memo, Non-Marginality Rebuttal, Fund Flow Chronology, Net Worth
+          // Statement, DS-160 Reference, Gift Letter, Property Portfolio).
+          if (isPartnership && !isP2Doc && JOINT_PARTNERSHIP_DOC_TYPES.has(docType) && Object.keys(p2Answers).length > 0) {
+            const p1Name = (caseBrief as unknown as Record<string, unknown>).principal_name as string || 'Investor 1';
+            const p1Nationality = (caseBrief as unknown as Record<string, unknown>).treaty_country as string
+              ?? (caseBrief as unknown as Record<string, unknown>).nationality as string
+              ?? null;
+            const p2Name = p2Answers['P2-NAME'] ?? 'Investor 2';
+            const p2Nation = p2Answers['P2-NATIONALITY'] ?? '';
+            const p2Shares = p2Answers['P2-SHARES'] ?? '';
+            const p2Invest = p2Answers['P2-INVEST'] ?? '';
+            const p2Role = p2Answers['P2-ROLE'] ?? '';
+
+            const nationality = computeEnterpriseNationality(
+              p1Name, p1Nationality, null,
+              p2Name, p2Nation || null, p2Shares || null,
+            );
+            const jointBlock = buildJointPartnershipBlock(
+              p1Name, p2Name, p2Nation, p2Shares, p2Invest, p2Role, nationality,
+            );
+            payload.system_prompt = jointBlock + payload.system_prompt;
           }
 
           // Prepend client regen note (if this is a client-requested regeneration)
