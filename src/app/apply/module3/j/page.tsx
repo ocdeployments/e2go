@@ -239,7 +239,7 @@ export default function TabJPage() {
           question_key: key,
           answer_value: value,
         },
-        { onConflict: 'application_id,question_key' }
+        { onConflict: 'application_id,question_key,family_member_id' }
       );
 
     if (!error) {
@@ -295,7 +295,7 @@ export default function TabJPage() {
         question_key: 'QJ-ORG-CONFIRMED',
         answer_value: 'true',
       },
-      { onConflict: 'application_id,question_key' }
+      { onConflict: 'application_id,question_key,family_member_id' }
     );
 
     setScreenState('completion');

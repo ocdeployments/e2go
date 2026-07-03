@@ -55,8 +55,8 @@ export async function POST(request: NextRequest) {
     await Promise.all(
       updates.map(({ key, value }) =>
         service.from('answers').upsert(
-          { application_id: app.id, question_key: key, answer: value, source: 'fdd_intelligence', updated_at: new Date().toISOString() },
-          { onConflict: 'application_id,question_key' }
+          { application_id: app.id, question_key: key, answer_value: value, source: 'fdd_intelligence', updated_at: new Date().toISOString() },
+          { onConflict: 'application_id,question_key,family_member_id' }
         ).then(({ error }) => { if (error) console.warn(`Writeback failed for ${key}:`, error.message); })
       )
     );

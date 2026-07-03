@@ -201,7 +201,7 @@ export async function POST(request: NextRequest) {
                     source_document_type: classification.detected_type,
                     source: 'document_extracted',
                   },
-                  { onConflict: 'application_id,question_key' }
+                  { onConflict: 'application_id,question_key,family_member_id' }
                 );
             }
 

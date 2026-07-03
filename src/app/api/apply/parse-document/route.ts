@@ -588,6 +588,41 @@ Dollar amounts: plain integers, no commas, no $.
 }`,
   },
 
+  // ── Birth certificate ──────────────────────────────────────────────────────
+  birth_certificate: {
+    maxTokens: 500,
+    prompt: `You are extracting data from a birth certificate for an E-2 visa application.
+Return ONLY a valid JSON object. Return null for any field not found.
+Dates: YYYY-MM-DD.
+
+{
+  "full_name": "full name of the person on the birth certificate",
+  "date_of_birth": "date of birth YYYY-MM-DD",
+  "place_of_birth_city": "city of birth",
+  "place_of_birth_country": "country of birth",
+  "nationality": "nationality if stated or inferable from place of birth",
+  "father_full_name": "father's full name if listed",
+  "mother_full_name": "mother's full name if listed",
+  "registration_number": "birth registration or certificate number"
+}`,
+  },
+
+  // ── Marriage certificate ──────────────────────────────────────────────────
+  marriage_certificate: {
+    maxTokens: 500,
+    prompt: `You are extracting data from a marriage certificate for an E-2 visa application.
+Return ONLY a valid JSON object. Return null for any field not found.
+Dates: YYYY-MM-DD.
+
+{
+  "spouse1_full_name": "full name of first spouse",
+  "spouse2_full_name": "full name of second spouse",
+  "marriage_date": "date of marriage YYYY-MM-DD",
+  "marriage_place": "city and country where marriage occurred",
+  "registration_number": "marriage registration or certificate number"
+}`,
+  },
+
   // ── Government form (DS-160, DS-156E, G-28, I-539, etc.) ─────────────────
   government_form: {
     maxTokens: 800,
@@ -690,12 +725,11 @@ const INTAKE_FIELD_MAP: Record<string, Record<string, string>> = {
   },
   passport: {
     'full_name':                 'M3-A-01',
-    'date_of_birth':             'M3-A-DOB',
-    'nationality':               'M3-A-NATIONALITY',
-    'issuing_country':           'M3-A-CITIZENSHIP',
+    'date_of_birth':             'M3-A-03',
+    'issuing_country':           'M3-A-05',
     'passport_number':           'M3-A-PASSPORT',
     'expiry_date':               'M3-A-PASSPORT-EXP',
-    'place_of_birth_country':    'M3-A-BIRTH-COUNTRY',
+    'place_of_birth_country':    'M3-A-04',
   },
   franchise_agreement: {
     'franchise_brand':           'M3-Q-00',
@@ -723,11 +757,21 @@ const INTAKE_FIELD_MAP: Record<string, Record<string, string>> = {
   },
   government_form: {
     'applicant_full_name':       'M3-A-01',
-    'date_of_birth':             'M3-A-DOB',
-    'nationality':               'M3-A-NATIONALITY',
+    'date_of_birth':             'M3-A-03',
     'passport_number':           'M3-A-PASSPORT',
     'business_name_e2':          'M3-E-01',
     'investment_amount_e2':      'M3-F-02',
+  },
+  birth_certificate: {
+    'full_name':                 'M3-A-01',
+    'date_of_birth':             'M3-A-03',
+    'place_of_birth_country':    'M3-A-04',
+    'nationality':                'M3-A-05',
+  },
+  marriage_certificate: {
+    // No principal-question-key mapping — marriage date/place isn't a DS-160
+    // field on its own; this doc type exists to surface a spouse via identity
+    // detection. Full extraction is still stored in extracted_json.
   },
 };
 
@@ -780,13 +824,15 @@ export interface ExtractedField {
   key: string;
   label: string;
   value: string;
+  familyMemberId: string | null;
 }
 
 export interface ParseDocumentResponse {
-  docId:       string;
-  fields:      ExtractedField[];
-  docType:     string;
-  totalFields: number;
+  docId:           string;
+  fields:          ExtractedField[];
+  docType:         string;
+  totalFields:     number;
+  identityMatches: IdentityMatchResult[];
 }
 
 // ─── POST handler ─────────────────────────────────────────────────────────────
@@ -818,6 +864,153 @@ async function detectDocumentType(textSample: string, userId: string): Promise<s
   return (COMPREHENSIVE_SCHEMAS[detected] ? detected : null) ?? 'resume';
 }
 
+// ─── Identity detection ───────────────────────────────────────────────────────
+// "Who does this document mention?" — runs for every doc type, not just
+// passports, so a spouse's resume or a birth certificate naming a child can
+// also surface a new person. Cheap, small-token, structured output.
+
+interface IdentifiedPerson {
+  name: string;
+  roleGuess: 'self' | 'spouse' | 'child' | 'parent' | 'unknown';
+  dob: string | null;
+  nationality: string | null;
+  passportNumber: string | null;
+}
+
+async function identifyPeopleInDocument(textSample: string, userId: string): Promise<IdentifiedPerson[]> {
+  const result = await callLLM({
+    task:       'extract',
+    route:      '/api/apply/parse-document',
+    userId,
+    max_tokens: 500,
+    messages: [
+      {
+        role:    'system',
+        content: 'You identify which people are named in a document for a US visa case. Reply ONLY with a valid JSON array — no markdown, no commentary.',
+      },
+      {
+        role:    'user',
+        content: `List every distinct person named in this document (the document owner, their spouse, children, parents — anyone identifiable by name). Skip people who are not part of the applicant's family (e.g. employers, landlords, witnesses, notaries).
+For each person return: {"name": "full name", "roleGuess": one of "self"|"spouse"|"child"|"parent"|"unknown", "dob": "YYYY-MM-DD or null", "nationality": "or null", "passportNumber": "or null"}.
+"self" = the document's primary subject/owner. If uncertain about the relationship, use "unknown".
+Reply with ONLY a JSON array, e.g. [{"name":"...","roleGuess":"self","dob":null,"nationality":null,"passportNumber":null}]. If no people are identifiable, reply with [].
+
+Document content:\n\n${textSample.slice(0, 4000)}`,
+      },
+    ],
+  });
+
+  if (!result) return [];
+  try {
+    const jsonMatch = result.match(/\[[\s\S]*\]/);
+    const parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .filter((p): p is Record<string, unknown> => !!p && typeof p.name === 'string' && p.name.trim() !== '')
+      .map(p => ({
+        name:           String(p.name).trim(),
+        roleGuess:      (['self', 'spouse', 'child', 'parent', 'unknown'].includes(String(p.roleGuess)) ? p.roleGuess : 'unknown') as IdentifiedPerson['roleGuess'],
+        dob:            p.dob ? String(p.dob) : null,
+        nationality:    p.nationality ? String(p.nationality) : null,
+        passportNumber: p.passportNumber ? String(p.passportNumber) : null,
+      }));
+  } catch {
+    return [];
+  }
+}
+
+// Loose name match: normalize and compare token sets so "Jane A. Doe" matches
+// "Jane Doe" — good enough for surfacing a match/mismatch, not a legal check.
+function namesLikelyMatch(a: string, b: string): boolean {
+  const norm = (s: string) => new Set(s.toLowerCase().replace(/[^a-z\s]/g, '').split(/\s+/).filter(t => t.length > 1));
+  const setA = norm(a);
+  const setB = norm(b);
+  if (setA.size === 0 || setB.size === 0) return false;
+  let overlap = 0;
+  for (const t of setA) if (setB.has(t)) overlap++;
+  return overlap >= Math.min(setA.size, setB.size) * 0.6;
+}
+
+export interface IdentityMatchResult {
+  name: string;
+  roleGuess: IdentifiedPerson['roleGuess'];
+  matchedFamilyMemberId: string | null;
+  matchedIsPrincipal: boolean;
+  isNewPerson: boolean;
+  newFamilyMemberId?: string;
+}
+
+const ROLE_TO_MEMBER_TYPE: Record<string, 'spouse' | 'child'> = {
+  spouse: 'spouse',
+  child:  'child',
+};
+
+async function matchAndRouteIdentities(
+  people: IdentifiedPerson[],
+  userId: string,
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+): Promise<IdentityMatchResult[]> {
+  if (people.length === 0) return [];
+
+  const [{ data: profile }, { data: familyMembers }] = await Promise.all([
+    supabase.from('profiles').select('first_name, last_name').eq('id', userId).single(),
+    supabase.from('family_members').select('id, member_type, first_name, last_name').eq('user_id', userId),
+  ]);
+
+  const principalName = [profile?.first_name, profile?.last_name].filter(Boolean).join(' ').trim();
+  const members = (familyMembers ?? []) as Array<{ id: string; member_type: string; first_name: string | null; last_name: string | null }>;
+
+  const results: IdentityMatchResult[] = [];
+
+  for (const person of people) {
+    if (principalName && namesLikelyMatch(person.name, principalName)) {
+      results.push({ name: person.name, roleGuess: person.roleGuess, matchedFamilyMemberId: null, matchedIsPrincipal: true, isNewPerson: false });
+      continue;
+    }
+
+    const match = members.find(m => namesLikelyMatch(person.name, [m.first_name, m.last_name].filter(Boolean).join(' ')));
+    if (match) {
+      results.push({ name: person.name, roleGuess: person.roleGuess, matchedFamilyMemberId: match.id, matchedIsPrincipal: false, isNewPerson: false });
+      continue;
+    }
+
+    // No match anywhere — auto-create a stub family_members row for spouse/child
+    // roles only (per locked decision). "self"/"parent"/"unknown" are surfaced
+    // to the client without creating a record — too ambiguous to safely file.
+    const memberType = ROLE_TO_MEMBER_TYPE[person.roleGuess];
+    if (!memberType) {
+      results.push({ name: person.name, roleGuess: person.roleGuess, matchedFamilyMemberId: null, matchedIsPrincipal: false, isNewPerson: false });
+      continue;
+    }
+
+    const nameParts = person.name.trim().split(/\s+/);
+    const { data: created } = await supabase
+      .from('family_members')
+      .insert({
+        user_id:         userId,
+        member_type:     memberType,
+        first_name:      nameParts[0] ?? null,
+        last_name:       nameParts.length > 1 ? nameParts.slice(1).join(' ') : null,
+        date_of_birth:   person.dob,
+        nationality:     person.nationality,
+        passport_number: person.passportNumber,
+      })
+      .select('id')
+      .single();
+
+    results.push({
+      name: person.name,
+      roleGuess: person.roleGuess,
+      matchedFamilyMemberId: created?.id ?? null,
+      matchedIsPrincipal: false,
+      isNewPerson: !!created,
+      newFamilyMemberId: created?.id,
+    });
+  }
+
+  return results;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createSupabaseServerClient();
@@ -842,6 +1035,9 @@ export async function POST(request: NextRequest) {
     const file    = formData.get('file')    as File | null;
     const docType = formData.get('docType') as string | null;
     const appId   = formData.get('applicationId') as string | null;
+    // Which person section the file was dropped into on the client — the
+    // primary routing signal. Identity detection below cross-checks it.
+    const ownerFamilyMemberId = (formData.get('ownerFamilyMemberId') as string | null) || null;
 
     if (!file)    return NextResponse.json({ error: 'No file provided' },          { status: 400 });
     if (!docType) return NextResponse.json({ error: 'No document type provided' }, { status: 400 });
@@ -921,12 +1117,14 @@ export async function POST(request: NextRequest) {
     const { data: docRecord, error: insertErr } = await supabase
       .from('uploaded_documents')
       .insert({
-        user_id:           user.id,
-        application_id:    appId || null,
-        file_path:         '',
-        file_name:         file.name,
-        doc_type:          resolvedDocType,
-        extraction_status: 'processing',
+        user_id:                 user.id,
+        application_id:          appId || null,
+        file_path:               '',
+        file_name:               file.name,
+        doc_type:                resolvedDocType,
+        extraction_status:       'processing',
+        owner_type:              ownerFamilyMemberId ? 'family_member' : 'principal',
+        owner_family_member_id:  ownerFamilyMemberId,
       })
       .select('id')
       .single();
@@ -988,10 +1186,18 @@ export async function POST(request: NextRequest) {
         return v !== null && v !== undefined && String(v).trim() !== '' && String(v) !== 'null';
       })
       .map(([extractedKey, questionKey]) => ({
-        key:   questionKey,
-        label: FIELD_LABELS[questionKey] ?? questionKey,
-        value: String(extracted[extractedKey]).trim(),
+        key:            questionKey,
+        label:          FIELD_LABELS[questionKey] ?? questionKey,
+        value:          String(extracted[extractedKey]).trim(),
+        familyMemberId: ownerFamilyMemberId,
       }));
+
+    // ── Identity detection — who does this document mention? ──────────────────
+    // Runs for every doc type; cross-checks against the section the file was
+    // dropped into and surfaces mismatches/new people to the client rather than
+    // silently filing data under the wrong person.
+    const identifiedPeople  = await identifyPeopleInDocument(documentText, user.id);
+    const identityMatches   = await matchAndRouteIdentities(identifiedPeople, user.id, supabase);
 
     // ── Count total non-null fields in full extraction ────────────────────────
 
@@ -1047,6 +1253,7 @@ export async function POST(request: NextRequest) {
       fields,
       docType:     resolvedDocType,
       totalFields,
+      identityMatches,
     } satisfies ParseDocumentResponse);
 
   } catch (err) {

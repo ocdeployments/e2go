@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { createBrowserSupabaseClient } from '@/lib/supabase';
 import { resolvePrimaryApplicationId } from '@/lib/resolve-application';
-import type { ExtractedField, ParseDocumentResponse } from '@/app/api/apply/parse-document/route';
+import type { ExtractedField, ParseDocumentResponse, IdentityMatchResult } from '@/app/api/apply/parse-document/route';
+import type { FamilyMember } from '@/app/api/profile/family-members/route';
 
 interface DocumentImportHubProps {
   applicationId: string | null;
@@ -25,9 +26,38 @@ const DOC_TYPE_OPTIONS = [
   { value: 'lease_agreement',        label: 'Lease Agreement',                 hint: 'Business address, rent, lease term' },
   { value: 'acquisition_financials', label: 'Acquisition Financials',          hint: 'Purchase price, 3-year P&L, employees' },
   { value: 'government_form',        label: 'Government Form (DS-160, G-28…)', hint: 'Applicant info, visa type, business details' },
+  { value: 'birth_certificate',      label: 'Birth Certificate',               hint: 'Name, DOB, place of birth, parents' },
+  { value: 'marriage_certificate',   label: 'Marriage Certificate',            hint: 'Spouses, date and place of marriage' },
 ] as const;
 
 type DocTypeValue = typeof DOC_TYPE_OPTIONS[number]['value'];
+
+// ─── Owner (person) model ────────────────────────────────────────────────────
+// `null` owner id = the principal applicant. Every other section corresponds
+// to a row in `family_members`.
+
+interface OwnerOption {
+  id: string | null;
+  label: string;
+  sublabel: string;
+}
+
+const PRINCIPAL_KEY = '__principal__';
+
+function ownerKeyOf(ownerId: string | null): string {
+  return ownerId ?? PRINCIPAL_KEY;
+}
+
+function familyMemberLabel(m: FamilyMember): string {
+  const name = [m.first_name, m.last_name].filter(Boolean).join(' ').trim();
+  return name || 'Unnamed family member';
+}
+
+const MEMBER_TYPE_LABEL: Record<string, string> = {
+  spouse:      'Spouse',
+  child:       'Child',
+  co_investor: 'Co-investor',
+};
 
 // ─── Queue types ─────────────────────────────────────────────────────────────
 
@@ -35,12 +65,14 @@ interface QueuedFile {
   id: string;
   file: File;
   docType: DocTypeValue;
+  ownerId: string | null;
   status: 'pending' | 'processing' | 'done' | 'error';
   fields?: ExtractedField[];
   totalFields?: number;
   resolvedDocType?: string;
   docId?: string | null;
   error?: string;
+  identityMatches?: IdentityMatchResult[];
   /** Upload progress 0-100. Reaches 100 once the file is fully uploaded;
    *  server-side extraction continues after that with no further signal. */
   progress?: number;
@@ -58,6 +90,7 @@ interface FieldSource {
 interface MergedField {
   key: string;
   label: string;
+  ownerId: string | null;
   sources: FieldSource[];
   /** true when 2+ sources disagree on the value */
   isConflict: boolean;
@@ -88,13 +121,13 @@ const SOURCE_PRIORITY: Record<string, string[]> = {
   // Entity name: applicant's LLC (business plan / franchise agreement) beats FDD franchisor entity
   'M3-E-01':            ['franchise_agreement', 'business_plan', 'government_form', 'acquisition_financials', 'fdd'],
   // Personal identity: passport is ground truth
-  'M3-A-01':            ['passport', 'government_form', 'resume'],
-  'M3-A-DOB':           ['passport', 'government_form'],
-  'M3-A-NATIONALITY':   ['passport', 'government_form'],
+  'M3-A-01':            ['passport', 'government_form', 'birth_certificate', 'resume'],
+  'M3-A-DOB':           ['passport', 'government_form', 'birth_certificate'],
+  'M3-A-NATIONALITY':   ['passport', 'government_form', 'birth_certificate'],
   'M3-A-CITIZENSHIP':   ['passport', 'government_form'],
   'M3-A-PASSPORT':      ['passport', 'government_form'],
   'M3-A-PASSPORT-EXP':  ['passport', 'government_form'],
-  'M3-A-BIRTH-COUNTRY': ['passport', 'government_form'],
+  'M3-A-BIRTH-COUNTRY': ['passport', 'government_form', 'birth_certificate'],
   // Client's capital: financial statement > investment records > business plan (FDD excluded — it's system avg)
   'M3-F-02':            ['financial_statement', 'investment_records', 'business_plan'],
   // Source of funds: detailed fund flow doc beats general net worth narrative
@@ -130,17 +163,22 @@ function normalizeForComparison(v: string): string {
     .trim();
 }
 
+// Merges per owner — a spouse's passport number must never collide with the
+// principal's under the same question_key, so grouping happens before dedup.
 function mergeFields(queue: QueuedFile[]): MergedField[] {
   const map = new Map<string, MergedField>();
 
   for (const item of queue) {
     if (!item.fields) continue;
     const resolvedType = item.resolvedDocType ?? item.docType;
+    const mapKey = `${ownerKeyOf(item.ownerId)}::${item.file.name}`;
+    void mapKey;
     for (const f of item.fields) {
-      if (!map.has(f.key)) {
-        map.set(f.key, { key: f.key, label: f.label, sources: [], isConflict: false });
+      const entryKey = `${ownerKeyOf(item.ownerId)}::${f.key}`;
+      if (!map.has(entryKey)) {
+        map.set(entryKey, { key: f.key, label: f.label, ownerId: item.ownerId, sources: [], isConflict: false });
       }
-      map.get(f.key)!.sources.push({
+      map.get(entryKey)!.sources.push({
         value:    f.value,
         docType:  resolvedType,
         fileName: item.file.name,
@@ -179,6 +217,9 @@ function mergeFields(queue: QueuedFile[]): MergedField[] {
 
 export default function DocumentImportHub({ applicationId, onFieldsApplied }: DocumentImportHubProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // Which section's "Add files" button was clicked — tags the next batch of
+  // files picked from the (single, shared) hidden file input.
+  const pendingOwnerRef = useRef<string | null>(null);
 
   const [isOpen,    setIsOpen]    = useState(false);
   const [stage,     setStage]     = useState<HubStage>('idle');
@@ -187,10 +228,50 @@ export default function DocumentImportHub({ applicationId, onFieldsApplied }: Do
   const [merged,    setMerged]    = useState<MergedField[]>([]);
   const [savedCount, setSavedCount] = useState(0);
 
-  // Review state
+  // Family members — drive the per-person sections
+  const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
+  const [showAddMember, setShowAddMember] = useState(false);
+  const [newMemberName, setNewMemberName] = useState('');
+  const [newMemberType, setNewMemberType] = useState<FamilyMember['member_type']>('spouse');
+  const [addingMember,  setAddingMember]  = useState(false);
+
+  // Review state — keyed by `${ownerKey}::${questionKey}` so principal and
+  // dependent fields never collide.
   const [accepted,        setAccepted]        = useState<Set<string>>(new Set());
-  const [conflictChoices, setConflictChoices] = useState<Map<string, string>>(new Map()); // key → chosen value
-  const [manualValues,    setManualValues]    = useState<Map<string, string>>(new Map()); // key → manual text
+  const [conflictChoices, setConflictChoices] = useState<Map<string, string>>(new Map());
+  const [manualValues,    setManualValues]    = useState<Map<string, string>>(new Map());
+
+  // ── Load family members whenever the panel opens ────────────────────────
+
+  const loadFamilyMembers = useCallback(async () => {
+    try {
+      const res = await fetch('/api/profile/family-members');
+      if (!res.ok) return;
+      const data = await res.json();
+      setFamilyMembers(data.members ?? []);
+    } catch {
+      // Non-fatal — sections just won't show until this succeeds
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isOpen) loadFamilyMembers();
+  }, [isOpen, loadFamilyMembers]);
+
+  const ownerOptions: OwnerOption[] = [
+    { id: null, label: 'My documents', sublabel: 'Principal applicant' },
+    ...familyMembers.map(m => ({
+      id:       m.id,
+      label:    `${familyMemberLabel(m)}'s documents`,
+      sublabel: MEMBER_TYPE_LABEL[m.member_type] ?? m.member_type,
+    })),
+  ];
+
+  function ownerLabel(ownerId: string | null): string {
+    if (ownerId === null) return 'Principal applicant';
+    const m = familyMembers.find(fm => fm.id === ownerId);
+    return m ? familyMemberLabel(m) : 'Family member';
+  }
 
   // ── Reset ─────────────────────────────────────────────────────────────────
 
@@ -206,14 +287,44 @@ export default function DocumentImportHub({ applicationId, onFieldsApplied }: Do
     if (fileInputRef.current) fileInputRef.current.value = '';
   }
 
-  // ── Add files from picker ─────────────────────────────────────────────────
+  // ── Add family member (inline, stub row) ────────────────────────────────
+
+  async function handleAddMember() {
+    const trimmed = newMemberName.trim();
+    if (!trimmed) return;
+    setAddingMember(true);
+    try {
+      const [first_name, ...rest] = trimmed.split(/\s+/);
+      const res = await fetch('/api/profile/family-members', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({
+          member_type: newMemberType,
+          first_name,
+          last_name:   rest.length > 0 ? rest.join(' ') : null,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setFamilyMembers(prev => [...prev, data.member]);
+        setNewMemberName('');
+        setShowAddMember(false);
+      }
+    } finally {
+      setAddingMember(false);
+    }
+  }
+
+  // ── Add files from picker, tagged to whichever section triggered it ─────
 
   const handleFilesChosen = useCallback((files: FileList | null) => {
     if (!files || files.length === 0) return;
+    const ownerId = pendingOwnerRef.current;
     const newItems: QueuedFile[] = Array.from(files).map(f => ({
       id:      uid(),
       file:    f,
       docType: 'auto',
+      ownerId,
       status:  'pending',
     }));
     setQueue(prev => [...prev, ...newItems]);
@@ -221,12 +332,23 @@ export default function DocumentImportHub({ applicationId, onFieldsApplied }: Do
     if (fileInputRef.current) fileInputRef.current.value = '';
   }, []);
 
+  function openFilePickerFor(ownerId: string | null) {
+    pendingOwnerRef.current = ownerId;
+    fileInputRef.current?.click();
+  }
+
   function removeFromQueue(id: string) {
     setQueue(prev => prev.filter(f => f.id !== id));
   }
 
   function setQueueDocType(id: string, docType: DocTypeValue) {
     setQueue(prev => prev.map(f => f.id === id ? { ...f, docType } : f));
+  }
+
+  // Reassign a queued/processed file to a different person's section —
+  // used when identity detection surfaces a mismatch after extraction.
+  function reassignOwner(id: string, ownerId: string | null) {
+    setQueue(prev => prev.map(f => f.id === id ? { ...f, ownerId } : f));
   }
 
   // ── Batch extraction ──────────────────────────────────────────────────────
@@ -241,6 +363,7 @@ export default function DocumentImportHub({ applicationId, onFieldsApplied }: Do
       fd.append('file',    item.file);
       fd.append('docType', item.docType);
       if (applicationId) fd.append('applicationId', applicationId);
+      if (item.ownerId) fd.append('ownerFamilyMemberId', item.ownerId);
 
       const xhr = new XMLHttpRequest();
       xhr.open('POST', '/api/apply/parse-document');
@@ -265,6 +388,7 @@ export default function DocumentImportHub({ applicationId, onFieldsApplied }: Do
             totalFields:     data.totalFields,
             resolvedDocType: data.docType,
             docId:           data.docId,
+            identityMatches: data.identityMatches,
             progress:        100,
           };
         }
@@ -295,6 +419,11 @@ export default function DocumentImportHub({ applicationId, onFieldsApplied }: Do
       await extractOne(i, updated);
     }
 
+    // Pick up any family members auto-created server-side from identity
+    // detection (e.g. a birth certificate naming a child not yet on file).
+    const anyNewPeople = updated.some(f => f.identityMatches?.some(m => m.isNewPerson));
+    if (anyNewPeople) await loadFamilyMembers();
+
     // Build merged review from successful extractions
     const successful = updated.filter(f => f.status === 'done');
     if (successful.length === 0) {
@@ -308,7 +437,7 @@ export default function DocumentImportHub({ applicationId, onFieldsApplied }: Do
 
     // Default-accept all non-conflict fields
     const autoAccepted = new Set(
-      mergedFields.filter(f => !f.isConflict).map(f => f.key)
+      mergedFields.filter(f => !f.isConflict).map(f => `${ownerKeyOf(f.ownerId)}::${f.key}`)
     );
     setAccepted(autoAccepted);
     setConflictChoices(new Map());
@@ -321,46 +450,47 @@ export default function DocumentImportHub({ applicationId, onFieldsApplied }: Do
 
   // ── Review interactions ───────────────────────────────────────────────────
 
-  function toggleAccepted(key: string) {
+  function toggleAccepted(entryKey: string) {
     setAccepted(prev => {
       const next = new Set(prev);
-      if (next.has(key)) next.delete(key); else next.add(key);
+      if (next.has(entryKey)) next.delete(entryKey); else next.add(entryKey);
       return next;
     });
   }
 
-  function setConflictChoice(key: string, value: string) {
+  function setConflictChoice(entryKey: string, value: string) {
     setConflictChoices(prev => {
       const next = new Map(prev);
-      next.set(key, value);
+      next.set(entryKey, value);
       return next;
     });
   }
 
-  function setManualValue(key: string, val: string) {
-    setManualValues(prev => { const n = new Map(prev); n.set(key, val); return n; });
+  function setManualValue(entryKey: string, val: string) {
+    setManualValues(prev => { const n = new Map(prev); n.set(entryKey, val); return n; });
   }
 
   // ── Apply ─────────────────────────────────────────────────────────────────
 
   async function handleApply() {
     // Resolve final field list
-    const toApply: { key: string; value: string }[] = [];
+    const toApply: { key: string; value: string; ownerId: string | null }[] = [];
 
     for (const f of merged) {
+      const entryKey = `${ownerKeyOf(f.ownerId)}::${f.key}`;
       if (f.isConflict) {
-        const choice = conflictChoices.get(f.key);
+        const choice = conflictChoices.get(entryKey);
         if (!choice) continue; // unresolved conflict — skip
         if (choice === '__manual__') {
-          const manual = manualValues.get(f.key)?.trim();
+          const manual = manualValues.get(entryKey)?.trim();
           if (!manual) continue;
-          toApply.push({ key: f.key, value: manual });
+          toApply.push({ key: f.key, value: manual, ownerId: f.ownerId });
         } else {
-          toApply.push({ key: f.key, value: choice });
+          toApply.push({ key: f.key, value: choice, ownerId: f.ownerId });
         }
       } else {
-        if (!accepted.has(f.key)) continue;
-        toApply.push({ key: f.key, value: f.sources[0].value });
+        if (!accepted.has(entryKey)) continue;
+        toApply.push({ key: f.key, value: f.sources[0].value, ownerId: f.ownerId });
       }
     }
 
@@ -386,13 +516,14 @@ export default function DocumentImportHub({ applicationId, onFieldsApplied }: Do
         application_id:       appId!,
         question_key:         f.key,
         answer_value:         f.value,
+        family_member_id:     f.ownerId,
         source_document_type: 'document_upload',
         answered_at:          new Date().toISOString(),
       }));
 
       const { error: upsertErr } = await supabase
         .from('answers')
-        .upsert(upserts, { onConflict: 'application_id,question_key' });
+        .upsert(upserts, { onConflict: 'application_id,question_key,family_member_id' });
 
       if (upsertErr) { setErrorMsg(`Failed to save: ${upsertErr.message}`); setStage('error'); return; }
 
@@ -401,7 +532,7 @@ export default function DocumentImportHub({ applicationId, onFieldsApplied }: Do
         .filter(item => item.docId)
         .map(item => {
           const count = toApply.filter(f => {
-            const mf = merged.find(m => m.key === f.key);
+            const mf = merged.find(m => m.key === f.key && m.ownerId === item.ownerId);
             return mf?.sources.some(s => s.docId === item.docId) ?? false;
           }).length;
           return supabase
@@ -430,7 +561,7 @@ export default function DocumentImportHub({ applicationId, onFieldsApplied }: Do
 
   // Count how many conflict fields still need resolution
   const unresolvedConflicts = merged.filter(
-    f => f.isConflict && !conflictChoices.has(f.key)
+    f => f.isConflict && !conflictChoices.has(`${ownerKeyOf(f.ownerId)}::${f.key}`)
   ).length;
 
   const applyCount =
@@ -439,6 +570,22 @@ export default function DocumentImportHub({ applicationId, onFieldsApplied }: Do
       if (val === '__manual__') return !!(manualValues.get(key)?.trim());
       return true;
     }).length;
+
+  // Group the queue by owner for the idle-stage section display
+  const queueByOwner = new Map<string, QueuedFile[]>();
+  for (const item of queue) {
+    const k = ownerKeyOf(item.ownerId);
+    if (!queueByOwner.has(k)) queueByOwner.set(k, []);
+    queueByOwner.get(k)!.push(item);
+  }
+
+  // Group merged fields by owner for the reviewing stage
+  const mergedByOwner = new Map<string, MergedField[]>();
+  for (const f of merged) {
+    const k = ownerKeyOf(f.ownerId);
+    if (!mergedByOwner.has(k)) mergedByOwner.set(k, []);
+    mergedByOwner.get(k)!.push(f);
+  }
 
   // ── Closed state ──────────────────────────────────────────────────────────
 
@@ -462,7 +609,7 @@ export default function DocumentImportHub({ applicationId, onFieldsApplied }: Do
             Import from documents
           </p>
           <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '11px', color: 'rgba(245,240,232,0.45)', marginTop: '2px' }}>
-            Upload a resume, FDD, financial statement, or business plan — AI extracts and pre-fills your fields
+            Upload a resume, FDD, passport, or birth certificate — for you or a family member — AI extracts and pre-fills fields
           </p>
         </div>
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'rgba(201,168,76,0.45)', marginLeft: 'auto', flexShrink: 0 }}>
@@ -498,104 +645,157 @@ export default function DocumentImportHub({ applicationId, onFieldsApplied }: Do
 
       <div className="p-5">
 
-        {/* ── Stage: idle — queue builder ──────────────────────────────────── */}
+        {/* Hidden multi-file input — shared across all person sections, tagged
+            via pendingOwnerRef by whichever section's "Add files" was clicked. */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".pdf,.docx,.txt,.csv"
+          multiple
+          onChange={e => handleFilesChosen(e.target.files)}
+          style={{ display: 'none' }}
+        />
+
+        {/* ── Stage: idle — per-person queue builder ───────────────────────── */}
         {stage === 'idle' && (
           <>
-            {/* Hidden multi-file input */}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".pdf,.docx,.txt,.csv"
-              multiple
-              onChange={e => handleFilesChosen(e.target.files)}
-              style={{ display: 'none' }}
-            />
-
-            {/* Drop zone / Add files button */}
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="w-full border border-dashed flex flex-col items-center justify-center gap-2 py-8 mb-5 transition-colors hover:bg-[rgba(201,168,76,0.03)]"
-              style={{ borderColor: 'rgba(201,168,76,0.2)' }}
-            >
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#C9A84C" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.7 }}>
-                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" />
-              </svg>
-              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '12px', color: 'rgba(245,240,232,0.55)' }}>
-                Click to add files <span style={{ color: 'rgba(245,240,232,0.3)' }}>— PDF, DOCX, or TXT, max 20 MB each</span>
-              </p>
-              {queue.length > 0 && (
-                <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '11px', color: 'rgba(201,168,76,0.6)' }}>
-                  Add more files
-                </p>
-              )}
-            </button>
-
-            {/* Queue list */}
-            {queue.length > 0 && (
-              <div className="mb-5">
-                <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '11px', fontWeight: 500, color: 'rgba(245,240,232,0.4)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '10px' }}>
-                  {queue.length} file{queue.length !== 1 ? 's' : ''} queued
-                </p>
-                <div className="flex flex-col gap-2">
-                  {queue.map(item => (
-                    <div
-                      key={item.id}
-                      className="flex items-start gap-3 border p-3"
-                      style={{ borderColor: 'rgba(245,240,232,0.07)', backgroundColor: 'rgba(0,0,0,0.15)' }}
-                    >
-                      {/* File icon */}
-                      <div
-                        className="shrink-0 flex items-center justify-center"
-                        style={{ width: '28px', height: '28px', border: '1px solid rgba(201,168,76,0.15)', marginTop: '2px' }}
-                      >
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#C9A84C" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
-                          <polyline points="14 2 14 8 20 8" />
-                        </svg>
-                      </div>
-
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '12px', color: '#f5f0e8', fontWeight: 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: '2px' }}>
-                          {item.file.name}
+            <div className="flex flex-col gap-4 mb-5">
+              {ownerOptions.map(opt => {
+                const items = queueByOwner.get(ownerKeyOf(opt.id)) ?? [];
+                return (
+                  <div key={ownerKeyOf(opt.id)} className="border" style={{ borderColor: 'rgba(245,240,232,0.08)' }}>
+                    <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: items.length > 0 ? '1px solid rgba(245,240,232,0.06)' : 'none' }}>
+                      <div>
+                        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '12px', fontWeight: 500, color: '#f5f0e8' }}>
+                          {opt.label}
                         </p>
-                        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '10px', color: 'rgba(245,240,232,0.3)', marginBottom: '6px' }}>
-                          {formatFileSize(item.file.size)}
+                        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '10px', color: 'rgba(245,240,232,0.35)' }}>
+                          {opt.sublabel}
                         </p>
-                        {/* Per-file doc type */}
-                        <select
-                          value={item.docType}
-                          onChange={e => setQueueDocType(item.id, e.target.value as DocTypeValue)}
-                          style={{
-                            fontFamily: "'DM Sans', sans-serif",
-                            fontSize:   '11px',
-                            color:      'rgba(245,240,232,0.7)',
-                            backgroundColor: 'rgba(0,0,0,0.3)',
-                            border:     '1px solid rgba(245,240,232,0.1)',
-                            padding:    '4px 8px',
-                            cursor:     'pointer',
-                            width:      '100%',
-                            maxWidth:   '260px',
-                          }}
-                        >
-                          {DOC_TYPE_OPTIONS.map(opt => (
-                            <option key={opt.value} value={opt.value}>{opt.label}</option>
-                          ))}
-                        </select>
                       </div>
-
-                      {/* Remove */}
                       <button
-                        onClick={() => removeFromQueue(item.id)}
-                        aria-label="Remove file"
-                        style={{ color: 'rgba(245,240,232,0.25)', background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px', lineHeight: 1, paddingTop: '2px', flexShrink: 0 }}
+                        onClick={() => openFilePickerFor(opt.id)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 border transition-colors hover:bg-[rgba(201,168,76,0.06)]"
+                        style={{ borderColor: 'rgba(201,168,76,0.25)', fontFamily: "'DM Sans', sans-serif", fontSize: '11px', color: '#C9A84C' }}
                       >
-                        ✕
+                        + Add files
                       </button>
                     </div>
-                  ))}
+
+                    {items.length > 0 && (
+                      <div className="flex flex-col gap-2 p-3">
+                        {items.map(item => (
+                          <div
+                            key={item.id}
+                            className="flex items-start gap-3 border p-3"
+                            style={{ borderColor: 'rgba(245,240,232,0.07)', backgroundColor: 'rgba(0,0,0,0.15)' }}
+                          >
+                            <div
+                              className="shrink-0 flex items-center justify-center"
+                              style={{ width: '28px', height: '28px', border: '1px solid rgba(201,168,76,0.15)', marginTop: '2px' }}
+                            >
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#C9A84C" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                                <polyline points="14 2 14 8 20 8" />
+                              </svg>
+                            </div>
+
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '12px', color: '#f5f0e8', fontWeight: 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: '2px' }}>
+                                {item.file.name}
+                              </p>
+                              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '10px', color: 'rgba(245,240,232,0.3)', marginBottom: '6px' }}>
+                                {formatFileSize(item.file.size)}
+                              </p>
+                              <select
+                                value={item.docType}
+                                onChange={e => setQueueDocType(item.id, e.target.value as DocTypeValue)}
+                                style={{
+                                  fontFamily: "'DM Sans', sans-serif",
+                                  fontSize:   '11px',
+                                  color:      'rgba(245,240,232,0.7)',
+                                  backgroundColor: 'rgba(0,0,0,0.3)',
+                                  border:     '1px solid rgba(245,240,232,0.1)',
+                                  padding:    '4px 8px',
+                                  cursor:     'pointer',
+                                  width:      '100%',
+                                  maxWidth:   '260px',
+                                }}
+                              >
+                                {DOC_TYPE_OPTIONS.map(dopt => (
+                                  <option key={dopt.value} value={dopt.value}>{dopt.label}</option>
+                                ))}
+                              </select>
+                            </div>
+
+                            <button
+                              onClick={() => removeFromQueue(item.id)}
+                              aria-label="Remove file"
+                              style={{ color: 'rgba(245,240,232,0.25)', background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px', lineHeight: 1, paddingTop: '2px', flexShrink: 0 }}
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+
+              {/* Add a family member */}
+              {!showAddMember && (
+                <button
+                  onClick={() => setShowAddMember(true)}
+                  className="flex items-center gap-2 px-4 py-2.5 border border-dashed transition-colors hover:bg-[rgba(201,168,76,0.03)]"
+                  style={{ borderColor: 'rgba(245,240,232,0.15)', fontFamily: "'DM Sans', sans-serif", fontSize: '12px', color: 'rgba(245,240,232,0.5)' }}
+                >
+                  + Add a family member
+                </button>
+              )}
+              {showAddMember && (
+                <div className="flex flex-wrap items-center gap-2 border p-3" style={{ borderColor: 'rgba(201,168,76,0.2)' }}>
+                  <input
+                    type="text"
+                    placeholder="Full name"
+                    value={newMemberName}
+                    onChange={e => setNewMemberName(e.target.value)}
+                    style={{
+                      fontFamily: "'DM Sans', sans-serif", fontSize: '12px', color: '#f5f0e8',
+                      backgroundColor: 'rgba(0,0,0,0.3)', border: '1px solid rgba(245,240,232,0.1)',
+                      padding: '6px 10px', outline: 'none', flex: '1 1 160px',
+                    }}
+                  />
+                  <select
+                    value={newMemberType}
+                    onChange={e => setNewMemberType(e.target.value as FamilyMember['member_type'])}
+                    style={{
+                      fontFamily: "'DM Sans', sans-serif", fontSize: '12px', color: 'rgba(245,240,232,0.8)',
+                      backgroundColor: 'rgba(0,0,0,0.3)', border: '1px solid rgba(245,240,232,0.1)',
+                      padding: '6px 10px', cursor: 'pointer',
+                    }}
+                  >
+                    <option value="spouse">Spouse</option>
+                    <option value="child">Child</option>
+                    <option value="co_investor">Co-investor</option>
+                  </select>
+                  <button
+                    onClick={handleAddMember}
+                    disabled={!newMemberName.trim() || addingMember}
+                    className="px-3 py-1.5 transition-opacity disabled:opacity-40"
+                    style={{ backgroundColor: '#C9A84C', color: '#0a0a0a', fontFamily: "'DM Sans', sans-serif", fontSize: '11px', fontWeight: 500 }}
+                  >
+                    {addingMember ? 'Adding…' : 'Add'}
+                  </button>
+                  <button
+                    onClick={() => { setShowAddMember(false); setNewMemberName(''); }}
+                    style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '11px', color: 'rgba(245,240,232,0.35)', background: 'none', border: 'none', cursor: 'pointer' }}
+                  >
+                    Cancel
+                  </button>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
 
             {/* Extract button */}
             {queue.length > 0 && (
@@ -649,6 +849,9 @@ export default function DocumentImportHub({ applicationId, onFieldsApplied }: Do
                       </p>
                       <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '10px', color: 'rgba(245,240,232,0.3)', flexShrink: 0 }}>
                         {formatFileSize(item.file.size)}
+                      </span>
+                      <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '10px', color: 'rgba(201,168,76,0.5)', flexShrink: 0 }}>
+                        · {ownerLabel(item.ownerId)}
                       </span>
                     </div>
 
@@ -710,56 +913,92 @@ export default function DocumentImportHub({ applicationId, onFieldsApplied }: Do
             </p>
 
             <div className="flex flex-col gap-2 mb-5">
-              {queue.map(item => (
-                <div
-                  key={item.id}
-                  className="flex items-center gap-3 border p-3"
-                  style={{
-                    borderColor:     item.status === 'error' ? 'rgba(248,113,113,0.2)' : item.status === 'done' ? 'rgba(74,222,128,0.15)' : 'rgba(245,240,232,0.07)',
-                    backgroundColor: item.status === 'error' ? 'rgba(248,113,113,0.05)' : 'rgba(0,0,0,0.15)',
-                  }}
-                >
-                  <div style={{ width: '18px', height: '18px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    {item.status === 'done' && (
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4ade80" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M5 13l4 4L19 7" />
-                      </svg>
-                    )}
-                    {item.status === 'error' && (
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(248,113,113,0.8)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
-                      </svg>
-                    )}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '12px', color: item.status === 'error' ? 'rgba(248,113,113,0.85)' : '#f5f0e8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {item.file.name}
-                    </p>
-                    {item.status === 'done' && item.fields && (
-                      <div style={{ marginTop: '3px', display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
-                        <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '11px', color: 'rgba(74,222,128,0.85)', fontWeight: 500 }}>
-                          {item.fields.length} intake field{item.fields.length !== 1 ? 's' : ''}
-                        </span>
-                        {item.totalFields !== undefined && (
-                          <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '11px', color: 'rgba(201,168,76,0.7)' }}>
-                            · {item.totalFields} total fields stored
-                          </span>
+              {queue.map(item => {
+                // Identity cross-check: does the document mention someone other
+                // than the person it was filed under? Surface a move suggestion
+                // rather than silently accepting the section it was dropped in.
+                const otherMatches = (item.identityMatches ?? []).filter(m => {
+                  if (m.matchedIsPrincipal) return item.ownerId !== null;
+                  if (m.matchedFamilyMemberId) return item.ownerId !== m.matchedFamilyMemberId;
+                  return false;
+                });
+
+                return (
+                  <div
+                    key={item.id}
+                    className="border p-3"
+                    style={{
+                      borderColor:     item.status === 'error' ? 'rgba(248,113,113,0.2)' : item.status === 'done' ? 'rgba(74,222,128,0.15)' : 'rgba(245,240,232,0.07)',
+                      backgroundColor: item.status === 'error' ? 'rgba(248,113,113,0.05)' : 'rgba(0,0,0,0.15)',
+                    }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div style={{ width: '18px', height: '18px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        {item.status === 'done' && (
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4ade80" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M5 13l4 4L19 7" />
+                          </svg>
                         )}
-                        {item.resolvedDocType && item.docType === 'auto' && (
-                          <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '10px', color: 'rgba(245,240,232,0.35)', letterSpacing: '0.04em' }}>
-                            · detected as {docTypeLabel(item.resolvedDocType)}
-                          </span>
+                        {item.status === 'error' && (
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(248,113,113,0.8)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+                          </svg>
                         )}
                       </div>
-                    )}
-                    {item.status === 'error' && (
-                      <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '11px', color: 'rgba(248,113,113,0.7)', marginTop: '2px' }}>
-                        {item.error ?? 'No fields found in this document'}
-                      </p>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '12px', color: item.status === 'error' ? 'rgba(248,113,113,0.85)' : '#f5f0e8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {item.file.name}
+                          <span style={{ color: 'rgba(201,168,76,0.55)', marginLeft: '8px', fontSize: '11px' }}>
+                            {ownerLabel(item.ownerId)}
+                          </span>
+                        </p>
+                        {item.status === 'done' && item.fields && (
+                          <div style={{ marginTop: '3px', display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
+                            <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '11px', color: 'rgba(74,222,128,0.85)', fontWeight: 500 }}>
+                              {item.fields.length} intake field{item.fields.length !== 1 ? 's' : ''}
+                            </span>
+                            {item.totalFields !== undefined && (
+                              <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '11px', color: 'rgba(201,168,76,0.7)' }}>
+                                · {item.totalFields} total fields stored
+                              </span>
+                            )}
+                            {item.resolvedDocType && item.docType === 'auto' && (
+                              <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '10px', color: 'rgba(245,240,232,0.35)', letterSpacing: '0.04em' }}>
+                                · detected as {docTypeLabel(item.resolvedDocType)}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                        {item.status === 'error' && (
+                          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '11px', color: 'rgba(248,113,113,0.7)', marginTop: '2px' }}>
+                            {item.error ?? 'No fields found in this document'}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Identity mismatch: this document also (or instead) names someone else */}
+                    {otherMatches.length > 0 && (
+                      <div className="flex flex-col gap-1.5 mt-3 pt-3" style={{ borderTop: '1px solid rgba(251,191,36,0.15)' }}>
+                        {otherMatches.map((m, idx) => (
+                          <div key={idx} className="flex items-center justify-between gap-3 flex-wrap">
+                            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '11px', color: 'rgba(251,191,36,0.85)' }}>
+                              This document also mentions <strong>{m.name}</strong>{m.isNewPerson ? ' — added as a new family member' : ''}.
+                            </p>
+                            <button
+                              onClick={() => reassignOwner(item.id, m.matchedIsPrincipal ? null : (m.matchedFamilyMemberId ?? m.newFamilyMemberId ?? null))}
+                              className="px-3 py-1 border transition-colors hover:bg-[rgba(251,191,36,0.06)]"
+                              style={{ borderColor: 'rgba(251,191,36,0.3)', fontFamily: "'DM Sans', sans-serif", fontSize: '10px', color: 'rgba(251,191,36,0.9)' }}
+                            >
+                              Move to their section
+                            </button>
+                          </div>
+                        ))}
+                      </div>
                     )}
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             <div className="flex gap-3 flex-wrap">
@@ -780,7 +1019,7 @@ export default function DocumentImportHub({ applicationId, onFieldsApplied }: Do
           </div>
         )}
 
-        {/* ── Stage: reviewing ─────────────────────────────────────────────── */}
+        {/* ── Stage: reviewing — grouped by person ─────────────────────────── */}
         {stage === 'reviewing' && (
           <>
             <div className="mb-4">
@@ -795,139 +1034,150 @@ export default function DocumentImportHub({ applicationId, onFieldsApplied }: Do
             </div>
 
             <div className="mb-5">
-              {merged.map(field => {
-                const isAccepted = accepted.has(field.key);
-                const choice     = conflictChoices.get(field.key);
-                const isManual   = choice === '__manual__';
-
-                if (field.isConflict) {
-                  // ── Conflict field: forced radio choice ──
-                  return (
-                    <div
-                      key={field.key}
-                      className="border-b py-4"
-                      style={{ borderColor: 'rgba(201,168,76,0.1)' }}
-                    >
-                      {/* Field label + conflict badge */}
-                      <div className="flex items-center gap-2 mb-3">
-                        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '11px', color: 'rgba(245,240,232,0.5)', fontWeight: 400 }}>
-                          {field.label}
-                        </p>
-                        <span style={{ fontSize: '10px', fontFamily: "'DM Sans', sans-serif", color: 'rgba(251,191,36,0.8)', backgroundColor: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.2)', padding: '1px 6px', letterSpacing: '0.04em' }}>
-                          CONFLICT — choose one
-                        </span>
-                      </div>
-
-                      {/* One radio per source */}
-                      <div className="flex flex-col gap-2 mb-2">
-                        {field.sources.map((src, idx) => {
-                          const isChosen = choice === src.value;
-                          return (
-                            <button
-                              key={idx}
-                              onClick={() => setConflictChoice(field.key, src.value)}
-                              className="flex items-start gap-3 border p-3 text-left transition-colors"
-                              style={{
-                                borderColor:     isChosen ? '#C9A84C' : 'rgba(245,240,232,0.08)',
-                                backgroundColor: isChosen ? 'rgba(201,168,76,0.06)' : 'transparent',
-                              }}
-                            >
-                              {/* Radio dot */}
-                              <div style={{ width: '14px', height: '14px', borderRadius: '50%', border: `1px solid ${isChosen ? '#C9A84C' : 'rgba(245,240,232,0.2)'}`, backgroundColor: isChosen ? '#C9A84C' : 'transparent', flexShrink: 0, marginTop: '3px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                {isChosen && <div style={{ width: '5px', height: '5px', borderRadius: '50%', backgroundColor: '#0a0a0a' }} />}
-                              </div>
-                              <div>
-                                <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '13px', color: isChosen ? '#f5f0e8' : 'rgba(245,240,232,0.55)', fontWeight: 300, marginBottom: '2px' }}>
-                                  {src.value}
-                                </p>
-                                <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '10px', color: 'rgba(245,240,232,0.3)' }}>
-                                  from {src.fileName}
-                                </p>
-                              </div>
-                            </button>
-                          );
-                        })}
-
-                        {/* Enter manually option */}
-                        <button
-                          onClick={() => setConflictChoice(field.key, '__manual__')}
-                          className="flex items-start gap-3 border p-3 text-left transition-colors"
-                          style={{
-                            borderColor:     isManual ? 'rgba(245,240,232,0.35)' : 'rgba(245,240,232,0.06)',
-                            backgroundColor: isManual ? 'rgba(245,240,232,0.03)' : 'transparent',
-                          }}
-                        >
-                          <div style={{ width: '14px', height: '14px', borderRadius: '50%', border: `1px solid ${isManual ? 'rgba(245,240,232,0.6)' : 'rgba(245,240,232,0.2)'}`, backgroundColor: isManual ? 'rgba(245,240,232,0.6)' : 'transparent', flexShrink: 0, marginTop: '3px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            {isManual && <div style={{ width: '5px', height: '5px', borderRadius: '50%', backgroundColor: '#0a0a0a' }} />}
-                          </div>
-                          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '12px', color: isManual ? 'rgba(245,240,232,0.75)' : 'rgba(245,240,232,0.3)', fontWeight: 300 }}>
-                            Enter manually
-                          </p>
-                        </button>
-                      </div>
-
-                      {/* Manual text input */}
-                      {isManual && (
-                        <input
-                          type="text"
-                          autoFocus
-                          placeholder="Type the correct value…"
-                          value={manualValues.get(field.key) ?? ''}
-                          onChange={e => setManualValue(field.key, e.target.value)}
-                          style={{
-                            width:           '100%',
-                            fontFamily:      "'DM Sans', sans-serif",
-                            fontSize:        '13px',
-                            color:           '#f5f0e8',
-                            backgroundColor: 'rgba(0,0,0,0.3)',
-                            border:          '1px solid rgba(201,168,76,0.25)',
-                            padding:         '8px 12px',
-                            outline:         'none',
-                            marginTop:       '6px',
-                          }}
-                        />
-                      )}
-                    </div>
-                  );
-                }
-
-                // ── Non-conflict field: checkbox ──
+              {[...mergedByOwner.entries()].map(([ownerKey, fields]) => {
+                const ownerIdForGroup = fields[0]?.ownerId ?? null;
                 return (
-                  <div
-                    key={field.key}
-                    className="flex items-start gap-3 border-b py-3 cursor-pointer"
-                    style={{ borderColor: 'rgba(201,168,76,0.07)' }}
-                    onClick={() => toggleAccepted(field.key)}
-                  >
-                    <div
-                      className="mt-0.5 shrink-0 flex items-center justify-center"
-                      style={{
-                        width:           '16px',
-                        height:          '16px',
-                        border:          `1px solid ${isAccepted ? '#C9A84C' : 'rgba(245,240,232,0.2)'}`,
-                        backgroundColor: isAccepted ? 'rgba(201,168,76,0.15)' : 'transparent',
-                        flexShrink:      0,
-                      }}
-                    >
-                      {isAccepted && (
-                        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#C9A84C" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M5 13l4 4L19 7" />
-                        </svg>
-                      )}
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '11px', color: 'rgba(245,240,232,0.45)', fontWeight: 400, marginBottom: '2px' }}>
-                        {field.label}
-                        {field.sources.length > 0 && (
-                          <span style={{ color: 'rgba(245,240,232,0.25)', marginLeft: '6px', fontSize: '10px' }}>
-                            from {field.sources[0].fileName}
-                          </span>
-                        )}
-                      </p>
-                      <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '13px', color: isAccepted ? '#f5f0e8' : 'rgba(245,240,232,0.35)', fontWeight: 300 }}>
-                        {field.sources[0]?.value}
-                      </p>
-                    </div>
+                  <div key={ownerKey} className="mb-5">
+                    <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '11px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#C9A84C', marginBottom: '8px' }}>
+                      {ownerLabel(ownerIdForGroup)}
+                    </p>
+                    {fields.map(field => {
+                      const entryKey  = `${ownerKey}::${field.key}`;
+                      const isAccepted = accepted.has(entryKey);
+                      const choice     = conflictChoices.get(entryKey);
+                      const isManual   = choice === '__manual__';
+
+                      if (field.isConflict) {
+                        // ── Conflict field: forced radio choice ──
+                        return (
+                          <div
+                            key={entryKey}
+                            className="border-b py-4"
+                            style={{ borderColor: 'rgba(201,168,76,0.1)' }}
+                          >
+                            {/* Field label + conflict badge */}
+                            <div className="flex items-center gap-2 mb-3">
+                              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '11px', color: 'rgba(245,240,232,0.5)', fontWeight: 400 }}>
+                                {field.label}
+                              </p>
+                              <span style={{ fontSize: '10px', fontFamily: "'DM Sans', sans-serif", color: 'rgba(251,191,36,0.8)', backgroundColor: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.2)', padding: '1px 6px', letterSpacing: '0.04em' }}>
+                                CONFLICT — choose one
+                              </span>
+                            </div>
+
+                            {/* One radio per source */}
+                            <div className="flex flex-col gap-2 mb-2">
+                              {field.sources.map((src, idx) => {
+                                const isChosen = choice === src.value;
+                                return (
+                                  <button
+                                    key={idx}
+                                    onClick={() => setConflictChoice(entryKey, src.value)}
+                                    className="flex items-start gap-3 border p-3 text-left transition-colors"
+                                    style={{
+                                      borderColor:     isChosen ? '#C9A84C' : 'rgba(245,240,232,0.08)',
+                                      backgroundColor: isChosen ? 'rgba(201,168,76,0.06)' : 'transparent',
+                                    }}
+                                  >
+                                    {/* Radio dot */}
+                                    <div style={{ width: '14px', height: '14px', borderRadius: '50%', border: `1px solid ${isChosen ? '#C9A84C' : 'rgba(245,240,232,0.2)'}`, backgroundColor: isChosen ? '#C9A84C' : 'transparent', flexShrink: 0, marginTop: '3px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                      {isChosen && <div style={{ width: '5px', height: '5px', borderRadius: '50%', backgroundColor: '#0a0a0a' }} />}
+                                    </div>
+                                    <div>
+                                      <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '13px', color: isChosen ? '#f5f0e8' : 'rgba(245,240,232,0.55)', fontWeight: 300, marginBottom: '2px' }}>
+                                        {src.value}
+                                      </p>
+                                      <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '10px', color: 'rgba(245,240,232,0.3)' }}>
+                                        from {src.fileName}
+                                      </p>
+                                    </div>
+                                  </button>
+                                );
+                              })}
+
+                              {/* Enter manually option */}
+                              <button
+                                onClick={() => setConflictChoice(entryKey, '__manual__')}
+                                className="flex items-start gap-3 border p-3 text-left transition-colors"
+                                style={{
+                                  borderColor:     isManual ? 'rgba(245,240,232,0.35)' : 'rgba(245,240,232,0.06)',
+                                  backgroundColor: isManual ? 'rgba(245,240,232,0.03)' : 'transparent',
+                                }}
+                              >
+                                <div style={{ width: '14px', height: '14px', borderRadius: '50%', border: `1px solid ${isManual ? 'rgba(245,240,232,0.6)' : 'rgba(245,240,232,0.2)'}`, backgroundColor: isManual ? 'rgba(245,240,232,0.6)' : 'transparent', flexShrink: 0, marginTop: '3px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                  {isManual && <div style={{ width: '5px', height: '5px', borderRadius: '50%', backgroundColor: '#0a0a0a' }} />}
+                                </div>
+                                <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '12px', color: isManual ? 'rgba(245,240,232,0.75)' : 'rgba(245,240,232,0.3)', fontWeight: 300 }}>
+                                  Enter manually
+                                </p>
+                              </button>
+                            </div>
+
+                            {/* Manual text input */}
+                            {isManual && (
+                              <input
+                                type="text"
+                                autoFocus
+                                placeholder="Type the correct value…"
+                                value={manualValues.get(entryKey) ?? ''}
+                                onChange={e => setManualValue(entryKey, e.target.value)}
+                                style={{
+                                  width:           '100%',
+                                  fontFamily:      "'DM Sans', sans-serif",
+                                  fontSize:        '13px',
+                                  color:           '#f5f0e8',
+                                  backgroundColor: 'rgba(0,0,0,0.3)',
+                                  border:          '1px solid rgba(201,168,76,0.25)',
+                                  padding:         '8px 12px',
+                                  outline:         'none',
+                                  marginTop:       '6px',
+                                }}
+                              />
+                            )}
+                          </div>
+                        );
+                      }
+
+                      // ── Non-conflict field: checkbox ──
+                      return (
+                        <div
+                          key={entryKey}
+                          className="flex items-start gap-3 border-b py-3 cursor-pointer"
+                          style={{ borderColor: 'rgba(201,168,76,0.07)' }}
+                          onClick={() => toggleAccepted(entryKey)}
+                        >
+                          <div
+                            className="mt-0.5 shrink-0 flex items-center justify-center"
+                            style={{
+                              width:           '16px',
+                              height:          '16px',
+                              border:          `1px solid ${isAccepted ? '#C9A84C' : 'rgba(245,240,232,0.2)'}`,
+                              backgroundColor: isAccepted ? 'rgba(201,168,76,0.15)' : 'transparent',
+                              flexShrink:      0,
+                            }}
+                          >
+                            {isAccepted && (
+                              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#C9A84C" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M5 13l4 4L19 7" />
+                              </svg>
+                            )}
+                          </div>
+                          <div style={{ flex: 1 }}>
+                            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '11px', color: 'rgba(245,240,232,0.45)', fontWeight: 400, marginBottom: '2px' }}>
+                              {field.label}
+                              {field.sources.length > 0 && (
+                                <span style={{ color: 'rgba(245,240,232,0.25)', marginLeft: '6px', fontSize: '10px' }}>
+                                  from {field.sources[0].fileName}
+                                </span>
+                              )}
+                            </p>
+                            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '13px', color: isAccepted ? '#f5f0e8' : 'rgba(245,240,232,0.35)', fontWeight: 300 }}>
+                              {field.sources[0]?.value}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 );
               })}
@@ -947,7 +1197,7 @@ export default function DocumentImportHub({ applicationId, onFieldsApplied }: Do
               </button>
               <button
                 onClick={() => {
-                  setAccepted(new Set(merged.filter(f => !f.isConflict).map(f => f.key)));
+                  setAccepted(new Set(merged.filter(f => !f.isConflict).map(f => `${ownerKeyOf(f.ownerId)}::${f.key}`)));
                 }}
                 className="px-4 py-2.5 border transition-colors hover:bg-[rgba(245,240,232,0.03)]"
                 style={{ borderColor: 'rgba(245,240,232,0.1)', fontFamily: "'DM Sans', sans-serif", fontSize: '12px', color: 'rgba(245,240,232,0.55)' }}

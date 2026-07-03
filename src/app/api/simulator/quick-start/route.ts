@@ -122,7 +122,7 @@ export async function POST(request: NextRequest) {
     if (answersToSave.length > 0) {
       await supabase
         .from('answers')
-        .upsert(answersToSave, { onConflict: 'application_id,question_key' });
+        .upsert(answersToSave, { onConflict: 'application_id,question_key,family_member_id' });
     }
 
     return NextResponse.json({ applicationId: appId });

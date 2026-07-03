@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     } catch {
       return NextResponse.json({ error: 'invalid_json', message: 'Request body is not valid JSON.' }, { status: 400 });
     }
-    const { question_key, answer_value, application_id } = body as { question_key?: string; answer_value?: string; application_id?: string };
+    const { question_key, answer_value, application_id, family_member_id } = body as { question_key?: string; answer_value?: string; application_id?: string; family_member_id?: string | null };
 
     // Validate required fields
     if (!question_key || !application_id) {
@@ -28,6 +28,19 @@ export async function POST(request: NextRequest) {
         { error: 'Missing required fields' },
         { status: 400 }
       );
+    }
+
+    // If scoped to a dependent, verify the family member belongs to this user
+    if (family_member_id) {
+      const { data: fm, error: fmError } = await supabase
+        .from('family_members')
+        .select('id')
+        .eq('id', family_member_id)
+        .eq('user_id', user.id)
+        .single();
+      if (fmError || !fm) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      }
     }
 
     // Validate question key format
@@ -77,9 +90,10 @@ export async function POST(request: NextRequest) {
           question_key,
           answer_value: sanitizedValue,
           answered_at: new Date().toISOString(),
+          family_member_id: family_member_id ?? null,
         },
         {
-          onConflict: 'application_id,question_key',
+          onConflict: 'application_id,question_key,family_member_id',
         }
       )
       .select('question_key, answered_at')

@@ -372,7 +372,7 @@ export default function TabBPage() {
             application_id: applicationId,
             question_key: `QB-CHECK-${itemId}`,
             answer_value: checked ? 'true' : 'false',
-          }, { onConflict: 'application_id,question_key' });
+          }, { onConflict: 'application_id,question_key,family_member_id' });
           setSaveStatus('saved');
           setTimeout(() => setSaveStatus('idle'), 2000);
         }

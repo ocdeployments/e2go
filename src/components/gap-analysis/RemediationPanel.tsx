@@ -11,6 +11,7 @@ import type {
 interface DocRow {
   detected_document_type?: string | null;
   user_selected_document_type?: string | null;
+  doc_type?: string | null;
 }
 
 interface RemediationPanelProps {
@@ -24,10 +25,18 @@ interface RemediationPanelProps {
   riskColor: string;
 }
 
+// Legacy remediation-registry tokens (bank/wire) have no substring overlap
+// with the current uploaded_documents taxonomy — map them explicitly.
+const DOC_TYPE_ALIASES: Record<string, string[]> = {
+  bank: ['investment_records', 'financial_statement'],
+  wire: ['investment_records'],
+};
+
 function docIsPresent(docType: string, docs: DocRow[]): boolean {
+  const targets = [docType.toLowerCase(), ...(DOC_TYPE_ALIASES[docType.toLowerCase()] ?? [])];
   return docs.some(d => {
-    const t = (d.detected_document_type || d.user_selected_document_type || '').toLowerCase();
-    return t.includes(docType.toLowerCase());
+    const t = (d.detected_document_type || d.user_selected_document_type || d.doc_type || '').toLowerCase();
+    return targets.some(target => t.includes(target));
   });
 }
 

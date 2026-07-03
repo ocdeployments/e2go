@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
           confidence: null,
           answered_at: new Date().toISOString(),
         },
-        { onConflict: 'application_id,question_key' }
+        { onConflict: 'application_id,question_key,family_member_id' }
       );
 
     if (answerError) {

@@ -65,6 +65,20 @@ export interface CaseProfileResponse {
 
   // Uploaded documents — extraction transparency for the client
   documents: DocumentExtractionUI[];
+
+  // Spouse / children / co-investors, each with their own completion + documents
+  familyMembers: FamilyMemberCaseUI[];
+
+  // Identity / background fields sourced from Module 3 answers (manual entry or document extraction)
+  dateOfBirth: string | null;
+  placeOfBirth: string | null;
+  countryOfCitizenship: string | null;
+  passportNumber: string | null;
+  passportExpiry: string | null;
+  educationLevel: string | null;
+  fieldOfStudy: string | null;
+  yearsExperience: string | null;
+  priorVisaHistory: string | null;
 }
 
 export interface DocumentExtractionUI {
@@ -74,6 +88,23 @@ export interface DocumentExtractionUI {
   extractionStatus: 'pending' | 'processing' | 'complete' | 'failed';
   fieldsTotal: number;
   createdAt: string;
+}
+
+export interface FamilyMemberCaseUI {
+  id: string;
+  memberType: 'co_investor' | 'spouse' | 'child';
+  firstName: string | null;
+  lastName: string | null;
+  dateOfBirth: string | null;
+  nationality: string | null;
+  passportNumber: string | null;
+  // Filled-in count among the 5 base fields captured directly on family_members
+  // (first_name, last_name, date_of_birth, nationality, passport_number).
+  answeredCount: number;
+  totalExpectedCount: number;
+  // Additional fields routed to this person via document extraction (answers.family_member_id).
+  extractedAnswerCount: number;
+  documents: DocumentExtractionUI[];
 }
 
 export interface CaseTheoryUI {
@@ -112,6 +143,7 @@ export async function GET(request: Request) {
     simResult,
     prepKitResult,
     appResult,
+    familyMembersResult,
   ] = await Promise.all([
     supabase
       .from('profiles')
@@ -176,6 +208,13 @@ export async function GET(request: Request) {
       .eq('user_id', userId)
       .neq('source', 'simulator_standalone')
       .order('created_at', { ascending: false }),
+
+    supabase
+      .from('family_members')
+      .select('id, member_type, first_name, last_name, date_of_birth, nationality, passport_number')
+      .eq('user_id', userId)
+      .order('sort_order', { ascending: true })
+      .order('created_at', { ascending: true }),
   ]);
 
   const profile = profileResult.data as { first_name: string | null; middle_name: string | null; last_name: string | null } | null;
@@ -207,14 +246,52 @@ export async function GET(request: Request) {
   let marketVerdict: string | null = null;
   let caseTheory: CaseTheoryUI | null = null;
   let documents: DocumentExtractionUI[] = [];
+  let dateOfBirth: string | null = null;
+  let placeOfBirth: string | null = null;
+  let countryOfCitizenship: string | null = null;
+  let passportNumber: string | null = null;
+  let passportExpiry: string | null = null;
+  let educationLevel: string | null = null;
+  let fieldOfStudy: string | null = null;
+  let yearsExperience: string | null = null;
+  let priorVisaHistory: string | null = null;
+
+  const familyMembersRaw = (familyMembersResult.data ?? []) as {
+    id: string;
+    member_type: 'co_investor' | 'spouse' | 'child';
+    first_name: string | null;
+    last_name: string | null;
+    date_of_birth: string | null;
+    nationality: string | null;
+    passport_number: string | null;
+  }[];
+
+  let familyMembers: FamilyMemberCaseUI[] = familyMembersRaw.map(m => ({
+    id:                    m.id,
+    memberType:            m.member_type,
+    firstName:             m.first_name,
+    lastName:              m.last_name,
+    dateOfBirth:           m.date_of_birth,
+    nationality:           m.nationality,
+    passportNumber:        m.passport_number,
+    answeredCount:         [m.first_name, m.last_name, m.date_of_birth, m.nationality, m.passport_number].filter(Boolean).length,
+    totalExpectedCount:    5,
+    extractedAnswerCount:  0,
+    documents:             [],
+  }));
 
   if (app?.id) {
-    const [{ data: qmaRows }, { data: theoryRow }, { data: docRows }] = await Promise.all([
+    const [{ data: qmaRows }, { data: identityRows }, { data: theoryRow }, { data: docRows }, { data: memberAnswerRows }, { data: memberDocRows }] = await Promise.all([
       supabase
         .from('answers')
         .select('question_key, answer_value')
         .eq('application_id', app.id)
         .in('question_key', ['QMA-SCORE', 'QMA-RATING', 'QMA-ZIP', 'QMA-STATE', 'QMA-COMPETITOR-COUNT', 'QMA-VERDICT']),
+      supabase
+        .from('answers')
+        .select('question_key, answer_value')
+        .eq('application_id', app.id)
+        .in('question_key', ['M3-A-03', 'M3-A-04', 'M3-A-05', 'M3-A-PASSPORT', 'M3-A-PASSPORT-EXP', 'M3-Q-01', 'M3-Q-02A', 'M3-Q-05', 'M3-A-21']),
       supabase
         .from('case_theory')
         .select('narrative, transferable_skills, numbers_strategy, dimension_verdicts, directives, doctrine_citations, built_at')
@@ -224,6 +301,17 @@ export async function GET(request: Request) {
         .from('uploaded_documents')
         .select('id, file_name, doc_type, extraction_status, fields_total, created_at')
         .eq('application_id', app.id)
+        .order('created_at', { ascending: false }),
+      supabase
+        .from('answers')
+        .select('family_member_id')
+        .eq('application_id', app.id)
+        .not('family_member_id', 'is', null),
+      supabase
+        .from('uploaded_documents')
+        .select('id, file_name, doc_type, extraction_status, fields_total, created_at, owner_family_member_id')
+        .eq('application_id', app.id)
+        .not('owner_family_member_id', 'is', null)
         .order('created_at', { ascending: false }),
     ]);
 
@@ -247,6 +335,47 @@ export async function GET(request: Request) {
       marketCompetitorCount = qma['QMA-COMPETITOR-COUNT'] ? Number(qma['QMA-COMPETITOR-COUNT']) : null;
       marketVerdict       = qma['QMA-VERDICT']           ?? null;
     }
+
+    if (identityRows?.length) {
+      const idv: Record<string, string> = Object.fromEntries(
+        identityRows.map(r => [r.question_key, r.answer_value ?? ''])
+      );
+      dateOfBirth          = idv['M3-A-03']            || null;
+      placeOfBirth         = idv['M3-A-04']            || null;
+      countryOfCitizenship = idv['M3-A-05']            || null;
+      passportNumber       = idv['M3-A-PASSPORT']      || null;
+      passportExpiry       = idv['M3-A-PASSPORT-EXP']  || null;
+      educationLevel       = idv['M3-Q-01']            || null;
+      fieldOfStudy         = idv['M3-Q-02A']           || null;
+      yearsExperience      = idv['M3-Q-05']            || null;
+      priorVisaHistory     = idv['M3-A-21']            || null;
+    }
+
+    const extractedCountByMember = new Map<string, number>();
+    for (const row of memberAnswerRows ?? []) {
+      const key = row.family_member_id as string;
+      extractedCountByMember.set(key, (extractedCountByMember.get(key) ?? 0) + 1);
+    }
+
+    const documentsByMember = new Map<string, DocumentExtractionUI[]>();
+    for (const d of memberDocRows ?? []) {
+      const key = d.owner_family_member_id as string;
+      const doc: DocumentExtractionUI = {
+        id:               d.id,
+        fileName:         d.file_name,
+        docType:          d.doc_type,
+        extractionStatus: d.extraction_status,
+        fieldsTotal:      d.fields_total ?? 0,
+        createdAt:        d.created_at,
+      };
+      documentsByMember.set(key, [...(documentsByMember.get(key) ?? []), doc]);
+    }
+
+    familyMembers = familyMembers.map(m => ({
+      ...m,
+      extractedAnswerCount: extractedCountByMember.get(m.id) ?? 0,
+      documents:            documentsByMember.get(m.id) ?? [],
+    }));
 
     if (theoryRow?.narrative) {
       caseTheory = {
@@ -315,6 +444,17 @@ export async function GET(request: Request) {
 
     caseTheory,
     documents,
+    familyMembers,
+
+    dateOfBirth,
+    placeOfBirth,
+    countryOfCitizenship,
+    passportNumber,
+    passportExpiry,
+    educationLevel,
+    fieldOfStudy,
+    yearsExperience,
+    priorVisaHistory,
   };
 
   return NextResponse.json(response);

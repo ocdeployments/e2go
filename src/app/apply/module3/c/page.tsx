@@ -105,7 +105,7 @@ export default function TabCPage() {
       application_id: applicationId,
       question_key: 'QC-CONFIRMED',
       answer_value: confirmed ? 'true' : 'false',
-    }, { onConflict: 'application_id,question_key' });
+    }, { onConflict: 'application_id,question_key,family_member_id' });
 
     setLetterConfirmed(confirmed);
     setNeedsReview(!confirmed);

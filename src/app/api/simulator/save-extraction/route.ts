@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
     const { error: insertError } = await supabase
       .from('answers')
       .upsert(insertData, {
-        onConflict: 'application_id,question_key',
+        onConflict: 'application_id,question_key,family_member_id',
         ignoreDuplicates: false,
       });
 

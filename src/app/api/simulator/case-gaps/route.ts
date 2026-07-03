@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
     if (answerRows.length > 0) {
       const { error: answersError } = await supabase
         .from('answers')
-        .upsert(answerRows, { onConflict: 'application_id,question_key' });
+        .upsert(answerRows, { onConflict: 'application_id,question_key,family_member_id' });
 
       if (answersError) {
         console.error('Case gaps answers upsert error:', answersError);

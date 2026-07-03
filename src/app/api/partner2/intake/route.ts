@@ -129,7 +129,7 @@ export async function PATCH(request: NextRequest) {
 
   await svc
     .from('answers')
-    .upsert(upsertRows, { onConflict: 'application_id,question_key' });
+    .upsert(upsertRows, { onConflict: 'application_id,question_key,family_member_id' });
 
   return NextResponse.json({ saved: upsertRows.length });
 }

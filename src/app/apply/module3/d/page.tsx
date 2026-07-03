@@ -174,7 +174,7 @@ export default function TabDPage() {
           });
 
           if (upserts.length > 0) {
-            await supabase.from('answers').upsert(upserts, { onConflict: 'application_id,question_key' });
+            await supabase.from('answers').upsert(upserts, { onConflict: 'application_id,question_key,family_member_id' });
             setPrefilledKeys(newPrefilledKeys);
           }
         }
@@ -261,7 +261,7 @@ export default function TabDPage() {
           question_key: key,
           answer_value: value,
         },
-        { onConflict: 'application_id,question_key' }
+        { onConflict: 'application_id,question_key,family_member_id' }
       );
 
     if (!error) {
@@ -365,7 +365,7 @@ Write a formal 3-4 paragraph cover letter addressed "To Whom It May Concern:". U
             question_key: 'QD-GENERATED-LETTER',
             answer_value: letter,
           },
-          { onConflict: 'application_id,question_key' }
+          { onConflict: 'application_id,question_key,family_member_id' }
         );
       }
 
@@ -389,7 +389,7 @@ Write a formal 3-4 paragraph cover letter addressed "To Whom It May Concern:". U
         question_key: 'QD-CONFIRMED',
         answer_value: 'true',
       },
-      { onConflict: 'application_id,question_key' }
+      { onConflict: 'application_id,question_key,family_member_id' }
     );
 
     setScreenState('completion');

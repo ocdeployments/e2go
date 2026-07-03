@@ -27,7 +27,7 @@ const AI_ANALYSIS_STEPS = [
 
 const supabase = createBrowserSupabaseClient();
 
-type DocRow = { detected_document_type?: string | null; user_selected_document_type?: string | null };
+type DocRow = { detected_document_type?: string | null; user_selected_document_type?: string | null; doc_type?: string | null };
 type AppRow = { business_name?: string | null; business_category?: string | null; operational_status?: string | null; target_state?: string | null; principal_name?: string | null; simulator_sessions_used?: number | null };
 type BriefRow = { substantiality_score?: number | null; marginality_score?: number | null };
 
@@ -170,7 +170,8 @@ function GapAnalysisInner() {
         const [
           { data: app },
           { data: answers },
-          { data: docs },
+          { data: legacyDocs },
+          { data: uploadedDocs },
           { data: brief },
           { data: simApp },
           { data: simSessions },
@@ -179,8 +180,9 @@ function GapAnalysisInner() {
           { data: appFull },
         ] = await Promise.all([
           supabase.from('applications').select('business_name, principal_name, simulator_sessions_used').eq('id', resolvedId).eq('user_id', user.id).single(),
-          supabase.from('answers').select('question_key, answer_value').eq('application_id', resolvedId),
+          supabase.from('answers').select('question_key, answer_value').eq('application_id', resolvedId).is('family_member_id', null),
           supabase.from('application_documents').select('detected_document_type, user_selected_document_type').eq('application_id', resolvedId),
+          supabase.from('uploaded_documents').select('doc_type').eq('application_id', resolvedId),
           supabase.from('case_briefs').select('substantiality_score').eq('application_id', resolvedId).order('created_at', { ascending: false }).limit(1).maybeSingle(),
           supabase.from('applications').select('simulator_sessions_used').eq('id', resolvedId).single(),
           supabase.from('simulator_sessions').select('inconsistency_count').eq('application_id', resolvedId).order('started_at', { ascending: false }).limit(1),
@@ -188,6 +190,8 @@ function GapAnalysisInner() {
           supabase.from('quiz_sessions').select('result_json, hard_stop_codes').eq('user_id', user.id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
           supabase.from('applications').select('investment_amount, application_type').eq('id', resolvedId).single(),
         ]);
+
+        const docs: DocRow[] = [...(legacyDocs ?? []), ...(uploadedDocs ?? [])];
 
         if (!app) { setError('Application not found or access denied.'); setLoading(false); return; }
         setBusinessName(app.business_name || 'Your Business');

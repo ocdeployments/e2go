@@ -407,7 +407,7 @@ export default function SimulatorQuickStart() {
         question_key: 'QF-02',
         answer_value: String(confirmEdits.investmentAmount),
         answered_at: new Date().toISOString(),
-      }, { onConflict: 'application_id,question_key' });
+      }, { onConflict: 'application_id,question_key,family_member_id' });
     }
 
     router.push(`/simulator/case-file?applicationId=${confirmedAppId}`);

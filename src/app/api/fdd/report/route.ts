@@ -216,11 +216,11 @@ async function writePlatformIntegration(
           {
             application_id: app.id,
             question_key: key,
-            answer: value,
+            answer_value: value,
             source: 'fdd_intelligence',
             updated_at: new Date().toISOString(),
           },
-          { onConflict: 'application_id,question_key' }
+          { onConflict: 'application_id,question_key,family_member_id' }
         )
         .then(({ error }) => {
           if (error) console.warn(`Answer upsert failed for ${key}:`, error.message);

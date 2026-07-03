@@ -132,19 +132,29 @@ export async function buildCaseProfile(userId: string): Promise<CaseProfile> {
         .from('answers')
         .select('question_key, answer_value')
         .eq('application_id', application.id)
+        .is('family_member_id', null)
     : { data: null };
 
   const answers = answerRows ?? [];
 
   // ── 4. Documents ──────────────────────────────────────────────────────────
-  const { data: documentRows } = application
-    ? await supabase
-        .from('application_documents')
-        .select('detected_document_type, user_selected_document_type')
-        .eq('application_id', application.id)
-    : { data: null };
+  // Two upload pipelines feed gap analysis: legacy application_documents and
+  // the current uploaded_documents taxonomy — both must be present or newer
+  // uploads silently drop out of document-based scoring.
+  const [{ data: legacyDocRows }, { data: uploadedDocRows }] = application
+    ? await Promise.all([
+        supabase
+          .from('application_documents')
+          .select('detected_document_type, user_selected_document_type')
+          .eq('application_id', application.id),
+        supabase
+          .from('uploaded_documents')
+          .select('doc_type')
+          .eq('application_id', application.id),
+      ])
+    : [{ data: null }, { data: null }];
 
-  const documents = documentRows ?? [];
+  const documents = [...(legacyDocRows ?? []), ...(uploadedDocRows ?? [])];
 
   // ── 5. Simulator sessions ─────────────────────────────────────────────────
   const { data: simSessions } = application
