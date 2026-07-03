@@ -93,6 +93,7 @@ const TAB_TEMPLATES: TabTemplate[] = [
   { label: 'Spouse Resume',            description: 'Professional resume of the accompanying spouse',                                source: 'generated', documentType: 'resume_spouse',           alwaysRequired: false, conditionalOn: 'M3-L-01' },
   { label: 'Property Portfolio',       description: 'Summary of property sold as source of investment funds',                        source: 'generated', documentType: 'property_portfolio',      alwaysRequired: false, conditionalOn: 'M3-F-05' },
   { label: 'Investment Evidence',      description: 'At-risk analysis for staged or committed-but-unspent investment funds',         source: 'generated', documentType: 'investment_proof',        alwaysRequired: false },
+  { label: 'Financial Assets Portfolio', description: 'Non-real-estate financial assets — registered plans, securities, cryptocurrency', source: 'generated', documentType: 'financial_assets_portfolio', alwaysRequired: false, conditionalOn: 'M3-F-05' },
 
   // Client-provided — always required
   { label: 'Passport & Treaty Nationality', description: 'Valid passport (all pages) + evidence of treaty country citizenship',     source: 'client_provided', uploadedDocTypes: ['passport'],                   alwaysRequired: true },

@@ -138,6 +138,15 @@ export async function POST(request: Request) {
     if (condMap['M3-F-NEW-01'] === 'partial' || condMap['M3-F-NEW-01'] === 'no') {
       conditionalDocTypes.push('investment_proof');
     }
+    // WS6.1 — Financial Assets Portfolio generates when fund sources include securities/
+    // registered plans/crypto (RRSP, TFSA, LIRA/pension, cryptocurrency) — the case where
+    // there's a non-real-estate financial asset trail to document beyond SOF §V.
+    if (
+      typeof condMap['M3-F-05'] === 'string' &&
+      ['rrsp', 'tfsa', 'lira', 'crypto'].some(v => (condMap['M3-F-05'] as string).includes(v))
+    ) {
+      conditionalDocTypes.push('financial_assets_portfolio');
+    }
 
     // Sprint F-P: Add Investor 2 documents for complete_partnership buyers
     if (partnerPayment) {

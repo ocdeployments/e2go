@@ -70,6 +70,7 @@ const DOC_TYPE_QUESTION_MAP: Record<string, string[]> = {
   resume_principal: ['IQ-14', 'IQ-15', 'IQ-16'],
   resume_spouse: ['IQ-14', 'IQ-15'],
   gift_letter: ['IQ-08', 'IQ-09'],
+  financial_assets_portfolio: ['IQ-08', 'IQ-09'],
   exhibit_list: [],
 };
 
@@ -91,6 +92,7 @@ const DOC_TOKEN_BUDGETS: Partial<Record<string, number>> = {
   visa_category:         6000,
   marginality_rebuttal:  6000,
   gift_letter:           4000,
+  financial_assets_portfolio: 4000,
   resume_principal:      4000,
   resume_spouse:         4000,
   declaration_principal: 4000,
@@ -125,6 +127,7 @@ const DOC_DCODE_MAP: Partial<Record<string, string[] | 'all'>> = {
   fund_flow_chronology:  ['D-02', 'D-03', 'D-12'],
   net_worth_statement:   ['D-01', 'D-03', 'D-12'],
   gift_letter:           ['D-03', 'D-12'],
+  financial_assets_portfolio: ['D-01', 'D-03', 'D-12'],
   investment_proof:      ['D-01', 'D-02'],
   business_plan:         ['D-04', 'D-05', 'D-06', 'D-07', 'D-14'],
   marginality_rebuttal:  ['D-04', 'D-06', 'D-07', 'D-14'],
@@ -460,6 +463,7 @@ export async function loadPrompt(documentType: DocumentType): Promise<string> {
   // b01 is the canonical merged prompt replacing both source_of_funds.md and investment_proof.md
   const FILE_ALIASES: Partial<Record<DocumentType, string>> = {
     source_of_funds:    'b01_source_and_application_of_funds',
+    financial_assets_portfolio: 'f02_investment_portfolio_summary',
     // P2 docs reuse P1 prompt files — the generation engine prepends a partnership context block
     cover_letter_p2:      'cover_letter',
     source_of_funds_p2:   'b01_source_and_application_of_funds',
@@ -565,6 +569,7 @@ const DOC_TYPE_DIMENSIONS: Partial<Record<DocumentType, Dimension[]>> = {
   investment_proof:      ['investment', 'source_of_funds'],
   property_portfolio:    ['source_of_funds'],
   gift_letter:           ['source_of_funds'],
+  financial_assets_portfolio: ['source_of_funds', 'investment'],
   business_plan:         ['business', 'investment', 'operations', 'franchise', 'location'],
   marginality_rebuttal:  ['business', 'investment', 'operations'],
   visa_category:         ['investment', 'business'],
@@ -722,6 +727,7 @@ const DOC_GAP_CATEGORY_MAP: Record<string, string[]> = {
   resume_principal:      ['management_role'],
   resume_spouse:         [],
   gift_letter:           ['source_of_funds', 'investment_amount'],
+  financial_assets_portfolio: ['source_of_funds', 'investment_amount'],
 };
 
 // CIC-3.1 — CPU dimension → the denial codes that dimension speaks to. Used to
@@ -1538,6 +1544,7 @@ const MIN_WORD_COUNTS: Record<string, number> = {
   resume_principal: 400,
   resume_spouse: 150,
   gift_letter: 300,
+  financial_assets_portfolio: 300,
 };
 
 const MAX_PAGE_ESTIMATES: Record<string, number> = {
@@ -1558,6 +1565,7 @@ const MAX_PAGE_ESTIMATES: Record<string, number> = {
   resume_principal: 3,
   resume_spouse: 2,
   gift_letter: 1,
+  financial_assets_portfolio: 3,
 };
 
 const FORBIDDEN_LEGAL_PHRASES = [
@@ -1867,6 +1875,12 @@ const REQUIRED_ELEMENTS: Record<DocumentType, string[]> = {
     'gift_amount',
     'irrevocability',
   ],
+  financial_assets_portfolio: [
+    'source_description',
+    'amount',
+    'timeline',
+    'documentation_mentioned',
+  ],
   // Partnership — Investor 2
   cover_letter_p2:          ['applicant_name', 'business_name', 'investment_amount', 'treaty_country'],
   source_of_funds_p2:       ['source_description', 'timeline', 'amount'],
@@ -1932,6 +1946,7 @@ export function runGapAnalysis(documents: GeneratedDocument[]): GapAnalysisResul
     resume_principal: [],
     resume_spouse: [],
     gift_letter: [],
+    financial_assets_portfolio: [],
     // Partnership — Investor 2
     cover_letter_p2: [],
     source_of_funds_p2: [],

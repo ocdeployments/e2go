@@ -25,6 +25,7 @@ export type DocumentType =
   | 'resume_spouse'
   // DOC-6: Conditional documents (generated only when applicable)
   | 'gift_letter'
+  | 'financial_assets_portfolio'
   // DOC-P: Partnership documents — generated for Investor 2 in complete_partnership applications
   | 'cover_letter_p2'
   | 'source_of_funds_p2'
@@ -93,6 +94,7 @@ export const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {
   cover_letter: 'Cover Letter',
   source_of_funds: 'Source of Funds Statement',
   investment_proof: 'Investment Evidence',
+  financial_assets_portfolio: 'Financial Assets Portfolio',
   business_plan: 'Business Plan',
   qualifications: 'Investor Biography & Qualifications',
   ds160_reference: 'DS-156E / DS-160 Reference',

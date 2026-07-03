@@ -138,14 +138,35 @@ Net Proceeds:             $[X] (after [tax withholding / redemption fees / broke
 Application of Proceeds:  Transferred to [LLC Name] E-2 investment — see Tab B-02
 ```
 
+**RRSP withholding-tax reconciliation (RRSP/registered-plan withdrawals only):**
+RRSP withdrawals are subject to Canadian non-resident/resident withholding tax at source. A
+withdrawal statement showing a gross amount that does not match the net deposit into the
+applicant's bank account is the single most common Tab B reconciliation gap officers flag.
+Reconcile the two explicitly:
+
+```
+Gross RRSP Withdrawal:    $[X] CAD as of [date]
+Withholding Tax Deducted: $[X] CAD (rate: [X]% — see T4RSP slip)
+Net Deposit to Bank:      $[X] CAD (matches bank statement dated [date])
+```
+
+State the withholding rate actually applied (do not assume a standard bracket — use the rate
+shown on the T4RSP slip or account statement). If the gross-to-net gap is not reconciled with
+this table, flag it: `[WITHHOLDING TAX AMOUNT NOT PROVIDED — confirm T4RSP slip with applicant]`.
+
 **Cryptocurrency note:**
 If the applicant holds or held cryptocurrency:
-- State the exchange/wallet used
+- State the exchange/wallet used and provide exchange transaction records (not just a wallet
+  balance screenshot) — this is the documentation officers actually ask for
 - Note that crypto prices fluctuate — the value stated is as of a specific date
-- If crypto was converted to fiat before investment, show the conversion:
-  "Converted [X] BTC to $[X] USD at [exchange] on [date] at an exchange rate of $[X]/BTC"
+- State the cost basis (original acquisition price and date) alongside the value realized at
+  conversion, so the reviewer can see this was a real asset with an acquisition history, not
+  funds that first appeared at the moment of liquidation:
+  "Acquired [X] BTC at $[X]/BTC on [date] (cost basis: $[X]); converted to $[X] USD at
+  [exchange] on [date] at an exchange rate of $[X]/BTC"
 - If regulators ask about crypto: it is source of funds evidence, not a problem per se, but
-  the full conversion trail to fiat and into the business must be unbroken
+  the full conversion trail — acquisition, cost basis, exchange records, conversion to fiat,
+  and wire into the business — must be unbroken
 
 ---
 
@@ -202,7 +223,8 @@ Ready to save as .txt or .docx.
 - [ ] Summary table covers all asset categories with totals
 - [ ] Each account has institution, type, holder, balance as of date
 - [ ] Currency conversions show rate and date
-- [ ] Crypto holdings include exchange name and date of valuation
+- [ ] Crypto holdings include exchange name, cost basis, and date of valuation
+- [ ] RRSP/registered-plan withdrawals reconcile gross withdrawal to net deposit via withholding tax
 - [ ] Liquidated accounts show pre-liquidation balance, liquidation date, net proceeds
 - [ ] E-2 investment cross-reference included if any accounts were liquidated
 - [ ] Supporting documentation index accurate (lists only actual documents)
