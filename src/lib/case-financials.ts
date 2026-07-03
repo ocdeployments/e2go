@@ -271,3 +271,34 @@ export function formatCaseFinancialsText(cf: CaseFinancials): string {
 
   return lines.join('\n');
 }
+
+// WS6.2 — Business Plan chart capability. The docx assembler has no image/
+// canvas rendering path (adding one means a native `canvas` dependency,
+// which is a real risk in a serverless build target), so charts are rendered
+// as fixed-width Unicode block-bar text — deterministic, always in sync with
+// the spine, and renders correctly in Word as a monospace block without any
+// new dependency. Returns null when there isn't enough data to chart.
+export function formatRevenueRampChart(cf: CaseFinancials): string | null {
+  const rows = cf.projections.filter(p => p.revenue !== null);
+  if (rows.length === 0) return null;
+
+  const maxRevenue = Math.max(...rows.map(p => p.revenue ?? 0));
+  if (maxRevenue <= 0) return null;
+
+  const BAR_WIDTH = 40;
+  const lines: string[] = ['REVENUE RAMP — YEAR 1 THROUGH ' + rows[rows.length - 1].year, ''];
+  for (const p of rows) {
+    const filled = Math.max(1, Math.round(((p.revenue ?? 0) / maxRevenue) * BAR_WIDTH));
+    const bar = '█'.repeat(filled);
+    const label = `Year ${p.year}`.padEnd(7);
+    const value = `$${(p.revenue ?? 0).toLocaleString()}`;
+    lines.push(`${label} ${bar} ${value}`);
+  }
+
+  if (cf.computed_breakeven_year !== null) {
+    lines.push('');
+    lines.push(`Break-even: Year ${cf.computed_breakeven_year} (first year net income turns positive)`);
+  }
+
+  return lines.join('\n');
+}

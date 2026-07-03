@@ -166,12 +166,25 @@ retain status. I understand that my dependents' E-2 status derives from my own
 and ends when mine does."
 
 **Section VI — Truthfulness Attestation:**
-Standard closing declaration language:
+Use the unsworn declaration formula from 28 U.S.C. § 1746(2) VERBATIM — this is the
+exact statutory language for a declaration executed within the United States. Do not
+paraphrase it, shorten it, or substitute alternate perjury language:
 
-"I declare under penalty of perjury under the laws of the United States of America
-that the foregoing is true and correct to the best of my knowledge and belief.
-I understand that any willful false statement in this declaration may subject me to
-criminal prosecution."
+"I declare (or certify, verify, or state) under penalty of perjury under the laws of
+the United States of America that the foregoing is true and correct. Executed on
+[Date]."
+
+If the applicant is executing the declaration from outside the United States (confirm
+against the applicant's current address in the intake data), 28 U.S.C. § 1746(1)
+requires the location to be stated explicitly:
+
+"I declare (or certify, verify, or state) under penalty of perjury under the laws of
+the United States of America that the foregoing is true and correct. Executed on
+[Date] at [City, Country]."
+
+Use whichever subsection applies to where the applicant is physically located when
+signing. This is the statutory formula, not attorney boilerplate — do not alter it
+beyond filling in the bracketed date and, where applicable, location.
 
 **Signature Block:**
 ```
@@ -216,6 +229,8 @@ Ready to save as .txt or .docx. The applicant will sign the printed version.
 - [ ] Ties section includes only facts present in intake data
 - [ ] No fabricated ties
 - [ ] No legal conclusions
+- [ ] Truthfulness attestation uses the exact 28 U.S.C. § 1746 statutory formula, unaltered
+- [ ] Correct § 1746 subsection used (domestic vs. executed-abroad with location stated)
 - [ ] Signature block is blank (date and signature line only — no pre-filled date)
 - [ ] Written in first person throughout
 - [ ] Applicant voice matched from voice_profile

@@ -109,6 +109,15 @@ documented projections showing it will reach non-marginal status within 5 years.
 Identify which path applies to this applicant based on context variables and write
 accordingly. If both apply, lead with the stronger one.
 
+**Path B — the 5-year guardrail (D16) is a hard limit, not a suggestion.** "Near-future"
+under 9 FAM 402.9-7(A)(2) is interpreted in this system as five years from the
+investment date. The DETERMINISTIC FINANCIAL SPINE's headcount and break-even figures
+are computed against this same 5-year horizon. Any growth trajectory you write must
+reach non-marginal headcount at or before Year 5 of the spine's projections — never
+propose a Path B timeline that extends past Year 5. If the spine's own projections do
+not reach non-marginal status by Year 5, do not paper over it: state the shortfall
+honestly rather than inventing a faster trajectory than the numbers support.
+
 ---
 
 ## DOCUMENT-SPECIFIC INSTRUCTIONS
@@ -145,6 +154,15 @@ Immediately below the table:
 - Estimated employer FICA contribution ($)
 - Statement on whether any employees are family members (officers expect this addressed)
 
+**Use the spine, do not re-derive:** the DETERMINISTIC FINANCIAL SPINE provided in this
+prompt's variables includes a computed headcount consistency check (intake FT+PT count
+vs. the projections table). The employee count and payroll figures in this section must
+equal the spine's figures exactly. If the spine flags a headcount inconsistency, surface
+it in this document rather than silently picking one number and discarding the other.
+If the spine leaves payroll uncomputed (no per-employee wage data on file), do not
+invent a wage — carry forward the spine's note verbatim rather than estimating a figure
+the spine itself declined to compute.
+
 *If employees are not yet hired but projected within 12 months:*
 State the specific timeline: "Mr. Chen projects hiring [N] full-time employees within
 [X] months of opening, based on [FDD Item 19 data / industry standard for this business
@@ -168,9 +186,12 @@ Franchise royalties paid to US franchisor | $[X] (if franchise)
 ```
 
 Note: Mark estimated figures as estimates. Do not present estimates as precise facts.
-If FDD Item 19 provides comparable franchisee financial performance data, cite it:
-"Per FDD Item 19, comparable [Brand] franchisees in [region] generate average gross
-revenue of $[X], implying payroll and tax contributions consistent with the above projections."
+If FDD Item 19 provides comparable franchisee financial performance data, cite it with
+the specific Item 19 page or table reference, not just the item number: "Per FDD Item 19
+(p. [X], Table [Y]), comparable [Brand] franchisees in [region] generate average gross
+revenue of $[X], implying payroll and tax contributions consistent with the above
+projections." A citation to "FDD Item 19" alone, without a page or table locator, is not
+sufficient — the officer must be able to find the exact figure in the source document.
 
 **Section IV — Growth Trajectory:**
 (Include if applicant does not currently have employees, or to reinforce Path A.)
@@ -223,6 +244,9 @@ Ready to save as .txt or .docx.
 - [ ] Employer FICA contribution calculated
 - [ ] Economic contribution table includes estimates clearly labeled as estimates
 - [ ] Growth trajectory anchored to FDD data or applicant's own plan
+- [ ] Headcount and payroll figures match the DETERMINISTIC FINANCIAL SPINE exactly
+- [ ] Path B growth trajectory reaches non-marginal status at or before Year 5 (D16)
+- [ ] FDD Item 19 citations include a page or table locator, not just the item number
 - [ ] No legal conclusion language
 - [ ] No content duplicated from business plan
 - [ ] All figures are internally consistent

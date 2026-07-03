@@ -284,6 +284,32 @@ CRITICAL: Ensure financials pass Officer Concern checks:
 
 If FDD Item 19 is present, cite it as benchmark. If absent, cite independent market research.
 
+**Use the spine, do not re-derive:** the prompt includes a DETERMINISTIC FINANCIAL SPINE
+block with pre-computed Year 1–5 revenue, net income, and employee figures. The 5-Year
+Projections Table's numbers must equal the spine's exactly — the LLM narrates around
+these figures and never independently computes a break-even month, revenue growth
+percentage, or headcount that contradicts them. Where the spine marks a year
+NOT PROVIDED, state plainly that the figure is not yet confirmed rather than estimating one.
+
+Immediately after the 5-Year Projections Table, insert the REVENUE RAMP CHART block
+supplied in the prompt verbatim (see the "REVENUE RAMP CHART — PRE-RENDERED" instruction
+elsewhere in this prompt) — do not redraw it or describe it in prose instead.
+
+**Franchise applicants with FDD Item 19 data — system benchmark table:**
+Immediately after the chart, if FDD Item 19 discloses comparable unit performance, include:
+
+```
+| Metric              | This Applicant's Projection | FDD Item 19 System Average |
+|----------------------|------------------------------|------------------------------|
+| Year 1 Revenue       | $X                           | $X                           |
+| Year [breakeven] Net Income | $X                     | $X                           |
+```
+
+State plainly, without legal conclusion language, whether the applicant's projections sit
+above, at, or below the disclosed system average, and let the officer draw their own
+conclusion about plausibility. Omit this table entirely for non-franchise applicants or
+when Item 19 contains no comparable performance data — do not fabricate a system average.
+
 **VII.B — Non-Marginality Proof Table (REQUIRED IN ALL CASES):**
 
 Include this table immediately after the 5-year projections. Use the applicant's actual
@@ -386,5 +412,8 @@ The content should be ready to save as a .txt or .docx file.
 - [ ] Non-Marginality Proof Table present (VII.B)
 - [ ] Break-Even month stated explicitly (VII.C)
 - [ ] Monthly Cash Flow Year 1 table present (VII.D) — or Frankfurt override note
+- [ ] 5-Year Projections Table matches the DETERMINISTIC FINANCIAL SPINE exactly
+- [ ] Revenue Ramp Chart block inserted verbatim after the 5-Year Projections Table
+- [ ] Franchise applicants: FDD Item 19 system benchmark table included if Item 19 data exists
 - [ ] CPA certification note at end of Section VII
 - [ ] Page count within consulate target range for this consulate_post

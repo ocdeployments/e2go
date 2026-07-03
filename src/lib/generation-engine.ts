@@ -22,7 +22,7 @@ import { verifyCaseTheoryCompliance, type VerifierResult } from './cic-verifier'
 import { runCanonicalConsistencySweep } from './cic-consistency-sweep';
 import { checkFigureProvenance } from './figure-provenance';
 import { QUESTION_LABELS } from './question-registry.generated';
-import { computeCaseFinancials, formatCaseFinancialsText } from './case-financials';
+import { computeCaseFinancials, formatCaseFinancialsText, formatRevenueRampChart } from './case-financials';
 import { buildExhibitRegistry, formatExhibitRegistryText, checkExhibitConsistency } from './exhibit-registry';
 import { buildDeterministicDocumentIndex } from './docx-package-constants';
 import { computeEnterpriseNationality, buildJointPartnershipBlock } from './partnership-analysis';
@@ -1077,6 +1077,26 @@ export async function callClaudeAPI(payload: GenerationPayload): Promise<string>
   // pre-computed table every document must narrate around, never re-derive.
   const caseFinancialsText = payload.case_financials ? formatCaseFinancialsText(payload.case_financials) : '';
 
+  // WS6.2 — Business Plan chart capability (see formatRevenueRampChart doc
+  // comment for why this is a text block, not an embedded image). Only the
+  // Business Plan gets it — no other document narrates a multi-year ramp.
+  const revenueRampChartBlock = (payload.document_type === 'business_plan' && payload.case_financials)
+    ? (() => {
+        const chart = formatRevenueRampChart(payload.case_financials);
+        return chart
+          ? [
+              'REVENUE RAMP CHART — PRE-RENDERED, INSERT VERBATIM:',
+              'Insert this exact block, unmodified, as the visual immediately following the',
+              'Financial Projections narrative (Section VII). Do not redraw it, recompute the',
+              'bars, or describe it in prose instead of including it.',
+              '',
+              chart,
+              '',
+            ].join('\n')
+          : '';
+      })()
+    : '';
+
   // WS3.1 — master exhibit registry, identical across every document call for
   // this application, so it lives in the cached stableBlock alongside the
   // case brief rather than the per-document variableBlock.
@@ -1166,6 +1186,7 @@ export async function callClaudeAPI(payload: GenerationPayload): Promise<string>
     ...(payload.gap_analysis_context ? [payload.gap_analysis_context, ''] : []),
     investmentBreakdownText,
     caseFinancialsText,
+    revenueRampChartBlock,
     documentIndexBlock,
     ...(Object.keys(payload.follow_up_responses).length > 0
       ? [`FOLLOW-UP CONVERSATION (applicant answers to targeted gap questions — use this content in the document):`, wrapUserContent(JSON.stringify(payload.follow_up_responses, null, 2)), '']

@@ -94,6 +94,17 @@ use investment date or the most recent date for which data is available].
 It is provided to demonstrate the applicant's financial capacity in connection with
 the E-2 Treaty Investor Visa application."
 
+**Single as-of date — enforced document-wide:** Pick ONE "as of" date for the entire
+statement — the date stated in this Purpose sentence. Every individual asset and
+liability line item takes its value AS OF THAT SAME DATE, even though the underlying
+source statement (bank statement, mortgage statement, appraisal) may carry its own
+different date. Do not let each line item silently carry forward its own statement date
+as if that were the document's as-of date — if a source document's date differs from the
+statement's single as-of date, note the source date in the "Basis of Value" / "Institution"
+column (as already instructed below) but state the VALUE as of the one governing date.
+An officer reading this statement must never have to ask "as of when, exactly, is this
+net worth figure computed" — the header date answers it for every row without exception.
+
 **Section II — Asset Summary:**
 
 ```
@@ -130,6 +141,13 @@ Notes:
 - Retirement accounts: use the current account balance (not projected value).
 - Business interests: use book value or owner's estimate — clearly labeled as estimate.
 - Do not include the E-2 business itself in assets before it is operational.
+
+**Exhibit-ID linkage — required per line item:** Every asset and liability row must cite
+the exhibit ID (format Tab X-N) from the EXHIBIT REGISTRY that substantiates it, appended
+to the "Basis of Value" / "Institution" column: "Statement as of [date] (Tab E-4)."
+Reference exhibits ONLY by an ID that actually appears in the registry — never invent one.
+If a line item has no corresponding exhibit on file, state the basis in words and add
+`[NO SUPPORTING EXHIBIT ON FILE]` rather than citing a fabricated ID or omitting the flag.
 
 **Section III — Liability Summary:**
 
@@ -210,6 +228,8 @@ Tables use pipe-delimited formatting. Ready to save as .txt or .docx.
 - [ ] Balance sheet math is correct (assets - liabilities = net worth)
 - [ ] Post-investment position shown
 - [ ] All asset values have a stated basis (appraisal / statement / estimate)
+- [ ] Single as-of date stated in Purpose and used consistently for every line item's value
+- [ ] Every line item cites its supporting exhibit ID (Tab X-N) or flags [NO SUPPORTING EXHIBIT ON FILE]
 - [ ] All values have a date reference
 - [ ] Currency conversions shown with rate and date
 - [ ] Retirement accounts use current balance, not projected value

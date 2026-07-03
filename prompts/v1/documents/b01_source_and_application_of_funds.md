@@ -142,6 +142,18 @@ Do NOT omit the intermediate step — officers see bank records.
 - Working capital: confirm deposit to U.S. LLC bank account (not held in escrow)
 - Nothing should remain in escrow with a refund condition
 
+**Foreign Exchange Rate Documentation — Non-USD Transfers:**
+For every transfer that converts a foreign currency to USD (CAD, GBP, EUR, etc.), state
+the exchange rate applied, the date it was locked, and its source:
+"The CAD $[X] transfer was converted at [institution]'s posted rate of [X] CAD/USD on
+[date], yielding $[X] USD (Tab [X-N])."
+If the intake or exhibit registry does not supply a dated, sourced rate for a given
+transfer, do not invent or estimate one — state: "[NOTE: exchange rate and conversion
+date not on file for this transfer — confirm with your financial institution's
+transaction record]." The DETERMINISTIC FINANCIAL SPINE below intentionally leaves
+any USD conversion of net worth uncomputed for the same reason — never bridge that gap
+with an assumed rate.
+
 ---
 
 ## DENIAL PATTERN TESTS
@@ -268,6 +280,13 @@ Use the EXACT amounts from investment_breakdown. Adapt rows to what actually app
 Omit any category not present in the applicant's investment. Fill each `Tab [X-N]`
 placeholder with a real ID from the EXHIBIT REGISTRY — if no matching exhibit exists,
 omit the citation rather than inventing one.
+
+**Deployment reconciliation — use the spine, do not re-derive:** the prompt includes a
+DETERMINISTIC FINANCIAL SPINE block with pre-computed `Funding Gap` and `Proportionality
+Ratio` figures. The deployment table's TOTAL INVESTED must equal the spine's
+`Total Invested to Date` exactly. If the spine flags the two as inconsistent, state the
+spine's figure and add a line noting the discrepancy for the applicant to resolve —
+never silently pick one number to make the table balance.
 
 If franchise applicant and FDD Item 7 is available:
 "The total investment of $[X] [falls within / exceeds] the FDD Item 7 estimated initial

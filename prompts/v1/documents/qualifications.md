@@ -269,6 +269,31 @@ Never state there is "no relevant experience" — there is always
 SOME transferable connection; find the most honest and specific one.
 Do not mention the "gap." Present only the strength.
 
+**SKILL-TO-EVIDENCE MAPPING — STANDING INSTRUCTION (always perform):**
+Every skill or competency claimed anywhere in this document — in Section II,
+the Bridge Paragraph, or the transferable-skills analysis — must trace to two
+things:
+
+(a) **A resume entry.** The claim must correspond to a specific role, dated
+range, or achievement that also appears in the Principal Resume (Tab I). Do
+not assert a skill this applicant's resume does not support with a concrete
+role or achievement. If the EXHIBIT REGISTRY contains a resume exhibit ID,
+cite it — e.g., "(see Tab I-1)".
+
+(b) **The franchisor's stated requirements, where an FDD exists.** If FDD
+Item 15 (Obligations to Participate in the Actual Operation of the Business)
+or Item 11's training-program description is available in this case's
+knowledge context, cross-reference each claimed skill against what the
+franchisor actually requires — prior industry experience, a specific
+certification, completion of initial training, or none of the above. State
+this as fact, not conclusion: "Item 15 does not require prior [industry]
+experience; it requires completion of the [X]-week initial training program,
+which [applicant] is scheduled to complete on [date]." Never claim the
+applicant "qualifies" under Item 15 — state what Item 15 requires and what
+the applicant's record shows, and let the officer connect them. If no FDD
+exists (non-franchise business), omit part (b) entirely — do not invent
+franchisor requirements.
+
 **Forbidden language:**
 Do not use: "extensive expertise", "wealth of experience",
 "passionate about", "driven by", "deeply committed to"
@@ -291,6 +316,8 @@ The content should be ready to save as a .txt or .docx file.
 - [ ] Specific metrics used in every role (staff count, budget amounts, years, revenue)
 - [ ] No puffery ("extensive", "wealth of", "passionate", "driven", "deeply committed")
 - [ ] Franchise training cited as prospective qualification evidence (if franchise)
+- [ ] Every claimed skill traces to a resume entry (cited by exhibit ID where available)
+- [ ] FDD Item 15/training requirements cross-referenced against claimed skills (franchise only)
 - [ ] Framing decisions from Case Brief applied in Section II
 - [ ] No mention of experience "gaps" — strengths only
 - [ ] Education and certifications listed

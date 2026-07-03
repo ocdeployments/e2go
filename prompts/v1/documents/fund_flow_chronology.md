@@ -138,10 +138,14 @@ After the table, address any transactions that need explanation:
   on [date] was a temporary hold during the LLC formation period, pending EIN assignment.
   The funds were returned to [LLC account] on [date]."
 
-- **Timing gaps:** If there is a gap between fund receipt and deployment exceeding 60 days,
-  explain it. "The $175,000 remained in the [institution] account from [date received] to
-  [date transferred] while the LLC Operating Agreement and franchise agreement were being
-  finalized."
+- **Timing gaps — mandatory check, not optional:** Compare every consecutive pair of dates
+  in the Fund Flow Table yourself, row by row. Any gap between fund receipt and the next
+  deployment step that exceeds 30 days MUST be flagged and explained — this is a fixed
+  threshold, not a judgment call, and skipping this check is a document defect. Do not wait
+  for a gap to seem "unusual" before checking; check every row pair every time.
+  "The $175,000 remained in the [institution] account from [date received] to
+  [date transferred] — a [N]-day gap — while the LLC Operating Agreement and franchise
+  agreement were being finalized."
 
 - **Currency conversion:** State conversion method and source of exchange rate.
   "The [CAD/EUR/GBP] amounts above were converted to USD at the exchange rate in effect
@@ -206,6 +210,7 @@ Ready to save as .txt or .docx.
 - [ ] All amounts in USD (conversions shown with rate and date)
 - [ ] No gaps between receipt and deployment
 - [ ] Round-trip movements explained in narrative notes
+- [ ] Every consecutive row pair checked for a >30-day gap; all such gaps explained
 - [ ] Final deployment summary reconciles to investment amount in case_brief_json
 - [ ] Each table row references a supporting exhibit
 - [ ] RRSP/TFSA withholding tax shown separately if applicable

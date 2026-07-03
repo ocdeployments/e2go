@@ -61,6 +61,22 @@ Do not state that the applicant satisfies any legal standard.
 Do not use "prove", "demonstrate", "establish" in reference to
 legal requirements. Simply state the facts of their life.
 
+9. CITE THE RECORD — EVERY TIE CARRIES ITS EVIDENCE
+The prompt includes an EXHIBIT REGISTRY listing every uploaded document with its
+canonical citation ID (format "Tab X-N"). Every concrete tie described — the home
+retained, the family member, the financial obligation — should cite the exhibit that
+documents it where one exists: "our home at [address], which we retain (Tab F-1)."
+Reference exhibits ONLY by an ID from the registry; never invent one. If a tie has no
+corresponding exhibit on file, state the tie in the applicant's own words without a
+citation rather than inventing one.
+
+10. CONSISTENCY WITH THE DECLARATION (D11)
+This document and the Principal Applicant Declaration describe the same home-country
+ties. Do not introduce a tie, name, relationship, or figure here that contradicts what
+the applicant stated elsewhere in this case's intake — the two documents are cross-checked
+for consistency and a contradiction between them is a credibility risk, not a stylistic
+choice.
+
 ---
 
 ## DOCUMENT PURPOSE
@@ -190,3 +206,17 @@ This document is generated for a U.S. E-2 Treaty Investor Visa application.
 The applicant is responsible for reviewing all generated documents for accuracy.
 This tool does not provide legal advice. The applicant should consult with
 a licensed immigration attorney before submitting any documents to the consulate.
+
+---
+
+## QUALITY CHECKLIST
+
+- [ ] Written in first person, active voice
+- [ ] Every concrete tie (property, family, financial obligation) is real and named — no categories
+- [ ] Ties cite an exhibit from the EXHIBIT REGISTRY where one exists (format Tab X-N)
+- [ ] No tie, name, relationship, or figure contradicts the Principal Declaration (D11)
+- [ ] Weak ties presented honestly, not manufactured
+- [ ] "Indefinite" duration reframed honestly, never stated as "intends to return"
+- [ ] No forbidden phrases present
+- [ ] No legal conclusion language ("prove", "demonstrate", "establish", "qualifies")
+- [ ] Applicant voice matched — sounds personal, not lawyerly
