@@ -1,6 +1,31 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** July 3, 2026 — Session 119e: **WS7 Interview Prep Kit's four unwired sources fixed.** Per owner instruction to prioritize WS4/7/8: WS4 closed out (Session 119), FDD Comparison (119b), Renewal Package (119c), Gap Analysis partnership fix (119d), now Interview Prep Kit (spec-scored 8.0) pulls uploaded-document extraction data, Gap Analysis's LLM-enriched narrative + semantic field ratings, the full QMA-* market field set, and multi-session trend history — previously only a bare deterministic re-score and the latest single session were visible to the dossier LLM. Next: continue WS7's remaining analyses, then WS8 golden-case verification.
+**Last Updated:** July 3, 2026 — Session 119f: **WS7 Coaching Report fixed.** Per owner instruction to prioritize WS4/7/8: WS4 closed out (Session 119), FDD Comparison (119b), Renewal Package (119c), Gap Analysis partnership fix (119d), Interview Prep Kit (119e), now Coaching Report (spec-scored 7.5) extends trend analysis from 2 to 5 prior sessions and adds the "Print / Save as PDF" export it was previously missing; confirmed LLM-failure surfacing was already fixed. Next: continue WS7's remaining analyses (FDD Final Report, FDD Extraction, FDD E-2 Scoring, FDD Questions, Territory/Market Analysis), then WS8 golden-case verification.
+
+---
+
+## Session 119f — WS7: Coaching Report trend cap + missing export (July 3, 2026)
+
+**Branch:** dev. Build clean, `tsc --noEmit` clean, 135/135 tests pass (no new tests — client-side query cap and print/export UI, no new scoring or prompt logic).
+
+### Context
+Spec-scored 7.5, next-highest open WS7 item after Interview Prep Kit. Investigated all three of the spec's listed Coaching Report issues against current code before touching anything:
+- "Surface LLM failures" (WS1.7) — already fixed. `coaching-report/route.ts` returns `{ coaching: [], error: true }` on empty/unparseable/timed-out LLM responses, and `simulator/page.tsx` already renders a dedicated error block with a retry button. No action needed.
+- "Extend trend analysis beyond 2 sessions" — the backend prompt's `priorSessionBlock` builder in `coaching-report/route.ts` already generalizes to any `sessions.length >= 2`; the actual cap was client-side, a `.limit(2)` on the `priorSessions` Supabase query in `simulator/page.tsx`.
+- "No print/export" — confirmed true. Coaching Report was the only interview output (vs. Interview Prep Kit, FDD reports) with no way to save/print it.
+
+### Built
+- **`src/app/simulator/page.tsx`**:
+  1. Bumped the prior-sessions query from `.limit(2)` to `.limit(5)`, so trend-aware coaching now considers up to 5 past sessions instead of 2.
+  2. Added a "Print / Save as PDF" button to the coaching-report section header (gated on `!coachingLoading && summary.detailedCoaching?.length > 0`), styled to match the app's gold-accent button convention.
+  3. Added a scoped `@media print` stylesheet to `SessionComplete`, mirroring the `.no-print` convention already established in `simulator/prep-kit/page.tsx`.
+  4. Marked the print button, the coaching-error "Retry" button, and the bottom action-button row (`completeActions`) with `className="no-print"` so printing yields a clean, coaching-report-only page.
+
+### Next
+WS7 remaining: FDD Final Report (7.0), FDD Extraction (7.0), FDD E-2 Scoring (7.0), FDD Questions (6.5), Territory/Market Analysis (6.5/6.0). Then WS8 golden-case verification.
+
+### Dev server
+Not started this session — print/export is a `window.print()` call verified by code inspection against the established prep-kit pattern; no new interactive state to exercise in-browser.
 
 ---
 
