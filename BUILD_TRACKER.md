@@ -1,6 +1,14 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** July 3, 2026 — Session 119l: **WS7 Renewal Package re-checked and upgraded.** Re-audit of the 119c "blocked" verdict found two of the four deferred spec fixes were buildable from data already collected: fix #3 (renewal-specific gap analysis) now ships as a deterministic module flagging marginality, ownership changes, >25% projection shortfalls, immigration issues, and thin develop-and-direct/ties answers — added as a fifth package document with its own tab and fed into the cover-letter prompt so HIGH flags are addressed rather than omitted; fix #4 (consulate handling) resolves the actual consulate from the original application's M3-I-11/M3-I-12 answers and parameterizes the Path A checklist, cover-letter prompt, and UI labels (Toronto remains the default). Fixes #1 (evidence upload cross-check) and #5 (expiry-aware checklist) remain genuinely blocked on new intake/upload infrastructure — owner scope decision. 11 new jest tests; 146/146 pass; build clean; entry-page label change verified live in browser. Next: FDD Comparison re-check (last WS7 item), then WS6 (owner: do not skip), then WS8.
+**Last Updated:** July 3, 2026 — Session 119m: **WS7 COMPLETE — FDD Comparison re-check passed.** All four spec (§11) fix items verified present in current code: profile_match persisted at scoring time (`api/fdd/questions/route.ts`), payback_years/franchisee_survival_rate computed server-side in the compare route, em-dash columns are legended "not disclosed" indicators (never-fabricate, not broken), and the 119b weighted verdict panel ("ranked for your capital and territory") renders above the metrics table. No code changes needed — docs-only closeout. WS7 is finished. Next: WS6 (missing documents + per-template upgrades — owner: do not skip): 3 dead templates to wire, 3 new documents to build, ~12 per-template upgrades (WS6.2 substantiality fix done in 116b). Then WS8 golden-case verification.
+
+---
+
+## Session 119m — WS7: FDD Comparison re-check — clean pass, WS7 complete (July 3, 2026)
+
+**Branch:** dev. No code changes. Verified by direct code inspection that all four spec fix items hold after the ten sessions since 119b: (1) profile_match persisted server-side at scoring time, (2) payback/survival derived in the compare route's `buildColumn()`, (3) em-dashes legended as "not disclosed or not yet extracted", (4) `computeVerdict()` + verdict panel live. The spec's 4.0 score predates 119b and is stale.
+
+**Next:** WS6, then WS8.
 
 ---
 
