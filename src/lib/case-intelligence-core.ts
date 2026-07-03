@@ -37,6 +37,7 @@ import { createHash } from 'node:crypto';
 import { callLLM } from './llm-client';
 import { retrieveDoctrine, formatDoctrineForPrompt, type DoctrineChunk } from './doctrine-retrieval';
 import type { Dimension } from './document-comprehension-engine';
+import { computeFundSourceRiskProfile, computeDesperationRatio } from './cpu-risk-signals';
 
 const DIMENSIONS: Dimension[] = [
   'identity', 'source_of_funds', 'investment', 'business',
@@ -183,11 +184,34 @@ export async function assembleCaseModel(applicationId: string, userId: string): 
     .eq('application_id', applicationId);
   if (answerRows && answerRows.length > 0) {
     signalsPresent.answers = true;
+    const answersMap: Record<string, unknown> = {};
     for (const a of answerRows) {
       const value = typeof a.answer_value === 'string' ? a.answer_value : JSON.stringify(a.answer_value ?? '');
+      answersMap[a.question_key] = a.answer_value;
       if (!value || value === 'null' || value === '""' || value === '[]') continue;
       push(dims, dimensionForKey(a.question_key), {
         fact: a.question_key, value, source: 'answer', sourceRef: a.question_key, confidence: 'high',
+      });
+    }
+
+    // CPU 4B — D4 fund-source risk tier + D7 desperation ratio (cpu-risk-signals.ts).
+    // Deterministic signals computed once here so Faculty 3 REASON can turn a
+    // high-risk reading into an actual directive rather than each downstream
+    // document independently (or never) noticing the risk.
+    const riskProfile = computeFundSourceRiskProfile(answersMap);
+    if (riskProfile.blendedTier) {
+      push(dims, 'source_of_funds', {
+        fact: 'fund_source_risk_tier',
+        value: `${riskProfile.blendedTier} (highest-risk source: ${riskProfile.highestRiskSource?.label ?? 'n/a'})`,
+        source: 'answer', sourceRef: 'cpu-risk-signals:D4', confidence: 'high',
+      });
+    }
+    const desperation = computeDesperationRatio(answersMap);
+    if (desperation.ratio !== null) {
+      push(dims, 'investment', {
+        fact: 'desperation_ratio',
+        value: `${Math.round(desperation.ratio * 100)}% of net worth invested (${desperation.tier})`,
+        source: 'answer', sourceRef: 'cpu-risk-signals:D7', confidence: 'high',
       });
     }
   }
