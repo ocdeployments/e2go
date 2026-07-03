@@ -806,7 +806,8 @@ function scoreCategory(
   am: Map<string, string>,
   docs: DocumentRow[],
   app: ApplicationRow,
-  brief?: CaseBriefRow
+  brief?: CaseBriefRow,
+  isPartnership?: boolean
 ): GapCategory {
   const evidence: string[] = [];
   const gaps: string[] = [];
@@ -853,6 +854,19 @@ function scoreCategory(
 
       if (!hasBankDocs) score = Math.max(score - 15, 0);
       if (amount === 0) score = Math.max(score - 20, 0);
+
+      // Each investor stands alone (spec §5.1.3): a complete Investor 1 source-of-funds
+      // showing says nothing about Investor 2's paper trail. Without this check, a
+      // partnership case with a documented principal and an entirely blank partner
+      // scores identical to a fully-documented solo case — a false-confidence gap.
+      if (isPartnership) {
+        if (hasAnswer(am, 'P2-SOF')) evidence.push("Investor 2's source of funds narrative on file");
+        else {
+          gaps.push("Investor 2's source of funds narrative has not been provided — partnership packages require an independent showing for each investor");
+          actions.push('Have Investor 2 complete their source-of-funds narrative in the Partner Access portal');
+          score = Math.max(score - 20, 0);
+        }
+      }
       break;
     }
 
@@ -874,6 +888,23 @@ function scoreCategory(
       if (sessionsUsed >= 3) evidence.push(`${sessionsUsed} simulator sessions completed`);
       else if (sessionsUsed >= 1) { gaps.push(`Only ${sessionsUsed} simulator session — practice more`); }
       else { gaps.push('No simulator sessions — interview readiness unverified'); actions.push('Complete at least 3 interview simulator sessions'); }
+
+      // Each investor stands alone: a 50/50 partnership needs BOTH partners to show
+      // develop-and-direct through role differentiation (spec §5.1.2/5.1.5), not just
+      // the principal who happens to be the one filing this account's Module 3.
+      if (isPartnership) {
+        const p2Role = getAnswer(am, 'P2-ROLE');
+        const p2Quals = getAnswer(am, 'P2-QUALS');
+        if (p2Role && p2Role.length > 5) evidence.push(`Investor 2 role: ${p2Role.substring(0, 80)}`);
+        else {
+          gaps.push('Investor 2 role and qualifications not defined — neither partner has numerical control, so each must independently show develop-and-direct');
+          actions.push("Have Investor 2 complete their role and qualifications in the Partner Access portal");
+          score = Math.max(score - 20, 0);
+        }
+        if (!p2Quals) {
+          gaps.push("Investor 2's qualifications narrative has not been provided");
+        }
+      }
       break;
     }
 
@@ -1038,7 +1069,8 @@ export function scoreCase(
   caseBrief?: CaseBriefRow,
   simulator?: SimulatorData,
   archetype?: string | null,
-  cpuContext?: CpuGapContext
+  cpuContext?: CpuGapContext,
+  isPartnership?: boolean
 ): GapAnalysisResult {
   const am = buildAnswerMap(answers);
 
@@ -1115,7 +1147,7 @@ export function scoreCase(
       ];
 
   const categories = categoryDefs.map(def =>
-    scoreCategory(def.id, def.name, def.weight, def.dCodes, denialFactors, am, documents, application, caseBrief)
+    scoreCategory(def.id, def.name, def.weight, def.dCodes, denialFactors, am, documents, application, caseBrief, isPartnership)
   );
 
   // Compute weighted scores

@@ -84,6 +84,7 @@ function GapAnalysisInner() {
   const [cachedBrief, setCachedBrief] = useState<BriefRow | undefined>(undefined);
   const [cachedSim, setCachedSim] = useState<SimulatorData>({ sessionsUsed: 0, latestInconsistencyCount: 0 });
   const [cachedArchetype, setCachedArchetype] = useState<string | null>(null);
+  const [isPartnership, setIsPartnership] = useState(false);
 
   // Pathway intelligence state
   const [pathwayResult, setPathwayResult] = useState<PathwayAnalysisResult | null>(null);
@@ -178,6 +179,7 @@ function GapAnalysisInner() {
           { data: profile },
           { data: quizSession },
           { data: appFull },
+          { data: partnershipPayment },
         ] = await Promise.all([
           supabase.from('applications').select('business_name, principal_name, simulator_sessions_used').eq('id', resolvedId).eq('user_id', user.id).single(),
           supabase.from('answers').select('question_key, answer_value').eq('application_id', resolvedId).is('family_member_id', null),
@@ -189,7 +191,11 @@ function GapAnalysisInner() {
           supabase.from('case_profiles').select('archetype, franchise_triggered').eq('user_id', user.id).maybeSingle(),
           supabase.from('quiz_sessions').select('result_json, hard_stop_codes').eq('user_id', user.id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
           supabase.from('applications').select('investment_amount, application_type').eq('id', resolvedId).single(),
+          supabase.from('payments').select('id').eq('user_id', user.id).eq('payment_type', 'complete_partnership').eq('status', 'completed').limit(1).maybeSingle(),
         ]);
+
+        const partnershipDetected = Boolean(partnershipPayment);
+        setIsPartnership(partnershipDetected);
 
         const docs: DocRow[] = [...(legacyDocs ?? []), ...(uploadedDocs ?? [])];
 
@@ -203,7 +209,7 @@ function GapAnalysisInner() {
           latestInconsistencyCount: simSessions?.[0]?.inconsistency_count ?? 0,
         };
 
-        const scored = scoreCase(app, answers || [], docs || [], brief || undefined, simData, resolvedArchetype);
+        const scored = scoreCase(app, answers || [], docs || [], brief || undefined, simData, resolvedArchetype, undefined, partnershipDetected);
         setResult(scored);
 
         // Pathway intelligence — extract nationality and hard stops from quiz session
@@ -294,7 +300,7 @@ function GapAnalysisInner() {
   useEffect(() => {
     if (!cachedApp) return;
     const answerRows = Array.from(localAnswers.entries()).map(([question_key, answer_value]) => ({ question_key, answer_value }));
-    const rescored = scoreCase(cachedApp, answerRows, localDocs, cachedBrief, cachedSim, cachedArchetype);
+    const rescored = scoreCase(cachedApp, answerRows, localDocs, cachedBrief, cachedSim, cachedArchetype, undefined, isPartnership);
     setLiveResult(rescored);
 
     // Compute which D-codes improved vs. the initial load baseline
@@ -307,7 +313,7 @@ function GapAnalysisInner() {
       }
     }
     setResolvedCodes(improvements);
-  }, [localAnswers, localDocs, cachedApp, cachedBrief, cachedSim, cachedArchetype]);
+  }, [localAnswers, localDocs, cachedApp, cachedBrief, cachedSim, cachedArchetype, isPartnership]);
 
   // Handlers passed down to DenialRiskRadar → RemediationPanel
   const handleAnswerChange = useCallback((key: string, value: string) => {
