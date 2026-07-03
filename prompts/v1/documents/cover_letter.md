@@ -1,6 +1,6 @@
 # Cover Letter Generation Prompt
 ## Document Type: cover_letter
-## Tab Reference: Tab D
+## Tab Reference: Tab C
 ## Generation Order: Step 1 — ALWAYS FIRST
 
 ---

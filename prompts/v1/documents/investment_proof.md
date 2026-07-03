@@ -1,6 +1,6 @@
 # Investment Proof Generation Prompt
 ## Document Type: investment_proof
-## Tab Reference: Tab B — Investment Proof (At-Risk Element)
+## Tab Reference: Tab E — Investment Proof (At-Risk Element)
 ## Generation Order: Step 3
 
 ## SCOPE — READ THIS FIRST

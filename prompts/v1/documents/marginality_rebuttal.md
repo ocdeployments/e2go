@@ -1,6 +1,6 @@
 # Marginality Rebuttal Generation Prompt
 ## Document Type: marginality_rebuttal
-## Tab Reference: Tab C — Business / Franchise (C-04)
+## Tab Reference: Tab G — Non-Marginality Analysis (G-01)
 ## Generation Order: Step 8
 
 ---

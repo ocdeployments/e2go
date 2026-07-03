@@ -1,6 +1,6 @@
 # Business Plan Generation Prompt
 ## Document Type: business_plan
-## Tab Reference: Tab C
+## Tab Reference: Tab H
 ## Generation Order: Step 4
 
 ---

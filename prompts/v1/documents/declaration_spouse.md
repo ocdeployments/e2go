@@ -1,6 +1,6 @@
 # Spouse Applicant Declaration Generation Prompt
 ## Document Type: declaration_spouse
-## Tab Reference: Tab G — Declarations (G-02)
+## Tab Reference: Tab L — Declarations (L-02)
 ## Generation Order: Step 10
 ## Condition: Generate ONLY if spouse is included in the E-2 application
 

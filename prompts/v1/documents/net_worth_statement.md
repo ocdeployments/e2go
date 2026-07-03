@@ -1,6 +1,6 @@
 # Consolidated Net Worth Statement Generation Prompt
 ## Document Type: net_worth_statement
-## Tab Reference: Tab B — Investment / Funds (B-03)
+## Tab Reference: Tab E — Investment / Funds (E-03)
 ## Generation Order: Step 5
 
 ---

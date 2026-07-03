@@ -2,7 +2,7 @@
 ## Document Type: visa_category
 ## Internal Key: visa_category (retained for generation engine compatibility)
 ## Displayed as: Substantiality Memorandum
-## Tab Reference: Tab C — Investment Analysis
+## Tab Reference: Tab F — Investment Analysis
 ## Generation Order: Step 7
 
 ---

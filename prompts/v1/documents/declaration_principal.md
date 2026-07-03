@@ -1,6 +1,6 @@
 # Principal Applicant Declaration Generation Prompt
 ## Document Type: declaration_principal
-## Tab Reference: Tab G — Declarations (G-01)
+## Tab Reference: Tab L — Declarations (L-01)
 ## Generation Order: Step 9
 
 ---

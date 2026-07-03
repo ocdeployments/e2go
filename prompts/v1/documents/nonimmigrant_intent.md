@@ -1,6 +1,6 @@
 # Non-immigrant Intent Statement Generation Prompt
 ## Document Type: nonimmigrant_intent
-## Tab Reference: Tab G — Your Ties section (M3-T-01 through M3-T-11)
+## Tab Reference: Tab M — Your Ties section (M3-T-01 through M3-T-11)
 ## Generation Order: Step 8 — after visa_category
 
 ---

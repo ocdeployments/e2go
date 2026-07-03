@@ -1,7 +1,7 @@
 # Source and Application of Funds — Generation Prompt
 ## Document Type: source_of_funds (merged with investment_proof)
-## Tab Reference: canonical tab letter is assigned by docx-package-constants.ts
-##   (DOC_TYPE_TAB_MAP) and supplied at generation time — do not hardcode a letter here.
+## Tab Reference: Tab D — Source and Application of Funds (canonical letter
+##   from DOC_TYPE_TAB_MAP in docx-package-constants.ts)
 ## Generation Order: Step 2
 ## Replaces: source_of_funds.md + investment_proof.md (merged into single document)
 

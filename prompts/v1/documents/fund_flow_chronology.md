@@ -1,6 +1,6 @@
 # Fund Flow Chronology Generation Prompt
 ## Document Type: fund_flow_chronology
-## Tab Reference: Tab B — Investment / Funds (B-02)
+## Tab Reference: Tab E — Investment / Funds (E-02)
 ## Generation Order: Step 4
 
 ---
