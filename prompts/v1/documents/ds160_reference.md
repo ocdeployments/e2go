@@ -1,7 +1,22 @@
-# DS-160 Reference Generation Prompt
+# DS-156E / DS-160 Reference Generation Prompt
 ## Document Type: ds160_reference
-## Tab Reference: Tab B
+## Tab Reference: Tab B (also covers Tab D-04/D-05 business/investment fields)
 ## Generation Order: Step 6
+
+---
+
+## WHAT THIS DOCUMENT IS — READ FIRST
+
+This is a personalized reference guide to help the applicant correctly complete:
+- **DS-156E** — Nonimmigrant Treaty Trader/Investor Application (principal applicant only;
+  captures the business and investment details specific to the E-2 visa category)
+- **DS-160** — Online Nonimmigrant Visa Application (every applicant in the E-2 family —
+  principal, spouse, each child — completes their own)
+
+Both forms must be completed and stay consistent with each other and with every other
+document in the binder. This document is a guide, not the completed form itself — the
+applicant enters data into the official State Department online system; this guide
+pre-populates the answers from intake data so the applicant can copy them in accurately.
 
 ---
 
@@ -107,7 +122,20 @@ For DS-160 Reference, specifically extract from module_3_answers (Tab A):
 - Prior U.S. visits
 - Immigration history (prior visas, refusals, overstays)
 - Family information
-- Security questions
+- Security questions — the `M3-SEC-*` answers (five categories: Health `M3-SEC-H-*`,
+  Criminal `M3-SEC-C-*`, Moral `M3-SEC-M-*`, Immigration `M3-SEC-I-*`, Severe `M3-SEC-S-*`,
+  each with a paired `-EXPLAIN` field when answered "yes")
+
+For the DS-156E business/investment fields (principal applicant only), extract from
+module_3_answers Tab A (entity) and Tab H (funds):
+- LLC/entity legal name, state of formation, EIN, NAICS code, business address
+- Investment classification (E-2 Treaty Investor), total investment amount, date of
+  initial investment, percentage of business owned, role/title, compensation
+- Ownership table: each owner's name, ownership %, and role (for partnerships — each
+  partner's non-overlapping domain, cross-referencing the Org Chart / Management
+  Structure Exhibit where one exists)
+- Prior E-visa/treaty-investor history: any prior E-visa applications, approvals,
+  denials, or status changes under this or another treaty-investor category
 
 ---
 
@@ -169,26 +197,76 @@ Use this test case to validate the generation:
 
 ## DOCUMENT-SPECIFIC INSTRUCTIONS
 
-### DS-160 Reference
+### DS-156E / DS-160 Reference
 
-This document is a reference guide for completing the DS-160 online visa application.
-It provides all required information in a format that can be directly transferred
-to the DS-160 form.
+This document is a reference guide for completing the DS-156E (principal applicant only)
+and the DS-160 online visa application (every applicant). It provides all required
+information in a format that can be directly transferred to each form.
 
 **Structure:**
 
 ```
-I.   Personal Information
-II.  Passport Information
-III. Address and Phone
-IV.  Travel Information
-V.   Employment Information
-VI.  Education Information
-VII. Previous U.S. Visits
-VIII.Immigration History
-IX.  Family Information
-X.   Security Background
+PART 1 — DS-156E BUSINESS & INVESTMENT DETAILS (Principal Applicant Only)
+PART 2 — DS-160 COMPLETION GUIDE (Each Applicant)
+  I.   Personal Information
+  II.  Passport Information
+  III. Address and Phone
+  IV.  Travel Information
+  V.   Employment Information
+  VI.  Education Information
+  VII. Previous U.S. Visits
+  VIII.Immigration History
+  IX.  Family Information
+  X.   Security Background
+PART 3 — CONSISTENCY CHECKLIST
 ```
+
+---
+
+**PART 1 — DS-156E Business & Investment Details (Principal Applicant Only)**
+
+```
+Legal Entity Name:                   [Full LLC/Corp name as on Certificate of Formation]
+State of Formation:                  [State]
+EIN:                                 [XX-XXXXXXX format]
+NAICS Code:                          [6-digit NAICS code if known]
+Business Address:                    [Full street address including zip code]
+Date Business Established:           [LLC formation date — matches Certificate of Formation]
+
+Investment Type:                     E-2 Treaty Investor
+Total Investment Amount (USD):       $[EXACT amount — numeral only, no commas or "approximately"]
+Date of Initial Investment:          [Date of first investment transaction — matches Tab B-01]
+Percentage of Business Owned:        [XX%]
+Role / Position Title:               [Owner-Operator / President / Managing Member — be specific]
+```
+
+**IMPORTANT:** The investment amount must be the TOTAL amount invested as documented in
+Tab B-01. If staged investments occurred, use the CUMULATIVE total as of the application
+date. No approximate figures, no ranges.
+
+**Ownership table (single-owner cases list one row; partnerships list every owner):**
+```
+Owner Name          | Ownership % | Role / Functional Domain
+[Full legal name]    | [XX%]        | [e.g., "Managing Member — operations, staffing"]
+```
+For partnerships, each partner's functional domain should be non-overlapping and should
+match the Org Chart / Management Structure Exhibit where one has been generated for this case.
+
+**Prior E-visa / treaty-investor history:**
+```
+Prior E-Visa Applications:  [Type, consulate, date, outcome — e.g., "E-2, Toronto, 2021, approved"]
+                             [If none: "None"]
+Prior E-Visa Denials:       [Date, consulate, reason if known]
+                             [If none: "None"]
+Prior Status Changes:       [Any change of status to/from E-2 or another treaty category]
+                             [If none: "None"]
+```
+Do not omit prior denials — officers can see denial records in PIMS. Omitting a denial
+that shows in the system is treated as misrepresentation, worse than the denial itself.
+
+---
+
+**PART 2 — DS-160 Completion Guide**
 
 **Section I — Personal Information:**
 - Full legal name (as it appears on passport)
@@ -253,7 +331,39 @@ misrepresentation. Non-disclosed items are worse than the underlying issue.
 - Children: names, dates of birth, nationalities
 
 **Section X — Security Background:**
-Answer each question accurately. If any answer is "yes", provide details.
+Reflect the applicant's actual `M3-SEC-*` answers — do not generate generic guidance text
+for this section. For each of the five categories, state the applicant's actual answer and,
+where "yes", the paired `-EXPLAIN` narrative:
+```
+Health-related (M3-SEC-H-01 to H-03):        [Answer] — [Explanation if yes]
+Criminal (M3-SEC-C-01 to C-02):               [Answer] — [Explanation if yes]
+Moral / vice (M3-SEC-M-01 to M-03):           [Answer] — [Explanation if yes]
+Immigration violations (M3-SEC-I-01 to I-03): [Answer] — [Explanation if yes]
+Security / severe (M3-SEC-S-01 to S-05):      [Answer] — [Explanation if yes]
+```
+If a security-question answer is missing from intake, flag it:
+`[CONFIRM WITH APPLICANT: [specific M3-SEC-* question]]` — do not infer "No" by default.
+
+---
+
+**PART 3 — Consistency Checklist**
+
+Use this checklist to confirm all documents in the binder match the DS-156E/DS-160 before submission:
+
+```
+FIELD                    | DS-156E/DS-160 VALUE      | TAB REFERENCE     | MATCH?
+Investment Amount        | $[X]                       | Tab B-01          | [ ]
+LLC Name                 | [LLC name]                 | Tab A (entity)    | [ ]
+EIN                      | [XX-XXXXXXX]               | Tab A (EIN letter)| [ ]
+Business Address         | [Address]                  | Tab A / Tab C     | [ ]
+Principal Name           | [Full legal name]          | Passport          | [ ]
+Date of Birth            | [DOB]                      | Passport          | [ ]
+Passport Number          | [Number]                   | Passport          | [ ]
+Employer History (5 yr)  | [Employer list]            | Tab D qualifs     | [ ]
+Prior Denials            | [Yes/No + dates]           | Tab G-01          | [ ]
+```
+
+Any mismatch between columns is a risk. Resolve BEFORE submission.
 
 ---
 
@@ -266,6 +376,10 @@ The content should be ready to save as a .txt or .docx file.
 
 ## QUALITY CHECKLIST
 
+- [ ] DS-156E and DS-160 distinguished clearly at the top
+- [ ] DS-156E business/investment fields present: EIN, NAICS, investment classification, ownership table, prior E-visa history
+- [ ] Investment amount matches Tab B-01 exactly (numerals only, no approximation)
+- [ ] Ownership table lists every owner with % and functional domain; partnerships cross-reference the Org Chart exhibit
 - [ ] Full legal name exactly as on passport
 - [ ] Date of birth in correct format
 - [ ] Passport information complete and accurate
@@ -277,9 +391,10 @@ The content should be ready to save as a .txt or .docx file.
 - [ ] Immigration history questions all answered
 - [ ] Any prior refusals or overstays explicitly disclosed
 - [ ] Family information complete
-- [ ] Security background questions answered
+- [ ] Security background (Section X) reflects actual M3-SEC-* answers per category, not generic guidance
+- [ ] Consistency checklist included with all critical cross-references
 - [ ] No legal conclusions stated
 - [ ] Active voice throughout
 - [ ] Specific facts only — no generic language
 - [ ] No e2go branding
-- [ ] Under 5 pages estimated
+- [ ] 3–6 pages depending on family size
