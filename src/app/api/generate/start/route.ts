@@ -147,6 +147,19 @@ export async function POST(request: Request) {
     ) {
       conditionalDocTypes.push('financial_assets_portfolio');
     }
+    // WS6.1 — Lease/Premises Summary generates only for physical-location businesses,
+    // detected deterministically by the presence of an uploaded lease agreement rather
+    // than a new intake question.
+    const { data: leaseDoc } = await supabase
+      .from('uploaded_documents')
+      .select('id')
+      .eq('application_id', applicationId)
+      .eq('doc_type', 'lease_agreement')
+      .limit(1)
+      .maybeSingle();
+    if (leaseDoc) {
+      conditionalDocTypes.push('lease_premises_summary');
+    }
 
     // Sprint F-P: Add Investor 2 documents for complete_partnership buyers
     if (partnerPayment) {
@@ -161,6 +174,7 @@ export async function POST(request: Request) {
       'ds160_reference', 'visa_category', 'nonimmigrant_intent',
       'marginality_rebuttal', 'declaration_principal', 'fund_flow_chronology',
       'net_worth_statement', 'resume_principal', 'gift_letter',
+      'org_chart', 'corporate_documents_guide',
     ];
     const allDocTypes = [...coreDocTypes, ...conditionalDocTypes];
     const totalSteps = 1 + allDocTypes.length + 9;

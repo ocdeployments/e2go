@@ -71,6 +71,9 @@ const DOC_TYPE_QUESTION_MAP: Record<string, string[]> = {
   resume_spouse: ['IQ-14', 'IQ-15'],
   gift_letter: ['IQ-08', 'IQ-09'],
   financial_assets_portfolio: ['IQ-08', 'IQ-09'],
+  org_chart: ['IQ-01', 'IQ-14'],
+  corporate_documents_guide: ['IQ-01'],
+  lease_premises_summary: ['IQ-01', 'IQ-11', 'IQ-12'],
   exhibit_list: [],
 };
 
@@ -93,6 +96,9 @@ const DOC_TOKEN_BUDGETS: Partial<Record<string, number>> = {
   marginality_rebuttal:  6000,
   gift_letter:           4000,
   financial_assets_portfolio: 4000,
+  org_chart:             2500,
+  corporate_documents_guide: 2500,
+  lease_premises_summary: 2500,
   resume_principal:      4000,
   resume_spouse:         4000,
   declaration_principal: 4000,
@@ -137,6 +143,8 @@ const DOC_DCODE_MAP: Partial<Record<string, string[] | 'all'>> = {
   declaration_principal: ['D-11', 'D-15'],
   ds160_reference:       ['D-09'],
   property_portfolio:    ['D-15'],
+  org_chart:             ['D-04', 'D-07'],
+  lease_premises_summary: ['D-06', 'D-14'],
 };
 
 function getDocDCodeFilter(documentType: string): string[] | 'all' | undefined {
@@ -570,6 +578,9 @@ const DOC_TYPE_DIMENSIONS: Partial<Record<DocumentType, Dimension[]>> = {
   property_portfolio:    ['source_of_funds'],
   gift_letter:           ['source_of_funds'],
   financial_assets_portfolio: ['source_of_funds', 'investment'],
+  org_chart:             ['business', 'background'],
+  corporate_documents_guide: ['business'],
+  lease_premises_summary: ['location', 'investment'],
   business_plan:         ['business', 'investment', 'operations', 'franchise', 'location'],
   marginality_rebuttal:  ['business', 'investment', 'operations'],
   visa_category:         ['investment', 'business'],
@@ -728,6 +739,9 @@ const DOC_GAP_CATEGORY_MAP: Record<string, string[]> = {
   resume_spouse:         [],
   gift_letter:           ['source_of_funds', 'investment_amount'],
   financial_assets_portfolio: ['source_of_funds', 'investment_amount'],
+  org_chart:             ['management_role', 'business_operations'],
+  corporate_documents_guide: ['business_operations'],
+  lease_premises_summary: ['business_operations', 'employment_creation'],
 };
 
 // CIC-3.1 — CPU dimension → the denial codes that dimension speaks to. Used to
@@ -1545,6 +1559,9 @@ const MIN_WORD_COUNTS: Record<string, number> = {
   resume_spouse: 150,
   gift_letter: 300,
   financial_assets_portfolio: 300,
+  org_chart: 150,
+  corporate_documents_guide: 150,
+  lease_premises_summary: 150,
 };
 
 const MAX_PAGE_ESTIMATES: Record<string, number> = {
@@ -1566,6 +1583,9 @@ const MAX_PAGE_ESTIMATES: Record<string, number> = {
   resume_spouse: 2,
   gift_letter: 1,
   financial_assets_portfolio: 3,
+  org_chart: 1,
+  corporate_documents_guide: 1,
+  lease_premises_summary: 1,
 };
 
 const FORBIDDEN_LEGAL_PHRASES = [
@@ -1881,6 +1901,20 @@ const REQUIRED_ELEMENTS: Record<DocumentType, string[]> = {
     'timeline',
     'documentation_mentioned',
   ],
+  org_chart: [
+    'business_name',
+    'business_ownership',
+    'applicant_name',
+  ],
+  corporate_documents_guide: [
+    'business_name',
+    'documentation_mentioned',
+  ],
+  lease_premises_summary: [
+    'business_name',
+    'amount',
+    'timeline',
+  ],
   // Partnership — Investor 2
   cover_letter_p2:          ['applicant_name', 'business_name', 'investment_amount', 'treaty_country'],
   source_of_funds_p2:       ['source_description', 'timeline', 'amount'],
@@ -1947,6 +1981,9 @@ export function runGapAnalysis(documents: GeneratedDocument[]): GapAnalysisResul
     resume_spouse: [],
     gift_letter: [],
     financial_assets_portfolio: [],
+    org_chart: [],
+    corporate_documents_guide: [],
+    lease_premises_summary: [],
     // Partnership — Investor 2
     cover_letter_p2: [],
     source_of_funds_p2: [],
@@ -2155,6 +2192,8 @@ export async function runGenerationPipeline(
     'net_worth_statement',
     'resume_principal',
     'gift_letter',
+    'org_chart',
+    'corporate_documents_guide',
   ];
 
   const generatedDocs: GeneratedDocument[] = [];
@@ -2241,6 +2280,31 @@ export async function runGenerationPipeline(
     // Fully-deployed cases rely on SOF §V instead of a redundant standalone document.
     if (condAnswerMap['M3-F-NEW-01'] === 'partial' || condAnswerMap['M3-F-NEW-01'] === 'no') {
       conditionalDocTypes.push('investment_proof');
+    }
+    // WS6.1 — Financial Assets Portfolio generates when fund sources include securities/
+    // registered plans/crypto (RRSP, TFSA, LIRA/pension, cryptocurrency). Mirrors the
+    // trigger in /api/generate/start/route.ts — this pipeline executor had its own
+    // independent conditionalDocTypes computation that was missed when that route was
+    // wired in Session 119o, so financial_assets_portfolio was never actually generated
+    // despite the step counter accounting for it. Fixed here.
+    if (
+      typeof condAnswerMap['M3-F-05'] === 'string' &&
+      ['rrsp', 'tfsa', 'lira', 'crypto'].some(v => (condAnswerMap['M3-F-05'] as string).includes(v))
+    ) {
+      conditionalDocTypes.push('financial_assets_portfolio');
+    }
+    // WS6.1 — Lease/Premises Summary generates only for physical-location businesses,
+    // detected deterministically by the presence of an uploaded lease agreement (rather
+    // than a new intake question) — mirrors the trigger in start/route.ts.
+    const { data: leaseDoc } = await supabase
+      .from('uploaded_documents')
+      .select('id')
+      .eq('application_id', applicationId)
+      .eq('doc_type', 'lease_agreement')
+      .limit(1)
+      .maybeSingle();
+    if (leaseDoc) {
+      conditionalDocTypes.push('lease_premises_summary');
     }
 
     // Sprint F-P: Add Investor 2 document types for complete_partnership buyers

@@ -26,6 +26,10 @@ export type DocumentType =
   // DOC-6: Conditional documents (generated only when applicable)
   | 'gift_letter'
   | 'financial_assets_portfolio'
+  // DOC-7: WS6.1 — the develop-and-direct / entity-existence exhibits
+  | 'org_chart'
+  | 'corporate_documents_guide'
+  | 'lease_premises_summary'
   // DOC-P: Partnership documents — generated for Investor 2 in complete_partnership applications
   | 'cover_letter_p2'
   | 'source_of_funds_p2'
@@ -109,6 +113,9 @@ export const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {
   resume_principal: 'Principal Applicant Resume',
   resume_spouse: 'Spouse Resume',
   gift_letter: 'Gift Letter',
+  org_chart: 'Org Chart / Management Structure Exhibit',
+  corporate_documents_guide: 'Corporate Documents Guide',
+  lease_premises_summary: 'Lease / Premises Summary',
   // Partnership — Investor 2
   cover_letter_p2:          'Cover Letter — Investor 2',
   source_of_funds_p2:       'Source of Funds — Investor 2',

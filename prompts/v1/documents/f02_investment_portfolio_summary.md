@@ -1,6 +1,6 @@
 # Investment Portfolio Summary — Generation Prompt
 ## Document Type: property_portfolio (extended scope — covers financial instruments)
-## Tab Reference: Tab F — Property / Financial Assets (F-02)
+## Tab Reference: Tab E — Financial Evidence & Investment Records (F-02)
 ## Generation Order: Conditional — only when applicant holds investment accounts
 ## Condition: Generate only if applicant has securities, investment accounts, or financial portfolios
 

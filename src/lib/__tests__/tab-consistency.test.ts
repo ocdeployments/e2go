@@ -22,6 +22,7 @@ describe('template tab headers match DOCUMENT_TYPE_TABS', () => {
     qualifications_p2: 'qualifications',
     nonimmigrant_intent_p2: 'nonimmigrant_intent',
     resume_p2: 'resume_principal',
+    financial_assets_portfolio: 'f02_investment_portfolio_summary',
   };
   const SKIP: Partial<Record<DocumentType, true>> = { gift_letter: true };
 

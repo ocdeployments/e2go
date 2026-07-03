@@ -84,6 +84,8 @@ const TAB_TEMPLATES: TabTemplate[] = [
   { label: 'Principal Resume',        description: 'Full professional resume of the principal applicant',                             source: 'generated', documentType: 'resume_principal',        alwaysRequired: true },
   { label: 'Principal Declaration',   description: 'Sworn declaration by the principal applicant confirming all facts',               source: 'generated', documentType: 'declaration_principal',   alwaysRequired: true },
   { label: 'Non-immigrant Intent',    description: 'Statement of non-immigrant intent confirming the applicant intends to depart',    source: 'generated', documentType: 'nonimmigrant_intent',     alwaysRequired: true },
+  { label: 'Org Chart / Management Structure', description: 'Ownership chart, reporting lines, and the principal\'s decision authority', source: 'generated', documentType: 'org_chart',              alwaysRequired: true },
+  { label: 'Corporate Documents Guide', description: 'Index of entity formation documents — articles, operating agreement, EIN, certificates, bank resolution', source: 'generated', documentType: 'corporate_documents_guide', alwaysRequired: true },
 
   // Generated documents — conditional
   { label: 'Non-Marginality Rebuttal', description: 'Detailed rebuttal demonstrating the business creates jobs and is not marginal',  source: 'generated', documentType: 'marginality_rebuttal',  alwaysRequired: false },
@@ -94,6 +96,7 @@ const TAB_TEMPLATES: TabTemplate[] = [
   { label: 'Property Portfolio',       description: 'Summary of property sold as source of investment funds',                        source: 'generated', documentType: 'property_portfolio',      alwaysRequired: false, conditionalOn: 'M3-F-05' },
   { label: 'Investment Evidence',      description: 'At-risk analysis for staged or committed-but-unspent investment funds',         source: 'generated', documentType: 'investment_proof',        alwaysRequired: false },
   { label: 'Financial Assets Portfolio', description: 'Non-real-estate financial assets — registered plans, securities, cryptocurrency', source: 'generated', documentType: 'financial_assets_portfolio', alwaysRequired: false, conditionalOn: 'M3-F-05' },
+  { label: 'Lease / Premises Summary', description: 'Premises address, lease term vs. visa horizon, rent-to-revenue cross-check, buildout status', source: 'generated', documentType: 'lease_premises_summary', alwaysRequired: false },
 
   // Client-provided — always required
   { label: 'Passport & Treaty Nationality', description: 'Valid passport (all pages) + evidence of treaty country citizenship',     source: 'client_provided', uploadedDocTypes: ['passport'],                   alwaysRequired: true },
