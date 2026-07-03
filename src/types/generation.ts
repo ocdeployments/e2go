@@ -1,4 +1,5 @@
 import type { CaseFinancials } from '@/lib/case-financials';
+import type { ExhibitRegistry } from '@/lib/exhibit-registry';
 import { DOC_TYPE_TAB_MAP } from '@/lib/docx-package-constants';
 
 export type DocumentType =
@@ -233,6 +234,7 @@ export interface GenerationPayload {
   qfn_investor_profile?: string;
   gap_analysis_context?: string;
   case_theory_brief?: string;
+  exhibit_registry: ExhibitRegistry;
 }
 
 export interface InvestmentBreakdownData {

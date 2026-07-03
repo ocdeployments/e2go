@@ -23,6 +23,7 @@ import { runCanonicalConsistencySweep } from './cic-consistency-sweep';
 import { checkFigureProvenance } from './figure-provenance';
 import { QUESTION_LABELS } from './question-registry.generated';
 import { computeCaseFinancials, formatCaseFinancialsText } from './case-financials';
+import { buildExhibitRegistry, formatExhibitRegistryText, checkExhibitConsistency } from './exhibit-registry';
 
 const PROMPTS_DIR = join(process.cwd(), 'prompts', 'v1', 'documents');
 
@@ -902,7 +903,7 @@ export async function buildGenerationPayload(
   // CIC-2.1 / CIC-3.1 — fetch Case Theory (verdicts + strategy) and the
   // comprehension ledger up front so the gap engine can fold the CPU's reasoning
   // in. Both are graceful on miss (neither exists for sparse accounts yet).
-  const [{ data: caseTheoryRow }, { data: docIntelRow }] = await Promise.all([
+  const [{ data: caseTheoryRow }, { data: docIntelRow }, exhibitRegistry] = await Promise.all([
     supabase
       .from('case_theory')
       .select('narrative, numbers_strategy, dimension_verdicts, directives')
@@ -913,6 +914,7 @@ export async function buildGenerationPayload(
       .select('ledger')
       .eq('application_id', applicationId)
       .maybeSingle(),
+    buildExhibitRegistry(applicationId),
   ]);
 
   // CIC-3.1 — turn comprehension + the case theory's verdicts into evidence the
@@ -964,6 +966,7 @@ export async function buildGenerationPayload(
     module_3_answers: module3Answers,
     investment_breakdown: investmentBreakdown,
     case_financials: caseFinancials,
+    exhibit_registry: exhibitRegistry,
     voice_profile: voiceProfile?.voice_profile_text || '',
     consulate_post: (caseBrief as unknown as Record<string, unknown>).consulate_post as string || 'toronto',
     document_type: documentType,
@@ -1025,6 +1028,11 @@ export async function callClaudeAPI(payload: GenerationPayload): Promise<string>
   // pre-computed table every document must narrate around, never re-derive.
   const caseFinancialsText = payload.case_financials ? formatCaseFinancialsText(payload.case_financials) : '';
 
+  // WS3.1 — master exhibit registry, identical across every document call for
+  // this application, so it lives in the cached stableBlock alongside the
+  // case brief rather than the per-document variableBlock.
+  const exhibitRegistryText = formatExhibitRegistryText(payload.exhibit_registry);
+
   // Extract denial risk flags and route each document exactly the D-codes it
   // exists to answer (DOC_DCODE_MAP). Documents with no entry get no block.
   const brief = payload.case_brief as { critical_risks?: { code: string; reason: string }[]; watch_risks?: { code: string; reason: string }[] } | null;
@@ -1075,6 +1083,8 @@ export async function callClaudeAPI(payload: GenerationPayload): Promise<string>
     ...(payload.voice_profile
       ? [`VOICE PROFILE (match this writing style in all documents):`, wrapUserContent(payload.voice_profile), '']
       : []),
+    exhibitRegistryText,
+    '',
   ].join('\n');
 
   const variableBlock = [
@@ -2722,6 +2732,35 @@ Generate the document using Investor 2's identity, name, nationality, source of 
             passed: false,
             flagged_sections: [issue],
             notes: `CIC-P.2 consistency issue: ${issue.field}`,
+          });
+      }
+    }
+
+    // WS3.1 — deterministic exhibit-citation provenance sweep, folded into
+    // the same quality step rather than a new numbered step (adding one
+    // would renumber every QUALITY_LABELS index downstream).
+    const exhibitRegistryForSweep = await buildExhibitRegistry(applicationId);
+    const exhibitConsistencyResult = checkExhibitConsistency(
+      exhibitRegistryForSweep,
+      generatedDocs
+        .filter(d => d.content_text)
+        .map(d => ({ documentType: d.document_type, contentText: d.content_text as string })),
+    );
+
+    await updateJob({ exhibit_consistency_result: exhibitConsistencyResult });
+
+    if (!exhibitConsistencyResult.clean) {
+      for (const issue of exhibitConsistencyResult.orphanCitations) {
+        await supabase
+          .from('document_generation_log')
+          .insert({
+            application_id: applicationId,
+            document_type: issue.documentType,
+            stage: 'exhibit_consistency_check',
+            attempt_number: 1,
+            passed: false,
+            flagged_sections: [issue.citation],
+            notes: `WS3.1 orphan exhibit citation: ${issue.citation} does not resolve to any uploaded document`,
           });
       }
     }
