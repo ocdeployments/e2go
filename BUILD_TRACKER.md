@@ -1,6 +1,25 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** July 3, 2026 — Session 119m: **WS7 COMPLETE — FDD Comparison re-check passed.** All four spec (§11) fix items verified present in current code: profile_match persisted at scoring time (`api/fdd/questions/route.ts`), payback_years/franchisee_survival_rate computed server-side in the compare route, em-dash columns are legended "not disclosed" indicators (never-fabricate, not broken), and the 119b weighted verdict panel ("ranked for your capital and territory") renders above the metrics table. No code changes needed — docs-only closeout. WS7 is finished. Next: WS6 (missing documents + per-template upgrades — owner: do not skip): 3 dead templates to wire, 3 new documents to build, ~12 per-template upgrades (WS6.2 substantiality fix done in 116b). Then WS8 golden-case verification.
+**Last Updated:** July 3, 2026 — Session 119n: **WS6 started — Investment Evidence wired as conditional document.** `investment_proof.md` (complete template, never generated — the WS6.1 "latent product lie") now generates when M3-F-NEW-01 deployment status is `partial` or `no` (staged deployment / committed-but-unspent funds — where at-risk is genuinely contested). Fully-deployed cases keep relying on SOF §V, per spec. Build clean, 146/146 tests. **Known infra issue:** pre-push Playwright suite fails when two runs happen within 15 minutes — the /login rate limit (5/15min sliding window) persists in Upstash Redis across runs and 429s the regression test's login. Wait out the window before pushing, or fix the test login strategy (flagged as a spin-off task). Next WS6.1 items: Financial Assets Portfolio (f02) conditional wiring, DS-156E→DS-160 merge, then 3 new documents (Org Chart, Corporate Documents Guide, Lease Summary), then WS6.2 per-template upgrades. Then WS8.
+
+---
+
+## Session 119n — WS6.1: Investment Evidence conditional wiring (July 3, 2026)
+
+**Branch:** dev. Build clean, 146/146 tests pass. Feature commit 6e33064.
+
+**Context:** WS6.1 (spec §10) table row 1: `investment_proof.md` is a complete, current template (at-risk/irrevocability only — correctly scoped against SOF and Substantiality overlap) with a DocumentType, UI label, tab letter (E), token budget, verifier dimensions, KB mappings, and archetype blocks — but it appeared in neither `coreDocTypes` (start route) nor the pipeline's conditional list, so it never generated. Audit confirmed all downstream plumbing survived the b01 SOF merge; only the two conditional-plan sites and the package manifest needed changes.
+
+**Built:**
+- `src/app/api/generate/start/route.ts` — fetches `M3-F-NEW-01` (funds-deployed status: yes/partial/no) with the other conditional answers; pushes `investment_proof` when `partial` or `no`. No new intake needed — the deployment-status question already exists in `/apply/investment`.
+- `src/lib/generation-engine.ts` — same condition in the pipeline's own conditional-doc block (the two sites mirror each other, as with spouse/property docs).
+- `src/lib/cic-package-manifest.ts` — "Investment Evidence" manifest tab entry, `alwaysRequired: false` (shown only when generated, same pattern as marginality/fund-flow/net-worth).
+
+**Escrow note:** the spec's "escrow arrangement exists" trigger has no dedicated intake field; `M3-F-NEW-01 = 'no'` ("committed but not yet spent") covers escrow-style arrangements. If the owner wants an explicit escrow question, that's an intake scope decision.
+
+**Push blocker discovered (not this session's code):** two consecutive pre-push suite runs failed on `parse-document-auto-type.spec.ts` — page snapshot showed the middleware's own 429 ("Too many attempts"). `/login` is rate-limited 5/15min per IP via Upstash Redis (persists across runs). Structural test-infra debt: the suite's own /login hits + any run <15min prior exhaust the budget. Spin-off task chip filed (storage-state login or count only auth POSTs, not page GETs).
+
+**Next:** WS6.1 item 2 — Financial Assets Portfolio (`f02_investment_portfolio_summary.md`, dead) conditional on securities/RRSP/401(k)/crypto fund sources, with RRSP withholding-tax reconciliation + crypto exchange-records note.
 
 ---
 
