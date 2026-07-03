@@ -1,6 +1,7 @@
 # Source and Application of Funds — Generation Prompt
 ## Document Type: source_of_funds (merged with investment_proof)
-## Tab Reference: Tab B — Investment / Source of Funds (B-01)
+## Tab Reference: canonical tab letter is assigned by docx-package-constants.ts
+##   (DOC_TYPE_TAB_MAP) and supplied at generation time — do not hardcode a letter here.
 ## Generation Order: Step 2
 ## Replaces: source_of_funds.md + investment_proof.md (merged into single document)
 
@@ -69,7 +70,10 @@ Avoid any phrasing that reads as template language.
 
 7. CITE THE RECORD
 Every factual claim must trace to something the applicant provided.
-Reference exhibits by tab: "as detailed in Tab B-2"
+The prompt includes an EXHIBIT REGISTRY listing every uploaded document with its
+canonical citation ID (format "Tab X-N"). Reference exhibits ONLY by an ID from
+that registry — e.g. "as detailed in Tab D-2". Never invent an ID, never assume
+a letter, and never cite an exhibit that is not in the registry.
 
 8. LEGAL BOUNDARY — NEVER CROSS THIS LINE
 You must not:
@@ -155,7 +159,7 @@ Test your output against each of these:
 8. Franchise fee explicitly labeled as non-refundable with agreement reference
 9. Working capital confirmed as deposited in U.S. LLC account (not in escrow)
 10. No legal conclusion language — no "qualifies", "eligible", "sufficient", "substantial"
-11. All exhibit references use correct tab format (Tab B-1, Tab B-2, etc.)
+11. All exhibit references resolve to an ID in the EXHIBIT REGISTRY (format Tab X-N)
 12. Investment total in numerals AND words
 
 ---
@@ -222,11 +226,14 @@ Use the format most appropriate to the complexity (simple = paragraph, complex =
 
 ```
 Date        | Event                          | Amount   | From                    | To                      | Exhibit
-[date]      | RRSP redemption                | $[X]     | RRSP — BMO              | CIBC Personal Chequing  | Tab B-3
-[date]      | Transfer to USD account        | $[X]     | CIBC Personal Chequing  | CIBC USD Account        | Tab B-3
-[date]      | International wire transfer    | $[X]     | CIBC USD Account        | Cedar Park Kumon LLC    | Tab B-2
-[date]      | Franchise fee payment          | $[X]     | Cedar Park Kumon LLC    | Kumon of America        | Tab B-1
+[date]      | RRSP redemption                | $[X]     | RRSP — BMO              | CIBC Personal Chequing  | Tab [X-N]
+[date]      | Transfer to USD account        | $[X]     | CIBC Personal Chequing  | CIBC USD Account        | Tab [X-N]
+[date]      | International wire transfer    | $[X]     | CIBC USD Account        | Cedar Park Kumon LLC    | Tab [X-N]
+[date]      | Franchise fee payment          | $[X]     | Cedar Park Kumon LLC    | Kumon of America        | Tab [X-N]
 ```
+
+Use the actual exhibit ID from the EXHIBIT REGISTRY for each `Tab [X-N]` placeholder —
+never assume the letter shown in this example.
 
 Every transaction in sequence. No gaps.
 
@@ -246,19 +253,21 @@ Mandatory investment deployment table:
 INVESTMENT DEPLOYMENT — [LLC NAME]
 
 Category                    | Amount    | Status                        | Supporting Evidence
-Franchise Fee               | $X        | Paid — non-refundable         | Tab B-1; Tab B-2 (wire)
-Leasehold Improvements      | $X        | Committed / In progress       | Tab B-3 (lease + contractor)
-Equipment / Build-out       | $X        | Paid or contracted            | Tab B-4 (invoices)
-Initial Inventory           | $X        | Ordered / received            | Tab B-5 (purchase orders)
-Working Capital Reserve     | $X        | Deposited in LLC bank account | Tab B-6 (bank statement)
-Professional / Legal Fees   | $X        | Paid                          | Tab B-7 (invoices)
-Marketing / Pre-launch      | $X        | Contracted                    | Tab B-8
+Franchise Fee               | $X        | Paid — non-refundable         | Tab [X-N]; Tab [X-N] (wire)
+Leasehold Improvements      | $X        | Committed / In progress       | Tab [X-N] (lease + contractor)
+Equipment / Build-out       | $X        | Paid or contracted            | Tab [X-N] (invoices)
+Initial Inventory           | $X        | Ordered / received            | Tab [X-N] (purchase orders)
+Working Capital Reserve     | $X        | Deposited in LLC bank account | Tab [X-N] (bank statement)
+Professional / Legal Fees   | $X        | Paid                          | Tab [X-N] (invoices)
+Marketing / Pre-launch      | $X        | Contracted                    | Tab [X-N]
 ─────────────────────────────────────────────────────────────────────────────────────────
 TOTAL INVESTED              | $[TOTAL]  |                               |
 ```
 
 Use the EXACT amounts from investment_breakdown. Adapt rows to what actually applies.
-Omit any category not present in the applicant's investment.
+Omit any category not present in the applicant's investment. Fill each `Tab [X-N]`
+placeholder with a real ID from the EXHIBIT REGISTRY — if no matching exhibit exists,
+omit the citation rather than inventing one.
 
 If franchise applicant and FDD Item 7 is available:
 "The total investment of $[X] [falls within / exceeds] the FDD Item 7 estimated initial
@@ -274,11 +283,11 @@ A factual paragraph (not legal conclusion) covering each major category:
 "Of the $[total] invested in [LLC Name]:
 
 The $[franchise fee] franchise fee, paid to [Franchisor] on [date] per Section [X]
-of the Franchise Agreement (Tab B-1), is non-refundable. No portion of this amount
+of the Franchise Agreement (Tab [X-N]), is non-refundable. No portion of this amount
 will be returned to [applicant name] under any circumstances, including denial of
 the E-2 visa application.
 
-The $[working capital] deposited in the [LLC] operating account at [bank] (Tab B-6)
+The $[working capital] deposited in the [LLC] operating account at [bank] (Tab [X-N])
 has been drawn upon for pre-opening expenses including [specific expenses]. The
 remaining balance of approximately $[X] as of [date] is committed to operational use.
 
@@ -292,19 +301,11 @@ Adapt to the actual investment composition. Do not use language claiming the fun
 
 **Section VI — Supporting Documentation Index**
 
-List all exhibits in the Tab B package:
-- Tab B-1: Franchise Agreement / Business Purchase Agreement — executed, with signature page
-- Tab B-2: Wire transfer confirmation(s) — investment funds from source account to LLC
-- Tab B-3: Lease agreement — key pages (parties, term, monthly rent, deposit, signatures)
-- Tab B-4: Vendor invoices or contracts — equipment, build-out, signage
-- Tab B-5: LLC Certificate of Formation + EIN Assignment Letter (IRS CP 575)
-- Tab B-6: U.S. business bank statement — showing funds on deposit
-- Tab B-7: RRSP/TFSA redemption statement — if applicable
-- Tab B-8: Source account bank statements — 12–24 months showing accumulation
-- Tab B-9: Tax returns — last 3 years (home country)
-- Tab B-10: Property sale agreement / closing statement — if proceeds funded investment
-
-Only list exhibits that exist in the submission. Never list an exhibit that doesn't exist.
+List every exhibit cited elsewhere in this document, in the format `Tab X-N: [label]`,
+using the exact IDs and labels given in the EXHIBIT REGISTRY supplied in this prompt.
+Do not invent an exhibit ID, do not renumber the registry's IDs, and do not list an
+exhibit that was never uploaded. If the registry is empty, state that supporting
+documentation is pending rather than listing hypothetical exhibits.
 
 ---
 
@@ -335,6 +336,6 @@ Do not include a document title in the output — the cover page handles that.
 - [ ] Active voice throughout
 - [ ] Applicant voice matched from voice_profile
 - [ ] No AI-sounding phrases or filler language
-- [ ] All exhibit references use Tab B-X format
+- [ ] All exhibit references resolve to an ID in the EXHIBIT REGISTRY (format Tab X-N)
 - [ ] No e2go branding
 - [ ] 3–6 pages estimated (longer for complex multi-source funding)
