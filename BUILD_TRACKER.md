@@ -1,6 +1,21 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** July 3, 2026 — Session 119i: **WS7 FDD E-2 Scoring fixed.** Per owner instruction to prioritize WS4/7/8 (now explicitly including WS6): WS4 closed out (Session 119), FDD Comparison (119b), Renewal Package (119c), Gap Analysis partnership fix (119d), Interview Prep Kit (119e), Coaching Report (119f), FDD Final Report (119g), FDD Extraction (119h), now FDD E-2 Scoring (spec-scored 7.0) demotes the two hardcoded "theater checks" (visa-holder acceptance, minimum unit separation) to a genuine new `manual_review` result state instead of faking pass/warn, adds an assumption table to the ODE waterfall so fallback figures are disclosed to the user, unifies the ODE thresholds/proxy math between the scoring engine and the territory engine into `src/lib/fdd-ode-engine.ts`, and fixes debt service to use a real 10-year amortized payment (was flat 8% interest-only, contradicting its own comment). Next: remaining WS7 analyses (FDD Questions, Territory/Market Analysis, Renewal Package re-check, FDD Comparison re-check), then WS6 (missing documents + per-template upgrades — untouched except the 116b substantiality fix), then WS8 golden-case verification.
+**Last Updated:** July 3, 2026 — Session 119j: **WS7 FDD Questions fixed.** Per owner instruction to prioritize WS4/7/8 (now explicitly including WS6): WS4 closed out (Session 119), FDD Comparison (119b), Renewal Package (119c), Gap Analysis partnership fix (119d), Interview Prep Kit (119e), Coaching Report (119f), FDD Final Report (119g), FDD Extraction (119h), FDD E-2 Scoring (119i), now FDD Questions (spec-scored 6.5) threads the FDD page number that triggered each flag-derived question (`FddFlag.page` → `GeneratedQuestion.page`) through to the UI as a "p. N" citation badge on each question card — three of the four spec-listed items (placeholder substitution, industry-fit dead logic, audience grouping) were confirmed already fixed by investigation, so only the page-citation gap needed work. Next: remaining WS7 analyses (Territory/Market Analysis, Renewal Package re-check, FDD Comparison re-check), then WS6 (missing documents + per-template upgrades — untouched except the 116b substantiality fix), then WS8 golden-case verification.
+
+---
+
+## Session 119j — WS7: FDD Questions — page-citation for flag-derived questions (July 3, 2026)
+
+**Branch:** dev. Build clean, `tsc --noEmit` clean, 135/135 tests pass (no new tests — deterministic engine change with no existing unit-test harness for this file).
+
+**Context:** Spec-scored 6.5. Investigation confirmed 3 of 4 spec-listed fix items already resolved in current code (placeholder `[target state]` substitution, dead industry-fit logic, audience grouping) — no-ops avoided. The one genuine gap: flag-derived questions (e.g. "ask the franchisor about the pending litigation") had no way to tell the user which FDD page the underlying disclosure came from, even though the per-field page number (`FddFieldMeta._page`) was already captured during extraction.
+
+**Built:**
+- `src/lib/fdd-scoring-engine.ts` — `FddFlag` gains `page: number | null`; new `page()` helper reads `meta?._page`; all 16 flag-push sites in `collectFlags()` populate it (`null` for the two flags not tied to a single field — `fdd_stale`, `state_registration`).
+- `src/lib/fdd-questions-engine.ts` — `GeneratedQuestion` gains `page: number | null`. Flag-triggered questions inherit `flag.page` directly; standard, data-gap, and bespoke questions (none tied to a specific field) get `page: null` at push time.
+- `src/app/fdd/questions/[fddId]/page.tsx` — `QuestionCard` renders a "p. N" badge next to the category label whenever `question.page !== null`.
+
+**Next:** Territory/Market Analysis (6.5/6.0), Renewal Package (5.5), FDD Comparison (4.0 — already improved in 119b, needs re-check against current spec list). Then WS6 (owner: do not skip). Then WS8.
 
 ---
 
