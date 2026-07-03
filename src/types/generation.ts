@@ -1,3 +1,5 @@
+import type { CaseFinancials } from '@/lib/case-financials';
+
 export type DocumentType =
   // Existing core documents (generated in sequential pipeline)
   | 'cover_letter'
@@ -231,6 +233,7 @@ export interface GenerationPayload {
   case_brief: Record<string, unknown>;
   module_3_answers: Record<string, unknown>;
   investment_breakdown: InvestmentBreakdownData;
+  case_financials: CaseFinancials;
   voice_profile: string;
   consulate_post: string;
   document_type: DocumentType;

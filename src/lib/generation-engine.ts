@@ -22,6 +22,7 @@ import { verifyCaseTheoryCompliance, type VerifierResult } from './cic-verifier'
 import { runCanonicalConsistencySweep } from './cic-consistency-sweep';
 import { checkFigureProvenance } from './figure-provenance';
 import { QUESTION_LABELS } from './question-registry.generated';
+import { computeCaseFinancials, formatCaseFinancialsText } from './case-financials';
 
 const PROMPTS_DIR = join(process.cwd(), 'prompts', 'v1', 'documents');
 
@@ -894,6 +895,10 @@ export async function buildGenerationPayload(
   // Extract investment breakdown as structured data
   const investmentBreakdown = extractInvestmentBreakdown(module3Answers);
 
+  // Phase 2/A4 — deterministic financial spine, computed once from the same
+  // module3Answers every document call would otherwise re-derive independently.
+  const caseFinancials = computeCaseFinancials(module3Answers);
+
   // CIC-2.1 / CIC-3.1 — fetch Case Theory (verdicts + strategy) and the
   // comprehension ledger up front so the gap engine can fold the CPU's reasoning
   // in. Both are graceful on miss (neither exists for sparse accounts yet).
@@ -958,6 +963,7 @@ export async function buildGenerationPayload(
     case_brief: caseBrief as unknown as Record<string, unknown>,
     module_3_answers: module3Answers,
     investment_breakdown: investmentBreakdown,
+    case_financials: caseFinancials,
     voice_profile: voiceProfile?.voice_profile_text || '',
     consulate_post: (caseBrief as unknown as Record<string, unknown>).consulate_post as string || 'toronto',
     document_type: documentType,
@@ -1013,6 +1019,11 @@ export async function callClaudeAPI(payload: GenerationPayload): Promise<string>
     `IMPORTANT: Use EXACT dollar amounts from this breakdown. Never estimate, round, or substitute any amounts.`,
     `If a figure is marked "NOT PROVIDED", state it is not yet confirmed — NEVER invent a number.`,
   ].filter(Boolean).join('\n') : '';
+
+  // Phase 2/A4 — deterministic financial spine (revenue ramp, break-even,
+  // headcount, payroll, net worth) computed once and injected as a
+  // pre-computed table every document must narrate around, never re-derive.
+  const caseFinancialsText = payload.case_financials ? formatCaseFinancialsText(payload.case_financials) : '';
 
   // Extract denial risk flags and route each document exactly the D-codes it
   // exists to answer (DOC_DCODE_MAP). Documents with no entry get no block.
@@ -1080,6 +1091,7 @@ export async function callClaudeAPI(payload: GenerationPayload): Promise<string>
     dCodeBlock,
     ...(payload.gap_analysis_context ? [payload.gap_analysis_context, ''] : []),
     investmentBreakdownText,
+    caseFinancialsText,
     ...(Object.keys(payload.follow_up_responses).length > 0
       ? [`FOLLOW-UP CONVERSATION (applicant answers to targeted gap questions — use this content in the document):`, wrapUserContent(JSON.stringify(payload.follow_up_responses, null, 2)), '']
       : []),
