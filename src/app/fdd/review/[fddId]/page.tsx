@@ -188,6 +188,14 @@ function confidenceBadge(conf: FddFieldMeta['_conf']) {
   return <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-white/30">Not disclosed</span>;
 }
 
+// _provenance labels the method a value was obtained by, distinct from confidence.
+// 'verbatim' (the default/undefined case) is not badged — it's the expected common case.
+function provenanceBadge(provenance: FddFieldMeta['_provenance']) {
+  if (provenance === 'estimated') return <span className="text-[10px] px-1.5 py-0.5 rounded bg-sky-500/15 text-sky-400">Estimated</span>;
+  if (provenance === 'derived') return <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/40">Derived</span>;
+  return null;
+}
+
 // ============================================================================
 // Main page
 // ============================================================================
@@ -354,6 +362,7 @@ export default function FddReviewPage() {
                               </span>
                               <div className="flex items-center justify-end gap-2">
                                 {confidenceBadge(meta._conf)}
+                                {provenanceBadge(meta._provenance)}
                                 {meta._page && (
                                   <span className="text-[10px] text-white/25">p.{meta._page}</span>
                                 )}

@@ -5,6 +5,10 @@
 export type FddTransactionType = 'new_unit' | 'resale' | 'multi_unit_development';
 export type FddExtractionStatus = 'pending' | 'extracting' | 'extracted' | 'failed';
 export type FddFieldConfidence = 'high' | 'medium' | 'low' | 'not_disclosed';
+// verbatim = quoted/stated directly in the FDD; derived = calculated in code from other
+// extracted fields (e.g. fdd_age_months); estimated = an LLM industry-norm estimate offered
+// because the FDD didn't disclose the figure directly.
+export type FddFieldProvenance = 'verbatim' | 'derived' | 'estimated';
 export type FddCompatibility = 'STRONG' | 'VIABLE' | 'CAUTION' | 'INELIGIBLE';
 export type FddRegistrationStatus = 'pass' | 'warn' | 'fail' | 'unknown';
 export type FddStaleStatus = 'current' | 'warn' | 'fail';
@@ -67,6 +71,9 @@ export interface FddFieldMeta {
   _page: number | null;
   _quote: string | null;
   _conf: FddFieldConfidence;
+  // Optional — absent on fields extracted before this was added. Treat as 'verbatim'
+  // (the pre-existing default assumption) when undefined.
+  _provenance?: FddFieldProvenance;
 }
 
 export interface FddExtractedFields {
