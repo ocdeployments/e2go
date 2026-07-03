@@ -100,7 +100,19 @@ export async function POST(
 
     // Build payload and inject revision instructions into the system prompt
     const caseBrief = caseBriefRow.case_brief_json as CaseBrief;
-    const payload = await buildGenerationPayload(applicationId, doc.document_type as DocumentType, caseBrief);
+
+    // WS3.2 — when revising the cover letter, Section X's document index must
+    // still reflect the real package, so fetch the actual generated types.
+    let allDocumentTypes: DocumentType[] | undefined;
+    if (doc.document_type === 'cover_letter' || doc.document_type === 'cover_letter_p2') {
+      const { data: allDocs } = await supabase
+        .from('generated_documents')
+        .select('document_type')
+        .eq('application_id', applicationId);
+      allDocumentTypes = (allDocs ?? []).map(d => d.document_type as DocumentType);
+    }
+
+    const payload = await buildGenerationPayload(applicationId, doc.document_type as DocumentType, caseBrief, allDocumentTypes);
 
     const changeTypeLabel = changeType === 'factual_correction'
       ? 'factual correction'

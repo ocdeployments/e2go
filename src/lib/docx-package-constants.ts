@@ -162,3 +162,33 @@ export const TAB_SECTION_TITLES: Record<
 
 /** Fixed order for index/dividers — only include tabs for documents actually generated */
 export const TAB_ORDER: string[] = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M'];
+
+/**
+ * WS3.2 — deterministic document index (A2/A3).
+ *
+ * Builds a tab-grouped "Document X — Tab Y" listing from the actual set of
+ * document types a pipeline run will generate, using this file's canonical
+ * DOC_TYPE_TAB_MAP/TAB_ORDER. Nothing here calls the LLM. Consumers (the
+ * cover letter's Section X, the ZIP's table of contents) render this text
+ * or reproduce it verbatim instead of letting a document independently
+ * compose its own list — the two lists cannot drift from the real package.
+ *
+ * `labels` is a caller-supplied map (DOCUMENT_TYPE_LABELS from
+ * src/types/generation.ts) rather than an import, to avoid a circular
+ * dependency between the package-constants and generation-type modules.
+ */
+export function buildDeterministicDocumentIndex(
+  documentTypes: string[],
+  labels: Record<string, string>
+): string {
+  const lines: string[] = [];
+  for (const tab of TAB_ORDER) {
+    const docsInTab = documentTypes.filter((dt) => DOC_TYPE_TAB_MAP[dt] === tab);
+    if (docsInTab.length === 0) continue;
+    for (const dt of docsInTab) {
+      const label = labels[dt] ?? dt;
+      lines.push(`Tab ${tab} — ${label}`);
+    }
+  }
+  return lines.join('\n');
+}

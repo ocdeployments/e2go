@@ -24,6 +24,7 @@ import { checkFigureProvenance } from './figure-provenance';
 import { QUESTION_LABELS } from './question-registry.generated';
 import { computeCaseFinancials, formatCaseFinancialsText } from './case-financials';
 import { buildExhibitRegistry, formatExhibitRegistryText, checkExhibitConsistency } from './exhibit-registry';
+import { buildDeterministicDocumentIndex } from './docx-package-constants';
 
 const PROMPTS_DIR = join(process.cwd(), 'prompts', 'v1', 'documents');
 
@@ -838,7 +839,8 @@ function buildGapContext(
 export async function buildGenerationPayload(
   applicationId: string,
   documentType: DocumentType,
-  caseBrief: CaseBrief
+  caseBrief: CaseBrief,
+  allDocumentTypes?: DocumentType[]
 ): Promise<GenerationPayload> {
   const supabase = getSupabase();
   const systemPrompt = await loadPrompt(documentType);
@@ -960,6 +962,15 @@ export async function buildGenerationPayload(
     ? buildCaseTheoryBrief(caseTheoryRow as CaseTheoryRow, documentType)
     : undefined;
 
+  // WS3.2 — Section X of the cover letter must reproduce this deterministic
+  // list, not compose its own, so it can never drift from the actual
+  // package. Only computed when the caller passes the full run's document
+  // types (the cover letter step in generation-engine.ts's main loop does).
+  const documentIndexText =
+    (documentType === 'cover_letter' || documentType === 'cover_letter_p2') && allDocumentTypes
+      ? buildDeterministicDocumentIndex(allDocumentTypes, DOCUMENT_TYPE_LABELS)
+      : undefined;
+
   return {
     system_prompt: systemPrompt,
     case_brief: caseBrief as unknown as Record<string, unknown>,
@@ -967,6 +978,7 @@ export async function buildGenerationPayload(
     investment_breakdown: investmentBreakdown,
     case_financials: caseFinancials,
     exhibit_registry: exhibitRegistry,
+    document_index_text: documentIndexText,
     voice_profile: voiceProfile?.voice_profile_text || '',
     consulate_post: (caseBrief as unknown as Record<string, unknown>).consulate_post as string || 'toronto',
     document_type: documentType,
@@ -1032,6 +1044,21 @@ export async function callClaudeAPI(payload: GenerationPayload): Promise<string>
   // this application, so it lives in the cached stableBlock alongside the
   // case brief rather than the per-document variableBlock.
   const exhibitRegistryText = formatExhibitRegistryText(payload.exhibit_registry);
+
+  // WS3.2 — cover letter's Section X ("Document Index") must reproduce this
+  // deterministic, tab-grouped list verbatim rather than composing its own,
+  // so it can never drift from what actually gets assembled into the ZIP.
+  // Only populated for cover_letter/cover_letter_p2 (see buildGenerationPayload).
+  const documentIndexBlock = payload.document_index_text
+    ? [
+        'SECTION X — DOCUMENT INDEX: USE THIS EXACT LIST. DO NOT COMPOSE YOUR OWN.',
+        'This is the deterministic, authoritative list of every document in this package,',
+        'grouped by tab. Reproduce it verbatim as Section X — do not add, omit, reorder,',
+        'or renumber any entry, and do not invent a document not listed here.',
+        '',
+        payload.document_index_text,
+      ].join('\n')
+    : '';
 
   // Extract denial risk flags and route each document exactly the D-codes it
   // exists to answer (DOC_DCODE_MAP). Documents with no entry get no block.
@@ -1102,6 +1129,7 @@ export async function callClaudeAPI(payload: GenerationPayload): Promise<string>
     ...(payload.gap_analysis_context ? [payload.gap_analysis_context, ''] : []),
     investmentBreakdownText,
     caseFinancialsText,
+    documentIndexBlock,
     ...(Object.keys(payload.follow_up_responses).length > 0
       ? [`FOLLOW-UP CONVERSATION (applicant answers to targeted gap questions — use this content in the document):`, wrapUserContent(JSON.stringify(payload.follow_up_responses, null, 2)), '']
       : []),
@@ -2316,7 +2344,7 @@ export async function runGenerationPipeline(
           .eq('document_type', docType);
 
         try {
-          const payload = await buildGenerationPayload(applicationId, docType, caseBrief);
+          const payload = await buildGenerationPayload(applicationId, docType, caseBrief, DOCUMENT_TYPES);
 
           // Sprint F-P: Inject Partner 2 context for _p2 document types
           const isP2Doc = docType.endsWith('_p2');
@@ -2649,7 +2677,7 @@ Generate the document using Investor 2's identity, name, nationality, source of 
         if (!docToFix || !docToFix.content_text) continue;
 
         try {
-          const regenPayload = await buildGenerationPayload(applicationId, pair.doc2, caseBrief);
+          const regenPayload = await buildGenerationPayload(applicationId, pair.doc2, caseBrief, DOCUMENT_TYPES);
           const distinctivenessBrief = `CRITICAL: Your previous draft of this document was ${Math.round(pair.similarity * 100)}% textually similar to the ${DOCUMENT_TYPE_LABELS[pair.doc1]}. Every document in this package must cover its assigned ground in distinct language — do not reuse the same sentences, phrasing, or paragraph structure as the other document. Keep the same facts and figures, but write this one independently.`;
           const correctedContent = await callClaudeAPI({
             ...regenPayload,
@@ -3014,7 +3042,7 @@ Generate the document using Investor 2's identity, name, nationality, source of 
       // Re-prompt once if quality gate fails
       if (!qualityResult.passed) {
         try {
-          const payload = await buildGenerationPayload(applicationId, doc.document_type, caseBrief);
+          const payload = await buildGenerationPayload(applicationId, doc.document_type, caseBrief, DOCUMENT_TYPES);
           const failureInstructions = [
             'CRITICAL: Your previous output failed the quality check. Fix these issues:',
             ...qualityResult.failures.map(f => `  - ${f}`),

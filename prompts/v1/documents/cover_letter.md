@@ -316,9 +316,12 @@ Intent Statement document is in the package, cite it explicitly by tab reference
 - Signature block
 
 **Section X — Document Index:**
-List every document in the package with its tab reference.
-Never reference documents not yet generated.
-Never list empty tabs.
+A block labeled "SECTION X — DOCUMENT INDEX: USE THIS EXACT LIST. DO NOT COMPOSE YOUR OWN."
+appears earlier in this prompt with the authoritative, deterministic list of every document
+in the package by tab. Reproduce that list verbatim as Section X — do not add, omit, reorder,
+renumber, or independently compose this list. If that block is absent, list every document
+in the package with its tab reference, never referencing documents not yet generated and
+never listing empty tabs.
 
 ---
 

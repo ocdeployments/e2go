@@ -20,7 +20,8 @@ import {
   TabStopType,
   TabStopPosition,
 } from 'docx';
-import { TAB_SECTION_TITLES, DOC_DISPLAY_NAMES, DOC_TYPE_TAB_MAP } from '@/lib/docx-package-constants';
+import { TAB_SECTION_TITLES, DOC_DISPLAY_NAMES, DOC_TYPE_TAB_MAP, TAB_ORDER } from '@/lib/docx-package-constants';
+import type { ExhibitEntry } from '@/lib/exhibit-registry';
 
 export interface TocBuilderOptions {
   applicantName: string;
@@ -29,6 +30,10 @@ export interface TocBuilderOptions {
   includedDocTypes?: string[]; // all generated doc types — enables per-tab file listing
   totalDocCount?: number; // actual doc count (may exceed tab count for multi-doc tabs)
   consulateDisplay?: string; // e.g. "U.S. Consulate General, Toronto"
+  // WS3.2 — client-uploaded exhibits (from the WS3.1 exhibit registry), keyed
+  // by tab letter, so this becomes a real Master Exhibit Index rather than
+  // only listing the documents this application generated.
+  exhibitsByTab?: Record<string, ExhibitEntry[]>;
 }
 
 /**
@@ -42,7 +47,17 @@ export function buildTableOfContents(options: TocBuilderOptions): Document {
     includedDocTypes = [],
     totalDocCount,
     consulateDisplay = 'U.S. Consulate General',
+    exhibitsByTab = {},
   } = options;
+
+  const totalExhibitCount = Object.values(exhibitsByTab).reduce((sum, list) => sum + list.length, 0);
+
+  // Union of tabs with generated docs and tabs with client-uploaded exhibits,
+  // in canonical order — a tab with only exhibits (no generated doc) still
+  // belongs in a real Master Exhibit Index.
+  const allTabs = TAB_ORDER.filter(
+    (t) => includedTabs.includes(t) || (exhibitsByTab[t]?.length ?? 0) > 0
+  );
 
   const children: Paragraph[] = [];
 
@@ -122,7 +137,7 @@ export function buildTableOfContents(options: TocBuilderOptions): Document {
   );
 
   // --- Index entries ---
-  for (const tabLetter of includedTabs) {
+  for (const tabLetter of allTabs) {
     const entry = TAB_SECTION_TITLES[tabLetter];
     if (!entry) continue;
 
@@ -238,6 +253,47 @@ export function buildTableOfContents(options: TocBuilderOptions): Document {
         })
       );
     }
+
+    // WS3.2 — client-uploaded exhibits for this tab, listed by their
+    // canonical registry ID (e.g. "Exhibit D-2") so the binder index matches
+    // the exact citations used inside the generated documents.
+    const exhibitsInTab = exhibitsByTab[tabLetter] ?? [];
+    if (exhibitsInTab.length > 0) {
+      for (const ex of exhibitsInTab) {
+        children.push(
+          new Paragraph({
+            spacing: { after: 40 },
+            indent: { left: convertInchesToTwip(0.5) },
+            tabStops: [
+              {
+                type: TabStopType.RIGHT,
+                position: TabStopPosition.MAX,
+                leader: 'dot',
+              },
+            ],
+            children: [
+              new TextRun({
+                text: `Exhibit ${ex.id}  `,
+                bold: true,
+                font: 'Century Schoolbook',
+                size: 20,
+              }),
+              new TextRun({
+                text: `${ex.label} — ${ex.fileName}`,
+                font: 'Century Schoolbook',
+                size: 20,
+              }),
+            ],
+          })
+        );
+      }
+      children.push(
+        new Paragraph({
+          spacing: { after: 160 },
+          children: [],
+        })
+      );
+    }
   }
 
   // --- Bottom spacing ---
@@ -271,7 +327,9 @@ export function buildTableOfContents(options: TocBuilderOptions): Document {
       alignment: AlignmentType.CENTER,
       children: [
         new TextRun({
-          text: `TOTAL PACKAGE: ${totalDocCount ?? includedTabs.length} generated documents across ${includedTabs.length} tabs (plus cover page, index, and tab dividers)`,
+          text: `TOTAL PACKAGE: ${totalDocCount ?? includedTabs.length} generated documents`
+            + (totalExhibitCount > 0 ? ` + ${totalExhibitCount} client exhibit(s)` : '')
+            + ` across ${allTabs.length} tabs (plus cover page, index, and tab dividers)`,
           bold: true,
           font: 'Century Schoolbook',
           size: 22,

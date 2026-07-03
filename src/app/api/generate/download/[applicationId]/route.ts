@@ -31,6 +31,7 @@ import {
   TAB_ORDER,
 } from '@/lib/docx-package-constants';
 import { buildPackageManifest } from '@/lib/cic-package-manifest';
+import { buildExhibitRegistry } from '@/lib/exhibit-registry';
 import type { DocumentType } from '@/types/generation';
 
 const VALID_DOC_TYPES: DocumentType[] = [
@@ -222,13 +223,16 @@ export async function GET(
     const coverBuffer = await Packer.toBuffer(coverDoc);
     zip.file('00_Cover_Page.docx', Buffer.from(coverBuffer));
 
-    // 7b. Table of contents
+    // 7b. Table of contents / Master Exhibit Index (WS3.2 — also lists the
+    // client's uploaded exhibits from the WS3.1 registry, not just generated docs)
+    const exhibitRegistry = await buildExhibitRegistry(applicationId);
     const tocDoc = buildTableOfContents({
       applicantName,
       preparedDate,
       includedTabs,
       includedDocTypes,
       totalDocCount: includedDocTypes.length,
+      exhibitsByTab: exhibitRegistry.byTab,
     });
     const tocBuffer = await Packer.toBuffer(tocDoc);
     zip.file('01_Table_of_Contents.docx', Buffer.from(tocBuffer));

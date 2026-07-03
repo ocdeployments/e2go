@@ -235,6 +235,7 @@ export interface GenerationPayload {
   gap_analysis_context?: string;
   case_theory_brief?: string;
   exhibit_registry: ExhibitRegistry;
+  document_index_text?: string;
 }
 
 export interface InvestmentBreakdownData {
