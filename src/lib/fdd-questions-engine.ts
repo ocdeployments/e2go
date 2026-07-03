@@ -7,11 +7,9 @@
 //   - Standard due diligence questions (always included)
 //   - CaseProfile match scoring
 
-import Anthropic from '@anthropic-ai/sdk';
 import type { FddExtractedFields } from '@/types/fdd';
 import type { ScoringResult } from '@/lib/fdd-scoring-engine';
-
-const anthropic = new Anthropic();
+import { callFDDModel } from '@/lib/llm-client';
 
 // ============================================================================
 // Types
@@ -511,7 +509,7 @@ async function generateBespokeQuestions(
   const territory = fields.territory_type?.value as string | null;
   const flagSummary = scoring.flags.map(f => f.label).join('; ') || 'None';
 
-  const prompt = `You are a senior franchise attorney and franchise development director. An investor is doing due diligence on ${franchiseName}.
+  const prompt = `An investor is doing due diligence on ${franchiseName}.
 
 Key data:
 - Total investment: ${totalMin ? `$${totalMin.toLocaleString()}` : 'Unknown'}
@@ -536,13 +534,14 @@ Return as a JSON array of objects with this shape:
 
 Return only the JSON array, nothing else.`;
 
-  const response = await anthropic.messages.create({
-    model: 'claude-sonnet-4-6',
+  const fddResult = await callFDDModel({
+    system: 'You are a senior franchise attorney and franchise development director.',
+    user: prompt,
     max_tokens: 1500,
-    messages: [{ role: 'user', content: prompt }],
+    route: 'fdd-questions',
   });
 
-  const text = response.content[0].type === 'text' ? response.content[0].text : '[]';
+  const text = fddResult?.content ?? '[]';
   const match = text.match(/\[[\s\S]*\]/);
   if (!match) return [];
 

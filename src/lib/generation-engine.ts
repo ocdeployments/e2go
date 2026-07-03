@@ -26,6 +26,7 @@ import { computeCaseFinancials, formatCaseFinancialsText, formatRevenueRampChart
 import { buildExhibitRegistry, formatExhibitRegistryText, checkExhibitConsistency } from './exhibit-registry';
 import { buildDeterministicDocumentIndex } from './docx-package-constants';
 import { computeEnterpriseNationality, buildJointPartnershipBlock } from './partnership-analysis';
+import { callDocGenFallback } from './llm-client';
 
 const PROMPTS_DIR = join(process.cwd(), 'prompts', 'v1', 'documents');
 
@@ -1234,6 +1235,24 @@ export async function callClaudeAPI(payload: GenerationPayload): Promise<string>
     try {
       return await attempt();
     } catch (secondError) {
+      // Non-business-plan documents fall through the OpenRouter chain
+      // (glm-5.2 -> mimo -> mimo-pro -> gemini-2.5-pro) when both Opus
+      // attempts fail. business_plan stays Opus-only: the eval showed the
+      // fallback models cannot produce a full-length business plan, so it
+      // fails loudly rather than shipping a degraded document.
+      if (payload.document_type !== 'business_plan') {
+        const fallback = await callDocGenFallback({
+          system: enrichedSystemPrompt,
+          user: `${stableBlock}\n${variableBlock}`,
+          max_tokens: getDocTokenBudget(payload.document_type),
+          temperature: GENERATION_TEMPERATURE,
+          route: 'doc-generation',
+        });
+        if (fallback) {
+          console.warn(`[generation-engine] ${payload.document_type} generated via OpenRouter fallback (${fallback.model})`);
+          return fallback.content;
+        }
+      }
       const msg = secondError instanceof Error ? secondError.message : 'Unknown error';
       throw new Error(`CLAUDE_API_FAILED: ${msg}`);
     }
@@ -1306,27 +1325,51 @@ export async function humanizeDocument(
   ].join('\n');
 
   const model = await getGenerationModel();
-  const response = await anthropic.messages.create({
-    model,
-    max_tokens: documentType ? getDocTokenBudget(documentType) : DEFAULT_TOKEN_BUDGET,
-    temperature: HUMANIZATION_TEMPERATURE,
-    system: [
-      { type: 'text', text: HUMANIZATION_SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } },
-      ...(previousFeedback
-        ? [{ type: 'text' as const, text: HUMANIZATION_RETRY_PREFIX.replace('{feedback}', previousFeedback) }]
-        : []),
-    ],
-    messages: [{ role: 'user', content: userMessage }],
-  });
+  try {
+    const response = await anthropic.messages.create({
+      model,
+      max_tokens: documentType ? getDocTokenBudget(documentType) : DEFAULT_TOKEN_BUDGET,
+      temperature: HUMANIZATION_TEMPERATURE,
+      system: [
+        { type: 'text', text: HUMANIZATION_SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } },
+        ...(previousFeedback
+          ? [{ type: 'text' as const, text: HUMANIZATION_RETRY_PREFIX.replace('{feedback}', previousFeedback) }]
+          : []),
+      ],
+      messages: [{ role: 'user', content: userMessage }],
+    });
 
-  // Check for deprecation warnings
-  await checkDeprecationWarning(response);
+    // Check for deprecation warnings
+    await checkDeprecationWarning(response);
 
-  const content = response.content[0];
-  if (content.type !== 'text') {
-    throw new Error('Humanization returned non-text response');
+    const content = response.content[0];
+    if (content.type !== 'text') {
+      throw new Error('Humanization returned non-text response');
+    }
+    return content.text;
+  } catch (err) {
+    // Same fallback gating as generation: non-business-plan documents may
+    // humanize on the OpenRouter chain so a doc that generated during an
+    // Anthropic outage doesn't then die at this stage. business_plan fails
+    // loudly instead.
+    if (documentType && documentType !== 'business_plan') {
+      const systemPrompt = previousFeedback
+        ? `${HUMANIZATION_SYSTEM_PROMPT}\n\n${HUMANIZATION_RETRY_PREFIX.replace('{feedback}', previousFeedback)}`
+        : HUMANIZATION_SYSTEM_PROMPT;
+      const fallback = await callDocGenFallback({
+        system: systemPrompt,
+        user: userMessage,
+        max_tokens: getDocTokenBudget(documentType),
+        temperature: HUMANIZATION_TEMPERATURE,
+        route: 'doc-humanization',
+      });
+      if (fallback) {
+        console.warn(`[generation-engine] ${documentType} humanized via OpenRouter fallback (${fallback.model})`);
+        return fallback.content;
+      }
+    }
+    throw err;
   }
-  return content.text;
 }
 
 // ---------------------------------------------------------------------------

@@ -4,13 +4,12 @@
 // Splits FDD text into Item-targeted sections, runs 4 focused LLM passes,
 // merges results. Uses Anthropic directly for large-context reliability.
 
-import Anthropic from '@anthropic-ai/sdk';
 import { sanitizeForPrompt } from '@/lib/prompt-sanitizer';
+import { callFDDModel } from '@/lib/llm-client';
 import { REGISTRATION_STATES } from '@/types/fdd';
 import type { FddExtractedFields, FddFieldMeta, FddStaleStatus, FddRegistrationStatus } from '@/types/fdd';
 
-const ANTHROPIC_MODEL = 'claude-sonnet-4-6';
-const MAX_CHUNK_CHARS = 80_000;  // ~60K tokens — safe for Sonnet 4.6
+const MAX_CHUNK_CHARS = 80_000;  // ~60K tokens — safe chunk size across the FDD model chain
 
 // ============================================================================
 // PDF text extraction (no truncation — FDDs need full text)
@@ -113,20 +112,9 @@ export function splitFddIntoSections(text: string): FddSections {
 // ============================================================================
 
 async function callAnthropic(system: string, user: string, maxTokens = 4000): Promise<string> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) throw new Error('ANTHROPIC_API_KEY not set');
-
-  const client = new Anthropic({ apiKey });
-  const response = await client.messages.create({
-    model: ANTHROPIC_MODEL,
-    max_tokens: maxTokens,
-    system,
-    messages: [{ role: 'user', content: user }],
-  });
-
-  const block = response.content[0];
-  if (block.type !== 'text') throw new Error('Anthropic returned non-text block');
-  return block.text;
+  const result = await callFDDModel({ system, user, max_tokens: maxTokens, route: 'fdd-extraction' });
+  if (!result) throw new Error('FDD model chain (Opus/Sonnet/GLM) returned no result');
+  return result.content;
 }
 
 function parseJsonFromLlm(raw: string): Record<string, FddFieldMeta> {

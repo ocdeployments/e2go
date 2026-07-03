@@ -36,7 +36,7 @@ interface LLMOptions {
 // Per-task model chains — OpenRouter tries each in order on failure
 const OPENROUTER_MODELS: Record<TaskType, string[]> = {
   evaluate: ['xiaomi/mimo-v2.5', 'google/gemini-2.5-flash', 'google/gemini-2.5-pro'],
-  coaching: ['xiaomi/mimo-v2.5-pro', 'google/gemini-2.5-pro'],
+  coaching: ['z-ai/glm-5.2', 'xiaomi/mimo-v2.5-pro', 'google/gemini-2.5-pro'],
   faq:      ['xiaomi/mimo-v2.5', 'google/gemini-2.5-flash'],
   prep:     ['xiaomi/mimo-v2.5', 'xiaomi/mimo-v2.5-pro'],
   extract:  ['google/gemini-2.5-pro', 'z-ai/glm-5.2'],
@@ -45,7 +45,7 @@ const OPENROUTER_MODELS: Record<TaskType, string[]> = {
 // Anthropic fallback models per task
 const ANTHROPIC_MODELS: Record<TaskType, string> = {
   evaluate: 'claude-haiku-4-5-20251001',
-  coaching: 'claude-sonnet-4-6',
+  coaching: 'claude-sonnet-5',
   faq:      'claude-haiku-4-5-20251001',
   prep:     'claude-haiku-4-5-20251001',
   extract:  'claude-haiku-4-5-20251001',
@@ -81,6 +81,10 @@ const MODEL_COSTS: Record<string, { in: number; out: number }> = {
   'google/gemini-2.5-pro':     { in: 1.25,  out: 10.00 },
   'claude-haiku-4-5-20251001': { in: 0.80,  out: 4.00  },
   'claude-sonnet-4-6':         { in: 3.00,  out: 15.00 },
+  // Pricing unverified — claude-sonnet-5 has no published rate card yet.
+  // Reusing sonnet-4-6 rates as a placeholder; correct this in llm_cost_log
+  // once Anthropic publishes actual pricing for this model.
+  'claude-sonnet-5':           { in: 3.00,  out: 15.00 },
   'claude-opus-4-8':           { in: 15.00, out: 75.00 },
 };
 
@@ -225,7 +229,10 @@ async function callOpenRouter(options: LLMOptions): Promise<LLMResult> {
   throw lastErr;
 }
 
-async function callAnthropic(options: LLMOptions): Promise<LLMResult> {
+async function callAnthropicModel(
+  model: string,
+  options: { messages: LLMMessage[]; max_tokens?: number; task: string; userId?: string; route?: string },
+): Promise<LLMResult> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error('ANTHROPIC_API_KEY not set');
 
@@ -238,7 +245,7 @@ async function callAnthropic(options: LLMOptions): Promise<LLMResult> {
 
   const t0 = Date.now();
   const response = await anthropic.messages.create({
-    model:      ANTHROPIC_MODELS[options.task],
+    model,
     max_tokens: options.max_tokens ?? 700,
     system:     systemMsg || undefined,
     messages:   conversationMsgs,
@@ -247,7 +254,6 @@ async function callAnthropic(options: LLMOptions): Promise<LLMResult> {
   const block = response.content[0];
   if (block.type !== 'text') throw new Error('Anthropic returned non-text block');
 
-  const model     = ANTHROPIC_MODELS[options.task];
   const tokensIn  = response.usage.input_tokens;
   const tokensOut = response.usage.output_tokens;
   logCost({
@@ -258,6 +264,136 @@ async function callAnthropic(options: LLMOptions): Promise<LLMResult> {
   });
 
   return { content: block.text, model };
+}
+
+async function callAnthropic(options: LLMOptions): Promise<LLMResult> {
+  return callAnthropicModel(ANTHROPIC_MODELS[options.task], options);
+}
+
+// ============================================================================
+// FDD analysis chain — Anthropic-primary (Opus is the whole point: FDD
+// extraction/scoring/report/territory/questions all read dense, high-stakes
+// documents where a wrong number is a real legal-risk surface, unlike the
+// static Word-doc pipeline). Falls through Opus -> Sonnet -> GLM 5.2 so a
+// single provider outage or an Opus rate-limit doesn't take FDD analysis
+// down entirely.
+// ============================================================================
+const FDD_CHAIN = ['claude-opus-4-8', 'claude-sonnet-5'] as const;
+const FDD_OPENROUTER_FALLBACK = 'z-ai/glm-5.2';
+
+export interface FddCallOptions {
+  system: string;
+  user: string;
+  max_tokens?: number;
+  temperature?: number;
+  route?: string;
+  userId?: string;
+}
+
+/**
+ * Call the FDD analysis chain: claude-opus-4-8 -> claude-sonnet-5 -> z-ai/glm-5.2 (OpenRouter).
+ * Returns the model's text response and which model produced it, or null if every tier fails.
+ */
+export async function callFDDModel(options: FddCallOptions): Promise<LLMResult | null> {
+  const messages: LLMMessage[] = [
+    { role: 'system', content: options.system },
+    { role: 'user', content: options.user },
+  ];
+
+  for (const model of FDD_CHAIN) {
+    try {
+      return await callAnthropicModel(model, {
+        messages, max_tokens: options.max_tokens, task: 'fdd',
+        userId: options.userId, route: options.route,
+      });
+    } catch (err) {
+      console.warn(`[llm-client] ${model} failed for task=fdd:`, err instanceof Error ? err.message : err);
+    }
+  }
+
+  try {
+    const result = await callOpenRouterModel(FDD_OPENROUTER_FALLBACK, {
+      task: 'extract', // reuses the 'extract' timeout/reasoning budget — closest existing profile for dense-document analysis
+      messages,
+      temperature: options.temperature,
+      max_tokens: options.max_tokens,
+      userId: options.userId,
+      route: options.route,
+    });
+    console.info('[llm-client] GLM 5.2 fallback succeeded for task=fdd');
+    return result;
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error('[llm-client] All FDD chain tiers failed:', message);
+    Sentry.captureException(err, { extra: { task: 'fdd', route: options.route } });
+  }
+
+  return null;
+}
+
+// ============================================================================
+// Document-generation fallback chain — non-business-plan documents only.
+// Opus (with Anthropic prompt caching) stays primary inside
+// generation-engine.ts; this chain only runs after both Opus attempts fail.
+// business_plan must NEVER reach this chain: the June 2026 eval showed
+// glm-5.2 produces ~half the required business-plan length and mimo fails
+// outright, so business plans fail loudly rather than ship degraded.
+// Gift-letter-class documents passed on all three OpenRouter model families.
+// ============================================================================
+const DOCGEN_FALLBACK_CHAIN = [
+  'z-ai/glm-5.2',
+  'xiaomi/mimo-v2.5',
+  'xiaomi/mimo-v2.5-pro',
+  'google/gemini-2.5-pro',
+];
+
+// Long-form documents need far more generation time than the per-task
+// simulator timeouts allow.
+const DOCGEN_TIMEOUT_MS = 120_000;
+
+export interface DocGenFallbackOptions {
+  system: string;
+  user: string;
+  max_tokens?: number;
+  temperature?: number;
+  route?: string;
+  userId?: string;
+}
+
+/**
+ * OpenRouter fallback for document generation when Anthropic is unavailable:
+ * z-ai/glm-5.2 -> xiaomi/mimo-v2.5 -> xiaomi/mimo-v2.5-pro -> google/gemini-2.5-pro.
+ * Returns the model's text response and which model produced it, or null if
+ * every model fails.
+ */
+export async function callDocGenFallback(options: DocGenFallbackOptions): Promise<LLMResult | null> {
+  const messages: LLMMessage[] = [
+    { role: 'system', content: options.system },
+    { role: 'user', content: options.user },
+  ];
+
+  for (const model of DOCGEN_FALLBACK_CHAIN) {
+    try {
+      const result = await callOpenRouterModel(model, {
+        task: 'extract', // task only labels the cost log here; route carries the real attribution
+        messages,
+        temperature: options.temperature,
+        max_tokens: options.max_tokens,
+        userId: options.userId,
+        route: options.route,
+        timeoutMs: DOCGEN_TIMEOUT_MS,
+      });
+      console.info(`[llm-client] docgen fallback succeeded on ${model}`);
+      return result;
+    } catch (err) {
+      console.warn(`[llm-client] ${model} failed for docgen fallback:`, err instanceof Error ? err.message : err);
+    }
+  }
+
+  Sentry.captureException(new Error('All docgen fallback models failed'), {
+    extra: { route: options.route },
+  });
+  return null;
 }
 
 /**

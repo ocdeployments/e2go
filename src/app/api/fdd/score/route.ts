@@ -3,13 +3,11 @@ import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { isKillSwitchEnabled } from '@/lib/kill-switch';
-import Anthropic from '@anthropic-ai/sdk';
 import { scoreFdd } from '@/lib/fdd-scoring-engine';
 import { synthesizeInvestorProfile } from '@/lib/investor-profile-synthesizer';
 import { resolvePrimaryApplication } from '@/lib/resolve-application';
+import { callFDDModel } from '@/lib/llm-client';
 import type { FddExtractedFields, FddE2Score } from '@/types/fdd';
-
-const anthropic = new Anthropic();
 
 // POST /api/fdd/score
 // Body: { fdd_id: string }
@@ -172,9 +170,7 @@ async function generateNarrative(
     ? `Estimated owner net income: low $${scoring.ode.ode_low?.toLocaleString() ?? 'n/a'} / mid $${scoring.ode.ode_mid.toLocaleString()} / high $${scoring.ode.ode_high?.toLocaleString() ?? 'n/a'}`
     : scoring.ode.note;
 
-  const prompt = `You are a senior immigration attorney and franchise development director with 20 years of E-2 visa and franchise experience.
-
-You have just scored an FDD for E-2 visa compatibility. Write four concise, professional narrative sections based on the scoring data below. Write in plain English — no jargon, no hedging, no generic advice. Be specific. Every sentence must be grounded in the data.
+  const prompt = `You have just scored an FDD for E-2 visa compatibility. Write four concise, professional narrative sections based on the scoring data below. Write in plain English — no jargon, no hedging, no generic advice. Be specific. Every sentence must be grounded in the data.
 
 ---
 FRANCHISE: ${franchiseName}
@@ -206,13 +202,14 @@ ATTORNEY_NOTE: One practical sentence advising what this investor should bring t
 Return as JSON: {"OVERALL_VERDICT":"...","STRENGTHS":"...","CONCERNS":"...","ATTORNEY_NOTE":"..."}`;
 
   try {
-    const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-6',
+    const fddResult = await callFDDModel({
+      system: 'You are a senior immigration attorney and franchise development director with 20 years of E-2 visa and franchise experience.',
+      user: prompt,
       max_tokens: 1000,
-      messages: [{ role: 'user', content: prompt }],
+      route: 'fdd-score',
     });
 
-    const text = response.content[0].type === 'text' ? response.content[0].text : '';
+    const text = fddResult?.content ?? '';
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
       return JSON.parse(jsonMatch[0]) as Record<string, string>;

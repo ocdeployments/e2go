@@ -93,11 +93,11 @@ function countFddFields(fields: Record<string, unknown> | null): number {
 // PROMPT VERSION REGISTRY — update this whenever a prompt changes
 const PROMPT_REGISTRY = [
   { route: '/api/simulator/evaluate', model: 'xiaomi/mimo-v2.5 → gemini-2.5-flash → claude-haiku', version: 'v3 (Jun 2026)', notes: 'Added KB knowledge + document cross-reference' },
-  { route: '/api/simulator/coaching-report', model: 'xiaomi/mimo-v2.5-pro → gemini-2.5-pro', version: 'v2 (Jun 2026)', notes: 'Multi-session memory, cross-session coaching' },
+  { route: '/api/simulator/coaching-report', model: 'z-ai/glm-5.2 → mimo-v2.5-pro → gemini-2.5-pro', version: 'v3 (Jul 2026)', notes: 'Multi-session memory, cross-session coaching' },
   { route: '/api/simulator/follow-up', model: 'xiaomi/mimo-v2.5', version: 'v1 (May 2026)', notes: 'Single-turn probe on weak answers' },
   { route: '/api/faq/ask', model: 'xiaomi/mimo-v2.5 → gemini-2.5-flash', version: 'v2 (Jun 2026)', notes: 'Removed Anthropic fallback; OpenRouter-only' },
-  { route: '/api/fdd/extract', model: 'claude-sonnet-4-6 (via ANTHROPIC)', version: 'v2 (Jun 2026)', notes: '50-field schema, territory analysis' },
-  { route: 'generation-engine (doc gen)', model: 'claude-sonnet-4-6 (via ANTHROPIC)', version: 'v3 (Jun 2026)', notes: 'KB injection, humanization loop, consistency gate' },
+  { route: 'FDD engines (extract/report/territory/questions/score)', model: 'claude-opus-4-8 → claude-sonnet-5 → z-ai/glm-5.2', version: 'v3 (Jul 2026)', notes: '50-field schema, territory analysis, FDD chain via callFDDModel' },
+  { route: 'generation-engine (doc gen)', model: 'claude-opus-4-8; non-business-plan fallback glm-5.2 → mimo → mimo-pro → gemini-2.5-pro', version: 'v4 (Jul 2026)', notes: 'KB injection, humanization loop, consistency gate' },
   { route: '/api/gap-analysis', model: 'xiaomi/mimo-v2.5-pro', version: 'v1 (May 2026)', notes: 'Case profile build + gap scoring' },
 ];
 

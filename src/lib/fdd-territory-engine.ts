@@ -10,11 +10,9 @@
 //   Census ACS 5-year — population, income, demographics, households, employment
 //   Google Places API — competitive scan (optional, degrades gracefully)
 
-import Anthropic from '@anthropic-ai/sdk';
 import type { FddExtractedFields } from '@/types/fdd';
 import { computeOdeProxy, classifyOde } from '@/lib/fdd-ode-engine';
-
-const anthropic = new Anthropic();
+import { callFDDModel } from '@/lib/llm-client';
 
 // ============================================================================
 // Types
@@ -899,14 +897,14 @@ VERDICT: A direct recommendation. Should this investor seriously pursue this ter
 Return as JSON: {"MARKET_OVERVIEW":"...","ECONOMIC_STRENGTH":"...","DEMOGRAPHIC_FIT":"...","COMPETITIVE_LANDSCAPE":"...","VERDICT":"..."}`;
 
   try {
-    const response = await anthropic.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 1100,
+    const fddResult = await callFDDModel({
       system: TERRITORY_ANALYST_SYSTEM,
-      messages: [{ role: 'user', content: prompt }],
+      user: prompt,
+      max_tokens: 1100,
+      route: 'fdd-territory',
     });
 
-    const text = response.content[0].type === 'text' ? response.content[0].text : '';
+    const text = fddResult?.content ?? '';
     const match = text.match(/\{[\s\S]*\}/);
     if (match) return JSON.parse(match[0]) as TerritoryAnalysis['narrative'];
     return fallbackNarrative(analysis);
@@ -972,14 +970,14 @@ VERDICT: A direct recommendation. Should this investor seriously pursue this loc
 Return as JSON: {"MARKET_OVERVIEW":"...","ECONOMIC_STRENGTH":"...","DEMOGRAPHIC_FIT":"...","COMPETITIVE_LANDSCAPE":"...","VERDICT":"..."}`;
 
   try {
-    const response = await anthropic.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 1100,
+    const fddResult = await callFDDModel({
       system: `You are a senior business location analyst with 20 years of experience advising investors on site selection. Your assessments inform $100K–$1M investment decisions. Write with authority, cite specific numbers, and give a clear verdict. Return ONLY valid JSON.`,
-      messages: [{ role: 'user', content: prompt }],
+      user: prompt,
+      max_tokens: 1100,
+      route: 'fdd-territory',
     });
 
-    const text = response.content[0].type === 'text' ? response.content[0].text : '';
+    const text = fddResult?.content ?? '';
     const match = text.match(/\{[\s\S]*\}/);
     if (match) return JSON.parse(match[0]) as TerritoryAnalysis['narrative'];
     return fallbackNarrative(analysis);

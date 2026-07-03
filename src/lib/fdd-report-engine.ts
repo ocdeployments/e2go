@@ -7,16 +7,15 @@
 // Voice: investment advisor + franchise director + immigration specialist.
 // Opinionated. Benchmark-driven. No hedging. Every claim grounded in FDD data.
 //
-// API key: ANTHROPIC_API_KEY ONLY — never OpenRouter for FDD analysis.
+// Models: FDD chain via callFDDModel — Opus primary, Sonnet 5 fallback,
+// GLM 5.2 (OpenRouter) last resort. See llm-client.ts.
 // Run sections in parallel; executive summary runs last (synthesises all).
 // ============================================================================
 
-import Anthropic from '@anthropic-ai/sdk';
+import { callFDDModel } from '@/lib/llm-client';
 import type { FddExtractedFields, FddFieldMeta } from '@/types/fdd';
 import type { ScoringResult, OdeAssessment } from '@/lib/fdd-scoring-engine';
 import { classifyCategory, type TerritoryAnalysis } from '@/lib/fdd-territory-engine';
-
-const anthropic = new Anthropic();
 
 // ============================================================================
 // Report section types
@@ -301,14 +300,8 @@ Produce a legal risk assessment as this exact JSON schema:
   "analyst_commentary": "3–4 sentences overall legal risk verdict — direct, specific, consequences named. What would you tell a client making a $300K investment?"
 }`;
 
-  const response = await anthropic.messages.create({
-    model: 'claude-haiku-4-5-20251001',
-    max_tokens: 1200,
-    system: ANALYST_SYSTEM,
-    messages: [{ role: 'user', content: prompt }],
-  });
-
-  const text = response.content[0].type === 'text' ? response.content[0].text : '{}';
+  const fddResult = await callFDDModel({ system: ANALYST_SYSTEM, user: prompt, max_tokens: 1200, route: 'fdd-report' });
+  const text = fddResult?.content ?? '{}';
   const match = text.match(/\{[\s\S]*\}/);
   if (!match) throw new Error('Legal risk: no JSON in response');
   return JSON.parse(match[0]) as LegalRiskAssessment;
@@ -552,14 +545,8 @@ Produce financial performance analysis as this exact JSON schema:
   "analyst_commentary": "4–5 sentences of direct analyst commentary on Item 19 quality and what it means for the investor's decision. Be specific about data quality issues. Name the consequence of poor data quality for E-2 visa filing."
 }`;
 
-  const response = await anthropic.messages.create({
-    model: 'claude-sonnet-4-6',
-    max_tokens: 1800,
-    system: ANALYST_SYSTEM,
-    messages: [{ role: 'user', content: prompt }],
-  });
-
-  const text = response.content[0].type === 'text' ? response.content[0].text : '{}';
+  const fddResult = await callFDDModel({ system: ANALYST_SYSTEM, user: prompt, max_tokens: 1800, route: 'fdd-report' });
+  const text = fddResult?.content ?? '{}';
   const match = text.match(/\{[\s\S]*\}/);
   if (!match) throw new Error('Financial performance: no JSON in response');
   return JSON.parse(match[0]) as FinancialPerformanceAnalysis;
@@ -637,14 +624,8 @@ Produce system health analysis as this exact JSON schema:
   "analyst_commentary": "3–4 sentences of direct analysis on system health. If the data shows a healthy or growing system, say so clearly. If it shows problems, name them directly with consequences."
 }`;
 
-  const response = await anthropic.messages.create({
-    model: 'claude-haiku-4-5-20251001',
-    max_tokens: 1200,
-    system: ANALYST_SYSTEM,
-    messages: [{ role: 'user', content: prompt }],
-  });
-
-  const text = response.content[0].type === 'text' ? response.content[0].text : '{}';
+  const fddResult = await callFDDModel({ system: ANALYST_SYSTEM, user: prompt, max_tokens: 1200, route: 'fdd-report' });
+  const text = fddResult?.content ?? '{}';
   const match = text.match(/\{[\s\S]*\}/);
   if (!match) throw new Error('System health: no JSON in response');
   return JSON.parse(match[0]) as SystemHealthAnalysis;
@@ -712,14 +693,8 @@ Produce franchisor financial health as this exact JSON schema:
   "analyst_commentary": "3–4 sentences overall financial health verdict. If it is strong, say so confidently. If there are concerns, name the specific failure mode and its probability."
 }`;
 
-  const response = await anthropic.messages.create({
-    model: 'claude-haiku-4-5-20251001',
-    max_tokens: 1200,
-    system: ANALYST_SYSTEM,
-    messages: [{ role: 'user', content: prompt }],
-  });
-
-  const text = response.content[0].type === 'text' ? response.content[0].text : '{}';
+  const fddResult = await callFDDModel({ system: ANALYST_SYSTEM, user: prompt, max_tokens: 1200, route: 'fdd-report' });
+  const text = fddResult?.content ?? '{}';
   const match = text.match(/\{[\s\S]*\}/);
   if (!match) throw new Error('Franchisor financial health: no JSON in response');
   return JSON.parse(match[0]) as FranchisorFinancialHealth;
@@ -818,14 +793,8 @@ Produce E-2 compatibility deep dive as this exact JSON schema:
   "timing_warning": "1–2 sentences on timing risk between signing, visa filing, and business opening, or null if no timing concern"
 }`;
 
-  const response = await anthropic.messages.create({
-    model: 'claude-sonnet-4-6',
-    max_tokens: 2000,
-    system: ANALYST_SYSTEM,
-    messages: [{ role: 'user', content: prompt }],
-  });
-
-  const text = response.content[0].type === 'text' ? response.content[0].text : '{}';
+  const fddResult = await callFDDModel({ system: ANALYST_SYSTEM, user: prompt, max_tokens: 2000, route: 'fdd-report' });
+  const text = fddResult?.content ?? '{}';
   const match = text.match(/\{[\s\S]*\}/);
   if (!match) throw new Error('E-2 deep dive: no JSON in response');
   const parsed = JSON.parse(match[0]) as E2CompatibilityDeepDive;
@@ -899,14 +868,8 @@ Return as a JSON array:
 
 Return only the JSON array. Order by severity descending (CRITICAL first).`;
 
-  const response = await anthropic.messages.create({
-    model: 'claude-haiku-4-5-20251001',
-    max_tokens: 2000,
-    system: ANALYST_SYSTEM,
-    messages: [{ role: 'user', content: prompt }],
-  });
-
-  const text = response.content[0].type === 'text' ? response.content[0].text : '[]';
+  const fddResult = await callFDDModel({ system: ANALYST_SYSTEM, user: prompt, max_tokens: 2000, route: 'fdd-report' });
+  const text = fddResult?.content ?? '[]';
   const match = text.match(/\[[\s\S]*\]/);
   if (!match) throw new Error('Risk matrix: no JSON in response');
   return JSON.parse(match[0]) as RiskMatrixItem[];
@@ -995,14 +958,8 @@ Produce executive summary as this exact JSON schema:
   "one_line_verdict": "A single powerful sentence — the kind you'd say to a client over the phone to summarise the whole report. Maximum 25 words. No hedging."
 }`;
 
-  const response = await anthropic.messages.create({
-    model: 'claude-sonnet-4-6',
-    max_tokens: 1800,
-    system: ANALYST_SYSTEM,
-    messages: [{ role: 'user', content: prompt }],
-  });
-
-  const text = response.content[0].type === 'text' ? response.content[0].text : '{}';
+  const fddResult = await callFDDModel({ system: ANALYST_SYSTEM, user: prompt, max_tokens: 1800, route: 'fdd-report' });
+  const text = fddResult?.content ?? '{}';
   const match = text.match(/\{[\s\S]*\}/);
   if (!match) throw new Error('Executive summary: no JSON in response');
   return JSON.parse(match[0]) as ExecutiveSummary;
