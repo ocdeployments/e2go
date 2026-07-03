@@ -1,6 +1,30 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** July 3, 2026 — Session 117: audited WS1 (confirmed small bugs) end-to-end against the actual codebase — all 8 items (tab-consistency test, FDD Questions placeholder + dead branch, Prep Kit `model_used`, category-keyed royalty benchmarks, territory never-fabricate rule, coaching silent-failure UI, dead `source_of_funds.md` removal) were already shipped by prior sessions; no code changes needed. Also swept the working tree for uncommitted stray files from earlier sessions: committed 5 legitimate but never-committed knowledge-base docs (`E2Go_Document_Checklist_Matrix.md`, `E2Go_Global_Consulate_Page_Limits.md`, `E2Go_Page_Budget_Allocation_Framework.md`, `E2Go_Application_Documents_Complete.md`, `ds160_e2_questions.md`) and the Supabase verification email template; deleted `src/components/dashboard/FeatureCommand.tsx` (an unwired, superseded dashboard-CTA component — `CaseProfilePage.tsx` + `ControlPanel.tsx` is now the live dashboard, confirmed with owner). Next: remaining WS4 clusters (4A/4C/4D/4E/4F — 20 of 23 CPU Intelligence directives), WS5 partnership docs, WS6 remaining items, WS7 analyses, WS8 golden-case verification.
+**Last Updated:** July 3, 2026 — Session 118: shipped 4 more WS4 CPU Intelligence directives (D3, D11, D18, D20) — see below. **`agent-prompt-part1-engine-and-package.md` / `agent-prompt-part2-intelligence-and-content.md` (the WS4-8 spec) are gone from disk** — untracked, never committed, and no longer present at session start; only the paraphrased directive list already recorded in prior BUILD_TRACKER entries and session memory survives. Continuing WS4-8 from here means working from that paraphrase, not the verbatim spec — flagged to owner. Next: confirm whether the spec files can be re-supplied before continuing D6/D9(partial)/D12(partial)/D13-16/D22(done)/D23, then WS5 partnership docs, WS6 remaining items, WS7 analyses, WS8 golden-case verification.
+
+---
+
+## Session 118 — WS4 CPU Intelligence: D3, D11, D18, D20 (July 3, 2026)
+
+**Branch:** dev. Build clean (`npm run build`). Two commits.
+
+### Context
+Continuing WS4 (23-directive CPU Intelligence Pack) per owner instruction to proceed through WS4-8 without pausing. Partway through, discovered `agent-prompt-part1-engine-and-package.md` and `agent-prompt-part2-intelligence-and-content.md` — the only copies of the full WS4-8 spec, both untracked and never committed — are no longer present on disk. This session's directive implementations are therefore built from the paraphrased directive descriptions already on record (this file's prior session entries + in-session task notes), not the verbatim spec text. Flagged at the top of this file; owner should confirm whether the source files can be re-supplied before further WS4-8 work risks drifting from the original spec.
+
+### Built
+- **D20 (prior-refusal global modifier, 4E person/narrative)** — new `src/lib/cpu-case-modifiers.ts`: `computePriorRefusalModifier()` reads `M3-A-21` (prefilled from quiz `Q0-09a`, confirmed via `prefill.ts`'s `isPriorVisas` mapping; falls back to legacy `QA-23`/`QA-11`), classifies into `none`/`old`/`recent`/`multiple`/`unknown` tiers, and returns tier-scaled directive text. Wired into `case-intelligence-core.ts`'s `assembleCaseModel()` — pushed as a `background`-dimension `CaseFact` tagged `cpu-case-modifiers:D20`. `REASON_SYSTEM` now has an explicit instruction that any fact with that sourceRef is a BINDING case-wide modifier, not a Cover-Letter-only footnote. 8 unit tests in `src/lib/__tests__/cpu-case-modifiers.test.ts`.
+- **D1, D2, D17, D19, D21 (case-theory-directive mechanism, no new files)** — added a "CPU INTELLIGENCE PACK — CASE-WIDE MODIFIERS" block to `REASON_SYSTEM` in `case-intelligence-core.ts`: two-minute rule (D1), disqualification-first framing (D2, leveraging the existing `DOC_DCODE_MAP`/`DIMENSION_DENIAL_CODES` infrastructure from `generation-engine.ts`), why-triangle (D17), social-media/digital-footprint consistency (D19), front-load-by-refusal-probability ordering (D21).
+- **D18 (career-switch disconnect, 4E)** — confirmed the needed data exists (`M3-Q-00` business type, `M3-Q-04` professional background, `M3-Q-05` years experience, `M3-Q-06` relevant skills, all flowing into the Case Model's `background` dimension already). Judged this is a semantic-relevance call a keyword matcher would get wrong often enough to violate the never-fabricate spirit, so it's handled as REASON steering text (same block above) rather than a deterministic pre-check.
+- **D3 (adjective/number-density) + D11 (ties symmetry), 4A/4C** — both added as explicit rules inside `cic-verifier.ts`'s `buildVerifierPrompt()`: D3 flags unqualified superlatives ("excellent," "significant," "robust," etc.) with no supporting number/date/fact in the same or next sentence; D11 flags any home-country tie asserted in `cover_letter`/`nonimmigrant_intent` that doesn't match what the Case Theory's dimension-verdict evidence establishes. Both route through the existing `flowIssues`/`contradictions` channels the retry loop already consumes — no new verifier plumbing needed.
+
+### Verified
+`npm run build` clean, `tsc --noEmit` clean, `npx jest cpu-case-modifiers` (8/8 pass).
+
+### Next
+Spec files missing — see the flag at the top of this file. If they can't be re-supplied, remaining WS4 items (D6, D9/D12 partial-completion confirmation, D13-D16, D22 confirm-done, D23) and all of WS5-8 will need to proceed from the paraphrase only, which increases drift risk on anything with numeric/legal specificity (e.g. D13-16's substantiality/marginality thresholds).
+
+### Dev server
+No server was running at start of session; no previewable change made (all backend/lib).
 
 ---
 
