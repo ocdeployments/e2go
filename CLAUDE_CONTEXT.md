@@ -183,7 +183,7 @@ Security/audit session:
 | Frontend | Next.js 14 App Router · TypeScript · Tailwind CSS |
 | Database + Auth | Supabase (PostgreSQL + Auth + Storage) |
 | AI — App features | OpenRouter (xiaomi/mimo-v2.5 via OPENROUTER_API_KEY) |
-| AI — Document generation | Anthropic API direct (ANTHROPIC_API_KEY) |
+| AI — Document generation | Anthropic API direct (ANTHROPIC_API_KEY); non-business-plan docs fall back to OpenRouter (glm-5.2 → mimo → mimo-pro → gemini-2.5-pro) |
 | AI — Simulator evaluation | OpenRouter (xiaomi/mimo-v2.5 or mimo-v2.5-pro ONLY via OPENROUTER_API_KEY) |
 | AI — FAQ Q&A | OpenRouter (xiaomi/mimo-v2.5 via OPENROUTER_API_KEY) |
 | Voice transcription | Groq Whisper (GROQ_API_KEY) |
@@ -198,11 +198,13 @@ Security/audit session:
 **CRITICAL API KEY RULE — READ EVERY SESSION:**
 - OPENROUTER_API_KEY → ALL app AI features (simulator, analysis,
   follow-up, extraction engine, classification)
-- ANTHROPIC_API_KEY → document generation AND FDD extraction/scoring
-  (src/lib/generation-engine.ts AND src/lib/fdd-extraction-engine.ts,
-  src/lib/fdd-scoring-engine.ts, src/app/api/fdd/* routes)
-  FDD routes use claude-sonnet-4-6 via Anthropic SDK directly — this is
-  a deliberate exception for large-context reliability.
+- ANTHROPIC_API_KEY → document generation AND FDD analysis
+  (src/lib/generation-engine.ts AND the FDD engines: extraction, report,
+  territory, questions — all via callFDDModel in src/lib/llm-client.ts)
+  FDD chain (LOCKED July 3, 2026): claude-opus-4-8 primary →
+  claude-sonnet-5 fallback (both Anthropic direct) → z-ai/glm-5.2
+  (OpenRouter) last resort. Deliberate Anthropic-primary exception for
+  large-context reliability on high-stakes document analysis.
 - GROQ_API_KEY → voice transcription + TTS only
   (src/lib/groq-transcription.ts, src/lib/groq-tts.ts,
   src/app/api/simulator/tts/route.ts,
@@ -212,11 +214,16 @@ DO NOT switch any existing OpenRouter calls to the Anthropic API.
 FDD routes ARE an approved exception — they already use Anthropic directly.
 DO NOT expose any API key in browser/client code.
 
-**SIMULATOR MODEL CONSTRAINT — LOCKED (June 16, 2026):**
-ALL simulator routes (evaluate, follow-up, coaching-report, case-summary)
+**SIMULATOR MODEL CONSTRAINT — LOCKED (June 16, 2026; amended July 3, 2026):**
+Simulator evaluate, follow-up, and case-summary routes
 MUST use ONLY: `xiaomi/mimo-v2.5` or `xiaomi/mimo-v2.5-pro`
-NEVER use minimax, deepseek, or any other model for simulator routes.
-This was explicitly corrected by the user and is non-negotiable.
+NEVER use minimax, deepseek, or any other model for those routes.
+Amendment (user directive, July 3, 2026): the `coaching` task — which
+serves the interview prep dossier (prep-kit) and coaching-report — now
+runs `z-ai/glm-5.2` primary → `xiaomi/mimo-v2.5-pro` →
+`google/gemini-2.5-pro`, with `claude-sonnet-5` as the Anthropic-direct
+fallback layer. The mimo-only lock still applies to evaluate/follow-up/
+case-summary.
 
 ---
 

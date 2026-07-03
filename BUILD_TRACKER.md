@@ -1,6 +1,29 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** July 3, 2026 — Session 119s: **WS6.2 per-template upgrades complete.** Upgraded all 9 templates identified in spec §10.2 (Cover Letter was already done pre-session): Source of Funds, Business Plan, Qualifications, Nonimmigrant Intent, Marginality Rebuttal, Principal Declaration, Fund Flow Chronology, Net Worth Statement, and a full rebuild of Gift Letter (the only core doc that was never on the standard template pattern). Added `formatRevenueRampChart()` to the deterministic financial spine for a dependency-free text chart in the Business Plan. Property Portfolio and Spouse Declaration/Resume confirmed out of scope per spec (§10.2: they benefit from already-shipped shared fixes, not template rewrites). Build clean, `tsc --noEmit` clean, 150/150 tests. WS6 (both 6.1 and 6.2) is now complete.
+**Last Updated:** July 3, 2026 — Session 119t: **Model routing overhaul (user-directed).** New FDD chain `callFDDModel` in llm-client.ts (claude-opus-4-8 → claude-sonnet-5 → z-ai/glm-5.2) wired into all five LLM-calling FDD sites (extraction, report, territory, questions, score-route narrative). Coaching task (interview prep dossier + coaching report) bumped to glm-5.2 primary with claude-sonnet-5 Anthropic fallback. Non-business-plan document generation and humanization now fall back to OpenRouter (glm-5.2 → mimo-v2.5 → mimo-v2.5-pro → gemini-2.5-pro) after both Opus attempts fail; business_plan stays Opus-only by design. Routing decisions grounded in the June/July model eval (~/Desktop/e2go-llm-eval-results.md). ⚠️ ANTHROPIC_API_KEY in .env.local is dead (401) — every Anthropic tier is non-functional locally until rotated.
+
+---
+
+## Session 119t — Model Routing Overhaul (July 3, 2026)
+
+**Branch:** dev. Build clean, `tsc --noEmit` clean. Backend model-routing change — not browser-verifiable without live generation runs (and the local ANTHROPIC_API_KEY is dead, see below).
+
+**Context:** User directive after the model eval (Session 119t eval: gift-letter-class docs pass on all three OpenRouter models at ~1/170th Opus cost; business plan fails outright on mimo and comes out ~half-length on glm-5.2): FDD analysis moves to Opus with Sonnet 5 → GLM 5.2 fallback; Sonnet 4.6 usages bump to Sonnet 5; non-business-plan documents get a GLM-led OpenRouter fallback chain; interview prep dossier moves to GLM 5.2. The literal model string `claude-sonnet-5` was explicitly chosen by Romy (over my claude-sonnet-4-6 recommendation) — do not "correct" it.
+
+**Built:**
+- `src/lib/llm-client.ts` — extracted `callAnthropicModel(model, options)` from `callAnthropic`; new exported `callFDDModel()` walking `FDD_CHAIN` (`claude-opus-4-8` → `claude-sonnet-5`, Anthropic direct) then `z-ai/glm-5.2` via OpenRouter, Sentry capture + null on total failure; new exported `callDocGenFallback()` walking `DOCGEN_FALLBACK_CHAIN` (`z-ai/glm-5.2` → `xiaomi/mimo-v2.5` → `xiaomi/mimo-v2.5-pro` → `google/gemini-2.5-pro`, 120s timeout); coaching chain now `['z-ai/glm-5.2', 'xiaomi/mimo-v2.5-pro', 'google/gemini-2.5-pro']` with `claude-sonnet-5` Anthropic fallback (was sonnet-4-6); MODEL_COSTS gained `claude-sonnet-5` at placeholder sonnet-4-6 rates (no published rate card yet — flagged in comment).
+- `src/lib/fdd-extraction-engine.ts` — internal `callAnthropic()` helper now delegates to `callFDDModel` (route `fdd-extraction`); Anthropic SDK import and hardcoded `claude-sonnet-4-6` removed; all 5 internal call sites unchanged.
+- `src/lib/fdd-report-engine.ts` — all 7 `anthropic.messages.create` sites (was sonnet-4-6) replaced with `callFDDModel` (route `fdd-report`), preserving per-site max_tokens and `'{}'`/`'[]'` JSON-parse fallbacks; Anthropic import/client removed.
+- `src/lib/fdd-territory-engine.ts` — both narrative call sites (was haiku-4-5) replaced with `callFDDModel` (route `fdd-territory`); deterministic `fallbackNarrative()` retained as the final safety net; Anthropic import/client removed. This is the market analysis engine.
+- `src/lib/fdd-questions-engine.ts` — `generateBespokeQuestions` (was sonnet-4-6, user-message-only prompt) now calls `callFDDModel` (route `fdd-questions`) with the persona sentence split into the system slot; return-`[]`-on-failure behavior preserved; Anthropic import/client removed. `fdd-scoring-engine.ts` confirmed pure TS — no LLM calls to migrate.
+- `src/app/api/fdd/score/route.ts` — found in the final sweep: the E-2 scoring narrative (`generateNarrative`) had its own direct Anthropic client on sonnet-4-6. Now on `callFDDModel` (route `fdd-score`), persona split into system slot, deterministic fallback narrative on failure preserved; Anthropic import/client removed. This was the fifth and last FDD LLM call site.
+- `src/app/admin/quality/page.tsx` — PROMPT_REGISTRY reference table updated (coaching-report chain, FDD chain, doc-gen fallback rows were stale).
+- `src/lib/generation-engine.ts` — after both Opus attempts fail, non-business-plan documents fall through `callDocGenFallback` (route `doc-generation`), flattening the cached stable/variable blocks into one user message; same gating added to `humanizeDocument` (route `doc-humanization`) so a doc generated during an Anthropic outage doesn't then die at humanization. `business_plan` never reaches either fallback — fails loudly with `CLAUDE_API_FAILED` as before.
+- `CLAUDE_CONTEXT.md` — tech-stack table, API-key rules, and the simulator model lock updated (mimo-only lock now scoped to evaluate/follow-up/case-summary; coaching amendment recorded with date and rationale).
+
+**Known issue (owner action):** ANTHROPIC_API_KEY in `.env.local` returns 401 invalid x-api-key. Until rotated, the Opus and Sonnet 5 tiers of the FDD chain, the doc-generation primary, and the Anthropic fallback layer for all tasks are dead in the local environment — everything silently lands on the OpenRouter tiers.
+
+**Next steps:** rotate ANTHROPIC_API_KEY, then a live smoke test of one FDD report + one non-business-plan doc to observe the chain under a working key; WS8 golden-case verification loop; CLAUDE_CONTEXT.md / FEATURE_INVENTORY.html staleness pass.
 
 ---
 
