@@ -24,8 +24,9 @@ adds value — because the proportionality test requires a specific calculation
 that the cover letter typically states only in summary form.
 
 This document provides the full analysis: total enterprise cost breakdown,
-investment as a percentage of that cost, comparison to the 9 FAM threshold
-table, FDD Item 7 benchmark (if franchise), and the at-risk share of the total.
+investment as a percentage of that cost, comparison to practitioner-benchmark
+ranges for that ratio, FDD Item 7 benchmark (if franchise), and the at-risk
+share of the total.
 
 DO NOT write a general E-2 analysis or cover letter companion.
 DO NOT address treaty nationality, non-marginality, or non-immigrant intent.
@@ -54,8 +55,10 @@ Never write a sentence that could apply to any applicant.
 Present the math. Let the officer conclude.
 Never write: "This investment is substantial"
 Write: "The investment of $175,000 represents 62.5% of the total enterprise
-cost of $280,000 — a ratio that, per the proportionality framework in
-9 FAM 402.9-6(D), corresponds to [the highest tier / the second tier / etc.]"
+cost of $280,000. 9 FAM 402.9-6(D) applies a proportionality-based inverted
+sliding scale without fixed percentage thresholds; practitioners commonly
+benchmark a ratio in this range as [falling toward the higher end of what is
+typically documented for enterprises of this size]."
 
 3. ACTIVE VOICE throughout.
 
@@ -107,26 +110,29 @@ licensed immigration attorney before submitting any documents to the consulate.
 
 ## 9 FAM PROPORTIONALITY FRAMEWORK
 
-9 FAM 402.9-6(D) sets out the proportionality test for substantiality.
-The investment must be proportional to the total cost of the enterprise.
-The framework uses a sliding scale — lower-cost businesses require a higher
-percentage invested; higher-cost businesses may satisfy the test at lower percentages.
+9 FAM 402.9-6(D) sets out the proportionality test for substantiality as an
+inverted sliding scale: the lower the total enterprise cost, the higher the
+percentage of that cost the investment must represent. **The FAM does NOT
+state fixed percentage thresholds or tiers** — it declines to set bright
+lines and leaves the standard flexible, evaluated case by case.
 
-Reference the following thresholds when analyzing this case:
+The table below is a **practitioner rule-of-thumb benchmark**, not a
+regulatory citation. Present it explicitly as informal practice, never as
+the FAM's own language:
 
-| Total Enterprise Cost | Proportionality Threshold |
+| Total Enterprise Cost | Commonly-Cited Practitioner Benchmark |
 |---|---|
-| Under $100,000 | 100% — full cost must be invested |
-| $100,001 – $500,000 | 75% or more |
-| $500,001 – $1,000,000 | 50% or more |
-| Over $1,000,000 | 30% or more (case-by-case) |
+| Under $100,000 | At or near 100% of cost invested |
+| $100,001 – $500,000 | Roughly 75% or more |
+| $500,001 – $1,000,000 | Roughly 50% or more |
+| Over $1,000,000 | Roughly 30% or more (case-by-case) |
 
-IMPORTANT: These thresholds are NOT stated in the FAR/9 FAM as hard lines —
-they are the officer's practical benchmark. Never state that the investment
-"meets the threshold." Present the ratio and let the officer assess.
-
-Present the calculation in plain language AND as the table above, with the
-applicant's numbers filled in.
+IMPORTANT: Never attribute these percentages to 9 FAM 402.9-6(D) itself, and
+never state that the investment "meets the threshold" or "satisfies the
+tier." Frame every reference along these lines: "9 FAM 402.9-6(D) applies a
+flexible, no-fixed-threshold sliding scale; practitioners commonly benchmark
+ratios in this range as [X]." Present the ratio, present the benchmark
+context, and let the officer assess.
 
 ---
 
@@ -200,16 +206,19 @@ marketing expenses paid from working capital draws). In that case, explain this.
 
 State the total investment committed by the applicant.
 Calculate the ratio: investment ÷ total enterprise cost = proportionality percentage.
-Show which 9 FAM proportionality tier this ratio falls within.
+State where this ratio falls against the commonly-cited practitioner benchmark
+for this enterprise-cost band — never framed as a FAM-defined tier.
 
 ```
 Total Enterprise Cost:    $[X]
 Total Investment:         $[X]
 Proportionality Ratio:    [X]%
 
-9 FAM Tier for this enterprise cost:  [e.g., "investments in enterprises
-totaling $100,001–$500,000 are generally evaluated against a 75% threshold"]
-[Applicant's] ratio of [X]% [exceeds / approaches / falls within] this range.
+9 FAM 402.9-6(D) applies a flexible sliding-scale proportionality test with
+no fixed percentage thresholds. Practitioners commonly benchmark investments
+in enterprises totaling $100,001–$500,000 at roughly 75% or more of total
+cost. [Applicant's] ratio of [X]% [exceeds / approaches / falls within] that
+commonly-cited range.
 ```
 
 **Section IV — Committed vs. Reserved Breakdown (1 paragraph):**
@@ -256,7 +265,7 @@ The document itself should carry the "SUBSTANTIALITY MEMORANDUM" header in the t
 - [ ] Document header says "SUBSTANTIALITY MEMORANDUM" — not "Visa Category Letter"
 - [ ] Total enterprise cost defined and sourced (FDD Item 7 if franchise)
 - [ ] Investment as % of total enterprise cost calculated and stated explicitly
-- [ ] 9 FAM proportionality tier identified and compared to applicant's ratio
+- [ ] Practitioner-benchmark range identified and compared to applicant's ratio (never attributed to 9 FAM as a fixed threshold)
 - [ ] Committed vs. reserved split explained
 - [ ] FDD Item 7 benchmark cited (franchise cases) or absence noted
 - [ ] No language about treaty nationality, non-marginality, or non-immigrant intent
