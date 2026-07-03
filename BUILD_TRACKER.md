@@ -1,6 +1,22 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** July 3, 2026 — Session 119o: **WS6.1 — Financial Assets Portfolio wired as conditional document.** `f02_investment_portfolio_summary.md` (complete template, dead — same latent-product-lie pattern as Investment Evidence in 119n) now generates when `M3-F-05` (source of funds) includes `rrsp`, `tfsa`, `lira`, or `crypto` — the non-real-estate financial-asset cases the spec calls out (extremely common for Canadian applicants). Per spec, also added an RRSP gross-to-net withholding-tax reconciliation table and a crypto cost-basis requirement to the prompt (exchange records + cost basis, not just a wallet balance). Build clean, `tsc --noEmit` clean, 146/146 tests. **Known infra issue carried from 119n:** pre-push Playwright suite fails when two runs happen within 15 minutes — the /login rate limit persists in Upstash Redis across runs and 429s the regression test's login; wait out the window before pushing. Next WS6.1 items: DS-156E→DS-160 merge, then 3 new documents (Org Chart, Corporate Documents Guide, Lease Summary), then WS6.2 per-template upgrades. Then WS8.
+**Last Updated:** July 3, 2026 — Session 119p: **Document pipeline read-side merge — gap report + case summary.** Two live document-upload pipelines (`uploaded_documents` / Pipeline A and `application_documents` / Pipeline B) both write real data, but `case-summary/route.ts` and `gap-report/route.ts` each read from only one — documents uploaded through the other pipeline silently vanished from those screens. Both routes now query both tables in parallel and merge results into `extractions`/`documentSummaries`. Write-path unification and `document_discrepancies` parity for Pipeline A intentionally left out of scope (owner's explicit call). Build clean, `tsc --noEmit` clean, 146/146 tests. Commit `bf69088`.
+
+---
+
+## Session 119p — Document pipeline read-side merge (July 3, 2026)
+
+**Branch:** dev. Build clean, `tsc --noEmit` clean, 146/146 tests pass. Backend-only read-path fix — no new UI surface, verified via type-check/test/build only.
+
+**Context:** Prior investigation established two document-upload pipelines are both live: `uploaded_documents` (current taxonomy, written by the newer upload flow) and `application_documents` (legacy table, still written by gap-analysis remediation and quick-start onboarding). `case-summary/route.ts` (the "your case file" review screen) read only `uploaded_documents`; `gap-report/route.ts` read only `application_documents`. Either way, documents uploaded through the pipeline the route didn't query were invisible to the user on that screen, even though the data existed.
+
+**Built:**
+- `src/app/api/simulator/case-summary/route.ts` — added a parallel `application_documents` query alongside the existing `uploaded_documents` query (`Promise.all`, non-fatal error handling on both); `documentSummaries` now concatenates both, mapped to a common shape.
+- `src/app/api/documents/gap-report/route.ts` — mirror-image fix: added a parallel `uploaded_documents` query alongside the existing `application_documents` query; merged both into the `documents` array feeding `extractions` and `gapReport.documentSummaries`.
+
+**Explicitly out of scope (owner's architectural call):** `document_discrepancies` cross-checking is not extended to Pipeline A records — that's a separate feature-parity decision, not a read-side visibility bug. Write-path unification of the two pipelines into one table is a larger migration not attempted here.
+
+**Next:** Assessment of what's left across WS6/WS7/WS8; continue WS6 (DS-156E→DS-160 merge, 3 new documents — Org Chart/Corporate Documents Guide/Lease-Premises Summary, WS6.2 per-template upgrades on ~12 templates), then WS8 golden-case verification. `CLAUDE_CONTEXT.md` and `docs/FEATURE_INVENTORY.html` need a staleness pass.
 
 ---
 
