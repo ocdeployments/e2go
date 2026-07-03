@@ -1,4 +1,5 @@
 import type { CaseFinancials } from '@/lib/case-financials';
+import { DOC_TYPE_TAB_MAP } from '@/lib/docx-package-constants';
 
 export type DocumentType =
   // Existing core documents (generated in sequential pipeline)
@@ -114,32 +115,23 @@ export const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {
   resume_p2:                'Investor 2 Resume',
 };
 
-export const DOCUMENT_TYPE_TABS: Record<DocumentType, string> = {
-  cover_letter: 'Tab D',
-  source_of_funds: 'Tab B',
-  investment_proof: 'Tab B',
-  business_plan: 'Tab C',
-  qualifications: 'Tab D',
-  ds160_reference: 'Tab D / E',
-  visa_category: 'Tab C',
-  nonimmigrant_intent: 'Tab G',
-  marginality_rebuttal: 'Tab C',
-  declaration_principal: 'Tab G',
-  declaration_spouse: 'Tab G',
-  fund_flow_chronology: 'Tab B',
-  net_worth_statement: 'Tab B',
-  property_portfolio: 'Tab F',
-  resume_principal: 'Tab D',
-  resume_spouse: 'Tab E',
-  gift_letter: 'Tab B',
-  // Partnership — Investor 2
-  cover_letter_p2:          'Tab D (Investor 2)',
-  source_of_funds_p2:       'Tab B (Investor 2)',
-  declaration_p2:           'Tab G (Investor 2)',
-  qualifications_p2:        'Tab D (Investor 2)',
-  nonimmigrant_intent_p2:   'Tab G (Investor 2)',
-  resume_p2:                'Tab D (Investor 2)',
-};
+// Derived from the single canonical Tab scheme (docx-package-constants.ts,
+// DOC_TYPE_TAB_MAP) so this can never drift from the letters that actually
+// drive the assembled .docx package — P2 (Investor 2) variants get an
+// explicit suffix since they share their principal counterpart's letter.
+const P2_DOCUMENT_TYPES = new Set<DocumentType>([
+  'cover_letter_p2', 'source_of_funds_p2', 'declaration_p2',
+  'qualifications_p2', 'nonimmigrant_intent_p2', 'resume_p2',
+]);
+
+export const DOCUMENT_TYPE_TABS: Record<DocumentType, string> = Object.fromEntries(
+  (Object.keys(DOC_TYPE_TAB_MAP) as DocumentType[])
+    .filter((dt) => dt in DOCUMENT_TYPE_LABELS)
+    .map((dt) => [
+      dt,
+      `Tab ${DOC_TYPE_TAB_MAP[dt]}${P2_DOCUMENT_TYPES.has(dt) ? ' (Investor 2)' : ''}`,
+    ])
+) as Record<DocumentType, string>;
 
 export interface GenerationStep {
   id: number;

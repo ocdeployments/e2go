@@ -6,8 +6,6 @@ export interface ChecklistItem {
   prefillNote: string | null;
   required: boolean;
   tabReference: string;
-  sharedTabs?: string[];
-  crossTabNote?: string;
   warning?: string;
 }
 
@@ -46,7 +44,7 @@ export function generatePreAppChecklist(quizData: QuizData | null): ChecklistIte
     source: "always",
     prefillNote: null,
     required: true,
-    tabReference: "Tab B"
+    tabReference: "Tab A"
   });
 
   if (isMarried || hasSpouse) {
@@ -57,9 +55,7 @@ export function generatePreAppChecklist(quizData: QuizData | null): ChecklistIte
       source: "pre-filled",
       prefillNote: "We know you are married from your eligibility check. One certified copy of your marriage certificate is required.",
       required: true,
-      tabReference: "Tab B",
-      sharedTabs: ["Tab B", "Tab L"],
-      crossTabNote: "One certified copy covers both your personal binder (Tab B) and your dependent section (Tab L)."
+      tabReference: "Tab A"
     });
   }
 
@@ -71,9 +67,7 @@ export function generatePreAppChecklist(quizData: QuizData | null): ChecklistIte
       source: "pre-filled",
       prefillNote: "Your spouse is listed as a dependent in your eligibility check.",
       required: true,
-      tabReference: "Tab L",
-      sharedTabs: ["Tab B", "Tab L"],
-      crossTabNote: "One copy covers both Tab B and Tab L."
+      tabReference: "Tab A"
     });
     items.push({
       id: "spouse_birth_cert",
@@ -82,9 +76,7 @@ export function generatePreAppChecklist(quizData: QuizData | null): ChecklistIte
       source: "pre-filled",
       prefillNote: "Your spouse is listed as a dependent in your eligibility check.",
       required: true,
-      tabReference: "Tab L",
-      sharedTabs: ["Tab B", "Tab L"],
-      crossTabNote: "One certified copy covers both Tab B and Tab L."
+      tabReference: "Tab A"
     });
   }
 
@@ -96,9 +88,7 @@ export function generatePreAppChecklist(quizData: QuizData | null): ChecklistIte
       source: "pre-filled",
       prefillNote: "Dependent children were indicated in your eligibility check.",
       required: true,
-      tabReference: "Tab L",
-      sharedTabs: ["Tab B", "Tab L"],
-      crossTabNote: "One copy per child covers both Tab B and Tab L."
+      tabReference: "Tab A"
     });
     items.push({
       id: "child_birth_cert",
@@ -107,9 +97,7 @@ export function generatePreAppChecklist(quizData: QuizData | null): ChecklistIte
       source: "pre-filled",
       prefillNote: "Dependent children were indicated in your eligibility check.",
       required: true,
-      tabReference: "Tab L",
-      sharedTabs: ["Tab B", "Tab L"],
-      crossTabNote: "One certified copy per child covers both Tab B and Tab L."
+      tabReference: "Tab A"
     });
   }
 
@@ -182,7 +170,7 @@ export function generatePreAppChecklist(quizData: QuizData | null): ChecklistIte
     source: "always",
     prefillNote: null,
     required: true,
-    tabReference: "Tab B"
+    tabReference: "Tab A"
   });
   items.push({
     id: "ds160",
@@ -204,7 +192,7 @@ export function generatePreAppChecklist(quizData: QuizData | null): ChecklistIte
     warning: "Required at some consulates — check your specific post's requirements. Toronto does not require the DS-156E, but other posts may."
   });
 
-  // ─── FINANCIAL EVIDENCE (Tab B) ──────────────────────────────────────────
+  // ─── FINANCIAL EVIDENCE (Tab E) ──────────────────────────────────────────
   const fundSources = strVal(answers["M3-F-05"]).toLowerCase();
   const giftAnswer  = strVal(answers["M3-H-05"]).toLowerCase();
   const investType  = strVal(answers["M3-F-01"]).toLowerCase();
@@ -219,7 +207,7 @@ export function generatePreAppChecklist(quizData: QuizData | null): ChecklistIte
     source: "always",
     prefillNote: null,
     required: true,
-    tabReference: "Tab B",
+    tabReference: "Tab E",
     warning: "Must show the full accumulation and movement of investment funds. Statements should be official (downloaded from online banking or issued by the branch) — not handwritten."
   });
 
@@ -231,7 +219,7 @@ export function generatePreAppChecklist(quizData: QuizData | null): ChecklistIte
     source: "always",
     prefillNote: null,
     required: true,
-    tabReference: "Tab B",
+    tabReference: "Tab E",
     warning: "Officers trace every dollar. If funds moved through multiple accounts or currencies, you need records for each leg of the transfer."
   });
 
@@ -244,7 +232,7 @@ export function generatePreAppChecklist(quizData: QuizData | null): ChecklistIte
       source: "pre-filled",
       prefillNote: "RRSP was selected as a funding source in your case file.",
       required: true,
-      tabReference: "Tab B"
+      tabReference: "Tab E"
     });
   }
   if (fundSources.includes("tfsa")) {
@@ -255,7 +243,7 @@ export function generatePreAppChecklist(quizData: QuizData | null): ChecklistIte
       source: "pre-filled",
       prefillNote: "TFSA was selected as a funding source in your case file.",
       required: true,
-      tabReference: "Tab B"
+      tabReference: "Tab E"
     });
   }
 
@@ -268,7 +256,7 @@ export function generatePreAppChecklist(quizData: QuizData | null): ChecklistIte
       source: "pre-filled",
       prefillNote: "Property sale was selected as a funding source in your case file.",
       required: true,
-      tabReference: "Tab B",
+      tabReference: "Tab E",
       warning: "The closing statement must show the sale price, mortgage payoff, and net proceeds deposited. A realtor letter alone is not sufficient."
     });
   }
@@ -282,7 +270,7 @@ export function generatePreAppChecklist(quizData: QuizData | null): ChecklistIte
       source: "pre-filled",
       prefillNote: "Loan was selected as a funding source in your case file.",
       required: true,
-      tabReference: "Tab B",
+      tabReference: "Tab E",
       warning: "Officers must be able to confirm the loan is at-risk capital (your personal liability). Include any collateral documentation."
     });
   }
@@ -296,7 +284,7 @@ export function generatePreAppChecklist(quizData: QuizData | null): ChecklistIte
       source: "pre-filled",
       prefillNote: "Gift or inheritance was indicated in your case file investment section.",
       required: true,
-      tabReference: "Tab B",
+      tabReference: "Tab E",
       warning: "The gift letter must state the funds are a genuine gift with no expectation of repayment, and that they are available for E-2 investment. e2go generates this document for you."
     });
     items.push({
@@ -306,7 +294,7 @@ export function generatePreAppChecklist(quizData: QuizData | null): ChecklistIte
       source: "pre-filled",
       prefillNote: "Gift or inheritance was indicated in your case file investment section.",
       required: true,
-      tabReference: "Tab B",
+      tabReference: "Tab E",
       warning: "The officer will trace the gift funds back to the donor's own source. A gift letter alone is never sufficient — you need the donor's paper trail too."
     });
   }
@@ -320,7 +308,7 @@ export function generatePreAppChecklist(quizData: QuizData | null): ChecklistIte
       source: "pre-filled",
       prefillNote: "Franchise investment type was indicated in your case file.",
       required: true,
-      tabReference: "Tab B",
+      tabReference: "Tab K",
       warning: "The initial franchise fee payment is key evidence that funds are irrevocably committed. Include the invoice and your bank's confirmation of the wire or payment."
     });
     items.push({
@@ -330,7 +318,7 @@ export function generatePreAppChecklist(quizData: QuizData | null): ChecklistIte
       source: "pre-filled",
       prefillNote: "Franchise investment type was indicated in your case file.",
       required: true,
-      tabReference: "Tab B",
+      tabReference: "Tab K",
       warning: "Item 7 of the FDD is the officer's benchmark for whether your investment amount is consistent with what the franchisor discloses for this business. A copy of the relevant FDD pages must be included."
     });
   }
@@ -348,7 +336,7 @@ function getGenericChecklist(): ChecklistItem[] {
       source: "always",
       prefillNote: null,
       required: true,
-      tabReference: "Tab B"
+      tabReference: "Tab A"
     },
     {
       id: "photos",
@@ -366,7 +354,7 @@ function getGenericChecklist(): ChecklistItem[] {
       source: "always",
       prefillNote: null,
       required: true,
-      tabReference: "Tab B"
+      tabReference: "Tab A"
     },
     {
       id: "ds160",
@@ -411,7 +399,7 @@ function getGenericChecklist(): ChecklistItem[] {
       source: "always",
       prefillNote: null,
       required: true,
-      tabReference: "Tab B",
+      tabReference: "Tab E",
       warning: "Must show the full accumulation and movement of investment funds."
     },
     {
@@ -421,7 +409,7 @@ function getGenericChecklist(): ChecklistItem[] {
       source: "always",
       prefillNote: null,
       required: true,
-      tabReference: "Tab B",
+      tabReference: "Tab E",
       warning: "Officers trace every dollar. If funds moved through multiple accounts, include records for each leg."
     },
   ];
