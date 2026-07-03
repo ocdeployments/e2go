@@ -1,16 +1,10 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import type { CaseProfileResponse, CaseTheoryUI, DocumentExtractionUI } from "@/app/api/dashboard/case-profile/route";
+import type { CaseProfileResponse, CaseTheoryUI, DocumentExtractionUI, FamilyMemberCaseUI } from "@/app/api/dashboard/case-profile/route";
 import DocumentImportHub, { docTypeLabel } from "@/components/apply/DocumentImportHub";
-
-// ── Design tokens ──────────────────────────────────────────────────────────────
-const GOLD    = "#C9A84C";
-const CREAM   = "#f5f0e8";
-const GREEN   = "#5DCAA5";
-const CARD_BG = "#111007";
-const BORDER  = "rgba(201,168,76,0.13)";
-const INNER   = "rgba(201,168,76,0.07)";
+import ControlPanel from "@/components/casefile/ControlPanel";
+import { GOLD, CREAM, GREEN, CARD_BG, BORDER, INNER } from "@/components/casefile/tokens";
 
 // ── Field status ───────────────────────────────────────────────────────────────
 type Status = "have" | "module" | "needed" | "optional";
@@ -47,6 +41,9 @@ interface FieldDef {
   status: Status;
   note: string;
   href?: string;
+  questionKey?: string;
+  editable?: boolean;
+  placeholder?: string;
 }
 
 // ── Outcome vocabulary ─────────────────────────────────────────────────────────
@@ -168,13 +165,121 @@ function Dot({ status }: { status: Status }) {
 }
 
 // ── Field row ──────────────────────────────────────────────────────────────────
-function FieldRow({ label, value, status, note, href }: FieldDef) {
+function FieldRow({ label, value, status, note, href, questionKey, editable, placeholder, applicationId, onSaved }: FieldDef & { applicationId?: string | null; onSaved?: (questionKey: string, value: string) => void }) {
   const textColor: Record<Status, string> = {
     have:     CREAM,
     module:   "rgba(245,240,232,0.28)",
     needed:   "rgba(248,113,113,0.5)",
     optional: "rgba(245,240,232,0.2)",
   };
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [draft, setDraft] = useState(value ?? "");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => { setDraft(value ?? ""); }, [value]);
+
+  const canEdit = !!editable && !!questionKey && !!applicationId;
+
+  const handleSave = async () => {
+    if (!questionKey || !applicationId) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/answers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ application_id: applicationId, question_key: questionKey, answer_value: draft }),
+      });
+      if (!res.ok) throw new Error("save_failed");
+      onSaved?.(questionKey, draft);
+      setIsEditing(false);
+    } catch {
+      setError("Couldn't save — try again");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (canEdit && isEditing) {
+    return (
+      <div style={{
+        display: "flex",
+        alignItems: "flex-start",
+        gap: "10px",
+        padding: "7px 0",
+        borderBottom: `1px solid ${INNER}`,
+      }}>
+        <Dot status={status} />
+        <span style={{
+          fontSize: "11px",
+          fontFamily: "'DM Sans', sans-serif",
+          color: "rgba(245,240,232,0.38)",
+          minWidth: "148px",
+          flexShrink: 0,
+          lineHeight: 1.6,
+        }}>
+          {label}
+        </span>
+        <span style={{ flex: 1, display: "flex", alignItems: "center", gap: "8px" }}>
+          <input
+            autoFocus
+            value={draft}
+            placeholder={placeholder}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") handleSave(); if (e.key === "Escape") { setIsEditing(false); setDraft(value ?? ""); } }}
+            style={{
+              flex: 1,
+              minWidth: 0,
+              background: "rgba(255,255,255,0.04)",
+              border: `1px solid ${GOLD}`,
+              color: CREAM,
+              fontSize: "12px",
+              fontFamily: "'DM Sans', sans-serif",
+              padding: "5px 8px",
+              borderRadius: "3px",
+              outline: "none",
+            }}
+          />
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            style={{
+              fontSize: "10px",
+              fontFamily: "'DM Sans', sans-serif",
+              color: "#0a0a0a",
+              background: GOLD,
+              border: "none",
+              borderRadius: "3px",
+              padding: "5px 10px",
+              cursor: saving ? "default" : "pointer",
+              opacity: saving ? 0.6 : 1,
+            }}
+          >
+            {saving ? "…" : "Save"}
+          </button>
+          <button
+            onClick={() => { setIsEditing(false); setDraft(value ?? ""); setError(null); }}
+            style={{
+              fontSize: "10px",
+              fontFamily: "'DM Sans', sans-serif",
+              color: "rgba(245,240,232,0.5)",
+              background: "transparent",
+              border: `1px solid ${BORDER}`,
+              borderRadius: "3px",
+              padding: "5px 10px",
+              cursor: "pointer",
+            }}
+          >
+            Cancel
+          </button>
+          {error && <span style={{ fontSize: "10px", color: "#f87171" }}>{error}</span>}
+        </span>
+      </div>
+    );
+  }
+
   return (
     <div style={{
       display: "flex",
@@ -212,6 +317,24 @@ function FieldRow({ label, value, status, note, href }: FieldDef) {
             textDecoration: "none",
           }}>→</Link>
         )}
+        {canEdit && (
+          <button
+            onClick={() => setIsEditing(true)}
+            style={{
+              marginLeft: "8px",
+              color: "rgba(201,168,76,0.55)",
+              fontSize: "10px",
+              fontStyle: "normal",
+              background: "transparent",
+              border: "none",
+              cursor: "pointer",
+              textDecoration: "underline",
+              padding: 0,
+            }}
+          >
+            {status === "have" ? "edit" : "enter"}
+          </button>
+        )}
       </span>
       {status === "needed" && (
         <span style={{
@@ -232,7 +355,7 @@ function FieldRow({ label, value, status, note, href }: FieldDef) {
 }
 
 // ── Subsection ─────────────────────────────────────────────────────────────────
-function Sub({ title, fields }: { title: string; fields: FieldDef[] }) {
+function Sub({ title, fields, applicationId, onFieldSaved }: { title: string; fields: FieldDef[]; applicationId?: string | null; onFieldSaved?: (questionKey: string, value: string) => void }) {
   return (
     <div style={{ marginBottom: "20px" }}>
       <div style={{
@@ -248,7 +371,7 @@ function Sub({ title, fields }: { title: string; fields: FieldDef[] }) {
       }}>
         {title}
       </div>
-      {fields.map((f, i) => <FieldRow key={i} {...f} />)}
+      {fields.map((f, i) => <FieldRow key={i} {...f} applicationId={applicationId} onSaved={onFieldSaved} />)}
     </div>
   );
 }
@@ -398,8 +521,35 @@ const EXTRACTION_DESTINATIONS = [
   { label: "Interview Simulator",        detail: "Prep questions grounded in your actual case file" },
 ];
 
-function ExtractionTransparencyPanel({ documents }: { documents: DocumentExtractionUI[] }) {
+function ExtractionTransparencyPanel({ documents, compact = false }: { documents: DocumentExtractionUI[]; compact?: boolean }) {
   if (documents.length === 0) return null;
+  if (compact) {
+    return (
+      <div style={{ marginTop: "8px", marginBottom: "4px" }}>
+        {documents.map(doc => {
+          const status = EXTRACTION_STATUS_UI[doc.extractionStatus];
+          return (
+            <div key={doc.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px", padding: "6px 10px", background: "rgba(0,0,0,0.2)", border: `1px solid ${INNER}`, marginBottom: "4px" }}>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ fontSize: "10.5px", fontFamily: "'DM Sans', sans-serif", color: CREAM, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {doc.fileName}
+                </div>
+                <div style={{ fontSize: "9px", fontFamily: "'DM Sans', sans-serif", color: "rgba(245,240,232,0.4)", marginTop: "1px" }}>
+                  {docTypeLabel(doc.docType)}
+                  {doc.extractionStatus === "complete" && doc.fieldsTotal > 0 && (
+                    <span> &middot; {doc.fieldsTotal} field{doc.fieldsTotal !== 1 ? "s" : ""}</span>
+                  )}
+                </div>
+              </div>
+              <div style={{ fontSize: "8px", letterSpacing: "0.06em", textTransform: "uppercase", color: status.color, fontFamily: "'DM Sans', sans-serif", fontWeight: 600, flexShrink: 0 }}>
+                {status.label}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
   return (
     <div style={{ marginBottom: "28px", padding: "18px 20px", background: CARD_BG, border: `1px solid ${BORDER}` }}>
       <div style={{ fontSize: "8px", letterSpacing: "0.18em", textTransform: "uppercase", color: "rgba(201,168,76,0.4)", fontFamily: "'DM Sans', sans-serif", marginBottom: "12px" }}>
@@ -647,6 +797,7 @@ export default function CaseProfilePage() {
   const [nameSaving, setNameSaving]         = useState(false);
   const [nameError, setNameError]           = useState<string | null>(null);
   const [editingMemberId, setEditingMemberId]   = useState<string | null>(null);
+  const [expandedMemberDocs, setExpandedMemberDocs] = useState<Set<string>>(new Set());
   const [addingMemberType, setAddingMemberType] = useState<FamilyMemberUI["member_type"] | null>(null);
   const emptyMemberForm: MemberFormState = { first_name: "", middle_name: "", last_name: "", gender: "", date_of_birth: "", nationality: "", passport_number: "", role: "" };
   const [memberForm, setMemberForm]         = useState<MemberFormState>(emptyMemberForm);
@@ -697,6 +848,18 @@ export default function CaseProfilePage() {
     observerRef.current = observer;
     return () => observer.disconnect();
   }, [data]);
+
+  // ── Generic field save (case-profile inline editing) ──────────────────────────
+  const FIELD_KEY_TO_DATA_KEY: Record<string, keyof CaseProfileResponse> = {
+    "M3-A-03":            "dateOfBirth",
+    "M3-A-PASSPORT":      "passportNumber",
+    "M3-A-PASSPORT-EXP":  "passportExpiry",
+  };
+  function handleFieldSaved(questionKey: string, value: string) {
+    const dataKey = FIELD_KEY_TO_DATA_KEY[questionKey];
+    if (!dataKey) return;
+    setData(d => d ? { ...d, [dataKey]: value } : d);
+  }
 
   // ── Name save ────────────────────────────────────────────────────────────────
   async function handleSaveName() {
@@ -918,6 +1081,13 @@ export default function CaseProfilePage() {
     const genderLabel: Record<string, string> = { male: "Male", female: "Female", non_binary: "Non-binary", prefer_not_to_say: "Not disclosed" };
     const roleLabel: Record<string, string> = { "50/50": "50/50 equal", majority: "Majority investor", minority: "Minority investor", silent: "Silent partner" };
     const isEditing = editingMemberId === m.id;
+    const caseData: FamilyMemberCaseUI | undefined = data?.familyMembers?.find(fm => fm.id === m.id);
+    const showDocs = expandedMemberDocs.has(m.id);
+    const toggleShowDocs = () => setExpandedMemberDocs(prev => {
+      const next = new Set(prev);
+      if (next.has(m.id)) next.delete(m.id); else next.add(m.id);
+      return next;
+    });
     return (
       <div style={{ marginBottom: "4px" }}>
         <div style={{ display: "flex", alignItems: "flex-start", gap: "10px", padding: "9px 0", borderBottom: `1px solid ${INNER}` }}>
@@ -930,6 +1100,31 @@ export default function CaseProfilePage() {
               {m.nationality && <span style={{ fontSize: "10px", color: "rgba(245,240,232,0.38)", fontFamily: "'DM Sans', sans-serif" }}>{m.nationality}</span>}
               {m.role    && m.member_type === "co_investor" && <span style={{ fontSize: "10px", color: GOLD, fontFamily: "'DM Sans', sans-serif" }}>{roleLabel[m.role] ?? m.role}</span>}
             </div>
+            {caseData && (
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "5px", flexWrap: "wrap" }}>
+                <span style={{ fontSize: "9px", letterSpacing: "0.04em", color: caseData.answeredCount >= caseData.totalExpectedCount ? GREEN : "rgba(201,168,76,0.65)", fontFamily: "'DM Sans', sans-serif", fontWeight: 600 }}>
+                  {caseData.answeredCount}/{caseData.totalExpectedCount} fields
+                  {caseData.extractedAnswerCount > 0 && ` · ${caseData.extractedAnswerCount} extracted`}
+                </span>
+                {caseData.documents.length > 0 && (
+                  <button
+                    onClick={toggleShowDocs}
+                    style={{ fontSize: "9px", color: "rgba(245,240,232,0.4)", background: "transparent", border: "none", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", padding: 0, textDecoration: "underline" }}
+                  >
+                    {caseData.documents.length} document{caseData.documents.length !== 1 ? "s" : ""} {showDocs ? "▲" : "▼"}
+                  </button>
+                )}
+              </div>
+            )}
+            {caseData && showDocs && <ExtractionTransparencyPanel documents={caseData.documents} compact />}
+            {(m.member_type === "spouse" || m.member_type === "child") && (
+              <Link
+                href={`/apply/dependent/${m.id}`}
+                style={{ display: "inline-block", marginTop: "6px", fontSize: "9px", color: GOLD, fontFamily: "'DM Sans', sans-serif", textDecoration: "underline" }}
+              >
+                Complete {m.first_name || "their"} DS-160 details →
+              </Link>
+            )}
           </div>
           <div style={{ display: "flex", gap: "6px", flexShrink: 0 }}>
             <button onClick={() => openEditMember(m)} style={{ fontSize: "9px", color: "rgba(201,168,76,0.6)", background: "transparent", border: "none", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", padding: "2px 6px" }}>Edit</button>
@@ -980,58 +1175,75 @@ export default function CaseProfilePage() {
     },
     {
       label: "Date of Birth",
-      value: null,
-      status: "needed",
-      note: "Required on DS-160 visa application form — not yet collected",
+      value: data.dateOfBirth,
+      status: data.dateOfBirth ? "have" : (data.applicationId ? "needed" : "module"),
+      note: data.dateOfBirth
+        ? "Collected in Onboarding — Section 1"
+        : data.applicationId
+          ? "Required on DS-160 visa application form — enter it here"
+          : "Start onboarding to add your date of birth",
+      href: data.applicationId ? undefined : "/apply/story",
+      questionKey: "M3-A-03",
+      editable: true,
+      placeholder: "e.g. 1985-04-12",
     },
     {
       label: "Passport Number",
-      value: null,
-      status: "needed",
-      note: "Required for visa application — not yet collected",
+      value: data.passportNumber,
+      status: data.passportNumber ? "have" : (data.applicationId ? "needed" : "module"),
+      note: data.passportNumber
+        ? "Extracted from uploaded passport — edit if incorrect"
+        : data.applicationId
+          ? "Required for visa application — upload your passport, or enter it here"
+          : "Start onboarding, then upload your passport or enter it here",
+      href: data.applicationId ? undefined : "/apply/story",
+      questionKey: "M3-A-PASSPORT",
+      editable: true,
+      placeholder: "Passport number",
     },
     {
       label: "Passport Expiry",
-      value: null,
-      status: "needed",
-      note: "Must be valid at interview date — not yet collected",
+      value: data.passportExpiry,
+      status: data.passportExpiry ? "have" : (data.applicationId ? "needed" : "module"),
+      note: data.passportExpiry
+        ? "Extracted from uploaded passport — edit if incorrect"
+        : data.applicationId
+          ? "Must be valid at interview date — upload your passport, or enter it here"
+          : "Start onboarding, then upload your passport or enter it here",
+      href: data.applicationId ? undefined : "/apply/story",
+      questionKey: "M3-A-PASSPORT-EXP",
+      editable: true,
+      placeholder: "e.g. 2031-06-30",
     },
   ];
 
   const backgroundFields: FieldDef[] = [
     {
       label: "Education Level",
-      value: null,
-      status: "module",
-      note: "Collects from Onboarding — Section 2",
-      href: "/apply/story",
+      value: data.educationLevel,
+      status: data.educationLevel ? "have" : "module",
+      note: "Collects from Onboarding — Qualifications section",
+      href: "/apply/qualifications",
     },
     {
       label: "Field of Study",
-      value: null,
-      status: "module",
-      note: "Collects from Onboarding — Section 2",
-      href: "/apply/story",
+      value: data.fieldOfStudy,
+      status: data.fieldOfStudy ? "have" : "module",
+      note: "Collects from Onboarding — Qualifications section",
+      href: "/apply/qualifications",
     },
     {
       label: "Years of Relevant Experience",
-      value: null,
-      status: "module",
-      note: "Collects from Onboarding — work history section",
-      href: "/apply/story",
+      value: data.yearsExperience,
+      status: data.yearsExperience ? "have" : "module",
+      note: "Collects from Onboarding — Qualifications section",
+      href: "/apply/qualifications",
     },
     {
       label: "Prior U.S. Visa History",
-      value: null,
-      status: "module",
+      value: data.priorVisaHistory,
+      status: data.priorVisaHistory ? "have" : "module",
       note: "Collects from Onboarding — travel history",
-      href: "/apply/story",
-    },
-    {
-      label: "Prior Visa Denials",
-      value: null,
-      status: "module",
-      note: "Collects from Onboarding — consulate asks this at interview",
       href: "/apply/story",
     },
     {
@@ -1055,20 +1267,6 @@ export default function CaseProfilePage() {
       value: quizAnswers["Q0-dependents"] ?? null,
       status: quizAnswers["Q0-dependents"] ? "have" : "module",
       note: "Collects from Onboarding — affects derivative E-2 applications",
-      href: "/apply/story",
-    },
-    {
-      label: "Current Country of Residence",
-      value: null,
-      status: "module",
-      note: "Collects from Onboarding — needed for consulate assignment",
-      href: "/apply/story",
-    },
-    {
-      label: "Intended U.S. State / City",
-      value: null,
-      status: "module",
-      note: "Collects from Onboarding — shows intent to direct business",
       href: "/apply/story",
     },
   ];
@@ -1207,7 +1405,7 @@ export default function CaseProfilePage() {
       value: null,
       status: "module",
       note: "Collects from Market Analysis — territory viability analysis",
-      href: "/market-analysis",
+      href: data.applicationId ? `/market-analysis?applicationId=${data.applicationId}` : "/market-analysis",
     },
     {
       label: "Franchise Agreement Date",
@@ -1257,7 +1455,7 @@ export default function CaseProfilePage() {
       value: null,
       status: "module",
       note: "Collects from Market Analysis — ZIP / city / metro area",
-      href: "/market-analysis",
+      href: data.applicationId ? `/market-analysis?applicationId=${data.applicationId}` : "/market-analysis",
     },
     {
       label: "Revenue Projections (Y1–Y3)",
@@ -1495,35 +1693,35 @@ export default function CaseProfilePage() {
       value: data.marketScore != null ? `${data.marketScore}/100 — ${data.marketRating ?? ""}`.trim() : null,
       status: data.marketScore != null ? "have" : "module",
       note: "Overall viability of your target market for E-2 investment purposes",
-      href: "/market-analysis",
+      href: data.applicationId ? `/market-analysis?applicationId=${data.applicationId}` : "/market-analysis",
     },
     {
       label: "Target ZIP / State",
       value: data.marketZip && data.marketState ? `${data.marketZip}, ${data.marketState}` : (data.marketZip ?? null),
       status: data.marketZip != null ? "have" : "module",
       note: "Geographic target area for your business location",
-      href: "/market-analysis",
+      href: data.applicationId ? `/market-analysis?applicationId=${data.applicationId}` : "/market-analysis",
     },
     {
       label: "Competitor Count (nearby)",
       value: data.marketCompetitorCount != null ? `${data.marketCompetitorCount} in area` : null,
       status: data.marketCompetitorCount != null ? "have" : "module",
       note: "Supports non-marginality argument — number of comparable businesses in your target zone",
-      href: "/market-analysis",
+      href: data.applicationId ? `/market-analysis?applicationId=${data.applicationId}` : "/market-analysis",
     },
     {
       label: "Market Verdict",
       value: marketHasData ? (data.marketVerdict ?? "Analysis complete") : null,
       status: marketHasData ? "have" : "module",
       note: "Plain-language summary of territory viability from the analysis engine",
-      href: "/market-analysis",
+      href: data.applicationId ? `/market-analysis?applicationId=${data.applicationId}` : "/market-analysis",
     },
     {
       label: "Industry Benchmark",
       value: null,
       status: "module",
       note: "Investment comparison against comparable businesses in your market",
-      href: "/market-analysis",
+      href: data.applicationId ? `/market-analysis?applicationId=${data.applicationId}` : "/market-analysis",
     },
     {
       label: "Business Valuation Benchmark",
@@ -1818,6 +2016,16 @@ export default function CaseProfilePage() {
           )}
         </div>
 
+        {/* ── Quick Access — control panel for the whole app ───────────────── */}
+        <div style={{ marginBottom: "28px" }}>
+          <ControlPanel
+            applicationId={data.applicationId}
+            isFranchise={isFranchise}
+            isPartnership={isPartnership}
+            marketAnalysisHref={data.applicationId ? `/market-analysis?applicationId=${data.applicationId}` : "/market-analysis"}
+          />
+        </div>
+
         {/* ── Import from a document — prominent fast-fill ─────────────────── */}
         <div style={{ marginBottom: "28px" }}>
           <DocumentImportHub
@@ -1863,9 +2071,9 @@ export default function CaseProfilePage() {
               </div>
               {NameEditForm}
 
-              <Sub title="Identity & Nationality" fields={identityFields} />
-              <Sub title="Professional Background" fields={backgroundFields} />
-              <Sub title="Business Path & U.S. Intent" fields={intentFields} />
+              <Sub title="Identity & Nationality" fields={identityFields} applicationId={data.applicationId} onFieldSaved={handleFieldSaved} />
+              <Sub title="Professional Background" fields={backgroundFields} applicationId={data.applicationId} onFieldSaved={handleFieldSaved} />
+              <Sub title="Business Path & U.S. Intent" fields={intentFields} applicationId={data.applicationId} onFieldSaved={handleFieldSaved} />
 
               {/* ── Family Members ─────────────────────────────────────── */}
               <div style={{ marginBottom: "20px" }}>
@@ -2013,8 +2221,8 @@ export default function CaseProfilePage() {
               description="AI simulator sessions, coaching notes, and personalised interview dossier"
               haveCount={s6Have}
               totalCount={s6Total}
-              ctaLabel="Open Simulator"
-              ctaHref="/simulator"
+              ctaLabel="Open Interview Dossier"
+              ctaHref="/simulator/prep-kit"
             >
               {data.simCoachingNotes && (
                 <div style={{ padding: "12px 14px", background: "rgba(0,0,0,0.3)", border: `1px solid ${INNER}`, marginBottom: "16px" }}>

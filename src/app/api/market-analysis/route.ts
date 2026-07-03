@@ -4,6 +4,37 @@ import { analyseTeritoryForBusiness } from '@/lib/fdd-territory-engine';
 import type { TerritoryAnalysis } from '@/lib/fdd-territory-engine';
 import { resolvePrimaryApplicationId } from '@/lib/resolve-application';
 
+export async function GET(req: NextRequest) {
+  const supabase = await createSupabaseServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const applicationId = req.nextUrl.searchParams.get('applicationId');
+  if (!applicationId) {
+    return NextResponse.json({ error: 'applicationId is required' }, { status: 400 });
+  }
+
+  const { data: rows } = await supabase
+    .from('answers')
+    .select('question_key, answer_value')
+    .eq('application_id', applicationId)
+    .in('question_key', ['QMA-BUSINESS-NAME', 'QMA-BUSINESS-CATEGORY', 'QMA-ZIP', 'QMA-STATE']);
+
+  const byKey = new Map((rows ?? []).map(r => [r.question_key, r.answer_value]));
+  const businessName = byKey.get('QMA-BUSINESS-NAME') ?? null;
+  const businessCategory = byKey.get('QMA-BUSINESS-CATEGORY') ?? null;
+  const zip = byKey.get('QMA-ZIP') ?? null;
+  const state = byKey.get('QMA-STATE') ?? null;
+
+  if (!businessName || !businessCategory || !zip || !state) {
+    return NextResponse.json({ saved: false });
+  }
+
+  return NextResponse.json({ saved: true, businessName, businessCategory, zip, state });
+}
+
 const VALID_CATEGORIES = [
   'qsr',
   'home_services',
@@ -21,6 +52,8 @@ async function writeMarketScoreBack(
   supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
   applicationId: string,
   analysis: TerritoryAnalysis,
+  businessName: string,
+  businessCategory: string,
 ): Promise<void> {
   // Keys use QMA- prefix (Q-series, market-analysis source).
   // source/user_id columns omitted — may not exist until migration 004 is applied.
@@ -33,6 +66,8 @@ async function writeMarketScoreBack(
     { key: 'QMA-COMPETITOR-COUNT',   value: String(analysis.competitors.nearby_count ?? '') },
     { key: 'QMA-POP-PER-COMPETITOR', value: String(analysis.competitors.population_per_competitor ?? '') },
     { key: 'QMA-VERDICT',            value: analysis.narrative.VERDICT },
+    { key: 'QMA-BUSINESS-NAME',      value: businessName },
+    { key: 'QMA-BUSINESS-CATEGORY',  value: businessCategory },
   ].filter(r => r.value !== '' && r.value !== 'null' && r.value !== 'undefined');
 
   await supabase.from('answers').upsert(
@@ -42,7 +77,7 @@ async function writeMarketScoreBack(
       answer_value: r.value,
       answered_at: new Date().toISOString(),
     })),
-    { onConflict: 'application_id,question_key' },
+    { onConflict: 'application_id,question_key,family_member_id' },
   );
 }
 
@@ -102,7 +137,7 @@ export async function POST(req: NextRequest) {
           appId = await resolvePrimaryApplicationId(supabase, user.id);
         }
         if (appId) {
-          await writeMarketScoreBack(supabase, appId, analysis);
+          await writeMarketScoreBack(supabase, appId, analysis, businessName.trim(), businessCategory);
         }
       } catch (writeErr) {
         // Non-blocking — log but never fail the response

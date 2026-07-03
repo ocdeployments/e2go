@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useCallback, useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import type { TerritoryAnalysis } from '@/lib/fdd-territory-engine';
 import GenerationProgress from '@/components/ui/GenerationProgress';
 
@@ -171,12 +172,24 @@ function parseZips(raw: string): string[] {
 }
 
 export default function MarketAnalysisPage() {
+  return (
+    <Suspense fallback={null}>
+      <MarketAnalysisPageInner />
+    </Suspense>
+  );
+}
+
+function MarketAnalysisPageInner() {
+  const searchParams = useSearchParams();
+  const applicationId = searchParams.get('applicationId');
+
   const [form, setForm] = useState<FormState>(INITIAL_FORM);
   const [analysis, setAnalysis] = useState<TerritoryAnalysis | null>(null);
   const [territoryZips, setTerritoryZips] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState<Partial<FormState>>({});
+  const [prefillChecked, setPrefillChecked] = useState(false);
 
   function validate(): boolean {
     const errs: Partial<FormState> = {};
@@ -197,14 +210,12 @@ export default function MarketAnalysisPage() {
     return Object.keys(errs).length === 0;
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!validate()) return;
+  const runAnalysis = useCallback(async (values: FormState, scroll: boolean) => {
     setLoading(true);
     setError('');
     setAnalysis(null);
 
-    const zips = parseZips(form.zip);
+    const zips = parseZips(values.zip);
     setTerritoryZips(zips);
 
     try {
@@ -213,24 +224,58 @@ export default function MarketAnalysisPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          businessName:     form.businessName.trim(),
-          businessCategory: form.businessCategory,
+          businessName:     values.businessName.trim(),
+          businessCategory: values.businessCategory,
           zip:              zips[0],
-          state:            form.state,
+          state:            values.state,
+          applicationId:    applicationId ?? undefined,
         }),
       });
       const json = await res.json() as TerritoryAnalysis & { error?: string };
       if (!res.ok) throw new Error(json.error ?? 'Analysis failed');
       setAnalysis(json);
-      setTimeout(() => {
-        document.getElementById('results')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 100);
+      if (scroll) {
+        setTimeout(() => {
+          document.getElementById('results')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
     } finally {
       setLoading(false);
     }
+  }, [applicationId]);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!validate()) return;
+    void runAnalysis(form, true);
   }
+
+  // Prefill from a saved case-profile analysis and re-run it automatically so
+  // the user sees their existing results instead of a blank form.
+  useEffect(() => {
+    if (!applicationId || prefillChecked) return;
+    setPrefillChecked(true);
+    (async () => {
+      try {
+        const res = await fetch(`/api/market-analysis?applicationId=${encodeURIComponent(applicationId)}`);
+        const json = await res.json() as { saved: boolean; businessName?: string; businessCategory?: string; zip?: string; state?: string };
+        if (json.saved && json.businessName && json.businessCategory && json.zip && json.state) {
+          const prefilled: FormState = {
+            businessName: json.businessName,
+            businessCategory: json.businessCategory,
+            zip: json.zip,
+            state: json.state,
+          };
+          setForm(prefilled);
+          void runAnalysis(prefilled, false);
+        }
+      } catch {
+        // No saved analysis to prefill — leave the form blank.
+      }
+    })();
+  }, [applicationId, prefillChecked, runAnalysis]);
 
   function handleChange(field: keyof FormState, value: string) {
     setForm(prev => ({ ...prev, [field]: value }));
