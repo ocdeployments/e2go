@@ -5,6 +5,8 @@ import { isKillSwitchEnabled } from '@/lib/kill-switch';
 import { callLLMWithMeta } from '@/lib/llm-client';
 import { scoreCase } from '@/lib/gap-analysis-engine';
 import { rankApplications } from '@/lib/resolve-application';
+import { enrichCategory, runSemanticEval } from '@/lib/gap-analysis-enrichment';
+import { uploadedDocTypeLabel, summarizeExtractedJson } from '@/lib/uploaded-doc-labels';
 
 // UQ question text (canonical labels — not session-randomized, for dossier)
 const UQ_QUESTIONS: Record<string, string> = {
@@ -90,8 +92,9 @@ export async function POST(request: NextRequest) {
     caseProfileRes,
     answersRes,
     fddRes,
-    simRes,
+    simSessionsRes,
     caseTheoryRes,
+    uploadedDocsRes,
   ] = await Promise.all([
     supabase
       .from('quiz_sessions')
@@ -116,14 +119,15 @@ export async function POST(request: NextRequest) {
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle(),
+    // Last 5 completed sessions (not just the latest) so the dossier can show
+    // a trend across retakes rather than a single snapshot.
     supabase
       .from('simulator_sessions')
       .select('readiness_indicator, coaching_notes, strong_count, needs_work_count, completed_at')
       .eq('user_id', user.id)
       .not('completed_at', 'is', null)
       .order('completed_at', { ascending: false })
-      .limit(1)
-      .maybeSingle(),
+      .limit(5),
     // CIC-3.3 — the CPU's Case Theory: dimension verdicts + directives. The CPU
     // emits directives tagged engine='simulator_prep' specifically to steer this
     // dossier toward the dimensions its reasoning found weakest.
@@ -132,6 +136,14 @@ export async function POST(request: NextRequest) {
       .select('narrative, numbers_strategy, dimension_verdicts, directives')
       .eq('application_id', primaryApp.id)
       .maybeSingle(),
+    // Raw uploaded-document extraction data — previously fetched by the FDD
+    // analysis lookup only; the client's other filed evidence (resume, bank
+    // records, business plan, etc.) was never surfaced to this dossier.
+    supabase
+      .from('uploaded_documents')
+      .select('doc_type, extracted_json')
+      .eq('application_id', primaryApp.id)
+      .eq('extraction_status', 'complete'),
   ]);
 
   const quiz = quizRes.data as {
@@ -168,13 +180,32 @@ export async function POST(request: NextRequest) {
     final_report?: string | null;
   } | null;
 
-  const simSession = simRes.data as {
+  const simSessions = (simSessionsRes.data ?? []) as {
     readiness_indicator?: string | null;
     coaching_notes?: { top3NextSession?: string[]; summary?: string } | null;
     strong_count?: number | null;
     needs_work_count?: number | null;
     completed_at?: string | null;
-  } | null;
+  }[];
+  const simSession = simSessions[0] ?? null;
+
+  // Trend across retakes — oldest to newest so the LLM can narrate improvement
+  // (or regression) rather than only ever seeing the single latest snapshot.
+  const simulatorTrend = [...simSessions].reverse().map(s => ({
+    completedAt: s.completed_at ?? null,
+    readiness: s.readiness_indicator ?? null,
+    strongCount: s.strong_count ?? null,
+    needsWorkCount: s.needs_work_count ?? null,
+  }));
+
+  const uploadedDocs = (uploadedDocsRes.data ?? []) as {
+    doc_type: string;
+    extracted_json: Record<string, unknown> | null;
+  }[];
+  const documentsOnFile = uploadedDocs.map(d => ({
+    type: uploadedDocTypeLabel(d.doc_type),
+    summary: summarizeExtractedJson(d.extracted_json, 160) || null,
+  }));
 
   // CIC-3.3 — Case Theory overlay. The CPU's per-dimension verdicts tell us which
   // dimensions its reasoning could NOT yet prove; its directives are the concrete,
@@ -223,6 +254,31 @@ export async function POST(request: NextRequest) {
       : undefined,
     caseProfile?.archetype ?? null
   );
+
+  // Gap Analysis's LLM-enriched narrative + semantic field ratings — the same
+  // enrichment the /gap-analysis page requests via /api/gap-analysis/run,
+  // reused here (via the shared lib) instead of only the bare deterministic
+  // score this dossier previously re-derived.
+  const weakCategories = gapResult.categories.filter(c => c.score < 70);
+  const [enrichmentResults, semanticFieldRatings] = await Promise.all([
+    weakCategories.length > 0
+      ? Promise.all(weakCategories.map(c => enrichCategory({
+          id: c.id,
+          name: c.name,
+          gaps: c.gaps,
+          evidence: c.evidence,
+          score: c.score,
+          businessName: primaryApp.business_name ?? undefined,
+          businessCategory: primaryApp.business_category ?? undefined,
+          operationalStatus: primaryApp.operational_status ?? undefined,
+        })))
+      : Promise.resolve([]),
+    runSemanticEval(primaryApp.id, primaryApp.business_name ?? null),
+  ]);
+  const gapEnrichments: Record<string, string | null> = {};
+  for (const { id, enrichment } of enrichmentResults) {
+    gapEnrichments[id] = enrichment;
+  }
 
   // Determine which WP probes apply — legacy score triggers OR a CPU weak-dimension
   // directive (CIC-3.3) forcing the probe in.
@@ -281,12 +337,33 @@ export async function POST(request: NextRequest) {
     fddRecommendation: am.get('QA-FDD-RECOMMENDATION') ?? null,
     fddVerdict: am.get('QA-FDD-VERDICT') ?? null,
 
-    // Market data answers
+    // Market data answers — full QMA-* set (previously only 5 of 10 fields were read)
     qmaScore: am.get('QMA-SCORE') ?? null,
     qmaRating: am.get('QMA-RATING') ?? null,
     qmaPopulation: am.get('QMA-POPULATION') ?? null,
     qmaCompetitorCount: am.get('QMA-COMPETITOR-COUNT') ?? null,
     qmaVerdict: am.get('QMA-VERDICT') ?? null,
+    qmaZip: am.get('QMA-ZIP') ?? null,
+    qmaState: am.get('QMA-STATE') ?? null,
+    qmaBusinessName: am.get('QMA-BUSINESS-NAME') ?? null,
+    qmaBusinessCategory: am.get('QMA-BUSINESS-CATEGORY') ?? null,
+    qmaPopPerCompetitor: am.get('QMA-POP-PER-COMPETITOR') ?? null,
+
+    // Uploaded-document extraction data — the client's filed evidence
+    // (resume, bank/investment records, business plan, FDD, etc.), not just
+    // the FDD analysis row this dossier previously read in isolation.
+    documentsOnFile,
+
+    // Gap Analysis's LLM-enriched narrative for weak categories, and the
+    // semantic ratings for the 3 fields officers scrutinise most — the same
+    // enrichment surfaced on the /gap-analysis page, not re-derived here.
+    gapCategoryEnrichments: gapEnrichments,
+    semanticFieldRatings,
+
+    // Multi-session simulator trend (oldest to newest) — previously only the
+    // single latest session was visible, so no improvement/regression story
+    // could be told across retakes.
+    simulatorTrend,
 
     // Gap analysis pre-computed
     overallGapScore: gapResult.overallScore,
@@ -402,8 +479,8 @@ Return ONLY valid JSON matching this structure:
     "keyDates": [
       { "event": "...", "date": "..." }
     ],
-    "simulatorFeedback": "If simulator sessions exist: top coaching notes to revisit. Otherwise: 'No simulator sessions recorded — consider a practice run before your interview.'",
-    "documentsToCarry": "List the physical documents this applicant should bring based on application type and family configuration",
+    "simulatorFeedback": "If simulatorTrend has entries: narrate the trend across sessions (improving/steady/regressing on readiness and needs-work count), leading with the most recent. Otherwise: 'No simulator sessions recorded — consider a practice run before your interview.'",
+    "documentsToCarry": "List the physical documents this applicant should bring, grounded in documentsOnFile (what's actually been uploaded and extracted) plus what's still missing for their application type and family configuration",
     "whatMayHaveChanged": "Flag specific things that commonly change between filing and interview that the officer may ask about"
   },
 
@@ -437,6 +514,9 @@ Important rules:
 - Section 7 must cover all 9 universal questions plus any applicable WP probes.
 - Answer frameworks must reference real case details (business name, investment amount, archetype, etc.).
 - CASE-INTELLIGENCE PRIORITY (cpuWeakDimensions / cpuPriorityDirectives): these are the dimensions the case-intelligence reasoning could NOT yet prove and its specific coaching instructions for this client. Lead section 3 (risk register) and section 6 (revision focus) with these dimensions, and weave each cpuPriorityDirective's instruction into the relevant answer framework in section 7. These are the highest-leverage things this client must shore up before the interview — do not bury them.
+- gapCategoryEnrichments / semanticFieldRatings: this is the same officer-facing narrative and field-level rating (strong/adequate/weak/not_filed) shown on the client's Gap Analysis page for their weakest categories and 3 most-scrutinised fields (revenue projection basis, management activities, source of funds). Ground "yourPosition" and "whatToSay" in section 3, and the answer frameworks in section 7 for those same topics, in this narrative rather than re-deriving generic advice.
+- documentsOnFile: the client's actual uploaded and extracted evidence. Use it in section4/section6 to state what's already on file (don't ask them to gather something they've already uploaded) and flag genuinely missing documents.
+- simulatorTrend: an array of past sessions oldest-to-newest (empty if none). Use it to ground section6's simulatorFeedback in an honest trajectory, not just the latest score.
 - Return only the JSON object — no markdown fences, no explanation.`;
 
   // Call LLM with 120s timeout
