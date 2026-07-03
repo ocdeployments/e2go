@@ -1,6 +1,29 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** July 3, 2026 — Session 119: **spec files recovered, WS4 closed out, WS7 FDD Comparison verdict shipped.** `agent-prompt-part1-engine-and-package.md` / `agent-prompt-part2-intelligence-and-content.md` had gone missing from disk (untracked, never committed) partway through Session 118; owner re-supplied the complete verbatim text and both files are now rewritten to disk, byte-verified against the source paste in the session transcript. Per owner instruction to prioritize WS4/7/8: WS4 (all 23 directives) is now closed out; WS7 audit found FDD Comparison's server-side profile-match persistence and payback/survival-rate computation were already done in an earlier session (spec was stale on this point) — added the one genuinely missing piece, the weighted ranked verdict. Next: continue WS7's remaining 10 analyses, then WS8 golden-case verification.
+**Last Updated:** July 3, 2026 — Session 119c: **WS7 Renewal Package promise-vs-delivery reconciliation shipped.** Per owner instruction to prioritize WS4/7/8: WS4 closed out (Session 119), FDD Comparison verdict shipped (Session 119b), now Renewal Package's promise-vs-delivery reconciliation (spec §11 fix #2 of 5) is built and wired into all three renewal documents. Next: continue WS7's remaining analyses, then WS8 golden-case verification.
+
+---
+
+## Session 119c — WS7: Renewal Package promise-vs-delivery reconciliation (July 3, 2026)
+
+**Branch:** dev. Build clean, `tsc --noEmit` clean, 131/131 tests pass (8 new).
+
+### Context
+Spec (WS7, §11) scores the Renewal Package at 5.5 and lists 5 fixes: (1) evidence cross-check, (2) promise-vs-delivery reconciliation, (3) renewal-specific gap analysis, (4) expanded consulate handling, (5) expiry-date-aware checklist. Audited `src/app/api/renewal/generate/route.ts` and `src/app/renewal/intake/page.tsx` before writing code: Template 6 already lays projected figures next to self-reported actuals in a table, but never states the officer-facing conclusion in words, and the cover letter / BP update prompts only used coarse `profitLabel`/`hiringLabel` buckets rather than real figures — this is fix #2, and it was genuinely open. Fixes #1, #3, #4, #5 are confirmed BLOCKED, not built: `renewal/intake/page.tsx`'s RQ-01 through RQ-15 collect no consulate name, visa-expiry date, or document-upload fields, so none of the other four can be built without either fabricating data or adding new intake/upload infrastructure — a product scope decision for the owner, same status as WS4's D5/D6/D10.
+
+### Built
+- **`src/lib/renewal-reconciliation.ts`** (new) — `computeRenewalReconciliation(projections, answers)` deterministically compares each year's projected revenue (`M3-I-PROJECTIONS`) against that year's self-reported actual (`RQ-01-Y{n}`), and the original Year 1 projected headcount against current full-time headcount (`RQ-02`), producing a plain-English `summary` string plus structured per-year variance data. Ground rule (same as `case-financials.ts`): a year without both projected and actual figures on file is omitted from the narrative, not guessed at — `variancePct`/`narrative` stay `null`.
+- Wired into `src/app/api/renewal/generate/route.ts`: `buildTemplate6`, `generateCoverLetter`, and `generateBPUpdate` now all accept the computed `reconciliationSummary` and cite it — Template 6 appends a "PROMISE VS. DELIVERY" section, and both LLM prompts are instructed to cite the given figures explicitly and not invent others. The `POST` handler computes `computeRenewalReconciliation()` once and passes `.summary` to all three; the full `reconciliation` object is also stored on `documents.reconciliation` for potential future UI display.
+- 8 unit tests in `src/lib/__tests__/renewal-reconciliation.test.ts`: per-year variance math, exceeded/met/short employee verdicts, insufficient-data fallback, currency-string parsing (`$`/commas), zero-projected-revenue edge case, empty-projections edge case.
+
+### Verified
+`npm run build` clean, `tsc --noEmit` clean, `npx jest --silent` 131/131 pass. Not verified end-to-end in the browser — this is a backend generation route (LLM calls), and exercising it requires a completed renewal intake with real projections/actuals on a test account, which none of the 3 seeded QA accounts currently have.
+
+### Next
+WS7 remaining: Gap Analysis (8.5), Interview Prep Kit (8.0), Coaching Report (7.5), FDD Final Report (7.0), FDD Extraction (7.0), FDD E-2 Scoring (7.0), FDD Questions (6.5), Territory/Market Analysis (6.5/6.0). Then WS8 golden-case verification. Renewal Package fixes #1/#3/#4/#5 remain blocked pending new intake fields (consulate, visa-expiry date) and upload infrastructure — flag to owner as a scope decision.
+
+### Dev server
+Not started this session — no browser-observable UI changed (backend route + lib only).
 
 ---
 
