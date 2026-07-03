@@ -1,6 +1,34 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** July 3, 2026 — Session 119c: **WS7 Renewal Package promise-vs-delivery reconciliation shipped.** Per owner instruction to prioritize WS4/7/8: WS4 closed out (Session 119), FDD Comparison verdict shipped (Session 119b), now Renewal Package's promise-vs-delivery reconciliation (spec §11 fix #2 of 5) is built and wired into all three renewal documents. Next: continue WS7's remaining analyses, then WS8 golden-case verification.
+**Last Updated:** July 3, 2026 — Session 119d: **WS7 Gap Analysis partnership blind spot fixed.** Per owner instruction to prioritize WS4/7/8: WS4 closed out (Session 119), FDD Comparison verdict shipped (Session 119b), Renewal Package reconciliation shipped (Session 119c), now Gap Analysis (the WS7 "crown jewel," spec-scored 8.5) no longer scores partnership cases as if Investor 2 doesn't exist. Next: continue WS7's remaining analyses, then WS8 golden-case verification.
+
+---
+
+## Session 119d — WS7: Gap Analysis partnership blind spot (July 3, 2026)
+
+**Branch:** dev. Build clean, `tsc --noEmit` clean, 135/135 tests pass (4 new).
+
+### Context
+Spec (WS7, §11) lists Gap Analysis's first fix as: "fix the partnership blind spot (WS5.2) ... Gap Analysis filters `.is('family_member_id', null)`." Traced the actual mechanism before writing code: partner-2 answers (`P2-SOF`, `P2-ROLE`, `P2-QUALS`, etc., saved via `api/partner2/intake/route.ts`) are stored with `family_member_id` NULL, same as the principal's — so that filter does not literally exclude them from the fetched answer rows in `gap-analysis/page.tsx`. The real bug is one level deeper: `scoreCase()` / `scoreCategory()` in `gap-analysis-engine.ts` never look at any `P2-*` key when scoring `source_of_funds` or `management_role` — so a partnership case with a fully-documented principal and a completely blank Investor 2 scores identical to a fully-documented solo case. Per spec §5.1.3 ("each investor stands alone... one partner's weakness doesn't average out"), that's exactly backwards — it's false confidence on the single most consequential partnership failure mode.
+
+### Built
+- **`gap-analysis-engine.ts`** — `scoreCase()` and `scoreCategory()` now accept an `isPartnership` flag. When true: `source_of_funds` checks `P2-SOF` and docks the category 20 points with an explicit gap ("Investor 2's source of funds narrative has not been provided — partnership packages require an independent showing for each investor") and a remediation action if missing; `management_role` checks `P2-ROLE`/`P2-QUALS` the same way ("neither partner has numerical control, so each must independently show develop-and-direct"). Both categories reward the partner data as evidence once present, mirroring how the principal's own answers are already scored.
+- **`gap-analysis/page.tsx`** — added a `payments` query (`payment_type = 'complete_partnership', status = 'completed'`) alongside the existing parallel data-fetch, stored as `isPartnership` state, and threaded into both `scoreCase()` call sites (initial load and the live-rescore effect that runs as the user fills in answers).
+- 4 unit tests in `src/lib/__tests__/gap-analysis-engine.partnership.test.ts`: solo cases unaffected, partnership cases flag missing P2-SOF/P2-ROLE, partnership score is strictly lower than an identical solo case when partner data is missing, and the gap clears once P2-SOF/P2-ROLE/P2-QUALS are filled in.
+
+### Verified
+`npm run build` clean, `tsc --noEmit` clean, `npx jest --silent` 135/135 pass. Not verified end-to-end in the browser — requires a live `complete_partnership` payment + P2-* intake on a test account, which none of the 3 seeded QA accounts currently have.
+
+### Deferred (still open from the spec's Gap Analysis item)
+- Surfacing D-code sourcing in the UI ("derived from documented denial patterns at [category]") — currently only in engine comments, invisible to users.
+- Extending the LLM critical-field review (`gap-analysis/run/route.ts`'s `SEMANTIC_FIELDS`) beyond 3 fields to the top-N weakest per case, and feeding semantic evaluation back into category scores rather than sitting alongside them.
+- The `investment_amount` category (proportionality/marginality doubling per spec §5.1.4 — "one business now supports two investor households") was left unchanged; marginality itself isn't scored in this engine (it lives in `case_briefs.marginality_score`, computed elsewhere), so a partnership-aware marginality check belongs with the WS4 D15/D16 waterfall work, not here.
+
+### Next
+WS7 remaining: Interview Prep Kit (8.0), Coaching Report (7.5), FDD Final Report (7.0), FDD Extraction (7.0), FDD E-2 Scoring (7.0), FDD Questions (6.5), Territory/Market Analysis (6.5/6.0). Then WS8 golden-case verification.
+
+### Dev server
+Not started this session — no browser-observable UI rendering changed (scoring logic + a background data query only).
 
 ---
 
