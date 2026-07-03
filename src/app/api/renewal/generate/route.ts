@@ -4,6 +4,7 @@ import { createServiceClient } from '@/lib/supabase-service';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { isKillSwitchEnabled } from '@/lib/kill-switch';
 import { callLLM } from '@/lib/llm-client';
+import { computeRenewalReconciliation } from '@/lib/renewal-reconciliation';
 
 // POST /api/renewal/generate
 // Generates the renewal document package (cover letter, BP update, Template 6, checklist)
@@ -30,7 +31,7 @@ interface RenewalAnswers {
   [key: string]: string | undefined;
 }
 
-function buildTemplate6(answers: RenewalAnswers, projections: ProjectionRow[]): string {
+function buildTemplate6(answers: RenewalAnswers, projections: ProjectionRow[], reconciliationSummary: string): string {
   const years = projections.length > 0 ? projections : [
     { year: 1, revenue: '', netIncome: '', employees: '' },
     { year: 2, revenue: '', netIncome: '', employees: '' },
@@ -65,7 +66,10 @@ CURRENT STAFFING (at time of renewal)
   Part-time U.S. employees: ${ptNow}
 
 Note: Projected figures are from the original E-2 application business plan.
-Actual figures are self-reported by the applicant for this renewal cycle.`;
+Actual figures are self-reported by the applicant for this renewal cycle.
+
+PROMISE VS. DELIVERY
+${reconciliationSummary}`;
 }
 
 function buildChecklist(path: string): string {
@@ -134,7 +138,7 @@ TIPS
   • Renewal interview is typically shorter than original — focus on performance data`;
 }
 
-async function generateCoverLetter(answers: RenewalAnswers, businessName: string, applicantName: string): Promise<string | null> {
+async function generateCoverLetter(answers: RenewalAnswers, businessName: string, applicantName: string, reconciliationSummary: string): Promise<string | null> {
   const profitLabel: Record<string, string> = {
     'yes': 'consistently profitable',
     'yes-recently': 'recently profitable',
@@ -174,9 +178,12 @@ ${answers['RQ-09'] ?? 'Not provided.'}
 CANADIAN TIES:
 ${answers['RQ-13'] ?? 'Not provided.'}
 
+PROMISE VS. DELIVERY (cite these exact figures where relevant — do not invent others):
+${reconciliationSummary}
+
 Write a formal E-2 renewal cover letter (600–800 words). The letter must:
 1. Open by identifying the applicant, business, and that this is a renewal of E-2 treaty investor status
-2. Summarise business performance — growth since original application, current profitability status, employees
+2. Summarise business performance — growth since original application, current profitability status, employees. Where the promise-vs-delivery figures above are available, state the original projection next to the actual result explicitly (an officer checks this first).
 3. Address the develop-and-direct element — investor's active management role (use the current role description above)
 4. Address non-immigrant intent — Canadian ties retained (use the ties section above)
 5. Close with a request for renewal and statement of continued compliance
@@ -195,7 +202,7 @@ Do not use placeholder brackets — if information is missing, write around it n
   });
 }
 
-async function generateBPUpdate(answers: RenewalAnswers, businessName: string): Promise<string | null> {
+async function generateBPUpdate(answers: RenewalAnswers, businessName: string, reconciliationSummary: string): Promise<string | null> {
   const prompt = `You are an immigration consultant writing a condensed business plan update for an E-2 visa renewal.
 
 BUSINESS: ${businessName || 'the business'}
@@ -212,13 +219,16 @@ PERFORMANCE DATA:
 - Additional investment made: $${answers['RQ-06'] ?? '0'}
 - Ownership changes: ${answers['RQ-08'] === 'no' ? 'None' : answers['RQ-08-detail'] ?? 'None'}
 
+PROMISE VS. DELIVERY (cite these exact figures where relevant — do not invent others):
+${reconciliationSummary}
+
 Write a condensed 4-section business plan update (approximately 500 words total):
 
 SECTION 1 — BUSINESS OVERVIEW (current state)
 Describe what the business does today, its current operating status, and how it has evolved since the original E-2 application.
 
 SECTION 2 — PERFORMANCE SUMMARY
-Summarise actual financial and employment performance vs. original projections. Explain any variances honestly and professionally.
+Summarise actual financial and employment performance vs. original projections, citing the promise-vs-delivery figures above explicitly. Explain any variances honestly and professionally.
 
 SECTION 3 — CURRENT OPERATIONS
 Describe current operations, staffing, management structure, and market position.
@@ -335,13 +345,15 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    const reconciliation = computeRenewalReconciliation(projections, answers);
+
     // Generate 3 LLM documents in parallel + build 2 programmatically
     const [coverLetter, bpUpdate] = await Promise.all([
-      generateCoverLetter(answers, businessName, applicantName),
-      generateBPUpdate(answers, businessName),
+      generateCoverLetter(answers, businessName, applicantName, reconciliation.summary),
+      generateBPUpdate(answers, businessName, reconciliation.summary),
     ]);
 
-    const template6 = buildTemplate6(answers, projections);
+    const template6 = buildTemplate6(answers, projections, reconciliation.summary);
     const checklist = buildChecklist(intake.path);
 
     const documents = {
@@ -349,6 +361,7 @@ export async function POST(request: NextRequest) {
       bp_update: bpUpdate ?? '',
       template6,
       checklist,
+      reconciliation,
       generated_at: new Date().toISOString(),
       path: intake.path,
     };
