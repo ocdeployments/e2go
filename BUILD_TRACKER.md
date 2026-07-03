@@ -1,6 +1,33 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** July 3, 2026 — Session 118: shipped 4 more WS4 CPU Intelligence directives (D3, D11, D18, D20) — see below. **`agent-prompt-part1-engine-and-package.md` / `agent-prompt-part2-intelligence-and-content.md` (the WS4-8 spec) are gone from disk** — untracked, never committed, and no longer present at session start; only the paraphrased directive list already recorded in prior BUILD_TRACKER entries and session memory survives. Continuing WS4-8 from here means working from that paraphrase, not the verbatim spec — flagged to owner. Next: confirm whether the spec files can be re-supplied before continuing D6/D9(partial)/D12(partial)/D13-16/D22(done)/D23, then WS5 partnership docs, WS6 remaining items, WS7 analyses, WS8 golden-case verification.
+**Last Updated:** July 3, 2026 — Session 119: **spec files recovered + WS4 (D5/D6/D8/D10/D13/D14/D15/D16/D23) closed out.** `agent-prompt-part1-engine-and-package.md` / `agent-prompt-part2-intelligence-and-content.md` had gone missing from disk (untracked, never committed) partway through Session 118; owner re-supplied the complete verbatim text and both files are now rewritten to disk, byte-verified against the source paste in the session transcript. Next: WS5 partnership docs, WS6 remaining items, WS7 analyses, WS8 golden-case verification.
+
+---
+
+## Session 119 — WS4 closeout: D5/D6/D8/D10/D13/D14/D15/D16/D23 (July 3, 2026)
+
+**Branch:** dev. Build clean (`npm run build`, `tsc --noEmit`). New tests pass (13/13).
+
+### Context
+Resumed WS4 (23-directive CPU Intelligence Pack) from the recovered verbatim spec. Before writing new code, audited what's already built vs. genuinely open by reading `cpu-risk-signals.ts`, `case-financials.ts`, `partnership-analysis.ts`, `fdd-scoring-engine.ts`, `fdd-report-engine.ts`, `fdd-territory-engine.ts`, `case-intelligence-core.ts`, and `generation-engine.ts` — several of the remaining directives were already satisfied by earlier sessions' work and only needed confirmation, not new code.
+
+### Built
+- **D15 + D16 (marginality living-wage waterfall + 5-year horizon guardrail, 4D)** — new `src/lib/cpu-marginality-waterfall.ts`: `estimateHouseholdSize()` derives a conservative MINIMUM household size from the Q0-03/M3-L-family family-composition string (never invents an exact child count), `computeFederalPovertyGuideline()` uses the verified 2026 HHS ASPE Federal Poverty Guidelines ($15,960 base + $5,680/additional person, 48 contiguous states + DC — source: https://aspe.hhs.gov/topics/poverty-economic-mobility/poverty-guidelines, refresh every January), `computeMarginalityWaterfall()` compares `case-financials.ts`'s Year 1 owner draw / Years 2-5 net-income projections against that floor per year and classifies `clears_now` / `clears_within_5yr` / `clears_beyond_5yr` / `never_clears` / `insufficient_data`. Wired into `case-intelligence-core.ts`'s `assembleCaseModel()` as a `business`-dimension `CaseFact` tagged `cpu-marginality-waterfall:D15-D16`, following the existing D4/D7/D20 push pattern. 13 unit tests in `src/lib/__tests__/cpu-marginality-waterfall.test.ts`.
+- **D5 + D6 (seasoning check + round-trip/layering detection, 4B) — documented as CONFIRMED BLOCKED**, not built: `cpu-risk-signals.ts`'s header comment now explicitly states these need per-transaction deposit date/amount data that no Module 3 intake field collects (M3-F-05 captures source TYPE only). Building deterministic logic against nonexistent data would fabricate the very signal these directives detect. Unblocking requires a new intake surface (a transaction ledger) — a product scope decision for the owner, not a code gap.
+- **D8 (FX discipline) — confirmed ALREADY SATISFIED**, no new code: `case-financials.ts`'s existing `fx_note` already carries amounts in their reported currency with an explanatory note rather than a fabricated conversion rate. Cross-referenced in `cpu-risk-signals.ts`'s header for discoverability.
+- **D10 (timeline sanity) — confirmed CONFIRMED BLOCKED**: no entity-formation/lease/franchise-agreement date fields exist anywhere in the live Module 3 intake schema, so no cross-document date-sequence check can be built without fabricating dates. Same product-scope-decision status as D5/D6.
+- **D13 (proportionality honesty) — confirmed ALREADY SATISFIED**: `case-financials.ts`'s plain `proportionality_ratio` (no fabricated bright-line framing) plus the Session 116b Substantiality Memo prompt fix (commit `c0e65f9`) already reframe the 9 FAM tiers as practitioner benchmarks, not regulation, across all 5 archetype prompt blocks in `generation-engine.ts`.
+- **D14 (cost-understatement detector) — partially covered, deterministic half deferred**: the case-theory-directive half is already in place — FDD Item 7 references exist as prompt-injected archetype guidance across 5+ document types in `generation-engine.ts` (Substantiality Memo, Fund Flow, Cover Letter, DS-156E, Marginality Rebuttal, Net Worth Statement, Investment Proof), for both franchise (cite Item 7 range) and independent (construct cost from first principles, flag skepticism) paths. The deterministic flag-when-materially-below-benchmark half needs a new FDD-data join into `assembleCaseModel()` (currently absent) for the franchise case, and non-franchise category setup-cost benchmarks don't exist anywhere and can't be fabricated — deferred as a scoped data-source gap, not built with invented numbers.
+- **D23 (repetition policy) — confirmed ALREADY SATISFIED**: `generation-engine.ts`'s `checkRepetition()` (used at the post-generation stage, line ~2695) and `cic-verifier.ts`'s `repetitionIssues` channel (per-document verifier pass) both already enforce this from earlier WS2.8/E8 work.
+
+### Verified
+`npm run build` clean, `tsc --noEmit` clean, `npx jest cpu-marginality-waterfall` (13/13 pass).
+
+### Next
+WS5 (partnership packages — joint-context block, 8 shared-doc changes, new intake fields), WS6 (missing documents + per-template upgrades), WS7 (11 analyses upgrades), WS8 (golden-case verification). D14's deterministic half remains open pending an FDD-data-join scope decision.
+
+### Dev server
+No server was running at start of session; no previewable change made (all backend/lib).
 
 ---
 
@@ -21,7 +48,7 @@ Continuing WS4 (23-directive CPU Intelligence Pack) per owner instruction to pro
 `npm run build` clean, `tsc --noEmit` clean, `npx jest cpu-case-modifiers` (8/8 pass).
 
 ### Next
-Spec files missing — see the flag at the top of this file. If they can't be re-supplied, remaining WS4 items (D6, D9/D12 partial-completion confirmation, D13-D16, D22 confirm-done, D23) and all of WS5-8 will need to proceed from the paraphrase only, which increases drift risk on anything with numeric/legal specificity (e.g. D13-16's substantiality/marginality thresholds).
+**Update (Session 119): spec recovered.** Owner re-supplied the full verbatim text of both spec files; they are rewritten to disk and byte-verified. Remaining WS4 items (D5, D6, D8, D10-confirm-blocked, D13-D16, D23) proceed from the exact spec, not a paraphrase.
 
 ### Dev server
 No server was running at start of session; no previewable change made (all backend/lib).
