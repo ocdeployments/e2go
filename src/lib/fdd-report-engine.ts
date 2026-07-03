@@ -196,9 +196,10 @@ under 9 FAM 402.9 and have supported over 300 E-2 visa applicants through franch
 Your analytical voice:
 - OPINIONATED AND DIRECT. You give clear verdicts, not "it depends" hedges. If the data supports
   a strong view, take it.
-- BENCHMARK-DRIVEN. Compare every metric against named standards: IFA norms, FRANdata research,
-  FTC filing patterns, category-specific QSR/senior care/fitness benchmarks. Numbers without
-  context are useless.
+- BENCHMARK-DRIVEN. Compare every metric against the category-specific and structural benchmarks
+  supplied to you in this prompt. Numbers without context are useless — but never invent a
+  statistic, a study finding, or a named-source citation that was not given to you. If you don't
+  have a number for something, say so and reason qualitatively instead.
 - REGULATORY-PRECISE. Cite 9 FAM chapter and section, INA section, or FTC Rule 436 references
   when making legal or visa-related assessments.
 - CONSEQUENCE-FOCUSED. For every risk identified, state the specific consequence for THIS
@@ -272,8 +273,9 @@ BANKRUPTCY DATA (Item 4):
 
 INDUSTRY BENCHMARKS FOR CONTEXT:
 - Healthy franchise systems with 100–500 units typically show 0–3 suits over 5 years
-- FRANdata research: systems with >5 franchisee-initiated suits per 100 units over 3 years show
-  22% higher closure rates within 5 years
+- A suit count materially above that range relative to system size is a structural pattern, not
+  an isolated incident — treat it as a serious flag and say so directly, but do not cite a
+  specific closure-rate percentage or named study you were not given.
 - FTC Rule 436 requires disclosure of all suits in the past 10 years — any pattern across similar
   dispute types (fee disputes, territorial violations, misrepresentation) is highly material
 - Bankruptcy within past 10 years of any franchisor officer or principal is a serious red flag
@@ -492,10 +494,13 @@ INVESTMENT CONTEXT:
 - Working capital months covered: ${wcMonths ?? 'Not disclosed'}
 
 INDUSTRY BENCHMARKS:
-- IFA research: Item 19 coverage below 50% of the system is statistically unreliable —
-  the excluded cohort typically underperforms by 15–30%
-- FRANdata: High-quality Item 19 disclosures cover >80% of the system, include median AND quartile
-  data, and separate company vs. franchisee performance
+- Item 19 coverage below 50% of the system is a materially weaker disclosure — the excluded
+  cohort is more likely to be underperforming than representative, since franchisors have no
+  incentive to exclude a segment that makes their numbers look better. Say so directly, but do
+  not cite a specific percentage range for how much the excluded cohort underperforms by unless
+  it is derivable from the data you were given.
+- A high-quality Item 19 disclosure covers most of the system (well above 80% is strong), includes
+  both median AND quartile/range data, and separates company-owned vs. franchisee performance.
 - Mean/median gap: if (mean - median) / median > 25%, the system has high performance variability,
   meaning most franchisees perform below the "average" — a critical distinction
 - Non-marginality floor: ODE above $65K/yr at median AUV is generally sufficient to demonstrate
@@ -606,10 +611,13 @@ INDUSTRY BENCHMARKS:
   (1) the franchisor actively enforces quality standards (potentially positive), or
   (2) the franchisor is using termination to reclaim units or clear underperformers (potentially negative)
 - Net negative unit growth over 3 years for a system of >50 units is a serious systemic signal
-- FRANdata: systems with >10% churn show a 35% higher probability of complete system collapse
-  within 7 years
-- IFA: franchisee validation quality correlates strongly with system health — systems that
-  discourage validation calls are 3x more likely to have undisclosed performance problems
+- Sustained churn above the ~12% distress threshold is a going-concern-level signal for the
+  system as a whole, not just individual underperforming units — say so directly, but do not
+  cite a specific collapse-probability percentage or named study you were not given.
+- Franchisor cooperation with validation calls (connecting prospects to existing/former
+  franchisees without steering) is itself a signal — systems that resist or heavily curate
+  validation contact are more likely to be concealing performance problems, even without a
+  precise multiplier to cite.
 - A high closure rate in a single year (Year 1 or 2) vs. spread evenly suggests either a market
   correction event or a wave of early-period units failing at the same time
 
@@ -820,7 +828,29 @@ Produce E-2 compatibility deep dive as this exact JSON schema:
   const text = response.content[0].type === 'text' ? response.content[0].text : '{}';
   const match = text.match(/\{[\s\S]*\}/);
   if (!match) throw new Error('E-2 deep dive: no JSON in response');
-  return JSON.parse(match[0]) as E2CompatibilityDeepDive;
+  const parsed = JSON.parse(match[0]) as E2CompatibilityDeepDive;
+
+  // The LLM elaborates on each dimension — it does not re-adjudicate. Verdicts are
+  // deterministic facts owned by the scoring engine; overwrite whatever the LLM produced
+  // so the report can never contradict its own scoring (a self-contradicting report is a
+  // refund request). Narrative fields (regulatory_basis, what_officer_looks_for,
+  // documentation_required) are left as the LLM's elaboration.
+  parsed.overall_verdict = scoring.overall;
+  parsed.dimensions.eligibility_gates.verdict = dimensionResultToVerdict(scoring.eligibility_gates.result);
+  parsed.dimensions.investment_substantiality.verdict = dimensionResultToVerdict(scoring.investment_substantiality.result);
+  parsed.dimensions.non_marginality.verdict = dimensionResultToVerdict(scoring.non_marginality.result);
+  parsed.dimensions.develop_and_direct.verdict = dimensionResultToVerdict(scoring.develop_and_direct.result);
+
+  return parsed;
+}
+
+// Maps the scoring engine's DimensionResult onto the deep-dive's PASS/WARN/FAIL verdict scale.
+// 'unknown' (data not available to score) maps to WARN, never PASS — absence of a fail signal
+// is not evidence of a pass.
+function dimensionResultToVerdict(result: ScoringResult['eligibility_gates']['result']): 'PASS' | 'WARN' | 'FAIL' {
+  if (result === 'pass') return 'PASS';
+  if (result === 'fail') return 'FAIL';
+  return 'WARN';
 }
 
 // ============================================================================
