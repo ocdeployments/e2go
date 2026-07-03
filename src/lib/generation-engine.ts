@@ -2205,7 +2205,7 @@ export async function runGenerationPipeline(
       .from('answers')
       .select('question_key, answer_value')
       .eq('application_id', applicationId)
-      .in('question_key', ['M3-L-01', 'M3-F-05']);
+      .in('question_key', ['M3-L-01', 'M3-F-05', 'M3-F-NEW-01']);
 
     const condAnswerMap: Record<string, string> = {};
     for (const row of (condAnswerRows ?? [])) {
@@ -2220,6 +2220,12 @@ export async function runGenerationPipeline(
     }
     if (typeof condAnswerMap['M3-F-05'] === 'string' && condAnswerMap['M3-F-05'].includes('property-sale')) {
       conditionalDocTypes.push('property_portfolio');
+    }
+    // WS6.1 — Investment Evidence generates only when at-risk is genuinely contested:
+    // funds partially deployed or committed-but-unspent (escrow-style arrangements).
+    // Fully-deployed cases rely on SOF §V instead of a redundant standalone document.
+    if (condAnswerMap['M3-F-NEW-01'] === 'partial' || condAnswerMap['M3-F-NEW-01'] === 'no') {
+      conditionalDocTypes.push('investment_proof');
     }
 
     // Sprint F-P: Add Investor 2 document types for complete_partnership buyers
