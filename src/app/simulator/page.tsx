@@ -501,7 +501,9 @@ export default function InterviewSimulator() {
 
     if (toCoach.length === 0) return;
 
-    // Fetch last 2 prior sessions for trend-aware coaching (non-fatal if absent)
+    // Fetch last 5 prior sessions for trend-aware coaching (non-fatal if absent).
+    // The prompt's trend note (coaching-report/route.ts) already generalises to
+    // any session count >= 2 — this was the only place capping it at 2.
     type PriorSessionData = { sessionNumber: number; readinessIndicator: string; top3NextSession: string[] };
     const priorSessions: PriorSessionData[] = [];
     if (currentSession && user) {
@@ -512,7 +514,7 @@ export default function InterviewSimulator() {
           .eq('user_id', user.id)
           .lt('session_number', currentSession.sessionNumber)
           .order('session_number', { ascending: false })
-          .limit(2);
+          .limit(5);
         if (prevRows) {
           for (const prev of prevRows) {
             const notes = prev.coaching_notes as { top3NextSession?: string[] } | null;
@@ -1679,6 +1681,13 @@ function SessionComplete({
 
   return (
     <div style={styles.completeContainer}>
+      <style>{`
+        @media print {
+          body { background: white !important; color: black !important; }
+          .no-print { display: none !important; }
+          * { color: black !important; border-color: #ccc !important; background: white !important; }
+        }
+      `}</style>
       <div style={styles.completeCard}>
         <div style={styles.eyebrow}>SESSION {sessionNumber} COMPLETE</div>
 
@@ -1720,14 +1729,34 @@ function SessionComplete({
         {/* Coaching Report Section */}
         {hasWeakItems && (
           <div style={{ marginBottom: '32px' }}>
-            <h3 style={{ fontSize: '14px', fontWeight: 500, color: '#f5f0e8', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-              Your interview coaching report
-              {coachingLoading && (
-                <span style={{ fontSize: '11px', color: 'rgba(201,168,76,0.7)', fontWeight: 400, letterSpacing: '0.06em' }}>
-                  — generating...
-                </span>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginBottom: '6px' }}>
+              <h3 style={{ fontSize: '14px', fontWeight: 500, color: '#f5f0e8', margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                Your interview coaching report
+                {coachingLoading && (
+                  <span style={{ fontSize: '11px', color: 'rgba(201,168,76,0.7)', fontWeight: 400, letterSpacing: '0.06em' }}>
+                    — generating...
+                  </span>
+                )}
+              </h3>
+              {!coachingLoading && summary.detailedCoaching && summary.detailedCoaching.length > 0 && (
+                <button
+                  className="no-print"
+                  onClick={() => window.print()}
+                  style={{
+                    padding: '6px 14px',
+                    background: 'transparent',
+                    border: '1px solid rgba(201,168,76,0.4)',
+                    color: '#C9A84C',
+                    fontSize: '11px',
+                    letterSpacing: '0.06em',
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap' as const,
+                  }}
+                >
+                  Print / Save as PDF
+                </button>
               )}
-            </h3>
+            </div>
             <p style={{ fontSize: '12px', color: 'rgba(245,240,232,0.72)', marginBottom: '20px', marginTop: 0 }}>
               Questions where your answer needs strengthening before the real interview.
             </p>
@@ -1759,6 +1788,7 @@ function SessionComplete({
                 </div>
                 {onRetryCoaching && (
                   <button
+                    className="no-print"
                     onClick={onRetryCoaching}
                     style={{
                       background: 'transparent',
@@ -1832,7 +1862,7 @@ function SessionComplete({
           </div>
         )}
 
-        <div style={styles.completeActions}>
+        <div className="no-print" style={styles.completeActions}>
           <button style={styles.primaryButton} onClick={onStartNew}>
             Start another session
           </button>
