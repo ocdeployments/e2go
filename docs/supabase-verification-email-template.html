@@ -1,0 +1,114 @@
+<!--
+  E2go — Supabase Verification Email Template
+
+  HOW TO INSTALL:
+  1. Go to Supabase dashboard → Authentication → Email Templates
+  2. Select "Confirm signup"
+  3. Set Subject: Congratulations — your E-2 result is ready
+  4. Paste the entire HTML below into the "Message" / "Body" field
+  5. Available variables: {{ .ConfirmationURL }} and {{ .Email }}
+  6. Save
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Your E-2 result is ready — E2go</title>
+</head>
+<body style="margin:0; padding:0; background-color:#e0dbd0; font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#e0dbd0;">
+    <tr>
+      <td align="center" style="padding:40px 16px;">
+
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:520px; background-color:#f5f0e8; border-top:3px solid #C9A84C;">
+
+          <!-- Wordmark -->
+          <tr>
+            <td style="padding:28px 40px 24px;">
+              <p style="margin:0; font-size:19px; font-weight:300; color:#C9A84C; letter-spacing:0.04em; font-family:Georgia,'Times New Roman',serif;">E2go<span style="color:#1a1a1a;">.app</span></p>
+            </td>
+          </tr>
+
+          <!-- Divider -->
+          <tr>
+            <td style="padding:0 40px 28px;">
+              <div style="height:1px; background-color:#d4cfc5;"></div>
+            </td>
+          </tr>
+
+          <!-- Headline -->
+          <tr>
+            <td style="padding:0 40px 20px;">
+              <h1 style="margin:0; font-family:Georgia,'Times New Roman',serif; font-size:28px; font-weight:400; color:#1a1a1a; line-height:1.25;">
+                Congratulations on taking the first step.
+              </h1>
+            </td>
+          </tr>
+
+          <!-- Opening -->
+          <tr>
+            <td style="padding:0 40px 18px;">
+              <p style="margin:0; font-size:14px; color:#3a3a3a; line-height:1.75; font-family:Arial,sans-serif;">
+                Deciding to pursue a life in the United States takes real courage — and you've already done what most people only talk about. You sat down, answered the hard questions, and found out exactly where you stand.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="padding:0 40px 28px;">
+              <p style="margin:0; font-size:14px; color:#3a3a3a; line-height:1.75; font-family:Arial,sans-serif;">
+                Your E-2 eligibility result is ready — your score, a full analysis of your situation, and a preview of the documents that would build your case. Verify your email to see everything.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Encouraging strip -->
+          <tr>
+            <td style="padding:0 40px 32px;">
+              <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color:#fdf9f0; border-left:3px solid #C9A84C;">
+                <tr>
+                  <td style="padding:14px 18px;">
+                    <p style="margin:0; font-size:13px; color:#5a4a1a; line-height:1.7; font-family:Georgia,'Times New Roman',serif; font-style:italic;">
+                      Most applicants who complete the E2go assessment discover their path is more viable than they expected. And for those with hurdles to clear — every flag in your result comes with a specific strategy to address it.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- CTA -->
+          <tr>
+            <td style="padding:0 40px 36px; text-align:center;">
+              <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;">
+                <tr>
+                  <td style="background-color:#C9A84C; padding:16px 36px;" align="center">
+                    <a href="{{ .ConfirmationURL }}" style="color:#0a0a0a; font-family:Arial,'Helvetica Neue',Helvetica,sans-serif; font-size:13px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; text-decoration:none; white-space:nowrap;">
+                      SEE MY ELIGIBILITY RESULT &rarr;
+                    </a>
+                  </td>
+                </tr>
+              </table>
+              <p style="margin:14px 0 0; font-size:11px; color:#999; font-family:Arial,sans-serif; line-height:1.5;">
+                This link expires in 24 hours.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding:18px 40px; border-top:1px solid #d4cfc5; background-color:#ece7dd;">
+              <p style="margin:0; font-size:10.5px; color:#888; line-height:1.6; font-family:Arial,sans-serif;">
+                This email was sent to {{ .Email }} because you completed an eligibility assessment at e2go.app. If you did not take this assessment, you can safely ignore this email. &mdash; E2go.app is a preparation tool, not a law firm. For legal advice, consult a qualified U.S. immigration attorney.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

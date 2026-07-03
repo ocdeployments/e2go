@@ -1,6 +1,39 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** July 3, 2026 — Session 116: built WS3.5 (A8) — production/rendering layer fixes, then WS6.2 — corrected the Substantiality Memorandum's proportionality framing (9 FAM 402.9-6(D) sets no fixed thresholds; the prompt was presenting invented practitioner tiers as if they were the FAM's own regulation). Note: WS3.4 (A7 verifier contracts) and WS4B (D4/D7 funds intelligence) were completed by concurrent sessions (commits `c448fde`, `9a68dd2`) — not by this session; scope was reconciled before starting fresh work to avoid duplication. Two commits this session, build clean. Next: remaining WS4 clusters (4A/4C/4D/4E/4F), WS5 partnership docs, WS6 remaining items, WS7 analyses, WS8 golden-case verification.
+**Last Updated:** July 3, 2026 — Session 117: audited WS1 (confirmed small bugs) end-to-end against the actual codebase — all 8 items (tab-consistency test, FDD Questions placeholder + dead branch, Prep Kit `model_used`, category-keyed royalty benchmarks, territory never-fabricate rule, coaching silent-failure UI, dead `source_of_funds.md` removal) were already shipped by prior sessions; no code changes needed. Also swept the working tree for uncommitted stray files from earlier sessions: committed 5 legitimate but never-committed knowledge-base docs (`E2Go_Document_Checklist_Matrix.md`, `E2Go_Global_Consulate_Page_Limits.md`, `E2Go_Page_Budget_Allocation_Framework.md`, `E2Go_Application_Documents_Complete.md`, `ds160_e2_questions.md`) and the Supabase verification email template; deleted `src/components/dashboard/FeatureCommand.tsx` (an unwired, superseded dashboard-CTA component — `CaseProfilePage.tsx` + `ControlPanel.tsx` is now the live dashboard, confirmed with owner). Next: remaining WS4 clusters (4A/4C/4D/4E/4F — 20 of 23 CPU Intelligence directives), WS5 partnership docs, WS6 remaining items, WS7 analyses, WS8 golden-case verification.
+
+---
+
+## Session 117 — WS1 Audit + Stray-File Cleanup (July 3, 2026)
+
+**Branch:** dev. Build clean (`npm run build`). One commit.
+
+### Context
+Resumed from a prior session that lost the exact source text of the WS4-8 directives to a context-compaction event. Investigation found nothing was actually lost: `agent-prompt-part1-engine-and-package.md` and `agent-prompt-part2-intelligence-and-content.md` are intact in the repo root with the full 23-directive CPU Intelligence Pack, partnership spec, and analyses upgrades. `CLAUDE_CONTEXT.md` and `docs/FEATURE_INVENTORY.html` were checked for corroborating detail and contain no WS5-8 references (different, older documentation track).
+
+### Verified (no code changes)
+All 8 WS1 confirmed-bug items, checked against live code:
+1. Tab mismatch — `src/lib/__tests__/tab-consistency.test.ts` exists and asserts template headers match `DOCUMENT_TYPE_TABS`.
+2/3. FDD Questions placeholder + dead industry-fit branch — `fdd-questions-engine.ts` fills real non-compete years/miles from extraction data, with graceful "not stated in the FDD" fallback per-field.
+4. Prep Kit `model_used` — `prep-kit/route.ts:491` sets it from the actual `modelUsed` variable, not a hardcoded string.
+5. FDD Report QSR-only benchmarks — `fdd-report-engine.ts` has `ROYALTY_BENCHMARK_BY_CATEGORY`, a category-keyed table (QSR, senior care, fitness, etc.), not a single QSR figure.
+6. Territory/Market fabricated neutral-50 score — `fdd-territory-engine.ts:505-509` emits "Competition not assessed — Google Places data unavailable" instead of a fabricated number when data is absent.
+7. Coaching silent failure — `coaching-report/route.ts` returns `{ coaching: [], error: true }` on failure; `simulator/page.tsx` sets `coachingError` state and renders a retry message at line 1748 rather than a silent blank report.
+8. Dead file deletion — no `prompts/v1/documents/source_of_funds.md` in the repo; already removed.
+
+### Built
+Nothing new for WS1 — it was already complete. Instead, swept `git status` for stray untracked files left by earlier sessions and resolved them:
+- **Committed as reference material:** `docs/E2Go_Document_Checklist_Matrix.md`, `docs/E2Go_Global_Consulate_Page_Limits.md`, `docs/E2Go_Page_Budget_Allocation_Framework.md`, `docs/E2Go_Application_Documents_Complete.md`, `docs/ds160_e2_questions.md` (dated June 22, 2026 — complete E-2 knowledge-base documents, not yet wired into any engine but valuable source material for future consulate-budget and DS-160 work), `docs/supabase-verification-email-template.html` (a complete, self-contained Supabase "Confirm signup" email template with install instructions — correctly not referenced by code since it's pasted manually into the Supabase dashboard).
+- **Deleted:** `src/components/dashboard/FeatureCommand.tsx` — a complete but never-imported entitlement-aware dashboard CTA panel, superseded by `ControlPanel.tsx` (already wired into `CaseProfilePage.tsx`, which is the live dashboard). Owner confirmed no new dashboard should be built.
+
+### Verified
+`npm run build` clean.
+
+### Next
+Part 2 (`agent-prompt-part2-intelligence-and-content.md`) — Workstream 4 remaining clusters (4A officer-reality heuristics, 4C cross-document invariants, 4D substantiality/marginality intelligence, 4E person/narrative intelligence, 4F package-assembly intelligence — 4B funds intelligence already done), then WS5 partnership packages, WS6 missing documents + template upgrades, WS7 analyses upgrades, WS8 golden-case verification loop.
+
+### Dev server
+No server was running at start of session; no previewable change made.
 
 ---
 
