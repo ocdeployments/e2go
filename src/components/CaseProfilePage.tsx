@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { CaseProfileResponse, CaseTheoryUI, DocumentExtractionUI, FamilyMemberCaseUI } from "@/app/api/dashboard/case-profile/route";
 import DocumentImportHub, { docTypeLabel } from "@/components/apply/DocumentImportHub";
 import ControlPanel from "@/components/casefile/ControlPanel";
+import PartnerInvitePanel from "@/components/dashboard/PartnerInvitePanel";
 import { GOLD, CREAM, GREEN, CARD_BG, BORDER, INNER } from "@/components/casefile/tokens";
 
 // ── Field status ───────────────────────────────────────────────────────────────
@@ -2317,6 +2318,14 @@ export default function CaseProfilePage() {
                     Complete →
                   </a>
                 </div>
+              </div>
+            )}
+
+            {/* ── 10 PARTNER ACCESS (Interview Prep Partnership buyers only) ──── */}
+            {data.hasInterviewPrepPartnership && (
+              <div style={{ marginBottom: "12px" }}>
+                <div style={{ fontSize: '8px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(201,168,76,0.5)', fontFamily: "'DM Sans', sans-serif", marginBottom: '8px' }}>10 · Interview Prep Partnership</div>
+                <PartnerInvitePanel existingInvite={data.partnerInvite} />
               </div>
             )}
 

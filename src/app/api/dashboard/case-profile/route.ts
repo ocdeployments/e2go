@@ -79,6 +79,10 @@ export interface CaseProfileResponse {
   fieldOfStudy: string | null;
   yearsExperience: string | null;
   priorVisaHistory: string | null;
+
+  // Interview Prep Partnership — partner invite
+  hasInterviewPrepPartnership: boolean;
+  partnerInvite: { partnerEmail: string; accepted: boolean } | null;
 }
 
 export interface DocumentExtractionUI {
@@ -144,6 +148,8 @@ export async function GET(request: Request) {
     prepKitResult,
     appResult,
     familyMembersResult,
+    partnershipPaymentResult,
+    partnerInviteResult,
   ] = await Promise.all([
     supabase
       .from('profiles')
@@ -215,6 +221,23 @@ export async function GET(request: Request) {
       .eq('user_id', userId)
       .order('sort_order', { ascending: true })
       .order('created_at', { ascending: true }),
+
+    supabase
+      .from('payments')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('payment_type', 'interview_prep_partnership')
+      .eq('status', 'completed')
+      .maybeSingle(),
+
+    supabase
+      .from('partner_access_tokens')
+      .select('partner_email, used_at')
+      .eq('created_by_user_id', userId)
+      .eq('tier_id', 'interview_prep_partnership')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ]);
 
   const profile = profileResult.data as { first_name: string | null; middle_name: string | null; last_name: string | null } | null;
@@ -225,6 +248,11 @@ export async function GET(request: Request) {
   const latestFdd = fddLatestResult.data;
   const sim = simResult.data;
   const prepKit = prepKitResult.data;
+  const hasInterviewPrepPartnership = !!partnershipPaymentResult.data;
+  const partnerInviteRow = partnerInviteResult.data as { partner_email: string; used_at: string | null } | null;
+  const partnerInvite = partnerInviteRow
+    ? { partnerEmail: partnerInviteRow.partner_email, accepted: !!partnerInviteRow.used_at }
+    : null;
   // N3 FIX: Honor the applicationId param when provided. Fall back to
   // paid-first selection to preserve backwards-compat with callers that omit it.
   const allApps = (appResult.data ?? []) as { id: string; payment_status: string }[];
@@ -455,6 +483,9 @@ export async function GET(request: Request) {
     fieldOfStudy,
     yearsExperience,
     priorVisaHistory,
+
+    hasInterviewPrepPartnership,
+    partnerInvite,
   };
 
   return NextResponse.json(response);
