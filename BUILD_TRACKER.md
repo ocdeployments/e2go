@@ -1,6 +1,27 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** July 3, 2026 — Session 119: **spec files recovered + WS4 (D5/D6/D8/D10/D13/D14/D15/D16/D23) closed out.** `agent-prompt-part1-engine-and-package.md` / `agent-prompt-part2-intelligence-and-content.md` had gone missing from disk (untracked, never committed) partway through Session 118; owner re-supplied the complete verbatim text and both files are now rewritten to disk, byte-verified against the source paste in the session transcript. Next: WS5 partnership docs, WS6 remaining items, WS7 analyses, WS8 golden-case verification.
+**Last Updated:** July 3, 2026 — Session 119: **spec files recovered, WS4 closed out, WS7 FDD Comparison verdict shipped.** `agent-prompt-part1-engine-and-package.md` / `agent-prompt-part2-intelligence-and-content.md` had gone missing from disk (untracked, never committed) partway through Session 118; owner re-supplied the complete verbatim text and both files are now rewritten to disk, byte-verified against the source paste in the session transcript. Per owner instruction to prioritize WS4/7/8: WS4 (all 23 directives) is now closed out; WS7 audit found FDD Comparison's server-side profile-match persistence and payback/survival-rate computation were already done in an earlier session (spec was stale on this point) — added the one genuinely missing piece, the weighted ranked verdict. Next: continue WS7's remaining 10 analyses, then WS8 golden-case verification.
+
+---
+
+## Session 119b — WS7: FDD Comparison weighted verdict (July 3, 2026)
+
+**Branch:** dev. Build clean, `tsc --noEmit` clean, 123/123 tests pass.
+
+### Context
+Spec (WS7, §11) scores FDD Comparison at 4.0 — "the weakest thing the product ships" — and lists three fixes: persist profile-match server-side, derive payback/survival rate in the compare route, remove broken em-dash columns, then add a weighted verdict row. Audited `src/app/api/fdd/compare/route.ts` and `src/app/fdd/compare/page.tsx` before writing code: the first three items were already done (profile_match is persisted at scoring time in `api/fdd/questions/route.ts`; payback_years and franchisee_survival_rate are already computed server-side in `buildColumn()`; em-dashes are an intentional "not disclosed" indicator with a footer legend, not broken columns). The scorecard entry is stale relative to current code.
+
+### Built
+- **Weighted verdict (the one missing piece)** — new `computeVerdict()` in `api/fdd/compare/route.ts`: ranks the compared FDDs using ONLY fields the route already computes (compatibility, capital adequacy, substantiality, profile fit, ODE mid, payback years, territory score, flag count). Each category contributes rank-based points (best in the compared set = +2, worst = -2) rather than absolute scores, so the verdict never depends on scales that vary franchise to franchise — deliberately a ranking of this comparison, not a new standalone score. `VerdictEntry` type added to `types/fdd-compare.ts`. Rendered as a new "Verdict — ranked for your capital and territory" panel above the metrics table in `fdd/compare/page.tsx`, showing rank + top 3 driving reasons per franchise, with an explicit "not a new score" disclaimer.
+
+### Verified
+`npm run build` clean, `tsc --noEmit` clean, `npx jest` 123/123 pass. Ranking math spot-checked with a standalone script (3-column case: best=+2, mid=0, worst=-2, confirmed). Full browser verification against live FDD data was not done — the FDD Comparison feature requires 2+ uploaded/parsed FDD analyses in the DB, which none of the 3 seeded QA test accounts (test_accounts.md) currently have; would need either a real FDD PDF upload or a DB fixture to exercise end-to-end.
+
+### Next
+WS7 remaining: Gap Analysis (8.5), Interview Prep Kit (8.0), Coaching Report (7.5), FDD Final Report (7.0), FDD Extraction (7.0), FDD E-2 Scoring (7.0), FDD Questions (6.5), Territory/Market Analysis (6.5/6.0), Renewal Package (5.5). Then WS8 golden-case verification.
+
+### Dev server
+No server was running at start; not started this session (no live FDD data to preview against — see Verified note above).
 
 ---
 
