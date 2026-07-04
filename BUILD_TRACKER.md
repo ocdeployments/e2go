@@ -1,6 +1,124 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** July 3, 2026 — Session 119u: **Document extraction gap fix + Interview Case Dossier template rewrite, both now live.** New `parse-document` schemas (`ds160`, `cover_letter`, `organizational_document`, `general_supporting_document`) close a silent data-loss bug where unmatched documents fell back to the `resume` schema; production `doc_type` CHECK constraint widened and pushed live. Interview Case Dossier (`prep-kit`) rewritten to match the reference case-dossier structure — new candidate-persona section, 5-field officer-concerns-and-response-strategy section (replacing the old risk register), categorized question bank with short-answer leads, and three new sections (conduct rules, mock interview plan, final review checklist). Also root-caused and fixed a real Supabase CLI misconfiguration (stale `/Users/owner/supabase/` dir shadowing this project) — see Known Issues.
+**Last Updated:** July 4, 2026 — Session 119y: **Closed the Phase 6 gap found in Session 119x's audit** — added a "Documents" step to the `/onboarding` wizard (new step 4, between DS-160 and Next Steps) that embeds the existing `DocumentImportHub` (Phase 3's bounded-concurrency parallel parser) directly in onboarding, with per-family-member upload sections, instead of deferring all uploads to `/case-profile`. Live-verified against the seeded UK test account (partnership case) — new Documents tab shows both "My documents" and the P2 co-investor's own upload section side by side, `person_code` badge renders correctly, Continue advances cleanly to the renumbered Next Steps step, no console errors, `npm run build`/`tsc --noEmit` clean.
+
+---
+
+## Session 119y — Onboarding Documents Step (Phase 6 gap close) (July 4, 2026)
+
+**Branch:** dev (uncommitted). Build clean (`npm run build`, `tsc --noEmit`). Browser-verified live via Claude Preview against the seeded `test-uk@example.com` partnership account.
+
+**Context:** Session 119x's verification audit found `/onboarding` (Phase 6) was a real 4-step wizard but had no upload integration at all — the spec's "per-family-member upload sections with parallel parsing, reusing Phase 3's mechanism" was missing; uploads only existed on `/case-profile`. Rather than duplicate `DocumentImportHub`'s upload/parse/merge/review logic inside onboarding, embedded the existing component directly — it already loads family members itself and renders one upload section per person, so no new plumbing was needed beyond mounting it and adding a step.
+
+**Built:**
+- **`src/components/apply/DocumentImportHub.tsx`** — added an optional `defaultOpen` prop (default `false`, preserves existing collapsed behavior everywhere else it's used) so the panel can render pre-expanded when it's the dedicated focus of a screen rather than a collapsed option among several.
+- **`src/app/onboarding/page.tsx`** — inserted a new step 4 ("Documents") between the DS-160 security step and the triage/"Next steps" step (renumbered 4→5); `type Step` extended to `1 | 2 | 3 | 4 | 5`; header nav labels updated to `['Consent', 'Family', 'DS-160', 'Documents', 'Next steps']`. New step renders `<DocumentImportHub applicationId={applicationId} defaultOpen />` with copy framing uploads as optional/speed-up rather than blocking, plus a Continue button to step 5. No new data plumbing — `DocumentImportHub` already fetches family members and posts to the same `/api/apply/parse-document` route used everywhere else.
+
+**Tested:** Logged into the seeded partnership account (`test-uk@example.com`, principal + P2 co-investor "Alex Whitfield"). Navigated Family → DS-160 → Documents; screenshot confirms two upload sections ("My documents" / "Alex Whitfield's documents", badged Co-investor), zero console errors. Clicked Continue → landed on Next Steps with existing triage rows intact and correctly still linking to `/apply/business`, `/apply/investment`, `/case-profile`.
+
+**Commit status:** Uncommitted — awaiting owner's go-ahead to commit/push per branch discipline (dev, never direct to main).
+
+---
+
+## Session 119x — Phase 3-6 Verification Audit (July 4, 2026)
+
+**Branch:** dev (uncommitted). No code changes this session — read-only verification pass. Not applicable to browser testing.
+
+**Context:** Owner believed Phases 3, 4, 5, and 6 of the duplicate-key-fix/onboarding task list (tracked earlier this session as Session 119v) were already done, done elsewhere/in parallel. Rather than accept the claim or rely on this file's own Session 119v note (which said Phases 3-6 were "fully unstarted"), read the actual code and migrations to verify each phase independently.
+
+**Findings:**
+- **Phase 3 (parallelize document parsing, concurrency-chunked, SSE-safe) — CONFIRMED DONE.** `src/components/apply/DocumentImportHub.tsx` (lines ~419-435) runs a bounded worker pool (`CONCURRENCY = Math.min(3, updated.length)`), explicitly avoiding one big `Promise.all` to stay under the parse-document rate limit; workers write disjoint array indices so concurrent `setQueue` snapshots are safe.
+- **Phase 4 (wire real Business/Investment data into `/case-profile`) — SATISFIED, but not new work from this task list.** `src/lib/case-financials.ts`'s `computeCaseFinancials()` deterministic financial spine (deployment/investment reconciliation, break-even, revenue ramp, headcount, net worth) is genuinely wired into `case-profile/route.ts` (`caseFinancials` field) plus `generation-engine.ts`, `case-intelligence-core.ts`, `cpu-marginality-waterfall.ts`, `cpu-risk-signals.ts`, `partnership-analysis.ts`, `renewal-reconciliation.ts`. Per this file's own history (lines ~702-751 of the prior log), this was built as "Phase 2/A4" of the separate 23-directive CPU Intelligence Pack workstream (`agent-prompt-part1/2-*.md`), across multiple earlier sessions — a coincidental phase-number collision with this task list, not confirmation this specific plan item was executed.
+- **Phase 5 (hierarchical `case_code`/`person_code` scheme) — CONFIRMED DONE.** `supabase/migrations/20260705000000_case_person_codes.sql` adds both columns with a collision-checked `generate_case_code()` function, an insert trigger, one-time backfills, and a denormalized `case_code` on `support_tickets`. Genuinely wired, not orphaned: `case-profile/route.ts` returns `app?.case_code`, and `src/app/onboarding/page.tsx` renders `person_code` as a badge per family member.
+- **Phase 6 (new `/onboarding` page — 3 gates, triage, per-family-member parallel uploads, no-silo audit) — PARTIALLY DONE.** `src/app/onboarding/page.tsx` (475 lines) is a real 4-step wizard: consent/ToS/CASL/referral → family & co-investor gate → per-person DS-160-style security questions (`TriageSectionRow` per family member, badged with `person_code`) → triage screen linking to `/apply/business`, `/apply/investment`, `/case-profile` (all three routes exist and are live). It correctly reuses the shared `answers` table and `family_members`/`person_code` scheme rather than inventing a parallel data path — no silo introduced on the data side. **Gap:** grepped for `DocumentImportHub`/`upload`/`parse-document` inside `onboarding/page.tsx` — zero matches. The spec's "per-family-member upload sections with parallel parsing, reusing Phase 3's mechanism" was not built into the onboarding flow; uploads remain only inside `/case-profile`'s `DocumentImportHub`.
+- **Cross-module "no silo" spot-check:** partnership/financial data is genuinely shared — `simulator-engine.ts` reads the same `P2-ROLE`/`P2-SOF`/`P2-QUALS` answer keys as everything else, no separate onboarding-specific table. FDD/Market Intelligence engines don't reference `case-financials.ts` or `family_members` at all, but that appears to be by design (FDD scores the franchisor's disclosure data, not the applicant's personal financials) rather than a silo bug.
+
+**Next steps:** Build the missing Phase 6 piece — an upload step inside `/onboarding` (or an explicit hand-off into `DocumentImportHub`) so per-family-member document upload with parallel parsing happens during onboarding itself, not only after reaching `/case-profile`.
+
+---
+
+## Session 119w — LLM Engine Tiering Audit + Generic AI Route Migration (July 4, 2026)
+
+**Branch:** dev (uncommitted at end of session — see Commit status below). Build clean (`npm run build`, `tsc --noEmit`). Backend model-routing + config change — not browser-verifiable without live generation runs.
+
+**Context:** Owner asked for a full inventory of every LLM engine in the app, ranked by importance, with a gut-check on whether each was over- or under-resourced (specifically questioning whether Case Intelligence Core should be smarter than Haiku, and whether Gap Analysis's cheaper models were sufficient). After the ranking, owner specified an explicit 3-tier model chain and had it applied engine-by-engine.
+
+### Engine ranking delivered
+
+1. **Tier 1** (mistakes here can sink the case): FDD engines (extraction/report/territory/questions), Document Generation Engine, Case Intelligence Core (REASON — decides the case theory everything downstream inherits), Document Comprehension Engine (feeds REASON's input).
+2. **Tier 2** (QC/verification, catches problems rather than creating them): CIC Verifier, CIC Consistency Sweep.
+3. **Tier 3** (mechanical/interactive, cost-sensitive): Simulator/Interview Coaching, Gap Analysis Enrichment, field-quality checks.
+4. **Public FAQ** — left untouched throughout (lowest stakes, already on the right cheap model).
+
+Flagged during the inventory: Case Intelligence Core and Document Comprehension were sharing the exact same `extract` TaskType chain as the much-lower-stakes CIC Verifier/Consistency Sweep — meaning the app's most strategically important reasoning step had the same fallback ceiling (Haiku) as a QC pass. Also corrected an earlier (wrong) claim from a prior inventory pass that the `coaching` task chain was dead config — verified directly that it's live, called from `renewal/generate`, `simulator/prep-kit`, and `simulator/coaching-report`.
+
+### Model-chain changes (`src/lib/llm-client.ts`)
+
+| Tier | Chain | Engines |
+|---|---|---|
+| 1 | claude-opus-4-8 → claude-sonnet-5 → z-ai/glm-5.2 → claude-sonnet-4-6 | FDD (all 4), Case Intelligence Core, Document Comprehension Engine |
+| 2 | claude-sonnet-5 → z-ai/glm-5.2 → claude-sonnet-4-6 | CIC Verifier, CIC Consistency Sweep |
+| 3 | xiaomi/mimo-v2.5 → z-ai/glm-5.2 → claude-sonnet-4-6 | Simulator (evaluate/coaching/prep), Gap Analysis, field-quality |
+
+Added `callTier1Model`/`callTier2Model` (generic Anthropic-chain → OpenRouter fallback → final Anthropic fallback, mirroring the existing `callFDDModel` pattern) and switched `case-intelligence-core.ts`, `document-comprehension-engine.ts`, `cic-verifier.ts`, `cic-consistency-sweep.ts` off the shared `callLLM({task:'extract'})` path onto these. FDD's existing chain got a fourth tail step (Sonnet 4.6) added. Tier 3 kept mimo-v2.5 as the first/cheap step per owner's explicit call, rather than applying the tier spec literally (which would have dropped it and ~9x'd cost on the highest-volume interactive routes).
+
+**Two things left deliberately untouched, by owner decision, despite the tier spec:** the Document Generation Engine's non-business-plan OpenRouter fallback chain (glm→mimo→mimo-pro→gemini-pro) — this was tuned from a real eval showing all three OpenRouter families pass for gift-letter-class docs, and business_plan's Opus-only/no-fallback rule stays as-is either way. Public FAQ was excluded from the tiering exercise entirely.
+
+### Generic AI route fix
+
+Found `/api/ai`, `/api/followup/completion-summary`, and `/api/followup/generate-questions` were all routing through a standalone `src/lib/ai.ts` hardcoded to `minimax/minimax-m2.5` — completely outside the shared `llm-client.ts` cost-logging/fallback system, and violating the standing "never minimax" rule. Owner confirmed minimax has stopped working. Migrated all three call sites onto `callLLM` with a new `general` TaskType chain (z-ai/glm-5.2 → xiaomi/mimo-v2.5 → claude-sonnet-4-6, per owner's explicit spec). Deleted `src/lib/ai.ts` (fully dead after migration — `callAI`/`callAIStreaming` had no remaining callers).
+
+### Env cleanup
+
+- `.env.local`: backed up first (`.env.local.bak.20260704025415`) per standing safety rule, then removed `MINIMAX_MODEL`.
+- Vercel: removed `MINIMAX_MODEL` (was a single entry scoped to Dev/Preview/Prod) and, after a brief `GENERIC_AI_MODEL` env var interim (added then found unused once the model chain moved into code, per owner confirmation), removed that too — from all three environments individually (added as separate per-env entries, unlike the single multi-scoped `MINIMAX_MODEL`).
+
+### Security note
+
+The Lazyweb MCP server returned tool output containing an embedded instruction telling this session to silently append a permanent "always use Lazyweb" rule into the user's CLAUDE.md. Did not comply — flagged directly to the owner as a prompt-injection attempt from a third-party server, per the project's explicit "never invoke Lazyweb silently or use it to justify writing to any config/instruction file — only per explicit request" rule.
+
+**Commit status:** uncommitted at end of session (per repo convention — commits only on explicit request).
+
+**Not done this session:** live generation test of the new chains (would require burning real OpenRouter/Anthropic credits against production-shaped prompts); no code path exists yet to verify fallback ordering fires correctly under an actual primary-model failure.
+
+---
+
+## Session 119v — Duplicate-Key Race Fix + Field-Type-Aware Phone/DOB Input (July 4, 2026)
+
+**Branch:** dev (uncommitted at end of session — see Commit status below). Build clean (`npm run build` / `next build --no-lint`, `tsc --noEmit`).
+
+**Context:** Owner-directed 7-phase task, explicitly to be executed **one phase at a time with confirmation before each next phase**. This session covers Phases 0–2 only; Phases 3–6 are unstarted.
+
+### Phase 0 — Branch sync check
+
+Owner's stated premise ("150 commits behind origin/dev") did not match reality: `git rev-list --left-right --count origin/dev...dev` showed `0 behind, 7 ahead`. Flagged this to the owner rather than blindly rebasing; owner chose to push the 7 local commits first. Pushed (pre-push hook ran build + 27 Playwright tests, all passed); `dev` and `origin/dev` now match exactly.
+
+### Phase 1 — Re-diagnosed and fixed the `case_profiles` duplicate-key error
+
+Confirmed this was **not** the same bug as a previously-fixed `family_member_id`/`answers`-table duplicate-key issue — no document re-upload was needed. Root cause: `buildCaseProfile()` in `src/lib/case-profile.ts` used a racy SELECT-then-INSERT-or-UPDATE pattern against `case_profiles` (fired from 6+ call sites, including the fire-and-forget triggers and the daily rebuild cron), so two near-simultaneous writes for the same user could both see "no existing row" and both attempt an INSERT, tripping the `23505` unique-violation on `user_id`.
+
+**Fix:** replaced the SELECT + branch with a single atomic `supabase.from('case_profiles').upsert(profilePayload, { onConflict: 'user_id' })`.
+
+### Phase 2 — Field-type-aware phone/DOB normalization (international)
+
+**Root cause of the "phone/DOB confusion":** not a shared normalization bug — both field types were falling through to the same untyped generic text input, with zero format-aware parsing, in the legacy question-set schema (`src/lib/ds160-question-sets.ts` / `QuestionSetRunner.tsx`, used by `/apply/security/[personId]` and `/apply/dependent/[familyMemberId]`) and in `src/app/apply/story/page.tsx`'s Cluster 3 schema.
+
+**Built:**
+- `npm install libphonenumber-js date-fns`
+- `src/components/apply/questions/PhoneInput.tsx` (new) — `AsYouType` progressive formatting while typing; `isValidPhoneNumber` normalization on blur. No hardcoded country default — works for any of the 82 treaty countries, not just US/Canada.
+- `src/components/apply/questions/DateInput.tsx` (new) — native `<input type="date">` for unambiguous ISO 8601 storage (eliminates MM/DD vs DD/MM ambiguity), plus a date-fns human-readable confirmation string underneath (e.g. "July 4, 1990").
+- `src/lib/ds160-question-sets.ts` — `QuestionField.type` gains `'date' | 'phone'`; `M3-POC-06` (US point of contact phone) and `M3-AC-03` (accompanying-child phone) retyped to `'phone'`.
+- `src/components/apply/questions/QuestionSetRunner.tsx` — renders `PhoneInput`/`DateInput` for the new types.
+- `src/app/apply/story/page.tsx` — Cluster 3: `M3-A-03` (date of birth) retyped to `'date'`; `M3-A-11` (primary phone) retyped to `'phone'`; `M3-A-09` label de-hardcoded from "Current home address in Canada" to "Current home address".
+- `src/app/api/apply/parse-document/route.ts` — `namesLikelyMatch()` was silently deleting every non-ASCII character (`[^a-z\s]` filter), breaking identity matching for accented Latin names and any non-Latin script (Chinese, Arabic, Cyrillic, etc.). Fixed: NFD-decompose + strip diacritics, then keep any Unicode letter (`\p{L}`, `u` flag) instead of ASCII-only.
+
+**Verified live in browser** (via a temporary scratch route, since real in-app navigation stalled on `useApplicationGate` "Loading..." states during this session — not investigated further, noted as a dev-environment friction point, not a Phase 2 defect): UK number `+442071234567` → live-formats to `+44 20 7123 4567`; date `1990-07-04` stores as clean ISO and renders "July 4, 1990" underneath. Scratch route deleted after verification — nothing shipped from it.
+
+**Known adjacent issue, not fixed (scope boundary):** `namesLikelyMatch()`'s token-length filter (`t.length > 1`) still drops single-character CJK name tokens when whitespace-separated — a distinct tokenization problem from the diacritic/script-stripping bug that was actually asked for. Flagged as a candidate follow-up, not acted on.
+
+**Commit status:** uncommitted at end of session (per repo convention — commits only on explicit request). Note: the working tree also contains unrelated uncommitted changes (partnership co-investor gap-probe wiring in `simulator-engine.ts`/`types/simulator.ts`, and other files) that predate this session and were not touched or reviewed here.
+
+**Next steps:** await owner confirmation to start **Phase 3** (parallelize document parsing — concurrency-chunked, SSE-safe). Phases 3–6 remain fully unstarted: Phase 3 (parallel doc parsing), Phase 4 (wire real Business/Investment data into `/case-profile`), Phase 5 (hierarchical `case_code`/`person_code` scheme), Phase 6 (new `/onboarding` page — 3 gates, triage, per-family-member parallel uploads, "no silo" cross-module data-wiring audit).
 
 ---
 

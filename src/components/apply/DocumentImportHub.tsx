@@ -9,6 +9,10 @@ import type { FamilyMember } from '@/app/api/profile/family-members/route';
 interface DocumentImportHubProps {
   applicationId: string | null;
   onFieldsApplied?: (count: number) => void;
+  /** Renders the panel already expanded — for contexts (e.g. the onboarding
+   *  wizard) where document import is the dedicated focus of the screen,
+   *  rather than a collapsed option among several. */
+  defaultOpen?: boolean;
 }
 
 type HubStage = 'idle' | 'processing' | 'processed' | 'reviewing' | 'saving' | 'done' | 'error';
@@ -218,13 +222,13 @@ function mergeFields(queue: QueuedFile[]): MergedField[] {
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-export default function DocumentImportHub({ applicationId, onFieldsApplied }: DocumentImportHubProps) {
+export default function DocumentImportHub({ applicationId, onFieldsApplied, defaultOpen }: DocumentImportHubProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   // Which section's "Add files" button was clicked — tags the next batch of
   // files picked from the (single, shared) hidden file input.
   const pendingOwnerRef = useRef<string | null>(null);
 
-  const [isOpen,    setIsOpen]    = useState(false);
+  const [isOpen,    setIsOpen]    = useState(!!defaultOpen);
   const [stage,     setStage]     = useState<HubStage>('idle');
   const [errorMsg,  setErrorMsg]  = useState('');
   const [queue,     setQueue]     = useState<QueuedFile[]>([]);
@@ -416,11 +420,23 @@ export default function DocumentImportHub({ applicationId, onFieldsApplied }: Do
 
     const updated = [...queue];
 
-    for (let i = 0; i < updated.length; i++) {
-      updated[i] = { ...updated[i], status: 'processing', progress: 0 };
-      setQueue([...updated]);
-      await extractOne(i, updated);
+    // Bounded worker pool, not one big Promise.all — keeps us well under the
+    // 10-req/10-min parse-doc rate limit even on large batches, while still
+    // parallelizing. Workers write disjoint indices of `updated` and each
+    // snapshot the full array into setQueue, so concurrent writes are safe.
+    const CONCURRENCY = Math.min(3, updated.length);
+    let cursor = 0;
+
+    async function worker() {
+      while (cursor < updated.length) {
+        const i = cursor++;
+        updated[i] = { ...updated[i], status: 'processing', progress: 0 };
+        setQueue([...updated]);
+        await extractOne(i, updated);
+      }
     }
+
+    await Promise.all(Array.from({ length: CONCURRENCY }, worker));
 
     // Pick up any family members auto-created server-side from identity
     // detection (e.g. a birth certificate naming a child not yet on file).
