@@ -18,6 +18,8 @@ interface Ticket {
   admin_notes: string | null;
   resolved_at: string | null;
   created_at: string;
+  application_id: string | null;
+  case_code: string | null;
 }
 
 function getAdmin() {
@@ -126,6 +128,9 @@ export default async function AdminSupportPage() {
               <span>{ticket.user_email}</span>
               <span className="capitalize">{ticket.category}</span>
               <span>{fmtDate(ticket.created_at)}</span>
+              {ticket.case_code && (
+                <span className="text-[#C9A84C] font-mono">{ticket.case_code}</span>
+              )}
             </div>
 
             <p className="text-sm text-zinc-400 leading-relaxed whitespace-pre-line">{ticket.message}</p>

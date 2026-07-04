@@ -25,6 +25,22 @@ export async function POST(request: Request) {
     const userEmail = user?.email ?? (body.email as string | undefined) ?? 'anonymous';
 
     const service = createServiceClient();
+
+    let applicationId: string | null = null;
+    let caseCode: string | null = null;
+    if (user?.id) {
+      const { data: existingApp } = await service
+        .from('applications')
+        .select('id, case_code')
+        .eq('user_id', user.id)
+        .not('source', 'eq', 'simulator_standalone')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      applicationId = existingApp?.id ?? null;
+      caseCode = existingApp?.case_code ?? null;
+    }
+
     const { data: ticket, error } = await service
       .from('support_tickets')
       .insert({
@@ -35,6 +51,8 @@ export async function POST(request: Request) {
         message: message.trim(),
         status: 'open',
         priority: 'normal',
+        application_id: applicationId,
+        case_code: caseCode,
       })
       .select('id')
       .single();
