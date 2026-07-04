@@ -240,16 +240,16 @@ export default function Nav() {
                 </div>
               )}
 
-              {/* Documents — always visible */}
-              {showApp && (
-                <Link href={docsHref} className="text-sm transition-colors"
-                  style={{ color: linkColor(pathname.startsWith("/documents")) }}
-                  onMouseEnter={e => e.currentTarget.style.color = HOVER_ON}
-                  onMouseLeave={e => e.currentTarget.style.color = linkColor(pathname.startsWith("/documents"))}
-                >
-                  Documents
-                </Link>
-              )}
+              {/* Documents — always visible to any logged-in user, including
+                  simulator-only clients and while browsing /simulator, since
+                  it's the one place every generated report/document lives */}
+              <Link href={docsHref} className="text-sm transition-colors"
+                style={{ color: linkColor(pathname.startsWith("/documents")) }}
+                onMouseEnter={e => e.currentTarget.style.color = HOVER_ON}
+                onMouseLeave={e => e.currentTarget.style.color = linkColor(pathname.startsWith("/documents"))}
+              >
+                Documents
+              </Link>
 
               {/* Simulator — always visible for authenticated users */}
               <Link href="/simulator" className="text-sm transition-colors"
@@ -339,9 +339,7 @@ export default function Nav() {
                 </>
               )}
 
-              {showApp && (
-                <Link href={docsHref} className="text-sm py-2" style={{ color: pathname.startsWith("/documents") ? GOLD : DIM }} onClick={closeAll}>Documents</Link>
-              )}
+              <Link href={docsHref} className="text-sm py-2" style={{ color: pathname.startsWith("/documents") ? GOLD : DIM }} onClick={closeAll}>Documents</Link>
               <Link href="/simulator" className="text-sm py-2" style={{ color: pathname.startsWith("/simulator") ? GOLD : DIM }} onClick={closeAll}>Simulator</Link>
 
               <div style={{ height: "1px", background: "rgba(201,168,76,0.1)", margin: "4px 0" }} />
