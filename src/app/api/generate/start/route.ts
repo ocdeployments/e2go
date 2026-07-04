@@ -161,10 +161,12 @@ export async function POST(request: Request) {
       conditionalDocTypes.push('lease_premises_summary');
     }
 
-    // Sprint F-P: Add Investor 2 documents for complete_partnership buyers
+    // Sprint F-P: Add Investor 2 documents for complete_partnership buyers.
+    // cover_letter_p2 retired — the shared cover_letter now covers both
+    // investors jointly (see JOINT_PARTNERSHIP_DOC_TYPES in generation-engine.ts).
     if (partnerPayment) {
       conditionalDocTypes.push(
-        'cover_letter_p2', 'source_of_funds_p2', 'declaration_p2',
+        'source_of_funds_p2', 'declaration_p2',
         'qualifications_p2', 'nonimmigrant_intent_p2', 'resume_p2'
       );
     }

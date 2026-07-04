@@ -15,7 +15,7 @@ import * as Sentry from '@sentry/nextjs';
 
 const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
 
-type TaskType = 'evaluate' | 'coaching' | 'faq' | 'prep' | 'extract';
+type TaskType = 'evaluate' | 'coaching' | 'faq' | 'prep' | 'extract' | 'general';
 
 interface LLMMessage {
   role: 'system' | 'user' | 'assistant';
@@ -33,22 +33,30 @@ interface LLMOptions {
   timeoutMs?: number;
 }
 
-// Per-task model chains — OpenRouter tries each in order on failure
+// Per-task model chains — OpenRouter tries each in order on failure.
+// Tier 3 (evaluate/coaching/prep — Simulator, Gap Analysis, field-quality):
+// mimo-v2.5 stays first since these are high-volume interactive calls where
+// cost compounds fast; GLM 5.2 and the Anthropic sonnet-4-6 fallback below
+// only fire when mimo fails, so the cheap path stays the common case.
 const OPENROUTER_MODELS: Record<TaskType, string[]> = {
-  evaluate: ['xiaomi/mimo-v2.5', 'google/gemini-2.5-flash', 'google/gemini-2.5-pro'],
-  coaching: ['z-ai/glm-5.2', 'xiaomi/mimo-v2.5-pro', 'google/gemini-2.5-pro'],
+  evaluate: ['xiaomi/mimo-v2.5', 'z-ai/glm-5.2'],
+  coaching: ['xiaomi/mimo-v2.5', 'z-ai/glm-5.2'],
   faq:      ['xiaomi/mimo-v2.5', 'google/gemini-2.5-flash'],
-  prep:     ['xiaomi/mimo-v2.5', 'xiaomi/mimo-v2.5-pro'],
+  prep:     ['xiaomi/mimo-v2.5', 'z-ai/glm-5.2'],
   extract:  ['google/gemini-2.5-pro', 'z-ai/glm-5.2'],
+  // Generic assistant route (cover-letter drafts, follow-up question/summary
+  // generation) — GLM 5.2 primary, mimo-v2.5 as the OpenRouter fallback.
+  general:  ['z-ai/glm-5.2', 'xiaomi/mimo-v2.5'],
 };
 
 // Anthropic fallback models per task
 const ANTHROPIC_MODELS: Record<TaskType, string> = {
-  evaluate: 'claude-haiku-4-5-20251001',
-  coaching: 'claude-sonnet-5',
+  evaluate: 'claude-sonnet-4-6',
+  coaching: 'claude-sonnet-4-6',
   faq:      'claude-haiku-4-5-20251001',
-  prep:     'claude-haiku-4-5-20251001',
+  prep:     'claude-sonnet-4-6',
   extract:  'claude-haiku-4-5-20251001',
+  general:  'claude-sonnet-4-6',
 };
 
 // Reasoning models (e.g. gemini-2.5-pro) deduct hidden "thinking" tokens from
@@ -70,6 +78,7 @@ const DEFAULT_TIMEOUT_MS: Record<TaskType, number> = {
   faq:      30_000,
   prep:     30_000,
   extract:  45_000,
+  general:  30_000,
 };
 
 // Model pricing: USD per 1M tokens (input / output). Verified June 17, 2026.
@@ -302,6 +311,9 @@ async function callAnthropic(options: LLMOptions, deadline: number): Promise<LLM
 // ============================================================================
 const FDD_CHAIN = ['claude-opus-4-8', 'claude-sonnet-5'] as const;
 const FDD_OPENROUTER_FALLBACK = 'z-ai/glm-5.2';
+// Final fallback after Opus, Sonnet 5, and GLM 5.2 have all failed — an
+// extra Anthropic tier so a GLM outage doesn't take the whole chain down.
+const FDD_FINAL_ANTHROPIC_FALLBACK = 'claude-sonnet-4-6';
 
 export interface FddCallOptions {
   system: string;
@@ -313,7 +325,7 @@ export interface FddCallOptions {
 }
 
 /**
- * Call the FDD analysis chain: claude-opus-4-8 -> claude-sonnet-5 -> z-ai/glm-5.2 (OpenRouter).
+ * Call the FDD analysis chain: claude-opus-4-8 -> claude-sonnet-5 -> z-ai/glm-5.2 (OpenRouter) -> claude-sonnet-4-6.
  * Returns the model's text response and which model produced it, or null if every tier fails.
  */
 export async function callFDDModel(options: FddCallOptions): Promise<LLMResult | null> {
@@ -345,12 +357,108 @@ export async function callFDDModel(options: FddCallOptions): Promise<LLMResult |
     console.info('[llm-client] GLM 5.2 fallback succeeded for task=fdd');
     return result;
   } catch (err) {
+    console.warn('[llm-client] GLM 5.2 fallback failed for task=fdd:', err instanceof Error ? err.message : err);
+  }
+
+  try {
+    const result = await callAnthropicModel(FDD_FINAL_ANTHROPIC_FALLBACK, {
+      messages, max_tokens: options.max_tokens, task: 'fdd',
+      userId: options.userId, route: options.route,
+    });
+    console.info('[llm-client] Sonnet 4.6 final fallback succeeded for task=fdd');
+    return result;
+  } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error('[llm-client] All FDD chain tiers failed:', message);
     Sentry.captureException(err, { extra: { task: 'fdd', route: options.route } });
   }
 
   return null;
+}
+
+// ============================================================================
+// Generic tiered chain for the CIC / comprehension pipeline. These engines
+// used to all share the 'extract' TaskType chain regardless of how much a
+// mistake there actually costs — Case Intelligence Core (decides the case
+// theory everything else inherits) was on the same chain as CIC Verifier
+// (a QC pass over already-generated text). Split by actual importance:
+//   Tier 1 — claude-opus-4-8 -> claude-sonnet-5 -> z-ai/glm-5.2 -> claude-sonnet-4-6
+//   Tier 2 — claude-sonnet-5 -> z-ai/glm-5.2 -> claude-sonnet-4-6
+// ============================================================================
+const TIER1_ANTHROPIC_CHAIN = ['claude-opus-4-8', 'claude-sonnet-5'] as const;
+const TIER2_ANTHROPIC_CHAIN = ['claude-sonnet-5'] as const;
+const TIER_OPENROUTER_FALLBACK = 'z-ai/glm-5.2';
+const TIER_FINAL_ANTHROPIC_FALLBACK = 'claude-sonnet-4-6';
+
+export interface TieredCallOptions {
+  system: string;
+  user: string;
+  max_tokens?: number;
+  timeoutMs?: number;
+  route?: string;
+  userId?: string;
+  task: string; // label only — used for cost-log attribution and the OpenRouter reasoning/timeout profile
+}
+
+async function callTieredChain(
+  options: TieredCallOptions,
+  anthropicChain: readonly string[],
+): Promise<string | null> {
+  const messages: LLMMessage[] = [
+    { role: 'system', content: options.system },
+    { role: 'user', content: options.user },
+  ];
+
+  for (const model of anthropicChain) {
+    try {
+      const result = await callAnthropicModel(model, {
+        messages, max_tokens: options.max_tokens, task: options.task,
+        userId: options.userId, route: options.route, timeoutMs: options.timeoutMs,
+      });
+      return result.content;
+    } catch (err) {
+      console.warn(`[llm-client] ${model} failed for task=${options.task}:`, err instanceof Error ? err.message : err);
+    }
+  }
+
+  try {
+    const result = await callOpenRouterModel(TIER_OPENROUTER_FALLBACK, {
+      task: 'extract', // reuses the 'extract' reasoning/timeout profile
+      messages,
+      max_tokens: options.max_tokens,
+      userId: options.userId,
+      route: options.route,
+      timeoutMs: options.timeoutMs,
+    });
+    console.info(`[llm-client] GLM 5.2 fallback succeeded for task=${options.task}`);
+    return result.content;
+  } catch (err) {
+    console.warn(`[llm-client] GLM 5.2 fallback failed for task=${options.task}:`, err instanceof Error ? err.message : err);
+  }
+
+  try {
+    const result = await callAnthropicModel(TIER_FINAL_ANTHROPIC_FALLBACK, {
+      messages, max_tokens: options.max_tokens, task: options.task,
+      userId: options.userId, route: options.route, timeoutMs: options.timeoutMs,
+    });
+    console.info(`[llm-client] Sonnet 4.6 final fallback succeeded for task=${options.task}`);
+    return result.content;
+  } catch (err) {
+    console.error(`[llm-client] All chain tiers failed (task=${options.task}):`, err instanceof Error ? err.message : err);
+    Sentry.captureException(err, { extra: { task: options.task, route: options.route } });
+  }
+
+  return null;
+}
+
+/** Tier 1: claude-opus-4-8 -> claude-sonnet-5 -> z-ai/glm-5.2 -> claude-sonnet-4-6. */
+export async function callTier1Model(options: TieredCallOptions): Promise<string | null> {
+  return callTieredChain(options, TIER1_ANTHROPIC_CHAIN);
+}
+
+/** Tier 2: claude-sonnet-5 -> z-ai/glm-5.2 -> claude-sonnet-4-6. */
+export async function callTier2Model(options: TieredCallOptions): Promise<string | null> {
+  return callTieredChain(options, TIER2_ANTHROPIC_CHAIN);
 }
 
 // ============================================================================

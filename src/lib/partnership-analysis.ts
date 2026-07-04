@@ -12,6 +12,8 @@
  * say so instead of guessing.
  */
 
+import { personLabel } from './person-code';
+
 export type NationalityConclusion = 'qualifies' | 'does_not_qualify' | 'insufficient_data';
 
 export interface InvestorShare {
@@ -120,7 +122,7 @@ export function buildJointPartnershipBlock(
 ): string {
   return `
 ⚠️ PARTNERSHIP APPLICATION — JOINT DOCUMENT (two investors)
-This is a complete_partnership E-2 application with two investors: ${p1Name} (Investor 1) and ${p2Name} (Investor 2, nationality: ${p2Nationality || 'not confirmed'}, ownership: ${p2SharePct || 'not confirmed'}, personal investment: $${p2InvestAmount || 'not confirmed'}, role: ${p2Role || 'not confirmed'}).
+This is a complete_partnership E-2 application with two investors: ${p1Name} (${personLabel('P1')}) and ${p2Name} (${personLabel('P2')}, nationality: ${p2Nationality || 'not confirmed'}, ownership: ${p2SharePct || 'not confirmed'}, personal investment: $${p2InvestAmount || 'not confirmed'}, role: ${p2Role || 'not confirmed'}).
 
 This document covers the ENTERPRISE and BOTH investors jointly. Do NOT default to single-investor voice or write as if ${p1Name} is the sole owner. Rules for this document:
 - Where the document has personal sections (source of funds, net worth, ties, qualifications), address each investor's data SEPARATELY and never merge or average one investor's figures into the other's — each investor's financial picture stands alone.

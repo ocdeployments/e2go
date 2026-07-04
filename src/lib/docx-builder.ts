@@ -78,6 +78,8 @@ interface DocxBuilderOptions {
   contentText: string;
   documentType: string;
   lastName: string;
+  caseCode?: string;
+  personCode?: string;
 }
 
 interface ParsedLine {
@@ -280,7 +282,7 @@ function createWordTable(header: string[], data: string[][]): Table {
  * Build a formatted Document from content_text.
  */
 export function buildDocument(options: DocxBuilderOptions): Document {
-  const { documentType, lastName } = options;
+  const { documentType, lastName, caseCode, personCode } = options;
   const contentText = enforceStatutoryDeclaration(options.contentText, documentType);
   const parsedLines = parseContentLines(contentText);
 
@@ -510,7 +512,7 @@ export function buildDocument(options: DocxBuilderOptions): Document {
                 ],
                 children: [
                   new TextRun({
-                    text: `${lastName} — E-2 Application${tabLabel ? ` — ${tabLabel}` : ''}`,
+                    text: `${lastName}${personCode && personCode !== 'P1' ? ` (${personCode})` : ''} — E-2 Application${caseCode ? ` — ${caseCode}` : ''}${tabLabel ? ` — ${tabLabel}` : ''}`,
                     font: 'Century Schoolbook',
                     size: 20, // 10pt
                   }),

@@ -19,7 +19,7 @@
  */
 
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import { callLLM } from './llm-client';
+import { callTier1Model } from './llm-client';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -167,15 +167,13 @@ function comprehendPrompt(doc: UploadedDoc): string {
 }
 
 async function comprehendDoc(doc: UploadedDoc, userId: string): Promise<ComprehendResult | null> {
-  const raw = await callLLM({
-    task: 'extract',
+  const raw = await callTier1Model({
+    task: 'reason',
     route: '/lib/document-comprehension-engine',
     userId,
     max_tokens: 1200,
-    messages: [
-      { role: 'system', content: COMPREHEND_SYSTEM },
-      { role: 'user', content: comprehendPrompt(doc) },
-    ],
+    system: COMPREHEND_SYSTEM,
+    user: comprehendPrompt(doc),
   });
   if (!raw) return null;
 

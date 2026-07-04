@@ -6,7 +6,7 @@
 
 export interface QuestionField {
   key: string;
-  type: 'text' | 'textarea' | 'single' | 'multi' | 'currency';
+  type: 'text' | 'textarea' | 'single' | 'multi' | 'currency' | 'date' | 'phone';
   label: string;
   helperText?: string;
   options?: { value: string; label: string }[];
@@ -290,7 +290,7 @@ export const US_POC_QUESTIONS: QuestionField[] = [
     ],
   },
   { key: 'M3-POC-05', type: 'text', label: 'U.S. address', showIf: { key: 'M3-POC-01', value: 'yes' } },
-  { key: 'M3-POC-06', type: 'text', label: 'Phone number', showIf: { key: 'M3-POC-01', value: 'yes' } },
+  { key: 'M3-POC-06', type: 'phone', label: 'Phone number', showIf: { key: 'M3-POC-01', value: 'yes' } },
   { key: 'M3-POC-07', type: 'text', label: 'Email address', showIf: { key: 'M3-POC-01', value: 'yes' } },
 ];
 
@@ -329,7 +329,7 @@ export const TRAVEL_COMPANIONS_QUESTIONS: QuestionField[] = [
 export const APPLICATION_CONTACT_QUESTIONS: QuestionField[] = [
   { key: 'M3-AC-01', type: 'text', label: 'Contact person full name', required: true },
   { key: 'M3-AC-02', type: 'text', label: 'Contact person title / role in the business' },
-  { key: 'M3-AC-03', type: 'text', label: 'Contact phone number', required: true },
+  { key: 'M3-AC-03', type: 'phone', label: 'Contact phone number', required: true },
   { key: 'M3-AC-04', type: 'text', label: 'Contact email address', required: true },
   {
     key: 'M3-AC-05',

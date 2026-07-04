@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
-import { callAI } from '@/lib/ai';
+import { callLLM } from '@/lib/llm-client';
 import { getOperationalNeeds } from '@/lib/business-operational-needs';
 
 function getSupabase() {
@@ -180,20 +180,25 @@ APPLICANT BACKGROUND SUMMARY: ${tabJAnswers || 'No Tab J answers available'}
 Generate questions targeting the specific gaps
 in this application.`;
 
-    const aiResult = await callAI({
-      systemPrompt,
-      userPrompt: userMessage,
+    const aiResponse = await callLLM({
+      task: 'general',
+      route: '/api/followup/generate-questions',
+      userId: user.id,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userMessage },
+      ],
     });
 
-    if (aiResult.error || !aiResult.response) {
-      console.error('AI generation error:', aiResult.error);
+    if (!aiResponse) {
+      console.error('AI generation error: all providers failed');
       return NextResponse.json({ questions: DEFAULT_QUESTIONS });
     }
 
     // Parse JSON response
     try {
       // Try to extract JSON from response (in case there's extra text)
-      const jsonMatch = aiResult.response.match(/\[[\s\S]*\]/);
+      const jsonMatch = aiResponse.match(/\[[\s\S]*\]/);
       if (!jsonMatch) {
         throw new Error('No JSON array found in response');
       }
@@ -242,14 +247,19 @@ Return ONLY a JSON object with these fields:
   "question_number": 1
 }`;
 
-          const targetedResult = await callAI({
-            systemPrompt: 'You generate a single follow-up question for an E-2 visa applicant.',
-            userPrompt: targetedPrompt,
+          const targetedResponse = await callLLM({
+            task: 'general',
+            route: '/api/followup/generate-questions#targeted',
+            userId: user.id,
+            messages: [
+              { role: 'system', content: 'You generate a single follow-up question for an E-2 visa applicant.' },
+              { role: 'user', content: targetedPrompt },
+            ],
           });
 
-          if (targetedResult.response) {
+          if (targetedResponse) {
             try {
-              const targetedMatch = targetedResult.response.match(/\{[\s\S]*\}/);
+              const targetedMatch = targetedResponse.match(/\{[\s\S]*\}/);
               if (targetedMatch) {
                 const targetedQ = JSON.parse(targetedMatch[0]);
                 if (targetedQ.question_text) {
@@ -282,7 +292,7 @@ Return ONLY a JSON object with these fields:
 
       return NextResponse.json({ questions: finalQuestions });
     } catch (parseError) {
-      console.error('JSON parse error:', parseError, aiResult.response);
+      console.error('JSON parse error:', parseError, aiResponse);
       return NextResponse.json({ questions: DEFAULT_QUESTIONS });
     }
   } catch (error) {

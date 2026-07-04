@@ -27,14 +27,21 @@ import { buildExhibitRegistry, formatExhibitRegistryText, checkExhibitConsistenc
 import { buildDeterministicDocumentIndex } from './docx-package-constants';
 import { computeEnterpriseNationality, buildJointPartnershipBlock } from './partnership-analysis';
 import { callDocGenFallback } from './llm-client';
+import { personLabel } from './person-code';
 
 const PROMPTS_DIR = join(process.cwd(), 'prompts', 'v1', 'documents');
 
-// WS5 5.2 — the 8 documents shared across a complete_partnership case that
+// WS5 5.2 — the documents shared across a complete_partnership case that
 // need the joint-context block (business_plan, visa_category [Substantiality
 // Memo], marginality_rebuttal, fund_flow_chronology, net_worth_statement,
-// ds160_reference, gift_letter, property_portfolio) rather than the
-// single-investor _p2 context block.
+// ds160_reference, gift_letter, property_portfolio, cover_letter) rather than
+// the single-investor _p2 context block.
+//
+// cover_letter was promoted from the _p2-duplicate list to this joint list —
+// previously partnership cases got two separate single-voice cover letters
+// (cover_letter for P1, cover_letter_p2 for P2), and P1's copy never even
+// received the joint-context block since cover_letter wasn't in this set.
+// Now there is one shared cover letter addressing both investors together.
 const JOINT_PARTNERSHIP_DOC_TYPES = new Set<DocumentType>([
   'business_plan',
   'visa_category',
@@ -44,6 +51,7 @@ const JOINT_PARTNERSHIP_DOC_TYPES = new Set<DocumentType>([
   'ds160_reference',
   'gift_letter',
   'property_portfolio',
+  'cover_letter',
 ]);
 
 // ---------------------------------------------------------------------------
@@ -2384,8 +2392,10 @@ export async function runGenerationPipeline(
     const isPartnership = !!partnershipPayment;
 
     if (isPartnership) {
+      // cover_letter_p2 retired — the shared cover_letter now covers both
+      // investors jointly (see JOINT_PARTNERSHIP_DOC_TYPES above).
       conditionalDocTypes.push(
-        'cover_letter_p2', 'source_of_funds_p2', 'declaration_p2',
+        'source_of_funds_p2', 'declaration_p2',
         'qualifications_p2', 'nonimmigrant_intent_p2', 'resume_p2'
       );
     }
@@ -2515,7 +2525,7 @@ export async function runGenerationPipeline(
           // Sprint F-P: Inject Partner 2 context for _p2 document types
           const isP2Doc = docType.endsWith('_p2');
           if (isP2Doc && Object.keys(p2Answers).length > 0) {
-            const p2Name       = p2Answers['P2-NAME']       ?? 'Investor 2';
+            const p2Name       = p2Answers['P2-NAME']       ?? personLabel('P2');
             const p2Nation     = p2Answers['P2-NATIONALITY'] ?? '';
             const p2Shares     = p2Answers['P2-SHARES']     ?? '';
             const p2Invest     = p2Answers['P2-INVEST']     ?? '';
@@ -2523,7 +2533,7 @@ export async function runGenerationPipeline(
             const p2Sof        = p2Answers['P2-SOF']        ?? '';
             const p2Quals      = p2Answers['P2-QUALS']      ?? '';
             const p2Intent     = p2Answers['P2-INTENT']     ?? '';
-            const p1Name = (caseBrief as unknown as Record<string, unknown>).principal_name as string || 'Investor 1';
+            const p1Name = (caseBrief as unknown as Record<string, unknown>).principal_name as string || personLabel('P1');
 
             const p2Block = `
 ⚠️ PARTNERSHIP APPLICATION — INVESTOR 2 DOCUMENT
@@ -2570,11 +2580,11 @@ Generate the document using Investor 2's identity, name, nationality, source of 
           // Memo, Non-Marginality Rebuttal, Fund Flow Chronology, Net Worth
           // Statement, DS-160 Reference, Gift Letter, Property Portfolio).
           if (isPartnership && !isP2Doc && JOINT_PARTNERSHIP_DOC_TYPES.has(docType) && Object.keys(p2Answers).length > 0) {
-            const p1Name = (caseBrief as unknown as Record<string, unknown>).principal_name as string || 'Investor 1';
+            const p1Name = (caseBrief as unknown as Record<string, unknown>).principal_name as string || personLabel('P1');
             const p1Nationality = (caseBrief as unknown as Record<string, unknown>).treaty_country as string
               ?? (caseBrief as unknown as Record<string, unknown>).nationality as string
               ?? null;
-            const p2Name = p2Answers['P2-NAME'] ?? 'Investor 2';
+            const p2Name = p2Answers['P2-NAME'] ?? personLabel('P2');
             const p2Nation = p2Answers['P2-NATIONALITY'] ?? '';
             const p2Shares = p2Answers['P2-SHARES'] ?? '';
             const p2Invest = p2Answers['P2-INVEST'] ?? '';

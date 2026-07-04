@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
-import { callAI } from '@/lib/ai';
+import { callLLM } from '@/lib/llm-client';
 
 function getSupabase() {
   return createClient(
@@ -100,20 +100,25 @@ Return ONLY the JSON array. No other text.`;
 
     const userMessage = `FOLLOW-UP RESPONSES:\n${formattedResponses}\n\n${voiceProfile ? `VOICE PROFILE:\n${voiceProfile.voice_profile_text}\n` : ''}\n\nIdentify the strongest evidence from these responses.`;
 
-    const aiResult = await callAI({
-      systemPrompt,
-      userPrompt: userMessage,
+    const aiResponse = await callLLM({
+      task: 'general',
+      route: '/api/followup/completion-summary',
+      userId: user.id,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userMessage },
+      ],
     });
 
     let summary: string[];
 
-    if (aiResult.error || !aiResult.response) {
-      console.error('AI summary error:', aiResult.error);
+    if (!aiResponse) {
+      console.error('AI summary error: all providers failed');
       // Generate generic bullets from response content
       summary = GENERIC_BULLETS;
     } else {
       try {
-        const jsonMatch = aiResult.response.match(/\[[\s\S]*\]/);
+        const jsonMatch = aiResponse.match(/\[[\s\S]*\]/);
         if (!jsonMatch) {
           summary = GENERIC_BULLETS;
         } else {
@@ -123,7 +128,7 @@ Return ONLY the JSON array. No other text.`;
           }
         }
       } catch {
-        console.error('JSON parse error for summary:', aiResult.response);
+        console.error('JSON parse error for summary:', aiResponse);
         summary = GENERIC_BULLETS;
       }
     }

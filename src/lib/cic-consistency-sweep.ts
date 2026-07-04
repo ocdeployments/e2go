@@ -19,7 +19,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
-import { callLLM } from './llm-client';
+import { callTier2Model } from './llm-client';
 import type { DocumentType } from '@/types/generation';
 import { DOCUMENT_TYPE_LABELS } from '@/types/generation';
 
@@ -215,16 +215,14 @@ Output JSON:
 
 If all documents are consistent with the narrative, return: { "semantic_issues": [] }`;
 
-  const raw = await callLLM({
-    task: 'extract',
+  const raw = await callTier2Model({
+    task: 'verify',
     route: '/lib/cic-consistency-sweep',
     userId,
     max_tokens: 1500,
     timeoutMs: 45_000,
-    messages: [
-      { role: 'system', content: SEMANTIC_SYSTEM },
-      { role: 'user', content: prompt },
-    ],
+    system: SEMANTIC_SYSTEM,
+    user: prompt,
   });
 
   if (!raw) return [];

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
-import { callAI } from "@/lib/ai";
+import { callLLM } from "@/lib/llm-client";
 import { Redis } from "@upstash/redis";
 
 const RATE_LIMIT = 10;
@@ -86,22 +86,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const result = await callAI({
-      systemPrompt: "You are a helpful assistant.",
-      userPrompt: finalUserPrompt,
+    const response = await callLLM({
+      task: "general",
+      route: "/api/ai",
+      userId,
+      messages: [
+        { role: "system", content: "You are a helpful assistant." },
+        { role: "user", content: finalUserPrompt },
+      ],
     });
 
-    if (result.error) {
+    if (!response) {
       return NextResponse.json(
-        { error: result.error },
+        { error: "AI request failed" },
         { status: 500 }
       );
     }
 
-    return NextResponse.json({
-      response: result.response,
-      tokens_used: result.tokens_used,
-    });
+    return NextResponse.json({ response });
   } catch (error) {
     console.error("AI API route error:", error);
     return NextResponse.json(

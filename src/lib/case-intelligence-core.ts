@@ -34,7 +34,7 @@
 
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { createHash } from 'node:crypto';
-import { callLLM } from './llm-client';
+import { callTier1Model } from './llm-client';
 import { retrieveDoctrine, formatDoctrineForPrompt, type DoctrineChunk } from './doctrine-retrieval';
 import type { Dimension } from './document-comprehension-engine';
 import { computeFundSourceRiskProfile, computeDesperationRatio } from './cpu-risk-signals';
@@ -663,19 +663,16 @@ export async function generateCaseTheory(
     })
     .join('\n\n');
 
-  const raw = await callLLM({
-    task: 'extract',
+  const raw = await callTier1Model({
+    task: 'reason',
     route: '/lib/case-intelligence-core',
     userId,
-    // gemini-2.5-pro handles large token budgets without runaway reasoning.
     // 8000 gives full dimension_verdicts even for large case models.
     // JSON repair catches any residual truncation.
     max_tokens: 8000,
     timeoutMs: 90_000,
-    messages: [
-      { role: 'system', content: REASON_SYSTEM },
-      { role: 'user', content: reasonPrompt(caseModelBlock, doctrineBlock, caseModel.dataState) },
-    ],
+    system: REASON_SYSTEM,
+    user: reasonPrompt(caseModelBlock, doctrineBlock, caseModel.dataState),
   });
 
   if (!raw) return { status: 'failed', dimensionsCovered: 0, directiveCount: 0 };

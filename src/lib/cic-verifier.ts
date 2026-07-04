@@ -8,11 +8,11 @@
  * Structured output (VerifierResult) is stored on generated_documents.verifier_result
  * and drives the retry loop in generation-engine.ts (CIC-2.3).
  *
- * Uses callLLM task:'extract' (gemini-2.5-pro primary) — same task type as generateCaseTheory
+ * Uses callTier2Model (claude-sonnet-5 primary) — a QC pass over generated text, one tier below the Case Theory reasoning it checks
  * because this is also structured JSON extraction from a reasoning pass.
  */
 
-import { callLLM } from './llm-client';
+import { callTier2Model } from './llm-client';
 import type { DocumentType } from '@/types/generation';
 import { getSectionContract } from './section-contract-parser';
 
@@ -293,16 +293,14 @@ export async function verifyCaseTheoryCompliance(
 
   const prompt = buildVerifierPrompt(documentType, documentText, caseTheory);
 
-  const raw = await callLLM({
-    task: 'extract',
+  const raw = await callTier2Model({
+    task: 'verify',
     route: '/lib/cic-verifier',
     userId,
     max_tokens: 2000,
     timeoutMs: 60_000,
-    messages: [
-      { role: 'system', content: VERIFIER_SYSTEM },
-      { role: 'user',   content: prompt },
-    ],
+    system: VERIFIER_SYSTEM,
+    user: prompt,
   });
 
   if (!raw) return null;
