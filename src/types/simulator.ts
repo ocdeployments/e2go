@@ -49,6 +49,11 @@ export interface SimulatorContext {
   // Application metadata
   applicationType: string;
   createdAt: string;
+  // Partnership (complete_partnership) co-investor data — null when solo or
+  // when Investor 2 hasn't filled in the corresponding Partner Access field
+  p2Role: string | null;
+  p2Sof: string | null;
+  p2Quals: string | null;
 }
 
 export interface InvestmentSource {

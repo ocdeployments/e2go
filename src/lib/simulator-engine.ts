@@ -211,6 +211,9 @@ export async function buildSimulatorContext(applicationId: string): Promise<Simu
     businessPlanScore: caseProfile?.business_plan_score ?? null,
     applicationType: application.application_type || 'solo',
     createdAt: application.created_at,
+    p2Role: answersMap.get('P2-ROLE') || null,
+    p2Sof: answersMap.get('P2-SOF') || null,
+    p2Quals: answersMap.get('P2-QUALS') || null,
     fddPriorityQuestions: fddPriorityQuestions.length > 0 ? fddPriorityQuestions : undefined,
     caseTheoryNarrative: caseTheory?.narrative ?? null,
     caseTheoryNumbersStrategy: caseTheory?.numbers_strategy ?? null,
@@ -506,6 +509,36 @@ export function generateQuestions(context: SimulatorContext): Question[] {
         'What specific milestones has your business plan set for the first 6, 12, and 24 months of operation?',
       ]),
     });
+  }
+
+  // === PARTNERSHIP PROBES — each investor stands alone (spec §5.1.2/§5.1.3):
+  // a partnership case is only as strong as its least-documented partner, so
+  // these fire independently of the P1-only scores above.
+  if (context.applicationType === 'partnership') {
+    if (!context.p2Role || context.p2Role.trim().length < 5) {
+      questions.push({
+        id: 'GP-04',
+        category: 'gap_probe',
+        context: 'Investor 2 role/qualifications not on file',
+        relatesToField: 'management_role',
+        text: pick([
+          "Since neither of you holds majority control, you each need to independently show you develop and direct this enterprise. What specifically does your co-investor do that's distinct from your role?",
+          "Walk me through how you and your co-investor divide management responsibility — where does your authority end and theirs begin?",
+        ]),
+      });
+    }
+    if (!context.p2Sof || context.p2Sof.trim().length < 5) {
+      questions.push({
+        id: 'GP-05',
+        category: 'gap_probe',
+        context: 'Investor 2 source of funds not on file',
+        relatesToField: 'source_of_funds',
+        text: pick([
+          "Your source of funds trail is on file, but this is a two-investor case. Can you speak to where your co-investor's share of the capital came from?",
+          "Each investor's funds need an independent paper trail in a partnership case. What do you know about how your co-investor's contribution was sourced?",
+        ]),
+      });
+    }
   }
 
   // === ARCHETYPE QUESTIONS — 2 picked from archetype-specific pool ===
