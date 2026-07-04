@@ -1085,7 +1085,14 @@ Document content:\n\n${textSample.slice(0, 4000)}`,
 // Loose name match: normalize and compare token sets so "Jane A. Doe" matches
 // "Jane Doe" — good enough for surfacing a match/mismatch, not a legal check.
 function namesLikelyMatch(a: string, b: string): boolean {
-  const norm = (s: string) => new Set(s.toLowerCase().replace(/[^a-z\s]/g, '').split(/\s+/).filter(t => t.length > 1));
+  // Strip diacritics (José -> jose) via NFD decomposition, then keep any Unicode
+  // letter (\p{L} covers non-Latin scripts too — Chinese, Arabic, Cyrillic, etc.)
+  // instead of the old `[^a-z\s]` filter, which silently deleted every non-ASCII
+  // character and broke identity matching for international applicants.
+  const norm = (s: string) => new Set(
+    s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+      .replace(/[^\p{L}\s]/gu, '').split(/\s+/).filter(t => t.length > 1)
+  );
   const setA = norm(a);
   const setB = norm(b);
   if (setA.size === 0 || setB.size === 0) return false;
