@@ -10,6 +10,8 @@ import QuestionLabel from '@/components/apply/questions/QuestionLabel';
 import HelperText from '@/components/apply/questions/HelperText';
 import TextInput from '@/components/apply/questions/TextInput';
 import TextArea from '@/components/apply/questions/TextArea';
+import PhoneInput from '@/components/apply/questions/PhoneInput';
+import DateInput from '@/components/apply/questions/DateInput';
 import OptionButton from '@/components/apply/questions/OptionButton';
 import PreFillBadge from '@/components/apply/questions/PreFillBadge';
 import AdvisoryBlock from '@/components/apply/questions/AdvisoryBlock';
@@ -39,7 +41,7 @@ const DOCUMENTS = [
 
 interface QuestionField {
   key: string;
-  type: 'text' | 'textarea' | 'single';
+  type: 'text' | 'textarea' | 'single' | 'date' | 'phone';
   label: string;
   helperText?: string;
   options?: { value: string; label: string }[];
@@ -96,14 +98,14 @@ const CLUSTER_2_QUESTIONS: QuestionField[] = [
 const CLUSTER_3_QUESTIONS: QuestionField[] = [
   { key: 'M3-A-01', type: 'text', label: 'Full legal name as it appears on your passport', required: true },
   { key: 'M3-A-02', type: 'single', label: 'Have you ever used any other names?', options: [{ value: 'yes', label: 'Yes' }, { value: 'no', label: 'No' }], required: true },
-  { key: 'M3-A-03', type: 'text', label: 'Date of birth', required: true },
+  { key: 'M3-A-03', type: 'date', label: 'Date of birth', required: true },
   { key: 'M3-A-04', type: 'text', label: 'Place of birth (City and Country)', required: true },
   { key: 'M3-A-05', type: 'text', label: 'Country of citizenship', required: true, helperText: 'Pre-filled from your eligibility check.' },
   { key: 'M3-A-06', type: 'single', label: 'Do you hold citizenship in any other country?', options: [{ value: 'yes', label: 'Yes' }, { value: 'no', label: 'No' }], required: true },
   { key: 'M3-A-08', type: 'text', label: 'U.S. Social Security Number or Taxpayer ID (ITIN)', helperText: 'Leave blank if you do not have one — you will apply after arrival.' },
-  { key: 'M3-A-09', type: 'text', label: 'Current home address in Canada', required: true },
+  { key: 'M3-A-09', type: 'text', label: 'Current home address', required: true },
   { key: 'M3-A-10', type: 'text', label: 'How long have you lived at this address?' },
-  { key: 'M3-A-11', type: 'text', label: 'Primary phone number', required: true },
+  { key: 'M3-A-11', type: 'phone', label: 'Primary phone number', required: true },
   { key: 'M3-A-12', type: 'text', label: 'Email address', required: true, helperText: 'Pre-filled from your account.' },
   { key: 'M3-A-13', type: 'text', label: 'Social media platforms (list handles or "None")' },
   { key: 'M3-A-14', type: 'text', label: "Parents' full names" },
@@ -455,6 +457,16 @@ export default function StoryPage() {
                       />
                     ))}
                   </div>
+                ) : q.type === 'phone' ? (
+                  <PhoneInput
+                    value={answer?.value || ''}
+                    onChange={(val) => handleAnswerChange(q.key, val)}
+                  />
+                ) : q.type === 'date' ? (
+                  <DateInput
+                    value={answer?.value || ''}
+                    onChange={(val) => handleAnswerChange(q.key, val)}
+                  />
                 ) : (
                   <TextInput
                     value={answer?.value || ''}
