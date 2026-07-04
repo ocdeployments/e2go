@@ -45,8 +45,8 @@ interface PrepKit {
   section2: { title: string; subtitle: string; strengths: Strength[] };
   section3: { title: string; subtitle: string; highRisk: OfficerConcern[]; moderateRisk: OfficerConcern[]; noIssues: string[] };
   section4: { title: string; subtitle: string; businessOverview: string; managementRole: string; staffingPlan: string; marketPosition: string };
-  section5: { title: string; subtitle: string; totalInvested: string; breakdown: Breakdown[]; sourceChronology: string; committedAmount: string; fddNote?: string };
-  section6: { title: string; subtitle: string; keyDates: KeyDate[]; simulatorFeedback: string; documentsToCarry: string; whatMayHaveChanged: string; materialUpdates?: string[] };
+  section5: { title: string; subtitle: string; totalInvested: string; breakdown: Breakdown[]; sourceChronology: string[]; committedAmount: string; fddNote?: string };
+  section6: { title: string; subtitle: string; keyDates: KeyDate[]; simulatorFeedback: string; documentsToCarry: string[]; whatMayHaveChanged: string[]; materialUpdates?: string[] };
   section7: { title: string; subtitle: string; questions: InterviewQuestion[]; applicableProbes: WpProbe[] };
   section8?: { title: string; subtitle: string; rules: string[] };
   section9?: { title: string; subtitle: string; rounds: MockRound[] };
@@ -348,7 +348,11 @@ function Section5({ data }: { data: PrepKit["section5"] }) {
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
         <div>
           <Label>Source chronology</Label>
-          <Body style={{ fontSize: "12px", color: T.textDim }}>{data.sourceChronology}</Body>
+          <div style={{ display: "flex", flexDirection: "column", gap: "3px", marginTop: "4px" }}>
+            {data.sourceChronology.map((step, i) => (
+              <Body key={i} style={{ fontSize: "12px", color: T.textDim }}>→ {step}</Body>
+            ))}
+          </div>
         </div>
         <div>
           <Label>What is committed / deployed</Label>
@@ -388,11 +392,19 @@ function Section6({ data }: { data: PrepKit["section6"] }) {
       </div>
       <div>
         <Label>Documents to carry to the interview</Label>
-        <Body style={{ fontSize: "12px", color: T.textDim }}>{data.documentsToCarry}</Body>
+        <div style={{ display: "flex", flexDirection: "column", gap: "3px", marginTop: "4px" }}>
+          {data.documentsToCarry.map((doc, i) => (
+            <Body key={i} style={{ fontSize: "12px", color: T.textDim }}>→ {doc}</Body>
+          ))}
+        </div>
       </div>
       <div>
         <Label>What may have changed since you filed</Label>
-        <Body style={{ fontSize: "12px", color: T.textDim }}>{data.whatMayHaveChanged}</Body>
+        <div style={{ display: "flex", flexDirection: "column", gap: "3px", marginTop: "4px" }}>
+          {data.whatMayHaveChanged.map((item, i) => (
+            <Body key={i} style={{ fontSize: "12px", color: T.textDim }}>→ {item}</Body>
+          ))}
+        </div>
       </div>
       {data.materialUpdates && data.materialUpdates.length > 0 && (
         <div>

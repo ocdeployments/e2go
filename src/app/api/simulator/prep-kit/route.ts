@@ -568,7 +568,7 @@ Return ONLY valid JSON matching this structure:
     "breakdown": [
       { "item": "...", "amount": "..." }
     ],
-    "sourceChronology": "Narrative: where the money came from, how it moved to the business",
+    "sourceChronology": ["3-6 short bullet steps, in chronological order, narrating where the money came from and how it moved to the business — one discrete step per bullet (e.g. 'Earned via 12 years at [employer], accumulated in [account type]', 'Transferred $X from [account] to [account] on [date/timeframe]'), not one long paragraph"],
     "committedAmount": "What is irrevocably committed / already deployed",
     "fddNote": "If franchise: ODE timeline, royalty structure, AUV context (omit section if not franchise)"
   },
@@ -580,8 +580,8 @@ Return ONLY valid JSON matching this structure:
       { "event": "...", "date": "..." }
     ],
     "simulatorFeedback": "If simulatorTrend has entries: narrate the trend across sessions (improving/steady/regressing on readiness and needs-work count), leading with the most recent. Otherwise: 'No simulator sessions recorded — consider a practice run before your interview.'",
-    "documentsToCarry": "List the physical documents this applicant should bring, grounded in documentsOnFile (what's actually been uploaded and extracted) plus what's still missing for their application type and family configuration",
-    "whatMayHaveChanged": "Flag specific things that commonly change between filing and interview that the officer may ask about",
+    "documentsToCarry": ["One physical document per bullet that this applicant should bring, grounded in documentsOnFile (what's actually been uploaded and extracted) plus what's still missing for their application type and family configuration — short document names, not sentences"],
+    "whatMayHaveChanged": ["One specific thing per bullet that commonly changes between filing and interview that the officer may ask about — short and specific, not a paragraph"],
     "materialUpdates": [
       "A short editable checklist of things that may have changed since filing that this client should confirm/update by hand before the interview — e.g. 'Confirm current employee count is still accurate', 'Confirm lease is still active / renewed', 'Confirm bank balance still reflects committed capital'. These are deliberately generic prompts for the client to verify and fill in themselves, not facts you assert as true — write each as a short action item, not a claim."
     ]
