@@ -90,13 +90,30 @@ The following variables are available in the generation payload:
 - `voice_profile_text` — Applicant's writing style profile from their sample
 - `follow_up_responses` — Responses from the follow-up conversation
 - `consulate_post` — Target consulate (toronto, frankfurt, london, auckland)
+- `territory_market_analysis` — OPTIONAL. Present for any applicant (franchise or
+  independent) who ran the Market Analysis tool on their selected location. If the
+  applicant compared multiple candidate territories, this is the WINNING territory's
+  analysis only — the comparison itself already happened upstream, before this document
+  existed. Contains Census-based demographics, competitor density, a target market sizing
+  block (addressable segment, TAM, Year 1/Year 3 revenue targets), a non-marginality check,
+  and narrative blocks (MARKET_OVERVIEW, ECONOMIC_STRENGTH, DEMOGRAPHIC_FIT,
+  COMPETITIVE_LANDSCAPE, VERDICT). Investment figures always come from
+  `investment_breakdown` (what the client tells us they are paying) — never from a
+  franchisor territory document. When present, `territory_market_analysis` is the
+  authoritative source for Section III — see Section III instructions below.
+- `JOINT PARTNERSHIP BLOCK` — OPTIONAL. Present for `complete_partnership` cases with
+  two E-2 investor-applicants. States each investor's name, nationality, ownership
+  share, personal investment amount, and role, plus the enterprise-nationality
+  conclusion computed deterministically upstream. Treat that conclusion as settled —
+  never independently re-derive it. When present, follow PARTNERSHIP MODE below. When
+  absent, this is a single-principal plan — ignore PARTNERSHIP MODE entirely.
 
 Extract all relevant facts from these variables. Reference them explicitly
 in the document. Never leave placeholder text — use the actual values.
 
 For Business Plan, specifically extract:
 - Business description and services
-- Market analysis from Tab K
+- Market analysis: `territory_market_analysis` if present, otherwise Tab K and case_brief_json
 - Financial projections (revenue, expenses, break-even)
 
 ## INVESTMENT DATA — CRITICAL
@@ -154,12 +171,91 @@ Ensure your output:
 4. Exit strategy section demonstrates investor understands business risks
 5. Never uses legal conclusion language
 6. Contains specific dates, amounts, and locations — never vague
+7. If partnership (see PARTNERSHIP MODE below): no sentence about one partner could swap
+   names with a sentence about the other partner and still read as true
+
+---
+
+## PARTNERSHIP MODE (applies only when JOINT PARTNERSHIP BLOCK is present)
+
+This is a joint enterprise plan for TWO E-2 investor-applicants, not one. Their combined
+capital and combined weekly commitment support ONE business — the plan must read as a
+single coherent venture, never as two single-investor plans stapled together. When the
+JOINT PARTNERSHIP BLOCK is absent, ignore this section entirely and follow the structure
+above as written for a single principal.
+
+**Ownership and Governance** (place inside Section II, immediately after "Business name
+and legal structure"): State each investor's name, nationality, and ownership percentage
+from the JOINT PARTNERSHIP BLOCK. State the enterprise-nationality conclusion exactly as
+computed upstream — do not re-derive it, do not hedge it, do not offer an alternative
+reading. If the block flags `insufficient_data` (mixed-nationality partnership), state
+plainly that treaty-nationality confirmation for the majority interest holder is pending,
+and do not assert a nationality conclusion that was not given to you.
+Only describe governance mechanics (voting rights, deadlock provisions, buy-sell terms,
+board seats) if the operating agreement or a follow-up answer actually states them. If
+none were provided, describe ownership percentages and each partner's operational
+authority over their own stated role — never invent a governance structure to sound
+complete.
+
+**Partner Profiles** (place inside Section II, brief — 2-4 sentences per partner, not a
+biography): Each partner gets language distinct to their own role, investment, and
+background. Never write parallel sentences that could swap names and still be true — that
+is the fastest way to read as generated rather than written. Full career histories belong
+in the resume/qualifications exhibits (cite by tab); here, only state what connects this
+specific person to this specific business's operational needs.
+
+**Investment Summary** (place inside Section VII, before the 5-Year Projections Table):
+Break the total investment down by partner — each investor's personal contribution amount
+against the combined total, each expressed as a percentage of the combined enterprise
+cost. Use `investment_breakdown` for the combined figures and the JOINT PARTNERSHIP BLOCK
+for the per-partner split. Never let one partner's contribution disappear into a combined
+number with no attribution.
+
+**Source of Funds** (one sentence per partner, inside Section VII near the Investment
+Summary): Reference — do not reproduce — each partner's source-of-funds documentation by
+tab: "Mr./Ms. [Partner]'s source of funds is detailed in Tab [X]." The full source-of-funds
+narrative belongs in the standalone Source of Funds document(s), never duplicated here.
+
+**Non-Marginality — TWO HOUSEHOLDS (overrides the single-household VII.B instructions
+above when partnership is present):** The Non-Marginality Proof Table must show income
+capacity sufficient for TWO investor households, not one. Add a row for each partner's
+household income need and each partner's net owner income (their individual projected
+salary from the staffing plan), plus a combined coverage ratio:
+
+```
+| Metric                               | Year 1 | Year 3 | Year 5 |
+|----------------------------------------|--------|--------|--------|
+| Projected Revenue                      | $X     | $X     | $X     |
+| Net Owner Income — [Partner 1 Name]    | $X     | $X     | $X     |
+| Net Owner Income — [Partner 2 Name]    | $X     | $X     | $X     |
+| Household Income Need — [Partner 1]    | $X     | $X     | $X     |
+| Household Income Need — [Partner 2]    | $X     | $X     | $X     |
+| Combined Coverage Ratio                | X.X×   | X.X×   | X.X×   |
+```
+
+Combined Coverage Ratio = (Partner 1 Net Owner Income + Partner 2 Net Owner Income) ÷
+(Partner 1 Household Need + Partner 2 Household Need). If either partner's household
+income need was not provided, state that figure as "not yet confirmed" rather than
+estimating it — do not silently drop the row.
+
+**Staffing Plan — role allocation** (place inside Section VIII): Show each partner's
+executive role and day-to-day responsibilities as non-overlapping — the organizational
+structure should make clear who owns which function (e.g., one partner running
+operations, the other running sales/marketing/finance), drawn from each partner's stated
+role in the JOINT PARTNERSHIP BLOCK. Do not assign both partners the same responsibilities
+in parallel language.
+
+**What never to invent:** partnership agreement terms, voting thresholds, deadlock/buy-
+sell clauses, capital-call provisions, or any partner's title beyond what was actually
+provided. If a follow-up answer or intake field is silent on a governance detail, state
+ownership and role only — leave the mechanics unstated rather than fabricated.
 
 ---
 
 ## TEST CASE REFERENCE
 
-Use this test case to validate the generation:
+Use this test case (single-principal path — PARTNERSHIP MODE above governs when the
+JOINT PARTNERSHIP BLOCK is present) to validate the generation:
 
 **Applicant:** Michael James Chen
 **Business:** Kumon franchise in Cedar Park, Texas
@@ -241,16 +337,45 @@ Investment amount, business type, location, and growth potential.
 
 **Section II — Business Description:**
 - Business name and legal structure
+- If JOINT PARTNERSHIP BLOCK is present: Ownership and Governance Overview + Partner
+  Profiles go here — see PARTNERSHIP MODE above for exact placement and rules
 - Services offered (Kumon math and reading programs)
 - Target demographic (students K-12)
 - Location and facility description
 - Years of operation (for franchises: franchise system history)
 
 **Section III — Market Analysis:**
-- Local market: Cedar Park, Texas demographic data
-- Target market size: number of potential students in service area
-- Market trends in education services
-- Reference local market research
+
+This section exists to make Section VII's financial projections, the Section IX growth
+plan, and the VII.B Non-Marginality Proof Table look evidence-based rather than
+speculative. Every number that appears later as a revenue assumption should be traceable
+back to a claim made here. Cover:
+- Local demographics relevant to this specific business (not the applicant's home country)
+- Target customer segment(s) and the size of that segment in the service area
+- Demand indicators for this business type in this location
+- Competitor overview (cross-reference, do not duplicate, Section IV's full competitive
+  analysis — here, tie competitor presence/absence to demand and pricing conclusions)
+- Pricing logic — how the pricing model was set relative to the local market
+- Why this specific territory, not the business category in the abstract, supports the
+  growth plan in Section IX
+
+**If `territory_market_analysis` is present** (applicant ran the Market Analysis tool on
+this location): treat it as the backbone of this section. Draw the demographic,
+competitor, and target-market-sizing language directly from its narrative blocks and cite
+its Year 1/Year 3 revenue targets and non-marginality check — do not independently
+re-derive figures that contradict it. Present only the chosen territory's findings, framed
+as this business's operating market. Never turn this section into a multi-territory
+comparison; the comparison already happened upstream, before this document existed.
+Investment and fee figures in Section VII always come from `investment_breakdown` — the
+territory analysis is a market/demographic source only, never a source for what the
+applicant is paying.
+
+**If `territory_market_analysis` is absent:** conduct a narrower, lighter market analysis
+using `case_brief_json`, `module_3_answers`, and general knowledge of this business
+category and location. State findings plainly and do not fabricate specific statistics
+(population counts, income figures, competitor counts) that were not provided — describe
+market conditions qualitatively where hard numbers are unavailable, and note that detailed
+market data can be provided at interview if requested.
 
 **Section IV — Competitive Analysis:**
 - Direct competitors: other tutoring and learning centers in Cedar Park
@@ -271,6 +396,9 @@ Investment amount, business type, location, and growth potential.
 - Referral programs
 
 **Section VII — Financial Projections:**
+If JOINT PARTNERSHIP BLOCK is present: insert the Investment Summary and Source of Funds
+reference described in PARTNERSHIP MODE above before the 5-Year Projections Table.
+
 Year 1 through Year 5 projections including:
 - Revenue (enrollment growth curve)
 - Expenses (rent, payroll, materials, royalties)
@@ -311,6 +439,9 @@ conclusion about plausibility. Omit this table entirely for non-franchise applic
 when Item 19 contains no comparable performance data — do not fabricate a system average.
 
 **VII.B — Non-Marginality Proof Table (REQUIRED IN ALL CASES):**
+
+If JOINT PARTNERSHIP BLOCK is present, use the TWO-HOUSEHOLD table in PARTNERSHIP MODE
+above instead of the single-household table below.
 
 Include this table immediately after the 5-year projections. Use the applicant's actual
 household income need from their intake data. The Coverage Ratio = Net Owner Income ÷
@@ -365,6 +496,8 @@ If no CPA has been engaged, substitute: "These projections are based on [source]
 is prepared to present supporting market data at interview."
 
 **Section VIII — Staffing Plan:**
+- If JOINT PARTNERSHIP BLOCK is present: role allocation between partners — see
+  PARTNERSHIP MODE above — before listing non-owner hires
 - Initial hires: position titles, wages, hire dates
 - Growth hires: timeline for additional staff
 - Organizational structure showing investor's executive role
@@ -394,7 +527,10 @@ The content should be ready to save as a .txt or .docx file.
 
 - [ ] Executive summary present
 - [ ] Business description with specific services and location
-- [ ] Market analysis with local demographic data
+- [ ] Market analysis with local demographic data, tied forward into Section VII's
+      revenue assumptions and the VII.B Non-Marginality Proof Table (not free-floating)
+- [ ] If `territory_market_analysis` was provided, Section III uses it as the backbone and
+      does not present a multi-territory comparison
 - [ ] Competitive differentiation clearly stated
 - [ ] Operations plan describes day-to-day activities
 - [ ] Marketing strategy with specific channels
@@ -417,3 +553,11 @@ The content should be ready to save as a .txt or .docx file.
 - [ ] Franchise applicants: FDD Item 19 system benchmark table included if Item 19 data exists
 - [ ] CPA certification note at end of Section VII
 - [ ] Page count within consulate target range for this consulate_post
+- [ ] If partnership: Ownership and Governance Overview + Partner Profiles present in
+      Section II, distinct per partner (no swappable "twin" sentences)
+- [ ] If partnership: Investment Summary shows per-partner contribution breakdown in
+      Section VII, and source of funds is referenced per partner by tab, not reproduced
+- [ ] If partnership: Non-Marginality Proof Table uses the TWO-HOUSEHOLD format with a
+      combined coverage ratio, not the single-household table
+- [ ] If partnership: Staffing Plan shows non-overlapping role allocation between partners
+- [ ] If partnership: no governance/voting/buy-sell terms invented beyond what was provided
