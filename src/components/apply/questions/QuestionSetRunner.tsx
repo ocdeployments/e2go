@@ -8,6 +8,8 @@ import QuestionLabel from '@/components/apply/questions/QuestionLabel';
 import HelperText from '@/components/apply/questions/HelperText';
 import TextInput from '@/components/apply/questions/TextInput';
 import TextArea from '@/components/apply/questions/TextArea';
+import PhoneInput from '@/components/apply/questions/PhoneInput';
+import DateInput from '@/components/apply/questions/DateInput';
 import OptionButton from '@/components/apply/questions/OptionButton';
 import PreFillBadge from '@/components/apply/questions/PreFillBadge';
 
@@ -133,6 +135,10 @@ export default function QuestionSetRunner({ questions, applicationId, familyMemb
               </div>
             ) : q.type === 'textarea' ? (
               <TextArea value={answer?.value || ''} onChange={(val) => handleAnswerChange(q.key, val)} rows={4} />
+            ) : q.type === 'phone' ? (
+              <PhoneInput value={answer?.value || ''} onChange={(val) => handleAnswerChange(q.key, val)} />
+            ) : q.type === 'date' ? (
+              <DateInput value={answer?.value || ''} onChange={(val) => handleAnswerChange(q.key, val)} />
             ) : (
               <TextInput value={answer?.value || ''} onChange={(val) => handleAnswerChange(q.key, val)} />
             )}

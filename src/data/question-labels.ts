@@ -16,6 +16,7 @@ export const SECTION_MAP: Record<string, string> = {
   QI: 'section_3_investment',
   QJ: 'section_4_qualifications',
   QL: 'section_5_family',
+  'M3-T': 'section_6_ties',
 };
 
 export const SECTION_LABELS: Record<string, string> = {
