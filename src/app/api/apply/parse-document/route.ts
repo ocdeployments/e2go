@@ -665,6 +665,137 @@ Dates: YYYY-MM-DD.
 }`,
   },
 
+  // ── DS-160 (nonimmigrant visa application) ────────────────────────────────
+  ds160: {
+    maxTokens: 1200,
+    prompt: `You are extracting data from a completed DS-160 Online Nonimmigrant Visa Application for an E-2 visa case.
+This form belongs to ONE specific person (could be the principal applicant, a spouse, or a child) — extract only what is on the form, do not guess who else it might apply to.
+Return ONLY a valid JSON object. Return null for any field not found.
+Dates: YYYY-MM-DD. Booleans: return as "yes" or "no" strings.
+
+{
+  "applicant_full_name": "surname and given names as shown",
+  "date_of_birth": "YYYY-MM-DD",
+  "place_of_birth_city": "city of birth",
+  "place_of_birth_country": "country of birth",
+  "nationality": "nationality / country of citizenship",
+  "gender": "male or female as shown",
+  "marital_status": "single, married, divorced, widowed, etc.",
+  "passport_number": "passport number",
+  "passport_issuing_country": "country that issued the passport",
+  "passport_issue_date": "YYYY-MM-DD",
+  "passport_expiry_date": "YYYY-MM-DD",
+
+  "home_address": "permanent home address",
+  "phone_number": "primary phone number",
+  "email_address": "email address",
+
+  "purpose_of_trip": "visa classification / purpose of trip (e.g. E-2 Treaty Investor)",
+  "specific_travel_plans": "yes or no — has specific travel dates",
+  "intended_arrival_date": "YYYY-MM-DD if stated",
+  "intended_length_of_stay": "as stated (e.g. 2 years)",
+  "us_point_of_contact_name": "US point of contact person or organization",
+  "us_point_of_contact_address": "US point of contact address",
+
+  "spouse_full_name": "spouse's full name if married",
+  "spouse_date_of_birth": "spouse's date of birth YYYY-MM-DD if stated",
+  "spouse_nationality": "spouse's nationality if stated",
+  "children_count": "number of children listed, numeric",
+  "children_names": ["array of children's full names if listed"],
+
+  "father_full_name": "father's full name if listed",
+  "mother_full_name": "mother's full name if listed",
+
+  "present_employer_name": "current employer or business name",
+  "present_occupation": "current occupation / job title",
+  "present_employer_address": "current employer address",
+  "monthly_income": "monthly income if stated (numeric)",
+  "prior_employment_summary": "brief summary of employment history section if present",
+
+  "education_summary": "brief summary of educational history listed on the form",
+
+  "has_prior_us_travel": "yes or no — has traveled to the US before",
+  "prior_us_travel_summary": "dates/purpose of prior US travel if stated",
+  "has_prior_visa_refusal": "yes or no — was ever refused a US visa",
+  "visa_refusal_explanation": "explanation if a refusal is disclosed",
+  "security_background_flags": "yes or no — any 'yes' answers in the Security and Background section (this is a red flag worth surfacing, do not guess if not visible)",
+  "security_background_notes": "brief note on which security/background question was answered yes, if any, or null",
+
+  "form_notes": "any other notable case-relevant information from the form"
+}`,
+  },
+
+  // ── E-2 petition cover letter (attorney's synthesized case narrative) ─────
+  cover_letter: {
+    maxTokens: 1500,
+    prompt: `You are extracting data from an attorney-drafted E-2 visa petition cover letter. This document is usually the single richest narrative summary of the whole case — treat it as authoritative for the business/investment story, not a form to skim.
+Return ONLY a valid JSON object. Return null for any field not found — do not guess or infer beyond what the letter states.
+Numbers: plain integers only, no commas or symbols.
+
+{
+  "applicant_full_name": "principal applicant's full name",
+  "business_legal_name": "legal name of the enterprise",
+  "business_dba": "DBA / trade name if different from legal name",
+  "business_description": "1-3 sentence description of what the business does, in the letter's own framing",
+  "business_location": "city and state of operations",
+  "ownership_percentage": "applicant's ownership percentage in the enterprise",
+  "applicant_title_role": "applicant's title (e.g. Manager, Managing Member) and role description",
+
+  "total_investment_amount": "total investment amount cited (numeric)",
+  "investment_breakdown_summary": "brief summary of how the investment breaks down (franchise fee, rent, equipment, etc.)",
+  "source_of_funds_summary": "how the letter describes where the investment funds came from",
+  "funds_at_risk_argument": "the letter's core argument for why funds are irrevocably committed / at risk",
+
+  "hiring_plan_summary": "hiring / job-creation plan as described (e.g. Year 1 vs Year 5 headcount)",
+  "revenue_projection_summary": "revenue projections as cited in the letter",
+  "marginality_argument": "the letter's argument for why the business is not marginal",
+
+  "home_country_ties_summary": "the letter's summary of the applicant's ties to their home country",
+  "case_theory_summary": "the overall persuasive narrative/theory of the case as the attorney frames it — the throughline argument for why this case should be approved",
+
+  "family_members_mentioned": ["array of any spouse/dependent names mentioned in the letter"]
+}`,
+  },
+
+  // ── Organizational documents (membership certificates, operating agreements,
+  // corporate resolutions, cap tables) ──────────────────────────────────────
+  organizational_document: {
+    maxTokens: 800,
+    prompt: `You are extracting data from a business organizational document (membership certificate, operating agreement, corporate resolution, or similar entity-formation record) for an E-2 visa case.
+Return ONLY a valid JSON object. Return null for any field not found.
+Dates: YYYY-MM-DD.
+
+{
+  "document_type_detail": "specific type of document (e.g. Membership Certificate, Operating Agreement, Corporate Resolution)",
+  "entity_name": "legal name of the entity",
+  "entity_type": "LLC, Corporation, Partnership, etc.",
+  "state_of_formation": "state where entity is formed/registered",
+  "formation_date": "YYYY-MM-DD if stated",
+  "members": [
+    { "name": "member/owner full name", "ownership_percentage": "ownership percentage if stated", "role": "title or role if stated (e.g. Managing Member)" }
+  ],
+  "document_date": "date the document was executed, YYYY-MM-DD",
+  "notable_provisions": "brief note on anything case-relevant (e.g. management authority, transfer restrictions)"
+}`,
+  },
+
+  // ── Fallback for anything that doesn't fit a known category — captures a
+  // general summary rather than misapplying an unrelated schema (e.g. forcing
+  // a cover letter or certificate through the resume schema and losing data).
+  general_supporting_document: {
+    maxTokens: 600,
+    prompt: `You are extracting case-relevant data from a supporting document for an E-2 visa application. This document did not clearly match a known category, so extract whatever is genuinely useful without guessing.
+Return ONLY a valid JSON object. Return null for any field not found.
+
+{
+  "document_description": "1 sentence describing what this document appears to be",
+  "people_named": ["array of full names mentioned"],
+  "business_names_mentioned": ["array of business/entity names mentioned"],
+  "key_figures": ["array of notable dollar amounts, dates, or numbers with brief context, e.g. '$50,000 — franchise fee'"],
+  "summary": "2-4 sentence summary of the document's case-relevant content"
+}`,
+  },
+
 };
 
 // ─── Intake field mapping ─────────────────────────────────────────────────────
@@ -773,6 +904,35 @@ const INTAKE_FIELD_MAP: Record<string, Record<string, string>> = {
     // field on its own; this doc type exists to surface a spouse via identity
     // detection. Full extraction is still stored in extracted_json.
   },
+  ds160: {
+    // familyMemberId (set below from ownerFamilyMemberId) already scopes these
+    // writes to the correct person, so it's safe to map identity fields here —
+    // a spouse's DS-160 upload won't overwrite the principal's answers.
+    'applicant_full_name':   'M3-A-01',
+    'date_of_birth':         'M3-A-DOB',
+    'nationality':           'M3-A-05',
+    'passport_number':       'M3-A-PASSPORT',
+    'passport_expiry_date':  'M3-A-PASSPORT-EXP',
+    'home_address':          'M3-T-01',
+    'present_employer_name': 'M3-Q-06',
+  },
+  cover_letter: {
+    // Intentionally sparse: the cover letter's business/investment narrative
+    // fields are lower-confidence paraphrases of numbers that business_plan /
+    // investment_records extract directly from source records, so they are
+    // left out of intake writeback to avoid a lower-quality source winning a
+    // field-collision race. The full extraction is still stored in
+    // extracted_json and read directly by the prep-kit dossier and
+    // case-profile via documentsOnFile.
+  },
+  organizational_document: {
+    'entity_name': 'M3-E-01',
+  },
+  general_supporting_document: {
+    // No intake mapping — this is the fallback for documents that don't
+    // clearly fit any known category, so the extracted summary is stored in
+    // extracted_json only rather than guessed onto a specific question key.
+  },
 };
 
 // ─── Human-readable labels ────────────────────────────────────────────────────
@@ -861,7 +1021,10 @@ async function detectDocumentType(textSample: string, userId: string): Promise<s
     ],
   });
   const detected = (result ?? '').trim().toLowerCase().replace(/[^a-z_]/g, '');
-  return (COMPREHENSIVE_SCHEMAS[detected] ? detected : null) ?? 'resume';
+  // Fall back to the generic extractor, not 'resume' — applying the resume
+  // schema to an unrecognized document (e.g. a cover letter or certificate)
+  // silently produces near-empty extraction instead of capturing what's there.
+  return (COMPREHENSIVE_SCHEMAS[detected] ? detected : null) ?? 'general_supporting_document';
 }
 
 // ─── Identity detection ───────────────────────────────────────────────────────

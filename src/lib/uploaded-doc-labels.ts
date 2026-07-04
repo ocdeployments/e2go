@@ -11,7 +11,13 @@ export const UPLOADED_DOC_TYPE_LABELS: Record<string, string> = {
   franchise_agreement: 'Franchise Agreement (signed)',
   lease_agreement: 'Lease Agreement',
   acquisition_financials: 'Acquisition Financials',
-  government_form: 'Government Form (DS-160, G-28…)',
+  ds160: 'DS-160 Confirmation',
+  cover_letter: 'Petition Cover Letter',
+  organizational_document: 'Entity / Organizational Document',
+  government_form: 'Government Form (G-28…)',
+  birth_certificate: 'Birth Certificate',
+  marriage_certificate: 'Marriage Certificate',
+  general_supporting_document: 'Supporting Document',
 };
 
 export function uploadedDocTypeLabel(value: string | null | undefined): string {

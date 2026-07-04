@@ -25,7 +25,10 @@ const DOC_TYPE_OPTIONS = [
   { value: 'franchise_agreement',    label: 'Franchise Agreement (signed)',     hint: 'Agreement date, territory, fees, term' },
   { value: 'lease_agreement',        label: 'Lease Agreement',                 hint: 'Business address, rent, lease term' },
   { value: 'acquisition_financials', label: 'Acquisition Financials',          hint: 'Purchase price, 3-year P&L, employees' },
-  { value: 'government_form',        label: 'Government Form (DS-160, G-28…)', hint: 'Applicant info, visa type, business details' },
+  { value: 'ds160',                   label: 'DS-160 Confirmation',              hint: 'Identity, family, travel, employment, security answers — for this specific person' },
+  { value: 'cover_letter',            label: 'Petition Cover Letter',            hint: 'Attorney case narrative — business, investment, hiring, ties story' },
+  { value: 'organizational_document', label: 'Entity / Organizational Document', hint: 'Membership certificate, operating agreement, corporate resolution' },
+  { value: 'government_form',        label: 'Other Government Form (G-28…)',   hint: 'Applicant info, visa type, business details' },
   { value: 'birth_certificate',      label: 'Birth Certificate',               hint: 'Name, DOB, place of birth, parents' },
   { value: 'marriage_certificate',   label: 'Marriage Certificate',            hint: 'Spouses, date and place of marriage' },
 ] as const;
