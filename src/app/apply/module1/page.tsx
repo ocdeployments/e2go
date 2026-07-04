@@ -5,7 +5,6 @@ import { useTrackSectionVisit } from "@/hooks/useTrackSectionVisit";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
-import PreFilledField from "@/components/PreFilledField";
 
 interface QuizSession {
   id: string;
@@ -79,12 +78,6 @@ export default function Module1Page() {
     business_formation: false,
   });
 
-  // Screen 5 State
-  const [familyComposition, setFamilyComposition] = useState<"individual" | "couple" | "family">("individual");
-  const [spouseName, setSpouseName] = useState("");
-  const [spouseDob, setSpouseDob] = useState("");
-  const [children, setChildren] = useState<{ name: string; dob: string }[]>([]);
-
   useEffect(() => {
     const loadSession = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -110,10 +103,6 @@ export default function Module1Page() {
       setApplicationType(session.application_type || "solo");
       setPartnerName(session.partner_name || "");
       setPartnerEmail(session.partner_email || "");
-      setFamilyComposition(session.family_type || "individual");
-      setSpouseName(session.spouse_name || "");
-      setSpouseDob(session.spouse_dob || "");
-      setChildren(session.children || []);
 
       setLoading(false);
     };
@@ -121,9 +110,9 @@ export default function Module1Page() {
     loadSession();
   }, [supabase, router]);
 
-  // Auto-trigger save when step 6 is reached (step 6 has no button)
+  // Auto-trigger save when step 5 is reached (step 5 has no button)
   useEffect(() => {
-    if (step === 6) {
+    if (step === 5) {
       void saveApplicationRecord();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -208,7 +197,6 @@ export default function Module1Page() {
           .update({
             application_type: applicationType,
             processing_path: applicationType === "partnership" ? "partnership" : "solo",
-            family_composition: familyComposition,
             working_target_date: computeTargetDate(quizSession?.result_json?.target_date),
             module_1_complete: true,
           })
@@ -220,7 +208,6 @@ export default function Module1Page() {
             user_id: user.id,
             application_type: applicationType,
             processing_path: applicationType === "partnership" ? "partnership" : "solo",
-            family_composition: familyComposition,
             working_target_date: computeTargetDate(quizSession?.result_json?.target_date),
             module_1_complete: true,
             status: "in_progress",
@@ -267,13 +254,13 @@ export default function Module1Page() {
       {/* Step indicator — sits below the global Nav */}
       <header className="fixed top-16 left-0 right-0 z-10 bg-[#0a0a0a] border-b border-[rgba(201,168,76,0.2)]">
         <div className="flex justify-end items-center h-10 px-6 md:px-12 max-w-4xl mx-auto">
-          <div className="text-[10px] font-medium uppercase tracking-[0.18em] text-[rgba(245,240,232,0.72)]">Step {step} of 6</div>
+          <div className="text-[10px] font-medium uppercase tracking-[0.18em] text-[rgba(245,240,232,0.72)]">Step {step} of 5</div>
         </div>
       </header>
 
       {/* Progress Bar */}
       <div className="fixed top-[104px] left-0 right-0 h-[3px] bg-[rgba(245,240,232,0.1)] z-10">
-        <div className="h-full bg-[#C9A84C] transition-all duration-500" style={{ width: `${(step / 6) * 100}%` }} />
+        <div className="h-full bg-[#C9A84C] transition-all duration-500" style={{ width: `${(step / 5) * 100}%` }} />
       </div>
 
       <main className="relative z-10 pt-32 pb-12 px-6 md:px-12 max-w-4xl mx-auto">
@@ -548,153 +535,10 @@ export default function Module1Page() {
           </div>
         )}
 
-        {/* SCREEN 5: Family Composition */}
+        {/* SCREEN 5: Application Record Creation */}
         {step === 5 && (
-          <div className="border border-[rgba(201,168,76,0.2)] bg-[#0a0a0a] p-8 md:p-12">
-            <div className="text-[10px] font-medium uppercase tracking-[0.18em] text-[#C9A84C] mb-4">Module 1 — Step 5</div>
-            <h1 className="font-['Cormorant_Garamond'] text-[32px] md:text-[42px] font-light leading-tight mb-4">
-              Family Composition
-            </h1>
-            <p className="text-[#f5f0e8]/60 text-[16px] leading-relaxed mb-8">
-              Confirm or update the family details from your eligibility check. This data goes directly into your application record.
-            </p>
-
-            <div className="mb-8">
-              <label className="block text-[12px] font-medium uppercase tracking-[0.12em] text-[#f5f0e8]/60 mb-4">
-                Composition <span className="text-[#C9A84C]">*</span>
-              </label>
-              <div className="space-y-3 max-w-[480px]">
-                {([
-                  { value: "individual", label: "Individual", desc: "Just me" },
-                  { value: "couple", label: "Couple", desc: "Spouse included" },
-                  { value: "family", label: "Family", desc: "Spouse and dependent children" },
-                ] as const).map((opt) => (
-                  <button
-                    key={opt.value}
-                    onClick={() => setFamilyComposition(opt.value)}
-                    className={`w-full text-left p-4 border transition-all duration-200 ${
-                      familyComposition === opt.value
-                        ? "border-[#C9A84C] bg-[rgba(201,168,76,0.06)]"
-                        : "border-[rgba(201,168,76,0.2)] hover:border-[rgba(201,168,76,0.4)]"
-                    }`}
-                  >
-                    <div className="text-[15px] font-medium text-[#f5f0e8] mb-1">{opt.label}</div>
-                    <div className="text-[13px] text-[#f5f0e8]/50">{opt.desc}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {(familyComposition === "couple" || familyComposition === "family") && (
-              <PreFilledField
-                questionId="spouse_details"
-                label="Spouse Details"
-                prefillValue={spouseName ? `${spouseName} ${spouseDob ? `(DOB: ${spouseDob})` : ""}` : null}
-                prefillNote="From your eligibility check"
-              >
-                <div className="space-y-4">
-                  <input
-                    type="text"
-                    value={spouseName}
-                    onChange={(e) => setSpouseName(e.target.value)}
-                    className="w-full p-4 bg-[rgba(255,255,255,0.04)] border border-[rgba(201,168,76,0.2)] text-[#f5f0e8] text-[15px] outline-none focus:border-[#C9A84C] transition-colors"
-                    placeholder="Spouse legal name"
-                  />
-                  <input
-                    type="date"
-                    value={spouseDob}
-                    onChange={(e) => setSpouseDob(e.target.value)}
-                    className="w-full p-4 bg-[rgba(255,255,255,0.04)] border border-[rgba(201,168,76,0.2)] text-[#f5f0e8] text-[15px] outline-none focus:border-[#C9A84C] transition-colors"
-                  />
-                </div>
-              </PreFilledField>
-            )}
-
-            {familyComposition === "family" && (
-              <div className="mt-8">
-                <div className="flex items-center justify-between mb-4">
-                  <label className="block text-[12px] font-medium uppercase tracking-[0.12em] text-[#f5f0e8]/60">
-                    Dependent Children
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => setChildren([...children, { name: "", dob: "" }])}
-                    className="text-[12px] text-[#C9A84C] hover:text-[#D4BC6A] uppercase tracking-wider font-medium"
-                  >
-                    + Add Child
-                  </button>
-                </div>
-
-                {children.length === 0 && (
-                  <button
-                    type="button"
-                    onClick={() => setChildren([{ name: "", dob: "" }])}
-                    className="w-full py-8 border border-dashed border-[rgba(201,168,76,0.3)] text-[#f5f0e8]/40 hover:border-[#C9A84C] hover:text-[#C9A84C] transition-colors text-[14px] uppercase tracking-widest"
-                  >
-                    Add a dependent child
-                  </button>
-                )}
-
-                <div className="space-y-4">
-                  {children.map((child, idx) => (
-                    <div key={idx} className="p-4 border border-[rgba(201,168,76,0.15)] bg-[rgba(255,255,255,0.02)]">
-                      <div className="flex justify-between items-center mb-3">
-                        <span className="text-[11px] uppercase tracking-wider text-[#C9A84C]/70">Child {idx + 1}</span>
-                        <button
-                          type="button"
-                          onClick={() => setChildren(children.filter((_, i) => i !== idx))}
-                          className="text-[11px] uppercase tracking-wider text-[#ef4444] hover:text-[#f87171]"
-                        >
-                          Remove
-                        </button>
-                </div>
-                      <div className="space-y-3">
-                        <input
-                          type="text"
-                          value={child.name}
-                          onChange={(e) => {
-                            const updated = [...children];
-                            updated[idx].name = e.target.value;
-                            setChildren(updated);
-                          }}
-                          className="w-full p-3 bg-[rgba(255,255,255,0.04)] border border-[rgba(201,168,76,0.2)] text-[#f5f0e8] text-[14px] outline-none focus:border-[#C9A84C] transition-colors"
-                          placeholder="Child's legal name"
-                        />
-                        <input
-                          type="date"
-                          value={child.dob}
-                          onChange={(e) => {
-                            const updated = [...children];
-                            updated[idx].dob = e.target.value;
-                            setChildren(updated);
-                          }}
-                          className="w-full p-3 bg-[rgba(255,255,255,0.04)] border border-[rgba(201,168,76,0.2)] text-[#f5f0e8] text-[14px] outline-none focus:border-[#C9A84C] transition-colors"
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div className="flex justify-between mt-12">
-              <button onClick={handleBack} className="px-6 py-3 text-[#f5f0e8]/60 hover:text-[#f5f0e8] text-[14px] tracking-wide transition-colors">
-                Back
-              </button>
-              <button
-                onClick={handleNext}
-                className="px-8 py-4 bg-[#C9A84C] text-[#0a0a0a] text-[14px] font-medium uppercase tracking-[0.12em] hover:bg-[#D4BC6A] transition-colors"
-              >
-                Confirm and Continue →
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* SCREEN 6: Application Record Creation */}
-        {step === 6 && (
           <div className="border border-[rgba(201,168,76,0.2)] bg-[#0a0a0a] p-8 md:p-12 text-center">
-            <div className="text-[10px] font-medium uppercase tracking-[0.18em] text-[#C9A84C] mb-4">Module 1 — Step 6</div>
+            <div className="text-[10px] font-medium uppercase tracking-[0.18em] text-[#C9A84C] mb-4">Module 1 — Step 5</div>
             <h1 className="font-['Cormorant_Garamond'] text-[32px] md:text-[42px] font-light leading-tight mb-6">
               Creating your application record
             </h1>
