@@ -199,6 +199,7 @@ Return ONLY a valid JSON object (no markdown, no prose) with this exact structur
       temperature: 0.35,
       max_tokens: 6000,
       signal: controller.signal,
+      timeoutMs: 90_000,
     });
 
     if (!content) {

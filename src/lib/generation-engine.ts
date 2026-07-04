@@ -1221,9 +1221,9 @@ export async function callClaudeAPI(payload: GenerationPayload): Promise<string>
     // Check for deprecation warnings
     await checkDeprecationWarning(response);
 
-    const content = response.content[0];
-    if (content.type !== 'text') {
-      throw new Error('Claude returned non-text response');
+    const content = response.content.find((b): b is Anthropic.TextBlock => b.type === 'text');
+    if (!content) {
+      throw new Error('Claude returned no text block');
     }
     return content.text;
   }
@@ -1342,9 +1342,9 @@ export async function humanizeDocument(
     // Check for deprecation warnings
     await checkDeprecationWarning(response);
 
-    const content = response.content[0];
-    if (content.type !== 'text') {
-      throw new Error('Humanization returned non-text response');
+    const content = response.content.find((b): b is Anthropic.TextBlock => b.type === 'text');
+    if (!content) {
+      throw new Error('Humanization returned no text block');
     }
     return content.text;
   } catch (err) {
@@ -3257,8 +3257,8 @@ Generate the document using Investor 2's identity, name, nationality, source of 
             messages: [{ role: 'user', content: 'Regenerate the document now.' }],
           });
 
-          const retryContent = retryResponse.content[0];
-          if (retryContent.type === 'text') {
+          const retryContent = retryResponse.content.find((b): b is Anthropic.TextBlock => b.type === 'text');
+          if (retryContent) {
             const wc = countWords(retryContent.text);
             const pages = estimatePages(wc);
 

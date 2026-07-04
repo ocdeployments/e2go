@@ -138,14 +138,14 @@ interface LLMResult {
   model: string;
 }
 
-async function callOpenRouterModel(model: string, options: LLMOptions): Promise<LLMResult> {
+async function callOpenRouterModel(model: string, options: LLMOptions, timeoutMsOverride?: number): Promise<LLMResult> {
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) throw new Error('OPENROUTER_API_KEY not set');
 
   const timeoutController = new AbortController();
   const timeoutId = setTimeout(
     () => timeoutController.abort(),
-    options.timeoutMs ?? DEFAULT_TIMEOUT_MS[options.task]
+    timeoutMsOverride ?? options.timeoutMs ?? DEFAULT_TIMEOUT_MS[options.task]
   );
 
   // Compose with any caller-supplied signal
@@ -213,13 +213,24 @@ async function callOpenRouterModel(model: string, options: LLMOptions): Promise<
 
 // Tries every model in the task's OpenRouter chain in order, falling
 // through on any failure (HTTP error, timeout, or empty content).
-async function callOpenRouter(options: LLMOptions): Promise<LLMResult> {
+async function callOpenRouter(options: LLMOptions, deadline: number): Promise<LLMResult> {
   const models = OPENROUTER_MODELS[options.task];
   let lastErr: unknown = new Error('No OpenRouter models configured');
 
   for (const model of models) {
+    const remaining = deadline - Date.now();
+    if (remaining <= 0) {
+      const message = `Deadline exceeded before trying ${model} (task=${options.task})`;
+      lastErr = new Error(message);
+      console.warn(`[llm-client] ${message}`);
+      break;
+    }
+    // Cap each attempt to the task's baseline timeout so one slow model
+    // can't consume the whole remaining deadline and starve the rest of
+    // the chain (see callLLMWithMeta for the shared deadline).
+    const attemptTimeout = Math.min(options.timeoutMs ?? DEFAULT_TIMEOUT_MS[options.task], remaining);
     try {
-      return await callOpenRouterModel(model, options);
+      return await callOpenRouterModel(model, options, attemptTimeout);
     } catch (err) {
       lastErr = err;
       console.warn(`[llm-client] ${model} failed for task=${options.task}:`, err instanceof Error ? err.message : err);
@@ -231,7 +242,7 @@ async function callOpenRouter(options: LLMOptions): Promise<LLMResult> {
 
 async function callAnthropicModel(
   model: string,
-  options: { messages: LLMMessage[]; max_tokens?: number; task: string; userId?: string; route?: string },
+  options: { messages: LLMMessage[]; max_tokens?: number; task: string; userId?: string; route?: string; timeoutMs?: number; signal?: AbortSignal },
 ): Promise<LLMResult> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error('ANTHROPIC_API_KEY not set');
@@ -244,15 +255,23 @@ async function callAnthropicModel(
     .map(m => ({ role: m.role as 'user' | 'assistant', content: m.content }));
 
   const t0 = Date.now();
-  const response = await anthropic.messages.create({
-    model,
-    max_tokens: options.max_tokens ?? 700,
-    system:     systemMsg || undefined,
-    messages:   conversationMsgs,
-  });
+  // Without an explicit timeout the SDK defaults to 10 minutes (plus
+  // retries) — that silently turned "all providers failed" into "hangs
+  // for minutes" whenever this fallback fired. See callAnthropic below.
+  const response = await anthropic.messages.create(
+    {
+      model,
+      max_tokens: options.max_tokens ?? 700,
+      system:     systemMsg || undefined,
+      messages:   conversationMsgs,
+    },
+    { timeout: options.timeoutMs, signal: options.signal },
+  );
 
-  const block = response.content[0];
-  if (block.type !== 'text') throw new Error('Anthropic returned non-text block');
+  // Content can include non-text blocks first (e.g. extended-thinking blocks
+  // on reasoning-capable models) — take the first text block, not index 0.
+  const textBlock = response.content.find((b): b is Anthropic.TextBlock => b.type === 'text');
+  if (!textBlock) throw new Error('Anthropic returned no text block');
 
   const tokensIn  = response.usage.input_tokens;
   const tokensOut = response.usage.output_tokens;
@@ -263,11 +282,14 @@ async function callAnthropicModel(
     latencyMs: Date.now() - t0,
   });
 
-  return { content: block.text, model };
+  return { content: textBlock.text, model };
 }
 
-async function callAnthropic(options: LLMOptions): Promise<LLMResult> {
-  return callAnthropicModel(ANTHROPIC_MODELS[options.task], options);
+async function callAnthropic(options: LLMOptions, deadline: number): Promise<LLMResult> {
+  // Give the fallback a working floor even if the OpenRouter chain consumed
+  // most of the overall deadline — handing it ~0ms just guarantees failure.
+  const timeoutMs = Math.max(deadline - Date.now(), 15_000);
+  return callAnthropicModel(ANTHROPIC_MODELS[options.task], { ...options, timeoutMs });
 }
 
 // ============================================================================
@@ -412,16 +434,23 @@ export async function callLLM(options: LLMOptions): Promise<string | null> {
  * `model_used` (e.g. interview_prep_kits) rather than hardcoding a guess.
  */
 export async function callLLMWithMeta(options: LLMOptions): Promise<LLMResult | null> {
+  // options.timeoutMs (or the task default) is the deadline for the WHOLE
+  // operation — every OpenRouter attempt plus the Anthropic fallback share
+  // this clock, so a slow first model can't silently consume the entire
+  // budget and starve the rest of the chain. Each OpenRouter attempt is
+  // additionally capped to DEFAULT_TIMEOUT_MS[task] — see callOpenRouter.
+  const deadline = Date.now() + (options.timeoutMs ?? DEFAULT_TIMEOUT_MS[options.task]);
+
   // Layer 1: OpenRouter (handles model-level fallback via models array)
   try {
-    return await callOpenRouter(options);
+    return await callOpenRouter(options, deadline);
   } catch (err) {
     console.warn(`[llm-client] OpenRouter failed for task=${options.task}:`, err instanceof Error ? err.message : err);
   }
 
   // Layer 2: Anthropic direct (different provider — survives OpenRouter outages)
   try {
-    const result = await callAnthropic(options);
+    const result = await callAnthropic(options, deadline);
     console.info(`[llm-client] Anthropic fallback succeeded for task=${options.task}`);
     return result;
   } catch (err) {
