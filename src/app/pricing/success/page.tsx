@@ -22,8 +22,8 @@ const PAYMENT_TYPE_NAMES: Record<string, string> = {
 };
 
 const PAYMENT_TYPE_NEXT_STEP: Record<string, { label: string; href: string }> = {
-  complete:                   { label: 'Begin Your Application', href: '/apply/module1' },
-  complete_partnership:       { label: 'Begin Your Application', href: '/apply/module1' },
+  complete:                   { label: 'Begin Your Application', href: '/onboarding' },
+  complete_partnership:       { label: 'Begin Your Application', href: '/onboarding' },
   interview_prep:             { label: 'Go to Simulator',        href: '/simulator' },
   interview_prep_partnership: { label: 'Go to Simulator',        href: '/simulator' },
   fdd_intelligence:         { label: 'View FDD Analysis',      href: '/fdd' },

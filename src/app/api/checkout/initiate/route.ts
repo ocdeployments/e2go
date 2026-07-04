@@ -115,7 +115,7 @@ export async function POST(request: NextRequest) {
       payment_method_types: ['card'],
       line_items: [{ price: priceId, quantity: 1 }],
       mode: 'payment',
-      success_url: `${appUrl}/case-profile?payment=success`,
+      success_url: `${appUrl}/onboarding?payment=success`,
       cancel_url: `${appUrl}/results`,
       ...(customerEmail ? { customer_email: customerEmail } : {}),
       metadata: {
