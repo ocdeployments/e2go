@@ -126,6 +126,21 @@ export async function buildCaseProfile(userId: string): Promise<CaseProfile> {
 
   const application = applications?.[0];
 
+  // ── 2b. Partnership detection ──────────────────────────────────────────────
+  // Same complete_partnership payment check used in generation-engine.ts,
+  // gap-analysis/page.tsx, and the /api/partner2/intake route — determines
+  // whether scoreCase() should apply the per-partner (Investor 2) checks.
+  const { data: partnerPayment } = await supabase
+    .from('payments')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('payment_type', 'complete_partnership')
+    .eq('status', 'completed')
+    .limit(1)
+    .maybeSingle();
+
+  const isPartnership = !!partnerPayment;
+
   // ── 3. Answers (only when application exists) ─────────────────────────────
   const { data: answerRows } = application
     ? await supabase
@@ -225,7 +240,7 @@ export async function buildCaseProfile(userId: string): Promise<CaseProfile> {
         ? { sessionsUsed: completedSims.length, latestInconsistencyCount: latestSim?.inconsistency_count ?? 0 }
         : undefined;
 
-      const gapResult = scoreCase(appRow, answers, documents, caseBrief, simData, archetype);
+      const gapResult = scoreCase(appRow, answers, documents, caseBrief, simData, archetype, undefined, isPartnership);
 
       for (const cat of gapResult.categories) {
         if (cat.id === 'source_of_funds')  sourceOfFundsScore  = cat.score;
@@ -260,12 +275,6 @@ export async function buildCaseProfile(userId: string): Promise<CaseProfile> {
   const simulatorReadiness = completedSims.length > 0;
 
   // ── 10. Persist to case_profiles ─────────────────────────────────────────
-  const { data: existing } = await supabase
-    .from('case_profiles')
-    .select('id, created_at')
-    .eq('user_id', userId)
-    .single();
-
   const profilePayload = {
     user_id:                userId,
     quiz_session_id:        session?.id ?? null,
@@ -289,19 +298,12 @@ export async function buildCaseProfile(userId: string): Promise<CaseProfile> {
     updated_at: new Date().toISOString(),
   };
 
-  let createdAt = new Date().toISOString();
-
-  if (existing) {
-    await supabase.from('case_profiles').update(profilePayload).eq('user_id', userId);
-    createdAt = existing.created_at ?? createdAt;
-  } else {
-    const { data: inserted } = await supabase
-      .from('case_profiles')
-      .insert(profilePayload)
-      .select('created_at')
-      .single();
-    createdAt = inserted?.created_at ?? createdAt;
-  }
+  const { data: upserted } = await supabase
+    .from('case_profiles')
+    .upsert(profilePayload, { onConflict: 'user_id' })
+    .select('created_at')
+    .single();
+  const createdAt = upserted?.created_at ?? new Date().toISOString();
 
   // D1 — sync denormalized scores into case_model (the CIC canonical table).
   // case_profiles stays populated for the ~14 existing readers during migration;

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
+import { assignNextPersonCode } from '@/lib/person-code';
 
 export interface FamilyMember {
   id: string;
@@ -13,6 +14,7 @@ export interface FamilyMember {
   passport_number: string | null;
   role: string | null;
   sort_order: number;
+  person_code: string | null;
 }
 
 export async function GET() {
@@ -25,7 +27,7 @@ export async function GET() {
 
   const { data, error } = await supabase
     .from('family_members')
-    .select('id, user_id, member_type, first_name, middle_name, last_name, gender, date_of_birth, nationality, passport_number, role, sort_order, created_at, updated_at')
+    .select('id, user_id, member_type, first_name, middle_name, last_name, gender, date_of_birth, nationality, passport_number, role, sort_order, person_code, created_at, updated_at')
     .eq('user_id', user.id)
     .order('sort_order', { ascending: true })
     .order('created_at', { ascending: true });
@@ -51,6 +53,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'member_type is required' }, { status: 400 });
   }
 
+  const personCode = await assignNextPersonCode(supabase, user.id);
+
   const { data, error } = await supabase
     .from('family_members')
     .insert({
@@ -65,6 +69,7 @@ export async function POST(req: Request) {
       passport_number: body.passport_number ?? null,
       role:            body.role ?? null,
       sort_order:      body.sort_order ?? 0,
+      person_code:     personCode,
     })
     .select()
     .single();

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
+import { computeCaseFinancials, type CaseFinancials } from '@/lib/case-financials';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,6 +33,7 @@ export interface CaseProfileResponse {
 
   // Application
   applicationId: string | null;
+  caseCode: string | null;
 
   // FDD
   fddCount: number;
@@ -83,6 +85,13 @@ export interface CaseProfileResponse {
   // Interview Prep Partnership — partner invite
   hasInterviewPrepPartnership: boolean;
   partnerInvite: { partnerEmail: string; accepted: boolean } | null;
+
+  // Business/Investment financial spine — computed once from the live
+  // M3-F-*/M3-I-* answers (see src/lib/case-financials.ts). Null until an
+  // application exists; individual fields inside stay null where the intake
+  // hasn't captured that number rather than being estimated.
+  caseFinancials: CaseFinancials | null;
+  sourceOfFundsTypes: string[] | null;
 }
 
 export interface DocumentExtractionUI {
@@ -102,6 +111,7 @@ export interface FamilyMemberCaseUI {
   dateOfBirth: string | null;
   nationality: string | null;
   passportNumber: string | null;
+  personCode: string | null;
   // Filled-in count among the 5 base fields captured directly on family_members
   // (first_name, last_name, date_of_birth, nationality, passport_number).
   answeredCount: number;
@@ -210,14 +220,14 @@ export async function GET(request: Request) {
 
     supabase
       .from('applications')
-      .select('id, payment_status')
+      .select('id, payment_status, case_code')
       .eq('user_id', userId)
       .neq('source', 'simulator_standalone')
       .order('created_at', { ascending: false }),
 
     supabase
       .from('family_members')
-      .select('id, member_type, first_name, last_name, date_of_birth, nationality, passport_number')
+      .select('id, member_type, first_name, last_name, date_of_birth, nationality, passport_number, person_code')
       .eq('user_id', userId)
       .order('sort_order', { ascending: true })
       .order('created_at', { ascending: true }),
@@ -255,7 +265,7 @@ export async function GET(request: Request) {
     : null;
   // N3 FIX: Honor the applicationId param when provided. Fall back to
   // paid-first selection to preserve backwards-compat with callers that omit it.
-  const allApps = (appResult.data ?? []) as { id: string; payment_status: string }[];
+  const allApps = (appResult.data ?? []) as { id: string; payment_status: string; case_code: string | null }[];
   const app = (requestedAppId ? allApps.find(a => a.id === requestedAppId) : null)
     ?? allApps.find(a => a.payment_status === 'paid')
     ?? allApps[0]
@@ -283,6 +293,8 @@ export async function GET(request: Request) {
   let fieldOfStudy: string | null = null;
   let yearsExperience: string | null = null;
   let priorVisaHistory: string | null = null;
+  let caseFinancials: CaseFinancials | null = null;
+  let sourceOfFundsTypes: string[] | null = null;
 
   const familyMembersRaw = (familyMembersResult.data ?? []) as {
     id: string;
@@ -292,6 +304,7 @@ export async function GET(request: Request) {
     date_of_birth: string | null;
     nationality: string | null;
     passport_number: string | null;
+    person_code: string | null;
   }[];
 
   let familyMembers: FamilyMemberCaseUI[] = familyMembersRaw.map(m => ({
@@ -302,6 +315,7 @@ export async function GET(request: Request) {
     dateOfBirth:           m.date_of_birth,
     nationality:           m.nationality,
     passportNumber:        m.passport_number,
+    personCode:            m.person_code,
     answeredCount:         [m.first_name, m.last_name, m.date_of_birth, m.nationality, m.passport_number].filter(Boolean).length,
     totalExpectedCount:    5,
     extractedAnswerCount:  0,
@@ -309,7 +323,7 @@ export async function GET(request: Request) {
   }));
 
   if (app?.id) {
-    const [{ data: qmaRows }, { data: identityRows }, { data: theoryRow }, { data: docRows }, { data: memberAnswerRows }, { data: memberDocRows }] = await Promise.all([
+    const [{ data: qmaRows }, { data: identityRows }, { data: financialsRows }, { data: theoryRow }, { data: docRows }, { data: memberAnswerRows }, { data: memberDocRows }] = await Promise.all([
       supabase
         .from('answers')
         .select('question_key, answer_value')
@@ -320,6 +334,11 @@ export async function GET(request: Request) {
         .select('question_key, answer_value')
         .eq('application_id', app.id)
         .in('question_key', ['M3-A-03', 'M3-A-04', 'M3-A-05', 'M3-A-PASSPORT', 'M3-A-PASSPORT-EXP', 'M3-Q-01', 'M3-Q-02A', 'M3-Q-05', 'M3-A-21']),
+      supabase
+        .from('answers')
+        .select('question_key, answer_value')
+        .eq('application_id', app.id)
+        .in('question_key', ['M3-F-02', 'M3-F-03', 'M3-F-04', 'M3-F-05', 'M3-F-NEW-01', 'M3-F-NET', 'M3-I-04', 'M3-I-05', 'M3-I-06', 'M3-I-PROJECTIONS', 'M3-I-BREAKEVEN']),
       supabase
         .from('case_theory')
         .select('narrative, transferable_skills, numbers_strategy, dimension_verdicts, directives, doctrine_citations, built_at')
@@ -377,6 +396,17 @@ export async function GET(request: Request) {
       fieldOfStudy         = idv['M3-Q-02A']           || null;
       yearsExperience      = idv['M3-Q-05']            || null;
       priorVisaHistory     = idv['M3-A-21']            || null;
+    }
+
+    if (financialsRows?.length) {
+      const answersMap: Record<string, unknown> = Object.fromEntries(
+        financialsRows.map(r => [r.question_key, r.answer_value])
+      );
+      caseFinancials = computeCaseFinancials(answersMap);
+      const rawSourceOfFunds = answersMap['M3-F-05'];
+      sourceOfFundsTypes = typeof rawSourceOfFunds === 'string' && rawSourceOfFunds.trim().length > 0
+        ? rawSourceOfFunds.split(',').map(v => v.trim()).filter(Boolean)
+        : null;
     }
 
     const extractedCountByMember = new Map<string, number>();
@@ -447,6 +477,7 @@ export async function GET(request: Request) {
     module5CompletedAt: lc?.module5_completed_at ?? null,
 
     applicationId: app?.id ?? null,
+    caseCode: app?.case_code ?? null,
 
     fddCount,
     latestFddId: latestFdd?.id ?? null,
@@ -486,6 +517,9 @@ export async function GET(request: Request) {
 
     hasInterviewPrepPartnership,
     partnerInvite,
+
+    caseFinancials,
+    sourceOfFundsTypes,
   };
 
   return NextResponse.json(response);

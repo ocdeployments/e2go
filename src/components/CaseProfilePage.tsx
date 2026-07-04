@@ -65,6 +65,30 @@ const ARCHETYPE_LABEL: Record<string, string> = {
   investor:       "Capital Investor",
 };
 
+function fmtUsd(n: number | null): string | null {
+  if (n === null) return null;
+  return `$${Math.round(n).toLocaleString()}`;
+}
+
+const FUNDS_DEPLOYED_LABEL: Record<string, string> = {
+  yes:     "Yes — funds are deployed",
+  partial: "Partially — some funds still held",
+  no:      "No — committed but not yet spent",
+};
+
+const SOURCE_OF_FUNDS_LABEL: Record<string, string> = {
+  savings:       "Personal savings",
+  rrsp:          "RRSP",
+  tfsa:          "TFSA",
+  lira:          "LIRA or pension",
+  "property-sale": "Sale of property",
+  "business-sale": "Sale of a business",
+  inheritance:   "Inheritance or gift",
+  crypto:        "Cryptocurrency",
+  loan:          "Loan",
+  other:         "Other",
+};
+
 // ── Sidebar nav sections ───────────────────────────────────────────────────────
 const NAV_SECTIONS = [
   { id: "investor",    num: "01", label: "The Investor" },
@@ -1487,15 +1511,19 @@ export default function CaseProfilePage() {
     },
     {
       label: "Precise Investment Amount",
-      value: null,
-      status: "module",
-      note: "Collects from Investment & Documents — Module 3",
+      value: fmtUsd(data.caseFinancials?.total_invested ?? null),
+      status: data.caseFinancials?.total_invested != null ? "have" : "module",
+      note: data.caseFinancials?.total_invested != null
+        ? "Collected in Investment & Documents — Module 3"
+        : "Collects from Investment & Documents — Module 3",
       href: "/apply/investment",
     },
     {
       label: "At-Risk Declaration",
-      value: null,
-      status: "module",
+      value: data.caseFinancials?.funds_deployed_status
+        ? (FUNDS_DEPLOYED_LABEL[data.caseFinancials.funds_deployed_status] ?? data.caseFinancials.funds_deployed_status)
+        : null,
+      status: data.caseFinancials?.funds_deployed_status ? "have" : "module",
       note: "Collects from Module 3 — funds must be irrevocably committed to the business",
       href: "/apply/investment",
     },
@@ -1508,56 +1536,34 @@ export default function CaseProfilePage() {
     },
   ];
 
+  // Module 3 (M3-F-04) only captures which deployment categories apply, not a
+  // dollar figure per category — so "have" here means "selected on intake",
+  // not a computed amount. Do not fabricate a per-line dollar breakdown.
+  const deploymentCategories = data.caseFinancials?.deployment_categories ?? [];
+  const deploymentField = (label: string, categoryLabel: string, note: string): FieldDef => ({
+    label,
+    value: deploymentCategories.includes(categoryLabel) ? "Selected in Module 3" : null,
+    status: deploymentCategories.includes(categoryLabel) ? "have" : "module",
+    note,
+    href: "/apply/investment",
+  });
+
   const breakdownFields: FieldDef[] = [
-    {
-      label: "Franchise Fee / Purchase Price",
-      value: null,
-      status: "module",
-      note: "Collects from Module 3 — largest single investment line item",
-      href: "/apply/investment",
-    },
-    {
-      label: "Equipment & Fixtures",
-      value: null,
-      status: "module",
-      note: "Collects from Module 3 — physical business assets",
-      href: "/apply/investment",
-    },
-    {
-      label: "Working Capital",
-      value: null,
-      status: "module",
-      note: "Collects from Module 3 — operating cash reserves for 3–6 months",
-      href: "/apply/investment",
-    },
-    {
-      label: "Lease Deposits",
-      value: null,
-      status: "module",
-      note: "Collects from Module 3 — first/last month rent, security deposit",
-      href: "/apply/investment",
-    },
-    {
-      label: "Inventory",
-      value: null,
-      status: "module",
-      note: "Collects from Module 3 — initial stock for operations",
-      href: "/apply/investment",
-    },
-    {
-      label: "Professional & Legal Fees",
-      value: null,
-      status: "module",
-      note: "Collects from Module 3 — attorney, CPA, franchise consultant fees",
-      href: "/apply/investment",
-    },
+    deploymentField("Franchise Fee / Purchase Price", "Franchise fee", "Collects from Module 3 — largest single investment line item"),
+    deploymentField("Equipment & Fixtures", "Equipment", "Collects from Module 3 — physical business assets"),
+    deploymentField("Working Capital", "Working capital", "Collects from Module 3 — operating cash reserves for 3–6 months"),
+    deploymentField("Lease Deposits", "Leasehold improvements", "Collects from Module 3 — first/last month rent, security deposit"),
+    deploymentField("Inventory", "Initial inventory", "Collects from Module 3 — initial stock for operations"),
+    deploymentField("Professional & Legal Fees", "Professional fees", "Collects from Module 3 — attorney, CPA, franchise consultant fees"),
   ];
 
   const sourceFields: FieldDef[] = [
     {
       label: "Source of Funds Type",
-      value: null,
-      status: "module",
+      value: data.sourceOfFundsTypes?.length
+        ? data.sourceOfFundsTypes.map(v => SOURCE_OF_FUNDS_LABEL[v] ?? v).join(", ")
+        : null,
+      status: data.sourceOfFundsTypes?.length ? "have" : "module",
       note: "Collects from Module 3 — savings / sale of property / gift / loan / inheritance",
       href: "/apply/investment",
     },
@@ -1619,8 +1625,43 @@ export default function CaseProfilePage() {
     },
   ];
 
-  const s4Have  = [...capitalFields, ...breakdownFields, ...sourceFields, ...docsFields].filter(f => f.status === "have").length;
-  const s4Total = capitalFields.length + breakdownFields.length + sourceFields.length + docsFields.length;
+  const cf = data.caseFinancials;
+  const y1Headcount = cf?.year1_headcount_from_intake ?? cf?.year1_headcount_from_projections ?? null;
+  const projectionFields: FieldDef[] = [
+    {
+      label: "Total Business Cost",
+      value: fmtUsd(cf?.total_business_cost ?? null),
+      status: cf?.total_business_cost != null ? "have" : "module",
+      note: "Collects from Module 3 — total cost to establish the business",
+      href: "/apply/investment",
+    },
+    {
+      label: "Year 1 Headcount",
+      value: y1Headcount != null ? `${y1Headcount} employee${y1Headcount === 1 ? "" : "s"}` : null,
+      status: y1Headcount != null ? "have" : "module",
+      note: "Collects from Module 3 — full-time + part-time employees planned for Year 1",
+      href: "/apply/investment",
+    },
+    {
+      label: "Year 1 Owner Draw",
+      value: fmtUsd(cf?.year1_owner_draw ?? null),
+      status: cf?.year1_owner_draw != null ? "have" : "module",
+      note: "Collects from Module 3 — your planned Year 1 compensation from the business",
+      href: "/apply/investment",
+    },
+    {
+      label: "Break-Even Year",
+      value: cf?.computed_breakeven_year != null ? `Year ${cf.computed_breakeven_year}` : null,
+      status: cf?.computed_breakeven_year != null ? "have" : "module",
+      note: cf?.breakeven_consistency === "inconsistent"
+        ? "Computed from your revenue projections table — disagrees with your self-reported break-even estimate, review before filing"
+        : "Computed from your revenue projections table (Module 3)",
+      href: "/apply/investment",
+    },
+  ];
+
+  const s4Have  = [...capitalFields, ...breakdownFields, ...sourceFields, ...docsFields, ...projectionFields].filter(f => f.status === "have").length;
+  const s4Total = capitalFields.length + breakdownFields.length + sourceFields.length + docsFields.length + projectionFields.length;
 
   // ── SECTION 5: CASE INTELLIGENCE ────────────────────────────────────────────
 
@@ -2183,6 +2224,7 @@ export default function CaseProfilePage() {
               <Sub title="Capital Summary" fields={capitalFields} />
               <Sub title="Investment Breakdown" fields={breakdownFields} />
               <Sub title="Source of Funds" fields={sourceFields} />
+              <Sub title="Revenue & Financial Projections" fields={projectionFields} />
               <Sub title="Supporting Documentation" fields={docsFields} />
             </SectionCard>
 

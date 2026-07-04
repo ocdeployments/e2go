@@ -59,6 +59,7 @@ export default function DocumentsReviewPage() {
   const [credits, setCredits] = useState<RevisionCredit | null>(null);
   const [manifest, setManifest] = useState<PackageManifest | null>(null);
   const [impactReport, setImpactReport] = useState<ChangeImpactReport | null>(null);
+  const [prepKitGeneratedAt, setPrepKitGeneratedAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -128,6 +129,18 @@ export default function DocumentsReviewPage() {
       if (impactRes.ok) {
         const iData = await impactRes.json() as { impactReport: ChangeImpactReport | null };
         setImpactReport(iData.impactReport ?? null);
+      }
+
+      // Interview Case Dossier status — best-effort; a 403 (not entitled) or
+      // network failure just leaves the card showing "Not yet generated".
+      try {
+        const prepRes = await fetch("/api/simulator/prep-kit");
+        if (prepRes.ok) {
+          const prepData = await prepRes.json() as { generated_at: string | null };
+          setPrepKitGeneratedAt(prepData.generated_at ?? null);
+        }
+      } catch {
+        // leave prepKitGeneratedAt as null
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load documents");
@@ -397,6 +410,44 @@ export default function DocumentsReviewPage() {
                 <span className="text-[#C9A84C]">{credits.credits_remaining}</span>
               </span>
             )}
+          </div>
+        </div>
+
+        {/* ── Reports & Analysis ──────────────────────────────────────────────
+            Central hub for every printable output the app produces, not just
+            the petition package below. Each card links to the module that
+            owns generation/printing for that report — this page doesn't
+            duplicate that logic, just gives one place to find it. */}
+        <div className="mb-10">
+          <h2
+            className="mb-4 text-xs font-medium uppercase tracking-wider text-white/40"
+            style={{ fontFamily: "'DM Sans', sans-serif" }}
+          >
+            Reports & Analysis
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {[
+              {
+                href: "/simulator/prep-kit",
+                label: "Interview Case Dossier",
+                status: prepKitGeneratedAt
+                  ? `Generated ${new Date(prepKitGeneratedAt).toLocaleDateString()}`
+                  : "Not yet generated",
+              },
+              { href: "/fdd", label: "FDD Analysis", status: "View & print" },
+              { href: "/gap-analysis", label: "Gap Analysis", status: "View & print" },
+              { href: "/market-analysis", label: "Market Analysis", status: "View & print" },
+            ].map((card) => (
+              <a
+                key={card.href}
+                href={card.href}
+                className="flex items-center justify-between border border-white/8 bg-[#0d0d0d] px-5 py-4 transition-colors hover:border-[#C9A84C]/30"
+                style={{ fontFamily: "'DM Sans', sans-serif" }}
+              >
+                <span className="text-sm text-[#f5f0e8]">{card.label}</span>
+                <span className="text-xs text-white/40">{card.status}</span>
+              </a>
+            ))}
           </div>
         </div>
 
