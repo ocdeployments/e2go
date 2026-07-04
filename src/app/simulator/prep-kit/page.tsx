@@ -4,23 +4,53 @@ import { useState, useEffect, useCallback } from "react";
 // ── Types ──────────────────────────────────────────────────────────────────────
 interface KitFact { label: string; value: string }
 interface Strength { heading: string; detail: string }
-interface RiskItem { code: string; name: string; test: string; yourPosition: string; whatToSay: string; risk: "high" | "moderate" }
+interface OfficerConcern {
+  code: string;
+  name: string;
+  concern: string;
+  factsToKnow: string[];
+  bestShortAnswer: string;
+  expandedAnswer: string;
+  avoidSaying: string;
+  risk: "high" | "moderate";
+}
 interface Breakdown { item: string; amount: string }
 interface KeyDate { event: string; date: string }
-interface InterviewQuestion { id: string; question: string; answerFramework: string; keyNumbers: string[]; pitfalls: string }
+interface InterviewQuestion {
+  id: string;
+  category: string;
+  question: string;
+  shortAnswer?: string;
+  answerFramework: string;
+  keyNumbers: string[];
+  pitfalls: string;
+}
 interface WpProbe { id: string; trigger: string; question: string; answerFramework: string }
+interface MockRound { name: string; focus: string; sampleQuestions: string[] }
 
 interface PrepKit {
   clientName: string;
   businessName: string;
   generatedDate: string;
+  persona?: {
+    title: string;
+    subtitle: string;
+    name: string;
+    roleSummary: string;
+    backgroundSummary: string;
+    caseTheorySummary: string;
+    interviewStyleNotes: string[];
+  };
   section1: { title: string; subtitle: string; facts: KitFact[] };
   section2: { title: string; subtitle: string; strengths: Strength[] };
-  section3: { title: string; subtitle: string; highRisk: RiskItem[]; moderateRisk: RiskItem[]; noIssues: string[] };
+  section3: { title: string; subtitle: string; highRisk: OfficerConcern[]; moderateRisk: OfficerConcern[]; noIssues: string[] };
   section4: { title: string; subtitle: string; businessOverview: string; managementRole: string; staffingPlan: string; marketPosition: string };
   section5: { title: string; subtitle: string; totalInvested: string; breakdown: Breakdown[]; sourceChronology: string; committedAmount: string; fddNote?: string };
-  section6: { title: string; subtitle: string; keyDates: KeyDate[]; simulatorFeedback: string; documentsToCarry: string; whatMayHaveChanged: string };
+  section6: { title: string; subtitle: string; keyDates: KeyDate[]; simulatorFeedback: string; documentsToCarry: string; whatMayHaveChanged: string; materialUpdates?: string[] };
   section7: { title: string; subtitle: string; questions: InterviewQuestion[]; applicableProbes: WpProbe[] };
+  section8?: { title: string; subtitle: string; rules: string[] };
+  section9?: { title: string; subtitle: string; rounds: MockRound[] };
+  section10?: { title: string; subtitle: string; checklist: string[] };
 }
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
@@ -230,19 +260,31 @@ function Section3({ data }: { data: PrepKit["section3"] }) {
                 </div>
                 <RiskChip level={r.risk} />
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                <div>
-                  <Label>What the officer checks</Label>
-                  <Body style={{ fontSize: "12px", color: T.textDim }}>{r.test}</Body>
-                </div>
-                <div>
-                  <Label>Where your case stands</Label>
-                  <Body style={{ fontSize: "12px", color: T.textDim }}>{r.yourPosition}</Body>
-                </div>
-              </div>
+
+              <Label>The officer&apos;s concern</Label>
+              <Body style={{ fontSize: "12px", color: T.textDim, marginBottom: "10px" }}>{r.concern}</Body>
+
+              {r.factsToKnow?.length > 0 && (
+                <>
+                  <Label>Facts to know cold</Label>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "3px", marginTop: "4px", marginBottom: "10px" }}>
+                    {r.factsToKnow.map((f, i) => (
+                      <Body key={i} style={{ fontSize: "12px", color: T.text }}>→ {f}</Body>
+                    ))}
+                  </div>
+                </>
+              )}
+
               <Divider />
-              <Label>What you need to be able to say</Label>
-              <Body style={{ fontSize: "12px", color: T.text }}>{r.whatToSay}</Body>
+
+              <Label>Best short answer</Label>
+              <Body style={{ fontSize: "13px", color: T.gold, fontWeight: 500, marginBottom: "10px" }}>{r.bestShortAnswer}</Body>
+
+              <Label>If they probe further</Label>
+              <Body style={{ fontSize: "12px", color: T.text, marginBottom: "10px" }}>{r.expandedAnswer}</Body>
+
+              <Label>Avoid saying</Label>
+              <Body style={{ fontSize: "12px", color: "rgba(192,82,82,0.85)" }}>{r.avoidSaying}</Body>
             </div>
           ))}
         </div>
@@ -352,40 +394,82 @@ function Section6({ data }: { data: PrepKit["section6"] }) {
         <Label>What may have changed since you filed</Label>
         <Body style={{ fontSize: "12px", color: T.textDim }}>{data.whatMayHaveChanged}</Body>
       </div>
+      {data.materialUpdates && data.materialUpdates.length > 0 && (
+        <div>
+          <Label>Confirm before you go in</Label>
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginTop: "6px" }}>
+            {data.materialUpdates.map((item, i) => (
+              <div key={i} style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}>
+                <span style={{ color: T.goldLabel, fontSize: "12px", flexShrink: 0, marginTop: "1px" }}>☐</span>
+                <Body style={{ fontSize: "12px", color: T.textDim }}>{item}</Body>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 function Section7({ data }: { data: PrepKit["section7"] }) {
+  const categoryOrder = [
+    "Opening questions",
+    "Role and operations questions",
+    "Investment and financial questions",
+    "Hiring and growth questions",
+    "Credibility and consistency questions",
+    "Challenge questions",
+  ];
+  const grouped = new Map<string, InterviewQuestion[]>();
+  for (const q of data.questions) {
+    const cat = q.category || "Other questions";
+    if (!grouped.has(cat)) grouped.set(cat, []);
+    grouped.get(cat)!.push(q);
+  }
+  const orderedCategories = [
+    ...categoryOrder.filter((c) => grouped.has(c)),
+    ...[...grouped.keys()].filter((c) => !categoryOrder.includes(c)),
+  ];
+
   return (
-    <div style={{ paddingTop: "14px", display: "flex", flexDirection: "column", gap: "16px" }}>
-      {data.questions.map((q) => (
-        <div key={q.id} style={{ border: `1px solid ${T.border}`, padding: "14px 16px" }}>
-          <div style={{ display: "flex", gap: "10px", alignItems: "flex-start", marginBottom: "10px" }}>
-            <span style={{ fontSize: "10px", fontFamily: T.body, color: T.goldLabel, fontWeight: 600, flexShrink: 0, paddingTop: "2px" }}>{q.id}</span>
-            <div style={{ fontSize: "14px", fontFamily: T.heading, fontWeight: 300, color: T.text, lineHeight: 1.3 }}>{q.question}</div>
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "12px", marginTop: "6px" }}>
-            <div>
-              <Label>Answer framework</Label>
-              <Body style={{ fontSize: "12px", color: T.textDim }}>{q.answerFramework}</Body>
-            </div>
-            <div>
-              <div style={{ marginBottom: "10px" }}>
-                <Label>Key numbers to cite</Label>
-                {q.keyNumbers.length > 0 ? (
-                  <div style={{ display: "flex", flexDirection: "column", gap: "3px", marginTop: "4px" }}>
-                    {q.keyNumbers.map((n, i) => (
-                      <Body key={i} style={{ fontSize: "11px", color: T.gold }}>→ {n}</Body>
-                    ))}
-                  </div>
-                ) : (
-                  <Body style={{ fontSize: "11px", color: T.textMuted }}>—</Body>
+    <div style={{ paddingTop: "14px", display: "flex", flexDirection: "column", gap: "20px" }}>
+      {orderedCategories.map((cat) => (
+        <div key={cat}>
+          <div style={{ ...eyebrow, marginBottom: "10px" }}>{cat}</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            {grouped.get(cat)!.map((q) => (
+              <div key={q.id} style={{ border: `1px solid ${T.border}`, padding: "14px 16px" }}>
+                <div style={{ display: "flex", gap: "10px", alignItems: "flex-start", marginBottom: "10px" }}>
+                  <span style={{ fontSize: "10px", fontFamily: T.body, color: T.goldLabel, fontWeight: 600, flexShrink: 0, paddingTop: "2px" }}>{q.id}</span>
+                  <div style={{ fontSize: "14px", fontFamily: T.heading, fontWeight: 300, color: T.text, lineHeight: 1.3 }}>{q.question}</div>
+                </div>
+                {q.shortAnswer && (
+                  <Body style={{ fontSize: "13px", color: T.gold, fontWeight: 500, marginBottom: "10px" }}>{q.shortAnswer}</Body>
                 )}
+                <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "12px", marginTop: "6px" }}>
+                  <div>
+                    <Label>Answer framework</Label>
+                    <Body style={{ fontSize: "12px", color: T.textDim }}>{q.answerFramework}</Body>
+                  </div>
+                  <div>
+                    <div style={{ marginBottom: "10px" }}>
+                      <Label>Key numbers to cite</Label>
+                      {q.keyNumbers.length > 0 ? (
+                        <div style={{ display: "flex", flexDirection: "column", gap: "3px", marginTop: "4px" }}>
+                          {q.keyNumbers.map((n, i) => (
+                            <Body key={i} style={{ fontSize: "11px", color: T.gold }}>→ {n}</Body>
+                          ))}
+                        </div>
+                      ) : (
+                        <Body style={{ fontSize: "11px", color: T.textMuted }}>—</Body>
+                      )}
+                    </div>
+                    <Label>Pitfall to avoid</Label>
+                    <Body style={{ fontSize: "11px", color: "rgba(192,82,82,0.8)" }}>{q.pitfalls}</Body>
+                  </div>
+                </div>
               </div>
-              <Label>Pitfall to avoid</Label>
-              <Body style={{ fontSize: "11px", color: "rgba(192,82,82,0.8)" }}>{q.pitfalls}</Body>
-            </div>
+            ))}
           </div>
         </div>
       ))}
@@ -408,6 +492,87 @@ function Section7({ data }: { data: PrepKit["section7"] }) {
           ))}
         </>
       )}
+    </div>
+  );
+}
+
+function Persona({ data }: { data: NonNullable<PrepKit["persona"]> }) {
+  return (
+    <div style={{ paddingTop: "14px", display: "flex", flexDirection: "column", gap: "14px" }}>
+      <div>
+        <Label>Role</Label>
+        <Body style={{ fontSize: "14px", color: T.text, fontWeight: 500 }}>{data.roleSummary}</Body>
+      </div>
+      <div>
+        <Label>Background</Label>
+        <Body style={{ color: T.textDim }}>{data.backgroundSummary}</Body>
+      </div>
+      <div>
+        <Label>Case theory — why this case should be approved</Label>
+        <Body style={{ color: T.textDim }}>{data.caseTheorySummary}</Body>
+      </div>
+      {data.interviewStyleNotes?.length > 0 && (
+        <div>
+          <Label>How to carry yourself</Label>
+          <div style={{ display: "flex", flexDirection: "column", gap: "5px", marginTop: "6px" }}>
+            {data.interviewStyleNotes.map((n, i) => (
+              <div key={i} style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}>
+                <span style={{ color: T.goldLabel, fontSize: "11px", flexShrink: 0, marginTop: "2px" }}>→</span>
+                <Body style={{ fontSize: "12px", color: T.text }}>{n}</Body>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Section8({ data }: { data: NonNullable<PrepKit["section8"]> }) {
+  return (
+    <div style={{ paddingTop: "14px", display: "flex", flexDirection: "column", gap: "8px" }}>
+      {data.rules.map((rule, i) => (
+        <div key={i} style={{ display: "flex", gap: "10px", alignItems: "flex-start" }}>
+          <span style={{ fontSize: "10px", fontFamily: T.body, color: T.goldLabel, fontWeight: 600, flexShrink: 0, paddingTop: "2px" }}>{String(i + 1).padStart(2, "0")}</span>
+          <Body style={{ color: T.text }}>{rule}</Body>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function Section9({ data }: { data: NonNullable<PrepKit["section9"]> }) {
+  return (
+    <div style={{ paddingTop: "14px", display: "flex", flexDirection: "column", gap: "14px" }}>
+      {data.rounds.map((round, i) => (
+        <div key={i} style={{ border: `1px solid ${T.border}`, padding: "14px 16px" }}>
+          <div style={{ fontSize: "14px", fontFamily: T.heading, fontWeight: 300, color: T.gold, marginBottom: "4px" }}>{round.name}</div>
+          <Body style={{ fontSize: "12px", color: T.textDim, marginBottom: "10px" }}>{round.focus}</Body>
+          {round.sampleQuestions.length > 0 && (
+            <>
+              <Label>Practice these</Label>
+              <div style={{ display: "flex", flexDirection: "column", gap: "4px", marginTop: "4px" }}>
+                {round.sampleQuestions.map((q, j) => (
+                  <Body key={j} style={{ fontSize: "12px", color: T.text }}>→ {q}</Body>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function Section10({ data }: { data: NonNullable<PrepKit["section10"]> }) {
+  return (
+    <div style={{ paddingTop: "14px", display: "flex", flexDirection: "column", gap: "6px" }}>
+      {data.checklist.map((item, i) => (
+        <div key={i} style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}>
+          <span style={{ color: T.goldLabel, fontSize: "12px", flexShrink: 0, marginTop: "1px" }}>☐</span>
+          <Body style={{ fontSize: "13px", color: T.text }}>{item}</Body>
+        </div>
+      ))}
     </div>
   );
 }
@@ -465,10 +630,10 @@ function PrepKitUpsell() {
           Interview Case Dossier
         </div>
         <p style={{ fontSize: "14px", fontFamily: T.body, color: T.textDim, lineHeight: 1.7, maxWidth: "580px", margin: 0 }}>
-          The Interview Case Dossier is a personalised 7-section revision document you read through
+          The Interview Case Dossier is a personalised revision document you read through
           before walking into your consulate interview. It is independent of the Interview Simulator —
-          it summarises your business, investment, denial risks, and the key arguments of your case
-          in a format designed for study, not practice sessions.
+          it summarises your candidate story, business, investment, officer concerns, and the key arguments
+          of your case in a format designed for study, not practice sessions.
         </p>
       </div>
 
@@ -484,13 +649,16 @@ function PrepKitUpsell() {
         <div style={{ ...eyebrow, marginBottom: "12px" }}>What the dossier covers</div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
           {[
+            "Candidate persona — who you're walking in as",
             "Case snapshot — key facts and figures",
             "Your strongest arguments — evidenced",
-            "Denial risk analysis — all 15 E-2 factors",
+            "Officer concerns and response strategy — all 15 E-2 factors",
             "Business narrative — what you will say",
             "Investment breakdown and source chronology",
             "Interview day checklist and documents to carry",
-            "9 universal questions with answer frameworks",
+            "Categorised interview question bank with answer frameworks",
+            "Interview conduct rules and a 3-round mock interview plan",
+            "Final review checklist",
           ].map((item, i) => (
             <div key={i} style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}>
               <span style={{ color: T.goldLabel, fontSize: "11px", flexShrink: 0, marginTop: "2px" }}>→</span>
@@ -898,6 +1066,11 @@ export default function PrepKitPage() {
             <style>{`.print-header { display: none } @media print { .print-header { display: block !important } }`}</style>
 
             <div style={{ display: "flex", flexDirection: "column", gap: "0" }}>
+              {kit.persona && (
+                <Section number="00" title={kit.persona.title} subtitle={kit.persona.subtitle} defaultOpen>
+                  <Persona data={kit.persona} />
+                </Section>
+              )}
               <Section number="01" title={kit.section1.title} subtitle={kit.section1.subtitle} defaultOpen>
                 <Section1 data={kit.section1} />
               </Section>
@@ -919,6 +1092,21 @@ export default function PrepKitPage() {
               <Section number="07" title={kit.section7.title} subtitle={kit.section7.subtitle}>
                 <Section7 data={kit.section7} />
               </Section>
+              {kit.section8 && (
+                <Section number="08" title={kit.section8.title} subtitle={kit.section8.subtitle}>
+                  <Section8 data={kit.section8} />
+                </Section>
+              )}
+              {kit.section9 && (
+                <Section number="09" title={kit.section9.title} subtitle={kit.section9.subtitle}>
+                  <Section9 data={kit.section9} />
+                </Section>
+              )}
+              {kit.section10 && (
+                <Section number="10" title={kit.section10.title} subtitle={kit.section10.subtitle}>
+                  <Section10 data={kit.section10} />
+                </Section>
+              )}
             </div>
           </>
         )}
