@@ -1,6 +1,44 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** July 3, 2026 — Session 119t: **Model routing overhaul (user-directed).** New FDD chain `callFDDModel` in llm-client.ts (claude-opus-4-8 → claude-sonnet-5 → z-ai/glm-5.2) wired into all five LLM-calling FDD sites (extraction, report, territory, questions, score-route narrative). Coaching task (interview prep dossier + coaching report) bumped to glm-5.2 primary with claude-sonnet-5 Anthropic fallback. Non-business-plan document generation and humanization now fall back to OpenRouter (glm-5.2 → mimo-v2.5 → mimo-v2.5-pro → gemini-2.5-pro) after both Opus attempts fail; business_plan stays Opus-only by design. Routing decisions grounded in the June/July model eval (~/Desktop/e2go-llm-eval-results.md). ⚠️ ANTHROPIC_API_KEY in .env.local is dead (401) — every Anthropic tier is non-functional locally until rotated.
+**Last Updated:** July 3, 2026 — Session 119u: **Document extraction gap fix + Interview Case Dossier template rewrite, both now live.** New `parse-document` schemas (`ds160`, `cover_letter`, `organizational_document`, `general_supporting_document`) close a silent data-loss bug where unmatched documents fell back to the `resume` schema; production `doc_type` CHECK constraint widened and pushed live. Interview Case Dossier (`prep-kit`) rewritten to match the reference case-dossier structure — new candidate-persona section, 5-field officer-concerns-and-response-strategy section (replacing the old risk register), categorized question bank with short-answer leads, and three new sections (conduct rules, mock interview plan, final review checklist). Also root-caused and fixed a real Supabase CLI misconfiguration (stale `/Users/owner/supabase/` dir shadowing this project) — see Known Issues.
+
+---
+
+## Session 119u — Document Extraction Gap Fix + Interview Case Dossier Rewrite (July 3, 2026)
+
+**Branch:** dev (uncommitted at end of session — see Commit status below). Build clean (`npm run build`, `tsc --noEmit`).
+
+**Context:** Two-part user-directed task, explicitly authorized end-to-end ("Do everything that's required to get the thing done. Don't ask me again," including the production migration push): (A) fix a document-extraction "digestion" gap where uploads that didn't match any of the 13 known `doc_type`s silently fell back to the `resume` schema and extracted almost nothing useful; (B) rewrite the Interview Case Dossier prompt/schema/UI to structurally match a reference document (`docs/interview_case_dossier_template.md`), adapted generically rather than copying its specific example case.
+
+### Phase A — Document extraction gap (parse-document)
+
+| Item | File | Change |
+|---|---|---|
+| New extraction schemas | `src/app/api/apply/parse-document/route.ts` | Added dedicated JSON extraction schemas for `ds160`, `cover_letter`, `organizational_document`, `general_supporting_document` — previously any doc not matching one of 13 known types silently used the `resume` schema and extracted almost nothing |
+| Fixed silent misclassification fallback | `src/app/api/apply/parse-document/route.ts` | Classification now routes into the four new types instead of defaulting to `resume` |
+| New upload-UI options | `src/components/apply/DocumentImportHub.tsx` | Added matching manual doc-type picker options for the four new types |
+| New labels | `src/lib/uploaded-doc-labels.ts` | Added human-readable labels: DS-160 Confirmation, Petition Cover Letter, Entity / Organizational Document, Supporting Document |
+| Production schema migration | `supabase/migrations/20260703020000_widen_doc_type_check.sql` | Widens `uploaded_documents.doc_type` CHECK constraint from 13 to 17 allowed values. **Pushed to production this session** — confirmed via `supabase migration list --workdir /Users/owner/E2-go` showing the migration in both Local and Remote columns. The four new doc types are now actually insertable, not just code-complete. |
+
+### Phase B — Interview Case Dossier (prep-kit) template rewrite
+
+Rewrote the dossier's LLM prompt/schema (`src/app/api/simulator/prep-kit/route.ts`) and rendering (`src/app/simulator/prep-kit/page.tsx`) to match the reference structure in `docs/interview_case_dossier_template.md`, expanding from 7 to 11 sections:
+
+- **New persona section** ("Who You Are Walking In As") — name, one-line role summary, background summary, plain-English case theory, and 2-4 candidate-specific interview-style reminders.
+- **Section 3 rewritten** from a `test/yourPosition/whatToSay` risk-register shape to a 5-field **Officer Concerns and Response Strategy** structure per D-code: the officer's underlying concern, facts to know cold, a verbatim-ready best short answer, an expanded first-person answer for follow-up probing, and a specific phrase to avoid saying (with why).
+- **Section 6** gained an editable `materialUpdates` checklist ("confirm before you go in" — things that may have changed since filing, phrased as action items for the client to verify, not asserted facts).
+- **Section 7** (question bank) now groups questions into the reference doc's 6 categories (Opening / Role and operations / Investment and financial / Hiring and growth / Credibility and consistency / Challenge) and adds a `shortAnswer` lead-in per question.
+- **Three new sections**: Interview Conduct Rules (8), Mock Interview Plan — 3 rounds: Narrative/Numbers/Pressure (9), Final Review Checklist (10) — all optional/only rendered when the LLM returns them.
+- `max_tokens` raised 16000 → 20000 to accommodate the larger 11-section schema (the 16000 budget was observed hitting its ceiling mid-array on the smaller 7-section schema).
+- Fixed one ESLint `react/no-unescaped-entities` build error (`&apos;s`) introduced by the new Section 3 copy.
+
+### Supabase CLI misconfiguration — root-caused and fixed
+
+While pushing the Phase A migration, `supabase db push` (reproduced identically via both my tool and the user's own terminal) failed with "Remote migration versions not found in local migrations directory" and suggested a destructive `migration repair --status reverted` across ~70 legitimate migration IDs — **not run**. Root cause: a stale, unrelated `/Users/owner/supabase/` directory (its own `config.toml`, only 2 old migration files) is linked to the *same* remote project and is what the CLI reads by default, even when invoked from `/Users/owner/E2-go`. Fix: pass `--workdir /Users/owner/E2-go` explicitly to all `supabase` migration commands. Documented in [CLAUDE_CONTEXT.md](CLAUDE_CONTEXT.md) Known Issues (previously stale "CLI migration history out of sync" entry corrected) and in persistent cross-session memory so future sessions don't rediscover this from scratch.
+
+**Commit status:** all Phase A/B code changes plus the `CLAUDE_CONTEXT.md` Known Issues correction were left uncommitted in the working tree at end of session (per repo convention — commits happen only when explicitly requested). The migration itself is already live in production regardless of local commit state.
+
+**Not done this session (flagged, not started unprompted):** real end-to-end verification — uploading an actual DS-160/cover-letter/org-document sample through `/apply` to confirm classification + extraction, and regenerating a dossier to visually confirm the 4 new/changed sections render correctly with real case data.
 
 ---
 
