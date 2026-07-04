@@ -825,12 +825,27 @@ function PrepKitUpsell() {
   );
 }
 
+// Real generation runs one LLM call over an 11-section prompt with a 240s
+// budget — observed wall-clock time is 2-5 minutes, not the 30-90s the UI
+// used to claim. These stages mirror the actual server-side steps (data
+// assembly, then a single long drafting call) so the copy stays honest
+// rather than inventing granular progress we can't actually observe.
+const GENERATION_STAGES: { at: number; text: string }[] = [
+  { at: 0, text: "Pulling your case file, documents, and simulator history…" },
+  { at: 12, text: "Cross-checking your investment, business, and family data…" },
+  { at: 30, text: "Reviewing gap analysis and officer risk areas for your profile…" },
+  { at: 50, text: "Drafting your personalised interview dossier…" },
+  { at: 150, text: "Still writing — this dossier covers 11 sections, so it takes a few minutes…" },
+  { at: 240, text: "Finalising formatting and double-checking your numbers…" },
+];
+
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function PrepKitPage() {
   const [kit, setKit] = useState<PrepKit | null>(null);
   const [generatedAt, setGeneratedAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
+  const [elapsedSec, setElapsedSec] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [notEntitled, setNotEntitled] = useState(false);
   const [requirements, setRequirements] = useState<{ met: boolean; missing: string[] } | null>(null);
@@ -856,6 +871,7 @@ export default function PrepKitPage() {
 
   const generate = useCallback(async (force = false) => {
     setGenerating(true);
+    setElapsedSec(0);
     setError(null);
     try {
       const res = await fetch("/api/simulator/prep-kit", {
@@ -877,6 +893,14 @@ export default function PrepKitPage() {
   useEffect(() => {
     fetchCached();
   }, [fetchCached]);
+
+  useEffect(() => {
+    if (!generating) return;
+    const id = setInterval(() => setElapsedSec((s) => s + 1), 1000);
+    return () => clearInterval(id);
+  }, [generating]);
+
+  const currentStage = [...GENERATION_STAGES].reverse().find((s) => elapsedSec >= s.at) ?? GENERATION_STAGES[0];
 
   // During the initial fetch, show nothing — avoids flashing the generate button
   // before we know whether the user is entitled or requirements are met.
@@ -1054,11 +1078,11 @@ export default function PrepKitPage() {
               />
             </div>
             <style>{`@keyframes slide { 0% { left: -60% } 100% { left: 160% } }`}</style>
-            <div style={{ fontSize: "13px", fontFamily: T.body, color: T.textDim }}>
-              Analysing your case data and building your dossier…
+            <div style={{ fontSize: "13px", fontFamily: T.body, color: T.textDim, textAlign: "center", maxWidth: "420px" }}>
+              {currentStage.text}
             </div>
             <div style={{ fontSize: "11px", fontFamily: T.body, color: T.textMuted }}>
-              This takes 30–90 seconds
+              This usually takes 2–5 minutes — please keep this tab open
             </div>
           </div>
         )}
