@@ -9,10 +9,10 @@
     "start": "next start",
     "lint": "next lint",
     "prepare": "husky install",
-    "qa": "tsc --noEmit && npm run build && npx playwright test",
+    "qa": "tsc --noEmit && npm test && npm run build && npx playwright test",
     "security:audit": "npm audit --audit-level=high",
     "qa:snapshot": "bash scripts/qa-snapshot.sh",
-    "test": "echo test"
+    "test": "jest"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.100.1",
