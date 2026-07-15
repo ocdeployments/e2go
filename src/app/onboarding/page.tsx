@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createBrowserSupabaseClient } from '@/lib/supabase';
@@ -49,12 +49,7 @@ const TRIAGE_SECTIONS: { key: keyof SectionCompletion; label: string; descriptio
 ];
 
 interface QuizSessionRow {
-  first_name: string | null;
-  last_name: string | null;
   application_type: 'solo' | 'partnership' | null;
-  partner_name: string | null;
-  partner_email: string | null;
-  spouse_name: string | null;
 }
 
 type Step = 1 | 2 | 3 | 4 | 5;
@@ -68,6 +63,7 @@ export default function OnboardingPage() {
   const [step, setStep] = useState<Step>(1);
 
   const [quizSession, setQuizSession] = useState<QuizSessionRow | null>(null);
+  const [fullName, setFullName] = useState('');
   const [module1Complete, setModule1Complete] = useState(false);
 
   // Consent step state
@@ -84,14 +80,16 @@ export default function OnboardingPage() {
   // Completion state
   const [answeredKeys, setAnsweredKeys] = useState<Record<string, Set<string>>>({});
   const [sectionCompletion, setSectionCompletion] = useState<SectionCompletion | null>(null);
+  const [importAppliedNotice, setImportAppliedNotice] = useState<string | null>(null);
 
   const loadAll = useCallback(async (appId: string) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    const [quizRes, appRes, membersRes, answersRes, sectionRes] = await Promise.all([
-      supabase.from('quiz_sessions').select('first_name, last_name, application_type, partner_name, partner_email, spouse_name')
+    const [quizRes, profileRes, appRes, membersRes, answersRes, sectionRes] = await Promise.all([
+      supabase.from('quiz_sessions').select('application_type')
         .eq('user_id', user.id).order('id', { ascending: false }).limit(1).maybeSingle(),
+      supabase.from('profiles').select('first_name, last_name').eq('id', user.id).maybeSingle(),
       supabase.from('applications').select('module_1_complete').eq('id', appId).maybeSingle(),
       fetch('/api/profile/family-members').then((r) => r.json()),
       supabase.from('answers').select('question_key, answer_value, family_member_id')
@@ -100,6 +98,9 @@ export default function OnboardingPage() {
     ]);
 
     if (quizRes.data) setQuizSession(quizRes.data);
+    if (profileRes.data) {
+      setFullName(`${profileRes.data.first_name || ''} ${profileRes.data.last_name || ''}`.trim());
+    }
     const isModule1Complete = !!appRes.data?.module_1_complete;
     setModule1Complete(isModule1Complete);
     setFamilyMembers(membersRes.members ?? []);
@@ -117,27 +118,22 @@ export default function OnboardingPage() {
     setLoading(false);
   }, [supabase]);
 
+  const handleFieldsApplied = useCallback(async (count: number) => {
+    const sectionRes = await fetch('/api/apply/section-completion').then((r) => r.json());
+    setSectionCompletion(sectionRes);
+    setImportAppliedNotice(`Résumé applied — ${count} field${count === 1 ? '' : 's'} filled`);
+    setTimeout(() => setImportAppliedNotice(null), 5000);
+  }, []);
+
   useEffect(() => {
     if (status === 'ready' && applicationId) {
       loadAll(applicationId);
     }
   }, [status, applicationId, loadAll]);
 
-  const suggestedPartner = useMemo(() => {
-    if (!quizSession || quizSession.application_type !== 'partnership' || !quizSession.partner_name) return null;
-    const alreadyAdded = familyMembers.some((m) => m.member_type === 'co_investor');
-    if (alreadyAdded) return null;
-    const [first, ...rest] = quizSession.partner_name.trim().split(' ');
-    return { firstName: first ?? '', lastName: rest.join(' ') };
-  }, [quizSession, familyMembers]);
-
-  const suggestedSpouse = useMemo(() => {
-    if (!quizSession?.spouse_name) return null;
-    const alreadyAdded = familyMembers.some((m) => m.member_type === 'spouse');
-    if (alreadyAdded) return null;
-    const [first, ...rest] = quizSession.spouse_name.trim().split(' ');
-    return { firstName: first ?? '', lastName: rest.join(' ') };
-  }, [quizSession, familyMembers]);
+  useEffect(() => {
+    if (status === 'no-user') router.push('/login?next=/onboarding');
+  }, [status, router]);
 
   const handleSaveConsent = async () => {
     setSavingConsent(true);
@@ -146,10 +142,18 @@ export default function OnboardingPage() {
       if (!user || !applicationId) return;
 
       if (tosAccepted) {
-        await supabase.from('consent_log').insert({ user_id: user.id, consent_type: 'tos', consent_given: true, ip_hash: 'local-hash' });
+        await fetch('/api/consent/log', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ consent_type: 'tos', consent_given: true }),
+        });
       }
       if (privacyAccepted) {
-        await supabase.from('consent_log').insert({ user_id: user.id, consent_type: 'privacy', consent_given: true, ip_hash: 'local-hash' });
+        await fetch('/api/consent/log', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ consent_type: 'privacy', consent_given: true }),
+        });
       }
       if (caslConsent !== null) {
         await supabase.from('profiles').update({ casl_marketing_consent: caslConsent }).eq('id', user.id);
@@ -214,15 +218,12 @@ export default function OnboardingPage() {
   }
 
   if (status === 'no-user') {
-    router.push('/login?next=/onboarding');
     return null;
   }
 
   if (status === 'not-ready') {
     return <ApplicationNotReadyScreen onRetry={retry} />;
   }
-
-  const fullName = `${quizSession?.first_name || ''} ${quizSession?.last_name || ''}`.trim();
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-[#f5f0e8] font-[DM_Sans]">
@@ -337,27 +338,6 @@ export default function OnboardingPage() {
               Add your spouse, children, or a co-investor. We&apos;ll build a separate DS-160-style intake for each person you add.
             </p>
 
-            {suggestedPartner && (
-              <button
-                onClick={() => setAddFormType('co_investor')}
-                className="w-full text-left p-5 border border-dashed border-[#C9A84C] bg-[rgba(201,168,76,0.05)] mb-4 hover:bg-[rgba(201,168,76,0.08)] transition-colors"
-              >
-                <span className="text-[14px] text-[#f5f0e8]">
-                  You mentioned a partner — <span className="text-[#C9A84C]">{quizSession?.partner_name}</span>. Add them as a co-investor?
-                </span>
-              </button>
-            )}
-            {suggestedSpouse && (
-              <button
-                onClick={() => setAddFormType('spouse')}
-                className="w-full text-left p-5 border border-dashed border-[#C9A84C] bg-[rgba(201,168,76,0.05)] mb-4 hover:bg-[rgba(201,168,76,0.08)] transition-colors"
-              >
-                <span className="text-[14px] text-[#f5f0e8]">
-                  You mentioned a spouse — <span className="text-[#C9A84C]">{quizSession?.spouse_name}</span>. Add them?
-                </span>
-              </button>
-            )}
-
             <div className="space-y-3 mb-6">
               {familyMembers.map((m) => (
                 <div key={m.id} className="flex items-center justify-between p-4 border border-[rgba(201,168,76,0.2)]">
@@ -382,8 +362,8 @@ export default function OnboardingPage() {
             {addFormType ? (
               <AddFamilyMemberForm
                 defaultType={addFormType}
-                initialFirstName={addFormType === 'co_investor' ? (suggestedPartner?.firstName ?? '') : addFormType === 'spouse' ? (suggestedSpouse?.firstName ?? '') : ''}
-                initialLastName={addFormType === 'co_investor' ? (suggestedPartner?.lastName ?? '') : addFormType === 'spouse' ? (suggestedSpouse?.lastName ?? '') : ''}
+                initialFirstName=""
+                initialLastName=""
                 onCancel={() => setAddFormType(null)}
                 onSubmit={handleAddFamilyMember}
               />
@@ -451,7 +431,13 @@ export default function OnboardingPage() {
               Upload a passport, resume, FDD, or birth certificate — for you or anyone you added — and we&apos;ll pre-fill fields across your application automatically. Optional: skip this and upload later from your case file.
             </p>
 
-            <DocumentImportHub applicationId={applicationId} defaultOpen />
+            <DocumentImportHub applicationId={applicationId} onFieldsApplied={handleFieldsApplied} defaultOpen />
+
+            {importAppliedNotice && (
+              <div className="mt-4 px-4 py-3 border border-[rgba(74,222,128,0.3)] bg-[rgba(74,222,128,0.08)] text-[#4ADE80] text-[13px] font-['DM_Sans']">
+                {importAppliedNotice}
+              </div>
+            )}
 
             <div className="flex justify-end mt-12">
               <button onClick={() => setStep(5)} className="px-8 py-4 bg-[#C9A84C] text-[#0a0a0a] text-[14px] font-medium uppercase tracking-[0.12em] hover:bg-[#D4BC6A] transition-colors">
