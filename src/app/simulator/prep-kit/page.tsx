@@ -209,15 +209,18 @@ function CriticalGaps({ data }: { data: NonNullable<PrepKit["criticalGaps"]> }) 
   if (!data.actions || data.actions.length === 0) return null;
   return (
     <div
+      className="print-avoid"
+      data-print-border
       style={{
         border: `1px solid ${T.red}`,
+        borderLeft: `3px solid ${T.red}`,
         background: "rgba(192,82,82,0.06)",
         padding: "20px 22px",
         marginBottom: "24px",
         breakInside: "avoid",
       }}
     >
-      <div style={{ ...eyebrow, color: T.red, marginBottom: "2px" }}>Do this first</div>
+      <div data-print-red style={{ ...eyebrow, color: T.red, marginBottom: "2px" }}>Do this first</div>
       <div style={{ fontFamily: T.heading, fontSize: "20px", fontWeight: 300, color: T.text, marginBottom: "2px" }}>
         {data.title}
       </div>
@@ -228,6 +231,7 @@ function CriticalGaps({ data }: { data: NonNullable<PrepKit["criticalGaps"]> }) 
         {data.actions.map((a, i) => (
           <div key={i} style={{ display: "flex", gap: "12px", alignItems: "flex-start" }}>
             <div
+              data-print-red
               style={{
                 fontFamily: T.heading,
                 fontSize: "16px",
@@ -298,7 +302,7 @@ function Section3({ data }: { data: PrepKit["section3"] }) {
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
           {allRisks.map((r) => (
-            <div key={r.code} style={{ border: `1px solid ${r.risk === "high" ? "rgba(192,82,82,0.25)" : "rgba(184,115,51,0.22)"}`, padding: "14px 16px" }}>
+            <div key={r.code} className="print-avoid" data-print-border style={{ border: `1px solid ${r.risk === "high" ? "rgba(192,82,82,0.25)" : "rgba(184,115,51,0.22)"}`, borderLeft: `3px solid ${r.risk === "high" ? T.red : T.amber}`, padding: "14px 16px" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
                 <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
                   <span style={{ fontSize: "10px", fontFamily: T.body, color: T.goldLabel, fontWeight: 600 }}>{r.code}</span>
@@ -324,7 +328,17 @@ function Section3({ data }: { data: PrepKit["section3"] }) {
               <Divider />
 
               <Label>Best short answer</Label>
-              <Body style={{ fontSize: "13px", color: T.gold, fontWeight: 500, marginBottom: "10px" }}>{r.bestShortAnswer}</Body>
+              <div
+                data-print-border
+                style={{
+                  border: `1px solid ${T.goldDim}`,
+                  background: T.goldDim,
+                  padding: "8px 12px",
+                  marginBottom: "10px",
+                }}
+              >
+                <Body data-print-gold style={{ fontSize: "15px", fontFamily: T.heading, fontWeight: 500, color: T.gold }}>{r.bestShortAnswer}</Body>
+              </div>
 
               <Label>If they probe further</Label>
               <Body style={{ fontSize: "12px", color: T.text, marginBottom: "10px" }}>{r.expandedAnswer}</Body>
@@ -372,21 +386,25 @@ function Section4({ data }: { data: PrepKit["section4"] }) {
 
 function Section5({ data }: { data: PrepKit["section5"] }) {
   return (
-    <div style={{ paddingTop: "14px" }}>
+    <div style={{ paddingTop: "14px" }} className="print-avoid">
       <div style={{ marginBottom: "14px" }}>
         <Label>Total invested</Label>
-        <div style={{ fontSize: "22px", fontFamily: T.heading, fontWeight: 300, color: T.gold, lineHeight: 1.1 }}>{data.totalInvested}</div>
+        <div data-print-gold style={{ fontSize: "22px", fontFamily: T.heading, fontWeight: 300, color: T.gold, lineHeight: 1.1 }}>{data.totalInvested}</div>
       </div>
       {data.breakdown.length > 0 && (
         <>
           <Label>Breakdown</Label>
-          <div style={{ marginTop: "8px", display: "flex", flexDirection: "column", gap: "4px" }}>
+          <div data-print-border style={{ marginTop: "8px", display: "flex", flexDirection: "column", gap: "4px", border: `1px solid ${T.border}`, borderTop: "none" }}>
             {data.breakdown.map((b, i) => (
-              <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: `1px solid ${T.border}` }}>
-                <Body style={{ fontSize: "12px", color: T.textDim }}>{b.item}</Body>
-                <Body style={{ fontSize: "12px", color: T.text, fontWeight: 500 }}>{b.amount}</Body>
+              <div key={i} data-print-border style={{ display: "flex", justifyContent: "space-between", padding: "8px 12px", borderTop: `1px solid ${T.border}` }}>
+                <Body style={{ fontSize: "12px", color: T.textDim, fontFamily: T.body }}>{b.item}</Body>
+                <Body style={{ fontSize: "13px", color: T.text, fontWeight: 500, fontVariantNumeric: "tabular-nums", textAlign: "right" }}>{b.amount}</Body>
               </div>
             ))}
+            <div data-print-border style={{ display: "flex", justifyContent: "space-between", padding: "8px 12px", borderTop: `2px solid ${T.gold}` }}>
+              <Body style={{ fontSize: "12px", color: T.text, fontWeight: 600 }}>Total</Body>
+              <Body data-print-gold style={{ fontSize: "13px", color: T.gold, fontWeight: 700, fontVariantNumeric: "tabular-nums", textAlign: "right" }}>{data.totalInvested}</Body>
+            </div>
           </div>
           <Divider />
         </>
@@ -496,7 +514,7 @@ function Section7({ data }: { data: PrepKit["section7"] }) {
           <div style={{ ...eyebrow, marginBottom: "10px" }}>{cat}</div>
           <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
             {grouped.get(cat)!.map((q) => (
-              <div key={q.id} style={{ border: `1px solid ${T.border}`, padding: "14px 16px" }}>
+              <div key={q.id} className="print-avoid" data-print-border style={{ border: `1px solid ${T.border}`, padding: "14px 16px" }}>
                 <div style={{ display: "flex", gap: "10px", alignItems: "flex-start", marginBottom: "10px" }}>
                   <span style={{ fontSize: "10px", fontFamily: T.body, color: T.goldLabel, fontWeight: 600, flexShrink: 0, paddingTop: "2px" }}>{q.id}</span>
                   <div style={{ fontSize: "14px", fontFamily: T.heading, fontWeight: 300, color: T.text, lineHeight: 1.3 }}>{q.question}</div>
@@ -535,7 +553,7 @@ function Section7({ data }: { data: PrepKit["section7"] }) {
         <>
           <div style={{ ...eyebrow, marginTop: "8px", color: T.amber }}>Weak point probes — may be asked based on your case</div>
           {data.applicableProbes.map((wp) => (
-            <div key={wp.id} style={{ border: `1px solid rgba(184,115,51,0.25)`, padding: "14px 16px" }}>
+            <div key={wp.id} className="print-avoid" data-print-border style={{ border: `1px solid rgba(184,115,51,0.25)`, padding: "14px 16px" }}>
               <div style={{ display: "flex", gap: "10px", alignItems: "flex-start", marginBottom: "8px" }}>
                 <span style={{ fontSize: "10px", fontFamily: T.body, color: T.amber, fontWeight: 600, flexShrink: 0, paddingTop: "2px" }}>{wp.id}</span>
                 <div style={{ fontSize: "14px", fontFamily: T.heading, fontWeight: 300, color: T.text }}>{wp.question}</div>
@@ -967,13 +985,28 @@ export default function PrepKitPage() {
     : null;
 
   // ── Print CSS injected once ────────────────────────────────────────────────
+  // Obsidian Gold survives to paper via print-color-adjust: exact — everything
+  // else strips down to black-on-white so it doesn't burn a printer's gold cartridge
+  // that doesn't exist. Section wrappers already carry pageBreakInside: "avoid";
+  // this adds the same guarantee to cards that render outside that wrapper.
   const printStyle = `
     @media print {
-      body { background: white !important; color: black !important; }
+      @page { margin: 0.6in 0.55in; }
+      html, body { background: white !important; }
       .no-print { display: none !important; }
-      .print-section { page-break-inside: avoid; }
-      * { color: black !important; border-color: #ccc !important; background: white !important; }
-      a { display: none !important; }
+      .print-avoid { break-inside: avoid; page-break-inside: avoid; }
+      .print-cover, .print-cheat-card { display: block !important; }
+      * {
+        color: #1a1a1a !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      [data-print-gold] { color: #8a6d1f !important; }
+      [data-print-red] { color: #a83a3a !important; border-color: #a83a3a !important; }
+      [data-print-amber] { color: #92551f !important; border-color: #92551f !important; }
+      [data-print-green] { color: #2c5f42 !important; }
+      [data-print-border], .print-avoid { border-color: #ccc !important; background: white !important; }
+      a[href]::after { content: none !important; }
     }
   `;
 
@@ -1136,16 +1169,30 @@ export default function PrepKitPage() {
         {/* Dossier */}
         {!loading && !generating && kit && (
           <>
-            {/* Print header — only visible when printing */}
-            <div style={{ display: "none" }} className="print-header">
-              <div style={{ fontFamily: T.heading, fontSize: "28px", marginBottom: "4px" }}>
-                E-2 Interview Case Dossier
+            {/* Print cover page — only visible when printing, one full page */}
+            <div
+              className="print-cover"
+              style={{
+                display: "none",
+                minHeight: "9in",
+                pageBreakAfter: "always",
+                flexDirection: "column",
+                justifyContent: "space-between",
+              }}
+            >
+              <div style={{ marginTop: "2in" }}>
+                <div data-print-gold style={{ ...eyebrow, fontSize: "11px", color: T.gold, marginBottom: "18px" }}>e2go.app · Confidential</div>
+                <div style={{ fontFamily: T.heading, fontSize: "40px", fontWeight: 300, lineHeight: 1.15, marginBottom: "14px" }}>
+                  E-2 Interview Case Dossier
+                </div>
+                <div style={{ fontSize: "16px", fontFamily: T.body, marginBottom: "4px" }}>{kit.clientName}</div>
+                <div style={{ fontSize: "14px", fontFamily: T.body, color: "#555" }}>{kit.businessName}</div>
               </div>
-              <div style={{ fontSize: "12px", marginBottom: "24px" }}>
-                {kit.clientName} · {kit.businessName} · Generated {kit.generatedDate}
+              <div style={{ fontSize: "11px", fontFamily: T.body, color: "#666", marginBottom: "0.5in" }}>
+                Generated {kit.generatedDate} · Prepared for personal interview revision only —
+                not a legal document and not for submission to USCIS or a consular officer.
               </div>
             </div>
-            <style>{`.print-header { display: none } @media print { .print-header { display: block !important } }`}</style>
 
             <div style={{ display: "flex", flexDirection: "column", gap: "0" }}>
               {kit.criticalGaps && <CriticalGaps data={kit.criticalGaps} />}
@@ -1189,6 +1236,43 @@ export default function PrepKitPage() {
                 <Section number="10" title={kit.section10.title} subtitle={kit.section10.subtitle}>
                   <Section10 data={kit.section10} />
                 </Section>
+              )}
+            </div>
+
+            {/* Print-only waiting-room cheat card — standalone final page */}
+            <div className="print-cheat-card" style={{ display: "none", pageBreakBefore: "always", paddingTop: "0.3in" }}>
+              <div data-print-gold style={{ ...eyebrow, fontSize: "11px", color: T.gold, marginBottom: "10px" }}>Waiting-room cheat card</div>
+              <div style={{ fontFamily: T.heading, fontSize: "24px", fontWeight: 300, marginBottom: "18px" }}>
+                Last look before you&apos;re called in
+              </div>
+
+              <div style={{ marginBottom: "18px" }}>
+                <div style={{ fontSize: "11px", fontWeight: 600, marginBottom: "6px" }}>THE NUMBERS</div>
+                <div>Total invested: <strong>{kit.section5.totalInvested}</strong></div>
+                {kit.section1.facts.map((f) => (
+                  <div key={f.label}>{f.label}: <strong>{f.value}</strong></div>
+                ))}
+              </div>
+
+              {kit.section3.highRisk.length > 0 && (
+                <div style={{ marginBottom: "18px" }}>
+                  <div style={{ fontSize: "11px", fontWeight: 600, marginBottom: "6px" }}>THE 3 HARDEST QUESTIONS</div>
+                  {kit.section3.highRisk.slice(0, 3).map((r) => (
+                    <div key={r.code} className="print-avoid" style={{ marginBottom: "10px" }}>
+                      <div style={{ fontSize: "12px", fontWeight: 500 }}>{r.name}</div>
+                      <div style={{ fontSize: "12px" }}>{r.bestShortAnswer}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {kit.section6.documentsToCarry.length > 0 && (
+                <div>
+                  <div style={{ fontSize: "11px", fontWeight: 600, marginBottom: "6px" }}>DOCUMENTS IN HAND</div>
+                  {kit.section6.documentsToCarry.map((doc, i) => (
+                    <div key={i} style={{ fontSize: "12px" }}>☐ {doc}</div>
+                  ))}
+                </div>
               )}
             </div>
           </>
