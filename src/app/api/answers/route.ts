@@ -81,7 +81,6 @@ export async function POST(request: NextRequest) {
     }
 
     // Upsert to answers table
-    // Note: user_id and source columns require migrations 001/002 — omit until applied
     const { data, error } = await supabase
       .from('answers')
       .upsert(
@@ -91,6 +90,8 @@ export async function POST(request: NextRequest) {
           answer_value: sanitizedValue,
           answered_at: new Date().toISOString(),
           family_member_id: family_member_id ?? null,
+          source_document_type: 'manual',
+          confidence: null,
         },
         {
           onConflict: 'application_id,question_key,family_member_id',
