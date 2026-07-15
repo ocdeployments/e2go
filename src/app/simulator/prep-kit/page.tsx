@@ -51,6 +51,7 @@ interface PrepKit {
   section8?: { title: string; subtitle: string; rules: string[] };
   section9?: { title: string; subtitle: string; rounds: MockRound[] };
   section10?: { title: string; subtitle: string; checklist: string[] };
+  criticalGaps?: { title: string; subtitle: string; actions: { action: string; why: string }[] };
 }
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
@@ -200,6 +201,51 @@ function RiskChip({ level }: { level: "high" | "moderate" }) {
     >
       {level}
     </span>
+  );
+}
+
+// ── Critical gaps — always-visible top-of-dossier panel (not collapsible) ──────
+function CriticalGaps({ data }: { data: NonNullable<PrepKit["criticalGaps"]> }) {
+  if (!data.actions || data.actions.length === 0) return null;
+  return (
+    <div
+      style={{
+        border: `1px solid ${T.red}`,
+        background: "rgba(192,82,82,0.06)",
+        padding: "20px 22px",
+        marginBottom: "24px",
+        breakInside: "avoid",
+      }}
+    >
+      <div style={{ ...eyebrow, color: T.red, marginBottom: "2px" }}>Do this first</div>
+      <div style={{ fontFamily: T.heading, fontSize: "20px", fontWeight: 300, color: T.text, marginBottom: "2px" }}>
+        {data.title}
+      </div>
+      <div style={{ fontSize: "12px", fontFamily: T.body, color: T.textDim, marginBottom: "14px" }}>
+        {data.subtitle}
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+        {data.actions.map((a, i) => (
+          <div key={i} style={{ display: "flex", gap: "12px", alignItems: "flex-start" }}>
+            <div
+              style={{
+                fontFamily: T.heading,
+                fontSize: "16px",
+                color: T.red,
+                flexShrink: 0,
+                width: "22px",
+              }}
+            >
+              {i + 1}
+            </div>
+            <div>
+              <Body style={{ fontWeight: 500 }}>{a.action}</Body>
+              <Body style={{ fontSize: "12px", color: T.textDim, marginTop: "2px" }}>{a.why}</Body>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -1102,6 +1148,7 @@ export default function PrepKitPage() {
             <style>{`.print-header { display: none } @media print { .print-header { display: block !important } }`}</style>
 
             <div style={{ display: "flex", flexDirection: "column", gap: "0" }}>
+              {kit.criticalGaps && <CriticalGaps data={kit.criticalGaps} />}
               {kit.persona && (
                 <Section number="00" title={kit.persona.title} subtitle={kit.persona.subtitle} defaultOpen>
                   <Persona data={kit.persona} />

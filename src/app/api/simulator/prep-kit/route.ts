@@ -34,6 +34,101 @@ const WP_QUESTIONS: Record<string, { trigger: string; text: string }> = {
 // 7-day cache threshold
 const CACHE_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
+// L-2 — canonical investment figures, computed in code so the dossier's money
+// figures can never diverge from the applicant's actual recorded data (the LLM
+// was previously free-generating them, which produced mismatched totals across
+// sections). answer_value is stored as plain TEXT; dollar answers are typically
+// unformatted numeric strings ("195000") but defensively parsed either way.
+function parseUsd(raw: string | null | undefined): number | null {
+  if (!raw) return null;
+  const cleaned = raw.replace(/[^0-9.\-]/g, '');
+  if (!cleaned) return null;
+  const n = parseFloat(cleaned);
+  return Number.isFinite(n) ? n : null;
+}
+
+function fmtUsd(n: number): string {
+  return `$${Math.round(n).toLocaleString()}`;
+}
+
+// M3-F-04 ("How was the investment deployed?") is a category multiselect whose
+// option labels sometimes embed a dollar figure in parens, e.g.
+// "Franchise fee ($49,500)" — the only per-category amount signal that exists
+// anywhere in the answers table today. Categories without a parenthesised
+// figure (e.g. "Equipment and vehicle fit-out") are not usable as breakdown
+// rows since no amount was ever captured for them.
+function parseDeploymentCategories(raw: string | null | undefined): { item: string; amount: number }[] {
+  if (!raw) return [];
+  let arr: string[] = [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) arr = parsed.map(String);
+  } catch {
+    arr = [raw];
+  }
+  const rows: { item: string; amount: number }[] = [];
+  for (const label of arr) {
+    const m = label.match(/^(.*?)\s*\(\$?([\d,]+)\)\s*$/);
+    if (!m) continue;
+    const amount = parseFloat(m[2].replace(/,/g, ''));
+    if (Number.isFinite(amount) && amount > 0) rows.push({ item: m[1].trim(), amount });
+  }
+  return rows;
+}
+
+interface InvestmentFigures {
+  totalInvestedFormatted: string | null;
+  committedAmountFormatted: string | null;
+  breakdown: { item: string; amount: string }[];
+}
+
+function computeInvestmentFigures(am: Map<string, string>): InvestmentFigures {
+  const totalInvested = parseUsd(am.get('M3-F-02') ?? am.get('QF-NEW-01') ?? am.get('QF-02'));
+  const fundsSpentStatus = am.get('M3-F-NEW-01') ?? null;
+
+  // Only build a breakdown table when parsed category amounts are internally
+  // consistent with the total — either they sum to it (within $1 rounding) or
+  // undershoot it, in which case the gap becomes an explicit balancing row.
+  // Categories in this dossier must never omit reconciled cents by being
+  // silently dropped or silently overshooting the stated total.
+  let breakdown: { item: string; amount: string }[] = [];
+  if (totalInvested !== null) {
+    const categories = parseDeploymentCategories(am.get('M3-F-04'));
+    if (categories.length > 0) {
+      const sum = categories.reduce((s, c) => s + c.amount, 0);
+      const remainder = totalInvested - sum;
+      if (remainder > 1) {
+        breakdown = [
+          ...categories.map((c) => ({ item: c.item, amount: fmtUsd(c.amount) })),
+          { item: 'Other committed funds', amount: fmtUsd(remainder) },
+        ];
+      } else if (remainder >= -1) {
+        breakdown = categories.map((c) => ({ item: c.item, amount: fmtUsd(c.amount) }));
+      }
+      // remainder < -1 means the parsed categories overshoot the stated total —
+      // the data is inconsistent, so omit the table rather than show numbers
+      // that don't reconcile.
+    }
+  }
+
+  let committedAmountFormatted: string | null = null;
+  if (totalInvested !== null) {
+    if (fundsSpentStatus === 'no') {
+      committedAmountFormatted = `${fmtUsd(totalInvested)} committed, not yet deployed`;
+    } else if (fundsSpentStatus === 'partial') {
+      committedAmountFormatted = `${fmtUsd(totalInvested)} committed; partially deployed to date`;
+    } else {
+      committedAmountFormatted = `${fmtUsd(totalInvested)} fully committed and deployed`;
+    }
+  }
+
+  return {
+    totalInvestedFormatted: totalInvested !== null ? fmtUsd(totalInvested) : null,
+    committedAmountFormatted,
+    breakdown,
+  };
+}
+
 export async function POST(request: NextRequest) {
   const supabase = await createSupabaseServerClient();
   const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -195,6 +290,9 @@ export async function POST(request: NextRequest) {
   for (const a of answers) {
     if (a.answer_value && !a.family_member_id) am.set(a.question_key, a.answer_value);
   }
+
+  // L-2 — canonical, code-computed investment figures (never LLM-derived).
+  const investmentFigures = computeInvestmentFigures(am);
 
   const familyMembers = (familyMembersRes.data ?? []) as {
     id: string;
@@ -371,13 +469,20 @@ export async function POST(request: NextRequest) {
 
   // Build structured case context for the LLM
   const caseContext = {
-    // Identity
-    principalName: primaryApp.principal_name ?? 'the applicant',
-    businessName: primaryApp.business_name ?? 'the business',
+    // Identity — L-3: 'the applicant'/'the business' placeholders became the PDF
+    // title block verbatim, so resolve the real name from other recorded
+    // sources before ever falling back, and turn a genuine absence into an
+    // action prompt instead of a placeholder string.
+    principalName:
+      primaryApp.principal_name ?? am.get('M3-A-01') ?? am.get('full_name') ?? 'Add your name in your case file',
+    businessName:
+      primaryApp.business_name ?? am.get('QMA-BUSINESS-NAME') ?? 'Add your business name in your case file',
     businessCategory: primaryApp.business_category ?? null,
     targetState: primaryApp.target_state ?? null,
     treatyCountry: quiz?.result_json?.country ?? quiz?.result_json?.answers?.['Q0-01'] ?? null,
-    investmentRange: quiz?.result_json?.investment_range ?? null,
+    // L-2 — the quiz's rough range ("$100,000-$150,000") must never render once
+    // an exact figure exists; exact figure wins everywhere.
+    investmentRange: investmentFigures.totalInvestedFormatted ? null : (quiz?.result_json?.investment_range ?? null),
     applicationType: quiz?.application_type ?? null,
     quizOutcome: quiz?.outcome ?? null,
 
@@ -482,6 +587,14 @@ export async function POST(request: NextRequest) {
     // Questions to answer
     universalQuestions: Object.entries(UQ_QUESTIONS).map(([id, text]) => ({ id, text })),
     applicableWpProbes: applicableWpProbes.map(([id, info]) => ({ id, trigger: info.trigger, text: info.text })),
+
+    // L-2 — the single source of truth for the investment total. Computed in
+    // code from the applicant's own recorded answers, never by the LLM.
+    verifiedFigures: {
+      totalInvested: investmentFigures.totalInvestedFormatted,
+      committedAmount: investmentFigures.committedAmountFormatted,
+      breakdown: investmentFigures.breakdown,
+    },
   };
 
   // Build the prompt
@@ -492,7 +605,9 @@ This client will attend a consulate interview for an E-2 visa. This dossier is t
 CASE DATA (pre-computed — do not derive new numbers, use only what is here):
 ${JSON.stringify(caseContext, null, 2)}
 
-Produce a JSON object with exactly these sections. Every section must use the client's real data — no placeholders (the sole exception is section6.materialUpdates, which is deliberately an editable checklist the client fills in by hand — see that section's instructions). Write in second person ("you", "your"). Use plain English. Be specific with numbers and facts. If caseTheoryNarrative or caseTheoryNumbersStrategy are present in the case data, ground section2 (strengths) and section5 (investment numbers) in them — they are the CPU's own reasoning about which figures to foreground and which honest narrative wins this case.
+VERIFIED FIGURES — these exact strings, from caseContext.verifiedFigures, are the ONLY investment total and committed-amount figures that may appear anywhere in this dossier. They were computed in code directly from the applicant's own answers, not by you. Never compute, round, restate, or alter them — copy the strings verbatim everywhere the investment total or committed amount appears (section1's Investment fact, section5.totalInvested, section5.committedAmount, persona, section3, section4, section7 keyNumbers, everywhere). If verifiedFigures.totalInvested is null, write "not yet recorded" rather than inventing a figure. Do not use investmentRange once verifiedFigures.totalInvested is present — investmentRange will already be null in that case.
+
+Produce a JSON object with exactly these sections. Every section must use the client's real data — no placeholders (the sole exception is section6.materialUpdates, which is deliberately an editable checklist the client fills in by hand — see that section's instructions). Write in FIRST person throughout ("my business", "I have invested $X", "I own 50%") — this is the client's own revision document, not something written about them. Coaching asides (avoidSaying, pitfalls, interviewStyleNotes, conduct rules) stay imperative, like a coach's margin note ("Don't volunteer this unprompted"). Use plain English. Be specific with numbers and facts. If caseTheoryNarrative or caseTheoryNumbersStrategy are present in the case data, ground section2 (strengths) and section5 (investment numbers) in them — they are the CPU's own reasoning about which figures to foreground and which honest narrative wins this case.
 
 Return ONLY valid JSON matching this structure:
 {
@@ -501,8 +616,8 @@ Return ONLY valid JSON matching this structure:
   "generatedDate": "${new Date().toISOString().split('T')[0]}",
 
   "persona": {
-    "title": "Who You Are Walking In As",
-    "subtitle": "Read this first — your candidate snapshot",
+    "title": "My Candidate Snapshot",
+    "subtitle": "Read this first — who I am walking in as",
     "name": "${caseContext.principalName}",
     "roleSummary": "One sentence: who this person is and their role in the business (e.g. 'Owner-operator of a home care franchise, managing daily operations and staffing')",
     "backgroundSummary": "2-3 sentences on relevant professional background and why this candidate is credible in this business, grounded in real case data (qualifications, work history)",
@@ -511,15 +626,13 @@ Return ONLY valid JSON matching this structure:
   },
 
   "section1": {
-    "title": "Your Case at a Glance",
+    "title": "My Case at a Glance",
     "subtitle": "2-minute review before entering the building",
     "facts": [
       { "label": "Business", "value": "..." },
       { "label": "Treaty Country", "value": "..." },
       { "label": "Investment", "value": "..." },
-      { "label": "Application Type", "value": "..." },
-      { "label": "Quiz Outcome", "value": "..." },
-      { "label": "Investor Archetype", "value": "..." }
+      { "label": "Application Type", "value": "..." }
     ]
   },
 
@@ -562,8 +675,8 @@ Return ONLY valid JSON matching this structure:
   },
 
   "section5": {
-    "title": "Your Investment — Know the Numbers",
-    "subtitle": "Every figure must be on the tip of your tongue",
+    "title": "My Numbers",
+    "subtitle": "Every figure must be on the tip of my tongue",
     "totalInvested": "...",
     "breakdown": [
       { "item": "...", "amount": "..." }
@@ -588,8 +701,8 @@ Return ONLY valid JSON matching this structure:
   },
 
   "section7": {
-    "title": "Interview Question Bank",
-    "subtitle": "Every likely question, categorised — with your personalised answer frameworks",
+    "title": "My Answers",
+    "subtitle": "Every likely question, categorised — with my personalised answer frameworks",
     "questions": [
       {
         "id": "UQ-01",
@@ -631,15 +744,28 @@ Return ONLY valid JSON matching this structure:
     "title": "Final Review Checklist",
     "subtitle": "Run through this the night before",
     "checklist": ["8-12 short, specific checklist items grounded in this client's real case — documents to pack (from documentsOnFile / section6.documentsToCarry), numbers to know cold (from section5), and concerns to be ready for (from section3's highRisk items)"]
+  },
+
+  "criticalGaps": {
+    "title": "Before My Interview — Critical Gaps",
+    "subtitle": "The highest-leverage things to fix before the interview",
+    "actions": [
+      { "action": "One specific, concrete action (e.g. 'Upload a business plan — none is on file')", "why": "One sentence on what this protects against in the interview" }
+    ]
   }
 }
 
 Important rules:
+- verifiedFigures is the single source of truth for the investment total and committed amount — every mention of these anywhere in the dossier must match verifiedFigures exactly, character for character. Never write a different number, and never derive a total from breakdown rows or any other source.
 - Use ONLY data from the CASE DATA object above. Do not invent facts.
 - If a data field is null/missing, acknowledge it gracefully ("not yet recorded") rather than fabricating.
 - The highRisk and moderateRisk arrays must use only D-codes from the pre-computed lists above.
-- Section 7 must cover all 9 universal questions plus any applicable WP probes, each tagged with exactly one of the 6 categories listed in the schema.
+- Section 7's questions array covers ONLY the 9 universal questions, each tagged with exactly one of the 6 categories listed in the schema. Any applicable WP probes go ONLY in section7.applicableProbes — never duplicate a WP probe into questions. Each probe must appear exactly once in the entire dossier.
 - Answer frameworks must reference real case details (business name, investment amount, archetype, etc.).
+- Never mention internal field names, key names, or data-structure terms anywhere in generated prose — neither as literal identifiers ("semanticField", "documentsOnFile", "fullAnswerPool", answer keys like "M3-A-01") nor spelled out as a phrase ("semantic field rating", "weak dimension rating", "case data object", "is null"/"is empty"). Translate these into plain client-facing language — the client never sees the underlying data model or its rating system.
+- Never coach a false or unverifiable statement. If a gap exists (e.g. no business plan on file, no revenue projections recorded), the relevant bestShortAnswer/shortAnswer must be honest about the current state (e.g. "My business plan is being finalised; here is what it will cover…") and the corresponding factsToKnow/checklist item becomes a concrete pre-interview action ("Upload/complete the business plan before the interview"), never an assertion that the missing thing already exists.
+- Do not narrate the absence of data as a fact in prose (e.g. never write "No ODE timeline is available" or "Simulator trend is empty" as a standalone sentence) — either omit it or convert it into one action line, and surface it in criticalGaps instead.
+- criticalGaps: 3-5 ranked, concrete pre-interview actions grounded in cpuWeakDimensions, gaps in documentsOnFile, and an empty or weak simulatorTrend. This is the single highest-value section — rank the most consequential gap first. If there are genuinely no gaps, return an empty actions array rather than inventing filler.
 - persona: this section must come from real case data (principalName, businessName, caseTheoryNarrative, qualifications/background fields) — it is a factual snapshot, not a generic introduction. If caseTheoryNarrative is missing, base caseTheorySummary on the strongest available strengths/facts instead of inventing one.
 - section3 (Officer Concerns and Response Strategy): every highRisk/moderateRisk item needs the full 5-field structure (concern/factsToKnow/bestShortAnswer/expandedAnswer/avoidSaying) grounded in this client's real data — do not leave any of the 5 fields generic/boilerplate.
 - section6.materialUpdates is the one deliberate exception to "no placeholders" — it's a short action checklist for the client to verify by hand, not a set of asserted facts.
@@ -695,6 +821,46 @@ Important rules:
     console.error(`[prep-kit] LLM call failed (model: ${modelUsed}):`, error);
     return NextResponse.json({ error: 'Failed to generate dossier. Please try again.' }, { status: 500 });
   }
+
+  // L-2 — never trust the LLM's own arithmetic for money. Overwrite the two
+  // rendered figure slots with the code-computed values regardless of what
+  // the model wrote, so section1's "at a glance" figure and section5 can
+  // never diverge from each other or from the applicant's actual data.
+  if (investmentFigures.totalInvestedFormatted) {
+    const section1 = kitJson.section1 as { facts?: Array<{ label: string; value: string }> } | undefined;
+    if (section1?.facts) {
+      const idx = section1.facts.findIndex((f) => f.label === 'Investment');
+      const fact = { label: 'Investment', value: investmentFigures.totalInvestedFormatted };
+      if (idx >= 0) section1.facts[idx] = fact;
+      else section1.facts.push(fact);
+    }
+    const section5 = kitJson.section5 as
+      | { totalInvested?: string; breakdown?: Array<{ item: string; amount: string }>; committedAmount?: string }
+      | undefined;
+    if (section5) {
+      section5.totalInvested = investmentFigures.totalInvestedFormatted;
+      if (investmentFigures.committedAmountFormatted) section5.committedAmount = investmentFigures.committedAmountFormatted;
+      section5.breakdown = investmentFigures.breakdown;
+    }
+  }
+
+  // L-3 — belt-and-braces sweep for internal field/key names the prompt rule
+  // asked the LLM not to write, in case it slipped one in anyway. Recurses
+  // through every string value in the JSON tree and strips matches in place.
+  const BANNED_FIELD_PATTERN = /semantic\s*field(?:\s*rating)?|documents\s*on\s*file|full\s*answer\s*pool|weak\s*dimension(?:\s*rating)?|M3-[A-Z]-\d+|is null|is empty/gi;
+  function sweepBannedFieldNames(value: unknown): unknown {
+    if (typeof value === 'string') {
+      return BANNED_FIELD_PATTERN.test(value) ? value.replace(BANNED_FIELD_PATTERN, '').replace(/\s{2,}/g, ' ').trim() : value;
+    }
+    if (Array.isArray(value)) return value.map(sweepBannedFieldNames);
+    if (value && typeof value === 'object') {
+      const out: Record<string, unknown> = {};
+      for (const [k, v] of Object.entries(value)) out[k] = sweepBannedFieldNames(v);
+      return out;
+    }
+    return value;
+  }
+  kitJson = sweepBannedFieldNames(kitJson) as Record<string, unknown>;
 
   // Upsert to cache (service client — RLS bypass)
   const serviceClient = createServiceClient();
