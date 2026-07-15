@@ -82,6 +82,7 @@ export default function ConversationalSession({
 
   const [convState, setConvState] = useState<ConvState>('speaking');
   const [questionIdx, setQuestionIdx] = useState(0);
+  const [showHint, setShowHint] = useState(false);
   const [transcript, setTranscript] = useState('');
   const submittedAnswersRef = useRef<RawVoiceAnswer[]>([]);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -139,7 +140,7 @@ export default function ConversationalSession({
     deadRef.current = false;
     return () => {
       deadRef.current = true;
-      stopMic();
+      teardownMic();
       stopMicTest();
       if (sessionTimerRef.current) clearInterval(sessionTimerRef.current);
       if (autoAdvanceRef.current) clearInterval(autoAdvanceRef.current);
@@ -209,12 +210,13 @@ export default function ConversationalSession({
     setTranscript('');
     setErrorMsg(null);
     setAutoAdvanceSec(null);
+    setShowHint(false);
 
     let cancelled = false;
 
     async function run() {
       if (!mutableMuted.current) {
-        try { await speakQuestion(officerSpeech(question.text, questionIdx)); } catch { /* silent */ }
+        await speakWithWatchdog(officerSpeech(question.text, questionIdx));
       }
       if (cancelled || deadRef.current) return;
       await openMic();
@@ -238,7 +240,7 @@ export default function ConversationalSession({
     setConvState('speaking');
 
     if (!mutableMuted.current) {
-      try { await speakQuestion(welcomeText); } catch { /* silent */ }
+      await speakWithWatchdog(welcomeText, 60_000);
     }
     if (deadRef.current) return;
 
@@ -348,34 +350,68 @@ export default function ConversationalSession({
   }
 
   // ─── Mic utilities ─────────────────────────────────────────────────────────
-  function stopMic() {
+  // The mic stream is acquired ONCE and kept alive across questions. Re-requesting
+  // getUserMedia for every question is fragile mid-session (device contention
+  // produced repeated "microphone denied" errors after Q1). stopRecording() ends
+  // the current capture only; teardownMic() fully releases the device at session end.
+  function stopRecording() {
     if (animFrameRef.current) { cancelAnimationFrame(animFrameRef.current); animFrameRef.current = null; }
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       try { mediaRecorderRef.current.stop(); } catch { /* ignore */ }
     }
-    if (streamRef.current) { streamRef.current.getTracks().forEach(t => t.stop()); streamRef.current = null; }
     if (audioCtxRef.current) { try { audioCtxRef.current.close(); } catch { /* ignore */ } audioCtxRef.current = null; }
     setVadLevel(0);
   }
 
+  function teardownMic() {
+    stopRecording();
+    if (streamRef.current) { streamRef.current.getTracks().forEach(t => t.stop()); streamRef.current = null; }
+  }
+
+  // Reuse the live stream when possible; re-acquire only when it has gone dead.
+  async function acquireStream(): Promise<MediaStream | null> {
+    const existing = streamRef.current;
+    if (existing && existing.getAudioTracks().some(t => t.readyState === 'live')) {
+      return existing;
+    }
+    if (existing) { existing.getTracks().forEach(t => t.stop()); streamRef.current = null; }
+    try {
+      const s = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = s;
+      return s;
+    } catch {
+      return null;
+    }
+  }
+
+  // TTS with watchdog — a hung TTS fetch or playback would otherwise freeze the
+  // session in 'speaking' forever. On timeout, cancel the audio and move on.
+  async function speakWithWatchdog(text: string, timeoutMs = 45_000): Promise<void> {
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const timedOut = new Promise<'timeout'>(resolve => {
+      timer = setTimeout(() => resolve('timeout'), timeoutMs);
+    });
+    const spoken = speakQuestion(text).then(() => 'ok' as const).catch(() => 'ok' as const);
+    const result = await Promise.race([spoken, timedOut]);
+    if (timer) clearTimeout(timer);
+    if (result === 'timeout') cancelTTS();
+  }
+
   async function openMic() {
     if (deadRef.current) return;
-    stopMic();
+    stopRecording();
     setConvState('listening');
 
-    let stream: MediaStream;
-    try {
-      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    } catch {
+    const stream = await acquireStream();
+    if (!stream) {
       setMicBlocked(true);
-      setErrorMsg('Microphone access denied. Please allow access in your browser settings, then refresh.');
+      setErrorMsg('Microphone unavailable. Allow mic access in your browser settings and tap "Try again" — or skip to the next question. Your recorded answers are safe.');
       setConvState('error');
       return;
     }
 
-    if (deadRef.current) { stream.getTracks().forEach(t => t.stop()); return; }
-
-    streamRef.current = stream;
+    if (deadRef.current) { teardownMic(); return; }
+    setMicBlocked(false);
 
     const ctx = new AudioContext();
     audioCtxRef.current = ctx;
@@ -393,7 +429,7 @@ export default function ConversationalSession({
 
     recorder.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
     recorder.onstop = () => {
-      stream.getTracks().forEach(t => t.stop());
+      // Stream stays alive for the next question — released in teardownMic()
       if (!deadRef.current) handleRecordingComplete();
     };
 
@@ -445,7 +481,7 @@ export default function ConversationalSession({
       setConvState('speaking');
 
       if (!mutableMuted.current) {
-        try { await speakQuestion(ackText); } catch { /* silent */ }
+        await speakWithWatchdog(ackText, 30_000);
       } else {
         // Even muted, show text for ~2s so the user knows to expect questions
         await new Promise(r => setTimeout(r, 2000));
@@ -459,16 +495,28 @@ export default function ConversationalSession({
     // ── QUESTIONS PHASE: full transcribe → evaluate → feedback flow ──
     setConvState('processing');
 
+    // Transcribe with one silent retry — transient network/STT hiccups shouldn't
+    // interrupt the interview flow.
     let answerText = '';
-    try {
-      const form = new FormData();
-      form.append('file', blob, 'answer.webm');
-      const res = await fetch('/api/simulator/transcribe', { method: 'POST', body: form });
-      if (!res.ok) throw new Error('transcription failed');
-      const data = await res.json();
-      answerText = (data.text || '').trim();
-    } catch {
-      setErrorMsg('Transcription failed. Tap "Try again" to re-record.');
+    let transcriptionFailed = false;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      if (deadRef.current) return;
+      try {
+        const form = new FormData();
+        form.append('file', blob, 'answer.webm');
+        const res = await fetch('/api/simulator/transcribe', { method: 'POST', body: form });
+        if (!res.ok) throw new Error('transcription failed');
+        const data = await res.json();
+        answerText = (data.text || '').trim();
+        transcriptionFailed = false;
+        break;
+      } catch {
+        transcriptionFailed = true;
+        if (attempt === 0) await new Promise(r => setTimeout(r, 800));
+      }
+    }
+    if (transcriptionFailed) {
+      setErrorMsg('We could not process that recording. Re-record your answer, or skip to the next question — your previous answers are safe.');
       setConvState('error');
       return;
     }
@@ -511,9 +559,23 @@ export default function ConversationalSession({
   function finishSession() {
     if (sessionTimerRef.current) clearInterval(sessionTimerRef.current);
     if (autoAdvanceRef.current) clearInterval(autoAdvanceRef.current);
-    stopMic();
+    if (mediaRecorderRef.current) mediaRecorderRef.current.onstop = null;
+    teardownMic();
     // Pass raw answers to parent — it evaluates them in parallel and builds the summary
     setTimeout(() => onComplete(submittedAnswersRef.current, session.sessionNumber), 50);
+  }
+
+  // End-session button: if any answers were recorded, score the partial session
+  // instead of silently discarding the user's work.
+  function handleEndSession() {
+    cancelTTS();
+    if (submittedAnswersRef.current.length > 0) {
+      finishSession();
+    } else {
+      if (mediaRecorderRef.current) mediaRecorderRef.current.onstop = null;
+      teardownMic();
+      onExit();
+    }
   }
 
   // ─── Manual controls ────────────────────────────────────────────────────────
@@ -530,11 +592,10 @@ export default function ConversationalSession({
     // Null out onstop before stopping — prevents handleRecordingComplete
     // from firing on a partial recording captured before the replay
     if (mediaRecorderRef.current) mediaRecorderRef.current.onstop = null;
-    stopMic();
+    stopRecording();
     setTranscript('');
     setConvState('speaking');
-    speakQuestion(officerSpeech(question.text, questionIdx))
-      .catch(() => {})
+    speakWithWatchdog(officerSpeech(question.text, questionIdx))
       .finally(() => { if (!deadRef.current) openMic(); });
   }
 
@@ -544,8 +605,18 @@ export default function ConversationalSession({
     // Null out onstop before stopping — prevents handleRecordingComplete
     // from firing on any partial in-progress recording when skip is pressed
     if (mediaRecorderRef.current) mediaRecorderRef.current.onstop = null;
-    stopMic();
+    stopRecording();
+    setErrorMsg(null);
     advance();
+  }
+
+  // Skip a stuck introduction and go straight to the questions
+  function handleSkipIntro() {
+    cancelTTS();
+    if (mediaRecorderRef.current) mediaRecorderRef.current.onstop = null;
+    stopRecording();
+    setErrorMsg(null);
+    setPhase('questions');
   }
 
   function handleRetry() {
@@ -630,7 +701,7 @@ export default function ConversationalSession({
           <button style={styles.muteButton} onClick={() => setMuted(m => !m)} title={muted ? 'Unmute officer voice' : 'Mute officer voice'}>
             {muted ? '🔇' : '🔊'}
           </button>
-          <button style={styles.endButton} onClick={() => { stopMic(); onExit(); }}>
+          <button style={styles.endButton} onClick={handleEndSession}>
             End session
           </button>
         </div>
@@ -775,9 +846,10 @@ export default function ConversationalSession({
               {convState === 'error' && (
                 <div style={styles.errorBox}>
                   <p style={styles.errorText}>{errorMsg}</p>
-                  {!micBlocked && (
+                  <div style={styles.errorActions}>
                     <button style={styles.retryButton} onClick={handleRetry}>Try again →</button>
-                  )}
+                    <button style={styles.controlGhost} onClick={handleSkipIntro}>Skip introduction →</button>
+                  </div>
                 </div>
               )}
             </div>
@@ -811,6 +883,16 @@ export default function ConversationalSession({
               {question.context && (
                 <p style={styles.questionContext}>{question.context}</p>
               )}
+              {question.hint && (
+                <div style={{ marginTop: '16px' }}>
+                  <button style={styles.hintToggle} onClick={() => setShowHint(h => !h)}>
+                    {showHint ? '▾  Hide coach hint' : '▸  Coach hint — what the officer wants to hear'}
+                  </button>
+                  {showHint && (
+                    <div style={styles.hintPanel}>{question.hint}</div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* State display */}
@@ -842,9 +924,14 @@ export default function ConversationalSession({
               {convState === 'error' && (
                 <div style={styles.errorBox}>
                   <p style={styles.errorText}>{errorMsg}</p>
-                  {!micBlocked && (
-                    <button style={styles.retryButton} onClick={handleRetry}>Try again →</button>
-                  )}
+                  <div style={styles.errorActions}>
+                    <button style={styles.retryButton} onClick={handleRetry}>
+                      {micBlocked ? 'Retry microphone →' : 'Try again →'}
+                    </button>
+                    <button style={styles.controlGhost} onClick={handleSkip}>
+                      {isLastQuestion ? 'Skip & finish session →' : 'Skip this question →'}
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -1195,6 +1282,21 @@ const styles: Record<string, React.CSSProperties> = {
     textAlign: 'center' as const,
   },
   errorText: { fontSize: '14px', color: 'rgba(239,68,68,0.8)', lineHeight: 1.6, margin: '0 0 16px' },
+  errorActions: {
+    display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' as const,
+  },
+  hintToggle: {
+    background: 'transparent', border: 'none', padding: '4px 0',
+    color: 'rgba(201,168,76,0.85)', fontSize: '12px', letterSpacing: '0.05em',
+    cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", textAlign: 'left' as const,
+  },
+  hintPanel: {
+    marginTop: '10px', padding: '16px 18px',
+    background: 'rgba(201,168,76,0.05)', border: '1px solid rgba(201,168,76,0.18)',
+    borderLeft: '3px solid rgba(201,168,76,0.5)',
+    fontSize: '13px', color: 'rgba(245,240,232,0.85)', lineHeight: 1.65,
+    whiteSpace: 'pre-line' as const,
+  },
   retryButton: {
     background: 'transparent', border: '1px solid rgba(239,68,68,0.4)',
     color: 'rgba(239,68,68,0.8)', fontSize: '13px', padding: '8px 20px',
