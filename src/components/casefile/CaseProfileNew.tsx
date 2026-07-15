@@ -130,6 +130,7 @@ export default function CaseProfileNew() {
           onFieldsApplied={() => reloadProfile()}
           initialDocType={uploadDocType}
           openSignal={uploadSignal}
+          suggestedDocOrder={completion?.docTypeOrdering}
         />
 
         {/* ── Renewal Package ──────────────────────────────────────── */}

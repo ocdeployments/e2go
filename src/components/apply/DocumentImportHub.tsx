@@ -20,6 +20,10 @@ interface DocumentImportHubProps {
   /** Bump this counter to force the panel open from outside (e.g. a drawer
    *  action) even after the user has collapsed it. */
   openSignal?: number;
+  /** K-3.2: doc types to surface first in the per-file type picker, in given
+   *  priority order (from /api/case/completion's quiz-derived ranking). The
+   *  full option list is always still present — this only reorders it. */
+  suggestedDocOrder?: DocTypeValue[];
 }
 
 type HubStage = 'idle' | 'processing' | 'processed' | 'reviewing' | 'saving' | 'done' | 'error';
@@ -45,6 +49,20 @@ const DOC_TYPE_OPTIONS = [
 ] as const;
 
 export type DocTypeValue = typeof DOC_TYPE_OPTIONS[number]['value'];
+
+// K-3.2: puts 'auto' first, then any suggested types (in given order), then
+// the remaining options in their original order — never narrows the list.
+function orderDocTypeOptions(suggestedDocOrder: DocTypeValue[] | undefined) {
+  if (!suggestedDocOrder || suggestedDocOrder.length === 0) return DOC_TYPE_OPTIONS;
+  const priorityList: DocTypeValue[] = ['auto', ...suggestedDocOrder];
+  const priority = new Set<DocTypeValue>(priorityList);
+  const byValue = new Map(DOC_TYPE_OPTIONS.map((o) => [o.value, o]));
+  const ordered = priorityList
+    .map((v) => byValue.get(v))
+    .filter((o): o is (typeof DOC_TYPE_OPTIONS)[number] => Boolean(o));
+  const rest = DOC_TYPE_OPTIONS.filter((o) => !priority.has(o.value));
+  return [...ordered, ...rest];
+}
 
 // ─── Owner (person) model ────────────────────────────────────────────────────
 // `null` owner id = the principal applicant. Every other section corresponds
@@ -229,7 +247,8 @@ function mergeFields(queue: QueuedFile[]): MergedField[] {
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-export default function DocumentImportHub({ applicationId, onFieldsApplied, defaultOpen, initialDocType, openSignal }: DocumentImportHubProps) {
+export default function DocumentImportHub({ applicationId, onFieldsApplied, defaultOpen, initialDocType, openSignal, suggestedDocOrder }: DocumentImportHubProps) {
+  const docTypeOptions = orderDocTypeOptions(suggestedDocOrder);
   const fileInputRef = useRef<HTMLInputElement>(null);
   // Which section's "Add files" button was clicked — tags the next batch of
   // files picked from the (single, shared) hidden file input.
@@ -756,7 +775,7 @@ export default function DocumentImportHub({ applicationId, onFieldsApplied, defa
                                   maxWidth:   '260px',
                                 }}
                               >
-                                {DOC_TYPE_OPTIONS.map(dopt => (
+                                {docTypeOptions.map(dopt => (
                                   <option key={dopt.value} value={dopt.value}>{dopt.label}</option>
                                 ))}
                               </select>

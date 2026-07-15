@@ -7,6 +7,8 @@ import {
   getFieldsForCard,
   type CardId,
 } from '@/lib/field-registry';
+import { rankCards, rankDocTypes, computeContextualOffers, type QuizProfileSignals, type ContextualOffer } from '@/lib/case-ranking';
+import type { DocTypeValue } from '@/components/apply/DocumentImportHub';
 
 // The one quiz→field overlay the product has actually shipped (D-K1's exception
 // clause): investment/page.tsx's own M3-F-02 midpoint prefill. D-K1's general
@@ -60,6 +62,8 @@ export interface CaseCompletionResponse {
   cards: Partial<Record<CardId, CardCompletion>>;
   nextBestAction: NextBestAction | null;
   ordering: CardId[];
+  docTypeOrdering: DocTypeValue[];
+  contextualOffers: ContextualOffer[];
 }
 
 export type FieldSource = 'manual' | `document:${string}` | 'quiz-overlay' | 'quiz_confirmed';
@@ -102,6 +106,8 @@ function emptyResponse(): CaseCompletionResponse {
     ordering: (Object.values(CARD_DEFINITIONS) as { id: CardId; order: number }[])
       .sort((a, b) => a.order - b.order)
       .map((c) => c.id),
+    docTypeOrdering: [],
+    contextualOffers: [],
   };
 }
 
@@ -141,6 +147,7 @@ export async function GET(request: NextRequest) {
       { data: simRaw },
       { data: prepKitRaw },
       { data: generatedDocsRaw },
+      { data: quizSessionRaw },
     ] = await Promise.all([
       supabase
         .from('applications')
@@ -192,6 +199,14 @@ export async function GET(request: NextRequest) {
         .from('generated_documents')
         .select('id', { count: 'exact', head: true })
         .eq('application_id', applicationId),
+      supabase
+        .from('quiz_sessions')
+        .select('franchise_interest, hard_stop_codes, attorney_flag_codes, risk_flag_codes, result_json')
+        .eq('user_id', user.id)
+        .not('completed_at', 'is', null)
+        .order('completed_at', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
     ]);
 
     if (!app) {
@@ -207,6 +222,14 @@ export async function GET(request: NextRequest) {
     }[];
 
     const answers = (answersRaw ?? []) as { question_key: string; answer_value: string; family_member_id: string | null }[];
+
+    const quizSession = quizSessionRaw as {
+      franchise_interest: boolean | null;
+      hard_stop_codes: string[] | null;
+      attorney_flag_codes: string[] | null;
+      risk_flag_codes: string[] | null;
+      result_json: Record<string, unknown> | null;
+    } | null;
 
     const profile = profileRaw as { first_name: string | null; last_name: string | null } | null;
     const metaFirst = (user.user_metadata?.first_name as string | null) ?? null;
@@ -338,13 +361,29 @@ export async function GET(request: NextRequest) {
     }
     const progressPct = totalRequired > 0 ? Math.round((totalRequiredHave / totalRequired) * 100) : 0;
 
-    // --- Next best action: simple ordinal rule for K-1; superseded by K-3's ranking ---
-    const orderedCardIds = (Object.values(CARD_DEFINITIONS) as { id: CardId; order: number }[])
-      .sort((a, b) => a.order - b.order)
-      .map((c) => c.id);
+    // --- K-3.1: quiz-derived signals feeding the ranking engine ---
+    const quizResultForRanking = quizSession?.result_json ?? null;
+    const quizAnswers = (quizResultForRanking?.answers ?? null) as Record<string, unknown> | null;
+    const fundingSourcesRaw = quizAnswers?.['Q0-06'];
+    const profileSignals: QuizProfileSignals = {
+      franchiseInterest: Boolean(quizSession?.franchise_interest),
+      flagCodes: [
+        ...(quizSession?.hard_stop_codes ?? []),
+        ...(quizSession?.attorney_flag_codes ?? []),
+        ...(quizSession?.risk_flag_codes ?? []),
+      ],
+      businessTypeAnswer: (quizAnswers?.['Q0-08a'] as string | undefined) ?? null,
+      country: (quizResultForRanking?.country as string | undefined) ?? null,
+      fundingSourcesText: (Array.isArray(fundingSourcesRaw) ? fundingSourcesRaw.join(' ') : String(fundingSourcesRaw ?? '')).toLowerCase(),
+    };
 
+    // --- Next best action: cold-start (D-K1) preserved verbatim; otherwise K-3's ranking ---
+    let ordering: CardId[];
     let nextBestAction: NextBestAction | null = null;
     if (progressPct === 0) {
+      ordering = (Object.values(CARD_DEFINITIONS) as { id: CardId; order: number }[])
+        .sort((a, b) => a.order - b.order)
+        .map((c) => c.id);
       nextBestAction = {
         cardId: 'story',
         label: 'Tell us your story',
@@ -353,21 +392,13 @@ export async function GET(request: NextRequest) {
         reason: 'cold-start',
       };
     } else {
-      const nextIncomplete = orderedCardIds.find((id) => {
-        const card = cards[id];
-        return card && (card.state === 'not_started' || card.state === 'in_progress');
-      });
-      if (nextIncomplete) {
-        const def = CARD_DEFINITIONS[nextIncomplete];
-        nextBestAction = {
-          cardId: nextIncomplete,
-          label: def.label,
-          href: def.moduleHref,
-          estimateMin: def.kind === 'intake' ? 8 : 15,
-          reason: def.kind === 'intake' ? 'incomplete-intake' : 'next-tool',
-        };
-      }
+      const ranked = rankCards(cards, profileSignals);
+      ordering = ranked.ordering;
+      nextBestAction = ranked.nextBestAction;
     }
+
+    const docTypeOrdering = rankDocTypes(profileSignals);
+    const contextualOffers = computeContextualOffers(profileSignals, fddCount ?? 0);
 
     const response: CaseCompletionResponse = {
       caseCode: app.case_code ?? null,
@@ -376,7 +407,9 @@ export async function GET(request: NextRequest) {
       people,
       cards,
       nextBestAction,
-      ordering: orderedCardIds,
+      ordering,
+      docTypeOrdering,
+      contextualOffers,
     };
 
     return NextResponse.json(response, { headers: { 'Cache-Control': 'private, max-age=15' } });

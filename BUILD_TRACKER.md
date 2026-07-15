@@ -1,6 +1,52 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** July 14, 2026 — Session 120: **One-Room Redesign planned and handed off.** Full research + critique + approved visuals for redesigning `/onboarding` + `/case-profile` as one continuous experience. Zero code changes — the deliverables are the master plan **`docs/ONE_ROOM_REDESIGN_PLAN.md`** (Sprints K-0…K-5, self-contained instructions for the next agent), the approved visual artifact (before/after mockups + data-flow map), and this handoff. **Next agent: read `docs/ONE_ROOM_REDESIGN_PLAN.md` first — it is the execution contract. Start with Sprint K-0 (10-min note) then K-1. Do NOT touch `src/app/onboarding/page.tsx` (another agent owns it; K-5 is blocked on their landing).**
+**Last Updated:** July 14, 2026 — Session 122: **K-1, K-2, K-3 (One-Room Redesign) complete and committed.** Registry-driven completion engine, rebuilt `/case-profile` card grid, and the K-3 triage-intelligence ranking engine (`src/lib/case-ranking.ts`) are all live — next-best-action ranking, quiz-aware doc-type ordering, contextual referral rules. 175/175 jest tests passing, `tsc --noEmit` clean, `npm run build` clean. Ran in parallel with the Session 121 agent (simulator/dossier work) in the same tree — only the K-sprint files were committed this session, per Session 121's own coordination note. **Next agent: proceed to Sprint K-4 (de-silo wiring) per `docs/ONE_ROOM_REDESIGN_PLAN.md` lines 277-302.**
+
+---
+
+## Session 122 — One-Room Redesign: K-1/K-2/K-3 Complete (July 14, 2026)
+
+**Branch:** dev. Ran in parallel with the Session 121 agent (simulator UX + dossier critique) in the same tree — per their coordination note, committed only the K-sprint files, kept separate from their simulator files.
+
+**Delivered — K-3 Triage Intelligence** (K-1 and K-2 were completed and committed in an earlier segment of this same session):
+- **`src/lib/case-ranking.ts`** (NEW): `rankCards()` — tier-based ordering (5 = actionable intake card with an unresolved quiz flag, 4 = actionable intake card, 3 = actionable tool card, 2 = ready/generated, 1 = locked) so a low-effort tool card can never numerically outrank an incomplete intake card. `FLAG_CARD_MAP` maps quiz hard-stop/attorney/risk flag codes to the card that resolves them. `rankDocTypes()` reorders (never narrows) `DocumentImportHub`'s doc-type list by franchise interest / business-type answer. `computeContextualOffers()` computes franchise/banking/accountant referral suggestions (no UI consumer yet — deferred to K-5).
+- **`src/app/api/case/completion/route.ts`**: wired in a new `quiz_sessions` query + the ranking engine, added `docTypeOrdering`/`contextualOffers` to the response. Cold-start (`progressPct === 0`) branch preserved verbatim — verified live against test-france (0% progress → registry order + hardcoded "Tell us your story", `reason: 'cold-start'`, regardless of that account's quiz flags).
+- **`src/components/apply/DocumentImportHub.tsx`** / **`src/components/casefile/CaseProfileNew.tsx`**: `suggestedDocOrder` prop threaded from `completion.docTypeOrdering`.
+- **`src/lib/__tests__/case-ranking.test.ts`** (NEW): 13 tests covering tier dominance, flag-boost (`resolve-flag`), quick-win, franchise-priority boost, locked-card exclusion, and all three `rankDocTypes`/`computeContextualOffers` branches.
+
+**K-3 Acceptance — verified live:**
+- Non-cold-start ranking confirmed on **test-uk@example.com** (28% progress, real seeded M3-* answers): ordering correctly ranked all incomplete intake cards (`story`, `ties`, `investor_profile`, `family_dependents`, `security_background`) above tool cards (`fdd_review`, `market_analysis`, `prep_kit`) and locked cards (`gap_analysis`, `simulator`, `generate_package`); `nextBestAction.reason` = `'incomplete-intake'` as expected.
+- `docTypeOrdering`/`contextualOffers` confirmed consistent and franchise-prioritized (fdd-first, franchise + banking referral offers) across three different accounts (test-france, test-uk, the partnership fixture).
+- Flag-boost (`resolve-flag`) and franchise-priority reasons are exercised by the unit tests (no current QA fixture has both partial progress and a flag code together).
+
+**Incidents:** Two stray `next dev` processes (unrelated to this session's own dev server) were corrupting `.next` mid-build — killed with the owner's explicit confirmation, then `rm -rf .next && npm run build` succeeded clean.
+
+**Commit status:** `case-ranking.ts`, `case-ranking.test.ts`, `route.ts`, `DocumentImportHub.tsx`, `CaseProfileNew.tsx` committed this session on `dev`. `BUILD_TRACKER.md` / `CLAUDE_CONTEXT.md` updated. Dev server left running for the next agent per session hygiene (restart if picking up stale state).
+
+---
+
+**Previously (Session 121):** **Simulator UX fixes coded (uncommitted) + Interview Dossier scored 4.5/10 + Sprint L handoff.** Four simulator complaints fixed in code (question variety, mic resilience + skip, scored end-of-session analysis, substantive hints) — build clean, browser verification and commit handed off. Dossier accuracy/voice/print rebuild specced. See `docs/SPRINT_L_SIMULATOR_DOSSIER.md` for L-1…L-4.
+
+---
+
+## Session 121 — Simulator UX Fixes + Dossier Critique + Sprint L Handoff (July 14, 2026)
+
+**Branch:** dev. Ran in parallel with the K-sprint agent in the same tree — after the owner's mid-session instruction, no further code changes were made; this entry + `docs/SPRINT_L_SIMULATOR_DOSSIER.md` + CLAUDE_CONTEXT.md are the only writes since.
+
+**Context:** Owner reported four simulator failures (identical questions every session; sessions stuck on mic errors with no skip; no end-of-session scoring/analysis; vague hints) and asked for a scored critique of the generated Interview Case Dossier PDF (verdict: 4.5/10 — figure contradictions, "the applicant · the business" placeholders, raw enums like PROCEED_RISK, second-person voice, internal field names leaking, coaching false statements, weak print layout).
+
+**Delivered:**
+- **Simulator UX fixes, code COMPLETE but UNCOMMITTED and browser-unverified** in `src/types/simulator.ts`, `src/lib/simulator-engine.ts`, `src/components/simulator/ConversationalSession.tsx`, `src/app/simulator/page.tsx`. `npm run build` clean (181 pages, tsc clean). Details + verification steps: Sprint L-1 in the handoff doc.
+- **`docs/SPRINT_L_SIMULATOR_DOSSIER.md`** (NEW — self-contained execution contract): L-1 verify + commit simulator fixes; L-2 dossier figures computed server-side (LLM never generates numbers) in `src/app/api/simulator/prep-kit/route.ts`; L-3 first-person voice, placeholder/enum/internal-name fixes, no-false-coaching rule, probe de-dup, "critical gaps" action panel; L-4 professional print/PDF redesign in `src/app/simulator/prep-kit/page.tsx`.
+- **Test data:** ran the real `/api/analysis/run` as `test-uk@example.com` (app `a394ba10-bd20-4bc0-b9f0-de63ba931ae2`), so a `case_briefs` row now exists and the simulator gate is open for verification.
+
+**Coordination / incidents:** Two stray `next dev` processes were killed this session (they were corrupting `.next`; one may have been the other agent's server — restart if missing). `.next` was wiped and rebuilt clean. The other agent's uncommitted K-sprint files (case/completion route, DocumentImportHub, CaseProfileNew, case-ranking) coexist with the Session 121 simulator files — commit the two workstreams separately, never bundled.
+
+**Commit status:** nothing committed this session; the four simulator files await L-1 verification, then commit on dev.
+
+---
+
+**Previously (Session 120):** **One-Room Redesign planned and handed off.** Full research + critique + approved visuals for redesigning `/onboarding` + `/case-profile` as one continuous experience. Zero code changes — the deliverables are the master plan **`docs/ONE_ROOM_REDESIGN_PLAN.md`** (Sprints K-0…K-5, self-contained instructions for the next agent), the approved visual artifact (before/after mockups + data-flow map), and this handoff. **Next agent: read `docs/ONE_ROOM_REDESIGN_PLAN.md` first — it is the execution contract. Start with Sprint K-0 (10-min note) then K-1. Do NOT touch `src/app/onboarding/page.tsx` (another agent owns it; K-5 is blocked on their landing).**
 
 ---
 
