@@ -9,8 +9,11 @@ import ApplicationNotReadyScreen from '@/components/apply/ApplicationNotReadyScr
 import AddFamilyMemberForm, { type NewFamilyMemberInput } from '@/components/onboarding/AddFamilyMemberForm';
 import TriageSectionRow from '@/components/onboarding/TriageSectionRow';
 import DocumentImportHub from '@/components/apply/DocumentImportHub';
+import CaseHeader from '@/components/casefile/CaseHeader';
+import { CARD_DEFINITIONS, type CardId } from '@/lib/field-registry';
 import type { FamilyMember } from '@/app/api/profile/family-members/route';
-import type { SectionCompletion } from '@/app/api/apply/section-completion/route';
+import type { CaseCompletionResponse } from '@/app/api/case/completion/route';
+import type { ContextualOffer } from '@/lib/case-ranking';
 import {
   SECURITY_HEALTH_QUESTIONS,
   SECURITY_CRIMINAL_QUESTIONS,
@@ -50,22 +53,88 @@ async function stampLifecycleOnce(
     .upsert({ user_id: userId, [column]: new Date().toISOString() }, { onConflict: 'user_id' });
 }
 
-const REFERRAL_CATEGORIES = [
-  { id: 'franchise', title: 'Franchise Consultant', help: 'Help finding an E-2 compatible business' },
-  { id: 'immigration', title: 'Immigration Consultant', help: 'For complex cases that need legal guidance' },
-  { id: 'banking', title: 'Cross-border Banking', help: 'Opening your U.S. business bank account' },
-  { id: 'accountant', title: 'Cross-border Accountant', help: 'Departure tax and U.S. filings' },
-  { id: 'business_formation', title: 'Business Formation', help: 'LLC registration and EIN application' },
-];
+// K-5.2: title/help copy for the 3 contextual-offer ids computeContextualOffers()
+// can emit. Keyed narrowly to those ids — the other 2 REFERRAL_CATEGORIES from the
+// pre-K-5 step-1 checkbox block (immigration, business_formation) have no
+// contextual trigger yet and are intentionally not offered anywhere in onboarding.
+const OFFER_TITLES: Record<ContextualOffer['id'], string> = {
+  franchise: 'Franchise Consultant',
+  banking: 'Cross-border Banking',
+  accountant: 'Cross-border Accountant',
+};
 
-const TRIAGE_SECTIONS: { key: keyof SectionCompletion; label: string; description: string; href: string }[] = [
-  { key: 'story', label: 'Your story', description: 'Background, motivation, and career narrative', href: '/apply/story' },
-  { key: 'business', label: 'Your business', description: 'Entity structure, operations, and business plan', href: '/apply/business' },
-  { key: 'investment', label: 'Your investment', description: 'Investment amount, source of funds, financials', href: '/apply/investment' },
-  { key: 'qualifications', label: 'Your qualifications', description: 'Education, work history, relevant experience', href: '/apply/qualifications' },
-  { key: 'family', label: 'Your family', description: 'Spouse and dependents joining your application', href: '/apply/family' },
-  { key: 'ties', label: 'Your ties', description: 'Travel history and ties to your home country', href: '/apply/ties' },
-];
+// K-5.4: onboarding's step-5 triage list is registry-driven — every intake
+// card in CARD_DEFINITIONS with category 'case_file', ordered by
+// /api/case/completion's ordering (never a separately hand-maintained list).
+const CARD_DESCRIPTIONS: Record<CardId, string> = {
+  investor_profile: 'Identity, contact details, and travel history',
+  story: 'Background, motivation, and career narrative',
+  business_details: 'Entity structure, operations, and business plan',
+  investment_snapshot: 'Investment amount, source of funds, financials',
+  qualifications: 'Education, work history, relevant experience',
+  family_dependents: 'Spouse and dependents joining your application',
+  ties: 'Travel history and ties to your home country',
+  security_background: 'Health, criminal history, immigration, and security questions',
+  gap_analysis: 'Where your case is strong and where it needs work',
+  market_analysis: 'Territory and market data for your business',
+  fdd_review: 'Franchise Disclosure Document analysis',
+  simulator: 'Practice your consular interview',
+  prep_kit: 'Your interview preparation materials',
+  document_vault: 'All uploaded and generated documents',
+  generate_package: 'Generate your application package',
+};
+
+function cardHref(cardId: CardId): string {
+  if (cardId === 'security_background') return '/apply/security/principal';
+  return CARD_DEFINITIONS[cardId].moduleHref;
+}
+
+function cardProgressPct(card: { state: string; have: number; needed: number } | undefined): number {
+  if (!card) return 0;
+  if (card.state === 'ready' || card.state === 'generated') return 100;
+  const total = card.have + card.needed;
+  if (total <= 0) return 0;
+  return Math.round((card.have / total) * 100);
+}
+
+function cardStatus(card: { state: string } | undefined): 'none' | 'partial' | 'complete' {
+  if (!card) return 'none';
+  if (card.state === 'not_started' || card.state === 'locked') return 'none';
+  if (card.state === 'ready' || card.state === 'generated') return 'complete';
+  return 'partial';
+}
+
+function ContextualOfferCard({
+  offer,
+  response,
+  onRespond,
+}: {
+  offer: ContextualOffer;
+  response: boolean | undefined;
+  onRespond: (consentGiven: boolean) => void;
+}) {
+  if (response !== undefined) {
+    return (
+      <div className="border border-[rgba(201,168,76,0.2)] p-4 text-[13px] text-[#f5f0e8]/50">
+        {response ? `We'll pass your details to a ${OFFER_TITLES[offer.id].toLowerCase()}.` : 'No thanks — noted.'}
+      </div>
+    );
+  }
+  return (
+    <div className="border border-[rgba(201,168,76,0.2)] p-5">
+      <div className="text-[13px] font-medium text-[#f5f0e8] mb-1">{OFFER_TITLES[offer.id]}</div>
+      <div className="text-[13px] text-[#f5f0e8]/60 mb-4">{offer.copy}</div>
+      <div className="flex gap-3">
+        <button onClick={() => onRespond(true)} className="px-4 py-2 bg-[#C9A84C] text-[#0a0a0a] text-[12px] font-medium uppercase tracking-[0.1em] hover:bg-[#D4BC6A] transition-colors">
+          Connect me
+        </button>
+        <button onClick={() => onRespond(false)} className="px-4 py-2 border border-[rgba(201,168,76,0.3)] text-[#f5f0e8]/60 text-[12px] uppercase tracking-[0.1em] hover:border-[rgba(201,168,76,0.5)] transition-colors">
+          No thanks
+        </button>
+      </div>
+    </div>
+  );
+}
 
 interface QuizSessionRow {
   application_type: 'solo' | 'partnership' | null;
@@ -89,7 +158,6 @@ export default function OnboardingPage() {
   const [tosAccepted, setTosAccepted] = useState(false);
   const [privacyAccepted, setPrivacyAccepted] = useState(false);
   const [caslConsent, setCaslConsent] = useState<boolean | null>(null);
-  const [referralConsents, setReferralConsents] = useState<Record<string, boolean>>({});
   const [savingConsent, setSavingConsent] = useState(false);
 
   // Family setup state
@@ -98,14 +166,18 @@ export default function OnboardingPage() {
 
   // Completion state
   const [answeredKeys, setAnsweredKeys] = useState<Record<string, Set<string>>>({});
-  const [sectionCompletion, setSectionCompletion] = useState<SectionCompletion | null>(null);
+  const [caseCompletion, setCaseCompletion] = useState<CaseCompletionResponse | null>(null);
   const [importAppliedNotice, setImportAppliedNotice] = useState<string | null>(null);
+
+  // K-5.2: contextual referral offers — id -> the consent value the user picked, so
+  // an offer's buttons disable after a response instead of re-firing the upsert.
+  const [offerResponses, setOfferResponses] = useState<Record<string, boolean>>({});
 
   const loadAll = useCallback(async (appId: string) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    const [quizRes, profileRes, appRes, membersRes, answersRes, sectionRes] = await Promise.all([
+    const [quizRes, profileRes, appRes, membersRes, answersRes, completionRes] = await Promise.all([
       supabase.from('quiz_sessions').select('application_type')
         .eq('user_id', user.id).order('id', { ascending: false }).limit(1).maybeSingle(),
       supabase.from('profiles').select('first_name, last_name').eq('id', user.id).maybeSingle(),
@@ -113,7 +185,7 @@ export default function OnboardingPage() {
       fetch('/api/profile/family-members').then((r) => r.json()),
       supabase.from('answers').select('question_key, answer_value, family_member_id')
         .eq('application_id', appId).not('answer_value', 'is', null).neq('answer_value', ''),
-      fetch('/api/apply/section-completion').then((r) => r.json()),
+      fetch('/api/case/completion').then((r) => r.json()),
     ]);
 
     if (quizRes.data) setQuizSession(quizRes.data);
@@ -123,7 +195,7 @@ export default function OnboardingPage() {
     const isModule1Complete = !!appRes.data?.module_1_complete;
     setModule1Complete(isModule1Complete);
     setFamilyMembers(membersRes.members ?? []);
-    setSectionCompletion(sectionRes);
+    setCaseCompletion(completionRes);
 
     const bucket: Record<string, Set<string>> = { principal: new Set() };
     for (const row of (answersRes.data ?? [])) {
@@ -138,14 +210,27 @@ export default function OnboardingPage() {
   }, [supabase]);
 
   const handleFieldsApplied = useCallback(async (count: number) => {
-    const sectionRes = await fetch('/api/apply/section-completion').then((r) => r.json());
-    setSectionCompletion(sectionRes);
-    setImportAppliedNotice(`Résumé applied — ${count} field${count === 1 ? '' : 's'} filled`);
+    const completionRes: CaseCompletionResponse = await fetch('/api/case/completion').then((r) => r.json());
+    setCaseCompletion(completionRes);
+    const qualificationsPct = cardProgressPct(completionRes.cards.qualifications);
+    setImportAppliedNotice(
+      `Résumé applied — ${count} field${count === 1 ? '' : 's'} filled · Qualifications now ${qualificationsPct}%`,
+    );
     setTimeout(() => setImportAppliedNotice(null), 5000);
 
     const { data: { user } } = await supabase.auth.getUser();
     if (user) stampLifecycleOnce(supabase, user.id, 'onboarding_doc_uploaded_at');
   }, [supabase]);
+
+  const handleOfferResponse = async (offerId: string, consentGiven: boolean) => {
+    setOfferResponses((prev) => ({ ...prev, [offerId]: consentGiven }));
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    await supabase.from('referral_consents').upsert(
+      { user_id: user.id, category: offerId, consent_given: consentGiven },
+      { onConflict: 'user_id,category' },
+    );
+  };
 
   useEffect(() => {
     if (status === 'ready' && applicationId) {
@@ -190,12 +275,6 @@ export default function OnboardingPage() {
       }
       if (caslConsent !== null) {
         await supabase.from('profiles').update({ casl_marketing_consent: caslConsent }).eq('id', user.id);
-      }
-      const referralInserts = Object.entries(referralConsents).map(([category, consentGiven]) => ({
-        user_id: user.id, category, consent_given: consentGiven,
-      }));
-      if (referralInserts.length > 0) {
-        await supabase.from('referral_consents').upsert(referralInserts, { onConflict: 'user_id,category' });
       }
 
       const derivedType = quizSession?.application_type === 'partnership' ? 'partnership' : 'solo';
@@ -265,7 +344,7 @@ export default function OnboardingPage() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-[#f5f0e8] font-[DM_Sans]">
-      <header className="fixed top-16 left-0 right-0 z-10 bg-[#0a0a0a] border-b border-[rgba(201,168,76,0.2)]">
+      <header className="fixed top-16 left-0 right-0 z-20 bg-[#0a0a0a] border-b border-[rgba(201,168,76,0.2)]">
         <div className="flex items-center justify-center gap-8 h-14 px-6 max-w-4xl mx-auto">
           {(['Consent', 'Family', 'DS-160', 'Documents', 'Next steps'] as const).map((label, idx) => {
             const s = (idx + 1) as Step;
@@ -288,15 +367,46 @@ export default function OnboardingPage() {
       </header>
 
       <main className="relative z-10 pt-32 pb-16 px-6 md:px-12 max-w-4xl mx-auto">
+        {caseCompletion && (
+          <div className="mb-8">
+            <CaseHeader
+              caseCode={caseCompletion.caseCode}
+              packageLabel={caseCompletion.applicationType === 'partnership' ? 'Partnership' : caseCompletion.applicationType === 'solo' ? 'Solo' : null}
+              people={caseCompletion.people}
+              progressPct={caseCompletion.progressPct}
+              nextBestAction={caseCompletion.nextBestAction}
+            />
+          </div>
+        )}
+
         {step === 1 && (
           <div className="border border-[rgba(201,168,76,0.2)] bg-[#0a0a0a] p-8 md:p-12">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 border border-[rgba(74,222,128,0.3)] bg-[rgba(74,222,128,0.08)] mb-6">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#4ADE80]" />
+              <span className="text-[11px] uppercase tracking-[0.1em] text-[#4ADE80]">Payment received</span>
+            </div>
             <div className="text-[10px] font-medium uppercase tracking-[0.18em] text-[#C9A84C] mb-4">Welcome</div>
             <h1 className="font-['Cormorant_Garamond'] text-[32px] md:text-[42px] font-light leading-tight mb-6">
-              Welcome{fullName ? `, ${fullName}` : ''}
+              Your case file is open{fullName ? `, ${fullName}` : ''}
             </h1>
             <p className="text-[#f5f0e8]/60 text-[16px] leading-relaxed mb-8 max-w-2xl">
               Before we set up your case file, please review a few consents.
             </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+              {[
+                { n: 1, label: 'Add your people', help: 'Family, co-investors, security background' },
+                { n: 2, label: 'Upload documents', help: 'We pre-fill fields automatically' },
+                { n: 3, label: 'Open your case file', help: "See what's left to build your package" },
+              ].map((s) => (
+                <div key={s.n} className="border border-[rgba(201,168,76,0.2)] p-4">
+                  <div className="text-[11px] uppercase tracking-[0.1em] text-[#C9A84C] mb-1">Step {s.n}</div>
+                  <div className="text-[14px] font-medium text-[#f5f0e8] mb-1">{s.label}</div>
+                  <div className="text-[12px] text-[#f5f0e8]/50">{s.help}</div>
+                </div>
+              ))}
+            </div>
+            <p className="text-[12px] text-[#f5f0e8]/40 mb-8">About 10–15 minutes total, based on the average time filers spend per section.</p>
 
             <div className="border-l-[3px] border-[#C9A84C] bg-[rgba(201,168,76,0.04)] p-6 mb-8">
               <p className="text-[14px] text-[#f5f0e8]/80 leading-relaxed">
@@ -332,23 +442,6 @@ export default function OnboardingPage() {
                   <div className="text-[15px] font-medium mb-1">No thanks</div>
                   <div className="text-[13px] text-[#f5f0e8]/50">Just essential updates.</div>
                 </button>
-              </div>
-            </div>
-
-            <div className="mb-4">
-              <label className="block text-[12px] font-medium uppercase tracking-[0.12em] text-[#f5f0e8]/60 mb-4">
-                Connect with vetted specialists (optional)
-              </label>
-              <div className="space-y-3">
-                {REFERRAL_CATEGORIES.map((cat) => (
-                  <label key={cat.id} className="flex items-start gap-4 p-4 border border-[rgba(201,168,76,0.2)] hover:border-[rgba(201,168,76,0.4)] transition-colors cursor-pointer">
-                    <input type="checkbox" checked={!!referralConsents[cat.id]} onChange={(e) => setReferralConsents((prev) => ({ ...prev, [cat.id]: e.target.checked }))} className="mt-1 w-4 h-4 accent-[#C9A84C]" />
-                    <div>
-                      <div className="text-[14px] font-medium text-[#f5f0e8]">{cat.title}</div>
-                      <div className="text-[13px] text-[#f5f0e8]/50">{cat.help}</div>
-                    </div>
-                  </label>
-                ))}
               </div>
             </div>
 
@@ -469,13 +562,24 @@ export default function OnboardingPage() {
               Upload a passport, resume, FDD, or birth certificate — for you or anyone you added — and we&apos;ll pre-fill fields across your application automatically. Optional: skip this and upload later from your case file.
             </p>
 
-            <DocumentImportHub applicationId={applicationId} onFieldsApplied={handleFieldsApplied} defaultOpen />
+            <DocumentImportHub
+              applicationId={applicationId}
+              onFieldsApplied={handleFieldsApplied}
+              suggestedDocOrder={caseCompletion?.docTypeOrdering}
+              defaultOpen
+            />
 
             {importAppliedNotice && (
               <div className="mt-4 px-4 py-3 border border-[rgba(74,222,128,0.3)] bg-[rgba(74,222,128,0.08)] text-[#4ADE80] text-[13px] font-['DM_Sans']">
                 {importAppliedNotice}
               </div>
             )}
+
+            {caseCompletion?.contextualOffers.filter((o) => o.id === 'franchise').map((offer) => (
+              <div key={offer.id} className="mt-6">
+                <ContextualOfferCard offer={offer} response={offerResponses[offer.id]} onRespond={(v) => handleOfferResponse(offer.id, v)} />
+              </div>
+            ))}
 
             <div className="flex justify-end mt-12">
               <button onClick={handleReachStep5} className="px-8 py-4 bg-[#C9A84C] text-[#0a0a0a] text-[14px] font-medium uppercase tracking-[0.12em] hover:bg-[#D4BC6A] transition-colors">
@@ -496,20 +600,35 @@ export default function OnboardingPage() {
             </p>
 
             <div className="space-y-3 mb-8">
-              {TRIAGE_SECTIONS.map((section) => (
-                <TriageSectionRow
-                  key={section.key}
-                  label={section.label}
-                  description={section.description}
-                  href={section.href}
-                  status={sectionCompletion?.[section.key] ?? 'none'}
-                />
-              ))}
+              {(caseCompletion?.ordering ?? [])
+                .filter((id) => CARD_DEFINITIONS[id].kind === 'intake')
+                .map((id) => {
+                  const card = caseCompletion?.cards[id];
+                  const def = CARD_DEFINITIONS[id];
+                  return (
+                    <TriageSectionRow
+                      key={id}
+                      label={def.label}
+                      description={CARD_DESCRIPTIONS[id]}
+                      href={cardHref(id)}
+                      status={cardStatus(card)}
+                      progressPct={cardProgressPct(card)}
+                      sourceChip={card?.note ?? undefined}
+                      badge={caseCompletion?.nextBestAction?.cardId === id ? 'Start here' : undefined}
+                    />
+                  );
+                })}
             </div>
+
+            {caseCompletion?.contextualOffers.filter((o) => o.id === 'banking' || o.id === 'accountant').map((offer) => (
+              <div key={offer.id} className="mb-4">
+                <ContextualOfferCard offer={offer} response={offerResponses[offer.id]} onRespond={(v) => handleOfferResponse(offer.id, v)} />
+              </div>
+            ))}
 
             <div className="flex justify-end mt-12">
               <Link href="/case-profile" className="px-8 py-4 border border-[rgba(201,168,76,0.4)] text-[#C9A84C] text-[14px] font-medium uppercase tracking-[0.12em] hover:bg-[rgba(201,168,76,0.06)] transition-colors">
-                Go to case profile →
+                Open your case file{caseCompletion?.caseCode ? ` — ${caseCompletion.caseCode}` : ''} →
               </Link>
             </div>
           </div>

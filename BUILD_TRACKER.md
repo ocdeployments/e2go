@@ -1,6 +1,28 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** July 14, 2026 — Session 123: **K-4 (de-silo wiring) complete and committed.** Dual document-pipeline merge verified/closed everywhere, prep-kit `case_theory` widened, `/onboarding` middleware-gated with a Stripe-race grace path, onboarding funnel timestamps fixed and extended on `application_lifecycle`. `tsc --noEmit` clean. **Next agent: proceed to K-5 (Onboarding Chapter One) per `docs/ONE_ROOM_REDESIGN_PLAN.md`.**
+**Last Updated:** July 15, 2026 — Session 124: **K-5 (Onboarding Chapter One) complete and committed — the One-Room Redesign plan (K-1 through K-5) is now fully closed.** Arrival moment, contextual referrals, evidence-step payoff, and registry-driven triage handoff all live in `/onboarding`. Build clean, 175/175 tests pass, full browser walkthrough verified. **Next agent: no further sprints remain in `docs/ONE_ROOM_REDESIGN_PLAN.md` — check with the owner for the next initiative.**
+
+---
+
+## Session 124 — One-Room Redesign: K-5 Onboarding Chapter One Complete (July 15, 2026)
+
+**Branch:** dev.
+
+**K-5.1 — Arrival moment.** Step 1 rebuilt: "Payment received" chip, headline changed to "Your case file is open{, name}", a 3-step journey preview (Add your people → Upload documents → Open your case file) with an honest ~10–15 min estimate. Per decision **D-K5**, the "Connect with vetted specialists (optional)" referral-checkbox block was removed from consent entirely — referrals are now offered contextually instead (K-5.2).
+
+**K-5.2 — Contextual referrals.** `computeContextualOffers()` (built in K-3.3, previously unconsumed by any UI) is now rendered live: the franchise offer near Documents (step 4), banking/accountant offers near the Next Steps handoff (step 5). A new `ContextualOfferCard` component handles the connect/no-thanks response and upserts to `referral_consents`.
+
+**K-5.3 — Evidence-step payoff.** Upload toast now reports the concrete effect of a resume import (e.g. "Résumé applied — 3 fields filled · Qualifications now 40%") instead of a generic success message. `DocumentImportHub`'s existing `suggestedDocOrder` prop (K-3.2) is now wired in onboarding via `caseCompletion.docTypeOrdering`.
+
+**K-5.4 — Registry-driven triage handoff.** Step 5 ("Next steps") dropped the old hand-rolled `TRIAGE_SECTIONS` list (which had drifted out of sync with the real card registry) and now renders directly off `/api/case/completion`'s `ordering`/`cards`, filtered to `CARD_DEFINITIONS[id].kind === 'intake'`. `TriageSectionRow` gained two additive optional props — `progressPct` (thin fill bar) and `sourceChip` (provenance note, e.g. "3/5 required") — existing callers unaffected. The next-best-action card gets a "Start here" badge. Closing CTA now reads "Open your case file — {caseCode} →".
+
+**K-5.5 — `ip_hash` fix.** Already fixed by a prior agent; no code needed this session.
+
+**K-5.6 — Full-journey verification.** `tsc --noEmit` clean, `npm run build` clean (`/onboarding` 9.35 kB / 300 kB First Load JS), `npx jest --silent` 175/175 passing. Live browser walkthrough (test-france account) confirmed all five steps render as designed, including the "Start here" badge landing on the correct next-best-action card and the banking/franchise offer cards firing.
+
+**Bug found and fixed along the way:** the onboarding step-tab header (`fixed`, `z-10`) and the page's `<main>` (`relative`, `z-10`) were tied at the same z-index; since `main` comes later in the DOM, it painted on top and silently absorbed every click on the step tabs — the tabs have likely never been clickable in this layout. Pre-existing, unrelated to this session's other edits (confirmed via `git show HEAD`). Fixed by bumping the header to `z-20` (`src/app/onboarding/page.tsx`).
+
+**Commit status:** `onboarding/page.tsx`, `TriageSectionRow.tsx` committed this session on `dev`, along with this `BUILD_TRACKER.md` / `CLAUDE_CONTEXT.md` update.
 
 ---
 

@@ -9,6 +9,11 @@ interface TriageSectionRowProps {
   href: string;
   status: SectionStatus;
   badge?: string;
+  /** K-5.4: 0-100 fill for the thin progress bar under the description — additive,
+   *  omit for callers (e.g. step 3's per-person security rows) with no percent to show. */
+  progressPct?: number;
+  /** K-5.4: provenance note from CardCompletion.note (e.g. "3/5 required") — additive. */
+  sourceChip?: string;
 }
 
 const STATUS_STYLES: Record<SectionStatus, { dot: string; text: string; label: string }> = {
@@ -17,14 +22,14 @@ const STATUS_STYLES: Record<SectionStatus, { dot: string; text: string; label: s
   none: { dot: 'bg-[rgba(245,240,232,0.25)]', text: 'text-[#f5f0e8]/40', label: 'Not started' },
 };
 
-export default function TriageSectionRow({ label, description, href, status, badge }: TriageSectionRowProps) {
+export default function TriageSectionRow({ label, description, href, status, badge, progressPct, sourceChip }: TriageSectionRowProps) {
   const style = STATUS_STYLES[status];
   return (
     <Link
       href={href}
       className="flex items-center justify-between gap-6 p-5 md:p-6 border border-[rgba(201,168,76,0.2)] hover:border-[rgba(201,168,76,0.4)] hover:bg-[rgba(201,168,76,0.03)] transition-all duration-200 group"
     >
-      <div>
+      <div className="min-w-0 flex-1">
         <div className="text-[16px] font-medium text-[#f5f0e8] mb-1 flex items-center gap-2">
           {label}
           {badge && (
@@ -33,7 +38,14 @@ export default function TriageSectionRow({ label, description, href, status, bad
             </span>
           )}
         </div>
-        <div className="text-[13px] text-[#f5f0e8]/50">{description}</div>
+        <div className="text-[13px] text-[#f5f0e8]/50">
+          {sourceChip ?? description}
+        </div>
+        {progressPct !== undefined && (
+          <div className="mt-2 h-1 w-full max-w-[200px] bg-[rgba(245,240,232,0.1)]">
+            <div className={`h-full ${style.dot}`} style={{ width: `${progressPct}%` }} />
+          </div>
+        )}
       </div>
       <div className="flex items-center gap-3 shrink-0">
         <span className={`text-[11px] uppercase tracking-[0.1em] ${style.text}`}>{style.label}</span>
