@@ -76,6 +76,8 @@ export interface Question {
   category: 'universal' | 'weak_point_probe' | 'business_type' | 'investment_source' | 'profile_flag' | 'archetype_probe' | 'gap_probe' | 'fdd_probe';
   context?: string;
   relatesToField?: string;
+  /** Substantive coach guidance: what the officer is testing + what a strong answer covers */
+  hint?: string;
 }
 
 export interface DeliveryNote {
@@ -126,12 +128,26 @@ export interface QuestionCoaching {
   documentReference: string | null;
 }
 
+export interface QuestionBreakdownItem {
+  questionId: string;
+  questionText: string;
+  rating: 'strong' | 'weak' | 'inconsistent';
+  /** 0-100 (LLM 1-10 score × 10); null when the evaluator returned no score */
+  score: number | null;
+  feedback: string;
+  suggestion: string;
+}
+
 export interface CoachingSummary {
   strongAnswers: { question: string; note: string }[];
   needsWork: { questionId: string; question: string; suggestion: string; originalAnswer: string }[];
   inconsistencies: { questionId: string; question: string; filed: string; spoken: string; originalAnswer: string }[];
   weakPointsAtRisk: string[];
   readinessIndicator: 'ready' | 'nearly_ready' | 'needs_work';
+  /** Weighted session score 0-100; null when no answers were scored */
+  overallScore: number | null;
+  /** Per-question scores and suggestions — always populated, one entry per answered question */
+  questionBreakdown: QuestionBreakdownItem[];
   detailedCoaching?: QuestionCoaching[];
   deliveryFlags?: { questionId: string; questionText: string; notes: DeliveryNote[] }[];
   top3NextSession?: string[];

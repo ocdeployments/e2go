@@ -3,10 +3,12 @@
 // Generated: June 5, 2026
 
 import { createBrowserSupabaseClient } from '@/lib/supabase';
+import { getQuestionKnowledge } from '@/lib/interview-knowledge-base';
 import type {
   SimulatorContext,
   Question,
   CoachingSummary,
+  QuestionBreakdownItem,
   CompletedSession,
   InvestmentSource,
   FundFlowEvent,
@@ -259,8 +261,14 @@ function reframeAsFranchiseOfficerQuestion(
   ]);
 }
 
+// Phrasings used in the previous session for this application — pick() avoids
+// them so repeat sessions don't serve identical wording. Set per generateQuestions call.
+let _avoidTexts: Set<string> = new Set();
+
 function pick<T>(arr: T[]): T {
-  return arr[Math.floor(Math.random() * arr.length)];
+  const fresh = arr.filter(x => typeof x !== 'string' || !_avoidTexts.has(x as unknown as string));
+  const pool = fresh.length > 0 ? fresh : arr;
+  return pool[Math.floor(Math.random() * pool.length)];
 }
 
 function shuffle<T>(arr: T[]): T[] {
@@ -272,13 +280,65 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
+// Prefer pool entries whose text wasn't asked last session; top up from the rest if short.
+function sampleFresh(pool: Question[], n: number): Question[] {
+  const fresh = pool.filter(q => !_avoidTexts.has(q.text));
+  const stale = pool.filter(q => _avoidTexts.has(q.text));
+  return [...shuffle(fresh), ...shuffle(stale)].slice(0, n);
+}
+
+function questionHistoryKey(applicationId: string): string {
+  return `e2go-sim-last-questions-${applicationId}`;
+}
+
+/**
+ * Substantive coach hint: what the officer is testing + what a strong answer covers.
+ * Uses the interview knowledge base where the question ID is mapped; falls back to
+ * category-level guidance otherwise.
+ */
+function buildCoachHint(q: Question): string {
+  const kb = getQuestionKnowledge(q.id);
+  if (kb) {
+    const principles = kb.keyPrinciples.slice(0, 4).map(p => `• ${p}`).join('\n');
+    return `The officer is testing: ${kb.officerTests}\n\nA strong answer covers:\n${principles}`;
+  }
+  switch (q.category) {
+    case 'gap_probe':
+      return 'This probes a documented weak spot in your file. Answer with specifics — exact figures, dates, account names, and where the evidence sits in your package. A vague answer here confirms the officer\'s concern.';
+    case 'archetype_probe':
+      return 'The officer is testing whether your background genuinely fits this business. Connect your specific experience to concrete operating decisions you make — avoid generic claims anyone could recite.';
+    case 'fdd_probe':
+      return 'This question comes from your own Franchise Disclosure Document. Show you read and understood it: name the FDD item, state what it disclosed, and describe the specific due-diligence step you took before committing funds.';
+    case 'business_type':
+      return 'This is an industry-operations check. Prove operational fluency: name the licenses, suppliers, hires, or contracts involved — with numbers and dates, not plans in the abstract.';
+    case 'weak_point_probe':
+      return 'This is an adversarial probe. Answer it head-on: lead with your strongest fact, then support it with a specific number, date, or document reference from your filed package.';
+    default:
+      return 'Answer in 30–60 seconds with specifics: exact figures, names, dates, and one concrete example. Officers score specificity and consistency with your filed documents.';
+  }
+}
+
 /**
  * Generates 10-12 personalized questions based on the simulator context.
- * Each session randomly selects from question pools so repeat users get variety.
- * Order: universal questions first, then weak point probes, then business type.
+ * Variety across sessions comes from three mechanisms:
+ * 1. Phrasing memory — the previous session's exact wordings (localStorage,
+ *    keyed by application) are avoided when picking from each phrasing pool.
+ * 2. Topic rotation — one non-core universal topic is dropped at random each
+ *    session, freeing a slot for probes/archetype/business-type questions.
+ * 3. Order shuffle — everything after the opening question is shuffled, so
+ *    probes interleave with universals instead of repeating a fixed skeleton.
  */
 export function generateQuestions(context: SimulatorContext): Question[] {
   const questions: Question[] = [];
+
+  // Load the previous session's phrasings so pick()/sampleFresh() avoid them
+  _avoidTexts = new Set();
+  if (typeof window !== 'undefined') {
+    try {
+      const prev = JSON.parse(localStorage.getItem(questionHistoryKey(context.applicationId)) || '[]');
+      if (Array.isArray(prev)) _avoidTexts = new Set(prev.filter((t): t is string => typeof t === 'string'));
+    } catch { /* fresh start */ }
+  }
 
   const businessCtx = context.targetState
     ? `${context.businessName} in ${context.targetState}`
@@ -541,9 +601,16 @@ export function generateQuestions(context: SimulatorContext): Question[] {
     }
   }
 
+  // === TOPIC ROTATION — drop one non-core universal at random each session ===
+  // Core topics (business, investment, source of funds, intent) always stay.
+  const rotatable = ['UQ-02', 'UQ-05', 'UQ-06', 'UQ-07', 'UQ-08'];
+  const dropId = rotatable[Math.floor(Math.random() * rotatable.length)];
+  const dropIdx = questions.findIndex(q => q.id === dropId);
+  if (dropIdx !== -1) questions.splice(dropIdx, 1);
+
   // === ARCHETYPE QUESTIONS — 2 picked from archetype-specific pool ===
   const archetypePool = getArchetypeQuestions(context.archetype, context);
-  const archetypeSelected = shuffle(archetypePool).slice(0, 2);
+  const archetypeSelected = sampleFresh(archetypePool, 2);
   archetypeSelected.forEach((q, i) => {
     questions.push({ ...q, id: `AQ-0${i + 1}` });
   });
@@ -566,7 +633,7 @@ export function generateQuestions(context: SimulatorContext): Question[] {
   // === BUSINESS TYPE QUESTIONS — fill remaining slots when fewer than 2 FDD probes ===
   const btSlotsNeeded = Math.max(0, 2 - fddProbes.length);
   const businessTypePool = getBusinessTypeQuestions(context.businessCategory, context);
-  const selected = shuffle(businessTypePool).slice(0, btSlotsNeeded);
+  const selected = sampleFresh(businessTypePool, btSlotsNeeded);
   selected.forEach((q, i) => {
     questions.push({ ...q, id: `BT-0${i + 1}` });
   });
@@ -581,13 +648,25 @@ export function generateQuestions(context: SimulatorContext): Question[] {
 
   if (probeCount < 2 && questions.length < 11) {
     const escalationPool = getEscalationQuestions(context);
-    const escalation = shuffle(escalationPool).slice(0, 2);
+    const escalation = sampleFresh(escalationPool, 2);
     escalation.forEach((q, i) => {
       questions.push({ ...q, id: `ESC-0${i + 1}` });
     });
   }
 
-  return questions.slice(0, 12);
+  // === FINAL ASSEMBLY — shuffle order (opener stays first), attach coach hints ===
+  const capped = questions.slice(0, 12);
+  const ordered = [capped[0], ...shuffle(capped.slice(1))];
+  const final = ordered.map(q => ({ ...q, hint: q.hint ?? buildCoachHint(q) }));
+
+  // Persist this session's phrasings so the next session avoids repeating them
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.setItem(questionHistoryKey(context.applicationId), JSON.stringify(final.map(q => q.text)));
+    } catch { /* storage unavailable — variety still works via random pools */ }
+  }
+
+  return final;
 }
 
 /**
@@ -863,12 +942,36 @@ export function generateCoachingSummary(
     .filter(q => q.deliveryNotes && q.deliveryNotes.length > 0)
     .map(q => ({ questionId: q.questionId, questionText: q.questionText, notes: q.deliveryNotes! }));
 
+  // Numeric session score: LLM per-answer scores (1-10 → ×10) averaged across
+  // all answered questions; answers with no score fall back to a rating-based value.
+  const ratingFallbackScore: Record<'strong' | 'weak' | 'inconsistent', number> = {
+    strong: 80,
+    weak: 45,
+    inconsistent: 25,
+  };
+  const questionBreakdown: QuestionBreakdownItem[] = session.questions.map(q => ({
+    questionId: q.questionId,
+    questionText: q.questionText,
+    rating: q.rating,
+    score: typeof q.score === 'number' ? Math.round(q.score * 10) : null,
+    feedback: q.feedback,
+    suggestion: q.specificSuggestion || q.feedback,
+  }));
+  const perAnswerScores = session.questions.map(q =>
+    typeof q.score === 'number' ? q.score * 10 : ratingFallbackScore[q.rating]
+  );
+  const overallScore = perAnswerScores.length > 0
+    ? Math.round(perAnswerScores.reduce((a, b) => a + b, 0) / perAnswerScores.length)
+    : null;
+
   return {
     strongAnswers,
     needsWork,
     inconsistencies,
     weakPointsAtRisk,
     readinessIndicator,
+    overallScore,
+    questionBreakdown,
     deliveryFlags: deliveryFlags.length > 0 ? deliveryFlags : undefined,
   };
 }
