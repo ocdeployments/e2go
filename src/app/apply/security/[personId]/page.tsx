@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, use } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createBrowserSupabaseClient } from '@/lib/supabase';
@@ -17,8 +17,8 @@ interface PersonInfo {
   familyMemberId: string | null;
 }
 
-export default function SecurityBackgroundPage({ params }: { params: Promise<{ personId: string }> }) {
-  const { personId } = use(params);
+export default function SecurityBackgroundPage({ params }: { params: { personId: string } }) {
+  const { personId } = params;
   useTrackSectionVisit('security-background');
   const router = useRouter();
   const { status: gateStatus, applicationId, retry } = useApplicationGate();
@@ -49,8 +49,11 @@ export default function SecurityBackgroundPage({ params }: { params: Promise<{ p
     load();
   }, [gateStatus, personId]);
 
+  useEffect(() => {
+    if (gateStatus === 'no-user') router.push('/login');
+  }, [gateStatus, router]);
+
   if (gateStatus === 'no-user') {
-    router.push('/login');
     return null;
   }
   if (gateStatus === 'not-ready') {

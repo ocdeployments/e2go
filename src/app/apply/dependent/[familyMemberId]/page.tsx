@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, use } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createBrowserSupabaseClient } from '@/lib/supabase';
@@ -17,8 +17,8 @@ interface MemberInfo {
   memberType: 'spouse' | 'child' | 'co_investor';
 }
 
-export default function DependentDS160Page({ params }: { params: Promise<{ familyMemberId: string }> }) {
-  const { familyMemberId } = use(params);
+export default function DependentDS160Page({ params }: { params: { familyMemberId: string } }) {
+  const { familyMemberId } = params;
   useTrackSectionVisit('dependent-ds160');
   const router = useRouter();
   const { status: gateStatus, applicationId, retry } = useApplicationGate();
