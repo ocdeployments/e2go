@@ -1066,21 +1066,38 @@ export default function PrepKitPage() {
           </div>
           <div style={{ display: "flex", gap: "10px" }}>
             {kit && (
-              <button
-                onClick={() => window.print()}
-                style={{
-                  padding: "8px 16px",
-                  background: "transparent",
-                  border: `1px solid ${T.border}`,
-                  color: T.textDim,
-                  fontFamily: T.body,
-                  fontSize: "11px",
-                  letterSpacing: "0.08em",
-                  cursor: "pointer",
-                }}
-              >
-                Print / Save as PDF
-              </button>
+              <>
+                <button
+                  onClick={() => window.print()}
+                  style={{
+                    padding: "8px 16px",
+                    background: "transparent",
+                    border: `1px solid ${T.border}`,
+                    color: T.textDim,
+                    fontFamily: T.body,
+                    fontSize: "11px",
+                    letterSpacing: "0.08em",
+                    cursor: "pointer",
+                  }}
+                >
+                  Print / Save as PDF
+                </button>
+                <button
+                  onClick={() => window.open("/api/simulator/prep-kit/pdf", "_blank")}
+                  style={{
+                    padding: "8px 16px",
+                    background: "transparent",
+                    border: `1px solid ${T.gold}`,
+                    color: T.gold,
+                    fontFamily: T.body,
+                    fontSize: "11px",
+                    letterSpacing: "0.08em",
+                    cursor: "pointer",
+                  }}
+                >
+                  Download PDF
+                </button>
+              </>
             )}
             <button
               onClick={() => generate(Boolean(kit))}
