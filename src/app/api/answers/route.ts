@@ -20,7 +20,15 @@ export async function POST(request: NextRequest) {
     } catch {
       return NextResponse.json({ error: 'invalid_json', message: 'Request body is not valid JSON.' }, { status: 400 });
     }
-    const { question_key, answer_value, application_id, family_member_id } = body as { question_key?: string; answer_value?: string; application_id?: string; family_member_id?: string | null };
+    const { question_key, answer_value, application_id, family_member_id, source_document_type } = body as { question_key?: string; answer_value?: string; application_id?: string; family_member_id?: string | null; source_document_type?: string };
+
+    // Only 'manual' (default) and 'quiz_confirmed' (K-2.3's drawer "Confirm"
+    // action on a D-K1 quiz-overlay row) may be set from this endpoint —
+    // document-sourced provenance is written by the parse-document pipeline.
+    const ALLOWED_SOURCES = new Set(['manual', 'quiz_confirmed']);
+    if (source_document_type !== undefined && !ALLOWED_SOURCES.has(source_document_type)) {
+      return NextResponse.json({ error: 'Invalid source_document_type' }, { status: 400 });
+    }
 
     // Validate required fields
     if (!question_key || !application_id) {
@@ -90,7 +98,7 @@ export async function POST(request: NextRequest) {
           answer_value: sanitizedValue,
           answered_at: new Date().toISOString(),
           family_member_id: family_member_id ?? null,
-          source_document_type: 'manual',
+          source_document_type: source_document_type ?? 'manual',
           confidence: null,
         },
         {

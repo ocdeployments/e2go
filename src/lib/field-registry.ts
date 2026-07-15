@@ -41,30 +41,40 @@ export interface FieldDefinition {
   askOnce: boolean;
 }
 
+export type CardCategory = 'case_file' | 'case_intelligence' | 'interview_prep' | 'documents';
+
+export const CARD_CATEGORY_LABELS: Record<CardCategory, string> = {
+  case_file: 'Case File',
+  case_intelligence: 'Case Intelligence',
+  interview_prep: 'Interview Prep',
+  documents: 'Documents',
+};
+
 export interface CardDefinition {
   id: CardId;
   label: string;
   kind: 'intake' | 'tool';
+  category: CardCategory;
   moduleHref: string;
   order: number;
 }
 
 export const CARD_DEFINITIONS: Record<CardId, CardDefinition> = {
-  investor_profile:    { id: 'investor_profile',    label: 'Your profile',        kind: 'intake', moduleHref: '/apply/story',                     order: 1 },
-  story:               { id: 'story',               label: 'Your story',          kind: 'intake', moduleHref: '/apply/story',                     order: 2 },
-  business_details:    { id: 'business_details',    label: 'Your business',       kind: 'intake', moduleHref: '/apply/business',                  order: 3 },
-  investment_snapshot: { id: 'investment_snapshot', label: 'Your investment',     kind: 'intake', moduleHref: '/apply/investment',                order: 4 },
-  qualifications:      { id: 'qualifications',      label: 'Your qualifications', kind: 'intake', moduleHref: '/apply/qualifications',            order: 5 },
-  family_dependents:   { id: 'family_dependents',   label: 'Family & dependents', kind: 'intake', moduleHref: '/apply/family',                    order: 6 },
-  ties:                { id: 'ties',                label: 'Ties to home',        kind: 'intake', moduleHref: '/apply/ties',                      order: 7 },
-  security_background: { id: 'security_background', label: 'Security background', kind: 'intake', moduleHref: '/apply/security/[personId]',       order: 8 },
-  gap_analysis:        { id: 'gap_analysis',        label: 'Gap analysis',        kind: 'tool',   moduleHref: '/gap-analysis',                    order: 9 },
-  market_analysis:     { id: 'market_analysis',     label: 'Market analysis',     kind: 'tool',   moduleHref: '/market-analysis',                 order: 10 },
-  fdd_review:          { id: 'fdd_review',          label: 'FDD review',          kind: 'tool',   moduleHref: '/fdd',                             order: 11 },
-  simulator:           { id: 'simulator',           label: 'Interview simulator', kind: 'tool',   moduleHref: '/simulator',                       order: 12 },
-  prep_kit:            { id: 'prep_kit',            label: 'Prep kit',           kind: 'tool',   moduleHref: '/simulator/prep-kit',              order: 13 },
-  document_vault:      { id: 'document_vault',      label: 'Documents',          kind: 'tool',   moduleHref: '/documents',                        order: 14 },
-  generate_package:    { id: 'generate_package',    label: 'Generate package',   kind: 'tool',   moduleHref: '/generate',                         order: 15 },
+  investor_profile:    { id: 'investor_profile',    label: 'Your profile',        kind: 'intake', category: 'case_file',         moduleHref: '/apply/story',                     order: 1 },
+  story:               { id: 'story',               label: 'Your story',          kind: 'intake', category: 'case_file',         moduleHref: '/apply/story',                     order: 2 },
+  business_details:    { id: 'business_details',    label: 'Your business',       kind: 'intake', category: 'case_file',         moduleHref: '/apply/business',                  order: 3 },
+  investment_snapshot: { id: 'investment_snapshot', label: 'Your investment',     kind: 'intake', category: 'case_file',         moduleHref: '/apply/investment',                order: 4 },
+  qualifications:      { id: 'qualifications',      label: 'Your qualifications', kind: 'intake', category: 'case_file',         moduleHref: '/apply/qualifications',            order: 5 },
+  family_dependents:   { id: 'family_dependents',   label: 'Family & dependents', kind: 'intake', category: 'case_file',         moduleHref: '/apply/family',                    order: 6 },
+  ties:                { id: 'ties',                label: 'Ties to home',        kind: 'intake', category: 'case_file',         moduleHref: '/apply/ties',                      order: 7 },
+  security_background: { id: 'security_background', label: 'Security background', kind: 'intake', category: 'case_file',         moduleHref: '/apply/security/[personId]',       order: 8 },
+  gap_analysis:        { id: 'gap_analysis',        label: 'Gap analysis',        kind: 'tool',   category: 'case_intelligence', moduleHref: '/gap-analysis',                    order: 9 },
+  market_analysis:     { id: 'market_analysis',     label: 'Market analysis',     kind: 'tool',   category: 'case_intelligence', moduleHref: '/market-analysis',                 order: 10 },
+  fdd_review:          { id: 'fdd_review',          label: 'FDD review',          kind: 'tool',   category: 'case_intelligence', moduleHref: '/fdd',                             order: 11 },
+  simulator:           { id: 'simulator',           label: 'Interview simulator', kind: 'tool',   category: 'interview_prep',    moduleHref: '/simulator',                       order: 12 },
+  prep_kit:            { id: 'prep_kit',            label: 'Prep kit',           kind: 'tool',   category: 'interview_prep',    moduleHref: '/simulator/prep-kit',              order: 13 },
+  document_vault:      { id: 'document_vault',      label: 'Documents',          kind: 'tool',   category: 'documents',         moduleHref: '/documents',                        order: 14 },
+  generate_package:    { id: 'generate_package',    label: 'Generate package',   kind: 'tool',   category: 'documents',         moduleHref: '/generate',                         order: 15 },
 };
 
 function fields(cardId: CardId, moduleHref: string, perPerson: boolean, defs: [string, string, boolean?][]): FieldDefinition[] {
