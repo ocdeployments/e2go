@@ -1,6 +1,28 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** July 4, 2026 — Session 119y: **Closed the Phase 6 gap found in Session 119x's audit** — added a "Documents" step to the `/onboarding` wizard (new step 4, between DS-160 and Next Steps) that embeds the existing `DocumentImportHub` (Phase 3's bounded-concurrency parallel parser) directly in onboarding, with per-family-member upload sections, instead of deferring all uploads to `/case-profile`. Live-verified against the seeded UK test account (partnership case) — new Documents tab shows both "My documents" and the P2 co-investor's own upload section side by side, `person_code` badge renders correctly, Continue advances cleanly to the renumbered Next Steps step, no console errors, `npm run build`/`tsc --noEmit` clean.
+**Last Updated:** July 14, 2026 — Session 120: **One-Room Redesign planned and handed off.** Full research + critique + approved visuals for redesigning `/onboarding` + `/case-profile` as one continuous experience. Zero code changes — the deliverables are the master plan **`docs/ONE_ROOM_REDESIGN_PLAN.md`** (Sprints K-0…K-5, self-contained instructions for the next agent), the approved visual artifact (before/after mockups + data-flow map), and this handoff. **Next agent: read `docs/ONE_ROOM_REDESIGN_PLAN.md` first — it is the execution contract. Start with Sprint K-0 (10-min note) then K-1. Do NOT touch `src/app/onboarding/page.tsx` (another agent owns it; K-5 is blocked on their landing).**
+
+---
+
+## Session 120 — One-Room Redesign: Research, Critique, Visuals & Sprint Plan (July 14, 2026)
+
+**Branch:** dev. **No code changes** — research/planning/docs session only. The working tree's uncommitted changes (Session 119y onboarding Documents step + older unrelated edits) were left untouched.
+
+**Context:** Owner-directed redesign of the post-purchase experience. `/case-profile` scored 4/10 (92 hardcoded "Collects from Onboarding…" notes, dev vocabulary shipped to paying clients, `case_code` fetched but never rendered, stateless nav chips, all 7 sections expanded); `/onboarding` scored 5/10 (arrival moment is a consent form with five vendor opt-ins, collects but never triages, step-5 statuses stale after uploads because `onFieldsApplied` is unwired). Owner's mandate: the two pages must feel like one room, and everything collected in onboarding must flow to every consumer in the app.
+
+**Delivered:**
+- **`docs/ONE_ROOM_REDESIGN_PLAN.md`** (NEW — the master handoff). Sprints K-0…K-5 with per-task file paths, API contracts, acceptance criteria, locked product decisions (D-K1…D-K6), and the verified research findings. Written to be executed by an agent with no access to this conversation.
+- **Approved visual artifact** — before/after mockups of both pages, data-flow map (collected → store → consumers → status), phase plan: https://claude.ai/code/artifact/83cdbf9c-ec05-44dd-97c7-8281203f4161 (source `one-room-redesign.html` in session scratchpad; known cosmetic debts listed in plan §6).
+- **Data-flow research (all verified in code):** `answers` table = 25+ consumers; provenance columns (`source_document_type`, `confidence`) exist and are written by DocumentImportHub but read by only ONE consumer (gap report) — case profile fakes it with hardcoded strings; manual saves in `/api/answers` still skip the source columns (~line 84) even though migration `20260620000000_answers_source_update.sql` is applied; quiz `result_json` (country/investment_range/business_type/franchise_interest/warnings/attorney_flags) read only by investment prefill + franchise pages; two live document tables (`uploaded_documents` 13 consumers vs legacy `application_documents` 8 consumers incl. prep-kit/case-summary); `/api/apply/section-completion` consumed by onboarding only; `/onboarding` in neither AUTH_ROUTES nor PAID_ROUTES; `case_code` VERIFIED minted at insert (migration `20260705000000`, confirmed 119x) — pages just never render it; consent_log writes hardcoded `ip_hash: 'local-hash'`.
+- **Self-critique folded into the plan** (owner asked for it explicitly): quiz values overlay-only, never materialized into `answers` (D-K1 — generation engine must never see unconfirmed guesses); manual > document > quiz precedence, documents suggest never overwrite (D-K2); registry drift test required (the registry is the new single point of failure); partnership variant required in header/cards (P2-erasure is this repo's known bug class); middleware gating needs a Stripe-webhook race grace path; cold-start state designed (NBA = "Your story"); revert flag for the case-profile rewrite; funnel events to prove behavior change.
+
+**Key architecture (approved):** one field registry (`src/lib/field-registry.ts`) + one completion engine (`/api/case/completion`) both pages read; one card language (TriageSectionRow idiom, 5 states: locked/not_started/in_progress/ready/generated); one identity header (name + case code + progress ring + single next-best-action); ask-once with visible provenance chips.
+
+**Coordination:** Sprint K-0 = hand the onboarding agent two items now: wire `onFieldsApplied` on the step-4 DocumentImportHub (payoff toast + status refresh), and replace the `ip_hash` placeholder with a real hash. K-1…K-4 never touch `src/app/onboarding/page.tsx`; K-5 waits for that agent to land.
+
+**Housekeeping:** temporary "Scratchpad Static" entry added to `.claude/launch.json` for artifact preview during this session — reverted at session end. Figma + Prisma-Remote MCP servers need OAuth (non-interactive session couldn't authorize; run /mcp in an interactive session if needed).
+
+**Commit status:** nothing to commit from this session beyond docs (`docs/ONE_ROOM_REDESIGN_PLAN.md`, BUILD_TRACKER.md, CLAUDE_CONTEXT.md) — committing per owner's explicit request only, as always.
 
 ---
 
