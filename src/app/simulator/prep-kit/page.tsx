@@ -998,6 +998,11 @@ export default function PrepKitPage() {
       .print-cover, .print-cheat-card { display: block !important; }
       * {
         color: #1a1a1a !important;
+        background: white !important;
+        background-color: white !important;
+        background-image: none !important;
+        border-color: #ddd !important;
+        box-shadow: none !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
       }
