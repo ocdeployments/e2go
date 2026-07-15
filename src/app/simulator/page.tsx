@@ -21,7 +21,7 @@ import { speakQuestion } from '@/lib/groq-tts';
 import CaseFileSummary from '@/components/simulator/CaseFileSummary';
 import GenerationProgress from '@/components/ui/GenerationProgress';
 import ConversationalSession, { type RawVoiceAnswer } from '@/components/simulator/ConversationalSession';
-import type { SimulatorContext, Question, AnswerEvaluation, CoachingSummary, CompletedSession, QuestionCoaching, DeliveryNote } from '@/types/simulator';
+import type { SimulatorContext, Question, AnswerEvaluation, CoachingSummary, CompletedSession, QuestionCoaching, DeliveryNote, QuestionBreakdownItem } from '@/types/simulator';
 
 const supabase = createBrowserSupabaseClient();
 
@@ -603,6 +603,7 @@ export default function InterviewSimulator() {
             questionText: a.questionText,
             answerText: a.answerText,
             rating: (ev.rating || 'weak') as 'strong' | 'weak' | 'inconsistent',
+            score: typeof ev.score === 'number' ? ev.score : undefined,
             feedback: ev.feedback || 'Answer recorded.',
             specificSuggestion: ev.specificSuggestion || '',
             deliveryNotes: analyzeDelivery(a.answerText),
@@ -933,6 +934,9 @@ function ActiveSession({
   onGetFollowUp: () => void;
 }) {
   const wordCount = answer.trim().split(/\s+/).filter(Boolean).length;
+  const [showHint, setShowHint] = useState(false);
+
+  useEffect(() => { setShowHint(false); }, [question.id]);
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
@@ -974,6 +978,17 @@ function ActiveSession({
           {question.context && (
             <div style={styles.questionContext}>
               {question.context}
+            </div>
+          )}
+
+          {question.hint && (
+            <div style={{ marginTop: '16px' }}>
+              <button style={styles.hintToggle} onClick={() => setShowHint(h => !h)}>
+                {showHint ? '▾  Hide coach hint' : '▸  Coach hint — what the officer wants to hear'}
+              </button>
+              {showHint && (
+                <div style={styles.hintPanel}>{question.hint}</div>
+              )}
             </div>
           )}
 
@@ -1628,6 +1643,69 @@ function DeliveryFlagCard({ flag }: { flag: { questionId: string; questionText: 
   );
 }
 
+function QuestionBreakdownCard({ index, item }: { index: number; item: QuestionBreakdownItem }) {
+  const ratingColor = item.rating === 'strong' ? '#22c55e' : item.rating === 'inconsistent' ? '#ef4444' : '#f59e0b';
+  const ratingLabel = item.rating === 'strong' ? 'Strong' : item.rating === 'inconsistent' ? 'Inconsistent' : 'Needs work';
+  const scoreColor = item.score === null ? 'rgba(245,240,232,0.55)'
+    : item.score >= 75 ? '#22c55e' : item.score >= 55 ? '#f59e0b' : '#ef4444';
+
+  return (
+    <div style={{
+      border: '1px solid rgba(201,168,76,0.12)',
+      background: 'rgba(201,168,76,0.02)',
+      padding: '18px 20px',
+      marginBottom: '12px',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', marginBottom: '10px' }}>
+        <div style={{ fontSize: '13px', color: '#f5f0e8', lineHeight: 1.5, flex: 1 }}>
+          <span style={{ color: 'rgba(201,168,76,0.7)', marginRight: '8px' }}>Q{index}</span>
+          {item.questionText}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+          <span style={{
+            fontSize: '10px',
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase' as const,
+            padding: '3px 10px',
+            border: `1px solid ${ratingColor}`,
+            background: `${ratingColor}20`,
+            color: ratingColor,
+            whiteSpace: 'nowrap' as const,
+          }}>
+            {ratingLabel}
+          </span>
+          <span style={{
+            fontFamily: "'Cormorant Garamond', serif",
+            fontSize: '24px',
+            fontWeight: 400,
+            lineHeight: 1,
+            color: scoreColor,
+            minWidth: '44px',
+            textAlign: 'right' as const,
+          }}>
+            {item.score !== null ? item.score : '—'}
+          </span>
+        </div>
+      </div>
+      <div style={{ fontSize: '12px', color: 'rgba(245,240,232,0.78)', lineHeight: 1.55, marginBottom: item.suggestion ? '8px' : 0 }}>
+        {item.feedback}
+      </div>
+      {item.suggestion && (
+        <div style={{
+          fontSize: '12px',
+          color: 'rgba(245,240,232,0.85)',
+          lineHeight: 1.55,
+          borderLeft: '2px solid rgba(201,168,76,0.5)',
+          paddingLeft: '12px',
+        }}>
+          <span style={{ color: '#C9A84C', letterSpacing: '0.06em', fontSize: '10px', textTransform: 'uppercase' as const, marginRight: '6px' }}>Improve</span>
+          {item.suggestion}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function SessionComplete({
   summary,
   sessionNumber,
@@ -1708,6 +1786,45 @@ function SessionComplete({
             </div>
           )}
         </div>
+
+        {/* Overall session score */}
+        {summary.overallScore !== null && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'baseline',
+            justifyContent: 'center',
+            gap: '10px',
+            marginBottom: '36px',
+          }}>
+            <span style={{
+              fontFamily: "'Cormorant Garamond', serif",
+              fontSize: '64px',
+              fontWeight: 300,
+              lineHeight: 1,
+              color: summary.overallScore >= 75 ? '#22c55e' : summary.overallScore >= 55 ? '#f59e0b' : '#ef4444',
+            }}>
+              {summary.overallScore}
+            </span>
+            <span style={{ fontSize: '15px', color: 'rgba(245,240,232,0.55)', letterSpacing: '0.04em' }}>
+              / 100 session score
+            </span>
+          </div>
+        )}
+
+        {/* Question-by-question breakdown */}
+        {summary.questionBreakdown && summary.questionBreakdown.length > 0 && (
+          <div style={{ marginBottom: '32px' }}>
+            <h3 style={{ fontSize: '14px', fontWeight: 500, color: '#f5f0e8', marginBottom: '6px' }}>
+              Question-by-question breakdown
+            </h3>
+            <p style={{ fontSize: '12px', color: 'rgba(245,240,232,0.72)', marginBottom: '20px', marginTop: 0 }}>
+              How a consular officer would score each of your answers, with what to improve.
+            </p>
+            {summary.questionBreakdown.map((item, i) => (
+              <QuestionBreakdownCard key={item.questionId + i} index={i + 1} item={item} />
+            ))}
+          </div>
+        )}
 
         {/* Strong Answers */}
         {summary.strongAnswers.length > 0 && (
@@ -2333,6 +2450,18 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '6px 12px',
     cursor: 'pointer',
     fontFamily: "'DM Sans', sans-serif",
+  },
+  hintToggle: {
+    background: 'transparent', border: 'none', padding: '4px 0',
+    color: 'rgba(201,168,76,0.85)', fontSize: '12px', letterSpacing: '0.05em',
+    cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", textAlign: 'left' as const,
+  },
+  hintPanel: {
+    marginTop: '10px', padding: '16px 18px',
+    background: 'rgba(201,168,76,0.05)', border: '1px solid rgba(201,168,76,0.18)',
+    borderLeft: '3px solid rgba(201,168,76,0.5)',
+    fontSize: '13px', color: 'rgba(245,240,232,0.85)', lineHeight: 1.65,
+    whiteSpace: 'pre-line' as const,
   },
   answerPanel: {
     padding: '32px',
