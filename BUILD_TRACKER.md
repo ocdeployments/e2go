@@ -1,6 +1,39 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** July 15, 2026 — Session 124: **K-5 (Onboarding Chapter One) complete and committed — the One-Room Redesign plan (K-1 through K-5) is now fully closed.** Arrival moment, contextual referrals, evidence-step payoff, and registry-driven triage handoff all live in `/onboarding`. Build clean, 175/175 tests pass, full browser walkthrough verified. **Next agent: no further sprints remain in `docs/ONE_ROOM_REDESIGN_PLAN.md` — check with the owner for the next initiative.**
+**Last Updated:** July 15, 2026 — Session 125: **Sprint L (Simulator UX + Interview Dossier Rebuild) complete — L-1 through L-4 all committed on `dev`.** Dossier figures are now computed server-side and never LLM-invented, voice rewritten to first person, content-hygiene sweep for leaked internal terminology, and a full print/PDF redesign (cover page, waiting-room cheat card, financial-statement Section 5). Two pre-existing bugs found via live testing and spun off as separate tasks (not fixed in this sprint's scope — see below). **Next agent: check `docs/SPRINT_L_SIMULATOR_DOSSIER.md` is now fully closed; check with the owner for the next initiative.**
+
+---
+
+## Session 125 — Sprint L Complete: Dossier Accuracy, Voice, Hygiene, Print (July 15, 2026)
+
+**Branch:** dev. Continuation of Session 121's Sprint L handoff (L-1 was completed/committed in an earlier segment of this same session — see below).
+
+**L-2 — Server-computed figures.** `src/app/api/simulator/prep-kit/route.ts`: added `parseUsd`/`fmtUsd`/`parseDeploymentCategories`/`computeInvestmentFigures()` to compute the total investment, committed/deployed amount, and per-category breakdown in code from the same answer keys the simulator context builder uses — never left to the LLM to restate. Breakdown rows that don't sum to the verified total get an explicit "Other committed funds" balancing row (or the table is omitted). Figures are passed into the prompt as a `VERIFIED FIGURES` block the LLM must use verbatim, and the "at a glance" investment fact / Section 5 table are populated from computed data post-parse, bypassing the LLM's own numbers for those specific fields.
+
+**L-3 — Voice, placeholders, content hygiene (7 sub-items, all live-verified):**
+- First-person throughout ("my business", "I have invested…"); section titles renamed ("My Candidate Snapshot", "My Case at a Glance", "My Numbers", "My Answers").
+- `principalName`/`businessName` fallback chain fixed — resolves from other recorded answers before ever falling back to a placeholder string; genuine absence now renders an action prompt ("Add your business name in your case file") instead of "the applicant"/"the business" leaking into the PDF title block.
+- Dropped raw enum fields (`PROCEED_RISK`, `buyer` archetype) from the client-facing glance card.
+- Added a banned-internal-terminology prompt rule + post-generation regex sweep (`sweepBannedFieldNames()`) covering both literal identifiers (`M3-A-01`, `semanticField`) and spelled-out phrases ("semantic field rating", "weak dimension rating"). **Bug found and fixed during live verification:** the first version of the regex only matched camelCase identifiers, missing the natural-language phrase form — a real generation for test-uk@example.com produced "...the weak semantic field rating for management activities" in a critical-gaps action. Broadened the regex and prompt rule to cover both forms; re-verified clean on a fresh regeneration.
+- Prompt rule against coaching false statements — when a gap exists (e.g. no business plan on file), the answer must be honest about current state and the corresponding checklist item becomes a pre-interview action, never an assertion the missing thing exists.
+- De-duplicated weak-point probes — each renders exactly once, in the probes block only.
+- Added a new always-visible `criticalGaps` top-of-dossier panel (3-5 ranked pre-interview actions) — converts null-data narration ("no ODE timeline available") into concrete actions instead of prose. New `CriticalGaps` component in `page.tsx`, mounted first in the dossier.
+
+**L-4 — Print/PDF redesign.** `src/app/simulator/prep-kit/page.tsx`:
+- Print-only cover page (client name, business, generated date, confidentiality line) and a standalone waiting-room cheat card as the final printed page (memorized numbers, 3 hardest questions, document checklist) — both `display: none` on screen, `display: block` under `@media print`.
+- `break-inside: avoid` (`.print-avoid` class) applied to every card that previously could split mid-answer: officer-concern cards, interview-question cards, weak-point-probe cards, the critical-gaps panel.
+- Obsidian Gold/red/amber accents now survive to paper via `print-color-adjust: exact` + `data-print-gold`/`data-print-red`/`data-print-amber` attribute selectors, instead of the old blanket "everything becomes grey ink" print stylesheet.
+- Section 5 restyled as a financial statement: right-aligned tabular-nums figures, bordered breakdown rows, a gold-ruled totals row.
+- "Best short answer" in each officer-concern card now renders in a boxed, larger serif treatment — the line the client actually memorizes, made typographically dominant over the surrounding framework/avoid-saying text.
+- Verified via DOM inspection (print styles present, `.print-cover`/`.print-cheat-card` correctly `display:none` on screen with real client data populated) rather than an actual print-preview screenshot, since the harness can't render `@media print` visually — flagging this as the one L-4 acceptance step not eyeballed pixel-for-pixel.
+
+**Two pre-existing bugs found via live testing, out of Sprint L's file scope, spun off as separate background tasks (not fixed here):**
+1. `interview_prep_kits` cache write fails with `PGRST204` ("Could not find the 'kit_json' column... in the schema cache") — every dossier generation succeeds and renders but never persists, so every page load forces a full 2-5 minute LLM regeneration. Looked like a stale PostgREST schema cache rather than a missing column.
+2. `src/lib/gap-analysis-engine.ts` D-15 (214(b) immigrant-intent factor) hardcodes "Canada" in both its `name` and `mitigation` strings regardless of the applicant's actual treaty country — confirmed live on the UK test account, where the dossier rendered "...will return to Canada" while all surrounding facts correctly referenced the UK.
+
+**This session also used the existing `test-uk@example.com` seed account with a one-off, user-approved direct DB patch** (`application_lifecycle.module1_completed_at`/`module2_completed_at`, via service-role key) to unblock the prep-kit gate, since `scripts/seed-test-profiles.mjs` only sets `quiz_completed_at` and doesn't set module completion timestamps.
+
+**Commit status:** two commits on `dev` — `route.ts`+`page.tsx` (L-2/L-3), then `page.tsx` (L-4). `tsc --noEmit` clean, `npx jest` 175/175 passing, `npx eslint` clean on both touched files.
 
 ---
 
