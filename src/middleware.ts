@@ -141,6 +141,7 @@ export async function middleware(req: NextRequest) {
     '/gap-analysis',
     '/market-analysis',
     '/simulator',
+    '/onboarding',
   ];
 
   // Auth pages — redirect to /case-profile if already signed in
@@ -235,7 +236,15 @@ export async function middleware(req: NextRequest) {
       return NextResponse.redirect(new URL('/account-recovery', req.url));
     }
 
-    if (!access.full) {
+    // Grace path — a client landing on /onboarding straight from Stripe checkout
+    // carries ?session_id=; the webhook that flips payment_status to 'paid' can
+    // lag a few seconds behind the redirect, so the access cache may still read
+    // unpaid. Trust a present session_id and let onboarding's own client-side
+    // useApplicationGate retry loop (4 attempts, 1.5s apart) wait out the race
+    // instead of bouncing a paying client to /results.
+    const hasFreshCheckoutSession = pathname.startsWith('/onboarding') && req.nextUrl.searchParams.has('session_id');
+
+    if (!access.full && !hasFreshCheckoutSession) {
       if (pathname.startsWith('/fdd')) {
         if (access.fdd) {
           // FDD standalone purchase — allow through
@@ -310,6 +319,8 @@ export const config = {
     // Application building — paid users only
     '/dashboard/:path*',
     '/apply/:path*',
+    '/onboarding',
+    '/onboarding/:path*',
     '/admin/:path*',
     '/score',
     '/settings',

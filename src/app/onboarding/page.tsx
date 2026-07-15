@@ -31,6 +31,25 @@ const SECURITY_KEYS = [
 
 const DEPENDENT_EXTRA_KEYS = [...US_POC_QUESTIONS, ...TRAVEL_COMPANIONS_QUESTIONS].map((q) => q.key);
 
+// K-4.4: stamps an application_lifecycle timestamp column the first time only —
+// arrival, doc-upload, and completion events must not get overwritten on repeat visits,
+// or the funnel durations computed from them (arrival→handoff, upload rate) go to zero.
+async function stampLifecycleOnce(
+  supabase: ReturnType<typeof createBrowserSupabaseClient>,
+  userId: string,
+  column: 'first_entry' | 'onboarding_doc_uploaded_at' | 'onboarding_completed_at',
+) {
+  const { data: existing } = await supabase
+    .from('application_lifecycle')
+    .select(column)
+    .eq('user_id', userId)
+    .maybeSingle();
+  if (existing && (existing as Record<string, unknown>)[column]) return;
+  await supabase
+    .from('application_lifecycle')
+    .upsert({ user_id: userId, [column]: new Date().toISOString() }, { onConflict: 'user_id' });
+}
+
 const REFERRAL_CATEGORIES = [
   { id: 'franchise', title: 'Franchise Consultant', help: 'Help finding an E-2 compatible business' },
   { id: 'immigration', title: 'Immigration Consultant', help: 'For complex cases that need legal guidance' },
@@ -123,13 +142,27 @@ export default function OnboardingPage() {
     setSectionCompletion(sectionRes);
     setImportAppliedNotice(`Résumé applied — ${count} field${count === 1 ? '' : 's'} filled`);
     setTimeout(() => setImportAppliedNotice(null), 5000);
-  }, []);
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) stampLifecycleOnce(supabase, user.id, 'onboarding_doc_uploaded_at');
+  }, [supabase]);
 
   useEffect(() => {
     if (status === 'ready' && applicationId) {
       loadAll(applicationId);
     }
   }, [status, applicationId, loadAll]);
+
+  useEffect(() => {
+    if (status !== 'ready' || !applicationId) return;
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) stampLifecycleOnce(supabase, user.id, 'first_entry');
+    })();
+    // Fires once per arrival at /onboarding, independent of consent completion —
+    // see stampLifecycleOnce above for why this must be a true arrival mark.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status, applicationId]);
 
   useEffect(() => {
     if (status === 'no-user') router.push('/login?next=/onboarding');
@@ -174,7 +207,6 @@ export default function OnboardingPage() {
 
       await supabase.from('application_lifecycle').upsert({
         user_id: user.id,
-        first_entry: new Date().toISOString(),
         module1_completed_at: new Date().toISOString(),
       }, { onConflict: 'user_id' });
 
@@ -183,6 +215,12 @@ export default function OnboardingPage() {
     } finally {
       setSavingConsent(false);
     }
+  };
+
+  const handleReachStep5 = async () => {
+    setStep(5);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) stampLifecycleOnce(supabase, user.id, 'onboarding_completed_at');
   };
 
   const handleAddFamilyMember = async (input: NewFamilyMemberInput) => {
@@ -440,7 +478,7 @@ export default function OnboardingPage() {
             )}
 
             <div className="flex justify-end mt-12">
-              <button onClick={() => setStep(5)} className="px-8 py-4 bg-[#C9A84C] text-[#0a0a0a] text-[14px] font-medium uppercase tracking-[0.12em] hover:bg-[#D4BC6A] transition-colors">
+              <button onClick={handleReachStep5} className="px-8 py-4 bg-[#C9A84C] text-[#0a0a0a] text-[14px] font-medium uppercase tracking-[0.12em] hover:bg-[#D4BC6A] transition-colors">
                 Continue →
               </button>
             </div>

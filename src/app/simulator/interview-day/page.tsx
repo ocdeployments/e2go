@@ -157,11 +157,21 @@ export default function InterviewDayPage() {
 
       let hasDocumentUploads = false;
       if (app) {
-        const { count } = await supabase
-          .from('application_documents')
-          .select('id', { count: 'exact', head: true })
-          .eq('application_id', app.id);
-        hasDocumentUploads = (count ?? 0) > 0;
+        // Two upload pipelines feed this checklist: the legacy application_documents
+        // pipeline (gap-analysis remediation, quick-start onboarding) and the current
+        // uploaded_documents taxonomy (/case-profile) — both must be checked or a
+        // client who only uploaded via /case-profile shows as having no documents.
+        const [{ count: legacyCount }, { count: uploadedCount }] = await Promise.all([
+          supabase
+            .from('application_documents')
+            .select('id', { count: 'exact', head: true })
+            .eq('application_id', app.id),
+          supabase
+            .from('uploaded_documents')
+            .select('id', { count: 'exact', head: true })
+            .eq('application_id', app.id),
+        ]);
+        hasDocumentUploads = (legacyCount ?? 0) > 0 || (uploadedCount ?? 0) > 0;
       }
 
       const flags: CaseFlags = {

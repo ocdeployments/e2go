@@ -41,7 +41,8 @@ export async function GET() {
     { data: consentLog },
     { data: termsAcceptance },
     { data: followupResponses },
-    { data: documentRefs },
+    { data: legacyDocumentRefs },
+    { data: uploadedDocumentRefs },
   ] = await Promise.all([
     admin.from('profiles').select('*').eq('user_id', uid).maybeSingle(),
     admin.from('quiz_sessions')
@@ -81,7 +82,28 @@ export async function GET() {
     admin.from('application_documents')
       .select('original_filename, detected_document_type, created_at, extraction_status')
       .eq('user_id', uid),
+    // uploaded_documents is a second, still-live document pipeline (fed by
+    // /case-profile) — the export must include it too, or a data subject
+    // access request silently omits documents filed through that path.
+    admin.from('uploaded_documents')
+      .select('file_name, doc_type, created_at, extraction_status')
+      .eq('user_id', uid),
   ]);
+
+  const uploadedDocuments = [
+    ...(legacyDocumentRefs ?? []).map((d) => ({
+      filename: d.original_filename,
+      docType: d.detected_document_type,
+      createdAt: d.created_at,
+      extractionStatus: d.extraction_status,
+    })),
+    ...(uploadedDocumentRefs ?? []).map((d) => ({
+      filename: d.file_name,
+      docType: d.doc_type,
+      createdAt: d.created_at,
+      extractionStatus: d.extraction_status,
+    })),
+  ];
 
   const exportPayload = {
     exportedAt: new Date().toISOString(),
@@ -97,7 +119,7 @@ export async function GET() {
     consentLog: consentLog ?? [],
     termsAcceptance: termsAcceptance ?? [],
     followupResponses: followupResponses ?? [],
-    uploadedDocuments: documentRefs ?? [],
+    uploadedDocuments,
     _notice:
       'This export contains all personal data held by e2go.app for the above user. ' +
       'Raw document files and generated DOCX content are available for download in-app ' +
