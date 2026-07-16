@@ -2,13 +2,13 @@
  * POST /api/auth/verify-captcha
  *
  * Validates a Cloudflare Turnstile token server-side before allowing signup.
- * If CF_TURNSTILE_SECRET_KEY is not configured, returns ok=true (graceful
+ * If TURNSTILE_SECRET_KEY is not configured, returns ok=true (graceful
  * degradation — CAPTCHA is optional until keys are provisioned).
  */
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
-  const secretKey = process.env.CF_TURNSTILE_SECRET_KEY;
+  const secretKey = process.env.TURNSTILE_SECRET_KEY;
 
   // Not configured — skip CAPTCHA check (degrade gracefully)
   if (!secretKey) {

@@ -1,6 +1,6 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** July 15, 2026 — Session 127: **Sprint M-1 shipped** — `/api/fdd/report` given a `maxDuration` override, right-sized down from the sprint doc's original "port to async job pattern" plan (see Session 127 entry below for why). **Next agent: continue Sprint M at M-3 (see `docs/SPRINT_M_SECURITY_AUDIT.md`'s Status section) — pure documentation, no code risk, do it before M-2/M-4/M-5.**
+**Last Updated:** July 15, 2026 — Session 127: **Sprint M-1, M-3, M-4 shipped.** M-4 uncovered two live production bugs (generate/fdd routes 429-ing on every request due to a missing `UPSTASH_REDIS_REST_URL`; CAPTCHA silently skipped on every signup due to an env-var name mismatch) — both fixed, see Session 127 entry below. **A production redeploy is still needed to pick up the new Upstash URL — flag this to Romy if not already done. Next agent: continue Sprint M at M-2 (Sentry rollout) or M-5 (schema consolidation).**
 
 ---
 
@@ -46,9 +46,37 @@ COLUMN IF NOT EXISTS` convention with a wrong/right example and the
 "Status" section: M-1 and M-3 done, M-2/M-4/M-5/M-6 not started, next up
 M-4 (env-var confirmation).
 
+**M-4 found and fixed two live production bugs, not just a hardening gap:**
+
+1. **Production document generation and FDD extraction/scoring were failing
+   on every request.** `vercel env ls production` showed
+   `UPSTASH_REDIS_REST_TOKEN` set but `UPSTASH_REDIS_REST_URL` missing from
+   both Production and Development (Preview had it from 12 days earlier —
+   only prod and dev were broken). `src/lib/rate-limit.ts` fails **closed**
+   (not open) for the two cost-critical profiles (`generate`, `fdd`) when
+   Redis isn't configured, and four live routes act on that result:
+   `generate/start`, `renewal/generate`, `fdd/extract`, `fdd/score` — every
+   user hitting any of these got a 429 "rate limit exceeded" on their first
+   attempt. Fixed by adding `UPSTASH_REDIS_REST_URL` to Production and
+   Development via `vercel env add` (value supplied by Romy). **Requires a
+   production redeploy to take effect** — env vars are baked in at deploy
+   time, not read live.
+2. **CAPTCHA was silently disabled on every signup in production.**
+   `src/app/api/auth/verify-captcha/route.ts` read
+   `process.env.CF_TURNSTILE_SECRET_KEY`, but the actual Vercel var (all
+   three environments) is named `TURNSTILE_SECRET_KEY` — no `CF_` prefix.
+   The mismatch meant the route always took its "not configured" branch and
+   returned `{ok: true, skipped: true}`, i.e. Turnstile verification never
+   ran despite a real secret being provisioned. Fixed by changing the code
+   to read `TURNSTILE_SECRET_KEY` (matching the var that already exists —
+   no new Vercel var needed). `tsc --noEmit` clean; not browser-verifiable
+   (server-side env read), confirmed via type-check + code inspection only.
+
 **Commit status:** `3426fbc` on `dev` (route fix), `da50b8c` (Session 126
-follow-up doc commit), plus this session's M-3 + tracker/context updates in
-a further commit.
+follow-up doc commit), `57723fd` (M-3 doc commit), plus this session's M-4
+CAPTCHA-fix + tracker/context updates in a further commit. The
+`UPSTASH_REDIS_REST_URL` change is a Vercel env-var addition, not a git
+commit — it takes effect on the next production deploy.
 
 ---
 

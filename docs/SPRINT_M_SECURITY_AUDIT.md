@@ -98,7 +98,7 @@ section.
 
 ---
 
-## M-4 — Confirm production env vars for rate limiting + CAPTCHA (MEDIUM)
+## M-4 — Confirm production env vars for rate limiting + CAPTCHA (MEDIUM) — ✅ DONE (found live bugs, not just gaps)
 
 **Problem — rate limiting:** `src/lib/rate-limit.ts` documents that it fails
 open (allows unlimited requests) if `UPSTASH_REDIS_REST_URL`/`TOKEN` are
@@ -118,6 +118,27 @@ widget rendering.
    missing it: `market-analysis/route.ts`, `fdd/report/route.ts`,
    `fdd/territory/route.ts`, `fdd/compare/route.ts`,
    `documents/extract/route.ts`.
+
+**Resolution (shipped, Session 127):** step 1 (`vercel env ls production`)
+surfaced two live production bugs, not just gaps:
+
+- `UPSTASH_REDIS_REST_URL` was missing from Production and Development
+  (Preview had it). Because `checkRateLimit` fails **closed** for the
+  `generate`/`fdd` profiles when Redis isn't configured, this meant
+  `generate/start`, `renewal/generate`, `fdd/extract`, and `fdd/score` were
+  returning 429 on every single request in production. Fixed by adding the
+  var to Production and Development via `vercel env add` — **needs a
+  production redeploy to take effect.**
+- The CAPTCHA route read `CF_TURNSTILE_SECRET_KEY`, but the actual
+  provisioned var (all environments) is `TURNSTILE_SECRET_KEY` — no `CF_`
+  prefix. Every signup was silently skipping CAPTCHA verification. Fixed by
+  correcting the code to read the var name that actually exists.
+
+Step 2 (adding `checkRateLimit` to the 5 uncovered routes) — **not done
+this session**, deferred: fixing the two live bugs took priority, and doing
+that mechanical rollout right after just having established the Redis
+config actually works felt safer as a follow-up rather than bundling it
+into the same push. Still open for the next agent.
 
 ---
 
@@ -173,4 +194,11 @@ never "done," just tracked as an ongoing convention once started.
 
 - M-1: ✅ done, right-sized to a `maxDuration` fix (see above) — commit `3426fbc`.
 - M-3: ✅ done — `supabase/migrations/README.md` + `CLAUDE_CONTEXT.md` pointer.
-- M-2, M-4, M-5, M-6: not yet started. Next up: M-4 (env-var confirmation, quick).
+- M-4: ✅ done — found and fixed two live production bugs (see above): missing
+  `UPSTASH_REDIS_REST_URL` causing generate/fdd routes to 429 on every
+  request, and a `CF_TURNSTILE_SECRET_KEY`/`TURNSTILE_SECRET_KEY` name
+  mismatch silently disabling CAPTCHA. **Production redeploy still needed**
+  to pick up the new Upstash var. Task 2 of M-4 (add `checkRateLimit` to 5
+  more routes) still open.
+- M-2, M-5, M-6: not yet started. Next up: M-2 (Sentry rollout) or M-5
+  (schema consolidation) — either can go next; M-6 stays lowest priority.
