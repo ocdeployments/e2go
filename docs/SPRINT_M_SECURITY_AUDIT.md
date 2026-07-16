@@ -69,7 +69,7 @@ reviewable in reasonably sized commits, not one 108-file commit.
 
 ---
 
-## M-3 — Fix the migration pattern that caused the July 15 `kit_json` incident (MEDIUM-HIGH)
+## M-3 — Fix the migration pattern that caused the July 15 `kit_json` incident (MEDIUM-HIGH) — ✅ DONE
 
 **Problem:** `CREATE TABLE IF NOT EXISTS` silently no-ops against an existing
 table. `interview_prep_kits` already existed as an earlier quiz-questions
@@ -90,6 +90,11 @@ EXISTS` to carry a schema change — it no-ops silently if the table is already
 there.* If a PGRST204 ("column not in schema cache") error ever recurs, check
 for the column's actual existence before assuming a stale cache and retrying
 `NOTIFY pgrst`.
+
+**Resolution (shipped, Session 127):** added `supabase/migrations/README.md`
+with the convention, a wrong/right example, and the incident writeup; added
+a one-line pointer to it in `CLAUDE_CONTEXT.md`'s "KEY RULES — NEVER BREAK"
+section.
 
 ---
 
@@ -167,4 +172,5 @@ never "done," just tracked as an ongoing convention once started.
 ## Status (updated after Session 127)
 
 - M-1: ✅ done, right-sized to a `maxDuration` fix (see above) — commit `3426fbc`.
-- M-2, M-3, M-4, M-5, M-6: not yet started.
+- M-3: ✅ done — `supabase/migrations/README.md` + `CLAUDE_CONTEXT.md` pointer.
+- M-2, M-4, M-5, M-6: not yet started. Next up: M-4 (env-var confirmation, quick).

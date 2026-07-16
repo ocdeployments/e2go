@@ -36,11 +36,19 @@ Vercel's production runtime, not local `next dev`, so a preview check
 wouldn't have proven anything about this specific fix. `tsc --noEmit` clean,
 `npx jest` 175/175 passing.
 
-**Sprint M doc updated** (`docs/SPRINT_M_SECURITY_AUDIT.md`) with a new
-"Status" section reflecting M-1 done, M-2 through M-6 not started.
+**Sprint M-3 also shipped this session** (pure documentation, no code risk):
+added `supabase/migrations/README.md` documenting the `ALTER TABLE ... ADD
+COLUMN IF NOT EXISTS` convention with a wrong/right example and the
+`interview_prep_kits` incident writeup, plus a one-line pointer in
+`CLAUDE_CONTEXT.md`'s "KEY RULES — NEVER BREAK" section.
 
-**Commit status:** `3426fbc` on `dev` (route fix). Tracker/sprint-doc updates
-for this session pending in a follow-up commit.
+**Sprint M doc updated** (`docs/SPRINT_M_SECURITY_AUDIT.md`) with a
+"Status" section: M-1 and M-3 done, M-2/M-4/M-5/M-6 not started, next up
+M-4 (env-var confirmation).
+
+**Commit status:** `3426fbc` on `dev` (route fix), `da50b8c` (Session 126
+follow-up doc commit), plus this session's M-3 + tracker/context updates in
+a further commit.
 
 ---
 
