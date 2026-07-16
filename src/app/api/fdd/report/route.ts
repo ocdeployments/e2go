@@ -8,6 +8,12 @@ import type { FddExtractedFields } from '@/types/fdd';
 import type { ScoringResult } from '@/lib/fdd-scoring-engine';
 import type { TerritoryAnalysis } from '@/lib/fdd-territory-engine';
 
+// FDD_TIMEOUT_MS (llm-client.ts) budgets the model call at up to 120s;
+// without an explicit maxDuration override this route inherits Vercel's
+// default function timeout, which can kill the request (after the LLM
+// cost is already incurred) before the model call finishes.
+export const maxDuration = 150;
+
 // POST /api/fdd/report
 // Body: { fdd_id: string }
 // Generates professional report via fdd-report-engine, then writes platform integration keys.
