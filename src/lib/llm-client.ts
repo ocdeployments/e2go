@@ -309,6 +309,11 @@ async function callAnthropic(options: LLMOptions, deadline: number): Promise<LLM
 // single provider outage or an Opus rate-limit doesn't take FDD analysis
 // down entirely.
 // ============================================================================
+// 'fdd' isn't a TaskType, so DEFAULT_TIMEOUT_MS has no entry for it —
+// callAnthropicModel must get an explicit timeoutMs or the SDK rejects the
+// request ('timeout' in options with value undefined fails validation).
+const FDD_TIMEOUT_MS = 120_000;
+
 const FDD_CHAIN = ['claude-opus-4-8', 'claude-sonnet-5'] as const;
 const FDD_OPENROUTER_FALLBACK = 'z-ai/glm-5.2';
 // Final fallback after Opus, Sonnet 5, and GLM 5.2 have all failed — an
@@ -338,7 +343,7 @@ export async function callFDDModel(options: FddCallOptions): Promise<LLMResult |
     try {
       return await callAnthropicModel(model, {
         messages, max_tokens: options.max_tokens, task: 'fdd',
-        userId: options.userId, route: options.route,
+        userId: options.userId, route: options.route, timeoutMs: FDD_TIMEOUT_MS,
       });
     } catch (err) {
       console.warn(`[llm-client] ${model} failed for task=fdd:`, err instanceof Error ? err.message : err);
@@ -363,7 +368,7 @@ export async function callFDDModel(options: FddCallOptions): Promise<LLMResult |
   try {
     const result = await callAnthropicModel(FDD_FINAL_ANTHROPIC_FALLBACK, {
       messages, max_tokens: options.max_tokens, task: 'fdd',
-      userId: options.userId, route: options.route,
+      userId: options.userId, route: options.route, timeoutMs: FDD_TIMEOUT_MS,
     });
     console.info('[llm-client] Sonnet 4.6 final fallback succeeded for task=fdd');
     return result;

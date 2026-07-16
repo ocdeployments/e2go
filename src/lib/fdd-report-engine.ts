@@ -793,7 +793,7 @@ Produce E-2 compatibility deep dive as this exact JSON schema:
   "timing_warning": "1–2 sentences on timing risk between signing, visa filing, and business opening, or null if no timing concern"
 }`;
 
-  const fddResult = await callFDDModel({ system: ANALYST_SYSTEM, user: prompt, max_tokens: 2000, route: 'fdd-report' });
+  const fddResult = await callFDDModel({ system: ANALYST_SYSTEM, user: prompt, max_tokens: 3500, route: 'fdd-report' });
   const text = fddResult?.content ?? '{}';
   const match = text.match(/\{[\s\S]*\}/);
   if (!match) throw new Error('E-2 deep dive: no JSON in response');
@@ -868,7 +868,7 @@ Return as a JSON array:
 
 Return only the JSON array. Order by severity descending (CRITICAL first).`;
 
-  const fddResult = await callFDDModel({ system: ANALYST_SYSTEM, user: prompt, max_tokens: 2000, route: 'fdd-report' });
+  const fddResult = await callFDDModel({ system: ANALYST_SYSTEM, user: prompt, max_tokens: 3000, route: 'fdd-report' });
   const text = fddResult?.content ?? '[]';
   const match = text.match(/\[[\s\S]*\]/);
   if (!match) throw new Error('Risk matrix: no JSON in response');
