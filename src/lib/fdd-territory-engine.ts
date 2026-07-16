@@ -254,18 +254,15 @@ const CENSUS_VARS = [
   'B11003_003E', // married-couple family HH with own children under 18
 ].join(',');
 
-const STATE_FIPS: Record<string, string> = {
-  AL:'01',AK:'02',AZ:'04',AR:'05',CA:'06',CO:'08',CT:'09',DE:'10',FL:'12',GA:'13',
-  HI:'15',ID:'16',IL:'17',IN:'18',IA:'19',KS:'20',KY:'21',LA:'22',ME:'23',MD:'24',
-  MA:'25',MI:'26',MN:'27',MS:'28',MO:'29',MT:'30',NE:'31',NV:'32',NH:'33',NJ:'34',
-  NM:'35',NY:'36',NC:'37',ND:'38',OH:'39',OK:'40',OR:'41',PA:'42',RI:'44',SC:'45',
-  SD:'46',TN:'47',TX:'48',UT:'49',VT:'50',VA:'51',WA:'53',WV:'54',WI:'55',WY:'56',
-  DC:'11',
-};
-
-async function fetchCensusData(zip: string, state: string): Promise<CensusData> {
-  const stateFips = STATE_FIPS[state.toUpperCase()] ?? '06';
-  const url = `${CENSUS_BASE}?get=${CENSUS_VARS}&for=zip%20code%20tabulation%20area:${zip}&in=state:${stateFips}`;
+async function fetchCensusData(zip: string): Promise<CensusData> {
+  const apiKey = process.env.CENSUS_API_KEY;
+  if (!apiKey) {
+    console.warn('CENSUS_API_KEY not set — Census ACS calls will fail');
+    return emptyCensus();
+  }
+  // ZCTA is a national-level geography in ACS5 — it cannot be nested under `in=state:`,
+  // that combination returns "unknown/unsupported geography hierarchy".
+  const url = `${CENSUS_BASE}?get=${CENSUS_VARS}&for=zip%20code%20tabulation%20area:${zip}&key=${apiKey}`;
 
   try {
     const res = await fetch(url, {
@@ -1002,7 +999,7 @@ export async function analyseTeritoryForBusiness(
   const radiusMiles = RADIUS_BY_CATEGORY[category] ?? RADIUS_BY_CATEGORY.default;
 
   const [census, competitors] = await Promise.all([
-    fetchCensusData(zip, state),
+    fetchCensusData(zip),
     fetchCompetitors(zip, category, radiusMiles, businessName, null),
   ]);
 
@@ -1076,7 +1073,7 @@ export async function analyseTeritory(
 
   // Fetch Census and competitors in parallel
   const [census, competitors] = await Promise.all([
-    fetchCensusData(zip, state),
+    fetchCensusData(zip),
     // Fetch competitors — we need population first but it's from Census, so we pass null initially
     // and will recalculate the ratio after Census returns
     fetchCompetitors(zip, category, radiusMiles, franchiseName, null),
