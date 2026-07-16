@@ -428,13 +428,18 @@ function scoreDimension3(
     ode.note
   ));
 
-  // Churn rate
-  const closedYr1 = num(fields.units_closed_yr1) ?? 0;
-  const closedYr2 = num(fields.units_closed_yr2) ?? 0;
-  const closedYr3 = num(fields.units_closed_yr3) ?? 0;
-  const totalUnits = num(fields.total_units_open_current) ?? 0;
-  const totalClosed = closedYr1 + closedYr2 + closedYr3;
-  const churnPct = totalUnits > 0 ? (totalClosed / 3) / totalUnits : null;
+  // Churn rate — closure counts are frequently absent from the extracted FDD text;
+  // treat any missing year as "unknown", never as a disclosed zero, or an FDD that
+  // discloses total units but not yearly closures would silently score as 0% churn.
+  const closedYr1 = num(fields.units_closed_yr1);
+  const closedYr2 = num(fields.units_closed_yr2);
+  const closedYr3 = num(fields.units_closed_yr3);
+  const totalUnits = num(fields.total_units_open_current);
+  const closuresDisclosed = closedYr1 !== null && closedYr2 !== null && closedYr3 !== null;
+  const totalClosed = closuresDisclosed ? closedYr1! + closedYr2! + closedYr3! : null;
+  const churnPct = (totalUnits !== null && totalUnits > 0 && totalClosed !== null)
+    ? (totalClosed / 3) / totalUnits
+    : null;
 
   const churnResult: DimensionResult =
     churnPct === null ? 'unknown' :

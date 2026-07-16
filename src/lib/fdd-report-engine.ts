@@ -560,37 +560,51 @@ async function generateSystemHealth(
   fields: FddExtractedFields,
   franchiseName: string
 ): Promise<SystemHealthAnalysis> {
-  const openedYr1 = n(fields.units_opened_yr1) ?? 0;
-  const openedYr2 = n(fields.units_opened_yr2) ?? 0;
-  const openedYr3 = n(fields.units_opened_yr3) ?? 0;
-  const closedYr1 = n(fields.units_closed_yr1) ?? 0;
-  const closedYr2 = n(fields.units_closed_yr2) ?? 0;
-  const closedYr3 = n(fields.units_closed_yr3) ?? 0;
+  const openedYr1 = n(fields.units_opened_yr1);
+  const openedYr2 = n(fields.units_opened_yr2);
+  const openedYr3 = n(fields.units_opened_yr3);
+  const closedYr1 = n(fields.units_closed_yr1);
+  const closedYr2 = n(fields.units_closed_yr2);
+  const closedYr3 = n(fields.units_closed_yr3);
   const totalOpen = n(fields.total_units_open_current);
-  const franchiseeClosures = n(fields.franchisee_initiated_closures_3yr) ?? 0;
-  const franchisorTerminations = n(fields.franchisor_initiated_terminations_3yr) ?? 0;
+  const franchiseeClosures = n(fields.franchisee_initiated_closures_3yr);
+  const franchisorTerminations = n(fields.franchisor_initiated_terminations_3yr);
   const formerFranchiseeContacts = b(fields.former_franchisee_contacts_available);
 
-  const totalOpened = openedYr1 + openedYr2 + openedYr3;
-  const totalClosed = closedYr1 + closedYr2 + closedYr3;
-  const netUnitChange = totalOpened - totalClosed;
-  const churnRate = totalOpen && totalOpen > 0
+  // Item 20 openings/closures are frequently absent from the extracted FDD text.
+  // Treat "not disclosed" as null all the way through — never default a missing
+  // year's count to 0, since that fabricates a specific (and often alarming)
+  // claim the FDD never actually made.
+  const openingsDisclosed = openedYr1 !== null && openedYr2 !== null && openedYr3 !== null;
+  const closuresDisclosed = closedYr1 !== null && closedYr2 !== null && closedYr3 !== null;
+  const totalOpened = openingsDisclosed ? openedYr1! + openedYr2! + openedYr3! : null;
+  const totalClosed = closuresDisclosed ? closedYr1! + closedYr2! + closedYr3! : null;
+  const netUnitChange = (totalOpened !== null && totalClosed !== null) ? totalOpened - totalClosed : null;
+  const churnRate = (totalOpen !== null && totalOpen > 0 && totalClosed !== null)
     ? ((totalClosed / 3) / totalOpen)
     : null;
+
+  const fmt = (v: number | null): string => v === null ? 'Not disclosed' : String(v);
 
   const prompt = `Analyze the system health data from Item 20 of this franchise FDD.
 
 FRANCHISE: ${franchiseName}
 
 ITEM 20 OUTLET DATA:
-- Total units currently open: ${totalOpen ?? 'Unknown'}
-- Openings: Year 1: ${openedYr1}, Year 2: ${openedYr2}, Year 3: ${openedYr3} (Total 3yr: ${totalOpened})
-- Closures: Year 1: ${closedYr1}, Year 2: ${closedYr2}, Year 3: ${closedYr3} (Total 3yr: ${totalClosed})
-- Net unit change over 3 years: ${netUnitChange > 0 ? '+' : ''}${netUnitChange}
-- Franchisee-initiated closures (3yr): ${franchiseeClosures}
-- Franchisor-initiated terminations (3yr): ${franchisorTerminations}
-- Annual churn rate: ${churnRate !== null ? `${(churnRate * 100).toFixed(1)}%` : 'Cannot calculate'}
+- Total units currently open: ${totalOpen ?? 'Not disclosed'}
+- Openings: Year 1: ${fmt(openedYr1)}, Year 2: ${fmt(openedYr2)}, Year 3: ${fmt(openedYr3)} (Total 3yr: ${totalOpened ?? 'Not disclosed'})
+- Closures: Year 1: ${fmt(closedYr1)}, Year 2: ${fmt(closedYr2)}, Year 3: ${fmt(closedYr3)} (Total 3yr: ${totalClosed ?? 'Not disclosed'})
+- Net unit change over 3 years: ${netUnitChange === null ? 'Not disclosed' : `${netUnitChange > 0 ? '+' : ''}${netUnitChange}`}
+- Franchisee-initiated closures (3yr): ${fmt(franchiseeClosures)}
+- Franchisor-initiated terminations (3yr): ${fmt(franchisorTerminations)}
+- Annual churn rate: ${churnRate !== null ? `${(churnRate * 100).toFixed(1)}%` : 'Cannot calculate — outlet data incomplete'}
 - Former franchisee contact list available in Item 20: ${formerFranchiseeContacts === true ? 'YES' : formerFranchiseeContacts === false ? 'NO — red flag' : 'Not confirmed'}
+
+IMPORTANT: "Not disclosed" means this figure was absent from the extracted FDD text — it is NOT
+a disclosed zero. Never treat a "Not disclosed" field as if the franchisor reported zero activity,
+and never call a "Not disclosed" pattern "implausible," "suspicious," or a red flag on its own —
+the correct and only honest response to missing Item 20 data is to say plainly that it was not
+disclosed/extracted and that this itself limits confidence in the system health assessment.
 
 INDUSTRY BENCHMARKS:
 - Healthy franchise systems: annual churn rate <5% is strong, 5–8% is acceptable, >8% is elevated, >12% is distress
