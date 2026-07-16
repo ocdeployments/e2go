@@ -75,7 +75,7 @@ export default function FddUploadPage() {
         .from('fdd_analyses')
         .select('id, original_filename, created_at, extraction_status')
         .eq('user_id', user.id)
-        .eq('extraction_status', 'complete')
+        .eq('extraction_status', 'extracted')
         .order('created_at', { ascending: false })
         .limit(1);
       const fdd = fddRows?.[0];
@@ -438,6 +438,15 @@ export default function FddUploadPage() {
             >
               Upload &amp; Begin Extraction
             </button>
+            {(!selectedFile || !targetState) && (
+              <p className="text-xs text-white/30 text-center -mt-4">
+                {!selectedFile && !targetState
+                  ? 'Select your FDD PDF and a target state to continue.'
+                  : !selectedFile
+                  ? 'Select your FDD PDF to continue.'
+                  : 'Select a target state to continue.'}
+              </p>
+            )}
 
             <p className="text-xs text-white/25 text-center leading-relaxed">
               This analysis does not constitute legal, financial, or franchise advice.
