@@ -442,6 +442,32 @@ function MarketAnalysisPageInner() {
                   <button onClick={() => window.print()} className="text-white/30 text-xs hover:text-white/50 transition-colors">
                     Print / PDF
                   </button>
+                  <button
+                    onClick={async () => {
+                      const zips = parseZips(form.zip);
+                      const res = await fetch('/api/market-analysis/pdf', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          businessName: form.businessName,
+                          businessCategory: form.businessCategory,
+                          zip: zips[0],
+                          state: form.state,
+                        }),
+                      });
+                      if (!res.ok) return;
+                      const blob = await res.blob();
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = `Market-Analysis-${zips[0]}.pdf`;
+                      a.click();
+                      URL.revokeObjectURL(url);
+                    }}
+                    className="text-[#C9A84C] text-xs hover:text-[#C9A84C]/70 transition-colors"
+                  >
+                    Download PDF
+                  </button>
                 </div>
                 <p className="font-['Cormorant_Garamond'] text-6xl font-light" style={{ color: overallColor }}>
                   {analysis.overall_score}

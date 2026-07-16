@@ -119,9 +119,17 @@ function ProfessionalReport({
             {analysis.transaction_type && <> · {analysis.transaction_type.replace(/_/g, ' ')}</>}
           </p>
         </div>
-        <button onClick={onPrint} className="text-white/30 text-xs hover:text-white/50 transition-colors mt-1 shrink-0">
-          Print / PDF
-        </button>
+        <div className="flex items-center gap-4 mt-1 shrink-0">
+          <button onClick={onPrint} className="text-white/30 text-xs hover:text-white/50 transition-colors">
+            Print / PDF
+          </button>
+          <button
+            onClick={() => window.open(`/api/fdd/report/pdf?fdd_id=${fddId}`, "_blank")}
+            className="text-[#C9A84C] text-xs hover:text-[#C9A84C]/70 transition-colors"
+          >
+            Download PDF
+          </button>
+        </div>
       </div>
 
       {/* Recommendation banner */}
@@ -500,9 +508,17 @@ function LegacyFullReport({ analysis, report, onPrint }: {
             {analysis.target_city ? `${analysis.target_city}, ` : ''}{analysis.target_state ?? ''}
           </p>
         </div>
-        <button onClick={onPrint} className="text-white/30 text-xs hover:text-white/50 transition-colors mt-1 shrink-0">
-          Print / PDF
-        </button>
+        <div className="flex items-center gap-4 mt-1 shrink-0">
+          <button onClick={onPrint} className="text-white/30 text-xs hover:text-white/50 transition-colors">
+            Print / PDF
+          </button>
+          <button
+            onClick={() => window.open(`/api/fdd/report/pdf?fdd_id=${fddId}`, "_blank")}
+            className="text-[#C9A84C] text-xs hover:text-[#C9A84C]/70 transition-colors"
+          >
+            Download PDF
+          </button>
+        </div>
       </div>
 
       <div className={`rounded-2xl border ${cfg.border} ${cfg.bg} p-6 flex items-center justify-between`}>
