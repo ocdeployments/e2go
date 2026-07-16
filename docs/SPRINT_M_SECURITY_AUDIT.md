@@ -20,7 +20,7 @@ already in good shape. The tasks below are specific, scoped gaps.
 
 ---
 
-## M-1 — Move `/api/fdd/report` off the synchronous request path (HIGH)
+## M-1 — Move `/api/fdd/report` off the synchronous request path (HIGH) — ✅ DONE (right-sized)
 
 **Problem:** `src/app/api/fdd/report/route.ts` calls `generateProfessionalReport`
 (→ `fdd-report-engine.ts`) synchronously inside the POST handler. The FDD model
@@ -35,13 +35,20 @@ request timeout (Vercel default 60s on Pro plans) killing the request after
 the LLM cost has already been incurred — user sees a bare error, nothing
 persisted, no retry path.
 
-**Task:** port `/api/fdd/report` onto the same async job pattern already
-proven in `generate/run/[jobId]/route.ts` — a job row, a background
-worker/step that calls `generateProfessionalReport`, and the client polling
-or SSE-subscribing for completion instead of awaiting the POST directly.
-Reuse `document_generation_jobs` if the shape fits, or a dedicated
-`fdd_report_jobs` table via a new migration if it doesn't (follow M-3's
-migration pattern below either way).
+**Resolution (shipped, commit `3426fbc`):** the original task called for
+porting this route onto the full async job-table pattern (`document_generation_jobs`
++ client polling/SSE). On inspection that pattern exists in `generate/run/[jobId]`
+to support a **15-step pipeline with per-step progress UI** — it's solving a
+different problem. `/api/fdd/report` produces one JSON blob from a single LLM
+call, and the client (`src/app/fdd/report/[fddId]/page.tsx`'s `generateReport()`)
+already just shows a spinner and reloads on completion; there's no
+intermediate progress to report. The actual cited risk — no `maxDuration`
+override against a route that can legitimately run up to 120s — is closed by
+adding `export const maxDuration = 150;` to the route, matching the pattern
+already used on the sibling route. Porting the job-table/polling machinery
+onto a single-shot flow would have added real complexity to fix a problem
+this smaller change already solves — right-sized down rather than following
+the original task literally.
 
 ---
 
@@ -156,3 +163,8 @@ lowest priority, no need to block sprint close on finishing all of it).
 Acceptance for closing this sprint: M-1, M-3, M-4 done; M-2 and M-5 may be
 partial with remaining scope explicitly logged in `BUILD_TRACKER.md`; M-6 is
 never "done," just tracked as an ongoing convention once started.
+
+## Status (updated after Session 127)
+
+- M-1: ✅ done, right-sized to a `maxDuration` fix (see above) — commit `3426fbc`.
+- M-2, M-3, M-4, M-5, M-6: not yet started.

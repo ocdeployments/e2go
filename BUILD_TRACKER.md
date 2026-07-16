@@ -1,6 +1,46 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** July 15, 2026 — Session 126: **Working tree from the FDD-report PDF export work organized into 7 clean commits on `dev`, followed by a grounded two-agent security/infrastructure audit (Application Security Engineer + Database Optimizer).** No critical "vibe-coded and broken" findings — ownership checks, RLS, indexing, and Sentry config are all sound. Audit turned into **Sprint M** (`docs/SPRINT_M_SECURITY_AUDIT.md`), six prioritized tasks led by moving `/api/fdd/report` onto an async job pattern. **Next agent: start Sprint M at M-1 (see the sprint doc); check with the owner before starting if it's been a while.**
+**Last Updated:** July 15, 2026 — Session 127: **Sprint M-1 shipped** — `/api/fdd/report` given a `maxDuration` override, right-sized down from the sprint doc's original "port to async job pattern" plan (see Session 127 entry below for why). **Next agent: continue Sprint M at M-3 (see `docs/SPRINT_M_SECURITY_AUDIT.md`'s Status section) — pure documentation, no code risk, do it before M-2/M-4/M-5.**
+
+---
+
+## Session 127 — Sprint M-1: FDD Report Timeout Fix (July 15, 2026)
+
+**Branch:** dev. Continuation of Session 126's Sprint M plan.
+
+Sprint M-1 originally called for porting `/api/fdd/report` onto the full
+async job-table pattern used by `/api/generate/run/[jobId]` (a
+`document_generation_jobs` row + client polling/SSE), because that route
+has no `maxDuration` override against a model chain that can legitimately
+run up to 120s (`FDD_TIMEOUT_MS`).
+
+**Investigated before implementing, and right-sized:** `generate/run/[jobId]`'s
+job-table/polling machinery exists to support a 15-step document-generation
+pipeline with real per-step progress UI (`current_step`/`current_step_label`,
+an SSE progress route). `/api/fdd/report` calls `generateProfessionalReport`
+once and returns one JSON blob — the client (`src/app/fdd/report/[fddId]/page.tsx`
+`generateReport()`) already just sets a `generating` spinner flag and reloads
+on completion; there's no intermediate progress to expose. Porting the
+job-table pattern onto a single-shot flow would add a new migration, a new
+job table, a start/run route split, and client polling logic — real
+complexity — to fix a problem that's actually just a missing timeout
+override.
+
+**Shipped instead:** added `export const maxDuration = 150;` to
+`src/app/api/fdd/report/route.ts`, matching the pattern already used on the
+sibling `generate/run/[jobId]` route. This directly closes the cited risk
+(Vercel's default function timeout killing the request before the 120s
+model-call budget completes) with a 6-line change instead of new
+infrastructure. Not browser-verified — `maxDuration` only takes effect on
+Vercel's production runtime, not local `next dev`, so a preview check
+wouldn't have proven anything about this specific fix. `tsc --noEmit` clean,
+`npx jest` 175/175 passing.
+
+**Sprint M doc updated** (`docs/SPRINT_M_SECURITY_AUDIT.md`) with a new
+"Status" section reflecting M-1 done, M-2 through M-6 not started.
+
+**Commit status:** `3426fbc` on `dev` (route fix). Tracker/sprint-doc updates
+for this session pending in a follow-up commit.
 
 ---
 
