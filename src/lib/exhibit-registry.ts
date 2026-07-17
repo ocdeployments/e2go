@@ -18,7 +18,7 @@
  * exhibits (uploaded, never cited by any document).
  */
 
-import { createClient } from '@supabase/supabase-js';
+import { createServiceClient as serviceClient } from '@/lib/supabase-service';
 import { UPLOADED_DOC_TYPE_TAB_MAP, TAB_ORDER } from './docx-package-constants';
 import { uploadedDocTypeLabel } from './uploaded-doc-labels';
 
@@ -38,14 +38,6 @@ export interface ExhibitRegistry {
   // doc_types uploaded with no tab mapping — surfaced so the map can be
   // extended rather than silently dropping evidence from the registry
   unmappedDocTypes: string[];
-}
-
-function serviceClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  );
 }
 
 export async function buildExhibitRegistry(applicationId: string): Promise<ExhibitRegistry> {
