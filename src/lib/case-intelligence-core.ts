@@ -32,7 +32,8 @@
  * llm_cost_log).
  */
 
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { createServiceClient as serviceClient } from '@/lib/supabase-service';
 import { createHash } from 'node:crypto';
 import { callTier1Model } from './llm-client';
 import { retrieveDoctrine, formatDoctrineForPrompt, type DoctrineChunk } from './doctrine-retrieval';
@@ -63,14 +64,6 @@ export interface CaseModelResult {
   dataState: 'sparse' | 'partial' | 'substantial' | 'complete';
   dimensions: CaseModelDimensions;
   signalsPresent: Record<string, boolean>;
-}
-
-function serviceClient(): SupabaseClient {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  );
 }
 
 function emptyDimensions(): CaseModelDimensions {
