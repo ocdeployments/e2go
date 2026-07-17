@@ -18,7 +18,7 @@
  * Result stored on document_generation_jobs.consistency_result (jsonb).
  */
 
-import { createClient } from '@supabase/supabase-js';
+import { createServiceClient as serviceClient } from '@/lib/supabase-service';
 import { callTier2Model } from './llm-client';
 import type { DocumentType } from '@/types/generation';
 import { DOCUMENT_TYPE_LABELS } from '@/types/generation';
@@ -242,14 +242,6 @@ If all documents are consistent with the narrative, return: { "semantic_issues":
 }
 
 // ── Main entry point ──────────────────────────────────────────────────────────
-
-function serviceClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  );
-}
 
 export async function runCanonicalConsistencySweep(
   applicationId: string,
