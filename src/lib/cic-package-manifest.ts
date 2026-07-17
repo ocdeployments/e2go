@@ -14,7 +14,7 @@
  *   - CIC-P.4 package assembly (only certified/uploaded tabs are included)
  */
 
-import { createClient } from '@supabase/supabase-js';
+import { createServiceClient as serviceClient } from '@/lib/supabase-service';
 import type { DocumentType } from '@/types/generation';
 import { DOCUMENT_TYPE_LABELS } from '@/types/generation';
 
@@ -108,14 +108,6 @@ const TAB_TEMPLATES: TabTemplate[] = [
   { label: 'Business Records',              description: 'Business plan, financials, or market research provided by client',       source: 'client_provided', uploadedDocTypes: ['business_plan'],              alwaysRequired: false },
   { label: 'Supporting Evidence',           description: 'Additional supporting documents provided by the client',                 source: 'client_provided', uploadedDocTypes: ['territory_analysis','acquisition_financials'], alwaysRequired: false },
 ];
-
-function serviceClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  );
-}
 
 export async function buildPackageManifest(applicationId: string): Promise<PackageManifest> {
   const supabase = serviceClient();
