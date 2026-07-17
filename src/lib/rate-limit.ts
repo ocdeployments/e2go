@@ -38,6 +38,10 @@ const PROFILES: Record<RateLimitProfile, { requests: number; window: string }> =
   'gap-analysis-run': { requests: 10,  window: '10 m' },
 };
 
+// Profiles that fail CLOSED (block) when Redis is unavailable — unbounded
+// LLM cost is worse than temporary unavailability. Everything else fails open.
+const COST_CRITICAL: RateLimitProfile[] = ['generate', 'fdd'];
+
 const limiters = new Map<RateLimitProfile, Ratelimit>();
 
 function getRedis(): Redis | null {
@@ -90,15 +94,26 @@ export async function checkRateLimit(
 
   if (!limiter) {
     // Upstash not configured — fail CLOSED on cost-critical profiles, open on others
-    const costCritical: RateLimitProfile[] = ['generate', 'fdd'];
-    if (costCritical.includes(profile)) {
+    if (COST_CRITICAL.includes(profile)) {
       console.error(`[rate-limit] Upstash not configured — blocking ${profile} to prevent unbounded cost. Set UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN.`);
       return { allowed: false, remaining: 0, reset: 0 };
     }
     return { allowed: true, remaining: 999, reset: 0 };
   }
 
-  const result = await limiter.limit(identifier);
+  let result;
+  try {
+    result = await limiter.limit(identifier);
+  } catch (err) {
+    // Redis unreachable or auth failure (e.g. WRONGPASS) — a limiter outage
+    // must not turn every rate-limited route into a 500. Apply the same
+    // policy as the unconfigured case: closed for cost-critical, open else.
+    console.error(`[rate-limit] Redis error on ${profile} — ${COST_CRITICAL.includes(profile) ? 'failing closed' : 'failing open'}:`, err instanceof Error ? err.message : err);
+    if (COST_CRITICAL.includes(profile)) {
+      return { allowed: false, remaining: 0, reset: 0 };
+    }
+    return { allowed: true, remaining: 999, reset: 0 };
+  }
 
   return {
     allowed: result.success,
