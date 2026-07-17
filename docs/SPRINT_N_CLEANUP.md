@@ -58,10 +58,14 @@ not source.
 
 ## N-3 — Delete dead code (VERY LOW RISK)
 
-**Problem:** four files have zero references anywhere in `src/`, `scripts/`,
+**Problem:** files with zero references anywhere in `src/`, `scripts/`,
 or tests (verified by name-grep, not just import-grep):
 
-- `src/lib/smoke.ts` (13 lines)
+- ~~`src/lib/smoke.ts`~~ — **NOT dead, deletion reverted.**
+  `tests/smoke/smoke.spec.ts` (Playwright, run via `npm run qa`) imports
+  `SMOKE_ROUTES` from it. jest doesn't cover `tests/`, so the pre-commit
+  hook passed on the deletion; `tsc --noEmit` caught it. Lesson: dead-code
+  verification must include `tests/` and anything only `npm run qa` touches.
 - `src/lib/timeline-service.ts` (128 lines)
 - `src/lib/visibilityRules.ts` (28 lines)
 - `src/components/faq-section.tsx` (216 lines — superseded by `FaqWidget`)
@@ -145,10 +149,15 @@ N-6 if unblocked → N-7. N-5 waits on Romy.
 
 ## Status
 
-- N-1: ⏳ not started
-- N-2: ⏳ not started
-- N-3: ⏳ not started
-- N-4: ⏳ not started
+- N-1: ✅ done — commit `ec21720`; git status clean, cli-latest no longer tracked
+- N-2: ✅ done — commit `f672a59`
+- N-3: ✅ done — timeline-service, visibilityRules, faq-section deleted;
+  smoke.ts deletion reverted (live Playwright consumer — see N-3 note above)
+- N-4: ✅ done — commit `8b4ec38`; score-sync.ts deleted, PackageSummary
+  comment now names the component as single source of truth
 - N-5: ⏳ open decision (Romy)
 - N-6: ⏳ gated on prod redeploy confirmation
 - N-7: ⏳ not started
+
+Phase 0/1 close-out verified July 17: `tsc --noEmit` clean, jest 175/175
+per commit, `npm run build` clean (184 pages).
