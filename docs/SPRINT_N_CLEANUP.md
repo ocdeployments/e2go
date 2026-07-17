@@ -162,20 +162,47 @@ N-6 if unblocked → N-7. N-5 waits on Romy.
 - N-4: ✅ done — commit `8b4ec38`; score-sync.ts deleted, PackageSummary
   comment now names the component as single source of truth
 - N-5: ⏳ open decision (Romy)
-- N-6: 🔴 GATE FAILED — **`UPSTASH_REDIS_REST_URL` is EMPTY in Vercel
-  Production** (verified July 17 via `vercel env pull`: var name exists,
-  value length 0; the TOKEN pulls fine at 135 chars, so this is not a pull
-  artifact). Session 127's `vercel env add` evidently captured an empty
-  value, and the M-4 note that "Preview had it" is wrong — the URL exists
-  in no environment and `.env.local` has only the TOKEN. Consequence:
-  even after the July 16 production deploy, `generate/start`,
-  `renewal/generate`, `fdd/extract`, `fdd/score` still 429 on every prod
-  request (generate/fdd profiles fail closed). **Only Romy can fix:** copy
-  the REST URL from console.upstash.com (database → REST API), run
-  `vercel env rm UPSTASH_REDIS_REST_URL production` then `vercel env add
-  UPSTASH_REDIS_REST_URL` for Production + Development (+ Preview), add it
-  to `.env.local` too, then redeploy production. N-6's rate-limit rollout
-  stays blocked until a post-fix prod request succeeds.
+- N-6: ✅ code shipped July 17 (second half of Session 128) — see the
+  UPSTASH section below for the remaining ops step (token mismatch, Romy).
+  Romy supplied the REST URL (`https://desired-leopard-67358.upstash.io`);
+  it is now set and pull-verified in Production/Development/Preview and
+  `.env.local`. Route rollout: new `fdd-analysis` profile (10 req/60 min,
+  fail-OPEN — deliberately not in the cost-critical fail-closed list, and
+  deliberately NOT the 3-req `fdd` profile, which extract+score already
+  consume) applied to `market-analysis` POST, `fdd/report`,
+  `fdd/territory`, `fdd/compare`; `documents/extract` uses the existing
+  `parse-doc` profile (SSE error pattern mirroring `fdd/extract`). One
+  commit per route. Because all five use fail-open profiles, they are safe
+  in production even while Redis creds are broken.
+
+### UPSTASH — remaining ops fix (Romy, July 17 evening state)
+
+1. **Root cause of Session 127's "empty var":** Vercel CLI 54 defaults to
+   `--non-interactive` when it detects an agent, which silently ignores
+   piped stdin on `vercel env add` and stores an EMPTY value while
+   printing success. Always use `--value='…'` (and `--no-sensitive`, else
+   Production/Preview store as sensitive and `vercel env pull` shows `""`
+   even when the value is fine).
+2. **URL: FIXED.** Set via `--value` + `--no-sensitive` in all three envs
+   and `.env.local` (backup taken first); pull-verified non-empty.
+3. **🔴 TOKEN: MISMATCHED — only Romy can fix.** With the real URL in
+   place, Upstash answers `WRONGPASS invalid or missing auth token`: the
+   135-char `UPSTASH_REDIS_REST_TOKEN` provisioned 34 days ago does NOT
+   belong to the `desired-leopard-67358` database. Fix: console.upstash.com
+   → desired-leopard-67358 → REST API → copy the TOKEN, then for each of
+   production/development/preview:
+   `vercel env add UPSTASH_REDIS_REST_TOKEN <env> --value='<token>' --no-sensitive --force --yes`
+   and update the token line in `.env.local`. Then redeploy production
+   (dashboard → Deployments → ⋯ → Redeploy; the CLI redeploy was
+   permission-blocked for the agent).
+4. **Hardening shipped:** `checkRateLimit` no longer throws on Redis
+   errors (WRONGPASS live-tested → every rate-limited route returned 500).
+   It now applies the unconfigured-case policy on error: generate/fdd fail
+   closed, everything else fails open. Verified live on the dev server.
+5. **Still pending final verification:** after the token fix + redeploy,
+   confirm a prod `generate/start` request no longer 429s, and optionally
+   an 11-request spam of `faq/ask` returns 429 on #11 (real Redis
+   enforcement).
 - N-7: ✅ done (item 2 closed as no-change-needed) —
   1. `generate/acknowledge` rewritten to `createSupabaseServerClient`
      (commit `6a2fd26`); verified live: logged-out POST → 401, logged-in

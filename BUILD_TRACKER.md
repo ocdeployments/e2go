@@ -1,6 +1,6 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** July 17, 2026 — Session 128: **Sprint N (cleanup + access polish) executed — all tasks done except N-5/N-6.** 🔴 **P0 FOR ROMY: Session 127's rate-limit fix did NOT land — `UPSTASH_REDIS_REST_URL` was added to Vercel Production with an EMPTY value** (verified via `vercel env pull`: name present, value length 0; the URL exists in no environment and `.env.local` has only the TOKEN). Production `generate/start`, `renewal/generate`, `fdd/extract`, `fdd/score` are still 429-ing on every request even after the July 16 redeploy. Fix: copy the REST URL from console.upstash.com → `vercel env rm UPSTASH_REDIS_REST_URL production` → `vercel env add` for Production/Development/Preview → add to `.env.local` → redeploy. See `docs/SPRINT_N_CLEANUP.md` N-6. **Next agent: Sprint M-2 (Sentry rollout) or M-5; N-6 rate-limit rollout stays blocked until the env fix + redeploy is confirmed.**
+**Last Updated:** July 17, 2026 — Session 128 (cont.): **Sprint N fully shipped including N-5 (PWAInstallPrompt deleted) and N-6 (5 routes rate-limited via new fail-open `fdd-analysis` profile + `parse-doc`).** Upstash URL is now set + pull-verified in all Vercel envs and `.env.local` (Session 127's empty var was Vercel CLI 54 swallowing piped stdin in agent mode — always use `--value` + `--no-sensitive`). 🔴 **P0 FOR ROMY — one step left: the 34-day-old `UPSTASH_REDIS_REST_TOKEN` does not match the `desired-leopard-67358` database (live `WRONGPASS`). Copy the REST token from console.upstash.com → `vercel env add UPSTASH_REDIS_REST_TOKEN <env> --value='<token>' --no-sensitive --force --yes` for production/development/preview → update `.env.local` → redeploy production (dashboard Redeploy; CLI redeploy is permission-blocked for agents).** Until then prod `generate`/`fdd` routes keep 429-ing (fail-closed); all other rate-limited routes now fail OPEN on Redis errors thanks to new hardening in `rate-limit.ts` (a WRONGPASS previously 500'd every rate-limited route — live-tested). Details: `docs/SPRINT_N_CLEANUP.md` §UPSTASH. **Next agent: Sprint M-2 (Sentry rollout) or M-5.**
 
 ---
 
@@ -36,7 +36,7 @@ Status section for per-task detail). Every commit gated on jest 175/175
 **Found (not fixable from this machine):** the N-6 gate check exposed that
 `UPSTASH_REDIS_REST_URL` is EMPTY in Vercel Production (see banner above).
 
-**Open:** N-6 (blocked on env fix + redeploy).
+**Open:** ~~N-6~~ — shipped later same day (see third block below).
 
 **Session 128 continued — N-5 resolved + second orphan sweep (same day):**
 - **N-5:** Romy chose delete. `PWAInstallPrompt.tsx` removed (`05c370b`) —
@@ -62,6 +62,22 @@ Status section for per-task detail). Every commit gated on jest 175/175
   `docs/SPRINT_N_CLEANUP.md` §N-8.
 - **Follow-up logged (not done):** shared Bearer-parse helper for the 6
   routes with inline `Authorization` parsing — auth-path churn deferred.
+
+**Session 128, third block — N-6 shipped + Upstash root causes (July 17 evening):**
+- Romy supplied the Upstash REST URL. Set + pull-verified in all three
+  Vercel envs and `.env.local` (backup first). Root cause of Session 127's
+  empty var found: Vercel CLI 54 agent-mode `--non-interactive` silently
+  drops piped stdin on `env add` — use `--value` + `--no-sensitive`.
+- **N-6 done:** new `fdd-analysis` profile (10/60 min, fail-open; the
+  3-req `fdd` profile would self-block a normal extract→score→report flow)
+  on `market-analysis`, `fdd/report`, `fdd/territory`, `fdd/compare`;
+  `parse-doc` on `documents/extract`. One commit per route; jest + tsc
+  per commit; build clean 184/184.
+- **New P0 discovered + hardened:** live test surfaced `WRONGPASS` — the
+  existing TOKEN belongs to a different Upstash database than the URL.
+  Before hardening, that exception 500'd every rate-limited route;
+  `checkRateLimit` now catches Redis errors and applies fail-open/closed
+  policy (verified live). Token fix is Romy-only — see banner.
 
 ---
 
