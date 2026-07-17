@@ -17,7 +17,7 @@
  * change in a dimension only affects documents that cover that dimension.
  */
 
-import { createClient } from '@supabase/supabase-js';
+import { createServiceClient as serviceClient } from '@/lib/supabase-service';
 import type { DocumentType } from '@/types/generation';
 import { DOCUMENT_TYPE_LABELS } from '@/types/generation';
 
@@ -116,14 +116,6 @@ function describeChange(
 }
 
 // ── Main entry point ──────────────────────────────────────────────────────────
-
-function serviceClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  );
-}
 
 export async function computeChangeImpact(
   applicationId: string,
