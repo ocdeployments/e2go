@@ -85,16 +85,22 @@ drift.
 so it no longer points at a deleted file (state the logic inline is the
 single source). One commit.
 
-## N-5 — PWAInstallPrompt decision (OPEN — needs Romy)
+## N-5 — PWAInstallPrompt decision (RESOLVED — Romy chose delete)
 
 **Problem:** `src/components/PWAInstallPrompt.tsx` (153 lines, the
-"install E2go to your home screen" banner) is orphaned — never mounted, so
-users never see it. But PWA is a listed live feature, so this is a product
-decision, not cleanup.
+"install E2go to your home screen" banner) was orphaned — never mounted, so
+users never saw it.
 
-**Task:** NOT deleted in this sprint. Romy decides: (a) mount it in the root
-layout as a small feature task, or (b) delete it. Until decided, leave the
-file untouched.
+**Resolution (July 17):** Romy decided to delete rather than mount. Mounting
+would NOT have "just worked": `public/icons/` doesn't exist even though
+`manifest.json` references `/icons/icon-192.png` and `icon-512.png` (so the
+Android install prompt would never fire), the manifest `theme_color` is the
+old teal `#0D9488`, and the component used banned design tokens (white
+background, `#004ac6`, rounded corners). Deleted in commit `05c370b`.
+`manifest.json`, `public/sw.js`, and `ServiceWorkerRegistration` in the root
+layout remain — they work independently of the deleted banner. If PWA
+install UX is ever revived, it needs a rebuild on the Obsidian Gold system
+plus real icons, not a remount.
 
 ## N-6 — Sprint M-4 step 2: rate-limit the 5 uncovered LLM routes (LOW RISK, GATED)
 
@@ -190,6 +196,66 @@ N-6 if unblocked → N-7. N-5 waits on Romy.
 Phase 0/1 close-out verified July 17: `tsc --noEmit` clean, jest 175/175
 per commit, `npm run build` clean (184 pages).
 
-Sprint close-out July 17 (Session 128): all tasks done except N-5 (Romy
-decision) and N-6 (blocked on the empty prod env var above). Final state:
-`tsc --noEmit` clean, jest 175/175, `npm run build` clean 184/184 pages.
+Sprint close-out July 17 (Session 128): all tasks done except N-6 (blocked
+on the empty prod env var above). Final state: `tsc --noEmit` clean, jest
+175/175, `npm run build` clean 184/184 pages.
+
+---
+
+## N-8 — Second orphan sweep (July 17, same session, after N-5 deletion)
+
+Romy asked for the full refactoring audit to be re-run after the
+PWAInstallPrompt deletion. Method: name-grep every component/hook/lib
+basename across `src/`, `scripts/`, AND `tests/` (the smoke.ts lesson),
+iterated to closure because deletions expose new orphans; candidates
+confirmed via `git grep` on historical commits (all were last referenced by
+the June 24–28 pre-K-1/K-2 dashboard, superseded by the rebuild).
+
+**Deleted — 23 files, ~5,200 lines, jest 175/175 + tsc clean per commit:**
+
+- `PWAInstallPrompt.tsx` (N-5, `05c370b`)
+- First pass, 14 components (3 commits, 3,144 lines):
+  `apply/{CaseFileHeader, DocumentUploadCard, GenerateStrip, QuestionPanel,
+  SectionSideNav}`, `dashboard/{DashboardClient, EligibilityBadges,
+  JourneySpine, LockedSectionCards}`, `journey/JourneyWizard`,
+  `landing/FAQSection`, `results/{DocumentTeaser, OutcomeSummaryCard}`,
+  `simulator/CaseGapsForm`
+- Second pass, 6 files (1,808 lines): `PartialProfileTeaser.tsx`,
+  `dashboard/{CaseCommandPanel, CaseRecordSection, FolderStack}.tsx`
+  (only reachable from first-pass deletions), `hooks/useAutoSave.ts`,
+  `hooks/useSpeechInput.ts` (live apply pages implement their own
+  debounced autosave)
+- `src/lib/strength-badges.ts` (64 lines; its only consumer was a deleted
+  dashboard file)
+- `public/data/treaty_countries.json` + `public/data/flag_explanations.json`
+  (`79ab3ce`) — zero runtime references; everything imports from `src/data`
+
+**Deliberately retained (do not re-flag as dead):**
+
+- `src/lib/entitlements.ts` — orphaned in code, but it is the documented
+  read-model for the parked pricing/packaging domain (the Stripe webhook
+  comment names `getUserEntitlements()` as the intended reader). Pricing
+  work is deferred until Romy initiates it; delete or wire up then.
+- `src/lib/doctrine-retrieval.ts` local `serviceClient()` — memoizes, a
+  real behavioral difference from the shared helper.
+
+**Flagged for Romy — public/data module0 copies (LOCKED, untouched):**
+
+`public/data/module0_questions.json` (June 18) has DIVERGED from the live
+`src/data/module0_questions.json` (June 26) — the app imports the src copy;
+the public copy is stale. `public/data/module0_scoring_logic.json` has no
+src counterpart (a copy also sits at repo root). Both are publicly
+downloadable at `e2go.app/data/…`, which exposes the scoring logic to
+anyone. Recommendation when Romy is ready: confirm `src/data` +
+root-level copies are the canonical locked artifacts, then remove the
+`public/data` copies so the scoring logic is no longer world-readable.
+Locked-file rule means this needs Romy's explicit go-ahead.
+
+**Logged as follow-up (not done — auth-path churn at a critical stage):**
+
+Six API routes contain the same inline Bearer-token parse
+(`request.headers.get('Authorization')…replace('Bearer ', '')` +
+`supabase.auth.getUser(token)`); only `dashboard/outcome` wraps it in a
+`getAuthUser()` function. A shared `getBearerUser(request)` helper in
+`src/lib` would remove the duplication, but it touches six auth paths and
+each would need live verification — deferred to a future sprint.

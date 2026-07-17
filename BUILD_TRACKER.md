@@ -36,8 +36,32 @@ Status section for per-task detail). Every commit gated on jest 175/175
 **Found (not fixable from this machine):** the N-6 gate check exposed that
 `UPSTASH_REDIS_REST_URL` is EMPTY in Vercel Production (see banner above).
 
-**Open:** N-5 (mount or delete the orphaned `PWAInstallPrompt.tsx` banner —
-Romy's product call), N-6 (blocked on env fix + redeploy).
+**Open:** N-6 (blocked on env fix + redeploy).
+
+**Session 128 continued — N-5 resolved + second orphan sweep (same day):**
+- **N-5:** Romy chose delete. `PWAInstallPrompt.tsx` removed (`05c370b`) —
+  mounting would not have worked anyway (`public/icons/` missing so the
+  Android install prompt never fires; old teal theme_color; banned design
+  tokens). Manifest + service worker remain functional independently.
+- **Second orphan sweep (full audit re-run per Romy):** deleted 23 files,
+  ~5,200 lines total — 14 pre-K-rebuild components (apply/dashboard/
+  journey/landing/results/simulator, all superseded June 24–28), then 4
+  more components + `useAutoSave`/`useSpeechInput` hooks exposed by the
+  first pass, `strength-badges.ts`, and 2 unreferenced `public/data`
+  duplicates (`79ab3ce`). Every commit jest 175/175 + tsc clean; final
+  `npm run build` clean 184/184.
+- **Retained on purpose:** `entitlements.ts` (parked pricing read-model),
+  `doctrine-retrieval.ts` local client (memoizes).
+- **🔶 For Romy (LOCKED files, untouched):** `public/data/module0_questions.json`
+  is a STALE June 18 copy that has diverged from the live
+  `src/data/module0_questions.json` (June 26 — the one the quiz imports),
+  and `public/data/module0_scoring_logic.json` is publicly downloadable at
+  `e2go.app/data/…` (scoring-logic disclosure). Recommend removing the
+  public copies once you confirm src/root copies are canonical — needs your
+  explicit go-ahead per the locked-file rule. Detail in
+  `docs/SPRINT_N_CLEANUP.md` §N-8.
+- **Follow-up logged (not done):** shared Bearer-parse helper for the 6
+  routes with inline `Authorization` parsing — auth-path churn deferred.
 
 ---
 
