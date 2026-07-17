@@ -3,6 +3,7 @@ import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { analyseTeritoryForBusiness } from '@/lib/fdd-territory-engine';
 import type { TerritoryAnalysis } from '@/lib/fdd-territory-engine';
 import { resolvePrimaryApplicationId } from '@/lib/resolve-application';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 export async function GET(req: NextRequest) {
   const supabase = await createSupabaseServerClient();
@@ -86,6 +87,14 @@ export async function POST(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const rl = await checkRateLimit(user.id, 'fdd-analysis');
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: 'Rate limit exceeded. Please wait before running another market analysis.' },
+      { status: 429 }
+    );
   }
 
   let body: {
