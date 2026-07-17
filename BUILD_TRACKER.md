@@ -1,6 +1,43 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** July 15, 2026 — Session 127: **Sprint M-1, M-3, M-4 shipped.** M-4 uncovered two live production bugs (generate/fdd routes 429-ing on every request due to a missing `UPSTASH_REDIS_REST_URL`; CAPTCHA silently skipped on every signup due to an env-var name mismatch) — both fixed, see Session 127 entry below. **A production redeploy is still needed to pick up the new Upstash URL — flag this to Romy if not already done. Next agent: continue Sprint M at M-2 (Sentry rollout) or M-5 (schema consolidation).**
+**Last Updated:** July 17, 2026 — Session 128: **Sprint N (cleanup + access polish) executed — all tasks done except N-5/N-6.** 🔴 **P0 FOR ROMY: Session 127's rate-limit fix did NOT land — `UPSTASH_REDIS_REST_URL` was added to Vercel Production with an EMPTY value** (verified via `vercel env pull`: name present, value length 0; the URL exists in no environment and `.env.local` has only the TOKEN). Production `generate/start`, `renewal/generate`, `fdd/extract`, `fdd/score` are still 429-ing on every request even after the July 16 redeploy. Fix: copy the REST URL from console.upstash.com → `vercel env rm UPSTASH_REDIS_REST_URL production` → `vercel env add` for Production/Development/Preview → add to `.env.local` → redeploy. See `docs/SPRINT_N_CLEANUP.md` N-6. **Next agent: Sprint M-2 (Sentry rollout) or M-5; N-6 rate-limit rollout stays blocked until the env fix + redeploy is confirmed.**
+
+---
+
+## Session 128 — Sprint N: Cleanup, Dead Code, Access Polish (July 17, 2026)
+
+**Branch:** dev. Full sprint contract in `docs/SPRINT_N_CLEANUP.md` (see its
+Status section for per-task detail). Every commit gated on jest 175/175
+(pre-commit hook); close-out verified with `tsc --noEmit` clean and
+`npm run build` clean at 184/184 pages.
+
+**Shipped:**
+- **N-1/N-2:** untracked ~20 root screenshot PNGs, ad-hoc debug scripts, and
+  `supabase/.temp/cli-latest` (the cause of the permanently dirty git
+  status); ignored `docs/generated-output/`.
+- **N-3:** deleted dead `timeline-service.ts`, `visibilityRules.ts`,
+  `faq-section.tsx`. **Correction:** `smoke.ts` deletion was reverted —
+  `tests/smoke/smoke.spec.ts` (Playwright, via `npm run qa`) imports it;
+  jest doesn't cover `tests/`, `tsc` caught it. Dead-code checks must
+  include `tests/`.
+- **N-4:** deleted never-imported `score-sync.ts`; `PackageSummary.tsx`
+  comment now marks its inline copy as the single source of truth.
+- **N-7.1:** `generate/acknowledge` off hand-rolled cookie-regex parsing,
+  onto `createSupabaseServerClient` — verified live (logged-out 401;
+  logged-in + bogus id → 404 past auth).
+- **N-7.2:** closed as no-change-needed — the last `getSession()` (documents
+  page) is client-side JWT retrieval for Bearer headers, itself the old F9
+  P0 fix; swapping to `getUser()` would break it.
+- **N-7.3:** consolidated 7 duplicate local `serviceClient()` definitions
+  (6 lib files + `dashboard/outcome`) to shared `createServiceClient()`,
+  one commit each; `doctrine-retrieval.ts` left alone (memoizes
+  deliberately). Verified live on /case-profile — all dashboard APIs 200.
+
+**Found (not fixable from this machine):** the N-6 gate check exposed that
+`UPSTASH_REDIS_REST_URL` is EMPTY in Vercel Production (see banner above).
+
+**Open:** N-5 (mount or delete the orphaned `PWAInstallPrompt.tsx` banner —
+Romy's product call), N-6 (blocked on env fix + redeploy).
 
 ---
 

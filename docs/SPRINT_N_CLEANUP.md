@@ -170,7 +170,26 @@ N-6 if unblocked → N-7. N-5 waits on Romy.
   UPSTASH_REDIS_REST_URL` for Production + Development (+ Preview), add it
   to `.env.local` too, then redeploy production. N-6's rate-limit rollout
   stays blocked until a post-fix prod request succeeds.
-- N-7: ⏳ not started
+- N-7: ✅ done (item 2 closed as no-change-needed) —
+  1. `generate/acknowledge` rewritten to `createSupabaseServerClient`
+     (commit `6a2fd26`); verified live: logged-out POST → 401, logged-in
+     POST with unknown application_id → 404.
+  2. **No change needed** — the `getSession()` in
+     `documents/[applicationId]/page.tsx` is client-side token retrieval
+     for Bearer headers (server validates via `getUser(token)`); it was
+     itself the deliberate F9 P0 fix (getAuthToken returned UUID → real
+     JWT). `getUser()` can't return a JWT, so the originally proposed swap
+     would break all six call sites. Item was a misdiagnosis.
+  3. 7 local `serviceClient()` definitions consolidated to the shared
+     `createServiceClient()` (6 identical lib copies + `dashboard/outcome`
+     route, one commit each). `doctrine-retrieval.ts` deliberately left
+     alone — its local copy memoizes the client, a real behavioral
+     difference. Verified live: /case-profile dashboard APIs all 200,
+     no console errors.
 
 Phase 0/1 close-out verified July 17: `tsc --noEmit` clean, jest 175/175
 per commit, `npm run build` clean (184 pages).
+
+Sprint close-out July 17 (Session 128): all tasks done except N-5 (Romy
+decision) and N-6 (blocked on the empty prod env var above). Final state:
+`tsc --noEmit` clean, jest 175/175, `npm run build` clean 184/184 pages.
