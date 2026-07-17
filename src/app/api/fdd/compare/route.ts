@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { matchInvestorProfile } from '@/lib/fdd-profile-match-engine';
+import { checkRateLimit } from '@/lib/rate-limit';
 import type { FddAnalysis, FddExtractedFields } from '@/types/fdd';
 import type { ScoringResult } from '@/lib/fdd-scoring-engine';
 import type { TerritoryAnalysis } from '@/lib/fdd-territory-engine';
@@ -15,6 +16,14 @@ export async function POST(request: NextRequest) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const rl = await checkRateLimit(user.id, 'fdd-analysis');
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: 'Rate limit exceeded. Please wait before running another comparison.' },
+        { status: 429 }
+      );
     }
 
     const body = await request.json() as { fdd_ids: string[] };
