@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
+import { checkRateLimit } from '@/lib/rate-limit';
 import { buildCaseProfile } from '@/lib/case-profile';
 import { extractTextFromBuffer } from '@/lib/text-extraction';
 import {
@@ -43,6 +44,13 @@ export async function POST(request: NextRequest) {
 
         if (authError || !user) {
           sendEvent({ event: 'error', data: { message: 'Unauthorized' } });
+          controller.close();
+          return;
+        }
+
+        const rl = await checkRateLimit(user.id, 'parse-doc');
+        if (!rl.allowed) {
+          sendEvent({ event: 'error', data: { message: 'Rate limit exceeded. Please wait before extracting more documents.' } });
           controller.close();
           return;
         }
