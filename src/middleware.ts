@@ -47,6 +47,40 @@ const quizLimiter = redis
   ? new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(3, '60 m'), prefix: 'rl:quiz' })
   : null;
 
+// ---------------------------------------------------------------------------
+// Safe Redis wrappers — a Redis outage or auth failure (e.g. WRONGPASS) must
+// never 500 the middleware: rate limits fail open, cache reads fall back to
+// the DB path, cache writes are dropped.
+// ---------------------------------------------------------------------------
+async function safeLimit(limiter: Ratelimit, key: string): Promise<boolean> {
+  try {
+    const { success } = await limiter.limit(key);
+    return success;
+  } catch (err) {
+    console.error('[middleware] Redis rate-limit error — failing open:', err instanceof Error ? err.message : err);
+    return true;
+  }
+}
+
+async function safeCacheGet<T>(key: string): Promise<T | null> {
+  if (!redis) return null;
+  try {
+    return await redis.get<T>(key);
+  } catch (err) {
+    console.error('[middleware] Redis cache read error — treating as miss:', err instanceof Error ? err.message : err);
+    return null;
+  }
+}
+
+async function safeCacheSet(key: string, value: unknown, ex: number): Promise<void> {
+  if (!redis) return;
+  try {
+    await redis.set(key, value, { ex });
+  } catch (err) {
+    console.error('[middleware] Redis cache write error — skipping:', err instanceof Error ? err.message : err);
+  }
+}
+
 // In-memory fallback (single-instance dev only)
 const devLimits = new Map<string, { count: number; resetAt: number }>();
 
@@ -69,7 +103,7 @@ export async function middleware(req: NextRequest) {
   // Rate limit login route
   if ((pathname === '/login' || pathname === '/api/auth/v1/token') && process.env.NODE_ENV === 'production') {
     if (loginLimiter) {
-      const { success } = await loginLimiter.limit(ip);
+      const success = await safeLimit(loginLimiter, ip);
       if (!success) return NextResponse.json({ error: 'Too many attempts. Please wait a few minutes and try again.' }, { status: 429 });
     } else {
       const allowed = devCheckRateLimit(`login:${ip}`, 5, 15 * 60 * 1000);
@@ -80,7 +114,7 @@ export async function middleware(req: NextRequest) {
   // Rate limit quiz submission
   if (pathname === '/api/quiz/submit' || pathname === '/api/email/results') {
     if (quizLimiter) {
-      const { success } = await quizLimiter.limit(ip);
+      const success = await safeLimit(quizLimiter, ip);
       if (!success) return NextResponse.json({ error: 'Too many attempts. Please wait a few minutes and try again.' }, { status: 429 });
     } else {
       const allowed = devCheckRateLimit(`quiz:${ip}`, 3, 60 * 60 * 1000);
@@ -162,7 +196,7 @@ export async function middleware(req: NextRequest) {
   // PAID_ROUTES handle this within their own cache block below.
   // ---------------------------------------------------------------------------
   if (user && AUTH_ROUTES.some(r => pathname.startsWith(r))) {
-    const cachedAccess = redis ? await redis.get<AccessCache>(accessCacheKey(user.id)) : null;
+    const cachedAccess = await safeCacheGet<AccessCache>(accessCacheKey(user.id));
     if (cachedAccess?.deleted) {
       return NextResponse.redirect(new URL('/account-recovery', req.url));
     }
@@ -174,7 +208,7 @@ export async function middleware(req: NextRequest) {
         .maybeSingle();
       if (profile?.deleted_at) {
         const access: AccessCache = { full: false, sim: false, fdd: false, deleted: true };
-        if (redis) await redis.set(accessCacheKey(user.id), access, { ex: 86400 });
+        await safeCacheSet(accessCacheKey(user.id), access, 86400);
         return NextResponse.redirect(new URL('/account-recovery', req.url));
       }
     }
@@ -185,11 +219,7 @@ export async function middleware(req: NextRequest) {
   // Cached in Upstash Redis for 30 min; invalidated by stripe webhook on payment
   // ---------------------------------------------------------------------------
   if (user && PAID_ROUTES.some(r => pathname.startsWith(r))) {
-    let access: AccessCache | null = null;
-
-    if (redis) {
-      access = await redis.get<AccessCache>(accessCacheKey(user.id));
-    }
+    let access: AccessCache | null = await safeCacheGet<AccessCache>(accessCacheKey(user.id));
 
     if (!access) {
       // Cache miss — fetch soft-delete status and payment status in parallel
@@ -201,7 +231,7 @@ export async function middleware(req: NextRequest) {
       if (profile?.deleted_at) {
         // Soft-deleted — cache with long TTL and redirect
         access = { full: false, sim: false, fdd: false, deleted: true };
-        if (redis) await redis.set(accessCacheKey(user.id), access, { ex: 86400 });
+        await safeCacheSet(accessCacheKey(user.id), access, 86400);
         return NextResponse.redirect(new URL('/account-recovery', req.url));
       }
 
@@ -227,9 +257,7 @@ export async function middleware(req: NextRequest) {
 
       access = { full: hasFullAccess, sim: hasSimulatorAccess, fdd: hasFddAccess };
 
-      if (redis) {
-        await redis.set(accessCacheKey(user.id), access, { ex: CACHE_TTL_SECONDS });
-      }
+      await safeCacheSet(accessCacheKey(user.id), access, CACHE_TTL_SECONDS);
     }
 
     if (access.deleted) {
@@ -273,10 +301,8 @@ export async function middleware(req: NextRequest) {
   if (user && pathname.startsWith('/apply')) {
     let termsAccepted = false;
 
-    if (redis) {
-      const cached = await redis.get<number>(termsCacheKey(user.id, TERMS_VERSION));
-      termsAccepted = cached === 1;
-    }
+    const cachedTerms = await safeCacheGet<number>(termsCacheKey(user.id, TERMS_VERSION));
+    termsAccepted = cachedTerms === 1;
 
     if (!termsAccepted) {
       const { data: acceptance } = await supabase
@@ -288,9 +314,7 @@ export async function middleware(req: NextRequest) {
 
       if (acceptance) {
         termsAccepted = true;
-        if (redis) {
-          await redis.set(termsCacheKey(user.id, TERMS_VERSION), 1, { ex: CACHE_TTL_SECONDS });
-        }
+        await safeCacheSet(termsCacheKey(user.id, TERMS_VERSION), 1, CACHE_TTL_SECONDS);
       }
     }
 
