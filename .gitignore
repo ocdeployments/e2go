@@ -74,3 +74,11 @@ docs/Anupama/
 docs/AssistingHands Documents/
 docs/Assisting Hands Home Care*.pdf
 .env*
+
+# generated FDD test PDFs (scripts/run-real-fdd.ts output)
+docs/generated-output/
+
+# ad-hoc root debug scripts — local only (untracked in Sprint N-1)
+/check-constraint.mjs
+/check-schema.mjs
+/take-screenshot.js
