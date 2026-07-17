@@ -13,7 +13,7 @@
  */
 
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createServiceClient as serviceClient } from '@/lib/supabase-service';
 
 type OutcomeValue = 'approved' | 'denied' | 'rfe' | 'withdrawal' | 'pending' | 'unknown';
 
@@ -28,13 +28,6 @@ interface OutcomeBody {
   decisiveDimensions?: string[];  // which dimensions drove the decision
   officerNotes?: string;
   consentGiven?: boolean;
-}
-
-function serviceClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
 }
 
 async function getAuthUser(request: Request) {
