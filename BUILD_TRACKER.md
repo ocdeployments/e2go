@@ -78,6 +78,16 @@ Status section for per-task detail). Every commit gated on jest 175/175
   Before hardening, that exception 500'd every rate-limited route;
   `checkRateLimit` now catches Redis errors and applies fail-open/closed
   policy (verified live). Token fix is Romy-only — see banner.
+- **Middleware hardened (a938cb5):** the pre-push Playwright suite failed
+  twice because `src/middleware.ts` had nine unguarded Upstash calls
+  (login/quiz limiters + access/terms caches) — under `next start` the
+  production-only login limiter hit WRONGPASS and 500'd `/login` (and
+  would have 500'd every matched route on Vercel during any Upstash
+  outage). All nine wrapped in safeLimit/safeCacheGet/safeCacheSet:
+  limits fail open, cache errors fall back to DB, writes dropped.
+  Verified `/login` 200 under `next start` with the bad token; pushed to
+  dev with smoke suite 27/27. A Redis outage now degrades performance,
+  never availability.
 
 ---
 

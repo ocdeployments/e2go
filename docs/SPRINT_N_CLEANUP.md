@@ -199,6 +199,19 @@ N-6 if unblocked → N-7. N-5 waits on Romy.
    errors (WRONGPASS live-tested → every rate-limited route returned 500).
    It now applies the unconfigured-case policy on error: generate/fdd fail
    closed, everything else fails open. Verified live on the dev server.
+4b. **Middleware hardened too (a938cb5):** `src/middleware.ts` had NINE
+   unguarded Upstash calls of its own (login/quiz limiters — the login
+   limiter is production-only, so it only fires under `next start`/Vercel —
+   plus access-cache and terms-cache get/set). With the WRONGPASS token
+   those threw inside the middleware and 500'd every matched route
+   sitewide, including `/login` — this is what failed the pre-push
+   Playwright suite twice. All nine now go through `safeLimit` /
+   `safeCacheGet` / `safeCacheSet`: rate limits fail open, cache reads
+   fall back to the DB path, cache writes are dropped. Verified: `/login`
+   200 under `next start` with the bad token; full smoke suite 27/27 on
+   push. Net effect: a total Upstash outage now costs cache performance
+   and rate-limit enforcement (except fail-closed generate/fdd), never
+   availability.
 5. **Still pending final verification:** after the token fix + redeploy,
    confirm a prod `generate/start` request no longer 429s, and optionally
    an 11-request spam of `faq/ask` returns 429 on #11 (real Redis
