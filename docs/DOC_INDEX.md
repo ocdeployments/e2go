@@ -26,4 +26,6 @@
 | src/lib/treatyCountries.ts | Treaty country list, consulate profiles | (To be built) |
 | src/lib/governmentFees.ts | Government fee schedule by country | (To be built) |
 
+| docs/SPRINT_N_CLEANUP.md | Sprint N execution contract — repo hygiene, dead-code removal, access polish tasks N-1…N-7 with gates and status. | Rules, product spec |
+
 Rule: Before creating any new doc, add it to DOC_INDEX.md first and declare what it owns. Never let two files own the same topic.
