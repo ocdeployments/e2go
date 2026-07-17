@@ -18,7 +18,6 @@
  * already-extracted values and explains their relevance.
  */
 
-import type { SupabaseClient } from '@supabase/supabase-js';
 import { createServiceClient as serviceClient } from '@/lib/supabase-service';
 import { callTier1Model } from './llm-client';
 

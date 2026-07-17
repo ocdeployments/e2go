@@ -32,7 +32,6 @@
  * llm_cost_log).
  */
 
-import type { SupabaseClient } from '@supabase/supabase-js';
 import { createServiceClient as serviceClient } from '@/lib/supabase-service';
 import { createHash } from 'node:crypto';
 import { callTier1Model } from './llm-client';
