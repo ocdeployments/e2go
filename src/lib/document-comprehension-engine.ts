@@ -18,7 +18,8 @@
  * already-extracted values and explains their relevance.
  */
 
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { createServiceClient as serviceClient } from '@/lib/supabase-service';
 import { callTier1Model } from './llm-client';
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -92,14 +93,6 @@ const DIMENSION_AUTHORITY: Record<Dimension, string[]> = {
 };
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
-
-function serviceClient(): SupabaseClient {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  );
-}
 
 // Strip symbols + entity suffixes so "450,000" / "450000" / "Care Shepherds LLC"
 // vs "Care Shepherds" don't read as conflicts. (Ported from DocumentImportHub.)
