@@ -156,7 +156,20 @@ N-6 if unblocked → N-7. N-5 waits on Romy.
 - N-4: ✅ done — commit `8b4ec38`; score-sync.ts deleted, PackageSummary
   comment now names the component as single source of truth
 - N-5: ⏳ open decision (Romy)
-- N-6: ⏳ gated on prod redeploy confirmation
+- N-6: 🔴 GATE FAILED — **`UPSTASH_REDIS_REST_URL` is EMPTY in Vercel
+  Production** (verified July 17 via `vercel env pull`: var name exists,
+  value length 0; the TOKEN pulls fine at 135 chars, so this is not a pull
+  artifact). Session 127's `vercel env add` evidently captured an empty
+  value, and the M-4 note that "Preview had it" is wrong — the URL exists
+  in no environment and `.env.local` has only the TOKEN. Consequence:
+  even after the July 16 production deploy, `generate/start`,
+  `renewal/generate`, `fdd/extract`, `fdd/score` still 429 on every prod
+  request (generate/fdd profiles fail closed). **Only Romy can fix:** copy
+  the REST URL from console.upstash.com (database → REST API), run
+  `vercel env rm UPSTASH_REDIS_REST_URL production` then `vercel env add
+  UPSTASH_REDIS_REST_URL` for Production + Development (+ Preview), add it
+  to `.env.local` too, then redeploy production. N-6's rate-limit rollout
+  stays blocked until a post-fix prod request succeeds.
 - N-7: ⏳ not started
 
 Phase 0/1 close-out verified July 17: `tsc --noEmit` clean, jest 175/175
