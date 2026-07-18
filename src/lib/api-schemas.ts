@@ -41,3 +41,7 @@ export type EvaluateRequestBody = z.infer<typeof evaluateRequestSchema>;
 export const fddExtractRequestSchema = z.object({
   fdd_id: z.string().min(1),
 });
+
+export const generateStartRequestSchema = z.object({
+  applicationId: z.string().min(1),
+});

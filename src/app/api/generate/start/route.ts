@@ -4,6 +4,7 @@ import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { isKillSwitchEnabled } from '@/lib/kill-switch';
 import { captureApiError } from '@/lib/capture-error';
+import { generateStartRequestSchema } from '@/lib/api-schemas';
 
 function getSupabase() {
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
@@ -43,15 +44,15 @@ export async function POST(request: Request) {
         { status: 503 }
       );
     }
-    const body = await request.json();
-    const { applicationId } = body;
-
-    if (!applicationId) {
+    const rawBody = await request.json();
+    const parsed = generateStartRequestSchema.safeParse(rawBody);
+    if (!parsed.success) {
       return NextResponse.json(
         { error: 'applicationId is required' },
         { status: 400 }
       );
     }
+    const { applicationId } = parsed.data;
 
     // Verify application belongs to authenticated user
     const { data: application, error: appError } = await supabase
