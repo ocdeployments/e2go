@@ -256,4 +256,16 @@ never "done," just tracked as an ongoing convention once started.
   provisioned database (`WRONGPASS`); see `BUILD_TRACKER.md` P0 banner.
 - M-2: ✅ done, Session 129 — see above.
 - M-5: ✅ done, Session 130 — see above. Migration written, not yet pushed
-  to production. M-6 stays lowest priority, ongoing once started.
+  to production.
+- M-6: 🟡 started, Session 131 — `zod` installed (was not a dependency
+  before this session), `src/lib/api-schemas.ts` created. 3 routes
+  converted so far, one commit each: `simulator/evaluate` (commit
+  `dd49433`), `fdd/extract` (commit `9d9313c`), `generate/start` (commit
+  `625937b`). Remaining LLM-cost/write-heavy routes not yet converted:
+  12 more `simulator/*` routes, 8 more `fdd/*` routes, 9 more
+  `generate/*` routes. Per this doc's own acceptance bar, M-6 is never
+  "done" — this satisfies sprint closure as an ongoing convention now
+  established; continue one route/commit at a time in future sessions.
+
+**Sprint M is now closeable**: M-1, M-2, M-3, M-4, M-5 done; M-6 started
+per its own acceptance criteria above.
