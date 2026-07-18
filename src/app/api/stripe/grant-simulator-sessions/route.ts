@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import Stripe from 'stripe';
+import { captureApiError } from '@/lib/capture-error';
 
 function getSupabase() {
   return createClient(
@@ -115,7 +116,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (fetchErr || !app) {
-      console.error(`grant-simulator-sessions: application not found. appId=${applicationId} userId=${user.id} err=${fetchErr?.message}`);
+      captureApiError(fetchErr ?? new Error('grant-simulator-sessions: application not found'), { route: 'stripe/grant-simulator-sessions', stage: 'fetch-application', userId: user.id, applicationId });
       return NextResponse.json({ error: 'Application not found' }, { status: 404 });
     }
 
@@ -165,7 +166,7 @@ export async function POST(request: NextRequest) {
       sessionsPurchased: updated?.simulator_sessions_purchased ?? newPurchased,
     });
   } catch (err) {
-    console.error('Grant simulator sessions error:', err);
+    captureApiError(err, { route: 'stripe/grant-simulator-sessions', userId: user.id });
     return NextResponse.json({ error: 'Failed to grant sessions' }, { status: 500 });
   }
 }

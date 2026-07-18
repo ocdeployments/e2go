@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import Stripe from 'stripe';
+import { captureApiError } from '@/lib/capture-error';
 
 function getSupabase() {
   return createClient(
@@ -211,12 +212,12 @@ export async function POST(request: NextRequest) {
     });
 
     if (insertError) {
-      console.error('Failed to create pending payment record:', insertError);
+      captureApiError(insertError, { route: 'stripe/create-checkout', stage: 'pending-payment-insert', userId: user.id, applicationId, tierId });
     }
 
     return NextResponse.json({ url: session.url, sessionId: session.id });
   } catch (error) {
-    console.error('Stripe checkout error:', error);
+    captureApiError(error, { route: 'stripe/create-checkout', userId: user.id });
     return NextResponse.json(
       { error: 'Failed to create checkout session' },
       { status: 500 }

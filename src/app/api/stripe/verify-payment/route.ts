@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import Stripe from 'stripe';
 import { Redis } from '@upstash/redis';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
+import { captureApiError } from '@/lib/capture-error';
 
 const redis = process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
   ? new Redis({ url: process.env.UPSTASH_REDIS_REST_URL, token: process.env.UPSTASH_REDIS_REST_TOKEN })
@@ -107,7 +108,7 @@ export async function POST(request: NextRequest) {
           },
         });
       } catch (err) {
-        console.error('Stripe session retrieve error:', err);
+        captureApiError(err, { route: 'stripe/verify-payment', stage: 'session-retrieve', userId: user.id, sessionId });
         return NextResponse.json({ verified: false, reason: 'Failed to retrieve Stripe session' });
       }
     }
@@ -139,7 +140,7 @@ export async function POST(request: NextRequest) {
       payment,
     });
   } catch (error) {
-    console.error('Payment verification error:', error);
+    captureApiError(error, { route: 'stripe/verify-payment' });
     return NextResponse.json(
       { error: 'Verification failed' },
       { status: 500 }

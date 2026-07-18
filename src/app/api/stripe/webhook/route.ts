@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
 import { Redis } from '@upstash/redis';
+import { captureApiError } from '@/lib/capture-error';
 
 // Invalidate middleware payment-access cache so users get correct access on next request
 const redis = process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
@@ -33,7 +34,7 @@ export async function POST(request: NextRequest) {
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
   if (!stripe || !webhookSecret) {
-    console.error('Stripe not configured for webhooks');
+    captureApiError(new Error('Stripe not configured for webhooks'), { route: 'stripe/webhook' });
     return NextResponse.json({ error: 'Webhook not configured' }, { status: 503 });
   }
 
@@ -48,7 +49,7 @@ export async function POST(request: NextRequest) {
   try {
     event = stripe.webhooks.constructEvent(body, signature, webhookSecret, 300);
   } catch (err) {
-    console.error('Webhook signature failed:', err);
+    captureApiError(err, { route: 'stripe/webhook', stage: 'signature-verify' });
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
   }
 
@@ -70,7 +71,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ received: true, duplicate: true });
     }
     // DB error — log and return 200 to avoid Stripe retry storm
-    console.error('[webhook] Event dedup insert failed:', dedupError.message);
+    captureApiError(dedupError, { route: 'stripe/webhook', stage: 'dedup-insert', eventId: event.id, eventType: event.type });
     return NextResponse.json({ received: true });
   }
 
