@@ -15,6 +15,7 @@ import { createClient } from "@supabase/supabase-js";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { isKillSwitchEnabled } from "@/lib/kill-switch";
 import { buildFaqPrompt } from "@/lib/faq-system-prompt";
+import { captureApiError } from "@/lib/capture-error";
 
 // ---------------------------------------------------------------------------
 // Config
@@ -114,7 +115,7 @@ async function searchCorpus(
   });
 
   if (error) {
-    console.error("Layer 1 search error:", error.message);
+    captureApiError(error, { route: 'faq/ask', stage: 'layer1-corpus-search' });
     return null;
   }
 
@@ -145,7 +146,7 @@ async function searchKB(
   });
 
   if (error) {
-    console.error("Layer 2 search error:", error.message);
+    captureApiError(error, { route: 'faq/ask', stage: 'layer2-kb-search' });
     return null;
   }
 
@@ -322,7 +323,7 @@ export async function POST(req: NextRequest) {
     try {
       embedding = await embedQuery(query);
     } catch (err) {
-      console.error("Embedding error:", err);
+      captureApiError(err, { route: 'faq/ask', stage: 'embedding' });
       // If embedding fails, fall through to Layer 3 (model knowledge)
       embedding = [];
     }
@@ -365,7 +366,7 @@ export async function POST(req: NextRequest) {
         similarity_score: similarityScore,
       })
       .then(({ error }) => {
-        if (error) console.error("Query log error:", error.message);
+        if (error) captureApiError(error, { route: 'faq/ask', stage: 'query-log' });
       });
 
     // ---- Return streaming response ----
@@ -377,7 +378,7 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (err) {
-    console.error("FAQ ask error:", err);
+    captureApiError(err, { route: 'faq/ask' });
     return Response.json(
       {
         error: "internal_error",

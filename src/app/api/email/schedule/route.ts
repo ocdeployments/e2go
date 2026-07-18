@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { checkInactivityAndSendEmails, processScheduledEmails } from '@/lib/email-scheduler';
+import { captureApiError } from '@/lib/capture-error';
 
 export async function POST(req: Request) {
   try {
@@ -50,7 +51,7 @@ export async function POST(req: Request) {
       ...result
     });
   } catch (error) {
-    console.error('Email scheduler error:', error);
+    captureApiError(error, { route: 'email/schedule' });
     return NextResponse.json(
       { success: false, error: 'An error occurred. Please try again.' },
       { status: 500 }

@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import crypto from 'crypto';
 import { Resend } from 'resend';
+import { captureApiError } from '@/lib/capture-error';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -115,10 +116,10 @@ export async function POST(req: Request) {
         html: htmlContent,
       });
       if (resendError) {
-        console.error("Resend error:", resendError);
+        captureApiError(resendError, { route: 'email/results', stage: 'resend-send', email });
       }
     } catch (e) {
-      console.error("Resend exception:", e);
+      captureApiError(e, { route: 'email/results', stage: 'resend-exception', email });
     }
   } else {
     console.log("TODO: Send email with content:", htmlContent);
