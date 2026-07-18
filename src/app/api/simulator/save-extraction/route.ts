@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
+import { captureApiError } from '@/lib/capture-error';
 
 // POST /api/simulator/save-extraction — Save extracted document fields as answers
 // Body: { applicationId, answers: Array<{ question_id, value, confidence, source_quote? }> }
@@ -56,7 +57,7 @@ export async function POST(request: NextRequest) {
       });
 
     if (insertError) {
-      console.error('Failed to save extraction answers:', insertError);
+      captureApiError(insertError, { route: 'simulator/save-extraction', userId: user.id, applicationId });
       return NextResponse.json(
         { error: 'Failed to save answers' },
         { status: 500 }
@@ -65,7 +66,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ saved: insertData.length });
   } catch (error) {
-    console.error('Save extraction error:', error);
+    captureApiError(error, { route: 'simulator/save-extraction' });
     return NextResponse.json({ error: 'Save failed' }, { status: 500 });
   }
 }

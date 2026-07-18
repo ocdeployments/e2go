@@ -8,6 +8,7 @@ import { rankApplications } from '@/lib/resolve-application';
 import { enrichCategory, runSemanticEval } from '@/lib/gap-analysis-enrichment';
 import { uploadedDocTypeLabel } from '@/lib/uploaded-doc-labels';
 import { QUESTION_LABELS } from '@/data/question-labels';
+import { captureApiError } from '@/lib/capture-error';
 
 // UQ question text (canonical labels — not session-randomized, for dossier)
 const UQ_QUESTIONS: Record<string, string> = {
@@ -818,7 +819,7 @@ Important rules:
       kitJson = JSON.parse(match[0]) as Record<string, unknown>;
     }
   } catch (error) {
-    console.error(`[prep-kit] LLM call failed (model: ${modelUsed}):`, error);
+    captureApiError(error, { route: 'simulator/prep-kit', stage: 'llm-call', userId: user.id, applicationId: primaryApp.id, modelUsed });
     return NextResponse.json({ error: 'Failed to generate dossier. Please try again.' }, { status: 500 });
   }
 
@@ -873,7 +874,7 @@ Important rules:
   }, { onConflict: 'application_id' });
 
   if (upsertError) {
-    console.error('[prep-kit] Failed to cache generated kit:', upsertError);
+    captureApiError(upsertError, { route: 'simulator/prep-kit', stage: 'cache-upsert', userId: user.id, applicationId: primaryApp.id });
   }
 
   return NextResponse.json({

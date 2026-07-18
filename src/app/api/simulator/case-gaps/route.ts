@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { buildSimulatorContext } from '@/lib/simulator-engine';
 import { buildGapFields, hasRequiredGaps, GAP_FIELD_WRITE_TARGETS } from '@/lib/simulator-gaps';
+import { captureApiError } from '@/lib/capture-error';
 
 // GET /api/simulator/case-gaps?applicationId=xxx — fields the simulator needs
 // confirmed or filled in before a personalized, consistent interview can begin.
@@ -40,7 +41,7 @@ export async function GET(request: NextRequest) {
       hasGaps: hasRequiredGaps(fields),
     });
   } catch (error) {
-    console.error('Case gaps error:', error);
+    captureApiError(error, { route: 'simulator/case-gaps', stage: 'get' });
     return NextResponse.json({ error: 'Failed to load case gaps' }, { status: 500 });
   }
 }
@@ -109,7 +110,7 @@ export async function POST(request: NextRequest) {
         .upsert(answerRows, { onConflict: 'application_id,question_key,family_member_id' });
 
       if (answersError) {
-        console.error('Case gaps answers upsert error:', answersError);
+        captureApiError(answersError, { route: 'simulator/case-gaps', stage: 'answers-upsert', userId: user.id, applicationId });
         return NextResponse.json({ error: 'Failed to save answers' }, { status: 500 });
       }
     }
@@ -121,14 +122,14 @@ export async function POST(request: NextRequest) {
         .eq('id', applicationId);
 
       if (appUpdateError) {
-        console.error('Case gaps application update error:', appUpdateError);
+        captureApiError(appUpdateError, { route: 'simulator/case-gaps', stage: 'application-update', userId: user.id, applicationId });
         return NextResponse.json({ error: 'Failed to update application' }, { status: 500 });
       }
     }
 
     return NextResponse.json({ saved: true });
   } catch (error) {
-    console.error('Case gaps save error:', error);
+    captureApiError(error, { route: 'simulator/case-gaps', stage: 'post' });
     return NextResponse.json({ error: 'Failed to save case gaps' }, { status: 500 });
   }
 }

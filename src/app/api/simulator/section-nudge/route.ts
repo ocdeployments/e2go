@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { resolvePrimaryApplicationId } from '@/lib/resolve-application';
+import { captureApiError } from '@/lib/capture-error';
 
 // Question IDs that map to each case-file section.
 // A weak/inconsistent answer on any of these triggers a nudge on that section page.
@@ -101,7 +102,7 @@ export async function GET(request: NextRequest) {
       section,
     });
   } catch (error) {
-    console.error('[section-nudge] Error:', error);
+    captureApiError(error, { route: 'simulator/section-nudge' });
     return NextResponse.json<SectionNudgeResponse>({
       hasNudge: false, sessionId: null, sessionNumber: null, weakCount: 0, tips: [], section: '',
     });

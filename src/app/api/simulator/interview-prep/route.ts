@@ -7,6 +7,7 @@ import { scoreCase } from '@/lib/gap-analysis-engine';
 import { INTERVIEW_KNOWLEDGE_BASE } from '@/lib/interview-knowledge-base';
 import { uploadedDocTypeLabel, summarizeExtractedJson } from '@/lib/uploaded-doc-labels';
 import type { GapAnalysisResult } from '@/lib/gap-analysis-engine';
+import { captureApiError } from '@/lib/capture-error';
 
 const CONSULATE_LABELS: Record<string, string> = {
   toronto: 'Toronto, Canada',
@@ -427,7 +428,7 @@ Rules:
 
     return NextResponse.json(brief);
   } catch (error) {
-    console.error('[interview-prep] Error:', error);
+    captureApiError(error, { route: 'simulator/interview-prep' });
     return NextResponse.json({ error: 'Interview prep failed' }, { status: 500 });
   }
 }

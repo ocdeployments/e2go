@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
+import { captureApiError } from '@/lib/capture-error';
 
 // POST /api/simulator/quick-start
 // Body: { businessCategory, applicantName?, treatyCountry?, businessType?,
@@ -77,7 +78,7 @@ export async function POST(request: NextRequest) {
         .maybeSingle();
 
       if (appError || !app) {
-        console.error('Failed to create quick-start application:', appError);
+        captureApiError(appError ?? new Error('Failed to create quick-start application'), { route: 'simulator/quick-start', stage: 'create-application', userId: user.id });
         return NextResponse.json(
           { error: 'Failed to create application' },
           { status: 500 }
@@ -127,7 +128,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ applicationId: appId });
   } catch (error) {
-    console.error('Quick-start error:', error);
+    captureApiError(error, { route: 'simulator/quick-start' });
     return NextResponse.json({ error: 'Quick-start failed' }, { status: 500 });
   }
 }

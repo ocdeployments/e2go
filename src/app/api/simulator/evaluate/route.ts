@@ -7,6 +7,7 @@ import { callLLM } from '@/lib/llm-client';
 import { analyzeDelivery } from '@/lib/delivery-analysis';
 import { uploadedDocTypeLabel, summarizeExtractedJson } from '@/lib/uploaded-doc-labels';
 import type { SimulatorContext, AnswerEvaluation } from '@/types/simulator';
+import { captureApiError } from '@/lib/capture-error';
 
 interface PriorAnswer {
   questionText: string;
@@ -42,7 +43,7 @@ export async function POST(request: NextRequest) {
   }
 
   if (!process.env.OPENROUTER_API_KEY && !process.env.ANTHROPIC_API_KEY) {
-    console.error('[simulator-evaluate] No LLM provider configured');
+    captureApiError(new Error('[simulator-evaluate] No LLM provider configured'), { route: 'simulator/evaluate', stage: 'no-provider', userId: user.id });
     return NextResponse.json(
       { error: 'Evaluation service not configured' },
       { status: 503 }
@@ -184,7 +185,7 @@ Score guide: 1-3 = fails core E-2 criteria or contradicts documents; 4-5 = meets
         } satisfies AnswerEvaluation);
       }
     } catch (parseError) {
-      console.error(`[simulator-evaluate] JSON parse failed for question ${questionId}. Raw content:`, content.substring(0, 500), parseError);
+      captureApiError(parseError, { route: 'simulator/evaluate', stage: 'json-parse-failed', userId: user.id, questionId, contentSnippet: content.substring(0, 500) });
     }
 
     return NextResponse.json({
@@ -197,7 +198,7 @@ Score guide: 1-3 = fails core E-2 criteria or contradicts documents; 4-5 = meets
 
   } catch (error) {
     const isAbort = error instanceof DOMException && error.name === 'AbortError';
-    console.error(`[simulator-evaluate] ${isAbort ? 'TIMED OUT' : 'FAILED'} for question ${questionId}:`, error);
+    captureApiError(error, { route: 'simulator/evaluate', stage: isAbort ? 'timed-out' : 'failed', userId: user.id, questionId });
     return NextResponse.json({
       rating: 'weak',
       feedback: 'Evaluation timed out. Your answer has been recorded.',

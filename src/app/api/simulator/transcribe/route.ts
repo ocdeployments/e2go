@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { checkRateLimit } from '@/lib/rate-limit';
+import { captureApiError } from '@/lib/capture-error';
 
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
@@ -91,13 +92,13 @@ export async function POST(request: NextRequest) {
         const transcript = await transcribeWithOpenAI(audioFile);
         return NextResponse.json({ transcript });
       } catch (openaiError) {
-        console.error('[transcribe] OpenAI Whisper also failed:', openaiError);
+        captureApiError(openaiError, { route: 'simulator/transcribe', stage: 'openai-fallback', userId: user.id });
       }
     }
 
     return NextResponse.json({ error: 'Transcription failed' }, { status: 502 });
   } catch (error) {
-    console.error('[transcribe] Unexpected error:', error);
+    captureApiError(error, { route: 'simulator/transcribe', userId: user.id });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

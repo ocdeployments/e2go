@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { checkRateLimit } from '@/lib/rate-limit';
+import { captureApiError } from '@/lib/capture-error';
 
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
@@ -97,7 +98,7 @@ export async function POST(request: NextRequest) {
     // Emergency: signal client to use browser SpeechSynthesis
     return NextResponse.json({ audioChunks: [], fallbackToBrowser: true });
   } catch (error) {
-    console.error('[tts] Unexpected error:', error);
+    captureApiError(error, { route: 'simulator/tts', userId: user.id });
     return NextResponse.json({ audioChunks: [], fallbackToBrowser: true });
   }
 }

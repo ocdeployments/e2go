@@ -3,6 +3,7 @@ import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { QUESTION_LABELS, SECTION_MAP, SECTION_LABELS } from '@/data/question-labels';
 import { getBusinessCategoryLabel } from '@/lib/business-categories';
 import { uploadedDocTypeLabel, summarizeExtractedJson } from '@/lib/uploaded-doc-labels';
+import { captureApiError } from '@/lib/capture-error';
 
 const SECTION_ORDER = [
   'section_1_story',
@@ -166,7 +167,7 @@ export async function GET(request: NextRequest) {
       totalFields,
     });
   } catch (error) {
-    console.error('Case summary error:', error);
+    captureApiError(error, { route: 'simulator/case-summary' });
     return NextResponse.json({ error: 'Case summary failed' }, { status: 500 });
   }
 }

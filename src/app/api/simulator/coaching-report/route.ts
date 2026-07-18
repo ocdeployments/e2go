@@ -5,6 +5,7 @@ import { checkRateLimit } from '@/lib/rate-limit';
 import { isKillSwitchEnabled } from '@/lib/kill-switch';
 import { callLLM } from '@/lib/llm-client';
 import type { SimulatorContext, QuestionCoaching } from '@/types/simulator';
+import { captureApiError } from '@/lib/capture-error';
 
 interface WeakAnswer {
   questionId: string;
@@ -203,7 +204,7 @@ Return ONLY a valid JSON object (no markdown, no prose) with this exact structur
     });
 
     if (!content) {
-      console.error('[coaching-report] Empty content from all providers');
+      captureApiError(new Error('[coaching-report] Empty content from all providers'), { route: 'simulator/coaching-report', stage: 'empty-content', userId: user.id });
       return NextResponse.json({ coaching: [], error: true });
     }
 
@@ -226,7 +227,7 @@ Return ONLY a valid JSON object (no markdown, no prose) with this exact structur
         return NextResponse.json({ coaching: parsed });
       }
     } catch (parseError) {
-      console.error('[coaching-report] JSON parse failed:', content.substring(0, 300), parseError);
+      captureApiError(parseError, { route: 'simulator/coaching-report', stage: 'json-parse-failed', userId: user.id, contentSnippet: content.substring(0, 300) });
       return NextResponse.json({ coaching: [], error: true });
     }
 
@@ -234,11 +235,11 @@ Return ONLY a valid JSON object (no markdown, no prose) with this exact structur
     // generation failure, not "no coaching needed" (weakAnswers.length > 0
     // was already guaranteed above, so an empty result here means the model
     // didn't return usable output, not that coaching was unnecessary).
-    console.error('[coaching-report] Unrecognized response shape:', content.substring(0, 300));
+    captureApiError(new Error('[coaching-report] Unrecognized response shape'), { route: 'simulator/coaching-report', stage: 'unrecognized-shape', userId: user.id, contentSnippet: content.substring(0, 300) });
     return NextResponse.json({ coaching: [], error: true });
   } catch (error) {
     const isAbort = error instanceof DOMException && error.name === 'AbortError';
-    console.error(`[coaching-report] ${isAbort ? 'TIMED OUT' : 'FAILED'}:`, error);
+    captureApiError(error, { route: 'simulator/coaching-report', stage: isAbort ? 'timed-out' : 'failed', userId: user.id });
     return NextResponse.json({ coaching: [], error: true });
   } finally {
     clearTimeout(timeout);

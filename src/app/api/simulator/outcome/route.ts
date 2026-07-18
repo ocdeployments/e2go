@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { buildCaseProfile } from '@/lib/case-profile';
 import { buildCaseIntelligence } from '@/lib/case-intelligence-core';
+import { captureApiError } from '@/lib/capture-error';
 
 export async function POST(request: NextRequest) {
   const supabase = await createSupabaseServerClient();
@@ -46,7 +47,7 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (error) {
-    console.error('[simulator-outcome] Insert failed:', error);
+    captureApiError(error, { route: 'simulator/outcome', userId: user.id });
     return NextResponse.json({ error: 'Failed to save outcome' }, { status: 500 });
   }
 
