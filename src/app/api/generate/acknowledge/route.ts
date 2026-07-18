@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
+import { captureApiError } from '@/lib/capture-error';
 
 /**
  * POST /api/generate/acknowledge
@@ -83,7 +84,7 @@ export async function POST(req: Request) {
       .eq('applicant_acknowledged', false);
 
     if (updateError) {
-      console.error('[ACKNOWLEDGE] Failed to update pipeline_log:', updateError);
+      captureApiError(updateError, { route: 'generate/acknowledge', stage: 'pipeline-log-update', userId: user.id, applicationId: application_id });
       // Non-fatal — continue with download
     }
 
@@ -114,7 +115,7 @@ export async function POST(req: Request) {
       acknowledged_at: now,
     });
   } catch (err) {
-    console.error('[ACKNOWLEDGE] Error:', err);
+    captureApiError(err, { route: 'generate/acknowledge' });
     return NextResponse.json(
       { error: 'Failed to record acknowledgment' },
       { status: 500 }

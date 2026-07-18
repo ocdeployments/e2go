@@ -33,6 +33,7 @@ import {
 import { buildPackageManifest } from '@/lib/cic-package-manifest';
 import { buildExhibitRegistry } from '@/lib/exhibit-registry';
 import type { DocumentType } from '@/types/generation';
+import { captureApiError } from '@/lib/capture-error';
 
 // DOC_DISPLAY_NAMES has exactly one entry per DocumentType — deriving
 // VALID_DOC_TYPES from it keeps this list from silently drifting out of
@@ -323,7 +324,7 @@ export async function GET(
       },
     });
   } catch (err) {
-    console.error('[DOWNLOAD] Error:', err);
+    captureApiError(err, { route: 'generate/download' });
     return NextResponse.json(
       { error: 'Failed to generate download package' },
       { status: 500 }

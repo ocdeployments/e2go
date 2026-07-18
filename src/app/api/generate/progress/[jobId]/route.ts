@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import type { SSEProgressMessage } from '@/types/generation';
+import { captureApiError } from '@/lib/capture-error';
 
 function getSupabase() {
   return createClient(
@@ -105,7 +106,7 @@ export async function GET(
             closed = true;
           }
         } catch (err) {
-          console.error('SSE poll error:', err);
+          captureApiError(err, { route: 'generate/progress', jobId, userId: user.id });
         }
       }, 2000);
 

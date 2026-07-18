@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { isKillSwitchEnabled } from '@/lib/kill-switch';
+import { captureApiError } from '@/lib/capture-error';
 
 function getSupabase() {
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
@@ -233,7 +234,7 @@ export async function POST(request: Request) {
       message: 'Generation job created',
     });
   } catch (error) {
-    console.error('Start generation error:', error);
+    captureApiError(error, { route: 'generate/start' });
     return NextResponse.json(
       { error: 'Failed to start generation' },
       { status: 500 }

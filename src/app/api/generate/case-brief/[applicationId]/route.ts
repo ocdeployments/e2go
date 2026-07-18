@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
+import { captureApiError } from '@/lib/capture-error';
 
 function getSupabase() {
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
@@ -81,7 +82,7 @@ export async function GET(
       businessCategory: quizSession?.business_type || null,
     });
   } catch (error) {
-    console.error('Get case brief error:', error);
+    captureApiError(error, { route: 'generate/case-brief' });
     return NextResponse.json(
       { error: 'Failed to fetch case brief' },
       { status: 500 }

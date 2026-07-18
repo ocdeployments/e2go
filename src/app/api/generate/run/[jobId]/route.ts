@@ -4,6 +4,7 @@ import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { runGenerationPipeline } from '@/lib/generation-engine';
 import { checkRateLimit } from '@/lib/rate-limit';
 import type { GenerationStep } from '@/types/generation';
+import { captureApiError } from '@/lib/capture-error';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -97,7 +98,7 @@ export async function POST(
       jobId,
       onProgress
     ).catch(async (err) => {
-      console.error('Pipeline crashed:', err);
+      captureApiError(err, { route: 'generate/run', stage: 'pipeline', jobId, userId: job.user_id });
       await supabase
         .from('document_generation_jobs')
         .update({
@@ -113,7 +114,7 @@ export async function POST(
       { status: 202 }
     );
   } catch (error) {
-    console.error('Run generation error:', error);
+    captureApiError(error, { route: 'generate/run' });
     return NextResponse.json(
       { error: 'Failed to start generation run' },
       { status: 500 }

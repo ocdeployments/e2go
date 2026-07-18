@@ -8,6 +8,7 @@ import {
 } from '@/lib/generation-engine';
 import type { CaseBrief } from '@/types/analysis';
 import type { DocumentType, RevisionNote } from '@/types/generation';
+import { captureApiError } from '@/lib/capture-error';
 
 function getSupabase() {
   return createClient(
@@ -190,7 +191,7 @@ ${description.trim()}`;
 
     return NextResponse.json({ success: true, document: updatedDoc });
   } catch (err) {
-    console.error('[REVISE]', err);
+    captureApiError(err, { route: 'generate/revise' });
     return NextResponse.json({ error: 'Revision failed. Please try again.' }, { status: 500 });
   }
 }

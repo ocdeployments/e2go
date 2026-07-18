@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { validateForGeneration } from '@/lib/pre-generation-validation';
+import { captureApiError } from '@/lib/capture-error';
 
 function getSupabase() {
   return createClient(
@@ -48,7 +49,7 @@ export async function GET(
       .eq('application_id', applicationId);
 
     if (answersError) {
-      console.error('Answers fetch error:', answersError);
+      captureApiError(answersError, { route: 'generate/validate', userId: user.id, applicationId });
       return NextResponse.json({ error: 'Failed to load answers' }, { status: 500 });
     }
 
@@ -84,7 +85,7 @@ export async function GET(
       validation: result,
     });
   } catch (error) {
-    console.error('Validate error:', error);
+    captureApiError(error, { route: 'generate/validate' });
     return NextResponse.json(
       { error: 'Validation failed' },
       { status: 500 }

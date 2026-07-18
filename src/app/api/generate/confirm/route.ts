@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
+import { captureApiError } from '@/lib/capture-error';
 
 function getSupabase() {
   return createClient(
@@ -78,7 +79,7 @@ export async function POST(request: Request) {
       .single();
 
     if (insertError) {
-      console.error('Confirmation insert error:', insertError);
+      captureApiError(insertError, { route: 'generate/confirm', userId: user.id, applicationId });
       return NextResponse.json(
         { error: 'Failed to record confirmation' },
         { status: 500 }
@@ -90,7 +91,7 @@ export async function POST(request: Request) {
       confirmationId: data.id,
     });
   } catch (error) {
-    console.error('Confirm error:', error);
+    captureApiError(error, { route: 'generate/confirm' });
     return NextResponse.json(
       { error: 'Confirmation failed' },
       { status: 500 }
