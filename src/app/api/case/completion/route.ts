@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { resolvePrimaryApplicationId } from '@/lib/resolve-application';
+import { captureApiError } from '@/lib/capture-error';
 import {
   CARD_DEFINITIONS,
   INTAKE_CARD_IDS,
@@ -414,7 +415,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(response, { headers: { 'Cache-Control': 'private, max-age=15' } });
   } catch (err) {
-    console.error('[case/completion]', err);
+    captureApiError(err, { route: 'case/completion' });
     return NextResponse.json(emptyResponse(), { headers: { 'Cache-Control': 'private, max-age=15' } });
   }
 }

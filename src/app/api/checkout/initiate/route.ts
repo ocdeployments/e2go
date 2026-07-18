@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import Stripe from 'stripe';
+import { captureApiError } from '@/lib/capture-error';
 
 // Valid tiers that can be initiated from first-purchase flows
 const VALID_TIERS = ['complete', 'complete_partnership', 'fdd_intelligence'] as const;
@@ -98,7 +99,7 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (insertError || !newApp) {
-        console.error('[checkout/initiate] Failed to create application:', insertError);
+        captureApiError(insertError ?? new Error('applications insert returned no record'), { route: 'checkout/initiate', stage: 'create-application', userId: user.id, tierId });
         return NextResponse.json({ error: 'Failed to initialize application' }, { status: 500 });
       }
 
@@ -125,7 +126,7 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (err) {
-    console.error('[checkout/initiate] Stripe error:', err);
+    captureApiError(err, { route: 'checkout/initiate', stage: 'stripe-session', userId: user.id, tierId });
     return NextResponse.json({ error: 'Failed to create checkout session' }, { status: 500 });
   }
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { isKillSwitchEnabled } from '@/lib/kill-switch';
 import { callLLM } from '@/lib/llm-client';
+import { captureApiError } from '@/lib/capture-error';
 
 // Fields that warrant quality checks — key maps to a short officer-perspective description
 const FIELD_CRITERIA: Record<string, { topic: string; minWords: number; requirements: string }> = {
@@ -98,7 +99,7 @@ Reply with ONLY valid JSON: {"quality":"strong"|"adequate"|"needs_work","feedbac
       });
     }
   } catch (error) {
-    console.error('[field-quality] LLM failed:', error);
+    captureApiError(error, { route: 'case-file/field-quality', userId: user.id, fieldKey });
   }
 
   return NextResponse.json({ quality: 'adequate', wordCount, feedback: null });

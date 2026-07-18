@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createHash } from 'node:crypto';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
+import { captureApiError } from '@/lib/capture-error';
 
 function hashIp(req: NextRequest): string {
   const ip =
@@ -31,7 +32,7 @@ export async function POST(req: NextRequest) {
   });
 
   if (error) {
-    console.error('[consent/log]', error);
+    captureApiError(error, { route: 'consent/log', userId: user.id });
     return NextResponse.json({ error: 'Failed to record consent' }, { status: 500 });
   }
 
