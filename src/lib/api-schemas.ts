@@ -37,3 +37,7 @@ export const evaluateRequestSchema = z.object({
 });
 
 export type EvaluateRequestBody = z.infer<typeof evaluateRequestSchema>;
+
+export const fddExtractRequestSchema = z.object({
+  fdd_id: z.string().min(1),
+});

@@ -6,6 +6,7 @@ import { isKillSwitchEnabled } from '@/lib/kill-switch';
 import { extractFddText, extractFdd } from '@/lib/fdd-extraction-engine';
 import type { FddSSEEvent } from '@/types/fdd';
 import { captureApiError } from '@/lib/capture-error';
+import { fddExtractRequestSchema } from '@/lib/api-schemas';
 
 // POST /api/fdd/extract — SSE stream
 // Body: { fdd_id: string }
@@ -43,14 +44,14 @@ export async function POST(request: NextRequest) {
           return;
         }
 
-        const body = await request.json();
-        const { fdd_id } = body as { fdd_id: string };
-
-        if (!fdd_id) {
-          send({ event: 'error', data: { message: 'Missing fdd_id' } });
+        const rawBody = await request.json();
+        const parsed = fddExtractRequestSchema.safeParse(rawBody);
+        if (!parsed.success) {
+          send({ event: 'error', data: { message: 'Missing or invalid fdd_id' } });
           controller.close();
           return;
         }
+        const { fdd_id } = parsed.data;
 
         const serviceClient = createServiceClient();
 
