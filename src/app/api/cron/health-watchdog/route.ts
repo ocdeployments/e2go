@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { captureApiError } from '@/lib/capture-error';
 
 // Runs every 5 minutes via Vercel cron.
 // 1. Marks generation jobs stuck > 30 min as failed
@@ -160,7 +161,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: true, ...results });
   } catch (err) {
     const errMsg = err instanceof Error ? err.message : String(err);
-    console.error('[health-watchdog] Fatal error:', errMsg);
+    captureApiError(err, { route: 'cron/health-watchdog' });
 
     if (logId) {
       await admin
