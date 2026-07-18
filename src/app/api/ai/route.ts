@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 import { callLLM } from "@/lib/llm-client";
 import { Redis } from "@upstash/redis";
+import { captureApiError } from "@/lib/capture-error";
 
 const RATE_LIMIT = 10;
 const RATE_WINDOW_SECONDS = 60;
@@ -42,7 +43,7 @@ async function checkRateLimitWithRedis(userId: string): Promise<boolean> {
     return count <= RATE_LIMIT;
   } catch (error) {
     // Fail open - allow request if Redis fails
-    console.error("[AI] Redis rate limit check failed, failing open:", error);
+    captureApiError(error, { route: 'ai', stage: 'redis-rate-limit' });
     return true;
   }
 }
@@ -105,7 +106,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ response });
   } catch (error) {
-    console.error("AI API route error:", error);
+    captureApiError(error, { route: 'ai' });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

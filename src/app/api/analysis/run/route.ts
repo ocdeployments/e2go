@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { runAnalysisEngine } from '@/lib/analysis-engine';
 import { createClient } from '@supabase/supabase-js';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
+import { captureApiError } from '@/lib/capture-error';
 
 function getServiceSupabase() {
   return createClient(
@@ -60,7 +61,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(caseBrief);
   } catch (error) {
-    console.error('[analysis/run] Error:', error);
+    captureApiError(error, { route: 'analysis/run' });
     return new NextResponse('Internal Server Error', { status: 500 });
   }
 }

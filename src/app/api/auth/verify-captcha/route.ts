@@ -6,6 +6,7 @@
  * degradation — CAPTCHA is optional until keys are provisioned).
  */
 import { NextRequest, NextResponse } from 'next/server';
+import { captureApiError } from '@/lib/capture-error';
 
 export async function POST(request: NextRequest) {
   const secretKey = process.env.TURNSTILE_SECRET_KEY;
@@ -49,7 +50,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ ok: true });
   } catch (err) {
-    console.error('[verify-captcha] Turnstile API error:', err);
+    captureApiError(err, { route: 'auth/verify-captcha' });
     // On network failure, allow through — CAPTCHA is defense-in-depth, not a gate
     return NextResponse.json({ ok: true, skipped: true });
   }

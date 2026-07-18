@@ -3,6 +3,7 @@ import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { isValidQuestionKey, QUESTION_KEY_REGEX } from '@/lib/questionKeyValidator';
 import { buildCaseProfile } from '@/lib/case-profile';
 import { buildCaseIntelligence } from '@/lib/case-intelligence-core';
+import { captureApiError } from '@/lib/capture-error';
 
 export async function POST(request: NextRequest) {
   try {
@@ -109,7 +110,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      console.error('Supabase error:', error);
+      captureApiError(error, { route: 'answers', stage: 'upsert', userId: user.id, applicationId: application_id, questionKey: question_key });
       return NextResponse.json({ error: 'Save failed' }, { status: 500 });
     }
 
@@ -123,7 +124,7 @@ export async function POST(request: NextRequest) {
       answered_at: data.answered_at,
     });
   } catch (error) {
-    console.error('API error:', error);
+    captureApiError(error, { route: 'answers' });
     return NextResponse.json({ error: 'Save failed' }, { status: 500 });
   }
 }

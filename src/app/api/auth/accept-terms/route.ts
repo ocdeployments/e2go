@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 import { createServiceClient } from "@/lib/supabase-service";
 import { Redis } from "@upstash/redis";
+import { captureApiError } from "@/lib/capture-error";
 
 const TERMS_VERSION = "1.0";
 
@@ -41,7 +42,7 @@ export async function POST(req: NextRequest) {
   );
 
   if (error) {
-    console.error("[accept-terms]", error);
+    captureApiError(error, { route: 'auth/accept-terms', userId: user.id });
     return NextResponse.json(
       { error: "Failed to record acceptance" },
       { status: 500 }
