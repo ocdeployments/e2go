@@ -17,6 +17,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import type { DocumentType } from '@/types/generation';
+import { captureApiError } from '@/lib/capture-error';
 
 interface RegenBody {
   applicationId: string;
@@ -71,7 +72,7 @@ export async function POST(request: Request) {
     .eq('document_type', documentType);
 
   if (resetError) {
-    console.error('[request-regeneration] reset error:', resetError);
+    captureApiError(resetError, { route: 'dashboard/request-regeneration', stage: 'reset', userId: user.id, applicationId, documentType });
     return NextResponse.json({ error: 'Failed to reset document' }, { status: 500 });
   }
 
@@ -88,7 +89,7 @@ export async function POST(request: Request) {
     });
 
   if (jobError) {
-    console.error('[request-regeneration] job insert error:', jobError);
+    captureApiError(jobError, { route: 'dashboard/request-regeneration', stage: 'queue-job', userId: user.id, applicationId, documentType });
     return NextResponse.json({ error: 'Failed to queue regeneration' }, { status: 500 });
   }
 

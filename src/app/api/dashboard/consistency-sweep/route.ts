@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { runCanonicalConsistencySweep } from '@/lib/cic-consistency-sweep';
+import { captureApiError } from '@/lib/capture-error';
 
 export async function GET(request: Request) {
   const supabase = createClient(
@@ -32,7 +33,7 @@ export async function GET(request: Request) {
     const result = await runCanonicalConsistencySweep(applicationId, user.id);
     return NextResponse.json(result);
   } catch (err) {
-    console.error('[consistency-sweep] error:', err);
+    captureApiError(err, { route: 'dashboard/consistency-sweep', userId: user.id, applicationId });
     return NextResponse.json({ error: 'Failed to run consistency sweep' }, { status: 500 });
   }
 }

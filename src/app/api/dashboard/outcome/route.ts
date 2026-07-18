@@ -14,6 +14,7 @@
 
 import { NextResponse } from 'next/server';
 import { createServiceClient as serviceClient } from '@/lib/supabase-service';
+import { captureApiError } from '@/lib/capture-error';
 
 type OutcomeValue = 'approved' | 'denied' | 'rfe' | 'withdrawal' | 'pending' | 'unknown';
 
@@ -87,7 +88,7 @@ export async function POST(request: Request) {
     .single();
 
   if (error) {
-    console.error('[outcome] upsert error:', error);
+    captureApiError(error, { route: 'dashboard/outcome', userId: user.id, applicationId });
     return NextResponse.json({ error: 'Failed to record outcome' }, { status: 500 });
   }
 

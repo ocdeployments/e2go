@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { buildPackageManifest } from '@/lib/cic-package-manifest';
+import { captureApiError } from '@/lib/capture-error';
 
 export async function GET(request: Request) {
   const supabase = createClient(
@@ -33,7 +34,7 @@ export async function GET(request: Request) {
     const manifest = await buildPackageManifest(applicationId);
     return NextResponse.json(manifest);
   } catch (err) {
-    console.error('[package-manifest] error:', err);
+    captureApiError(err, { route: 'dashboard/package-manifest', userId: user.id, applicationId });
     return NextResponse.json({ error: 'Failed to build manifest' }, { status: 500 });
   }
 }

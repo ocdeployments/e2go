@@ -18,6 +18,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import type { DocumentType } from '@/types/generation';
+import { captureApiError } from '@/lib/capture-error';
 
 interface CertifyBody {
   applicationId: string;
@@ -83,7 +84,7 @@ export async function POST(request: Request) {
     .eq('document_type', documentType);
 
   if (error) {
-    console.error('[certify-document] error:', error);
+    captureApiError(error, { route: 'dashboard/certify-document', userId: user.id, applicationId, documentType });
     return NextResponse.json({ error: 'Failed to certify document' }, { status: 500 });
   }
 
