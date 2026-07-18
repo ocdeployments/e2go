@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
+import { captureApiError } from '@/lib/capture-error';
 
 // GET /api/documents/[documentId] — Get document details
 export async function GET(
@@ -27,7 +28,7 @@ export async function GET(
 
     return NextResponse.json({ document });
   } catch (error) {
-    console.error('Get document error:', error);
+    captureApiError(error, { route: 'documents/[documentId]', stage: 'get', documentId: params.documentId });
     return NextResponse.json({ error: 'Failed' }, { status: 500 });
   }
 }
@@ -72,13 +73,13 @@ export async function DELETE(
       .eq('user_id', user.id);
 
     if (deleteError) {
-      console.error('Delete error:', deleteError);
+      captureApiError(deleteError, { route: 'documents/[documentId]', stage: 'delete-db', userId: user.id, documentId: params.documentId });
       return NextResponse.json({ error: 'Delete failed' }, { status: 500 });
     }
 
     return NextResponse.json({ deleted: true });
   } catch (error) {
-    console.error('Delete error:', error);
+    captureApiError(error, { route: 'documents/[documentId]', stage: 'delete', documentId: params.documentId });
     return NextResponse.json({ error: 'Delete failed' }, { status: 500 });
   }
 }

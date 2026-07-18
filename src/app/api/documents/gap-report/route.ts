@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { generateGapReport } from '@/lib/document-extraction-engine';
 import type { DetectedDocumentType, Confidence } from '@/types/document-upload';
+import { captureApiError } from '@/lib/capture-error';
 
 // GET /api/documents/gap-report?applicationId=xxx — Get gap report
 export async function GET(request: NextRequest) {
@@ -42,7 +43,7 @@ export async function GET(request: NextRequest) {
     ]);
 
     if (docError) {
-      console.error('Document query error:', docError);
+      captureApiError(docError, { route: 'documents/gap-report', stage: 'document-query', userId: user.id, applicationId });
       return NextResponse.json({ error: 'Query failed' }, { status: 500 });
     }
     if (uploadedDocError) {
@@ -56,7 +57,7 @@ export async function GET(request: NextRequest) {
       .eq('application_id', applicationId);
 
     if (ansError) {
-      console.error('Answer query error:', ansError);
+      captureApiError(ansError, { route: 'documents/gap-report', stage: 'answer-query', userId: user.id, applicationId });
       return NextResponse.json({ error: 'Query failed' }, { status: 500 });
     }
 
@@ -138,7 +139,7 @@ export async function GET(request: NextRequest) {
       unresolvedDiscrepancies: unresolvedCount || 0,
     });
   } catch (error) {
-    console.error('Gap report error:', error);
+    captureApiError(error, { route: 'documents/gap-report' });
     return NextResponse.json({ error: 'Gap report failed' }, { status: 500 });
   }
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import type { ResolveDiscrepancyRequest } from '@/types/document-upload';
+import { captureApiError } from '@/lib/capture-error';
 
 // POST /api/documents/resolve-discrepancy — Resolve a conflicting value
 export async function POST(request: NextRequest) {
@@ -48,7 +49,7 @@ export async function POST(request: NextRequest) {
       .eq('id', discrepancyId);
 
     if (updateError) {
-      console.error('Update discrepancy error:', updateError);
+      captureApiError(updateError, { route: 'documents/resolve-discrepancy', stage: 'update-discrepancy', userId: user.id, applicationId, discrepancyId });
       return NextResponse.json({ error: 'Update failed' }, { status: 500 });
     }
 
@@ -69,7 +70,7 @@ export async function POST(request: NextRequest) {
       );
 
     if (answerError) {
-      console.error('Update answer error:', answerError);
+      captureApiError(answerError, { route: 'documents/resolve-discrepancy', stage: 'update-answer', userId: user.id, applicationId, discrepancyId });
       // Non-critical — discrepancy is resolved even if answer update fails
     }
 
@@ -80,7 +81,7 @@ export async function POST(request: NextRequest) {
       resolvedValue,
     });
   } catch (error) {
-    console.error('Resolve discrepancy error:', error);
+    captureApiError(error, { route: 'documents/resolve-discrepancy' });
     return NextResponse.json({ error: 'Resolution failed' }, { status: 500 });
   }
 }

@@ -15,6 +15,7 @@ import type {
   DetectedDocumentType,
   Confidence,
 } from '@/types/document-upload';
+import { captureApiError } from '@/lib/capture-error';
 
 function _getSupabase() {
   return createClient(
@@ -312,7 +313,7 @@ export async function POST(request: NextRequest) {
         // Trigger profile rebuild fire-and-forget (documents change dimension scores)
         buildCaseProfile(user.id).catch(() => {});
       } catch (error) {
-        console.error('Extraction pipeline error:', error);
+        captureApiError(error, { route: 'documents/extract', userId: user?.id });
         sendEvent({
           event: 'error',
           data: { message: error instanceof Error ? error.message : 'Pipeline failed' },

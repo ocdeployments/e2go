@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { createServiceClient } from '@/lib/supabase-service';
+import { captureApiError } from '@/lib/capture-error';
 import {
   validateFileBatch,
   getFileTypeFromExtension,
@@ -139,7 +140,7 @@ export async function POST(request: NextRequest) {
         });
 
       if (uploadError) {
-        console.error('Storage upload error:', uploadError);
+        captureApiError(uploadError, { route: 'documents', stage: 'storage-upload', userId: user.id, applicationId, fileName: safeFilename });
         return NextResponse.json(
           { error: `Failed to upload ${safeFilename}: ${uploadError.message}` },
           { status: 500 }
@@ -163,7 +164,7 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (dbError) {
-        console.error('DB insert error:', dbError);
+        captureApiError(dbError, { route: 'documents', stage: 'db-insert', userId: user.id, applicationId, fileName: safeFilename });
         // Clean up uploaded file
         await serviceClient.storage
           .from('application-documents')
@@ -188,7 +189,7 @@ export async function POST(request: NextRequest) {
       })),
     });
   } catch (error) {
-    console.error('Upload error:', error);
+    captureApiError(error, { route: 'documents', stage: 'upload' });
     return NextResponse.json({ error: 'Upload failed' }, { status: 500 });
   }
 }
@@ -221,13 +222,13 @@ export async function GET(request: NextRequest) {
       .order('created_at', { ascending: true });
 
     if (error) {
-      console.error('Query error:', error);
+      captureApiError(error, { route: 'documents', stage: 'query', userId: user.id, applicationId });
       return NextResponse.json({ error: 'Query failed' }, { status: 500 });
     }
 
     return NextResponse.json({ documents });
   } catch (error) {
-    console.error('List error:', error);
+    captureApiError(error, { route: 'documents', stage: 'list' });
     return NextResponse.json({ error: 'List failed' }, { status: 500 });
   }
 }
