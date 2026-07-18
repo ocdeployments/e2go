@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { Resend } from 'resend';
 import { Redis } from '@upstash/redis';
+import { captureApiError } from '@/lib/capture-error';
 
 const GRACE_DAYS = 30;
 
@@ -34,7 +35,7 @@ export async function POST() {
     .eq('user_id', userId);
 
   if (softDeleteError) {
-    console.error('[account/delete] Soft-delete failed:', softDeleteError.message);
+    captureApiError(softDeleteError, { route: 'account/delete', stage: 'soft-delete', userId });
     return NextResponse.json({ error: 'Failed to schedule deletion. Please contact support.' }, { status: 500 });
   }
 
@@ -89,7 +90,7 @@ export async function POST() {
         `,
       });
     } catch (emailErr) {
-      console.error('[account/delete] Confirmation email failed:', emailErr);
+      captureApiError(emailErr, { route: 'account/delete', stage: 'confirmation-email', userId });
     }
   }
 

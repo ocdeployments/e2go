@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { Redis } from '@upstash/redis';
+import { captureApiError } from '@/lib/capture-error';
 
 function getAdminClient() {
   return createClient(
@@ -39,7 +40,7 @@ export async function POST() {
     .eq('user_id', userId);
 
   if (restoreError) {
-    console.error('[account/restore] Failed:', restoreError.message);
+    captureApiError(restoreError, { route: 'account/restore', userId });
     return NextResponse.json({ error: 'Failed to restore account. Please contact support.' }, { status: 500 });
   }
 
