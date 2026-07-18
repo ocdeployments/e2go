@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
+import { captureApiError } from '@/lib/capture-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,7 +37,7 @@ export async function POST(req: NextRequest) {
 
   const { error: updateErr } = await admin.from('profiles').update(updates).eq('id', targetUserId);
   if (updateErr) {
-    console.error('[admin/flag-user] Update error:', updateErr.message);
+    captureApiError(updateErr, { route: 'admin/flag-user', targetUserId });
     return NextResponse.json({ error: updateErr.message }, { status: 500 });
   }
 
