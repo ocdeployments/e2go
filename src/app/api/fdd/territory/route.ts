@@ -5,6 +5,7 @@ import { analyseTeritory } from '@/lib/fdd-territory-engine';
 import { checkRateLimit } from '@/lib/rate-limit';
 import type { FddExtractedFields, FddTerritoryAnalysis } from '@/types/fdd';
 import type { TerritoryAnalysis } from '@/lib/fdd-territory-engine';
+import { captureApiError } from '@/lib/capture-error';
 
 // POST /api/fdd/territory
 // Body: { fdd_id: string }
@@ -78,12 +79,12 @@ export async function POST(request: NextRequest) {
       .eq('id', fdd_id);
 
     if (updateErr) {
-      console.error('Territory persist error:', updateErr);
+      captureApiError(updateErr, { route: 'fdd/territory', stage: 'persist', userId: user.id, fddId: fdd_id });
     }
 
     return NextResponse.json({ territory_analysis: result });
   } catch (err) {
-    console.error('Territory route error:', err);
+    captureApiError(err, { route: 'fdd/territory' });
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Territory analysis failed' },
       { status: 500 }

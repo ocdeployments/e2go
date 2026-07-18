@@ -8,6 +8,7 @@ import { deriveFddAnswerKeys, writeFddAnswerKeys } from '@/lib/fdd-writeback';
 import type { FddExtractedFields } from '@/types/fdd';
 import type { ScoringResult } from '@/lib/fdd-scoring-engine';
 import type { TerritoryAnalysis } from '@/lib/fdd-territory-engine';
+import { captureApiError } from '@/lib/capture-error';
 
 // FDD_TIMEOUT_MS (llm-client.ts) budgets the model call at up to 120s;
 // without an explicit maxDuration override this route inherits Vercel's
@@ -83,7 +84,7 @@ export async function POST(request: NextRequest) {
       .eq('id', fdd_id);
 
     if (updateErr) {
-      console.error('Report persist error:', updateErr);
+      captureApiError(updateErr, { route: 'fdd/report', stage: 'persist', userId: user.id, fddId: fdd_id });
     }
 
     // Write platform integration keys (non-blocking — we don't await errors)
@@ -92,11 +93,11 @@ export async function POST(request: NextRequest) {
       if (!appId) return;
       const updates = deriveFddAnswerKeys(fields, scoring, territory, report, analysis as Record<string, unknown>);
       await writeFddAnswerKeys(service, appId, updates);
-    })().catch(err => console.error('Platform integration error:', err));
+    })().catch(err => captureApiError(err, { route: 'fdd/report', stage: 'platform-integration', userId: user.id, fddId: fdd_id }));
 
     return NextResponse.json({ final_report: report });
   } catch (err) {
-    console.error('Report route error:', err);
+    captureApiError(err, { route: 'fdd/report' });
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Report generation failed' },
       { status: 500 }

@@ -7,6 +7,7 @@ import type { FddAnalysis, FddExtractedFields } from '@/types/fdd';
 import type { ScoringResult } from '@/lib/fdd-scoring-engine';
 import type { TerritoryAnalysis } from '@/lib/fdd-territory-engine';
 import type { ComparisonColumn, CompareResponse, VerdictEntry } from '@/types/fdd-compare';
+import { captureApiError } from '@/lib/capture-error';
 
 export type { ComparisonColumn, CompareResponse, VerdictEntry };
 
@@ -56,7 +57,7 @@ export async function POST(request: NextRequest) {
     const verdict = computeVerdict(ordered);
     return NextResponse.json({ columns: ordered, best, verdict });
   } catch (err) {
-    console.error('Compare error:', err);
+    captureApiError(err, { route: 'fdd/compare' });
     return NextResponse.json({ error: err instanceof Error ? err.message : 'Compare failed' }, { status: 500 });
   }
 }

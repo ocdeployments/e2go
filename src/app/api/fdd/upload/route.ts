@@ -3,6 +3,7 @@ import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { sanitizeFilename, validateMagicBytes } from '@/lib/document-validation';
 import type { FddUploadIntake } from '@/types/fdd';
+import { captureApiError } from '@/lib/capture-error';
 
 const MAX_FDD_SIZE = 50 * 1024 * 1024; // 50MB — FDDs can be large
 
@@ -87,7 +88,7 @@ export async function POST(request: NextRequest) {
       });
 
     if (uploadError) {
-      console.error('[fdd/upload] Storage error:', uploadError);
+      captureApiError(uploadError, { route: 'fdd/upload', stage: 'storage', userId: user.id, fileName: safeFilename });
       return NextResponse.json({ error: 'File upload failed' }, { status: 500 });
     }
 
@@ -113,7 +114,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (dbError || !record) {
-      console.error('[fdd/upload] DB error:', dbError);
+      captureApiError(dbError ?? new Error('fdd_analyses insert returned no record'), { route: 'fdd/upload', stage: 'db-insert', userId: user.id, fileName: safeFilename });
       await serviceClient.storage.from('application-documents').remove([storagePath]);
       return NextResponse.json({ error: 'Failed to create analysis record' }, { status: 500 });
     }
@@ -124,7 +125,7 @@ export async function POST(request: NextRequest) {
       storage_path: storagePath,
     });
   } catch (error) {
-    console.error('[fdd/upload] Error:', error);
+    captureApiError(error, { route: 'fdd/upload' });
     return NextResponse.json({ error: 'Upload failed' }, { status: 500 });
   }
 }

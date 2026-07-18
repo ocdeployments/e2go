@@ -5,6 +5,7 @@ import { checkRateLimit } from '@/lib/rate-limit';
 import { isKillSwitchEnabled } from '@/lib/kill-switch';
 import { extractFddText, extractFdd } from '@/lib/fdd-extraction-engine';
 import type { FddSSEEvent } from '@/types/fdd';
+import { captureApiError } from '@/lib/capture-error';
 
 // POST /api/fdd/extract — SSE stream
 // Body: { fdd_id: string }
@@ -180,7 +181,7 @@ export async function POST(request: NextRequest) {
           },
         });
       } catch (error) {
-        console.error('[fdd/extract] Pipeline error:', error);
+        captureApiError(error, { route: 'fdd/extract', userId: user?.id });
         send({
           event: 'error',
           data: { message: error instanceof Error ? error.message : 'Extraction failed' },

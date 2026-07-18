@@ -7,6 +7,7 @@ import type { FddExtractedFields } from '@/types/fdd';
 import type { ScoringResult } from '@/lib/fdd-scoring-engine';
 import type { TerritoryAnalysis } from '@/lib/fdd-territory-engine';
 import type { FddProfessionalReport } from '@/lib/fdd-report-engine';
+import { captureApiError } from '@/lib/capture-error';
 
 // ============================================================================
 // POST /api/fdd/writeback
@@ -49,7 +50,7 @@ export async function POST(request: NextRequest) {
     const preview = buildFddWritebackPreview(updates);
     return NextResponse.json({ preview, application_id: app.id });
   } catch (err) {
-    console.error('Writeback error:', err);
+    captureApiError(err, { route: 'fdd/writeback' });
     return NextResponse.json({ error: err instanceof Error ? err.message : 'Writeback failed' }, { status: 500 });
   }
 }

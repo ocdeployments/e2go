@@ -7,6 +7,7 @@ import { synthesizeInvestorProfile } from '@/lib/investor-profile-synthesizer';
 import { resolvePrimaryApplication } from '@/lib/resolve-application';
 import type { FddExtractedFields, FddQuestions } from '@/types/fdd';
 import type { ScoringResult } from '@/lib/fdd-scoring-engine';
+import { captureApiError } from '@/lib/capture-error';
 
 // POST /api/fdd/questions
 // Body: { fdd_id: string }
@@ -149,7 +150,7 @@ export async function POST(request: NextRequest) {
       .eq('id', fdd_id);
 
     if (updateErr) {
-      console.error('Questions persist error:', updateErr);
+      captureApiError(updateErr, { route: 'fdd/questions', stage: 'persist', userId: user.id, fddId: fdd_id });
     }
 
     return NextResponse.json({
@@ -159,7 +160,7 @@ export async function POST(request: NextRequest) {
       profile_match: result.profile_match,
     });
   } catch (err) {
-    console.error('Questions route error:', err);
+    captureApiError(err, { route: 'fdd/questions' });
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Question generation failed' },
       { status: 500 }

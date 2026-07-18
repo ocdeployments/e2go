@@ -8,6 +8,7 @@ import { synthesizeInvestorProfile } from '@/lib/investor-profile-synthesizer';
 import { resolvePrimaryApplication } from '@/lib/resolve-application';
 import { callFDDModel } from '@/lib/llm-client';
 import type { FddExtractedFields, FddE2Score } from '@/types/fdd';
+import { captureApiError } from '@/lib/capture-error';
 
 // POST /api/fdd/score
 // Body: { fdd_id: string }
@@ -129,12 +130,12 @@ export async function POST(request: NextRequest) {
       .eq('id', fdd_id);
 
     if (updateErr) {
-      console.error('Score persist error:', updateErr);
+      captureApiError(updateErr, { route: 'fdd/score', stage: 'persist', userId: user.id, fddId: fdd_id });
     }
 
     return NextResponse.json({ e2_score: e2Score });
   } catch (err) {
-    console.error('Score route error:', err);
+    captureApiError(err, { route: 'fdd/score' });
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Scoring failed' },
       { status: 500 }
@@ -216,7 +217,7 @@ Return as JSON: {"OVERALL_VERDICT":"...","STRENGTHS":"...","CONCERNS":"...","ATT
     }
     return { OVERALL_VERDICT: text, STRENGTHS: '', CONCERNS: '', ATTORNEY_NOTE: '' };
   } catch (err) {
-    console.error('Narrative generation error:', err);
+    captureApiError(err, { route: 'fdd/score', stage: 'narrative-generation' });
     return {
       OVERALL_VERDICT: `This franchise scored ${overallLabel} for E-2 compatibility.`,
       STRENGTHS: '',
