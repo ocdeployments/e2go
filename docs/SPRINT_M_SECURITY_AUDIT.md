@@ -52,7 +52,7 @@ the original task literally.
 
 ---
 
-## M-2 — Roll out `captureApiError()` to the rest of the API surface (MEDIUM-HIGH)
+## M-2 — Roll out `captureApiError()` to the rest of the API surface (MEDIUM-HIGH) — ✅ DONE
 
 **Problem:** Sentry is genuinely configured (real DSN, PII-scrubbing
 `beforeSend` in `instrumentation.ts`/`instrumentation-client.ts`) and a
@@ -66,6 +66,20 @@ takes the error + route context). Do this as a mechanical pass, not a
 refactor — don't change control flow, only the error-reporting call. Batch
 by directory (e.g. all of `fdd/*` first, then `dashboard/*`, etc.) so it's
 reviewable in reasonably sized commits, not one 108-file commit.
+
+**Resolution (shipped, Session 129):** all 78 remaining routes with bare
+`console.error` in a catch/error site converted to `captureApiError()`, in
+15 commits batched by directory (`account`, `admin`, `ai/analysis/answers/
+auth`, `case-file/case/checkout/consent`, `cron`, `dashboard`, `documents`,
+`email/faq`, `fdd`, `followup`, misc singles, `generate`, `market-analysis`,
+`simulator`, `stripe` — `stripe/webhook` handled last with extra care, only
+the 3 `console.error` call sites swapped, no control-flow changes). Sites
+with no real caught error object use `new Error('descriptive message')` per
+the convention already established in `apply/parse-document/route.ts`.
+`_sentry-tunnel` intentionally excluded (Sentry's own proxy route).
+`console.warn` fallback/retry logging left untouched — only `console.error`
+converted. `tsc --noEmit` clean, jest 175/175, zero regressions. No bare
+`console.error` remains in any `src/app/api/**/route.ts` catch site.
 
 ---
 
@@ -134,11 +148,10 @@ surfaced two live production bugs, not just gaps:
   prefix. Every signup was silently skipping CAPTCHA verification. Fixed by
   correcting the code to read the var name that actually exists.
 
-Step 2 (adding `checkRateLimit` to the 5 uncovered routes) — **not done
-this session**, deferred: fixing the two live bugs took priority, and doing
-that mechanical rollout right after just having established the Redis
-config actually works felt safer as a follow-up rather than bundling it
-into the same push. Still open for the next agent.
+Step 2 (adding `checkRateLimit` to the 5 uncovered routes) — **✅ done,
+Session 128 (Sprint N-6)**: `market-analysis`, `fdd/report`, `fdd/territory`,
+`fdd/compare` on the new fail-open `fdd-analysis` profile; `documents/extract`
+on `parse-doc`. One commit per route, jest 175/175 + tsc clean per commit.
 
 ---
 
@@ -197,8 +210,10 @@ never "done," just tracked as an ongoing convention once started.
 - M-4: ✅ done — found and fixed two live production bugs (see above): missing
   `UPSTASH_REDIS_REST_URL` causing generate/fdd routes to 429 on every
   request, and a `CF_TURNSTILE_SECRET_KEY`/`TURNSTILE_SECRET_KEY` name
-  mismatch silently disabling CAPTCHA. **Production redeploy still needed**
-  to pick up the new Upstash var. Task 2 of M-4 (add `checkRateLimit` to 5
-  more routes) still open.
-- M-2, M-5, M-6: not yet started. Next up: M-2 (Sentry rollout) or M-5
-  (schema consolidation) — either can go next; M-6 stays lowest priority.
+  mismatch silently disabling CAPTCHA. Task 2 of M-4 (add `checkRateLimit`
+  to 5 more routes) also done, Session 128 (Sprint N-6). **Production
+  redeploy still needed** to pick up the new Upstash var — separately,
+  the currently-live `UPSTASH_REDIS_REST_TOKEN` doesn't match the
+  provisioned database (`WRONGPASS`); see `BUILD_TRACKER.md` P0 banner.
+- M-2: ✅ done, Session 129 — see above.
+- M-5: not yet started. M-6 stays lowest priority, ongoing once started.
