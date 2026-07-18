@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { callLLM } from '@/lib/llm-client';
+import { captureApiError } from '@/lib/capture-error';
 
 function getSupabase() {
   return createClient(
@@ -50,7 +51,7 @@ export async function POST(request: NextRequest) {
       .order('question_number', { ascending: true });
 
     if (responsesError) {
-      console.error('Responses load error:', responsesError);
+      captureApiError(responsesError, { route: 'followup/completion-summary', stage: 'responses-load', userId: user.id, applicationId });
       return NextResponse.json({ error: 'Failed to load responses' }, { status: 500 });
     }
 
@@ -62,7 +63,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (voiceError) {
-      console.error('Voice profile load error:', voiceError);
+      captureApiError(voiceError, { route: 'followup/completion-summary', stage: 'voice-profile-load', userId: user.id, applicationId });
     }
 
     if (!responses || responses.length === 0) {
@@ -113,7 +114,7 @@ Return ONLY the JSON array. No other text.`;
     let summary: string[];
 
     if (!aiResponse) {
-      console.error('AI summary error: all providers failed');
+      captureApiError(new Error('AI summary error: all providers failed'), { route: 'followup/completion-summary', stage: 'ai-summary', userId: user.id, applicationId });
       // Generate generic bullets from response content
       summary = GENERIC_BULLETS;
     } else {
@@ -127,8 +128,8 @@ Return ONLY the JSON array. No other text.`;
             summary = GENERIC_BULLETS;
           }
         }
-      } catch {
-        console.error('JSON parse error for summary:', aiResponse);
+      } catch (parseErr) {
+        captureApiError(parseErr, { route: 'followup/completion-summary', stage: 'json-parse', userId: user.id, applicationId, aiResponse });
         summary = GENERIC_BULLETS;
       }
     }
@@ -144,7 +145,7 @@ Return ONLY the JSON array. No other text.`;
 
     return NextResponse.json({ summary });
   } catch (error) {
-    console.error('Completion summary error:', error);
+    captureApiError(error, { route: 'followup/completion-summary' });
     return NextResponse.json({ summary: GENERIC_BULLETS }, { status: 200 });
   }
 }

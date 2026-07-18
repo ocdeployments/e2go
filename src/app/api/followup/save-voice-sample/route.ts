@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
+import { captureApiError } from '@/lib/capture-error';
 
 function getSupabase() {
   return createClient(
@@ -156,7 +157,7 @@ ${voiceSampleText}`;
       .single();
 
     if (voiceError) {
-      console.error('Voice profile save error:', voiceError);
+      captureApiError(voiceError, { route: 'followup/save-voice-sample', userId: user.id, applicationId });
       return NextResponse.json({ error: 'Failed to save voice profile' }, { status: 500 });
     }
 
@@ -176,7 +177,7 @@ ${voiceSampleText}`;
       score,
     });
   } catch (error) {
-    console.error('Save voice sample error:', error);
+    captureApiError(error, { route: 'followup/save-voice-sample' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

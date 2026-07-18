@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { callLLM } from '@/lib/llm-client';
 import { getOperationalNeeds } from '@/lib/business-operational-needs';
+import { captureApiError } from '@/lib/capture-error';
 
 function getSupabase() {
   return createClient(
@@ -92,7 +93,7 @@ export async function POST(request: NextRequest) {
       .eq('application_id', applicationId);
 
     if (answersError) {
-      console.error('Answers load error:', answersError);
+      captureApiError(answersError, { route: 'followup/generate-questions', stage: 'answers-load', userId: user.id, applicationId });
     }
 
     // Build context from answers
@@ -191,7 +192,7 @@ in this application.`;
     });
 
     if (!aiResponse) {
-      console.error('AI generation error: all providers failed');
+      captureApiError(new Error('AI generation error: all providers failed'), { route: 'followup/generate-questions', stage: 'ai-generation', userId: user.id, applicationId });
       return NextResponse.json({ questions: DEFAULT_QUESTIONS });
     }
 
@@ -292,11 +293,11 @@ Return ONLY a JSON object with these fields:
 
       return NextResponse.json({ questions: finalQuestions });
     } catch (parseError) {
-      console.error('JSON parse error:', parseError, aiResponse);
+      captureApiError(parseError, { route: 'followup/generate-questions', stage: 'json-parse', userId: user.id, applicationId, aiResponse });
       return NextResponse.json({ questions: DEFAULT_QUESTIONS });
     }
   } catch (error) {
-    console.error('Generate questions error:', error);
+    captureApiError(error, { route: 'followup/generate-questions' });
     return NextResponse.json({ questions: DEFAULT_QUESTIONS }, { status: 200 });
   }
 }
