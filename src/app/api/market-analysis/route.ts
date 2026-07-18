@@ -4,6 +4,7 @@ import { analyseTeritoryForBusiness } from '@/lib/fdd-territory-engine';
 import type { TerritoryAnalysis } from '@/lib/fdd-territory-engine';
 import { resolvePrimaryApplicationId } from '@/lib/resolve-application';
 import { checkRateLimit } from '@/lib/rate-limit';
+import { captureApiError } from '@/lib/capture-error';
 
 export async function GET(req: NextRequest) {
   const supabase = await createSupabaseServerClient();
@@ -150,14 +151,14 @@ export async function POST(req: NextRequest) {
         }
       } catch (writeErr) {
         // Non-blocking — log but never fail the response
-        console.error('[market-analysis] Score writeback failed:', writeErr);
+        captureApiError(writeErr, { route: 'market-analysis', stage: 'score-writeback', userId: user.id, applicationId });
       }
     };
     void resolveAndWriteBack();
 
     return NextResponse.json(analysis);
   } catch (err) {
-    console.error('Market analysis error:', err);
+    captureApiError(err, { route: 'market-analysis', userId: user.id });
     return NextResponse.json(
       { error: 'Analysis failed. Please try again.' },
       { status: 500 }

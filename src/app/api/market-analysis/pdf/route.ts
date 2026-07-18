@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { analyseTeritoryForBusiness } from '@/lib/fdd-territory-engine';
 import { buildMarketAnalysisPdf } from '@/lib/market-analysis-pdf';
+import { captureApiError } from '@/lib/capture-error';
 
 export async function GET(req: NextRequest) {
   const supabase = await createSupabaseServerClient();
@@ -45,7 +46,7 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch (err) {
-    console.error('[market-analysis/pdf] generation failed:', err);
+    captureApiError(err, { route: 'market-analysis/pdf', userId: user.id });
     return NextResponse.json({ error: 'PDF generation failed' }, { status: 500 });
   }
 }
@@ -83,7 +84,7 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (err) {
-    console.error('[market-analysis/pdf] generation failed:', err);
+    captureApiError(err, { route: 'market-analysis/pdf', userId: user.id });
     return NextResponse.json({ error: 'PDF generation failed' }, { status: 500 });
   }
 }
