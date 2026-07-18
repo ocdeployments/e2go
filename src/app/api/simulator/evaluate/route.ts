@@ -6,21 +6,9 @@ import { isKillSwitchEnabled } from '@/lib/kill-switch';
 import { callLLM } from '@/lib/llm-client';
 import { analyzeDelivery } from '@/lib/delivery-analysis';
 import { uploadedDocTypeLabel, summarizeExtractedJson } from '@/lib/uploaded-doc-labels';
-import type { SimulatorContext, AnswerEvaluation } from '@/types/simulator';
+import type { AnswerEvaluation } from '@/types/simulator';
 import { captureApiError } from '@/lib/capture-error';
-
-interface PriorAnswer {
-  questionText: string;
-  answerText: string;
-}
-
-interface EvaluateRequest {
-  questionId: string;
-  questionText: string;
-  answer: string;
-  context: SimulatorContext;
-  priorAnswers?: PriorAnswer[];
-}
+import { evaluateRequestSchema } from '@/lib/api-schemas';
 
 export async function POST(request: NextRequest) {
   // Auth check
@@ -50,21 +38,21 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  let body: EvaluateRequest;
+  let rawBody: unknown;
   try {
-    body = await request.json();
+    rawBody = await request.json();
   } catch {
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
   }
 
-  const { questionId, questionText, answer, context, priorAnswers } = body;
-
-  if (!questionId || !questionText || !answer || !context) {
+  const parsed = evaluateRequestSchema.safeParse(rawBody);
+  if (!parsed.success) {
     return NextResponse.json(
-      { error: 'Missing required fields: questionId, questionText, answer, context' },
+      { error: 'Invalid request body', details: parsed.error.flatten() },
       { status: 400 }
     );
   }
+  const { questionId, questionText, answer, context, priorAnswers } = parsed.data;
 
   // Run delivery analysis synchronously — pure function, no cost
   const deliveryNotes = analyzeDelivery(answer);
