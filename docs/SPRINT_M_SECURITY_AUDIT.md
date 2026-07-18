@@ -155,7 +155,7 @@ on `parse-doc`. One commit per route, jest 175/175 + tsc clean per commit.
 
 ---
 
-## M-5 — Consolidate `docs/schema.sql`/`docs/schema_complete.sql` into a real migration (MEDIUM)
+## M-5 — Consolidate `docs/schema.sql`/`docs/schema_complete.sql` into a real migration (MEDIUM) — ✅ DONE
 
 **Problem:** foundational tables (`applications`, `users`, `quiz_sessions`,
 `answers`, `pdf_exports`) were never created via `supabase/migrations/` — they
@@ -173,6 +173,45 @@ equivalent against production first, since Session 123's K-4.5 audit already
 flagged that live schema has drifted from `docs/` in at least one other area
 — `application_lifecycle`). This is a real, if low-urgency, disaster-recovery
 gap — treat it as a dedicated task, not a quick copy-paste of the docs/ files.
+
+**Resolution (shipped, Session 130, commit `be5b4b1`):** pulled the live
+production schema via `supabase db dump --linked --schema public` (required
+starting Docker first — no local dump credentials in `.env.local`), then
+extracted just the 17 genuinely-missing tables (`admin_users`,
+`ai_usage_log`, `answers`, `application_lifecycle`, `applications`,
+`feature_flags`, `nps_scores`, `pdf_exports`, `profiles`, `quiz_sessions`,
+`referral_leads`, `referral_partners`, `simulation_answers`,
+`simulation_sessions`, `ticket_replies`, `tickets`, `users`) — confirmed via
+a table-name-anchored regex scan of the full 71-table live schema, not
+substring matching (which had originally, incorrectly, excluded `profiles`
+and `tickets` because they're substrings of `case_profiles` and
+`support_tickets`).
+
+Written as `supabase/migrations/0000_initial_schema.sql` (sorts first, runs
+on a fresh `supabase db reset`) plus a companion
+`20260628210000_initial_schema_fks_deferred.sql` for the 2 FK constraints
+that reference tables outside this set (`answers → family_members`,
+`applications → payments`), timestamped after both dependencies'
+migrations so ordering holds.
+
+Idempotency required going beyond this repo's usual `DROP CONSTRAINT/POLICY
+IF EXISTS` convention: `CREATE TABLE`/`INDEX IF NOT EXISTS` and
+`DROP POLICY IF EXISTS` + `CREATE POLICY` are safe as usual, but
+`ADD CONSTRAINT` statements are wrapped in a `pg_constraint`-existence-
+checked `DO` block instead of drop-then-add — because these 17 tables are
+already live in production with other tables' foreign keys pointing at
+their primary keys; a `DROP CONSTRAINT` on e.g. `applications_pkey` would
+either fail outright or (with `CASCADE`) silently destroy every other
+table's FK pointing at `applications`, which is unacceptable against a
+live database. Verified: 17/17 `CREATE TABLE`, 40 constraints, 59 indexes,
+53 policies, 51 grants, paren/DO-block balance checked, `tsc --noEmit`
+clean, jest 175/175. Not replayed against a local Supabase reset (another
+project's local Postgres container was already holding the dev port;
+left it running rather than stopping someone else's session) — the SQL was
+instead verified by direct read-through against the live dump plus the
+idempotency-pattern reasoning above. This migration has not been pushed to
+production (`supabase db push`) — that's an infrastructure-affecting action
+outside this session's scope; flag to Romy before running it.
 
 ---
 
@@ -216,4 +255,5 @@ never "done," just tracked as an ongoing convention once started.
   the currently-live `UPSTASH_REDIS_REST_TOKEN` doesn't match the
   provisioned database (`WRONGPASS`); see `BUILD_TRACKER.md` P0 banner.
 - M-2: ✅ done, Session 129 — see above.
-- M-5: not yet started. M-6 stays lowest priority, ongoing once started.
+- M-5: ✅ done, Session 130 — see above. Migration written, not yet pushed
+  to production. M-6 stays lowest priority, ongoing once started.
