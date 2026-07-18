@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { checkRateLimit } from '@/lib/rate-limit';
+import { captureApiError } from '@/lib/capture-error';
 
 const resend = process.env.RESEND_API_KEY
   ? new Resend(process.env.RESEND_API_KEY)
@@ -114,7 +115,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ sent: true });
   } catch (error) {
-    console.error("[franchise-referral] Email send failed:", error);
+    captureApiError(error, { route: 'notifications/franchise-referral' });
     return NextResponse.json(
       { sent: false, error: "Failed to send notification" },
       { status: 500 }

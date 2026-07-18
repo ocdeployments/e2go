@@ -3,6 +3,7 @@ import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { resolvePrimaryApplicationId } from '@/lib/resolve-application';
 import { Resend } from 'resend';
+import { captureApiError } from '@/lib/capture-error';
 
 // TODO(OPQ-2): Change BROKER_NOTIFICATION_EMAIL to a CRM webhook or internal
 // inbox once the broker handoff mechanism decision is resolved.
@@ -94,7 +95,7 @@ export async function POST(request: NextRequest) {
           `,
         });
       } catch (e) {
-        console.error('Resend broker-request email failed:', e);
+        captureApiError(e, { route: 'franchise/broker-request', stage: 'resend-send', userId: user.id });
       }
     } else {
       console.log('[broker-request] RESEND_API_KEY not set. Request from:', user.email, '| Categories:', matchCategories);
@@ -102,7 +103,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ ok: true });
   } catch (err) {
-    console.error('[broker-request] error:', err);
+    captureApiError(err, { route: 'franchise/broker-request' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

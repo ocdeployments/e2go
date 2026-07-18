@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { isKillSwitchEnabled } from '@/lib/kill-switch';
 import { callLLM } from '@/lib/llm-client';
+import { captureApiError } from '@/lib/capture-error';
 
 interface EnrichRequest {
   categoryId: string;
@@ -91,7 +92,7 @@ Write in second person ("Your..."), plain language, no bullet points, no markdow
       enrichment: content?.trim() || null,
     });
   } catch (error) {
-    console.error(`[gap-enrich] Failed for category ${categoryId}:`, error);
+    captureApiError(error, { route: 'gap-analysis/enrich', categoryId, userId: user.id });
     return NextResponse.json({ categoryId, enrichment: null });
   }
 }

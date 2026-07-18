@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { createClient } from '@supabase/supabase-js';
+import { captureApiError } from '@/lib/capture-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -58,7 +59,7 @@ export async function POST(req: NextRequest) {
   });
 
   if (insertError) {
-    console.error('[nps/submit] Insert error:', insertError.message);
+    captureApiError(insertError, { route: 'nps/submit', userId: user.id });
     return NextResponse.json({ error: 'Failed to submit' }, { status: 500 });
   }
 

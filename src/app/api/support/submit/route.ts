@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { Resend } from 'resend';
+import { captureApiError } from '@/lib/capture-error';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 const ADMIN_EMAIL = 'romyjames@gmail.com';
@@ -58,7 +59,7 @@ export async function POST(request: Request) {
       .single();
 
     if (error) {
-      console.error('[support/submit] DB error:', error);
+      captureApiError(error, { route: 'support/submit', stage: 'db-insert', userId: user?.id });
       return NextResponse.json({ error: 'Failed to submit ticket.' }, { status: 500 });
     }
 
@@ -76,12 +77,12 @@ export async function POST(request: Request) {
         <p>${message.trim().replace(/\n/g, '<br/>')}</p>
       `,
     }).catch((err) => {
-      console.error('[support/submit] Email error (non-fatal):', err);
+      captureApiError(err, { route: 'support/submit', stage: 'email-send', userId: user?.id });
     });
 
     return NextResponse.json({ success: true, ticketId: ticket.id });
   } catch (err) {
-    console.error('[support/submit] Unexpected error:', err);
+    captureApiError(err, { route: 'support/submit' });
     return NextResponse.json({ error: 'Unexpected error.' }, { status: 500 });
   }
 }

@@ -6,6 +6,7 @@ import { isKillSwitchEnabled } from '@/lib/kill-switch';
 import { callLLM } from '@/lib/llm-client';
 import { computeRenewalReconciliation } from '@/lib/renewal-reconciliation';
 import { computeRenewalGaps, buildGapAnalysisDocument, summarizeGapsForPrompt } from '@/lib/renewal-gap-analysis';
+import { captureApiError } from '@/lib/capture-error';
 
 // POST /api/renewal/generate
 // Generates the renewal document package (cover letter, BP update, Template 6, checklist)
@@ -410,7 +411,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ generated: true, documents });
   } catch (error) {
-    console.error('[renewal/generate] Pipeline error:', error);
+    captureApiError(error, { route: 'renewal/generate', userId: user.id, intakeId });
     await svc
       .from('renewal_intakes')
       .update({ status: 'complete' })

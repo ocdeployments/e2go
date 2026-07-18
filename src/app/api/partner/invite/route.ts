@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { Resend } from 'resend';
+import { captureApiError } from '@/lib/capture-error';
 
 function buildInviteEmail(params: {
   senderName: string;
@@ -206,7 +207,7 @@ export async function POST(request: NextRequest) {
         html: buildInviteEmail({ senderName, partnerEmail, acceptUrl }),
       });
     } catch (err) {
-      console.error('[PARTNER INVITE] Resend error:', err);
+      captureApiError(err, { route: 'partner/invite', stage: 'resend-send', userId: user.id });
     }
   } else {
     console.log('[PARTNER INVITE] No RESEND_API_KEY — would send to:', partnerEmail, acceptUrl);

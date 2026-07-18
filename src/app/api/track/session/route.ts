@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { extractGeo, COUNTRY_NAMES } from '@/lib/geo';
+import { captureApiError } from '@/lib/capture-error';
 
 // POST /api/track/session
 // Called from the client after email/password login to record the login event with geo data.
@@ -29,7 +30,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ ok: true });
   } catch (err) {
-    console.error('[track/session]', err);
+    captureApiError(err, { route: 'track/session' });
     return NextResponse.json({ error: 'Failed' }, { status: 500 });
   }
 }
