@@ -2,7 +2,10 @@
  * Rate limiting for API routes — Upstash Redis (sliding window)
  *
  * Config: UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN in .env.local / Vercel env vars
- * Without Upstash configured, all limits fail open (allow) — add Upstash to enable enforcement.
+ * Without Upstash configured — or when Redis is unreachable — limits fall back
+ * to a per-instance in-memory counter. That is weaker than Redis (each
+ * serverless instance keeps its own tally) but it keeps cost-critical routes
+ * bounded instead of leaving them unlimited, and it never takes a route down.
  *
  * Profiles:
  *   faq           — 10 req / 10 min   (public search widget)
@@ -12,7 +15,7 @@
  *   transcribe    — 60 req / 10 min   (voice: answer audio per interview)
  *   generate      — 4 req / 60 min    (doc gen: expensive Anthropic call)
  *   fdd           — 3 req / 60 min    (FDD extract + score: expensive LLM pipeline)
- *   fdd-analysis  — 10 req / 60 min   (FDD report/territory/compare + market analysis; fails open)
+ *   fdd-analysis  — 10 req / 60 min   (FDD report/territory/compare + market analysis)
  *   semantic-eval — 10 req / 10 min   (gap analysis semantic evaluation)
  *   parse-doc     — 10 req / 10 min   (document parse/comprehension)
  *   notification  — 3 req / 60 min    (admin-inbox notifications, e.g. franchise referral)
@@ -38,10 +41,6 @@ const PROFILES: Record<RateLimitProfile, { requests: number; window: string }> =
   'gap-analysis-run': { requests: 10,  window: '10 m' },
 };
 
-// Profiles that fail CLOSED (block) when Redis is unavailable — unbounded
-// LLM cost is worse than temporary unavailability. Everything else fails open.
-const COST_CRITICAL: RateLimitProfile[] = ['generate', 'fdd'];
-
 const limiters = new Map<RateLimitProfile, Ratelimit>();
 
 function getRedis(): Redis | null {
@@ -60,8 +59,8 @@ function getLimiter(profile: RateLimitProfile): Ratelimit | null {
     redis = getRedis();
     if (!redis) {
       console.warn(
-        '⚠️  Upstash Redis not configured — rate limiting disabled. ' +
-        'Add UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN to enable.'
+        '⚠️  Upstash Redis not configured — falling back to per-instance in-memory rate limiting. ' +
+        'Add UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN for shared enforcement.'
       );
     }
   }
@@ -80,6 +79,47 @@ function getLimiter(profile: RateLimitProfile): Ratelimit | null {
   return limiter;
 }
 
+// ---------------------------------------------------------------------------
+// In-memory fallback — used when Redis is unconfigured or unreachable.
+// ---------------------------------------------------------------------------
+const WINDOW_UNITS: Record<string, number> = {
+  ms: 1,
+  s: 1000,
+  m: 60 * 1000,
+  h: 60 * 60 * 1000,
+  d: 24 * 60 * 60 * 1000,
+};
+
+/** Parse an Upstash window string ('10 m', '60 m') into milliseconds. */
+function windowMs(window: string): number {
+  const match = /^(\d+)\s*(ms|s|m|h|d)$/.exec(window.trim());
+  if (!match) return 60 * 60 * 1000; // unparseable — assume the longest common window
+  return Number(match[1]) * WINDOW_UNITS[match[2]];
+}
+
+const memoryCounters = new Map<string, { count: number; resetAt: number }>();
+
+function memoryLimit(profile: RateLimitProfile, identifier: string): RateLimitResult {
+  const { requests, window } = PROFILES[profile];
+  const key = `${profile}:${identifier}`;
+  const now = Date.now();
+  const record = memoryCounters.get(key);
+
+  if (!record || now > record.resetAt) {
+    const resetAt = now + windowMs(window);
+    memoryCounters.set(key, { count: 1, resetAt });
+    return { allowed: true, remaining: requests - 1, reset: Math.ceil((resetAt - now) / 1000) };
+  }
+
+  const reset = Math.ceil((record.resetAt - now) / 1000);
+  if (record.count >= requests) {
+    return { allowed: false, remaining: 0, reset };
+  }
+
+  record.count += 1;
+  return { allowed: true, remaining: requests - record.count, reset };
+}
+
 export interface RateLimitResult {
   allowed: boolean;
   remaining: number;
@@ -92,27 +132,22 @@ export async function checkRateLimit(
 ): Promise<RateLimitResult> {
   const limiter = getLimiter(profile);
 
-  if (!limiter) {
-    // Upstash not configured — fail CLOSED on cost-critical profiles, open on others
-    if (COST_CRITICAL.includes(profile)) {
-      console.error(`[rate-limit] Upstash not configured — blocking ${profile} to prevent unbounded cost. Set UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN.`);
-      return { allowed: false, remaining: 0, reset: 0 };
-    }
-    return { allowed: true, remaining: 999, reset: 0 };
-  }
+  if (!limiter) return memoryLimit(profile, identifier);
 
   let result;
   try {
     result = await limiter.limit(identifier);
+    // `limit()` settles its background work (multi-region sync, analytics) on
+    // `pending`. Upstash requires the caller to handle it explicitly on edge
+    // runtimes; left unhandled a dead Redis produces an unhandled rejection
+    // that can abort the whole invocation.
+    void Promise.resolve(result.pending).catch(() => {});
   } catch (err) {
-    // Redis unreachable or auth failure (e.g. WRONGPASS) — a limiter outage
-    // must not turn every rate-limited route into a 500. Apply the same
-    // policy as the unconfigured case: closed for cost-critical, open else.
-    console.error(`[rate-limit] Redis error on ${profile} — ${COST_CRITICAL.includes(profile) ? 'failing closed' : 'failing open'}:`, err instanceof Error ? err.message : err);
-    if (COST_CRITICAL.includes(profile)) {
-      return { allowed: false, remaining: 0, reset: 0 };
-    }
-    return { allowed: true, remaining: 999, reset: 0 };
+    // Redis unreachable, deleted, or auth failure (e.g. WRONGPASS). Fall back
+    // to the in-memory counter: cost-critical profiles stay bounded per
+    // instance, and no route goes down because the cache is gone.
+    console.error(`[rate-limit] Redis error on ${profile} — falling back to in-memory:`, err instanceof Error ? err.message : err);
+    return memoryLimit(profile, identifier);
   }
 
   return {
