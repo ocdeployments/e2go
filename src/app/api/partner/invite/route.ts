@@ -201,7 +201,7 @@ export async function POST(request: NextRequest) {
     const resend = new Resend(process.env.RESEND_API_KEY);
     try {
       await resend.emails.send({
-        from: 'onboarding@resend.dev',
+        from: 'e2go <notifications@e2go.app>',
         to: partnerEmail,
         subject: `${senderName} has granted you Interview Prep access on E2go`,
         html: buildInviteEmail({ senderName, partnerEmail, acceptUrl }),
