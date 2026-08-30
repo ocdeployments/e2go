@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
 
       try {
         await resend.emails.send({
-          from: 'onboarding@resend.dev', // TODO: change to notifications@e2go.app once domain is verified
+          from: 'e2go <notifications@e2go.app>',
           to: BROKER_NOTIFICATION_EMAIL,
           subject: 'New Broker Connection Request',
           html: `
