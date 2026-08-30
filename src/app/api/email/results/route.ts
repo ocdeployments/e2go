@@ -110,7 +110,7 @@ export async function POST(req: Request) {
     const resend = new Resend(process.env.RESEND_API_KEY);
     try {
       const { error: resendError } = await resend.emails.send({
-        from: 'onboarding@resend.dev', // TEMP: revert to results@e2go.app once domain verified in Resend
+        from: 'e2go <results@e2go.app>',
         to: email,
         subject,
         html: htmlContent,
