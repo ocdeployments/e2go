@@ -63,6 +63,34 @@ interface LimitSpec {
 }
 
 /**
+ * Circuit breaker for Redis.
+ *
+ * A deleted or unreachable Upstash host does not fail fast: every call pays a
+ * DNS/connect timeout before it rejects. Middleware runs on every gated
+ * navigation and makes several Redis calls per request, so a dead Redis adds
+ * seconds of latency to each page load even though every call site below
+ * already degrades correctly on its own.
+ *
+ * After a failure we stop calling Redis for a cooldown and go straight to the
+ * in-memory path. The first call after the cooldown probes Redis again, so the
+ * circuit closes by itself once Redis comes back.
+ */
+const REDIS_COOLDOWN_MS = 30_000;
+let redisDownUntil = 0;
+
+function redisAvailable(): boolean {
+  return Date.now() >= redisDownUntil;
+}
+
+function noteRedisFailure(): void {
+  redisDownUntil = Date.now() + REDIS_COOLDOWN_MS;
+}
+
+function noteRedisSuccess(): void {
+  redisDownUntil = 0;
+}
+
+/**
  * Enforce a rate limit, degrading rather than failing when Redis is unavailable.
  *
  * Two failure modes are handled here:
@@ -80,33 +108,40 @@ interface LimitSpec {
  */
 async function enforceLimit({ limiter, ip, name, limit, windowMs }: LimitSpec): Promise<boolean> {
   const fallbackKey = `${name}:${ip}`;
-  if (!limiter) return devCheckRateLimit(fallbackKey, limit, windowMs);
+  if (!limiter || !redisAvailable()) return devCheckRateLimit(fallbackKey, limit, windowMs);
 
   try {
     const result = await limiter.limit(ip);
     void Promise.resolve(result.pending).catch(() => {});
+    noteRedisSuccess();
     return result.success;
   } catch (err) {
+    noteRedisFailure();
     console.error(`[middleware] Redis rate-limit unavailable on ${name} — falling back to in-memory:`, err instanceof Error ? err.message : err);
     return devCheckRateLimit(fallbackKey, limit, windowMs);
   }
 }
 
 async function safeCacheGet<T>(key: string): Promise<T | null> {
-  if (!redis) return null;
+  if (!redis || !redisAvailable()) return null;
   try {
-    return await redis.get<T>(key);
+    const value = await redis.get<T>(key);
+    noteRedisSuccess();
+    return value;
   } catch (err) {
+    noteRedisFailure();
     console.error('[middleware] Redis cache read error — treating as miss:', err instanceof Error ? err.message : err);
     return null;
   }
 }
 
 async function safeCacheSet(key: string, value: unknown, ex: number): Promise<void> {
-  if (!redis) return;
+  if (!redis || !redisAvailable()) return;
   try {
     await redis.set(key, value, { ex });
+    noteRedisSuccess();
   } catch (err) {
+    noteRedisFailure();
     console.error('[middleware] Redis cache write error — skipping:', err instanceof Error ? err.message : err);
   }
 }
