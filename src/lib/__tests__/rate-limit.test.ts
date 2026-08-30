@@ -168,3 +168,47 @@ describe('checkRateLimit — Redis healthy', () => {
     expect(limitMock).toHaveBeenCalledWith('user-1');
   });
 });
+
+describe('circuit breaker', () => {
+  it('stops calling Redis for a cooldown after a failure', async () => {
+    const { checkRateLimit } = await freshModule(REDIS_ENV);
+    limitMock.mockRejectedValue(new Error('fetch failed'));
+
+    await checkRateLimit('breaker-ip', 'faq');
+    expect(limitMock).toHaveBeenCalledTimes(1);
+
+    // A dead Upstash host only rejects after a DNS/connect timeout, so the
+    // breaker must not pay that cost again on every subsequent request.
+    for (let i = 0; i < 5; i++) await checkRateLimit('breaker-ip', 'faq');
+    expect(limitMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps enforcing the limit in memory while the circuit is open', async () => {
+    const { checkRateLimit } = await freshModule(REDIS_ENV);
+    limitMock.mockRejectedValue(new Error('fetch failed'));
+
+    // 'fdd' allows 3 per hour — the 4th must be refused even with Redis gone.
+    const results = [];
+    for (let i = 0; i < 4; i++) results.push(await checkRateLimit('breaker-fdd', 'fdd'));
+
+    expect(results.map(r => r.allowed)).toEqual([true, true, true, false]);
+    expect(limitMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('probes Redis again once the cooldown expires', async () => {
+    const { checkRateLimit } = await freshModule(REDIS_ENV);
+    limitMock.mockRejectedValueOnce(new Error('fetch failed'));
+
+    await checkRateLimit('breaker-recover', 'faq');
+    expect(limitMock).toHaveBeenCalledTimes(1);
+
+    // Jump past the 30s cooldown; Redis is healthy again on the next probe.
+    const realNow = Date.now;
+    jest.spyOn(Date, 'now').mockImplementation(() => realNow() + 31_000);
+    limitMock.mockResolvedValue({ success: true, remaining: 9, reset: realNow() + 60_000, pending: Promise.resolve() });
+
+    const result = await checkRateLimit('breaker-recover', 'faq');
+    expect(limitMock).toHaveBeenCalledTimes(2);
+    expect(result.allowed).toBe(true);
+  });
+});
