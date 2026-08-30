@@ -48,17 +48,47 @@ const quizLimiter = redis
   : null;
 
 // ---------------------------------------------------------------------------
-// Safe Redis wrappers — a Redis outage or auth failure (e.g. WRONGPASS) must
-// never 500 the middleware: rate limits fail open, cache reads fall back to
-// the DB path, cache writes are dropped.
+// Safe Redis wrappers — a Redis outage or auth failure (e.g. WRONGPASS, or a
+// deleted database) must never 500 the middleware: rate limits fall back to the
+// in-memory counter, cache reads fall back to the DB path, cache writes are
+// dropped.
 // ---------------------------------------------------------------------------
-async function safeLimit(limiter: Ratelimit, key: string): Promise<boolean> {
+interface LimitSpec {
+  limiter: Ratelimit | null;
+  ip: string;
+  /** Namespace for the in-memory fallback counter. */
+  name: string;
+  limit: number;
+  windowMs: number;
+}
+
+/**
+ * Enforce a rate limit, degrading rather than failing when Redis is unavailable.
+ *
+ * Two failure modes are handled here:
+ *  1. `limiter.limit()` rejecting — Redis unreachable, deleted, or WRONGPASS.
+ *  2. The SDK's `pending` promise rejecting. `limit()` settles background work
+ *     (multi-region sync, analytics) on that promise, and the Upstash docs
+ *     require the caller to handle it explicitly on the Edge runtime. Left
+ *     unhandled it becomes an unhandled rejection that aborts the whole
+ *     invocation — which is how a deleted Redis turned /login into a 500
+ *     even though the try/catch below was already in place.
+ *
+ * When Redis is gone we fall back to the in-memory counter rather than waving
+ * every request through: per-instance limiting is weaker than Redis, but it
+ * still blunts brute-force attempts instead of removing the limit entirely.
+ */
+async function enforceLimit({ limiter, ip, name, limit, windowMs }: LimitSpec): Promise<boolean> {
+  const fallbackKey = `${name}:${ip}`;
+  if (!limiter) return devCheckRateLimit(fallbackKey, limit, windowMs);
+
   try {
-    const { success } = await limiter.limit(key);
-    return success;
+    const result = await limiter.limit(ip);
+    void Promise.resolve(result.pending).catch(() => {});
+    return result.success;
   } catch (err) {
-    console.error('[middleware] Redis rate-limit error — failing open:', err instanceof Error ? err.message : err);
-    return true;
+    console.error(`[middleware] Redis rate-limit unavailable on ${name} — falling back to in-memory:`, err instanceof Error ? err.message : err);
+    return devCheckRateLimit(fallbackKey, limit, windowMs);
   }
 }
 
@@ -81,7 +111,7 @@ async function safeCacheSet(key: string, value: unknown, ex: number): Promise<vo
   }
 }
 
-// In-memory fallback (single-instance dev only)
+// In-memory fallback — dev, and any request where Redis is unreachable
 const devLimits = new Map<string, { count: number; resetAt: number }>();
 
 function devCheckRateLimit(key: string, limit: number, windowMs: number): boolean {
@@ -102,24 +132,14 @@ export async function middleware(req: NextRequest) {
 
   // Rate limit login route
   if ((pathname === '/login' || pathname === '/api/auth/v1/token') && process.env.NODE_ENV === 'production') {
-    if (loginLimiter) {
-      const success = await safeLimit(loginLimiter, ip);
-      if (!success) return NextResponse.json({ error: 'Too many attempts. Please wait a few minutes and try again.' }, { status: 429 });
-    } else {
-      const allowed = devCheckRateLimit(`login:${ip}`, 5, 15 * 60 * 1000);
-      if (!allowed) return NextResponse.json({ error: 'Too many attempts. Please wait a few minutes and try again.' }, { status: 429 });
-    }
+    const allowed = await enforceLimit({ limiter: loginLimiter, ip, name: 'login', limit: 5, windowMs: 15 * 60 * 1000 });
+    if (!allowed) return NextResponse.json({ error: 'Too many attempts. Please wait a few minutes and try again.' }, { status: 429 });
   }
 
   // Rate limit quiz submission
   if (pathname === '/api/quiz/submit' || pathname === '/api/email/results') {
-    if (quizLimiter) {
-      const success = await safeLimit(quizLimiter, ip);
-      if (!success) return NextResponse.json({ error: 'Too many attempts. Please wait a few minutes and try again.' }, { status: 429 });
-    } else {
-      const allowed = devCheckRateLimit(`quiz:${ip}`, 3, 60 * 60 * 1000);
-      if (!allowed) return NextResponse.json({ error: 'Too many attempts. Please wait a few minutes and try again.' }, { status: 429 });
-    }
+    const allowed = await enforceLimit({ limiter: quizLimiter, ip, name: 'quiz', limit: 3, windowMs: 60 * 60 * 1000 });
+    if (!allowed) return NextResponse.json({ error: 'Too many attempts. Please wait a few minutes and try again.' }, { status: 429 });
   }
 
   let supabaseResponse = NextResponse.next({ request: req });
