@@ -120,6 +120,22 @@ function memoryLimit(profile: RateLimitProfile, identifier: string): RateLimitRe
   return { allowed: true, remaining: requests - record.count, reset };
 }
 
+/**
+ * Circuit breaker — see the same pattern in src/middleware.ts.
+ *
+ * A deleted or unreachable Upstash host does not reject quickly; each call
+ * waits out a DNS/connect timeout first. Without a breaker every request to a
+ * rate-limited route pays that latency before falling back, which is slow
+ * enough to look like a hang. After a failure we use the in-memory counter
+ * directly for a cooldown, then probe Redis again.
+ */
+const REDIS_COOLDOWN_MS = 30_000;
+let redisDownUntil = 0;
+
+function redisAvailable(): boolean {
+  return Date.now() >= redisDownUntil;
+}
+
 export interface RateLimitResult {
   allowed: boolean;
   remaining: number;
@@ -132,11 +148,12 @@ export async function checkRateLimit(
 ): Promise<RateLimitResult> {
   const limiter = getLimiter(profile);
 
-  if (!limiter) return memoryLimit(profile, identifier);
+  if (!limiter || !redisAvailable()) return memoryLimit(profile, identifier);
 
   let result;
   try {
     result = await limiter.limit(identifier);
+    redisDownUntil = 0;
     // `limit()` settles its background work (multi-region sync, analytics) on
     // `pending`. Upstash requires the caller to handle it explicitly on edge
     // runtimes; left unhandled a dead Redis produces an unhandled rejection
@@ -146,6 +163,7 @@ export async function checkRateLimit(
     // Redis unreachable, deleted, or auth failure (e.g. WRONGPASS). Fall back
     // to the in-memory counter: cost-critical profiles stay bounded per
     // instance, and no route goes down because the cache is gone.
+    redisDownUntil = Date.now() + REDIS_COOLDOWN_MS;
     console.error(`[rate-limit] Redis error on ${profile} — falling back to in-memory:`, err instanceof Error ? err.message : err);
     return memoryLimit(profile, identifier);
   }
