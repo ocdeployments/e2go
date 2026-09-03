@@ -1,9 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
-import crypto from 'crypto';
-import { Resend } from 'resend';
-import { captureApiError } from '@/lib/capture-error';
+import { sendResultsEmail } from '@/lib/emails/results-email';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -48,7 +46,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Quiz session not found' }, { status: 404 });
     }
 
-    // Reject if completed more than 10 minutes ago
+    // Reject if completed more than 10 minutes ago. Stale sessions come back
+    // through /api/email/resend-results, which is rate limited.
     const completedAt = new Date(session.completed_at).getTime();
     if (Date.now() - completedAt > 10 * 60 * 1000) {
       return NextResponse.json({ error: 'Quiz session expired — please retake the quiz' }, { status: 410 });
@@ -61,68 +60,17 @@ export async function POST(req: Request) {
     franchise_interest = session.franchise_interest ?? false;
   }
 
-  // ── Generate token and insert verification record ──
-  const token = crypto.randomBytes(32).toString('hex');
+  const sent = await sendResultsEmail({
+    supabase,
+    email,
+    outcome,
+    result_json,
+    franchise_interest,
+    quiz_session_id: quiz_session_id || null,
+  });
 
-  const { error: dbError } = await supabase
-    .from('email_verifications')
-    .insert([{
-      email,
-      token,
-      quiz_session_id: quiz_session_id || null,
-      outcome,
-      result_json,
-      franchise_interest,
-    }]);
-
-  if (dbError) {
-    return NextResponse.json({ success: false, error: dbError.message }, { status: 500 });
-  }
-
-  // ── Send email via Resend ──
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-  const verifyLink = `${appUrl}/verify?token=${token}`;
-
-  const isQualified = ['PROCEED', 'PROCEED_RISK'].includes(outcome);
-  const subject = isQualified
-    ? "Good news — your E-2 eligibility result"
-    : "Your E-2 eligibility assessment result";
-
-  const htmlContent = isQualified
-    ? `
-      <div style="font-family: 'Cormorant Garamond', serif; color: #f5f0e8;">
-        <h1>Your eligibility assessment is ready.</h1>
-        <p>Based on your answers, you appear to meet the foundational requirements for an E-2 Treaty Investor visa. Your full result — including your readiness score — is waiting for you.</p>
-        <a href="${verifyLink}" style="background-color: #C9A84C; color: #0a0a0a; padding: 14px 28px; text-decoration: none;">View My Full Result →</a>
-        <footer style="margin-top: 40px; font-size: 12px; color: rgba(245,240,232,0.76);">
-          This link expires in 24 hours. e2go.app — document preparation tool, not a law firm.
-        </footer>
-      </div>
-    `
-    : `
-      <div style="font-family: 'Cormorant Garamond', serif; color: #f5f0e8;">
-        <p>You completed the e2go eligibility assessment. We have important information to share about your E-2 eligibility based on your answers.</p>
-        <a href="${verifyLink}" style="background-color: #C9A84C; color: #0a0a0a; padding: 14px 28px; text-decoration: none;">View My Result →</a>
-      </div>
-    `;
-
-  if (process.env.RESEND_API_KEY) {
-    const resend = new Resend(process.env.RESEND_API_KEY);
-    try {
-      const { error: resendError } = await resend.emails.send({
-        from: 'e2go <results@e2go.app>',
-        to: email,
-        subject,
-        html: htmlContent,
-      });
-      if (resendError) {
-        captureApiError(resendError, { route: 'email/results', stage: 'resend-send', email });
-      }
-    } catch (e) {
-      captureApiError(e, { route: 'email/results', stage: 'resend-exception', email });
-    }
-  } else {
-    console.log("TODO: Send email with content:", htmlContent);
+  if (!sent) {
+    return NextResponse.json({ success: false, error: 'Could not send the results email' }, { status: 500 });
   }
 
   return NextResponse.json({ success: true });
