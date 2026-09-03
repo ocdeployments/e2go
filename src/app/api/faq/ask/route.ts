@@ -107,15 +107,24 @@ async function searchCorpus(
   supabase: any,
   embedding: number[]
 ): Promise<{ answer: string; sources: string; similarity: number; question_id: string } | null> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any).rpc("match_faq_corpus", {
-    query_embedding: JSON.stringify(embedding),
-    match_threshold: LAYER1_THRESHOLD,
-    match_count: 1,
-  });
-
-  if (error) {
-    captureApiError(error, { route: 'faq/ask', stage: 'layer1-corpus-search' });
+  // The RPC can also reject outright (e.g. PGRST202 when the search functions
+  // are missing from the schema cache), so catch as well as check `error` —
+  // retrieval must never take the endpoint down, only degrade to Layer 3.
+  let data: { id: string; answer: string; sources: string | null; similarity: number }[] | null;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const res = await (supabase as any).rpc("match_faq_corpus", {
+      query_embedding: JSON.stringify(embedding),
+      match_threshold: LAYER1_THRESHOLD,
+      match_count: 1,
+    });
+    if (res.error) {
+      captureApiError(res.error, { route: 'faq/ask', stage: 'layer1-corpus-search' });
+      return null;
+    }
+    data = res.data;
+  } catch (err) {
+    captureApiError(err, { route: 'faq/ask', stage: 'layer1-corpus-search' });
     return null;
   }
 
@@ -138,15 +147,22 @@ async function searchKB(
   supabase: any,
   embedding: number[]
 ): Promise<string[] | null> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any).rpc("match_faq_kb", {
-    query_embedding: JSON.stringify(embedding),
-    match_threshold: 0.65,
-    match_count: 3,
-  });
-
-  if (error) {
-    captureApiError(error, { route: 'faq/ask', stage: 'layer2-kb-search' });
+  // Same contract as searchCorpus: a failing lookup degrades, never throws out.
+  let data: { chunk_text: string }[] | null;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const res = await (supabase as any).rpc("match_faq_kb", {
+      query_embedding: JSON.stringify(embedding),
+      match_threshold: 0.65,
+      match_count: 3,
+    });
+    if (res.error) {
+      captureApiError(res.error, { route: 'faq/ask', stage: 'layer2-kb-search' });
+      return null;
+    }
+    data = res.data;
+  } catch (err) {
+    captureApiError(err, { route: 'faq/ask', stage: 'layer2-kb-search' });
     return null;
   }
 
@@ -365,9 +381,16 @@ export async function POST(req: NextRequest) {
         matched_question_id: matchedQuestionId,
         similarity_score: similarityScore,
       })
-      .then(({ error }) => {
-        if (error) captureApiError(error, { route: 'faq/ask', stage: 'query-log' });
-      });
+      .then(
+        ({ error }) => {
+          if (error) captureApiError(error, { route: 'faq/ask', stage: 'query-log' });
+        },
+        // PostgrestBuilder is a PromiseLike without .catch — the rejection
+        // handler has to be the second argument or it goes unhandled.
+        (err: unknown) => {
+          captureApiError(err, { route: 'faq/ask', stage: 'query-log' });
+        }
+      );
 
     // ---- Return streaming response ----
     return new Response(stream, {
