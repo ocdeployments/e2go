@@ -8,6 +8,7 @@ import * as Sentry from '@sentry/nextjs';
  * fallback so nothing is silently swallowed either way.
  */
 export function captureApiError(err: unknown, context: { route: string; [key: string]: unknown }): void {
-  console.error(`[${context.route}]`, err);
+  const stage = typeof context.stage === 'string' ? `:${context.stage}` : '';
+  console.error(`[${context.route}${stage}]`, err);
   Sentry.captureException(err, { extra: context });
 }
