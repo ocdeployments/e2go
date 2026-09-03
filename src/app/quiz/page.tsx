@@ -772,10 +772,16 @@ function QuizInner() {
     const stored = localStorage.getItem("e2go_quiz_result");
     const resultData = stored ? JSON.parse(stored) : {};
 
+    // Anonymous callers have no SELECT policy on quiz_sessions, so asking
+    // PostgREST to return the inserted row makes Postgres fail the whole
+    // INSERT with 42501. Mint the id here and insert without reading it back.
+    const sessionId = crypto.randomUUID();
+
     try {
-      const { data: session, error } = await supabase
+      const { error } = await supabase
         .from("quiz_sessions")
         .insert({
+          id: sessionId,
           user_id: null,
           email,
           outcome: resultData.outcome || "PROCEED",
@@ -789,28 +795,31 @@ function QuizInner() {
           casl_consent: caslConsent,
           casl_consent_at: caslConsent ? new Date().toISOString() : null,
           completed_at: new Date().toISOString(),
-        })
-        .select("id")
-        .single();
+        });
 
-      if (!error && session) {
-        try {
-          await fetch("/api/email/results", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              email,
-              outcome: resultData.outcome,
-              result_json: resultData,
-              quiz_session_id: session.id,
-              franchise_interest: resultData.franchise_interest,
-            }),
-          });
-          setEmailSent(true);
-        } catch {
-          // ignore
-        }
+      if (error) {
+        setSaveError("Unable to save your results. Please try again.");
+        return;
       }
+
+      const res = await fetch("/api/email/results", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          outcome: resultData.outcome,
+          result_json: resultData,
+          quiz_session_id: sessionId,
+          franchise_interest: resultData.franchise_interest,
+        }),
+      });
+
+      if (!res.ok) {
+        setSaveError("We saved your results but could not send the email. Please try again.");
+        return;
+      }
+
+      setEmailSent(true);
     } catch {
       setSaveError("Unable to save. Please try again.");
     } finally {
