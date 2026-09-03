@@ -24,7 +24,7 @@
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 
-export type RateLimitProfile = 'faq' | 'evaluate' | 'coaching' | 'tts' | 'transcribe' | 'generate' | 'fdd' | 'fdd-analysis' | 'semantic-eval' | 'parse-doc' | 'notification' | 'gap-analysis-run';
+export type RateLimitProfile = 'faq' | 'evaluate' | 'coaching' | 'tts' | 'transcribe' | 'generate' | 'fdd' | 'fdd-analysis' | 'semantic-eval' | 'parse-doc' | 'notification' | 'gap-analysis-run' | 'resend-results';
 
 const PROFILES: Record<RateLimitProfile, { requests: number; window: string }> = {
   faq:                { requests: 10,  window: '10 m' },
@@ -39,6 +39,10 @@ const PROFILES: Record<RateLimitProfile, { requests: number; window: string }> =
   'parse-doc':        { requests: 10,  window: '10 m' },
   notification:       { requests: 3,   window: '60 m' },
   'gap-analysis-run': { requests: 10,  window: '10 m' },
+  // Emails an address the caller only has to type. Kept tight in both
+  // directions: per-IP so one client cannot spray, per-address so a victim
+  // cannot be mail-bombed from many IPs.
+  'resend-results':   { requests: 3,   window: '60 m' },
 };
 
 const limiters = new Map<RateLimitProfile, Ratelimit>();
