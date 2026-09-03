@@ -101,16 +101,25 @@ function EmailGate({ onBackToQuiz }: { onBackToQuiz: () => void }) {
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const supabase = useState(() => createBrowserSupabaseClient())[0];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !caslConsent || sending) return;
     setSending(true); setError(null);
     try {
-      const { data: session } = await supabase.from("quiz_sessions").select("id, result_json, outcome").eq("email", email).order("completed_at", { ascending: false }).limit(1).single();
-      if (!session) { setError("No quiz results found for this email. Take the quiz first."); setSending(false); return; }
-      await fetch("/api/email/results", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, outcome: session.outcome, result_json: session.result_json, quiz_session_id: session.id, franchise_interest: (session.result_json as Record<string, unknown>)?.franchise_interest || false }) });
+      // The lookup has to happen server-side: anonymous callers have no SELECT
+      // policy on quiz_sessions, so querying from here always came back empty
+      // and showed "no results found" even when results existed.
+      const res = await fetch("/api/email/resend-results", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data.message || data.error || "Something went wrong. Please try again.");
+        return;
+      }
       setSent(true);
     } catch { setError("Something went wrong. Please try again."); }
     finally { setSending(false); }
@@ -124,7 +133,7 @@ function EmailGate({ onBackToQuiz }: { onBackToQuiz: () => void }) {
           <>
             <div style={{ width: "48px", height: "48px", border: "2px solid #5DCAA5", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "24px" }}><span style={{ color: "#5DCAA5", fontSize: "20px" }}>✓</span></div>
             <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "24px", fontWeight: 300, color: "#f5f0e8", marginBottom: "12px", textAlign: "center" }}>Check your email</h1>
-            <p style={{ color: "rgba(245,240,232,0.76)", fontSize: "14px", textAlign: "center", lineHeight: 1.6, marginBottom: "8px" }}>We sent a verification link to <strong style={{ color: "#f5f0e8" }}>{email}</strong></p>
+            <p style={{ color: "rgba(245,240,232,0.76)", fontSize: "14px", textAlign: "center", lineHeight: 1.6, marginBottom: "8px" }}>If we have results for <strong style={{ color: "#f5f0e8" }}>{email}</strong>, we&apos;ve sent a link to it.</p>
             <p style={{ color: "rgba(245,240,232,0.70)", fontSize: "13px", textAlign: "center", lineHeight: 1.6 }}>Click the link in the email to view your results. The link expires in 24 hours.</p>
             <button onClick={onBackToQuiz} style={{ marginTop: "32px", padding: "12px 24px", background: "transparent", border: "1px solid rgba(201,168,76,0.3)", color: "rgba(201,168,76,0.7)", fontSize: "12px", cursor: "pointer", letterSpacing: "0.08em", textTransform: "uppercase" as const, fontFamily: "'DM Sans', sans-serif", borderRadius: 0 }}>← Back to quiz</button>
           </>
