@@ -7,7 +7,7 @@
  *   Layer 2: pgvector against faq_kb_chunks (broader knowledge base)
  *   Layer 3: Model's own knowledge (fallback, scoped by system prompt)
  *
- * Streaming response via OpenRouter (google/gemini-2.5-flash).
+ * Streaming response via OpenRouter (xiaomi/mimo-v2.5).
  */
 
 import { NextRequest } from "next/server";
@@ -22,7 +22,7 @@ import { captureApiError } from "@/lib/capture-error";
 // ---------------------------------------------------------------------------
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY!;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY!;
-const FAQ_MODEL = "google/gemini-2.5-flash";
+const FAQ_MODEL = "xiaomi/mimo-v2.5";
 const EMBEDDING_MODEL = "text-embedding-3-small";
 const LAYER1_THRESHOLD = 0.80; // cosine similarity threshold for corpus match
 const MAX_QUERY_LENGTH = 500;
@@ -245,12 +245,11 @@ async function streamViaOpenRouter(
   });
 }
 
-const FAQ_FALLBACK_MODEL = "xiaomi/mimo-v2.5";
+const FAQ_FALLBACK_MODEL = "google/gemini-2.5-flash";
 
 /**
- * Stream generation — primary: gemini-2.5-flash, fallback: mimo-v2.5.
- * Ordered by time-to-first-token: mimo is a reasoning model whose reasoning
- * deltas this route discards, so it stalls ~5s before emitting any answer.
+ * Stream generation — primary: mimo-v2.5, fallback: gemini-2.5-flash.
+ * Flash costs 3.4x more per query, so it stays the fallback only.
  * Both via OpenRouter. ANTHROPIC_API_KEY is never used here.
  */
 async function streamGeneration(
