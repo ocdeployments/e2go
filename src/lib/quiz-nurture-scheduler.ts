@@ -9,9 +9,11 @@
  *
  * Safety properties, in the order they matter:
  *
- *   1. Consent. Only sessions with casl_consent = TRUE are ever selected.
- *      The column has been written since the quiz shipped and read by nothing
- *      until now; a marketing sequence is exactly where it starts to matter.
+ *   1. Consent, from whichever flow collected it. An anonymous quiz taker
+ *      ticks the box on the email gate and the answer lands on the quiz row;
+ *      someone already signed in never sees that gate, and answered the same
+ *      question during onboarding instead. Both are honoured, and neither is
+ *      assumed — see hasConsent below.
  *   2. Suppression. Anyone in email_suppressions is skipped, checked per run
  *      rather than cached, so an unsubscribe landing mid-run is honoured.
  *   3. Idempotency. Every send is recorded in quiz_nurture_log, which carries
@@ -75,10 +77,17 @@ export async function processQuizNurture(): Promise<NurtureRunResult> {
     const newest = new Date(Date.now() - window.fromDays * DAY).toISOString();
     const oldest = new Date(Date.now() - window.toDays * DAY).toISOString();
 
+    /**
+     * Signed-in sessions carry casl_consent = FALSE unconditionally: the box
+     * that sets it lives on the email gate, which their path never renders.
+     * So they are pulled in on user_id and their consent is resolved per row
+     * against the profile, rather than being read off a column that could
+     * only ever say no.
+     */
     const { data: sessions, error } = await supabase
       .from('quiz_sessions')
-      .select('id, email, result_json, completed_at')
-      .eq('casl_consent', true)
+      .select('id, email, result_json, completed_at, casl_consent, user_id')
+      .or('casl_consent.eq.true,user_id.not.is.null')
       .not('email', 'is', null)
       .not('outcome', 'is', null)
       .lte('completed_at', newest)
@@ -95,7 +104,7 @@ export async function processQuizNurture(): Promise<NurtureRunResult> {
     for (const session of sessions) {
       const email = (session.email as string).toLowerCase();
 
-      const eligible = await isEligible(supabase, session.id as string, email, window.step);
+      const eligible = await isEligible(supabase, session, email, window.step);
       if (!eligible.ok) {
         result.skipped += 1;
         result.details.push({ step: window.step, email, status: eligible.reason });
@@ -155,12 +164,48 @@ type Eligibility =
 /**
  * Every reason not to send, checked in cheapest-first order.
  */
+interface ScannedSession {
+  id: string;
+  casl_consent: boolean | null;
+  user_id: string | null;
+}
+
+/**
+ * Whether this person agreed to hear from us, from whichever flow asked.
+ *
+ * The profile is read live rather than copied onto the quiz row, so that
+ * withdrawing consent in onboarding stops the sequence on the next run instead
+ * of leaving a stale yes behind. Only TRUE counts: the column is nullable
+ * because "never asked" is a real state, and it is not agreement.
+ */
+async function hasConsent(
+  supabase: SupabaseClient,
+  session: ScannedSession,
+): Promise<boolean> {
+  if (session.casl_consent === true) return true;
+  if (!session.user_id) return false;
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('casl_marketing_consent')
+    .eq('id', session.user_id)
+    .maybeSingle();
+
+  return profile?.casl_marketing_consent === true;
+}
+
 async function isEligible(
   supabase: SupabaseClient,
-  sessionId: string,
+  session: ScannedSession,
   email: string,
   step: NurtureStep,
 ): Promise<Eligibility> {
+  const sessionId = session.id;
+
+  if (!(await hasConsent(supabase, session))) {
+    return { ok: false, reason: 'no consent', hasViewedResults: false };
+  }
+
   const { data: priorSends } = await supabase
     .from('quiz_nurture_log')
     .select('step')
