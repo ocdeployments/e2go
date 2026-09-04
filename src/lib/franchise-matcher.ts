@@ -7,7 +7,6 @@ export interface FranchiseBrand {
   category: string;
   minInvestment: number;
   maxInvestment: number;
-  minNetWorth: number;
   description: string;
   website: string;
 }
@@ -60,71 +59,59 @@ function parseRangeToCeiling(range: string): number {
   return isNaN(num) ? 500_000 : num;
 }
 
-function parseRangeToFloor(range: string): number {
-  if (!range) return 0;
-
-  const r = range.toLowerCase().replace(/[\s,$]/g, '');
-
-  if (r === 'under_100k' || r === 'under_250k') return 0;
-  if (r === '100k_300k') return 100_000;
-  if (r === '250k_500k') return 250_000;
-  if (r === '300k_700k') return 300_000;
-  if (r === '500k_1m') return 500_000;
-  if (r === '700k_plus' || r === '700k+') return 700_000;
-  if (r === '1m_2_5m') return 1_000_000;
-  if (r === 'over_2_5m' || r === 'over2_5m') return 2_500_000;
-
-  return 0;
-}
-
+/**
+ * Rank brands against a case profile.
+ *
+ * Scoring is two-dimensional — industry and investment fit — because those are
+ * the only two the brand table actually holds. It used to carry a third, a net
+ * worth buffer weighted equally with the other two, filtering on a
+ * `min_net_worth` column that does not exist on `franchise_brands`. The select
+ * naming it errored, so `rows` came back null and this function returned an
+ * empty list on every call: the net worth dimension has never contributed to a
+ * score anyone saw. The remaining two are reweighted to 50 each so a score is
+ * still out of 100.
+ */
 export async function matchFranchises(profile: CaseProfile): Promise<FranchiseMatch[]> {
   const supabase = getSupabaseAdmin();
 
-  const { data: rows } = await supabase
+  const { data: rows, error } = await supabase
     .from('franchise_brands')
-    .select('id, name, category, min_investment, max_investment, min_net_worth, description, website')
-    .eq('active', true);
+    .select('id, name, category, investment_min, investment_max, description, website')
+    .eq('e2_eligible', true);
 
+  if (error) {
+    console.error('[franchise-matcher] brand query failed:', error);
+    return [];
+  }
   if (!rows || rows.length === 0) return [];
 
   const brands: FranchiseBrand[] = rows.map((r) => ({
     id: r.id,
     name: r.name,
     category: r.category,
-    minInvestment: r.min_investment,
-    maxInvestment: r.max_investment,
-    minNetWorth: r.min_net_worth,
+    minInvestment: r.investment_min ?? 0,
+    maxInvestment: r.investment_max ?? 0,
     description: r.description ?? '',
     website: r.website ?? '',
   }));
 
   const investmentCeiling = parseRangeToCeiling(profile.investmentRange || profile.netWorthRange);
-  const netWorthFloor = parseRangeToFloor(profile.netWorthRange);
 
   const scored: FranchiseMatch[] = brands
-    .filter(
-      (b) =>
-        b.minInvestment <= investmentCeiling && b.minNetWorth <= Math.max(netWorthFloor, 1)
-    )
+    .filter((b) => b.minInvestment <= investmentCeiling)
     .map((brand) => {
       const reasons: string[] = [];
       let score = 0;
 
-      // Industry match (40 pts)
-      const industryScore = brand.category === profile.industryInterest ? 40 : 0;
+      // Industry match (50 pts)
+      const industryScore = brand.category === profile.industryInterest ? 50 : 0;
       if (industryScore > 0) reasons.push('Industry match');
       score += industryScore;
 
-      // Investment fit — within 80% of ceiling (30 pts)
-      const fitScore = brand.minInvestment <= investmentCeiling * 0.8 ? 30 : 15;
-      if (fitScore === 30) reasons.push('Investment fits your range');
+      // Investment fit — within 80% of ceiling (50 pts)
+      const fitScore = brand.minInvestment <= investmentCeiling * 0.8 ? 50 : 25;
+      if (fitScore === 50) reasons.push('Investment fits your range');
       score += fitScore;
-
-      // Net worth buffer — floor >= 1.5× brand minimum (30 pts)
-      const bufferScore =
-        netWorthFloor >= brand.minNetWorth * 1.5 || netWorthFloor === 0 ? 30 : 15;
-      if (bufferScore === 30) reasons.push('Net worth buffer adequate');
-      score += bufferScore;
 
       return { brand, score, reasons };
     });
