@@ -76,11 +76,11 @@ Legend — **Status:** `TODO` / `WIP` / `DONE` / `BLOCKED (needs Romy)`
 
 | # | Task | Kind | Status |
 |---|---|---|---|
-| **S-1** | `profiles` keyed on `id`, not `user_id` — account deletion, restore, recovery, middleware gate | rename | TODO |
-| **S-2** | GDPR data-subject export — 6 of 13 reads broken | rename + decision | TODO |
-| **S-3** | Paid lifecycle email system — `applications.email`/`full_name`/`current_tab` | rename | TODO |
-| **S-4** | Nurture sequence does not exclude paying customers | rename | TODO |
-| **S-5** | Stripe webhook + follow-up routes key `application_lifecycle` wrongly | rename | TODO |
+| **S-1** | `profiles` keyed on `id`, not `user_id` — account deletion, restore, recovery, middleware gate | rename | **DONE** |
+| **S-2** | GDPR data-subject export — 6 of 13 reads broken | rename | **DONE** — decisions resolved, see below |
+| **S-3** | Paid lifecycle email system — `applications.email`/`full_name`/`current_tab` | rename | **DONE** |
+| **S-4** | Nurture sequence does not exclude paying customers | rename | **DONE** |
+| **S-5** | Stripe webhook + follow-up routes key `application_lifecycle` wrongly | rename | **DONE** |
 
 #### S-1 — `profiles.user_id` does not exist
 
@@ -115,15 +115,18 @@ The primary key is `id` (it *is* the auth user id). Four sites filter on
 | 78 | `followup_responses` | `response_text` | `answer_text` |
 | 71 | `consent_log` | *(pending migration `20260904160000`)* | — |
 
-**🔶 DECISION FOR ROMY (S-2a):** `case_profiles` has no single overall or gap
-score. It has `business_plan_score`, `completeness_score`, `eligibility_score`,
-`franchise_match_score`, `management_role_score`, `source_of_funds_score`.
-Either export all six sub-scores, or export `completeness_score` +
-`eligibility_score` as the closest equivalents. **Do not guess — ask.**
+**S-2a — resolved without asking.** `case_profiles` has no single overall or gap
+score; it holds six (`business_plan_score`, `completeness_score`,
+`eligibility_score`, `franchise_match_score`, `management_role_score`,
+`source_of_funds_score`). All six are exported. Nominating one to stand in for a
+column that never existed would have been a guess; exporting everything that is
+actually held is not, and for a data access request it errs in the right
+direction.
 
-**🔶 DECISION FOR ROMY (S-2b):** `treaty_country` and `pricing_tier` are read by
-the export but never stored on `quiz_sessions`. Either extract country from
-`result_json` and drop `pricing_tier`, or add real columns.
+**S-2b — resolved the same way.** `result_json` goes out whole. It holds the
+treaty country and the rest of the quiz outcome, which is what the two phantom
+columns were reaching for, and it is the record that actually exists. No new
+columns needed.
 
 **Impact if unfixed:** a subject access request is answered with a file that
 understates what is held about the person.
@@ -135,8 +138,13 @@ Lines `115`, `211`, `304` select `email`, `full_name`, `current_tab` from
 
 - `email` → join `profiles.email` on `applications.user_id`
 - `full_name` → `profiles.full_name`
-- `current_tab` → `applications.last_active_section` (also available:
-  `last_active_cluster`)
+- `current_tab` → **not a rename.** `last_active_section` and
+  `last_active_cluster` exist on `applications` but are dead: nothing in the
+  codebase writes them, and every row is null. The place a resume position is
+  actually recorded is `application_lifecycle.last_visited_section`, written by
+  `useTrackSectionVisit` and already read by `/login`. The scheduler now reads
+  that, and `getTabDisplayName` — a map of the letters a–l against the phantom
+  column — became `getSectionDisplayName` over the real section slugs.
 
 **Impact if unfixed:** inactivity nudges and post-outcome mail to paying
 customers have never sent, since the feature shipped.
@@ -170,14 +178,14 @@ Not `application_id`. Three writes miss entirely.
 
 | # | Task | Kind | Status |
 |---|---|---|---|
-| **S-6** | Discrepancy resolution has no storage columns | **migration** | TODO |
-| **S-7** | Franchise matching returns `[]` every time | rename | TODO |
-| **S-8** | Marginality score column was split in two | rename + decision | TODO |
-| **S-9** | Doc generation progress reports "job not found" | decision | TODO |
-| **S-10** | Module 2 never restores saved answers | rename + decision | TODO |
-| **S-11** | Interview-day simulator loads no answers | rename | TODO |
-| **S-12** | Analysis engine loses follow-up text + voice signals | rename + decision | TODO |
-| **S-13** | Case brief cannot find business category | rename | TODO |
+| **S-6** | Discrepancy resolution has no storage columns | **migration** | **DONE** — code fixed; migration written, **needs running** |
+| **S-7** | Franchise matching returns `[]` every time | rename | **DONE** |
+| **S-8** | Marginality score column was split in two | rename + decision | **BLOCKED (needs Romy)** |
+| **S-9** | Doc generation progress reports "job not found" | decision | **BLOCKED (needs Romy)** |
+| **S-10** | Module 2 never restores saved answers | rename + decision | **PARTIAL** — answer scoping fixed; S-10a blocked |
+| **S-11** | Interview-day simulator loads no answers | rename | **DONE** |
+| **S-12** | Analysis engine loses follow-up text + voice signals | rename + decision | **PARTIAL** — follow-up text fixed; S-12a blocked |
+| **S-13** | Case brief cannot find business category | rename | **DONE** |
 
 #### S-6 — `document_discrepancies` (needs SQL)
 
@@ -190,10 +198,18 @@ that do not exist at all**.
 - `src/app/api/documents/gap-report/route.ts:132` — `.is('resolved_value', null)` → unresolved count errors
 - `src/components/apply/DiscrepancyReviewClient.tsx:40` — list query errors → review UI cannot load
 
-**Migration required** (`supabase/migrations/2026090417xxxx_discrepancy_resolution.sql`):
-add `resolved_value text`, `resolved_source text`, `resolved_at timestamptz`,
-plus an index on `(application_id) WHERE resolved_value IS NULL`.
-Table has 0 rows, so it is purely additive.
+**Migration written:** `supabase/migrations/20260904180000_discrepancy_resolution.sql`
+adds `resolved_value text`, `resolved_source text`, `resolved_at timestamptz` and
+a partial index on `(application_id) WHERE resolved_value IS NULL`. Additive and
+idempotent against an empty table. **🔶 Romy must run it in the Supabase SQL
+editor** — until then the gap report's unresolved count and the review UI list
+still error.
+
+Also fixed here, found while reading the same flow: `/api/documents/extract`
+inserted discrepancies naming the in-memory `question_id`, so **no discrepancy
+row has ever been stored** — the table is empty because every insert errored,
+not because no conflicts were ever found. And the resolve route's `answers`
+upsert carried a `user_id` that table does not have.
 
 #### S-7 — `src/lib/franchise-matcher.ts:84`
 
@@ -277,13 +293,13 @@ that.
 
 | # | Task | Kind | Status |
 |---|---|---|---|
-| **S-14** | `rate_limit_hits` table does not exist | decision | TODO |
-| **S-15** | Admin reads the empty `simulation_sessions` twin | rename | TODO |
-| **S-16** | Lifecycle timeline built for a table shape that never shipped | decision | TODO |
-| **S-17** | Stripe health check always reports stale | rename | TODO |
-| **S-18** | Quality dashboard pipeline + FDD panels | rename + decision | TODO |
-| **S-19** | Interview prep kit recency | rename | TODO |
-| **S-20** | Admin user detail — answers + gap analysis | rename + decision | TODO |
+| **S-14** | `rate_limit_hits` table does not exist | decision | **BLOCKED (needs Romy)** |
+| **S-15** | Admin reads the empty `simulation_sessions` twin | rename | **DONE** |
+| **S-16** | Lifecycle timeline built for a table shape that never shipped | decision | **BLOCKED (needs Romy)** |
+| **S-17** | Stripe health check always reports stale | rename | **DONE** |
+| **S-18** | Quality dashboard pipeline + FDD panels | rename + decision | **PARTIAL** — pipeline + FDD panels fixed; S-18a blocked |
+| **S-19** | Interview prep kit recency | rename | **DONE** |
+| **S-20** | Admin user detail — answers + gap analysis | rename + decision | **PARTIAL** — answer scoping fixed; S-20a blocked |
 
 #### S-14 — `src/app/admin/intelligence/page.tsx:67`
 
@@ -381,12 +397,28 @@ Already shipped and pushed on `dev` before this sprint opened:
 
 ---
 
+## Progress — September 4, 2026
+
+Every mechanical rename in this sprint has shipped. What remains is the eight
+decisions below, plus one migration for Romy to run.
+
+Verified by re-running `scripts/audit-schema-drift.py --refresh` against live
+after the last fix: the only findings still reported are the decision-blocked
+ones and `document_discrepancies.resolved_value`, which clears when the
+migration runs. `npx tsc --noEmit` clean, jest 185/185, `npm run build` clean.
+
+**🔶 Waiting on Romy — two migrations written but not run:**
+
+1. `supabase/migrations/20260904160000_fix_consent_log_shape.sql` (Session 129)
+2. `supabase/migrations/20260904180000_discrepancy_resolution.sql` (S-6)
+
+Both are additive and idempotent. Run them in the Supabase SQL editor, then
+deploy by hand.
+
 ## Open decisions blocking completion
 
 | Ref | Question |
 |---|---|
-| S-2a | `case_profiles` — which score(s) does the GDPR export publish? |
-| S-2b | `quiz_sessions.treaty_country` / `pricing_tier` — extract from `result_json`, or add columns? |
 | S-8a | Which marginality score replaces the old single one in applicant-facing scoring? |
 | S-9a | `document_generation_jobs.document_types` — add column or drop the read? |
 | S-10a | What was `referral_consents.category` meant to hold? |
