@@ -121,7 +121,7 @@ async function loadApplicationAnswers(applicationId: string): Promise<Record<str
   // 2. Load follow-up responses (mentioned_experiences, content_signals)
   const { data: followUpResponses } = await supabase
     .from('followup_responses')
-    .select('question_text, response_text, gap_category')
+    .select('question_text, answer_text, gap_category')
     .eq('application_id', applicationId);
 
   if (followUpResponses) {
@@ -206,7 +206,7 @@ function getTabJText(answers: Record<string, unknown>): string {
 function getFollowupText(answers: Record<string, unknown>): string {
   const followups = answers['_followup_responses'];
   if (!Array.isArray(followups)) return '';
-  return followups.map((r: Record<string, unknown>) => String(r.response_text || '')).join(' ');
+  return followups.map((r: Record<string, unknown>) => String(r.answer_text || '')).join(' ');
 }
 
 /**
