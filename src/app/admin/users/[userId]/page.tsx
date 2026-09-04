@@ -189,7 +189,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ use
           <Stat label="Applications"       value={String(typedApps.length)} />
           <Stat label="Total paid"         value={totalPaid > 0 ? `$${(totalPaid / 100).toFixed(2)}` : '$0'} />
           <Stat label="Archetype"          value={typedProfile2?.archetype ?? '—'} />
-          <Stat label="Completeness"       value={typedProfile2?.completeness_score != null ? `${Math.round(typedProfile2.completeness_score * 100)}%` : '—'} />
+          <Stat label="Completeness"       value={typedProfile2?.completeness_score != null ? `${Math.round(typedProfile2.completeness_score)}%` : '—'} />
           <Stat label="Quiz sessions"      value={String(typedQuiz.length)} />
           <Stat label="Sim sessions"       value={String(typedSims.length)} />
           <Stat label="AI cost (30d)"      value={totalCost > 0 ? `$${totalCost.toFixed(4)}` : '$0'} />
