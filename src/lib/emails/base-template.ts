@@ -7,6 +7,8 @@
  * white background and is effectively invisible.
  */
 
+import { unsubscribeUrl } from './unsubscribe';
+
 const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
 /**
@@ -15,8 +17,13 @@ const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
  * @param content   Body HTML — table rows or block elements, already styled.
  * @param preheader Inbox preview line. Shown by most clients next to the
  *                  subject; without it they scrape the first visible text.
+ * @param recipient Recipient address, so the footer's unsubscribe link is
+ *                  signed and works in one click. Omit only for mail with no
+ *                  single recipient; the bare link then explains how to opt
+ *                  out by replying, rather than failing silently.
  */
-export function getBaseHtml(content: string, preheader?: string): string {
+export function getBaseHtml(content: string, preheader?: string, recipient?: string): string {
+  const unsubHref = recipient ? unsubscribeUrl(recipient, appUrl) : `${appUrl}/unsubscribe`;
   return `
 <!DOCTYPE html>
 <html>
@@ -48,7 +55,7 @@ export function getBaseHtml(content: string, preheader?: string): string {
                 Your data is handled per our <a href="${appUrl}/privacy" style="color: #C9A84C; text-decoration: none;">privacy policy</a>.
               </p>
               <p style="font-size: 11px; color: rgba(245,240,232,0.68); margin: 0; line-height: 1.6;">
-                To unsubscribe: <a href="${appUrl}/unsubscribe" style="color: rgba(245,240,232,0.72); text-decoration: underline;">unsubscribe</a> | e2go.app | support@e2go.app
+                To unsubscribe: <a href="${unsubHref}" style="color: rgba(245,240,232,0.72); text-decoration: underline;">unsubscribe</a> | e2go.app | support@e2go.app
               </p>
             </td>
           </tr>
