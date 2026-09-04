@@ -134,14 +134,26 @@ Return ONLY the JSON array. No other text.`;
       }
     }
 
-    // Update lifecycle: followup_completed = true, module4_completed_at = now()
-    await supabase
+    /**
+     * Keyed on user_id. application_lifecycle has no application_id column, so
+     * this update errored and neither flag was ever written.
+     */
+    const { error: lifecycleError } = await supabase
       .from('application_lifecycle')
       .update({
         followup_completed: true,
         module4_completed_at: new Date().toISOString(),
       })
-      .eq('application_id', applicationId);
+      .eq('user_id', user.id);
+
+    if (lifecycleError) {
+      captureApiError(lifecycleError, {
+        route: 'followup/completion-summary',
+        stage: 'lifecycle-update',
+        userId: user.id,
+        applicationId,
+      });
+    }
 
     return NextResponse.json({ summary });
   } catch (error) {
