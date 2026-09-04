@@ -3,6 +3,7 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import { asScoreLevel, weakestScore, type ScoreLevel } from '@/lib/case-brief-scores';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,7 +31,20 @@ async function requireAdmin() {
 
 interface CostRow { cost_usd: number; tokens_in: number; tokens_out: number; task: string; model: string; latency_ms: number | null; created_at: string }
 interface DocRow { status: string; verifier_result: { overall?: string } | null; document_type: string; created_at: string }
-interface CaseRow { substantiality_score: number | null; fund_source_score: number | null; marginality_score_direct: number | null; intent_score: number | null; created_at: string }
+/**
+ * case_briefs scores are TEXT labels, not numbers, and there is no
+ * marginality_score_direct column — marginality is stored as two judgements.
+ * The old shape asked for the missing name, so supabase-js failed the whole
+ * select and this section has always rendered its empty state.
+ */
+interface CaseRow {
+  substantiality_score: string | null;
+  fund_source_score: string | null;
+  marginality_income_score: string | null;
+  marginality_contribution_score: string | null;
+  intent_score: string | null;
+  created_at: string;
+}
 interface SimRow { readiness_indicator: string | null; inconsistency_count: number | null }
 interface RateLimitRow { user_id: string; created_at: string }
 
@@ -62,7 +76,7 @@ export default async function AdminIntelligencePage() {
   ] = await Promise.all([
     admin.from('llm_cost_log').select('cost_usd, tokens_in, tokens_out, task, model, latency_ms, created_at').order('created_at', { ascending: false }).limit(1000),
     admin.from('generated_documents').select('status, verifier_result, document_type, created_at').order('created_at', { ascending: false }).limit(500),
-    admin.from('case_briefs').select('substantiality_score, fund_source_score, marginality_score_direct, intent_score, created_at').order('created_at', { ascending: false }).limit(200),
+    admin.from('case_briefs').select('substantiality_score, fund_source_score, marginality_income_score, marginality_contribution_score, intent_score, created_at').order('created_at', { ascending: false }).limit(200),
     admin.from('simulator_sessions').select('readiness_indicator, inconsistency_count').order('created_at', { ascending: false }).limit(200),
     admin.from('rate_limit_hits').select('user_id, created_at').order('created_at', { ascending: false }).limit(100).then(r => r),
   ]);
@@ -106,11 +120,25 @@ export default async function AdminIntelligencePage() {
   const medianLatency = median(latencies);
   const p95Latency    = latencies.length ? latencies.sort((a, b) => a - b)[Math.floor(latencies.length * 0.95)] : 0;
 
-  // ── Case intelligence scores ─────────────────────────────────────────────────
-  const subScores  = typedCases.map(c => c.substantiality_score).filter((s): s is number => s !== null);
-  const fundScores = typedCases.map(c => c.fund_source_score).filter((s): s is number => s !== null);
-  const margScores = typedCases.map(c => c.marginality_score_direct).filter((s): s is number => s !== null);
-  const intScores  = typedCases.map(c => c.intent_score).filter((s): s is number => s !== null);
+  /**
+   * ── Case intelligence scores ───────────────────────────────────────────────
+   *
+   * These are labels, so there is no average to take. The useful question for
+   * an admin is the same one either way: on which dimension are cases coming
+   * out weak? Each dimension reports how many assessed briefs sit below
+   * adequate, with the full breakdown underneath.
+   */
+  const dimensions = [
+    { label: 'Substantiality', levels: typedCases.map(c => asScoreLevel(c.substantiality_score)) },
+    { label: 'Fund source',    levels: typedCases.map(c => asScoreLevel(c.fund_source_score)) },
+    { label: 'Non-marginality', levels: typedCases.map(c => weakestScore(c.marginality_income_score, c.marginality_contribution_score)) },
+    { label: 'Intent',         levels: typedCases.map(c => asScoreLevel(c.intent_score)) },
+  ].map(({ label, levels }) => {
+    const assessed = levels.filter((l): l is ScoreLevel => l !== null);
+    const counts: Record<ScoreLevel, number> = { STRONG: 0, ADEQUATE: 0, WEAK: 0, CRITICAL: 0 };
+    for (const level of assessed) counts[level] += 1;
+    return { label, assessed: assessed.length, atRisk: counts.WEAK + counts.CRITICAL, counts };
+  });
 
   // ── Simulator intelligence ───────────────────────────────────────────────────
   const readinessCount: Record<string, number> = { ready: 0, nearly_ready: 0, needs_work: 0 };
@@ -208,21 +236,25 @@ export default async function AdminIntelligencePage() {
 
       {/* ── Case Intelligence (FAM scores) ── */}
       <section className="mb-14">
-        <h2 className="text-lg font-medium text-white mb-4 pb-2 border-b border-zinc-800">Case Intelligence — FAM Averages</h2>
+        <h2 className="text-lg font-medium text-white mb-4 pb-2 border-b border-zinc-800">Case Intelligence — FAM Judgements</h2>
         {typedCases.length === 0 ? (
           <p className="text-zinc-600 text-sm">No case brief data yet.</p>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[
-              { label: 'Avg substantiality', value: avg(subScores).toFixed(1), total: 100 },
-              { label: 'Avg fund source',    value: avg(fundScores).toFixed(1), total: 100 },
-              { label: 'Avg marginality',    value: avg(margScores).toFixed(1), total: 100 },
-              { label: 'Avg intent',         value: avg(intScores).toFixed(1),  total: 100 },
-            ].map(({ label, value }) => (
+            {dimensions.map(({ label, assessed, atRisk, counts }) => (
               <div key={label} className="border border-zinc-800 bg-zinc-900/40 px-5 py-4 rounded-lg">
                 <p className="text-xs text-zinc-500 uppercase tracking-widest mb-1">{label}</p>
-                <p className="text-2xl font-semibold text-[#C9A84C]">{value}</p>
-                <p className="text-xs text-zinc-600 mt-0.5">/ 100</p>
+                <p className="text-2xl font-semibold text-[#C9A84C]">
+                  {assessed === 0 ? '—' : `${atRisk} / ${assessed}`}
+                </p>
+                <p className="text-xs text-zinc-600 mt-0.5">
+                  {assessed === 0 ? 'not assessed yet' : 'weak or critical'}
+                </p>
+                {assessed > 0 && (
+                  <p className="text-[11px] text-zinc-600 mt-2 leading-relaxed">
+                    {counts.STRONG} strong · {counts.ADEQUATE} adequate · {counts.WEAK} weak · {counts.CRITICAL} critical
+                  </p>
+                )}
               </div>
             ))}
           </div>
