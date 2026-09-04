@@ -425,18 +425,145 @@ accept a write. They fill from here.
 before it, both from the `dev` working tree. `https://e2go.vercel.app` serving
 200 on `/` and `/quiz`.
 
-## Open decisions blocking completion
+## Decisions — resolved by Romy, September 4, 2026
 
-| Ref | Question |
-|---|---|
-| S-8a | Which marginality score replaces the old single one in applicant-facing scoring? |
-| S-9a | `document_generation_jobs.document_types` — add column or drop the read? |
-| S-10a | What was `referral_consents.category` meant to hold? |
-| S-12a | `applicant_voice_profile.content_signals_json` — add or drop? |
-| S-14a | `rate_limit_hits` — create the table or remove the admin panel? |
-| S-16a | Lifecycle timeline — derive from milestone columns, or add an event table? |
-| S-18a | Download-rate metric — is `released_at` acceptable, or is a real download event needed? |
-| S-20a | `case_profiles.gap_analysis` — drop from admin view, or does it live elsewhere? |
+All eight were put to Romy one at a time and answered the same evening. Two of
+them turned out to be mis-stated in the original audit; the corrected statement
+is given below, not the one that was asked.
+
+| Ref | Decision | Shape |
+|---|---|---|
+| S-8a | Gap Report speaks in the stored label, not a percentage | code |
+| S-9a | Drop the `document_types` reference | code |
+| S-10a | Fix the `referral_consents` table shape | migration + code |
+| S-12a | Drop the `content_signals_json` hook | code |
+| S-14a | Build the rate-limit logging | migration + code |
+| S-16a | Derive the timeline and funnel from the timestamp columns | code |
+| S-18a | Measure acknowledgement, and relabel the metric honestly | code |
+| S-20a | Drop `gap_analysis`; surface the six scores that do exist | code |
+
+### S-8a — marginality is a label, not a number
+
+**The audit mis-stated this.** It is not a rename: the old numeric 0-1 score
+exists nowhere in the live database. `case_briefs` carries
+`marginality_income_score` and `marginality_contribution_score`, and both hold
+three-level text — `ADEQUATE` / `WEAK` / `CRITICAL` — written by
+`src/app/api/analysis/run/route.ts:55-56`. `PackageSummary.tsx:94-105` already
+reads them correctly as labels.
+
+`gap-analysis-engine.ts:406-409` expects a number and prints
+`Math.round(brief.marginality_score * 100)%`. That percentage has never once
+been produced. Deriving one from a label would fabricate precision that was
+never measured, so the finding is rewritten to speak in the labels' own terms.
+
+Also expecting a number, and to be corrected the same way: `simulator-engine.ts:207`,
+`case-profile.ts:190`, `simulator/interview-prep/route.ts:241`,
+`gap-analysis/page.tsx:32`, `admin/intelligence/page.tsx:33,65,112`.
+
+### S-9a — `document_types` (severity higher than recorded)
+
+Because supabase-js fails the whole select when one column name is wrong, this
+is not a cosmetic count problem:
+
+- `api/generate/progress/[jobId]/route.ts:45` — the select errors, so the first
+  tick of the SSE stream sends `"Job not found"` and closes. **Every client who
+  starts a generation sees the live progress bar fail immediately.** Documents
+  still generate correctly in the background.
+- `generation-engine.ts:2275` — reads `document_types` alongside
+  `client_regen_note`. Same failure, so **a client's redraft note is silently
+  discarded** and never reaches the model.
+
+`total_steps` exists and is already the fallback, so dropping the reference
+restores both with no migration.
+
+### S-10a — `referral_consents` is the wrong table (broader than recorded)
+
+**The audit recorded one read; there are three sites, two of them writers.**
+Migration `20260605150000_module1_consent_tables.sql` intended a table of
+`(user_id, category, consent_given)` with `UNIQUE (user_id, category)`. A table
+of that name already existed with a refer-a-friend shape
+(`referral_code`, `referred_by`, `email`), so `CREATE TABLE IF NOT EXISTS`
+silently no-opped. The migration reported success and changed nothing.
+
+- `apply/module1/page.tsx:179` — upsert with `onConflict: "user_id,category"`. Fails.
+- `onboarding/page.tsx:229` — same. Fails.
+- `apply/module2/page.tsx:166` — reads it back to gate the franchise-consultant
+  offer at line 521. Always reads nothing.
+
+So **no client's referral consent has ever been recorded, and the
+franchise-consultant offer has never appeared for anyone.** The table holds zero
+rows and no code uses the refer-a-friend columns, so reshaping it is risk-free.
+
+### S-12a — drop the hook
+
+`analysis-engine.ts:133` reads a `content_signals_json` column that never
+existed and that nothing has ever written. It is one of three text sources the
+experience scorer scans (`analysis-engine.ts:215-219`); the other two — Tab J
+and follow-up answers — work.
+
+Considered and rejected: pointing the scorer at `voice_sample_raw`, which is
+stored. That column holds the Module 4 motivation essay ("I chose this business
+because…"), not a background statement. Keyword-scanning it produces false
+positives — "my sister managed a restaurant" scans like the client managed one —
+and a wrongly inflated experience score is worse than a missing one, because the
+Gap Report would then stop telling that client to substantiate their background.
+Deleting the query changes no behaviour.
+
+### S-14a — build the logging
+
+Rate limiting is real and working: `middleware.ts:43-47` enforces 5 logins per
+15 minutes and 3 quiz submissions per hour through Upstash Redis. Redis counts
+and forgets, so nothing is written down. `admin/intelligence/page.tsx:67` queries
+a `rate_limit_hits` table that has never existed; its warning banner (line 203)
+renders only when the count exceeds zero, so it can never appear.
+
+Romy chose to build it. Constraint: middleware runs on every request, so the
+write happens **only on a block**, and fire-and-forget, so a successful request
+never waits on a database round trip.
+
+### S-16a — derive from the timestamps
+
+`application_lifecycle` is a one-row-per-client **state** table with ~40
+timestamp columns. It has no `event` and no `details`. Four places treat it as
+an event log:
+
+- `admin/users/[userId]/page.tsx:97` and `.../view/page.tsx:59` — the client
+  activity timeline. Always empty.
+- `admin/revenue/page.tsx:161-163` — `quizCompleted` and `caseActive` filter on
+  `e.event`, so **both always read zero and the revenue page under-reports the
+  top of the funnel.**
+- `api/generate/start/route.ts:207` — inserts `{application_id, event, ...}`.
+  Fails silently, and would be wrong even if it worked: one row per client means
+  an insert creates a duplicate. To be removed, not repaired.
+
+Everything the first three want is derivable from columns already populated, and
+derivation works retroactively for existing clients. An event table would start
+empty.
+
+### S-18a — measure what is actually recorded
+
+`admin/quality/page.tsx:151` asks for `downloaded_at` on
+`generation_pipeline_log`. It does not exist, so `acknowledgedCount` and
+`downloadedCount` (lines 214-215) both read zero. Nothing anywhere records a
+file download.
+
+The table does record `released_at` (documents made available) and
+`acknowledged_at` / `applicant_acknowledged` (client confirmed seeing them). The
+metric is rebuilt on those and **relabelled** — "acknowledged", not
+"downloaded". Naming it accurately matters more than preserving the old word.
+
+### S-20a — drop it, and show what exists
+
+`admin/users/[userId]/view/page.tsx:60` asks for `gap_analysis` on
+`case_profiles`. There is no such column, and no gap-analysis table anywhere in
+the live database — gap analysis is computed on demand, never stored.
+
+Because one bad name fails the whole select, the three columns requested
+alongside it are lost too: **archetype, completeness score and last-updated all
+render blank at lines 118-123 despite existing and being populated.** Removing
+the one name restores the block; the five further scores `case_profiles` holds
+(eligibility, business plan, source of funds, management role, franchise match)
+are surfaced alongside it.
 
 **Rule for this sprint:** every mechanical rename ships without asking. Every
 `decision` task stops and waits. Do not invent a column mapping to keep moving.
