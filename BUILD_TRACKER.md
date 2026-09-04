@@ -1,8 +1,77 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** July 17, 2026 — Session 128 (cont.): **Sprint N fully shipped including N-5 (PWAInstallPrompt deleted) and N-6 (5 routes rate-limited via new fail-open `fdd-analysis` profile + `parse-doc`).** Upstash URL is now set + pull-verified in all Vercel envs and `.env.local` (Session 127's empty var was Vercel CLI 54 swallowing piped stdin in agent mode — always use `--value` + `--no-sensitive`). 🔴 **P0 FOR ROMY — one step left: the 34-day-old `UPSTASH_REDIS_REST_TOKEN` does not match the `desired-leopard-67358` database (live `WRONGPASS`). Copy the REST token from console.upstash.com → `vercel env add UPSTASH_REDIS_REST_TOKEN <env> --value='<token>' --no-sensitive --force --yes` for production/development/preview → update `.env.local` → redeploy production (dashboard Redeploy; CLI redeploy is permission-blocked for agents).** Until then prod `generate`/`fdd` routes keep 429-ing (fail-closed); all other rate-limited routes now fail OPEN on Redis errors thanks to new hardening in `rate-limit.ts` (a WRONGPASS previously 500'd every rate-limited route — live-tested). Details: `docs/SPRINT_N_CLEANUP.md` §UPSTASH. **Next agent: Sprint M-2 (Sentry rollout) or M-5.**
+**Last Updated:** September 4, 2026 — Session 129: **Full schema audit complete. 44 call sites across 30 files and 20 tables reference columns that do not exist in the live database.** None of them throw — `supabase-js` returns `{data, error}` rather than throwing, and none of these sites read the error, so every one of them fails silently and renders as an empty state. Sprint S opened to fix them: `docs/SPRINT_S_SCHEMA_DRIFT.md`. 🔴 **P0 FOR ROMY — five of these are live compliance/revenue faults:** account deletion does not work and a soft-deleted account keeps full access (`middleware.ts:260`); the GDPR data-subject export returns mostly empty sections; the paid lifecycle email system has never sent an email; the quiz nurture sequence does not exclude paying customers (cron is running daily); and the Stripe webhook has never stamped `payment_completed_at`, so every funnel figure derived from it is wrong. 🔴 **Also still outstanding from earlier in this session: the `consent_log` shape migration (`supabase/migrations/20260904160000_fix_consent_log_shape.sql`) is written and committed but NOT YET RUN in production** — run it in the Supabase SQL editor, then deploy. **Next agent: work `docs/SPRINT_S_SCHEMA_DRIFT.md` in order, P0 first. Ten tasks in it are blocked on decisions only Romy can make — they are listed at the bottom of that file.**
 
 ---
+
+## Session 129 — Sprint S: Schema Drift Audit (September 4, 2026)
+
+**Branch:** dev. Full sprint contract in `docs/SPRINT_S_SCHEMA_DRIFT.md`.
+Published audit report: https://claude.ai/code/artifact/e260ac75-d578-45a0-8024-a1f0b4f37695
+
+**Shipped:**
+
+- **`consent_log` bug fixed.** Every consent audit-trail insert had been failing
+  since the feature shipped. `2fb66db` adds the repair migration, `70c81e8`
+  routes Module 1 consent through `/api/consent/log` (which drops the hardcoded
+  `ip_hash: "local-hash"` the browser was writing into the audit trail), `8c29240`
+  makes onboarding check the response instead of firing and forgetting.
+- **`scripts/audit-schema-drift.py`** — re-runnable scanner. Reads the live schema
+  from PostgREST's OpenAPI endpoint and compares every `.from()` chain in `src`,
+  `scripts` and `supabase/functions` against it. Run it after any query change.
+- **`docs/DOC_INDEX.md` corrected.** It claimed `docs/schema_complete.sql` was the
+  database "single source of truth". It is not, and has not been for some time.
+  The live database is; the index now says so.
+
+**Found — the audit, in one paragraph:**
+
+Every `.from()` call in the codebase was checked column by column against the live
+Supabase database. 44 call sites across 30 files and 20 tables name columns that do
+not exist; one names a table that does not exist. The mechanism is
+`CREATE TABLE IF NOT EXISTS`, which silently no-ops against a pre-existing table of
+a different shape — the migrations reported success, the tables kept their original
+columns, and the code was written against the migration files rather than the
+database. Nothing caught it because nothing could: `supabase-js` does not throw, so
+a query naming a missing column returns `{data: null, error}`, and where nothing
+reads `error` a failed query is indistinguishable from one that found nothing. An
+empty list renders as an empty state. A null row skips a branch. A missing customer
+check waves the customer through. `tsc`, jest and `npm run build` all pass, because
+none of them talk to the database.
+
+**Open — full task list and file:line detail in `docs/SPRINT_S_SCHEMA_DRIFT.md`:**
+
+- **P0 (5 tasks, S-1…S-5):** account deletion / soft-delete gate; GDPR export;
+  paid lifecycle email; nurture customer exit; Stripe lifecycle stamping.
+- **P1 (8 tasks, S-6…S-13):** discrepancy resolution (needs a migration — three
+  columns do not exist at all); franchise matching; marginality scoring; doc-gen
+  progress; Module 2 answer restore; interview-day simulator; analysis engine;
+  case brief business category.
+- **P2 (7 tasks, S-14…S-20):** admin dashboards reading zero — `rate_limit_hits`
+  (table does not exist), the empty `simulation_sessions` twin, lifecycle timeline,
+  Stripe health check, quality dashboard, prep-kit recency, admin user detail.
+
+**Verified clean:** `email_log`, `email_verifications`, `uploaded_documents`,
+`payments`, `terms_acceptance`, `simulator_sessions`, `llm_cost_log`,
+`generated_documents`, `quiz_nurture_log`, `email_suppressions` and the remaining
+43 tables. No insert anywhere omits a required NOT NULL column.
+
+**Corrections to earlier session notes:** `verify-token.ts` writing `verified_at`
+was previously flagged as a suspected bug — it is not, that column exists. The two
+conflicting `email_log` migrations are likewise harmless; the live shape matches
+the code.
+
+**🔶 For Romy:**
+
+1. **Run the `consent_log` migration** in the Supabase SQL editor
+   (`supabase/migrations/20260904160000_fix_consent_log_shape.sql`), then deploy:
+   `npx vercel --prod --yes --scope ocdeployments-projects`
+2. **Ten sprint tasks are blocked on your decisions** — they are listed as a table
+   at the bottom of `docs/SPRINT_S_SCHEMA_DRIFT.md`. Each one is a case where the
+   code reads a column that was never built, and guessing a replacement would put
+   a wrong number in front of an applicant. The mechanical renames ship without you.
+
+---
+
 
 ## Session 128 — Sprint N: Cleanup, Dead Code, Access Polish (July 17, 2026)
 
