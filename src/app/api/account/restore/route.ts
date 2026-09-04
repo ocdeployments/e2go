@@ -26,7 +26,7 @@ export async function POST() {
   const { data: profile } = await admin
     .from('profiles')
     .select('deleted_at')
-    .eq('user_id', userId)
+    .eq('id', userId)
     .maybeSingle();
 
   if (!profile?.deleted_at) {
@@ -37,7 +37,7 @@ export async function POST() {
   const { error: restoreError } = await admin
     .from('profiles')
     .update({ deleted_at: null })
-    .eq('user_id', userId);
+    .eq('id', userId);
 
   if (restoreError) {
     captureApiError(restoreError, { route: 'account/restore', userId });
