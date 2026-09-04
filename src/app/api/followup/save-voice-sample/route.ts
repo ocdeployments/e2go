@@ -161,14 +161,26 @@ ${voiceSampleText}`;
       return NextResponse.json({ error: 'Failed to save voice profile' }, { status: 500 });
     }
 
-    // Update lifecycle: voice_sample_collected = true
-    await supabase
+    /**
+     * Keyed on user_id. application_lifecycle has no application_id column, so
+     * this update errored and neither flag was ever written.
+     */
+    const { error: lifecycleError } = await supabase
       .from('application_lifecycle')
       .update({
         voice_sample_collected: true,
         module4_started_at: new Date().toISOString()
       })
-      .eq('application_id', applicationId);
+      .eq('user_id', user.id);
+
+    if (lifecycleError) {
+      captureApiError(lifecycleError, {
+        route: 'followup/save-voice-sample',
+        stage: 'lifecycle-update',
+        userId: user.id,
+        applicationId,
+      });
+    }
 
     return NextResponse.json({
       success: true,
