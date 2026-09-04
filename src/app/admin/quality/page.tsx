@@ -61,8 +61,9 @@ type SimRow = {
   completed_at: string | null;
 };
 
-type DownloadRow = {
-  downloaded_at: string | null;
+type ReleaseRow = {
+  released_at: string | null;
+  acknowledged_at: string | null;
   applicant_acknowledged: boolean | null;
 };
 
@@ -128,7 +129,7 @@ export default async function QualityPage() {
     { data: fddRows },
     { data: npsRows },
     { data: simRows },
-    { data: downloadRows },
+    { data: releaseRows },
   ] = await Promise.all([
     admin.from('generation_pipeline_log')
       .select('document_type, stage3_detection_score, stage3_attempts, final_status, pipeline_started_at')
@@ -148,8 +149,8 @@ export default async function QualityPage() {
       .select('user_id, readiness_indicator, completed_at')
       .gte('created_at', thirtyDaysAgo),
     admin.from('generation_pipeline_log')
-      .select('downloaded_at, applicant_acknowledged')
-      .eq('applicant_acknowledged', true)
+      .select('released_at, acknowledged_at, applicant_acknowledged')
+      .not('released_at', 'is', null)
       .gte('pipeline_started_at', thirtyDaysAgo),
   ]);
 
@@ -158,7 +159,7 @@ export default async function QualityPage() {
   const fdds      = (fddRows ?? []) as FddRow[];
   const nps       = (npsRows ?? []) as NpsRow[];
   const sims      = (simRows ?? []) as SimRow[];
-  const downloads = (downloadRows ?? []) as DownloadRow[];
+  const releases  = (releaseRows ?? []) as ReleaseRow[];
 
   // ── Generation quality ────────────────────────────────────────────────────
   const logsWithScore = logs.filter(l => l.stage3_detection_score !== null);
@@ -210,10 +211,23 @@ export default async function QualityPage() {
   const uniqueSimUsers    = new Set(sims.map(s => s.user_id)).size;
   const avgSimsPerUser    = uniqueSimUsers > 0 ? (totalSimSessions / uniqueSimUsers).toFixed(1) : '—';
 
-  // ── Document download rate ────────────────────────────────────────────────
-  const acknowledgedCount = downloads.length;
-  const downloadedCount   = downloads.filter(d => d.downloaded_at !== null).length;
-  const downloadRate      = acknowledgedCount > 0 ? Math.round((downloadedCount / acknowledgedCount) * 100) : null;
+  /**
+   * ── Package acknowledgement rate ─────────────────────────────────────────
+   *
+   * This was a download rate, built on a downloaded_at column that does not
+   * exist — so both counts read zero and the panel was never true. Nothing
+   * anywhere records a file download.
+   *
+   * What the pipeline log does record is release (documents made available)
+   * and acknowledgement (the client confirming they have seen them). That is a
+   * slightly different question from "did they collect the files", and the
+   * labels say so rather than borrowing the old word.
+   */
+  const releasedCount     = releases.length;
+  const acknowledgedCount = releases.filter(
+    r => r.applicant_acknowledged === true || r.acknowledged_at !== null,
+  ).length;
+  const ackRate = releasedCount > 0 ? Math.round((acknowledgedCount / releasedCount) * 100) : null;
 
   return (
     <main className="min-h-screen bg-[#0a0a0a] text-white px-6 py-10 max-w-7xl mx-auto">
@@ -349,16 +363,16 @@ export default async function QualityPage() {
         )}
       </Section>
 
-      {/* ── Document Download Rate ── */}
-      <Section title="Document Download Rate">
+      {/* ── Package Acknowledgement Rate ── */}
+      <Section title="Package Acknowledgement Rate">
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-          <Metric label="Acknowledged (unlocked)" value={String(acknowledgedCount)} sub="Users who passed quality gate (30d)" />
-          <Metric label="Downloaded ZIP" value={String(downloadedCount)} sub="Users who clicked download" />
-          <Metric label="Download rate" value={downloadRate !== null ? `${downloadRate}%` : '—'}
-            sub={downloadRate !== null ? (downloadRate >= 80 ? 'Strong' : downloadRate >= 50 ? 'Moderate — investigate drop-off' : '⚠ Low — funnel leak after unlock') : 'No data yet'} />
+          <Metric label="Released" value={String(releasedCount)} sub="Packages made available (30d)" />
+          <Metric label="Acknowledged" value={String(acknowledgedCount)} sub="Clients who confirmed receipt" />
+          <Metric label="Acknowledgement rate" value={ackRate !== null ? `${ackRate}%` : '—'}
+            sub={ackRate !== null ? (ackRate >= 80 ? 'Strong' : ackRate >= 50 ? 'Moderate — investigate drop-off' : '⚠ Low — funnel leak after release') : 'No data yet'} />
         </div>
-        {acknowledgedCount === 0 && (
-          <p className="text-zinc-600 text-sm">No acknowledged packages in the last 30 days.</p>
+        {releasedCount === 0 && (
+          <p className="text-zinc-600 text-sm">No packages released in the last 30 days.</p>
         )}
       </Section>
 
