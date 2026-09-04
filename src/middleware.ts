@@ -161,6 +161,62 @@ function devCheckRateLimit(key: string, limit: number, windowMs: number): boolea
   return true;
 }
 
+// ---------------------------------------------------------------------------
+// Block logging — rate_limit_hits
+// ---------------------------------------------------------------------------
+
+/**
+ * Record one block.
+ *
+ * Only blocks are written. A rate limiter's whole point is that the ordinary
+ * request never notices it, so the ordinary request must not pay for a database
+ * round trip; a blocked one is being rejected anyway, and the few milliseconds
+ * buy the admin panel the only signal it has that anyone is being turned away.
+ *
+ * The write is awaited rather than fired and forgotten because Edge middleware
+ * ends when the response is returned — a dangling promise is simply dropped, and
+ * a log nobody can rely on is worse than none. The abort signal bounds the cost
+ * so a slow or unreachable Supabase cannot hold a 429 open.
+ *
+ * Every failure path is swallowed. Logging a block must never turn a 429 into a
+ * 500, and it must never be the reason a limiter stops limiting.
+ */
+async function logRateLimitHit(limiter: string, pathname: string, ip: string): Promise<void> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) return;
+
+  try {
+    /**
+     * The IP is hashed, not stored — the panel's question is how many distinct
+     * sources are hitting the wall, never who they are. Same construction as
+     * consent_log, via Web Crypto because node:crypto is not on the Edge runtime.
+     */
+    const salt = process.env.IP_HASH_SALT || 'e2go-consent-log';
+    const digest = await crypto.subtle.digest(
+      'SHA-256',
+      new TextEncoder().encode(`${ip}:${salt}`),
+    );
+    const ipHash = Array.from(new Uint8Array(digest))
+      .map((b) => b.toString(16).padStart(2, '0'))
+      .join('');
+
+    await fetch(`${url.replace(/\/$/, '')}/rest/v1/rate_limit_hits`, {
+      method: 'POST',
+      headers: {
+        apikey: key,
+        Authorization: `Bearer ${key}`,
+        'Content-Type': 'application/json',
+        Prefer: 'return=minimal',
+      },
+      body: JSON.stringify({ limiter, path: pathname, ip_hash: ipHash }),
+      signal: AbortSignal.timeout(2000),
+    });
+  } catch (err) {
+    console.error('[middleware] rate-limit hit not logged:', err instanceof Error ? err.message : err);
+  }
+}
+
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() || 'unknown-ip';
@@ -168,13 +224,19 @@ export async function middleware(req: NextRequest) {
   // Rate limit login route
   if ((pathname === '/login' || pathname === '/api/auth/v1/token') && process.env.NODE_ENV === 'production') {
     const allowed = await enforceLimit({ limiter: loginLimiter, ip, name: 'login', limit: 5, windowMs: 15 * 60 * 1000 });
-    if (!allowed) return NextResponse.json({ error: 'Too many attempts. Please wait a few minutes and try again.' }, { status: 429 });
+    if (!allowed) {
+      await logRateLimitHit('login', pathname, ip);
+      return NextResponse.json({ error: 'Too many attempts. Please wait a few minutes and try again.' }, { status: 429 });
+    }
   }
 
   // Rate limit quiz submission
   if (pathname === '/api/quiz/submit' || pathname === '/api/email/results') {
     const allowed = await enforceLimit({ limiter: quizLimiter, ip, name: 'quiz', limit: 3, windowMs: 60 * 60 * 1000 });
-    if (!allowed) return NextResponse.json({ error: 'Too many attempts. Please wait a few minutes and try again.' }, { status: 429 });
+    if (!allowed) {
+      await logRateLimitHit('quiz', pathname, ip);
+      return NextResponse.json({ error: 'Too many attempts. Please wait a few minutes and try again.' }, { status: 429 });
+    }
   }
 
   let supabaseResponse = NextResponse.next({ request: req });
