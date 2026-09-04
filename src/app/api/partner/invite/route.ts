@@ -3,6 +3,7 @@ import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { Resend } from 'resend';
 import { captureApiError } from '@/lib/capture-error';
+import { EMAIL_SENDER, SUPPORT_REPLY_TO } from '@/lib/emails/senders';
 
 function buildInviteEmail(params: {
   senderName: string;
@@ -201,7 +202,8 @@ export async function POST(request: NextRequest) {
     const resend = new Resend(process.env.RESEND_API_KEY);
     try {
       await resend.emails.send({
-        from: 'e2go <notifications@e2go.app>',
+        from: EMAIL_SENDER,
+        replyTo: SUPPORT_REPLY_TO,
         to: partnerEmail,
         subject: `${senderName} has granted you Interview Prep access on E2go`,
         html: buildInviteEmail({ senderName, partnerEmail, acceptUrl }),
