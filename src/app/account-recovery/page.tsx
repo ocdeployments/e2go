@@ -25,7 +25,7 @@ export default function AccountRecoveryPage() {
       const { data: profile } = await supabase
         .from('profiles')
         .select('deleted_at')
-        .eq('user_id', user.id)
+        .eq('id', user.id)
         .maybeSingle();
 
       if (profile?.deleted_at) {
