@@ -4,6 +4,7 @@ import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { Resend } from 'resend';
 import { Redis } from '@upstash/redis';
 import { captureApiError } from '@/lib/capture-error';
+import { EMAIL_SENDER, SUPPORT_REPLY_TO } from '@/lib/emails/senders';
 
 const GRACE_DAYS = 30;
 
@@ -53,7 +54,8 @@ export async function POST() {
       const resend = new Resend(process.env.RESEND_API_KEY);
 
       await resend.emails.send({
-        from: 'e2go <no-reply@e2go.app>',
+        from: EMAIL_SENDER,
+        replyTo: SUPPORT_REPLY_TO,
         to: userEmail,
         subject: 'Your e2go account is scheduled for deletion',
         html: `
