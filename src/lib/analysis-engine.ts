@@ -118,7 +118,7 @@ async function loadApplicationAnswers(applicationId: string): Promise<Record<str
     }
   }
 
-  // 2. Load follow-up responses (mentioned_experiences, content_signals)
+  // 2. Load follow-up responses
   const { data: followUpResponses } = await supabase
     .from('followup_responses')
     .select('question_text, answer_text, gap_category')
@@ -126,17 +126,6 @@ async function loadApplicationAnswers(applicationId: string): Promise<Record<str
 
   if (followUpResponses) {
     answersMap['_followup_responses'] = followUpResponses;
-  }
-
-  // 3. Load voice profile content signals (mentioned_experiences)
-  const { data: voiceProfile } = await supabase
-    .from('applicant_voice_profile')
-    .select('content_signals_json')
-    .eq('application_id', applicationId)
-    .single();
-
-  if (voiceProfile?.content_signals_json) {
-    answersMap['_content_signals'] = voiceProfile.content_signals_json;
   }
 
   // 4. Load quiz session data (business_type, franchise_interest)
@@ -213,10 +202,23 @@ function getFollowupText(answers: Record<string, unknown>): string {
  * Helper: extract all text fields for comprehensive scanning.
  */
 function getAllText(answers: Record<string, unknown>): string {
+  /**
+   * There used to be a third source here: content signals mined out of the
+   * client's writing sample, read from applicant_voice_profile. That column
+   * never existed and nothing ever wrote it, so the source has always been
+   * empty and removing it changes no score.
+   *
+   * Not replaced with the raw writing sample, which is stored. That sample is
+   * the Module 4 motivation essay — "I chose this business because…" — not a
+   * background statement, and keyword-scanning it produces false positives:
+   * "my sister managed a restaurant" scans like the client managed one. A
+   * wrongly inflated experience score is worse than a missing one, because the
+   * Gap Report would then stop telling that client to substantiate their
+   * background — the exact thing a consular officer probes.
+   */
   return [
     getTabJText(answers),
     getFollowupText(answers),
-    String(answers['_content_signals'] || ''),
   ].join(' ');
 }
 
