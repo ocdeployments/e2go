@@ -3,6 +3,7 @@ import { createServiceClient } from '@/lib/supabase-service';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { Resend } from 'resend';
 import { captureApiError } from '@/lib/capture-error';
+import { EMAIL_SENDER, replyToUser } from '@/lib/emails/senders';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 const ADMIN_EMAIL = 'romyjames@gmail.com';
@@ -64,7 +65,9 @@ export async function POST(request: Request) {
     }
 
     await resend.emails.send({
-      from: 'e2go Support <noreply@e2go.app>',
+      from: EMAIL_SENDER,
+      // Hitting reply on a ticket alert answers the customer directly.
+      replyTo: replyToUser(userEmail),
       to: ADMIN_EMAIL,
       subject: `[Support] ${subject.trim()}`,
       html: `
