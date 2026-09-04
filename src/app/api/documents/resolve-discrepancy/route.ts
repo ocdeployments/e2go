@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
     // Verify the discrepancy belongs to this user's application
     const { data: discrepancy, error: fetchError } = await supabase
       .from('document_discrepancies')
-      .select('id, question_id')
+      .select('id, question_key')
       .eq('id', discrepancyId)
       .eq('application_id', applicationId)
       .single();
@@ -59,9 +59,8 @@ export async function POST(request: NextRequest) {
       .upsert(
         {
           application_id: applicationId,
-          question_key: discrepancy.question_id,
+          question_key: discrepancy.question_key,
           answer_value: resolvedValue,
-          user_id: user.id,
           source: 'user_resolved_conflict',
           confidence: null,
           answered_at: new Date().toISOString(),
@@ -77,7 +76,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       resolved: true,
       discrepancyId,
-      questionId: discrepancy.question_id,
+      questionId: discrepancy.question_key,
       resolvedValue,
     });
   } catch (error) {
