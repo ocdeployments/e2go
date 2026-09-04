@@ -176,7 +176,21 @@ export default function Module1Page() {
     }));
 
     if (inserts.length > 0) {
-      await supabase.from("referral_consents").upsert(inserts, { onConflict: "user_id,category" });
+      /**
+       * The error is read because this upsert has never once succeeded: the
+       * table was a different feature's table that took the name first, with no
+       * category column and no unique index to conflict on, so every write
+       * failed and nothing said so. The shape is repaired now, but the RLS
+       * policies admitting these rows are equally new — if they reject a write,
+       * that has to be visible rather than silently losing the consent again.
+       */
+      const { error } = await supabase
+        .from("referral_consents")
+        .upsert(inserts, { onConflict: "user_id,category" });
+
+      if (error) {
+        console.error("[module1] failed to record referral consent:", error);
+      }
     }
   };
 
