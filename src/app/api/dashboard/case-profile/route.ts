@@ -212,9 +212,9 @@ export async function GET(request: Request) {
 
     supabase
       .from('interview_prep_kits')
-      .select('id, created_at')
+      .select('id, generated_at')
       .eq('user_id', userId)
-      .order('created_at', { ascending: false })
+      .order('generated_at', { ascending: false })
       .limit(1)
       .maybeSingle(),
 
@@ -487,7 +487,7 @@ export async function GET(request: Request) {
     simCoachingNotes: sim?.coaching_notes ?? null,
 
     prepKitId: prepKit?.id ?? null,
-    prepKitCreatedAt: prepKit?.created_at ?? null,
+    prepKitCreatedAt: prepKit?.generated_at ?? null,
 
     quizAnswers:        quizAnswers,
     applicationTypeRaw: quiz?.application_type ?? null,
