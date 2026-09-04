@@ -216,6 +216,7 @@ function QuizInner() {
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
   const [email, setEmail] = useState("");
   const [caslConsent, setCaslConsent] = useState(false);
+  const [consentFocused, setConsentFocused] = useState(false);
   const [showEmailGate, setShowEmailGate] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -948,15 +949,27 @@ function QuizInner() {
                 placeholder="your@email.com"
                 style={{ width: "100%", padding: "13px 16px", background: "rgba(201,168,76,0.02)", border: "1px solid rgba(201,168,76,0.2)", color: "#f5f0e8", fontSize: "14px", fontFamily: "'DM Sans', sans-serif", borderRadius: 0, outline: "none", marginBottom: "12px" }}
               />
-              <div
-                style={{ display: "flex", alignItems: "flex-start", gap: "10px", marginBottom: "24px", cursor: "pointer" }}
-                onClick={() => setCaslConsent(!caslConsent)}
-              >
-                <div style={{ width: "16px", height: "16px", border: `1px solid ${caslConsent ? "#C9A84C" : "rgba(201,168,76,0.3)"}`, background: caslConsent ? "#C9A84C" : "transparent", flexShrink: 0, marginTop: "2px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              {/*
+                A real checkbox, visually hidden behind the gold square. This
+                was a styled div with an onClick, which meant it could only be
+                set with a pointer — no keyboard, nothing for a screen reader
+                to announce or toggle. That is the wrong control to make
+                unreachable: it is the one that records marketing consent.
+              */}
+              <label style={{ display: "flex", alignItems: "flex-start", gap: "10px", marginBottom: "24px", cursor: "pointer" }}>
+                <input
+                  type="checkbox"
+                  className="sr-only"
+                  checked={caslConsent}
+                  onChange={(e) => setCaslConsent(e.target.checked)}
+                  onFocus={() => setConsentFocused(true)}
+                  onBlur={() => setConsentFocused(false)}
+                />
+                <span aria-hidden="true" style={{ width: "16px", height: "16px", border: `1px solid ${caslConsent ? "#C9A84C" : "rgba(201,168,76,0.3)"}`, background: caslConsent ? "#C9A84C" : "transparent", flexShrink: 0, marginTop: "2px", display: "flex", alignItems: "center", justifyContent: "center", outline: consentFocused ? "2px solid #C9A84C" : "none", outlineOffset: "2px" }}>
                   {caslConsent && <span style={{ color: "#0a0a0a", fontSize: "11px" }}>✓</span>}
-                </div>
-                <div style={{ fontSize: "12px", color: "rgba(245,240,232,0.72)", lineHeight: 1.6 }}>Send me occasional updates about the E-2 process. You can unsubscribe at any time.</div>
-              </div>
+                </span>
+                <span style={{ fontSize: "12px", color: "rgba(245,240,232,0.72)", lineHeight: 1.6 }}>Send me occasional updates about the E-2 process. You can unsubscribe at any time.</span>
+              </label>
               {saveError && <div style={{ fontSize: "13px", color: "rgba(220,60,60,0.8)", marginBottom: "12px" }}>{saveError}</div>}
               <button
                 onClick={handleEmailSubmit}
