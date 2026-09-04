@@ -4,6 +4,7 @@ import { createServiceClient } from '@/lib/supabase-service';
 import { resolvePrimaryApplicationId } from '@/lib/resolve-application';
 import { Resend } from 'resend';
 import { captureApiError } from '@/lib/capture-error';
+import { EMAIL_SENDER, replyToUser } from '@/lib/emails/senders';
 
 // TODO(OPQ-2): Change BROKER_NOTIFICATION_EMAIL to a CRM webhook or internal
 // inbox once the broker handoff mechanism decision is resolved.
@@ -62,7 +63,8 @@ export async function POST(request: NextRequest) {
 
       try {
         await resend.emails.send({
-          from: 'e2go <notifications@e2go.app>',
+          from: EMAIL_SENDER,
+          replyTo: replyToUser(user.email),
           to: BROKER_NOTIFICATION_EMAIL,
           subject: 'New Broker Connection Request',
           html: `
