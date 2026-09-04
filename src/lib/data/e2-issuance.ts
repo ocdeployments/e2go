@@ -39,23 +39,20 @@ const FY2024_BY_COUNTRY: Readonly<Record<string, number>> = {
   Canada: 6_747,
   Germany: 3_902,
   France: 3_574,
+  Taiwan: 2_921,
   'United Kingdom': 2_720,
   Italy: 1_531,
   Spain: 1_438,
 };
 
-/**
- * Rank among all treaty-country nationalities, FY 2024. Taiwan sits at #6 with
- * 2,921 issuances but is absent from TREATY_COUNTRIES, so a Taiwanese national
- * cannot currently reach this code path — the ranks below skip it deliberately
- * rather than renumbering around a gap we may later close.
- */
+/** Rank among all treaty-country nationalities, FY 2024. */
 const FY2024_RANK: Readonly<Record<string, number>> = {
   Japan: 1,
   'South Korea': 2,
   Canada: 3,
   Germany: 4,
   France: 5,
+  Taiwan: 6,
   'United Kingdom': 7,
   Italy: 8,
   Spain: 9,
