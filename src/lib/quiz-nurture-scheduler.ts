@@ -161,14 +161,31 @@ async function isEligible(
   email: string,
   step: NurtureStep,
 ): Promise<Eligibility> {
-  const { data: alreadySent } = await supabase
+  const { data: priorSends } = await supabase
     .from('quiz_nurture_log')
-    .select('id')
-    .eq('quiz_session_id', sessionId)
-    .eq('step', step)
-    .maybeSingle();
+    .select('step')
+    .eq('quiz_session_id', sessionId);
 
-  if (alreadySent) return { ok: false, reason: 'already sent', hasViewedResults: false };
+  const sentSteps = new Set((priorSends ?? []).map((row) => row.step as string));
+
+  if (sentSteps.has(step)) {
+    return { ok: false, reason: 'already sent', hasViewedResults: false };
+  }
+
+  /**
+   * The closing email says the sequence is ending and that we have written
+   * twice already. To someone who received neither of those, that is simply
+   * untrue, and the email reads as a cold approach with a strange frame. So
+   * it only goes to people the earlier steps actually reached.
+   *
+   * This matters beyond launch. The windows are wide enough that a session
+   * completed before the sequence existed, or one that sat through a long
+   * cron outage, lands directly in the day-30 window having received nothing.
+   * Dropping them is the right failure: silence rather than a false claim.
+   */
+  if (step === 'last' && sentSteps.size === 0) {
+    return { ok: false, reason: 'no earlier sends to close', hasViewedResults: false };
+  }
 
   const { data: suppressed } = await supabase
     .from('email_suppressions')
