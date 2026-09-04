@@ -191,9 +191,9 @@ export async function GET(request: NextRequest) {
         .maybeSingle(),
       supabase
         .from('interview_prep_kits')
-        .select('id, created_at')
+        .select('id, generated_at')
         .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
+        .order('generated_at', { ascending: false })
         .limit(1)
         .maybeSingle(),
       supabase
