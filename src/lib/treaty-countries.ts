@@ -96,6 +96,44 @@ export const RESTRICTED_TREATY_COUNTRIES: Record<string, string> = {
 };
 
 /**
+ * Countries matching a partial search, for the quiz's country typeahead.
+ *
+ * Matches anywhere in the name, not just the start, so "korea" finds South
+ * Korea and "kinshasa" finds Congo (Kinshasa). Prefix matches are listed
+ * first, because someone typing "ir" almost certainly means Ireland rather
+ * than Kyrgyzstan. Aliases are searched last and resolve to their canonical
+ * entry, so a Czech typing "Czechia" is offered "Czech Republic" rather than
+ * nothing at all.
+ *
+ * Returns canonical TREATY_COUNTRIES entries only, so the caller can store
+ * whatever it hands back without further translation.
+ */
+export function searchTreatyCountries(query: string, limit = 8): string[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return [];
+
+  const prefix: string[] = [];
+  const contains: string[] = [];
+
+  for (const country of TREATY_COUNTRIES) {
+    const name = country.toLowerCase();
+    if (name.startsWith(q)) prefix.push(country);
+    else if (name.includes(q)) contains.push(country);
+  }
+
+  const viaAlias: string[] = [];
+  for (const [alias, canonical] of Object.entries(ALIASES)) {
+    if (!alias.startsWith(q)) continue;
+    if (prefix.includes(canonical)) continue;
+    if (contains.includes(canonical)) continue;
+    if (viaAlias.includes(canonical)) continue;
+    viaAlias.push(canonical);
+  }
+
+  return [...prefix, ...contains, ...viaAlias].slice(0, limit);
+}
+
+/**
  * Case-insensitive check against the treaty country list, including aliases.
  * Returns false for null/undefined/empty.
  */
