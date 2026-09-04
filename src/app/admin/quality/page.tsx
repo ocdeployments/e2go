@@ -34,7 +34,8 @@ type PipelineLogRow = {
   stage3_detection_score: number | null;
   stage3_attempts: number | null;
   final_status: string | null;
-  created_at: string;
+  /** The pipeline log has no created_at; this is when the run began. */
+  pipeline_started_at: string;
 };
 
 type JobRow = {
@@ -45,7 +46,6 @@ type JobRow = {
 type FddRow = {
   extraction_status: string | null;
   flag_count: number | null;
-  low_confidence_count: number | null;
   extracted_fields: Record<string, unknown> | null;
   created_at: string;
 };
@@ -90,6 +90,22 @@ function countFddFields(fields: Record<string, unknown> | null): number {
   }).length;
 }
 
+/**
+ * Low-confidence field count, derived rather than read back.
+ *
+ * The extraction engine computes this number and streams it to the client, but
+ * never writes it: `fdd_analyses` has no low_confidence_count column, so the
+ * select naming it errored and the whole FDD panel read as empty. The stored
+ * `extracted_fields` carries the same per-field `_conf` marks the engine counts
+ * from, so the number is recoverable from what was saved — no column needed.
+ */
+function countLowConfidenceFields(fields: Record<string, unknown> | null): number {
+  if (!fields) return 0;
+  return Object.values(fields).filter(
+    (v) => typeof v === 'object' && v !== null && (v as { _conf?: string })._conf === 'low'
+  ).length;
+}
+
 // PROMPT VERSION REGISTRY — update this whenever a prompt changes
 const PROMPT_REGISTRY = [
   { route: '/api/simulator/evaluate', model: 'xiaomi/mimo-v2.5 → gemini-2.5-flash → claude-haiku', version: 'v3 (Jun 2026)', notes: 'Added KB knowledge + document cross-reference' },
@@ -115,14 +131,14 @@ export default async function QualityPage() {
     { data: downloadRows },
   ] = await Promise.all([
     admin.from('generation_pipeline_log')
-      .select('document_type, stage3_detection_score, stage3_attempts, final_status, created_at')
-      .gte('created_at', thirtyDaysAgo)
-      .order('created_at', { ascending: false }),
+      .select('document_type, stage3_detection_score, stage3_attempts, final_status, pipeline_started_at')
+      .gte('pipeline_started_at', thirtyDaysAgo)
+      .order('pipeline_started_at', { ascending: false }),
     admin.from('document_generation_jobs')
       .select('status, created_at')
       .gte('created_at', thirtyDaysAgo),
     admin.from('fdd_analyses')
-      .select('extraction_status, flag_count, low_confidence_count, extracted_fields, created_at')
+      .select('extraction_status, flag_count, extracted_fields, created_at')
       .gte('created_at', thirtyDaysAgo),
     admin.from('nps_scores')
       .select('score, created_at')
@@ -134,7 +150,7 @@ export default async function QualityPage() {
     admin.from('generation_pipeline_log')
       .select('downloaded_at, applicant_acknowledged')
       .eq('applicant_acknowledged', true)
-      .gte('created_at', thirtyDaysAgo),
+      .gte('pipeline_started_at', thirtyDaysAgo),
   ]);
 
   const logs      = (pipelineLogs ?? []) as PipelineLogRow[];
@@ -174,7 +190,7 @@ export default async function QualityPage() {
   const avgFields = avg(fieldCounts);
   const belowThresholdCount = fieldCounts.filter(n => n < 5).length;
   const avgFlags = avg(extractedFdds.map(f => f.flag_count ?? 0));
-  const avgLowConf = avg(extractedFdds.map(f => f.low_confidence_count ?? 0));
+  const avgLowConf = avg(extractedFdds.map(f => countLowConfidenceFields(f.extracted_fields)));
 
   // ── NPS ───────────────────────────────────────────────────────────────────
   const npsTotal = nps.length;
