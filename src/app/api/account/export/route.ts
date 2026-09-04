@@ -29,11 +29,34 @@ export async function GET() {
   const admin = getAdminClient();
   const uid = user.id;
 
+  /**
+   * Applications are fetched first because answers are scoped through them.
+   *
+   * The answers table has no user_id — it is keyed on application_id — and
+   * this route used to filter it on user_id anyway. That query errored, and
+   * because supabase-js returns { data: null, error } rather than throwing,
+   * the export shipped with an empty answers array and no sign anything had
+   * gone wrong. Several other sections here failed the same way.
+   */
+  const { data: applications, error: applicationsError } = await admin
+    .from('applications')
+    .select('id, created_at, updated_at, business_name, business_category, source, preparation_status')
+    .eq('user_id', uid);
+
+  if (applicationsError) {
+    console.error('[export] failed to load applications:', applicationsError);
+    return NextResponse.json(
+      { error: 'Could not assemble your data export. Please contact support.' },
+      { status: 500 },
+    );
+  }
+
+  const applicationIds = (applications ?? []).map((a) => a.id as string);
+
   // Fetch all user data — parallel where possible
   const [
     { data: profile },
     { data: quizSessions },
-    { data: applications },
     { data: answers },
     { data: simulatorSessions },
     { data: caseProfiles },
@@ -44,24 +67,35 @@ export async function GET() {
     { data: legacyDocumentRefs },
     { data: uploadedDocumentRefs },
   ] = await Promise.all([
-    admin.from('profiles').select('*').eq('user_id', uid).maybeSingle(),
+    admin.from('profiles').select('*').eq('id', uid).maybeSingle(),
+    /**
+     * result_json is included whole. It holds the treaty country and the rest
+     * of the quiz outcome, and this route previously asked for treaty_country
+     * and pricing_tier as columns — neither of which is stored. Returning the
+     * stored record itself is both accurate and more complete than the two
+     * fields it was reaching for.
+     */
     admin.from('quiz_sessions')
-      .select('id, created_at, score, hard_stops, risk_flags, application_type, treaty_country, pricing_tier, post_quiz_profile')
+      .select('id, created_at, completed_at, score, score_breakdown, outcome, hard_stop_codes, risk_flag_codes, attorney_flag_codes, application_type, archetype, business_type, consulate_post, investment_amount, investment_currency, readiness_stage, result_json, post_quiz_profile')
       .eq('user_id', uid)
       .order('created_at', { ascending: false }),
-    admin.from('applications')
-      .select('id, created_at, updated_at, business_name, business_category, source, preparation_status')
-      .eq('user_id', uid),
-    admin.from('answers')
-      .select('application_id, question_key, answer_value, source, updated_at')
-      .eq('user_id', uid)
-      .order('application_id'),
+    applicationIds.length
+      ? admin.from('answers')
+          .select('application_id, question_key, answer_value, source, updated_at')
+          .in('application_id', applicationIds)
+          .order('application_id')
+      : Promise.resolve({ data: [], error: null }),
     admin.from('simulator_sessions')
       .select('id, created_at, session_number, readiness_indicator, questions_asked, answers_given, coaching_notes')
       .eq('user_id', uid)
       .order('created_at', { ascending: false }),
+    /**
+     * There is no single overall or gap score on case_profiles — the six
+     * scores below are what is actually held. The export names all of them
+     * rather than picking one to stand in for a column that never existed.
+     */
     admin.from('case_profiles')
-      .select('overall_score, archetype, data_state, gap_score, updated_at')
+      .select('archetype, data_state, completeness_score, eligibility_score, business_plan_score, franchise_match_score, management_role_score, source_of_funds_score, franchise_triggered, created_at, updated_at')
       .eq('user_id', uid)
       .maybeSingle(),
     admin.from('payments')
@@ -76,7 +110,7 @@ export async function GET() {
       .select('terms_version, accepted_at')
       .eq('user_id', uid),
     admin.from('followup_responses')
-      .select('question_text, response_text, created_at')
+      .select('question_number, question_text, answer_text, gap_category, created_at')
       .eq('user_id', uid)
       .order('created_at'),
     admin.from('application_documents')
