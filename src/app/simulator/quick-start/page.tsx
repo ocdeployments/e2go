@@ -5,44 +5,19 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createBrowserSupabaseClient } from '@/lib/supabase';
 import { BUSINESS_CATEGORIES } from '@/lib/business-categories';
+import { TREATY_COUNTRIES } from '@/lib/treaty-countries';
 
 const supabase = createBrowserSupabaseClient();
 
 // ─── Treaty Countries ────────────────────────────────────────────────────────
-const TREATY_COUNTRIES = [
-  { value: 'canada', label: 'Canada' },
-  { value: 'united_kingdom', label: 'United Kingdom' },
-  { value: 'australia', label: 'Australia' },
-  { value: 'japan', label: 'Japan' },
-  { value: 'south_korea', label: 'South Korea' },
-  { value: 'germany', label: 'Germany' },
-  { value: 'france', label: 'France' },
-  { value: 'italy', label: 'Italy' },
-  { value: 'spain', label: 'Spain' },
-  { value: 'netherlands', label: 'Netherlands' },
-  { value: 'switzerland', label: 'Switzerland' },
-  { value: 'sweden', label: 'Sweden' },
-  { value: 'belgium', label: 'Belgium' },
-  { value: 'norway', label: 'Norway' },
-  { value: 'denmark', label: 'Denmark' },
-  { value: 'finland', label: 'Finland' },
-  { value: 'ireland', label: 'Ireland' },
-  { value: 'austria', label: 'Austria' },
-  { value: 'poland', label: 'Poland' },
-  { value: 'czech_republic', label: 'Czech Republic' },
-  { value: 'hungary', label: 'Hungary' },
-  { value: 'romania', label: 'Romania' },
-  { value: 'mexico', label: 'Mexico' },
-  { value: 'colombia', label: 'Colombia' },
-  { value: 'argentina', label: 'Argentina' },
-  { value: 'chile', label: 'Chile' },
-  { value: 'turkey', label: 'Turkey' },
-  { value: 'israel', label: 'Israel' },
-  { value: 'jordan', label: 'Jordan' },
-  { value: 'thailand', label: 'Thailand' },
-  { value: 'pakistan', label: 'Pakistan' },
-  { value: 'other', label: 'Other E-2 treaty country' },
-];
+// Options come from the shared list, which is verified against the State
+// Department table. Value and label are the same string, so the answer stored
+// under Q0-TC matches what the quiz stores under Q0-01 — one spelling of a
+// country across the whole app, rather than a slug that needs decoding.
+const TREATY_COUNTRY_OPTIONS = TREATY_COUNTRIES.map((country) => ({
+  value: country,
+  label: country,
+}));
 
 const BUSINESS_TYPES = [
   { value: 'new', label: 'New business — starting from scratch' },
@@ -579,7 +554,7 @@ export default function SimulatorQuickStart() {
                 value={treatyCountry}
                 onChange={setTreatyCountry}
                 placeholder="Select your country..."
-                options={TREATY_COUNTRIES}
+                options={TREATY_COUNTRY_OPTIONS}
               />
             </FormField>
           </FormCard>
@@ -840,7 +815,8 @@ export default function SimulatorQuickStart() {
     const categoryLabel = BUSINESS_CATEGORIES.find(c => c.value === businessCategory)?.label ?? businessCategory;
     const typeLabel = BUSINESS_TYPES.find(t => t.value === businessType)?.label ?? businessType;
     const consulateLabel = TARGET_CONSULATES.find(c => c.value === targetConsulate)?.label ?? targetConsulate;
-    const countryLabel = TREATY_COUNTRIES.find(c => c.value === treatyCountry)?.label ?? treatyCountry;
+    // Country options carry no separate label — the value is the display name.
+    const countryLabel = treatyCountry;
 
     const investmentDisplay = rawInvestment
       ? `$${Number(rawInvestment.replace(/[^0-9.]/g, '')).toLocaleString()}`
