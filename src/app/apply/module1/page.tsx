@@ -154,9 +154,17 @@ export default function Module1Page() {
 
   const saveCaslConsent = async (userId: string) => {
     if (caslConsent !== null) {
-      await supabase.from("profiles").update({
+      // See the matching note in onboarding: this update silently discarded
+      // every answer while the column was missing, because the returned error
+      // was never read.
+      const { error } = await supabase.from("profiles").update({
         casl_marketing_consent: caslConsent,
+        casl_marketing_consent_at: new Date().toISOString(),
       }).eq("id", userId);
+
+      if (error) {
+        console.error("[module1] failed to record marketing consent:", error);
+      }
     }
   };
 
