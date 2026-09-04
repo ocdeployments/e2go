@@ -60,6 +60,8 @@ export function buildResultsEmail(
   outcome: string,
   verifyLink: string,
   expiresAt?: Date,
+  /** Recipient, so the footer's unsubscribe link is signed and works. */
+  recipient?: string,
 ): ResultsEmailContent {
   const isQualified = QUALIFIED_OUTCOMES.includes(outcome);
 
@@ -158,7 +160,7 @@ export function buildResultsEmail(
     'e2go.app — document preparation tool, not a law firm.',
   ].join('\n');
 
-  return { subject, html: getBaseHtml(content, preheader), text };
+  return { subject, html: getBaseHtml(content, preheader, recipient), text };
 }
 
 export interface SendResultsEmailArgs {
@@ -207,7 +209,12 @@ export async function sendResultsEmail(args: SendResultsEmailArgs): Promise<bool
   }
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-  const { subject, html, text } = buildResultsEmail(outcome, `${appUrl}/verify?token=${token}`, expiresAt);
+  const { subject, html, text } = buildResultsEmail(
+    outcome,
+    `${appUrl}/verify?token=${token}`,
+    expiresAt,
+    email,
+  );
 
   if (!process.env.RESEND_API_KEY) {
     console.log(`[EMAIL] Would send results email to ${email}: ${subject}`);
