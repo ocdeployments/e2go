@@ -1,6 +1,6 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** September 4, 2026 — Session 129: **Full schema audit complete. 44 call sites across 30 files and 20 tables reference columns that do not exist in the live database.** None of them throw — `supabase-js` returns `{data, error}` rather than throwing, and none of these sites read the error, so every one of them fails silently and renders as an empty state. Sprint S opened to fix them: `docs/SPRINT_S_SCHEMA_DRIFT.md`. 🔴 **P0 FOR ROMY — five of these are live compliance/revenue faults:** account deletion does not work and a soft-deleted account keeps full access (`middleware.ts:260`); the GDPR data-subject export returns mostly empty sections; the paid lifecycle email system has never sent an email; the quiz nurture sequence does not exclude paying customers (cron is running daily); and the Stripe webhook has never stamped `payment_completed_at`, so every funnel figure derived from it is wrong. 🔴 **Also still outstanding from earlier in this session: the `consent_log` shape migration (`supabase/migrations/20260904160000_fix_consent_log_shape.sql`) is written and committed but NOT YET RUN in production** — run it in the Supabase SQL editor, then deploy. **Next agent: work `docs/SPRINT_S_SCHEMA_DRIFT.md` in order, P0 first. Ten tasks in it are blocked on decisions only Romy can make — they are listed at the bottom of that file.**
+**Last Updated:** September 4, 2026 — Session 129: **Full schema audit complete. 44 call sites across 30 files and 20 tables reference columns that do not exist in the live database.** None of them throw — `supabase-js` returns `{data, error}` rather than throwing, and none of these sites read the error, so every one of them fails silently and renders as an empty state. Sprint S opened to fix them: `docs/SPRINT_S_SCHEMA_DRIFT.md`. 🔴 **P0 FOR ROMY — five of these are live compliance/revenue faults:** account deletion does not work and a soft-deleted account keeps full access (`middleware.ts:260`); the GDPR data-subject export returns mostly empty sections; the paid lifecycle email system has never sent an email; the quiz nurture sequence does not exclude paying customers (cron is running daily); and the Stripe webhook has never stamped `payment_completed_at`, so every funnel figure derived from it is wrong. 🔴 **Also still outstanding from earlier in this session: the `consent_log` shape migration (`supabase/migrations/20260904160000_fix_consent_log_shape.sql`) is written and committed but NOT YET RUN in production** — run it in the Supabase SQL editor, then deploy. **All five P0 faults are now fixed, along with every mechanical rename in P1 and P2 — verified by re-running the scanner against live.** What is left is eight decisions only Romy can make (listed at the bottom of `docs/SPRINT_S_SCHEMA_DRIFT.md`) and **two migrations written but NOT YET RUN in production:** `20260904160000_fix_consent_log_shape.sql` and `20260904180000_discrepancy_resolution.sql`. Both are additive and idempotent — run them in the Supabase SQL editor, then deploy by hand.
 
 ---
 
@@ -38,17 +38,40 @@ empty list renders as an empty state. A null row skips a branch. A missing custo
 check waves the customer through. `tsc`, jest and `npm run build` all pass, because
 none of them talk to the database.
 
-**Open — full task list and file:line detail in `docs/SPRINT_S_SCHEMA_DRIFT.md`:**
+**Fixed — every mechanical rename in the sprint, one file per commit:**
 
-- **P0 (5 tasks, S-1…S-5):** account deletion / soft-delete gate; GDPR export;
-  paid lifecycle email; nurture customer exit; Stripe lifecycle stamping.
-- **P1 (8 tasks, S-6…S-13):** discrepancy resolution (needs a migration — three
-  columns do not exist at all); franchise matching; marginality scoring; doc-gen
-  progress; Module 2 answer restore; interview-day simulator; analysis engine;
-  case brief business category.
-- **P2 (7 tasks, S-14…S-20):** admin dashboards reading zero — `rate_limit_hits`
-  (table does not exist), the empty `simulation_sessions` twin, lifecycle timeline,
-  Stripe health check, quality dashboard, prep-kit recency, admin user detail.
+- **P0 (S-1…S-5), all five:** the soft-delete gate and the account
+  delete/restore/recovery paths now key `profiles` on `id`; the GDPR export
+  returns real data in all thirteen sections; the paid lifecycle email system
+  reads recipients from `profiles` and resume position from
+  `application_lifecycle.last_visited_section`; the nurture sequence resolves
+  paying customers through `profiles` → `applications` and treats a failed check
+  as a reason not to send; the Stripe webhook stamps `payment_completed_at` on
+  the lifecycle row keyed by user.
+- **P1 (S-6, S-7, S-10 part, S-11, S-12 part, S-13):** discrepancy resolution
+  (code fixed; **migration written, needs running**) — and while reading that
+  flow, two further faults: `/api/documents/extract` inserted discrepancies under
+  `question_id`, so **no discrepancy row has ever been stored**, and the resolve
+  route's `answers` upsert carried a `user_id` that table does not have.
+  Franchise matching now selects `investment_min`/`investment_max`/`e2_eligible`
+  and scores on the two dimensions the table actually holds — the net-worth
+  dimension filtered on a column that never existed, so it has never contributed
+  to a score anyone saw. Module 2 restores answers by application. The
+  interview-day simulator reads `question_key`/`answer_value`. The analysis engine
+  reads `followup_responses.answer_text`. The case brief joins the quiz by user.
+- **P2 (S-15, S-17, S-18 part, S-19, S-20 part):** admin user detail reads
+  `simulator_sessions` (6 rows) rather than the empty `simulation_sessions` twin
+  and scopes answers by application; the Stripe health check orders on
+  `processed_at`, so it can now report healthy; the quality dashboard uses
+  `pipeline_started_at` and derives the low-confidence count from the stored
+  `extracted_fields` rather than a column nothing ever wrote; prep-kit recency
+  reads `generated_at`.
+
+**Still open — eight decisions, listed at the bottom of the sprint doc:** the
+marginality score split (S-8a), `document_generation_jobs.document_types` (S-9a),
+`referral_consents.category` (S-10a), `applicant_voice_profile.content_signals_json`
+(S-12a), `rate_limit_hits` (S-14a), the lifecycle timeline UI (S-16a), the
+download-rate metric (S-18a), and `case_profiles.gap_analysis` (S-20a).
 
 **Verified clean:** `email_log`, `email_verifications`, `uploaded_documents`,
 `payments`, `terms_acceptance`, `simulator_sessions`, `llm_cost_log`,
@@ -62,13 +85,16 @@ the code.
 
 **🔶 For Romy:**
 
-1. **Run the `consent_log` migration** in the Supabase SQL editor
-   (`supabase/migrations/20260904160000_fix_consent_log_shape.sql`), then deploy:
-   `npx vercel --prod --yes --scope ocdeployments-projects`
-2. **Ten sprint tasks are blocked on your decisions** — they are listed as a table
-   at the bottom of `docs/SPRINT_S_SCHEMA_DRIFT.md`. Each one is a case where the
-   code reads a column that was never built, and guessing a replacement would put
-   a wrong number in front of an applicant. The mechanical renames ship without you.
+1. **Run two migrations** in the Supabase SQL editor, in either order — both are
+   additive and idempotent:
+   - `supabase/migrations/20260904160000_fix_consent_log_shape.sql`
+   - `supabase/migrations/20260904180000_discrepancy_resolution.sql`
+
+   Then deploy: `npx vercel --prod --yes --scope ocdeployments-projects`
+2. **Eight sprint tasks are blocked on your decisions** — listed as a table at the
+   bottom of `docs/SPRINT_S_SCHEMA_DRIFT.md`. Each is a case where the code reads a
+   column that was never built, and guessing a replacement would put a wrong number
+   in front of an applicant. Everything mechanical has already shipped.
 
 ---
 
