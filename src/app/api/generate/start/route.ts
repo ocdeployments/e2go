@@ -203,13 +203,23 @@ export async function POST(request: Request) {
 
     const jobId = job.id;
 
-    // Track generation triggered lifecycle event
-    await supabase.from('application_lifecycle').insert({
-      application_id: applicationId,
-      event: 'generation_triggered',
-      user_id: user.id,
-      created_at: new Date().toISOString(),
-    });
+    /**
+     * Stamp the milestone on the client's lifecycle row.
+     *
+     * This used to insert an event row carrying application_id and event —
+     * neither column exists, so the write failed silently on every run. It
+     * would have been wrong even had it worked: application_lifecycle holds one
+     * row per client, keyed on user_id, so an insert creates a duplicate rather
+     * than recording anything. The state it wanted to record already has a
+     * column, and upserting it is the shape the rest of the codebase uses.
+     */
+    await supabase.from('application_lifecycle').upsert(
+      {
+        user_id: user.id,
+        generation_triggered_at: new Date().toISOString(),
+      },
+      { onConflict: 'user_id' },
+    );
 
     // Create document rows for all pipeline document types (core + conditional)
     await supabase.from('generated_documents').insert(
