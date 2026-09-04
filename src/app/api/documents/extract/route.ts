@@ -263,16 +263,26 @@ export async function POST(request: NextRequest) {
         const discrepancies = detectDiscrepancies(extractions);
 
         if (discrepancies.length > 0) {
-          // Store discrepancies
+          /**
+           * Store discrepancies. The extraction pipeline calls the field
+           * `question_id` in memory, matching what the model returns; the table
+           * calls it `question_key`. The translation happens here, at the
+           * boundary — the insert used to name the in-memory field and errored
+           * silently on every row, which is why the table is empty.
+           */
           for (const disc of discrepancies) {
-            await supabase
+            const { error: discError } = await supabase
               .from('document_discrepancies')
               .insert({
                 application_id: applicationId,
-                question_id: disc.question_id,
+                question_key: disc.question_id,
                 question_label: disc.question_label,
                 conflicting_values: disc.conflicting_values,
               });
+
+            if (discError) {
+              console.error('[extract] failed to store discrepancy:', discError);
+            }
           }
 
           sendEvent({
