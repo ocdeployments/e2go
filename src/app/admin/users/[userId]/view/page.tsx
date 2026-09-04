@@ -23,10 +23,23 @@ export default async function UserViewPage({ params }: { params: Promise<{ userI
   const { userId } = await params;
   const admin = getAdmin();
 
+  /**
+   * Applications first, because `answers` has no user_id — a row is reachable
+   * only through the application it belongs to. The query this replaced
+   * filtered answers on user_id, errored, and rendered an empty answer list
+   * for every user.
+   */
+  const { data: applications } = await admin
+    .from('applications')
+    .select('id, status, source, created_at, updated_at')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+
+  const applicationIds = (applications ?? []).map((a) => a.id as string);
+
   const [
     { data: profile },
     { data: authData },
-    { data: applications },
     { data: answers },
     { data: quizSessions },
     { data: simSessions },
@@ -37,8 +50,9 @@ export default async function UserViewPage({ params }: { params: Promise<{ userI
   ] = await Promise.all([
     admin.from('profiles').select('*').eq('id', userId).single(),
     admin.auth.admin.getUserById(userId),
-    admin.from('applications').select('id, status, source, created_at, updated_at').eq('user_id', userId).order('created_at', { ascending: false }),
-    admin.from('answers').select('question_key, answer_value, updated_at').eq('user_id', userId).order('updated_at', { ascending: false }).limit(50),
+    applicationIds.length
+      ? admin.from('answers').select('question_key, answer_value, updated_at').in('application_id', applicationIds).order('updated_at', { ascending: false }).limit(50)
+      : Promise.resolve({ data: [] }),
     admin.from('quiz_sessions').select('id, outcome, application_type, score_breakdown, completed_at').eq('user_id', userId).order('completed_at', { ascending: false }).limit(5),
     admin.from('simulator_sessions').select('id, session_number, mode, readiness_indicator, completed_at').eq('user_id', userId).order('created_at', { ascending: false }).limit(10),
     admin.from('document_generation_jobs').select('id, application_id, status, current_step_label, total_steps, current_step, updated_at').eq('user_id', userId).order('created_at', { ascending: false }).limit(5),
