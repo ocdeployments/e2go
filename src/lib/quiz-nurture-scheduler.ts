@@ -194,6 +194,63 @@ async function hasConsent(
   return profile?.casl_marketing_consent === true;
 }
 
+/**
+ * Whether this person has a paid application, resolved by user id where the
+ * quiz session has one and by email address otherwise.
+ *
+ * `errored` is distinct from `paid: false`. The caller treats a failed check
+ * as a reason not to send, because the cost of the two failures is not
+ * symmetric: skipping one nurture email is nothing, and mailing a paying
+ * customer a "still thinking about it?" sequence is not.
+ */
+async function isCustomer(
+  supabase: SupabaseClient,
+  userId: string | null,
+  email: string,
+): Promise<{ paid: boolean; errored: boolean }> {
+  let resolvedId = userId;
+
+  if (!resolvedId) {
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('id')
+      .ilike('email', escapeLike(email))
+      .limit(1)
+      .maybeSingle();
+
+    if (profileError) {
+      console.error('[nurture] profile lookup failed for customer check:', profileError);
+      return { paid: false, errored: true };
+    }
+    // No account at all — they cannot have paid.
+    if (!profile) return { paid: false, errored: false };
+    resolvedId = profile.id as string;
+  }
+
+  const { data: paid, error: paidError } = await supabase
+    .from('applications')
+    .select('id')
+    .eq('user_id', resolvedId)
+    .eq('payment_status', 'paid')
+    .limit(1)
+    .maybeSingle();
+
+  if (paidError) {
+    console.error('[nurture] paid application lookup failed:', paidError);
+    return { paid: false, errored: true };
+  }
+
+  return { paid: Boolean(paid), errored: false };
+}
+
+/**
+ * Neutralise the two ilike wildcards. Underscore is legal in a local part, so
+ * an unescaped address like a_b@x.com would match a-b@x.com too.
+ */
+function escapeLike(value: string): string {
+  return value.replace(/[%_]/g, (c) => `\\${c}`);
+}
+
 async function isEligible(
   supabase: SupabaseClient,
   session: ScannedSession,
@@ -241,19 +298,28 @@ async function isEligible(
   if (suppressed) return { ok: false, reason: 'unsubscribed', hasViewedResults: false };
 
   /**
-   * A paying customer leaves the sequence. Matched on address because the
-   * quiz row is anonymous — someone can pay from an account whose auth user
-   * was created after the quiz, so the address is the only reliable join.
+   * A paying customer leaves the sequence.
+   *
+   * This used to filter applications on an `email` column that does not exist
+   * there. The query errored, `paid` came back null, and the guard read that
+   * as "not a customer" — so someone who had already bought could keep
+   * receiving mail written for people who had not.
+   *
+   * The address is still the join, because the quiz row can be anonymous and
+   * someone may pay from an account created after they took the quiz. But it
+   * has to go through profiles, which is where an address is actually stored,
+   * and then to applications by user_id. A session that already carries a
+   * user_id skips the lookup.
    */
-  const { data: paid } = await supabase
-    .from('applications')
-    .select('id')
-    .eq('email', email)
-    .eq('payment_status', 'paid')
-    .limit(1)
-    .maybeSingle();
-
-  if (paid) return { ok: false, reason: 'customer', hasViewedResults: true };
+  const customer = await isCustomer(supabase, session.user_id, email);
+  if (customer.errored) {
+    /**
+     * Not knowing whether they are a customer is not the same as knowing they
+     * are not. Skip the send rather than risk mailing a paying customer.
+     */
+    return { ok: false, reason: 'customer check failed', hasViewedResults: false };
+  }
+  if (customer.paid) return { ok: false, reason: 'customer', hasViewedResults: true };
 
   /**
    * Whether they ever opened their results link, which changes the day-3
