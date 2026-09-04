@@ -18,6 +18,13 @@ const CONSULATE_LABELS: Record<string, string> = {
   other: 'Other',
 };
 
+/**
+ * Legacy decoder. The simulator's quick-start form used to store the treaty
+ * country as a slug; it now stores the same display name the quiz does, which
+ * falls through the lookup below unchanged. This map only exists to render
+ * applications answered before that change — including 'hungary', which the
+ * old form offered even though Hungary has no E-2 treaty.
+ */
 const COUNTRY_LABELS: Record<string, string> = {
   canada: 'Canada', united_kingdom: 'United Kingdom', australia: 'Australia',
   japan: 'Japan', south_korea: 'South Korea', germany: 'Germany',
