@@ -238,7 +238,7 @@ export async function GET(request: NextRequest) {
     const [answersRes, documentsRes, caseBriefRes, profileRes, caseTheoryRes] = await Promise.all([
       supabase.from('answers').select('question_key, answer_value').eq('application_id', applicationId),
       supabase.from('uploaded_documents').select('doc_type, extracted_json').eq('application_id', applicationId).eq('extraction_status', 'complete'),
-      supabase.from('case_briefs').select('substantiality_score, marginality_score').eq('application_id', applicationId).order('created_at', { ascending: false }).limit(1).single(),
+      supabase.from('case_briefs').select('substantiality_score, marginality_income_score, marginality_contribution_score').eq('application_id', applicationId).order('created_at', { ascending: false }).limit(1).single(),
       supabase.from('case_profiles').select('archetype').eq('user_id', user.id).maybeSingle(),
       supabase.from('case_theory').select('narrative, numbers_strategy').eq('application_id', applicationId).maybeSingle(),
     ]);
