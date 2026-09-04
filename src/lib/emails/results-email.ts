@@ -15,6 +15,7 @@ import { Resend } from 'resend';
 import crypto from 'crypto';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getBaseHtml, getButtonHtml } from './base-template';
+import { EMAIL_SENDER, SUPPORT_REPLY_TO } from './senders';
 import { captureApiError } from '@/lib/capture-error';
 
 /** Outcomes that read as "you clear the basic bar". */
@@ -123,7 +124,8 @@ export async function sendResultsEmail(args: SendResultsEmailArgs): Promise<bool
   try {
     const resend = new Resend(process.env.RESEND_API_KEY);
     const { error: resendError } = await resend.emails.send({
-      from: 'e2go <results@e2go.app>',
+      from: EMAIL_SENDER,
+      replyTo: SUPPORT_REPLY_TO,
       to: email,
       subject,
       html,
