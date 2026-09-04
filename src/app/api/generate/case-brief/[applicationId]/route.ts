@@ -68,14 +68,24 @@ export async function GET(
       );
     }
 
-    // Fetch business category from quiz_sessions
-    const { data: quizSession } = await supabase
+    /**
+     * Business category comes from the quiz, which is keyed on the person
+     * rather than the application — a quiz can be taken before an application
+     * exists, so there is no application_id to join on. Missing is a normal
+     * state here (someone can reach a case brief without having taken the
+     * quiz), so this is maybeSingle and a null result is not an error.
+     */
+    const { data: quizSession, error: quizError } = await supabase
       .from('quiz_sessions')
       .select('business_type')
-      .eq('application_id', applicationId)
+      .eq('user_id', application.user_id)
       .order('created_at', { ascending: false })
       .limit(1)
-      .single();
+      .maybeSingle();
+
+    if (quizError) {
+      captureApiError(quizError, { route: 'generate/case-brief', stage: 'quiz-business-type' });
+    }
 
     return NextResponse.json({
       caseBrief: brief,
