@@ -178,7 +178,7 @@ Not `application_id`. Three writes miss entirely.
 
 | # | Task | Kind | Status |
 |---|---|---|---|
-| **S-6** | Discrepancy resolution has no storage columns | **migration** | **DONE** — code fixed; migration written, **needs running** |
+| **S-6** | Discrepancy resolution has no storage columns | **migration** | **DONE** — code fixed; migration run in production September 4, 2026 |
 | **S-7** | Franchise matching returns `[]` every time | rename | **DONE** |
 | **S-8** | Marginality score column was split in two | rename + decision | **BLOCKED (needs Romy)** |
 | **S-9** | Doc generation progress reports "job not found" | decision | **BLOCKED (needs Romy)** |
@@ -389,8 +389,8 @@ out harmless; the live shape matches the code.
 
 Already shipped and pushed on `dev` before this sprint opened:
 
-- `2fb66db` migration `20260904160000_fix_consent_log_shape.sql` — **written,
-  NOT YET RUN in production.** Romy must run it in the Supabase SQL editor.
+- `2fb66db` migration `20260904160000_fix_consent_log_shape.sql` — **run in
+  production by Romy on September 4, 2026.**
 - `70c81e8` Module 1 consent now recorded through `/api/consent/log` (drops the
   hardcoded `ip_hash: "local-hash"` placeholder)
 - `8c29240` onboarding consent-log responses are now checked
@@ -399,21 +399,31 @@ Already shipped and pushed on `dev` before this sprint opened:
 
 ## Progress — September 4, 2026
 
-Every mechanical rename in this sprint has shipped. What remains is the eight
-decisions below, plus one migration for Romy to run.
+Every mechanical rename in this sprint has shipped, both migrations have been run
+in production, and the code was deployed by hand the same evening. What remains
+is the eight decisions below.
 
 Verified by re-running `scripts/audit-schema-drift.py --refresh` against live
-after the last fix: the only findings still reported are the decision-blocked
-ones and `document_discrepancies.resolved_value`, which clears when the
-migration runs. `npx tsc --noEmit` clean, jest 185/185, `npm run build` clean.
+after the migrations: the only findings it still reports are the eight
+decision-blocked ones, and the "inserts missing required columns" section is
+empty. `npx tsc --noEmit` clean, jest 185/185, `npm run build` clean.
 
-**🔶 Waiting on Romy — two migrations written but not run:**
+**✅ Migrations run in production — September 4, 2026, by Romy:**
 
 1. `supabase/migrations/20260904160000_fix_consent_log_shape.sql` (Session 129)
-2. `supabase/migrations/20260904180000_discrepancy_resolution.sql` (S-6)
+   — `consent_log` now carries `consent_type`, `consent_given` and `created_at`,
+   and `tos_version`/`action` are no longer NOT NULL, so the application's
+   inserts can land. Confirmed live: the table's `required` set is now `[id]`.
+2. `supabase/migrations/20260904180000_discrepancy_resolution.sql` (S-6) —
+   `document_discrepancies` now carries `resolved_value`, `resolved_source` and
+   `resolved_at`, plus the partial index on unresolved rows. Confirmed live.
 
-Both are additive and idempotent. Run them in the Supabase SQL editor, then
-deploy by hand.
+Both tables are still empty, which is expected — neither has ever been able to
+accept a write. They fill from here.
+
+**Deployed:** production deployment `e2go-7zvoahv3c` (Ready), plus the one
+before it, both from the `dev` working tree. `https://e2go.vercel.app` serving
+200 on `/` and `/quiz`.
 
 ## Open decisions blocking completion
 
