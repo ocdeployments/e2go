@@ -180,11 +180,11 @@ Not `application_id`. Three writes miss entirely.
 |---|---|---|---|
 | **S-6** | Discrepancy resolution has no storage columns | **migration** | **DONE** — code fixed; migration run in production September 4, 2026 |
 | **S-7** | Franchise matching returns `[]` every time | rename | **DONE** |
-| **S-8** | Marginality score column was split in two | rename + decision | **BLOCKED (needs Romy)** |
-| **S-9** | Doc generation progress reports "job not found" | decision | **BLOCKED (needs Romy)** |
-| **S-10** | Module 2 never restores saved answers | rename + decision | **PARTIAL** — answer scoping fixed; S-10a blocked |
+| **S-8** | Marginality score column was split in two | rename + decision | **DONE** — S-8a shipped |
+| **S-9** | Doc generation progress reports "job not found" | decision | **DONE** — S-9a shipped |
+| **S-10** | Module 2 never restores saved answers | rename + **migration** | **DONE (code)** — S-10a migration written, **not yet run in production** |
 | **S-11** | Interview-day simulator loads no answers | rename | **DONE** |
-| **S-12** | Analysis engine loses follow-up text + voice signals | rename + decision | **PARTIAL** — follow-up text fixed; S-12a blocked |
+| **S-12** | Analysis engine loses follow-up text + voice signals | rename + decision | **DONE** — S-12a shipped |
 | **S-13** | Case brief cannot find business category | rename | **DONE** |
 
 #### S-6 — `document_discrepancies` (needs SQL)
@@ -293,13 +293,13 @@ that.
 
 | # | Task | Kind | Status |
 |---|---|---|---|
-| **S-14** | `rate_limit_hits` table does not exist | decision | **BLOCKED (needs Romy)** |
+| **S-14** | `rate_limit_hits` table does not exist | **migration** | **DONE (code)** — S-14a migration written, **not yet run in production** |
 | **S-15** | Admin reads the empty `simulation_sessions` twin | rename | **DONE** |
-| **S-16** | Lifecycle timeline built for a table shape that never shipped | decision | **BLOCKED (needs Romy)** |
+| **S-16** | Lifecycle timeline built for a table shape that never shipped | decision | **DONE** — S-16a shipped |
 | **S-17** | Stripe health check always reports stale | rename | **DONE** |
-| **S-18** | Quality dashboard pipeline + FDD panels | rename + decision | **PARTIAL** — pipeline + FDD panels fixed; S-18a blocked |
+| **S-18** | Quality dashboard pipeline + FDD panels | rename + decision | **DONE** — S-18a shipped |
 | **S-19** | Interview prep kit recency | rename | **DONE** |
-| **S-20** | Admin user detail — answers + gap analysis | rename + decision | **PARTIAL** — answer scoping fixed; S-20a blocked |
+| **S-20** | Admin user detail — answers + gap analysis | rename + decision | **DONE** — S-20a shipped |
 
 #### S-14 — `src/app/admin/intelligence/page.tsx:67`
 
@@ -567,3 +567,72 @@ are surfaced alongside it.
 
 **Rule for this sprint:** every mechanical rename ships without asking. Every
 `decision` task stops and waits. Do not invent a column mapping to keep moving.
+
+---
+
+## Sprint S closed — September 4, 2026
+
+All eight decisions are implemented. `npx tsc --noEmit` clean, jest 191/191.
+
+| Ref | What shipped | Commits |
+|---|---|---|
+| S-8a | `src/lib/case-brief-scores.ts` — one reader for the stored vocabulary. Gap engine, gap page, case profile, interview prep, simulator engine and the admin intelligence panel all read labels now. | `a60f7f4` `8fee8d2` `54ceff7` `90d5970` `f835e13` `fc319be` `da2b49e` |
+| S-9a | Progress route stopped preferring the absent `document_types` array. | `53a4e96` |
+| S-10a | `20260904210000_referral_consents_shape.sql` — **awaiting production run.** | `b6e3a9c` |
+| S-12a | Dead content-signals source removed from experience scoring. | `99fbf42` |
+| S-14a | `20260904220000_rate_limit_hits.sql` — **awaiting production run** — plus the middleware writer and the rebuilt panel. | `612aa8b` `30a76b4` `0690ac6` |
+| S-16a | Timeline and revenue funnel derived from the lifecycle milestone columns. | `8b5920a` `653d686` `890817b` `d2d2e76` `60583fc` |
+| S-18a | Download rate replaced with release/acknowledgement, relabelled honestly. | `bfc0082` |
+| S-20a | `gap_analysis` dropped; the six stored scores surfaced; completeness no longer renders as 7000%. | `ed47999` `d48cb61` |
+
+### Two things beyond the recorded scope
+
+**S-8a was wider than "one renamed column."** Every one of the eight `*_score`
+columns on `case_briefs` is TEXT holding `STRONG | ADEQUATE | WEAK | CRITICAL |
+PENDING`, and three separate readers were doing arithmetic on them — `>= 0.7`,
+`< 0.4`, `Math.round(x * 100)`. Fixing only the column name would have unblocked
+each select and then compared `"ADEQUATE" >= 0.7`, which is false, sending every
+client down the "high denial risk" branch. Hence one shared module rather than
+six local patches.
+
+`src/lib/simulator-engine.ts` carried the same defect in a form the audit script
+cannot see. It selects `*`, so `marginality_score`, `develop_direct_score` and
+`risk_flags` produced **no error at all** — they were simply `undefined`, and the
+three weak-point probe questions they gate (WP-01/02/03) have never been asked of
+any client. `select('*')` is the silent variant of this whole sprint's bug, and
+nothing in the tooling detects it.
+
+Also found while there: `denial_risks` is a real column that the analysis run has
+never written. The same list is inside `case_brief_json`, so the simulator reads
+it from there.
+
+**S-10a was worse than recorded.** Beyond the missing `category` column,
+`referral_consents` has `email` and `referral_code` as NOT NULL with no defaults —
+so even a corrected conflict target would still have failed every insert. The
+migration relaxes both. The orphan columns are kept rather than dropped: nothing
+in this repo writes them, and dropping is irreversible for no gain.
+
+### Still open — two migrations to run
+
+Neither table is written or read correctly until these run in the Supabase SQL
+editor. Both are safe: `referral_consents` has 0 rows and `rate_limit_hits` does
+not exist yet.
+
+1. `supabase/migrations/20260904210000_referral_consents_shape.sql`
+2. `supabase/migrations/20260904220000_rate_limit_hits.sql`
+
+After the first, verify the three consent sites: `apply/module1/page.tsx:171`
+(`saveReferralConsents`), `onboarding/page.tsx:225` (`handleOfferResponse`), and
+the franchise-consultant gate at `apply/module2/page.tsx:521`, which reads
+`module1ReferralConsent?.franchise` and has therefore never appeared for anyone.
+
+### What this sprint could not have caught
+
+`npx tsc --noEmit`, jest and `npm run build` all pass against every bug in this
+document, because none of them talks to the database. `scripts/audit-schema-drift.py`
+is the only gate that does, and it is blind to `select('*')`. Run it before
+shipping any query change:
+
+```
+set -a && . ./.env.local; set +a && python3 scripts/audit-schema-drift.py --refresh
+```
