@@ -42,7 +42,7 @@ export async function GET(
         try {
           const { data: job, error } = await supabase
             .from('document_generation_jobs')
-            .select('status, current_step, current_step_label, document_types, total_steps, error_message')
+            .select('status, current_step, current_step_label, total_steps, error_message')
             .eq('id', jobId)
             .eq('user_id', user.id)
             .single();
@@ -84,9 +84,16 @@ export async function GET(
             .eq('status', 'awaiting_approval')
             .single();
 
-          // Derive totalDocuments from the job's document_types array (actual planned count)
-          const plannedDocs = Array.isArray(job.document_types) ? (job.document_types as string[]).length : 0;
-          const totalDocuments = plannedDocs > 0 ? plannedDocs : (job.total_steps ?? 13);
+          /**
+           * total_steps is the planned count, written when the job is created.
+           *
+           * This used to prefer a document_types array that the table does not
+           * have. supabase-js fails the whole select on one bad column name, so
+           * `job` came back null on every tick and the stream's first message
+           * was "Job not found" — the progress bar was broken for every client,
+           * while the documents generated correctly behind it.
+           */
+          const totalDocuments = job.total_steps ?? 13;
 
           send({
             step: job.current_step,
