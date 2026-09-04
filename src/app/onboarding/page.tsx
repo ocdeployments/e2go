@@ -259,20 +259,22 @@ export default function OnboardingPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user || !applicationId) return;
 
-      if (tosAccepted) {
-        await fetch('/api/consent/log', {
+      // Checked for the same reason as the consent write below: these have
+      // been returning 500 against a table whose columns did not match, and
+      // nothing noticed because nothing looked at the response.
+      const recordConsent = async (consentType: string) => {
+        const res = await fetch('/api/consent/log', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ consent_type: 'tos', consent_given: true }),
+          body: JSON.stringify({ consent_type: consentType, consent_given: true }),
         });
-      }
-      if (privacyAccepted) {
-        await fetch('/api/consent/log', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ consent_type: 'privacy', consent_given: true }),
-        });
-      }
+        if (!res.ok) {
+          console.error(`[onboarding] failed to record ${consentType} consent:`, res.status);
+        }
+      };
+
+      if (tosAccepted) await recordConsent('tos');
+      if (privacyAccepted) await recordConsent('privacy');
       if (caslConsent !== null) {
         // Checked, because this write failed silently for months: the column
         // did not exist, supabase-js returned the error rather than throwing,
