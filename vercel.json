@@ -11,6 +11,10 @@
     {
       "path": "/api/cron/health-watchdog",
       "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/quiz-nurture",
+      "schedule": "0 14 * * *"
     }
   ]
 }
