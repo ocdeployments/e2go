@@ -1,6 +1,6 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** September 4, 2026 — Session 130: **Sprint S is closed. All eight remaining decisions are implemented.** The sprint fixed 44 call sites across 30 files that named columns the live database does not have — every one failing silently, because `supabase-js` returns `{data, error}` rather than throwing and none of them read the error. Full record in `docs/SPRINT_S_SCHEMA_DRIFT.md`. 🔴 **TWO MIGRATIONS STILL TO RUN IN PRODUCTION** — `20260904210000_referral_consents_shape.sql` (referral consent has never been recorded for anyone, and the franchise-consultant offer in Module 2 has therefore never appeared) and `20260904220000_rate_limit_hits.sql` (the admin abuse panel's only input, a table that has never existed). Both are safe: the first table has 0 rows, the second does not exist yet. **Two findings beyond the recorded scope:** every `*_score` column on `case_briefs` is TEXT (`STRONG|ADEQUATE|WEAK|CRITICAL|PENDING`) and three readers were doing arithmetic on them, so fixing only the column names would have sent every client down the "high denial risk" branch; and `simulator-engine.ts` carries the same bug via `select('*')`, which produces **no error at all** — the simulator's three weak-point probe questions have never been asked of any client. `select('*')` is the silent variant of this whole sprint's bug and no gate detects it.
+**Last Updated:** September 4, 2026 — Session 130: **Sprint S is closed. All eight remaining decisions are implemented.** The sprint fixed 44 call sites across 30 files that named columns the live database does not have — every one failing silently, because `supabase-js` returns `{data, error}` rather than throwing and none of them read the error. Full record in `docs/SPRINT_S_SCHEMA_DRIFT.md`. ✅ **Both migrations run in production and verified against the live schema** — `20260904210000_referral_consents_shape.sql` (referral consent had never been recorded for anyone, so the franchise-consultant offer in Module 2 had never appeared) and `20260904220000_rate_limit_hits.sql` (the admin abuse panel's only input, a table that had never existed). **`scripts/audit-schema-drift.py --refresh` now reports `none` in both sections.** **Two findings beyond the recorded scope:** every `*_score` column on `case_briefs` is TEXT (`STRONG|ADEQUATE|WEAK|CRITICAL|PENDING`) and three readers were doing arithmetic on them, so fixing only the column names would have sent every client down the "high denial risk" branch; and `simulator-engine.ts` carries the same bug via `select('*')`, which produces **no error at all** — the simulator's three weak-point probe questions have never been asked of any client. `select('*')` is the silent variant of this whole sprint's bug and no gate detects it.
 
 ---
 
@@ -45,13 +45,16 @@ Romy answered all eight open decisions; all eight are now implemented.
 - `referral_consents` also had `email` and `referral_code` NOT NULL with no
   defaults, so even a corrected conflict target would have failed every insert.
 
-**🔴 For Romy — two migrations to run in the Supabase SQL editor:**
+**✅ Both migrations run in production by Romy, September 4, 2026.** Confirmed
+against the live schema: `referral_consents` carries `category` and its required
+set moved from `[id, email, referral_code]` to `[id, category, consent_given]`;
+`rate_limit_hits` exists. `scripts/audit-schema-drift.py --refresh` re-run
+afterwards reports **`none` in both sections** — every finding Sprint S opened
+with is closed.
 
-1. `supabase/migrations/20260904210000_referral_consents_shape.sql`
-2. `supabase/migrations/20260904220000_rate_limit_hits.sql`
-
-After the first, verify the three consent sites: `apply/module1/page.tsx:171`,
-`onboarding/page.tsx:225`, and the franchise gate at `apply/module2/page.tsx:521`.
+Left to verify in the running app, since this code has never once executed
+successfully: tick a franchise referral box in Module 1, then check that the
+consultant offer appears in Module 2 (`apply/module2/page.tsx:521`).
 
 ---
 

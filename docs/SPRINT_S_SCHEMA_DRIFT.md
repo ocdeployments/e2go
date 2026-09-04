@@ -182,7 +182,7 @@ Not `application_id`. Three writes miss entirely.
 | **S-7** | Franchise matching returns `[]` every time | rename | **DONE** |
 | **S-8** | Marginality score column was split in two | rename + decision | **DONE** — S-8a shipped |
 | **S-9** | Doc generation progress reports "job not found" | decision | **DONE** — S-9a shipped |
-| **S-10** | Module 2 never restores saved answers | rename + **migration** | **DONE (code)** — S-10a migration written, **not yet run in production** |
+| **S-10** | Module 2 never restores saved answers | rename + **migration** | **DONE** — migration run in production September 4, 2026 |
 | **S-11** | Interview-day simulator loads no answers | rename | **DONE** |
 | **S-12** | Analysis engine loses follow-up text + voice signals | rename + decision | **DONE** — S-12a shipped |
 | **S-13** | Case brief cannot find business category | rename | **DONE** |
@@ -293,7 +293,7 @@ that.
 
 | # | Task | Kind | Status |
 |---|---|---|---|
-| **S-14** | `rate_limit_hits` table does not exist | **migration** | **DONE (code)** — S-14a migration written, **not yet run in production** |
+| **S-14** | `rate_limit_hits` table does not exist | **migration** | **DONE** — migration run in production September 4, 2026 |
 | **S-15** | Admin reads the empty `simulation_sessions` twin | rename | **DONE** |
 | **S-16** | Lifecycle timeline built for a table shape that never shipped | decision | **DONE** — S-16a shipped |
 | **S-17** | Stripe health check always reports stale | rename | **DONE** |
@@ -578,9 +578,9 @@ All eight decisions are implemented. `npx tsc --noEmit` clean, jest 191/191.
 |---|---|---|
 | S-8a | `src/lib/case-brief-scores.ts` — one reader for the stored vocabulary. Gap engine, gap page, case profile, interview prep, simulator engine and the admin intelligence panel all read labels now. | `a60f7f4` `8fee8d2` `54ceff7` `90d5970` `f835e13` `fc319be` `da2b49e` |
 | S-9a | Progress route stopped preferring the absent `document_types` array. | `53a4e96` |
-| S-10a | `20260904210000_referral_consents_shape.sql` — **awaiting production run.** | `b6e3a9c` |
+| S-10a | `20260904210000_referral_consents_shape.sql` — run in production. | `b6e3a9c` |
 | S-12a | Dead content-signals source removed from experience scoring. | `99fbf42` |
-| S-14a | `20260904220000_rate_limit_hits.sql` — **awaiting production run** — plus the middleware writer and the rebuilt panel. | `612aa8b` `30a76b4` `0690ac6` |
+| S-14a | `20260904220000_rate_limit_hits.sql` — run in production — plus the middleware writer and the rebuilt panel. | `612aa8b` `30a76b4` `0690ac6` |
 | S-16a | Timeline and revenue funnel derived from the lifecycle milestone columns. | `8b5920a` `653d686` `890817b` `d2d2e76` `60583fc` |
 | S-18a | Download rate replaced with release/acknowledgement, relabelled honestly. | `bfc0082` |
 | S-20a | `gap_analysis` dropped; the six stored scores surfaced; completeness no longer renders as 7000%. | `ed47999` `d48cb61` |
@@ -612,19 +612,27 @@ so even a corrected conflict target would still have failed every insert. The
 migration relaxes both. The orphan columns are kept rather than dropped: nothing
 in this repo writes them, and dropping is irreversible for no gain.
 
-### Still open — two migrations to run
+### Both migrations run — September 4, 2026, by Romy
 
-Neither table is written or read correctly until these run in the Supabase SQL
-editor. Both are safe: `referral_consents` has 0 rows and `rate_limit_hits` does
-not exist yet.
+1. `supabase/migrations/20260904210000_referral_consents_shape.sql` — confirmed
+   live: `referral_consents` now carries `category`, and its `required` set moved
+   from `[id, email, referral_code]` to `[id, category, consent_given]`. Note
+   what that second half means — the two orphan NOT NULLs were failing every
+   insert independently of the missing column, so fixing only `category` would
+   not have been enough.
+2. `supabase/migrations/20260904220000_rate_limit_hits.sql` — confirmed live:
+   `created_at, id, ip_hash, limiter, path`.
 
-1. `supabase/migrations/20260904210000_referral_consents_shape.sql`
-2. `supabase/migrations/20260904220000_rate_limit_hits.sql`
+`scripts/audit-schema-drift.py --refresh` re-run against live afterwards:
+**both sections report `none`.** Every finding this sprint opened with is closed.
 
-After the first, verify the three consent sites: `apply/module1/page.tsx:171`
+Still to verify in the running app, since the code has never once executed
+successfully: the three consent sites — `apply/module1/page.tsx:171`
 (`saveReferralConsents`), `onboarding/page.tsx:225` (`handleOfferResponse`), and
 the franchise-consultant gate at `apply/module2/page.tsx:521`, which reads
 `module1ReferralConsent?.franchise` and has therefore never appeared for anyone.
+That gate is the visible one: tick the franchise referral box in Module 1, then
+look for the consultant offer in Module 2.
 
 ### What this sprint could not have caught
 
