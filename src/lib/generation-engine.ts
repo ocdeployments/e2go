@@ -2274,7 +2274,7 @@ export async function runGenerationPipeline(
     // Fetch the job row to read client-supplied regen note (if this is a regen run)
     const { data: jobRow } = await supabase
       .from('document_generation_jobs')
-      .select('client_regen_note, document_types')
+      .select('client_regen_note')
       .eq('id', jobId)
       .maybeSingle();
     const clientRegenNote = (jobRow?.client_regen_note as string | null) ?? null;
