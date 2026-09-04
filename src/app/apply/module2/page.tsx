@@ -161,11 +161,20 @@ export default function Module2Page() {
         });
       }
 
-      // Check Module 1 referral consent
-      const { data: consents } = await supabase
+      /**
+       * Check Module 1 referral consent. This gates the franchise consultant
+       * offer on screen 4 — no consent row, no offer — so a read that fails is
+       * indistinguishable from a client who declined, and the offer simply
+       * never appears. That is exactly what has been happening.
+       */
+      const { data: consents, error: consentError } = await supabase
         .from("referral_consents")
         .select("category, consent_given")
         .eq("user_id", user.id);
+
+      if (consentError) {
+        console.error("[module2] failed to read referral consent:", consentError);
+      }
 
       if (consents) {
         const consentMap: Record<string, boolean> = {};
