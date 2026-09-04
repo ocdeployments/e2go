@@ -5,7 +5,7 @@
 | soul.md | Brand voice, copy principles, tone, approved copy | Tech decisions, build status |
 | public/data/module0_questions.json | Quiz questions v2.1 — LOCKED | Scoring logic |
 | public/data/module0_scoring_logic.json | Scoring engine v1.1 — LOCKED | Questions |
-| docs/schema_complete.sql | Database schema — single source of truth | App logic |
+| docs/schema_complete.sql | Historical schema snapshot — **NOT the source of truth.** Verified out of date against production on Sept 4, 2026 (Sprint S). The live Supabase database is the only authority on column names; check it before writing any query. | App logic, current schema claims |
 | docs/spec/ (Vol 1–4) | Product specification — reference only | Live build status |
 | docs/DOC_INDEX.md | This index — what every file owns | Anything else |
 | docs/Document_Generation_Standards.md | Visual format, tone, language rules, structure standards, consistency checker, repetition checker, quality gate, page limits, post-specific exceptions. This is the constitution for all document generation. Never deviate without explicit instruction. | Current app state |
@@ -27,5 +27,6 @@
 | src/lib/governmentFees.ts | Government fee schedule by country | (To be built) |
 
 | docs/SPRINT_N_CLEANUP.md | Sprint N execution contract — repo hygiene, dead-code removal, access polish tasks N-1…N-7 with gates and status. | Rules, product spec |
+| docs/SPRINT_S_SCHEMA_DRIFT.md | Sprint S execution contract — the 44 code-vs-live-database column mismatches found Sept 4, 2026, as tasks S-1…S-20 with file:line, wrong→right mapping, verification steps and status. Also owns the standing rule that the live database is the schema source of truth, and the procedure for re-reading it. | Rules, product spec, session logs |
 
 Rule: Before creating any new doc, add it to DOC_INDEX.md first and declare what it owns. Never let two files own the same topic.
