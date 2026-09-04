@@ -92,7 +92,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ use
     admin.from('applications').select('id, status, source, created_at').eq('user_id', userId).order('created_at', { ascending: false }),
     admin.from('payments').select('id, tier, payment_type, amount_cents, amount_paid, status, created_at').eq('user_id', userId).order('created_at', { ascending: false }),
     admin.from('quiz_sessions').select('id, outcome, application_type, completed_at').eq('user_id', userId).order('completed_at', { ascending: false }).limit(3),
-    admin.from('simulation_sessions').select('id, readiness_indicator, completed_at').eq('user_id', userId).order('completed_at', { ascending: false }).limit(3),
+    admin.from('simulator_sessions').select('id, readiness_indicator, completed_at').eq('user_id', userId).order('completed_at', { ascending: false }).limit(3),
     admin.from('document_generation_jobs').select('id, status, current_step_label, updated_at').eq('user_id', userId).order('updated_at', { ascending: false }).limit(3),
     admin.from('application_lifecycle').select('id, event, created_at, details').eq('user_id', userId).order('created_at', { ascending: false }),
     admin.from('llm_cost_log').select('task, cost_usd, tokens_in, tokens_out').eq('user_id', userId).gte('created_at', thirtyDaysAgo),
