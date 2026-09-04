@@ -1,4 +1,5 @@
 import { Resend } from 'resend';
+import { EMAIL_SENDER, SUPPORT_REPLY_TO } from './senders';
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
@@ -183,7 +184,8 @@ async function sendEmail(to: string, subject: string, html: string): Promise<boo
 
   try {
     await resend.emails.send({
-      from: 'e2go <notifications@e2go.app>',
+      from: EMAIL_SENDER,
+      replyTo: SUPPORT_REPLY_TO,
       to: to,
       subject: subject,
       html: html
