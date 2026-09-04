@@ -1,6 +1,8 @@
 // Interview Simulator Types
 // Generated: June 5, 2026
 
+import type { ScoreLevel } from '@/lib/case-brief-scores';
+
 export interface SimulatorContext {
   applicationId: string;
   userId: string;
@@ -30,10 +32,16 @@ export interface SimulatorContext {
   priorVisaDenial: boolean;
   priorDenialDetails: string | null;
   immigrantIntentRisk: 'low' | 'moderate' | 'high';
-  // Analysis engine scores (if available)
-  substantialityScore: number | null;
-  marginalityScore: number | null;
-  developDirectScore: number | null;
+  /**
+   * Analysis engine judgements, when a case brief exists. These are the words
+   * the engine stores — STRONG / ADEQUATE / WEAK / CRITICAL — not numbers; they
+   * used to be typed as scores out of 100 and read from columns case_briefs
+   * does not have, so all three were always null and the weak-point probes
+   * below never fired for anyone.
+   */
+  substantialityScore: ScoreLevel | null;
+  marginalityScore: ScoreLevel | null;
+  developDirectScore: ScoreLevel | null;
   denialRiskFlags: string[];
   // EU-2: archetype + dimension scores from case_profiles (null when profile not yet built)
   archetype: string | null;
