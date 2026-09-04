@@ -120,13 +120,21 @@ export default function InterviewDayPage() {
       const investmentSourceTypes: string[] = [];
 
       if (app) {
-        const { data: answers } = await supabase
+        const { data: answers, error: answersError } = await supabase
           .from('answers')
-          .select('question_id, answer_text')
+          .select('question_key, answer_value')
           .eq('application_id', app.id)
-          .in('question_id', ['Q0-03', 'QA-15', 'QA-16', 'QF-NEW-05']);
+          .in('question_key', ['Q0-03', 'QA-15', 'QA-16', 'QF-NEW-05']);
 
-        const answerMap = new Map<string, string>((answers || []).map((a: { question_id: string; answer_text: string }) => [a.question_id, a.answer_text] as [string, string]));
+        if (answersError) {
+          console.error('[interview-day] answer lookup failed:', answersError);
+        }
+
+        const answerMap = new Map<string, string>(
+          (answers || []).map((a: { question_key: string; answer_value: string }) =>
+            [a.question_key, a.answer_value] as [string, string]
+          )
+        );
         const appType = app.application_type || '';
         hasSpouse = appType.includes('spouse') || appType.includes('couple') || appType.includes('famil');
         const childAnswer = answerMap.get('Q0-03') || '';
