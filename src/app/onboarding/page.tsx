@@ -226,10 +226,16 @@ export default function OnboardingPage() {
     setOfferResponses((prev) => ({ ...prev, [offerId]: consentGiven }));
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    await supabase.from('referral_consents').upsert(
+    // Same reasoning as the matching write in Module 1: this has never
+    // succeeded, and the policies that now admit it are new.
+    const { error } = await supabase.from('referral_consents').upsert(
       { user_id: user.id, category: offerId, consent_given: consentGiven },
       { onConflict: 'user_id,category' },
     );
+
+    if (error) {
+      console.error('[onboarding] failed to record partner offer response:', error);
+    }
   };
 
   useEffect(() => {
