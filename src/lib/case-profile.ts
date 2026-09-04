@@ -188,7 +188,7 @@ export async function buildCaseProfile(userId: string): Promise<CaseProfile> {
   const { data: briefRows } = application
     ? await supabase
         .from('case_briefs')
-        .select('substantiality_score, marginality_score')
+        .select('substantiality_score, marginality_income_score, marginality_contribution_score')
         .eq('application_id', application.id)
         .order('created_at', { ascending: false })
         .limit(1)
