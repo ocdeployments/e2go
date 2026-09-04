@@ -135,12 +135,21 @@ export default function Module2Page() {
       const appId = apps?.[0]?.id ?? null;
       setApplicationId(appId);
 
-      // Load existing answers
-      const { data: answers } = await supabase
-        .from("answers")
-        .select("question_key, answer_value")
-        .eq("user_id", user.id)
-        .like("question_key", "M2-%");
+      // Load existing answers. Scoped by application, which is the only key
+      // `answers` carries — it has no user_id column, so the filter this
+      // replaced errored and every return visit rendered blank fields over
+      // answers that had saved correctly.
+      const { data: answers, error: answersError } = appId
+        ? await supabase
+            .from("answers")
+            .select("question_key, answer_value")
+            .eq("application_id", appId)
+            .like("question_key", "M2-%")
+        : { data: null, error: null };
+
+      if (answersError) {
+        console.error("[module2] answer load failed:", answersError);
+      }
 
       if (answers) {
         answers.forEach((a: { question_key: string; answer_value: string }) => {
