@@ -125,12 +125,12 @@ export async function GET() {
     // Stripe: check if last webhook arrived in last 24h
     admin
       .from('processed_webhook_events')
-      .select('created_at')
-      .order('created_at', { ascending: false })
+      .select('processed_at')
+      .order('processed_at', { ascending: false })
       .limit(1),
   ]);
 
-  const stripeLastWebhook = stripeWebhookProbe.data?.[0]?.created_at ?? null;
+  const stripeLastWebhook = stripeWebhookProbe.data?.[0]?.processed_at ?? null;
   const stripeHoursAgo    = stripeLastWebhook
     ? Math.round((Date.now() - new Date(stripeLastWebhook).getTime()) / 3_600_000)
     : null;
