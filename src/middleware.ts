@@ -256,11 +256,20 @@ export async function middleware(req: NextRequest) {
       return NextResponse.redirect(new URL('/account-recovery', req.url));
     }
     if (!cachedAccess) {
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('deleted_at')
-        .eq('user_id', user.id)
+        .eq('id', user.id)
         .maybeSingle();
+      /**
+       * Logged rather than swallowed. A failed lookup here reads as "not
+       * deleted" and lets the request through, which is the wrong direction to
+       * fail in for a deletion gate — but failing closed would lock every user
+       * out on a transient database blip. Loud in the logs is the compromise.
+       */
+      if (profileError) {
+        console.error('[middleware] soft-delete lookup failed:', profileError);
+      }
       if (profile?.deleted_at) {
         const access: AccessCache = { full: false, sim: false, fdd: false, deleted: true };
         await safeCacheSet(accessCacheKey(user.id), access, 86400);
@@ -280,7 +289,7 @@ export async function middleware(req: NextRequest) {
       // Cache miss — fetch soft-delete status and payment status in parallel
       const [{ data: apps }, { data: profile }] = await Promise.all([
         supabase.from('applications').select('payment_status, source').eq('user_id', user.id),
-        supabase.from('profiles').select('deleted_at').eq('user_id', user.id).maybeSingle(),
+        supabase.from('profiles').select('deleted_at').eq('id', user.id).maybeSingle(),
       ]);
 
       if (profile?.deleted_at) {
