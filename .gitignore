@@ -82,3 +82,6 @@ docs/generated-output/
 /check-constraint.mjs
 /check-schema.mjs
 /take-screenshot.js
+
+# Cached PostgREST schema spec (scripts/audit-schema-drift.py)
+.schema-spec.json
