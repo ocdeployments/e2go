@@ -4,6 +4,7 @@
 
 import { createBrowserSupabaseClient } from '@/lib/supabase';
 import { getQuestionKnowledge } from '@/lib/interview-knowledge-base';
+import { asScoreLevel, isBelowAdequate, weakestScore } from '@/lib/case-brief-scores';
 import type {
   SimulatorContext,
   Question,
@@ -24,6 +25,28 @@ const supabase = createBrowserSupabaseClient();
 // =============================================================================
 // HELPERS
 // =============================================================================
+
+/**
+ * The denial risks the analysis engine found, as short strings for the coaching
+ * prompt.
+ *
+ * They are read out of case_brief_json rather than the denial_risks column:
+ * the column exists but the analysis run has never written it, and the full
+ * brief it does write carries the same list. Only FLAG and CRITICAL are worth
+ * a coach's attention — CLEAR and WATCH are not findings to rehearse against.
+ */
+function extractDenialRiskFlags(caseBriefJson: unknown): string[] {
+  const risks = (caseBriefJson as { denial_risks?: unknown } | null)?.denial_risks;
+  if (!Array.isArray(risks)) return [];
+
+  return risks
+    .filter((r): r is { code: string; level: string; reason: string } =>
+      typeof r === 'object' && r !== null &&
+      typeof (r as { code?: unknown }).code === 'string' &&
+      typeof (r as { reason?: unknown }).reason === 'string' &&
+      ((r as { level?: unknown }).level === 'FLAG' || (r as { level?: unknown }).level === 'CRITICAL'))
+    .map((r) => `${r.code}: ${r.reason}`);
+}
 
 function deriveImmigrantIntentRisk(
   priorVisaDenial: boolean,
@@ -203,10 +226,26 @@ export async function buildSimulatorContext(applicationId: string): Promise<Simu
     priorDenialDetails: priorVisaDenial ?
       (answersMap.get('QA-24') || answersMap.get('M3-A-24') || null) : null,
     immigrantIntentRisk: deriveImmigrantIntentRisk(priorVisaDenial, answersMap),
-    substantialityScore: caseBrief?.substantiality_score ?? null,
-    marginalityScore: caseBrief?.marginality_score ?? null,
-    developDirectScore: caseBrief?.develop_direct_score ?? null,
-    denialRiskFlags: caseBrief?.risk_flags || [],
+    /**
+     * The engine's judgements, read from the columns that exist.
+     *
+     * These used to name marginality_score, develop_direct_score and
+     * risk_flags — none of which are columns on case_briefs. The select is a
+     * `*`, so nothing errored; the three fields were simply undefined, and the
+     * weak-point probes they gate have never fired for any client.
+     *
+     * Marginality is stored as two judgements and the case is only as strong
+     * as the weaker one. "Develop and direct" is the executive role judgement.
+     * The denial risks live inside case_brief_json rather than in a column of
+     * their own, because that is where the analysis run writes them.
+     */
+    substantialityScore: asScoreLevel(caseBrief?.substantiality_score),
+    marginalityScore: weakestScore(
+      caseBrief?.marginality_income_score,
+      caseBrief?.marginality_contribution_score,
+    ),
+    developDirectScore: asScoreLevel(caseBrief?.executive_role_score),
+    denialRiskFlags: extractDenialRiskFlags(caseBrief?.case_brief_json),
     archetype: caseProfile?.archetype ?? null,
     sourceOfFundsScore: caseProfile?.source_of_funds_score ?? null,
     managementRoleScore: caseProfile?.management_role_score ?? null,
@@ -452,11 +491,11 @@ export function generateQuestions(context: SimulatorContext): Question[] {
 
   // === WEAK POINT PROBE QUESTIONS — flagged by the analysis engine ===
 
-  if (context.substantialityScore !== null && context.substantialityScore < 70) {
+  if (isBelowAdequate(context.substantialityScore)) {
     questions.push({
       id: 'WP-01',
       category: 'weak_point_probe',
-      context: `Substantiality score: ${context.substantialityScore}/100`,
+      context: `Substantiality: ${context.substantialityScore}`,
       relatesToField: 'investment_allocation',
       text: pick([
         `Walk me through exactly how your $${context.investmentAmount.toLocaleString()} investment was allocated across the business.`,
@@ -466,11 +505,11 @@ export function generateQuestions(context: SimulatorContext): Question[] {
     });
   }
 
-  if (context.marginalityScore !== null && context.marginalityScore < 70) {
+  if (isBelowAdequate(context.marginalityScore)) {
     questions.push({
       id: 'WP-02',
       category: 'weak_point_probe',
-      context: `Marginality score: ${context.marginalityScore}/100`,
+      context: `Non-marginality: ${context.marginalityScore}`,
       relatesToField: 'marginality',
       text: pick([
         `Your business projects $${context.revenueYear1.toLocaleString()} in Year 1. How does this compare to what you need to support your household?`,
@@ -480,11 +519,11 @@ export function generateQuestions(context: SimulatorContext): Question[] {
     });
   }
 
-  if (context.developDirectScore !== null && context.developDirectScore < 70) {
+  if (isBelowAdequate(context.developDirectScore)) {
     questions.push({
       id: 'WP-03',
       category: 'weak_point_probe',
-      context: `Develop & Direct score: ${context.developDirectScore}/100`,
+      context: `Develop & Direct: ${context.developDirectScore}`,
       relatesToField: 'management',
       text: pick([
         'Describe your day-to-day management activities. Who reports to you and how do you direct their work?',
