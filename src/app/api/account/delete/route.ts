@@ -33,7 +33,7 @@ export async function POST() {
   const { error: softDeleteError } = await admin
     .from('profiles')
     .update({ deleted_at: deletedAt })
-    .eq('user_id', userId);
+    .eq('id', userId);
 
   if (softDeleteError) {
     captureApiError(softDeleteError, { route: 'account/delete', stage: 'soft-delete', userId });
