@@ -46,7 +46,12 @@ interface CaseRow {
   created_at: string;
 }
 interface SimRow { readiness_indicator: string | null; inconsistency_count: number | null }
-interface RateLimitRow { user_id: string; created_at: string }
+/**
+ * A block, not a user. Both limiters run before anyone is authenticated, so
+ * there is no user_id to record — this used to ask for one, which failed the
+ * whole select even once the table existed.
+ */
+interface RateLimitRow { limiter: string; path: string; created_at: string }
 
 function median(arr: number[]) {
   if (arr.length === 0) return 0;
@@ -78,7 +83,7 @@ export default async function AdminIntelligencePage() {
     admin.from('generated_documents').select('status, verifier_result, document_type, created_at').order('created_at', { ascending: false }).limit(500),
     admin.from('case_briefs').select('substantiality_score, fund_source_score, marginality_income_score, marginality_contribution_score, intent_score, created_at').order('created_at', { ascending: false }).limit(200),
     admin.from('simulator_sessions').select('readiness_indicator, inconsistency_count').order('created_at', { ascending: false }).limit(200),
-    admin.from('rate_limit_hits').select('user_id, created_at').order('created_at', { ascending: false }).limit(100).then(r => r),
+    admin.from('rate_limit_hits').select('limiter, path, created_at').order('created_at', { ascending: false }).limit(100).then(r => r),
   ]);
 
   const typedCosts = (costs ?? []) as CostRow[];
@@ -86,6 +91,18 @@ export default async function AdminIntelligencePage() {
   const typedCases = (cases ?? []) as CaseRow[];
   const typedSims  = (sims ?? []) as SimRow[];
   const typedRateLimits = (rateLimitHits ?? []) as RateLimitRow[];
+
+  /**
+   * Which limiter is doing the turning away. Five blocks on the quiz is a
+   * scraper; five on login is someone guessing a password, and they call for
+   * different responses, so the panel names them rather than giving one total.
+   */
+  const rateLimitByLimiter = Object.entries(
+    typedRateLimits.reduce<Record<string, number>>((acc, hit) => {
+      acc[hit.limiter] = (acc[hit.limiter] ?? 0) + 1;
+      return acc;
+    }, {}),
+  ).sort((a, b) => b[1] - a[1]);
 
   // ── Document quality ─────────────────────────────────────────────────────────
   const completedDocs  = typedDocs.filter(d => d.status === 'completed');
@@ -228,8 +245,13 @@ export default async function AdminIntelligencePage() {
 
         {typedRateLimits.length > 0 && (
           <div className="mt-6 p-3 border border-orange-500/20 bg-orange-950/20 text-sm">
-            <span className="text-orange-400 font-semibold">⚠ {typedRateLimits.length} rate limit hits</span>
-            <span className="text-zinc-400"> in the log. May indicate power users or misuse.</span>
+            <span className="text-orange-400 font-semibold">
+              ⚠ {typedRateLimits.length}{typedRateLimits.length === 100 ? '+' : ''} rate limit blocks
+            </span>
+            <span className="text-zinc-400">
+              {' '}— {rateLimitByLimiter.map(([name, count]) => `${count} on ${name}`).join(', ')}.
+              Most recent {new Date(typedRateLimits[0].created_at).toLocaleString()}.
+            </span>
           </div>
         )}
       </section>
