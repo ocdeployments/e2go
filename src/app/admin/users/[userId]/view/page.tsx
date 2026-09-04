@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { buildLifecycleTimeline, LIFECYCLE_TIMELINE_COLUMNS } from '@/lib/lifecycle-timeline';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,6 +16,15 @@ function getAdmin() {
 function fmtD(iso: string | null) {
   return iso ? new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
 }
+/**
+ * case_profiles scores are stored 0-100, not 0-1 — the client-facing case
+ * profile renders them verbatim with a percent sign. Both admin pages used to
+ * multiply by 100 as well, so a completeness of 70 read as 7000%.
+ */
+function pct(score: unknown) {
+  return typeof score === 'number' ? `${Math.round(score)}%` : '—';
+}
+
 function fmtDT(iso: string | null) {
   return iso ? new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
 }
@@ -56,12 +66,14 @@ export default async function UserViewPage({ params }: { params: Promise<{ userI
     admin.from('quiz_sessions').select('id, outcome, application_type, score_breakdown, completed_at').eq('user_id', userId).order('completed_at', { ascending: false }).limit(5),
     admin.from('simulator_sessions').select('id, session_number, mode, readiness_indicator, completed_at').eq('user_id', userId).order('created_at', { ascending: false }).limit(10),
     admin.from('document_generation_jobs').select('id, application_id, status, current_step_label, total_steps, current_step, updated_at').eq('user_id', userId).order('created_at', { ascending: false }).limit(5),
-    admin.from('application_lifecycle').select('event, created_at, details').eq('user_id', userId).order('created_at', { ascending: false }).limit(30),
-    admin.from('case_profiles').select('archetype, completeness_score, gap_analysis, updated_at').eq('user_id', userId).maybeSingle(),
+    admin.from('application_lifecycle').select(LIFECYCLE_TIMELINE_COLUMNS).eq('user_id', userId).maybeSingle(),
+    admin.from('case_profiles').select('archetype, completeness_score, eligibility_score, business_plan_score, source_of_funds_score, management_role_score, franchise_match_score, updated_at').eq('user_id', userId).maybeSingle(),
     admin.from('generated_documents').select('id, document_type, created_at').eq('user_id', userId).order('created_at', { ascending: false }).limit(20),
   ]);
 
   if (!profile) notFound();
+
+  const timeline = buildLifecycleTimeline(lifecycle as Record<string, unknown> | null);
 
   const email = authData?.user?.email ?? '—';
   const profileData = profile as Record<string, unknown>;
@@ -118,9 +130,14 @@ export default async function UserViewPage({ params }: { params: Promise<{ userI
       {caseProfile && (
         <Section title="Case Profile">
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
-            <Stat label="Completeness" value={`${Math.round(((caseProfile as Record<string, unknown>).completeness_score as number ?? 0) * 100)}%`} />
-            <Stat label="Archetype" value={String((caseProfile as Record<string, unknown>).archetype ?? '—')} />
-            <Stat label="Last updated" value={fmtD((caseProfile as Record<string, unknown>).updated_at as string | null)} />
+            <Stat label="Completeness"     value={pct((caseProfile as Record<string, unknown>).completeness_score)} />
+            <Stat label="Archetype"        value={String((caseProfile as Record<string, unknown>).archetype ?? '—')} />
+            <Stat label="Last updated"     value={fmtD((caseProfile as Record<string, unknown>).updated_at as string | null)} />
+            <Stat label="Eligibility"      value={pct((caseProfile as Record<string, unknown>).eligibility_score)} />
+            <Stat label="Business plan"    value={pct((caseProfile as Record<string, unknown>).business_plan_score)} />
+            <Stat label="Source of funds"  value={pct((caseProfile as Record<string, unknown>).source_of_funds_score)} />
+            <Stat label="Management role"  value={pct((caseProfile as Record<string, unknown>).management_role_score)} />
+            <Stat label="Franchise match"  value={pct((caseProfile as Record<string, unknown>).franchise_match_score)} />
           </div>
         </Section>
       )}
@@ -211,13 +228,13 @@ export default async function UserViewPage({ params }: { params: Promise<{ userI
       )}
 
       {/* Lifecycle */}
-      {(lifecycle ?? []).length > 0 && (
-        <Section title="Lifecycle Events">
+      {timeline.length > 0 && (
+        <Section title="Milestones">
           <div className="space-y-1">
-            {(lifecycle as Array<Record<string, unknown>>).map((e, i) => (
-              <div key={i} className="flex items-center gap-4 text-xs border-b border-zinc-900 py-1.5">
-                <span className="text-[#C9A84C]/70 font-mono">{String(e.event)}</span>
-                <span className="text-zinc-600 ml-auto">{fmtDT(e.created_at as string | null)}</span>
+            {timeline.map(m => (
+              <div key={m.key} className="flex items-center gap-4 text-xs border-b border-zinc-900 py-1.5">
+                <span className="text-[#C9A84C]/70">{m.label}</span>
+                <span className="text-zinc-600 ml-auto">{fmtDT(m.at)}</span>
               </div>
             ))}
           </div>
