@@ -102,10 +102,25 @@ export async function POST(request: NextRequest) {
           .update({ payment_status: 'paid' })
           .eq('id', applicationId);
 
-        await supabase
+        /**
+         * Keyed on user_id — application_lifecycle has no application_id
+         * column, and this update used to filter on one. It errored on every
+         * payment, so payment_completed_at has never been written and every
+         * funnel figure derived from it is wrong.
+         */
+        const { error: lifecycleError } = await supabase
           .from('application_lifecycle')
           .update({ payment_completed_at: new Date().toISOString() })
-          .eq('application_id', applicationId);
+          .eq('user_id', userId);
+
+        if (lifecycleError) {
+          captureApiError(lifecycleError, {
+            route: 'stripe/webhook',
+            stage: 'lifecycle-payment-stamp',
+            eventId: event.id,
+            userId,
+          });
+        }
 
       } else if (
         (tierId === 'fdd_intelligence' || tierId === 'fdd_intelligence_loyalty') &&
