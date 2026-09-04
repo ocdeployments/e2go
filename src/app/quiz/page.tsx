@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback, useRef, useMemo, Suspense } from "rea
 import { useRouter, useSearchParams } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import quizData from "@/data/module0_questions.json";
-import { TREATY_COUNTRIES } from "@/lib/treaty-countries";
+import { TREATY_COUNTRIES, searchTreatyCountries } from "@/lib/treaty-countries";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -831,12 +831,7 @@ function QuizInner() {
   const pct = Math.round(((cur + 1) / visibleQuestions.length) * 100);
   const currentSection = q ? SECTIONS[q.section_index] : "";
 
-  const filteredCountries =
-    countrySearch.length > 0
-      ? TREATY_COUNTRIES.filter((c) =>
-          c.toLowerCase().startsWith(countrySearch.toLowerCase())
-        ).slice(0, 8)
-      : [];
+  const filteredCountries = searchTreatyCountries(countrySearch);
 
   const isCountry = q?.type === "searchable_country";
   const isMulti = q?.type === "multiselect";
