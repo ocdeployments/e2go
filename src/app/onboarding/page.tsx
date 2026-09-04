@@ -274,7 +274,20 @@ export default function OnboardingPage() {
         });
       }
       if (caslConsent !== null) {
-        await supabase.from('profiles').update({ casl_marketing_consent: caslConsent }).eq('id', user.id);
+        // Checked, because this write failed silently for months: the column
+        // did not exist, supabase-js returned the error rather than throwing,
+        // and nothing looked at it. Consent is not something to lose quietly.
+        const { error: consentError } = await supabase
+          .from('profiles')
+          .update({
+            casl_marketing_consent: caslConsent,
+            casl_marketing_consent_at: new Date().toISOString(),
+          })
+          .eq('id', user.id);
+
+        if (consentError) {
+          console.error('[onboarding] failed to record marketing consent:', consentError);
+        }
       }
 
       const derivedType = quizSession?.application_type === 'partnership' ? 'partnership' : 'solo';
