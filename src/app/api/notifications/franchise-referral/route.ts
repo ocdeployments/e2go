@@ -3,6 +3,7 @@ import { Resend } from "resend";
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { captureApiError } from '@/lib/capture-error';
+import { EMAIL_SENDER, replyToUser } from '@/lib/emails/senders';
 
 const resend = process.env.RESEND_API_KEY
   ? new Resend(process.env.RESEND_API_KEY)
@@ -60,7 +61,8 @@ export async function POST(req: NextRequest) {
     const safeFranchiseName = franchiseName ? sanitize(franchiseName) : "";
 
     await resend.emails.send({
-      from: "e2go <notifications@e2go.app>",
+      from: EMAIL_SENDER,
+      replyTo: replyToUser(userEmail),
       to: adminEmail,
       subject: `New franchise referral request — ${date}`,
       html: `
