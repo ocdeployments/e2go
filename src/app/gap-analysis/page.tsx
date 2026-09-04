@@ -8,6 +8,7 @@ import { resolvePrimaryApplicationId } from '@/lib/resolve-application';
 import Link from 'next/link';
 import {
   scoreCase,
+  type CaseBriefRow,
   type GapAnalysisResult,
   type SimulatorData,
 } from '@/lib/gap-analysis-engine';
@@ -29,7 +30,11 @@ const supabase = createBrowserSupabaseClient();
 
 type DocRow = { detected_document_type?: string | null; user_selected_document_type?: string | null; doc_type?: string | null };
 type AppRow = { business_name?: string | null; business_category?: string | null; operational_status?: string | null; target_state?: string | null; principal_name?: string | null; simulator_sessions_used?: number | null };
-type BriefRow = { substantiality_score?: number | null; marginality_score?: number | null };
+/**
+ * Shared with the engine so the two cannot drift apart again: the columns are
+ * TEXT labels, and marginality is stored as two judgements rather than one.
+ */
+type BriefRow = CaseBriefRow;
 
 // =============================================================================
 // ROOT — Suspense wrapper required for useSearchParams in Next.js 14
@@ -185,7 +190,7 @@ function GapAnalysisInner() {
           supabase.from('answers').select('question_key, answer_value').eq('application_id', resolvedId).is('family_member_id', null),
           supabase.from('application_documents').select('detected_document_type, user_selected_document_type').eq('application_id', resolvedId),
           supabase.from('uploaded_documents').select('doc_type').eq('application_id', resolvedId),
-          supabase.from('case_briefs').select('substantiality_score').eq('application_id', resolvedId).order('created_at', { ascending: false }).limit(1).maybeSingle(),
+          supabase.from('case_briefs').select('substantiality_score, marginality_income_score, marginality_contribution_score').eq('application_id', resolvedId).order('created_at', { ascending: false }).limit(1).maybeSingle(),
           supabase.from('applications').select('simulator_sessions_used').eq('id', resolvedId).single(),
           supabase.from('simulator_sessions').select('inconsistency_count').eq('application_id', resolvedId).order('started_at', { ascending: false }).limit(1),
           supabase.from('case_profiles').select('archetype, franchise_triggered').eq('user_id', user.id).maybeSingle(),

@@ -6,6 +6,13 @@
 // Pure function — no API calls, no async. Pass raw DB rows in, get scored result out.
 
 import { synthesizeInvestorProfile, type InvestorProfile } from './investor-profile-synthesizer';
+import {
+  asScoreLevel,
+  isBelowAdequate,
+  scoreWords,
+  weakestScore,
+  type ScoreLevel,
+} from './case-brief-scores';
 
 // =============================================================================
 // TYPES
@@ -136,9 +143,19 @@ interface DocumentRow {
   doc_type?: string | null; // uploaded_documents taxonomy (current pipeline)
 }
 
-interface CaseBriefRow {
-  substantiality_score?: number | null;
-  marginality_score?: number | null;
+/**
+ * The analysis engine's judgement, stored as words rather than numbers.
+ *
+ * This used to be typed as two nullable numbers, one of which — marginality_score
+ * — is not a column at all. supabase-js fails the whole select on one bad name,
+ * so every caller's brief came back null and none of the branches below have
+ * ever run. Marginality is stored as two separate judgements, income and
+ * contribution, and the case is only as strong as the weaker of them.
+ */
+export interface CaseBriefRow {
+  substantiality_score?: string | null;
+  marginality_income_score?: string | null;
+  marginality_contribution_score?: string | null;
 }
 
 export interface SimulatorData {
@@ -260,17 +277,19 @@ function scoreDenialFactors(
     // Live answers always win over a stale cached brief score — otherwise a
     // user who just filled in QF-02/QF-03 sees "high priority" here while
     // RemediationPanel (which only reads live answers) shows the item complete.
-    if (brief?.substantiality_score != null && !(investmentAmount > 0 && totalCost > 0)) {
-      if (brief.substantiality_score >= 0.7) {
+    const substantiality = asScoreLevel(brief?.substantiality_score);
+
+    if (substantiality !== null && !(investmentAmount > 0 && totalCost > 0)) {
+      if (substantiality === 'STRONG' || substantiality === 'ADEQUATE') {
         risk = 'low';
-        finding = `Analysis engine scores substantiality at ${Math.round(brief.substantiality_score * 100)}% — within acceptable range.`;
-      } else if (brief.substantiality_score >= 0.45) {
+        finding = `Analysis engine rates substantiality ${scoreWords(substantiality)} — within acceptable range.`;
+      } else if (substantiality === 'WEAK') {
         risk = 'moderate';
-        finding = `Substantiality score is ${Math.round(brief.substantiality_score * 100)}% — borderline. Officer may probe during interview.`;
+        finding = 'Analysis engine rates substantiality weak — the officer may probe proportionality during the interview.';
         mitigation = 'Prepare a written proportionality argument in the cover letter explaining why this amount is substantial relative to the total enterprise cost.';
       } else {
         risk = 'high';
-        finding = `Substantiality score is ${Math.round(brief.substantiality_score * 100)}% — below threshold. High denial risk.`;
+        finding = 'Analysis engine rates substantiality critical — below the threshold an officer expects.';
         mitigation = 'Consult an E-2 attorney to assess whether additional investment can be added before filing.';
       }
     } else if (investmentAmount > 0 && totalCost > 0) {
@@ -403,17 +422,22 @@ function scoreDenialFactors(
     let mitigation: string | null = null;
 
     // Live answers always win over a stale cached brief score — see D-01 above.
-    if (brief?.marginality_score != null && !(revenueY3 > 0 && householdIncome > 0)) {
-      if (brief.marginality_score >= 0.7) {
+    const marginality = weakestScore(
+      brief?.marginality_income_score,
+      brief?.marginality_contribution_score,
+    );
+
+    if (marginality !== null && !(revenueY3 > 0 && householdIncome > 0)) {
+      if (marginality === 'STRONG' || marginality === 'ADEQUATE') {
         risk = 'low';
-        finding = `Non-marginality score: ${Math.round(brief.marginality_score * 100)}% — projections support a viable, growing enterprise.`;
-      } else if (brief.marginality_score >= 0.4) {
+        finding = `Analysis engine rates non-marginality ${scoreWords(marginality)} — projections support a viable, growing enterprise.`;
+      } else if (marginality === 'WEAK') {
         risk = 'moderate';
-        finding = `Marginality score is borderline (${Math.round(brief.marginality_score * 100)}%) — officer may probe whether the business will do more than support the investor.`;
+        finding = 'Analysis engine rates non-marginality weak — the officer may probe whether the business will do more than support the investor.';
         mitigation = 'Strengthen the non-marginality argument: more US employees, higher Year 3–5 revenue projections, explicit marginality counter-narrative in cover letter.';
       } else {
         risk = 'high';
-        finding = `Marginality score is ${Math.round(brief.marginality_score * 100)}% — business may appear to exist only to support the investor.`;
+        finding = 'Analysis engine rates non-marginality critical — the business may appear to exist only to support the investor.';
         mitigation = 'The business must clearly do more than provide a livelihood for the investor and family. Add hiring plan, market expansion, and Year 5 revenue projections.';
       }
     } else if (revenueY3 > 0 && householdIncome > 0) {
@@ -736,7 +760,10 @@ function scoreDenialFactors(
       risk = 'high';
       finding = `"${app.business_category || category}" category carries an inherent marginality risk — these businesses typically cannot scale beyond supporting the investor.`;
       mitigation = 'Build a detailed non-marginality argument: franchise system support, US employee growth, expansion plans. An attorney should review the viability of this category for E-2.';
-    } else if (brief?.marginality_score != null && brief.marginality_score < 0.4) {
+    } else if (isBelowAdequate(weakestScore(
+      brief?.marginality_income_score,
+      brief?.marginality_contribution_score,
+    ))) {
       risk = 'high';
       finding = 'Analysis engine indicates the business type may not generate sufficient economic activity beyond the investor household.';
       mitigation = 'Review marginal business risk with an E-2 attorney. Strengthen the non-marginality argument with hiring plans and revenue projections.';
@@ -940,10 +967,11 @@ function scoreCategory(
         evidence.push(`Total enterprise cost: $${totalCost.toLocaleString()} (${ratio}% invested)`);
       } else gaps.push('Total enterprise cost not documented');
 
-      if (brief?.substantiality_score != null) {
-        evidence.push(`Substantiality score: ${Math.round(brief.substantiality_score * 100)}%`);
-        if (brief.substantiality_score < 0.5) {
-          gaps.push('Substantiality score is below acceptable range');
+      const substantiality: ScoreLevel | null = asScoreLevel(brief?.substantiality_score);
+      if (substantiality !== null) {
+        evidence.push(`Substantiality: ${substantiality}`);
+        if (isBelowAdequate(substantiality)) {
+          gaps.push('Substantiality is below acceptable range');
           actions.push('Prepare proportionality argument in cover letter');
         }
       }
