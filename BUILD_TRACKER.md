@@ -1,6 +1,57 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** September 4, 2026 — Session 129: **Full schema audit complete. 44 call sites across 30 files and 20 tables reference columns that do not exist in the live database.** None of them throw — `supabase-js` returns `{data, error}` rather than throwing, and none of these sites read the error, so every one of them fails silently and renders as an empty state. Sprint S opened to fix them: `docs/SPRINT_S_SCHEMA_DRIFT.md`. 🔴 **P0 FOR ROMY — five of these are live compliance/revenue faults:** account deletion does not work and a soft-deleted account keeps full access (`middleware.ts:260`); the GDPR data-subject export returns mostly empty sections; the paid lifecycle email system has never sent an email; the quiz nurture sequence does not exclude paying customers (cron is running daily); and the Stripe webhook has never stamped `payment_completed_at`, so every funnel figure derived from it is wrong. **All five P0 faults are now fixed, along with every mechanical rename in P1 and P2 — verified by re-running the scanner against live.** ✅ **Both migrations (`20260904160000_fix_consent_log_shape.sql` and `20260904180000_discrepancy_resolution.sql`) were run in production by Romy on September 4, 2026, and the code was deployed by hand the same evening — verified live: `consent_log` now carries `consent_type`/`consent_given`/`created_at` with `tos_version`/`action` no longer NOT NULL, `document_discrepancies` carries the three resolution columns, and the scanner's "inserts missing required columns" section is empty.** What is left is eight decisions only Romy can make, listed at the bottom of `docs/SPRINT_S_SCHEMA_DRIFT.md`. None of them block launch.
+**Last Updated:** September 4, 2026 — Session 130: **Sprint S is closed. All eight remaining decisions are implemented.** The sprint fixed 44 call sites across 30 files that named columns the live database does not have — every one failing silently, because `supabase-js` returns `{data, error}` rather than throwing and none of them read the error. Full record in `docs/SPRINT_S_SCHEMA_DRIFT.md`. 🔴 **TWO MIGRATIONS STILL TO RUN IN PRODUCTION** — `20260904210000_referral_consents_shape.sql` (referral consent has never been recorded for anyone, and the franchise-consultant offer in Module 2 has therefore never appeared) and `20260904220000_rate_limit_hits.sql` (the admin abuse panel's only input, a table that has never existed). Both are safe: the first table has 0 rows, the second does not exist yet. **Two findings beyond the recorded scope:** every `*_score` column on `case_briefs` is TEXT (`STRONG|ADEQUATE|WEAK|CRITICAL|PENDING`) and three readers were doing arithmetic on them, so fixing only the column names would have sent every client down the "high denial risk" branch; and `simulator-engine.ts` carries the same bug via `select('*')`, which produces **no error at all** — the simulator's three weak-point probe questions have never been asked of any client. `select('*')` is the silent variant of this whole sprint's bug and no gate detects it.
+
+---
+
+## Session 130 — Sprint S closed: the eight decisions (September 4, 2026)
+
+**Branch:** dev. Full record in `docs/SPRINT_S_SCHEMA_DRIFT.md`.
+`npx tsc --noEmit` clean, jest 191/191.
+
+Romy answered all eight open decisions; all eight are now implemented.
+
+**Shipped:**
+
+- **S-8a — the score vocabulary.** `src/lib/case-brief-scores.ts` is now the one
+  place that knows the shape of a `case_briefs` score. Every `*_score` column is
+  TEXT holding `STRONG | ADEQUATE | WEAK | CRITICAL | PENDING` — not a number.
+  Three readers were comparing them numerically (`>= 0.7`, `< 0.4`,
+  `Math.round(x * 100)`), so fixing only the column names would have unblocked
+  each select and then evaluated `"ADEQUATE" >= 0.7` as false, sending every
+  client down the "high denial risk" branch. Fixed across the gap engine, the gap
+  page, case profile, interview prep, the simulator engine and the admin
+  intelligence panel. `a60f7f4` `8fee8d2` `54ceff7` `90d5970` `f835e13` `fc319be`
+  `da2b49e`
+- **S-14a — rate-limit logging.** New `rate_limit_hits` table, a writer in
+  `src/middleware.ts` that fires only on a block, and a rebuilt admin panel that
+  names which limiter tripped. The write is awaited rather than fired and
+  forgotten — Edge middleware ends with the response, so a dangling promise is
+  dropped — bounded by a 2s abort, with every failure swallowed so logging can
+  never turn a 429 into a 500. The IP is stored as a salted hash, matching
+  `consent_log`. `612aa8b` `30a76b4` `0690ac6`
+- **S-10a — `referral_consents`.** Migration written. `b6e3a9c`
+- **S-9a / S-12a / S-16a / S-18a / S-20a** — see the sprint doc's closing table.
+
+**Found beyond the recorded scope:**
+
+- `src/lib/simulator-engine.ts` selects `*`, so `marginality_score`,
+  `develop_direct_score` and `risk_flags` — none of which are columns — produced
+  **no error at all**. They were simply `undefined`, and the three weak-point
+  probe questions they gate (WP-01/02/03) have never fired for any client. The
+  audit scanner cannot see this class of bug.
+- `denial_risks` is a real column the analysis run has never written. The same
+  list is inside `case_brief_json`; the simulator reads it from there now.
+- `referral_consents` also had `email` and `referral_code` NOT NULL with no
+  defaults, so even a corrected conflict target would have failed every insert.
+
+**🔴 For Romy — two migrations to run in the Supabase SQL editor:**
+
+1. `supabase/migrations/20260904210000_referral_consents_shape.sql`
+2. `supabase/migrations/20260904220000_rate_limit_hits.sql`
+
+After the first, verify the three consent sites: `apply/module1/page.tsx:171`,
+`onboarding/page.tsx:225`, and the franchise gate at `apply/module2/page.tsx:521`.
 
 ---
 
