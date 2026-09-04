@@ -130,26 +130,26 @@ export default function Module1Page() {
     setStep((prev) => prev - 1);
   };
 
-  const saveConsentLogs = async (userId: string) => {
-    // Mock IP hash for demo/local
-    const ipHash = "local-hash";
+  /**
+   * Recorded through the API route rather than inserted from here, which is
+   * how onboarding already does it. The browser cannot see the caller's IP,
+   * so this used to write the literal string "local-hash" into the audit
+   * trail on every production sign-up; the route hashes the real address.
+   */
+  const saveConsentLogs = async () => {
+    const record = async (consentType: string) => {
+      const res = await fetch("/api/consent/log", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ consent_type: consentType, consent_given: true }),
+      });
+      if (!res.ok) {
+        console.error(`[module1] failed to record ${consentType} consent:`, res.status);
+      }
+    };
 
-    if (tosAccepted) {
-      await supabase.from("consent_log").insert({
-        user_id: userId,
-        consent_type: "tos",
-        consent_given: true,
-        ip_hash: ipHash,
-      });
-    }
-    if (privacyAccepted) {
-      await supabase.from("consent_log").insert({
-        user_id: userId,
-        consent_type: "privacy",
-        consent_given: true,
-        ip_hash: ipHash,
-      });
-    }
+    if (tosAccepted) await record("tos");
+    if (privacyAccepted) await record("privacy");
   };
 
   const saveCaslConsent = async (userId: string) => {
@@ -186,7 +186,7 @@ export default function Module1Page() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      await saveConsentLogs(user.id);
+      await saveConsentLogs();
       await saveCaslConsent(user.id);
       await saveReferralConsents(user.id);
 
