@@ -4,6 +4,8 @@ import { createServiceClient } from '@/lib/supabase-service';
 import { sanitizeFilename, validateMagicBytes } from '@/lib/document-validation';
 import type { FddUploadIntake } from '@/types/fdd';
 import { captureApiError } from '@/lib/capture-error';
+import { resolvePrimaryApplicationId } from '@/lib/resolve-application';
+import { getUserEntitlements, resolveFddAnalysisLimit } from '@/lib/entitlements';
 
 const MAX_FDD_SIZE = 50 * 1024 * 1024; // 50MB — FDDs can be large
 
@@ -49,17 +51,41 @@ export async function POST(request: NextRequest) {
       application_id: (formData.get('application_id') as string) || undefined,
     };
 
+    if (!intake.application_id) {
+      intake.application_id = await resolvePrimaryApplicationId(supabase, user.id) ?? undefined;
+    }
+
     // Validate application ownership if linked
     if (intake.application_id) {
       const { data: app } = await supabase
         .from('applications')
-        .select('id')
+        .select('id, fdd_analyses_purchased')
         .eq('id', intake.application_id)
         .eq('user_id', user.id)
         .single();
 
       if (!app) {
         return NextResponse.json({ error: 'Application not found' }, { status: 404 });
+      }
+
+      const entitlements = await getUserEntitlements(user.id, supabase);
+      const limit = resolveFddAnalysisLimit(entitlements, app.fdd_analyses_purchased ?? null);
+      const { count } = await supabase
+        .from('fdd_analyses')
+        .select('*', { count: 'exact', head: true })
+        .eq('application_id', intake.application_id);
+
+      if ((count ?? 0) >= limit) {
+        return NextResponse.json(
+          {
+            error: limit === 0
+              ? 'FDD Intelligence is included with Investor Ready and Visa Ready. Upgrade to analyze an FDD.'
+              : `You've used all ${limit} included FDD analyses. Purchase an add-on to analyze another.`,
+            quotaExceeded: true,
+            limit,
+          },
+          { status: 402 }
+        );
       }
     }
 
