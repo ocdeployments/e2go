@@ -5,6 +5,7 @@ import type { TerritoryAnalysis } from '@/lib/fdd-territory-engine';
 import { resolvePrimaryApplicationId } from '@/lib/resolve-application';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { captureApiError } from '@/lib/capture-error';
+import { getUserEntitlements, resolveMarketAnalysisLimit } from '@/lib/entitlements';
 
 export async function GET(req: NextRequest) {
   const supabase = await createSupabaseServerClient();
@@ -112,7 +113,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  const { businessName, businessCategory, zip, state, applicationId } = body;
+  const { businessName, businessCategory, zip, state } = body;
+  let { applicationId } = body;
 
   if (!businessName?.trim()) {
     return NextResponse.json({ error: 'businessName is required' }, { status: 400 });
@@ -130,6 +132,40 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'state is required' }, { status: 400 });
   }
 
+  if (!applicationId) {
+    applicationId = await resolvePrimaryApplicationId(supabase, user.id) ?? undefined;
+  }
+
+  if (applicationId) {
+    const [{ data: application }, entitlements] = await Promise.all([
+      supabase
+        .from('applications')
+        .select('market_analyses_purchased')
+        .eq('id', applicationId)
+        .single(),
+      getUserEntitlements(user.id, supabase),
+    ]);
+
+    const limit = resolveMarketAnalysisLimit(entitlements, application?.market_analyses_purchased ?? null);
+    const { count } = await supabase
+      .from('market_analyses')
+      .select('*', { count: 'exact', head: true })
+      .eq('application_id', applicationId);
+
+    if ((count ?? 0) >= limit) {
+      return NextResponse.json(
+        {
+          error: limit === 0
+            ? 'Market analysis is included with Investor Ready and Visa Ready. Upgrade to run a report.'
+            : `You've used all ${limit} included market analysis reports. Purchase an add-on to run another.`,
+          quotaExceeded: true,
+          limit,
+        },
+        { status: 402 }
+      );
+    }
+  }
+
   try {
     const analysis = await analyseTeritoryForBusiness(
       zip.trim(),
@@ -138,16 +174,33 @@ export async function POST(req: NextRequest) {
       businessCategory,
     );
 
+    if (applicationId) {
+      const { error: historyError } = await supabase.from('market_analyses').insert({
+        application_id: applicationId,
+        user_id: user.id,
+        business_name: businessName.trim(),
+        business_category: businessCategory,
+        target_zip: analysis.target_zip,
+        target_state: analysis.target_state,
+        overall_score: analysis.overall_score,
+        overall_rating: analysis.overall_rating,
+        population: analysis.census.total_population ?? null,
+        competitor_count: analysis.competitors.nearby_count ?? null,
+        population_per_competitor: analysis.competitors.population_per_competitor ?? null,
+        verdict: analysis.narrative.VERDICT,
+        raw_analysis: analysis,
+      });
+
+      if (historyError) {
+        captureApiError(historyError, { route: 'market-analysis', stage: 'history-insert', userId: user.id, applicationId });
+      }
+    }
+
     // Write territory metrics back to answers table (non-blocking).
-    // Use the provided applicationId, or fall back to the user's latest application.
     const resolveAndWriteBack = async () => {
       try {
-        let appId: string | null = applicationId ?? null;
-        if (!appId) {
-          appId = await resolvePrimaryApplicationId(supabase, user.id);
-        }
-        if (appId) {
-          await writeMarketScoreBack(supabase, appId, analysis, businessName.trim(), businessCategory);
+        if (applicationId) {
+          await writeMarketScoreBack(supabase, applicationId, analysis, businessName.trim(), businessCategory);
         }
       } catch (writeErr) {
         // Non-blocking — log but never fail the response
