@@ -1,6 +1,6 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** September 4, 2026 — Session 130: **Sprint S is closed. All eight remaining decisions are implemented.** The sprint fixed 44 call sites across 30 files that named columns the live database does not have — every one failing silently, because `supabase-js` returns `{data, error}` rather than throwing and none of them read the error. Full record in `docs/SPRINT_S_SCHEMA_DRIFT.md`. ✅ **Both migrations run in production and verified against the live schema** — `20260904210000_referral_consents_shape.sql` (referral consent had never been recorded for anyone, so the franchise-consultant offer in Module 2 had never appeared) and `20260904220000_rate_limit_hits.sql` (the admin abuse panel's only input, a table that had never existed). **`scripts/audit-schema-drift.py --refresh` now reports `none` in both sections.** **Two findings beyond the recorded scope:** every `*_score` column on `case_briefs` is TEXT (`STRONG|ADEQUATE|WEAK|CRITICAL|PENDING`) and three readers were doing arithmetic on them, so fixing only the column names would have sent every client down the "high denial risk" branch; and `simulator-engine.ts` carries the same bug via `select('*')`, which produces **no error at all** — the simulator's three weak-point probe questions have never been asked of any client. `select('*')` is the silent variant of this whole sprint's bug and no gate detects it.
+**Last Updated:** September 5, 2026 — Session 131: **Sprint S is fully closed, including live verification.** Sessions 129-130 fixed 44 call sites across 30 files that named columns the live database does not have — every one failing silently, because `supabase-js` returns `{data, error}` rather than throwing and none of them read the error. Session 131 caught three more call sites still discarding the error at the referral-consent table specifically (`apply/module1/page.tsx`, `onboarding/page.tsx`, `apply/module2/page.tsx`) and then verified live, against real RLS policies with a test account, that the franchise-consultant offer gate actually works end to end — the one thing Session 130 closed without being able to confirm. Full record in `docs/SPRINT_S_SCHEMA_DRIFT.md`. ✅ **Both migrations run in production and verified against the live schema** — `20260904210000_referral_consents_shape.sql` (referral consent had never been recorded for anyone, so the franchise-consultant offer in Module 2 had never appeared) and `20260904220000_rate_limit_hits.sql` (the admin abuse panel's only input, a table that had never existed). **`scripts/audit-schema-drift.py --refresh` re-confirmed `none` in both sections as of September 5.** **Two findings beyond the recorded scope, still open:** every `*_score` column on `case_briefs` is TEXT (`STRONG|ADEQUATE|WEAK|CRITICAL|PENDING`) and three readers were doing arithmetic on them, so fixing only the column names would have sent every client down the "high denial risk" branch; and `simulator-engine.ts` carries the same bug via `select('*')`, which produces **no error at all** — the simulator's three weak-point probe questions have never been asked of any client. `select('*')` is the silent variant of this whole sprint's bug and no gate detects it.
 
 ---
 
@@ -55,6 +55,40 @@ with is closed.
 Left to verify in the running app, since this code has never once executed
 successfully: tick a franchise referral box in Module 1, then check that the
 consultant offer appears in Module 2 (`apply/module2/page.tsx:521`).
+
+---
+
+## Session 131 — Sprint S: read the error at all three consent sites, then verify live (September 4-5, 2026)
+
+**Branch:** dev. `npx tsc --noEmit` clean, jest 191/191, `npm run build` clean.
+
+Session 130 repaired the `referral_consents` table shape but left three call
+sites still discarding `{ error }` from every read and write against it —
+exactly the pattern the rest of Sprint S exists to kill. Fixed:
+
+- **`9f3490a`** — `apply/module1/page.tsx` `saveReferralConsents()` now reads
+  the upsert's error and logs it. This upsert had never once succeeded before
+  Session 130's migration (no `category` column, no unique index to conflict
+  on), so every write failed silently; the shape is repaired, but the RLS
+  policies admitting these rows are equally new, so a rejected write has to be
+  visible now instead of silently losing the consent a second time.
+- **`06bb446`** — `onboarding/page.tsx` `handleOfferResponse()` reads the error
+  on the same write, same table, same history of failing without a sound.
+- **`11a61e5`** — `apply/module2/page.tsx` reads the error on the consent
+  fetch that gates the franchise-consultant offer on screen 4. A failed read
+  was indistinguishable from a client who declined, so the offer simply never
+  appeared — which is exactly what had been happening for every client.
+
+**Verified live, not just read:** signed in as the UK test profile
+(`test-uk@example.com`) and drove the exact upsert Module 1 makes and the
+exact select Module 2 makes, over PostgREST with that user's own RLS-scoped
+token — not the service key. `{category: 'franchise', consent_given: true}`
+upserted and read back correctly (`onConflict: user_id,category`), and the
+gate condition `module1ReferralConsent?.franchise` evaluated true, which is
+the check Session 130 had flagged as still unverified since this code had
+never once executed successfully end to end. Test rows deleted after.
+`scripts/audit-schema-drift.py --refresh` re-run afterward: still `none` in
+both sections.
 
 ---
 
