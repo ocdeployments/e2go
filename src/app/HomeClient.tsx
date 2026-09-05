@@ -8,24 +8,6 @@ import SectionNav from "@/components/landing/SectionNav";
 export default function HomeClient() {
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const mistakes = [
-    {
-      n: "01",
-      t: "Rushing to invest before confirming fit",
-      d: "The costliest mistake in the E-2 process is committing capital to a business before confirming that the investment structure, the business model, and your qualifications will survive consular scrutiny. The right sequence is: assess first, invest second, document third. e2go is built around that sequence.",
-    },
-    {
-      n: "02",
-      t: "Getting legal help too early — or too late",
-      d: "Too early means paying fees before you know whether your business structure is E-2 compliant. Too late means arriving at the consulate hoping for the best. The right moment is after the strategy is confirmed and before the application is filed. e2go handles the strategy. A consultant reviews and signs off.",
-    },
-    {
-      n: "03",
-      t: "Over-relying on free advice without context",
-      d: "Facebook groups and Reddit threads cannot tell you whether your specific business, at your specific investment level, with your specific background, will survive scrutiny at your specific consulate. Context is everything. e2go's consulate intelligence covers 82 treaty country consulates and tracks adjudication patterns by post.",
-    },
-  ];
-
   return (
     <div className="bg-[#0a0a0a] text-[#f5f0e8] min-h-screen w-full overflow-x-hidden font-['DM_Sans',system-ui,sans-serif]">
 
@@ -37,7 +19,7 @@ export default function HomeClient() {
               e2go<span className="text-[rgba(245,240,232,0.8)]">.app</span>
             </Link>
             <div className="hidden md:flex items-center gap-7">
-              {[["/#how-it-works","How it works"],["/learn","Learn"],["/pricing","Pricing"],["/simulator","Simulator"]].map(([href,label]) => (
+              {[["/learn","Learn"],["/pricing","Pricing"],["/simulator","Simulator"]].map(([href,label]) => (
                 <Link key={label} href={href} className="text-sm text-[rgba(245,240,232,0.76)] hover:text-[#f5f0e8] transition-colors tracking-wide">{label}</Link>
               ))}
             </div>
@@ -58,7 +40,7 @@ export default function HomeClient() {
         </div>
         {menuOpen && (
           <div className="md:hidden border-t border-[rgba(201,168,76,0.1)] px-4 py-4 flex flex-col gap-1">
-            {[["/#how-it-works","How it works"],["/learn","Learn"],["/pricing","Pricing"],["/simulator","Simulator"],["/login","Log in"]].map(([href,label]) => (
+            {[["/learn","Learn"],["/pricing","Pricing"],["/simulator","Simulator"],["/login","Log in"]].map(([href,label]) => (
               <Link key={label} href={href} onClick={() => setMenuOpen(false)}
                 className="text-sm text-[rgba(245,240,232,0.65)] py-3 border-b border-[rgba(201,168,76,0.08)] min-h-[44px] flex items-center">{label}</Link>
             ))}
@@ -150,30 +132,13 @@ export default function HomeClient() {
 
           {/* CTAs + stats */}
           <div className="lg:col-start-1 lg:row-start-2">
-            <div className="flex flex-col sm:flex-row gap-3 mb-10 md:mb-12">
+            <div className="flex flex-col sm:flex-row gap-3">
               <Link href="/quiz" className="w-full sm:w-auto text-center px-8 py-4 bg-[#C9A84C] text-[#0a0a0a] text-xs font-medium uppercase hover:opacity-85 transition-opacity min-h-[44px] flex items-center justify-center" style={{ letterSpacing: '0.13em', boxShadow: 'inset 0 1px 0 rgba(255,248,220,0.25)' }}>
                 Check my eligibility →
               </Link>
-              <Link href="#how-it-works" className="w-full sm:w-auto text-center px-8 py-4 border border-[rgba(245,240,232,0.35)] text-[rgba(245,240,232,0.7)] text-xs tracking-widest uppercase hover:border-[rgba(245,240,232,0.6)] hover:text-[rgba(245,240,232,0.95)] transition-colors min-h-[44px] flex items-center justify-center">
+              <Link href="#compare" className="w-full sm:w-auto text-center px-8 py-4 border border-[rgba(245,240,232,0.35)] text-[rgba(245,240,232,0.7)] text-xs tracking-widest uppercase hover:border-[rgba(245,240,232,0.6)] hover:text-[rgba(245,240,232,0.95)] transition-colors min-h-[44px] flex items-center justify-center">
                 See how it works
               </Link>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-y-4 pt-6 md:pt-8">
-              <div className="col-span-2 md:col-span-4 flex items-center gap-4 mb-6 md:mb-8">
-                <div className="w-12 h-px bg-[#C9A84C]" />
-                <div className="w-1 h-1 bg-[#C9A84C]" />
-              </div>
-              {[
-                { num: "Free", label: "Eligibility check + ask anything — no account" },
-                { num: "6", label: "Consulate-ready documents, written in your voice" },
-                { num: "15", label: "Denial-risk checks on every draft before you see it" },
-                { num: "From $550", label: "A complete package — not the $12,000 route" },
-              ].map((s,i) => (
-                <div key={i} className="pr-4">
-                  <div className={`font-['Cormorant_Garamond',Georgia,serif] font-light text-[#C9A84C] ${s.num.length > 4 ? 'text-[26px] md:text-[32px]' : 'text-2xl md:text-3xl'}`}>{s.num}</div>
-                  <div className="text-xs text-[rgba(245,240,232,0.68)] mt-1 tracking-wide">{s.label}</div>
-                </div>
-              ))}
             </div>
           </div>
         </div>
@@ -189,127 +154,25 @@ export default function HomeClient() {
         </p>
       </div>
 
-      {/* ── MISTAKES ── */}
-      <section className="px-4 md:px-10 lg:px-16 py-16 md:py-24 bg-[#0a0a0a]">
-        <p className="text-[10px] tracking-[0.18em] uppercase text-[rgba(201,168,76,0.6)] mb-3">What gets people denied</p>
-        <h2 className="font-['Cormorant_Garamond',Georgia,serif] text-3xl md:text-5xl font-light text-[#f5f0e8] mb-3 leading-tight">
-          The three most common E-2 mistakes.
-        </h2>
-        <p className="text-sm text-[rgba(245,240,232,0.72)] mb-10 md:mb-14 max-w-lg leading-relaxed">
-          Most denials are not caused by ineligibility. They are caused by preparation errors that a structured process would have caught.
+      {/* ── CONFIDENCE STRIP ── addresses the "don't I need a lawyer?" doubt
+          early, using the U.S. Mission to Canada's own wording. Framed as
+          "optional, not disqualifying" — never as legal advice. */}
+      <div className="border-b border-[rgba(201,168,76,0.08)] py-5 px-4 md:px-10 text-center">
+        <p className="text-[10px] tracking-[0.18em] uppercase text-[rgba(201,168,76,0.6)] mb-2">
+          No lawyer required to qualify
         </p>
-        <div>
-          {mistakes.map((m,i) => (
-            <div key={i} className="grid grid-cols-[64px_1fr] md:grid-cols-[80px_1fr] border-t border-[rgba(201,168,76,0.08)] py-8 md:py-10 relative overflow-hidden group">
-              <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-[rgba(201,168,76,0)] group-hover:bg-[rgba(201,168,76,0.4)] transition-colors duration-300" />
-              <div
-                className="absolute left-[-12px] top-[-18px] font-['Cormorant_Garamond',Georgia,serif] font-light leading-none pointer-events-none select-none"
-                style={{fontSize:'clamp(80px,14vw,160px)',color:'rgba(201,168,76,0.65)'}}
-              >{m.n}</div>
-              <div className="font-['Cormorant_Garamond',Georgia,serif] text-xs font-light text-[rgba(201,168,76,0.45)] tracking-[0.12em] uppercase pt-1 relative z-10">{m.n}</div>
-              <div className="relative z-10">
-                <div className="font-['Cormorant_Garamond',Georgia,serif] text-lg md:text-xl font-light italic text-[rgba(201,168,76,0.88)] mb-3 leading-snug">{m.t}</div>
-                <p className="text-xs md:text-sm text-[rgba(245,240,232,0.76)] leading-relaxed max-w-2xl">{m.d}</p>
-              </div>
-            </div>
-          ))}
-          <div className="border-t border-[rgba(201,168,76,0.08)]" />
-        </div>
-      </section>
-
-      {/* ── HOW IT WORKS ── */}
-      <section id="how-it-works" className="scroll-mt-28 md:scroll-mt-36 px-4 md:px-10 lg:px-16 py-16 md:py-24 bg-[rgba(201,168,76,0.015)] border-y border-[rgba(201,168,76,0.08)]">
-        <p className="text-[10px] tracking-[0.18em] uppercase text-[rgba(201,168,76,0.6)] mb-3">How it works</p>
-        <h2 className="font-['Cormorant_Garamond',Georgia,serif] text-3xl md:text-5xl font-light text-[#f5f0e8] mb-3 leading-tight">
-          Four steps to your consulate package.
-        </h2>
-        <p className="text-sm text-[rgba(245,240,232,0.72)] mb-12 md:mb-16 max-w-lg leading-relaxed">
-          No consultants. No back-and-forth. Your complete application, built and tested in days.
+        <p className="font-['Cormorant_Garamond',Georgia,serif] text-lg md:text-xl font-light italic text-[rgba(245,240,232,0.82)] leading-relaxed max-w-2xl mx-auto">
+          &ldquo;The decision to retain counsel is a personal one on the part of the applicant, and does not affect the applicant&rsquo;s eligibility.&rdquo;
         </p>
-        <div className="relative">
-          <div className="hidden lg:block absolute top-[42px] left-[4%] right-[4%] h-px bg-[rgba(201,168,76,0.12)]" />
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 md:gap-6 lg:gap-0">
-            {[
-              { n:"01", t:"Eligibility quiz", d:"14 questions. 4 minutes. Score out of 100, personalised risk flags, and your estimated timeline to interview.", filled:true },
-              { n:"02", t:"E-2 Discovery & Gap Analysis", d:"A guided conversation across 12 tabs that captures everything the consulate will ask about. Your answers become your documents.", filled:true },
-              { n:"03", t:"AI document engine", d:"Eight documents generated in sequence. Tested against 15 denial patterns. Cross-checked for consistency. Written in your voice.", filled:true },
-              { n:"04", t:"Consulate package", d:"A complete formatted binder — every tab, every document, in the exact order your consulate expects. Download and go.", filled:false },
-            ].map((s,i) => (
-              <div key={i} className="lg:pr-8 relative z-10">
-                <div className="mb-4">
-                  <div className={`w-2.5 h-2.5 rounded-full ${s.filled ? 'bg-[#C9A84C] shadow-[0_0_0_3px_rgba(201,168,76,0.15)]' : 'bg-[#0a0a0a] border border-[rgba(201,168,76,0.4)]'}`} />
-                </div>
-                <div
-                  className="font-['Cormorant_Garamond',Georgia,serif] text-[64px] md:text-[72px] font-light leading-none mb-3 select-none"
-                  style={{ WebkitTextStroke: "1px rgba(201,168,76,0.5)", color: "rgba(201,168,76,0.75)" }}
-                >{s.n}</div>
-                <div className="text-sm font-medium text-[#f5f0e8] mb-2">{s.t}</div>
-                <p className="text-xs text-[rgba(245,240,232,0.72)] leading-relaxed">{s.d}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+        <p className="text-[11px] text-[rgba(245,240,232,0.6)] tracking-wide mt-2.5">
+          — U.S. Mission to Canada. Counsel is optional. e2go is for applicants who want structured help with their case — and would rather spend thousands on their business or family than on legal fees.
+        </p>
+      </div>
 
       {/* ── COMPARISON ── */}
       <div id="compare" className="scroll-mt-28 md:scroll-mt-36">
         <ComparisonSection />
       </div>
-
-      {/* ── INTERVIEW SIMULATOR (compact callout) ── */}
-      <section id="interview" className="scroll-mt-28 md:scroll-mt-36 px-4 md:px-10 lg:px-16 py-16 md:py-20 border-y border-[rgba(201,168,76,0.08)]">
-        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-8 md:gap-12 items-center">
-          <div>
-            <p className="text-[10px] tracking-[0.18em] uppercase text-[rgba(201,168,76,0.6)] mb-3">
-              Interview preparation
-            </p>
-            <h2 className="font-['Cormorant_Garamond',Georgia,serif] text-3xl md:text-4xl font-light text-[#f5f0e8] mb-4 leading-tight">
-              Already have your documents? Practice your interview.
-            </h2>
-            <p className="text-sm text-[rgba(245,240,232,0.76)] leading-relaxed mb-5 max-w-xl">
-              An AI consular officer reads your application, finds where you are weak,
-              and probes it across three unscripted sessions — so nothing at the real
-              interview is a surprise.
-            </p>
-            <div className="flex flex-col gap-2 mb-7 max-w-xl">
-              {[
-                "3 unscripted AI consular officer sessions",
-                "Interview Case Dossier — 7-section personalised revision document",
-                "Coaching report + weak-point probe questions after each session",
-              ].map((f, i) => (
-                <div key={i} className="flex gap-2 items-start">
-                  <span className="text-[#C9A84C] text-xs mt-0.5 flex-shrink-0">→</span>
-                  <span className="text-[11px] text-[rgba(245,240,232,0.65)]">{f}</span>
-                </div>
-              ))}
-            </div>
-            <Link href="/simulator"
-              className="inline-flex w-full sm:w-auto text-center px-8 py-4 bg-[#C9A84C] text-[#0a0a0a] text-xs font-medium tracking-widest uppercase hover:opacity-85 transition-opacity min-h-[44px] items-center justify-center">
-              Start interview preparation →
-            </Link>
-          </div>
-          <div className="border border-[rgba(201,168,76,0.15)] bg-[rgba(201,168,76,0.02)] p-6 md:p-7 md:min-w-[210px]">
-            <div className="text-[10px] tracking-[0.15em] uppercase text-[rgba(201,168,76,0.45)] mb-2">Standalone</div>
-            <div className="font-['Cormorant_Garamond',Georgia,serif] text-4xl md:text-5xl font-light text-[#C9A84C] leading-none mb-2">$197</div>
-            <div className="text-[11px] text-[rgba(245,240,232,0.72)] leading-relaxed">3 sessions + Case Dossier · Included in every e2go package</div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── FOUNDER NOTE ── */}
-      <section className="px-4 md:px-10 lg:px-16 py-16 md:py-24">
-        <div className="max-w-xl mx-auto text-center">
-          <div className="w-10 h-px bg-[#C9A84C] mx-auto mb-8 opacity-50" />
-          <p className="font-['Cormorant_Garamond',Georgia,serif] text-xl md:text-2xl font-light italic text-[rgba(245,240,232,0.65)] leading-relaxed">
-            Before preparation, there is procrastination.
-            Weeks become months. Months become a year.
-            And the move you have been planning quietly stays a plan.
-            <br /><br />
-            You already have what you need. All that is left is to make the jump.
-          </p>
-          <div className="w-10 h-px bg-[#C9A84C] mx-auto mt-8 opacity-50" />
-        </div>
-      </section>
 
       {/* ── TESTIMONIALS ── */}
       <section id="reviews" className="scroll-mt-28 md:scroll-mt-36 px-4 md:px-10 lg:px-16 py-16 md:py-24 bg-[rgba(201,168,76,0.01)] border-y border-[rgba(201,168,76,0.08)]">
@@ -365,7 +228,7 @@ export default function HomeClient() {
             <p className="text-xs text-[rgba(245,240,232,0.65)] leading-relaxed">© 2026 e2go.app. All rights reserved.</p>
           </div>
           <div className="flex flex-wrap gap-x-6 gap-y-2 md:justify-end">
-            {[["/#how-it-works","How it works"],["/learn","Learn"],["/pricing","Pricing"],["/simulator","Simulator"],["/support","Support"]].map(([href,label]) => (
+            {[["/learn","Learn"],["/pricing","Pricing"],["/simulator","Simulator"],["/support","Support"]].map(([href,label]) => (
               <Link key={label} href={href} className="text-xs text-[rgba(245,240,232,0.68)] hover:text-[rgba(245,240,232,0.7)] transition-colors min-h-[44px] flex items-center">{label}</Link>
             ))}
           </div>
