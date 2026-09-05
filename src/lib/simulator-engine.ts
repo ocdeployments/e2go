@@ -5,6 +5,7 @@
 import { createBrowserSupabaseClient } from '@/lib/supabase';
 import { getQuestionKnowledge } from '@/lib/interview-knowledge-base';
 import { asScoreLevel, isBelowAdequate, weakestScore } from '@/lib/case-brief-scores';
+import { resolveIncludedSimulatorSessions, INTERVIEW_SESSION_TIER_PAYMENT_TYPES } from '@/lib/entitlements';
 import type {
   SimulatorContext,
   Question,
@@ -140,6 +141,16 @@ export async function buildSimulatorContext(applicationId: string): Promise<Simu
     .eq('application_id', applicationId)
     .maybeSingle();
 
+  // Fetch quiz-derived franchise intent — application.route/business_category are
+  // NULL on every live row, so this is the only populated franchise signal.
+  const { data: quizSession } = await supabase
+    .from('quiz_sessions')
+    .select('franchise_interest')
+    .eq('user_id', application.user_id)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
   // Fetch investment sources from Tab F
   const investmentSources: InvestmentSource[] = [];
   const fundFlowEvents: FundFlowEvent[] = [];
@@ -166,8 +177,11 @@ export async function buildSimulatorContext(applicationId: string): Promise<Simu
 
   // FDD priority questions — fetched for franchise applicants only (non-blocking)
   let fddPriorityQuestions: { text: string; triggered_by: string; importance: string }[] = [];
-  const businessRoute = application.business_route || answersMap.get('M2-ROUTE') || 'new';
+  const businessRoute = application.route || answersMap.get('M2-ROUTE') || 'new';
+  // application.route/business_category are NULL on every live row (Module 2 never
+  // writes them), so the quiz-derived signal is what actually gates this in production.
   const isFranchiseApplicant =
+    quizSession?.franchise_interest === true ||
     businessRoute === 'franchise' ||
     (businessCategory || '').toLowerCase().includes('franchise');
 
@@ -1039,17 +1053,20 @@ export async function createSimulatorSession(
 
   const sessionsUsed = application.simulator_sessions_used || 0;
 
-  // Complete package holders get 3 sessions. Standalone buyers use DB value. Default: 2.
-  let sessionsPurchased = application.simulator_sessions_purchased || 2;
-  const { data: completePayment } = await supabase
-    .from('payments')
-    .select('id')
-    .eq('user_id', application.user_id)
-    .eq('status', 'completed')
-    .in('payment_type', ['complete', 'complete_partnership'])
-    .limit(1)
-    .maybeSingle();
-  if (completePayment) sessionsPurchased = Math.max(sessionsPurchased, 3);
+  // NULL means "use the tier default" — Interview Ready/Visa Ready buyers get
+  // 5, legacy 'complete' buyers keep their grandfathered 3, everyone else 2.
+  let sessionsPurchased = application.simulator_sessions_purchased;
+  if (sessionsPurchased == null) {
+    const { data: tierPayments } = await supabase
+      .from('payments')
+      .select('payment_type')
+      .eq('user_id', application.user_id)
+      .eq('status', 'completed')
+      .in('payment_type', INTERVIEW_SESSION_TIER_PAYMENT_TYPES);
+    sessionsPurchased = resolveIncludedSimulatorSessions(
+      new Set((tierPayments ?? []).map((p: { payment_type: string }) => p.payment_type))
+    );
+  }
 
   if (sessionsUsed >= sessionsPurchased) throw new Error('SESSION_LIMIT_EXCEEDED');
 
@@ -1222,20 +1239,21 @@ export async function checkSessionAvailability(applicationId: string): Promise<{
 
   const sessionsUsed = application.simulator_sessions_used || 0;
 
-  // Complete package holders get 3 simulator sessions included.
-  // Standalone simulator buyers use simulator_sessions_purchased from DB.
-  // Default fallback: 2 free sessions.
-  let sessionsPurchased = application.simulator_sessions_purchased || 2;
-  if (application.user_id) {
-    const { data: completePayment } = await supabase
-      .from('payments')
-      .select('id')
-      .eq('user_id', application.user_id)
-      .eq('status', 'completed')
-      .in('payment_type', ['complete', 'complete_partnership'])
-      .limit(1)
-      .maybeSingle();
-    if (completePayment) sessionsPurchased = Math.max(sessionsPurchased, 3);
+  // NULL means "use the tier default" — Interview Ready/Visa Ready buyers get
+  // 5, legacy 'complete' buyers keep their grandfathered 3, everyone else 2.
+  let sessionsPurchased = application.simulator_sessions_purchased;
+  if (sessionsPurchased == null) {
+    let tierTypes = new Set<string>();
+    if (application.user_id) {
+      const { data: tierPayments } = await supabase
+        .from('payments')
+        .select('payment_type')
+        .eq('user_id', application.user_id)
+        .eq('status', 'completed')
+        .in('payment_type', INTERVIEW_SESSION_TIER_PAYMENT_TYPES);
+      tierTypes = new Set((tierPayments ?? []).map((p: { payment_type: string }) => p.payment_type));
+    }
+    sessionsPurchased = resolveIncludedSimulatorSessions(tierTypes);
   }
 
   const sessionsRemaining = Math.max(0, sessionsPurchased - sessionsUsed);
