@@ -43,17 +43,32 @@ type CostRow = { task: string | null; cost_usd: number; tokens_in: number | null
 type AuditRow = { id: string; admin_user_id: string; action: string; details: Record<string, unknown> | null; created_at: string };
 type CaseProfileRow = { archetype: string | null; completeness_score: number | null; updated_at: string | null };
 
+// Display-only: translates historical payments.tier / payment_type values for
+// the admin user detail view. New keys are the current USD model
+// (src/lib/pricing-tier.ts); older keys are kept so past rows still get a label.
 const TIER_LABELS: Record<string, string> = {
-  solo: 'Solo ($550)',
-  solo_spouse: 'Solo+Spouse ($697)',
-  solo_family_2: 'Family-2 ($750)',
-  solo_family_5: 'Family-5 ($797)',
-  partnership: 'Partnership ($997)',
-  partnership_couples: 'Partnership+Couples ($1,297)',
-  partnership_families: 'Partnership+Families ($1,397)',
-  fdd_intelligence: 'FDD Intelligence ($297)',
-  simulator_3pack: 'Simulator 3-Pack ($29.99)',
-  renewal: 'Renewal ($497)',
+  // Current USD model
+  foundation: 'Foundation ($990)',
+  investor_ready: 'Investor Ready ($390)',
+  interview_prep: 'Interview Ready ($290)',
+  visa_ready: 'Visa Ready ($1,490)',
+  loyalty_upgrade: 'Loyalty Upgrade',
+  fdd_analysis_addon: 'Add-on — FDD Analysis',
+  market_analysis_addon: 'Add-on — Market Analysis',
+  fdd_market_bundle_addon: 'Add-on — FDD + Market',
+  simulator_3pack: 'Simulator 3-Pack ($49)',
+  renewal: 'Renewal ($99)',
+  // Retired models
+  fdd_intelligence: 'FDD Intelligence ($297) — retired',
+  complete: 'Complete ($1,495) — retired',
+  complete_partnership: 'Complete — Partnership ($2,495) — retired',
+  solo: 'Solo ($550) — retired',
+  solo_spouse: 'Solo+Spouse ($697) — retired',
+  solo_family_2: 'Family-2 ($750) — retired',
+  solo_family_5: 'Family-5 ($797) — retired',
+  partnership: 'Partnership ($997) — retired',
+  partnership_couples: 'Partnership+Couples ($1,297) — retired',
+  partnership_families: 'Partnership+Families ($1,397) — retired',
 };
 
 function fmtD(iso: string | null) {
