@@ -2,15 +2,20 @@
 
 import { useState } from 'react';
 
+// Values match the tierId strings checkout sends (VALID_TIER_IDS in
+// src/app/api/stripe/create-checkout/route.ts). Prices mirror
+// src/lib/pricing-tier.ts.
 const TIERS = [
-  { value: 'complete',                  label: 'Complete ($1,495)' },
-  { value: 'complete_partnership',      label: 'Complete — Partnership ($2,495)' },
-  { value: 'interview_prep',            label: 'Interview Prep ($347)' },
-  { value: 'interview_prep_partnership',label: 'Interview Prep — Partnership ($495)' },
-  { value: 'fdd_intelligence',          label: 'FDD Intelligence ($575)' },
-  { value: 'fdd_intelligence_loyalty',  label: 'FDD Intelligence Loyalty ($375)' },
-  { value: 'simulator_3pack',           label: 'Simulator 3-Pack ($49)' },
-  { value: 'renewal',                   label: 'Renewal ($99)' },
+  { value: 'foundation',              label: 'Foundation ($990)' },
+  { value: 'investor_ready',          label: 'Investor Ready ($390)' },
+  { value: 'interview_prep',          label: 'Interview Ready ($290)' },
+  { value: 'visa_ready',              label: 'Visa Ready ($1,490)' },
+  { value: 'loyalty_upgrade',         label: 'Loyalty Upgrade — Foundation → Visa Ready' },
+  { value: 'fdd_analysis_addon',      label: 'Add-on — FDD Analysis' },
+  { value: 'market_analysis_addon',   label: 'Add-on — Market Analysis' },
+  { value: 'fdd_market_bundle_addon', label: 'Add-on — FDD + Market bundle' },
+  { value: 'simulator_3pack',         label: 'Simulator 3-Pack ($49)' },
+  { value: 'renewal',                 label: 'Renewal ($99)' },
 ];
 
 export default function TierOverridePanel({ userId, currentTier }: { userId: string; currentTier: string | null }) {
