@@ -583,7 +583,7 @@ const traditionalSteps = [
   {
     title: 'Immigration consultant — separate fee',
     description: 'Coordinates the process but cannot give legal advice or represent you — the immigration lawyer is extra.',
-    cost: '$3,000–$8,000 CAD — lawyer not included',
+    cost: '$2,500–$6,000 USD — lawyer not included',
   },
   {
     title: 'Document gathering — on your own',
@@ -598,7 +598,7 @@ const traditionalSteps = [
   {
     title: 'Immigration attorney — full preparation',
     description: 'Drafts everything from scratch at full hourly rate, because nothing was prepared in advance.',
-    cost: '$8,000–$15,000+ USD',
+    cost: '$6,000–$15,000 USD',
   },
 ]
 
