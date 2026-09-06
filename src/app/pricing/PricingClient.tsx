@@ -54,10 +54,17 @@ export default function PricingPage() {
         .order('amount', { ascending: true });
 
       if (!tiersError && tiers && tiers.length > 0) {
-        // Show the main application package only — exclude add-ons, utility tiers,
-        // and the retired Complete/Complete-Partnership tiers (kept here in case the
-        // DB row hasn't been deactivated yet — they have no valid Stripe Price object)
-        const UTILITY_TIERS = new Set(['simulator_3pack', 'renewal', 'interview_prep', 'interview_prep_partnership', 'fdd_intelligence', 'fdd_intelligence_loyalty', 'additional_child', 'child_surcharge', 'complete', 'complete_partnership']);
+        // Show the main application packages only — exclude add-ons, utility
+        // tiers, and any retired tier whose DB row may not be deactivated yet.
+        const UTILITY_TIERS = new Set([
+          // Current USD model — add-ons and utilities, not grid plans
+          'simulator_3pack', 'renewal', 'interview_prep',
+          'loyalty_upgrade', 'fdd_analysis_addon', 'market_analysis_addon', 'fdd_market_bundle_addon',
+          'additional_child', 'child_surcharge',
+          // Retired model
+          'interview_prep_partnership', 'fdd_intelligence', 'fdd_intelligence_loyalty',
+          'complete', 'complete_partnership',
+        ]);
         const mainTiers = tiers.filter((t: PricingTier) => !UTILITY_TIERS.has(t.tier_id));
         // If nothing but add-ons/utility tiers is active in the DB, keep the
         // local Foundation default rather than showing a non-purchasable add-on
