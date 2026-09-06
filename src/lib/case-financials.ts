@@ -53,7 +53,6 @@ export interface CaseFinancials {
   payroll_note: string;
 
   // Net worth
-  net_worth_cad: number | null;
   net_worth_usd: number | null;
   fx_note: string;
 
@@ -173,8 +172,8 @@ export function computeCaseFinancials(answers: Record<string, unknown>): CaseFin
   const year1_owner_draw = getNumber(answers, 'M3-I-04');
   const payroll_note = 'No per-employee wage data is captured by the live intake — only headcounts and the owner\'s Year 1 draw. Total payroll by year cannot be computed without fabricating a wage assumption and is intentionally left uncomputed.';
 
-  const net_worth_cad = getNumber(answers, 'M3-F-NET');
-  const fx_note = 'No dated FX rate source is configured in this codebase. Net worth is captured in CAD only — do not convert to USD without a dated, sourced exchange rate.';
+  const net_worth_usd = getNumber(answers, 'M3-F-NET');
+  const fx_note = 'Net worth is captured in USD at the M3-F-NET intake field. If the applicant holds assets in another currency, the source-of-funds documents must show the conversion.';
 
   if (total_invested === null) notes.push('Total invested (M3-F-02) not on file.');
   if (total_business_cost === null) notes.push('Total business cost (M3-F-03) not on file.');
@@ -197,8 +196,7 @@ export function computeCaseFinancials(answers: Record<string, unknown>): CaseFin
     headcount_consistency,
     year1_owner_draw,
     payroll_note,
-    net_worth_cad,
-    net_worth_usd: null,
+    net_worth_usd,
     fx_note,
     data_quality_notes: notes,
   };
@@ -257,7 +255,7 @@ export function formatCaseFinancialsText(cf: CaseFinancials): string {
   lines.push('');
 
   lines.push('Net worth:');
-  lines.push(`  ${cf.net_worth_cad !== null ? `$${cf.net_worth_cad.toLocaleString()} CAD` : 'NOT PROVIDED'}`);
+  lines.push(`  ${cf.net_worth_usd !== null ? `$${cf.net_worth_usd.toLocaleString()}` : 'NOT PROVIDED'}`);
   lines.push(`  ${cf.fx_note}`);
 
   if (cf.data_quality_notes.length > 0) {
