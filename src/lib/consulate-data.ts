@@ -81,7 +81,7 @@ export const CONSULATE_DATABASE: ConsulateCountryData[] = [
         ...CANADA_LOGISTICS,
         nearestTransit: 'St. Patrick Station (Line 1 Yonge–University) — 3-minute walk north on University Avenue',
         parkingNote:
-          'Wilson Parking at 390 Bay Street and multiple garages on Dundas/Queen. Budget $25–40 CAD for 2–3 hours.',
+          'Wilson Parking at 390 Bay Street and multiple garages on Dundas/Queen. Budget CAD $25–40 (about USD $20–30) for 2–3 hours.',
       },
     },
     additionalPosts: [
