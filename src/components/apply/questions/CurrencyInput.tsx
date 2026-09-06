@@ -63,6 +63,22 @@ export default function CurrencyInput({ value, onChange, placeholder, disabled }
           borderRadius: 0,
         }}
       />
+      <span
+        style={{
+          padding: '12px 14px',
+          color: 'rgba(201,168,76,0.65)',
+          fontFamily: "'DM Sans', sans-serif",
+          fontSize: '13px',
+          fontWeight: 300,
+          letterSpacing: '0.04em',
+          borderLeft: '1px solid rgba(201,168,76,0.10)',
+          lineHeight: 1,
+          flexShrink: 0,
+          userSelect: 'none',
+        }}
+      >
+        USD
+      </span>
     </div>
   );
 }
