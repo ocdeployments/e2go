@@ -71,7 +71,7 @@ const INVESTMENT_OVERVIEW_QUESTIONS: QuestionField[] = [
     { value: 'partial', label: 'Partially — some funds still held' },
     { value: 'no', label: 'No — committed but not yet spent' },
   ]},
-  { key: 'M3-F-NET', type: 'currency', label: 'Approximate net worth in CAD (including primary residence)' },
+  { key: 'M3-F-NET', type: 'currency', label: 'Approximate net worth (USD, including primary residence)', helperText: 'Enter the amount in US dollars. If your assets are held in another currency, convert at today’s rate.' },
 ];
 
 const SOURCE_OF_FUNDS_QUESTIONS: QuestionField[] = [
@@ -547,7 +547,7 @@ export default function InvestmentPage() {
           )}
 
           {answers['M3-B-WIRE']?.value === 'no' && (
-            <AdvisoryBlock>TD Bank&apos;s online wire limit is approximately $25,000 CAD. Above that requires branch or phone authorization. Some banks automatically freeze accounts on large outgoing international transfers without advance notice. Call your bank before wiring.</AdvisoryBlock>
+            <AdvisoryBlock>Many banks cap online international wires at roughly USD $18,000–20,000 — larger transfers require branch or phone authorization. Some banks automatically freeze accounts on large outgoing international transfers without advance notice. Call your bank before wiring.</AdvisoryBlock>
           )}
 
           {answers['M3-H-09']?.value === 'no' && (
