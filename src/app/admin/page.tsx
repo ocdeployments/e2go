@@ -39,13 +39,23 @@ function getAdmin() {
   );
 }
 
+// Display-only: translates historical payments.tier / payment_type values for
+// admin tables. New keys are the current USD model (src/lib/pricing-tier.ts);
+// older keys are kept so past payment rows still render a label.
 const TIER_LABELS: Record<string, string> = {
-  solo: 'Solo ($197)', solo_spouse: 'Solo+Spouse ($347)',
-  solo_family_2: 'Family-2 ($397)', solo_family_5: 'Family-5 ($497)',
-  partnership: 'Partnership ($397)', partnership_couples: 'Partnership Couples ($447)',
-  partnership_families: 'Partnership Families ($547)',
-  simulator_3pack: 'Simulator 3-Pack ($29)', fdd_intelligence: 'FDD ($297)',
-  renewal: 'Renewal ($99)',
+  // Current USD model
+  foundation: 'Foundation ($990)', investor_ready: 'Investor Ready ($390)',
+  interview_prep: 'Interview Ready ($290)', visa_ready: 'Visa Ready ($1,490)',
+  loyalty_upgrade: 'Loyalty Upgrade', fdd_analysis_addon: 'Add-on — FDD Analysis',
+  market_analysis_addon: 'Add-on — Market Analysis', fdd_market_bundle_addon: 'Add-on — FDD + Market',
+  simulator_3pack: 'Simulator 3-Pack ($49)', renewal: 'Renewal ($99)',
+  // Retired models
+  fdd_intelligence: 'FDD ($297) — retired',
+  complete: 'Complete ($1,495) — retired', complete_partnership: 'Complete — Partnership ($2,495) — retired',
+  solo: 'Solo ($197) — retired', solo_spouse: 'Solo+Spouse ($347) — retired',
+  solo_family_2: 'Family-2 ($397) — retired', solo_family_5: 'Family-5 ($497) — retired',
+  partnership: 'Partnership ($397) — retired', partnership_couples: 'Partnership Couples ($447) — retired',
+  partnership_families: 'Partnership Families ($547) — retired',
 };
 
 const STATUS_CLS: Record<string, string> = {
