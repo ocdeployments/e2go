@@ -90,7 +90,8 @@ export async function POST(request: NextRequest) {
           await supabase
             .from('applications')
             .update({ payment_status: 'paid' })
-            .eq('id', applicationIdFromMeta);
+            .eq('id', applicationIdFromMeta)
+            .eq('user_id', user.id);
         }
 
         // Invalidate middleware access cache so the user gets through on next
