@@ -105,7 +105,10 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      if ((tierId === 'complete' || tierId === 'complete_partnership') && applicationId && userId) {
+      if (
+        (tierId === 'complete' || tierId === 'complete_partnership' || tierId === 'foundation' || tierId === 'visa_ready') &&
+        applicationId && userId
+      ) {
         // Unlock full application access
         const { error: unlockError } = await supabase
           .from('applications')
@@ -196,8 +199,9 @@ export async function POST(request: NextRequest) {
           }
         }
       }
-      // interview_prep and renewal: payment record update above is sufficient.
-      // Entitlements are read from the payments table via getUserEntitlements().
+      // investor_ready, loyalty_upgrade, interview_prep, renewal, and the FDD/market
+      // add-ons: payment record update above is sufficient — they're bolt-ons read
+      // from the payments table via getUserEntitlements(), not application unlocks.
 
       // Invalidate middleware access cache so the user gets through on next navigation
       if (userId && redis) {
@@ -263,7 +267,10 @@ export async function POST(request: NextRequest) {
         const tierId = pi.metadata?.tierId ?? payment.payment_type;
         const fddId = pi.metadata?.fddId;
 
-        if ((tierId === 'complete' || tierId === 'complete_partnership') && payment.application_id) {
+        if (
+          (tierId === 'complete' || tierId === 'complete_partnership' || tierId === 'foundation' || tierId === 'visa_ready') &&
+          payment.application_id
+        ) {
           const { error: revokeError } = await supabase
             .from('applications')
             .update({ payment_status: 'refunded' })
