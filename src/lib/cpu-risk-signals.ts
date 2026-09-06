@@ -25,9 +25,11 @@
  * intentionally left undone pending that scope decision (session 119).
  *
  * D8 (FX discipline — never silently convert currencies) is ALREADY
- * SATISFIED, not by this module, but by case-financials.ts's `fx_note`:
- * amounts are carried in their reported currency with an explanatory note
- * rather than a fabricated conversion rate (session 119 confirmation).
+ * SATISFIED, not by this module, but by the intake model: money fields are
+ * entered in USD (see M3-F-NET and the "(USD)" investment fields), and
+ * case-financials.ts's `fx_note` tells the drafter that any non-USD assets
+ * must be evidenced with the applicant's own conversion documentation
+ * rather than a fabricated rate (session 119; USD-only pivot session 135).
  *
  * Ground rule (same as case-financials.ts): never fabricate. Where intake
  * does not capture a figure, the result is null with an explanatory note.
