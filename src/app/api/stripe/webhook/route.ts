@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
       const paymentIntentId = session.payment_intent as string;
 
       // Always mark the payment record as completed
-      await supabase
+      const { error: paymentCompleteError } = await supabase
         .from('payments')
         .update({
           stripe_payment_intent_id: paymentIntentId,
@@ -95,12 +95,32 @@ export async function POST(request: NextRequest) {
         })
         .eq('stripe_session_id', session.id);
 
+      if (paymentCompleteError) {
+        captureApiError(paymentCompleteError, {
+          route: 'stripe/webhook',
+          stage: 'payment-complete-stamp',
+          eventId: event.id,
+          sessionId: session.id,
+          tierId,
+        });
+      }
+
       if ((tierId === 'complete' || tierId === 'complete_partnership') && applicationId && userId) {
         // Unlock full application access
-        await supabase
+        const { error: unlockError } = await supabase
           .from('applications')
           .update({ payment_status: 'paid' })
           .eq('id', applicationId);
+
+        if (unlockError) {
+          captureApiError(unlockError, {
+            route: 'stripe/webhook',
+            stage: 'application-unlock',
+            eventId: event.id,
+            applicationId,
+            userId,
+          });
+        }
 
         /**
          * Keyed on user_id — application_lifecycle has no application_id
@@ -127,27 +147,53 @@ export async function POST(request: NextRequest) {
         fddId && userId
       ) {
         // Unlock the specific FDD analysis report
-        await supabase
+        const { error: fddUnlockError } = await supabase
           .from('fdd_analyses')
           .update({ report_unlocked: true })
           .eq('id', fddId)
           .eq('user_id', userId);
 
+        if (fddUnlockError) {
+          captureApiError(fddUnlockError, {
+            route: 'stripe/webhook',
+            stage: 'fdd-unlock',
+            eventId: event.id,
+            fddId,
+            userId,
+          });
+        }
+
       } else if (tierId === 'simulator_3pack' && applicationId && userId) {
         // Grant 3 additional simulator sessions
-        const { data: currentApp } = await supabase
+        const { data: currentApp, error: packReadError } = await supabase
           .from('applications')
           .select('simulator_sessions_purchased')
           .eq('id', applicationId)
           .single();
 
-        if (currentApp) {
-          await supabase
+        if (packReadError) {
+          captureApiError(packReadError, {
+            route: 'stripe/webhook',
+            stage: 'simulator-pack-read',
+            eventId: event.id,
+            applicationId,
+          });
+        } else if (currentApp) {
+          const { error: packGrantError } = await supabase
             .from('applications')
             .update({
               simulator_sessions_purchased: (currentApp.simulator_sessions_purchased ?? 2) + 3,
             })
             .eq('id', applicationId);
+
+          if (packGrantError) {
+            captureApiError(packGrantError, {
+              route: 'stripe/webhook',
+              stage: 'simulator-pack-grant',
+              eventId: event.id,
+              applicationId,
+            });
+          }
         }
       }
       // interview_prep and renewal: payment record update above is sufficient.
@@ -162,10 +208,19 @@ export async function POST(request: NextRequest) {
 
     case 'checkout.session.expired': {
       const session = event.data.object as Stripe.Checkout.Session;
-      await supabase
+      const { error: expireError } = await supabase
         .from('payments')
         .update({ status: 'expired' })
         .eq('stripe_session_id', session.id);
+
+      if (expireError) {
+        captureApiError(expireError, {
+          route: 'stripe/webhook',
+          stage: 'session-expired-stamp',
+          eventId: event.id,
+          sessionId: session.id,
+        });
+      }
       break;
     }
 
@@ -173,17 +228,35 @@ export async function POST(request: NextRequest) {
       const charge = event.data.object as Stripe.Charge;
       const paymentIntentId = charge.payment_intent as string;
 
-      const { data: payment } = await supabase
+      const { data: payment, error: paymentLookupError } = await supabase
         .from('payments')
         .select('id, application_id, payment_type, user_id')
         .eq('stripe_payment_intent_id', paymentIntentId)
         .single();
 
+      if (paymentLookupError) {
+        captureApiError(paymentLookupError, {
+          route: 'stripe/webhook',
+          stage: 'refund-payment-lookup',
+          eventId: event.id,
+          paymentIntentId,
+        });
+      }
+
       if (payment) {
-        await supabase
+        const { error: refundStampError } = await supabase
           .from('payments')
           .update({ status: 'refunded', refunded_at: new Date().toISOString() })
           .eq('id', payment.id);
+
+        if (refundStampError) {
+          captureApiError(refundStampError, {
+            route: 'stripe/webhook',
+            stage: 'refund-payment-stamp',
+            eventId: event.id,
+            paymentId: payment.id,
+          });
+        }
 
         // Retrieve PaymentIntent metadata to get tierId/fddId
         const pi = await stripe.paymentIntents.retrieve(paymentIntentId);
@@ -191,36 +264,72 @@ export async function POST(request: NextRequest) {
         const fddId = pi.metadata?.fddId;
 
         if ((tierId === 'complete' || tierId === 'complete_partnership') && payment.application_id) {
-          await supabase
+          const { error: revokeError } = await supabase
             .from('applications')
             .update({ payment_status: 'refunded' })
             .eq('id', payment.application_id);
+
+          if (revokeError) {
+            captureApiError(revokeError, {
+              route: 'stripe/webhook',
+              stage: 'refund-application-revoke',
+              eventId: event.id,
+              applicationId: payment.application_id,
+            });
+          }
 
         } else if (
           (tierId === 'fdd_intelligence' || tierId === 'fdd_intelligence_loyalty') &&
           fddId && payment.user_id
         ) {
           // Revoke FDD report access
-          await supabase
+          const { error: fddRevokeError } = await supabase
             .from('fdd_analyses')
             .update({ report_unlocked: false })
             .eq('id', fddId)
             .eq('user_id', payment.user_id);
 
+          if (fddRevokeError) {
+            captureApiError(fddRevokeError, {
+              route: 'stripe/webhook',
+              stage: 'refund-fdd-revoke',
+              eventId: event.id,
+              fddId,
+              userId: payment.user_id,
+            });
+          }
+
         } else if (tierId === 'simulator_3pack' && payment.application_id) {
           // Deduct 3 sessions from the pack that was refunded
-          const { data: currentApp } = await supabase
+          const { data: currentApp, error: packReadError } = await supabase
             .from('applications')
             .select('simulator_sessions_purchased')
             .eq('id', payment.application_id)
             .single();
-          if (currentApp) {
-            await supabase
+
+          if (packReadError) {
+            captureApiError(packReadError, {
+              route: 'stripe/webhook',
+              stage: 'refund-simulator-pack-read',
+              eventId: event.id,
+              applicationId: payment.application_id,
+            });
+          } else if (currentApp) {
+            const { error: packRevokeError } = await supabase
               .from('applications')
               .update({
                 simulator_sessions_purchased: Math.max(0, (currentApp.simulator_sessions_purchased ?? 0) - 3),
               })
               .eq('id', payment.application_id);
+
+            if (packRevokeError) {
+              captureApiError(packRevokeError, {
+                route: 'stripe/webhook',
+                stage: 'refund-simulator-pack-revoke',
+                eventId: event.id,
+                applicationId: payment.application_id,
+              });
+            }
           }
         }
 
@@ -234,10 +343,19 @@ export async function POST(request: NextRequest) {
 
     case 'payment_intent.payment_failed': {
       const paymentIntent = event.data.object as Stripe.PaymentIntent;
-      await supabase
+      const { error: failedStampError } = await supabase
         .from('payments')
         .update({ status: 'failed' })
         .eq('stripe_payment_intent_id', paymentIntent.id);
+
+      if (failedStampError) {
+        captureApiError(failedStampError, {
+          route: 'stripe/webhook',
+          stage: 'payment-failed-stamp',
+          eventId: event.id,
+          paymentIntentId: paymentIntent.id,
+        });
+      }
       break;
     }
   }
