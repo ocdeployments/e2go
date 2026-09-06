@@ -82,7 +82,24 @@ export async function POST(request: NextRequest) {
       const fddId = session.metadata?.fddId;
       const userId = session.metadata?.userId;
       const tierId = session.metadata?.tierId || '';
+      const promoRedemptionId = session.metadata?.promoRedemptionId;
       const paymentIntentId = session.payment_intent as string;
+
+      if (promoRedemptionId) {
+        const { error: promoCompleteError } = await supabase
+          .from('promo_redemptions')
+          .update({ status: 'completed', completed_at: new Date().toISOString() })
+          .eq('id', promoRedemptionId);
+
+        if (promoCompleteError) {
+          captureApiError(promoCompleteError, {
+            route: 'stripe/webhook',
+            stage: 'promo-redemption-complete',
+            eventId: event.id,
+            promoRedemptionId,
+          });
+        }
+      }
 
       // Always mark the payment record as completed
       const { error: paymentCompleteError } = await supabase
@@ -109,11 +126,14 @@ export async function POST(request: NextRequest) {
         (tierId === 'complete' || tierId === 'complete_partnership' || tierId === 'foundation' || tierId === 'visa_ready') &&
         applicationId && userId
       ) {
-        // Unlock full application access
+        // Unlock full application access — scoped to the paying user so a
+        // spoofed applicationId in session metadata can't unlock someone
+        // else's application.
         const { error: unlockError } = await supabase
           .from('applications')
           .update({ payment_status: 'paid' })
-          .eq('id', applicationId);
+          .eq('id', applicationId)
+          .eq('user_id', userId);
 
         if (unlockError) {
           captureApiError(unlockError, {
@@ -225,6 +245,27 @@ export async function POST(request: NextRequest) {
           sessionId: session.id,
         });
       }
+
+      // Release an abandoned promo reservation — the partial unique index in
+      // the migration only blocks 'pending'/'completed', so this lets the
+      // same account retry the code after a checkout they never finished.
+      const promoRedemptionId = session.metadata?.promoRedemptionId;
+      if (promoRedemptionId) {
+        const { error: promoExpireError } = await supabase
+          .from('promo_redemptions')
+          .update({ status: 'expired' })
+          .eq('id', promoRedemptionId)
+          .eq('status', 'pending');
+
+        if (promoExpireError) {
+          captureApiError(promoExpireError, {
+            route: 'stripe/webhook',
+            stage: 'promo-redemption-expire',
+            eventId: event.id,
+            promoRedemptionId,
+          });
+        }
+      }
       break;
     }
 
@@ -266,6 +307,11 @@ export async function POST(request: NextRequest) {
         const pi = await stripe.paymentIntents.retrieve(paymentIntentId);
         const tierId = pi.metadata?.tierId ?? payment.payment_type;
         const fddId = pi.metadata?.fddId;
+
+        // Deliberately not releasing promo_redemptions here: a promo code's
+        // redemption stays 'completed' even after a refund, so a buy-with-
+        // code -> refund -> re-redeem loop isn't a way to reuse a one-time
+        // code. The application/FDD/pack access itself is still revoked below.
 
         if (
           (tierId === 'complete' || tierId === 'complete_partnership' || tierId === 'foundation' || tierId === 'visa_ready') &&
