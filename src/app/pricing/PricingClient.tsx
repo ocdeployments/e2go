@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import { getPricingTier, TierId, PRICING_TIERS, MainTierId } from "@/lib/pricing-tier";
 import PricingCard from "@/components/PricingCard";
+import PromoCodeInput from "@/components/PromoCodeInput";
 
 interface PricingTier {
   tier_id: string;
@@ -36,6 +37,7 @@ export default function PricingPage() {
   const [testMode, setTestMode] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [promoCode, setPromoCode] = useState<string | null>(null);
   const highlightRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -166,6 +168,7 @@ export default function PricingPage() {
           tierId: id,
           applicationId,
           userId: user.id,
+          ...(promoCode ? { promoCode } : {}),
         }),
       });
 
@@ -249,6 +252,14 @@ export default function PricingPage() {
             </div>
           )}
 
+          {/* Promo Code */}
+          <div className="flex justify-center mb-6">
+            <PromoCodeInput
+              tierId={selectedTier || "foundation"}
+              onApply={(code) => setPromoCode(code)}
+              onRemove={() => setPromoCode(null)}
+            />
+          </div>
 
           {/* Pricing Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto mb-12" data-testid="pricing-tiers">
