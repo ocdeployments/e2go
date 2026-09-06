@@ -58,13 +58,22 @@ export async function POST(request: NextRequest) {
   const deliveryNotes = analyzeDelivery(answer);
 
   // Fetch filed document summaries for grounded evaluation (non-fatal if absent)
+  // context.applicationId is client-supplied — only read it back into the
+  // prompt (and thus into the response) if it's actually this user's.
   let documentEvidence = '';
   try {
-    const { data: docs } = await supabase
+    const { data: ownedApp } = await supabase
+      .from('applications')
+      .select('id')
+      .eq('id', context.applicationId)
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    const { data: docs } = ownedApp ? await supabase
       .from('uploaded_documents')
       .select('doc_type, extracted_json')
       .eq('application_id', context.applicationId)
-      .eq('extraction_status', 'complete');
+      .eq('extraction_status', 'complete') : { data: null };
 
     if (docs && docs.length > 0) {
       const lines = docs
