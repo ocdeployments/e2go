@@ -66,11 +66,15 @@ export async function POST(request: NextRequest) {
 
     const supabase = getSupabase();
 
-    // Idempotency: check if this session was already processed
+    // Idempotency: check if this session was already processed.
+    // Scoped to the caller — stripe_session_id alone is a client-suppliable
+    // value, and without the user_id check an attacker who learns someone
+    // else's session ID could read that user's simulator session counts back.
     const { data: existingPayment } = await supabase
       .from('payments')
       .select('id, status, application_id')
       .eq('stripe_session_id', sessionId)
+      .eq('user_id', user.id)
       .single();
 
     if (existingPayment?.status === 'completed') {
