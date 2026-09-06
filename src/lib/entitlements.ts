@@ -145,11 +145,25 @@ export async function hasLoyaltyEligibility(
   const { hasFoundation, hasVisaReady } = await getUserEntitlements(userId, supabase);
   if (!hasFoundation || hasVisaReady) return false;
 
-  // Loyalty pricing (Foundation -> Visa Ready) is only valid before any Phase B documents are generated
+  // applicationId must actually belong to this user — otherwise a caller could
+  // point this check at an unrelated, empty applicationId to fraudulently
+  // qualify for loyalty pricing while their real case already has documents.
+  const { data: ownedApp } = await supabase
+    .from('applications')
+    .select('id')
+    .eq('id', applicationId)
+    .eq('user_id', userId)
+    .maybeSingle();
+  if (!ownedApp) return false;
+
+  // Loyalty pricing (Foundation -> Visa Ready) is only valid before any Phase B
+  // documents are generated — checked across every application this user owns,
+  // not just the one passed in, so switching to a different (empty) application
+  // of theirs can't reset eligibility.
   const { count } = await supabase
     .from('generated_documents')
     .select('*', { count: 'exact', head: true })
-    .eq('application_id', applicationId)
+    .eq('user_id', userId)
     .eq('status', 'complete');
 
   return (count ?? 0) === 0;
