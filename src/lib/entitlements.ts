@@ -13,10 +13,11 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 const FOUNDATION_PAYMENT_TYPES = ['foundation', 'foundation_partnership'] as const;
 const LEGACY_COMPLETE_PAYMENT_TYPES = ['complete', 'complete_partnership'] as const;
 const INVESTOR_READY_PAYMENT_TYPES = ['investor_ready'] as const;
-const VISA_READY_PAYMENT_TYPES = ['visa_ready'] as const;
+// loyalty_upgrade is the Foundation -> Visa Ready upgrade path — it grants
+// exactly what buying Visa Ready outright grants.
+const VISA_READY_PAYMENT_TYPES = ['visa_ready', 'loyalty_upgrade'] as const;
 const INTERVIEW_READY_PAYMENT_TYPES = ['interview_prep', 'interview_prep_partnership'] as const;
 const FDD_STANDALONE_PAYMENT_TYPES = ['fdd_intelligence', 'fdd_intelligence_loyalty'] as const;
-const LOYALTY_UPGRADE_PAYMENT_TYPES = ['loyalty_upgrade'] as const;
 const FDD_ADDON_PAYMENT_TYPES = ['fdd_analysis_addon', 'fdd_market_bundle_addon'] as const;
 const MARKET_ADDON_PAYMENT_TYPES = ['market_analysis_addon', 'fdd_market_bundle_addon'] as const;
 
@@ -27,7 +28,6 @@ const ENTITLEMENT_PAYMENT_TYPES = [
   ...VISA_READY_PAYMENT_TYPES,
   ...INTERVIEW_READY_PAYMENT_TYPES,
   ...FDD_STANDALONE_PAYMENT_TYPES,
-  ...LOYALTY_UPGRADE_PAYMENT_TYPES,
   ...FDD_ADDON_PAYMENT_TYPES,
   ...MARKET_ADDON_PAYMENT_TYPES,
 ] as const;
