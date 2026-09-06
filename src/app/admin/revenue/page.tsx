@@ -29,10 +29,18 @@ function getAdmin() {
   );
 }
 
+// Only a fallback for the rare completed payment row that carries no
+// amount_cents/amount_paid. Both eras are listed: historical rows still use the
+// retired tier strings, new rows use the USD model in src/lib/pricing-tier.ts.
 const TIER_PRICES: Record<string, number> = {
+  // Current USD model
+  foundation:                 99000,
+  investor_ready:             39000,
+  visa_ready:                 149000,
+  interview_prep:             29000,
+  // Retired model — kept so historical payments still value correctly
   complete:                   149500,
   complete_partnership:       249500,
-  interview_prep:             34700,
   interview_prep_partnership: 49500,
   fdd_intelligence:           57500,
   fdd_intelligence_loyalty:   37500,
@@ -41,12 +49,21 @@ const TIER_PRICES: Record<string, number> = {
 };
 
 const TIER_LABELS: Record<string, string> = {
-  complete:                   'Complete ($1,495)',
-  complete_partnership:       'Complete — Partnership ($2,495)',
-  interview_prep:             'Interview Prep ($347)',
-  interview_prep_partnership: 'Interview Prep — Partnership ($495)',
-  fdd_intelligence:           'FDD Intelligence ($575)',
-  fdd_intelligence_loyalty:   'FDD Intelligence Loyalty ($375)',
+  // Current USD model
+  foundation:                 'Foundation ($990)',
+  investor_ready:             'Investor Ready ($390)',
+  visa_ready:                 'Visa Ready ($1,490)',
+  interview_prep:             'Interview Ready ($290)',
+  loyalty_upgrade:            'Loyalty Upgrade (Foundation → Visa Ready)',
+  fdd_analysis_addon:         'Add-on — FDD Analysis',
+  market_analysis_addon:      'Add-on — Market Analysis',
+  fdd_market_bundle_addon:    'Add-on — FDD + Market bundle',
+  // Retired model — kept so historical payments still render a label
+  complete:                   'Complete ($1,495) — retired',
+  complete_partnership:       'Complete — Partnership ($2,495) — retired',
+  interview_prep_partnership: 'Interview Prep — Partnership ($495) — retired',
+  fdd_intelligence:           'FDD Intelligence ($575) — retired',
+  fdd_intelligence_loyalty:   'FDD Intelligence Loyalty ($375) — retired',
   simulator_3pack:            'Simulator 3-Pack ($49)',
   renewal:                    'Renewal ($99)',
 };
