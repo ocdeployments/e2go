@@ -24,6 +24,16 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const { data: ownedApp } = await supabase
+      .from('applications')
+      .select('id')
+      .eq('id', applicationId)
+      .eq('user_id', user.id)
+      .maybeSingle();
+    if (!ownedApp) {
+      return NextResponse.json({ error: 'Application not found' }, { status: 404 });
+    }
+
     // Two upload pipelines feed this screen: the legacy application_documents
     // pipeline this route was originally built against, and the current
     // uploaded_documents taxonomy — both must be read or documents uploaded
