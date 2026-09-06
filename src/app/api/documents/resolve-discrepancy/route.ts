@@ -23,6 +23,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Verify the application belongs to the caller before trusting anything
+    // scoped to it — applicationId/discrepancyId both come from the client.
+    const { data: ownedApp } = await supabase
+      .from('applications')
+      .select('id')
+      .eq('id', applicationId)
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (!ownedApp) {
+      return NextResponse.json({ error: 'Application not found' }, { status: 404 });
+    }
+
     // Verify the discrepancy belongs to this user's application
     const { data: discrepancy, error: fetchError } = await supabase
       .from('document_discrepancies')
