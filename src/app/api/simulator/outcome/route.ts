@@ -31,6 +31,21 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid outcome value' }, { status: 400 });
   }
 
+  if (body.applicationId) {
+    // applicationId is client-suppliable — verify ownership before linking
+    // it to a new row, otherwise an attacker could pollute another user's
+    // application with fabricated interview outcomes.
+    const { data: ownedApp } = await supabase
+      .from('applications')
+      .select('id')
+      .eq('id', body.applicationId)
+      .eq('user_id', user.id)
+      .maybeSingle();
+    if (!ownedApp) {
+      return NextResponse.json({ error: 'Application not found' }, { status: 404 });
+    }
+  }
+
   const { data, error } = await supabase
     .from('simulator_outcomes')
     .insert({
