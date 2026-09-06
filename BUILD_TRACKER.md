@@ -38,7 +38,7 @@ Left CAD where it's correct and not a currency amount: Toronto consulate / Line 
 
 ### Left for Romy
 
-1. **Apply the currency migration** — `supabase/migrations/20260906130000_quiz_sessions_investment_currency_usd_only.sql` (or paste `scratchpad/quiz_sessions_investment_currency_usd_only.sql` into the SQL Editor). Check the row counts first (step 1 comment in the scratchpad copy). Not run — standing no-direct-SQL rule.
+1. ~~**Apply the currency migration**~~ — **DONE.** Romy ran `scratchpad/quiz_sessions_investment_currency_usd_only.sql` in the Supabase SQL Editor (Session 135). `supabase db push` was NOT usable: the remote migration history is out of sync — 9 local migration files (`20260904120000`..`20260906130000`) are absent from the remote history table, and the CLI additionally wants `--include-all` to re-insert `0000_initial_schema.sql` + `20260628210000_*` ahead of them. A blanket push would replay the initial schema + 8 other unreviewed migrations against prod, so it was declined. **Open item:** reconcile the migration history (`supabase migration repair --status applied <version>` for the ones already live, then a clean push) — separate job, not yet scoped.
 2. **Sanity-check two invented numbers** in `ComparisonSection.tsx`: the $2,500–$6,000 USD consultant range (straight FX conversion of the old CAD figure) and the $6,000–$15,000 USD attorney range (your hypothetical). Adjust if you have real figures.
 
 ### Noted, not actioned
