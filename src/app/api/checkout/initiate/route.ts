@@ -1,23 +1,23 @@
+import { randomUUID } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import Stripe from 'stripe';
 import { captureApiError } from '@/lib/capture-error';
+import { validatePromoCode, reservePromoRedemption, getStripeCouponId } from '@/lib/promo-codes';
 
-// Valid tiers that can be initiated from first-purchase flows
-const VALID_TIERS = ['complete', 'complete_partnership', 'fdd_intelligence'] as const;
+// This route is the first-purchase entry point from /results — Foundation only.
+// Partnership pricing is not yet confirmed (see foundation_partnership in
+// entitlements.ts), so it is deliberately not offered here.
+const VALID_TIERS = ['foundation'] as const;
 type Tier = typeof VALID_TIERS[number];
 
-// Tier → Stripe price ID.
-// Falls back to the old env var names that predate the "complete" tier rename.
 const PRICE_ENV: Record<Tier, string> = {
-  complete:             process.env.STRIPE_PRICE_COMPLETE        || process.env.STRIPE_PRICE_SOLO        || '',
-  complete_partnership: process.env.STRIPE_PRICE_COMPLETE_PARTNERSHIP || process.env.STRIPE_PRICE_PARTNERSHIP || '',
-  fdd_intelligence:     process.env.STRIPE_PRICE_FDD_INTELLIGENCE || '',
+  foundation: process.env.STRIPE_PRICE_FOUNDATION || '',
 };
 
 // Tiers that must create/reference an applications record
-const NEEDS_APPLICATION: Set<Tier> = new Set(['complete', 'complete_partnership']);
+const NEEDS_APPLICATION: Set<Tier> = new Set(['foundation']);
 
 function getSupabase() {
   return createClient(
@@ -49,12 +49,14 @@ export async function POST(request: NextRequest) {
   }
 
   let tierId: Tier;
+  let rawPromoCode: string | undefined;
   try {
-    const body = await request.json() as { tierId?: string };
+    const body = await request.json() as { tierId?: string; promoCode?: string };
     if (!body.tierId || !VALID_TIERS.includes(body.tierId as Tier)) {
       return NextResponse.json({ error: 'Invalid tier' }, { status: 400 });
     }
     tierId = body.tierId as Tier;
+    rawPromoCode = body.promoCode;
   } catch {
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
   }
@@ -110,6 +112,37 @@ export async function POST(request: NextRequest) {
   // Stripe rejects empty string for customer_email — use auth email or omit
   const customerEmail = user.email || undefined;
 
+  // Reserve the promo code before creating the Stripe session — see
+  // src/lib/promo-codes.ts for why reservation, not this pre-check, is the
+  // actual one-time-use guarantee.
+  let promoRedemptionId: string | null = null;
+  let couponId: string | null = null;
+  if (rawPromoCode) {
+    const validation = await validatePromoCode(rawPromoCode, user.id, customerEmail ?? '', tierId, supabase);
+    if (!validation.ok) {
+      return NextResponse.json({ error: validation.error }, { status: 400 });
+    }
+
+    couponId = getStripeCouponId(validation.promoCode.discount_percent);
+    if (!couponId) {
+      captureApiError(new Error('Missing Stripe coupon env var'), { route: 'checkout/initiate', discountPercent: validation.promoCode.discount_percent });
+      return NextResponse.json({ error: 'Promo codes are not configured. Please contact support.' }, { status: 503 });
+    }
+
+    const reservation = await reservePromoRedemption(
+      validation.promoCode,
+      user.id,
+      customerEmail ?? '',
+      applicationId,
+      `pending:${randomUUID()}`,
+      supabase
+    );
+    if (!reservation.ok) {
+      return NextResponse.json({ error: reservation.error }, { status: 400 });
+    }
+    promoRedemptionId = reservation.redemptionId;
+  }
+
   let session: Stripe.Checkout.Session;
   try {
     session = await stripe.checkout.sessions.create({
@@ -119,15 +152,33 @@ export async function POST(request: NextRequest) {
       success_url: `${appUrl}/onboarding?payment=success`,
       cancel_url: `${appUrl}/results`,
       ...(customerEmail ? { customer_email: customerEmail } : {}),
+      ...(couponId ? { discounts: [{ coupon: couponId }] } : {}),
       metadata: {
         applicationId: applicationId ?? '',
         userId: user.id,
         tierId,
+        promoRedemptionId: promoRedemptionId ?? '',
       },
     });
   } catch (err) {
+    if (promoRedemptionId) {
+      const { error: releaseError } = await supabase.from('promo_redemptions').delete().eq('id', promoRedemptionId);
+      if (releaseError) {
+        captureApiError(releaseError, { route: 'checkout/initiate', stage: 'promo-release-after-stripe-failure', promoRedemptionId });
+      }
+    }
     captureApiError(err, { route: 'checkout/initiate', stage: 'stripe-session', userId: user.id, tierId });
     return NextResponse.json({ error: 'Failed to create checkout session' }, { status: 500 });
+  }
+
+  if (promoRedemptionId) {
+    const { error: sessionIdPatchError } = await supabase
+      .from('promo_redemptions')
+      .update({ stripe_session_id: session.id })
+      .eq('id', promoRedemptionId);
+    if (sessionIdPatchError) {
+      captureApiError(sessionIdPatchError, { route: 'checkout/initiate', stage: 'promo-session-id-patch', promoRedemptionId, sessionId: session.id });
+    }
   }
 
   // Log pending payment record
