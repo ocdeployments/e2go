@@ -1,8 +1,11 @@
+import { randomUUID } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import Stripe from 'stripe';
 import { captureApiError } from '@/lib/capture-error';
+import { getUserEntitlements, hasLoyaltyEligibility } from '@/lib/entitlements';
+import { validatePromoCode, reservePromoRedemption, getStripeCouponId } from '@/lib/promo-codes';
 
 function getSupabase() {
   return createClient(
@@ -11,35 +14,33 @@ function getSupabase() {
   );
 }
 
+// foundation_partnership / interview_prep_partnership are excluded — pricing
+// not yet confirmed, so no Stripe Price object exists for them.
 const VALID_TIER_IDS = [
-  'complete',
-  'complete_partnership',
+  'foundation',
+  'investor_ready',
   'interview_prep',
-  'interview_prep_partnership',
-  'fdd_intelligence',
-  'fdd_intelligence_loyalty',
+  'visa_ready',
+  'loyalty_upgrade',
+  'fdd_analysis_addon',
+  'market_analysis_addon',
+  'fdd_market_bundle_addon',
   'simulator_3pack',
   'renewal',
 ];
 
-// Tiers that require an applicationId
-const REQUIRES_APPLICATION_ID = new Set([
-  'complete',
-  'complete_partnership',
-  'interview_prep',
-  'interview_prep_partnership',
-  'simulator_3pack',
-  'renewal',
-]);
+// Every tier is scoped to an application in this app's data model
+const REQUIRES_APPLICATION_ID = new Set(VALID_TIER_IDS);
 
-// Tiers that require the user to already own a Complete package (solo or partnership)
-const REQUIRES_COMPLETE = new Set([
-  'interview_prep',
-  'interview_prep_partnership',
-  'fdd_intelligence_loyalty',
-]);
+// investor_ready is a bolt-on — requires owning Foundation (or better) first
+const REQUIRES_FOUNDATION = new Set(['investor_ready']);
 
-const COMPLETE_TIER_IDS = ['complete', 'complete_partnership'];
+// FDD/market add-ons only make sense once the included quota exists
+const REQUIRES_INVESTOR_READY = new Set([
+  'fdd_analysis_addon',
+  'market_analysis_addon',
+  'fdd_market_bundle_addon',
+]);
 
 function getStripe(): Stripe | null {
   const secretKey = process.env.STRIPE_SECRET_KEY;
@@ -48,14 +49,16 @@ function getStripe(): Stripe | null {
 }
 
 const FALLBACK_PRICE_IDS: Record<string, string> = {
-  complete:                 process.env.STRIPE_PRICE_COMPLETE || '',
-  complete_partnership:          process.env.STRIPE_PRICE_COMPLETE_PARTNERSHIP || '',
-  interview_prep:                process.env.STRIPE_PRICE_INTERVIEW_PREP || '',
-  interview_prep_partnership:    process.env.STRIPE_PRICE_INTERVIEW_PREP_PARTNERSHIP || '',
-  fdd_intelligence:         process.env.STRIPE_PRICE_FDD_INTELLIGENCE || '',
-  fdd_intelligence_loyalty: process.env.STRIPE_PRICE_FDD_INTELLIGENCE_LOYALTY || '',
-  simulator_3pack:          process.env.STRIPE_PRICE_SIMULATOR_3PACK || '',
-  renewal:                  process.env.STRIPE_PRICE_RENEWAL || '',
+  foundation:              process.env.STRIPE_PRICE_FOUNDATION || '',
+  investor_ready:          process.env.STRIPE_PRICE_INVESTOR_READY || '',
+  interview_prep:          process.env.STRIPE_PRICE_INTERVIEW_PREP || '',
+  visa_ready:              process.env.STRIPE_PRICE_VISA_READY || '',
+  loyalty_upgrade:         process.env.STRIPE_PRICE_LOYALTY_UPGRADE || '',
+  fdd_analysis_addon:      process.env.STRIPE_PRICE_FDD_ANALYSIS_ADDON || '',
+  market_analysis_addon:   process.env.STRIPE_PRICE_MARKET_ANALYSIS_ADDON || '',
+  fdd_market_bundle_addon: process.env.STRIPE_PRICE_FDD_MARKET_BUNDLE_ADDON || '',
+  simulator_3pack:         process.env.STRIPE_PRICE_SIMULATOR_3PACK || '',
+  renewal:                 process.env.STRIPE_PRICE_RENEWAL || '',
 };
 
 async function getStripePriceId(supabase: ReturnType<typeof getSupabase>, tierId: string): Promise<string | null> {
@@ -96,7 +99,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { tierId, applicationId, fddId, successUrl: rawSuccessUrl, cancelUrl: rawCancelUrl } = body;
+    const { tierId, applicationId, fddId, promoCode: rawPromoCode, successUrl: rawSuccessUrl, cancelUrl: rawCancelUrl } = body;
 
     if (!tierId) {
       return NextResponse.json({ error: 'Missing required field: tierId' }, { status: 400 });
@@ -115,36 +118,48 @@ export async function POST(request: NextRequest) {
 
     const supabase = getSupabase();
 
-    // Validate add-on eligibility: user must own any Complete package
-    if (REQUIRES_COMPLETE.has(tierId)) {
-      const { data: completePayment } = await supabase
-        .from('payments')
+    // applicationId comes from the client and flows into Stripe metadata, which
+    // the webhook and verify-payment routes later trust to unlock document
+    // generation — so it must be proven to belong to this user right here,
+    // before it's used for anything else in this route.
+    if (applicationId) {
+      const { data: ownedApp, error: ownershipError } = await supabase
+        .from('applications')
         .select('id')
+        .eq('id', applicationId)
         .eq('user_id', user.id)
-        .in('payment_type', COMPLETE_TIER_IDS)
-        .eq('status', 'completed')
-        .limit(1)
-        .single();
+        .maybeSingle();
+      if (ownershipError || !ownedApp) {
+        return NextResponse.json({ error: 'Application not found' }, { status: 404 });
+      }
+    }
 
-      if (!completePayment) {
+    if (REQUIRES_FOUNDATION.has(tierId)) {
+      const entitlements = await getUserEntitlements(user.id, supabase);
+      if (!entitlements.hasFoundation) {
         return NextResponse.json(
-          { error: `${tierId} requires an active Complete package` },
+          { error: `${tierId} requires the Foundation package` },
           { status: 403 }
         );
       }
     }
 
-    // Loyalty pricing: also verify Phase B hasn't started (no documents generated yet)
-    if (tierId === 'fdd_intelligence_loyalty' && applicationId) {
-      const { count } = await supabase
-        .from('generated_documents')
-        .select('*', { count: 'exact', head: true })
-        .eq('application_id', applicationId)
-        .eq('status', 'complete');
-
-      if ((count ?? 0) > 0) {
+    if (REQUIRES_INVESTOR_READY.has(tierId)) {
+      const entitlements = await getUserEntitlements(user.id, supabase);
+      if (!entitlements.hasInvestorReady) {
         return NextResponse.json(
-          { error: 'Loyalty pricing is no longer available after document generation has started' },
+          { error: `${tierId} requires Investor Ready or Visa Ready` },
+          { status: 403 }
+        );
+      }
+    }
+
+    // Loyalty upgrade (Foundation -> Visa Ready): only before Phase B documents exist
+    if (tierId === 'loyalty_upgrade') {
+      const eligible = applicationId ? await hasLoyaltyEligibility(user.id, applicationId, supabase) : false;
+      if (!eligible) {
+        return NextResponse.json(
+          { error: 'Loyalty upgrade pricing is not available for this account' },
           { status: 403 }
         );
       }
@@ -183,22 +198,80 @@ export async function POST(request: NextRequest) {
       ? rawCancelUrl
       : `${appUrl}/pricing`;
 
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
-      line_items: [{ price: priceId, quantity: 1 }],
-      mode: 'payment',
-      success_url: successUrl.includes('{CHECKOUT_SESSION_ID}')
-        ? successUrl
-        : `${successUrl}${successUrl.includes('?') ? '&' : '?'}session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: cancelUrl,
-      customer_email: email,
-      metadata: {
-        applicationId: applicationId ?? '',
-        fddId: fddId ?? '',
-        userId: user.id,
-        tierId,
-      },
-    });
+    // Reserve the promo code BEFORE talking to Stripe: the reservation (an
+    // INSERT against a partial unique index + a max_redemptions trigger, see
+    // promo-codes.ts) is the actual one-time-use guarantee. Reserving first
+    // means a losing race never even creates a Stripe session.
+    let promoRedemptionId: string | null = null;
+    let couponId: string | null = null;
+    if (rawPromoCode) {
+      const validation = await validatePromoCode(rawPromoCode, user.id, email, tierId, supabase);
+      if (!validation.ok) {
+        return NextResponse.json({ error: validation.error }, { status: 400 });
+      }
+
+      couponId = getStripeCouponId(validation.promoCode.discount_percent);
+      if (!couponId) {
+        captureApiError(new Error('Missing Stripe coupon env var'), { route: 'stripe/create-checkout', discountPercent: validation.promoCode.discount_percent });
+        return NextResponse.json({ error: 'Promo codes are not configured. Please contact support.' }, { status: 503 });
+      }
+
+      const reservation = await reservePromoRedemption(
+        validation.promoCode,
+        user.id,
+        email,
+        applicationId ?? null,
+        `pending:${randomUUID()}`,
+        supabase
+      );
+      if (!reservation.ok) {
+        return NextResponse.json({ error: reservation.error }, { status: 400 });
+      }
+      promoRedemptionId = reservation.redemptionId;
+    }
+
+    let session: Stripe.Checkout.Session;
+    try {
+      session = await stripe.checkout.sessions.create({
+        payment_method_types: ['card'],
+        line_items: [{ price: priceId, quantity: 1 }],
+        mode: 'payment',
+        success_url: successUrl.includes('{CHECKOUT_SESSION_ID}')
+          ? successUrl
+          : `${successUrl}${successUrl.includes('?') ? '&' : '?'}session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: cancelUrl,
+        customer_email: email,
+        ...(couponId ? { discounts: [{ coupon: couponId }] } : {}),
+        metadata: {
+          applicationId: applicationId ?? '',
+          fddId: fddId ?? '',
+          userId: user.id,
+          tierId,
+          promoRedemptionId: promoRedemptionId ?? '',
+        },
+      });
+    } catch (err) {
+      // Stripe failed after the promo reservation succeeded — release it so
+      // the user isn't locked out of a code they never got to use.
+      if (promoRedemptionId) {
+        const { error: releaseError } = await supabase.from('promo_redemptions').delete().eq('id', promoRedemptionId);
+        if (releaseError) {
+          captureApiError(releaseError, { route: 'stripe/create-checkout', stage: 'promo-release-after-stripe-failure', promoRedemptionId });
+        }
+      }
+      captureApiError(err, { route: 'stripe/create-checkout', stage: 'stripe-session', userId: user.id, tierId });
+      return NextResponse.json({ error: 'Failed to create checkout session' }, { status: 500 });
+    }
+
+    if (promoRedemptionId) {
+      const { error: sessionIdPatchError } = await supabase
+        .from('promo_redemptions')
+        .update({ stripe_session_id: session.id })
+        .eq('id', promoRedemptionId);
+      if (sessionIdPatchError) {
+        captureApiError(sessionIdPatchError, { route: 'stripe/create-checkout', stage: 'promo-session-id-patch', promoRedemptionId, sessionId: session.id });
+      }
+    }
 
     const { error: insertError } = await supabase.from('payments').insert({
       application_id: applicationId ?? null,
