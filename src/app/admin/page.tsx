@@ -202,6 +202,9 @@ export default async function AdminPage() {
           <Link href="/admin/geography" className="text-xs text-zinc-400 border border-zinc-800 px-3 py-1.5 hover:border-[#C9A84C]/30 hover:text-[#C9A84C] transition-colors">
             Geography →
           </Link>
+          <Link href="/admin/promo-codes" className="text-xs text-zinc-400 border border-zinc-800 px-3 py-1.5 hover:border-[#C9A84C]/30 hover:text-[#C9A84C] transition-colors">
+            Promo Codes →
+          </Link>
           <Link href="/admin/system-status" className="text-xs text-[#C9A84C] border border-[#C9A84C]/20 px-3 py-1.5 hover:bg-[#C9A84C]/5 transition-colors">
             System →
           </Link>
