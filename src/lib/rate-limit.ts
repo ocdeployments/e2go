@@ -19,12 +19,13 @@
  *   semantic-eval — 10 req / 10 min   (gap analysis semantic evaluation)
  *   parse-doc     — 10 req / 10 min   (document parse/comprehension)
  *   notification  — 3 req / 60 min    (admin-inbox notifications, e.g. franchise referral)
+ *   promo-validate — 20 req / 10 min  (promo code pre-check; keyed per-user, generous enough for legitimate retries/typos)
  */
 
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 
-export type RateLimitProfile = 'faq' | 'evaluate' | 'coaching' | 'tts' | 'transcribe' | 'generate' | 'fdd' | 'fdd-analysis' | 'semantic-eval' | 'parse-doc' | 'notification' | 'gap-analysis-run' | 'resend-results';
+export type RateLimitProfile = 'faq' | 'evaluate' | 'coaching' | 'tts' | 'transcribe' | 'generate' | 'fdd' | 'fdd-analysis' | 'semantic-eval' | 'parse-doc' | 'notification' | 'gap-analysis-run' | 'resend-results' | 'promo-validate';
 
 const PROFILES: Record<RateLimitProfile, { requests: number; window: string }> = {
   faq:                { requests: 10,  window: '10 m' },
@@ -43,6 +44,7 @@ const PROFILES: Record<RateLimitProfile, { requests: number; window: string }> =
   // directions: per-IP so one client cannot spray, per-address so a victim
   // cannot be mail-bombed from many IPs.
   'resend-results':   { requests: 3,   window: '60 m' },
+  'promo-validate':   { requests: 20,  window: '10 m' },
 };
 
 const limiters = new Map<RateLimitProfile, Ratelimit>();
