@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
-import { getPricingTier, TierId } from "@/lib/pricing-tier";
+import { getPricingTier, TierId, PRICING_TIERS, MainTierId } from "@/lib/pricing-tier";
 import PricingCard from "@/components/PricingCard";
 
 interface PricingTier {
@@ -18,10 +18,10 @@ interface PricingTier {
 
 const DEFAULT_TIERS: PricingTier[] = [
   {
-    tier_id: 'complete',
-    name: 'Complete — Build & Document',
-    amount: 149500,
-    stripe_price_id: process.env.NEXT_PUBLIC_STRIPE_PRICE_COMPLETE || '',
+    tier_id: 'foundation',
+    name: 'Foundation',
+    amount: 99000,
+    stripe_price_id: process.env.NEXT_PUBLIC_STRIPE_PRICE_FOUNDATION || '',
     active: true,
   },
 ];
@@ -52,10 +52,17 @@ export default function PricingPage() {
         .order('amount', { ascending: true });
 
       if (!tiersError && tiers && tiers.length > 0) {
-        // Show the main application package only — exclude add-ons and utility tiers
-        const UTILITY_TIERS = new Set(['simulator_3pack', 'renewal', 'interview_prep', 'interview_prep_partnership', 'fdd_intelligence', 'fdd_intelligence_loyalty', 'additional_child']);
+        // Show the main application package only — exclude add-ons, utility tiers,
+        // and the retired Complete/Complete-Partnership tiers (kept here in case the
+        // DB row hasn't been deactivated yet — they have no valid Stripe Price object)
+        const UTILITY_TIERS = new Set(['simulator_3pack', 'renewal', 'interview_prep', 'interview_prep_partnership', 'fdd_intelligence', 'fdd_intelligence_loyalty', 'additional_child', 'child_surcharge', 'complete', 'complete_partnership']);
         const mainTiers = tiers.filter((t: PricingTier) => !UTILITY_TIERS.has(t.tier_id));
-        setPricingTiers(mainTiers.length > 0 ? mainTiers : tiers);
+        // If nothing but add-ons/utility tiers is active in the DB, keep the
+        // local Foundation default rather than showing a non-purchasable add-on
+        // as if it were the plan lineup.
+        if (mainTiers.length > 0) {
+          setPricingTiers(mainTiers);
+        }
       }
 
       // Check if Stripe is configured
@@ -250,13 +257,9 @@ export default function PricingPage() {
               const tierName = tierFromDb?.name || tier.name;
               const tierAmount = tierFromDb?.amount || tier.amount;
               const isHighlighted = selectedTier === tier.tier_id;
-              const isPartnership = tier.tier_id === 'complete_partnership';
-              const description = isPartnership
-                ? 'Partnership E-2 application — two investors, one complete package'
-                : 'Individual E-2 application with 15-document consulate package';
-              const features = isPartnership
-                ? ['15 consulate-formatted documents', 'Both investor profiles', 'Joint source of funds package', 'Partnership business plan', 'Gap Analysis & Consulate Briefing']
-                : ['15 consulate-formatted documents', 'Business Plan (complete)', 'Source of Funds Package', 'Gap Analysis & Risk Flags', 'Consulate Briefing Guide'];
+              const knownTier = PRICING_TIERS[tier.tier_id as MainTierId];
+              const description = knownTier?.description || tierName;
+              const features = knownTier?.features || [];
 
               return (
                 <div
