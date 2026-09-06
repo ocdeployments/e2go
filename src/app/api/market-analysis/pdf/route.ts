@@ -16,6 +16,16 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'applicationId is required' }, { status: 400 });
   }
 
+  const { data: ownedApp } = await supabase
+    .from('applications')
+    .select('id')
+    .eq('id', applicationId)
+    .eq('user_id', user.id)
+    .maybeSingle();
+  if (!ownedApp) {
+    return NextResponse.json({ error: 'Application not found' }, { status: 404 });
+  }
+
   const { data: rows } = await supabase
     .from('answers')
     .select('question_key, answer_value')
