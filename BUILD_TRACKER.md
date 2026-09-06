@@ -1,6 +1,39 @@
 # e2go.app — Build Tracker & Session Handoff
 
-**Last Updated:** September 6, 2026 — Session 134: **HANDOFF SPRINT — read this first, Romy's credits ran low and this is being picked up by a different agent/session with no memory of the prior conversation.** Romy's own words (voice-dictated, garbled by transcription — decoded below): *"I asked you to delete the [old pricing] model and concentrate only on the USD [model]. That is it. And the [promo codes] are still reflecting the [old pricing] model. We moved away from that already... This is we are going in circles."* Investigation (read-only, nothing changed yet) confirmed the core complaint: `src/lib/pricing-tier.ts` itself is already correctly USD-only on the new 4-tier model (`foundation` $990 / `investor_ready` $390 / `interview_prep` $290 / `visa_ready` $1490), but several **customer- and admin-facing surfaces built in earlier sessions never got updated to match** and still show/accept the retired 7-SKU tier IDs (`complete`, `complete_partnership`, `interview_prep_partnership`, `fdd_intelligence`, `fdd_intelligence_loyalty`) — most concretely, the promo-code admin page built last session (`PromoCodeForm.tsx`) lets Romy scope a discount to tiers that no longer exist for sale. Full file-by-file punch list, and which old-tier references are legitimate legacy-support code that must NOT be touched, is in the **Session 134** entry directly below. Also found genuine CAD/Canadian-currency remnants (DB constraint, a net-worth field, a live application question, marketing copy) — also listed below, one of which requires Romy to run SQL herself per the standing no-direct-SQL-on-production rule. Session 132's broader pricing-pivot scope (uncommitted draft rewrites already sitting in `results/page.tsx` and `modules/page.tsx`) is unstarted and still stacked behind this.
+**Last Updated:** September 6, 2026 — Session 135: **executed the Session 134 handoff sprint.** All six "old model leaking into live UI" items are fixed and committed to `dev` (7 commits, `e0830c4`..`13c9ea1`): promo-code form, admin tier-override panel, revenue report maps, pricing-grid `UTILITY_TIERS`, checkout success page, and the two admin label maps now carry the USD model; legacy `payment_type` reads for already-paid customers were left untouched per the punch list. `npx tsc --noEmit` and `npm run build` both clean; 191 jest tests pass. CAD DB constraint: SQL drafted for Romy to run herself at `scratchpad/quiz_sessions_investment_currency_usd_only.sql` (not run — standing no-direct-SQL rule). **Still needs Romy's input** before proceeding: (a) `case-financials.ts` / `investment/page.tsx` net-worth-in-CAD — keep or convert? (b) a USD figure to replace "$3,000–$8,000 CAD" in `ComparisonSection.tsx:586`. Nothing pushed to `origin/dev` yet (local `dev` now ~29 commits ahead). Session 132's broader pricing-pivot scope still stacked behind this. — Prior handoff (Session 134) below. Romy's own words (voice-dictated, garbled by transcription — decoded below): *"I asked you to delete the [old pricing] model and concentrate only on the USD [model]. That is it. And the [promo codes] are still reflecting the [old pricing] model. We moved away from that already... This is we are going in circles."* Investigation (read-only, nothing changed yet) confirmed the core complaint: `src/lib/pricing-tier.ts` itself is already correctly USD-only on the new 4-tier model (`foundation` $990 / `investor_ready` $390 / `interview_prep` $290 / `visa_ready` $1490), but several **customer- and admin-facing surfaces built in earlier sessions never got updated to match** and still show/accept the retired 7-SKU tier IDs (`complete`, `complete_partnership`, `interview_prep_partnership`, `fdd_intelligence`, `fdd_intelligence_loyalty`) — most concretely, the promo-code admin page built last session (`PromoCodeForm.tsx`) lets Romy scope a discount to tiers that no longer exist for sale. Full file-by-file punch list, and which old-tier references are legitimate legacy-support code that must NOT be touched, is in the **Session 134** entry directly below. Also found genuine CAD/Canadian-currency remnants (DB constraint, a net-worth field, a live application question, marketing copy) — also listed below, one of which requires Romy to run SQL herself per the standing no-direct-SQL-on-production rule. Session 132's broader pricing-pivot scope (uncommitted draft rewrites already sitting in `results/page.tsx` and `modules/page.tsx`) is unstarted and still stacked behind this.
+
+---
+
+## Session 135 — executed the Session 134 pricing-cleanup sprint (September 6, 2026)
+
+**Branch:** dev. 7 commits, one file each, `e0830c4`..`13c9ea1`. Build + typecheck + tests clean. Nothing pushed.
+
+### Done — old model removed from live UI
+
+| # | File | Change |
+|---|------|--------|
+| 1 | `src/app/admin/promo-codes/PromoCodeForm.tsx` | `TIERS` const → USD model (`foundation`/`investor_ready`/`interview_prep`/`visa_ready`) + still-sellable add-ons (`loyalty_upgrade`, `fdd_analysis_addon`, `market_analysis_addon`, `fdd_market_bundle_addon`) + utilities (`simulator_3pack`, `renewal`). Values match `VALID_TIER_IDS` in `create-checkout/route.ts` so promo `applicable_tiers` string-matches a real checkout tierId. |
+| 2 | `src/app/admin/users/[userId]/TierOverridePanel.tsx` | Same `TIERS` replacement. |
+| 3 | `src/app/admin/revenue/page.tsx` | `TIER_PRICES` + `TIER_LABELS`: USD tiers/add-ons **added**, retired keys **kept** and suffixed "— retired" (page reads historical `payments`). `interview_prep` fallback price moved 34700→29000 (same key, current price; fallback only fires for amount-less rows). |
+| 4 | `src/app/pricing/PricingClient.tsx` | `UTILITY_TIERS` exclusion Set: added the 4 USD add-ons so an active add-on `pricing` row can't render as a grid plan. Retired IDs kept (defensive — DB row may not be deactivated). |
+| 5 | `src/app/pricing/success/page.tsx` | `PAYMENT_TYPE_NAMES` + `PAYMENT_TYPE_NEXT_STEP`: USD entries added, retired kept. `paymentType` default `'complete'`→`''`. Full-access celebratory copy now gated on `isFullApplicationPackage` (foundation/investor_ready/visa_ready/complete/complete_partnership) instead of `=== 'complete'`. |
+| 6 | `src/app/admin/page.tsx`, `src/app/admin/users/[userId]/page.tsx` | Inline `TIER_LABELS` display maps: USD tiers/add-ons added; every historical key (incl. the even-older `solo`/`solo_spouse`/`partnership_*` generation) kept and suffixed "— retired". |
+
+Confirmed `simulator_3pack` + `renewal` ARE still sellable (`simulator/page.tsx:255`, `renewal/RenewalEntryClient.tsx:44`, `VALID_TIER_IDS`) → kept. Legacy `payment_type` reads on the DO-NOT-TOUCH list were not touched.
+
+### Left for Romy
+
+1. **Run the CAD constraint SQL yourself:** `scratchpad/quiz_sessions_investment_currency_usd_only.sql` (Supabase SQL Editor). It normalises any legacy non-USD `quiz_sessions.investment_currency` to NULL then tightens the CHECK to USD-only. `investment_currency` is nullable and no current code writes it, so this is low-risk — but check the row counts in step 1 first.
+2. **Decide:** `src/lib/case-financials.ts` (`net_worth_cad`, `M3-F-NET`) + `src/app/apply/investment/page.tsx:74` ("net worth in CAD" label) + `:550` (TD Bank "$25,000 CAD" wire advisory). Applicant financial data, not pricing — may be legitimate to keep CAD. Not changed pending your call.
+3. **Provide a USD figure:** `src/components/landing/ComparisonSection.tsx:586` — "$3,000–$8,000 CAD — lawyer not included". Needs a real USD attorney-cost range to match US-only positioning. Not invented.
+
+### Noted, not actioned
+
+`src/types/payments.ts` — full old-model type defs (`MainTierId = 'complete' | 'complete_partnership'`, `STRIPE_PRICES` with $1,495 etc.). **Imported nowhere** (dead). Out of Session 134 scope; safe to delete in a follow-up.
+
+### Still stacked behind this
+
+Session 132's broader pricing-pivot (uncommitted draft rewrites in `results/page.tsx` + `modules/page.tsx` — do not discard; Stripe price-ID wiring; env var fixes; budget tier). Unstarted.
 
 ---
 
