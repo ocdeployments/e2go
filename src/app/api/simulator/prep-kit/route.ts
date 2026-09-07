@@ -363,6 +363,7 @@ export async function POST(request: NextRequest) {
   // most of a document's extracted data before the LLM ever saw it.
   const describeExtractedJson = (extracted: Record<string, unknown> | null | undefined): string | null => {
     if (!extracted) return null;
+    if (extracted._redacted === true) return null;
     const parts = Object.entries(extracted)
       .filter(([, v]) => v !== null && v !== undefined && String(v).trim() !== '')
       .map(([k, v]) => `${k}: ${v}`);
