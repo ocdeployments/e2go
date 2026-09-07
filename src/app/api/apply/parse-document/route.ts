@@ -9,6 +9,7 @@ import { buildCaseIntelligence } from '@/lib/case-intelligence-core';
 import { seedFddAnalysisFromUpload } from '@/lib/cic-fdd-seed';
 import type { UploadFileType } from '@/types/document-upload';
 import { captureApiError } from '@/lib/capture-error';
+import { logDocumentAccess } from '@/lib/document-access-log';
 
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
 
@@ -1388,6 +1389,15 @@ export async function POST(request: NextRequest) {
         doc_type:          resolvedDocType,
       })
       .eq('id', docRecord.id);
+
+    await logDocumentAccess({
+      userId: user.id,
+      documentId: docRecord.id,
+      documentTable: 'uploaded_documents',
+      action: 'parse',
+      docType: resolvedDocType,
+      fileName: file.name,
+    });
 
     // ── Case Intelligence Core — fire-and-forget, sequenced ───────────────────
     // comprehendApplicationDocuments writes document_intelligence.ledger, which
