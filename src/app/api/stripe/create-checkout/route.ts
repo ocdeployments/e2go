@@ -138,7 +138,11 @@ export async function POST(request: NextRequest) {
       const entitlements = await getUserEntitlements(user.id, supabase);
       if (!entitlements.hasFoundation) {
         return NextResponse.json(
-          { error: `${tierId} requires the Foundation package` },
+          {
+            error:
+              'Investor Ready is an add-on to the Foundation package. Choose Foundation or Visa Ready first, then add Investor Ready from your dashboard.',
+            code: 'requires_foundation',
+          },
           { status: 403 }
         );
       }
@@ -148,7 +152,11 @@ export async function POST(request: NextRequest) {
       const entitlements = await getUserEntitlements(user.id, supabase);
       if (!entitlements.hasInvestorReady) {
         return NextResponse.json(
-          { error: `${tierId} requires Investor Ready or Visa Ready` },
+          {
+            error:
+              'This add-on needs Investor Ready or Visa Ready. Add one of those first, then come back for the extra reports.',
+            code: 'requires_investor_ready',
+          },
           { status: 403 }
         );
       }
