@@ -146,7 +146,7 @@ export default function PrivacyPolicyPage() {
             <li><strong>Immigration History:</strong> Prior visa denials, overstays, and criminal disclosures are stored as structured flags only.</li>
             <li><strong>Family Information:</strong> Dependent data is collected only as necessary for application generation and is subject to the same protections as applicant data.</li>
           </ul>
-          <p className="mb-4">No biometric data is collected. If you upload supporting documents — which may include government-issued identity documents or financial records — they are held in a private, access-controlled file store, used only to prepare your application, and removed when you delete them or delete your account.</p>
+          <p className="mb-4">No biometric data is collected. Government-issued identity documents are read in memory only and never stored as files. Other supporting documents (financial records, business documents) are held in a private, access-controlled file store, used only to prepare your application, and deleted on the schedule in Section 3 or sooner if you remove them.</p>
 
           <h2 className="text-2xl mb-4 mt-8" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#f5f0e8", fontWeight: 400 }}>5. SHARING YOUR INFORMATION</h2>
           <p className="mb-4">We do not share your personal information except in the following cases:</p>
