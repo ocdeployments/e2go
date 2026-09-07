@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { captureApiError } from '@/lib/capture-error';
+import { logDocumentAccess } from '@/lib/document-access-log';
 
 // GET /api/documents/[documentId] — Get document details
 export async function GET(
@@ -26,6 +27,15 @@ export async function GET(
       return NextResponse.json({ error: 'Document not found' }, { status: 404 });
     }
 
+    await logDocumentAccess({
+      userId: user.id,
+      documentId: document.id,
+      documentTable: 'application_documents',
+      action: 'view',
+      docType: document.user_selected_document_type ?? document.detected_document_type,
+      fileName: document.original_filename,
+    });
+
     return NextResponse.json({ document });
   } catch (error) {
     captureApiError(error, { route: 'documents/[documentId]', stage: 'get', documentId: params.documentId });
@@ -49,7 +59,7 @@ export async function DELETE(
     // Get the document to find storage path
     const { data: document, error: fetchError } = await supabase
       .from('application_documents')
-      .select('storage_path')
+      .select('storage_path, original_filename, user_selected_document_type, detected_document_type')
       .eq('id', params.documentId)
       .eq('user_id', user.id)
       .single();
@@ -76,6 +86,15 @@ export async function DELETE(
       captureApiError(deleteError, { route: 'documents/[documentId]', stage: 'delete-db', userId: user.id, documentId: params.documentId });
       return NextResponse.json({ error: 'Delete failed' }, { status: 500 });
     }
+
+    await logDocumentAccess({
+      userId: user.id,
+      documentId: params.documentId,
+      documentTable: 'application_documents',
+      action: 'delete',
+      docType: document.user_selected_document_type ?? document.detected_document_type,
+      fileName: document.original_filename,
+    });
 
     return NextResponse.json({ deleted: true });
   } catch (error) {
