@@ -29,7 +29,11 @@ export default function PricingCard({
   onSelect,
 }: PricingCardProps) {
   const cardContent = (
-    <div className="relative flex flex-col h-full p-8 bg-[#0a0a0a] border border-[rgba(201,168,76,0.15)]">
+    <div className="group relative flex flex-col h-full p-8 bg-[#0a0a0a] border border-[rgba(201,168,76,0.15)] transition-[transform,border-color,box-shadow] duration-300 ease-out hover:-translate-y-1.5 hover:border-[#C9A84C] hover:shadow-[0_0_50px_-5px_rgba(201,168,76,0.35)] motion-reduce:transition-none motion-reduce:hover:translate-y-0">
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-px origin-left scale-x-0 bg-gradient-to-r from-transparent via-[#C9A84C] to-transparent transition-transform duration-500 ease-out group-hover:scale-x-100"
+      />
       {(isHighlighted || isSelected) && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-[#C9A84C] text-[#0a0a0a] text-xs font-medium font-[DM_Sans] tracking-wide uppercase">
           {isSelected ? "Selected plan" : "Your plan — based on your eligibility check"}
@@ -37,7 +41,7 @@ export default function PricingCard({
       )}
 
       <div className="mb-6">
-        <h3 className="text-2xl italic font-serif text-[#f5f0e8] mb-2">{name}</h3>
+        <h3 className="text-2xl italic font-serif text-[#f5f0e8] mb-2 transition-colors duration-300 group-hover:text-[#C9A84C]">{name}</h3>
         <p className="text-[rgba(245,240,232,0.60)] text-sm font-[DM_Sans] leading-relaxed">
           {description}
         </p>
@@ -60,12 +64,12 @@ export default function PricingCard({
         data-testid={`pricing-cta-${id}`}
         onClick={() => !disabled && onSelect(id)}
         disabled={disabled}
-        className={`w-full py-4 text-sm font-medium font-[DM_Sans] transition-colors ${
+        className={`w-full py-4 text-sm font-medium font-[DM_Sans] transition-colors duration-300 ${
           disabled
             ? "bg-[rgba(201,168,76,0.1)] text-[rgba(201,168,76,0.4)] cursor-not-allowed"
             : isHighlighted || isSelected
               ? "bg-[#C9A84C] text-[#0a0a0a] hover:bg-[#d4b35a]"
-              : "bg-transparent border border-[#C9A84C] text-[#C9A84C] hover:bg-[rgba(201,168,76,0.08)]"
+              : "bg-transparent border border-[#C9A84C] text-[#C9A84C] group-hover:bg-[#C9A84C] group-hover:text-[#0a0a0a] group-hover:hover:bg-[#d4b35a]"
         }`}
       >
         {disabled ? disabledText : isSelected ? "Selected" : "Select Plan"}
