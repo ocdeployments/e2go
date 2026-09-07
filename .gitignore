@@ -85,3 +85,6 @@ docs/generated-output/
 
 # Cached PostgREST schema spec (scripts/audit-schema-drift.py)
 .schema-spec.json
+
+# ad-hoc scratch dir — local drafts only, never commit
+/scratchpad/
