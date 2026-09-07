@@ -28,5 +28,6 @@
 
 | docs/SPRINT_N_CLEANUP.md | Sprint N execution contract — repo hygiene, dead-code removal, access polish tasks N-1…N-7 with gates and status. | Rules, product spec |
 | docs/SPRINT_S_SCHEMA_DRIFT.md | Sprint S execution contract — the 44 code-vs-live-database column mismatches found Sept 4, 2026, as tasks S-1…S-20 with file:line, wrong→right mapping, verification steps and status. Also owns the standing rule that the live database is the schema source of truth, and the procedure for re-reading it. | Rules, product spec, session logs |
+| docs/MARKETING_STRATEGY.md | Go-to-market strategy for the US-only launch — positioning, ICP/personas, beachhead treaty-country selection, messaging pillars, organic-first channel plan, funnel, content engine, KPIs, phased roadmap, risks. Strategy layer only. | Build status, ad copy/creative, code |
 
 Rule: Before creating any new doc, add it to DOC_INDEX.md first and declare what it owns. Never let two files own the same topic.
