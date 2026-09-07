@@ -28,7 +28,7 @@ export default function PrivacyPolicyPage() {
 
         <div style={{ color: "rgba(245,240,232,0.75)", fontFamily: "'DM Sans', sans-serif", fontWeight: 300, lineHeight: 1.7, fontSize: "15px" }}>
           <p className="mb-6">
-            E2Pathway Inc. (&apos;Company&apos;, &apos;we&apos;, &apos;us&apos;, &apos;our&apos;) is committed to protecting your privacy. This Privacy Policy explains how we collect, use, store, and share information when you use the e2go application (&apos;App&apos;).
+            Prodigal Son IT Solutions LLC, doing business as e2go (&apos;Company&apos;, &apos;we&apos;, &apos;us&apos;, &apos;our&apos;), is committed to protecting your privacy. This Privacy Policy explains how we collect, use, store, and share information when you use the e2go application (&apos;App&apos;).
           </p>
           <p className="mb-6">
             This policy is designed to comply with the Personal Information Protection and Electronic Documents Act (PIPEDA) and applicable Canadian provincial privacy laws.
