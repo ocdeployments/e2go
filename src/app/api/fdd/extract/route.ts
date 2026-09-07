@@ -7,6 +7,7 @@ import { extractFddText, extractFdd } from '@/lib/fdd-extraction-engine';
 import type { FddSSEEvent } from '@/types/fdd';
 import { captureApiError } from '@/lib/capture-error';
 import { fddExtractRequestSchema } from '@/lib/api-schemas';
+import { logDocumentAccess } from '@/lib/document-access-log';
 
 // POST /api/fdd/extract — SSE stream
 // Body: { fdd_id: string }
@@ -103,6 +104,14 @@ export async function POST(request: NextRequest) {
         }
 
         const buffer = Buffer.from(await fileData.arrayBuffer());
+
+        await logDocumentAccess({
+          userId: user.id,
+          documentId: fdd_id,
+          documentTable: 'fdd_analyses',
+          action: 'extract',
+          docType: 'fdd',
+        });
 
         // Extract PDF text
         const { text, pageCount, isScanned } = await extractFddText(buffer);
