@@ -194,7 +194,7 @@ export function ComparisonSection() {
                   fontWeight: 300,
                   color: '#C9A84C',
                 }}>
-                  From $550
+                  From $990
                 </span>
               </div>
               <div style={{
