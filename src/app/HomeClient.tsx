@@ -225,7 +225,7 @@ export default function HomeClient() {
             <div className="font-['Cormorant_Garamond',Georgia,serif] text-xl font-light text-[#C9A84C] mb-2">
               e2go<span className="text-[rgba(245,240,232,0.76)]">.app</span>
             </div>
-            <p className="text-xs text-[rgba(245,240,232,0.65)] leading-relaxed">© 2026 e2go.app. All rights reserved.</p>
+            <p className="text-xs text-[rgba(245,240,232,0.65)] leading-relaxed">© 2026 Prodigal Son IT Solutions LLC, d/b/a e2go. All rights reserved.</p>
           </div>
           <div className="flex flex-wrap gap-x-6 gap-y-2 md:justify-end">
             {[["/learn","Learn"],["/pricing","Pricing"],["/simulator","Simulator"],["/support","Support"]].map(([href,label]) => (
