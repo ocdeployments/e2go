@@ -23,7 +23,7 @@ export default function PrivacyPolicyPage() {
           Privacy Policy
         </h1>
         <p className="mb-8" style={{ fontSize: "14px", color: "rgba(245,240,232,0.76)", fontFamily: "'DM Sans', sans-serif" }}>
-          Last updated: June 2026
+          Last updated: September 2026
         </p>
 
         <div style={{ color: "rgba(245,240,232,0.75)", fontFamily: "'DM Sans', sans-serif", fontWeight: 300, lineHeight: 1.7, fontSize: "15px" }}>
@@ -39,7 +39,8 @@ export default function PrivacyPolicyPage() {
           <p className="mb-4">During registration and use of the App, we collect:</p>
           <ul className="list-disc ml-6 mb-4 space-y-2">
             <li><strong>Account Information:</strong> Full legal name, email address, password (stored as a hashed value — never in plain text), province of residence.</li>
-            <li><strong>Application Data:</strong> Date of birth, passport number (stored encrypted; displayed as last 4 digits only), passport expiry date, home address, phone number, employment history, education history, business information, investment amounts and fund source descriptions, financial institution names and partial account references, family and dependent information, social media handles, interview date and outcome.</li>
+            <li><strong>Application Data:</strong> Date of birth, passport number, passport expiry date, home address, phone number, employment history, education history, business information, investment amounts and fund source descriptions, financial institution names and partial account references, family and dependent information, social media handles, interview date and outcome. Sensitive fields are handled under the access controls and encryption described in Section 3.</li>
+            <li><strong>Uploaded Documents:</strong> Files you choose to upload to support your application — for example bank and brokerage statements, business registration documents, tax returns, and franchise disclosure documents. Depending on where in the App you upload a file, it is either processed in memory to extract structured data and then discarded, or stored in a private, access-controlled file store so you can reuse and re-download it. You can delete uploaded files at any time from the Documents area.</li>
             <li><strong>Payment Information:</strong> Payment processing is handled by Stripe. e2go does not store full card numbers, CVC codes, or bank account details. We receive only a tokenized payment reference from Stripe.</li>
           </ul>
 
@@ -60,9 +61,9 @@ export default function PrivacyPolicyPage() {
 
           <h2 className="text-2xl mb-4 mt-8" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#f5f0e8", fontWeight: 400 }}>3. HOW WE STORE AND PROTECT YOUR INFORMATION</h2>
           <ul className="list-disc ml-6 mb-4 space-y-2">
-            <li><strong>Encryption:</strong> All data is transmitted over HTTPS/TLS. Sensitive fields (passport number, partial account references) are encrypted at rest using AES-256 encryption.</li>
-            <li><strong>Access Controls:</strong> Access to user data is restricted to authorized personnel on a need-to-know basis. Access is logged and audited.</li>
-            <li><strong>Storage Location:</strong> User data is stored on servers located in Canada or the United States.</li>
+            <li><strong>Encryption:</strong> All data is transmitted over HTTPS/TLS. All data — including database records and uploaded files — is encrypted at rest using AES-256 encryption by our infrastructure providers.</li>
+            <li><strong>Access Controls:</strong> Access to user data is restricted to authorized personnel on a need-to-know basis. Uploaded files are held in a private store, scoped to your account, and are not publicly accessible. Access is logged and audited.</li>
+            <li><strong>Storage Location:</strong> User data, including uploaded files, is stored on servers located in Canada or the United States.</li>
             <li><strong>Retention:</strong> Application data is retained until 90 days after your visa outcome is confirmed, then permanently deleted. Minimal compliance calendar data (email, visa dates, business name) is retained for compliance calendar subscribers only. You may request deletion at any time.</li>
             <li><strong>Third-Party Processors:</strong> Cloud hosting, payment processing (Stripe), email delivery, analytics (anonymized), document generation (LLM API providers — inputs are processed in-memory and not retained beyond the API call), and voice transcription (Groq — audio processed transiently, not retained).</li>
           </ul>
@@ -128,12 +129,12 @@ export default function PrivacyPolicyPage() {
 
           <h2 className="text-2xl mb-4 mt-8" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#f5f0e8", fontWeight: 400 }}>4. SENSITIVE INFORMATION</h2>
           <ul className="list-disc ml-6 mb-4 space-y-2">
-            <li><strong>Passport Data:</strong> Stored encrypted. Never shared with third parties except as explicitly authorized by you.</li>
+            <li><strong>Passport Data:</strong> Stored as application data under the encryption and access controls described in Section 3. Never shared with third parties except as explicitly authorized by you.</li>
             <li><strong>Financial Information:</strong> Fund source descriptions and account names are stored as application data. Partial account references only (last 4 digits). Full account numbers are never entered or stored.</li>
             <li><strong>Immigration History:</strong> Prior visa denials, overstays, and criminal disclosures are stored as structured flags only.</li>
             <li><strong>Family Information:</strong> Dependent data is collected only as necessary for application generation and is subject to the same protections as applicant data.</li>
           </ul>
-          <p className="mb-4">No biometric data is collected. No government documents are uploaded or stored on our servers.</p>
+          <p className="mb-4">No biometric data is collected. If you upload supporting documents — which may include government-issued identity documents or financial records — they are held in a private, access-controlled file store, used only to prepare your application, and removed when you delete them or delete your account.</p>
 
           <h2 className="text-2xl mb-4 mt-8" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#f5f0e8", fontWeight: 400 }}>5. SHARING YOUR INFORMATION</h2>
           <p className="mb-4">We do not share your personal information except in the following cases:</p>
