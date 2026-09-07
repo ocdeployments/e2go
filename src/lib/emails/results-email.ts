@@ -25,6 +25,7 @@ import { Resend } from 'resend';
 import crypto from 'crypto';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getBaseHtml, getButtonHtml } from './base-template';
+import { companyFooterLine } from './company';
 import { EMAIL_SENDER, SUPPORT_REPLY_TO } from './senders';
 import { captureApiError } from '@/lib/capture-error';
 
@@ -158,6 +159,7 @@ export function buildResultsEmail(
     'And the move you have been planning quietly stays a plan.',
     '',
     'e2go.app — document preparation tool, not a law firm.',
+    companyFooterLine(),
   ].join('\n');
 
   return { subject, html: getBaseHtml(content, preheader, recipient), text };
