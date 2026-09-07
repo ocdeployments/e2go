@@ -304,7 +304,11 @@ export async function comprehendApplicationDocuments(
     return { status: 'failed', docCount: 0, ledgerSize: 0, conflictCount: 0 };
   }
 
-  const completedDocs = (docs ?? []).filter((d) => d.extracted_json && Object.keys(d.extracted_json).length > 0) as UploadedDoc[];
+  const completedDocs = (docs ?? []).filter(
+    (d) => d.extracted_json
+      && !(d.extracted_json as Record<string, unknown>)._redacted
+      && Object.keys(d.extracted_json).length > 0,
+  ) as UploadedDoc[];
   if (completedDocs.length === 0) {
     await supabase.from('document_intelligence').upsert(
       { application_id: applicationId, user_id: userId, status: 'complete', ledger: [], memos: [], conflicts: [], doc_count: 0 },
