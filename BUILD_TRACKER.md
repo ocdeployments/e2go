@@ -32,10 +32,12 @@ No statute imposes a **minimum** retention on the documents e2go handles. Not a 
 Romy was right. E-2 (9 FAM 402.9) requires the source **and full path** of funds to be traceable and identifiable — institution names, account types, balances, and the source narrative are all legitimately required. **The financial extraction schemas are unchanged.** They already do not capture full account numbers. My earlier suggestion to strip them was withdrawn; the only addition is upload-screen copy telling users they *may* redact account-number digits.
 
 ### Left for Romy
-1. **Run** `supabase/migrations/20260907120000_document_retention.sql` in the Supabase SQL Editor (exact SQL handed over in chat). Until then the cron's file-purge pass no-ops on a missing column — it will log an error, harmlessly.
-2. **Verify `CRON_SECRET`** exists in the Vercel project env (the other 3 crons already use it, so it almost certainly does).
-3. Deploy: `npx vercel --prod --yes --scope team_HB5WINc2KA5vQdEraRSUzHdx`.
-4. After first cron run, check the daily log line — a non-empty `errors` array needs a look.
+1. ~~Run the migration~~ — **done.** Romy ran it in the Supabase SQL Editor; `file_purged_at` verified live on both tables (200, no 42703); `migration repair --status applied 20260907120000` reconciled remote history; `db push --dry-run` clean.
+2. ~~Verify `CRON_SECRET`~~ — confirmed (44 chars, shared with the other 3 crons).
+3. ~~Deploy~~ — **done.** Production smoke check green: `/api/cron/data-retention` 401s without auth (deployed), `/privacy` serves the new retention copy + Gemini sub-processor row and no longer says "Access is logged and audited", `/api/documents` auth guard intact. Local run of the cron against production returned `{"ok":true,...,"errors":[]}` with nothing yet eligible.
+4. After the first scheduled 04:00 UTC run, check the daily log line — a non-empty `errors` array needs a look.
+
+**Session 138 is fully shipped.** Only deferred P2 items remain (below).
 
 ### Deferred P2 hardening (flagged, not built)
 - Document-access / extraction audit log (who read which doc, when) — additive, medium build.
