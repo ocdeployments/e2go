@@ -712,6 +712,10 @@ export default function DocumentImportHub({ applicationId, onFieldsApplied, defa
         {/* ── Stage: idle — per-person queue builder ───────────────────────── */}
         {stage === 'idle' && (
           <>
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '10px', lineHeight: 1.5, color: 'rgba(245,240,232,0.4)', marginBottom: '14px' }}>
+              We only need balances, institution names, and the source of your funds — you can black out account numbers before uploading. Identity documents (passport, birth certificate) are read once and never stored as files; other files are deleted automatically 30 days after your document package is generated.
+            </p>
+
             <div className="flex flex-col gap-4 mb-5">
               {ownerOptions.map(opt => {
                 const items = queueByOwner.get(ownerKeyOf(opt.id)) ?? [];
