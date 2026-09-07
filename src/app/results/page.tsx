@@ -8,6 +8,7 @@ import flagExplanations from "../../data/flag_explanations.json";
 import FlagCard, { FLAG_REMEDIATION } from "@/components/results/FlagCard";
 import DocumentPackagePreview from "@/components/results/DocumentPackagePreview";
 import DocumentTabPreview from "@/components/results/DocumentTabPreview";
+import PromoCodeInput from "@/components/PromoCodeInput";
 import type { CaseProfile } from "@/types/case-profile";
 
 interface ResultData {
@@ -375,6 +376,7 @@ function ResultsPageInner() {
   const flagDebounceRefs = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [promoCode, setPromoCode] = useState<string | null>(null);
 
   useEffect(() => {
     if (!data) return;
@@ -474,7 +476,7 @@ function ResultsPageInner() {
   const targetDateMsg = getTargetDateMessage(data.answers?.["Q0-target-date"] as string);
   const scoreColor = score >= 70 ? "#C9A84C" : score >= 40 ? "#f59e0b" : "rgba(245,240,232,0.68)";
   const band = getBandConfig(outcome);
-  const handleCheckout = async (tierId: string = 'complete') => {
+  const handleCheckout = async (tierId: string = 'foundation') => {
     if (!isLoggedIn) {
       window.location.href = '/login?next=/results';
       return;
@@ -482,13 +484,10 @@ function ResultsPageInner() {
     setCheckoutLoading(true);
     setCheckoutError(null);
     try {
-      const resolvedTier = tierId === 'complete' && (data.application_type === 'partnership' || data.application_type === 'spousal_partnership')
-        ? 'complete_partnership'
-        : tierId;
       const res = await fetch('/api/checkout/initiate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tierId: resolvedTier }),
+        body: JSON.stringify({ tierId, ...(promoCode ? { promoCode } : {}) }),
       });
       const json = await res.json() as { alreadyPaid?: boolean; url?: string; error?: string };
       if (json.alreadyPaid) {
@@ -1150,10 +1149,8 @@ function ResultsPageInner() {
         {/* ─── PRICING CARD ─────────────────────────────────────────────────────── */}
         {(() => {
           const isPartnership = data.application_type === "complete_partnership";
-          const priceDollars = isPartnership ? "$2,495" : "$1,495";
-          const packageLabel = isPartnership ? "Partnership Package" : "Complete Package";
+          const packageLabel = isPartnership ? "Foundation — Partnership" : "Foundation";
           const packageSubline = isPartnership ? "two investors · one-time" : "one-time · no subscription";
-          const isFranchiseBuyer = /franchise/i.test(String(data.answers?.["Q0-08a"] || ""));
           return (
         <div style={{ padding: "52px 0", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
           <div style={{ fontSize: "9px", letterSpacing: "0.16em", textTransform: "uppercase" as const, color: "rgba(201,168,76,0.6)", marginBottom: "6px" }}>Ready to build your case</div>
@@ -1163,12 +1160,16 @@ function ResultsPageInner() {
               {/* Price block */}
               <div style={{ flexShrink: 0 }}>
                 <div style={{ fontSize: "9px", letterSpacing: "0.16em", textTransform: "uppercase" as const, color: "rgba(201,168,76,0.65)", marginBottom: "6px" }}>{packageLabel}</div>
-                <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "56px", fontWeight: 300, color: "#C9A84C", lineHeight: 1 }}>{priceDollars}</div>
+                {isPartnership ? (
+                  <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "34px", fontWeight: 300, color: "#C9A84C", lineHeight: 1.15 }}>Contact us for pricing</div>
+                ) : (
+                  <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "56px", fontWeight: 300, color: "#C9A84C", lineHeight: 1 }}>$990</div>
+                )}
                 <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.42)", marginTop: "4px" }}>{packageSubline}</div>
                 <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.48)", marginTop: "3px" }}>vs. $8,000–$15,000 for attorneys</div>
                 {isPartnership && (
                   <div style={{ marginTop: "10px", padding: "7px 10px", background: "rgba(201,168,76,0.06)", border: "1px solid rgba(201,168,76,0.18)", fontSize: "10px", color: "rgba(201,168,76,0.8)", lineHeight: 1.5 }}>
-                    Includes separate document packages for both investors.
+                    Partnership cases involve separate document packages for both investors — pricing is confirmed by our team before you check out.
                   </div>
                 )}
               </div>
@@ -1181,8 +1182,8 @@ function ResultsPageInner() {
                     { icon: "✓", color: "#5DCAA5", text: "Eligibility assessment", dim: true },
                     { icon: "✓", color: "#5DCAA5", text: flagsToShow.length > 0 ? `${flagsToShow.length} risk area${flagsToShow.length > 1 ? "s" : ""} identified` : "Clean profile", dim: true },
                     { icon: "✓", color: "#5DCAA5", text: "Consulate adjudication profiled", dim: true },
-                    { icon: "→", color: "#C9A84C", text: "15 engineered documents", dim: false },
-                    { icon: "→", color: "#C9A84C", text: "3 interview simulations + Case Dossier", dim: false },
+                    { icon: "→", color: "#C9A84C", text: "Complete filing document set", dim: false },
+                    { icon: "→", color: "#C9A84C", text: "Financial & business substantiality evidence", dim: false },
                   ] as Array<{ icon: string; color: string; text: string; dim: boolean }>).map((row, i) => (
                     <div key={i} style={{ display: "flex", gap: "7px", alignItems: "center", fontSize: "11px" }}>
                       <span style={{ color: row.color, flexShrink: 0 }}>{row.icon}</span>
@@ -1193,30 +1194,48 @@ function ResultsPageInner() {
                 {/* Right column */}
                 <div style={{ flex: 1, display: "flex", flexDirection: "column" as const, gap: "6px" }}>
                   {([
-                    { icon: "→", color: "#C9A84C", text: "Gap Analysis — 6 categories", dim: false, star: false },
-                    { icon: "→", color: "#C9A84C", text: "Page limits enforced", dim: false, star: false },
-                    { icon: "→", color: "#C9A84C", text: "Market Analysis", dim: false, star: true },
-                    { icon: "→", color: isFranchiseBuyer ? "#C9A84C" : "rgba(201,168,76,0.28)", text: "FDD Intelligence", dim: !isFranchiseBuyer, star: isFranchiseBuyer },
-                  ] as Array<{ icon: string; color: string; text: string; dim: boolean; star: boolean }>).map((row, i) => (
+                    { icon: "→", color: "#C9A84C", text: "Gap Analysis — 6 categories", dim: false },
+                    { icon: "→", color: "#C9A84C", text: "Page limits enforced", dim: false },
+                    ...(isPartnership ? [{ icon: "→", color: "#C9A84C", text: "Partnership document set", dim: false }] : []),
+                  ] as Array<{ icon: string; color: string; text: string; dim: boolean }>).map((row, i) => (
                     <div key={i} style={{ display: "flex", gap: "7px", alignItems: "center", fontSize: "11px" }}>
                       <span style={{ color: row.color, flexShrink: 0 }}>{row.icon}</span>
                       <span style={{ color: row.dim ? "rgba(245,240,232,0.3)" : "rgba(245,240,232,0.85)", whiteSpace: "nowrap" as const }}>{row.text}</span>
-                      {row.star && <span style={{ fontSize: "8px", color: "#C9A84C", fontWeight: 700 }}>★</span>}
                     </div>
                   ))}
-                  <div style={{ marginTop: "6px", fontSize: "9px", color: "rgba(201,168,76,0.45)", letterSpacing: "0.04em", whiteSpace: "nowrap" as const }}>★ Unique to e2go</div>
+                  <div style={{ marginTop: "8px", fontSize: "10px", color: "rgba(245,240,232,0.4)", lineHeight: 1.6 }}>
+                    Want Market Analysis + FDD Intelligence? Add <Link href="/pricing" style={{ color: "#C9A84C", textDecoration: "none" }}>Investor Ready</Link> for $390. Need mock interviews? <Link href="/pricing" style={{ color: "#C9A84C", textDecoration: "none" }}>Interview Ready</Link> is $290.
+                  </div>
                 </div>
               </div>
 
               {/* CTA */}
               <div style={{ display: "flex", flexDirection: "column" as const, alignItems: "flex-end", justifyContent: "flex-end", flexShrink: 0 }}>
-                <button
-                  onClick={() => handleCheckout(isPartnership ? 'complete_partnership' : 'complete')}
-                  disabled={checkoutLoading}
-                  style={{ display: "block", padding: "17px 30px", background: checkoutLoading ? "rgba(201,168,76,0.6)" : "#C9A84C", color: "#0a0a0a", fontSize: "12px", fontWeight: 600, letterSpacing: "0.08em", fontFamily: "'DM Sans', sans-serif", border: "none", cursor: checkoutLoading ? "not-allowed" : "pointer", textAlign: "center" as const, whiteSpace: "nowrap" as const }}
-                >
-                  {checkoutLoading ? "Preparing checkout…" : isPartnership ? "Build Our Partnership Case" : "Build My Case with E2Go"}
-                </button>
+                {!isPartnership && (
+                  <div style={{ marginBottom: "10px" }}>
+                    <PromoCodeInput
+                      tierId="foundation"
+                      onApply={(code) => setPromoCode(code)}
+                      onRemove={() => setPromoCode(null)}
+                    />
+                  </div>
+                )}
+                {isPartnership ? (
+                  <a
+                    href="mailto:support@e2go.app?subject=Partnership%20Foundation%20pricing"
+                    style={{ display: "block", padding: "17px 30px", background: "#C9A84C", color: "#0a0a0a", fontSize: "12px", fontWeight: 600, letterSpacing: "0.08em", fontFamily: "'DM Sans', sans-serif", border: "none", textAlign: "center" as const, whiteSpace: "nowrap" as const, textDecoration: "none" }}
+                  >
+                    Contact Us for Partnership Pricing
+                  </a>
+                ) : (
+                  <button
+                    onClick={() => handleCheckout('foundation')}
+                    disabled={checkoutLoading}
+                    style={{ display: "block", padding: "17px 30px", background: checkoutLoading ? "rgba(201,168,76,0.6)" : "#C9A84C", color: "#0a0a0a", fontSize: "12px", fontWeight: 600, letterSpacing: "0.08em", fontFamily: "'DM Sans', sans-serif", border: "none", cursor: checkoutLoading ? "not-allowed" : "pointer", textAlign: "center" as const, whiteSpace: "nowrap" as const }}
+                  >
+                    {checkoutLoading ? "Preparing checkout…" : "Build My Case with E2Go"}
+                  </button>
+                )}
                 {checkoutError && (
                   <div style={{ marginTop: "8px", fontSize: "11px", color: "#f87171", maxWidth: "240px", textAlign: "right" as const }}>
                     {checkoutError}
@@ -1234,100 +1253,22 @@ function ResultsPageInner() {
           );
         })()}
 
-        {/* ─── ALSO AVAILABLE / NOT RELEVANT — removed from UI ─────────────────── */}
-        {data.application_type !== "complete_partnership" && (() => {
-          const bizAnswer = String(data.answers?.["Q0-08a"] || "").toLowerCase();
-          const isFranchisePath = /franchise/i.test(bizAnswer) || showFranchiseTeaser;
-          const isNewConcept = !isFranchisePath && !/acquisition/i.test(bizAnswer);
-
-          return (
-            <div style={{ padding: "52px 0", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
-              <div style={{ fontSize: "9px", letterSpacing: "0.16em", textTransform: "uppercase" as const, color: "rgba(201,168,76,0.6)", marginBottom: "8px" }}>Individual modules</div>
-              <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "28px", fontWeight: 300, color: "#f5f0e8", marginBottom: "10px" }}>Joining us mid-journey?</div>
-              <div style={{ fontSize: "12px", color: "rgba(245,240,232,0.55)", lineHeight: 1.7, maxWidth: "560px", marginBottom: "32px" }}>
-                E2Go is designed to be with you from the very first step — quiz, gap analysis, consulate matching, and a complete submission-ready file. If you&apos;re already mid-process and only need a specific piece, each module is available individually.
-              </div>
-
-              <div className="step-cards-grid" style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "12px" }}>
-                {/* FDD Intelligence */}
-                {isFranchisePath ? (
-                  <div style={{ border: "1px solid rgba(201,168,76,0.35)", padding: "22px", background: "rgba(201,168,76,0.02)", display: "flex", flexDirection: "column" as const }}>
-                    <div style={{ fontSize: "9px", letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "#C9A84C", marginBottom: "10px" }}>Relevant for your path</div>
-                    <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "18px", fontWeight: 300, color: "#f5f0e8", marginBottom: "8px" }}>FDD Intelligence</div>
-                    <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.6)", lineHeight: 1.65, marginBottom: "16px", flex: 1 }}>
-                      5 engines extract the 50 fields that matter from your FDD — Item 7 investment validation, Item 19 unit economics, territory density, officer red flags. Findings inject directly into your case documents.
-                    </div>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <Link href="/modules" style={{ fontSize: "11px", color: "#C9A84C", textDecoration: "none", fontFamily: "'DM Sans', sans-serif" }}>
-                        {fddReceived ? "Get FDD Intelligence →" : "Learn more →"}
-                      </Link>
-                      <span style={{ fontSize: "12px", fontFamily: "'Cormorant Garamond', Georgia, serif", color: "#C9A84C", fontWeight: 300 }}>$495</span>
-                    </div>
-                  </div>
-                ) : (
-                  <div style={{ border: "1px solid rgba(245,240,232,0.06)", padding: "22px", background: "rgba(245,240,232,0.008)", opacity: 0.5, display: "flex", flexDirection: "column" as const }}>
-                    <div style={{ fontSize: "9px", letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "rgba(245,240,232,0.35)", marginBottom: "10px" }}>Not applicable</div>
-                    <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "18px", fontWeight: 300, color: "rgba(245,240,232,0.45)", marginBottom: "8px" }}>FDD Intelligence</div>
-                    <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.38)", lineHeight: 1.65, flex: 1 }}>
-                      {isNewConcept
-                        ? "FDD analysis is for franchise acquisitions only. Your new-concept case does not require it."
-                        : "FDD analysis applies to franchise acquisitions. This module is not part of your recommended path."}
-                    </div>
-                  </div>
-                )}
-
-                {/* Market Analysis */}
-                <div style={{ border: "1px solid rgba(201,168,76,0.2)", padding: "22px", background: "rgba(201,168,76,0.01)", display: "flex", flexDirection: "column" as const }}>
-                  <div style={{ fontSize: "9px", letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "rgba(201,168,76,0.55)", marginBottom: "10px" }}>All business types</div>
-                  <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "18px", fontWeight: 300, color: "#f5f0e8", marginBottom: "8px" }}>Market Analysis</div>
-                  <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.6)", lineHeight: 1.65, marginBottom: "16px", flex: 1 }}>
-                    Census ACS 5-year + BLS employment data for your exact sector and geography. TAM/SAM sizing, competitive landscape, industry benchmarks — embedded into your Business Plan, not appended as an afterthought.
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <Link href="/modules" style={{ fontSize: "11px", color: "#C9A84C", textDecoration: "none", fontFamily: "'DM Sans', sans-serif" }}>Learn more →</Link>
-                    <span style={{ fontSize: "12px", fontFamily: "'Cormorant Garamond', Georgia, serif", color: "#C9A84C", fontWeight: 300 }}>$295</span>
-                  </div>
-                </div>
-
-                {/* Business Plan */}
-                <div style={{ border: "1px solid rgba(201,168,76,0.2)", padding: "22px", background: "rgba(201,168,76,0.01)", display: "flex", flexDirection: "column" as const }}>
-                  <div style={{ fontSize: "9px", letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "rgba(201,168,76,0.55)", marginBottom: "10px" }}>All business types</div>
-                  <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "18px", fontWeight: 300, color: "#f5f0e8", marginBottom: "8px" }}>E-2 Business Plan</div>
-                  <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.6)", lineHeight: 1.65, marginBottom: "16px", flex: 1 }}>
-                    Produced by claude-opus-4-8 with your gap analysis, investor archetype, and market data loaded into a single structured prompt. Formatted to your consulate&apos;s confirmed page limits. Market Analysis included.
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <Link href="/modules" style={{ fontSize: "11px", color: "#C9A84C", textDecoration: "none", fontFamily: "'DM Sans', sans-serif" }}>Learn more →</Link>
-                    <span style={{ fontSize: "12px", fontFamily: "'Cormorant Garamond', Georgia, serif", color: "#C9A84C", fontWeight: 300 }}>$695</span>
-                  </div>
-                </div>
-
-                {/* Interview Preparation */}
-                <div style={{ border: "1px solid rgba(201,168,76,0.3)", padding: "22px", background: "rgba(201,168,76,0.02)", display: "flex", flexDirection: "column" as const }}>
-                  <div style={{ fontSize: "9px", letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "#C9A84C", marginBottom: "10px" }}>All applicants — pre-interview</div>
-                  <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "18px", fontWeight: 300, color: "#f5f0e8", marginBottom: "8px" }}>Interview Preparation</div>
-                  <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.6)", lineHeight: 1.65, marginBottom: "10px", flex: 1 }}>
-                    3 unscripted AI consular officer sessions that probe your weakest denial-factor scores. Includes the Interview Case Dossier — a personalised 7-section revision document built from your case data, tested against all 15 E-2 denial factors, and printable for the day of the interview.
-                  </div>
-                  <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" as const, marginBottom: "12px" }}>
-                    {["3 simulator sessions", "Interview Case Dossier", "Coaching report", "Day-of checklist"].map((f) => (
-                      <span key={f} style={{ fontSize: "9px", color: "rgba(201,168,76,0.7)", border: "1px solid rgba(201,168,76,0.2)", padding: "2px 7px", letterSpacing: "0.05em", fontFamily: "'DM Sans', sans-serif" }}>{f}</span>
-                    ))}
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <Link href="/modules" style={{ fontSize: "11px", color: "#C9A84C", textDecoration: "none", fontFamily: "'DM Sans', sans-serif" }}>Learn more →</Link>
-                    <span style={{ fontSize: "12px", fontFamily: "'Cormorant Garamond', Georgia, serif", color: "#C9A84C", fontWeight: 300 }}>$197</span>
-                  </div>
-                </div>
-              </div>
-
-              <div style={{ marginTop: "16px", fontSize: "10px", color: "rgba(245,240,232,0.3)", lineHeight: 1.6 }}>
-                All four modules are included in the Complete Package ($1,495). Purchasing individually costs more.{" "}
-                <Link href="/modules" style={{ color: "rgba(201,168,76,0.55)", textDecoration: "none" }}>See full module details →</Link>
-              </div>
+        {/* ─── ADD-ONS ───────────────────────────────────────────────────────── */}
+        {data.application_type !== "complete_partnership" && (
+          <div style={{ padding: "52px 0", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
+            <div style={{ fontSize: "9px", letterSpacing: "0.16em", textTransform: "uppercase" as const, color: "rgba(201,168,76,0.6)", marginBottom: "8px" }}>Add-ons</div>
+            <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "28px", fontWeight: 300, color: "#f5f0e8", marginBottom: "10px" }}>Need more than the Foundation filing?</div>
+            <div style={{ fontSize: "12px", color: "rgba(245,240,232,0.55)", lineHeight: 1.7, maxWidth: "560px", marginBottom: "20px" }}>
+              Market Analysis, FDD Intelligence, and mock interview sessions are available as add-ons on top of Foundation — see full pricing and what&apos;s included in each.
             </div>
-          );
-        })()}
+            <Link
+              href="/pricing"
+              style={{ display: "inline-block", padding: "13px 26px", border: "1px solid rgba(201,168,76,0.45)", color: "#C9A84C", fontSize: "11px", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase" as const, fontFamily: "'DM Sans', sans-serif", textDecoration: "none" }}
+            >
+              View Pricing & Add-ons →
+            </Link>
+          </div>
+        )}
 
         {/* ─── FLAGS — removed from UI ──────────────────────────────────────────── */}
         {(false as boolean) && flagsToShow.length > 0 && (
