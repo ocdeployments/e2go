@@ -8,6 +8,7 @@
  */
 
 import { unsubscribeUrl } from './unsubscribe';
+import { companyFooterLine } from './company';
 
 const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
@@ -54,8 +55,11 @@ export function getBaseHtml(content: string, preheader?: string, recipient?: str
                 e2go.app — document preparation tool, not a law firm.<br>
                 Your data is handled per our <a href="${appUrl}/privacy" style="color: #C9A84C; text-decoration: none;">privacy policy</a>.
               </p>
-              <p style="font-size: 11px; color: rgba(245,240,232,0.68); margin: 0; line-height: 1.6;">
+              <p style="font-size: 11px; color: rgba(245,240,232,0.68); margin: 0 0 8px 0; line-height: 1.6;">
                 To unsubscribe: <a href="${unsubHref}" style="color: rgba(245,240,232,0.72); text-decoration: underline;">unsubscribe</a> | e2go.app | support@e2go.app
+              </p>
+              <p style="font-size: 11px; color: rgba(245,240,232,0.55); margin: 0; line-height: 1.6;">
+                ${companyFooterLine()}
               </p>
             </td>
           </tr>
