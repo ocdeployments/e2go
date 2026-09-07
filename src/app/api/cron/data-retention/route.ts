@@ -28,6 +28,19 @@ const FILE_MAX_AGE_DAYS = 90; // hard cap: delete raw file 90 days after upload
 const FILE_POST_PACKAGE_DAYS = 30; // delete raw file 30 days after package generated
 const DORMANT_MONTHS = 24;
 const BUCKET = 'application-documents';
+const IDENTITY_REDACT_GRACE_DAYS = 1; // redact identity extracted_json 1 cron cycle after fields accepted
+
+// Identity documents whose extracted_json holds raw PII (passport number, DOB,
+// place of birth, …). Once those fields are accepted into `answers` there is no
+// reason to keep a second copy in uploaded_documents.extracted_json.
+const IDENTITY_DOC_TYPES = [
+  'passport',
+  'birth_certificate',
+  'marriage_certificate',
+  'national_id',
+  'government_id',
+  'drivers_license',
+];
 
 function getSupabaseAdmin(): SupabaseClient {
   const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -223,6 +236,56 @@ async function purgeExpiredFiles(supabase: SupabaseClient) {
   return result;
 }
 
+/**
+ * Strip raw PII from uploaded_documents.extracted_json for identity documents
+ * once their fields have been accepted into `answers`. The accepted fields
+ * (name, DOB, nationality, passport number, expiry) are retained in `answers`
+ * — the work product — and only the redundant copy in extracted_json is
+ * overwritten with a marker. Non-identity documents are never touched here:
+ * their extracted_json is load-bearing for the simulator and case intelligence.
+ */
+async function redactAcceptedIdentityDocs(supabase: SupabaseClient) {
+  const result = { redacted: 0, errors: [] as string[] };
+
+  const { data: rows, error } = await supabase
+    .from('uploaded_documents')
+    .select('id, extracted_json, doc_type, fields_accepted, created_at')
+    .in('doc_type', IDENTITY_DOC_TYPES)
+    .gt('fields_accepted', 0)
+    .lt('created_at', daysAgo(IDENTITY_REDACT_GRACE_DAYS));
+
+  if (error) {
+    captureApiError(error, { route: 'cron/data-retention', stage: 'fetch-identity-docs' });
+    result.errors.push(`fetch-identity-docs: ${error.message}`);
+    return result;
+  }
+
+  for (const row of rows ?? []) {
+    const current = row.extracted_json as Record<string, unknown> | null;
+    if (!current || current._redacted === true) continue;
+
+    const { error: updErr } = await supabase
+      .from('uploaded_documents')
+      .update({
+        extracted_json: {
+          _redacted: true,
+          _redacted_at: new Date().toISOString(),
+          _reason: 'identity fields captured to answers',
+        },
+      })
+      .eq('id', row.id);
+
+    if (updErr) {
+      captureApiError(updErr, { route: 'cron/data-retention', stage: 'redact-identity-doc', docId: row.id });
+      result.errors.push(`redact-identity-doc ${row.id}: ${updErr.message}`);
+      continue;
+    }
+    result.redacted += 1;
+  }
+
+  return result;
+}
+
 async function reportDormant(supabase: SupabaseClient) {
   const cutoff = new Date();
   cutoff.setMonth(cutoff.getMonth() - DORMANT_MONTHS);
@@ -255,14 +318,16 @@ export async function GET(request: NextRequest) {
   try {
     const accounts = await purgeDeletedAccounts(supabase);
     const files = await purgeExpiredFiles(supabase);
+    const identity = await redactAcceptedIdentityDocs(supabase);
     const dormant = await reportDormant(supabase);
 
     console.log(
       `[cron/data-retention] accounts purged=${accounts.purged}/${accounts.scanned}, ` +
-        `files purged app=${files.appDocs} fdd=${files.fddDocs}, dormant=${dormant.dormant}`,
+        `files purged app=${files.appDocs} fdd=${files.fddDocs}, ` +
+        `identity extracted_json redacted=${identity.redacted}, dormant=${dormant.dormant}`,
     );
 
-    return NextResponse.json({ ok: true, accounts, files, dormant });
+    return NextResponse.json({ ok: true, accounts, files, identity, dormant });
   } catch (err) {
     captureApiError(err, { route: 'cron/data-retention', stage: 'run' });
     return NextResponse.json({ error: 'Retention run failed' }, { status: 500 });
