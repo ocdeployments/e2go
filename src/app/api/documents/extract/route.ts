@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
         // Fetch all document records
         const { data: documents, error: fetchError } = await supabase
           .from('application_documents')
-          .select('id, original_filename, storage_path, file_type, user_selected_document_type, document_summary')
+          .select('id, original_filename, storage_path, file_type, user_selected_document_type, document_summary, file_purged_at')
           .eq('application_id', applicationId)
           .in('id', documentIds);
 
@@ -111,6 +111,19 @@ export async function POST(request: NextRequest) {
             event: 'document_start',
             data: { documentId: doc.id, filename: doc.original_filename },
           });
+
+          // File was purged under the retention policy — the extracted data
+          // still lives in `answers`, but there is nothing left to re-read.
+          if (doc.file_purged_at) {
+            sendEvent({
+              event: 'document_error',
+              data: {
+                documentId: doc.id,
+                message: 'This file was removed under our data-retention policy. Re-upload it to extract again.',
+              },
+            });
+            continue;
+          }
 
           // Mark as extracting
           await supabase

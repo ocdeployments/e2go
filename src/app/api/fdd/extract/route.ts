@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
         // Fetch the FDD record (verify ownership)
         const { data: fddRecord, error: fetchError } = await serviceClient
           .from('fdd_analyses')
-          .select('extraction_status, storage_path, target_state')
+          .select('extraction_status, storage_path, target_state, file_purged_at')
           .eq('id', fdd_id)
           .eq('user_id', user.id)
           .single();
@@ -71,6 +71,12 @@ export async function POST(request: NextRequest) {
 
         if (fddRecord.extraction_status === 'extracted') {
           send({ event: 'error', data: { message: 'This FDD has already been extracted' } });
+          controller.close();
+          return;
+        }
+
+        if (fddRecord.file_purged_at) {
+          send({ event: 'error', data: { message: 'This FDD file was removed under our data-retention policy. Re-upload it to analyze again.' } });
           controller.close();
           return;
         }
