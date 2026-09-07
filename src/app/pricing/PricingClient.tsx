@@ -57,8 +57,10 @@ export default function PricingPage() {
         // Show the main application packages only — exclude add-ons, utility
         // tiers, and any retired tier whose DB row may not be deactivated yet.
         const UTILITY_TIERS = new Set([
-          // Current USD model — add-ons and utilities, not grid plans
-          'simulator_3pack', 'renewal', 'interview_prep',
+          // Current USD model — add-ons and utilities, not grid plans.
+          // 'interview_prep' is Interview Ready, a real grid plan ($290) —
+          // it stays OFF this list so it renders as its own card.
+          'simulator_3pack', 'renewal',
           'loyalty_upgrade', 'fdd_analysis_addon', 'market_analysis_addon', 'fdd_market_bundle_addon',
           'additional_child', 'child_surcharge',
           // Retired model
