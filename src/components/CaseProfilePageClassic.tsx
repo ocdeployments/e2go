@@ -546,7 +546,29 @@ const EXTRACTION_DESTINATIONS = [
   { label: "Interview Simulator",        detail: "Prep questions grounded in your actual case file" },
 ];
 
-function ExtractionTransparencyPanel({ documents, compact = false }: { documents: DocumentExtractionUI[]; compact?: boolean }) {
+function ExtractionTransparencyPanel({ documents, compact = false, onDeleted }: { documents: DocumentExtractionUI[]; compact?: boolean; onDeleted?: () => void }) {
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  async function handleDelete(doc: DocumentExtractionUI) {
+    if (deletingId) return;
+    if (!window.confirm(`Delete "${doc.fileName}"? Information you have already reviewed and saved to your case stays — only this file's extracted copy is removed.`)) return;
+    setDeletingId(doc.id);
+    setDeleteError(null);
+    try {
+      const res = await fetch(`/api/uploaded-documents/${doc.id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || `Delete failed (${res.status})`);
+      }
+      onDeleted?.();
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : "Delete failed");
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
   if (documents.length === 0) return null;
   if (compact) {
     return (
@@ -597,12 +619,27 @@ function ExtractionTransparencyPanel({ documents, compact = false }: { documents
                   )}
                 </div>
               </div>
-              <div style={{ fontSize: "9px", letterSpacing: "0.08em", textTransform: "uppercase", color: status.color, fontFamily: "'DM Sans', sans-serif", fontWeight: 600, flexShrink: 0 }}>
-                {status.label}
+              <div style={{ display: "flex", alignItems: "center", gap: "12px", flexShrink: 0 }}>
+                <div style={{ fontSize: "9px", letterSpacing: "0.08em", textTransform: "uppercase", color: status.color, fontFamily: "'DM Sans', sans-serif", fontWeight: 600 }}>
+                  {status.label}
+                </div>
+                <button
+                  onClick={() => handleDelete(doc)}
+                  disabled={deletingId === doc.id}
+                  aria-label={`Delete ${doc.fileName}`}
+                  style={{ fontSize: "9px", letterSpacing: "0.06em", textTransform: "uppercase", color: "rgba(248,113,113,0.6)", background: "transparent", border: "1px solid rgba(248,113,113,0.25)", padding: "3px 8px", cursor: deletingId === doc.id ? "default" : "pointer", fontFamily: "'DM Sans', sans-serif", fontWeight: 600, opacity: deletingId === doc.id ? 0.5 : 1 }}
+                >
+                  {deletingId === doc.id ? "Deleting…" : "Delete"}
+                </button>
               </div>
             </div>
           );
         })}
+        {deleteError && (
+          <div style={{ fontSize: "10px", fontFamily: "'DM Sans', sans-serif", color: "#f87171", marginTop: "4px" }}>
+            {deleteError}
+          </div>
+        )}
       </div>
 
       <div style={{ fontSize: "8px", letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(201,168,76,0.38)", fontFamily: "'DM Sans', sans-serif", fontWeight: 600, marginBottom: "8px" }}>
@@ -2076,7 +2113,7 @@ export default function CaseProfilePageClassic() {
           />
         </div>
 
-        <ExtractionTransparencyPanel documents={data.documents} />
+        <ExtractionTransparencyPanel documents={data.documents} onDeleted={reloadProfile} />
 
         {/* ── Sidebar + content layout ─────────────────────────────────── */}
         <div style={{ display: "flex", gap: "40px", alignItems: "flex-start" }}>
