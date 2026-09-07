@@ -29,6 +29,9 @@ export function uploadedDocTypeLabel(value: string | null | undefined): string {
 // uploaded_documents has no document_summary column, only extracted_json.
 export function summarizeExtractedJson(extracted: Record<string, unknown> | null | undefined, maxChars = 220): string {
   if (!extracted) return '';
+  // Identity-document fields are stripped from extracted_json by the data-retention
+  // cron once they are captured into `answers`. See docs/DATA_RETENTION_POLICY.md.
+  if (extracted._redacted === true) return '';
   const parts = Object.entries(extracted)
     .filter(([, v]) => v !== null && v !== undefined && String(v).trim() !== '')
     .slice(0, 6)
