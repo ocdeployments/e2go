@@ -16,6 +16,7 @@ import type {
   Confidence,
 } from '@/types/document-upload';
 import { captureApiError } from '@/lib/capture-error';
+import { logDocumentAccess } from '@/lib/document-access-log';
 
 function _getSupabase() {
   return createClient(
@@ -140,6 +141,15 @@ export async function POST(request: NextRequest) {
             if (downloadError || !fileData) {
               throw new Error(`Failed to download ${doc.original_filename}`);
             }
+
+            await logDocumentAccess({
+              userId: user.id,
+              documentId: doc.id,
+              documentTable: 'application_documents',
+              action: 'extract',
+              docType: doc.user_selected_document_type,
+              fileName: doc.original_filename,
+            });
 
             // Extract text from file
             const arrayBuffer = await fileData.arrayBuffer();
