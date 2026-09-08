@@ -53,6 +53,7 @@ function fmtD(iso: string) {
 export default async function EarlyAccessLeadsPage() {
   await requireAdmin();
 
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
   const admin = getAdmin();
   const { data: leads } = await admin
     .from('early_access_leads')
@@ -78,7 +79,7 @@ export default async function EarlyAccessLeadsPage() {
         <p className="text-sm text-zinc-400">
           Post this link anywhere prospective clients can find it — Facebook groups, forums, DMs:
         </p>
-        <code className="block mt-2 text-[#C9A84C] font-mono text-sm">https://e2go.app/early-access</code>
+        <code className="block mt-2 text-[#C9A84C] font-mono text-sm">{appUrl}/early-access</code>
       </div>
 
       <section>
