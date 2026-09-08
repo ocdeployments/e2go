@@ -217,8 +217,70 @@ async function logRateLimitHit(limiter: string, pathname: string, ip: string): P
   }
 }
 
+// ---------------------------------------------------------------------------
+// Brand-domain gate — e2go.app / www.e2go.app
+// ---------------------------------------------------------------------------
+// The public brand domain shows only the homepage and the early-access page
+// while the rest of the app is still in development; the full app stays
+// reachable at e2go.vercel.app. Gating every path means this middleware must
+// now run on paths the matcher below never used to cover, so
+// `isExistingGatedPath` reproduces those matcher entries as a plain check —
+// keeping every other host on the exact same code path as before for
+// anything outside that list, rather than paying for a Supabase auth lookup
+// on every marketing page.
+const BRAND_HOSTS = new Set(['e2go.app', 'www.e2go.app']);
+
+function isBrandHostAllowedPath(pathname: string): boolean {
+  if (pathname === '/' || pathname === '/early-access') return true;
+  if (pathname.startsWith('/api/early-access')) return true;
+  if (pathname.startsWith('/_next')) return true;
+  if (pathname === '/favicon.ico') return true;
+  // Static assets (images, fonts, etc.) — app routes never carry a file extension.
+  if (/\.[a-zA-Z0-9]+$/.test(pathname)) return true;
+  return false;
+}
+
+function isExistingGatedPath(pathname: string): boolean {
+  return (
+    pathname === '/case-profile' || pathname.startsWith('/case-profile/') ||
+    pathname === '/dashboard' || pathname.startsWith('/dashboard/') ||
+    pathname === '/apply' || pathname.startsWith('/apply/') ||
+    pathname === '/onboarding' || pathname.startsWith('/onboarding/') ||
+    pathname === '/admin' || pathname.startsWith('/admin/') ||
+    pathname === '/score' ||
+    pathname === '/settings' ||
+    pathname.startsWith('/generate/') ||
+    pathname.startsWith('/documents/') ||
+    pathname === '/fdd' || pathname.startsWith('/fdd/') ||
+    pathname.startsWith('/api/fdd/') ||
+    pathname === '/gap-analysis' || pathname.startsWith('/gap-analysis/') ||
+    pathname === '/market-analysis' || pathname.startsWith('/market-analysis/') ||
+    pathname === '/api/market-analysis' ||
+    pathname === '/simulator' || pathname.startsWith('/simulator/') ||
+    pathname === '/login' ||
+    pathname === '/signup' ||
+    pathname === '/api/quiz/submit' ||
+    pathname === '/api/email/results' ||
+    pathname.startsWith('/api/generate/') ||
+    pathname.startsWith('/api/analysis/')
+  );
+}
+
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
+  const host = req.headers.get('host') || '';
+
+  if (BRAND_HOSTS.has(host)) {
+    if (isBrandHostAllowedPath(pathname)) {
+      return NextResponse.next();
+    }
+    return NextResponse.redirect(new URL('/early-access', req.url));
+  }
+
+  if (!isExistingGatedPath(pathname)) {
+    return NextResponse.next();
+  }
+
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() || 'unknown-ip';
 
   // Rate limit login route
@@ -496,5 +558,8 @@ export const config = {
     '/api/email/results',
     '/api/generate/:path*',
     '/api/analysis/:path*',
+    // Brand-domain gate — must see every other path too, so e2go.app /
+    // www.e2go.app can be restricted to the homepage + early-access.
+    '/((?!_next/static|_next/image).*)',
   ],
 };
