@@ -25,12 +25,31 @@ function getClientIp(req: NextRequest): string {
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const VALID_SOURCES = ['facebook_group', 'facebook_group_standalone'] as const;
+
+// This is a public lead-capture endpoint with no cookies/session involved,
+// and it's meant to be embeddable outside the app's own origin (e.g. a
+// standalone sign-up page shared directly to a Facebook group) — so it
+// allows any origin rather than allowlisting one.
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
+};
+
+function jsonResponse(body: Record<string, unknown>, status: number) {
+  return NextResponse.json(body, { status, headers: CORS_HEADERS });
+}
+
+export async function OPTIONS() {
+  return new NextResponse(null, { status: 204, headers: CORS_HEADERS });
+}
 
 export async function POST(req: NextRequest) {
   const ip = getClientIp(req);
   const rateResult = await checkRateLimit(ip, 'early-access-submit');
   if (!rateResult.allowed) {
-    return NextResponse.json({ error: 'Too many submissions — please try again later.' }, { status: 429 });
+    return jsonResponse({ error: 'Too many submissions — please try again later.' }, 429);
   }
 
   let body: {
@@ -38,35 +57,39 @@ export async function POST(req: NextRequest) {
     name?: string;
     country?: string;
     filingTimeline?: string;
+    source?: string;
     company?: string; // honeypot — real users never see or fill this field
   };
   try {
     body = await req.json();
   } catch {
-    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
+    return jsonResponse({ error: 'Invalid request body' }, 400);
   }
 
   // Honeypot: bots that fill every field trip this; humans never see it (hidden via CSS).
   if (body.company) {
-    return NextResponse.json({ ok: true });
+    return jsonResponse({ ok: true }, 200);
   }
 
   const email = body.email?.trim().toLowerCase();
   const name = body.name?.trim();
   const country = body.country?.trim();
   const filingTimeline = body.filingTimeline;
+  const source = VALID_SOURCES.includes(body.source as typeof VALID_SOURCES[number])
+    ? (body.source as typeof VALID_SOURCES[number])
+    : 'facebook_group';
 
   if (!email || !EMAIL_RE.test(email)) {
-    return NextResponse.json({ error: 'A valid email is required' }, { status: 400 });
+    return jsonResponse({ error: 'A valid email is required' }, 400);
   }
   if (!name) {
-    return NextResponse.json({ error: 'Name is required' }, { status: 400 });
+    return jsonResponse({ error: 'Name is required' }, 400);
   }
   if (!country) {
-    return NextResponse.json({ error: 'Country of residence is required' }, { status: 400 });
+    return jsonResponse({ error: 'Country of residence is required' }, 400);
   }
   if (!filingTimeline || !VALID_TIMELINES.includes(filingTimeline as FilingTimeline)) {
-    return NextResponse.json({ error: 'Please select a filing timeline' }, { status: 400 });
+    return jsonResponse({ error: 'Please select a filing timeline' }, 400);
   }
 
   const admin = getAdmin();
@@ -78,15 +101,15 @@ export async function POST(req: NextRequest) {
         name,
         country,
         filing_timeline: filingTimeline,
-        source: 'facebook_group',
+        source,
       },
       { onConflict: 'email' }
     );
 
   if (upsertErr) {
     captureApiError(upsertErr, { route: 'early-access', stage: 'upsert', email });
-    return NextResponse.json({ error: 'Something went wrong — please try again.' }, { status: 500 });
+    return jsonResponse({ error: 'Something went wrong — please try again.' }, 500);
   }
 
-  return NextResponse.json({ ok: true });
+  return jsonResponse({ ok: true }, 200);
 }
