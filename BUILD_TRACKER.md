@@ -52,7 +52,7 @@ ALTER TABLE early_access_leads ENABLE ROW LEVEL SECURITY;
 -- (public submit API route + admin page), same as payments/applications.
 ```
 
-Once that's run, the link to post is **`https://e2go.app/early-access`**, and submissions will show up at **`https://e2go.app/admin/early-access`**.
+Once that's run, the link to post is **`https://e2go.vercel.app/early-access`** (the app's real live URL today — `e2go.app` is still the WordPress marketing site until launch cutover, per [[project_domain_hosting]]), and submissions will show up at **`https://e2go.vercel.app/admin/early-access`**. The admin page reads `NEXT_PUBLIC_APP_URL` rather than hardcoding the domain, so this link updates itself automatically when the app moves to `e2go.app`.
 
 ### Not yet done
 - Code not yet committed to git — asking Romy first, per the "never commit unless explicitly asked" rule.
