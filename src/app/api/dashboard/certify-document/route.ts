@@ -61,13 +61,35 @@ export async function POST(request: Request) {
 
   if (!app) return new NextResponse('Not found', { status: 404 });
 
-  // Fetch existing locked_passages to merge
-  const { data: existing } = await supabase
+  // Fetch existing locked_passages to merge, plus the quality-gate verdict
+  const { data: existing, error: existingError } = await supabase
     .from('generated_documents')
-    .select('locked_passages')
+    .select('locked_passages, quality_gate_passed, quality_gate_notes')
     .eq('application_id', applicationId)
     .eq('document_type', documentType)
     .maybeSingle();
+
+  if (existingError) {
+    captureApiError(existingError, { route: 'dashboard/certify-document', userId: user.id, applicationId, documentType });
+    return NextResponse.json({ error: 'Failed to load document' }, { status: 500 });
+  }
+
+  // Gap 3 — a document that failed the legal-boundary quality gate is held for
+  // e2go review and cannot be certified by the client. Detect-and-block, not
+  // detect-and-flag: this is the last gate before the doc reaches a package.
+  if (existing?.quality_gate_passed === false) {
+    const notes = (existing.quality_gate_notes as string[] | null) ?? [];
+    const reason =
+      notes.find(n => /forbidden legal conclusion/i.test(n)) ?? notes[0] ?? 'quality gate not passed';
+    return NextResponse.json(
+      {
+        error: 'This document is held for e2go review and cannot be certified yet.',
+        reason,
+        held: true,
+      },
+      { status: 409 }
+    );
+  }
 
   const existingLocks = (existing?.locked_passages as string[] | null) ?? [];
   const newLocks = lockedPassages ?? [];
