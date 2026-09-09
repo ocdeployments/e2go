@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import FaqWidget from '@/components/landing/FaqWidget';
 
 const TIMELINES = [
   { value: 'asap', label: 'As soon as possible' },
@@ -180,6 +181,10 @@ export default function EarlyAccessPage() {
           </div>
 
         </form>
+      </div>
+
+      <div style={{ maxWidth: '672px', margin: '32px auto 0', borderTop: '1px solid rgba(201,168,76,0.12)' }}>
+        <FaqWidget />
       </div>
     </main>
   );
