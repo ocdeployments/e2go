@@ -87,6 +87,15 @@ Once that's run, the link to post is **`https://e2go.vercel.app/early-access`** 
 5. Insurance policies issued to "Prodigal Son IT Solutions LLC".
 6. Fill `COMPANY_POSTAL_ADDRESS` in `src/lib/emails/company.ts` (registered-agent / virtual-mailbox address) before any marketing email.
 
+### Follow-up (September 9, 2026)
+- `df9c0be` — `terms/TermsClient.tsx`: bumped the "Last updated" header `June 2026` → `September 2026` (the entity-name rewrite was substantive enough to warrant it). Landed first as `edff52e` on `main` by accident — HEAD was transiently on `main` during another session's dev→main catch-up merge — then cherry-picked (`-x`) onto `dev` as `df9c0be`.
+- **`main` / `origin/main` advanced past Session 81 for the first time** via `10ae50b Merge dev into main — catch up 607 commits (Sessions 82–141)`, done by a concurrent session (not this one). `main` now carries the entity-naming work + the date bump.
+
+### Deploy status — LIVE on production
+- **Entity-name changes:** live via Vercel deploy `e2go-oc3r4iaxp` (from `origin/dev`, ~Sept 8). Verified on `e2go.vercel.app`: `/terms`, `/privacy`, and the homepage footer all render "Prodigal Son IT Solutions LLC".
+- **Terms date bump (`df9c0be`):** live via deploy `e2go-pcfc9kgjy` (`dpl_5RZsPR69VZ3mDy23w6hMuASbG5vJ`, Sept 9, READY, aliased to `https://e2go.app`). Verified: `e2go.vercel.app/terms` shows "Last updated: September 2026".
+- The Sept 9 prod deploy also shipped Session 141's `/early-access` lead-capture work and the `e2go.app` brand-host gating (apex serves homepage + early-access only; `e2go.vercel.app` still serves the full app).
+
 ---
 
 ## Session 139 — deferred P2 hardening (September 7, 2026)
