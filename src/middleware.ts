@@ -233,6 +233,7 @@ const BRAND_HOSTS = new Set(['e2go.app', 'www.e2go.app']);
 function isBrandHostAllowedPath(pathname: string): boolean {
   if (pathname === '/' || pathname === '/early-access') return true;
   if (pathname.startsWith('/api/early-access')) return true;
+  if (pathname === '/api/_sentry-tunnel') return true;
   if (pathname.startsWith('/_next')) return true;
   if (pathname === '/favicon.ico') return true;
   // Static assets (images, fonts, etc.) — app routes never carry a file extension.
