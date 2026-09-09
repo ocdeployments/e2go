@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { captureApiError } from '@/lib/capture-error';
+import { sendEarlyAccessWelcomeEmail } from '@/lib/emails/early-access-welcome';
 
 export const dynamic = 'force-dynamic';
 
@@ -110,6 +111,12 @@ export async function POST(req: NextRequest) {
     captureApiError(upsertErr, { route: 'early-access', stage: 'upsert', email });
     return jsonResponse({ error: 'Something went wrong — please try again.' }, 500);
   }
+
+  // Best-effort: a failed welcome email should never fail a signup that
+  // already succeeded in the database.
+  sendEarlyAccessWelcomeEmail(name, email).catch((e) =>
+    captureApiError(e, { route: 'early-access', stage: 'welcome-email', email })
+  );
 
   return jsonResponse({ ok: true }, 200);
 }
