@@ -210,7 +210,7 @@ export function ComparisonSection() {
                   textTransform: 'uppercase',
                   letterSpacing: '0.1em',
                 }}>
-                  Typical timeline
+                  Typical timeline*
                 </span>
                 <span style={{
                   fontFamily: '"Cormorant Garamond", serif',
@@ -227,6 +227,17 @@ export function ComparisonSection() {
                 fontWeight: 300,
                 color: 'rgba(245,240,232,0.68)',
                 margin: '10px 0 0',
+                lineHeight: 1.6,
+              }}>
+                *Set by you, not the platform — document generation is instant;
+                this reflects how quickly you answer questions and upload documents.
+              </p>
+              <p style={{
+                fontFamily: 'DM Sans, sans-serif',
+                fontSize: '11px',
+                fontWeight: 300,
+                color: 'rgba(245,240,232,0.68)',
+                margin: '6px 0 0',
                 lineHeight: 1.6,
               }}>
                 Attorney review optional — typically reduced to $1,500–$3,000
