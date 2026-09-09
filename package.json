@@ -9,10 +9,10 @@
     "start": "next start",
     "lint": "next lint",
     "prepare": "husky install",
-    "qa": "tsc --noEmit && npm run build && npx playwright test",
+    "qa": "tsc --noEmit && npm test && npm run build && npx playwright test",
     "security:audit": "npm audit --audit-level=high",
     "qa:snapshot": "bash scripts/qa-snapshot.sh",
-    "test": "echo test"
+    "test": "jest"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.100.1",
@@ -26,10 +26,12 @@
     "@types/dompurify": "^3.0.5",
     "@upstash/ratelimit": "^2.0.8",
     "@upstash/redis": "^1.38.0",
+    "date-fns": "^4.4.0",
     "docx": "^9.7.1",
     "dompurify": "^3.4.11",
     "glob": "^10.5.0",
     "jszip": "^3.10.1",
+    "libphonenumber-js": "^1.13.8",
     "lucide-react": "^1.17.0",
     "mammoth": "^1.12.0",
     "motion": "^12.40.0",
@@ -41,7 +43,8 @@
     "react-dom": "^18",
     "resend": "^6.12.4",
     "stripe": "^22.2.0",
-    "xlsx": "^0.18.5"
+    "xlsx": "^0.18.5",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@playwright/test": "^1.60.0",

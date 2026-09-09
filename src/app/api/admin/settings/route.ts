@@ -30,6 +30,9 @@ async function getRequestingAdmin(): Promise<string | null> {
 }
 
 export async function GET() {
+  const adminId = await getRequestingAdmin();
+  if (!adminId) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+
   const admin = getAdmin();
   const { data } = await admin.from('app_settings').select('key, value').in('key', ALLOWED_KEYS);
   return NextResponse.json(Object.fromEntries((data ?? []).map(r => [r.key, r.value])));

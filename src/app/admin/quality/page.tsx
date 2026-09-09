@@ -34,7 +34,8 @@ type PipelineLogRow = {
   stage3_detection_score: number | null;
   stage3_attempts: number | null;
   final_status: string | null;
-  created_at: string;
+  /** The pipeline log has no created_at; this is when the run began. */
+  pipeline_started_at: string;
 };
 
 type JobRow = {
@@ -45,7 +46,6 @@ type JobRow = {
 type FddRow = {
   extraction_status: string | null;
   flag_count: number | null;
-  low_confidence_count: number | null;
   extracted_fields: Record<string, unknown> | null;
   created_at: string;
 };
@@ -61,8 +61,9 @@ type SimRow = {
   completed_at: string | null;
 };
 
-type DownloadRow = {
-  downloaded_at: string | null;
+type ReleaseRow = {
+  released_at: string | null;
+  acknowledged_at: string | null;
   applicant_acknowledged: boolean | null;
 };
 
@@ -90,14 +91,30 @@ function countFddFields(fields: Record<string, unknown> | null): number {
   }).length;
 }
 
+/**
+ * Low-confidence field count, derived rather than read back.
+ *
+ * The extraction engine computes this number and streams it to the client, but
+ * never writes it: `fdd_analyses` has no low_confidence_count column, so the
+ * select naming it errored and the whole FDD panel read as empty. The stored
+ * `extracted_fields` carries the same per-field `_conf` marks the engine counts
+ * from, so the number is recoverable from what was saved — no column needed.
+ */
+function countLowConfidenceFields(fields: Record<string, unknown> | null): number {
+  if (!fields) return 0;
+  return Object.values(fields).filter(
+    (v) => typeof v === 'object' && v !== null && (v as { _conf?: string })._conf === 'low'
+  ).length;
+}
+
 // PROMPT VERSION REGISTRY — update this whenever a prompt changes
 const PROMPT_REGISTRY = [
   { route: '/api/simulator/evaluate', model: 'xiaomi/mimo-v2.5 → gemini-2.5-flash → claude-haiku', version: 'v3 (Jun 2026)', notes: 'Added KB knowledge + document cross-reference' },
-  { route: '/api/simulator/coaching-report', model: 'xiaomi/mimo-v2.5-pro → gemini-2.5-pro', version: 'v2 (Jun 2026)', notes: 'Multi-session memory, cross-session coaching' },
+  { route: '/api/simulator/coaching-report', model: 'z-ai/glm-5.2 → mimo-v2.5-pro → gemini-2.5-pro', version: 'v3 (Jul 2026)', notes: 'Multi-session memory, cross-session coaching' },
   { route: '/api/simulator/follow-up', model: 'xiaomi/mimo-v2.5', version: 'v1 (May 2026)', notes: 'Single-turn probe on weak answers' },
   { route: '/api/faq/ask', model: 'xiaomi/mimo-v2.5 → gemini-2.5-flash', version: 'v2 (Jun 2026)', notes: 'Removed Anthropic fallback; OpenRouter-only' },
-  { route: '/api/fdd/extract', model: 'claude-sonnet-4-6 (via ANTHROPIC)', version: 'v2 (Jun 2026)', notes: '50-field schema, territory analysis' },
-  { route: 'generation-engine (doc gen)', model: 'claude-sonnet-4-6 (via ANTHROPIC)', version: 'v3 (Jun 2026)', notes: 'KB injection, humanization loop, consistency gate' },
+  { route: 'FDD engines (extract/report/territory/questions/score)', model: 'claude-opus-4-8 → claude-sonnet-5 → z-ai/glm-5.2', version: 'v3 (Jul 2026)', notes: '50-field schema, territory analysis, FDD chain via callFDDModel' },
+  { route: 'generation-engine (doc gen)', model: 'claude-opus-4-8; non-business-plan fallback glm-5.2 → mimo → mimo-pro → gemini-2.5-pro', version: 'v4 (Jul 2026)', notes: 'KB injection, humanization loop, consistency gate' },
   { route: '/api/gap-analysis', model: 'xiaomi/mimo-v2.5-pro', version: 'v1 (May 2026)', notes: 'Case profile build + gap scoring' },
 ];
 
@@ -112,17 +129,17 @@ export default async function QualityPage() {
     { data: fddRows },
     { data: npsRows },
     { data: simRows },
-    { data: downloadRows },
+    { data: releaseRows },
   ] = await Promise.all([
     admin.from('generation_pipeline_log')
-      .select('document_type, stage3_detection_score, stage3_attempts, final_status, created_at')
-      .gte('created_at', thirtyDaysAgo)
-      .order('created_at', { ascending: false }),
+      .select('document_type, stage3_detection_score, stage3_attempts, final_status, pipeline_started_at')
+      .gte('pipeline_started_at', thirtyDaysAgo)
+      .order('pipeline_started_at', { ascending: false }),
     admin.from('document_generation_jobs')
       .select('status, created_at')
       .gte('created_at', thirtyDaysAgo),
     admin.from('fdd_analyses')
-      .select('extraction_status, flag_count, low_confidence_count, extracted_fields, created_at')
+      .select('extraction_status, flag_count, extracted_fields, created_at')
       .gte('created_at', thirtyDaysAgo),
     admin.from('nps_scores')
       .select('score, created_at')
@@ -132,9 +149,9 @@ export default async function QualityPage() {
       .select('user_id, readiness_indicator, completed_at')
       .gte('created_at', thirtyDaysAgo),
     admin.from('generation_pipeline_log')
-      .select('downloaded_at, applicant_acknowledged')
-      .eq('applicant_acknowledged', true)
-      .gte('created_at', thirtyDaysAgo),
+      .select('released_at, acknowledged_at, applicant_acknowledged')
+      .not('released_at', 'is', null)
+      .gte('pipeline_started_at', thirtyDaysAgo),
   ]);
 
   const logs      = (pipelineLogs ?? []) as PipelineLogRow[];
@@ -142,7 +159,7 @@ export default async function QualityPage() {
   const fdds      = (fddRows ?? []) as FddRow[];
   const nps       = (npsRows ?? []) as NpsRow[];
   const sims      = (simRows ?? []) as SimRow[];
-  const downloads = (downloadRows ?? []) as DownloadRow[];
+  const releases  = (releaseRows ?? []) as ReleaseRow[];
 
   // ── Generation quality ────────────────────────────────────────────────────
   const logsWithScore = logs.filter(l => l.stage3_detection_score !== null);
@@ -174,7 +191,7 @@ export default async function QualityPage() {
   const avgFields = avg(fieldCounts);
   const belowThresholdCount = fieldCounts.filter(n => n < 5).length;
   const avgFlags = avg(extractedFdds.map(f => f.flag_count ?? 0));
-  const avgLowConf = avg(extractedFdds.map(f => f.low_confidence_count ?? 0));
+  const avgLowConf = avg(extractedFdds.map(f => countLowConfidenceFields(f.extracted_fields)));
 
   // ── NPS ───────────────────────────────────────────────────────────────────
   const npsTotal = nps.length;
@@ -194,10 +211,23 @@ export default async function QualityPage() {
   const uniqueSimUsers    = new Set(sims.map(s => s.user_id)).size;
   const avgSimsPerUser    = uniqueSimUsers > 0 ? (totalSimSessions / uniqueSimUsers).toFixed(1) : '—';
 
-  // ── Document download rate ────────────────────────────────────────────────
-  const acknowledgedCount = downloads.length;
-  const downloadedCount   = downloads.filter(d => d.downloaded_at !== null).length;
-  const downloadRate      = acknowledgedCount > 0 ? Math.round((downloadedCount / acknowledgedCount) * 100) : null;
+  /**
+   * ── Package acknowledgement rate ─────────────────────────────────────────
+   *
+   * This was a download rate, built on a downloaded_at column that does not
+   * exist — so both counts read zero and the panel was never true. Nothing
+   * anywhere records a file download.
+   *
+   * What the pipeline log does record is release (documents made available)
+   * and acknowledgement (the client confirming they have seen them). That is a
+   * slightly different question from "did they collect the files", and the
+   * labels say so rather than borrowing the old word.
+   */
+  const releasedCount     = releases.length;
+  const acknowledgedCount = releases.filter(
+    r => r.applicant_acknowledged === true || r.acknowledged_at !== null,
+  ).length;
+  const ackRate = releasedCount > 0 ? Math.round((acknowledgedCount / releasedCount) * 100) : null;
 
   return (
     <main className="min-h-screen bg-[#0a0a0a] text-white px-6 py-10 max-w-7xl mx-auto">
@@ -333,16 +363,16 @@ export default async function QualityPage() {
         )}
       </Section>
 
-      {/* ── Document Download Rate ── */}
-      <Section title="Document Download Rate">
+      {/* ── Package Acknowledgement Rate ── */}
+      <Section title="Package Acknowledgement Rate">
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-          <Metric label="Acknowledged (unlocked)" value={String(acknowledgedCount)} sub="Users who passed quality gate (30d)" />
-          <Metric label="Downloaded ZIP" value={String(downloadedCount)} sub="Users who clicked download" />
-          <Metric label="Download rate" value={downloadRate !== null ? `${downloadRate}%` : '—'}
-            sub={downloadRate !== null ? (downloadRate >= 80 ? 'Strong' : downloadRate >= 50 ? 'Moderate — investigate drop-off' : '⚠ Low — funnel leak after unlock') : 'No data yet'} />
+          <Metric label="Released" value={String(releasedCount)} sub="Packages made available (30d)" />
+          <Metric label="Acknowledged" value={String(acknowledgedCount)} sub="Clients who confirmed receipt" />
+          <Metric label="Acknowledgement rate" value={ackRate !== null ? `${ackRate}%` : '—'}
+            sub={ackRate !== null ? (ackRate >= 80 ? 'Strong' : ackRate >= 50 ? 'Moderate — investigate drop-off' : '⚠ Low — funnel leak after release') : 'No data yet'} />
         </div>
-        {acknowledgedCount === 0 && (
-          <p className="text-zinc-600 text-sm">No acknowledged packages in the last 30 days.</p>
+        {releasedCount === 0 && (
+          <p className="text-zinc-600 text-sm">No packages released in the last 30 days.</p>
         )}
       </Section>
 

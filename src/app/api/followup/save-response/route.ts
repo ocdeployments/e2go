@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
+import { captureApiError } from '@/lib/capture-error';
 
 function getSupabase() {
   return createClient(
@@ -96,7 +97,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (responseError) {
-      console.error('Response save error:', responseError);
+      captureApiError(responseError, { route: 'followup/save-response', userId: user.id, applicationId });
       return NextResponse.json({ error: 'Failed to save response' }, { status: 500 });
     }
 
@@ -106,7 +107,7 @@ export async function POST(request: NextRequest) {
       relevantDocuments,
     });
   } catch (error) {
-    console.error('Save response error:', error);
+    captureApiError(error, { route: 'followup/save-response' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

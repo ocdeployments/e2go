@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import Link from 'next/link';
+import { buildLifecycleTimeline, LIFECYCLE_TIMELINE_COLUMNS } from '@/lib/lifecycle-timeline';
 import { notFound } from 'next/navigation';
 import TierOverridePanel from './TierOverridePanel';
 import SendEmailPanel from './SendEmailPanel';
@@ -38,22 +39,36 @@ type PaymentRow = { id: string; tier: string | null; payment_type: string | null
 type QuizRow = { id: string; outcome: string | null; application_type: string | null; completed_at: string | null };
 type SimRow = { id: string; readiness_indicator: string | null; completed_at: string | null };
 type JobRow = { id: string; status: string; current_step_label: string; updated_at: string };
-type LifecycleRow = { id: string; event: string; created_at: string; details?: Record<string, unknown> | null };
 type CostRow = { task: string | null; cost_usd: number; tokens_in: number | null; tokens_out: number | null };
 type AuditRow = { id: string; admin_user_id: string; action: string; details: Record<string, unknown> | null; created_at: string };
 type CaseProfileRow = { archetype: string | null; completeness_score: number | null; updated_at: string | null };
 
+// Display-only: translates historical payments.tier / payment_type values for
+// the admin user detail view. New keys are the current USD model
+// (src/lib/pricing-tier.ts); older keys are kept so past rows still get a label.
 const TIER_LABELS: Record<string, string> = {
-  solo: 'Solo ($550)',
-  solo_spouse: 'Solo+Spouse ($697)',
-  solo_family_2: 'Family-2 ($750)',
-  solo_family_5: 'Family-5 ($797)',
-  partnership: 'Partnership ($997)',
-  partnership_couples: 'Partnership+Couples ($1,297)',
-  partnership_families: 'Partnership+Families ($1,397)',
-  fdd_intelligence: 'FDD Intelligence ($297)',
-  simulator_3pack: 'Simulator 3-Pack ($29.99)',
-  renewal: 'Renewal ($497)',
+  // Current USD model
+  foundation: 'Foundation ($990)',
+  investor_ready: 'Investor Ready ($390)',
+  interview_prep: 'Interview Ready ($290)',
+  visa_ready: 'Visa Ready ($1,490)',
+  loyalty_upgrade: 'Loyalty Upgrade',
+  fdd_analysis_addon: 'Add-on — FDD Analysis',
+  market_analysis_addon: 'Add-on — Market Analysis',
+  fdd_market_bundle_addon: 'Add-on — FDD + Market',
+  simulator_3pack: 'Simulator 3-Pack ($49)',
+  renewal: 'Renewal ($99)',
+  // Retired models
+  fdd_intelligence: 'FDD Intelligence ($297) — retired',
+  complete: 'Complete ($1,495) — retired',
+  complete_partnership: 'Complete — Partnership ($2,495) — retired',
+  solo: 'Solo ($550) — retired',
+  solo_spouse: 'Solo+Spouse ($697) — retired',
+  solo_family_2: 'Family-2 ($750) — retired',
+  solo_family_5: 'Family-5 ($797) — retired',
+  partnership: 'Partnership ($997) — retired',
+  partnership_couples: 'Partnership+Couples ($1,297) — retired',
+  partnership_families: 'Partnership+Families ($1,397) — retired',
 };
 
 function fmtD(iso: string | null) {
@@ -92,9 +107,9 @@ export default async function UserDetailPage({ params }: { params: Promise<{ use
     admin.from('applications').select('id, status, source, created_at').eq('user_id', userId).order('created_at', { ascending: false }),
     admin.from('payments').select('id, tier, payment_type, amount_cents, amount_paid, status, created_at').eq('user_id', userId).order('created_at', { ascending: false }),
     admin.from('quiz_sessions').select('id, outcome, application_type, completed_at').eq('user_id', userId).order('completed_at', { ascending: false }).limit(3),
-    admin.from('simulation_sessions').select('id, readiness_indicator, completed_at').eq('user_id', userId).order('completed_at', { ascending: false }).limit(3),
+    admin.from('simulator_sessions').select('id, readiness_indicator, completed_at').eq('user_id', userId).order('completed_at', { ascending: false }).limit(3),
     admin.from('document_generation_jobs').select('id, status, current_step_label, updated_at').eq('user_id', userId).order('updated_at', { ascending: false }).limit(3),
-    admin.from('application_lifecycle').select('id, event, created_at, details').eq('user_id', userId).order('created_at', { ascending: false }),
+    admin.from('application_lifecycle').select(LIFECYCLE_TIMELINE_COLUMNS).eq('user_id', userId).maybeSingle(),
     admin.from('llm_cost_log').select('task, cost_usd, tokens_in, tokens_out').eq('user_id', userId).gte('created_at', thirtyDaysAgo),
     admin.from('admin_audit_log').select('id, admin_user_id, action, details, created_at').eq('target_user_id', userId).order('created_at', { ascending: false }).limit(20),
     admin.from('case_profiles').select('archetype, completeness_score, updated_at').eq('user_id', userId).order('updated_at', { ascending: false }).limit(1).single(),
@@ -109,7 +124,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ use
   const typedQuiz = (quizSessions ?? []) as QuizRow[];
   const typedSims = (simSessions ?? []) as SimRow[];
   const typedJobs = (genJobs ?? []) as JobRow[];
-  const typedLifecycle = (lifecycle ?? []) as LifecycleRow[];
+  const timeline = buildLifecycleTimeline(lifecycle as Record<string, unknown> | null);
   const typedAudit = (auditLogs ?? []) as AuditRow[];
   const typedProfile2 = caseProfile as CaseProfileRow | null;
 
@@ -189,7 +204,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ use
           <Stat label="Applications"       value={String(typedApps.length)} />
           <Stat label="Total paid"         value={totalPaid > 0 ? `$${(totalPaid / 100).toFixed(2)}` : '$0'} />
           <Stat label="Archetype"          value={typedProfile2?.archetype ?? '—'} />
-          <Stat label="Completeness"       value={typedProfile2?.completeness_score != null ? `${Math.round(typedProfile2.completeness_score * 100)}%` : '—'} />
+          <Stat label="Completeness"       value={typedProfile2?.completeness_score != null ? `${Math.round(typedProfile2.completeness_score)}%` : '—'} />
           <Stat label="Quiz sessions"      value={String(typedQuiz.length)} />
           <Stat label="Sim sessions"       value={String(typedSims.length)} />
           <Stat label="AI cost (30d)"      value={totalCost > 0 ? `$${totalCost.toFixed(4)}` : '$0'} />
@@ -199,20 +214,15 @@ export default async function UserDetailPage({ params }: { params: Promise<{ use
       {/* Application timeline */}
       <section className="mb-10">
         <SectionTitle>Application Timeline</SectionTitle>
-        {typedLifecycle.length === 0 ? (
-          <div className="text-zinc-600 text-sm">No lifecycle events recorded.</div>
+        {timeline.length === 0 ? (
+          <div className="text-zinc-600 text-sm">No milestones reached yet.</div>
         ) : (
           <div className="relative pl-4 border-l border-zinc-800 space-y-3 max-h-80 overflow-y-auto">
-            {typedLifecycle.slice(0, 50).map(ev => (
-              <div key={ev.id} className="flex gap-3 items-baseline">
+            {timeline.map(m => (
+              <div key={m.key} className="flex gap-3 items-baseline">
                 <div className="w-2 h-2 rounded-full bg-[#C9A84C]/40 flex-shrink-0 mt-1 -ml-5" />
-                <div className="flex-1">
-                  <span className="text-xs font-medium text-zinc-300">{ev.event.replace(/_/g, ' ')}</span>
-                  {ev.details && Object.keys(ev.details).length > 0 && (
-                    <span className="text-[10px] text-zinc-600 ml-2">({JSON.stringify(ev.details).slice(0, 60)})</span>
-                  )}
-                </div>
-                <span className="text-[10px] text-zinc-600 flex-shrink-0">{fmtDT(ev.created_at)}</span>
+                <span className="flex-1 text-xs font-medium text-zinc-300">{m.label}</span>
+                <span className="text-[10px] text-zinc-600 flex-shrink-0">{fmtDT(m.at)}</span>
               </div>
             ))}
           </div>

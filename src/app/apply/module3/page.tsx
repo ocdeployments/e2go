@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useTrackSectionVisit } from "@/hooks/useTrackSectionVisit";
 import { useRouter } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
+import { useApplicationGate } from "@/hooks/useApplicationGate";
+import ApplicationNotReadyScreen from "@/components/apply/ApplicationNotReadyScreen";
 
 interface TabStatus {
   letter: string;
@@ -28,6 +30,7 @@ export default function Module3Overview() {
   useTrackSectionVisit("module3");
 
   const router = useRouter();
+  const { status: gateStatus, applicationId: gateAppId, retry } = useApplicationGate();
   const [tabs, setTabs] = useState<TabStatus[]>(
     TABS.map((t) => ({
       ...t,
@@ -40,32 +43,11 @@ export default function Module3Overview() {
   const [applicationId, setApplicationId] = useState<string>("");
 
   useEffect(() => {
+    if (gateStatus !== "ready" || !gateAppId) return;
     const loadStatus = async () => {
       try {
         const supabase = createBrowserSupabaseClient();
-
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-        if (!user) {
-          setLoading(false);
-          return;
-        }
-
-
-        const { data: apps } = await supabase
-          .from("applications")
-          .select("id")
-          .eq("user_id", user.id)
-          .order("created_at", { ascending: false })
-          .limit(1);
-
-        if (!apps || apps.length === 0) {
-          setLoading(false);
-          return;
-        }
-
-        const appId = apps[0].id;
+        const appId = gateAppId;
         setApplicationId(appId);
 
         const { data: answers } = await supabase
@@ -97,7 +79,7 @@ export default function Module3Overview() {
     };
 
     loadStatus();
-  }, []);
+  }, [gateStatus, gateAppId]);
 
   const allComplete = tabs.every((t) => t.complete);
 
@@ -109,7 +91,16 @@ export default function Module3Overview() {
 
   const completedCount = tabs.filter((t) => t.complete).length;
 
-  if (loading) {
+  if (gateStatus === "no-user") {
+    router.push("/login");
+    return null;
+  }
+
+  if (gateStatus === "not-ready") {
+    return <ApplicationNotReadyScreen onRetry={retry} />;
+  }
+
+  if (loading || gateStatus === "loading") {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#0a0a0a]">
         <p className="text-sm text-white/30" style={{ fontFamily: "'DM Sans', sans-serif" }}>

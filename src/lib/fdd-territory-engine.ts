@@ -10,10 +10,9 @@
 //   Census ACS 5-year — population, income, demographics, households, employment
 //   Google Places API — competitive scan (optional, degrades gracefully)
 
-import Anthropic from '@anthropic-ai/sdk';
 import type { FddExtractedFields } from '@/types/fdd';
-
-const anthropic = new Anthropic();
+import { computeOdeProxy, classifyOde } from '@/lib/fdd-ode-engine';
+import { callFDDModel } from '@/lib/llm-client';
 
 // ============================================================================
 // Types
@@ -74,6 +73,7 @@ export interface TerritoryAnalysis {
   radius_miles: number;
 
   census: CensusData;
+  census_source: string; // discloses the ACS vintage so users know how current the data is
   competitors: CompetitorData;
 
   population_score: DimensionScore;
@@ -127,6 +127,20 @@ const WEIGHTS_BY_CATEGORY: Record<string, CategoryWeights> = {
 const DEFAULT_WEIGHTS: CategoryWeights = {
   population: 0.25, income: 0.30, competition: 0.20, demographic_fit: 0.15, labor_market: 0.10,
 };
+
+// Dimensions with data_available: false carry a neutral sentinel score (50/60)
+// rather than a real measurement — folding that into the weighted average would
+// silently drag or prop the overall score with a fabricated number. Exclude
+// unavailable dimensions and renormalize the remaining weights to sum to 1.0.
+function computeWeightedOverallScore(
+  dims: { score: DimensionScore; weight: number }[]
+): number {
+  const available = dims.filter(d => d.score.data_available);
+  if (available.length === 0) return 50;
+  const weightSum = available.reduce((sum, d) => sum + d.weight, 0);
+  const weighted = available.reduce((sum, d) => sum + d.score.score * d.weight, 0);
+  return Math.round(weighted / weightSum);
+}
 
 const RADIUS_BY_CATEGORY: Record<string, number> = {
   home_services: 15,
@@ -216,7 +230,12 @@ export function classifyCategory(fields: FddExtractedFields): string {
 // Census ACS 5-year API
 // ============================================================================
 
-const CENSUS_BASE = 'https://api.census.gov/data/2022/acs/acs5';
+// Bump when a newer ACS 5-year vintage is published (2023 data releases ~Dec 2024,
+// 2024 data releases ~Dec 2025) — single place to update, and the vintage is
+// surfaced to the user via `census_source` so nobody assumes it's current-year.
+const CENSUS_VINTAGE = '2022';
+const CENSUS_BASE = `https://api.census.gov/data/${CENSUS_VINTAGE}/acs/acs5`;
+const CENSUS_SOURCE_LABEL = `U.S. Census Bureau, American Community Survey 5-Year Estimates (${CENSUS_VINTAGE} vintage)`;
 
 const CENSUS_VARS = [
   'B01003_001E', // total population
@@ -235,18 +254,15 @@ const CENSUS_VARS = [
   'B11003_003E', // married-couple family HH with own children under 18
 ].join(',');
 
-const STATE_FIPS: Record<string, string> = {
-  AL:'01',AK:'02',AZ:'04',AR:'05',CA:'06',CO:'08',CT:'09',DE:'10',FL:'12',GA:'13',
-  HI:'15',ID:'16',IL:'17',IN:'18',IA:'19',KS:'20',KY:'21',LA:'22',ME:'23',MD:'24',
-  MA:'25',MI:'26',MN:'27',MS:'28',MO:'29',MT:'30',NE:'31',NV:'32',NH:'33',NJ:'34',
-  NM:'35',NY:'36',NC:'37',ND:'38',OH:'39',OK:'40',OR:'41',PA:'42',RI:'44',SC:'45',
-  SD:'46',TN:'47',TX:'48',UT:'49',VT:'50',VA:'51',WA:'53',WV:'54',WI:'55',WY:'56',
-  DC:'11',
-};
-
-async function fetchCensusData(zip: string, state: string): Promise<CensusData> {
-  const stateFips = STATE_FIPS[state.toUpperCase()] ?? '06';
-  const url = `${CENSUS_BASE}?get=${CENSUS_VARS}&for=zip%20code%20tabulation%20area:${zip}&in=state:${stateFips}`;
+async function fetchCensusData(zip: string): Promise<CensusData> {
+  const apiKey = process.env.CENSUS_API_KEY;
+  if (!apiKey) {
+    console.warn('CENSUS_API_KEY not set — Census ACS calls will fail');
+    return emptyCensus();
+  }
+  // ZCTA is a national-level geography in ACS5 — it cannot be nested under `in=state:`,
+  // that combination returns "unknown/unsupported geography hierarchy".
+  const url = `${CENSUS_BASE}?get=${CENSUS_VARS}&for=zip%20code%20tabulation%20area:${zip}&key=${apiKey}`;
 
   try {
     const res = await fetch(url, {
@@ -486,10 +502,13 @@ function scoreCompetition(
   category: string
 ): DimensionScore {
   if (competitors.source === 'unavailable' || competitors.nearby_count === null) {
+    // No fabricated score — data_available: false excludes this dimension from
+    // the weighted composite (see computeWeightedOverallScore) rather than
+    // silently contributing a neutral 50 to the overall territory score.
     return {
       score: 50,
       rating: 'VIABLE',
-      note: 'Competitive data unavailable — confirm competitor density through direct site visit and local research',
+      note: 'Competition not assessed — Google Places data unavailable for this ZIP. Confirm competitor density through direct site visit and local research before relying on the overall score.',
       data_available: false,
     };
   }
@@ -781,14 +800,18 @@ function computeTargetMarketSizing(
   // Year 3: 8–12% of TAM
   const year3 = Math.round(tam * 0.10);
 
-  // Non-marginality check: E-2 requires the business generates more than the investor's livelihood.
-  // $65K owner income / year is the internal floor. ODE floor is roughly ODE > $65K.
-  // Since we don't have full ODE here, use AUV × (1 - 0.65) as a rough proxy.
+  // Non-marginality check: E-2 requires the business generates more than the
+  // investor's livelihood. This territory sizer doesn't have fee/rent/labor
+  // field data, so it approximates ODE off AUV using the same proxy margin
+  // and pass/warn/fail thresholds as the full waterfall in
+  // fdd-scoring-engine.ts (via shared fdd-ode-engine.ts) — kept in sync so
+  // the two engines can't silently diverge.
   let nonmarginality: TargetMarketSizing['nonmarginality_check'] = 'unknown';
   const referenceAuv = auv ?? year3;
   if (referenceAuv > 0) {
-    const proxyOde = Math.round(referenceAuv * 0.35); // rough: 35% ODE margin
-    nonmarginality = proxyOde >= 65_000 ? 'pass' : proxyOde >= 40_000 ? 'borderline' : 'fail';
+    const proxyOde = computeOdeProxy(referenceAuv);
+    const classification = classifyOde(proxyOde);
+    nonmarginality = classification === 'pass' ? 'pass' : classification === 'warn' ? 'borderline' : 'fail';
   }
 
   const segmentPct = census.total_population ? relevantSegment / census.total_population : null;
@@ -871,14 +894,14 @@ VERDICT: A direct recommendation. Should this investor seriously pursue this ter
 Return as JSON: {"MARKET_OVERVIEW":"...","ECONOMIC_STRENGTH":"...","DEMOGRAPHIC_FIT":"...","COMPETITIVE_LANDSCAPE":"...","VERDICT":"..."}`;
 
   try {
-    const response = await anthropic.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 1100,
+    const fddResult = await callFDDModel({
       system: TERRITORY_ANALYST_SYSTEM,
-      messages: [{ role: 'user', content: prompt }],
+      user: prompt,
+      max_tokens: 1100,
+      route: 'fdd-territory',
     });
 
-    const text = response.content[0].type === 'text' ? response.content[0].text : '';
+    const text = fddResult?.content ?? '';
     const match = text.match(/\{[\s\S]*\}/);
     if (match) return JSON.parse(match[0]) as TerritoryAnalysis['narrative'];
     return fallbackNarrative(analysis);
@@ -944,14 +967,14 @@ VERDICT: A direct recommendation. Should this investor seriously pursue this loc
 Return as JSON: {"MARKET_OVERVIEW":"...","ECONOMIC_STRENGTH":"...","DEMOGRAPHIC_FIT":"...","COMPETITIVE_LANDSCAPE":"...","VERDICT":"..."}`;
 
   try {
-    const response = await anthropic.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 1100,
+    const fddResult = await callFDDModel({
       system: `You are a senior business location analyst with 20 years of experience advising investors on site selection. Your assessments inform $100K–$1M investment decisions. Write with authority, cite specific numbers, and give a clear verdict. Return ONLY valid JSON.`,
-      messages: [{ role: 'user', content: prompt }],
+      user: prompt,
+      max_tokens: 1100,
+      route: 'fdd-territory',
     });
 
-    const text = response.content[0].type === 'text' ? response.content[0].text : '';
+    const text = fddResult?.content ?? '';
     const match = text.match(/\{[\s\S]*\}/);
     if (match) return JSON.parse(match[0]) as TerritoryAnalysis['narrative'];
     return fallbackNarrative(analysis);
@@ -976,7 +999,7 @@ export async function analyseTeritoryForBusiness(
   const radiusMiles = RADIUS_BY_CATEGORY[category] ?? RADIUS_BY_CATEGORY.default;
 
   const [census, competitors] = await Promise.all([
-    fetchCensusData(zip, state),
+    fetchCensusData(zip),
     fetchCompetitors(zip, category, radiusMiles, businessName, null),
   ]);
 
@@ -992,13 +1015,13 @@ export async function analyseTeritoryForBusiness(
   const demographicFitScore = scoreDemographicFit(census, category);
   const laborMarketScore = scoreLaborMarket(census, category, state);
 
-  const overallScore = Math.round(
-    populationScore.score     * weights.population +
-    incomeScore.score         * weights.income +
-    competitionScore.score    * weights.competition +
-    demographicFitScore.score * weights.demographic_fit +
-    laborMarketScore.score    * weights.labor_market
-  );
+  const overallScore = computeWeightedOverallScore([
+    { score: populationScore,     weight: weights.population },
+    { score: incomeScore,         weight: weights.income },
+    { score: competitionScore,    weight: weights.competition },
+    { score: demographicFitScore, weight: weights.demographic_fit },
+    { score: laborMarketScore,    weight: weights.labor_market },
+  ]);
 
   const overallRating = rateScore(overallScore);
 
@@ -1015,6 +1038,7 @@ export async function analyseTeritoryForBusiness(
     franchise_category: category,
     radius_miles: radiusMiles,
     census,
+    census_source: CENSUS_SOURCE_LABEL,
     competitors,
     population_score: populationScore,
     income_score: incomeScore,
@@ -1049,7 +1073,7 @@ export async function analyseTeritory(
 
   // Fetch Census and competitors in parallel
   const [census, competitors] = await Promise.all([
-    fetchCensusData(zip, state),
+    fetchCensusData(zip),
     // Fetch competitors — we need population first but it's from Census, so we pass null initially
     // and will recalculate the ratio after Census returns
     fetchCompetitors(zip, category, radiusMiles, franchiseName, null),
@@ -1069,14 +1093,15 @@ export async function analyseTeritory(
   const demographicFitScore = scoreDemographicFit(census, category);
   const laborMarketScore = scoreLaborMarket(census, category, state);
 
-  // Weighted composite across all 5 dimensions
-  const overallScore = Math.round(
-    populationScore.score    * weights.population +
-    incomeScore.score        * weights.income +
-    competitionScore.score   * weights.competition +
-    demographicFitScore.score * weights.demographic_fit +
-    laborMarketScore.score   * weights.labor_market
-  );
+  // Weighted composite across the available dimensions (unavailable dimensions
+  // are excluded and the remaining weights renormalized — see computeWeightedOverallScore)
+  const overallScore = computeWeightedOverallScore([
+    { score: populationScore,     weight: weights.population },
+    { score: incomeScore,         weight: weights.income },
+    { score: competitionScore,    weight: weights.competition },
+    { score: demographicFitScore, weight: weights.demographic_fit },
+    { score: laborMarketScore,    weight: weights.labor_market },
+  ]);
 
   const overallRating = rateScore(overallScore);
 
@@ -1093,6 +1118,7 @@ export async function analyseTeritory(
     franchise_category: category,
     radius_miles: radiusMiles,
     census,
+    census_source: CENSUS_SOURCE_LABEL,
     competitors,
     population_score: populationScore,
     income_score: incomeScore,

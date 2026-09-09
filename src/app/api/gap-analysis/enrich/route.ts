@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
+import { isKillSwitchEnabled } from '@/lib/kill-switch';
 import { callLLM } from '@/lib/llm-client';
+import { captureApiError } from '@/lib/capture-error';
 
 interface EnrichRequest {
   categoryId: string;
@@ -19,6 +21,10 @@ export async function POST(request: NextRequest) {
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  if (await isKillSwitchEnabled()) {
+    return NextResponse.json({ error: 'AI features are temporarily unavailable. Please try again shortly.' }, { status: 503 });
   }
 
   if (!process.env.OPENROUTER_API_KEY && !process.env.ANTHROPIC_API_KEY) {
@@ -86,7 +92,7 @@ Write in second person ("Your..."), plain language, no bullet points, no markdow
       enrichment: content?.trim() || null,
     });
   } catch (error) {
-    console.error(`[gap-enrich] Failed for category ${categoryId}:`, error);
+    captureApiError(error, { route: 'gap-analysis/enrich', categoryId, userId: user.id });
     return NextResponse.json({ categoryId, enrichment: null });
   }
 }

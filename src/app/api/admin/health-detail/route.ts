@@ -11,6 +11,8 @@ function getAdmin() {
   return createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } });
 }
 
+// No kill-switch on this route by design — it's the admin diagnostic tool for diagnosing kill-switch
+// situations (probes LLM to verify if the service is actually up before toggling the kill-switch off).
 // FIXED 2026-06-23: route had no auth — exposed service health + stuck job data publicly (QA-SEC-02)
 async function getRequestingAdmin(): Promise<string | null> {
   const cookieStore = await cookies();
@@ -122,13 +124,13 @@ export async function GET() {
     }),
     // Stripe: check if last webhook arrived in last 24h
     admin
-      .from('webhook_events')
-      .select('created_at')
-      .order('created_at', { ascending: false })
+      .from('processed_webhook_events')
+      .select('processed_at')
+      .order('processed_at', { ascending: false })
       .limit(1),
   ]);
 
-  const stripeLastWebhook = stripeWebhookProbe.data?.[0]?.created_at ?? null;
+  const stripeLastWebhook = stripeWebhookProbe.data?.[0]?.processed_at ?? null;
   const stripeHoursAgo    = stripeLastWebhook
     ? Math.round((Date.now() - new Date(stripeLastWebhook).getTime()) / 3_600_000)
     : null;

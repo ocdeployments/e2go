@@ -5,6 +5,7 @@ import { useTrackSectionVisit } from "@/hooks/useTrackSectionVisit";
 import { useRouter } from 'next/navigation';
 import { createBrowserSupabaseClient } from '@/lib/supabase';
 import UploadClient from '@/components/apply/UploadClient';
+import { resolvePrimaryApplicationId } from '@/lib/resolve-application';
 
 export default function UploadPage() {
   useTrackSectionVisit("upload");
@@ -24,12 +25,8 @@ export default function UploadPage() {
           return;
         }
 
-        const { data: apps } = await supabase
-          .from('applications')
-          .select('id')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(1);
+        const appsId = await resolvePrimaryApplicationId(supabase, user.id);
+        const apps = appsId ? [{ id: appsId }] : [];
 
         if (apps && apps.length > 0) {
           setApplicationId(apps[0].id);
@@ -45,7 +42,7 @@ export default function UploadPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#0a0a0a]">
+      <div className="flex min-h-screen items-center justify-center bg-[#0a0a0a] pt-16">
         <p
           className="text-sm"
           style={{ color: 'rgba(245,240,232,0.68)', fontFamily: "'DM Sans', sans-serif" }}
@@ -58,7 +55,7 @@ export default function UploadPage() {
 
   if (!applicationId) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#0a0a0a]">
+      <div className="flex min-h-screen items-center justify-center bg-[#0a0a0a] pt-16">
         <div className="text-center" style={{ maxWidth: '320px' }}>
           <p
             className="mb-2 text-sm"

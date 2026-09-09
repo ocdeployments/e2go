@@ -87,7 +87,7 @@ export default function Footer() {
             services. For legal advice, consult a qualified U.S. immigration attorney.
           </p>
           <p className="text-xs text-[rgba(245,240,232,0.65)]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-            © {currentYear} e2go.app. All rights reserved.
+            © {currentYear} Prodigal Son IT Solutions LLC, d/b/a e2go. All rights reserved.
           </p>
         </div>
       </div>

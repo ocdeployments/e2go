@@ -72,7 +72,8 @@ export interface ApplicationDocument {
 export interface DocumentDiscrepancy {
   id: string;
   application_id: string;
-  question_id: string;
+  /** Named question_key on the table; the extraction pipeline calls it question_id. */
+  question_key: string;
   question_label: string | null;
   conflicting_values: DiscrepancyValue[];
   resolved_value: string | null;

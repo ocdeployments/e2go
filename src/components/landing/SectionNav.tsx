@@ -22,9 +22,7 @@ interface NavSection {
 }
 
 const SECTIONS: NavSection[] = [
-  { id: "how-it-works", label: "How it works" },
   { id: "compare", label: "Compare" },
-  { id: "interview", label: "Interview prep" },
   { id: "reviews", label: "Reviews" },
 ];
 

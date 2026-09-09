@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
+import { captureApiError } from '@/lib/capture-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -59,7 +60,7 @@ export async function POST(req: NextRequest) {
 
   if (!emailRes.ok) {
     const err = await emailRes.json().catch(() => ({}));
-    console.error('[admin/send-email] Resend error:', err);
+    captureApiError(new Error('Resend send-email failed'), { route: 'admin/send-email', targetUserId, resendError: err });
     return NextResponse.json({ error: 'Failed to send email' }, { status: 500 });
   }
 

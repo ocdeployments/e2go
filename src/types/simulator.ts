@@ -1,6 +1,8 @@
 // Interview Simulator Types
 // Generated: June 5, 2026
 
+import type { ScoreLevel } from '@/lib/case-brief-scores';
+
 export interface SimulatorContext {
   applicationId: string;
   userId: string;
@@ -30,10 +32,16 @@ export interface SimulatorContext {
   priorVisaDenial: boolean;
   priorDenialDetails: string | null;
   immigrantIntentRisk: 'low' | 'moderate' | 'high';
-  // Analysis engine scores (if available)
-  substantialityScore: number | null;
-  marginalityScore: number | null;
-  developDirectScore: number | null;
+  /**
+   * Analysis engine judgements, when a case brief exists. These are the words
+   * the engine stores — STRONG / ADEQUATE / WEAK / CRITICAL — not numbers; they
+   * used to be typed as scores out of 100 and read from columns case_briefs
+   * does not have, so all three were always null and the weak-point probes
+   * below never fired for anyone.
+   */
+  substantialityScore: ScoreLevel | null;
+  marginalityScore: ScoreLevel | null;
+  developDirectScore: ScoreLevel | null;
   denialRiskFlags: string[];
   // EU-2: archetype + dimension scores from case_profiles (null when profile not yet built)
   archetype: string | null;
@@ -42,9 +50,18 @@ export interface SimulatorContext {
   businessPlanScore: number | null;
   // FDD priority questions for franchise applicants (fetched from fdd_analyses)
   fddPriorityQuestions?: { text: string; triggered_by: string; importance: string }[];
+  // Case Intelligence Core — the CPU's strongest honest E-2 narrative and which
+  // figures to foreground vs which denial risks to pre-empt (null until built)
+  caseTheoryNarrative: string | null;
+  caseTheoryNumbersStrategy: unknown | null;
   // Application metadata
   applicationType: string;
   createdAt: string;
+  // Partnership (complete_partnership) co-investor data — null when solo or
+  // when Investor 2 hasn't filled in the corresponding Partner Access field
+  p2Role: string | null;
+  p2Sof: string | null;
+  p2Quals: string | null;
 }
 
 export interface InvestmentSource {
@@ -67,6 +84,8 @@ export interface Question {
   category: 'universal' | 'weak_point_probe' | 'business_type' | 'investment_source' | 'profile_flag' | 'archetype_probe' | 'gap_probe' | 'fdd_probe';
   context?: string;
   relatesToField?: string;
+  /** Substantive coach guidance: what the officer is testing + what a strong answer covers */
+  hint?: string;
 }
 
 export interface DeliveryNote {
@@ -117,12 +136,26 @@ export interface QuestionCoaching {
   documentReference: string | null;
 }
 
+export interface QuestionBreakdownItem {
+  questionId: string;
+  questionText: string;
+  rating: 'strong' | 'weak' | 'inconsistent';
+  /** 0-100 (LLM 1-10 score × 10); null when the evaluator returned no score */
+  score: number | null;
+  feedback: string;
+  suggestion: string;
+}
+
 export interface CoachingSummary {
   strongAnswers: { question: string; note: string }[];
   needsWork: { questionId: string; question: string; suggestion: string; originalAnswer: string }[];
   inconsistencies: { questionId: string; question: string; filed: string; spoken: string; originalAnswer: string }[];
   weakPointsAtRisk: string[];
   readinessIndicator: 'ready' | 'nearly_ready' | 'needs_work';
+  /** Weighted session score 0-100; null when no answers were scored */
+  overallScore: number | null;
+  /** Per-question scores and suggestions — always populated, one entry per answered question */
+  questionBreakdown: QuestionBreakdownItem[];
   detailedCoaching?: QuestionCoaching[];
   deliveryFlags?: { questionId: string; questionText: string; notes: DeliveryNote[] }[];
   top3NextSession?: string[];

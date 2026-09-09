@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { useAutosaveFlush } from '@/lib/use-autosave-flush';
 import { useTrackSectionVisit } from "@/hooks/useTrackSectionVisit";
 import { createBrowserSupabaseClient } from '@/lib/supabase';
 import CaseFileShell from '@/components/apply/CaseFileShell';
@@ -16,6 +17,9 @@ import AdvisoryBlock from '@/components/apply/questions/AdvisoryBlock';
 import RiskFlag from '@/components/apply/questions/RiskFlag';
 import ClusterDivider from '@/components/apply/questions/ClusterDivider';
 import StartupCostTable from '@/components/apply/questions/StartupCostTable';
+import { useRouter } from 'next/navigation';
+import { useApplicationGate } from '@/hooks/useApplicationGate';
+import ApplicationNotReadyScreen from '@/components/apply/ApplicationNotReadyScreen';
 
 interface BizAnswer {
   value: string;
@@ -177,6 +181,8 @@ const ALL_QUESTION_SETS = [
 export default function BusinessPage() {
   useTrackSectionVisit("business");
   const { qualityMap, checkFieldQuality } = useFieldQuality();
+  const router = useRouter();
+  const { status: gateStatus, applicationId: gateAppId, retry } = useApplicationGate();
 
   const [loading, setLoading] = useState(true);
   const [activeCluster, setActiveCluster] = useState(1);
@@ -186,6 +192,8 @@ export default function BusinessPage() {
   const [isFranchise, setIsFranchise] = useState(false);
   const [startupCosts, setStartupCosts] = useState<Array<{ id: string; category: string; description: string; amount: string }>>([]);
   const debounceRef = useRef<Record<string, NodeJS.Timeout>>({});
+  const flushRef = useRef<Record<string, () => void>>({});
+  useAutosaveFlush(debounceRef, flushRef);
   const costsSaveRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -203,27 +211,16 @@ export default function BusinessPage() {
   }, []);
 
   useEffect(() => {
+    if (gateStatus !== 'ready' || !gateAppId) return;
     const loadData = async () => {
       try {
         const supabase = createBrowserSupabaseClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) { setLoading(false); return; }
-
-        const { data: apps } = await supabase
-          .from('applications')
-          .select('id')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(1);
-
-        if (!apps || apps.length === 0) { setLoading(false); return; }
-        const appId = apps[0].id;
-        setApplicationId(appId);
+        setApplicationId(gateAppId);
 
         const { data: existingAnswers } = await supabase
           .from('answers')
           .select('question_key, answer_value')
-          .eq('application_id', appId);
+          .eq('application_id', gateAppId);
 
         if (existingAnswers) {
           const answerMap: Record<string, BizAnswer> = {};
@@ -257,7 +254,7 @@ export default function BusinessPage() {
       }
     };
     loadData();
-  }, []);
+  }, [gateStatus, gateAppId]);
 
   // Auto-save startup costs as JSON whenever they change
   useEffect(() => {
@@ -301,8 +298,9 @@ export default function BusinessPage() {
         source: prev[key]?.source ?? null,
       },
     }));
+    flushRef.current[key] = () => saveAnswer(key, value);
     if (debounceRef.current[key]) clearTimeout(debounceRef.current[key]);
-    debounceRef.current[key] = setTimeout(() => saveAnswer(key, value), 800);
+    debounceRef.current[key] = setTimeout(() => { saveAnswer(key, value); delete flushRef.current[key]; }, 800);
   }, [saveAnswer]);
 
   const clusterStatuses = CLUSTERS
@@ -381,7 +379,16 @@ export default function BusinessPage() {
     </div>
   );
 
-  if (loading) {
+  if (gateStatus === 'no-user') {
+    router.push('/login');
+    return null;
+  }
+
+  if (gateStatus === 'not-ready') {
+    return <ApplicationNotReadyScreen onRetry={retry} />;
+  }
+
+  if (loading || gateStatus === 'loading') {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#0a0a0a]">
         <p className="text-sm" style={{ color: 'rgba(245,240,232,0.68)', fontFamily: "'DM Sans', sans-serif" }}>Loading...</p>

@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { createBrowserSupabaseClient } from '@/lib/supabase';
+import { resolvePrimaryApplication } from '@/lib/resolve-application';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -20,7 +21,7 @@ import { speakQuestion } from '@/lib/groq-tts';
 import CaseFileSummary from '@/components/simulator/CaseFileSummary';
 import GenerationProgress from '@/components/ui/GenerationProgress';
 import ConversationalSession, { type RawVoiceAnswer } from '@/components/simulator/ConversationalSession';
-import type { SimulatorContext, Question, AnswerEvaluation, CoachingSummary, CompletedSession, QuestionCoaching, DeliveryNote } from '@/types/simulator';
+import type { SimulatorContext, Question, AnswerEvaluation, CoachingSummary, CompletedSession, QuestionCoaching, DeliveryNote, QuestionBreakdownItem } from '@/types/simulator';
 
 const supabase = createBrowserSupabaseClient();
 
@@ -57,12 +58,14 @@ export default function InterviewSimulator() {
   const [purchaseLoading, setPurchaseLoading] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [hasCaseFile, setHasCaseFile] = useState<boolean | null>(null);
+  const [needsAnalysisOnly, setNeedsAnalysisOnly] = useState(false);
   const [caseFileReviewed, setCaseFileReviewed] = useState(false);
   const [voiceAvailable, setVoiceAvailable] = useState(false);
   const [followUpQuestion, setFollowUpQuestion] = useState<string | null>(null);
   const [isInFollowUp, setIsInFollowUp] = useState(false);
   const [followUpLoading, setFollowUpLoading] = useState(false);
   const [coachingLoading, setCoachingLoading] = useState(false);
+  const [coachingError, setCoachingError] = useState(false);
   const [loadTimedOut, setLoadTimedOut] = useState(false);
   // Captures ?session_id from Stripe redirect before URL is cleaned — processed once application loads
   const [pendingGrantSessionId, setPendingGrantSessionId] = useState<string | null>(() => {
@@ -98,45 +101,10 @@ export default function InterviewSimulator() {
         }
         if (!cancelled) setUser(user);
 
-        // Get the user's application with the most case file data.
-        // Users can accumulate multiple application rows (e.g. repeated
-        // /simulator/quick-start runs each create a new 'simulator_standalone'
-        // row). Picking the most RECENTLY CREATED one can surface an empty
-        // duplicate instead of the real case file, so pick by answer count.
-        const { data: apps } = await supabase
-          .from('applications')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
-
-        let app: any = null;
-        if (apps && apps.length > 0) {
-          if (apps.length === 1) {
-            app = apps[0];
-          } else {
-            // Fetch answer counts for all apps in a single query instead of N sequential calls
-            const { data: answerRows } = await supabase
-              .from('answers')
-              .select('application_id')
-              .in('application_id', apps.map((a: any) => a.id));
-
-            const countMap = new Map<string, number>();
-            answerRows?.forEach((row: { application_id: string }) => {
-              countMap.set(row.application_id, (countMap.get(row.application_id) ?? 0) + 1);
-            });
-
-            let bestCount = -1;
-            for (const candidate of apps) {
-              const c = countMap.get(candidate.id) ?? 0;
-              const candidateIsStandalone = candidate.source === 'simulator_standalone';
-              const betterOnTie = c === bestCount && app && candidateIsStandalone === false && app.source === 'simulator_standalone';
-              if (c > bestCount || betterOnTie) {
-                bestCount = c;
-                app = candidate;
-              }
-            }
-          }
-        }
+        // Resolve the same primary application every other surface uses,
+        // so the simulator always interviews against the case the rest of
+        // the app is building.
+        const app = await resolvePrimaryApplication<Record<string, any>>(supabase, user.id);
 
         console.log('[SIM] application result:', app ? 'found' : 'not found');
 
@@ -163,16 +131,21 @@ export default function InterviewSimulator() {
             // Standalone simulator: answers alone are sufficient
             if (!cancelled) setHasCaseFile(Boolean(answers && answers.length > 0));
           } else {
-            // Full Module 3 path: answers + case brief required
+            // Full Module 3 path: answers + case brief required. Case briefs are
+            // produced by running AI analysis on /gap-analysis — a single button,
+            // not a reason to send the user back through Module 3 from scratch.
             const { data: caseBrief } = await supabase
               .from('case_briefs')
               .select('id')
               .eq('application_id', app.id)
               .limit(1);
 
-            if (!cancelled) setHasCaseFile(
-              Boolean(answers && answers.length > 0 && caseBrief && caseBrief.length > 0)
-            );
+            const hasAnswers = Boolean(answers && answers.length > 0);
+            const hasBrief = Boolean(caseBrief && caseBrief.length > 0);
+            if (!cancelled) {
+              setHasCaseFile(hasAnswers && hasBrief);
+              setNeedsAnalysisOnly(hasAnswers && !hasBrief);
+            }
           }
         } else {
           // No application at all — cannot use simulator
@@ -528,7 +501,9 @@ export default function InterviewSimulator() {
 
     if (toCoach.length === 0) return;
 
-    // Fetch last 2 prior sessions for trend-aware coaching (non-fatal if absent)
+    // Fetch last 5 prior sessions for trend-aware coaching (non-fatal if absent).
+    // The prompt's trend note (coaching-report/route.ts) already generalises to
+    // any session count >= 2 — this was the only place capping it at 2.
     type PriorSessionData = { sessionNumber: number; readinessIndicator: string; top3NextSession: string[] };
     const priorSessions: PriorSessionData[] = [];
     if (currentSession && user) {
@@ -539,7 +514,7 @@ export default function InterviewSimulator() {
           .eq('user_id', user.id)
           .lt('session_number', currentSession.sessionNumber)
           .order('session_number', { ascending: false })
-          .limit(2);
+          .limit(5);
         if (prevRows) {
           for (const prev of prevRows) {
             const notes = prev.coaching_notes as { top3NextSession?: string[] } | null;
@@ -556,6 +531,7 @@ export default function InterviewSimulator() {
     }
 
     setCoachingLoading(true);
+    setCoachingError(false);
     try {
       const res = await fetch('/api/simulator/coaching-report', {
         method: 'POST',
@@ -563,7 +539,7 @@ export default function InterviewSimulator() {
         body: JSON.stringify({ context: ctx, weakAnswers: toCoach, priorSessions }),
       });
       if (res.ok) {
-        const { coaching, top3NextSession } = await res.json();
+        const { coaching, top3NextSession, error } = await res.json();
         if (Array.isArray(coaching) && coaching.length > 0) {
           // Build a map by questionId for O(1) lookup; also keep array for index fallback
           const byId = new Map(coaching.map((c: any) => [c.questionId, c]));
@@ -581,10 +557,17 @@ export default function InterviewSimulator() {
               saveCoachingNotes(currentSession.id, top3NextSession).catch(() => {});
             }
           }
+        } else if (error) {
+          // API explicitly flagged a generation failure (as opposed to the
+          // legitimate "no weak answers" empty-array response) — surface it
+          // so the user sees a retry option instead of a silently blank report.
+          setCoachingError(true);
         }
+      } else {
+        setCoachingError(true);
       }
     } catch {
-      // Non-fatal — coaching cards just won't appear
+      setCoachingError(true);
     } finally {
       setCoachingLoading(false);
     }
@@ -620,6 +603,7 @@ export default function InterviewSimulator() {
             questionText: a.questionText,
             answerText: a.answerText,
             rating: (ev.rating || 'weak') as 'strong' | 'weak' | 'inconsistent',
+            score: typeof ev.score === 'number' ? ev.score : undefined,
             feedback: ev.feedback || 'Answer recorded.',
             specificSuggestion: ev.specificSuggestion || '',
             deliveryNotes: analyzeDelivery(a.answerText),
@@ -708,7 +692,7 @@ export default function InterviewSimulator() {
   if (hasCaseFile === false) {
     return (
       <div style={styles.page}>
-        <SimulatorTeaser />
+        <SimulatorTeaser needsAnalysisOnly={needsAnalysisOnly} />
       </div>
     );
   }
@@ -808,6 +792,8 @@ export default function InterviewSimulator() {
           summary={coachingSummary}
           sessionNumber={currentSession?.sessionNumber}
           coachingLoading={coachingLoading}
+          coachingError={coachingError}
+          onRetryCoaching={() => context && fetchCoachingReport(coachingSummary, context)}
           applicationId={application?.id}
           onStartNew={() => {
             setScreen('start');
@@ -948,6 +934,9 @@ function ActiveSession({
   onGetFollowUp: () => void;
 }) {
   const wordCount = answer.trim().split(/\s+/).filter(Boolean).length;
+  const [showHint, setShowHint] = useState(false);
+
+  useEffect(() => { setShowHint(false); }, [question.id]);
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
@@ -989,6 +978,17 @@ function ActiveSession({
           {question.context && (
             <div style={styles.questionContext}>
               {question.context}
+            </div>
+          )}
+
+          {question.hint && (
+            <div style={{ marginTop: '16px' }}>
+              <button style={styles.hintToggle} onClick={() => setShowHint(h => !h)}>
+                {showHint ? '▾  Hide coach hint' : '▸  Coach hint — what the officer wants to hear'}
+              </button>
+              {showHint && (
+                <div style={styles.hintPanel}>{question.hint}</div>
+              )}
             </div>
           )}
 
@@ -1643,10 +1643,75 @@ function DeliveryFlagCard({ flag }: { flag: { questionId: string; questionText: 
   );
 }
 
+function QuestionBreakdownCard({ index, item }: { index: number; item: QuestionBreakdownItem }) {
+  const ratingColor = item.rating === 'strong' ? '#22c55e' : item.rating === 'inconsistent' ? '#ef4444' : '#f59e0b';
+  const ratingLabel = item.rating === 'strong' ? 'Strong' : item.rating === 'inconsistent' ? 'Inconsistent' : 'Needs work';
+  const scoreColor = item.score === null ? 'rgba(245,240,232,0.55)'
+    : item.score >= 75 ? '#22c55e' : item.score >= 55 ? '#f59e0b' : '#ef4444';
+
+  return (
+    <div style={{
+      border: '1px solid rgba(201,168,76,0.12)',
+      background: 'rgba(201,168,76,0.02)',
+      padding: '18px 20px',
+      marginBottom: '12px',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', marginBottom: '10px' }}>
+        <div style={{ fontSize: '13px', color: '#f5f0e8', lineHeight: 1.5, flex: 1 }}>
+          <span style={{ color: 'rgba(201,168,76,0.7)', marginRight: '8px' }}>Q{index}</span>
+          {item.questionText}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+          <span style={{
+            fontSize: '10px',
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase' as const,
+            padding: '3px 10px',
+            border: `1px solid ${ratingColor}`,
+            background: `${ratingColor}20`,
+            color: ratingColor,
+            whiteSpace: 'nowrap' as const,
+          }}>
+            {ratingLabel}
+          </span>
+          <span style={{
+            fontFamily: "'Cormorant Garamond', serif",
+            fontSize: '24px',
+            fontWeight: 400,
+            lineHeight: 1,
+            color: scoreColor,
+            minWidth: '44px',
+            textAlign: 'right' as const,
+          }}>
+            {item.score !== null ? item.score : '—'}
+          </span>
+        </div>
+      </div>
+      <div style={{ fontSize: '12px', color: 'rgba(245,240,232,0.78)', lineHeight: 1.55, marginBottom: item.suggestion ? '8px' : 0 }}>
+        {item.feedback}
+      </div>
+      {item.suggestion && (
+        <div style={{
+          fontSize: '12px',
+          color: 'rgba(245,240,232,0.85)',
+          lineHeight: 1.55,
+          borderLeft: '2px solid rgba(201,168,76,0.5)',
+          paddingLeft: '12px',
+        }}>
+          <span style={{ color: '#C9A84C', letterSpacing: '0.06em', fontSize: '10px', textTransform: 'uppercase' as const, marginRight: '6px' }}>Improve</span>
+          {item.suggestion}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function SessionComplete({
   summary,
   sessionNumber,
   coachingLoading,
+  coachingError,
+  onRetryCoaching,
   applicationId,
   onStartNew,
   onBackToDashboard,
@@ -1654,6 +1719,8 @@ function SessionComplete({
   summary: CoachingSummary;
   sessionNumber?: number;
   coachingLoading: boolean;
+  coachingError?: boolean;
+  onRetryCoaching?: () => void;
   applicationId?: string;
   onStartNew: () => void;
   onBackToDashboard: () => void;
@@ -1692,6 +1759,13 @@ function SessionComplete({
 
   return (
     <div style={styles.completeContainer}>
+      <style>{`
+        @media print {
+          body { background: white !important; color: black !important; }
+          .no-print { display: none !important; }
+          * { color: black !important; border-color: #ccc !important; background: white !important; }
+        }
+      `}</style>
       <div style={styles.completeCard}>
         <div style={styles.eyebrow}>SESSION {sessionNumber} COMPLETE</div>
 
@@ -1713,6 +1787,45 @@ function SessionComplete({
           )}
         </div>
 
+        {/* Overall session score */}
+        {summary.overallScore !== null && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'baseline',
+            justifyContent: 'center',
+            gap: '10px',
+            marginBottom: '36px',
+          }}>
+            <span style={{
+              fontFamily: "'Cormorant Garamond', serif",
+              fontSize: '64px',
+              fontWeight: 300,
+              lineHeight: 1,
+              color: summary.overallScore >= 75 ? '#22c55e' : summary.overallScore >= 55 ? '#f59e0b' : '#ef4444',
+            }}>
+              {summary.overallScore}
+            </span>
+            <span style={{ fontSize: '15px', color: 'rgba(245,240,232,0.55)', letterSpacing: '0.04em' }}>
+              / 100 session score
+            </span>
+          </div>
+        )}
+
+        {/* Question-by-question breakdown */}
+        {summary.questionBreakdown && summary.questionBreakdown.length > 0 && (
+          <div style={{ marginBottom: '32px' }}>
+            <h3 style={{ fontSize: '14px', fontWeight: 500, color: '#f5f0e8', marginBottom: '6px' }}>
+              Question-by-question breakdown
+            </h3>
+            <p style={{ fontSize: '12px', color: 'rgba(245,240,232,0.72)', marginBottom: '20px', marginTop: 0 }}>
+              How a consular officer would score each of your answers, with what to improve.
+            </p>
+            {summary.questionBreakdown.map((item, i) => (
+              <QuestionBreakdownCard key={item.questionId + i} index={i + 1} item={item} />
+            ))}
+          </div>
+        )}
+
         {/* Strong Answers */}
         {summary.strongAnswers.length > 0 && (
           <div style={styles.resultSection}>
@@ -1733,14 +1846,34 @@ function SessionComplete({
         {/* Coaching Report Section */}
         {hasWeakItems && (
           <div style={{ marginBottom: '32px' }}>
-            <h3 style={{ fontSize: '14px', fontWeight: 500, color: '#f5f0e8', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-              Your interview coaching report
-              {coachingLoading && (
-                <span style={{ fontSize: '11px', color: 'rgba(201,168,76,0.7)', fontWeight: 400, letterSpacing: '0.06em' }}>
-                  — generating...
-                </span>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginBottom: '6px' }}>
+              <h3 style={{ fontSize: '14px', fontWeight: 500, color: '#f5f0e8', margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                Your interview coaching report
+                {coachingLoading && (
+                  <span style={{ fontSize: '11px', color: 'rgba(201,168,76,0.7)', fontWeight: 400, letterSpacing: '0.06em' }}>
+                    — generating...
+                  </span>
+                )}
+              </h3>
+              {!coachingLoading && summary.detailedCoaching && summary.detailedCoaching.length > 0 && (
+                <button
+                  className="no-print"
+                  onClick={() => window.print()}
+                  style={{
+                    padding: '6px 14px',
+                    background: 'transparent',
+                    border: '1px solid rgba(201,168,76,0.4)',
+                    color: '#C9A84C',
+                    fontSize: '11px',
+                    letterSpacing: '0.06em',
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap' as const,
+                  }}
+                >
+                  Print / Save as PDF
+                </button>
               )}
-            </h3>
+            </div>
             <p style={{ fontSize: '12px', color: 'rgba(245,240,232,0.72)', marginBottom: '20px', marginTop: 0 }}>
               Questions where your answer needs strengthening before the real interview.
             </p>
@@ -1755,6 +1888,38 @@ function SessionComplete({
               }}>
                 <div style={{ marginBottom: '8px', fontSize: '20px' }}>⟳</div>
                 Analyzing your answers with E-2 expertise...
+              </div>
+            )}
+
+            {!coachingLoading && coachingError && !summary.detailedCoaching && (
+              <div style={{
+                padding: '24px',
+                textAlign: 'center' as const,
+                border: '1px solid rgba(220,120,90,0.25)',
+                background: 'rgba(220,120,90,0.06)',
+                color: 'rgba(245,240,232,0.85)',
+                fontSize: '13px',
+              }}>
+                <div style={{ marginBottom: '10px' }}>
+                  Your detailed coaching report couldn&apos;t be generated. The suggestions below are still available.
+                </div>
+                {onRetryCoaching && (
+                  <button
+                    className="no-print"
+                    onClick={onRetryCoaching}
+                    style={{
+                      background: 'transparent',
+                      border: '1px solid rgba(201,168,76,0.4)',
+                      color: '#C9A84C',
+                      fontSize: '12px',
+                      padding: '8px 16px',
+                      cursor: 'pointer',
+                      letterSpacing: '0.04em',
+                    }}
+                  >
+                    Retry
+                  </button>
+                )}
               </div>
             )}
 
@@ -1814,7 +1979,7 @@ function SessionComplete({
           </div>
         )}
 
-        <div style={styles.completeActions}>
+        <div className="no-print" style={styles.completeActions}>
           <button style={styles.primaryButton} onClick={onStartNew}>
             Start another session
           </button>
@@ -1834,7 +1999,7 @@ function SessionComplete({
 // SIMULATOR TEASER (shown when case file data is insufficient)
 // =============================================================================
 
-function SimulatorTeaser() {
+function SimulatorTeaser({ needsAnalysisOnly = false }: { needsAnalysisOnly?: boolean }) {
   return (
     <div style={{
       minHeight: '100vh',
@@ -1880,7 +2045,7 @@ function SimulatorTeaser() {
           marginBottom: '16px',
           lineHeight: 1.1,
         }}>
-          Pressure-Test Your Interview Readiness
+          {needsAnalysisOnly ? 'Almost Ready — One Step Left' : 'Pressure-Test Your Interview Readiness'}
         </h1>
 
         <p style={{
@@ -1945,17 +2110,16 @@ function SimulatorTeaser() {
             lineHeight: 1.6,
             margin: 0,
           }}>
-            To unlock the simulator, complete your case file in Module 3 — your
-            business details, investment data, and supporting information. The more
-            complete your filing, the more realistic and useful your practice sessions
-            will be.
+            {needsAnalysisOnly
+              ? 'Your case data is in — you just need to run AI analysis so the simulator has a scored case file to interview you against. It takes under a minute.'
+              : 'To unlock the simulator, complete your case file in Module 3 — your business details, investment data, and supporting information. The more complete your filing, the more realistic and useful your practice sessions will be.'}
           </p>
         </div>
 
         {/* Two CTAs */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center' }}>
           <a
-            href="/apply"
+            href={needsAnalysisOnly ? '/gap-analysis' : '/apply'}
             style={{
               display: 'inline-block',
               padding: '16px 32px',
@@ -1970,36 +2134,81 @@ function SimulatorTeaser() {
               textAlign: 'center' as const,
             }}
           >
-            Complete your case file →
+            {needsAnalysisOnly ? 'Run AI analysis →' : 'Complete your case file →'}
           </a>
 
-          <span style={{
-            fontSize: '12px',
-            color: 'rgba(245,240,232,0.68)',
-            fontFamily: "'DM Sans', sans-serif",
-          }}>
-            — or —
-          </span>
+          {!needsAnalysisOnly && (
+            <>
+              <span style={{
+                fontSize: '12px',
+                color: 'rgba(245,240,232,0.68)',
+                fontFamily: "'DM Sans', sans-serif",
+              }}>
+                — or —
+              </span>
 
-          <a
-            href="/simulator/quick-start"
-            style={{
-              display: 'inline-block',
-              padding: '14px 32px',
-              background: 'transparent',
-              color: '#C9A84C',
-              fontSize: '14px',
-              fontWeight: 500,
-              textDecoration: 'none',
-              fontFamily: "'DM Sans', sans-serif",
-              border: '1px solid rgba(201,168,76,0.3)',
-              width: '100%',
-              maxWidth: '320px',
-              textAlign: 'center' as const,
-            }}
-          >
-            Upload your documents instead →
-          </a>
+              <a
+                href="/simulator/quick-start"
+                style={{
+                  display: 'inline-block',
+                  padding: '14px 32px',
+                  background: 'transparent',
+                  color: '#C9A84C',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  textDecoration: 'none',
+                  fontFamily: "'DM Sans', sans-serif",
+                  border: '1px solid rgba(201,168,76,0.3)',
+                  width: '100%',
+                  maxWidth: '320px',
+                  textAlign: 'center' as const,
+                }}
+              >
+                Upload your documents instead →
+              </a>
+
+              {/* Document list for upload path */}
+              <div style={{
+                marginTop: '16px',
+                padding: '16px 20px',
+                background: 'rgba(201,168,76,0.03)',
+                border: '1px solid rgba(201,168,76,0.12)',
+                textAlign: 'left' as const,
+                maxWidth: '320px',
+                width: '100%',
+              }}>
+                <div style={{
+                  fontSize: '9px',
+                  letterSpacing: '0.12em',
+                  textTransform: 'uppercase' as const,
+                  color: 'rgba(201,168,76,0.65)',
+                  fontFamily: "'DM Sans', sans-serif",
+                  marginBottom: '10px',
+                }}>
+                  Recommended documents to upload
+                </div>
+                {[
+                  'Business plan or executive summary',
+                  'Source of funds statement or bank records',
+                  'Investment breakdown / proof of investment',
+                  'Franchise Disclosure Document (if franchise)',
+                  'Lease agreement or letter of intent',
+                  'Previous DS-160 or visa petition (if renewal)',
+                  'Any prior attorney correspondence',
+                ].map((doc, i) => (
+                  <div key={i} style={{
+                    display: 'flex',
+                    gap: '8px',
+                    alignItems: 'flex-start',
+                    marginBottom: i < 6 ? '7px' : 0,
+                  }}>
+                    <span style={{ color: 'rgba(201,168,76,0.5)', fontSize: '11px', flexShrink: 0, marginTop: '2px' }}>→</span>
+                    <span style={{ fontSize: '12px', color: 'rgba(245,240,232,0.6)', fontFamily: "'DM Sans', sans-serif", lineHeight: 1.4 }}>{doc}</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
         </div>
 
         <div style={{ marginTop: '24px' }}>
@@ -2241,6 +2450,18 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '6px 12px',
     cursor: 'pointer',
     fontFamily: "'DM Sans', sans-serif",
+  },
+  hintToggle: {
+    background: 'transparent', border: 'none', padding: '4px 0',
+    color: 'rgba(201,168,76,0.85)', fontSize: '12px', letterSpacing: '0.05em',
+    cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", textAlign: 'left' as const,
+  },
+  hintPanel: {
+    marginTop: '10px', padding: '16px 18px',
+    background: 'rgba(201,168,76,0.05)', border: '1px solid rgba(201,168,76,0.18)',
+    borderLeft: '3px solid rgba(201,168,76,0.5)',
+    fontSize: '13px', color: 'rgba(245,240,232,0.85)', lineHeight: 1.65,
+    whiteSpace: 'pre-line' as const,
   },
   answerPanel: {
     padding: '32px',

@@ -3,6 +3,7 @@
 import { Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createBrowserSupabaseClient } from '@/lib/supabase';
+import { resolvePrimaryApplicationId } from '@/lib/resolve-application';
 import { useEffect, useState } from 'react';
 import CaseFileSummary from '@/components/simulator/CaseFileSummary';
 import InterviewBrief from '@/components/simulator/InterviewBrief';
@@ -26,17 +27,11 @@ function CaseFileContent() {
       }
 
       if (!rawApplicationId) {
-        // Auto-resolve: find the user's most recent simulator application
-        const { data: apps } = await supabase
-          .from('applications')
-          .select('id, source')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(10);
+        // Auto-resolve to the same primary application every other surface uses
+        const primaryId = await resolvePrimaryApplicationId(supabase, user.id);
 
-        if (apps && apps.length > 0) {
-          const simApp = apps.find((a: { id: string; source: string | null }) => a.source === 'simulator_standalone') ?? apps[0];
-          setApplicationId(simApp.id);
+        if (primaryId) {
+          setApplicationId(primaryId);
         } else {
           // No application at all — send to Quick Start
           router.push('/simulator/quick-start');

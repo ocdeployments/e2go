@@ -3,10 +3,14 @@
 // Generated: June 5, 2026
 
 import { createBrowserSupabaseClient } from '@/lib/supabase';
+import { getQuestionKnowledge } from '@/lib/interview-knowledge-base';
+import { asScoreLevel, isBelowAdequate, weakestScore } from '@/lib/case-brief-scores';
+import { resolveIncludedSimulatorSessions, INTERVIEW_SESSION_TIER_PAYMENT_TYPES } from '@/lib/entitlements';
 import type {
   SimulatorContext,
   Question,
   CoachingSummary,
+  QuestionBreakdownItem,
   CompletedSession,
   InvestmentSource,
   FundFlowEvent,
@@ -22,6 +26,28 @@ const supabase = createBrowserSupabaseClient();
 // =============================================================================
 // HELPERS
 // =============================================================================
+
+/**
+ * The denial risks the analysis engine found, as short strings for the coaching
+ * prompt.
+ *
+ * They are read out of case_brief_json rather than the denial_risks column:
+ * the column exists but the analysis run has never written it, and the full
+ * brief it does write carries the same list. Only FLAG and CRITICAL are worth
+ * a coach's attention — CLEAR and WATCH are not findings to rehearse against.
+ */
+function extractDenialRiskFlags(caseBriefJson: unknown): string[] {
+  const risks = (caseBriefJson as { denial_risks?: unknown } | null)?.denial_risks;
+  if (!Array.isArray(risks)) return [];
+
+  return risks
+    .filter((r): r is { code: string; level: string; reason: string } =>
+      typeof r === 'object' && r !== null &&
+      typeof (r as { code?: unknown }).code === 'string' &&
+      typeof (r as { reason?: unknown }).reason === 'string' &&
+      ((r as { level?: unknown }).level === 'FLAG' || (r as { level?: unknown }).level === 'CRITICAL'))
+    .map((r) => `${r.code}: ${r.reason}`);
+}
 
 function deriveImmigrantIntentRisk(
   priorVisaDenial: boolean,
@@ -107,6 +133,24 @@ export async function buildSimulatorContext(applicationId: string): Promise<Simu
     .eq('user_id', application.user_id)
     .maybeSingle();
 
+  // Fetch Case Intelligence Core's case theory — the CPU's narrative + numbers
+  // strategy (non-blocking; null until the CPU has built a theory for this case)
+  const { data: caseTheory } = await supabase
+    .from('case_theory')
+    .select('narrative, numbers_strategy')
+    .eq('application_id', applicationId)
+    .maybeSingle();
+
+  // Fetch quiz-derived franchise intent — application.route/business_category are
+  // NULL on every live row, so this is the only populated franchise signal.
+  const { data: quizSession } = await supabase
+    .from('quiz_sessions')
+    .select('franchise_interest')
+    .eq('user_id', application.user_id)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
   // Fetch investment sources from Tab F
   const investmentSources: InvestmentSource[] = [];
   const fundFlowEvents: FundFlowEvent[] = [];
@@ -129,13 +173,15 @@ export async function buildSimulatorContext(applicationId: string): Promise<Simu
   // Business category
   const businessCategory = application.business_category ||
     answersMap.get('M2-CATEGORY') ||
-    answersMap.get('Q0-10') ||
     'general';
 
   // FDD priority questions — fetched for franchise applicants only (non-blocking)
   let fddPriorityQuestions: { text: string; triggered_by: string; importance: string }[] = [];
-  const businessRoute = application.business_route || answersMap.get('M2-ROUTE') || 'new';
+  const businessRoute = application.route || answersMap.get('M2-ROUTE') || 'new';
+  // application.route/business_category are NULL on every live row (Module 2 never
+  // writes them), so the quiz-derived signal is what actually gates this in production.
   const isFranchiseApplicant =
+    quizSession?.franchise_interest === true ||
     businessRoute === 'franchise' ||
     (businessCategory || '').toLowerCase().includes('franchise');
 
@@ -194,17 +240,38 @@ export async function buildSimulatorContext(applicationId: string): Promise<Simu
     priorDenialDetails: priorVisaDenial ?
       (answersMap.get('QA-24') || answersMap.get('M3-A-24') || null) : null,
     immigrantIntentRisk: deriveImmigrantIntentRisk(priorVisaDenial, answersMap),
-    substantialityScore: caseBrief?.substantiality_score ?? null,
-    marginalityScore: caseBrief?.marginality_score ?? null,
-    developDirectScore: caseBrief?.develop_direct_score ?? null,
-    denialRiskFlags: caseBrief?.risk_flags || [],
+    /**
+     * The engine's judgements, read from the columns that exist.
+     *
+     * These used to name marginality_score, develop_direct_score and
+     * risk_flags — none of which are columns on case_briefs. The select is a
+     * `*`, so nothing errored; the three fields were simply undefined, and the
+     * weak-point probes they gate have never fired for any client.
+     *
+     * Marginality is stored as two judgements and the case is only as strong
+     * as the weaker one. "Develop and direct" is the executive role judgement.
+     * The denial risks live inside case_brief_json rather than in a column of
+     * their own, because that is where the analysis run writes them.
+     */
+    substantialityScore: asScoreLevel(caseBrief?.substantiality_score),
+    marginalityScore: weakestScore(
+      caseBrief?.marginality_income_score,
+      caseBrief?.marginality_contribution_score,
+    ),
+    developDirectScore: asScoreLevel(caseBrief?.executive_role_score),
+    denialRiskFlags: extractDenialRiskFlags(caseBrief?.case_brief_json),
     archetype: caseProfile?.archetype ?? null,
     sourceOfFundsScore: caseProfile?.source_of_funds_score ?? null,
     managementRoleScore: caseProfile?.management_role_score ?? null,
     businessPlanScore: caseProfile?.business_plan_score ?? null,
     applicationType: application.application_type || 'solo',
     createdAt: application.created_at,
+    p2Role: answersMap.get('P2-ROLE') || null,
+    p2Sof: answersMap.get('P2-SOF') || null,
+    p2Quals: answersMap.get('P2-QUALS') || null,
     fddPriorityQuestions: fddPriorityQuestions.length > 0 ? fddPriorityQuestions : undefined,
+    caseTheoryNarrative: caseTheory?.narrative ?? null,
+    caseTheoryNumbersStrategy: caseTheory?.numbers_strategy ?? null,
   };
 }
 
@@ -247,8 +314,14 @@ function reframeAsFranchiseOfficerQuestion(
   ]);
 }
 
+// Phrasings used in the previous session for this application — pick() avoids
+// them so repeat sessions don't serve identical wording. Set per generateQuestions call.
+let _avoidTexts: Set<string> = new Set();
+
 function pick<T>(arr: T[]): T {
-  return arr[Math.floor(Math.random() * arr.length)];
+  const fresh = arr.filter(x => typeof x !== 'string' || !_avoidTexts.has(x as unknown as string));
+  const pool = fresh.length > 0 ? fresh : arr;
+  return pool[Math.floor(Math.random() * pool.length)];
 }
 
 function shuffle<T>(arr: T[]): T[] {
@@ -260,13 +333,65 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
+// Prefer pool entries whose text wasn't asked last session; top up from the rest if short.
+function sampleFresh(pool: Question[], n: number): Question[] {
+  const fresh = pool.filter(q => !_avoidTexts.has(q.text));
+  const stale = pool.filter(q => _avoidTexts.has(q.text));
+  return [...shuffle(fresh), ...shuffle(stale)].slice(0, n);
+}
+
+function questionHistoryKey(applicationId: string): string {
+  return `e2go-sim-last-questions-${applicationId}`;
+}
+
+/**
+ * Substantive coach hint: what the officer is testing + what a strong answer covers.
+ * Uses the interview knowledge base where the question ID is mapped; falls back to
+ * category-level guidance otherwise.
+ */
+function buildCoachHint(q: Question): string {
+  const kb = getQuestionKnowledge(q.id);
+  if (kb) {
+    const principles = kb.keyPrinciples.slice(0, 4).map(p => `• ${p}`).join('\n');
+    return `The officer is testing: ${kb.officerTests}\n\nA strong answer covers:\n${principles}`;
+  }
+  switch (q.category) {
+    case 'gap_probe':
+      return 'This probes a documented weak spot in your file. Answer with specifics — exact figures, dates, account names, and where the evidence sits in your package. A vague answer here confirms the officer\'s concern.';
+    case 'archetype_probe':
+      return 'The officer is testing whether your background genuinely fits this business. Connect your specific experience to concrete operating decisions you make — avoid generic claims anyone could recite.';
+    case 'fdd_probe':
+      return 'This question comes from your own Franchise Disclosure Document. Show you read and understood it: name the FDD item, state what it disclosed, and describe the specific due-diligence step you took before committing funds.';
+    case 'business_type':
+      return 'This is an industry-operations check. Prove operational fluency: name the licenses, suppliers, hires, or contracts involved — with numbers and dates, not plans in the abstract.';
+    case 'weak_point_probe':
+      return 'This is an adversarial probe. Answer it head-on: lead with your strongest fact, then support it with a specific number, date, or document reference from your filed package.';
+    default:
+      return 'Answer in 30–60 seconds with specifics: exact figures, names, dates, and one concrete example. Officers score specificity and consistency with your filed documents.';
+  }
+}
+
 /**
  * Generates 10-12 personalized questions based on the simulator context.
- * Each session randomly selects from question pools so repeat users get variety.
- * Order: universal questions first, then weak point probes, then business type.
+ * Variety across sessions comes from three mechanisms:
+ * 1. Phrasing memory — the previous session's exact wordings (localStorage,
+ *    keyed by application) are avoided when picking from each phrasing pool.
+ * 2. Topic rotation — one non-core universal topic is dropped at random each
+ *    session, freeing a slot for probes/archetype/business-type questions.
+ * 3. Order shuffle — everything after the opening question is shuffled, so
+ *    probes interleave with universals instead of repeating a fixed skeleton.
  */
 export function generateQuestions(context: SimulatorContext): Question[] {
   const questions: Question[] = [];
+
+  // Load the previous session's phrasings so pick()/sampleFresh() avoid them
+  _avoidTexts = new Set();
+  if (typeof window !== 'undefined') {
+    try {
+      const prev = JSON.parse(localStorage.getItem(questionHistoryKey(context.applicationId)) || '[]');
+      if (Array.isArray(prev)) _avoidTexts = new Set(prev.filter((t): t is string => typeof t === 'string'));
+    } catch { /* fresh start */ }
+  }
 
   const businessCtx = context.targetState
     ? `${context.businessName} in ${context.targetState}`
@@ -380,11 +505,11 @@ export function generateQuestions(context: SimulatorContext): Question[] {
 
   // === WEAK POINT PROBE QUESTIONS — flagged by the analysis engine ===
 
-  if (context.substantialityScore !== null && context.substantialityScore < 70) {
+  if (isBelowAdequate(context.substantialityScore)) {
     questions.push({
       id: 'WP-01',
       category: 'weak_point_probe',
-      context: `Substantiality score: ${context.substantialityScore}/100`,
+      context: `Substantiality: ${context.substantialityScore}`,
       relatesToField: 'investment_allocation',
       text: pick([
         `Walk me through exactly how your $${context.investmentAmount.toLocaleString()} investment was allocated across the business.`,
@@ -394,11 +519,11 @@ export function generateQuestions(context: SimulatorContext): Question[] {
     });
   }
 
-  if (context.marginalityScore !== null && context.marginalityScore < 70) {
+  if (isBelowAdequate(context.marginalityScore)) {
     questions.push({
       id: 'WP-02',
       category: 'weak_point_probe',
-      context: `Marginality score: ${context.marginalityScore}/100`,
+      context: `Non-marginality: ${context.marginalityScore}`,
       relatesToField: 'marginality',
       text: pick([
         `Your business projects $${context.revenueYear1.toLocaleString()} in Year 1. How does this compare to what you need to support your household?`,
@@ -408,11 +533,11 @@ export function generateQuestions(context: SimulatorContext): Question[] {
     });
   }
 
-  if (context.developDirectScore !== null && context.developDirectScore < 70) {
+  if (isBelowAdequate(context.developDirectScore)) {
     questions.push({
       id: 'WP-03',
       category: 'weak_point_probe',
-      context: `Develop & Direct score: ${context.developDirectScore}/100`,
+      context: `Develop & Direct: ${context.developDirectScore}`,
       relatesToField: 'management',
       text: pick([
         'Describe your day-to-day management activities. Who reports to you and how do you direct their work?',
@@ -499,9 +624,46 @@ export function generateQuestions(context: SimulatorContext): Question[] {
     });
   }
 
+  // === PARTNERSHIP PROBES — each investor stands alone (spec §5.1.2/§5.1.3):
+  // a partnership case is only as strong as its least-documented partner, so
+  // these fire independently of the P1-only scores above.
+  if (context.applicationType === 'partnership') {
+    if (!context.p2Role || context.p2Role.trim().length < 5) {
+      questions.push({
+        id: 'GP-04',
+        category: 'gap_probe',
+        context: 'Investor 2 role/qualifications not on file',
+        relatesToField: 'management_role',
+        text: pick([
+          "Since neither of you holds majority control, you each need to independently show you develop and direct this enterprise. What specifically does your co-investor do that's distinct from your role?",
+          "Walk me through how you and your co-investor divide management responsibility — where does your authority end and theirs begin?",
+        ]),
+      });
+    }
+    if (!context.p2Sof || context.p2Sof.trim().length < 5) {
+      questions.push({
+        id: 'GP-05',
+        category: 'gap_probe',
+        context: 'Investor 2 source of funds not on file',
+        relatesToField: 'source_of_funds',
+        text: pick([
+          "Your source of funds trail is on file, but this is a two-investor case. Can you speak to where your co-investor's share of the capital came from?",
+          "Each investor's funds need an independent paper trail in a partnership case. What do you know about how your co-investor's contribution was sourced?",
+        ]),
+      });
+    }
+  }
+
+  // === TOPIC ROTATION — drop one non-core universal at random each session ===
+  // Core topics (business, investment, source of funds, intent) always stay.
+  const rotatable = ['UQ-02', 'UQ-05', 'UQ-06', 'UQ-07', 'UQ-08'];
+  const dropId = rotatable[Math.floor(Math.random() * rotatable.length)];
+  const dropIdx = questions.findIndex(q => q.id === dropId);
+  if (dropIdx !== -1) questions.splice(dropIdx, 1);
+
   // === ARCHETYPE QUESTIONS — 2 picked from archetype-specific pool ===
   const archetypePool = getArchetypeQuestions(context.archetype, context);
-  const archetypeSelected = shuffle(archetypePool).slice(0, 2);
+  const archetypeSelected = sampleFresh(archetypePool, 2);
   archetypeSelected.forEach((q, i) => {
     questions.push({ ...q, id: `AQ-0${i + 1}` });
   });
@@ -524,7 +686,7 @@ export function generateQuestions(context: SimulatorContext): Question[] {
   // === BUSINESS TYPE QUESTIONS — fill remaining slots when fewer than 2 FDD probes ===
   const btSlotsNeeded = Math.max(0, 2 - fddProbes.length);
   const businessTypePool = getBusinessTypeQuestions(context.businessCategory, context);
-  const selected = shuffle(businessTypePool).slice(0, btSlotsNeeded);
+  const selected = sampleFresh(businessTypePool, btSlotsNeeded);
   selected.forEach((q, i) => {
     questions.push({ ...q, id: `BT-0${i + 1}` });
   });
@@ -539,13 +701,25 @@ export function generateQuestions(context: SimulatorContext): Question[] {
 
   if (probeCount < 2 && questions.length < 11) {
     const escalationPool = getEscalationQuestions(context);
-    const escalation = shuffle(escalationPool).slice(0, 2);
+    const escalation = sampleFresh(escalationPool, 2);
     escalation.forEach((q, i) => {
       questions.push({ ...q, id: `ESC-0${i + 1}` });
     });
   }
 
-  return questions.slice(0, 12);
+  // === FINAL ASSEMBLY — shuffle order (opener stays first), attach coach hints ===
+  const capped = questions.slice(0, 12);
+  const ordered = [capped[0], ...shuffle(capped.slice(1))];
+  const final = ordered.map(q => ({ ...q, hint: q.hint ?? buildCoachHint(q) }));
+
+  // Persist this session's phrasings so the next session avoids repeating them
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.setItem(questionHistoryKey(context.applicationId), JSON.stringify(final.map(q => q.text)));
+    } catch { /* storage unavailable — variety still works via random pools */ }
+  }
+
+  return final;
 }
 
 /**
@@ -821,12 +995,36 @@ export function generateCoachingSummary(
     .filter(q => q.deliveryNotes && q.deliveryNotes.length > 0)
     .map(q => ({ questionId: q.questionId, questionText: q.questionText, notes: q.deliveryNotes! }));
 
+  // Numeric session score: LLM per-answer scores (1-10 → ×10) averaged across
+  // all answered questions; answers with no score fall back to a rating-based value.
+  const ratingFallbackScore: Record<'strong' | 'weak' | 'inconsistent', number> = {
+    strong: 80,
+    weak: 45,
+    inconsistent: 25,
+  };
+  const questionBreakdown: QuestionBreakdownItem[] = session.questions.map(q => ({
+    questionId: q.questionId,
+    questionText: q.questionText,
+    rating: q.rating,
+    score: typeof q.score === 'number' ? Math.round(q.score * 10) : null,
+    feedback: q.feedback,
+    suggestion: q.specificSuggestion || q.feedback,
+  }));
+  const perAnswerScores = session.questions.map(q =>
+    typeof q.score === 'number' ? q.score * 10 : ratingFallbackScore[q.rating]
+  );
+  const overallScore = perAnswerScores.length > 0
+    ? Math.round(perAnswerScores.reduce((a, b) => a + b, 0) / perAnswerScores.length)
+    : null;
+
   return {
     strongAnswers,
     needsWork,
     inconsistencies,
     weakPointsAtRisk,
     readinessIndicator,
+    overallScore,
+    questionBreakdown,
     deliveryFlags: deliveryFlags.length > 0 ? deliveryFlags : undefined,
   };
 }
@@ -855,17 +1053,20 @@ export async function createSimulatorSession(
 
   const sessionsUsed = application.simulator_sessions_used || 0;
 
-  // Complete package holders get 3 sessions. Standalone buyers use DB value. Default: 2.
-  let sessionsPurchased = application.simulator_sessions_purchased || 2;
-  const { data: completePayment } = await supabase
-    .from('payments')
-    .select('id')
-    .eq('user_id', application.user_id)
-    .eq('status', 'completed')
-    .in('payment_type', ['complete', 'complete_partnership'])
-    .limit(1)
-    .maybeSingle();
-  if (completePayment) sessionsPurchased = Math.max(sessionsPurchased, 3);
+  // NULL means "use the tier default" — Interview Ready/Visa Ready buyers get
+  // 5, legacy 'complete' buyers keep their grandfathered 3, everyone else 2.
+  let sessionsPurchased = application.simulator_sessions_purchased;
+  if (sessionsPurchased == null) {
+    const { data: tierPayments } = await supabase
+      .from('payments')
+      .select('payment_type')
+      .eq('user_id', application.user_id)
+      .eq('status', 'completed')
+      .in('payment_type', INTERVIEW_SESSION_TIER_PAYMENT_TYPES);
+    sessionsPurchased = resolveIncludedSimulatorSessions(
+      new Set((tierPayments ?? []).map((p: { payment_type: string }) => p.payment_type))
+    );
+  }
 
   if (sessionsUsed >= sessionsPurchased) throw new Error('SESSION_LIMIT_EXCEEDED');
 
@@ -1038,20 +1239,21 @@ export async function checkSessionAvailability(applicationId: string): Promise<{
 
   const sessionsUsed = application.simulator_sessions_used || 0;
 
-  // Complete package holders get 3 simulator sessions included.
-  // Standalone simulator buyers use simulator_sessions_purchased from DB.
-  // Default fallback: 2 free sessions.
-  let sessionsPurchased = application.simulator_sessions_purchased || 2;
-  if (application.user_id) {
-    const { data: completePayment } = await supabase
-      .from('payments')
-      .select('id')
-      .eq('user_id', application.user_id)
-      .eq('status', 'completed')
-      .in('payment_type', ['complete', 'complete_partnership'])
-      .limit(1)
-      .maybeSingle();
-    if (completePayment) sessionsPurchased = Math.max(sessionsPurchased, 3);
+  // NULL means "use the tier default" — Interview Ready/Visa Ready buyers get
+  // 5, legacy 'complete' buyers keep their grandfathered 3, everyone else 2.
+  let sessionsPurchased = application.simulator_sessions_purchased;
+  if (sessionsPurchased == null) {
+    let tierTypes = new Set<string>();
+    if (application.user_id) {
+      const { data: tierPayments } = await supabase
+        .from('payments')
+        .select('payment_type')
+        .eq('user_id', application.user_id)
+        .eq('status', 'completed')
+        .in('payment_type', INTERVIEW_SESSION_TIER_PAYMENT_TYPES);
+      tierTypes = new Set((tierPayments ?? []).map((p: { payment_type: string }) => p.payment_type));
+    }
+    sessionsPurchased = resolveIncludedSimulatorSessions(tierTypes);
   }
 
   const sessionsRemaining = Math.max(0, sessionsPurchased - sessionsUsed);

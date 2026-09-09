@@ -158,7 +158,8 @@ function analyzeDocument(doc: GeneratedDocument): AuditFinding[] {
 
   // 2. Unfilled placeholders in content_text
   if (text) {
-    const placeholderRegex = /\[([A-Z][A-Z\s/'"-]{2,})\]/g;
+    // Matches all-caps templates ([PASSPORT NUMBER]) AND descriptive placeholders ([passport number], [insert name here])
+    const placeholderRegex = /\[(?:[A-Z][A-Z\s'/",-]{2,}|[a-zA-Z][a-zA-Z\s'/",-]*(?:name|number|date|amount|address|here|tbd|insert|unknown|provided|code|country|state|city|type|your)[a-zA-Z\s'/",-]*)\]/gi;
     const found = new Set<string>();
     let m: RegExpExecArray | null;
     while ((m = placeholderRegex.exec(text)) !== null) {

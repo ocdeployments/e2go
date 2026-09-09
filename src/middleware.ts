@@ -5,7 +5,7 @@ import { Ratelimit } from '@upstash/ratelimit';
 import { Redis } from '@upstash/redis';
 
 // ---------------------------------------------------------------------------
-// Rate limiting — Upstash Redis in production, in-memory fallback for dev
+// Redis — shared instance for rate limiting AND middleware caching
 // ---------------------------------------------------------------------------
 const redis = process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
   ? new Redis({
@@ -14,6 +14,31 @@ const redis = process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_RE
     })
   : null;
 
+// ---------------------------------------------------------------------------
+// Middleware cache — 30-min TTL, invalidated by webhook + accept-terms routes
+// ---------------------------------------------------------------------------
+const CACHE_TTL_SECONDS = 1800;
+
+interface AccessCache {
+  full: boolean;     // paid non-simulator application exists
+  sim: boolean;      // simulator-standalone purchase exists
+  fdd: boolean;      // standalone fdd_intelligence payment exists
+  deleted?: boolean; // soft-deleted accounts — redirected to /account-recovery
+}
+
+/** Exported so stripe webhook + payment routes can call invalidation */
+export function accessCacheKey(userId: string): string {
+  return `mw:access:${userId}`;
+}
+
+/** Exported so accept-terms route can call invalidation */
+export function termsCacheKey(userId: string, version: string): string {
+  return `mw:terms:${userId}:${version}`;
+}
+
+// ---------------------------------------------------------------------------
+// Rate limiting — Upstash Redis in production, in-memory fallback for dev
+// ---------------------------------------------------------------------------
 const loginLimiter = redis
   ? new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(5, '15 m'), prefix: 'rl:login' })
   : null;
@@ -22,7 +47,106 @@ const quizLimiter = redis
   ? new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(3, '60 m'), prefix: 'rl:quiz' })
   : null;
 
-// In-memory fallback (single-instance dev only)
+// ---------------------------------------------------------------------------
+// Safe Redis wrappers — a Redis outage or auth failure (e.g. WRONGPASS, or a
+// deleted database) must never 500 the middleware: rate limits fall back to the
+// in-memory counter, cache reads fall back to the DB path, cache writes are
+// dropped.
+// ---------------------------------------------------------------------------
+interface LimitSpec {
+  limiter: Ratelimit | null;
+  ip: string;
+  /** Namespace for the in-memory fallback counter. */
+  name: string;
+  limit: number;
+  windowMs: number;
+}
+
+/**
+ * Circuit breaker for Redis.
+ *
+ * A deleted or unreachable Upstash host does not fail fast: every call pays a
+ * DNS/connect timeout before it rejects. Middleware runs on every gated
+ * navigation and makes several Redis calls per request, so a dead Redis adds
+ * seconds of latency to each page load even though every call site below
+ * already degrades correctly on its own.
+ *
+ * After a failure we stop calling Redis for a cooldown and go straight to the
+ * in-memory path. The first call after the cooldown probes Redis again, so the
+ * circuit closes by itself once Redis comes back.
+ */
+const REDIS_COOLDOWN_MS = 30_000;
+let redisDownUntil = 0;
+
+function redisAvailable(): boolean {
+  return Date.now() >= redisDownUntil;
+}
+
+function noteRedisFailure(): void {
+  redisDownUntil = Date.now() + REDIS_COOLDOWN_MS;
+}
+
+function noteRedisSuccess(): void {
+  redisDownUntil = 0;
+}
+
+/**
+ * Enforce a rate limit, degrading rather than failing when Redis is unavailable.
+ *
+ * Two failure modes are handled here:
+ *  1. `limiter.limit()` rejecting — Redis unreachable, deleted, or WRONGPASS.
+ *  2. The SDK's `pending` promise rejecting. `limit()` settles background work
+ *     (multi-region sync, analytics) on that promise, and the Upstash docs
+ *     require the caller to handle it explicitly on the Edge runtime. Left
+ *     unhandled it becomes an unhandled rejection that aborts the whole
+ *     invocation — which is how a deleted Redis turned /login into a 500
+ *     even though the try/catch below was already in place.
+ *
+ * When Redis is gone we fall back to the in-memory counter rather than waving
+ * every request through: per-instance limiting is weaker than Redis, but it
+ * still blunts brute-force attempts instead of removing the limit entirely.
+ */
+async function enforceLimit({ limiter, ip, name, limit, windowMs }: LimitSpec): Promise<boolean> {
+  const fallbackKey = `${name}:${ip}`;
+  if (!limiter || !redisAvailable()) return devCheckRateLimit(fallbackKey, limit, windowMs);
+
+  try {
+    const result = await limiter.limit(ip);
+    void Promise.resolve(result.pending).catch(() => {});
+    noteRedisSuccess();
+    return result.success;
+  } catch (err) {
+    noteRedisFailure();
+    console.error(`[middleware] Redis rate-limit unavailable on ${name} — falling back to in-memory:`, err instanceof Error ? err.message : err);
+    return devCheckRateLimit(fallbackKey, limit, windowMs);
+  }
+}
+
+async function safeCacheGet<T>(key: string): Promise<T | null> {
+  if (!redis || !redisAvailable()) return null;
+  try {
+    const value = await redis.get<T>(key);
+    noteRedisSuccess();
+    return value;
+  } catch (err) {
+    noteRedisFailure();
+    console.error('[middleware] Redis cache read error — treating as miss:', err instanceof Error ? err.message : err);
+    return null;
+  }
+}
+
+async function safeCacheSet(key: string, value: unknown, ex: number): Promise<void> {
+  if (!redis || !redisAvailable()) return;
+  try {
+    await redis.set(key, value, { ex });
+    noteRedisSuccess();
+  } catch (err) {
+    noteRedisFailure();
+    console.error('[middleware] Redis cache write error — skipping:', err instanceof Error ? err.message : err);
+  }
+}
+
+// In-memory fallback — dev, and any request where Redis is unreachable
 const devLimits = new Map<string, { count: number; resetAt: number }>();
 
 function devCheckRateLimit(key: string, limit: number, windowMs: number): boolean {
@@ -37,92 +161,167 @@ function devCheckRateLimit(key: string, limit: number, windowMs: number): boolea
   return true;
 }
 
+// ---------------------------------------------------------------------------
+// Block logging — rate_limit_hits
+// ---------------------------------------------------------------------------
+
+/**
+ * Record one block.
+ *
+ * Only blocks are written. A rate limiter's whole point is that the ordinary
+ * request never notices it, so the ordinary request must not pay for a database
+ * round trip; a blocked one is being rejected anyway, and the few milliseconds
+ * buy the admin panel the only signal it has that anyone is being turned away.
+ *
+ * The write is awaited rather than fired and forgotten because Edge middleware
+ * ends when the response is returned — a dangling promise is simply dropped, and
+ * a log nobody can rely on is worse than none. The abort signal bounds the cost
+ * so a slow or unreachable Supabase cannot hold a 429 open.
+ *
+ * Every failure path is swallowed. Logging a block must never turn a 429 into a
+ * 500, and it must never be the reason a limiter stops limiting.
+ */
+async function logRateLimitHit(limiter: string, pathname: string, ip: string): Promise<void> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) return;
+
+  try {
+    /**
+     * The IP is hashed, not stored — the panel's question is how many distinct
+     * sources are hitting the wall, never who they are. Same construction as
+     * consent_log, via Web Crypto because node:crypto is not on the Edge runtime.
+     */
+    const salt = process.env.IP_HASH_SALT || 'e2go-consent-log';
+    const digest = await crypto.subtle.digest(
+      'SHA-256',
+      new TextEncoder().encode(`${ip}:${salt}`),
+    );
+    const ipHash = Array.from(new Uint8Array(digest))
+      .map((b) => b.toString(16).padStart(2, '0'))
+      .join('');
+
+    await fetch(`${url.replace(/\/$/, '')}/rest/v1/rate_limit_hits`, {
+      method: 'POST',
+      headers: {
+        apikey: key,
+        Authorization: `Bearer ${key}`,
+        'Content-Type': 'application/json',
+        Prefer: 'return=minimal',
+      },
+      body: JSON.stringify({ limiter, path: pathname, ip_hash: ipHash }),
+      signal: AbortSignal.timeout(2000),
+    });
+  } catch (err) {
+    console.error('[middleware] rate-limit hit not logged:', err instanceof Error ? err.message : err);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Brand-domain gate — e2go.app / www.e2go.app
+// ---------------------------------------------------------------------------
+// The public brand domain shows only the homepage and the early-access page
+// while the rest of the app is still in development; the full app stays
+// reachable at e2go.vercel.app. Gating every path means this middleware must
+// now run on paths the matcher below never used to cover, so
+// `isExistingGatedPath` reproduces those matcher entries as a plain check —
+// keeping every other host on the exact same code path as before for
+// anything outside that list, rather than paying for a Supabase auth lookup
+// on every marketing page.
+const BRAND_HOSTS = new Set(['e2go.app', 'www.e2go.app']);
+
+function isBrandHostAllowedPath(pathname: string): boolean {
+  if (pathname === '/' || pathname === '/early-access') return true;
+  if (pathname.startsWith('/api/early-access')) return true;
+  if (pathname.startsWith('/_next')) return true;
+  if (pathname === '/favicon.ico') return true;
+  // Static assets (images, fonts, etc.) — app routes never carry a file extension.
+  if (/\.[a-zA-Z0-9]+$/.test(pathname)) return true;
+  return false;
+}
+
+function isExistingGatedPath(pathname: string): boolean {
+  return (
+    pathname === '/case-profile' || pathname.startsWith('/case-profile/') ||
+    pathname === '/dashboard' || pathname.startsWith('/dashboard/') ||
+    pathname === '/apply' || pathname.startsWith('/apply/') ||
+    pathname === '/onboarding' || pathname.startsWith('/onboarding/') ||
+    pathname === '/admin' || pathname.startsWith('/admin/') ||
+    pathname === '/score' ||
+    pathname === '/settings' ||
+    pathname.startsWith('/generate/') ||
+    pathname.startsWith('/documents/') ||
+    pathname === '/fdd' || pathname.startsWith('/fdd/') ||
+    pathname.startsWith('/api/fdd/') ||
+    pathname === '/gap-analysis' || pathname.startsWith('/gap-analysis/') ||
+    pathname === '/market-analysis' || pathname.startsWith('/market-analysis/') ||
+    pathname === '/api/market-analysis' ||
+    pathname === '/simulator' || pathname.startsWith('/simulator/') ||
+    pathname === '/login' ||
+    pathname === '/signup' ||
+    pathname === '/api/quiz/submit' ||
+    pathname === '/api/email/results' ||
+    pathname.startsWith('/api/generate/') ||
+    pathname.startsWith('/api/analysis/')
+  );
+}
+
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
+  const host = req.headers.get('host') || '';
+
+  if (BRAND_HOSTS.has(host)) {
+    if (isBrandHostAllowedPath(pathname)) {
+      return NextResponse.next();
+    }
+    return NextResponse.redirect(new URL('/early-access', req.url));
+  }
+
+  if (!isExistingGatedPath(pathname)) {
+    return NextResponse.next();
+  }
+
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() || 'unknown-ip';
 
-  // Rate limit login route: 5 attempts per IP per 15 minutes (production only)
+  // Rate limit login route
   if ((pathname === '/login' || pathname === '/api/auth/v1/token') && process.env.NODE_ENV === 'production') {
-    if (loginLimiter) {
-      const { success } = await loginLimiter.limit(ip);
-      if (!success) {
-        return NextResponse.json(
-          { error: 'Too many attempts. Please wait a few minutes and try again.' },
-          { status: 429 }
-        );
-      }
-    } else {
-      const allowed = devCheckRateLimit(`login:${ip}`, 5, 15 * 60 * 1000);
-      if (!allowed) {
-        return NextResponse.json(
-          { error: 'Too many attempts. Please wait a few minutes and try again.' },
-          { status: 429 }
-        );
-      }
+    const allowed = await enforceLimit({ limiter: loginLimiter, ip, name: 'login', limit: 5, windowMs: 15 * 60 * 1000 });
+    if (!allowed) {
+      await logRateLimitHit('login', pathname, ip);
+      return NextResponse.json({ error: 'Too many attempts. Please wait a few minutes and try again.' }, { status: 429 });
     }
   }
 
-  // Rate limit quiz route completions: 3 completions per IP per hour
+  // Rate limit quiz submission
   if (pathname === '/api/quiz/submit' || pathname === '/api/email/results') {
-    if (quizLimiter) {
-      const { success } = await quizLimiter.limit(ip);
-      if (!success) {
-        return NextResponse.json(
-          { error: 'Too many attempts. Please wait a few minutes and try again.' },
-          { status: 429 }
-        );
-      }
-    } else {
-      const allowed = devCheckRateLimit(`quiz:${ip}`, 3, 60 * 60 * 1000);
-      if (!allowed) {
-        return NextResponse.json(
-          { error: 'Too many attempts. Please wait a few minutes and try again.' },
-          { status: 429 }
-        );
-      }
+    const allowed = await enforceLimit({ limiter: quizLimiter, ip, name: 'quiz', limit: 3, windowMs: 60 * 60 * 1000 });
+    if (!allowed) {
+      await logRateLimitHit('quiz', pathname, ip);
+      return NextResponse.json({ error: 'Too many attempts. Please wait a few minutes and try again.' }, { status: 429 });
     }
   }
 
-  // Note: /api/generate and /api/analysis rate limiting is enforced inside each route
-  // using Upstash Redis keyed on the verified session user.id — not here.
-  // A header-based limit here was bypassable by spoofing x-user-id.
-
-  let supabaseResponse = NextResponse.next({
-    request: req,
-  });
+  let supabaseResponse = NextResponse.next({ request: req });
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll() {
-          return req.cookies.getAll();
-        },
+        getAll() { return req.cookies.getAll(); },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => {
-            req.cookies.set(name, value);
-          });
-          supabaseResponse = NextResponse.next({
-            request: req,
-          });
-          cookiesToSet.forEach(({ name, value, options }) => {
-            supabaseResponse.cookies.set(name, value, options);
-          });
+          cookiesToSet.forEach(({ name, value }) => req.cookies.set(name, value));
+          supabaseResponse = NextResponse.next({ request: req });
+          cookiesToSet.forEach(({ name, value, options }) => supabaseResponse.cookies.set(name, value, options));
         },
       },
     }
   );
 
-  // getUser() validates the JWT against the Supabase Auth server on every
-  // request — unlike getSession() which trusts the cookie without verification
-  // and lets expired/forged tokens through to protected pages.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Validate JWT server-side on every request
+  const { data: { user } } = await supabase.auth.getUser();
 
-  // Enforce email verification — redirect to /verify if email not confirmed
-  // Exception: /verify itself and /api/auth/* routes must not redirect (infinite loop)
+  // Enforce email verification
   if (user && !user.email_confirmed_at) {
     const isVerifyRoute = pathname === '/verify';
     const isApiAuthRoute = pathname.startsWith('/api/auth');
@@ -131,118 +330,194 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  // Protected routes that require authentication
-  const protectedRoutes = [
+  // ---------------------------------------------------------------------------
+  // Route classification
+  // ---------------------------------------------------------------------------
+
+  // Requires authentication only (quiz and results are free)
+  const AUTH_ROUTES = [
     '/dashboard',
-    '/apply/',
     '/admin',
-    '/simulator',
     '/score',
     '/settings',
     '/generate/',
     '/documents/',
-    '/fdd/',
-    '/gap-analysis',
-    '/market-analysis',
+    '/franchise/',
+    '/renewal',
   ];
 
-  // Auth routes - redirect to dashboard if already logged in
-  const authRoutes = ['/login', '/signup'];
+  // Requires a paid application — redirects to /results if not paid
+  const PAID_ROUTES = [
+    '/case-profile',
+    '/apply',
+    '/fdd',
+    '/gap-analysis',
+    '/market-analysis',
+    '/simulator',
+    '/onboarding',
+  ];
 
-  // Check if accessing a protected route without a verified user
-  if (!user && protectedRoutes.some((route) => pathname.startsWith(route))) {
+  // Auth pages — redirect to /case-profile if already signed in
+  const AUTH_PAGES = ['/login', '/signup'];
+
+  // ---------------------------------------------------------------------------
+  // Auth guard
+  // ---------------------------------------------------------------------------
+  const needsAuth = [...AUTH_ROUTES, ...PAID_ROUTES].some(r => pathname.startsWith(r));
+  if (!user && needsAuth) {
     const redirectUrl = new URL('/login', req.url);
     redirectUrl.searchParams.set('next', pathname);
     return NextResponse.redirect(redirectUrl);
   }
 
-  // Gate /apply routes on terms acceptance (must be after auth check)
+  // ---------------------------------------------------------------------------
+  // Soft-delete guard for AUTH_ROUTES
+  // PAID_ROUTES handle this within their own cache block below.
+  // ---------------------------------------------------------------------------
+  if (user && AUTH_ROUTES.some(r => pathname.startsWith(r))) {
+    const cachedAccess = await safeCacheGet<AccessCache>(accessCacheKey(user.id));
+    if (cachedAccess?.deleted) {
+      return NextResponse.redirect(new URL('/account-recovery', req.url));
+    }
+    if (!cachedAccess) {
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('deleted_at')
+        .eq('id', user.id)
+        .maybeSingle();
+      /**
+       * Logged rather than swallowed. A failed lookup here reads as "not
+       * deleted" and lets the request through, which is the wrong direction to
+       * fail in for a deletion gate — but failing closed would lock every user
+       * out on a transient database blip. Loud in the logs is the compromise.
+       */
+      if (profileError) {
+        console.error('[middleware] soft-delete lookup failed:', profileError);
+      }
+      if (profile?.deleted_at) {
+        const access: AccessCache = { full: false, sim: false, fdd: false, deleted: true };
+        await safeCacheSet(accessCacheKey(user.id), access, 86400);
+        return NextResponse.redirect(new URL('/account-recovery', req.url));
+      }
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Payment gate — authenticated users must have a paid application
+  // Cached in Upstash Redis for 30 min; invalidated by stripe webhook on payment
+  // ---------------------------------------------------------------------------
+  if (user && PAID_ROUTES.some(r => pathname.startsWith(r))) {
+    let access: AccessCache | null = await safeCacheGet<AccessCache>(accessCacheKey(user.id));
+
+    if (!access) {
+      // Cache miss — fetch soft-delete status and payment status in parallel
+      const [{ data: apps }, { data: profile }] = await Promise.all([
+        supabase.from('applications').select('payment_status, source').eq('user_id', user.id),
+        supabase.from('profiles').select('deleted_at').eq('id', user.id).maybeSingle(),
+      ]);
+
+      if (profile?.deleted_at) {
+        // Soft-deleted — cache with long TTL and redirect
+        access = { full: false, sim: false, fdd: false, deleted: true };
+        await safeCacheSet(accessCacheKey(user.id), access, 86400);
+        return NextResponse.redirect(new URL('/account-recovery', req.url));
+      }
+
+      const hasFullAccess = apps?.some(
+        a => a.payment_status === 'paid' && a.source !== 'simulator_standalone'
+      ) ?? false;
+
+      const hasSimulatorAccess = apps?.some(a => a.source === 'simulator_standalone') ?? false;
+
+      // Pre-fetch FDD status so /fdd route checks also skip the DB on cache hit
+      let hasFddAccess = false;
+      if (!hasFullAccess) {
+        const { data: fddPayment } = await supabase
+          .from('payments')
+          .select('id')
+          .eq('user_id', user.id)
+          .in('payment_type', ['fdd_intelligence', 'fdd_intelligence_loyalty'])
+          .eq('status', 'completed')
+          .limit(1)
+          .maybeSingle();
+        hasFddAccess = !!fddPayment;
+      }
+
+      access = { full: hasFullAccess, sim: hasSimulatorAccess, fdd: hasFddAccess };
+
+      await safeCacheSet(accessCacheKey(user.id), access, CACHE_TTL_SECONDS);
+    }
+
+    if (access.deleted) {
+      return NextResponse.redirect(new URL('/account-recovery', req.url));
+    }
+
+    // Grace path — a client landing on /onboarding straight from Stripe checkout
+    // carries ?session_id=; the webhook that flips payment_status to 'paid' can
+    // lag a few seconds behind the redirect, so the access cache may still read
+    // unpaid. Trust a present session_id and let onboarding's own client-side
+    // useApplicationGate retry loop (4 attempts, 1.5s apart) wait out the race
+    // instead of bouncing a paying client to /results.
+    const hasFreshCheckoutSession = pathname.startsWith('/onboarding') && req.nextUrl.searchParams.has('session_id');
+
+    if (!access.full && !hasFreshCheckoutSession) {
+      if (pathname.startsWith('/fdd')) {
+        if (access.fdd) {
+          // FDD standalone purchase — allow through
+        } else if (access.sim) {
+          return NextResponse.redirect(new URL('/simulator', req.url));
+        } else {
+          return NextResponse.redirect(new URL('/results', req.url));
+        }
+      } else if (access.sim && pathname.startsWith('/simulator')) {
+        // Simulator-only subscriber on their permitted route — pass through
+      } else if (access.sim) {
+        // Simulator-only subscriber trying to reach a case-building route
+        return NextResponse.redirect(new URL('/simulator', req.url));
+      } else {
+        // No purchase yet — send to results/pricing page
+        return NextResponse.redirect(new URL('/results', req.url));
+      }
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Terms acceptance gate — /apply routes only
+  // Cached in Upstash Redis for 30 min; invalidated by /api/auth/accept-terms
+  // ---------------------------------------------------------------------------
   const TERMS_VERSION = '1.0';
   if (user && pathname.startsWith('/apply')) {
-    const { data: acceptance } = await supabase
-      .from('terms_acceptance')
-      .select('terms_version')
-      .eq('user_id', user.id)
-      .eq('terms_version', TERMS_VERSION)
-      .single();
+    let termsAccepted = false;
 
-    if (!acceptance) {
+    const cachedTerms = await safeCacheGet<number>(termsCacheKey(user.id, TERMS_VERSION));
+    termsAccepted = cachedTerms === 1;
+
+    if (!termsAccepted) {
+      const { data: acceptance } = await supabase
+        .from('terms_acceptance')
+        .select('terms_version')
+        .eq('user_id', user.id)
+        .eq('terms_version', TERMS_VERSION)
+        .single();
+
+      if (acceptance) {
+        termsAccepted = true;
+        await safeCacheSet(termsCacheKey(user.id, TERMS_VERSION), 1, CACHE_TTL_SECONDS);
+      }
+    }
+
+    if (!termsAccepted) {
       const termsUrl = new URL('/terms-required', req.url);
       termsUrl.searchParams.set('next', pathname);
       return NextResponse.redirect(termsUrl);
     }
   }
 
-  // Gate case-building and intelligence routes behind paid entitlements.
-  // Admin users (role=admin) bypass all payment gates — they have full access.
-  const COMPLETE_GATED = ['/apply/story', '/apply/business', '/apply/investment', '/apply/qualifications', '/apply/family', '/apply/ties', '/gap-analysis'];
-  const FDD_GATED = ['/fdd/'];
-
-  const needsPaymentCheck = user && (
-    COMPLETE_GATED.some(r => pathname.startsWith(r)) ||
-    FDD_GATED.some(r => pathname.startsWith(r))
-  );
-
-  let isAdmin = false;
-  if (needsPaymentCheck) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user!.id)
-      .single();
-    isAdmin = profile?.role === 'admin';
-  }
-
-  if (user && !isAdmin && COMPLETE_GATED.some(r => pathname.startsWith(r))) {
-    const { data: payment } = await supabase
-      .from('payments')
-      .select('id')
-      .eq('user_id', user.id)
-      .eq('status', 'completed')
-      .in('payment_type', ['complete', 'complete_partnership'])
-      .limit(1)
-      .maybeSingle();
-    if (!payment) {
-      return NextResponse.redirect(new URL('/pricing?locked=complete', req.url));
-    }
-  }
-
-  if (user && !isAdmin && FDD_GATED.some(r => pathname.startsWith(r))) {
-    const { data: payment } = await supabase
-      .from('payments')
-      .select('id')
-      .eq('user_id', user.id)
-      .eq('status', 'completed')
-      .in('payment_type', ['fdd_intelligence', 'fdd_intelligence_loyalty'])
-      .limit(1)
-      .maybeSingle();
-    if (!payment) {
-      return NextResponse.redirect(new URL('/pricing?locked=fdd', req.url));
-    }
-  }
-
-  // Block standalone simulator subscribers from case-building / document-
-  // generation routes and the main application dashboard. They only purchased
-  // the interview simulator — /simulator is their home.
-  const SIMULATOR_BLOCKED_ROUTES = ['/apply', '/generate/', '/documents/', '/dashboard'];
-  if (user && SIMULATOR_BLOCKED_ROUTES.some((route) => pathname.startsWith(route))) {
-    const { data: apps } = await supabase
-      .from('applications')
-      .select('source')
-      .eq('user_id', user.id);
-
-    const simulatorOnly = Boolean(
-      apps && apps.length > 0 && apps.every((a) => a.source === 'simulator_standalone')
-    );
-
-    if (simulatorOnly) {
-      return NextResponse.redirect(new URL('/simulator', req.url));
-    }
-  }
-
-  // Redirect verified users away from auth pages
-  if (user && authRoutes.includes(pathname)) {
-    return NextResponse.redirect(new URL('/dashboard', req.url));
+  // ---------------------------------------------------------------------------
+  // Redirect signed-in users away from auth pages
+  // ---------------------------------------------------------------------------
+  if (user && AUTH_PAGES.includes(pathname)) {
+    return NextResponse.redirect(new URL('/case-profile', req.url));
   }
 
   return supabaseResponse;
@@ -250,21 +525,21 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
+    // Case profile — paid users only
+    '/case-profile',
+    '/case-profile/:path*',
+    // Application building — paid users only
     '/dashboard/:path*',
     '/apply/:path*',
+    '/onboarding',
+    '/onboarding/:path*',
     '/admin/:path*',
-    '/login',
-    '/signup',
-    '/simulator',
-    '/simulator/:path*',
     '/score',
     '/settings',
     '/generate/:path*',
     '/documents/:path*',
-    '/api/quiz/submit',
-    '/api/email/results',
-    '/api/generate/:path*',
-    '/api/analysis/:path*',
+    // Intelligence modules — paid users only
+    '/fdd',
     '/fdd/:path*',
     '/api/fdd/:path*',
     '/gap-analysis',
@@ -272,5 +547,19 @@ export const config = {
     '/market-analysis',
     '/market-analysis/:path*',
     '/api/market-analysis',
+    // Simulator — paid or simulator-standalone
+    '/simulator',
+    '/simulator/:path*',
+    // Auth pages
+    '/login',
+    '/signup',
+    // Rate-limited API routes
+    '/api/quiz/submit',
+    '/api/email/results',
+    '/api/generate/:path*',
+    '/api/analysis/:path*',
+    // Brand-domain gate — must see every other path too, so e2go.app /
+    // www.e2go.app can be restricted to the homepage + early-access.
+    '/((?!_next/static|_next/image).*)',
   ],
 };

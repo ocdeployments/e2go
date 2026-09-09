@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { createBrowserSupabaseClient } from '@/lib/supabase';
 import type { CompareResponse, ComparisonColumn } from '@/types/fdd-compare';
+import { resolvePrimaryApplicationId } from '@/lib/resolve-application';
 
 // ============================================================================
 // FDD Compare Page — /fdd/compare?ids=id1,id2[,id3,id4]
@@ -112,6 +113,11 @@ const ROWS: RowDef[] = [
         : fmt(c.ode_mid, '$')}
     </span>
   )},
+  { group: 'Financial Performance', label: 'Payback period', key: 'payback_years', render: (c, best) => (
+    <span className={best ? 'text-emerald-400' : 'text-white/80'}>
+      {c.payback_years !== null ? `${c.payback_years.toFixed(1)} yrs` : '—'}
+    </span>
+  )},
 
   // ── Territory ───────────────────────────────────────────────────────────
   { group: 'Territory', label: 'Territory score', key: 'territory_score', render: (c, best) => (
@@ -145,6 +151,11 @@ const ROWS: RowDef[] = [
       {fmt(c.units_closed_last_year)}
     </span>
   )},
+  { group: 'System Health', label: 'Franchisee survival rate', key: 'franchisee_survival_rate', render: (c, best) => (
+    <span className={best ? 'text-emerald-400' : 'text-white/80'}>
+      {fmtPct(c.franchisee_survival_rate)}
+    </span>
+  )},
   { group: 'System Health', label: 'FDD age (months)', key: 'fdd_age_months', render: (c) => (
     <span className={c.fdd_age_months !== null && c.fdd_age_months > 24 ? 'text-amber-400' : 'text-white/80'}>
       {c.fdd_age_months !== null ? `${c.fdd_age_months}mo` : '—'}
@@ -166,7 +177,8 @@ function FddCompareContent() {
       const supabase = createBrowserSupabaseClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      const { data: app } = await supabase.from('applications').select('id').eq('user_id', user.id).order('created_at', { ascending: false }).limit(1).maybeSingle();
+      const appId = await resolvePrimaryApplicationId(supabase, user.id);
+      const app = appId ? { id: appId } : null;
       if (app?.id) setApplicationId(app.id);
     };
     loadAppId();
@@ -257,6 +269,38 @@ function FddCompareContent() {
             <button onClick={() => router.push('/fdd')} className="text-[#C9A84C] text-sm hover:underline">
               Return to FDD hub
             </button>
+          </div>
+        )}
+
+        {data?.verdict && data.verdict.length >= 2 && (
+          <div className="mb-12 border border-[#C9A84C]/25 bg-[#C9A84C]/[0.03] p-6">
+            <p className="text-[#C9A84C] text-xs tracking-widest uppercase mb-4">
+              Verdict — ranked for your capital and territory
+            </p>
+            <div className="space-y-4">
+              {data.verdict.map(v => {
+                const col = data.columns.find(c => c.id === v.id);
+                if (!col) return null;
+                return (
+                  <div key={v.id} className="flex items-start gap-4">
+                    <span className={`font-['Cormorant_Garamond'] text-2xl leading-none w-8 shrink-0 ${v.rank === 1 ? 'text-emerald-400' : 'text-white/40'}`}>
+                      #{v.rank}
+                    </span>
+                    <div>
+                      <p className="text-white text-sm font-medium mb-1">{col.franchise_name}</p>
+                      {v.reasons.length > 0 ? (
+                        <p className="text-white/50 text-xs">{v.reasons.join(' · ')}</p>
+                      ) : (
+                        <p className="text-white/30 text-xs">Not enough scored data on file to explain this ranking.</p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <p className="text-white/20 text-xs mt-5 pt-4 border-t border-white/8">
+              A weighted ranking of the metrics below — not a new score. Reflects this comparison&rsquo;s relative strengths, not an absolute rating.
+            </p>
           </div>
         )}
 

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
-import { callAI } from "@/lib/ai";
+import { callLLM } from "@/lib/llm-client";
 import { Redis } from "@upstash/redis";
+import { captureApiError } from "@/lib/capture-error";
 
 const RATE_LIMIT = 10;
 const RATE_WINDOW_SECONDS = 60;
@@ -42,7 +43,7 @@ async function checkRateLimitWithRedis(userId: string): Promise<boolean> {
     return count <= RATE_LIMIT;
   } catch (error) {
     // Fail open - allow request if Redis fails
-    console.error("[AI] Redis rate limit check failed, failing open:", error);
+    captureApiError(error, { route: 'ai', stage: 'redis-rate-limit' });
     return true;
   }
 }
@@ -86,24 +87,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const result = await callAI({
-      systemPrompt: "You are a helpful assistant.",
-      userPrompt: finalUserPrompt,
+    const response = await callLLM({
+      task: "general",
+      route: "/api/ai",
+      userId,
+      messages: [
+        { role: "system", content: "You are a helpful assistant." },
+        { role: "user", content: finalUserPrompt },
+      ],
     });
 
-    if (result.error) {
+    if (!response) {
       return NextResponse.json(
-        { error: result.error },
+        { error: "AI request failed" },
         { status: 500 }
       );
     }
 
-    return NextResponse.json({
-      response: result.response,
-      tokens_used: result.tokens_used,
-    });
+    return NextResponse.json({ response });
   } catch (error) {
-    console.error("AI API route error:", error);
+    captureApiError(error, { route: 'ai' });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

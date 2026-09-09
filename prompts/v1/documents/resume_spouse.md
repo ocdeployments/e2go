@@ -1,6 +1,6 @@
 # Spouse Applicant Resume Generation Prompt
 ## Document Type: resume_spouse
-## Tab Reference: Tab E — Dependents (E-02 or within E-01)
+## Tab Reference: Tab I — Investor Qualifications & Resumes (I-03)
 ## Generation Order: Step 12
 ## Condition: Generate ONLY if spouse is included in the E-2 application
 

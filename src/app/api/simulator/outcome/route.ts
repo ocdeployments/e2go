@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { buildCaseProfile } from '@/lib/case-profile';
+import { buildCaseIntelligence } from '@/lib/case-intelligence-core';
+import { captureApiError } from '@/lib/capture-error';
 
 export async function POST(request: NextRequest) {
   const supabase = await createSupabaseServerClient();
@@ -29,6 +31,21 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid outcome value' }, { status: 400 });
   }
 
+  if (body.applicationId) {
+    // applicationId is client-suppliable — verify ownership before linking
+    // it to a new row, otherwise an attacker could pollute another user's
+    // application with fabricated interview outcomes.
+    const { data: ownedApp } = await supabase
+      .from('applications')
+      .select('id')
+      .eq('id', body.applicationId)
+      .eq('user_id', user.id)
+      .maybeSingle();
+    if (!ownedApp) {
+      return NextResponse.json({ error: 'Application not found' }, { status: 404 });
+    }
+  }
+
   const { data, error } = await supabase
     .from('simulator_outcomes')
     .insert({
@@ -45,12 +62,15 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (error) {
-    console.error('[simulator-outcome] Insert failed:', error);
+    captureApiError(error, { route: 'simulator/outcome', userId: user.id });
     return NextResponse.json({ error: 'Failed to save outcome' }, { status: 500 });
   }
 
   // Trigger profile rebuild fire-and-forget (simulator session adds data confidence)
   buildCaseProfile(user.id).catch(() => {});
+  if (body.applicationId) {
+    buildCaseIntelligence(body.applicationId, user.id).catch(() => {});
+  }
 
   return NextResponse.json({ id: data.id });
 }
@@ -67,7 +87,7 @@ export async function GET(request: NextRequest) {
 
   const query = supabase
     .from('simulator_outcomes')
-    .select('*')
+    .select('id, user_id, application_id, simulator_session_id, outcome, interview_date, consulate, denial_reason, notes, created_at')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false });
 

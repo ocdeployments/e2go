@@ -1,7 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useCallback, useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import type { TerritoryAnalysis } from '@/lib/fdd-territory-engine';
+import GenerationProgress from '@/components/ui/GenerationProgress';
+
+const MARKET_ANALYSIS_STEPS = [
+  'Pulling Census ACS 5-year data for your ZIP…',
+  'Mapping the competitive landscape…',
+  'Scoring 5 territory dimensions…',
+];
 
 // ============================================================================
 // Market Analysis — /market-analysis
@@ -159,54 +167,115 @@ const INITIAL_FORM: FormState = {
   state: '',
 };
 
+function parseZips(raw: string): string[] {
+  return raw.split(/[,\s]+/).map(z => z.trim()).filter(z => z.length > 0);
+}
+
 export default function MarketAnalysisPage() {
+  return (
+    <Suspense fallback={null}>
+      <MarketAnalysisPageInner />
+    </Suspense>
+  );
+}
+
+function MarketAnalysisPageInner() {
+  const searchParams = useSearchParams();
+  const applicationId = searchParams.get('applicationId');
+
   const [form, setForm] = useState<FormState>(INITIAL_FORM);
   const [analysis, setAnalysis] = useState<TerritoryAnalysis | null>(null);
+  const [territoryZips, setTerritoryZips] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState<Partial<FormState>>({});
+  const [prefillChecked, setPrefillChecked] = useState(false);
 
   function validate(): boolean {
     const errs: Partial<FormState> = {};
     if (!form.businessName.trim()) errs.businessName = 'Business name is required';
     if (!form.businessCategory)    errs.businessCategory = 'Select a business category';
-    if (!/^\d{5}$/.test(form.zip)) errs.zip = 'Enter a valid 5-digit ZIP code';
     if (!form.state)               errs.state = 'Select a state';
+
+    const zips = parseZips(form.zip);
+    if (zips.length === 0) {
+      errs.zip = 'Enter at least one 5-digit ZIP code';
+    } else if (zips.some(z => !/^\d{5}$/.test(z))) {
+      errs.zip = 'Each ZIP code must be exactly 5 digits — separate multiple ZIPs with commas';
+    } else if (zips.length > 5) {
+      errs.zip = 'Enter up to 5 ZIP codes for a territory';
+    }
+
     setFieldErrors(errs);
     return Object.keys(errs).length === 0;
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!validate()) return;
+  const runAnalysis = useCallback(async (values: FormState, scroll: boolean) => {
     setLoading(true);
     setError('');
     setAnalysis(null);
 
+    const zips = parseZips(values.zip);
+    setTerritoryZips(zips);
+
     try {
+      // Run analysis on the primary (first) ZIP — this is what the engine scores
       const res = await fetch('/api/market-analysis', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          businessName:     form.businessName.trim(),
-          businessCategory: form.businessCategory,
-          zip:              form.zip.trim(),
-          state:            form.state,
+          businessName:     values.businessName.trim(),
+          businessCategory: values.businessCategory,
+          zip:              zips[0],
+          state:            values.state,
+          applicationId:    applicationId ?? undefined,
         }),
       });
       const json = await res.json() as TerritoryAnalysis & { error?: string };
       if (!res.ok) throw new Error(json.error ?? 'Analysis failed');
       setAnalysis(json);
-      // Scroll to results
-      setTimeout(() => {
-        document.getElementById('results')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 100);
+      if (scroll) {
+        setTimeout(() => {
+          document.getElementById('results')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
     } finally {
       setLoading(false);
     }
+  }, [applicationId]);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!validate()) return;
+    void runAnalysis(form, true);
   }
+
+  // Prefill from a saved case-profile analysis and re-run it automatically so
+  // the user sees their existing results instead of a blank form.
+  useEffect(() => {
+    if (!applicationId || prefillChecked) return;
+    setPrefillChecked(true);
+    (async () => {
+      try {
+        const res = await fetch(`/api/market-analysis?applicationId=${encodeURIComponent(applicationId)}`);
+        const json = await res.json() as { saved: boolean; businessName?: string; businessCategory?: string; zip?: string; state?: string };
+        if (json.saved && json.businessName && json.businessCategory && json.zip && json.state) {
+          const prefilled: FormState = {
+            businessName: json.businessName,
+            businessCategory: json.businessCategory,
+            zip: json.zip,
+            state: json.state,
+          };
+          setForm(prefilled);
+          void runAnalysis(prefilled, false);
+        }
+      } catch {
+        // No saved analysis to prefill — leave the form blank.
+      }
+    })();
+  }, [applicationId, prefillChecked, runAnalysis]);
 
   function handleChange(field: keyof FormState, value: string) {
     setForm(prev => ({ ...prev, [field]: value }));
@@ -218,7 +287,7 @@ export default function MarketAnalysisPage() {
   const overallColor = analysis ? (SCORE_COLOR[analysis.overall_rating] ?? SCORE_COLOR.unknown) : '#C9A84C';
 
   return (
-    <main className="min-h-screen bg-[#0a0a0a] text-white">
+    <main className="min-h-screen bg-[#0a0a0a] text-white pt-16">
       <div className="max-w-4xl mx-auto px-6 py-16">
 
         {/* Header */}
@@ -285,23 +354,24 @@ export default function MarketAnalysisPage() {
                 )}
               </div>
 
-              {/* ZIP Code */}
+              {/* ZIP Code(s) */}
               <div>
                 <label className="block text-white/50 text-xs tracking-widest uppercase mb-2">
-                  Target ZIP Code
+                  Territory ZIP Codes
                 </label>
                 <input
                   type="text"
-                  inputMode="numeric"
-                  maxLength={5}
                   value={form.zip}
-                  onChange={e => handleChange('zip', e.target.value.replace(/\D/g, ''))}
-                  placeholder="10001"
+                  onChange={e => handleChange('zip', e.target.value.replace(/[^\d,\s]/g, ''))}
+                  placeholder="10001 or 10001, 10002, 10003"
                   className={`w-full bg-white/5 border text-white text-sm px-4 py-3 placeholder-white/20 outline-none focus:border-[#C9A84C]/60 transition-colors ${
                     fieldErrors.zip ? 'border-red-500/60' : 'border-white/10'
                   }`}
                   style={{ borderRadius: 0 }}
                 />
+                <p className="text-white/25 text-xs mt-1.5">
+                  Separate multiple ZIPs with commas — up to 5 for a franchise territory. Analysis runs on the primary (first) ZIP.
+                </p>
                 {fieldErrors.zip && (
                   <p className="text-red-400 text-xs mt-1">{fieldErrors.zip}</p>
                 )}
@@ -343,13 +413,12 @@ export default function MarketAnalysisPage() {
               >
                 {loading ? 'Analysing territory…' : 'Run Market Analysis'}
               </button>
-              {loading && (
-                <div className="flex items-center gap-2 text-white/40 text-xs">
-                  <div className="w-4 h-4 border border-[#C9A84C]/30 border-t-[#C9A84C] animate-spin" style={{ borderRadius: '50%' }} />
-                  Pulling Census data and scoring 5 dimensions…
-                </div>
-              )}
             </div>
+            {loading && (
+              <div className="mt-6">
+                <GenerationProgress isActive={loading} estimatedSeconds={12} steps={MARKET_ANALYSIS_STEPS} showEstimate />
+              </div>
+            )}
           </div>
         </form>
 
@@ -368,17 +437,53 @@ export default function MarketAnalysisPage() {
             {/* Overall Score Banner */}
             <div className="border border-white/10 bg-white/[0.02] p-8 mb-8 flex items-center justify-between flex-wrap gap-6">
               <div>
-                <p className="text-[#C9A84C] text-xs tracking-widest uppercase mb-2">Overall Territory Score</p>
+                <div className="flex items-center gap-3 mb-2">
+                  <p className="text-[#C9A84C] text-xs tracking-widest uppercase">Overall Territory Score</p>
+                  <button onClick={() => window.print()} className="text-white/30 text-xs hover:text-white/50 transition-colors">
+                    Print / PDF
+                  </button>
+                  <button
+                    onClick={async () => {
+                      const zips = parseZips(form.zip);
+                      const res = await fetch('/api/market-analysis/pdf', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          businessName: form.businessName,
+                          businessCategory: form.businessCategory,
+                          zip: zips[0],
+                          state: form.state,
+                        }),
+                      });
+                      if (!res.ok) return;
+                      const blob = await res.blob();
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = `Market-Analysis-${zips[0]}.pdf`;
+                      a.click();
+                      URL.revokeObjectURL(url);
+                    }}
+                    className="text-[#C9A84C] text-xs hover:text-[#C9A84C]/70 transition-colors"
+                  >
+                    Download PDF
+                  </button>
+                </div>
                 <p className="font-['Cormorant_Garamond'] text-6xl font-light" style={{ color: overallColor }}>
                   {analysis.overall_score}
                   <span className="text-2xl text-white/30 ml-2">/100</span>
                 </p>
                 <p className="text-white/50 text-sm mt-1">
-                  {analysis.target_zip}, {analysis.target_state}
+                  {territoryZips.length > 1 ? territoryZips.join(', ') : analysis.target_zip}, {analysis.target_state}
                   {' · '}
                   {CATEGORIES.find(c => c.value === analysis.franchise_category)?.label ?? analysis.franchise_category}
                   {' · '}
                   {analysis.radius_miles}mi radius
+                  {territoryZips.length > 1 && (
+                    <span className="block text-white/30 text-xs mt-1">
+                      Scored on primary ZIP {analysis.target_zip} — {territoryZips.length}-ZIP territory
+                    </span>
+                  )}
                 </p>
               </div>
               <div className="text-right">
@@ -518,7 +623,7 @@ export default function MarketAnalysisPage() {
                   </div>
                 </div>
                 <p className="text-white/20 text-xs mt-4">
-                  Source: U.S. Census Bureau ACS 5-Year Estimates.
+                  Source: {analysis.census_source ?? 'U.S. Census Bureau ACS 5-Year Estimates.'}
                   {analysis.competitors.source === 'google_places' && ' Competitor data: Google Places API.'}
                   {analysis.competitors.source === 'unavailable' && ' Competitor count is a statistical estimate based on national density benchmarks.'}
                 </p>

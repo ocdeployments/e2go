@@ -11,12 +11,18 @@ import type {
   FddRegistrationStatus,
   FddStaleStatus,
 } from '@/types/fdd';
+import { substantialityPassThreshold, substantialityWarnThreshold } from '@/lib/e2-thresholds';
+import { classifyOde, type OdeAssumption } from '@/lib/fdd-ode-engine';
 
 // ============================================================================
 // Score types
 // ============================================================================
 
-export type DimensionResult = 'pass' | 'warn' | 'fail' | 'unknown';
+// 'manual_review' = the check cannot be computed from FDD/extraction data at
+// all (not even a best-effort estimate) and must be confirmed by a human —
+// distinct from 'unknown' (a normal field just wasn't extracted) and from a
+// hardcoded 'pass'/'warn' standing in for a check we never actually ran.
+export type DimensionResult = 'pass' | 'warn' | 'fail' | 'unknown' | 'manual_review';
 
 export interface CheckResult {
   check: string;
@@ -38,6 +44,7 @@ export interface OdeAssessment {
   ode_high: number | null;
   result: DimensionResult;
   note: string;
+  assumptions: OdeAssumption[];
 }
 
 export interface TimingAssessment {
@@ -50,6 +57,9 @@ export interface FddFlag {
   key: string;
   label: string;
   severity: 'critical' | 'important';
+  // FDD page the triggering field was extracted from, when known — lets
+  // downstream consumers (e.g. FDD Questions) cite where the flag came from.
+  page: number | null;
 }
 
 export interface ScoringResult {
@@ -83,6 +93,10 @@ function str(meta: FddFieldMeta | undefined): string | null {
   return typeof v === 'string' ? v : null;
 }
 
+function page(meta: FddFieldMeta | undefined): number | null {
+  return meta?._page ?? null;
+}
+
 function checkResult(
   check: string,
   value: string,
@@ -95,6 +109,7 @@ function checkResult(
 function worstOf(...results: DimensionResult[]): DimensionResult {
   if (results.includes('fail')) return 'fail';
   if (results.includes('warn')) return 'warn';
+  if (results.includes('manual_review')) return 'manual_review';
   if (results.includes('unknown')) return 'unknown';
   return 'pass';
 }
@@ -185,12 +200,18 @@ function scoreDimension1(
     'Refundability not confirmed'
   ));
 
-  // Visa holder acceptance (cannot determine from FDD — always flag)
+  // Visa holder acceptance — genuinely extracted when Chunk A finds explicit
+  // eligibility/citizenship language in the FDD; most FDDs never address
+  // this, in which case it is a manual-review item, not a computed result.
+  const visaHolders = bool(fields.accepts_nonimmigrant_visa_holders);
+  const visaResult: DimensionResult = visaHolders === true ? 'pass' : visaHolders === false ? 'fail' : 'manual_review';
   checks.push(checkResult(
     'Accepts non-immigrant visa holders',
-    'Must confirm directly',
-    'warn',
-    'Not disclosed in FDD. Confirm with franchisor before proceeding.'
+    visaHolders === true ? 'Yes — disclosed in FDD' : visaHolders === false ? 'No — disclosed in FDD' : 'Not disclosed',
+    visaResult,
+    visaHolders === true ? 'FDD states franchisees may hold non-immigrant visa status' :
+    visaHolders === false ? 'FDD restricts franchisee eligibility in a way that excludes visa holders — confirm with immigration counsel before proceeding' :
+    'Not disclosed in FDD — most FDDs are silent on this. Confirm directly with the franchisor before proceeding.'
   ));
 
   const overallResult = worstOf(...checks.map(c => c.result));
@@ -236,12 +257,8 @@ function scoreDimension2(
     const ratio = investorLiquidCapital / totalMin;
     const totalCost = totalMin;
 
-    let passThreshold: number;
-    let warnThreshold: number;
-    if (totalCost < 100_000) { passThreshold = 0.90; warnThreshold = 0.75; }
-    else if (totalCost < 500_000) { passThreshold = 0.75; warnThreshold = 0.50; }
-    else if (totalCost < 2_000_000) { passThreshold = 0.50; warnThreshold = 0.30; }
-    else { passThreshold = 0.30; warnThreshold = 0.20; }
+    const passThreshold = substantialityPassThreshold(totalCost);
+    const warnThreshold = substantialityWarnThreshold(totalCost);
 
     const propResult: DimensionResult =
       ratio >= passThreshold ? 'pass' :
@@ -284,6 +301,7 @@ export function computeOde(
       ode_low: null, ode_mid: null, ode_high: null,
       result: 'warn',
       note: 'Item 19 absent — cannot model owner income from FDD data alone. Territory analysis required.',
+      assumptions: [],
     };
   }
 
@@ -296,12 +314,24 @@ export function computeOde(
       ode_low: null, ode_mid: null, ode_high: null,
       result: 'unknown',
       note: 'Item 19 present but revenue figures could not be extracted',
+      assumptions: [],
     };
   }
 
-  const royaltyPct = num(fields.royalty_rate_pct) ?? 0.06;
-  const mktgPct = num(fields.marketing_fund_pct) ?? 0.02;
-  const cogsPct = num(fields.estimated_cogs_pct) ?? 0.30;
+  const assumptions: OdeAssumption[] = [];
+
+  const royaltyField = num(fields.royalty_rate_pct);
+  const royaltyPct = royaltyField ?? 0.06;
+  if (royaltyField === null) assumptions.push({ field: 'royalty_rate_pct', label: 'Royalty rate', used_value: `${(royaltyPct * 100).toFixed(0)}%`, source: 'assumed' });
+
+  const mktgField = num(fields.marketing_fund_pct);
+  const mktgPct = mktgField ?? 0.02;
+  if (mktgField === null) assumptions.push({ field: 'marketing_fund_pct', label: 'Marketing fund contribution', used_value: `${(mktgPct * 100).toFixed(0)}%`, source: 'assumed' });
+
+  const cogsField = num(fields.estimated_cogs_pct);
+  const cogsPct = cogsField ?? 0.30;
+  if (cogsField === null) assumptions.push({ field: 'estimated_cogs_pct', label: 'Cost of goods sold', used_value: `${(cogsPct * 100).toFixed(0)}%`, source: 'assumed' });
+
   const derivedFeeField = (fields as Record<string, FddFieldMeta | undefined>)['total_ongoing_fee_pct'];
   const totalFeePct = (num(derivedFeeField) ?? (royaltyPct + mktgPct));
 
@@ -309,14 +339,34 @@ export function computeOde(
   // Rough heuristic: assume rent is 8% of mid-range investment
   const totalMid = ((num(fields.total_investment_min) ?? 0) + (num(fields.total_investment_max) ?? 0)) / 2;
   const estimatedRent = totalMid > 0 ? Math.round(totalMid * 0.08) : 30_000;
+  assumptions.push({
+    field: 'estimated_rent',
+    label: 'Annual rent',
+    used_value: `$${estimatedRent.toLocaleString()}`,
+    source: 'assumed', // always a heuristic — the FDD doesn't disclose a target-territory lease rate
+  });
 
   // Labor: typical FTE × $35K average (entry-level franchise worker) × 1.25 burden
-  const fte = num(fields.typical_fte_employees) ?? 3;
+  const fteField = num(fields.typical_fte_employees);
+  const fte = fteField ?? 3;
+  if (fteField === null) assumptions.push({ field: 'typical_fte_employees', label: 'Staffing (FTEs)', used_value: `${fte} employees`, source: 'assumed' });
   const estimatedLabor = Math.round(fte * 35_000 * 1.25);
 
-  // Debt service: investment amortized over 10 years at 8%
+  // Debt service: 10-year amortized payment at 8% APR (matches the standard
+  // SBA 7(a)/franchise-financing term, not an interest-only estimate — an
+  // interest-only figure understates the investor's real annual cash outlay).
   const investmentMid = totalMid > 0 ? totalMid : (num(fields.total_investment_min) ?? 150_000);
-  const debtService = Math.round(investmentMid * 0.08);
+  const annualRate = 0.08;
+  const amortYears = 10;
+  const debtService = Math.round(
+    investmentMid * (annualRate / (1 - Math.pow(1 + annualRate, -amortYears)))
+  );
+  assumptions.push({
+    field: 'debt_service',
+    label: 'Annual debt service (10-yr amortized @ 8%)',
+    used_value: `$${debtService.toLocaleString()}`,
+    source: 'assumed', // the FDD never discloses the investor's actual financing terms
+  });
 
   function calcOde(auv: number): number {
     const grossProfit = auv * (1 - cogsPct);
@@ -328,9 +378,7 @@ export function computeOde(
   const odeMid = calcOde(auvMid);
   const odeHigh = auvHigh ? calcOde(auvHigh) : null;
 
-  const result: DimensionResult =
-    odeMid > 65_000 ? 'pass' :
-    odeMid > 40_000 ? 'warn' : 'fail';
+  const result = classifyOde(odeMid);
 
   const note =
     result === 'pass'
@@ -339,7 +387,7 @@ export function computeOde(
       ? `Estimated net income (mid case): $${odeMid.toLocaleString()}/yr — marginal. Strong territory analysis needed.`
       : `Estimated net income (mid case): $${odeMid.toLocaleString()}/yr — below non-marginality threshold. Officer scrutiny likely.`;
 
-  return { ode_low: odeLow, ode_mid: odeMid, ode_high: odeHigh, result, note };
+  return { ode_low: odeLow, ode_mid: odeMid, ode_high: odeHigh, result, note, assumptions };
 }
 
 // ============================================================================
@@ -380,13 +428,18 @@ function scoreDimension3(
     ode.note
   ));
 
-  // Churn rate
-  const closedYr1 = num(fields.units_closed_yr1) ?? 0;
-  const closedYr2 = num(fields.units_closed_yr2) ?? 0;
-  const closedYr3 = num(fields.units_closed_yr3) ?? 0;
-  const totalUnits = num(fields.total_units_open_current) ?? 0;
-  const totalClosed = closedYr1 + closedYr2 + closedYr3;
-  const churnPct = totalUnits > 0 ? (totalClosed / 3) / totalUnits : null;
+  // Churn rate — closure counts are frequently absent from the extracted FDD text;
+  // treat any missing year as "unknown", never as a disclosed zero, or an FDD that
+  // discloses total units but not yearly closures would silently score as 0% churn.
+  const closedYr1 = num(fields.units_closed_yr1);
+  const closedYr2 = num(fields.units_closed_yr2);
+  const closedYr3 = num(fields.units_closed_yr3);
+  const totalUnits = num(fields.total_units_open_current);
+  const closuresDisclosed = closedYr1 !== null && closedYr2 !== null && closedYr3 !== null;
+  const totalClosed = closuresDisclosed ? closedYr1! + closedYr2! + closedYr3! : null;
+  const churnPct = (totalUnits !== null && totalUnits > 0 && totalClosed !== null)
+    ? (totalClosed / 3) / totalUnits
+    : null;
 
   const churnResult: DimensionResult =
     churnPct === null ? 'unknown' :
@@ -499,15 +552,18 @@ function scoreDimension4(fields: FddExtractedFields, investorProfile?: InvestorP
     'Term not extracted'
   ));
 
-  // Cannibalization check
+  // Cannibalization check — the FDD-disclosed separation radius is a real,
+  // extracted fact, but whether an existing same-brand unit actually falls
+  // inside it requires locating nearby units (Google Places data), which
+  // this engine does not have. So this is always manual review, never a
+  // computed pass.
   const nearestBrandMiles = num(fields.franchisor_minimum_separation_miles);
-  // We note this as informational — cannibalization requires Google Places data
   if (nearestBrandMiles !== null) {
     checks.push(checkResult(
       'Minimum unit separation',
       `${nearestBrandMiles} miles required`,
-      'pass',
-      'Minimum separation disclosed — verify nearest same-brand unit during territory analysis'
+      'manual_review',
+      `Franchisor requires ${nearestBrandMiles} miles of separation from existing units — verify no same-brand unit falls within that radius of the target territory during territory analysis (requires a map check, not disclosed by this engine)`
     ));
   }
 
@@ -573,77 +629,78 @@ function collectFlags(
   const flags: FddFlag[] = [];
 
   if (staleStatus !== 'current') {
-    flags.push({ key: 'fdd_stale', label: 'FDD may be outdated — request current version', severity: 'critical' });
+    flags.push({ key: 'fdd_stale', label: 'FDD may be outdated — request current version', severity: 'critical', page: null });
   }
 
   if (registrationStatus === 'fail') {
-    flags.push({ key: 'state_registration', label: 'Franchisor not confirmed registered in target state', severity: 'critical' });
+    flags.push({ key: 'state_registration', label: 'Franchisor not confirmed registered in target state', severity: 'critical', page: null });
   }
 
   const litigation = num(fields.franchisee_initiated_suits);
   if (litigation !== null && litigation >= 3) {
-    flags.push({ key: 'litigation', label: `${litigation} franchisee-initiated suits — systemic concern`, severity: 'important' });
+    flags.push({ key: 'litigation', label: `${litigation} franchisee-initiated suits — systemic concern`, severity: 'important', page: page(fields.franchisee_initiated_suits) });
   }
 
   if (bool(fields.franchisor_bankruptcy_history) === true) {
-    flags.push({ key: 'bankruptcy', label: 'Franchisor has bankruptcy history', severity: 'important' });
+    flags.push({ key: 'bankruptcy', label: 'Franchisor has bankruptcy history', severity: 'important', page: page(fields.franchisor_bankruptcy_history) });
   }
 
   if (bool(fields.item19_cherry_pick_flag) === true) {
-    flags.push({ key: 'cherry_pick', label: 'Item 19 appears to cherry-pick top performers', severity: 'important' });
+    flags.push({ key: 'cherry_pick', label: 'Item 19 appears to cherry-pick top performers', severity: 'important', page: page(fields.item19_cherry_pick_flag) });
   }
 
   if (bool(fields.item19_includes_franchisee_units) === false) {
-    flags.push({ key: 'company_only_i19', label: 'Item 19 covers company units only — not franchisee economics', severity: 'important' });
+    flags.push({ key: 'company_only_i19', label: 'Item 19 covers company units only — not franchisee economics', severity: 'important', page: page(fields.item19_includes_franchisee_units) });
   }
 
   // Mean/median gap > 30%
-  const medianVsMean = num((fields as Record<string, FddFieldMeta>)['item19_median_vs_mean_gap'] as FddFieldMeta | undefined);
+  const medianVsMeanField = (fields as Record<string, FddFieldMeta>)['item19_median_vs_mean_gap'] as FddFieldMeta | undefined;
+  const medianVsMean = num(medianVsMeanField);
   if (medianVsMean !== null && medianVsMean > 0.30) {
-    flags.push({ key: 'revenue_variability', label: `${Math.round(medianVsMean * 100)}% mean/median gap — high performance variability`, severity: 'important' });
+    flags.push({ key: 'revenue_variability', label: `${Math.round(medianVsMean * 100)}% mean/median gap — high performance variability`, severity: 'important', page: page(fields.item19_median) ?? page(fields.item19_mean) });
   }
 
   const wcMonths = num(fields.working_capital_months_covered);
   if (wcMonths !== null && wcMonths < 6) {
-    flags.push({ key: 'working_capital', label: `Item 7 WC estimate covers only ${wcMonths} months`, severity: 'important' });
+    flags.push({ key: 'working_capital', label: `Item 7 WC estimate covers only ${wcMonths} months`, severity: 'important', page: page(fields.working_capital_months_covered) });
   }
 
   if (bool(fields.renewal_on_current_terms) === false) {
-    flags.push({ key: 'renewal_terms', label: 'Renewal requires signing new (potentially worse) agreement', severity: 'important' });
+    flags.push({ key: 'renewal_terms', label: 'Renewal requires signing new (potentially worse) agreement', severity: 'important', page: page(fields.renewal_on_current_terms) });
   }
 
   const cureDays = num(fields.cure_period_days);
   if (cureDays !== null && cureDays < 10) {
-    flags.push({ key: 'cure_period', label: `Cure period only ${cureDays} days — aggressive enforcement risk`, severity: 'important' });
+    flags.push({ key: 'cure_period', label: `Cure period only ${cureDays} days — aggressive enforcement risk`, severity: 'important', page: page(fields.cure_period_days) });
   }
 
   const nonCompeteYears = num(fields.post_termination_noncompete_years);
   const nonCompeteMiles = num(fields.post_termination_noncompete_radius_miles);
   if ((nonCompeteYears !== null && nonCompeteYears > 2) || (nonCompeteMiles !== null && nonCompeteMiles > 50)) {
-    flags.push({ key: 'noncompete', label: 'Broad post-termination non-compete restricts exit options', severity: 'important' });
+    flags.push({ key: 'noncompete', label: 'Broad post-termination non-compete restricts exit options', severity: 'important', page: page(fields.post_termination_noncompete_years) ?? page(fields.post_termination_noncompete_radius_miles) });
   }
 
   if (bool(fields.fee_escalation_rights) === true) {
-    flags.push({ key: 'fee_escalation', label: 'Franchisor can raise fees unilaterally', severity: 'important' });
+    flags.push({ key: 'fee_escalation', label: 'Franchisor can raise fees unilaterally', severity: 'important', page: page(fields.fee_escalation_rights) });
   }
 
   if (bool(fields.ecommerce_carve_out) === true) {
-    flags.push({ key: 'ecommerce_carveout', label: 'E-commerce carve-out — franchisor can sell in your territory online', severity: 'important' });
+    flags.push({ key: 'ecommerce_carveout', label: 'E-commerce carve-out — franchisor can sell in your territory online', severity: 'important', page: page(fields.ecommerce_carve_out) });
   }
 
   if (bool(fields.transfer_to_entity_allowed) === false) {
-    flags.push({ key: 'entity_transfer', label: 'Cannot transfer to LLC/corporation — blocks standard E-2 structure', severity: 'critical' });
+    flags.push({ key: 'entity_transfer', label: 'Cannot transfer to LLC/corporation — blocks standard E-2 structure', severity: 'critical', page: page(fields.transfer_to_entity_allowed) });
   }
 
   if (bool(fields.right_of_first_refusal_on_sale) === true) {
-    flags.push({ key: 'rofr', label: 'Franchisor right of first refusal on sale limits exit flexibility', severity: 'important' });
+    flags.push({ key: 'rofr', label: 'Franchisor right of first refusal on sale limits exit flexibility', severity: 'important', page: page(fields.right_of_first_refusal_on_sale) });
   }
 
   // COVID period flag
   const covidFlag = (fields as Record<string, FddFieldMeta>)['covid_period_flag'];
   if (bool(covidFlag as FddFieldMeta) === true) {
     const fiscalYear = num(fields.item19_fiscal_year);
-    flags.push({ key: 'covid_data', label: `Item 19 data from ${fiscalYear ?? 'COVID period'} — may not reflect steady-state performance`, severity: 'important' });
+    flags.push({ key: 'covid_data', label: `Item 19 data from ${fiscalYear ?? 'COVID period'} — may not reflect steady-state performance`, severity: 'important', page: page(fields.item19_fiscal_year) });
   }
 
   return flags;

@@ -9,7 +9,7 @@ import GenerationProgress from "@/components/ui/GenerationProgress";
 
 function LoginForm() {
   const searchParams = useSearchParams();
-  const next = searchParams.get("next") || "/dashboard";
+  const next = searchParams.get("next") || "/case-profile";
 
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState("");
@@ -105,9 +105,12 @@ function LoginForm() {
 
       setStatus('success');
 
+      // Fire-and-forget geo tracking for password logins (non-blocking)
+      fetch('/api/track/session', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ login_type: 'password' }) }).catch(() => {});
+
       if (user) {
         // Smart routing: if ?next is set, honour it; otherwise route by state
-        if (next && next !== '/dashboard') {
+        if (next && next !== '/case-profile') {
           window.location.href = next;
         } else {
           // 1. No quiz session → /quiz
@@ -153,7 +156,7 @@ function LoginForm() {
           }
         }
       } else {
-        window.location.href = next ?? '/dashboard';
+        window.location.href = next ?? '/case-profile';
       }
     } catch (err) {
       if (!timedOut) {
@@ -168,9 +171,10 @@ function LoginForm() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex flex-col md:flex-row">
-      {/* Animated overlay — fades in over the form on submit */}
+      {/* Animated overlay — stays visible through 'success' so the login UI
+          never flashes back into view while window.location.href resolves */}
       <AnimatePresence>
-        {status === 'loading' && (
+        {(status === 'loading' || status === 'success') && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -283,10 +287,11 @@ function LoginForm() {
 
               <form onSubmit={handleLogin} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1" style={{ color: "rgba(245,240,232,0.6)" }}>
+                  <label htmlFor="login-email" className="block text-sm font-medium mb-1" style={{ color: "rgba(245,240,232,0.6)" }}>
                     Email
                   </label>
                   <input
+                    id="login-email"
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -298,10 +303,11 @@ function LoginForm() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1" style={{ color: "rgba(245,240,232,0.6)" }}>
+                  <label htmlFor="login-password" className="block text-sm font-medium mb-1" style={{ color: "rgba(245,240,232,0.6)" }}>
                     Password
                   </label>
                   <input
+                    id="login-password"
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}

@@ -21,5 +21,5 @@ export default async function DocumentsIndexPage() {
     redirect(`/documents/${app.id}`);
   }
 
-  redirect("/apply");
+  redirect("/case-profile");
 }

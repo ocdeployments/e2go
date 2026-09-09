@@ -4,6 +4,14 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { createBrowserSupabaseClient } from '@/lib/supabase';
 import type { FddAnalysis, FddCompatibility, FddFinalReport, FddProfessionalReport } from '@/types/fdd';
+import GenerationProgress from '@/components/ui/GenerationProgress';
+
+const FDD_REPORT_STEPS = [
+  'Compiling business identity and financial sections…',
+  'Cross-referencing E-2 compatibility findings…',
+  'Building territory and litigation analysis…',
+  'Formatting your professional report…',
+];
 
 // ============================================================================
 // Type guards
@@ -111,9 +119,17 @@ function ProfessionalReport({
             {analysis.transaction_type && <> · {analysis.transaction_type.replace(/_/g, ' ')}</>}
           </p>
         </div>
-        <button onClick={onPrint} className="text-white/30 text-xs hover:text-white/50 transition-colors mt-1 shrink-0">
-          Print / PDF
-        </button>
+        <div className="flex items-center gap-4 mt-1 shrink-0">
+          <button onClick={onPrint} className="text-white/30 text-xs hover:text-white/50 transition-colors">
+            Print / PDF
+          </button>
+          <button
+            onClick={() => window.open(`/api/fdd/report/pdf?fdd_id=${fddId}`, "_blank")}
+            className="text-[#C9A84C] text-xs hover:text-[#C9A84C]/70 transition-colors"
+          >
+            Download PDF
+          </button>
+        </div>
       </div>
 
       {/* Recommendation banner */}
@@ -492,9 +508,17 @@ function LegacyFullReport({ analysis, report, onPrint }: {
             {analysis.target_city ? `${analysis.target_city}, ` : ''}{analysis.target_state ?? ''}
           </p>
         </div>
-        <button onClick={onPrint} className="text-white/30 text-xs hover:text-white/50 transition-colors mt-1 shrink-0">
-          Print / PDF
-        </button>
+        <div className="flex items-center gap-4 mt-1 shrink-0">
+          <button onClick={onPrint} className="text-white/30 text-xs hover:text-white/50 transition-colors">
+            Print / PDF
+          </button>
+          <button
+            onClick={() => window.open(`/api/fdd/report/pdf?fdd_id=${fddId}`, "_blank")}
+            className="text-[#C9A84C] text-xs hover:text-[#C9A84C]/70 transition-colors"
+          >
+            Download PDF
+          </button>
+        </div>
       </div>
 
       <div className={`rounded-2xl border ${cfg.border} ${cfg.bg} p-6 flex items-center justify-between`}>
@@ -662,7 +686,7 @@ interface ImportModalProps {
 }
 
 function ImportModal({ fddId, onClose }: ImportModalProps) {
-  const [state, setState] = useState<'confirm' | 'loading' | 'done' | 'error'>('confirm');
+  const [state, setState] = useState<'confirm' | 'loading' | 'done' | 'error' | 'not_applicable'>('confirm');
   const [groups, setGroups] = useState<ImportGroup[]>([]);
   const [totalWritten, setTotalWritten] = useState(0);
   const [errorMsg, setErrorMsg] = useState('');
@@ -676,7 +700,10 @@ function ImportModal({ fddId, onClose }: ImportModalProps) {
         body: JSON.stringify({ fdd_id: fddId }),
       });
       const json = await res.json() as { preview?: { total_written: number; groups: ImportGroup[] }; error?: string };
-      if (!res.ok) throw new Error(json.error ?? 'Import failed');
+      if (!res.ok) {
+        if (json.error === 'NO_APPLICATION') { setState('not_applicable'); return; }
+        throw new Error(json.error ?? 'Import failed');
+      }
       setGroups(json.preview?.groups ?? []);
       setTotalWritten(json.preview?.total_written ?? 0);
       setState('done');
@@ -772,9 +799,40 @@ function ImportModal({ fddId, onClose }: ImportModalProps) {
             </>
           )}
 
+          {state === 'not_applicable' && (
+            <>
+              <p className="text-[#C9A84C] text-xs tracking-widest uppercase mb-3">Feature Note</p>
+              <h2 className="font-['Cormorant_Garamond'] text-2xl font-light text-white mb-3">
+                Built for E-2 applicants
+              </h2>
+              <p className="text-white/55 text-sm leading-relaxed mb-6">
+                E2Go is designed for E-2 treaty investor applicants. The case file import connects your FDD analysis to your E-2 application — so your investment figures, territory data, and compatibility scores flow directly into your documents.
+              </p>
+              <p className="text-white/40 text-sm leading-relaxed mb-6">
+                Since your account isn&apos;t linked to an E-2 application yet, this feature isn&apos;t available. The rest of the FDD analysis — scoring, territory maps, and due diligence questions — works without one.
+              </p>
+              <div className="flex gap-3">
+                <a
+                  href="/apply"
+                  className="flex-1 bg-[#C9A84C] text-[#0a0a0a] font-semibold py-3 text-sm text-center hover:bg-[#d4b55a] transition-colors"
+                  style={{ borderRadius: 0 }}
+                >
+                  Start E-2 application
+                </a>
+                <button
+                  onClick={onClose}
+                  className="border border-white/15 text-white/50 px-5 py-3 text-sm hover:border-white/30 hover:text-white/70 transition-colors"
+                  style={{ borderRadius: 0 }}
+                >
+                  Close
+                </button>
+              </div>
+            </>
+          )}
+
           {state === 'error' && (
             <>
-              <p className="text-red-400 text-sm mb-4">{errorMsg}</p>
+              <p className="text-white/60 text-sm mb-4">{errorMsg}</p>
               <button
                 onClick={onClose}
                 className="text-white/40 text-xs hover:text-white/60"
@@ -896,15 +954,14 @@ export default function FddReportPage() {
   if (loading || generating) {
     return (
       <main className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
-        <div className="text-center max-w-xs">
-          <div className="w-10 h-10 border-2 border-[#C9A84C]/30 border-t-[#C9A84C] rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-white/40 text-sm">
-            {generating ? 'Compiling professional report...' : 'Loading...'}
-          </p>
-          {generating && (
-            <p className="text-white/25 text-xs mt-2">
-              8 analytical sections running in parallel · typically 25–40 seconds
-            </p>
+        <div className="text-center w-full max-w-sm px-6">
+          {generating ? (
+            <GenerationProgress isActive={generating} estimatedSeconds={32} steps={FDD_REPORT_STEPS} showEstimate />
+          ) : (
+            <>
+              <div className="w-10 h-10 border-2 border-[#C9A84C]/30 border-t-[#C9A84C] rounded-full animate-spin mx-auto mb-4" />
+              <p className="text-white/40 text-sm">Loading...</p>
+            </>
           )}
         </div>
       </main>

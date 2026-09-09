@@ -22,7 +22,7 @@ const raw = readFileSync('.env.local', 'utf8');
 const vars = {};
 for (const line of raw.split('\n')) {
   const m = line.match(/^([^#=]+)=(.*)$/);
-  if (m) vars[m[1].trim()] = m[2].trim();
+  if (m) vars[m[1].trim()] = m[2].trim().replace(/^"(.*)"$/, '$1').replace(/^'(.*)'$/, '$1');
 }
 
 const SUPABASE_URL = vars.NEXT_PUBLIC_SUPABASE_URL;
@@ -222,6 +222,7 @@ const PROFILES = [
       family_composition: 'individual',
       module_1_complete:  true,
       status:             'in_progress',
+      payment_status:     'paid',
     },
 
     // Pre-computed from buildCaseProfile() logic:
@@ -318,6 +319,7 @@ const PROFILES = [
       family_composition: 'married',
       module_1_complete:  true,
       status:             'in_progress',
+      payment_status:     'paid',
     },
 
     // archetype: career_switcher + food_beverage → career_switcher (not matching buyer/builder)
@@ -410,6 +412,7 @@ const PROFILES = [
       business_name:      'Assisting Hands Home Care East Austin LLC',
       principal_name:     'James Windsor',
       status:             'in_progress',
+      payment_status:     'paid',
     },
 
     // Module 3 answers — realistic franchise buyer data for meaningful gap analysis output

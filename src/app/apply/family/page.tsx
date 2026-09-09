@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { useAutosaveFlush } from '@/lib/use-autosave-flush';
 import { useTrackSectionVisit } from "@/hooks/useTrackSectionVisit";
 import { createBrowserSupabaseClient } from '@/lib/supabase';
 import CaseFileShell from '@/components/apply/CaseFileShell';
@@ -12,6 +13,9 @@ import OptionButton from '@/components/apply/questions/OptionButton';
 import PreFillBadge from '@/components/apply/questions/PreFillBadge';
 import AdvisoryBlock from '@/components/apply/questions/AdvisoryBlock';
 import ClusterDivider from '@/components/apply/questions/ClusterDivider';
+import { useRouter } from 'next/navigation';
+import { useApplicationGate } from '@/hooks/useApplicationGate';
+import ApplicationNotReadyScreen from '@/components/apply/ApplicationNotReadyScreen';
 
 interface FamilyAnswer {
   value: string;
@@ -112,6 +116,8 @@ const ALL_QUESTION_SETS = [
 
 export default function FamilyPage() {
   useTrackSectionVisit("family");
+  const router = useRouter();
+  const { status: gateStatus, applicationId: gateAppId, retry } = useApplicationGate();
 
   const [loading, setLoading] = useState(true);
   const [activeClusterId, setActiveClusterId] = useState('cluster-1');
@@ -119,28 +125,20 @@ export default function FamilyPage() {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [applicationId, setApplicationId] = useState<string | null>(null);
   const debounceRef = useRef<Record<string, NodeJS.Timeout>>({});
+  const flushRef = useRef<Record<string, () => void>>({});
+  useAutosaveFlush(debounceRef, flushRef);
 
   useEffect(() => {
+    if (gateStatus !== 'ready' || !gateAppId) return;
     const loadData = async () => {
       try {
         const supabase = createBrowserSupabaseClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) { setLoading(false); return; }
-
-        const { data: apps } = await supabase
-          .from('applications')
-          .select('id')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(1);
-
-        if (!apps || apps.length === 0) { setLoading(false); return; }
-        setApplicationId(apps[0].id);
+        setApplicationId(gateAppId);
 
         const { data: existingAnswers } = await supabase
           .from('answers')
           .select('question_key, answer_value')
-          .eq('application_id', apps[0].id);
+          .eq('application_id', gateAppId);
 
         if (existingAnswers) {
           const answerMap: Record<string, FamilyAnswer> = {};
@@ -155,7 +153,7 @@ export default function FamilyPage() {
       } catch { setLoading(false); }
     };
     loadData();
-  }, []);
+  }, [gateStatus, gateAppId]);
 
   const saveAnswer = useCallback(async (key: string, value: string) => {
     if (!applicationId) return;
@@ -174,8 +172,9 @@ export default function FamilyPage() {
 
   const handleAnswerChange = useCallback((key: string, value: string) => {
     setAnswers((prev) => ({ ...prev, [key]: { value, source: prev[key]?.source ?? null } }));
+    flushRef.current[key] = () => saveAnswer(key, value);
     if (debounceRef.current[key]) clearTimeout(debounceRef.current[key]);
-    debounceRef.current[key] = setTimeout(() => saveAnswer(key, value), 800);
+    debounceRef.current[key] = setTimeout(() => { saveAnswer(key, value); delete flushRef.current[key]; }, 800);
   }, [saveAnswer]);
 
   // Sync M3-L-08 summary whenever any per-child field changes (backwards compat for generation engine)
@@ -193,8 +192,9 @@ export default function FamilyPage() {
     const summary = lines.join('\n');
     if (summary && summary !== (answers['M3-L-08']?.value || '')) {
       setAnswers(prev => ({ ...prev, 'M3-L-08': { value: summary, source: prev['M3-L-08']?.source ?? null } }));
+      flushRef.current['M3-L-08'] = () => saveAnswer('M3-L-08', summary);
       if (debounceRef.current['M3-L-08']) clearTimeout(debounceRef.current['M3-L-08']);
-      debounceRef.current['M3-L-08'] = setTimeout(() => saveAnswer('M3-L-08', summary), 1200);
+      debounceRef.current['M3-L-08'] = setTimeout(() => { saveAnswer('M3-L-08', summary); delete flushRef.current['M3-L-08']; }, 1200);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [answers['M3-L-07-COUNT']?.value, ...Array.from({ length: 5 }, (_, i) => [
@@ -282,7 +282,16 @@ export default function FamilyPage() {
     </div>
   );
 
-  if (loading) {
+  if (gateStatus === 'no-user') {
+    router.push('/login');
+    return null;
+  }
+
+  if (gateStatus === 'not-ready') {
+    return <ApplicationNotReadyScreen onRetry={retry} />;
+  }
+
+  if (loading || gateStatus === 'loading') {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#0a0a0a]">
         <p className="text-sm" style={{ color: 'rgba(245,240,232,0.68)', fontFamily: "'DM Sans', sans-serif" }}>Loading...</p>
@@ -328,9 +337,6 @@ export default function FamilyPage() {
             <AdvisoryBlock>If you are unsure whether your spouse will apply, you can still complete this section now and update later. Spouse EAD applications can be filed separately or concurrently with your E-2.</AdvisoryBlock>
           )}
 
-          {answers['M3-L-06']?.value === 'yes' && (
-            <AdvisoryBlock>EAD applications for E-2 dependents can take 3–5 months to process. Your spouse should file Form I-765 concurrently with or after the I-539. Work authorization is not automatic — your spouse must receive the EAD card before starting work.</AdvisoryBlock>
-          )}
         </div>
       )}
 

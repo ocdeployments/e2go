@@ -2,33 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { getQuestionKnowledge } from '@/lib/interview-knowledge-base';
 import { checkRateLimit } from '@/lib/rate-limit';
+import { isKillSwitchEnabled } from '@/lib/kill-switch';
 import { callLLM } from '@/lib/llm-client';
 import { analyzeDelivery } from '@/lib/delivery-analysis';
-import type { SimulatorContext, AnswerEvaluation } from '@/types/simulator';
-
-const DOC_TYPE_LABELS: Record<string, string> = {
-  cover_letter: 'Cover letter',
-  business_plan: 'Business plan',
-  source_of_funds: 'Source of funds',
-  biography: 'Investor biography',
-  ds160: 'DS-160 form',
-  projections: 'Financial projections',
-  operating_agreement: 'Operating agreement',
-  franchise_docs: 'Franchise documents',
-};
-
-interface PriorAnswer {
-  questionText: string;
-  answerText: string;
-}
-
-interface EvaluateRequest {
-  questionId: string;
-  questionText: string;
-  answer: string;
-  context: SimulatorContext;
-  priorAnswers?: PriorAnswer[];
-}
+import { uploadedDocTypeLabel, summarizeExtractedJson } from '@/lib/uploaded-doc-labels';
+import type { AnswerEvaluation } from '@/types/simulator';
+import { captureApiError } from '@/lib/capture-error';
+import { evaluateRequestSchema } from '@/lib/api-schemas';
 
 export async function POST(request: NextRequest) {
   // Auth check
@@ -46,49 +26,62 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  if (await isKillSwitchEnabled()) {
+    return NextResponse.json({ error: 'AI features are temporarily unavailable. Please try again shortly.' }, { status: 503 });
+  }
+
   if (!process.env.OPENROUTER_API_KEY && !process.env.ANTHROPIC_API_KEY) {
-    console.error('[simulator-evaluate] No LLM provider configured');
+    captureApiError(new Error('[simulator-evaluate] No LLM provider configured'), { route: 'simulator/evaluate', stage: 'no-provider', userId: user.id });
     return NextResponse.json(
       { error: 'Evaluation service not configured' },
       { status: 503 }
     );
   }
 
-  let body: EvaluateRequest;
+  let rawBody: unknown;
   try {
-    body = await request.json();
+    rawBody = await request.json();
   } catch {
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
   }
 
-  const { questionId, questionText, answer, context, priorAnswers } = body;
-
-  if (!questionId || !questionText || !answer || !context) {
+  const parsed = evaluateRequestSchema.safeParse(rawBody);
+  if (!parsed.success) {
     return NextResponse.json(
-      { error: 'Missing required fields: questionId, questionText, answer, context' },
+      { error: 'Invalid request body', details: parsed.error.flatten() },
       { status: 400 }
     );
   }
+  const { questionId, questionText, answer, context, priorAnswers } = parsed.data;
 
   // Run delivery analysis synchronously — pure function, no cost
   const deliveryNotes = analyzeDelivery(answer);
 
   // Fetch filed document summaries for grounded evaluation (non-fatal if absent)
+  // context.applicationId is client-supplied — only read it back into the
+  // prompt (and thus into the response) if it's actually this user's.
   let documentEvidence = '';
   try {
-    const { data: docs } = await supabase
-      .from('application_documents')
-      .select('detected_document_type, document_summary')
+    const { data: ownedApp } = await supabase
+      .from('applications')
+      .select('id')
+      .eq('id', context.applicationId)
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    const { data: docs } = ownedApp ? await supabase
+      .from('uploaded_documents')
+      .select('doc_type, extracted_json')
       .eq('application_id', context.applicationId)
-      .not('document_summary', 'is', null);
+      .eq('extraction_status', 'complete') : { data: null };
 
     if (docs && docs.length > 0) {
       const lines = docs
-        .filter(d => d.document_summary)
         .map(d => {
-          const label = DOC_TYPE_LABELS[d.detected_document_type ?? 'unknown'] ?? 'Document';
-          return `- ${label}: ${(d.document_summary as string).substring(0, 220)}`;
-        });
+          const summary = summarizeExtractedJson(d.extracted_json as Record<string, unknown> | null);
+          return summary ? `- ${uploadedDocTypeLabel(d.doc_type)}: ${summary}` : null;
+        })
+        .filter((l): l is string => Boolean(l));
       if (lines.length > 0) {
         documentEvidence = `\n\nFiled documents on record (use these to detect real inconsistencies):\n${lines.join('\n')}`;
       }
@@ -118,7 +111,7 @@ The applicant's profile:
 - Operational status: ${context.operationalStatus}
 - Year 1 revenue projection: $${context.revenueYear1.toLocaleString()}
 - Employees: ${context.employeeCountCurrent} current, ${context.employeeCountYear1} planned
-- Prior visa denial: ${context.priorVisaDenial ? 'Yes' : 'No'}${documentEvidence}
+- Prior visa denial: ${context.priorVisaDenial ? 'Yes' : 'No'}${documentEvidence}${context.caseTheoryNarrative ? `\n\nCase theory (this client's strongest honest E-2 narrative — use it to judge whether the answer stays on-message): ${context.caseTheoryNarrative}` : ''}
 
 Note: If the applicant refers to their business by a trade name, brand name, or franchise banner that differs from the legal entity name above, do NOT treat that alone as an inconsistency — businesses commonly operate under a "doing business as" or franchise name distinct from their legal name. Only flag a genuine inconsistency if the substance of the answer (investment amount, role, location, business activities, etc.) contradicts the filed application.
 
@@ -189,7 +182,7 @@ Score guide: 1-3 = fails core E-2 criteria or contradicts documents; 4-5 = meets
         } satisfies AnswerEvaluation);
       }
     } catch (parseError) {
-      console.error(`[simulator-evaluate] JSON parse failed for question ${questionId}. Raw content:`, content.substring(0, 500), parseError);
+      captureApiError(parseError, { route: 'simulator/evaluate', stage: 'json-parse-failed', userId: user.id, questionId, contentSnippet: content.substring(0, 500) });
     }
 
     return NextResponse.json({
@@ -202,7 +195,7 @@ Score guide: 1-3 = fails core E-2 criteria or contradicts documents; 4-5 = meets
 
   } catch (error) {
     const isAbort = error instanceof DOMException && error.name === 'AbortError';
-    console.error(`[simulator-evaluate] ${isAbort ? 'TIMED OUT' : 'FAILED'} for question ${questionId}:`, error);
+    captureApiError(error, { route: 'simulator/evaluate', stage: isAbort ? 'timed-out' : 'failed', userId: user.id, questionId });
     return NextResponse.json({
       rating: 'weak',
       feedback: 'Evaluation timed out. Your answer has been recorded.',

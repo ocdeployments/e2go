@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import type { ResolveDiscrepancyRequest } from '@/types/document-upload';
+import { captureApiError } from '@/lib/capture-error';
 
 // POST /api/documents/resolve-discrepancy — Resolve a conflicting value
 export async function POST(request: NextRequest) {
@@ -22,10 +23,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Verify the application belongs to the caller before trusting anything
+    // scoped to it — applicationId/discrepancyId both come from the client.
+    const { data: ownedApp } = await supabase
+      .from('applications')
+      .select('id')
+      .eq('id', applicationId)
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (!ownedApp) {
+      return NextResponse.json({ error: 'Application not found' }, { status: 404 });
+    }
+
     // Verify the discrepancy belongs to this user's application
     const { data: discrepancy, error: fetchError } = await supabase
       .from('document_discrepancies')
-      .select('id, question_id')
+      .select('id, question_key')
       .eq('id', discrepancyId)
       .eq('application_id', applicationId)
       .single();
@@ -48,7 +62,7 @@ export async function POST(request: NextRequest) {
       .eq('id', discrepancyId);
 
     if (updateError) {
-      console.error('Update discrepancy error:', updateError);
+      captureApiError(updateError, { route: 'documents/resolve-discrepancy', stage: 'update-discrepancy', userId: user.id, applicationId, discrepancyId });
       return NextResponse.json({ error: 'Update failed' }, { status: 500 });
     }
 
@@ -58,29 +72,28 @@ export async function POST(request: NextRequest) {
       .upsert(
         {
           application_id: applicationId,
-          question_key: discrepancy.question_id,
+          question_key: discrepancy.question_key,
           answer_value: resolvedValue,
-          user_id: user.id,
           source: 'user_resolved_conflict',
           confidence: null,
           answered_at: new Date().toISOString(),
         },
-        { onConflict: 'application_id,question_key' }
+        { onConflict: 'application_id,question_key,family_member_id' }
       );
 
     if (answerError) {
-      console.error('Update answer error:', answerError);
+      captureApiError(answerError, { route: 'documents/resolve-discrepancy', stage: 'update-answer', userId: user.id, applicationId, discrepancyId });
       // Non-critical — discrepancy is resolved even if answer update fails
     }
 
     return NextResponse.json({
       resolved: true,
       discrepancyId,
-      questionId: discrepancy.question_id,
+      questionId: discrepancy.question_key,
       resolvedValue,
     });
   } catch (error) {
-    console.error('Resolve discrepancy error:', error);
+    captureApiError(error, { route: 'documents/resolve-discrepancy' });
     return NextResponse.json({ error: 'Resolution failed' }, { status: 500 });
   }
 }

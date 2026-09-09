@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { createBrowserSupabaseClient } from '@/lib/supabase';
 import {
   DOCUMENT_TYPE_OPTIONS,
   MAX_FILES_PER_SESSION,
@@ -18,6 +19,21 @@ interface PendingFile {
   fileType?: UploadFileType;
 }
 
+// Documents already imported via the case profile hub (uploaded_documents,
+// doc_type) that cover the same ground as one of these upload-hint types —
+// don't make the user upload the same document twice.
+const CASE_PROFILE_DOC_TYPE_MAP: Record<string, string> = {
+  fdd: 'franchise_docs',
+  franchise_agreement: 'franchise_docs',
+  business_plan: 'business_plan',
+};
+
+interface AlreadyOnFileDoc {
+  hintType: string;
+  filename: string;
+  createdAt: string;
+}
+
 export default function UploadClient({ applicationId }: { applicationId: string }) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -25,6 +41,33 @@ export default function UploadClient({ applicationId }: { applicationId: string 
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [alreadyOnFile, setAlreadyOnFile] = useState<AlreadyOnFileDoc[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const supabase = createBrowserSupabaseClient();
+      const { data: rows } = await supabase
+        .from('uploaded_documents')
+        .select('doc_type, file_name, created_at, extraction_status')
+        .eq('application_id', applicationId)
+        .eq('extraction_status', 'complete')
+        .order('created_at', { ascending: false });
+      if (cancelled || !rows) return;
+
+      const seen = new Set<string>();
+      const matches: AlreadyOnFileDoc[] = [];
+      for (const row of rows) {
+        const hintType = CASE_PROFILE_DOC_TYPE_MAP[row.doc_type as string];
+        if (hintType && !seen.has(hintType)) {
+          seen.add(hintType);
+          matches.push({ hintType, filename: row.file_name, createdAt: row.created_at });
+        }
+      }
+      setAlreadyOnFile(matches);
+    })();
+    return () => { cancelled = true; };
+  }, [applicationId]);
 
   const addFiles = useCallback((newFiles: FileList | File[]) => {
     const fileList = Array.from(newFiles);
@@ -149,7 +192,7 @@ export default function UploadClient({ applicationId }: { applicationId: string 
   const canProcess = validFileCount > 0 && !uploading;
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-[#f5f0e8]">
+    <div className="min-h-screen bg-[#0a0a0a] text-[#f5f0e8] pt-16">
       <div className="mx-auto max-w-2xl px-5 py-12 sm:px-8">
         {/* Back link */}
         <a
@@ -200,6 +243,42 @@ export default function UploadClient({ applicationId }: { applicationId: string 
           </p>
         </div>
 
+        {/* Already-on-file notice — don't ask twice for a document we already have */}
+        {alreadyOnFile.length > 0 && (
+          <div
+            style={{
+              marginBottom: '20px',
+              padding: '14px 16px',
+              border: '1px solid rgba(201,168,76,0.25)',
+              background: 'rgba(201,168,76,0.05)',
+              fontFamily: "'DM Sans', sans-serif",
+            }}
+          >
+            <p style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#C9A84C', marginBottom: '8px' }}>
+              Already on your case profile
+            </p>
+            <p style={{ fontSize: '11px', color: 'rgba(245,240,232,0.76)', lineHeight: 1.7, marginBottom: '6px' }}>
+              You&rsquo;ve already uploaded the following to your case profile — no need to upload them again here unless they&rsquo;ve changed:
+            </p>
+            <ul style={{ margin: 0, paddingLeft: '16px' }}>
+              {alreadyOnFile.map(doc => {
+                const label = DOCUMENT_TYPE_OPTIONS.find(o => o.value === doc.hintType)?.label ?? doc.hintType;
+                return (
+                  <li key={doc.hintType} style={{ fontSize: '11px', color: 'rgba(245,240,232,0.7)', marginBottom: '2px' }}>
+                    {label} — <span style={{ color: 'rgba(245,240,232,0.5)' }}>{doc.filename}</span>
+                  </li>
+                );
+              })}
+            </ul>
+            <a
+              href="/case-profile"
+              style={{ fontSize: '11px', color: 'rgba(201,168,76,0.8)', textDecoration: 'none' }}
+            >
+              View or replace on case profile →
+            </a>
+          </div>
+        )}
+
         {/* Privacy trust notice */}
         <div
           style={{
@@ -212,9 +291,10 @@ export default function UploadClient({ applicationId }: { applicationId: string 
         >
           <p style={{ fontSize: '11px', color: 'rgba(245,240,232,0.76)', lineHeight: 1.7 }}>
             <span style={{ color: 'rgba(201,168,76,0.7)', fontWeight: 500 }}>Your documents are private.</span>{' '}
-            We use them only to fill in your case file and check for gaps — never to train AI models,
-            never shared with third parties. Documents are encrypted at rest and deleted when you close your account.
-            You can request deletion at any time from{' '}
+            We use them only to fill in your case file and check for gaps — never to train AI models.
+            Files are encrypted at rest and automatically deleted 30 days after your document package
+            is generated, or 90 days after upload, whichever comes first. You can delete any file
+            immediately from your case profile, or close your account from{' '}
             <a href="/settings" style={{ color: 'rgba(201,168,76,0.6)', textDecoration: 'none' }}>Settings</a>.
           </p>
         </div>

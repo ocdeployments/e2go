@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
+import { checkRateLimit } from '@/lib/rate-limit';
 import { buildCaseProfile } from '@/lib/case-profile';
 import { extractTextFromBuffer } from '@/lib/text-extraction';
 import {
@@ -14,6 +15,8 @@ import type {
   DetectedDocumentType,
   Confidence,
 } from '@/types/document-upload';
+import { captureApiError } from '@/lib/capture-error';
+import { logDocumentAccess } from '@/lib/document-access-log';
 
 function _getSupabase() {
   return createClient(
@@ -47,6 +50,13 @@ export async function POST(request: NextRequest) {
           return;
         }
 
+        const rl = await checkRateLimit(user.id, 'parse-doc');
+        if (!rl.allowed) {
+          sendEvent({ event: 'error', data: { message: 'Rate limit exceeded. Please wait before extracting more documents.' } });
+          controller.close();
+          return;
+        }
+
         const body = await request.json();
         const { applicationId, documentIds } = body;
 
@@ -73,7 +83,7 @@ export async function POST(request: NextRequest) {
         // Fetch all document records
         const { data: documents, error: fetchError } = await supabase
           .from('application_documents')
-          .select('*')
+          .select('id, original_filename, storage_path, file_type, user_selected_document_type, document_summary, file_purged_at')
           .eq('application_id', applicationId)
           .in('id', documentIds);
 
@@ -103,6 +113,19 @@ export async function POST(request: NextRequest) {
             data: { documentId: doc.id, filename: doc.original_filename },
           });
 
+          // File was purged under the retention policy — the extracted data
+          // still lives in `answers`, but there is nothing left to re-read.
+          if (doc.file_purged_at) {
+            sendEvent({
+              event: 'document_error',
+              data: {
+                documentId: doc.id,
+                message: 'This file was removed under our data-retention policy. Re-upload it to extract again.',
+              },
+            });
+            continue;
+          }
+
           // Mark as extracting
           await supabase
             .from('application_documents')
@@ -118,6 +141,15 @@ export async function POST(request: NextRequest) {
             if (downloadError || !fileData) {
               throw new Error(`Failed to download ${doc.original_filename}`);
             }
+
+            await logDocumentAccess({
+              userId: user.id,
+              documentId: doc.id,
+              documentTable: 'application_documents',
+              action: 'extract',
+              docType: doc.user_selected_document_type,
+              fileName: doc.original_filename,
+            });
 
             // Extract text from file
             const arrayBuffer = await fileData.arrayBuffer();
@@ -201,7 +233,7 @@ export async function POST(request: NextRequest) {
                     source_document_type: classification.detected_type,
                     source: 'document_extracted',
                   },
-                  { onConflict: 'application_id,question_key' }
+                  { onConflict: 'application_id,question_key,family_member_id' }
                 );
             }
 
@@ -254,16 +286,26 @@ export async function POST(request: NextRequest) {
         const discrepancies = detectDiscrepancies(extractions);
 
         if (discrepancies.length > 0) {
-          // Store discrepancies
+          /**
+           * Store discrepancies. The extraction pipeline calls the field
+           * `question_id` in memory, matching what the model returns; the table
+           * calls it `question_key`. The translation happens here, at the
+           * boundary — the insert used to name the in-memory field and errored
+           * silently on every row, which is why the table is empty.
+           */
           for (const disc of discrepancies) {
-            await supabase
+            const { error: discError } = await supabase
               .from('document_discrepancies')
               .insert({
                 application_id: applicationId,
-                question_id: disc.question_id,
+                question_key: disc.question_id,
                 question_label: disc.question_label,
                 conflicting_values: disc.conflicting_values,
               });
+
+            if (discError) {
+              console.error('[extract] failed to store discrepancy:', discError);
+            }
           }
 
           sendEvent({
@@ -304,7 +346,7 @@ export async function POST(request: NextRequest) {
         // Trigger profile rebuild fire-and-forget (documents change dimension scores)
         buildCaseProfile(user.id).catch(() => {});
       } catch (error) {
-        console.error('Extraction pipeline error:', error);
+        captureApiError(error, { route: 'documents/extract', userId: user?.id });
         sendEvent({
           event: 'error',
           data: { message: error instanceof Error ? error.message : 'Pipeline failed' },

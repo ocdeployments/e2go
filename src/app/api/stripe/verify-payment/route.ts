@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import Stripe from 'stripe';
+import { Redis } from '@upstash/redis';
+import { createSupabaseServerClient } from '@/lib/supabase-server';
+import { captureApiError } from '@/lib/capture-error';
+
+const redis = process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
+  ? new Redis({ url: process.env.UPSTASH_REDIS_REST_URL, token: process.env.UPSTASH_REDIS_REST_TOKEN })
+  : null;
 
 function getSupabase() {
   return createClient(
@@ -24,8 +31,16 @@ function getStripe(): Stripe | null {
  */
 export async function POST(request: NextRequest) {
   try {
+    // Require authenticated session — userId is derived server-side, never from body
+    const supabaseAuth = await createSupabaseServerClient();
+    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
-    const { applicationId, userId, sessionId } = body;
+    const { applicationId, sessionId } = body;
+    // userId deliberately not read from body — use session identity only
 
     // Mode 2: Stripe session fallback
     if (sessionId) {
@@ -43,14 +58,19 @@ export async function POST(request: NextRequest) {
 
         const supabase = getSupabase();
         const applicationIdFromMeta = session.metadata?.applicationId || null;
-        const userIdFromMeta = session.metadata?.userId || null;
         const tierId = session.metadata?.tierId || 'unknown';
+
+        // Verify ownership — session userId must match the authenticated user
+        const userIdFromMeta = session.metadata?.userId || null;
+        if (userIdFromMeta && userIdFromMeta !== user.id) {
+          return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        }
 
         // Upsert payment row — creates if missing, no-op if exists
         await supabase.from('payments').upsert(
           {
             application_id: applicationIdFromMeta,
-            user_id: userIdFromMeta,
+            user_id: user.id,
             stripe_session_id: session.id,
             stripe_payment_intent_id: (session.payment_intent as string) || null,
             stripe_price_id: session.metadata?.priceId || '',
@@ -63,6 +83,23 @@ export async function POST(request: NextRequest) {
           { onConflict: 'stripe_session_id' }
         );
 
+        // C1 FIX: Also update applications.payment_status immediately so middleware
+        // grants access without waiting for the async Stripe webhook (race condition fix).
+        // The webhook may re-update this row later — both writes are idempotent.
+        if (applicationIdFromMeta) {
+          await supabase
+            .from('applications')
+            .update({ payment_status: 'paid' })
+            .eq('id', applicationIdFromMeta)
+            .eq('user_id', user.id);
+        }
+
+        // Invalidate middleware access cache so the user gets through on next
+        // navigation without waiting for the webhook (mirrors webhook behavior).
+        if (redis) {
+          await redis.del(`mw:access:${user.id}`);
+        }
+
         return NextResponse.json({
           verified: true,
           payment: {
@@ -72,13 +109,13 @@ export async function POST(request: NextRequest) {
           },
         });
       } catch (err) {
-        console.error('Stripe session retrieve error:', err);
+        captureApiError(err, { route: 'stripe/verify-payment', stage: 'session-retrieve', userId: user.id, sessionId });
         return NextResponse.json({ verified: false, reason: 'Failed to retrieve Stripe session' });
       }
     }
 
-    // Mode 1: Local database check (existing behavior)
-    if (!applicationId || !userId) {
+    // Mode 1: Local database check — userId from session, not body
+    if (!applicationId) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -89,9 +126,9 @@ export async function POST(request: NextRequest) {
 
     const { data: payment, error } = await supabase
       .from('payments')
-      .select('*')
+      .select('id, application_id, user_id, stripe_session_id, stripe_payment_intent_id, stripe_price_id, amount_paid, currency, status, payment_type, refund_eligible, refunded_at, created_at, completed_at')
       .eq('application_id', applicationId)
-      .eq('user_id', userId)
+      .eq('user_id', user.id)
       .eq('status', 'completed')
       .single();
 
@@ -104,7 +141,7 @@ export async function POST(request: NextRequest) {
       payment,
     });
   } catch (error) {
-    console.error('Payment verification error:', error);
+    captureApiError(error, { route: 'stripe/verify-payment' });
     return NextResponse.json(
       { error: 'Verification failed' },
       { status: 500 }

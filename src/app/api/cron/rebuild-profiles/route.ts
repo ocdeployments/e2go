@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { buildCaseProfile } from '@/lib/case-profile';
+import { captureApiError } from '@/lib/capture-error';
 
 function getSupabaseAdmin() {
   const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -28,7 +29,7 @@ export async function GET(request: NextRequest) {
     .not('user_id', 'is', null);
 
   if (error) {
-    console.error('[cron/rebuild-profiles] Failed to fetch user IDs:', error);
+    captureApiError(error, { route: 'cron/rebuild-profiles', stage: 'fetch-user-ids' });
     return NextResponse.json({ error: 'Database error' }, { status: 500 });
   }
 
@@ -44,7 +45,7 @@ export async function GET(request: NextRequest) {
     } catch (err) {
       results.failed++;
       results.errors.push(`${userId}: ${err instanceof Error ? err.message : String(err)}`);
-      console.error(`[cron/rebuild-profiles] Failed for user ${userId}:`, err);
+      captureApiError(err, { route: 'cron/rebuild-profiles', stage: 'per-user-rebuild', userId });
     }
   }
 

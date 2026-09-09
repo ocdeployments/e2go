@@ -197,8 +197,24 @@ She directed HR operations for 47 staff across three office locations.
       "Ms. Mitchell dedicated her career to operational excellence spanning " +
       "over eight years in senior management roles across multiple locations. ";
 
+    const disclaimer =
+      "This document does not constitute legal advice; e2go is not a law firm.";
+
+    // Covers the remaining cover-letter officer pillars (investment amount,
+    // job creation / economic contribution, at-risk capital) that the
+    // repeated management-experience sentence above does not touch.
+    const pillarSentences =
+      "Ms. Mitchell has committed $185,000 in at-risk capital, funds that were " +
+      "transferred and deployed to establish the enterprise. The business will " +
+      "employ five full-time staff within its first year, creating jobs that " +
+      "generate a substantial economic contribution.";
+
     // 19 words per sentence * 43 = 817 words, page estimate = 4 (817/250=3.27→4)
-    const content = Array.from({ length: 43 }, () => sentence).join("\n");
+    const content = [
+      ...Array.from({ length: 43 }, () => sentence),
+      pillarSentences,
+      disclaimer,
+    ].join("\n");
 
     const doc = makeMockDocument("cover_letter", content);
 

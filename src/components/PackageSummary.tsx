@@ -89,7 +89,7 @@ const DIMENSIONS: DimensionDef[] = [
     label: "Non-Marginality",
     plainLanguage: "Your capacity to generate income and economic contribution",
     getScore: (b) => {
-      // Replicate score-sync.ts logic
+      // Marginality roll-up: worst of income/contribution wins (single source of truth)
       if (
         b.marginality_income_score === "ADEQUATE" &&
         b.marginality_contribution_score === "ADEQUATE"

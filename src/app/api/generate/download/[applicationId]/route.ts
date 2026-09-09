@@ -30,26 +30,17 @@ import {
   TAB_SECTION_TITLES,
   TAB_ORDER,
 } from '@/lib/docx-package-constants';
+import { buildPackageManifest } from '@/lib/cic-package-manifest';
+import { buildExhibitRegistry } from '@/lib/exhibit-registry';
 import type { DocumentType } from '@/types/generation';
+import { captureApiError } from '@/lib/capture-error';
 
-const VALID_DOC_TYPES: DocumentType[] = [
-  'cover_letter',
-  'source_of_funds',
-  'business_plan',
-  'qualifications',
-  'ds160_reference',
-  'visa_category',
-  'nonimmigrant_intent',
-  'marginality_rebuttal',
-  'declaration_principal',
-  'declaration_spouse',
-  'fund_flow_chronology',
-  'net_worth_statement',
-  'property_portfolio',
-  'resume_principal',
-  'resume_spouse',
-  'gift_letter',
-];
+// DOC_DISPLAY_NAMES has exactly one entry per DocumentType — deriving
+// VALID_DOC_TYPES from it keeps this list from silently drifting out of
+// sync with the type (a hand-maintained subset here previously excluded
+// investment_proof/org_chart/etc. and all six _p2 partnership doc types
+// from the download package).
+const VALID_DOC_TYPES: DocumentType[] = Object.keys(DOC_DISPLAY_NAMES) as DocumentType[];
 
 /** Format today's date as "Month DD, YYYY" */
 function formatPreparedDate(): string {
@@ -103,25 +94,36 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
-    // 3. Gate check — must be acknowledged AND released
-    const { data: pipelineLog, error: logError } = await supabase
-      .from('generation_pipeline_log')
-      .select('applicant_acknowledged, final_status')
-      .eq('application_id', applicationId)
-      .eq('applicant_acknowledged', true)
-      .eq('final_status', 'RELEASED')
-      .limit(1)
-      .single();
-
-    if (logError || !pipelineLog) {
+    // 3. CIC-P.4 completeness gate — all generated docs certified, zero outstanding
+    const manifest = await buildPackageManifest(applicationId);
+    if (!manifest.packageReady) {
+      const reasons: string[] = [];
+      if (manifest.outstandingCount > 0) {
+        reasons.push(`${manifest.outstandingCount} required item(s) still outstanding`);
+      }
+      const uncertified = manifest.tabs.filter(
+        t => t.source === 'generated' && t.status !== 'certified'
+      );
+      if (uncertified.length > 0) {
+        reasons.push(`${uncertified.length} generated document(s) not yet certified by client`);
+      }
       return NextResponse.json(
         {
-          error:
-            'Documents not yet released. Please complete the acknowledgment step first.',
+          error: 'Package not ready for download.',
+          reasons,
+          certifiedCount: manifest.certifiedCount,
+          outstandingCount: manifest.outstandingCount,
+          totalTabs: manifest.totalTabs,
         },
         { status: 403 }
       );
     }
+
+    // Log download intent for audit trail
+    await supabase
+      .from('generation_pipeline_log')
+      .update({ downloaded_at: new Date().toISOString() })
+      .eq('application_id', applicationId);
 
     // 4. Read all 6 documents
     const { data: documents, error: docsError } = await supabase
@@ -145,9 +147,26 @@ export async function GET(
     //    - businessState: not yet collected → bracket placeholder is correct
     const { data: appProfile } = await supabase
       .from('applications')
-      .select('principal_name, business_name, user_id')
+      .select('principal_name, business_name, user_id, case_code')
       .eq('id', applicationId)
       .single();
+
+    const caseCode = (appProfile?.case_code as string | undefined) ?? undefined;
+
+    // Co-investor's own last_name/person_code — used so _p2 documents show
+    // the real second person, not the principal's name (see docsForTab loop).
+    // Same "first co_investor row wins" convention as ensureCoInvestorId in
+    // partner2/intake/route.ts.
+    const { data: coInvestor } = appProfile?.user_id
+      ? await supabase
+          .from('family_members')
+          .select('id, last_name, person_code')
+          .eq('user_id', appProfile.user_id)
+          .eq('member_type', 'co_investor')
+          .order('sort_order', { ascending: true })
+          .limit(1)
+          .maybeSingle()
+      : { data: null };
 
     const applicantName =
       (appProfile?.principal_name as string) || '[Applicant name]';
@@ -210,13 +229,16 @@ export async function GET(
     const coverBuffer = await Packer.toBuffer(coverDoc);
     zip.file('00_Cover_Page.docx', Buffer.from(coverBuffer));
 
-    // 7b. Table of contents
+    // 7b. Table of contents / Master Exhibit Index (WS3.2 — also lists the
+    // client's uploaded exhibits from the WS3.1 registry, not just generated docs)
+    const exhibitRegistry = await buildExhibitRegistry(applicationId);
     const tocDoc = buildTableOfContents({
       applicantName,
       preparedDate,
       includedTabs,
       includedDocTypes,
       totalDocCount: includedDocTypes.length,
+      exhibitsByTab: exhibitRegistry.byTab,
     });
     const tocBuffer = await Packer.toBuffer(tocDoc);
     zip.file('01_Table_of_Contents.docx', Buffer.from(tocBuffer));
@@ -251,15 +273,23 @@ export async function GET(
           (d) => d.document_type === docType
         );
         if (docContent?.content_text) {
+          const isP2Doc = docType.endsWith('_p2');
+          const docLastName = isP2Doc && coInvestor?.last_name ? coInvestor.last_name : lastName;
+          const personCode = isP2Doc ? (coInvestor?.person_code ?? 'P2') : 'P1';
+
           const docx = buildDocument({
             contentText: docContent.content_text,
             documentType: docType,
-            lastName,
+            lastName: docLastName,
+            caseCode,
+            personCode,
           });
           const docBuffer = await Packer.toBuffer(docx);
           const displayName = DOC_DISPLAY_NAMES[docType];
+          const codeSegment = caseCode ? `${caseCode}_` : '';
+          const personSegment = personCode !== 'P1' ? `${personCode}_` : '';
           zip.file(
-            `Tab_${tabLetter}_${displayName}.docx`,
+            `Tab_${tabLetter}_${codeSegment}${personSegment}${displayName}.docx`,
             Buffer.from(docBuffer)
           );
         }
@@ -281,15 +311,7 @@ export async function GET(
       Buffer.from(checklistBuffer)
     );
 
-    // 8. Log the download event
-    const now = new Date().toISOString();
-    await supabase
-      .from('generation_pipeline_log')
-      .update({ downloaded_at: now })
-      .eq('application_id', applicationId)
-      .eq('applicant_acknowledged', true);
-
-    // 9. Generate ZIP as arraybuffer and return
+    // 8. Generate ZIP as arraybuffer and return
     const zipBlob = await zip.generateAsync({ type: 'arraybuffer' });
 
     return new NextResponse(zipBlob as ArrayBuffer, {
@@ -297,12 +319,12 @@ export async function GET(
       headers: {
         'Content-Type': 'application/zip',
         'Content-Disposition':
-          'attachment; filename="E2_Application_Package.zip"',
+          `attachment; filename="E2_Application_Package${caseCode ? `_${caseCode}` : ''}.zip"`,
         'Cache-Control': 'no-store, no-cache, must-revalidate',
       },
     });
   } catch (err) {
-    console.error('[DOWNLOAD] Error:', err);
+    captureApiError(err, { route: 'generate/download' });
     return NextResponse.json(
       { error: 'Failed to generate download package' },
       { status: 500 }

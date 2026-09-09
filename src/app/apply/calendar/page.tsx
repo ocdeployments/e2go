@@ -247,7 +247,7 @@ export default function ComplianceCalendarPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#0a0a0a]">
+      <div className="flex min-h-screen items-center justify-center bg-[#0a0a0a] pt-16">
         <p className="text-sm text-white/30" style={{ fontFamily: "'DM Sans', sans-serif" }}>
           Loading...
         </p>
@@ -257,7 +257,7 @@ export default function ComplianceCalendarPage() {
 
   if (!timeline) {
     return (
-      <div className="min-h-screen bg-[#0a0a0a] text-[#f5f0e8]">
+      <div className="min-h-screen bg-[#0a0a0a] text-[#f5f0e8] pt-16">
         <div className="mx-auto max-w-3xl px-6 py-12">
           <Link href="/dashboard" className="text-sm" style={{ color: 'rgba(245,240,232,0.5)', fontFamily: "'DM Sans', sans-serif" }}>
             ← Back to Dashboard
@@ -285,7 +285,7 @@ export default function ComplianceCalendarPage() {
   const phaseGroups = groupItemsByPhase(items);
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-[#f5f0e8]">
+    <div className="min-h-screen bg-[#0a0a0a] text-[#f5f0e8] pt-16">
       <div className="mx-auto max-w-3xl px-6 py-12">
         <div className="flex justify-between items-center mb-6">
           <Link

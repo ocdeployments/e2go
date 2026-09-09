@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import Stripe from 'stripe';
+import { captureApiError } from '@/lib/capture-error';
 
 function getSupabase() {
   return createClient(
@@ -65,11 +66,15 @@ export async function POST(request: NextRequest) {
 
     const supabase = getSupabase();
 
-    // Idempotency: check if this session was already processed
+    // Idempotency: check if this session was already processed.
+    // Scoped to the caller — stripe_session_id alone is a client-suppliable
+    // value, and without the user_id check an attacker who learns someone
+    // else's session ID could read that user's simulator session counts back.
     const { data: existingPayment } = await supabase
       .from('payments')
       .select('id, status, application_id')
       .eq('stripe_session_id', sessionId)
+      .eq('user_id', user.id)
       .single();
 
     if (existingPayment?.status === 'completed') {
@@ -115,7 +120,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (fetchErr || !app) {
-      console.error(`grant-simulator-sessions: application not found. appId=${applicationId} userId=${user.id} err=${fetchErr?.message}`);
+      captureApiError(fetchErr ?? new Error('grant-simulator-sessions: application not found'), { route: 'stripe/grant-simulator-sessions', stage: 'fetch-application', userId: user.id, applicationId });
       return NextResponse.json({ error: 'Application not found' }, { status: 404 });
     }
 
@@ -165,7 +170,7 @@ export async function POST(request: NextRequest) {
       sessionsPurchased: updated?.simulator_sessions_purchased ?? newPurchased,
     });
   } catch (err) {
-    console.error('Grant simulator sessions error:', err);
+    captureApiError(err, { route: 'stripe/grant-simulator-sessions', userId: user.id });
     return NextResponse.json({ error: 'Failed to grant sessions' }, { status: 500 });
   }
 }

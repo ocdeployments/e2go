@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { createBrowserSupabaseClient } from '@/lib/supabase';
+import { resolvePrimaryApplicationId } from '@/lib/resolve-application';
 
 const supabase = createBrowserSupabaseClient();
 
@@ -23,18 +24,9 @@ export default function SimulatorNav() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data: apps } = await supabase
-        .from('applications')
-        .select('id, source')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(10);
-
-      if (!apps || apps.length === 0) return;
-
-      // Prefer simulator_standalone; fall back to any application
-      const simApp = apps.find((a: { id: string; source: string | null }) => a.source === 'simulator_standalone') ?? apps[0];
-      setApplicationId(simApp.id);
+      // Same primary application every other surface uses
+      const primaryId = await resolvePrimaryApplicationId(supabase, user.id);
+      if (primaryId) setApplicationId(primaryId);
     }
     loadApp();
   }, []);

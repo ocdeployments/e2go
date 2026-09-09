@@ -4,9 +4,11 @@
 import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { createBrowserSupabaseClient } from '@/lib/supabase';
+import { resolvePrimaryApplicationId } from '@/lib/resolve-application';
 import Link from 'next/link';
 import {
   scoreCase,
+  type CaseBriefRow,
   type GapAnalysisResult,
   type SimulatorData,
 } from '@/lib/gap-analysis-engine';
@@ -14,12 +16,25 @@ import DenialRiskRadar from '@/components/gap-analysis/DenialRiskRadar';
 import CategoryCard from '@/components/gap-analysis/CategoryCard';
 import PathwaySection from '@/components/gap-analysis/PathwaySection';
 import { analyzePathways, buildPathwayInput, type PathwayAnalysisResult } from '@/lib/pathway-engine';
+import GenerationProgress from '@/components/ui/GenerationProgress';
+
+const AI_ANALYSIS_STEPS = [
+  'Reading your case file…',
+  'Cross-referencing USCIS denial precedent…',
+  'Scoring investment substantiality…',
+  'Assessing marginality and intent…',
+  'Building your denial risk briefing…',
+];
 
 const supabase = createBrowserSupabaseClient();
 
-type DocRow = { detected_document_type?: string | null; user_selected_document_type?: string | null };
+type DocRow = { detected_document_type?: string | null; user_selected_document_type?: string | null; doc_type?: string | null };
 type AppRow = { business_name?: string | null; business_category?: string | null; operational_status?: string | null; target_state?: string | null; principal_name?: string | null; simulator_sessions_used?: number | null };
-type BriefRow = { substantiality_score?: number | null; marginality_score?: number | null };
+/**
+ * Shared with the engine so the two cannot drift apart again: the columns are
+ * TEXT labels, and marginality is stored as two judgements rather than one.
+ */
+type BriefRow = CaseBriefRow;
 
 // =============================================================================
 // ROOT — Suspense wrapper required for useSearchParams in Next.js 14
@@ -50,6 +65,8 @@ function GapAnalysisInner() {
   const searchParams = useSearchParams();
 
   const [loading, setLoading] = useState(true);
+  const [noApplication, setNoApplication] = useState(false);
+  const [quizAlreadyDone, setQuizAlreadyDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<GapAnalysisResult | null>(null);
   const [businessName, setBusinessName] = useState<string | null>(null);
@@ -72,6 +89,7 @@ function GapAnalysisInner() {
   const [cachedBrief, setCachedBrief] = useState<BriefRow | undefined>(undefined);
   const [cachedSim, setCachedSim] = useState<SimulatorData>({ sessionsUsed: 0, latestInconsistencyCount: 0 });
   const [cachedArchetype, setCachedArchetype] = useState<string | null>(null);
+  const [isPartnership, setIsPartnership] = useState(false);
 
   // Pathway intelligence state
   const [pathwayResult, setPathwayResult] = useState<PathwayAnalysisResult | null>(null);
@@ -79,6 +97,7 @@ function GapAnalysisInner() {
   // Diff tracking — captures baseline risk levels on first load, computes improvements live
   const initialRisksRef = useRef<Map<string, string>>(new Map());
   const changedKeysRef = useRef<Set<string>>(new Set());
+  const enrichmentInFlightForRef = useRef<string | null>(null);
   const [showReanalysisPrompt, setShowReanalysisPrompt] = useState(false);
   const [resolvedCodes, setResolvedCodes] = useState<{ code: string; from: string; to: string }[]>([]);
 
@@ -136,38 +155,54 @@ function GapAnalysisInner() {
       try {
         let resolvedId = searchParams.get('applicationId');
         if (!resolvedId) {
-          const { data: apps } = await supabase
-            .from('applications')
-            .select('id, business_name')
-            .eq('user_id', user.id)
-            .order('created_at', { ascending: false })
-            .limit(1);
-          if (!apps?.length) { setError('No application found. Create a case file first.'); setLoading(false); return; }
-          resolvedId = apps[0].id;
+          const primaryId = await resolvePrimaryApplicationId(supabase, user.id);
+          if (!primaryId) {
+            const { data: quizCheck } = await supabase
+              .from('quiz_sessions')
+              .select('id')
+              .eq('user_id', user.id)
+              .not('completed_at', 'is', null)
+              .limit(1)
+              .maybeSingle();
+            setQuizAlreadyDone(Boolean(quizCheck));
+            setNoApplication(true);
+            setLoading(false);
+            return;
+          }
+          resolvedId = primaryId;
         }
         setAppId(resolvedId);
 
         const [
           { data: app },
           { data: answers },
-          { data: docs },
+          { data: legacyDocs },
+          { data: uploadedDocs },
           { data: brief },
           { data: simApp },
           { data: simSessions },
           { data: profile },
           { data: quizSession },
           { data: appFull },
+          { data: partnershipPayment },
         ] = await Promise.all([
           supabase.from('applications').select('business_name, principal_name, simulator_sessions_used').eq('id', resolvedId).eq('user_id', user.id).single(),
-          supabase.from('answers').select('question_key, answer_value').eq('application_id', resolvedId),
+          supabase.from('answers').select('question_key, answer_value').eq('application_id', resolvedId).is('family_member_id', null),
           supabase.from('application_documents').select('detected_document_type, user_selected_document_type').eq('application_id', resolvedId),
-          supabase.from('case_briefs').select('substantiality_score').eq('application_id', resolvedId).order('created_at', { ascending: false }).limit(1).maybeSingle(),
+          supabase.from('uploaded_documents').select('doc_type').eq('application_id', resolvedId),
+          supabase.from('case_briefs').select('substantiality_score, marginality_income_score, marginality_contribution_score').eq('application_id', resolvedId).order('created_at', { ascending: false }).limit(1).maybeSingle(),
           supabase.from('applications').select('simulator_sessions_used').eq('id', resolvedId).single(),
           supabase.from('simulator_sessions').select('inconsistency_count').eq('application_id', resolvedId).order('started_at', { ascending: false }).limit(1),
           supabase.from('case_profiles').select('archetype, franchise_triggered').eq('user_id', user.id).maybeSingle(),
           supabase.from('quiz_sessions').select('result_json, hard_stop_codes').eq('user_id', user.id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
           supabase.from('applications').select('investment_amount, application_type').eq('id', resolvedId).single(),
+          supabase.from('payments').select('id').eq('user_id', user.id).eq('payment_type', 'complete_partnership').eq('status', 'completed').limit(1).maybeSingle(),
         ]);
+
+        const partnershipDetected = Boolean(partnershipPayment);
+        setIsPartnership(partnershipDetected);
+
+        const docs: DocRow[] = [...(legacyDocs ?? []), ...(uploadedDocs ?? [])];
 
         if (!app) { setError('Application not found or access denied.'); setLoading(false); return; }
         setBusinessName(app.business_name || 'Your Business');
@@ -179,7 +214,7 @@ function GapAnalysisInner() {
           latestInconsistencyCount: simSessions?.[0]?.inconsistency_count ?? 0,
         };
 
-        const scored = scoreCase(app, answers || [], docs || [], brief || undefined, simData, resolvedArchetype);
+        const scored = scoreCase(app, answers || [], docs || [], brief || undefined, simData, resolvedArchetype, undefined, partnershipDetected);
         setResult(scored);
 
         // Pathway intelligence — extract nationality and hard stops from quiz session
@@ -224,42 +259,37 @@ function GapAnalysisInner() {
         setCachedSim(simData);
         setCachedArchetype(resolvedArchetype);
 
-        // Fire LLM enrichment for weak categories — async, non-blocking
+        // Single merged LLM call: enrichment + semantic eval in one round-trip
         const weakCategories = scored.categories.filter(c => c.score < 70);
-        if (weakCategories.length > 0) {
+        if (weakCategories.length > 0 && enrichmentInFlightForRef.current !== resolvedId) {
+          enrichmentInFlightForRef.current = resolvedId;
           setEnrichingIds(new Set(weakCategories.map(c => c.id)));
-          Promise.all(weakCategories.map(async (cat) => {
-            try {
-              const res = await fetch('/api/gap-analysis/enrich', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  categoryId: cat.id, categoryName: cat.name,
-                  gaps: cat.gaps || [], evidence: cat.evidence || [],
-                  score: cat.score, businessName: app.business_name,
-                  businessCategory: (app as any).business_category,
-                  operationalStatus: (app as any).operational_status,
-                }),
-              });
-              if (res.ok) {
-                const { categoryId, enrichment } = await res.json();
-                if (enrichment) setEnrichments(prev => ({ ...prev, [categoryId]: enrichment }));
-              }
-            } catch { /* Non-fatal */ } finally {
-              setEnrichingIds(prev => { const next = new Set(prev); next.delete(cat.id); return next; });
-            }
-          }));
+          fetch('/api/gap-analysis/run', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              applicationId: resolvedId,
+              weakCategories: weakCategories.map(cat => ({
+                id: cat.id, name: cat.name,
+                gaps: cat.gaps || [], evidence: cat.evidence || [],
+                score: cat.score, businessName: app.business_name,
+                businessCategory: (app as any).business_category,
+                operationalStatus: (app as any).operational_status,
+              })),
+            }),
+          })
+            .then(r => r.ok ? r.json() : null)
+            .then(data => {
+              if (!data) return;
+              if (data.enrichments) setEnrichments(data.enrichments);
+              if (data.semanticResults) setSemanticResults(data.semanticResults);
+            })
+            .catch(() => {})
+            .finally(() => {
+              setEnrichingIds(new Set());
+              enrichmentInFlightForRef.current = null;
+            });
         }
-
-        // Fire semantic eval — async, non-blocking
-        fetch('/api/gap-analysis/semantic-eval', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ applicationId: resolvedId }),
-        })
-          .then(r => r.ok ? r.json() : null)
-          .then(data => { if (data?.results) setSemanticResults(data.results); })
-          .catch(() => {});
 
       } catch (err: any) {
         setError(err.message || 'Failed to load gap analysis');
@@ -275,7 +305,7 @@ function GapAnalysisInner() {
   useEffect(() => {
     if (!cachedApp) return;
     const answerRows = Array.from(localAnswers.entries()).map(([question_key, answer_value]) => ({ question_key, answer_value }));
-    const rescored = scoreCase(cachedApp, answerRows, localDocs, cachedBrief, cachedSim, cachedArchetype);
+    const rescored = scoreCase(cachedApp, answerRows, localDocs, cachedBrief, cachedSim, cachedArchetype, undefined, isPartnership);
     setLiveResult(rescored);
 
     // Compute which D-codes improved vs. the initial load baseline
@@ -288,7 +318,7 @@ function GapAnalysisInner() {
       }
     }
     setResolvedCodes(improvements);
-  }, [localAnswers, localDocs, cachedApp, cachedBrief, cachedSim, cachedArchetype]);
+  }, [localAnswers, localDocs, cachedApp, cachedBrief, cachedSim, cachedArchetype, isPartnership]);
 
   // Handlers passed down to DenialRiskRadar → RemediationPanel
   const handleAnswerChange = useCallback((key: string, value: string) => {
@@ -308,6 +338,50 @@ function GapAnalysisInner() {
   // ── Loading / Error ────────────────────────────────────────────────────────
 
   if (loading) return <LoadingScreen />;
+
+  if (noApplication) {
+    return (
+      <div style={{ ...styles.page, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ maxWidth: '520px', textAlign: 'center' as const, padding: '0 24px' }}>
+          <p style={{ fontSize: '10px', letterSpacing: '0.12em', textTransform: 'uppercase' as const, color: 'rgba(201,168,76,0.6)', marginBottom: '16px', fontFamily: "'DM Sans', sans-serif" }}>
+            Gap Analysis
+          </p>
+          <h2 style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: '36px', fontWeight: 300, color: '#f5f0e8', marginBottom: '16px', lineHeight: 1.2 }}>
+            {quizAlreadyDone ? 'Begin your case file' : 'Start your case file first'}
+          </h2>
+          <p style={{ fontSize: '14px', color: 'rgba(245,240,232,0.55)', lineHeight: 1.6, marginBottom: '32px', fontFamily: "'DM Sans', sans-serif" }}>
+            {quizAlreadyDone
+              ? "You've completed the eligibility quiz. Begin your onboarding to create your case file — Gap Analysis activates once your application is started."
+              : 'Gap Analysis evaluates your E-2 application across 7 immigration law dimensions. Complete the eligibility quiz to get started.'}
+          </p>
+          <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' as const }}>
+            {quizAlreadyDone ? (
+              <Link href="/apply/story" style={{
+                display: 'inline-block', padding: '12px 28px', background: '#C9A84C',
+                color: '#0a0a0a', fontSize: '11px', letterSpacing: '0.08em',
+                textTransform: 'uppercase' as const, fontFamily: "'DM Sans', sans-serif", fontWeight: 600,
+                textDecoration: 'none',
+              }}>
+                Begin onboarding →
+              </Link>
+            ) : (
+              <Link href="/quiz" style={{
+                display: 'inline-block', padding: '12px 28px', background: '#C9A84C',
+                color: '#0a0a0a', fontSize: '11px', letterSpacing: '0.08em',
+                textTransform: 'uppercase' as const, fontFamily: "'DM Sans', sans-serif", fontWeight: 600,
+                textDecoration: 'none',
+              }}>
+                Start eligibility quiz →
+              </Link>
+            )}
+            <Link href="/dashboard" style={{ display: 'inline-block', padding: '12px 24px', border: '1px solid rgba(201,168,76,0.3)', color: 'rgba(245,240,232,0.65)', fontSize: '11px', letterSpacing: '0.08em', textTransform: 'uppercase' as const, fontFamily: "'DM Sans', sans-serif", textDecoration: 'none' }}>
+              ← Dashboard
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (error) {
     return (
@@ -433,6 +507,12 @@ function GapAnalysisInner() {
             >
               {analysisRunning ? 'Running analysis…' : 'Run AI analysis →'}
             </button>
+          </div>
+        )}
+
+        {analysisRunning && (
+          <div style={{ padding: '16px 24px', background: 'rgba(201,168,76,0.05)', border: '1px solid rgba(201,168,76,0.2)', marginBottom: '32px' }}>
+            <GenerationProgress isActive={analysisRunning} estimatedSeconds={35} steps={AI_ANALYSIS_STEPS} showEstimate />
           </div>
         )}
 

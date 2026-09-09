@@ -1,3 +1,7 @@
+import type { CaseFinancials } from '@/lib/case-financials';
+import type { ExhibitRegistry } from '@/lib/exhibit-registry';
+import { DOC_TYPE_TAB_MAP } from '@/lib/docx-package-constants';
+
 export type DocumentType =
   // Existing core documents (generated in sequential pipeline)
   | 'cover_letter'
@@ -20,7 +24,19 @@ export type DocumentType =
   | 'resume_principal'
   | 'resume_spouse'
   // DOC-6: Conditional documents (generated only when applicable)
-  | 'gift_letter';
+  | 'gift_letter'
+  | 'financial_assets_portfolio'
+  // DOC-7: WS6.1 — the develop-and-direct / entity-existence exhibits
+  | 'org_chart'
+  | 'corporate_documents_guide'
+  | 'lease_premises_summary'
+  // DOC-P: Partnership documents — generated for Investor 2 in complete_partnership applications
+  | 'cover_letter_p2'
+  | 'source_of_funds_p2'
+  | 'declaration_p2'
+  | 'qualifications_p2'
+  | 'nonimmigrant_intent_p2'
+  | 'resume_p2';
 
 export type GenerationJobStatus =
   | 'queued'
@@ -82,6 +98,7 @@ export const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {
   cover_letter: 'Cover Letter',
   source_of_funds: 'Source of Funds Statement',
   investment_proof: 'Investment Evidence',
+  financial_assets_portfolio: 'Financial Assets Portfolio',
   business_plan: 'Business Plan',
   qualifications: 'Investor Biography & Qualifications',
   ds160_reference: 'DS-156E / DS-160 Reference',
@@ -96,27 +113,35 @@ export const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {
   resume_principal: 'Principal Applicant Resume',
   resume_spouse: 'Spouse Resume',
   gift_letter: 'Gift Letter',
+  org_chart: 'Org Chart / Management Structure Exhibit',
+  corporate_documents_guide: 'Corporate Documents Guide',
+  lease_premises_summary: 'Lease / Premises Summary',
+  // Partnership — Investor 2
+  cover_letter_p2:          'Cover Letter — Investor 2',
+  source_of_funds_p2:       'Source of Funds — Investor 2',
+  declaration_p2:           'Investor 2 Declaration',
+  qualifications_p2:        'Investor 2 Biography & Qualifications',
+  nonimmigrant_intent_p2:   'Non-immigrant Intent — Investor 2',
+  resume_p2:                'Investor 2 Resume',
 };
 
-export const DOCUMENT_TYPE_TABS: Record<DocumentType, string> = {
-  cover_letter: 'Tab D',
-  source_of_funds: 'Tab B',
-  investment_proof: 'Tab B',
-  business_plan: 'Tab C',
-  qualifications: 'Tab D',
-  ds160_reference: 'Tab D / E',
-  visa_category: 'Tab C',
-  nonimmigrant_intent: 'Tab G',
-  marginality_rebuttal: 'Tab C',
-  declaration_principal: 'Tab G',
-  declaration_spouse: 'Tab G',
-  fund_flow_chronology: 'Tab B',
-  net_worth_statement: 'Tab B',
-  property_portfolio: 'Tab F',
-  resume_principal: 'Tab D',
-  resume_spouse: 'Tab E',
-  gift_letter: 'Tab B',
-};
+// Derived from the single canonical Tab scheme (docx-package-constants.ts,
+// DOC_TYPE_TAB_MAP) so this can never drift from the letters that actually
+// drive the assembled .docx package — P2 (Investor 2) variants get an
+// explicit suffix since they share their principal counterpart's letter.
+const P2_DOCUMENT_TYPES = new Set<DocumentType>([
+  'cover_letter_p2', 'source_of_funds_p2', 'declaration_p2',
+  'qualifications_p2', 'nonimmigrant_intent_p2', 'resume_p2',
+]);
+
+export const DOCUMENT_TYPE_TABS: Record<DocumentType, string> = Object.fromEntries(
+  (Object.keys(DOC_TYPE_TAB_MAP) as DocumentType[])
+    .filter((dt) => dt in DOCUMENT_TYPE_LABELS)
+    .map((dt) => [
+      dt,
+      `Tab ${DOC_TYPE_TAB_MAP[dt]}${P2_DOCUMENT_TYPES.has(dt) ? ' (Investor 2)' : ''}`,
+    ])
+) as Record<DocumentType, string>;
 
 export interface GenerationStep {
   id: number;
@@ -159,6 +184,11 @@ export interface GeneratedDocument {
   approved_at: string | null;
   created_at: string;
   updated_at: string;
+  // CIC-P.4 fields
+  client_certified?: boolean | null;
+  certified_at?: string | null;
+  client_regen_note?: string | null;
+  verifier_result?: { overall?: 'pass' | 'fail' | 'pass_with_notes'; correctionBrief?: string | null } | null;
 }
 
 export interface RevisionNote {
@@ -205,12 +235,16 @@ export interface GenerationPayload {
   case_brief: Record<string, unknown>;
   module_3_answers: Record<string, unknown>;
   investment_breakdown: InvestmentBreakdownData;
+  case_financials: CaseFinancials;
   voice_profile: string;
   consulate_post: string;
   document_type: DocumentType;
   follow_up_responses: Record<string, unknown>;
   qfn_investor_profile?: string;
   gap_analysis_context?: string;
+  case_theory_brief?: string;
+  exhibit_registry: ExhibitRegistry;
+  document_index_text?: string;
 }
 
 export interface InvestmentBreakdownData {
@@ -224,6 +258,7 @@ export interface InvestmentBreakdownData {
   professional_fees: number | null;
   marketing_launch: number | null;
   at_risk_amount: number | null;
+  deployment_categories: string | null;
 }
 
 export interface ConsistencyIssue {

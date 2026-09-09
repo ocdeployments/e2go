@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { createBrowserSupabaseClient } from '@/lib/supabase';
 import type { FranchiseProfileAnswers } from '@/lib/franchise-scoring-engine';
+import { resolvePrimaryApplicationId } from '@/lib/resolve-application';
 
 // ─── Industry categories (E-7-05) ────────────────────────────────────────────
 
@@ -175,12 +176,8 @@ export default function FranchiseDiscoverPage() {
         setPrefill(prefillValues);
 
         // Get latest application to save answers to
-        const { data: apps } = await supabase
-          .from('applications')
-          .select('id')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(1);
+        const appsId = await resolvePrimaryApplicationId(supabase, user.id);
+        const apps = appsId ? [{ id: appsId }] : [];
 
         if (apps && apps.length > 0) {
           setApplicationId(apps[0].id);

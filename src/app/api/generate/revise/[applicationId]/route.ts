@@ -8,6 +8,7 @@ import {
 } from '@/lib/generation-engine';
 import type { CaseBrief } from '@/types/analysis';
 import type { DocumentType, RevisionNote } from '@/types/generation';
+import { captureApiError } from '@/lib/capture-error';
 
 function getSupabase() {
   return createClient(
@@ -55,7 +56,7 @@ export async function POST(
     // Check credits
     const { data: creditsRow } = await supabase
       .from('revision_credits')
-      .select('*')
+      .select('id, credits_remaining, credits_used')
       .eq('application_id', applicationId)
       .single();
 
@@ -66,7 +67,7 @@ export async function POST(
     // Load original document
     const { data: doc } = await supabase
       .from('generated_documents')
-      .select('*')
+      .select('id, document_type, content_text, revision_notes, revision_count')
       .eq('id', documentId)
       .eq('application_id', applicationId)
       .single();
@@ -100,7 +101,19 @@ export async function POST(
 
     // Build payload and inject revision instructions into the system prompt
     const caseBrief = caseBriefRow.case_brief_json as CaseBrief;
-    const payload = await buildGenerationPayload(applicationId, doc.document_type as DocumentType, caseBrief);
+
+    // WS3.2 — when revising the cover letter, Section X's document index must
+    // still reflect the real package, so fetch the actual generated types.
+    let allDocumentTypes: DocumentType[] | undefined;
+    if (doc.document_type === 'cover_letter' || doc.document_type === 'cover_letter_p2') {
+      const { data: allDocs } = await supabase
+        .from('generated_documents')
+        .select('document_type')
+        .eq('application_id', applicationId);
+      allDocumentTypes = (allDocs ?? []).map(d => d.document_type as DocumentType);
+    }
+
+    const payload = await buildGenerationPayload(applicationId, doc.document_type as DocumentType, caseBrief, allDocumentTypes);
 
     const changeTypeLabel = changeType === 'factual_correction'
       ? 'factual correction'
@@ -129,7 +142,7 @@ APPLICANT'S REVISION REQUEST (${changeTypeLabel}):
 ${description.trim()}`;
 
     const rawText = await callClaudeAPI(payload);
-    const humanizedText = await humanizeDocument(rawText, payload.voice_profile || '');
+    const humanizedText = await humanizeDocument(rawText, payload.voice_profile || '', undefined, payload.document_type);
 
     const revisionNote: RevisionNote = {
       timestamp: new Date().toISOString(),
@@ -178,7 +191,7 @@ ${description.trim()}`;
 
     return NextResponse.json({ success: true, document: updatedDoc });
   } catch (err) {
-    console.error('[REVISE]', err);
+    captureApiError(err, { route: 'generate/revise' });
     return NextResponse.json({ error: 'Revision failed. Please try again.' }, { status: 500 });
   }
 }

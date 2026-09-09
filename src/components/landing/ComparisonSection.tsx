@@ -2,7 +2,6 @@
 
 // ComparisonSection.tsx v2
 // Changes from v1:
-// - Added business formation step (LLC, EIN, US banking) to both columns
 // - Added time savings callout alongside cost totals
 // - Updated attorney disclaimer — neutral, no fee claims
 // - Added "already further along?" callout at bottom
@@ -48,8 +47,12 @@ export function ComparisonSection() {
             margin: 0,
             lineHeight: 1.7,
           }}>
-            Most people spend months asking the wrong people the wrong questions.
-            e2go puts everything in one place — in the right order, from day one.
+            The E-2 visa application isn&rsquo;t complicated — it&rsquo;s scattered. e2go
+            pulls it into one place: your eligibility, your answers, your assessment,
+            then 15+ documents drafted from your own words — each one gap-analysed,
+            denial-risk checked, consulate-ordered. No months of meetings — first the
+            consultant or broker, then the lawyer — to justify a $10&ndash;15,000
+            invoice. Just the work that counts, faster and for far less.
           </p>
         </div>
 
@@ -191,7 +194,7 @@ export function ComparisonSection() {
                   fontWeight: 300,
                   color: '#C9A84C',
                 }}>
-                  From $550
+                  From $990
                 </span>
               </div>
               <div style={{
@@ -529,7 +532,7 @@ export function ComparisonSection() {
   )
 }
 
-// ─── e2go STEPS (7 steps — added business formation as step 3) ───────────────
+// ─── e2go STEPS ─────────────────────────────────────────────────────────────
 
 const e2goSteps = [
   {
@@ -541,11 +544,6 @@ const e2goSteps = [
     title: 'Franchise introduction within 24 hours',
     description: 'Matched to an E-2 broker paid by the franchisor, not you — within a day, not weeks of searching.',
     cost: 'No client fee — ever',
-  },
-  {
-    title: 'Business formation — guided and parallel',
-    description: 'LLC, EIN, and US banking through pre-briefed specialists, run in parallel — 2–3 weeks instead of 4–6.',
-    cost: 'Specialist referrals included',
   },
   {
     title: 'Your entire application in one place',
@@ -569,7 +567,7 @@ const e2goSteps = [
   },
 ]
 
-// ─── TRADITIONAL STEPS (7 steps — matching structure) ─────────────────────────
+// ─── TRADITIONAL STEPS (matching structure) ──────────────────────────────────
 
 const traditionalSteps = [
   {
@@ -583,14 +581,9 @@ const traditionalSteps = [
     cost: '$0–$5,000 depending on broker',
   },
   {
-    title: 'Business formation — coordinated alone',
-    description: 'LLC, EIN, and banking as three separate processes nobody connects — 4–6 weeks of back-and-forth.',
-    cost: '$1,500–$4,000 in formation fees',
-  },
-  {
     title: 'Immigration consultant — separate fee',
     description: 'Coordinates the process but cannot give legal advice or represent you — the immigration lawyer is extra.',
-    cost: '$3,000–$8,000 CAD — lawyer not included',
+    cost: '$2,500–$6,000 USD — lawyer not included',
   },
   {
     title: 'Document gathering — on your own',
@@ -605,7 +598,7 @@ const traditionalSteps = [
   {
     title: 'Immigration attorney — full preparation',
     description: 'Drafts everything from scratch at full hourly rate, because nothing was prepared in advance.',
-    cost: '$8,000–$15,000+ USD',
+    cost: '$6,000–$15,000 USD',
   },
 ]
 
@@ -637,7 +630,6 @@ const featureGroups: FeatureGroup[] = [
     heading: 'Build',
     items: [
       { name: 'Franchise introduction', note: 'no client fee' },
-      { name: 'Business formation', note: 'LLC, EIN, US banking' },
       { name: 'Unified case file', note: 'saved as you go' },
       { name: 'AI documents', note: 'cover letter, source of funds, business plan, qualifications' },
       { name: 'Written in your voice', note: 'matched to your own writing' },

@@ -13,7 +13,9 @@
 import { NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { isKillSwitchEnabled } from "@/lib/kill-switch";
 import { buildFaqPrompt } from "@/lib/faq-system-prompt";
+import { captureApiError } from "@/lib/capture-error";
 
 // ---------------------------------------------------------------------------
 // Config
@@ -105,15 +107,24 @@ async function searchCorpus(
   supabase: any,
   embedding: number[]
 ): Promise<{ answer: string; sources: string; similarity: number; question_id: string } | null> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any).rpc("match_faq_corpus", {
-    query_embedding: JSON.stringify(embedding),
-    match_threshold: LAYER1_THRESHOLD,
-    match_count: 1,
-  });
-
-  if (error) {
-    console.error("Layer 1 search error:", error.message);
+  // The RPC can also reject outright (e.g. PGRST202 when the search functions
+  // are missing from the schema cache), so catch as well as check `error` —
+  // retrieval must never take the endpoint down, only degrade to Layer 3.
+  let data: { id: string; answer: string; sources: string | null; similarity: number }[] | null;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const res = await (supabase as any).rpc("match_faq_corpus", {
+      query_embedding: JSON.stringify(embedding),
+      match_threshold: LAYER1_THRESHOLD,
+      match_count: 1,
+    });
+    if (res.error) {
+      captureApiError(res.error, { route: 'faq/ask', stage: 'layer1-corpus-search' });
+      return null;
+    }
+    data = res.data;
+  } catch (err) {
+    captureApiError(err, { route: 'faq/ask', stage: 'layer1-corpus-search' });
     return null;
   }
 
@@ -136,15 +147,22 @@ async function searchKB(
   supabase: any,
   embedding: number[]
 ): Promise<string[] | null> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any).rpc("match_faq_kb", {
-    query_embedding: JSON.stringify(embedding),
-    match_threshold: 0.65,
-    match_count: 3,
-  });
-
-  if (error) {
-    console.error("Layer 2 search error:", error.message);
+  // Same contract as searchCorpus: a failing lookup degrades, never throws out.
+  let data: { chunk_text: string }[] | null;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const res = await (supabase as any).rpc("match_faq_kb", {
+      query_embedding: JSON.stringify(embedding),
+      match_threshold: 0.65,
+      match_count: 3,
+    });
+    if (res.error) {
+      captureApiError(res.error, { route: 'faq/ask', stage: 'layer2-kb-search' });
+      return null;
+    }
+    data = res.data;
+  } catch (err) {
+    captureApiError(err, { route: 'faq/ask', stage: 'layer2-kb-search' });
     return null;
   }
 
@@ -180,6 +198,10 @@ async function streamViaOpenRouter(
       temperature: 0.7,
       max_tokens: 500,
       stream: true,
+      // This route forwards only delta.content. A reasoning model would
+      // otherwise spend seconds streaming reasoning deltas we drop on the
+      // floor, delaying the first visible token.
+      reasoning: { enabled: false },
     }),
   });
 
@@ -227,6 +249,7 @@ const FAQ_FALLBACK_MODEL = "google/gemini-2.5-flash";
 
 /**
  * Stream generation — primary: mimo-v2.5, fallback: gemini-2.5-flash.
+ * Flash costs 3.4x more per query, so it stays the fallback only.
  * Both via OpenRouter. ANTHROPIC_API_KEY is never used here.
  */
 async function streamGeneration(
@@ -268,9 +291,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (await isKillSwitchEnabled()) {
+      return Response.json({ error: 'service_unavailable', message: 'AI features are temporarily unavailable. Please try again shortly.' }, { status: 503 });
+    }
+
     // ---- Parse body ----
-    const body = await req.json();
-    const query: string = (body.query || "").trim();
+    let body: Record<string, unknown>;
+    try {
+      body = await req.json() as Record<string, unknown>;
+    } catch {
+      return Response.json({ error: 'invalid_json', message: 'Request body is not valid JSON.' }, { status: 400 });
+    }
+    const query: string = ((body.query as string) || "").trim();
 
     if (!query) {
       return Response.json({ error: "missing_query" }, { status: 400 });
@@ -312,7 +344,7 @@ export async function POST(req: NextRequest) {
     try {
       embedding = await embedQuery(query);
     } catch (err) {
-      console.error("Embedding error:", err);
+      captureApiError(err, { route: 'faq/ask', stage: 'embedding' });
       // If embedding fails, fall through to Layer 3 (model knowledge)
       embedding = [];
     }
@@ -354,9 +386,16 @@ export async function POST(req: NextRequest) {
         matched_question_id: matchedQuestionId,
         similarity_score: similarityScore,
       })
-      .then(({ error }) => {
-        if (error) console.error("Query log error:", error.message);
-      });
+      .then(
+        ({ error }) => {
+          if (error) captureApiError(error, { route: 'faq/ask', stage: 'query-log' });
+        },
+        // PostgrestBuilder is a PromiseLike without .catch — the rejection
+        // handler has to be the second argument or it goes unhandled.
+        (err: unknown) => {
+          captureApiError(err, { route: 'faq/ask', stage: 'query-log' });
+        }
+      );
 
     // ---- Return streaming response ----
     return new Response(stream, {
@@ -367,7 +406,7 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (err) {
-    console.error("FAQ ask error:", err);
+    captureApiError(err, { route: 'faq/ask' });
     return Response.json(
       {
         error: "internal_error",

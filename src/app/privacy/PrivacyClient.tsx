@@ -23,12 +23,12 @@ export default function PrivacyPolicyPage() {
           Privacy Policy
         </h1>
         <p className="mb-8" style={{ fontSize: "14px", color: "rgba(245,240,232,0.76)", fontFamily: "'DM Sans', sans-serif" }}>
-          Last updated: June 2026
+          Last updated: September 2026
         </p>
 
         <div style={{ color: "rgba(245,240,232,0.75)", fontFamily: "'DM Sans', sans-serif", fontWeight: 300, lineHeight: 1.7, fontSize: "15px" }}>
           <p className="mb-6">
-            E2Pathway Inc. (&apos;Company&apos;, &apos;we&apos;, &apos;us&apos;, &apos;our&apos;) is committed to protecting your privacy. This Privacy Policy explains how we collect, use, store, and share information when you use the e2go application (&apos;App&apos;).
+            Prodigal Son IT Solutions LLC, doing business as e2go (&apos;Company&apos;, &apos;we&apos;, &apos;us&apos;, &apos;our&apos;), is committed to protecting your privacy. This Privacy Policy explains how we collect, use, store, and share information when you use the e2go application (&apos;App&apos;).
           </p>
           <p className="mb-6">
             This policy is designed to comply with the Personal Information Protection and Electronic Documents Act (PIPEDA) and applicable Canadian provincial privacy laws.
@@ -39,7 +39,8 @@ export default function PrivacyPolicyPage() {
           <p className="mb-4">During registration and use of the App, we collect:</p>
           <ul className="list-disc ml-6 mb-4 space-y-2">
             <li><strong>Account Information:</strong> Full legal name, email address, password (stored as a hashed value — never in plain text), province of residence.</li>
-            <li><strong>Application Data:</strong> Date of birth, passport number (stored encrypted; displayed as last 4 digits only), passport expiry date, home address, phone number, employment history, education history, business information, investment amounts and fund source descriptions, financial institution names and partial account references, family and dependent information, social media handles, interview date and outcome.</li>
+            <li><strong>Application Data:</strong> Date of birth, passport number, passport expiry date, home address, phone number, employment history, education history, business information, investment amounts and fund source descriptions, financial institution names and partial account references, family and dependent information, social media handles, interview date and outcome. Sensitive fields are handled under the access controls and encryption described in Section 3.</li>
+            <li><strong>Uploaded Documents:</strong> Files you choose to upload to support your application — for example bank and brokerage statements, business registration documents, tax returns, and franchise disclosure documents. Depending on where in the App you upload a file, it is either processed in memory to extract structured data and then discarded within the request, or stored in a private, account-scoped file store while you prepare. Stored files are automatically deleted 30 days after your document package is generated, or 90 days after upload if no package has been generated — whichever comes first. Identity documents (passport, birth certificate, marriage certificate) are always processed in memory only and never stored as files. You can delete any uploaded file at any time from the Documents area. The full retention schedule is in Section 3.</li>
             <li><strong>Payment Information:</strong> Payment processing is handled by Stripe. e2go does not store full card numbers, CVC codes, or bank account details. We receive only a tokenized payment reference from Stripe.</li>
           </ul>
 
@@ -60,11 +61,16 @@ export default function PrivacyPolicyPage() {
 
           <h2 className="text-2xl mb-4 mt-8" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#f5f0e8", fontWeight: 400 }}>3. HOW WE STORE AND PROTECT YOUR INFORMATION</h2>
           <ul className="list-disc ml-6 mb-4 space-y-2">
-            <li><strong>Encryption:</strong> All data is transmitted over HTTPS/TLS. Sensitive fields (passport number, partial account references) are encrypted at rest using AES-256 encryption.</li>
-            <li><strong>Access Controls:</strong> Access to user data is restricted to authorized personnel on a need-to-know basis. Access is logged and audited.</li>
-            <li><strong>Storage Location:</strong> User data is stored on servers located in Canada or the United States.</li>
-            <li><strong>Retention:</strong> Application data is retained until 90 days after your visa outcome is confirmed, then permanently deleted. Minimal compliance calendar data (email, visa dates, business name) is retained for compliance calendar subscribers only. You may request deletion at any time.</li>
-            <li><strong>Third-Party Processors:</strong> Cloud hosting, payment processing (Stripe), email delivery, analytics (anonymized), document generation (LLM API providers — inputs are processed in-memory and not retained beyond the API call), and voice transcription (Groq — audio processed transiently, not retained).</li>
+            <li><strong>Encryption:</strong> All data is transmitted over HTTPS/TLS. All data — including database records and uploaded files — is encrypted at rest using AES-256 encryption by our infrastructure providers.</li>
+            <li><strong>Access Controls:</strong> Access to user data is restricted to authorized personnel on a need-to-know basis. Uploaded files are held in a private store, scoped to your account, and are not publicly accessible.</li>
+            <li><strong>Storage Location:</strong> User data, including uploaded files, is stored on servers located in Canada or the United States.</li>
+            <li><strong>Retention — uploaded document files:</strong> Deleted automatically 30 days after your document package is generated, or 90 days after upload if no package exists, whichever is first. You can delete any file sooner from the Documents area.</li>
+            <li><strong>Retention — identity documents:</strong> Passport, birth-certificate, and marriage-certificate files are never stored. They are read in memory and discarded within the request; only the extracted fields (for example name, date of birth, passport number and expiry) are kept.</li>
+            <li><strong>Retention — your application data and generated documents:</strong> Kept for as long as your account is open, because this is the work product you are building. Purged when you delete your account.</li>
+            <li><strong>Retention — deleted accounts:</strong> When you delete your account there is a 30-day recovery window, after which every uploaded file and database record tied to your account is permanently and irreversibly removed by an automated job.</li>
+            <li><strong>Retention — dormant accounts:</strong> Accounts with no sign-in for 24 months are reviewed for deletion.</li>
+            <li><strong>Compliance calendar:</strong> Minimal data (email, visa dates, business name) is retained for compliance-calendar subscribers only. You may request deletion at any time.</li>
+            <li><strong>Third-Party Processors:</strong> Cloud hosting, payment processing (Stripe), email delivery, analytics (anonymized), document generation and document field extraction (LLM API providers — inputs, including the text of uploaded documents, are processed transiently, not retained beyond the API call, and not used for model training), and voice transcription (Groq — audio processed transiently, not retained).</li>
           </ul>
 
           <h3 className="text-lg mb-2 mt-4 font-medium" style={{ color: "#f5f0e8" }}>Sub-Processors</h3>
@@ -115,6 +121,13 @@ export default function PrivacyPolicyPage() {
                   <td style={{ padding: "8px 0" }}>United States</td>
                   <td style={{ padding: "8px 0" }}>In-memory only</td>
                 </tr>
+                <tr style={{ borderBottom: "1px solid rgba(201,168,76,0.15)" }}>
+                  <td style={{ padding: "8px 0" }}>Google LLC (Gemini), via OpenRouter Inc.</td>
+                  <td style={{ padding: "8px 0" }}>Reading uploaded documents to extract structured fields</td>
+                  <td style={{ padding: "8px 0" }}>Text of uploaded documents (transient)</td>
+                  <td style={{ padding: "8px 0" }}>United States</td>
+                  <td style={{ padding: "8px 0" }}>Not retained; not used for training</td>
+                </tr>
                 <tr>
                   <td style={{ padding: "8px 0" }}>Groq Inc.</td>
                   <td style={{ padding: "8px 0" }}>Voice transcription</td>
@@ -128,12 +141,12 @@ export default function PrivacyPolicyPage() {
 
           <h2 className="text-2xl mb-4 mt-8" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#f5f0e8", fontWeight: 400 }}>4. SENSITIVE INFORMATION</h2>
           <ul className="list-disc ml-6 mb-4 space-y-2">
-            <li><strong>Passport Data:</strong> Stored encrypted. Never shared with third parties except as explicitly authorized by you.</li>
+            <li><strong>Passport Data:</strong> Passport scans are never stored as files. When you upload a passport we read it in memory, extract the fields (name, date of birth, nationality, passport number, expiry), and discard the file within the request. Those fields are then held as application data under the access controls in Section 3, and are never shared with third parties except as explicitly authorized by you.</li>
             <li><strong>Financial Information:</strong> Fund source descriptions and account names are stored as application data. Partial account references only (last 4 digits). Full account numbers are never entered or stored.</li>
             <li><strong>Immigration History:</strong> Prior visa denials, overstays, and criminal disclosures are stored as structured flags only.</li>
             <li><strong>Family Information:</strong> Dependent data is collected only as necessary for application generation and is subject to the same protections as applicant data.</li>
           </ul>
-          <p className="mb-4">No biometric data is collected. No government documents are uploaded or stored on our servers.</p>
+          <p className="mb-4">No biometric data is collected. Government-issued identity documents are read in memory only and never stored as files. Other supporting documents (financial records, business documents) are held in a private, access-controlled file store, used only to prepare your application, and deleted on the schedule in Section 3 or sooner if you remove them.</p>
 
           <h2 className="text-2xl mb-4 mt-8" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#f5f0e8", fontWeight: 400 }}>5. SHARING YOUR INFORMATION</h2>
           <p className="mb-4">We do not share your personal information except in the following cases:</p>
@@ -179,7 +192,7 @@ export default function PrivacyPolicyPage() {
           <p className="mb-4">AI providers used and their data practices:</p>
           <ul className="list-disc pl-6 mb-4 space-y-1" style={{ color: "rgba(245,240,232,0.75)" }}>
             <li><strong>Anthropic (Claude):</strong> Used for document generation. Anthropic&apos;s API does not use submitted prompts for model training. Zero Data Retention (ZDR) applies.</li>
-            <li><strong>OpenRouter:</strong> Routes requests to underlying models for analysis and coaching features. Inputs are not retained or used for training.</li>
+            <li><strong>OpenRouter:</strong> Routes requests to underlying models (including Google Gemini) for document field extraction, analysis, and coaching features. Inputs, including uploaded document text, are not retained or used for training.</li>
             <li><strong>Groq:</strong> Used for voice transcription and text-to-speech. Zero Data Retention is enabled. Audio is not stored.</li>
             <li><strong>XAI / MiMo:</strong> Used for interview simulation. Inputs processed transiently and not retained.</li>
           </ul>

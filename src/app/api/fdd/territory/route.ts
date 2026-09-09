@@ -2,8 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { analyseTeritory } from '@/lib/fdd-territory-engine';
+import { checkRateLimit } from '@/lib/rate-limit';
 import type { FddExtractedFields, FddTerritoryAnalysis } from '@/types/fdd';
 import type { TerritoryAnalysis } from '@/lib/fdd-territory-engine';
+import { captureApiError } from '@/lib/capture-error';
 
 // POST /api/fdd/territory
 // Body: { fdd_id: string }
@@ -15,13 +17,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const rl = await checkRateLimit(user.id, 'fdd-analysis');
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: 'Rate limit exceeded. Please wait before running another territory analysis.' },
+        { status: 429 }
+      );
+    }
+
     const { fdd_id } = await request.json() as { fdd_id: string };
     if (!fdd_id) return NextResponse.json({ error: 'fdd_id required' }, { status: 400 });
 
     const service = createServiceClient();
     const { data: analysis, error: fetchErr } = await service
       .from('fdd_analyses')
-      .select('*')
+      .select('extracted_fields, target_zip, target_state')
       .eq('id', fdd_id)
       .eq('user_id', user.id)
       .single();
@@ -69,12 +79,12 @@ export async function POST(request: NextRequest) {
       .eq('id', fdd_id);
 
     if (updateErr) {
-      console.error('Territory persist error:', updateErr);
+      captureApiError(updateErr, { route: 'fdd/territory', stage: 'persist', userId: user.id, fddId: fdd_id });
     }
 
     return NextResponse.json({ territory_analysis: result });
   } catch (err) {
-    console.error('Territory route error:', err);
+    captureApiError(err, { route: 'fdd/territory' });
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Territory analysis failed' },
       { status: 500 }

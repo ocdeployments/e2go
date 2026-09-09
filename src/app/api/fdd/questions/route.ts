@@ -4,8 +4,10 @@ import { createServiceClient } from '@/lib/supabase-service';
 import { generateQuestions } from '@/lib/fdd-questions-engine';
 import { scoreFdd } from '@/lib/fdd-scoring-engine';
 import { synthesizeInvestorProfile } from '@/lib/investor-profile-synthesizer';
+import { resolvePrimaryApplication } from '@/lib/resolve-application';
 import type { FddExtractedFields, FddQuestions } from '@/types/fdd';
 import type { ScoringResult } from '@/lib/fdd-scoring-engine';
+import { captureApiError } from '@/lib/capture-error';
 
 // POST /api/fdd/questions
 // Body: { fdd_id: string }
@@ -25,7 +27,7 @@ export async function POST(request: NextRequest) {
     // Load the FDD analysis
     const { data: analysis, error: fetchErr } = await service
       .from('fdd_analyses')
-      .select('*')
+      .select('extracted_fields, fdd_stale, state_registration_status, investor_liquid_capital, investor_net_worth, target_state')
       .eq('id', fdd_id)
       .eq('user_id', user.id)
       .single();
@@ -47,19 +49,27 @@ export async function POST(request: NextRequest) {
       .limit(1)
       .maybeSingle();
 
+    // industry_interest lives on the quiz session's post_quiz_profile JSON
+    // (same source as buildCaseProfile in case-profile.ts), not on case_profiles —
+    // fetch it so computeProfileMatch's industry-fit scoring isn't always neutral.
+    const { data: quizSession } = await service
+      .from('quiz_sessions')
+      .select('post_quiz_profile')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const industryInterest = (quizSession?.post_quiz_profile as Record<string, string> | null)?.industry_interest ?? null;
+
     const fields = analysis.extracted_fields as FddExtractedFields;
     const staleStatus = analysis.fdd_stale ? 'fail' : 'current';
     const registrationStatus = analysis.state_registration_status ?? 'unknown';
     const investorLiquidCapital = analysis.investor_liquid_capital as number | null;
 
     // Build synthesized investor profile (QFN first, then inferred from M3/archetype/category)
-    const { data: apps } = await service
-      .from('applications')
-      .select('id, business_category, operational_status')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(1);
-    const latestApp = apps?.[0] ?? null;
+    const latestApp = await resolvePrimaryApplication<{ id: string; business_category: string | null; operational_status: string | null }>(
+      service, user.id, 'id, business_category, operational_status'
+    );
     const appId = latestApp?.id ?? null;
 
     const { data: caseProfileRow } = await service
@@ -98,6 +108,7 @@ export async function POST(request: NextRequest) {
       investor_net_worth: analysis.investor_net_worth as number | null,
       source_of_funds_score: caseProfile.source_of_funds_score as number | null,
       management_role_score: caseProfile.management_role_score as number | null,
+      industry_interest: industryInterest,
     } : null;
 
     const result = await generateQuestions(fields, scoring, profileSubset);
@@ -139,7 +150,7 @@ export async function POST(request: NextRequest) {
       .eq('id', fdd_id);
 
     if (updateErr) {
-      console.error('Questions persist error:', updateErr);
+      captureApiError(updateErr, { route: 'fdd/questions', stage: 'persist', userId: user.id, fddId: fdd_id });
     }
 
     return NextResponse.json({
@@ -149,7 +160,7 @@ export async function POST(request: NextRequest) {
       profile_match: result.profile_match,
     });
   } catch (err) {
-    console.error('Questions route error:', err);
+    captureApiError(err, { route: 'fdd/questions' });
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Question generation failed' },
       { status: 500 }

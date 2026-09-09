@@ -50,7 +50,7 @@ export function buildDocumentChecklist(flags: CaseFlags): ChecklistSection[] {
         id: 'ds160',
         label: 'DS-160 confirmation page (printed)',
         detail: 'The confirmation page with the barcode. Officers will not admit you without it.',
-        tab: 'Tab A',
+        tab: 'Tab B',
         critical: true,
       },
       {
@@ -80,65 +80,65 @@ export function buildDocumentChecklist(flags: CaseFlags): ChecklistSection[] {
   const binderItems: ChecklistItem[] = [
     {
       id: 'cover_letter',
-      label: 'Cover letter (Tab B)',
+      label: 'Cover letter (Tab C)',
       detail: 'The single most important document. Should answer all five of the officer\'s core questions within the first two pages.',
-      tab: 'Tab B',
+      tab: 'Tab C',
       critical: true,
     },
     {
       id: 'ds156e',
-      label: 'DS-156E Nonimmigrant Treaty Trader/Investor Application (Tab A)',
+      label: 'DS-156E Nonimmigrant Treaty Trader/Investor Application (Tab B)',
       detail: 'The E-visa specific form, distinct from DS-160. Must be complete and signed.',
-      tab: 'Tab A',
+      tab: 'Tab B',
       critical: true,
     },
     {
       id: 'business_plan',
-      label: 'Business plan (Tab K)',
+      label: 'Business plan (Tab H)',
       detail: 'Includes financial projections for Year 1, 3, and 5, market analysis, and hiring plan.',
-      tab: 'Tab K',
-      critical: true,
-    },
-    {
-      id: 'source_of_funds',
-      label: 'Source of funds chronology (Tab H)',
-      detail: 'The complete paper trail from the origin of your funds to the U.S. business account. No gaps.',
       tab: 'Tab H',
       critical: true,
     },
     {
+      id: 'source_of_funds',
+      label: 'Source of funds chronology (Tab D)',
+      detail: 'The complete paper trail from the origin of your funds to the U.S. business account. No gaps.',
+      tab: 'Tab D',
+      critical: true,
+    },
+    {
       id: 'investment_evidence',
-      label: 'Investment evidence — wire transfers, receipts, contracts (Tab F)',
+      label: 'Investment evidence — wire transfers, receipts, contracts (Tab E)',
       detail: 'Wire transfer confirmations, franchise fee payment receipts, lease agreements, equipment purchase orders.',
-      tab: 'Tab F',
+      tab: 'Tab E',
       critical: true,
     },
     {
       id: 'entity_docs',
-      label: 'U.S. entity documentation — LLC/Corp formation, EIN, bank account (Tab C)',
+      label: 'U.S. entity documentation — LLC/Corp formation, EIN, bank account (Tab J)',
       detail: 'Articles of organization/incorporation, EIN letter from IRS, U.S. business bank account statement.',
-      tab: 'Tab C',
-      critical: true,
-    },
-    {
-      id: 'investor_bio',
-      label: 'Investor biography / qualifications (Tab J)',
-      detail: 'Your professional background, education, and management experience. Connects your qualifications to this specific business.',
       tab: 'Tab J',
       critical: true,
     },
     {
+      id: 'investor_bio',
+      label: 'Investor biography / qualifications (Tab I)',
+      detail: 'Your professional background, education, and management experience. Connects your qualifications to this specific business.',
+      tab: 'Tab I',
+      critical: true,
+    },
+    {
       id: 'operating_agreement',
-      label: 'Operating agreement (Tab C)',
+      label: 'Operating agreement (Tab J)',
       detail: 'Showing ownership structure and investor control over the business.',
-      tab: 'Tab C',
+      tab: 'Tab J',
       critical: true,
     },
     {
       id: 'projections',
-      label: 'Financial projections with supporting assumptions (Tab I)',
+      label: 'Financial projections with supporting assumptions (Tab H)',
       detail: 'Year 1–5 revenue, net income, and employment projections — with the evidence base for each number.',
-      tab: 'Tab I',
+      tab: 'Tab H',
       critical: true,
     },
   ];
@@ -159,21 +159,21 @@ export function buildDocumentChecklist(flags: CaseFlags): ChecklistSection[] {
       id: 'fdd',
       label: 'Franchise Disclosure Document (FDD) — original',
       detail: 'Bring the full FDD. Officers may ask to see Item 19 (Financial Performance Representation) or Item 21 (Financial Statements) on the spot.',
-      tab: 'Tab G',
+      tab: 'Tab K',
       critical: true,
     });
     caseSpecificItems.push({
       id: 'franchise_agreement',
       label: 'Signed Franchise Agreement',
       detail: 'The executed contract between you and the franchisor. Shows commitment and investment terms.',
-      tab: 'Tab G',
+      tab: 'Tab K',
       critical: true,
     });
     caseSpecificItems.push({
       id: 'franchisor_support_letter',
       label: 'Franchisor support letter (if provided)',
       detail: 'Many franchisors provide a letter confirming the franchisee\'s investment, territory, and training plan.',
-      tab: 'Tab G',
+      tab: 'Tab K',
       critical: false,
     });
   }
@@ -184,7 +184,7 @@ export function buildDocumentChecklist(flags: CaseFlags): ChecklistSection[] {
       id: 'rrsp',
       label: 'RRSP redemption statement',
       detail: 'The official statement from your financial institution showing the RRSP balance, withdrawal amount, and date. Must show the origin of the funds within the RRSP.',
-      tab: 'Tab H',
+      tab: 'Tab D',
       critical: true,
     });
   }
@@ -195,7 +195,7 @@ export function buildDocumentChecklist(flags: CaseFlags): ChecklistSection[] {
       id: 'property_sale',
       label: 'Property sale documentation',
       detail: 'Agreement of purchase and sale, statement of adjustments from the real estate lawyer showing net proceeds, and bank statement showing deposit.',
-      tab: 'Tab H',
+      tab: 'Tab D',
       critical: true,
     });
   }
@@ -206,7 +206,7 @@ export function buildDocumentChecklist(flags: CaseFlags): ChecklistSection[] {
       id: 'gift_letter',
       label: 'Gift letter and donor\'s bank statement',
       detail: 'A signed gift letter on the donor\'s letterhead confirming the gift is unconditional, plus the donor\'s bank statement showing the funds existed before the gift.',
-      tab: 'Tab H',
+      tab: 'Tab D',
       critical: true,
     });
   }
@@ -217,7 +217,7 @@ export function buildDocumentChecklist(flags: CaseFlags): ChecklistSection[] {
       id: 'loan_agreement',
       label: 'Loan agreement and lender documentation',
       detail: 'The executed loan agreement showing terms, the lender\'s ability to make the loan, and evidence of funds transfer to the business.',
-      tab: 'Tab H',
+      tab: 'Tab D',
       critical: true,
     });
   }
@@ -228,7 +228,7 @@ export function buildDocumentChecklist(flags: CaseFlags): ChecklistSection[] {
       id: 'prior_denial_docs',
       label: 'Prior visa denial documentation',
       detail: 'Any documentation relating to your previous visa denial, including the original application, refusal notice, and your attorney\'s explanation of what has materially changed.',
-      tab: 'Tab L',
+      tab: 'Tab C',
       critical: true,
     });
   }
@@ -277,14 +277,14 @@ export function buildDocumentChecklist(flags: CaseFlags): ChecklistSection[] {
       id: 'partnership_agreement',
       label: 'Partnership agreement / operating agreement showing ownership split',
       detail: 'Must clearly show that the treaty-country national(s) own at least 50% of the enterprise.',
-      tab: 'Tab C',
+      tab: 'Tab J',
       critical: true,
     });
     caseSpecificItems.push({
       id: 'partner_nationality',
       label: 'Partner\'s nationality documentation (if not also applying for E-2)',
       detail: 'If your business partner holds the same treaty nationality but is not applying for a visa, documentation of their nationality may be required.',
-      tab: 'Tab C',
+      tab: 'Tab J',
       critical: false,
     });
   }
@@ -295,14 +295,14 @@ export function buildDocumentChecklist(flags: CaseFlags): ChecklistSection[] {
       id: 'lease_agreement',
       label: 'Signed lease agreement for business premises',
       detail: 'An executed lease shows the business location is committed and investment is real. A letter of intent is significantly weaker.',
-      tab: 'Tab F',
+      tab: 'Tab J',
       critical: true,
     });
     caseSpecificItems.push({
       id: 'vendor_contracts',
       label: 'Vendor contracts, equipment purchase orders, or supplier agreements',
       detail: 'Any binding commitment that shows funds are irrevocably at risk and the business is real.',
-      tab: 'Tab F',
+      tab: 'Tab J',
       critical: false,
     });
   }

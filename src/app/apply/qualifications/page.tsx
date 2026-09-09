@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { useAutosaveFlush } from '@/lib/use-autosave-flush';
 import { useTrackSectionVisit } from "@/hooks/useTrackSectionVisit";
 import { createBrowserSupabaseClient } from '@/lib/supabase';
 import CaseFileShell from '@/components/apply/CaseFileShell';
@@ -15,6 +16,9 @@ import PreFillBadge from '@/components/apply/questions/PreFillBadge';
 import AdvisoryBlock from '@/components/apply/questions/AdvisoryBlock';
 import RiskFlag from '@/components/apply/questions/RiskFlag';
 import ClusterDivider from '@/components/apply/questions/ClusterDivider';
+import { useRouter } from 'next/navigation';
+import { useApplicationGate } from '@/hooks/useApplicationGate';
+import ApplicationNotReadyScreen from '@/components/apply/ApplicationNotReadyScreen';
 
 interface QualAnswer {
   value: string;
@@ -45,7 +49,8 @@ interface QuestionField {
 }
 
 const BACKGROUND_QUESTIONS: QuestionField[] = [
-  { key: 'M3-Q-01', type: 'single', label: 'Highest level of education completed', required: true, options: [
+  { key: 'M3-Q-00', type: 'text', label: 'What type of business or franchise are you pursuing?', helperText: 'e.g. Senior care franchise, restaurant, cleaning services, retail.' },
+  { key: 'M3-Q-01', type: 'multi', label: 'Education completed (select all that apply)', required: true, options: [
     { value: 'high-school', label: 'High school diploma or equivalent' },
     { value: 'college', label: 'College or associate degree' },
     { value: 'bachelor', label: 'Bachelor\'s degree' },
@@ -54,7 +59,11 @@ const BACKGROUND_QUESTIONS: QuestionField[] = [
     { value: 'trade', label: 'Trade or technical certification' },
     { value: 'other', label: 'Other' },
   ]},
-  { key: 'M3-Q-02', type: 'text', label: 'What did you study?', helperText: 'Degree, diploma, or certification name and institution.' },
+  { key: 'M3-Q-02A', type: 'text', label: 'Primary field of study' },
+  { key: 'M3-Q-02B', type: 'text', label: 'Degree or certification received', helperText: 'e.g. Bachelor of Commerce, Registered Nurse, Red Seal Electrician' },
+  { key: 'M3-Q-02C', type: 'text', label: 'Institution attended' },
+  { key: 'M3-Q-02D', type: 'text', label: 'Year completed' },
+  { key: 'M3-Q-02E', type: 'textarea', label: 'Additional qualifications, certifications, or degrees (if any)', helperText: 'For each additional credential: name, institution, and year.' },
   { key: 'M3-Q-03', type: 'single', label: 'English language proficiency', options: [
     { value: 'native', label: 'Native speaker' },
     { value: 'fluent', label: 'Fluent — professional working proficiency' },
@@ -62,16 +71,18 @@ const BACKGROUND_QUESTIONS: QuestionField[] = [
     { value: 'limited', label: 'Limited proficiency' },
   ]},
   { key: 'M3-Q-04', type: 'textarea', label: 'Describe your professional background.' },
-  { key: 'M3-Q-05', type: 'text', label: 'Years of relevant industry experience' },
-  { key: 'M3-Q-06', type: 'multi', label: 'What relevant skills or experience do you bring to this business?', options: [
+  { key: 'M3-Q-05', type: 'text', label: 'Years of professional experience (direct or transferable)', helperText: 'Include experience in related fields, management, or roles that build transferable skills.' },
+  { key: 'M3-Q-06', type: 'multi', label: 'What relevant skills or experience do you bring to this business?', helperText: 'Select all that apply, including transferable skills from other industries.', options: [
     { value: 'management', label: 'Management / leadership' },
     { value: 'sales', label: 'Sales / business development' },
     { value: 'operations', label: 'Operations / logistics' },
     { value: 'finance', label: 'Finance / accounting' },
     { value: 'marketing', label: 'Marketing / branding' },
     { value: 'technical', label: 'Technical / IT' },
+    { value: 'customer-service', label: 'Customer service / client relations' },
+    { value: 'healthcare', label: 'Healthcare / caregiving' },
     { value: 'industry', label: 'Specific industry expertise' },
-    { value: 'none', label: 'No direct experience — first business' },
+    { value: 'none', label: 'No direct experience — transferable skills only' },
   ]},
   { key: 'M3-Q-07', type: 'single', label: 'Have you owned or operated a business before?', options: [
     { value: 'yes-current', label: 'Yes — currently own a business' },
@@ -180,6 +191,8 @@ const ALL_QUESTION_SETS = [
 export default function QualificationsPage() {
   useTrackSectionVisit("qualifications");
   const { qualityMap, checkFieldQuality } = useFieldQuality();
+  const router = useRouter();
+  const { status: gateStatus, applicationId: gateAppId, retry } = useApplicationGate();
 
   const [loading, setLoading] = useState(true);
   const [activeCluster, setActiveCluster] = useState('cluster-1');
@@ -187,6 +200,8 @@ export default function QualificationsPage() {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [applicationId, setApplicationId] = useState<string | null>(null);
   const debounceRef = useRef<Record<string, NodeJS.Timeout>>({});
+  const flushRef = useRef<Record<string, () => void>>({});
+  useAutosaveFlush(debounceRef, flushRef);
 
   useEffect(() => {
     const HASH_TO_CLUSTER: Record<string, string> = {
@@ -201,26 +216,16 @@ export default function QualificationsPage() {
   }, []);
 
   useEffect(() => {
+    if (gateStatus !== 'ready' || !gateAppId) return;
     const loadData = async () => {
       try {
         const supabase = createBrowserSupabaseClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) { setLoading(false); return; }
-
-        const { data: apps } = await supabase
-          .from('applications')
-          .select('id')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(1);
-
-        if (!apps || apps.length === 0) { setLoading(false); return; }
-        setApplicationId(apps[0].id);
+        setApplicationId(gateAppId);
 
         const { data: existingAnswers } = await supabase
           .from('answers')
           .select('question_key, answer_value')
-          .eq('application_id', apps[0].id);
+          .eq('application_id', gateAppId);
 
         if (existingAnswers) {
           const answerMap: Record<string, QualAnswer> = {};
@@ -235,7 +240,7 @@ export default function QualificationsPage() {
       } catch { setLoading(false); }
     };
     loadData();
-  }, []);
+  }, [gateStatus, gateAppId]);
 
   const saveAnswer = useCallback(async (key: string, value: string) => {
     if (!applicationId) return;
@@ -254,8 +259,9 @@ export default function QualificationsPage() {
 
   const handleAnswerChange = useCallback((key: string, value: string) => {
     setAnswers((prev) => ({ ...prev, [key]: { value, source: prev[key]?.source ?? null } }));
+    flushRef.current[key] = () => saveAnswer(key, value);
     if (debounceRef.current[key]) clearTimeout(debounceRef.current[key]);
-    debounceRef.current[key] = setTimeout(() => saveAnswer(key, value), 800);
+    debounceRef.current[key] = setTimeout(() => { saveAnswer(key, value); delete flushRef.current[key]; }, 800);
   }, [saveAnswer]);
 
   const clusterStatuses = CLUSTERS.map((cluster) => {
@@ -354,7 +360,16 @@ export default function QualificationsPage() {
 
   const activeClusterNumber = parseInt(activeCluster.replace('cluster-', ''), 10);
 
-  if (loading) {
+  if (gateStatus === 'no-user') {
+    router.push('/login');
+    return null;
+  }
+
+  if (gateStatus === 'not-ready') {
+    return <ApplicationNotReadyScreen onRetry={retry} />;
+  }
+
+  if (loading || gateStatus === 'loading') {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#0a0a0a]">
         <p className="text-sm" style={{ color: 'rgba(245,240,232,0.68)', fontFamily: "'DM Sans', sans-serif" }}>Loading...</p>

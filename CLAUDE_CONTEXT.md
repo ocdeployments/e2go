@@ -1,6 +1,12 @@
 # CLAUDE_CONTEXT.md — E2go
 ## Master Context for Every Claude Code Session
-**Version:** June 27, 2026 — Session 80. Dashboard Case File UI redesign complete (4 zones: welcome, command panel, folder stack, phase strip). Paywall removed from dashboard entirely. Sprint E (all 7 sub-sprints) complete. /modules page added. Build clean on dev (0ccafb6).
+**⏳ WORKSTREAM IN PROGRESS (July 15, 2026):** Sprint M — Security & Backend Hardening Audit Follow-Through. **Execution contract: `docs/SPRINT_M_SECURITY_AUDIT.md`.** Session 126 ran a grounded two-agent audit (Application Security Engineer + Database Optimizer) against the live codebase — no critical findings, but six scoped gaps turned into ordered tasks M-1…M-6. **M-1, M-3, M-4 done (Session 127)** — `/api/fdd/report` given a `maxDuration` override; `supabase/migrations/README.md` added documenting the `ADD COLUMN IF NOT EXISTS` convention; **M-4's env-var check found two live production bugs**: `UPSTASH_REDIS_REST_URL` was missing from Production/Development, causing `generate/start`, `renewal/generate`, `fdd/extract`, `fdd/score` to 429 on every request (fixed, added the var — **still needs a production redeploy to take effect**); CAPTCHA was silently disabled on every signup because the code read `CF_TURNSTILE_SECRET_KEY` while the real var is named `TURNSTILE_SECRET_KEY` (fixed in code). M-2, M-5, M-6 not started — next agent should continue at M-2 (Sentry rollout) or M-5 (schema consolidation). Full detail: BUILD_TRACKER.md Session 127.
+
+**⚡ WORKSTREAM COMPLETE (July 15, 2026):** One-Room Redesign of `/onboarding` + `/case-profile` — Sprints K-0…K-5. **All sprints (K-1 through K-5) are now complete** — registry-driven completion engine, rebuilt `/case-profile` card grid, K-3 triage-intelligence ranking, K-4's dual-document-pipeline verification/prep-kit widening/`/onboarding` payment gate/funnel instrumentation, and K-5's onboarding arrival moment, contextual referrals, evidence-step payoff, and registry-driven triage handoff. Full detail: BUILD_TRACKER.md Session 122 (K-1–K-3), Session 123 (K-4), Session 124 (K-5). `docs/ONE_ROOM_REDESIGN_PLAN.md` is the execution contract this workstream shipped against — no further sprints remain in it. A pre-existing z-index bug (step-tab header vs. `<main>` both `z-10`, silently blocking all step-tab clicks) was found and fixed during K-5.6 verification — see BUILD_TRACKER.md Session 124. Approved visuals: https://claude.ai/code/artifact/83cdbf9c-ec05-44dd-97c7-8281203f4161
+
+**⚡ WORKSTREAM COMPLETE (July 15, 2026):** Simulator UX + Interview Dossier rebuild — Sprints L-1…L-4. **Execution contract: `docs/SPRINT_L_SIMULATOR_DOSSIER.md`.** All four sprints complete and committed on `dev` (`3d70ea9` for L-2/L-3, `2545883` for L-4). L-1 verified the four already-coded simulator UX fixes in browser and committed them separately; L-2 moved every dossier currency figure to server-side computation in the prep-kit route so the LLM never invents numbers; L-3 rewrote dossier voice to first person and swept out placeholder/enum leaks and internal field-name leaks; L-4 rebuilt the print/PDF layout (cover page, break-inside:avoid on every card, financial-statement Section 5, waiting-room cheat card, Obsidian Gold print accents). Two bugs found during live verification and fixed in-sprint: a coach-hint-panel bug (L-1) and a regex phrase-leak surfacing "semantic field rating" text in dossier prose (L-3). Two more bugs found but judged out of Sprint L's file scope and spun off as separate background tasks instead of fixed inline: the pre-existing `interview_prep_kits` cache write failing with `PGRST204` (stale PostgREST schema cache — a migration forcing `NOTIFY pgrst, 'reload schema'` was applied by the spawned task), and a hardcoded `"Canada"` string in the D-15 (214(b)) gap-analysis factor in `src/lib/gap-analysis-engine.ts` that should interpolate the applicant's actual treaty country. Full detail: BUILD_TRACKER.md Session 125. L-4's print CSS was verified via DOM/computed-style inspection, not an actual print-preview screenshot — the harness can't render `@media print` visually, so that's the one acceptance-gate item not pixel-verified.
+
+**Version:** July 2, 2026 — Session 107 (Phase 1 + Phase 2, both complete). Document extraction routes to the correct person — principal, spouse, or child. Every DS-160 filer now has their own Security & Background, Travel Companions, and U.S. Point of Contact sections via a shared person-agnostic question-set registry (`src/lib/ds160-question-sets.ts`) + generic runner (`QuestionSetRunner.tsx`), reachable from `/case-profile` (`MemberCard` CTA + `ControlPanel` tiles) and `/apply/security/[personId]` / `/apply/dependent/[familyMemberId]`. Schema: `answers.family_member_id` + 3-column unique index, `uploaded_documents.doc_type` CHECK widened 6→13. Build clean. **Critical fix this session**: the Phase 1 migration had never actually been applied to production despite being reported as verified — `/api/answers` writes were silently failing for everyone. Resolved by running the migration SQL directly in the Supabase dashboard; verified post-fix. `/api/answers` also had a latent bug where `family_member_id` was referenced in `onConflict` but never written — now fixed. Full detail: BUILD_TRACKER.md Session 107.
 
 ## SPRINT STATUS
 - OPS-1 (API Cost Intelligence): ✅ COMPLETE — llm_cost_log, cost logging in callLLM(), /admin/cost page
@@ -18,8 +24,43 @@
 - Sprint E-5 (Dashboard overhaul): ✅ COMPLETE — superseded by Session 80 Case File UI redesign
 - Sprint E-6 (Pricing): ✅ COMPLETE — founding member counter removed, auth-aware header, features list updated
 - Sprint E-7 (Franchise Navigator): ✅ COMPLETE — brand removal, categories, FDD multi-zip, broker flow
+- Sprint G-1 (Dashboard: Intelligence Strip Fix): ✅ COMPLETE — Session 83
+- Sprint G-2 (Dashboard: Folder Stack Redesign): ✅ COMPLETE — Session 83
+- Sprint G-3 (Interview Preparation Kit): ✅ COMPLETE — Session 84 (/simulator/prep-kit + API + DB migration + 7 collapsible sections)
+- Sprint G-4 (Prep-kit data gate + dossier sections): ✅ COMPLETE — Session 87 (data requirements gate, DOSSIER_DATA_SOURCES list, entitlement wiring)
+- Sprint F-1 (Section Shell + Sidebar): ✅ COMPLETE — Session 84 (SectionLayout 7-step left rail for /apply + /gap-analysis)
+- Sprint F-2 (Section Task Panels): ✅ COMPLETE — Session 84 (collapsible checklist banner per section)
+- Sprint H-1 (formatOutcome Bug Fix): ✅ COMPLETE — Session 86 (PROCEED/PROCEED_RISK/ATTORNEY_RECOMMENDED added to vocabulary map)
+- Sprint H-2 (Dashboard Header Redesign): ✅ COMPLETE — Session 86 ("Let's build your E-2 application, [name]" + advisory sentence)
+- Sprint H-3 (CaseCommandPanel Hierarchy): ✅ COMPLETE — Session 86 (gold CTA dominant; 4-phase roadmap; adaptive franchise/own-business)
+- Sprint H-4 (WorkstreamStrip): ✅ COMPLETE — Session 86 (4 macro completion buckets replacing intelligence strip)
+- Sprint H-5 (FolderStack Architecture): ✅ COMPLETE — Session 86 (5-tab structure, 3-tier step rows, progressive fading)
+- Sprint H-6 (Case Profile — Standalone Page): ✅ COMPLETE — Session 87 (/case-profile full-page record with sidebar nav, 6 sections, 60+ fields, field status system — NOT a dashboard tab as originally planned)
+- Sprint H-7 (Case Profile API + DB): ✅ COMPLETE — Session 87 (case_profile_view migration, /api/dashboard/case-profile route, QMA-* market data, FDD + Market intelligence subsections split)
+- Gap Analysis noApplication fix: ✅ COMPLETE — Session 87 (quiz done but no application → "Begin onboarding" CTA instead of quiz link)
+- Sprint I-1 (Navigation Hub Migration): ✅ COMPLETE — Session 88 (/dashboard retired → redirect to /case-profile; Nav restructured with Application ▾ / Intelligence ▾ dropdowns; Sections 07 + 08 added to /case-profile; all dashboard back-links removed; logo + all auth redirects point to /case-profile)
+- Sprint I-2 (Form UX Audit): ✅ COMPLETE — Session 89 (CurrencyInput, quiz prefill for M3-F-02, 5 DS-160 education fields, 12 family/ties question rewrites, auto-save on all sections)
+- Sprint I-3 (Apply Section Tab Nav): ✅ COMPLETE — Session 90 (6-tab row in CaseFileShell, live completion state per section from /api/apply/section-completion)
+- Sprint I-4 (Document Import Hub v1): ✅ COMPLETE — Session 90 (6 doc types, Anthropic PDF extraction, per-field review, upserts to answers with source=document_upload, uploaded_documents migration)
+- Sprint I-4+ (DocumentImportHub Session 91 upgrade): ✅ COMPLETE — Session 91. 11 doc types (+ passport, franchise_agreement, lease_agreement, acquisition_financials, government_form). 80-field FDD schema with extractFDDSections() — no 32K truncation (full PDF, position-based section splice). Auto-detect mode (docType=auto, cheap 20-token LLM classify). SOURCE_PRIORITY map auto-resolves 21 question keys without user intervention. normalizeForComparison strips $/%/, LLC/Inc/Ltd before conflict detection. 5 false conflicts eliminated (removed 3 bad INTAKE_FIELD_MAP entries). Dual counter: "N intake fields · M total fields stored". 12 DOC_TYPE_OPTIONS with bank statement advisory on investment_records. accept attribute expanded to .pdf,.docx,.txt,.csv.
+- Sprint J-1 (Case Intelligence Core — "the CPU"): ✅ COMPLETE (Session 94) — All CIC tracks done and live. CIC-0: kb_chunks seeded (949 chunks, 93 docs), match_kb RPC, retrieveDoctrine. CIC-1: document-comprehension-engine.ts (per-doc memo + ledger → document_intelligence), case-intelligence-core.ts (assembleCaseModel → case_model; generateCaseTheory five-expert panel → case_theory with doctrine citations). CIC-2: case_theory brief injected into generation payloads (buildCaseTheoryBrief), LLM-as-critic verifier (cic-verifier.ts, DOC_SECTION_CONTRACTS per doc type), retry loop (max 3 passes, correctionBrief prepended). CIC-P: package manifest (cic-package-manifest.ts), consistency sweep (cic-consistency-sweep.ts, 2-phase: regex + semantic LLM), intra-doc flow directives (in verifier), certification gate (certify-document + request-regeneration APIs), change impact tracking (cic-change-impact.ts). CIC-3: gap analysis consuming CPU ledger (applyCpuContext, LedgerFact, activeDenialCodes), FDD auto-seed from imports (cic-fdd-seed.ts), simulator prep-kit steered by case_theory. CIC-4.1: /documents page rebuilt (certification flow, change-impact banner, package progress strip, manifest-gated download). Decisions: D1 ✅ (case_model merge phase 1), D2 ✅ (quiz-scoring.ts deleted), D3 ✅, D4 ✅ (outcome capture), D5 ⏳ (survey questions — Romy's domain input needed), D6 partial (before-download consent built; signup + terms-update pending). All 10 migrations applied. Full detail: docs/sessions/SPRINT_J1_CASE_INTELLIGENCE_CORE.md.
+- Sprint J-1 QA Audit Sweep: ✅ COMPLETE (Session 95) — All 16 audit findings resolved. Security: rate-limit generate profile fails closed (no Upstash = blocked), verify-payment writes paid status immediately (no webhook race). Correctness: answers + faq/ask return 400 invalid_json, case-profile GET honours ?applicationId= param. Performance: waitForApproval replaced with immediate pass-through (5-min server poll eliminated), SSE strips content_text from 2s polls + derives totalDocuments from job.document_types. Verifier: numbers_strategy injected as canonical ground truth (figure checks no longer vibes), null LLM result now warns not silently passes. UX: module3/j + module3/d per-key debounce Map (autosave race fixed), CaseProfilePage.onFieldsApplied → reloadProfile() (was no-op). /fdd list query narrowed (excludes extracted_fields + profile_match JSONB blobs). N1 + N2 migrations applied in Supabase.
+- DS-160 Intake Completion — Phase 1 (Document-to-Person Routing): ✅ COMPLETE (Session 107) — `answers.family_member_id` + 3-column unique index, `uploaded_documents.doc_type` CHECK widened 6→13, all 16 onConflict call sites updated. DocumentImportHub reorganized into per-person upload sections with non-blocking identity-mismatch surfacing. `/case-profile` MemberCard shows per-family-member completion + documents. Build clean; regression-verified live, multi-person scenarios need a test-account follow-up.
+- Sprint K-0 (One-Room: handoff note to onboarding agent — onFieldsApplied wiring + real ip_hash): ⏳ NOT STARTED — see docs/ONE_ROOM_REDESIGN_PLAN.md
+- Sprint K-1 (One-Room: field registry `src/lib/field-registry.ts` + drift test + `/api/case/completion` + manual-provenance un-gate + CaseHeader/StatusChip/ProgressRing): ✅ COMPLETE — verified against 3 QA accounts, drift test passing, build clean
+- Sprint K-2 (One-Room: /case-profile rebuild — passport header w/ case_code, stateful card grid replacing TileChips, click-to-populate drawer, cold start, revert flag): ✅ COMPLETE — verified live
+- Sprint K-3 (One-Room: triage intelligence — next-best-action ranking, quiz-aware doc-type ordering, contextual referral rules): ✅ COMPLETE (this session) — `src/lib/case-ranking.ts` (rankCards tier-based scoring, rankDocTypes, computeContextualOffers) wired into `/api/case/completion`, `DocumentImportHub.tsx`, `CaseProfileNew.tsx`. 13 unit tests passing (`src/lib/__tests__/case-ranking.test.ts`). Live-verified: cold-start preserved verbatim (test-france, 0% progress → registry order + hardcoded "Tell us your story"); non-cold-start ranking confirmed on test-uk (28% progress) — incomplete intake cards correctly outrank tool/locked cards; docTypeOrdering + contextualOffers confirmed franchise-prioritized across accounts. Full build clean (175/175 jest tests, tsc clean, `npm run build` clean).
+- Sprint K-4 (One-Room: de-silo — retire legacy application_documents reads, widen prep-kit case_theory select, middleware-gate /onboarding w/ Stripe race grace path, funnel events): ✅ COMPLETE — see BUILD_TRACKER.md Session 123
+- Sprint K-5 (One-Room: onboarding chapter one — arrival moment, contextual referrals, payoff toast, triage handoff via completion API, ip_hash): ✅ COMPLETE — see BUILD_TRACKER.md Session 124. Build clean, 175/175 tests, full browser walkthrough verified. One-Room Redesign workstream fully closed.
+- Sprint L-1 (Simulator UX: verify + commit — question variety, mic resilience/skip, scored end-of-session analysis, substantive hints): ✅ COMPLETE — see BUILD_TRACKER.md Session 125. Verified live in browser (test-uk@example.com); a coach-hint-panel bug found during verification was fixed in-sprint. Committed separately from the K-sprint files.
+- Sprint L-2 (Dossier accuracy: all currency figures computed server-side in prep-kit route, LLM uses them verbatim, quiz range retired): ✅ COMPLETE — see BUILD_TRACKER.md Session 125. Committed `3d70ea9`.
+- Sprint L-3 (Dossier content: first-person voice, resolve placeholder names, enum labels, ban internal field names, no-false-coaching, probe de-dup, "critical gaps" panel): ✅ COMPLETE — see BUILD_TRACKER.md Session 125. A regex phrase-leak bug (raw "semantic field rating" text surfacing in dossier prose) found and fixed during live verification. Committed `3d70ea9`.
+- Sprint L-4 (Dossier print/PDF: cover page, break-inside avoid, financial-statement Section 5, waiting-room cheat card, Obsidian Gold print accents): ✅ COMPLETE — see BUILD_TRACKER.md Session 125. Committed `2545883`. Verified via DOM/computed-style inspection, not an actual print-preview screenshot (harness can't render `@media print` visually) — the one acceptance-gate item not pixel-verified. **Known issues found but out of scope, spun off separately:** (1) `interview_prep_kits` cache write fails `PGRST204` (stale PostgREST schema cache) — actual root cause found and fixed in Session 126 (see below): the column never existed at all, not a cache issue. (2) `src/lib/gap-analysis-engine.ts` D-15 (214(b)) factor hardcodes "Canada" in its name/mitigation strings regardless of the applicant's actual treaty country — spawned as a separate task, not yet fixed.
+- Session 126 (Commit cleanup + security/infra audit): ✅ COMPLETE — 7 commits landed organizing the FDD PDF-export feature, LLM timeout/token-budget fix, Item 20 null-handling fix, Census ZCTA territory fix, upload-page resumable-check fix, debug scripts, and the real fix for the `interview_prep_kits` `kit_json` column (root cause was a no-op `CREATE TABLE IF NOT EXISTS` against an already-existing table, not a stale schema cache). Followed by a two-agent grounded security/DB audit — see BUILD_TRACKER.md Session 126 and Sprint M above.
+- DS-160 Intake Completion — Phase 2 (Missing Sections, shared registry): ✅ COMPLETE (Session 107, same session) — `src/lib/ds160-question-sets.ts` registry (Security & Background × 5 sub-areas, US POC, Travel Companions, Application Contact) + `QuestionSetRunner.tsx` generic runner, reused for principal and every dependent. New routes `/apply/security/[personId]` and `/apply/dependent/[familyMemberId]`. Case Profile entry points wired (MemberCard CTA for spouse/child, ControlPanel tiles). `/api/answers` fixed to actually persist `family_member_id` (was silently always NULL). Legacy `CHILD-{n}-*` backfill script built and verified (no legacy data currently exists to migrate). **Also found + fixed**: Phase 1's migration had never reached production — `/api/answers` was silently broken for all users until the owner ran the migration SQL directly via the Supabase dashboard this session. Not done: Application Contact route (registry exists, no page yet), Security & Background consent/compliance posture (needs product/legal input), deeper per-dependent fields beyond these three sections. Plan: `/Users/owner/.claude/plans/woolly-dancing-crescent.md`. Follow-up: reconcile local `supabase/migrations/` history against remote so `supabase db push` works cleanly again.
 
 ## KEY RULES — NEVER BREAK
+- Migrations adding a column to a possibly-existing table: use `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`, never `CREATE TABLE IF NOT EXISTS` alone — see `supabase/migrations/README.md`
 - ANTHROPIC_API_KEY: ONLY in generation-engine.ts + /api/fdd/* routes
 - callLLM(): OpenRouter only — never route through Anthropic SDK
 - Simulator routes: ONLY xiaomi/mimo-v2.5 or xiaomi/mimo-v2.5-pro
@@ -160,7 +201,7 @@ Security/audit session:
 | Frontend | Next.js 14 App Router · TypeScript · Tailwind CSS |
 | Database + Auth | Supabase (PostgreSQL + Auth + Storage) |
 | AI — App features | OpenRouter (xiaomi/mimo-v2.5 via OPENROUTER_API_KEY) |
-| AI — Document generation | Anthropic API direct (ANTHROPIC_API_KEY) |
+| AI — Document generation | Anthropic API direct (ANTHROPIC_API_KEY); non-business-plan docs fall back to OpenRouter (glm-5.2 → mimo → mimo-pro → gemini-2.5-pro) |
 | AI — Simulator evaluation | OpenRouter (xiaomi/mimo-v2.5 or mimo-v2.5-pro ONLY via OPENROUTER_API_KEY) |
 | AI — FAQ Q&A | OpenRouter (xiaomi/mimo-v2.5 via OPENROUTER_API_KEY) |
 | Voice transcription | Groq Whisper (GROQ_API_KEY) |
@@ -175,11 +216,13 @@ Security/audit session:
 **CRITICAL API KEY RULE — READ EVERY SESSION:**
 - OPENROUTER_API_KEY → ALL app AI features (simulator, analysis,
   follow-up, extraction engine, classification)
-- ANTHROPIC_API_KEY → document generation AND FDD extraction/scoring
-  (src/lib/generation-engine.ts AND src/lib/fdd-extraction-engine.ts,
-  src/lib/fdd-scoring-engine.ts, src/app/api/fdd/* routes)
-  FDD routes use claude-sonnet-4-6 via Anthropic SDK directly — this is
-  a deliberate exception for large-context reliability.
+- ANTHROPIC_API_KEY → document generation AND FDD analysis
+  (src/lib/generation-engine.ts AND the FDD engines: extraction, report,
+  territory, questions — all via callFDDModel in src/lib/llm-client.ts)
+  FDD chain (LOCKED July 3, 2026): claude-opus-4-8 primary →
+  claude-sonnet-5 fallback (both Anthropic direct) → z-ai/glm-5.2
+  (OpenRouter) last resort. Deliberate Anthropic-primary exception for
+  large-context reliability on high-stakes document analysis.
 - GROQ_API_KEY → voice transcription + TTS only
   (src/lib/groq-transcription.ts, src/lib/groq-tts.ts,
   src/app/api/simulator/tts/route.ts,
@@ -189,11 +232,16 @@ DO NOT switch any existing OpenRouter calls to the Anthropic API.
 FDD routes ARE an approved exception — they already use Anthropic directly.
 DO NOT expose any API key in browser/client code.
 
-**SIMULATOR MODEL CONSTRAINT — LOCKED (June 16, 2026):**
-ALL simulator routes (evaluate, follow-up, coaching-report, case-summary)
+**SIMULATOR MODEL CONSTRAINT — LOCKED (June 16, 2026; amended July 3, 2026):**
+Simulator evaluate, follow-up, and case-summary routes
 MUST use ONLY: `xiaomi/mimo-v2.5` or `xiaomi/mimo-v2.5-pro`
-NEVER use minimax, deepseek, or any other model for simulator routes.
-This was explicitly corrected by the user and is non-negotiable.
+NEVER use minimax, deepseek, or any other model for those routes.
+Amendment (user directive, July 3, 2026): the `coaching` task — which
+serves the interview prep dossier (prep-kit) and coaching-report — now
+runs `z-ai/glm-5.2` primary → `xiaomi/mimo-v2.5-pro` →
+`google/gemini-2.5-pro`, with `claude-sonnet-5` as the Anthropic-direct
+fallback layer. The mimo-only lock still applies to evaluate/follow-up/
+case-summary.
 
 ---
 
@@ -231,6 +279,7 @@ Repo: github.com/ocdeployments/e2go
 
 ### Authenticated routes
 - /dashboard — Application dashboard
+- /case-profile — Standalone full-page case record (6 sections, 60+ fields, field status inventory, FDD + market intelligence, sidebar nav)
 - /settings — Account settings (data deletion, 2-step confirmation + type-to-confirm)
 - /score — Application confidence score
 - /simulator — Interview simulator (text + voice, teaser if no case file)
@@ -735,7 +784,7 @@ Rate limits (production only):
 | **getSession() security warnings** | MEDIUM | Multiple files use `.getSession()` — Supabase recommends `.getUser()`; sweep needed |
 | Generation engine: approval gate, setState, empty boxes | MEDIUM | docs/sessions/SESSION_PLAN_GENERATION_FIXES.md |
 | Bracket highlighting regex + checklist builder | MEDIUM | Regex only matches [BRACKET FORMAT] tags, not descriptive brackets like [passport number] |
-| Supabase CLI migration history out of sync | MEDIUM | ~22 migrations applied manually, CLI shows 2 — never use db push without SQL Editor verification |
+| Supabase CLI defaults to wrong local migrations dir | **FIXED (Session 119u, July 3 2026)** | Root cause found: a stale, unrelated `/Users/owner/supabase/` directory (own `config.toml`, project_id "owner", only 2 old migration files) is what the CLI reads by default for `db push`/`migration list` — even when cwd is `/Users/owner/E2-go` — because it's linked to the *same* remote project (`cziphinlzfnlqlvynwnm`/"E2Go-App"). This makes the CLI see almost the entire real migration history as "missing locally" and suggest a destructive `migration repair --status reverted <~70 ids>` — do NOT run that, it would mark real applied migrations as reverted. Fix: always pass `--workdir /Users/owner/E2-go` explicitly, e.g. `supabase db push --workdir /Users/owner/E2-go` / `supabase migration list --workdir /Users/owner/E2-go`. Confirmed this resolves it cleanly (74-migration history, only genuinely new migrations shown pending). Stale `/Users/owner/supabase/` dir left untouched, not investigated for cleanup. |
 | Resend domain verification unknown | MEDIUM | Check Resend dashboard; if e2go.app verified, revert sender to results@e2go.app |
 | Stripe API version outdated (2024-06-20) | LOW | Upgrade apiVersion in scripts/stripe-setup.ts |
 | Quiz nationality selector curl/browser verification | LOW | Works in browser |

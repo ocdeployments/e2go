@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { createServiceClient } from '@/lib/supabase-service';
-import Anthropic from '@anthropic-ai/sdk';
+import { checkRateLimit } from '@/lib/rate-limit';
+import { isKillSwitchEnabled } from '@/lib/kill-switch';
 import { scoreFdd } from '@/lib/fdd-scoring-engine';
 import { synthesizeInvestorProfile } from '@/lib/investor-profile-synthesizer';
+import { resolvePrimaryApplication } from '@/lib/resolve-application';
+import { callFDDModel } from '@/lib/llm-client';
 import type { FddExtractedFields, FddE2Score } from '@/types/fdd';
-
-const anthropic = new Anthropic();
+import { captureApiError } from '@/lib/capture-error';
 
 // POST /api/fdd/score
 // Body: { fdd_id: string }
@@ -19,6 +21,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const rl = await checkRateLimit(user.id, 'fdd');
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: 'Too many FDD requests. Please wait before scoring another analysis.' },
+        { status: 429, headers: { 'Retry-After': String(rl.reset) } }
+      );
+    }
+
+    if (await isKillSwitchEnabled()) {
+      return NextResponse.json({ error: 'AI features are temporarily unavailable. Please try again shortly.' }, { status: 503 });
+    }
+
     const { fdd_id } = await request.json() as { fdd_id: string };
     if (!fdd_id) return NextResponse.json({ error: 'fdd_id required' }, { status: 400 });
 
@@ -26,7 +40,7 @@ export async function POST(request: NextRequest) {
     const service = createServiceClient();
     const { data: analysis, error: fetchErr } = await service
       .from('fdd_analyses')
-      .select('*')
+      .select('extracted_fields, fdd_stale, state_registration_status, investor_liquid_capital')
       .eq('id', fdd_id)
       .eq('user_id', user.id)
       .single();
@@ -45,13 +59,9 @@ export async function POST(request: NextRequest) {
     const investorLiquidCapital = analysis.investor_liquid_capital as number | null;
 
     // Build synthesized investor profile (QFN first, then inferred from M3/archetype/category)
-    const { data: apps } = await service
-      .from('applications')
-      .select('id, business_category, operational_status')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(1);
-    const latestApp = apps?.[0] ?? null;
+    const latestApp = await resolvePrimaryApplication<{ id: string; business_category: string | null; operational_status: string | null }>(
+      service, user.id, 'id, business_category, operational_status'
+    );
     const appId = latestApp?.id ?? null;
 
     const { data: caseProfileRow } = await service
@@ -120,12 +130,12 @@ export async function POST(request: NextRequest) {
       .eq('id', fdd_id);
 
     if (updateErr) {
-      console.error('Score persist error:', updateErr);
+      captureApiError(updateErr, { route: 'fdd/score', stage: 'persist', userId: user.id, fddId: fdd_id });
     }
 
     return NextResponse.json({ e2_score: e2Score });
   } catch (err) {
-    console.error('Score route error:', err);
+    captureApiError(err, { route: 'fdd/score' });
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Scoring failed' },
       { status: 500 }
@@ -161,9 +171,7 @@ async function generateNarrative(
     ? `Estimated owner net income: low $${scoring.ode.ode_low?.toLocaleString() ?? 'n/a'} / mid $${scoring.ode.ode_mid.toLocaleString()} / high $${scoring.ode.ode_high?.toLocaleString() ?? 'n/a'}`
     : scoring.ode.note;
 
-  const prompt = `You are a senior immigration attorney and franchise development director with 20 years of E-2 visa and franchise experience.
-
-You have just scored an FDD for E-2 visa compatibility. Write four concise, professional narrative sections based on the scoring data below. Write in plain English — no jargon, no hedging, no generic advice. Be specific. Every sentence must be grounded in the data.
+  const prompt = `You have just scored an FDD for E-2 visa compatibility. Write four concise, professional narrative sections based on the scoring data below. Write in plain English — no jargon, no hedging, no generic advice. Be specific. Every sentence must be grounded in the data.
 
 ---
 FRANCHISE: ${franchiseName}
@@ -195,20 +203,21 @@ ATTORNEY_NOTE: One practical sentence advising what this investor should bring t
 Return as JSON: {"OVERALL_VERDICT":"...","STRENGTHS":"...","CONCERNS":"...","ATTORNEY_NOTE":"..."}`;
 
   try {
-    const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-6',
+    const fddResult = await callFDDModel({
+      system: 'You are a senior immigration attorney and franchise development director with 20 years of E-2 visa and franchise experience.',
+      user: prompt,
       max_tokens: 1000,
-      messages: [{ role: 'user', content: prompt }],
+      route: 'fdd-score',
     });
 
-    const text = response.content[0].type === 'text' ? response.content[0].text : '';
+    const text = fddResult?.content ?? '';
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
       return JSON.parse(jsonMatch[0]) as Record<string, string>;
     }
     return { OVERALL_VERDICT: text, STRENGTHS: '', CONCERNS: '', ATTORNEY_NOTE: '' };
   } catch (err) {
-    console.error('Narrative generation error:', err);
+    captureApiError(err, { route: 'fdd/score', stage: 'narrative-generation' });
     return {
       OVERALL_VERDICT: `This franchise scored ${overallLabel} for E-2 compatibility.`,
       STRENGTHS: '',

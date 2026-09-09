@@ -170,6 +170,19 @@ body {
   }
 }
 
+/* ── Dashboard two-column layout → single column on mobile ── */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 55fr 45fr;
+  gap: 20px;
+  align-items: stretch;
+}
+@media (max-width: 768px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* ── Hidden scrollbar — horizontal chip rows (SectionNav mobile) ── */
 .no-scrollbar {
   -ms-overflow-style: none;

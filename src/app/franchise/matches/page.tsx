@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createBrowserSupabaseClient } from '@/lib/supabase';
+import { resolvePrimaryApplication } from '@/lib/resolve-application';
 import { scoreFranchiseProfile, type FranchiseMatchResult, type FranchiseProfileAnswers, type CategoryScore } from '@/lib/franchise-scoring-engine';
 import { FRANCHISE_CATEGORIES } from '@/data/franchise-brands';
 
@@ -234,15 +235,12 @@ export default function FranchiseMatchesPage() {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) { router.push('/login'); return; }
 
-        const { data: apps } = await supabase
-          .from('applications')
-          .select('id, target_state')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(1);
+        const primaryApp = await resolvePrimaryApplication<{ id: string; target_state: string | null }>(
+          supabase, user.id, 'id, target_state'
+        );
 
-        const appId = apps?.[0]?.id ?? null;
-        const targetState = apps?.[0]?.target_state ?? undefined;
+        const appId = primaryApp?.id ?? null;
+        const targetState = primaryApp?.target_state ?? undefined;
 
         const [{ data: quizSession }, { data: savedAnswers }] = await Promise.all([
           supabase

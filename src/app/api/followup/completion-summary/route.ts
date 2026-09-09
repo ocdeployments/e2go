@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
-import { callAI } from '@/lib/ai';
+import { callLLM } from '@/lib/llm-client';
+import { captureApiError } from '@/lib/capture-error';
 
 function getSupabase() {
   return createClient(
@@ -45,12 +46,12 @@ export async function POST(request: NextRequest) {
     // Load all followup_responses for this application
     const { data: responses, error: responsesError } = await supabase
       .from('followup_responses')
-      .select('*')
+      .select('question_number, gap_category, question_text, answer_text')
       .eq('application_id', applicationId)
       .order('question_number', { ascending: true });
 
     if (responsesError) {
-      console.error('Responses load error:', responsesError);
+      captureApiError(responsesError, { route: 'followup/completion-summary', stage: 'responses-load', userId: user.id, applicationId });
       return NextResponse.json({ error: 'Failed to load responses' }, { status: 500 });
     }
 
@@ -62,7 +63,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (voiceError) {
-      console.error('Voice profile load error:', voiceError);
+      captureApiError(voiceError, { route: 'followup/completion-summary', stage: 'voice-profile-load', userId: user.id, applicationId });
     }
 
     if (!responses || responses.length === 0) {
@@ -100,20 +101,25 @@ Return ONLY the JSON array. No other text.`;
 
     const userMessage = `FOLLOW-UP RESPONSES:\n${formattedResponses}\n\n${voiceProfile ? `VOICE PROFILE:\n${voiceProfile.voice_profile_text}\n` : ''}\n\nIdentify the strongest evidence from these responses.`;
 
-    const aiResult = await callAI({
-      systemPrompt,
-      userPrompt: userMessage,
+    const aiResponse = await callLLM({
+      task: 'general',
+      route: '/api/followup/completion-summary',
+      userId: user.id,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userMessage },
+      ],
     });
 
     let summary: string[];
 
-    if (aiResult.error || !aiResult.response) {
-      console.error('AI summary error:', aiResult.error);
+    if (!aiResponse) {
+      captureApiError(new Error('AI summary error: all providers failed'), { route: 'followup/completion-summary', stage: 'ai-summary', userId: user.id, applicationId });
       // Generate generic bullets from response content
       summary = GENERIC_BULLETS;
     } else {
       try {
-        const jsonMatch = aiResult.response.match(/\[[\s\S]*\]/);
+        const jsonMatch = aiResponse.match(/\[[\s\S]*\]/);
         if (!jsonMatch) {
           summary = GENERIC_BULLETS;
         } else {
@@ -122,24 +128,36 @@ Return ONLY the JSON array. No other text.`;
             summary = GENERIC_BULLETS;
           }
         }
-      } catch {
-        console.error('JSON parse error for summary:', aiResult.response);
+      } catch (parseErr) {
+        captureApiError(parseErr, { route: 'followup/completion-summary', stage: 'json-parse', userId: user.id, applicationId, aiResponse });
         summary = GENERIC_BULLETS;
       }
     }
 
-    // Update lifecycle: followup_completed = true, module4_completed_at = now()
-    await supabase
+    /**
+     * Keyed on user_id. application_lifecycle has no application_id column, so
+     * this update errored and neither flag was ever written.
+     */
+    const { error: lifecycleError } = await supabase
       .from('application_lifecycle')
       .update({
         followup_completed: true,
         module4_completed_at: new Date().toISOString(),
       })
-      .eq('application_id', applicationId);
+      .eq('user_id', user.id);
+
+    if (lifecycleError) {
+      captureApiError(lifecycleError, {
+        route: 'followup/completion-summary',
+        stage: 'lifecycle-update',
+        userId: user.id,
+        applicationId,
+      });
+    }
 
     return NextResponse.json({ summary });
   } catch (error) {
-    console.error('Completion summary error:', error);
+    captureApiError(error, { route: 'followup/completion-summary' });
     return NextResponse.json({ summary: GENERIC_BULLETS }, { status: 200 });
   }
 }

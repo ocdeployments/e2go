@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { buildCaseProfile } from '@/lib/case-profile';
+import { captureApiError } from '@/lib/capture-error';
 
 export async function POST() {
   try {
@@ -10,7 +11,7 @@ export async function POST() {
 
     // Fire-and-forget — return immediately, don't await the rebuild
     buildCaseProfile(user.id).catch((err) => {
-      console.error('[profile/rebuild] Background rebuild failed:', err);
+      captureApiError(err, { route: 'profile/rebuild', userId: user.id });
     });
 
     return NextResponse.json({ triggered: true });

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { checkRateLimit } from '@/lib/rate-limit';
+import { captureApiError } from '@/lib/capture-error';
 
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
@@ -69,16 +70,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid file' }, { status: 400 });
     }
 
-    const allowedTypes = ['audio/webm', 'audio/wav', 'audio/mp3', 'audio/ogg'];
-    if (!allowedTypes.includes(audioFile.type)) {
+    const baseType = audioFile.type.split(';')[0].trim();
+    const allowedTypes = ['audio/webm', 'audio/wav', 'audio/mp3', 'audio/ogg', 'audio/mp4'];
+    if (!allowedTypes.includes(baseType)) {
       return NextResponse.json({ error: 'Invalid file type' }, { status: 400 });
     }
 
     // Primary: Groq Whisper (faster inference)
     if (GROQ_API_KEY) {
       try {
-        const text = await transcribeWithGroq(audioFile);
-        return NextResponse.json({ text });
+        const transcript = await transcribeWithGroq(audioFile);
+        return NextResponse.json({ transcript });
       } catch (groqError) {
         console.warn('[transcribe] Groq STT failed, falling back to OpenAI Whisper:', groqError);
       }
@@ -87,16 +89,16 @@ export async function POST(request: NextRequest) {
     // Fallback: OpenAI Whisper
     if (OPENAI_API_KEY) {
       try {
-        const text = await transcribeWithOpenAI(audioFile);
-        return NextResponse.json({ text });
+        const transcript = await transcribeWithOpenAI(audioFile);
+        return NextResponse.json({ transcript });
       } catch (openaiError) {
-        console.error('[transcribe] OpenAI Whisper also failed:', openaiError);
+        captureApiError(openaiError, { route: 'simulator/transcribe', stage: 'openai-fallback', userId: user.id });
       }
     }
 
     return NextResponse.json({ error: 'Transcription failed' }, { status: 502 });
   } catch (error) {
-    console.error('[transcribe] Unexpected error:', error);
+    captureApiError(error, { route: 'simulator/transcribe', userId: user.id });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

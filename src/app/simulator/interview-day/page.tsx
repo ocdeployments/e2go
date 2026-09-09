@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { createBrowserSupabaseClient } from '@/lib/supabase';
+import { resolvePrimaryApplication } from '@/lib/resolve-application';
 import { getConsulateData, getEmbassyFinderUrl } from '@/lib/consulate-data';
 import { buildDocumentChecklist, type ChecklistSection, type CaseFlags } from '@/lib/document-checklist';
 import type { ConsulateCountryData } from '@/lib/consulate-data';
@@ -100,14 +101,17 @@ export default function InterviewDayPage() {
         setTop3NextSession(coachingNotes.top3NextSession);
       }
 
-      // Fetch the most recent application
-      const { data: app } = await supabase
-        .from('applications')
-        .select('id, application_type, treaty_country, investment_sources, prior_visa_denial, operational_status, business_category, has_partner')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
+      // Fetch the primary application (shared canonical rule)
+      const app = await resolvePrimaryApplication<{
+        id: string;
+        application_type: string | null;
+        treaty_country: string | null;
+        investment_sources: unknown;
+        prior_visa_denial: boolean | null;
+        operational_status: string | null;
+        business_category: string | null;
+        has_partner: boolean | null;
+      }>(supabase, user.id, 'id, application_type, treaty_country, investment_sources, prior_visa_denial, operational_status, business_category, has_partner');
 
       // Fetch answers for spouse/children flags
       let hasSpouse = false;
@@ -116,13 +120,21 @@ export default function InterviewDayPage() {
       const investmentSourceTypes: string[] = [];
 
       if (app) {
-        const { data: answers } = await supabase
+        const { data: answers, error: answersError } = await supabase
           .from('answers')
-          .select('question_id, answer_text')
+          .select('question_key, answer_value')
           .eq('application_id', app.id)
-          .in('question_id', ['Q0-03', 'QA-15', 'QA-16', 'QF-NEW-05']);
+          .in('question_key', ['Q0-03', 'QA-15', 'QA-16', 'QF-NEW-05']);
 
-        const answerMap = new Map<string, string>((answers || []).map((a: { question_id: string; answer_text: string }) => [a.question_id, a.answer_text] as [string, string]));
+        if (answersError) {
+          console.error('[interview-day] answer lookup failed:', answersError);
+        }
+
+        const answerMap = new Map<string, string>(
+          (answers || []).map((a: { question_key: string; answer_value: string }) =>
+            [a.question_key, a.answer_value] as [string, string]
+          )
+        );
         const appType = app.application_type || '';
         hasSpouse = appType.includes('spouse') || appType.includes('couple') || appType.includes('famil');
         const childAnswer = answerMap.get('Q0-03') || '';
@@ -153,11 +165,21 @@ export default function InterviewDayPage() {
 
       let hasDocumentUploads = false;
       if (app) {
-        const { count } = await supabase
-          .from('application_documents')
-          .select('id', { count: 'exact', head: true })
-          .eq('application_id', app.id);
-        hasDocumentUploads = (count ?? 0) > 0;
+        // Two upload pipelines feed this checklist: the legacy application_documents
+        // pipeline (gap-analysis remediation, quick-start onboarding) and the current
+        // uploaded_documents taxonomy (/case-profile) — both must be checked or a
+        // client who only uploaded via /case-profile shows as having no documents.
+        const [{ count: legacyCount }, { count: uploadedCount }] = await Promise.all([
+          supabase
+            .from('application_documents')
+            .select('id', { count: 'exact', head: true })
+            .eq('application_id', app.id),
+          supabase
+            .from('uploaded_documents')
+            .select('id', { count: 'exact', head: true })
+            .eq('application_id', app.id),
+        ]);
+        hasDocumentUploads = (legacyCount ?? 0) > 0 || (uploadedCount ?? 0) > 0;
       }
 
       const flags: CaseFlags = {

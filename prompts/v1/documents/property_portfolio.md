@@ -1,6 +1,6 @@
 # Property Portfolio Summary Generation Prompt
 ## Document Type: property_portfolio
-## Tab Reference: Tab F — Property / Financial Assets (F-01)
+## Tab Reference: Tab J — Property / Financial Assets (J-01)
 ## Generation Order: Step 6
 ## Condition: Generate only if applicant owns real property
 

@@ -2,5 +2,6 @@
 . "$(dirname "$0")/_/husky.sh"
 
 npx tsc --noEmit
+npm test
 npm run build
 npx playwright test

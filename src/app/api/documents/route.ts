@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { createServiceClient } from '@/lib/supabase-service';
+import { captureApiError } from '@/lib/capture-error';
+import { checkRateLimit } from '@/lib/rate-limit';
 import {
   validateFileBatch,
   getFileTypeFromExtension,
@@ -12,6 +14,19 @@ import {
   MAX_FILES_PER_SESSION,
   ACCEPTED_MIME_TYPES,
 } from '@/types/document-upload';
+
+// Identity documents are never stored as files on this path. Their data is
+// captured field-only through the intake parser (/api/apply/parse-document),
+// which processes the file in memory and discards it. Storing a passport or
+// birth-certificate scan in the document bucket is a deliberate policy no.
+const IDENTITY_DOC_TYPES = new Set([
+  'passport',
+  'birth_certificate',
+  'marriage_certificate',
+  'drivers_license',
+  'national_id',
+  'government_id',
+]);
 
 // POST /api/documents — Upload one or more files
 export async function POST(request: NextRequest) {
@@ -25,6 +40,14 @@ export async function POST(request: NextRequest) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const rl = await checkRateLimit(user.id, 'parse-doc');
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: 'Too many document uploads. Please wait before uploading more.' },
+        { status: 429, headers: { 'Retry-After': String(rl.reset) } }
+      );
     }
 
     const formData = await request.formData();
@@ -70,6 +93,21 @@ export async function POST(request: NextRequest) {
     if (files.length === 0) {
       return NextResponse.json(
         { error: 'No files provided' },
+        { status: 400 }
+      );
+    }
+
+    // Reject identity documents — their scans are never stored on this path.
+    const identityDoc = Object.entries(documentTypes).find(([, t]) =>
+      IDENTITY_DOC_TYPES.has(t)
+    );
+    if (identityDoc) {
+      return NextResponse.json(
+        {
+          error:
+            'Identity documents (passport, birth certificate, marriage certificate) are not stored. ' +
+            'Upload them through the intake screen instead — we read the details and immediately discard the file.',
+        },
         { status: 400 }
       );
     }
@@ -139,7 +177,7 @@ export async function POST(request: NextRequest) {
         });
 
       if (uploadError) {
-        console.error('Storage upload error:', uploadError);
+        captureApiError(uploadError, { route: 'documents', stage: 'storage-upload', userId: user.id, applicationId, fileName: safeFilename });
         return NextResponse.json(
           { error: `Failed to upload ${safeFilename}: ${uploadError.message}` },
           { status: 500 }
@@ -163,7 +201,7 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (dbError) {
-        console.error('DB insert error:', dbError);
+        captureApiError(dbError, { route: 'documents', stage: 'db-insert', userId: user.id, applicationId, fileName: safeFilename });
         // Clean up uploaded file
         await serviceClient.storage
           .from('application-documents')
@@ -188,7 +226,7 @@ export async function POST(request: NextRequest) {
       })),
     });
   } catch (error) {
-    console.error('Upload error:', error);
+    captureApiError(error, { route: 'documents', stage: 'upload' });
     return NextResponse.json({ error: 'Upload failed' }, { status: 500 });
   }
 }
@@ -215,19 +253,19 @@ export async function GET(request: NextRequest) {
 
     const { data: documents, error } = await supabase
       .from('application_documents')
-      .select('*')
+      .select('id, application_id, user_id, original_filename, file_type, file_size_bytes, storage_path, user_selected_document_type, extraction_status, extraction_error, detected_document_type, detection_confidence, detection_reasoning, fields_extracted, document_summary, extracted_at, created_at, updated_at')
       .eq('application_id', applicationId)
       .eq('user_id', user.id)
       .order('created_at', { ascending: true });
 
     if (error) {
-      console.error('Query error:', error);
+      captureApiError(error, { route: 'documents', stage: 'query', userId: user.id, applicationId });
       return NextResponse.json({ error: 'Query failed' }, { status: 500 });
     }
 
     return NextResponse.json({ documents });
   } catch (error) {
-    console.error('List error:', error);
+    captureApiError(error, { route: 'documents', stage: 'list' });
     return NextResponse.json({ error: 'List failed' }, { status: 500 });
   }
 }

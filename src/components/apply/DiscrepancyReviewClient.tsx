@@ -227,7 +227,7 @@ export default function DiscrepancyReviewClient({ applicationId }: DiscrepancyRe
                     fontSize: '16px',
                   }}
                 >
-                  {disc.question_label || disc.question_id}
+                  {disc.question_label || disc.question_key}
                 </h3>
 
                 {/* Value options */}

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import type { DocumentListResponse } from '@/types/generation';
+import { captureApiError } from '@/lib/capture-error';
 
 function getSupabase() {
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
@@ -64,7 +65,7 @@ export async function GET(
 
     const { data: credits } = await supabase
       .from('revision_credits')
-      .select('*')
+      .select('id, user_id, application_id, credits_remaining, credits_used, updated_at')
       .eq('application_id', applicationId)
       .order('updated_at', { ascending: false })
       .limit(1)
@@ -78,7 +79,7 @@ export async function GET(
 
     return NextResponse.json(response);
   } catch (error) {
-    console.error('Get documents error:', error);
+    captureApiError(error, { route: 'generate/documents', stage: 'get' });
     return NextResponse.json(
       { error: 'Failed to fetch documents' },
       { status: 500 }
@@ -132,7 +133,7 @@ export async function POST(
       applicationId,
     });
   } catch (error) {
-    console.error('Start generation error:', error);
+    captureApiError(error, { route: 'generate/documents', stage: 'post-start' });
     return NextResponse.json(
       { error: 'Failed to start generation' },
       { status: 500 }
@@ -195,7 +196,7 @@ export async function PATCH(
     if (documentId) {
       const { data: doc } = await supabase
         .from('generated_documents')
-        .select('*')
+        .select('id')
         .eq('id', documentId)
         .eq('application_id', applicationId)
         .single();
@@ -204,7 +205,7 @@ export async function PATCH(
       // Get the most recent document of this type for the application
       const { data: doc } = await supabase
         .from('generated_documents')
-        .select('*')
+        .select('id')
         .eq('application_id', applicationId)
         .eq('document_type', documentType)
         .order('created_at', { ascending: false })
@@ -251,7 +252,7 @@ export async function PATCH(
 
     return NextResponse.json({ success: true, document: updatedDoc });
   } catch (error) {
-    console.error('Update document error:', error);
+    captureApiError(error, { route: 'generate/documents', stage: 'patch-update' });
     return NextResponse.json(
       { error: 'Failed to update document' },
       { status: 500 }

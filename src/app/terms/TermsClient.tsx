@@ -72,9 +72,9 @@ export default function TermsOfServicePage() {
           Last updated: June 2026
         </p>
         <p style={{ ...bodyText, fontSize: "13px", color: "rgba(245,240,232,0.76)", marginBottom: "32px" }}>
-          Company: E2Pathway Inc., a Texas limited liability company
+          Company: Prodigal Son IT Solutions LLC, a Texas limited liability company, doing business as e2go
           <br />
-          DBA: e2go &nbsp;|&nbsp; hello@e2go.app &nbsp;|&nbsp; legal@e2go.app &nbsp;|&nbsp; privacy@e2go.app
+          hello@e2go.app &nbsp;|&nbsp; legal@e2go.app &nbsp;|&nbsp; privacy@e2go.app
         </p>
 
         <div style={bodyText}>
@@ -220,7 +220,7 @@ export default function TermsOfServicePage() {
           {/* Section 7 */}
           <h2 style={sectionHeading}>7. Intellectual Property</h2>
           <p style={{ marginBottom: "16px" }}>
-            The e2go platform, software, methodology, design, and original content are owned by E2Pathway Inc. and protected by U.S. and international intellectual property law.
+            The e2go platform, software, methodology, design, and original content are owned by Prodigal Son IT Solutions LLC and protected by U.S. and international intellectual property law.
           </p>
           <p style={{ marginBottom: "8px" }}>You may:</p>
           <ul style={{ marginLeft: "20px", marginBottom: "16px", listStyleType: "disc" }}>
@@ -301,7 +301,7 @@ export default function TermsOfServicePage() {
             <strong style={{ color: "#f5f0e8" }}>Support:</strong> support@e2go.app
           </p>
           <p style={{ marginBottom: "16px" }}>
-            E2Pathway Inc.
+            Prodigal Son IT Solutions LLC (d/b/a e2go)
             <br />
             Texas, United States
           </p>

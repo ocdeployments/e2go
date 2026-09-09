@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { checkRateLimit } from '@/lib/rate-limit';
+import { isKillSwitchEnabled } from '@/lib/kill-switch';
+import { captureApiError } from '@/lib/capture-error';
+import { generateStartRequestSchema } from '@/lib/api-schemas';
 
 function getSupabase() {
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
@@ -30,6 +33,10 @@ export async function POST(request: Request) {
       );
     }
 
+    if (await isKillSwitchEnabled()) {
+      return NextResponse.json({ error: 'AI features are temporarily unavailable. Please try again shortly.' }, { status: 503 });
+    }
+
     const supabase = getSupabase();
     if (!supabase) {
       return NextResponse.json(
@@ -37,15 +44,15 @@ export async function POST(request: Request) {
         { status: 503 }
       );
     }
-    const body = await request.json();
-    const { applicationId } = body;
-
-    if (!applicationId) {
+    const rawBody = await request.json();
+    const parsed = generateStartRequestSchema.safeParse(rawBody);
+    if (!parsed.success) {
       return NextResponse.json(
         { error: 'applicationId is required' },
         { status: 400 }
       );
     }
+    const { applicationId } = parsed.data;
 
     // Verify application belongs to authenticated user
     const { data: application, error: appError } = await supabase
@@ -98,11 +105,21 @@ export async function POST(request: Request) {
     }
 
     // Determine conditional doc types from intake answers
-    const { data: condAnswers } = await supabase
-      .from('answers')
-      .select('question_key, answer_value')
-      .eq('application_id', applicationId)
-      .in('question_key', ['M3-L-01', 'M3-F-05']);
+    const [{ data: condAnswers }, { data: partnerPayment }] = await Promise.all([
+      supabase
+        .from('answers')
+        .select('question_key, answer_value')
+        .eq('application_id', applicationId)
+        .in('question_key', ['M3-L-01', 'M3-F-05', 'M3-F-NEW-01']),
+      supabase
+        .from('payments')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('payment_type', 'complete_partnership')
+        .eq('status', 'completed')
+        .limit(1)
+        .maybeSingle(),
+    ]);
 
     const condMap: Record<string, string> = {};
     for (const row of (condAnswers ?? [])) {
@@ -117,12 +134,51 @@ export async function POST(request: Request) {
     if (typeof condMap['M3-F-05'] === 'string' && condMap['M3-F-05'].includes('property-sale')) {
       conditionalDocTypes.push('property_portfolio');
     }
+    // WS6.1 — Investment Evidence generates only when at-risk is genuinely contested:
+    // funds partially deployed or committed-but-unspent (escrow-style arrangements).
+    // Fully-deployed cases rely on SOF §V instead of a redundant standalone document.
+    if (condMap['M3-F-NEW-01'] === 'partial' || condMap['M3-F-NEW-01'] === 'no') {
+      conditionalDocTypes.push('investment_proof');
+    }
+    // WS6.1 — Financial Assets Portfolio generates when fund sources include securities/
+    // registered plans/crypto (RRSP, TFSA, LIRA/pension, cryptocurrency) — the case where
+    // there's a non-real-estate financial asset trail to document beyond SOF §V.
+    if (
+      typeof condMap['M3-F-05'] === 'string' &&
+      ['rrsp', 'tfsa', 'lira', 'crypto'].some(v => (condMap['M3-F-05'] as string).includes(v))
+    ) {
+      conditionalDocTypes.push('financial_assets_portfolio');
+    }
+    // WS6.1 — Lease/Premises Summary generates only for physical-location businesses,
+    // detected deterministically by the presence of an uploaded lease agreement rather
+    // than a new intake question.
+    const { data: leaseDoc } = await supabase
+      .from('uploaded_documents')
+      .select('id')
+      .eq('application_id', applicationId)
+      .eq('doc_type', 'lease_agreement')
+      .limit(1)
+      .maybeSingle();
+    if (leaseDoc) {
+      conditionalDocTypes.push('lease_premises_summary');
+    }
+
+    // Sprint F-P: Add Investor 2 documents for complete_partnership buyers.
+    // cover_letter_p2 retired — the shared cover_letter now covers both
+    // investors jointly (see JOINT_PARTNERSHIP_DOC_TYPES in generation-engine.ts).
+    if (partnerPayment) {
+      conditionalDocTypes.push(
+        'source_of_funds_p2', 'declaration_p2',
+        'qualifications_p2', 'nonimmigrant_intent_p2', 'resume_p2'
+      );
+    }
 
     const coreDocTypes = [
       'cover_letter', 'source_of_funds', 'business_plan', 'qualifications',
       'ds160_reference', 'visa_category', 'nonimmigrant_intent',
       'marginality_rebuttal', 'declaration_principal', 'fund_flow_chronology',
       'net_worth_statement', 'resume_principal', 'gift_letter',
+      'org_chart', 'corporate_documents_guide',
     ];
     const allDocTypes = [...coreDocTypes, ...conditionalDocTypes];
     const totalSteps = 1 + allDocTypes.length + 9;
@@ -147,13 +203,23 @@ export async function POST(request: Request) {
 
     const jobId = job.id;
 
-    // Track generation triggered lifecycle event
-    await supabase.from('application_lifecycle').insert({
-      application_id: applicationId,
-      event: 'generation_triggered',
-      user_id: user.id,
-      created_at: new Date().toISOString(),
-    });
+    /**
+     * Stamp the milestone on the client's lifecycle row.
+     *
+     * This used to insert an event row carrying application_id and event —
+     * neither column exists, so the write failed silently on every run. It
+     * would have been wrong even had it worked: application_lifecycle holds one
+     * row per client, keyed on user_id, so an insert creates a duplicate rather
+     * than recording anything. The state it wanted to record already has a
+     * column, and upserting it is the shape the rest of the codebase uses.
+     */
+    await supabase.from('application_lifecycle').upsert(
+      {
+        user_id: user.id,
+        generation_triggered_at: new Date().toISOString(),
+      },
+      { onConflict: 'user_id' },
+    );
 
     // Create document rows for all pipeline document types (core + conditional)
     await supabase.from('generated_documents').insert(
@@ -179,7 +245,7 @@ export async function POST(request: Request) {
       message: 'Generation job created',
     });
   } catch (error) {
-    console.error('Start generation error:', error);
+    captureApiError(error, { route: 'generate/start' });
     return NextResponse.json(
       { error: 'Failed to start generation' },
       { status: 500 }

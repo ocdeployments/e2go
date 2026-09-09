@@ -2,7 +2,9 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { runGenerationPipeline } from '@/lib/generation-engine';
+import { checkRateLimit } from '@/lib/rate-limit';
 import type { GenerationStep } from '@/types/generation';
+import { captureApiError } from '@/lib/capture-error';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -27,12 +29,21 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // M1: Rate-limit /run as well as /start — prevents bypass by calling run directly
+    const rl = await checkRateLimit(user.id, 'generate');
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: 'Too many generation requests. Please wait before retrying.' },
+        { status: 429, headers: { 'Retry-After': String(rl.reset) } }
+      );
+    }
+
     const supabase = getSupabase();
     const { jobId } = params;
 
     const { data: job, error: jobError } = await supabase
       .from('document_generation_jobs')
-      .select('*')
+      .select('id, user_id, status, application_id')
       .eq('id', jobId)
       .single();
 
@@ -87,7 +98,7 @@ export async function POST(
       jobId,
       onProgress
     ).catch(async (err) => {
-      console.error('Pipeline crashed:', err);
+      captureApiError(err, { route: 'generate/run', stage: 'pipeline', jobId, userId: job.user_id });
       await supabase
         .from('document_generation_jobs')
         .update({
@@ -103,7 +114,7 @@ export async function POST(
       { status: 202 }
     );
   } catch (error) {
-    console.error('Run generation error:', error);
+    captureApiError(error, { route: 'generate/run' });
     return NextResponse.json(
       { error: 'Failed to start generation run' },
       { status: 500 }

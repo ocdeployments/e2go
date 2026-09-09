@@ -6,6 +6,7 @@ import { ApplicationProvider, useApplication } from '@/contexts/ApplicationConte
 import TabPage from '@/components/module3/TabPage';
 import ContradictionFlag from '@/components/ContradictionFlag';
 import { Section, FieldConfig } from '@/types/module3';
+import { resolvePrimaryApplicationId } from '@/lib/resolve-application';
 
 const baseSections: Section[] = [
   {
@@ -116,13 +117,8 @@ function TabEPage() {
       const supabase = createBrowserSupabaseClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      const { data: app } = await supabase
-        .from('applications')
-        .select('id')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      const appId = await resolvePrimaryApplicationId(supabase, user.id);
+      const app = appId ? { id: appId } : null;
       if (app) setApplicationId(app.id);
     };
     load();

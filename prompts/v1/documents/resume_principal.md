@@ -1,6 +1,6 @@
 # Principal Applicant Resume Generation Prompt
 ## Document Type: resume_principal
-## Tab Reference: Tab D — Principal Applicant (D-02)
+## Tab Reference: Tab I — Principal Applicant (I-02)
 ## Generation Order: Step 11
 
 ---

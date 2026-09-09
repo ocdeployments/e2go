@@ -2,8 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { getQuestionKnowledge, buildKnowledgeBlock } from '@/lib/interview-knowledge-base';
 import { checkRateLimit } from '@/lib/rate-limit';
+import { isKillSwitchEnabled } from '@/lib/kill-switch';
 import { callLLM } from '@/lib/llm-client';
 import type { SimulatorContext, QuestionCoaching } from '@/types/simulator';
+import { captureApiError } from '@/lib/capture-error';
 
 interface WeakAnswer {
   questionId: string;
@@ -56,6 +58,10 @@ export async function POST(request: NextRequest) {
       { error: 'Too many requests. Please wait before generating another coaching report.' },
       { status: 429, headers: { 'Retry-After': String(rl.reset) } }
     );
+  }
+
+  if (await isKillSwitchEnabled()) {
+    return NextResponse.json({ error: 'AI features are temporarily unavailable. Please try again shortly.' }, { status: 503 });
   }
 
   if (!process.env.OPENROUTER_API_KEY && !process.env.ANTHROPIC_API_KEY) {
@@ -194,10 +200,12 @@ Return ONLY a valid JSON object (no markdown, no prose) with this exact structur
       temperature: 0.35,
       max_tokens: 6000,
       signal: controller.signal,
+      timeoutMs: 90_000,
     });
 
     if (!content) {
-      return NextResponse.json({ coaching: [] });
+      captureApiError(new Error('[coaching-report] Empty content from all providers'), { route: 'simulator/coaching-report', stage: 'empty-content', userId: user.id });
+      return NextResponse.json({ coaching: [], error: true });
     }
 
     try {
@@ -219,14 +227,20 @@ Return ONLY a valid JSON object (no markdown, no prose) with this exact structur
         return NextResponse.json({ coaching: parsed });
       }
     } catch (parseError) {
-      console.error('[coaching-report] JSON parse failed:', content.substring(0, 300), parseError);
+      captureApiError(parseError, { route: 'simulator/coaching-report', stage: 'json-parse-failed', userId: user.id, contentSnippet: content.substring(0, 300) });
+      return NextResponse.json({ coaching: [], error: true });
     }
 
-    return NextResponse.json({ coaching: [] });
+    // Response had content but neither JSON shape matched — treat as a
+    // generation failure, not "no coaching needed" (weakAnswers.length > 0
+    // was already guaranteed above, so an empty result here means the model
+    // didn't return usable output, not that coaching was unnecessary).
+    captureApiError(new Error('[coaching-report] Unrecognized response shape'), { route: 'simulator/coaching-report', stage: 'unrecognized-shape', userId: user.id, contentSnippet: content.substring(0, 300) });
+    return NextResponse.json({ coaching: [], error: true });
   } catch (error) {
     const isAbort = error instanceof DOMException && error.name === 'AbortError';
-    console.error(`[coaching-report] ${isAbort ? 'TIMED OUT' : 'FAILED'}:`, error);
-    return NextResponse.json({ coaching: [] });
+    captureApiError(error, { route: 'simulator/coaching-report', stage: isAbort ? 'timed-out' : 'failed', userId: user.id });
+    return NextResponse.json({ coaching: [], error: true });
   } finally {
     clearTimeout(timeout);
   }

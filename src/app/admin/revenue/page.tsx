@@ -29,10 +29,18 @@ function getAdmin() {
   );
 }
 
+// Only a fallback for the rare completed payment row that carries no
+// amount_cents/amount_paid. Both eras are listed: historical rows still use the
+// retired tier strings, new rows use the USD model in src/lib/pricing-tier.ts.
 const TIER_PRICES: Record<string, number> = {
+  // Current USD model
+  foundation:                 99000,
+  investor_ready:             39000,
+  visa_ready:                 149000,
+  interview_prep:             29000,
+  // Retired model — kept so historical payments still value correctly
   complete:                   149500,
   complete_partnership:       249500,
-  interview_prep:             34700,
   interview_prep_partnership: 49500,
   fdd_intelligence:           57500,
   fdd_intelligence_loyalty:   37500,
@@ -41,12 +49,21 @@ const TIER_PRICES: Record<string, number> = {
 };
 
 const TIER_LABELS: Record<string, string> = {
-  complete:                   'Complete ($1,495)',
-  complete_partnership:       'Complete — Partnership ($2,495)',
-  interview_prep:             'Interview Prep ($347)',
-  interview_prep_partnership: 'Interview Prep — Partnership ($495)',
-  fdd_intelligence:           'FDD Intelligence ($575)',
-  fdd_intelligence_loyalty:   'FDD Intelligence Loyalty ($375)',
+  // Current USD model
+  foundation:                 'Foundation ($990)',
+  investor_ready:             'Investor Ready ($390)',
+  visa_ready:                 'Visa Ready ($1,490)',
+  interview_prep:             'Interview Ready ($290)',
+  loyalty_upgrade:            'Loyalty Upgrade (Foundation → Visa Ready)',
+  fdd_analysis_addon:         'Add-on — FDD Analysis',
+  market_analysis_addon:      'Add-on — Market Analysis',
+  fdd_market_bundle_addon:    'Add-on — FDD + Market bundle',
+  // Retired model — kept so historical payments still render a label
+  complete:                   'Complete ($1,495) — retired',
+  complete_partnership:       'Complete — Partnership ($2,495) — retired',
+  interview_prep_partnership: 'Interview Prep — Partnership ($495) — retired',
+  fdd_intelligence:           'FDD Intelligence ($575) — retired',
+  fdd_intelligence_loyalty:   'FDD Intelligence Loyalty ($375) — retired',
   simulator_3pack:            'Simulator 3-Pack ($49)',
   renewal:                    'Renewal ($99)',
 };
@@ -57,7 +74,17 @@ type PaymentRow = {
   status: string | null; created_at: string;
 };
 
-type LifecycleRow = { user_id: string; event: string; created_at: string };
+/**
+ * application_lifecycle holds one row per client, not a stream of events. The
+ * milestones below are timestamp columns on that row; a null means the client
+ * has not reached that stage.
+ */
+type LifecycleRow = {
+  user_id: string;
+  updated_at: string | null;
+  quiz_completed_at: string | null;
+  module3_started_at: string | null;
+};
 
 function fmtUsd(cents: number) {
   return '$' + (cents / 100).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
@@ -84,13 +111,13 @@ export default async function RevenuePage() {
     { count: genCompleted },
   ] = await Promise.all([
     admin.from('payments').select('id, user_id, tier, payment_type, amount_cents, amount_paid, status, created_at').eq('status', 'completed').order('created_at', { ascending: true }),
-    admin.from('application_lifecycle').select('user_id, event, created_at'),
+    admin.from('application_lifecycle').select('user_id, updated_at, quiz_completed_at, module3_started_at'),
     admin.from('quiz_sessions').select('id', { count: 'exact', head: true }),
     admin.from('document_generation_jobs').select('id', { count: 'exact', head: true }).eq('status', 'completed'),
   ]);
 
   const payments = (allPayments ?? []) as PaymentRow[];
-  const events   = (lifecycle   ?? []) as LifecycleRow[];
+  const lifecycleRows = (lifecycle ?? []) as LifecycleRow[];
 
   // ── Revenue math ──────────────────────────────────────────────────────────
   const getAmount = (p: PaymentRow) => p.amount_cents ?? p.amount_paid ?? (TIER_PRICES[p.tier ?? p.payment_type ?? ''] ?? 0);
@@ -144,10 +171,8 @@ export default async function RevenuePage() {
   // ── Churn signals — paid users inactive 14+ days ─────────────────────────
   const paidUserIds = new Set(payments.map(p => p.user_id));
   const lastActivityByUser: Record<string, string> = {};
-  for (const e of events) {
-    if (!lastActivityByUser[e.user_id] || e.created_at > lastActivityByUser[e.user_id]) {
-      lastActivityByUser[e.user_id] = e.created_at;
-    }
+  for (const row of lifecycleRows) {
+    if (row.updated_at) lastActivityByUser[row.user_id] = row.updated_at;
   }
   const churnSignals = Array.from(paidUserIds)
     .filter(uid => {
@@ -158,9 +183,9 @@ export default async function RevenuePage() {
 
   // ── Conversion funnel ─────────────────────────────────────────────────────
   const quizStarted  = quizCount ?? 0;
-  const quizCompleted = events.filter(e => e.event === 'quiz_completed').length;
+  const quizCompleted = lifecycleRows.filter(r => r.quiz_completed_at !== null).length;
   const paymentMade  = payments.length;
-  const caseActive   = events.filter(e => e.event === 'module3_started' || e.event === 'case_file_started').length;
+  const caseActive   = lifecycleRows.filter(r => r.module3_started_at !== null).length;
   const docsGenerated = genCompleted ?? 0;
   const funnel = [
     { label: 'Quiz started',    n: quizStarted },

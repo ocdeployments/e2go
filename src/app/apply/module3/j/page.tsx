@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { createBrowserSupabaseClient } from '@/lib/supabase';
+import { resolvePrimaryApplicationId } from '@/lib/resolve-application';
 
 type ScreenState = 'intro' | 'question' | 'orgchart' | 'completion' | 'resume';
 
@@ -120,7 +121,7 @@ export default function TabJPage() {
   const [businessName, setBusinessName] = useState<string>('');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [showNoMgmtAdvisory, setShowNoMgmtAdvisory] = useState(false);
-  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const saveTimeoutRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
 
   const currentQuestion = QUESTIONS[currentIndex];
   const isLastQuestion = currentIndex === QUESTIONS.length - 1;
@@ -134,13 +135,8 @@ export default function TabJPage() {
         return;
       }
 
-      const { data: existingApp } = await supabase
-        .from('applications')
-        .select('id')
-        .eq('user_id', authUser.id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
+      const existingAppId = await resolvePrimaryApplicationId(supabase, authUser.id);
+      const existingApp = existingAppId ? { id: existingAppId } : null;
 
       if (existingApp) {
         setApplicationId(existingApp.id);
@@ -190,7 +186,7 @@ export default function TabJPage() {
           .select('answer_value')
           .eq('application_id', existingApp.id)
           .eq('question_key', 'QA-51')
-          .single();
+          .maybeSingle();
 
         setBusinessName(bizData?.answer_value || 'your business');
 
@@ -211,7 +207,7 @@ export default function TabJPage() {
           .select('answer_value')
           .eq('application_id', existingApp.id)
           .eq('question_key', 'QJ-ORG-CONFIRMED')
-          .single();
+          .maybeSingle();
 
         if (confirmData?.answer_value === 'true') {
           setScreenState('completion');
@@ -223,6 +219,12 @@ export default function TabJPage() {
 
     init();
   }, [router, supabase]);
+
+  // Flush pending debounced saves on unmount so keystrokes aren't lost
+  useEffect(() => {
+    const timeouts = saveTimeoutRef.current;
+    return () => { timeouts.forEach(t => clearTimeout(t)); };
+  }, []);
 
   // Debounced save
   const saveAnswer = useCallback(async (key: string, value: string) => {
@@ -237,7 +239,7 @@ export default function TabJPage() {
           question_key: key,
           answer_value: value,
         },
-        { onConflict: 'application_id,question_key' }
+        { onConflict: 'application_id,question_key,family_member_id' }
       );
 
     if (!error) {
@@ -256,8 +258,9 @@ export default function TabJPage() {
       setShowNoMgmtAdvisory(value === 'No');
     }
 
-    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-    saveTimeoutRef.current = setTimeout(() => saveAnswer(key, value), 800);
+    const existing = saveTimeoutRef.current.get(key);
+    if (existing) clearTimeout(existing);
+    saveTimeoutRef.current.set(key, setTimeout(() => saveAnswer(key, value), 800));
   };
 
   // Navigation handlers
@@ -292,7 +295,7 @@ export default function TabJPage() {
         question_key: 'QJ-ORG-CONFIRMED',
         answer_value: 'true',
       },
-      { onConflict: 'application_id,question_key' }
+      { onConflict: 'application_id,question_key,family_member_id' }
     );
 
     setScreenState('completion');

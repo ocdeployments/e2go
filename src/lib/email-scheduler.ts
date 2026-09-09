@@ -41,23 +41,101 @@ function getDaysInactive(lastActivityAt: string): number {
   return Math.floor(diffMs / (1000 * 60 * 60 * 24));
 }
 
-function getTabDisplayName(tab: string | undefined): string {
-  const tabNames: Record<string, string> = {
-    'a': 'Tab A — Personal Information',
-    'b': 'Tab B — Personal Checklist',
-    'c': 'Tab C — Visa Category',
-    'd': 'Tab D — Cover Letter',
-    'e': 'Tab E — Ownership',
-    'f': 'Tab F — Investment Proof',
-    'g': 'Tab G — Business Evidence',
-    'h': 'Tab H — Source of Funds',
-    'i': 'Tab I — Non-Marginality',
-    'j': 'Tab J — Qualifications',
-    'k': 'Tab K — Business Plan',
-    'l': 'Tab L — Family Dependents'
+/**
+ * Where someone left off, in words they will recognise.
+ *
+ * The keys are the section slugs written by useTrackSectionVisit — the same
+ * ones /login reads to send a returning user back to where they were. This
+ * used to be a map of single letters a-l against a column that does not exist,
+ * so it returned 'your application' for everyone.
+ *
+ * Anything unrecognised falls back to the generic phrase rather than showing a
+ * raw slug: a new section can be added without this list being updated first,
+ * and the email should still read properly when that happens.
+ */
+function getSectionDisplayName(section: string | null | undefined): string {
+  const sectionNames: Record<string, string> = {
+    'overview': 'your application overview',
+    'module1': 'your personal information',
+    'module2': 'your background',
+    'module3': 'your case detail',
+    'module4': 'your final review',
+    'business': 'your business information',
+    'investment': 'your investment evidence',
+    'story': 'your cover letter',
+    'qualifications': 'your qualifications',
+    'family': 'your family details',
+    'ties': 'your ties to home',
+    'upload': 'your document uploads',
+    'checklist': 'your document checklist',
+    'calendar': 'your interview scheduling',
+    'security-background': 'the security and background questions',
+    'dependent-ds160': 'your dependants\u2019 DS-160 details',
   };
-  if (!tab) return 'your application';
-  return tabNames[tab] || 'your application';
+  if (!section) return 'your application';
+  return sectionNames[section] || 'your application';
+}
+
+/**
+ * Email address and name for a set of applications.
+ *
+ * Both live on profiles, not applications. This module used to select them
+ * straight off applications, where neither column exists, so every query
+ * errored and the paid lifecycle mail has never sent a single email.
+ *
+ * Returns a map keyed on user_id. Anyone whose profile cannot be resolved is
+ * absent from it, and the caller skips them rather than sending to undefined.
+ */
+async function loadRecipients(
+  userIds: string[]
+): Promise<Map<string, { email: string; name?: string }>> {
+  const recipients = new Map<string, { email: string; name?: string }>();
+  const unique = Array.from(new Set(userIds.filter(Boolean)));
+  if (unique.length === 0) return recipients;
+
+  const { data, error } = await getSupabase()
+    .from('profiles')
+    .select('id, email, full_name')
+    .in('id', unique);
+
+  if (error) {
+    console.error('[EMAIL] failed to load recipient profiles:', error);
+    return recipients;
+  }
+
+  for (const row of data ?? []) {
+    if (!row.email) continue;
+    recipients.set(row.id as string, {
+      email: row.email as string,
+      name: (row.full_name as string | null) || undefined,
+    });
+  }
+  return recipients;
+}
+
+/**
+ * Last visited section per user, from application_lifecycle — the only place
+ * it is actually recorded.
+ */
+async function loadLastSections(userIds: string[]): Promise<Map<string, string | null>> {
+  const sections = new Map<string, string | null>();
+  const unique = Array.from(new Set(userIds.filter(Boolean)));
+  if (unique.length === 0) return sections;
+
+  const { data, error } = await getSupabase()
+    .from('application_lifecycle')
+    .select('user_id, last_visited_section')
+    .in('user_id', unique);
+
+  if (error) {
+    console.error('[EMAIL] failed to load last visited sections:', error);
+    return sections;
+  }
+
+  for (const row of data ?? []) {
+    sections.set(row.user_id as string, (row.last_visited_section as string | null) ?? null);
+  }
+  return sections;
 }
 
 async function hasEmailBeenSentToday(
@@ -113,7 +191,7 @@ export async function checkInactivityAndSendEmails(): Promise<{
   // AND still in progress (not completed) AND paid
   const { data: applications, error } = await getSupabase()
     .from('applications')
-    .select('id, user_id, email, full_name, last_activity_at, current_tab, payment_status, module_3_complete, outcome')
+    .select('id, user_id, last_activity_at, payment_status, module_3_complete, outcome')
     .eq('payment_status', 'paid')
     .eq('module_3_complete', false)
     .is('outcome', null)
@@ -129,21 +207,29 @@ export async function checkInactivityAndSendEmails(): Promise<{
     return result;
   }
 
+  const userIds = applications.map((app) => app.user_id as string);
+  const recipients = await loadRecipients(userIds);
+  const lastSections = await loadLastSections(userIds);
+
   for (const app of applications) {
     try {
+      const recipient = recipients.get(app.user_id as string);
+      if (!recipient) {
+        result.errors.push(`No email on file for application ${app.id}`);
+        continue;
+      }
+
+      const lastSection = lastSections.get(app.user_id as string) ?? null;
       const daysInactive = getDaysInactive(app.last_activity_at);
       const emailData: Clock1EmailData = {
-        recipient: {
-          email: app.email,
-          name: app.full_name || undefined
-        },
+        recipient,
         application: {
           applicationId: app.id,
-          currentTab: app.current_tab,
+          currentTab: lastSection ?? undefined,
           lastActivityAt: app.last_activity_at
         },
         daysInactive,
-        currentTabName: getTabDisplayName(app.current_tab)
+        currentTabName: getSectionDisplayName(lastSection)
       };
 
       // Day 60 - First re-engagement
@@ -209,7 +295,7 @@ export async function sendOutcomeEmails(
     // Get application details
     const { data: app, error: appError } = await getSupabase()
       .from('applications')
-      .select('id, user_id, email, full_name')
+      .select('id, user_id')
       .eq('id', applicationId)
       .single();
 
@@ -217,11 +303,13 @@ export async function sendOutcomeEmails(
       return { success: false, error: appError?.message || 'Application not found' };
     }
 
+    const recipient = (await loadRecipients([app.user_id as string])).get(app.user_id as string);
+    if (!recipient) {
+      return { success: false, error: `No email on file for application ${app.id}` };
+    }
+
     const emailData: Clock2EmailData = {
-      recipient: {
-        email: app.email,
-        name: app.full_name || undefined
-      },
+      recipient,
       application: {
         applicationId: app.id
       },
@@ -302,7 +390,7 @@ export async function processScheduledEmails(): Promise<{
       // Get application details
       const { data: app } = await getSupabase()
         .from('applications')
-        .select('id, user_id, email, full_name')
+        .select('id, user_id')
         .eq('id', email.application_id)
         .single();
 
@@ -311,11 +399,14 @@ export async function processScheduledEmails(): Promise<{
         continue;
       }
 
+      const recipient = (await loadRecipients([app.user_id as string])).get(app.user_id as string);
+      if (!recipient) {
+        result.errors.push(`No email on file for application ${app.id}`);
+        continue;
+      }
+
       const emailData: Clock2EmailData = {
-        recipient: {
-          email: app.email,
-          name: app.full_name || undefined
-        },
+        recipient,
         application: {
           applicationId: app.id
         },

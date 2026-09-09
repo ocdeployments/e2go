@@ -4,8 +4,9 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
-import { getPricingTier, TierId } from "@/lib/pricing-tier";
+import { getPricingTier, TierId, PRICING_TIERS, MainTierId } from "@/lib/pricing-tier";
 import PricingCard from "@/components/PricingCard";
+import PromoCodeInput from "@/components/PromoCodeInput";
 
 interface PricingTier {
   tier_id: string;
@@ -18,13 +19,21 @@ interface PricingTier {
 
 const DEFAULT_TIERS: PricingTier[] = [
   {
-    tier_id: 'complete',
-    name: 'Complete — Build & Document',
-    amount: 149500,
-    stripe_price_id: process.env.NEXT_PUBLIC_STRIPE_PRICE_COMPLETE || '',
+    tier_id: 'foundation',
+    name: 'Foundation',
+    amount: 99000,
+    stripe_price_id: process.env.NEXT_PUBLIC_STRIPE_PRICE_FOUNDATION || '',
     active: true,
   },
 ];
+
+// Display order on the pricing page. The two full packages lead — Visa Ready
+// first (it bundles everything), then Foundation (the core filing package).
+// The à-la-carte add-ons follow in their own section, for buyers who have
+// Foundation and only want one extra piece. Both add-ons are already included
+// in Visa Ready.
+const MAIN_PLAN_ORDER = ['visa_ready', 'foundation'];
+const ADDON_ORDER = ['interview_prep', 'investor_ready'];
 
 export default function PricingPage() {
   const router = useRouter();
@@ -36,7 +45,9 @@ export default function PricingPage() {
   const [testMode, setTestMode] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [promoCode, setPromoCode] = useState<string | null>(null);
   const highlightRef = useRef<HTMLDivElement>(null);
+  const errorRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -52,10 +63,26 @@ export default function PricingPage() {
         .order('amount', { ascending: true });
 
       if (!tiersError && tiers && tiers.length > 0) {
-        // Show the main application package only — exclude add-ons and utility tiers
-        const UTILITY_TIERS = new Set(['simulator_3pack', 'renewal', 'interview_prep', 'interview_prep_partnership', 'fdd_intelligence', 'fdd_intelligence_loyalty', 'additional_child']);
+        // Show the main application packages only — exclude add-ons, utility
+        // tiers, and any retired tier whose DB row may not be deactivated yet.
+        const UTILITY_TIERS = new Set([
+          // Current USD model — add-ons and utilities, not grid plans.
+          // 'interview_prep' is Interview Ready, a real grid plan ($290) —
+          // it stays OFF this list so it renders as its own card.
+          'simulator_3pack', 'renewal',
+          'loyalty_upgrade', 'fdd_analysis_addon', 'market_analysis_addon', 'fdd_market_bundle_addon',
+          'additional_child', 'child_surcharge',
+          // Retired model
+          'interview_prep_partnership', 'fdd_intelligence', 'fdd_intelligence_loyalty',
+          'complete', 'complete_partnership',
+        ]);
         const mainTiers = tiers.filter((t: PricingTier) => !UTILITY_TIERS.has(t.tier_id));
-        setPricingTiers(mainTiers.length > 0 ? mainTiers : tiers);
+        // If nothing but add-ons/utility tiers is active in the DB, keep the
+        // local Foundation default rather than showing a non-purchasable add-on
+        // as if it were the plan lineup.
+        if (mainTiers.length > 0) {
+          setPricingTiers(mainTiers);
+        }
       }
 
       // Check if Stripe is configured
@@ -98,6 +125,48 @@ export default function PricingPage() {
       highlightRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
     }
   }, [selectedTier]);
+
+  // Bring a checkout error into view — it renders below the add-ons, so a
+  // buyer who clicked a card higher up would otherwise never see it.
+  useEffect(() => {
+    if (error && errorRef.current) {
+      errorRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [error]);
+
+  const orderedSubset = (order: string[]): PricingTier[] =>
+    order
+      .map((tierId) => pricingTiers.find((t) => t.tier_id === tierId))
+      .filter((t): t is PricingTier => Boolean(t));
+
+  const mainPlans = orderedSubset(MAIN_PLAN_ORDER);
+  const addOns = orderedSubset(ADDON_ORDER);
+
+  const renderTierCard = (tier: PricingTier) => {
+    const isHighlighted = selectedTier === tier.tier_id;
+    const knownTier = PRICING_TIERS[tier.tier_id as MainTierId];
+    const description = knownTier?.description || tier.name;
+    const features = knownTier?.features || [];
+
+    return (
+      <div
+        key={tier.tier_id}
+        ref={isHighlighted ? highlightRef : undefined}
+        className={isHighlighted ? "md:col-span-2" : ""}
+      >
+        <PricingCard
+          id={tier.tier_id}
+          name={tier.name}
+          price={tier.amount / 100}
+          description={description}
+          features={features}
+          isHighlighted={isHighlighted && hasQuizData}
+          isSelected={isHighlighted}
+          onSelect={handleSelect}
+        />
+      </div>
+    );
+  };
 
   const handleSelect = async (id: string) => {
     setSelectedTier(id as TierId);
@@ -159,6 +228,7 @@ export default function PricingPage() {
           tierId: id,
           applicationId,
           userId: user.id,
+          ...(promoCode ? { promoCode } : {}),
         }),
       });
 
@@ -242,46 +312,40 @@ export default function PricingPage() {
             </div>
           )}
 
-
-          {/* Pricing Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto mb-12" data-testid="pricing-tiers">
-            {pricingTiers.map((tier) => {
-              const tierFromDb = pricingTiers.find(t => t.tier_id === tier.tier_id);
-              const tierName = tierFromDb?.name || tier.name;
-              const tierAmount = tierFromDb?.amount || tier.amount;
-              const isHighlighted = selectedTier === tier.tier_id;
-              const isPartnership = tier.tier_id === 'complete_partnership';
-              const description = isPartnership
-                ? 'Partnership E-2 application — two investors, one complete package'
-                : 'Individual E-2 application with 15-document consulate package';
-              const features = isPartnership
-                ? ['15 consulate-formatted documents', 'Both investor profiles', 'Joint source of funds package', 'Partnership business plan', 'Gap Analysis & Consulate Briefing']
-                : ['15 consulate-formatted documents', 'Business Plan (complete)', 'Source of Funds Package', 'Gap Analysis & Risk Flags', 'Consulate Briefing Guide'];
-
-              return (
-                <div
-                  key={tier.tier_id}
-                  ref={isHighlighted ? highlightRef : undefined}
-                  className={isHighlighted ? "md:col-span-2 lg:col-span-2" : ""}
-                >
-                  <PricingCard
-                    id={tier.tier_id}
-                    name={tierName}
-                    price={tierAmount / 100}
-                    description={description}
-                    features={features}
-                    isHighlighted={isHighlighted && hasQuizData}
-                    isSelected={isHighlighted}
-                    onSelect={handleSelect}
-                  />
-                </div>
-              );
-            })}
+          {/* Promo Code */}
+          <div className="flex justify-center mb-6">
+            <PromoCodeInput
+              tierId={selectedTier || "foundation"}
+              onApply={(code) => setPromoCode(code)}
+              onRemove={() => setPromoCode(null)}
+            />
           </div>
+
+          {/* Full packages — Visa Ready leads, then Foundation */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto mb-14" data-testid="pricing-tiers">
+            {mainPlans.map(renderTierCard)}
+          </div>
+
+          {/* Add-ons — for buyers who have Foundation and want one extra piece */}
+          {addOns.length > 0 && (
+            <div className="max-w-4xl mx-auto mb-12">
+              <div className="text-center mb-6">
+                <h2 className="text-2xl md:text-3xl font-bold mb-2" style={{ color: "#f5f0e8", fontFamily: "'Cormorant Garamond', serif", fontWeight: 300 }}>
+                  Add-ons
+                </h2>
+                <p className="text-sm max-w-2xl mx-auto" style={{ color: "rgba(245,240,232,0.6)" }}>
+                  Want just one extra piece? Add it on its own. Both are already included in Visa Ready.
+                </p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6" data-testid="pricing-addons">
+                {addOns.map(renderTierCard)}
+              </div>
+            </div>
+          )}
 
           {/* Error Display */}
           {error && (
-            <div className="max-w-md mx-auto mb-6 p-4" style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 0 }}>
+            <div ref={errorRef} className="max-w-md mx-auto mb-6 p-4" style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 0 }}>
               <p className="text-sm text-center" style={{ color: "#ef4444" }}>{error}</p>
             </div>
           )}

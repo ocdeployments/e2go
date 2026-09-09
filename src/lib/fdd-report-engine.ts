@@ -7,16 +7,15 @@
 // Voice: investment advisor + franchise director + immigration specialist.
 // Opinionated. Benchmark-driven. No hedging. Every claim grounded in FDD data.
 //
-// API key: ANTHROPIC_API_KEY ONLY — never OpenRouter for FDD analysis.
+// Models: FDD chain via callFDDModel — Opus primary, Sonnet 5 fallback,
+// GLM 5.2 (OpenRouter) last resort. See llm-client.ts.
 // Run sections in parallel; executive summary runs last (synthesises all).
 // ============================================================================
 
-import Anthropic from '@anthropic-ai/sdk';
+import { callFDDModel } from '@/lib/llm-client';
 import type { FddExtractedFields, FddFieldMeta } from '@/types/fdd';
 import type { ScoringResult, OdeAssessment } from '@/lib/fdd-scoring-engine';
-import type { TerritoryAnalysis } from '@/lib/fdd-territory-engine';
-
-const anthropic = new Anthropic();
+import { classifyCategory, type TerritoryAnalysis } from '@/lib/fdd-territory-engine';
 
 // ============================================================================
 // Report section types
@@ -196,9 +195,10 @@ under 9 FAM 402.9 and have supported over 300 E-2 visa applicants through franch
 Your analytical voice:
 - OPINIONATED AND DIRECT. You give clear verdicts, not "it depends" hedges. If the data supports
   a strong view, take it.
-- BENCHMARK-DRIVEN. Compare every metric against named standards: IFA norms, FRANdata research,
-  FTC filing patterns, category-specific QSR/senior care/fitness benchmarks. Numbers without
-  context are useless.
+- BENCHMARK-DRIVEN. Compare every metric against the category-specific and structural benchmarks
+  supplied to you in this prompt. Numbers without context are useless — but never invent a
+  statistic, a study finding, or a named-source citation that was not given to you. If you don't
+  have a number for something, say so and reason qualitatively instead.
 - REGULATORY-PRECISE. Cite 9 FAM chapter and section, INA section, or FTC Rule 436 references
   when making legal or visa-related assessments.
 - CONSEQUENCE-FOCUSED. For every risk identified, state the specific consequence for THIS
@@ -272,8 +272,9 @@ BANKRUPTCY DATA (Item 4):
 
 INDUSTRY BENCHMARKS FOR CONTEXT:
 - Healthy franchise systems with 100–500 units typically show 0–3 suits over 5 years
-- FRANdata research: systems with >5 franchisee-initiated suits per 100 units over 3 years show
-  22% higher closure rates within 5 years
+- A suit count materially above that range relative to system size is a structural pattern, not
+  an isolated incident — treat it as a serious flag and say so directly, but do not cite a
+  specific closure-rate percentage or named study you were not given.
 - FTC Rule 436 requires disclosure of all suits in the past 10 years — any pattern across similar
   dispute types (fee disputes, territorial violations, misrepresentation) is highly material
 - Bankruptcy within past 10 years of any franchisor officer or principal is a serious red flag
@@ -299,14 +300,8 @@ Produce a legal risk assessment as this exact JSON schema:
   "analyst_commentary": "3–4 sentences overall legal risk verdict — direct, specific, consequences named. What would you tell a client making a $300K investment?"
 }`;
 
-  const response = await anthropic.messages.create({
-    model: 'claude-haiku-4-5-20251001',
-    max_tokens: 1200,
-    system: ANALYST_SYSTEM,
-    messages: [{ role: 'user', content: prompt }],
-  });
-
-  const text = response.content[0].type === 'text' ? response.content[0].text : '{}';
+  const fddResult = await callFDDModel({ system: ANALYST_SYSTEM, user: prompt, max_tokens: 1200, route: 'fdd-report' });
+  const text = fddResult?.content ?? '{}';
   const match = text.match(/\{[\s\S]*\}/);
   if (!match) throw new Error('Legal risk: no JSON in response');
   return JSON.parse(match[0]) as LegalRiskAssessment;
@@ -316,12 +311,30 @@ Produce a legal risk assessment as this exact JSON schema:
 // Section 2 — Fee Structure Analysis (deterministic)
 // ============================================================================
 
+// Category-keyed royalty benchmarks — replaces a single QSR-only figure that
+// was previously applied to every franchise regardless of category. Ranges
+// reflect typical published royalty rates for each category; categories
+// match classifyCategory() in fdd-territory-engine.ts.
+const ROYALTY_BENCHMARK_BY_CATEGORY: Record<string, { label: string; low: number; high: number }> = {
+  qsr:             { label: 'QSR / food service', low: 0.05, high: 0.07 },
+  home_services:   { label: 'home services', low: 0.06, high: 0.10 },
+  senior_care:     { label: 'senior care', low: 0.05, high: 0.07 },
+  health_fitness:  { label: 'fitness / wellness', low: 0.06, high: 0.08 },
+  child_education: { label: 'education / child services', low: 0.08, high: 0.10 },
+  automotive:      { label: 'automotive', low: 0.05, high: 0.08 },
+  retail:          { label: 'retail', low: 0.04, high: 0.06 },
+  professional:    { label: 'professional / business services', low: 0.06, high: 0.10 },
+  default:         { label: 'this category', low: 0.05, high: 0.08 },
+};
+
 function generateFeeStructure(
   fields: FddExtractedFields,
   _ode: OdeAssessment
 ): FeeStructureAnalysis {
   const auv = n(fields.item19_auv) ?? n(fields.item19_median) ?? null;
   const royaltyPct = n(fields.royalty_rate_pct) ?? 0;
+  const category = classifyCategory(fields);
+  const benchmark = ROYALTY_BENCHMARK_BY_CATEGORY[category] ?? ROYALTY_BENCHMARK_BY_CATEGORY.default;
   const mktgPct = n(fields.marketing_fund_pct) ?? 0;
   const techFeeMonthly = n(fields.technology_fee_monthly) ?? 0;
   const cogsPct = n(fields.estimated_cogs_pct) ?? 0.30;
@@ -347,8 +360,8 @@ function generateFeeStructure(
       label: 'Less: Royalty',
       pct_of_gross: -(royaltyPct * 100),
       annual_on_auv: auv ? -(auv * royaltyPct) : null,
-      note: royaltyPct > 0.08 ? 'Above 8% — heavy royalty load for QSR category' :
-            royaltyPct > 0.06 ? 'Moderate royalty — typical range' :
+      note: royaltyPct > benchmark.high ? `Above ${(benchmark.high * 100).toFixed(0)}% — heavy royalty load for ${benchmark.label}` :
+            royaltyPct >= benchmark.low ? 'Moderate royalty — typical range for this category' :
             'Light royalty — positive for unit economics',
     },
     {
@@ -395,7 +408,7 @@ function generateFeeStructure(
   }
 
   const categoryBenchmark = royaltyPct > 0
-    ? `QSR industry median royalty is 5–7%. This franchise at ${(royaltyPct * 100).toFixed(1)}% is ${royaltyPct > 0.07 ? 'above' : royaltyPct < 0.05 ? 'below' : 'within'} that range. Combined with ${(mktgPct * 100).toFixed(1)}% marketing fund, total franchisor fee burden is ${(totalFranchisorPct * 100).toFixed(1)}% of gross revenue.`
+    ? `Typical royalty for ${benchmark.label} is ${(benchmark.low * 100).toFixed(0)}–${(benchmark.high * 100).toFixed(0)}%. This franchise at ${(royaltyPct * 100).toFixed(1)}% is ${royaltyPct > benchmark.high ? 'above' : royaltyPct < benchmark.low ? 'below' : 'within'} that range. Combined with ${(mktgPct * 100).toFixed(1)}% marketing fund, total franchisor fee burden is ${(totalFranchisorPct * 100).toFixed(1)}% of gross revenue.`
     : 'Fee structure not fully disclosed — obtain complete fee schedule before proceeding.';
 
   return {
@@ -474,10 +487,13 @@ INVESTMENT CONTEXT:
 - Working capital months covered: ${wcMonths ?? 'Not disclosed'}
 
 INDUSTRY BENCHMARKS:
-- IFA research: Item 19 coverage below 50% of the system is statistically unreliable —
-  the excluded cohort typically underperforms by 15–30%
-- FRANdata: High-quality Item 19 disclosures cover >80% of the system, include median AND quartile
-  data, and separate company vs. franchisee performance
+- Item 19 coverage below 50% of the system is a materially weaker disclosure — the excluded
+  cohort is more likely to be underperforming than representative, since franchisors have no
+  incentive to exclude a segment that makes their numbers look better. Say so directly, but do
+  not cite a specific percentage range for how much the excluded cohort underperforms by unless
+  it is derivable from the data you were given.
+- A high-quality Item 19 disclosure covers most of the system (well above 80% is strong), includes
+  both median AND quartile/range data, and separates company-owned vs. franchisee performance.
 - Mean/median gap: if (mean - median) / median > 25%, the system has high performance variability,
   meaning most franchisees perform below the "average" — a critical distinction
 - Non-marginality floor: ODE above $65K/yr at median AUV is generally sufficient to demonstrate
@@ -529,14 +545,8 @@ Produce financial performance analysis as this exact JSON schema:
   "analyst_commentary": "4–5 sentences of direct analyst commentary on Item 19 quality and what it means for the investor's decision. Be specific about data quality issues. Name the consequence of poor data quality for E-2 visa filing."
 }`;
 
-  const response = await anthropic.messages.create({
-    model: 'claude-sonnet-4-6',
-    max_tokens: 1800,
-    system: ANALYST_SYSTEM,
-    messages: [{ role: 'user', content: prompt }],
-  });
-
-  const text = response.content[0].type === 'text' ? response.content[0].text : '{}';
+  const fddResult = await callFDDModel({ system: ANALYST_SYSTEM, user: prompt, max_tokens: 1800, route: 'fdd-report' });
+  const text = fddResult?.content ?? '{}';
   const match = text.match(/\{[\s\S]*\}/);
   if (!match) throw new Error('Financial performance: no JSON in response');
   return JSON.parse(match[0]) as FinancialPerformanceAnalysis;
@@ -550,37 +560,51 @@ async function generateSystemHealth(
   fields: FddExtractedFields,
   franchiseName: string
 ): Promise<SystemHealthAnalysis> {
-  const openedYr1 = n(fields.units_opened_yr1) ?? 0;
-  const openedYr2 = n(fields.units_opened_yr2) ?? 0;
-  const openedYr3 = n(fields.units_opened_yr3) ?? 0;
-  const closedYr1 = n(fields.units_closed_yr1) ?? 0;
-  const closedYr2 = n(fields.units_closed_yr2) ?? 0;
-  const closedYr3 = n(fields.units_closed_yr3) ?? 0;
+  const openedYr1 = n(fields.units_opened_yr1);
+  const openedYr2 = n(fields.units_opened_yr2);
+  const openedYr3 = n(fields.units_opened_yr3);
+  const closedYr1 = n(fields.units_closed_yr1);
+  const closedYr2 = n(fields.units_closed_yr2);
+  const closedYr3 = n(fields.units_closed_yr3);
   const totalOpen = n(fields.total_units_open_current);
-  const franchiseeClosures = n(fields.franchisee_initiated_closures_3yr) ?? 0;
-  const franchisorTerminations = n(fields.franchisor_initiated_terminations_3yr) ?? 0;
+  const franchiseeClosures = n(fields.franchisee_initiated_closures_3yr);
+  const franchisorTerminations = n(fields.franchisor_initiated_terminations_3yr);
   const formerFranchiseeContacts = b(fields.former_franchisee_contacts_available);
 
-  const totalOpened = openedYr1 + openedYr2 + openedYr3;
-  const totalClosed = closedYr1 + closedYr2 + closedYr3;
-  const netUnitChange = totalOpened - totalClosed;
-  const churnRate = totalOpen && totalOpen > 0
+  // Item 20 openings/closures are frequently absent from the extracted FDD text.
+  // Treat "not disclosed" as null all the way through — never default a missing
+  // year's count to 0, since that fabricates a specific (and often alarming)
+  // claim the FDD never actually made.
+  const openingsDisclosed = openedYr1 !== null && openedYr2 !== null && openedYr3 !== null;
+  const closuresDisclosed = closedYr1 !== null && closedYr2 !== null && closedYr3 !== null;
+  const totalOpened = openingsDisclosed ? openedYr1! + openedYr2! + openedYr3! : null;
+  const totalClosed = closuresDisclosed ? closedYr1! + closedYr2! + closedYr3! : null;
+  const netUnitChange = (totalOpened !== null && totalClosed !== null) ? totalOpened - totalClosed : null;
+  const churnRate = (totalOpen !== null && totalOpen > 0 && totalClosed !== null)
     ? ((totalClosed / 3) / totalOpen)
     : null;
+
+  const fmt = (v: number | null): string => v === null ? 'Not disclosed' : String(v);
 
   const prompt = `Analyze the system health data from Item 20 of this franchise FDD.
 
 FRANCHISE: ${franchiseName}
 
 ITEM 20 OUTLET DATA:
-- Total units currently open: ${totalOpen ?? 'Unknown'}
-- Openings: Year 1: ${openedYr1}, Year 2: ${openedYr2}, Year 3: ${openedYr3} (Total 3yr: ${totalOpened})
-- Closures: Year 1: ${closedYr1}, Year 2: ${closedYr2}, Year 3: ${closedYr3} (Total 3yr: ${totalClosed})
-- Net unit change over 3 years: ${netUnitChange > 0 ? '+' : ''}${netUnitChange}
-- Franchisee-initiated closures (3yr): ${franchiseeClosures}
-- Franchisor-initiated terminations (3yr): ${franchisorTerminations}
-- Annual churn rate: ${churnRate !== null ? `${(churnRate * 100).toFixed(1)}%` : 'Cannot calculate'}
+- Total units currently open: ${totalOpen ?? 'Not disclosed'}
+- Openings: Year 1: ${fmt(openedYr1)}, Year 2: ${fmt(openedYr2)}, Year 3: ${fmt(openedYr3)} (Total 3yr: ${totalOpened ?? 'Not disclosed'})
+- Closures: Year 1: ${fmt(closedYr1)}, Year 2: ${fmt(closedYr2)}, Year 3: ${fmt(closedYr3)} (Total 3yr: ${totalClosed ?? 'Not disclosed'})
+- Net unit change over 3 years: ${netUnitChange === null ? 'Not disclosed' : `${netUnitChange > 0 ? '+' : ''}${netUnitChange}`}
+- Franchisee-initiated closures (3yr): ${fmt(franchiseeClosures)}
+- Franchisor-initiated terminations (3yr): ${fmt(franchisorTerminations)}
+- Annual churn rate: ${churnRate !== null ? `${(churnRate * 100).toFixed(1)}%` : 'Cannot calculate — outlet data incomplete'}
 - Former franchisee contact list available in Item 20: ${formerFranchiseeContacts === true ? 'YES' : formerFranchiseeContacts === false ? 'NO — red flag' : 'Not confirmed'}
+
+IMPORTANT: "Not disclosed" means this figure was absent from the extracted FDD text — it is NOT
+a disclosed zero. Never treat a "Not disclosed" field as if the franchisor reported zero activity,
+and never call a "Not disclosed" pattern "implausible," "suspicious," or a red flag on its own —
+the correct and only honest response to missing Item 20 data is to say plainly that it was not
+disclosed/extracted and that this itself limits confidence in the system health assessment.
 
 INDUSTRY BENCHMARKS:
 - Healthy franchise systems: annual churn rate <5% is strong, 5–8% is acceptable, >8% is elevated, >12% is distress
@@ -588,10 +612,13 @@ INDUSTRY BENCHMARKS:
   (1) the franchisor actively enforces quality standards (potentially positive), or
   (2) the franchisor is using termination to reclaim units or clear underperformers (potentially negative)
 - Net negative unit growth over 3 years for a system of >50 units is a serious systemic signal
-- FRANdata: systems with >10% churn show a 35% higher probability of complete system collapse
-  within 7 years
-- IFA: franchisee validation quality correlates strongly with system health — systems that
-  discourage validation calls are 3x more likely to have undisclosed performance problems
+- Sustained churn above the ~12% distress threshold is a going-concern-level signal for the
+  system as a whole, not just individual underperforming units — say so directly, but do not
+  cite a specific collapse-probability percentage or named study you were not given.
+- Franchisor cooperation with validation calls (connecting prospects to existing/former
+  franchisees without steering) is itself a signal — systems that resist or heavily curate
+  validation contact are more likely to be concealing performance problems, even without a
+  precise multiplier to cite.
 - A high closure rate in a single year (Year 1 or 2) vs. spread evenly suggests either a market
   correction event or a wave of early-period units failing at the same time
 
@@ -611,14 +638,8 @@ Produce system health analysis as this exact JSON schema:
   "analyst_commentary": "3–4 sentences of direct analysis on system health. If the data shows a healthy or growing system, say so clearly. If it shows problems, name them directly with consequences."
 }`;
 
-  const response = await anthropic.messages.create({
-    model: 'claude-haiku-4-5-20251001',
-    max_tokens: 1200,
-    system: ANALYST_SYSTEM,
-    messages: [{ role: 'user', content: prompt }],
-  });
-
-  const text = response.content[0].type === 'text' ? response.content[0].text : '{}';
+  const fddResult = await callFDDModel({ system: ANALYST_SYSTEM, user: prompt, max_tokens: 1200, route: 'fdd-report' });
+  const text = fddResult?.content ?? '{}';
   const match = text.match(/\{[\s\S]*\}/);
   if (!match) throw new Error('System health: no JSON in response');
   return JSON.parse(match[0]) as SystemHealthAnalysis;
@@ -686,14 +707,8 @@ Produce franchisor financial health as this exact JSON schema:
   "analyst_commentary": "3–4 sentences overall financial health verdict. If it is strong, say so confidently. If there are concerns, name the specific failure mode and its probability."
 }`;
 
-  const response = await anthropic.messages.create({
-    model: 'claude-haiku-4-5-20251001',
-    max_tokens: 1200,
-    system: ANALYST_SYSTEM,
-    messages: [{ role: 'user', content: prompt }],
-  });
-
-  const text = response.content[0].type === 'text' ? response.content[0].text : '{}';
+  const fddResult = await callFDDModel({ system: ANALYST_SYSTEM, user: prompt, max_tokens: 1200, route: 'fdd-report' });
+  const text = fddResult?.content ?? '{}';
   const match = text.match(/\{[\s\S]*\}/);
   if (!match) throw new Error('Franchisor financial health: no JSON in response');
   return JSON.parse(match[0]) as FranchisorFinancialHealth;
@@ -792,17 +807,33 @@ Produce E-2 compatibility deep dive as this exact JSON schema:
   "timing_warning": "1–2 sentences on timing risk between signing, visa filing, and business opening, or null if no timing concern"
 }`;
 
-  const response = await anthropic.messages.create({
-    model: 'claude-sonnet-4-6',
-    max_tokens: 2000,
-    system: ANALYST_SYSTEM,
-    messages: [{ role: 'user', content: prompt }],
-  });
-
-  const text = response.content[0].type === 'text' ? response.content[0].text : '{}';
+  const fddResult = await callFDDModel({ system: ANALYST_SYSTEM, user: prompt, max_tokens: 3500, route: 'fdd-report' });
+  const text = fddResult?.content ?? '{}';
   const match = text.match(/\{[\s\S]*\}/);
   if (!match) throw new Error('E-2 deep dive: no JSON in response');
-  return JSON.parse(match[0]) as E2CompatibilityDeepDive;
+  const parsed = JSON.parse(match[0]) as E2CompatibilityDeepDive;
+
+  // The LLM elaborates on each dimension — it does not re-adjudicate. Verdicts are
+  // deterministic facts owned by the scoring engine; overwrite whatever the LLM produced
+  // so the report can never contradict its own scoring (a self-contradicting report is a
+  // refund request). Narrative fields (regulatory_basis, what_officer_looks_for,
+  // documentation_required) are left as the LLM's elaboration.
+  parsed.overall_verdict = scoring.overall;
+  parsed.dimensions.eligibility_gates.verdict = dimensionResultToVerdict(scoring.eligibility_gates.result);
+  parsed.dimensions.investment_substantiality.verdict = dimensionResultToVerdict(scoring.investment_substantiality.result);
+  parsed.dimensions.non_marginality.verdict = dimensionResultToVerdict(scoring.non_marginality.result);
+  parsed.dimensions.develop_and_direct.verdict = dimensionResultToVerdict(scoring.develop_and_direct.result);
+
+  return parsed;
+}
+
+// Maps the scoring engine's DimensionResult onto the deep-dive's PASS/WARN/FAIL verdict scale.
+// 'unknown' (data not available to score) maps to WARN, never PASS — absence of a fail signal
+// is not evidence of a pass.
+function dimensionResultToVerdict(result: ScoringResult['eligibility_gates']['result']): 'PASS' | 'WARN' | 'FAIL' {
+  if (result === 'pass') return 'PASS';
+  if (result === 'fail') return 'FAIL';
+  return 'WARN';
 }
 
 // ============================================================================
@@ -851,14 +882,8 @@ Return as a JSON array:
 
 Return only the JSON array. Order by severity descending (CRITICAL first).`;
 
-  const response = await anthropic.messages.create({
-    model: 'claude-haiku-4-5-20251001',
-    max_tokens: 2000,
-    system: ANALYST_SYSTEM,
-    messages: [{ role: 'user', content: prompt }],
-  });
-
-  const text = response.content[0].type === 'text' ? response.content[0].text : '[]';
+  const fddResult = await callFDDModel({ system: ANALYST_SYSTEM, user: prompt, max_tokens: 3000, route: 'fdd-report' });
+  const text = fddResult?.content ?? '[]';
   const match = text.match(/\[[\s\S]*\]/);
   if (!match) throw new Error('Risk matrix: no JSON in response');
   return JSON.parse(match[0]) as RiskMatrixItem[];
@@ -947,14 +972,8 @@ Produce executive summary as this exact JSON schema:
   "one_line_verdict": "A single powerful sentence — the kind you'd say to a client over the phone to summarise the whole report. Maximum 25 words. No hedging."
 }`;
 
-  const response = await anthropic.messages.create({
-    model: 'claude-sonnet-4-6',
-    max_tokens: 1800,
-    system: ANALYST_SYSTEM,
-    messages: [{ role: 'user', content: prompt }],
-  });
-
-  const text = response.content[0].type === 'text' ? response.content[0].text : '{}';
+  const fddResult = await callFDDModel({ system: ANALYST_SYSTEM, user: prompt, max_tokens: 1800, route: 'fdd-report' });
+  const text = fddResult?.content ?? '{}';
   const match = text.match(/\{[\s\S]*\}/);
   if (!match) throw new Error('Executive summary: no JSON in response');
   return JSON.parse(match[0]) as ExecutiveSummary;

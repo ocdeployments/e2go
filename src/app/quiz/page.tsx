@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback, useRef, useMemo, Suspense } from "rea
 import { useRouter, useSearchParams } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import quizData from "@/data/module0_questions.json";
-import { TREATY_COUNTRIES } from "@/lib/treaty-countries";
+import { TREATY_COUNTRIES, searchTreatyCountries } from "@/lib/treaty-countries";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -216,6 +216,7 @@ function QuizInner() {
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
   const [email, setEmail] = useState("");
   const [caslConsent, setCaslConsent] = useState(false);
+  const [consentFocused, setConsentFocused] = useState(false);
   const [showEmailGate, setShowEmailGate] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -772,10 +773,16 @@ function QuizInner() {
     const stored = localStorage.getItem("e2go_quiz_result");
     const resultData = stored ? JSON.parse(stored) : {};
 
+    // Anonymous callers have no SELECT policy on quiz_sessions, so asking
+    // PostgREST to return the inserted row makes Postgres fail the whole
+    // INSERT with 42501. Mint the id here and insert without reading it back.
+    const sessionId = crypto.randomUUID();
+
     try {
-      const { data: session, error } = await supabase
+      const { error } = await supabase
         .from("quiz_sessions")
         .insert({
+          id: sessionId,
           user_id: null,
           email,
           outcome: resultData.outcome || "PROCEED",
@@ -789,28 +796,31 @@ function QuizInner() {
           casl_consent: caslConsent,
           casl_consent_at: caslConsent ? new Date().toISOString() : null,
           completed_at: new Date().toISOString(),
-        })
-        .select("id")
-        .single();
+        });
 
-      if (!error && session) {
-        try {
-          await fetch("/api/email/results", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              email,
-              outcome: resultData.outcome,
-              result_json: resultData,
-              quiz_session_id: session.id,
-              franchise_interest: resultData.franchise_interest,
-            }),
-          });
-          setEmailSent(true);
-        } catch {
-          // ignore
-        }
+      if (error) {
+        setSaveError("Unable to save your results. Please try again.");
+        return;
       }
+
+      const res = await fetch("/api/email/results", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          outcome: resultData.outcome,
+          result_json: resultData,
+          quiz_session_id: sessionId,
+          franchise_interest: resultData.franchise_interest,
+        }),
+      });
+
+      if (!res.ok) {
+        setSaveError("We saved your results but could not send the email. Please try again.");
+        return;
+      }
+
+      setEmailSent(true);
     } catch {
       setSaveError("Unable to save. Please try again.");
     } finally {
@@ -822,12 +832,7 @@ function QuizInner() {
   const pct = Math.round(((cur + 1) / visibleQuestions.length) * 100);
   const currentSection = q ? SECTIONS[q.section_index] : "";
 
-  const filteredCountries =
-    countrySearch.length > 0
-      ? TREATY_COUNTRIES.filter((c) =>
-          c.toLowerCase().startsWith(countrySearch.toLowerCase())
-        ).slice(0, 8)
-      : [];
+  const filteredCountries = searchTreatyCountries(countrySearch);
 
   const isCountry = q?.type === "searchable_country";
   const isMulti = q?.type === "multiselect";
@@ -935,22 +940,36 @@ function QuizInner() {
               <div style={{ fontSize: "10px", letterSpacing: "0.18em", textTransform: "uppercase", color: "rgba(201,168,76,0.6)", marginBottom: "16px" }}>Your results are ready</div>
               <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "32px", fontWeight: 300, color: "#f5f0e8", marginBottom: "8px", lineHeight: 1.3 }}>Enter your email and we&apos;ll send you a link to view them.</div>
               <div style={{ fontSize: "14px", color: "rgba(245,240,232,0.74)", marginBottom: "32px", lineHeight: 1.6 }}>Your full eligibility result is waiting. We&apos;ll email you a secure link.</div>
+              <label htmlFor="quiz-email" className="sr-only">Email address</label>
               <input
+                id="quiz-email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="your@email.com"
                 style={{ width: "100%", padding: "13px 16px", background: "rgba(201,168,76,0.02)", border: "1px solid rgba(201,168,76,0.2)", color: "#f5f0e8", fontSize: "14px", fontFamily: "'DM Sans', sans-serif", borderRadius: 0, outline: "none", marginBottom: "12px" }}
               />
-              <div
-                style={{ display: "flex", alignItems: "flex-start", gap: "10px", marginBottom: "24px", cursor: "pointer" }}
-                onClick={() => setCaslConsent(!caslConsent)}
-              >
-                <div style={{ width: "16px", height: "16px", border: `1px solid ${caslConsent ? "#C9A84C" : "rgba(201,168,76,0.3)"}`, background: caslConsent ? "#C9A84C" : "transparent", flexShrink: 0, marginTop: "2px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              {/*
+                A real checkbox, visually hidden behind the gold square. This
+                was a styled div with an onClick, which meant it could only be
+                set with a pointer — no keyboard, nothing for a screen reader
+                to announce or toggle. That is the wrong control to make
+                unreachable: it is the one that records marketing consent.
+              */}
+              <label style={{ display: "flex", alignItems: "flex-start", gap: "10px", marginBottom: "24px", cursor: "pointer" }}>
+                <input
+                  type="checkbox"
+                  className="sr-only"
+                  checked={caslConsent}
+                  onChange={(e) => setCaslConsent(e.target.checked)}
+                  onFocus={() => setConsentFocused(true)}
+                  onBlur={() => setConsentFocused(false)}
+                />
+                <span aria-hidden="true" style={{ width: "16px", height: "16px", border: `1px solid ${caslConsent ? "#C9A84C" : "rgba(201,168,76,0.3)"}`, background: caslConsent ? "#C9A84C" : "transparent", flexShrink: 0, marginTop: "2px", display: "flex", alignItems: "center", justifyContent: "center", outline: consentFocused ? "2px solid #C9A84C" : "none", outlineOffset: "2px" }}>
                   {caslConsent && <span style={{ color: "#0a0a0a", fontSize: "11px" }}>✓</span>}
-                </div>
-                <div style={{ fontSize: "12px", color: "rgba(245,240,232,0.72)", lineHeight: 1.6 }}>Send me occasional updates about the E-2 process. You can unsubscribe at any time.</div>
-              </div>
+                </span>
+                <span style={{ fontSize: "12px", color: "rgba(245,240,232,0.72)", lineHeight: 1.6 }}>Send me occasional updates about the E-2 process. You can unsubscribe at any time.</span>
+              </label>
               {saveError && <div style={{ fontSize: "13px", color: "rgba(220,60,60,0.8)", marginBottom: "12px" }}>{saveError}</div>}
               <button
                 onClick={handleEmailSubmit}

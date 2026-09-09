@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { useAutosaveFlush } from '@/lib/use-autosave-flush';
 import { useTrackSectionVisit } from "@/hooks/useTrackSectionVisit";
 import { createBrowserSupabaseClient } from '@/lib/supabase';
 import CaseFileShell from '@/components/apply/CaseFileShell';
@@ -12,10 +13,14 @@ import TextArea from '@/components/apply/questions/TextArea';
 import { useFieldQuality, getQualityBadgeStyle } from '@/hooks/useFieldQuality';
 import OptionButton from '@/components/apply/questions/OptionButton';
 import PreFillBadge from '@/components/apply/questions/PreFillBadge';
+import CurrencyInput from '@/components/apply/questions/CurrencyInput';
 import AdvisoryBlock from '@/components/apply/questions/AdvisoryBlock';
 import RiskFlag from '@/components/apply/questions/RiskFlag';
 import ClusterDivider from '@/components/apply/questions/ClusterDivider';
 import ProjectionTable from '@/components/apply/questions/ProjectionTable';
+import { useRouter } from 'next/navigation';
+import { useApplicationGate } from '@/hooks/useApplicationGate';
+import ApplicationNotReadyScreen from '@/components/apply/ApplicationNotReadyScreen';
 
 interface InvAnswer {
   value: string;
@@ -66,7 +71,7 @@ const INVESTMENT_OVERVIEW_QUESTIONS: QuestionField[] = [
     { value: 'partial', label: 'Partially — some funds still held' },
     { value: 'no', label: 'No — committed but not yet spent' },
   ]},
-  { key: 'M3-F-NET', type: 'currency', label: 'Approximate net worth in CAD (not including primary residence)' },
+  { key: 'M3-F-NET', type: 'currency', label: 'Approximate net worth (USD, including primary residence)', helperText: 'Enter the amount in US dollars. If your assets are held in another currency, convert at today’s rate.' },
 ];
 
 const SOURCE_OF_FUNDS_QUESTIONS: QuestionField[] = [
@@ -180,6 +185,8 @@ const ALL_QUESTION_SETS = [
 export default function InvestmentPage() {
   useTrackSectionVisit("investment");
   const { qualityMap, checkFieldQuality } = useFieldQuality();
+  const router = useRouter();
+  const { status: gateStatus, applicationId: gateAppId, userId: gateUserId, retry } = useApplicationGate();
 
   const [loading, setLoading] = useState(true);
   const [activeClusterId, setActiveClusterId] = useState('cluster-1');
@@ -188,6 +195,8 @@ export default function InvestmentPage() {
   const [applicationId, setApplicationId] = useState<string | null>(null);
   const [projections, setProjections] = useState<Array<{ year: number; revenue: string; netIncome: string; employees: string }>>([]);
   const debounceRef = useRef<Record<string, NodeJS.Timeout>>({});
+  const flushRef = useRef<Record<string, () => void>>({});
+  useAutosaveFlush(debounceRef, flushRef);
   const projSaveRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -202,26 +211,16 @@ export default function InvestmentPage() {
   }, []);
 
   useEffect(() => {
+    if (gateStatus !== 'ready' || !gateAppId) return;
     const loadData = async () => {
       try {
         const supabase = createBrowserSupabaseClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) { setLoading(false); return; }
-
-        const { data: apps } = await supabase
-          .from('applications')
-          .select('id')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(1);
-
-        if (!apps || apps.length === 0) { setLoading(false); return; }
-        setApplicationId(apps[0].id);
+        setApplicationId(gateAppId);
 
         const { data: existingAnswers } = await supabase
           .from('answers')
           .select('question_key, answer_value')
-          .eq('application_id', apps[0].id);
+          .eq('application_id', gateAppId);
 
         if (existingAnswers) {
           const answerMap: Record<string, InvAnswer> = {};
@@ -230,6 +229,30 @@ export default function InvestmentPage() {
               answerMap[row.question_key] = { value: String(row.answer_value), source: null };
             }
           });
+
+          // Pre-fill total invested from quiz eligibility check if not already answered
+          if (!answerMap['M3-F-02']?.value) {
+            const { data: quizSession } = await supabase
+              .from('quiz_sessions')
+              .select('result_json')
+              .eq('user_id', gateUserId)
+              .order('created_at', { ascending: false })
+              .limit(1)
+              .maybeSingle();
+            const investmentRange = (quizSession?.result_json as Record<string, unknown>)?.investment_range as string | undefined;
+            const QUIZ_MIDPOINTS: Record<string, number> = {
+              'Over $150,000': 175000,
+              '$100,000 – $150,000': 125000,
+              '$75,000 – $100,000': 87500,
+              '$50,000 – $75,000': 62500,
+              'Under $50,000': 35000,
+            };
+            const midpoint = investmentRange ? QUIZ_MIDPOINTS[investmentRange] : undefined;
+            if (midpoint) {
+              answerMap['M3-F-02'] = { value: String(midpoint), source: 'quiz' };
+            }
+          }
+
           setAnswers(answerMap);
 
           // Load saved financial projections from JSON blob
@@ -245,7 +268,7 @@ export default function InvestmentPage() {
       } catch { setLoading(false); }
     };
     loadData();
-  }, []);
+  }, [gateStatus, gateAppId, gateUserId]);
 
   // Auto-save financial projections as JSON whenever they change
   useEffect(() => {
@@ -281,8 +304,9 @@ export default function InvestmentPage() {
 
   const handleAnswerChange = useCallback((key: string, value: string) => {
     setAnswers((prev) => ({ ...prev, [key]: { value, source: prev[key]?.source ?? null } }));
+    flushRef.current[key] = () => saveAnswer(key, value);
     if (debounceRef.current[key]) clearTimeout(debounceRef.current[key]);
-    debounceRef.current[key] = setTimeout(() => saveAnswer(key, value), 800);
+    debounceRef.current[key] = setTimeout(() => { saveAnswer(key, value); delete flushRef.current[key]; }, 800);
   }, [saveAnswer]);
 
   const clusterStatuses = CLUSTERS.map((cluster) => {
@@ -354,6 +378,8 @@ export default function InvestmentPage() {
                   </div>
                 )}
               </>
+            ) : q.type === 'currency' ? (
+              <CurrencyInput value={answer?.value || ''} onChange={(val) => handleAnswerChange(q.key, val)} />
             ) : (
               <TextInput value={answer?.value || ''} onChange={(val) => handleAnswerChange(q.key, val)} />
             )}
@@ -364,7 +390,16 @@ export default function InvestmentPage() {
     </div>
   );
 
-  if (loading) {
+  if (gateStatus === 'no-user') {
+    router.push('/login');
+    return null;
+  }
+
+  if (gateStatus === 'not-ready') {
+    return <ApplicationNotReadyScreen onRetry={retry} />;
+  }
+
+  if (loading || gateStatus === 'loading') {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#0a0a0a]">
         <p className="text-sm" style={{ color: 'rgba(245,240,232,0.68)', fontFamily: "'DM Sans', sans-serif" }}>Loading...</p>
@@ -512,7 +547,7 @@ export default function InvestmentPage() {
           )}
 
           {answers['M3-B-WIRE']?.value === 'no' && (
-            <AdvisoryBlock>TD Bank&apos;s online wire limit is approximately $25,000 CAD. Above that requires branch or phone authorization. Some banks automatically freeze accounts on large outgoing international transfers without advance notice. Call your bank before wiring.</AdvisoryBlock>
+            <AdvisoryBlock>Many banks cap online international wires at roughly USD $18,000–20,000 — larger transfers require branch or phone authorization. Some banks automatically freeze accounts on large outgoing international transfers without advance notice. Call your bank before wiring.</AdvisoryBlock>
           )}
 
           {answers['M3-H-09']?.value === 'no' && (

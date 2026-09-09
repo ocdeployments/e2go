@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { createServiceClient } from '@/lib/supabase-service';
+import { resolvePrimaryApplicationId } from '@/lib/resolve-application';
 import { Resend } from 'resend';
+import { captureApiError } from '@/lib/capture-error';
+import { EMAIL_SENDER, replyToUser } from '@/lib/emails/senders';
 
 // TODO(OPQ-2): Change BROKER_NOTIFICATION_EMAIL to a CRM webhook or internal
 // inbox once the broker handoff mechanism decision is resolved.
@@ -29,34 +32,23 @@ export async function POST(request: NextRequest) {
     const service = createServiceClient();
 
     // ── Persist to database ──
-    // Attempt to insert into broker_requests table.
-    // Migration in supabase/migrations will create this table.
-    try {
-      await service.from('broker_requests').insert({
-        user_id: user.id,
-        user_email: user.email ?? '',
-        user_name: displayName,
-        match_categories: matchCategories,
-        requested_at: timestamp,
-      });
-    } catch {
-      // Table may not exist yet — non-critical, email will still send
-    }
+    await service.from('broker_requests').insert({
+      user_id: user.id,
+      user_email: user.email ?? '',
+      user_name: displayName,
+      match_categories: matchCategories,
+      requested_at: timestamp,
+    });
 
-    // Also flag the latest application record if the column exists
+    // Also flag the primary application record if the column exists
     try {
-      const { data: apps } = await service
-        .from('applications')
-        .select('id')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(1);
+      const appId = await resolvePrimaryApplicationId(service, user.id);
 
-      if (apps && apps.length > 0) {
+      if (appId) {
         await service
           .from('applications')
           .update({ broker_interest_requested: true })
-          .eq('id', apps[0].id);
+          .eq('id', appId);
       }
     } catch {
       // Column may not exist yet — non-critical
@@ -71,7 +63,8 @@ export async function POST(request: NextRequest) {
 
       try {
         await resend.emails.send({
-          from: 'onboarding@resend.dev', // TODO: change to notifications@e2go.app once domain is verified
+          from: EMAIL_SENDER,
+          replyTo: replyToUser(user.email),
           to: BROKER_NOTIFICATION_EMAIL,
           subject: 'New Broker Connection Request',
           html: `
@@ -104,7 +97,7 @@ export async function POST(request: NextRequest) {
           `,
         });
       } catch (e) {
-        console.error('Resend broker-request email failed:', e);
+        captureApiError(e, { route: 'franchise/broker-request', stage: 'resend-send', userId: user.id });
       }
     } else {
       console.log('[broker-request] RESEND_API_KEY not set. Request from:', user.email, '| Categories:', matchCategories);
@@ -112,7 +105,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ ok: true });
   } catch (err) {
-    console.error('[broker-request] error:', err);
+    captureApiError(err, { route: 'franchise/broker-request' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

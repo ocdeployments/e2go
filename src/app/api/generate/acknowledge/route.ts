@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { createSupabaseServerClient } from '@/lib/supabase-server';
+import { captureApiError } from '@/lib/capture-error';
 
 /**
  * POST /api/generate/acknowledge
@@ -28,25 +30,9 @@ export async function POST(req: Request) {
       );
     }
 
-    // Service role client for data operations
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
-
-    // Authenticate via cookie — parse cookies from request header
-    const cookieHeader = req.headers.get('cookie') || '';
-    const cookieMap = new Map<string, string>();
-    for (const part of cookieHeader.split(';')) {
-      const [name, ...rest] = part.trim().split('=');
-      if (name) cookieMap.set(name, rest.join('='));
-    }
-
-    // Extract the auth token from cookies
-    const accessToken = cookieMap.get('sb-access-token') || cookieMap.get('sb-' + process.env.NEXT_PUBLIC_SUPABASE_URL?.match(/https?:\/\/([^.]+)/)?.[1] + '-auth-token') || '';
-
-    // Verify user via the access token
-    const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken);
+    // Session auth — verify caller is logged in
+    const supabaseAuth = await createSupabaseServerClient();
+    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
 
     if (authError || !user) {
       return NextResponse.json(
@@ -54,6 +40,12 @@ export async function POST(req: Request) {
         { status: 401 }
       );
     }
+
+    // Service role client for data operations
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
 
     // Verify the application belongs to this user
     const { data: app, error: appError } = await supabase
@@ -92,7 +84,7 @@ export async function POST(req: Request) {
       .eq('applicant_acknowledged', false);
 
     if (updateError) {
-      console.error('[ACKNOWLEDGE] Failed to update pipeline_log:', updateError);
+      captureApiError(updateError, { route: 'generate/acknowledge', stage: 'pipeline-log-update', userId: user.id, applicationId: application_id });
       // Non-fatal — continue with download
     }
 
@@ -123,7 +115,7 @@ export async function POST(req: Request) {
       acknowledged_at: now,
     });
   } catch (err) {
-    console.error('[ACKNOWLEDGE] Error:', err);
+    captureApiError(err, { route: 'generate/acknowledge' });
     return NextResponse.json(
       { error: 'Failed to record acknowledgment' },
       { status: 500 }

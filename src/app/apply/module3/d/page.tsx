@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import DOMPurify from 'dompurify';
 import { createBrowserSupabaseClient } from '@/lib/supabase';
+import { resolvePrimaryApplicationId } from '@/lib/resolve-application';
 
 type ScreenState = 'intro' | 'question' | 'generation' | 'completion' | 'resume';
 
@@ -113,7 +114,7 @@ export default function TabDPage() {
   const [generationStep, setGenerationStep] = useState(0);
   const [hasComplexCase, setHasComplexCase] = useState(false);
   const [prefilledKeys, setPrefilledKeys] = useState<Set<string>>(new Set());
-  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const saveTimeoutRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
 
   const currentQuestion = QUESTIONS[currentIndex];
   const isLastQuestion = currentIndex === QUESTIONS.length - 1;
@@ -127,13 +128,8 @@ export default function TabDPage() {
         return;
       }
 
-      const { data: existingApp } = await supabase
-        .from('applications')
-        .select('id')
-        .eq('user_id', authUser.id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
+      const existingAppId = await resolvePrimaryApplicationId(supabase, authUser.id);
+      const existingApp = existingAppId ? { id: existingAppId } : null;
 
       if (existingApp) {
         setApplicationId(existingApp.id);
@@ -178,7 +174,7 @@ export default function TabDPage() {
           });
 
           if (upserts.length > 0) {
-            await supabase.from('answers').upsert(upserts, { onConflict: 'application_id,question_key' });
+            await supabase.from('answers').upsert(upserts, { onConflict: 'application_id,question_key,family_member_id' });
             setPrefilledKeys(newPrefilledKeys);
           }
         }
@@ -216,14 +212,14 @@ export default function TabDPage() {
           .select('answer_value')
           .eq('application_id', existingApp.id)
           .eq('question_key', 'QD-CONFIRMED')
-          .single();
+          .maybeSingle();
 
         const { data: letterData } = await supabase
           .from('answers')
           .select('answer_value')
           .eq('application_id', existingApp.id)
           .eq('question_key', 'QD-GENERATED-LETTER')
-          .single();
+          .maybeSingle();
 
         if (confirmData?.answer_value === 'true') {
           setGeneratedLetter(letterData?.answer_value || null);
@@ -245,6 +241,12 @@ export default function TabDPage() {
     init();
   }, [router, supabase]);
 
+  // Flush pending debounced saves on unmount so keystrokes aren't lost
+  useEffect(() => {
+    const timeouts = saveTimeoutRef.current;
+    return () => { timeouts.forEach(t => clearTimeout(t)); };
+  }, []);
+
   // Debounced save function
   const saveAnswer = useCallback(async (key: string, value: string) => {
     if (!applicationId) return;
@@ -259,7 +261,7 @@ export default function TabDPage() {
           question_key: key,
           answer_value: value,
         },
-        { onConflict: 'application_id,question_key' }
+        { onConflict: 'application_id,question_key,family_member_id' }
       );
 
     if (!error) {
@@ -275,13 +277,9 @@ export default function TabDPage() {
     setAnswers(prev => ({ ...prev, [key]: value }));
     setPrefilledKeys(prev => { const next = new Set(prev); next.delete(key); return next; });
 
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
-
-    saveTimeoutRef.current = setTimeout(() => {
-      saveAnswer(key, value);
-    }, 800);
+    const existing = saveTimeoutRef.current.get(key);
+    if (existing) clearTimeout(existing);
+    saveTimeoutRef.current.set(key, setTimeout(() => saveAnswer(key, value), 800));
   };
 
   // Handle QD-06 N/A toggle
@@ -367,7 +365,7 @@ Write a formal 3-4 paragraph cover letter addressed "To Whom It May Concern:". U
             question_key: 'QD-GENERATED-LETTER',
             answer_value: letter,
           },
-          { onConflict: 'application_id,question_key' }
+          { onConflict: 'application_id,question_key,family_member_id' }
         );
       }
 
@@ -391,7 +389,7 @@ Write a formal 3-4 paragraph cover letter addressed "To Whom It May Concern:". U
         question_key: 'QD-CONFIRMED',
         answer_value: 'true',
       },
-      { onConflict: 'application_id,question_key' }
+      { onConflict: 'application_id,question_key,family_member_id' }
     );
 
     setScreenState('completion');

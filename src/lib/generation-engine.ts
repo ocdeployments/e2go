@@ -2,7 +2,7 @@ import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import Anthropic from '@anthropic-ai/sdk';
 import { synthesizeInvestorProfile, formatInvestorProfileContext } from './investor-profile-synthesizer';
-import { scoreCase, type GapCategory } from './gap-analysis-engine';
+import { scoreCase, type GapCategory, type CpuGapContext, type LedgerFact } from './gap-analysis-engine';
 import { createClient } from '@supabase/supabase-js';
 import {
   type DocumentType,
@@ -18,8 +18,41 @@ import {
 import { type CaseBrief } from '@/types/analysis';
 import { wrapUserContent } from './prompt-sanitizer';
 import { INTERVIEW_KNOWLEDGE_BASE } from './interview-knowledge-base';
+import { verifyCaseTheoryCompliance, type VerifierResult } from './cic-verifier';
+import { runCanonicalConsistencySweep } from './cic-consistency-sweep';
+import { checkFigureProvenance } from './figure-provenance';
+import { QUESTION_LABELS } from './question-registry.generated';
+import { computeCaseFinancials, formatCaseFinancialsText, formatRevenueRampChart } from './case-financials';
+import { buildExhibitRegistry, formatExhibitRegistryText, checkExhibitConsistency } from './exhibit-registry';
+import { buildDeterministicDocumentIndex } from './docx-package-constants';
+import { computeEnterpriseNationality, buildJointPartnershipBlock } from './partnership-analysis';
+import { callDocGenFallback } from './llm-client';
+import { personLabel } from './person-code';
 
 const PROMPTS_DIR = join(process.cwd(), 'prompts', 'v1', 'documents');
+
+// WS5 5.2 — the documents shared across a complete_partnership case that
+// need the joint-context block (business_plan, visa_category [Substantiality
+// Memo], marginality_rebuttal, fund_flow_chronology, net_worth_statement,
+// ds160_reference, gift_letter, property_portfolio, cover_letter) rather than
+// the single-investor _p2 context block.
+//
+// cover_letter was promoted from the _p2-duplicate list to this joint list —
+// previously partnership cases got two separate single-voice cover letters
+// (cover_letter for P1, cover_letter_p2 for P2), and P1's copy never even
+// received the joint-context block since cover_letter wasn't in this set.
+// Now there is one shared cover letter addressing both investors together.
+const JOINT_PARTNERSHIP_DOC_TYPES = new Set<DocumentType>([
+  'business_plan',
+  'visa_category',
+  'marginality_rebuttal',
+  'fund_flow_chronology',
+  'net_worth_statement',
+  'ds160_reference',
+  'gift_letter',
+  'property_portfolio',
+  'cover_letter',
+]);
 
 // ---------------------------------------------------------------------------
 // Knowledge Base context injection
@@ -46,8 +79,89 @@ const DOC_TYPE_QUESTION_MAP: Record<string, string[]> = {
   resume_principal: ['IQ-14', 'IQ-15', 'IQ-16'],
   resume_spouse: ['IQ-14', 'IQ-15'],
   gift_letter: ['IQ-08', 'IQ-09'],
+  financial_assets_portfolio: ['IQ-08', 'IQ-09'],
+  org_chart: ['IQ-01', 'IQ-14'],
+  corporate_documents_guide: ['IQ-01'],
+  lease_premises_summary: ['IQ-01', 'IQ-11', 'IQ-12'],
   exhibit_list: [],
 };
+
+// ---------------------------------------------------------------------------
+// Per-document output token budgets.
+// A flat 4000-token cap (~6-7 pages) made the Business Plan's own instructed
+// length (12-25 pages depending on consulate) physically impossible — every
+// plan silently shipped at forced-compression length. Budgets are sized to
+// each template's instructed maximum, not its minimum.
+// ---------------------------------------------------------------------------
+
+const DEFAULT_TOKEN_BUDGET = 5000;
+
+const DOC_TOKEN_BUDGETS: Partial<Record<string, number>> = {
+  business_plan:         16000,
+  cover_letter:          6000,
+  source_of_funds:       6000,
+  fund_flow_chronology:  6000,
+  visa_category:         6000,
+  marginality_rebuttal:  6000,
+  gift_letter:           4000,
+  financial_assets_portfolio: 4000,
+  org_chart:             2500,
+  corporate_documents_guide: 2500,
+  lease_premises_summary: 2500,
+  resume_principal:      4000,
+  resume_spouse:         4000,
+  declaration_principal: 4000,
+  declaration_spouse:    4000,
+};
+
+export function getDocTokenBudget(documentType: string): number {
+  // _p2 variants share the base document's budget
+  const baseType = documentType.endsWith('_p2')
+    ? documentType.slice(0, -'_p2'.length)
+    : documentType;
+  return DOC_TOKEN_BUDGETS[baseType] ?? DOC_TOKEN_BUDGETS[documentType] ?? DEFAULT_TOKEN_BUDGET;
+}
+
+// Generation runs cool: figure fidelity and structural compliance dominate.
+// Humanization runs warm: its whole job is variation.
+const GENERATION_TEMPERATURE = 0.3;
+const HUMANIZATION_TEMPERATURE = 0.8;
+
+// ---------------------------------------------------------------------------
+// Denial-risk (D-code) routing.
+// The "DENIAL RISK FACTORS — MUST ADDRESS" block was previously injected only
+// for cover_letter and source_of_funds — the Marginality Rebuttal, the one
+// document whose entire purpose is rebutting denial grounds, never saw it.
+// Each document now receives exactly the risk codes it exists to answer.
+// 'all' = every critical/watch risk in the case brief (cover letter only).
+// ---------------------------------------------------------------------------
+
+const DOC_DCODE_MAP: Partial<Record<string, string[] | 'all'>> = {
+  cover_letter:          'all',
+  source_of_funds:       ['D-01', 'D-02', 'D-03', 'D-12'],
+  fund_flow_chronology:  ['D-02', 'D-03', 'D-12'],
+  net_worth_statement:   ['D-01', 'D-03', 'D-12'],
+  gift_letter:           ['D-03', 'D-12'],
+  financial_assets_portfolio: ['D-01', 'D-03', 'D-12'],
+  investment_proof:      ['D-01', 'D-02'],
+  business_plan:         ['D-04', 'D-05', 'D-06', 'D-07', 'D-14'],
+  marginality_rebuttal:  ['D-04', 'D-06', 'D-07', 'D-14'],
+  visa_category:         ['D-01', 'D-02'],
+  qualifications:        ['D-08', 'D-11'],
+  nonimmigrant_intent:   ['D-15'],
+  declaration_principal: ['D-11', 'D-15'],
+  ds160_reference:       ['D-09'],
+  property_portfolio:    ['D-15'],
+  org_chart:             ['D-04', 'D-07'],
+  lease_premises_summary: ['D-06', 'D-14'],
+};
+
+function getDocDCodeFilter(documentType: string): string[] | 'all' | undefined {
+  const baseType = documentType.endsWith('_p2')
+    ? documentType.slice(0, -'_p2'.length)
+    : documentType;
+  return DOC_DCODE_MAP[baseType] ?? DOC_DCODE_MAP[documentType];
+}
 
 // ---------------------------------------------------------------------------
 // Archetype-specific guidance injected into the system prompt
@@ -235,6 +349,14 @@ function buildKBContext(documentType: string, consulatePost: string): string {
   return lines.join('\n');
 }
 
+// E8/WS2.8 — fetchFAQKBContext degrades silently (empty string) per-call when
+// OPENAI_API_KEY is missing, so a misconfigured env var produced no signal
+// anywhere until someone noticed thinner documents. Warn once at module load
+// (i.e. once per server process) instead of staying silent indefinitely.
+if (!process.env.OPENAI_API_KEY) {
+  console.warn('[GENERATION-ENGINE] OPENAI_API_KEY is not set — FAQ knowledge-base context will be omitted from every generated document until this is configured.');
+}
+
 // Attempt to fetch relevant FAQ KB chunks from Supabase pgvector.
 // Gracefully returns empty string if OPENAI_API_KEY is absent or table is empty.
 async function fetchFAQKBContext(
@@ -357,7 +479,15 @@ async function checkDeprecationWarning(response: unknown): Promise<void> {
 export async function loadPrompt(documentType: DocumentType): Promise<string> {
   // b01 is the canonical merged prompt replacing both source_of_funds.md and investment_proof.md
   const FILE_ALIASES: Partial<Record<DocumentType, string>> = {
-    source_of_funds: 'b01_source_and_application_of_funds',
+    source_of_funds:    'b01_source_and_application_of_funds',
+    financial_assets_portfolio: 'f02_investment_portfolio_summary',
+    // P2 docs reuse P1 prompt files — the generation engine prepends a partnership context block
+    cover_letter_p2:      'cover_letter',
+    source_of_funds_p2:   'b01_source_and_application_of_funds',
+    declaration_p2:       'declaration_principal',
+    qualifications_p2:    'qualifications',
+    nonimmigrant_intent_p2: 'nonimmigrant_intent',
+    resume_p2:            'resume_principal',
   };
   const fileName = FILE_ALIASES[documentType] ?? documentType;
   const filePath = join(PROMPTS_DIR, `${fileName}.md`);
@@ -382,6 +512,7 @@ interface InvestmentBreakdown {
   professional_fees: number | null;
   marketing_launch: number | null;
   at_risk_amount: number | null;
+  deployment_categories: string | null;
 }
 
 function extractInvestmentBreakdown(answers: Record<string, unknown>): InvestmentBreakdown {
@@ -395,20 +526,28 @@ function extractInvestmentBreakdown(answers: Record<string, unknown>): Investmen
     return null;
   };
 
-  // QF-02: Total invested to date
-  // QF-03: Total business cost
-  // QF-NEW-01: Amount spent on actual business expenses
+  // M3-F-02: Total invested to date (USD)
+  // M3-F-03: Total cost to establish the business (USD)
+  // M3-F-04: How the investment was deployed — a category multiselect, not a per-category
+  //   dollar breakdown, so there is no live source for franchise_fee/leasehold_improvements/
+  //   equipment_technology/educational_materials/working_capital/professional_fees/
+  //   marketing_launch as individual dollar figures. Left null rather than fabricated;
+  //   deployment_categories carries the selected categories as a text signal instead.
+  // No live field captures an "amount actually spent/at-risk" dollar figure
+  // (M3-F-NEW-01 is a yes/partial/no status, not a currency value) — left null.
+  const deploymentRaw = answers['M3-F-04'];
   return {
-    total_invested: getNumber('QF-02'),
-    total_business_cost: getNumber('QF-03'),
-    franchise_fee: getNumber('franchise_fee'),
-    leasehold_improvements: getNumber('leasehold_improvements'),
-    equipment_technology: getNumber('equipment_technology'),
-    educational_materials: getNumber('educational_materials'),
-    working_capital: getNumber('working_capital'),
-    professional_fees: getNumber('professional_fees'),
-    marketing_launch: getNumber('marketing_launch'),
-    at_risk_amount: getNumber('QF-NEW-01'),
+    total_invested: getNumber('M3-F-02'),
+    total_business_cost: getNumber('M3-F-03'),
+    franchise_fee: null,
+    leasehold_improvements: null,
+    equipment_technology: null,
+    educational_materials: null,
+    working_capital: null,
+    professional_fees: null,
+    marketing_launch: null,
+    at_risk_amount: null,
+    deployment_categories: typeof deploymentRaw === 'string' && deploymentRaw.trim().length > 0 ? deploymentRaw : null,
   };
 }
 
@@ -419,6 +558,132 @@ function extractInvestmentBreakdown(answers: Record<string, unknown>): Investmen
 interface ValidationResult {
   valid: boolean;
   missingFields: string[];
+}
+
+// ---------------------------------------------------------------------------
+// CIC-2.1 — Case Theory brief formatter
+// Converts the case_theory DB row into a structured prompt block for the
+// generation LLM. Filtered to dimensions and directives relevant to the
+// specific document type being generated so the context stays focused.
+// ---------------------------------------------------------------------------
+
+type Dimension =
+  | 'source_of_funds' | 'investment' | 'business' | 'franchise'
+  | 'location' | 'background' | 'identity' | 'operations' | 'other';
+
+const ALL_DIMENSIONS: Dimension[] = [
+  'source_of_funds','investment','business','franchise',
+  'location','background','identity','operations','other',
+];
+
+// Which dimensions are most relevant per document type.
+// cover_letter gets all — it carries the full argument.
+const DOC_TYPE_DIMENSIONS: Partial<Record<DocumentType, Dimension[]>> = {
+  cover_letter:          ALL_DIMENSIONS,
+  source_of_funds:       ['source_of_funds', 'investment'],
+  fund_flow_chronology:  ['source_of_funds'],
+  net_worth_statement:   ['source_of_funds', 'investment'],
+  investment_proof:      ['investment', 'source_of_funds'],
+  property_portfolio:    ['source_of_funds'],
+  gift_letter:           ['source_of_funds'],
+  financial_assets_portfolio: ['source_of_funds', 'investment'],
+  org_chart:             ['business', 'background'],
+  corporate_documents_guide: ['business'],
+  lease_premises_summary: ['location', 'investment'],
+  business_plan:         ['business', 'investment', 'operations', 'franchise', 'location'],
+  marginality_rebuttal:  ['business', 'investment', 'operations'],
+  visa_category:         ['investment', 'business'],
+  qualifications:        ['background', 'business', 'franchise'],
+  resume_principal:      ['background', 'business'],
+  resume_spouse:         ['background'],
+  declaration_principal: ['identity', 'other'],
+  declaration_spouse:    ['identity'],
+  nonimmigrant_intent:   ['other', 'identity'],
+  ds160_reference:       ['identity', 'other'],
+  // Partnership — Investor 2 (same dimension relevance as P1 equivalents)
+  cover_letter_p2:        ALL_DIMENSIONS,
+  source_of_funds_p2:     ['source_of_funds', 'investment'],
+  declaration_p2:         ['identity', 'other'],
+  qualifications_p2:      ['background', 'business', 'franchise'],
+  nonimmigrant_intent_p2: ['other', 'identity'],
+  resume_p2:              ['background', 'business'],
+};
+
+interface CaseTheoryRow {
+  narrative?: string | null;
+  numbers_strategy?: Array<{ figure: string; value: string; foregroundBecause: string; denialRiskAddressed: string }> | null;
+  dimension_verdicts?: Record<string, { status: string; evidenceSummary?: string; gap?: string | null; gapFillSuggestions?: Array<{ persona: string; suggestion: string }> }> | null;
+  directives?: Array<{ engine: string; dimension: string; instruction: string; doctrineRef?: string | null }> | null;
+}
+
+function buildCaseTheoryBrief(theory: CaseTheoryRow, documentType: DocumentType): string {
+  const relevantDimensions = DOC_TYPE_DIMENSIONS[documentType] ?? ALL_DIMENSIONS;
+  const lines: string[] = [
+    '=== CASE THEORY STRATEGIC BRIEF ===',
+    'Generated by the Case Intelligence Core (five-expert panel: immigration consultant,',
+    'consular officer, immigration attorney, franchise development consultant, market analyst).',
+    'These directives and verdicts are BINDING for this document:',
+    '- Ground every legal claim in the evidence listed under each dimension',
+    '- Do not contradict a dimension verdict marked "contradicted" or "missing"',
+    '- Do not introduce figures not present in the case brief or module 3 answers',
+    '- Cite referenced exhibits exactly as written (Tab letters/numbers must match)',
+    '',
+  ];
+
+  if (theory.narrative?.trim()) {
+    lines.push('NARRATIVE BACKBONE (this is the theory of the case — use it as the strategic spine):');
+    lines.push(theory.narrative.trim());
+    lines.push('');
+  }
+
+  const numbersForDoc = (theory.numbers_strategy ?? []).filter(n =>
+    relevantDimensions.some(d => n.figure?.toLowerCase().includes(d) || n.denialRiskAddressed?.toLowerCase().includes(d))
+    || documentType === 'cover_letter'
+  );
+  if (numbersForDoc.length > 0) {
+    lines.push('NUMBERS TO FOREGROUND IN THIS DOCUMENT:');
+    for (const n of numbersForDoc) {
+      lines.push(`  ${n.figure}: ${n.value}`);
+      lines.push(`    → Foreground because: ${n.foregroundBecause}`);
+      lines.push(`    → Denial risk addressed: ${n.denialRiskAddressed}`);
+    }
+    lines.push('');
+  }
+
+  const verdicts = theory.dimension_verdicts ?? {};
+  const relevantVerdicts = relevantDimensions.filter(d => verdicts[d]);
+  if (relevantVerdicts.length > 0) {
+    lines.push('DIMENSION VERDICTS (for dimensions this document addresses):');
+    for (const dim of relevantVerdicts) {
+      const v = verdicts[dim];
+      const status = v.status?.toUpperCase() ?? 'UNKNOWN';
+      lines.push(`  ${dim.toUpperCase()}: ${status}`);
+      if (v.evidenceSummary) lines.push(`    Evidence: ${v.evidenceSummary}`);
+      if (v.gap)            lines.push(`    Gap to address: ${v.gap}`);
+      if (v.status === 'weak' && v.gapFillSuggestions?.length) {
+        lines.push(`    Expert suggestions:`);
+        for (const s of v.gapFillSuggestions) {
+          lines.push(`      [${s.persona}] ${s.suggestion}`);
+        }
+      }
+    }
+    lines.push('');
+  }
+
+  const genDirectives = (theory.directives ?? []).filter(
+    d => d.engine === 'generation' && relevantDimensions.includes(d.dimension as Dimension)
+  );
+  if (genDirectives.length > 0) {
+    lines.push('DIRECTIVES FOR THIS DOCUMENT (follow each one explicitly):');
+    for (const d of genDirectives) {
+      lines.push(`  [${d.dimension.toUpperCase()}] ${d.instruction}`);
+      if (d.doctrineRef) lines.push(`    Doctrine: ${d.doctrineRef}`);
+    }
+    lines.push('');
+  }
+
+  lines.push('=== END CASE THEORY BRIEF ===');
+  return lines.join('\n');
 }
 
 function validateContext(
@@ -445,7 +710,7 @@ function validateContext(
   }
 
   // Check source of funds
-  const sourceOfFunds = module3Answers['QF-05'] || caseBriefData.source_of_funds;
+  const sourceOfFunds = module3Answers['M3-F-05'] || caseBriefData.source_of_funds;
   if (!sourceOfFunds) {
     missingFields.push('source_of_funds_summary');
   }
@@ -482,16 +747,78 @@ const DOC_GAP_CATEGORY_MAP: Record<string, string[]> = {
   resume_principal:      ['management_role'],
   resume_spouse:         [],
   gift_letter:           ['source_of_funds', 'investment_amount'],
+  financial_assets_portfolio: ['source_of_funds', 'investment_amount'],
+  org_chart:             ['management_role', 'business_operations'],
+  corporate_documents_guide: ['business_operations'],
+  lease_premises_summary: ['business_operations', 'employment_creation'],
 };
+
+// CIC-3.1 — CPU dimension → the denial codes that dimension speaks to. Used to
+// translate the Case Theory's dimension verdicts into the gap engine's denial
+// vocabulary. The code sets mirror the gap categories' dCodes (stable across all
+// weight profiles), so a weak dimension activates exactly the risks it governs.
+const DIMENSION_DENIAL_CODES: Record<string, string[]> = {
+  source_of_funds: ['D-02', 'D-03', 'D-12'],
+  investment:      ['D-01'],
+  business:        ['D-04', 'D-05', 'D-06', 'D-14', 'D-15'],
+  franchise:       ['D-04', 'D-05', 'D-06', 'D-14', 'D-15'],
+  operations:      ['D-10', 'D-13'],
+  location:        ['D-10', 'D-13'],
+  background:      ['D-08', 'D-09', 'D-11'],
+};
+
+const UNPROVEN_VERDICT_STATUSES = new Set(['weak', 'missing', 'contradicted']);
+
+/**
+ * CIC-3.1 — translate the CPU's comprehension output into a CpuGapContext that
+ * the (still pure, still deterministic) gap engine can fold in:
+ *   - ledger facts → substantive, document-derived evidence the LLM should cite
+ *     instead of re-asking the client for it.
+ *   - active denial codes → derived from the Case Theory's unproven dimension
+ *     verdicts, so the gap engine flags exactly the risks this case theory
+ *     has NOT yet put to rest.
+ * Returns undefined when neither signal is present (keeps generation unchanged
+ * for sparse accounts with no comprehension run).
+ */
+function buildCpuGapContext(
+  ledgerRows: LedgerEntryLike[] | null | undefined,
+  dimensionVerdicts: Record<string, { status: string }> | null | undefined
+): CpuGapContext | undefined {
+  const ledger: LedgerFact[] = (ledgerRows ?? [])
+    .filter(e => e && typeof e.value === 'string' && e.value.trim().length > 0)
+    .map(e => ({
+      dimension: e.dimension,
+      label: e.label,
+      value: e.value,
+      significance: e.significance,
+    }));
+
+  const activeDenialCodes = new Set<string>();
+  for (const [dimension, verdict] of Object.entries(dimensionVerdicts ?? {})) {
+    if (!verdict || !UNPROVEN_VERDICT_STATUSES.has(verdict.status)) continue;
+    for (const code of DIMENSION_DENIAL_CODES[dimension] ?? []) activeDenialCodes.add(code);
+  }
+
+  if (ledger.length === 0 && activeDenialCodes.size === 0) return undefined;
+  return { ledger, activeDenialCodes: Array.from(activeDenialCodes) };
+}
+
+interface LedgerEntryLike {
+  dimension: string;
+  label: string;
+  value: string;
+  significance?: string;
+}
 
 function buildGapContext(
   answers: { question_key: string; answer_value: string | null }[],
   application: { business_name?: string | null; business_category?: string | null; operational_status?: string | null; target_state?: string | null; principal_name?: string | null; simulator_sessions_used?: number | null },
   documentType: string,
-  archetype?: string | null
+  archetype?: string | null,
+  cpuContext?: CpuGapContext
 ): string {
   try {
-    const result = scoreCase(application, answers, [], undefined, undefined, archetype ?? null);
+    const result = scoreCase(application, answers, [], undefined, undefined, archetype ?? null, cpuContext);
     const relevantCategoryIds = DOC_GAP_CATEGORY_MAP[documentType] ?? [];
 
     // Only surface categories that need attention — skip 'strong' and 'good'
@@ -501,7 +828,15 @@ function buildGapContext(
         (c.priority === 'needs_work' || c.priority === 'critical')
     );
 
-    if (weakCategories.length === 0) return '';
+    // CIC-3.1 — CPU-flagged active denial codes relevant to this document's categories.
+    const relevantDCodes = new Set(
+      result.categories.filter(c => relevantCategoryIds.includes(c.id)).flatMap(c => c.dCodes)
+    );
+    const cpuFlaggedFactors = result.denialFactors.filter(
+      f => f.finding.startsWith('⚑') && relevantDCodes.has(f.code)
+    );
+
+    if (weakCategories.length === 0 && cpuFlaggedFactors.length === 0) return '';
 
     const lines: string[] = [
       'GAP ANALYSIS — AREAS REQUIRING DEEPER COVERAGE IN THIS DOCUMENT:',
@@ -510,8 +845,21 @@ function buildGapContext(
       '',
     ];
 
+    if (cpuFlaggedFactors.length > 0) {
+      lines.push('ACTIVE DENIAL RISKS (the case-intelligence reasoning flagged these as live for THIS client — rebut each one head-on):');
+      for (const f of cpuFlaggedFactors) {
+        lines.push(`  ${f.code} ${f.name}: ${f.finding.replace(/^⚑\s*/, '')}`);
+        if (f.mitigation) lines.push(`    → How to address: ${f.mitigation}`);
+      }
+      lines.push('');
+    }
+
     for (const cat of weakCategories) {
       lines.push(`[${cat.priority.toUpperCase()}] ${cat.name} (score: ${cat.score}/100)`);
+      // Substantive, document-derived evidence already on file — cite it, do not re-ask for it.
+      if (cat.evidence.length > 0) {
+        lines.push(`  Evidence on file: ${cat.evidence.slice(0, 4).join(' | ')}`);
+      }
       if (cat.gaps.length > 0) {
         lines.push(`  Gaps: ${cat.gaps.slice(0, 3).join(' | ')}`);
       }
@@ -537,7 +885,8 @@ function buildGapContext(
 export async function buildGenerationPayload(
   applicationId: string,
   documentType: DocumentType,
-  caseBrief: CaseBrief
+  caseBrief: CaseBrief,
+  allDocumentTypes?: DocumentType[]
 ): Promise<GenerationPayload> {
   const supabase = getSupabase();
   const systemPrompt = await loadPrompt(documentType);
@@ -545,7 +894,8 @@ export async function buildGenerationPayload(
   const { data: answers } = await supabase
     .from('answers')
     .select('*')
-    .eq('application_id', applicationId);
+    .eq('application_id', applicationId)
+    .is('family_member_id', null);
 
   const { data: voiceProfile } = await supabase
     .from('applicant_voice_profile')
@@ -563,7 +913,12 @@ export async function buildGenerationPayload(
     for (const row of answers) {
       const r = row as Record<string, unknown>;
       const key = (r.question_key ?? r.question_id) as string | undefined;
-      if (key) module3Answers[key] = r.answer_value;
+      // P2-* rows belong to the partner/Investor-2 intake and carry
+      // family_member_id = NULL like principal answers, so they are not
+      // excluded by the query filter above. They are only relevant to
+      // partnership-package documents, which re-inject them explicitly
+      // via the p2Block mechanism further down the pipeline.
+      if (key && !key.startsWith('P2-')) module3Answers[key] = r.answer_value;
     }
   }
 
@@ -589,6 +944,34 @@ export async function buildGenerationPayload(
   // Extract investment breakdown as structured data
   const investmentBreakdown = extractInvestmentBreakdown(module3Answers);
 
+  // Phase 2/A4 — deterministic financial spine, computed once from the same
+  // module3Answers every document call would otherwise re-derive independently.
+  const caseFinancials = computeCaseFinancials(module3Answers);
+
+  // CIC-2.1 / CIC-3.1 — fetch Case Theory (verdicts + strategy) and the
+  // comprehension ledger up front so the gap engine can fold the CPU's reasoning
+  // in. Both are graceful on miss (neither exists for sparse accounts yet).
+  const [{ data: caseTheoryRow }, { data: docIntelRow }, exhibitRegistry] = await Promise.all([
+    supabase
+      .from('case_theory')
+      .select('narrative, numbers_strategy, dimension_verdicts, directives')
+      .eq('application_id', applicationId)
+      .maybeSingle(),
+    supabase
+      .from('document_intelligence')
+      .select('ledger')
+      .eq('application_id', applicationId)
+      .maybeSingle(),
+    buildExhibitRegistry(applicationId),
+  ]);
+
+  // CIC-3.1 — turn comprehension + the case theory's verdicts into evidence the
+  // LLM should cite and the active denial risks it must rebut head-on.
+  const cpuGapContext = buildCpuGapContext(
+    (docIntelRow?.ledger as LedgerEntryLike[] | undefined) ?? undefined,
+    (caseTheoryRow as CaseTheoryRow | null)?.dimension_verdicts ?? undefined
+  );
+
   // Build gap analysis context — surfaces weak evidence areas so the LLM
   // allocates deeper coverage to the sections that need it most.
   const appRowForGap = {
@@ -599,7 +982,7 @@ export async function buildGenerationPayload(
     principal_name: (caseBrief as unknown as Record<string, unknown>).principal_name as string | null,
     simulator_sessions_used: null,
   };
-  const gapAnalysisContext = buildGapContext(answersForProfile, appRowForGap, documentType, archForProfile) || undefined;
+  const gapAnalysisContext = buildGapContext(answersForProfile, appRowForGap, documentType, archForProfile, cpuGapContext) || undefined;
 
   // Format follow-up responses as clean Q&A dialogue for the LLM.
   // Raw DB rows include metadata noise (id, created_at, content_value, etc.)
@@ -619,23 +1002,60 @@ export async function buildGenerationPayload(
     });
   }
 
+  // CIC-2.1 — build the strategic brief for this document type from the Case
+  // Theory fetched above. Graceful on miss (theory may not exist for sparse accounts).
+  const caseTheoryBrief = caseTheoryRow?.narrative
+    ? buildCaseTheoryBrief(caseTheoryRow as CaseTheoryRow, documentType)
+    : undefined;
+
+  // WS3.2 — Section X of the cover letter must reproduce this deterministic
+  // list, not compose its own, so it can never drift from the actual
+  // package. Only computed when the caller passes the full run's document
+  // types (the cover letter step in generation-engine.ts's main loop does).
+  const documentIndexText =
+    (documentType === 'cover_letter' || documentType === 'cover_letter_p2') && allDocumentTypes
+      ? buildDeterministicDocumentIndex(allDocumentTypes, DOCUMENT_TYPE_LABELS)
+      : undefined;
+
   return {
     system_prompt: systemPrompt,
     case_brief: caseBrief as unknown as Record<string, unknown>,
     module_3_answers: module3Answers,
     investment_breakdown: investmentBreakdown,
+    case_financials: caseFinancials,
+    exhibit_registry: exhibitRegistry,
+    document_index_text: documentIndexText,
     voice_profile: voiceProfile?.voice_profile_text || '',
     consulate_post: (caseBrief as unknown as Record<string, unknown>).consulate_post as string || 'toronto',
     document_type: documentType,
     follow_up_responses: followUpFormatted,
     qfn_investor_profile: qfnInvestorProfile,
     gap_analysis_context: gapAnalysisContext,
+    case_theory_brief: caseTheoryBrief,
   };
 }
 
 // ---------------------------------------------------------------------------
 // 4c. Call the Anthropic API
 // ---------------------------------------------------------------------------
+
+// Serializes module_3_answers as labeled { question, answer } triples instead
+// of bare { code: value } pairs — the model was previously left to guess what
+// "QF-05" or "M3-A-08" means. Falls back to the raw code when a question has
+// no entry in the generated registry (new/renamed field not yet regenerated).
+function formatLabeledAnswers(answers: Record<string, unknown>): string {
+  const entries = Object.entries(answers).filter(([, value]) =>
+    value !== null && value !== undefined && value !== ''
+  );
+  if (entries.length === 0) return '(no answers on file)';
+  return entries
+    .map(([code, value]) => {
+      const question = QUESTION_LABELS[code] ?? code;
+      const answerText = typeof value === 'object' ? JSON.stringify(value) : String(value);
+      return `Q: ${question}\nA: ${answerText}`;
+    })
+    .join('\n\n');
+}
 
 export async function callClaudeAPI(payload: GenerationPayload): Promise<string> {
   const anthropic = getAnthropic();
@@ -655,18 +1075,70 @@ export async function callClaudeAPI(payload: GenerationPayload): Promise<string>
     ib.working_capital !== null ? `  Working Capital: $${ib.working_capital.toLocaleString()}` : null,
     ib.professional_fees !== null ? `  Professional Fees: $${ib.professional_fees.toLocaleString()}` : null,
     ib.marketing_launch !== null ? `  Marketing & Launch: $${ib.marketing_launch.toLocaleString()}` : null,
+    ib.deployment_categories ? `  Deployment Categories Selected: ${ib.deployment_categories}` : null,
     '',
     `IMPORTANT: Use EXACT dollar amounts from this breakdown. Never estimate, round, or substitute any amounts.`,
     `If a figure is marked "NOT PROVIDED", state it is not yet confirmed — NEVER invent a number.`,
   ].filter(Boolean).join('\n') : '';
 
-  // Extract denial risk flags for D-code-aware documents (cover letter + source of funds)
+  // Phase 2/A4 — deterministic financial spine (revenue ramp, break-even,
+  // headcount, payroll, net worth) computed once and injected as a
+  // pre-computed table every document must narrate around, never re-derive.
+  const caseFinancialsText = payload.case_financials ? formatCaseFinancialsText(payload.case_financials) : '';
+
+  // WS6.2 — Business Plan chart capability (see formatRevenueRampChart doc
+  // comment for why this is a text block, not an embedded image). Only the
+  // Business Plan gets it — no other document narrates a multi-year ramp.
+  const revenueRampChartBlock = (payload.document_type === 'business_plan' && payload.case_financials)
+    ? (() => {
+        const chart = formatRevenueRampChart(payload.case_financials);
+        return chart
+          ? [
+              'REVENUE RAMP CHART — PRE-RENDERED, INSERT VERBATIM:',
+              'Insert this exact block, unmodified, as the visual immediately following the',
+              'Financial Projections narrative (Section VII). Do not redraw it, recompute the',
+              'bars, or describe it in prose instead of including it.',
+              '',
+              chart,
+              '',
+            ].join('\n')
+          : '';
+      })()
+    : '';
+
+  // WS3.1 — master exhibit registry, identical across every document call for
+  // this application, so it lives in the cached stableBlock alongside the
+  // case brief rather than the per-document variableBlock.
+  const exhibitRegistryText = formatExhibitRegistryText(payload.exhibit_registry);
+
+  // WS3.2 — cover letter's Section X ("Document Index") must reproduce this
+  // deterministic, tab-grouped list verbatim rather than composing its own,
+  // so it can never drift from what actually gets assembled into the ZIP.
+  // Only populated for cover_letter/cover_letter_p2 (see buildGenerationPayload).
+  const documentIndexBlock = payload.document_index_text
+    ? [
+        'SECTION X — DOCUMENT INDEX: USE THIS EXACT LIST. DO NOT COMPOSE YOUR OWN.',
+        'This is the deterministic, authoritative list of every document in this package,',
+        'grouped by tab. Reproduce it verbatim as Section X — do not add, omit, reorder,',
+        'or renumber any entry, and do not invent a document not listed here.',
+        '',
+        payload.document_index_text,
+      ].join('\n')
+    : '';
+
+  // Extract denial risk flags and route each document exactly the D-codes it
+  // exists to answer (DOC_DCODE_MAP). Documents with no entry get no block.
   const brief = payload.case_brief as { critical_risks?: { code: string; reason: string }[]; watch_risks?: { code: string; reason: string }[] } | null;
-  const criticalRisks = brief?.critical_risks?.filter(r => r.code && r.reason) ?? [];
-  const watchRisks = brief?.watch_risks?.filter(r => r.code && r.reason) ?? [];
-  const dCodeBlock = (criticalRisks.length > 0 || watchRisks.length > 0) && (
-    payload.document_type === 'cover_letter' || payload.document_type === 'source_of_funds'
-  )
+  const dCodeFilter = getDocDCodeFilter(payload.document_type);
+  const matchesFilter = (r: { code: string }): boolean =>
+    dCodeFilter === 'all' || (Array.isArray(dCodeFilter) && dCodeFilter.includes(r.code));
+  const criticalRisks = dCodeFilter
+    ? (brief?.critical_risks?.filter(r => r.code && r.reason && matchesFilter(r)) ?? [])
+    : [];
+  const watchRisks = dCodeFilter
+    ? (brief?.watch_risks?.filter(r => r.code && r.reason && matchesFilter(r)) ?? [])
+    : [];
+  const dCodeBlock = (criticalRisks.length > 0 || watchRisks.length > 0)
     ? [
         'DENIAL RISK FACTORS — MUST ADDRESS IN THIS DOCUMENT:',
         'These are the top risk factors identified in this case. The document must proactively address each one.',
@@ -683,7 +1155,36 @@ export async function callClaudeAPI(payload: GenerationPayload): Promise<string>
   const staticKBContext = buildKBContext(payload.document_type, payload.consulate_post);
   const dynamicKBContext = await fetchFAQKBContext(payload.document_type, payload.consulate_post, archetype);
 
-  const userMessage = [
+  // Prompt caching (E6b): buildGenerationPayload is called once per document
+  // type per generation run, with the same case_brief/module_3_answers/
+  // investor-profile/voice-profile every time — up to ~19 calls per run, plus
+  // retries. Putting that identical content in its own leading block with a
+  // cache_control breakpoint lets Anthropic reuse it across every call in the
+  // run instead of re-billing/re-processing full price each time. Everything
+  // that varies by document type (KB context, D-code filter, case theory,
+  // follow-ups) stays in the second, uncached block.
+  const stableBlock = [
+    `APPLICANT CASE BRIEF:`,
+    wrapUserContent(JSON.stringify(payload.case_brief, null, 2)),
+    '',
+    `APPLICANT MODULE 3 ANSWERS:`,
+    wrapUserContent(formatLabeledAnswers(payload.module_3_answers)),
+    '',
+    ...(payload.qfn_investor_profile
+      ? [`INVESTOR PROFILE CONTEXT (Franchise Navigator):`, wrapUserContent(payload.qfn_investor_profile), '']
+      : []),
+    ...(payload.voice_profile
+      ? [`VOICE PROFILE (match this writing style in all documents):`, wrapUserContent(payload.voice_profile), '']
+      : []),
+    exhibitRegistryText,
+    '',
+  ].join('\n');
+
+  const variableBlock = [
+    // CIC-2.1: Case Theory strategic brief leads the prompt — it establishes the
+    // theory of the case before the LLM sees any raw answers. When absent (sparse
+    // accounts with no case_theory yet), the section is simply omitted.
+    ...(payload.case_theory_brief ? [payload.case_theory_brief, ''] : []),
     `KNOWLEDGE CONTEXT:`,
     `Consulate post: ${payload.consulate_post}`,
     `Document type: ${docLabel}`,
@@ -693,18 +1194,9 @@ export async function callClaudeAPI(payload: GenerationPayload): Promise<string>
     dCodeBlock,
     ...(payload.gap_analysis_context ? [payload.gap_analysis_context, ''] : []),
     investmentBreakdownText,
-    `APPLICANT CASE BRIEF:`,
-    wrapUserContent(JSON.stringify(payload.case_brief, null, 2)),
-    '',
-    `APPLICANT MODULE 3 ANSWERS:`,
-    wrapUserContent(JSON.stringify(payload.module_3_answers, null, 2)),
-    '',
-    ...(payload.qfn_investor_profile
-      ? [`INVESTOR PROFILE CONTEXT (Franchise Navigator):`, wrapUserContent(payload.qfn_investor_profile), '']
-      : []),
-    ...(payload.voice_profile
-      ? [`VOICE PROFILE (match this writing style in all documents):`, wrapUserContent(payload.voice_profile), '']
-      : []),
+    caseFinancialsText,
+    revenueRampChartBlock,
+    documentIndexBlock,
     ...(Object.keys(payload.follow_up_responses).length > 0
       ? [`FOLLOW-UP CONVERSATION (applicant answers to targeted gap questions — use this content in the document):`, wrapUserContent(JSON.stringify(payload.follow_up_responses, null, 2)), '']
       : []),
@@ -722,17 +1214,24 @@ export async function callClaudeAPI(payload: GenerationPayload): Promise<string>
     const model = await getGenerationModel();
     const response = await anthropic.messages.create({
       model,
-      max_tokens: 4000,
+      max_tokens: getDocTokenBudget(payload.document_type),
+      temperature: GENERATION_TEMPERATURE,
       system: enrichedSystemPrompt,
-      messages: [{ role: 'user', content: userMessage }],
+      messages: [{
+        role: 'user',
+        content: [
+          { type: 'text', text: stableBlock, cache_control: { type: 'ephemeral' } },
+          { type: 'text', text: variableBlock },
+        ],
+      }],
     });
 
     // Check for deprecation warnings
     await checkDeprecationWarning(response);
 
-    const content = response.content[0];
-    if (content.type !== 'text') {
-      throw new Error('Claude returned non-text response');
+    const content = response.content.find((b): b is Anthropic.TextBlock => b.type === 'text');
+    if (!content) {
+      throw new Error('Claude returned no text block');
     }
     return content.text;
   }
@@ -744,6 +1243,24 @@ export async function callClaudeAPI(payload: GenerationPayload): Promise<string>
     try {
       return await attempt();
     } catch (secondError) {
+      // Non-business-plan documents fall through the OpenRouter chain
+      // (glm-5.2 -> mimo -> mimo-pro -> gemini-2.5-pro) when both Opus
+      // attempts fail. business_plan stays Opus-only: the eval showed the
+      // fallback models cannot produce a full-length business plan, so it
+      // fails loudly rather than shipping a degraded document.
+      if (payload.document_type !== 'business_plan') {
+        const fallback = await callDocGenFallback({
+          system: enrichedSystemPrompt,
+          user: `${stableBlock}\n${variableBlock}`,
+          max_tokens: getDocTokenBudget(payload.document_type),
+          temperature: GENERATION_TEMPERATURE,
+          route: 'doc-generation',
+        });
+        if (fallback) {
+          console.warn(`[generation-engine] ${payload.document_type} generated via OpenRouter fallback (${fallback.model})`);
+          return fallback.content;
+        }
+      }
       const msg = secondError instanceof Error ? secondError.message : 'Unknown error';
       throw new Error(`CLAUDE_API_FAILED: ${msg}`);
     }
@@ -797,16 +1314,16 @@ Rewrite the document addressing each issue above. Be more aggressive in varying 
 export async function humanizeDocument(
   rawContent: string,
   voiceProfile: string,
-  previousFeedback?: string
+  previousFeedback?: string,
+  documentType?: DocumentType
 ): Promise<string> {
   const anthropic = getAnthropic();
 
-  let systemPrompt = HUMANIZATION_SYSTEM_PROMPT;
-
-  if (previousFeedback) {
-    systemPrompt += '\n\n' + HUMANIZATION_RETRY_PREFIX.replace('{feedback}', previousFeedback);
-  }
-
+  // HUMANIZATION_SYSTEM_PROMPT is byte-identical across every humanization
+  // call for every document and every user — the single highest-value prompt
+  // cache candidate in the engine. Keep it in its own cached block; the
+  // per-retry feedback (when present) goes in a second, uncached block so it
+  // doesn't invalidate the cached prefix.
   const userMessage = [
     'VOICE PROFILE:',
     wrapUserContent(voiceProfile),
@@ -816,53 +1333,131 @@ export async function humanizeDocument(
   ].join('\n');
 
   const model = await getGenerationModel();
-  const response = await anthropic.messages.create({
-    model,
-    max_tokens: 4000,
-    system: systemPrompt,
-    messages: [{ role: 'user', content: userMessage }],
-  });
+  try {
+    const response = await anthropic.messages.create({
+      model,
+      max_tokens: documentType ? getDocTokenBudget(documentType) : DEFAULT_TOKEN_BUDGET,
+      temperature: HUMANIZATION_TEMPERATURE,
+      system: [
+        { type: 'text', text: HUMANIZATION_SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } },
+        ...(previousFeedback
+          ? [{ type: 'text' as const, text: HUMANIZATION_RETRY_PREFIX.replace('{feedback}', previousFeedback) }]
+          : []),
+      ],
+      messages: [{ role: 'user', content: userMessage }],
+    });
 
-  // Check for deprecation warnings
-  await checkDeprecationWarning(response);
+    // Check for deprecation warnings
+    await checkDeprecationWarning(response);
 
-  const content = response.content[0];
-  if (content.type !== 'text') {
-    throw new Error('Humanization returned non-text response');
+    const content = response.content.find((b): b is Anthropic.TextBlock => b.type === 'text');
+    if (!content) {
+      throw new Error('Humanization returned no text block');
+    }
+    return content.text;
+  } catch (err) {
+    // Same fallback gating as generation: non-business-plan documents may
+    // humanize on the OpenRouter chain so a doc that generated during an
+    // Anthropic outage doesn't then die at this stage. business_plan fails
+    // loudly instead.
+    if (documentType && documentType !== 'business_plan') {
+      const systemPrompt = previousFeedback
+        ? `${HUMANIZATION_SYSTEM_PROMPT}\n\n${HUMANIZATION_RETRY_PREFIX.replace('{feedback}', previousFeedback)}`
+        : HUMANIZATION_SYSTEM_PROMPT;
+      const fallback = await callDocGenFallback({
+        system: systemPrompt,
+        user: userMessage,
+        max_tokens: getDocTokenBudget(documentType),
+        temperature: HUMANIZATION_TEMPERATURE,
+        route: 'doc-humanization',
+      });
+      if (fallback) {
+        console.warn(`[generation-engine] ${documentType} humanized via OpenRouter fallback (${fallback.model})`);
+        return fallback.content;
+      }
+    }
+    throw err;
   }
-  return content.text;
+}
+
+// ---------------------------------------------------------------------------
+// E7 — Deterministic AI-detection replacement.
+//
+// The previous implementation asked the same model family that generated
+// the document to also judge whether it "sounds AI-written" — on only the
+// first 3000 characters. That's not a detector, it's a coin flip with
+// extra API cost. This scores three concrete, model-free stylometric
+// signals that directly mirror what HUMANIZATION_SYSTEM_PROMPT above is
+// instructed to fix, over the FULL document text:
+//   1. Density of known AI-vocabulary fingerprints
+//   2. Sentence-length uniformity (AI prose is unusually consistent)
+//   3. Repeated sentence-opening structure (parallel construction)
+// ---------------------------------------------------------------------------
+
+const AI_VOCABULARY_FINGERPRINTS = [
+  'it is worth noting', 'it should be noted', 'furthermore', 'in conclusion',
+  'in summary', 'moreover', 'additionally', 'comprehensive', 'crucial',
+  'notably', 'leveraging', 'utilize', 'utilizing', 'demonstrate', 'facilitate',
+  'holistic', 'robust', 'seamless', 'delve', 'underscore', 'testament to',
+  'plays a vital role', 'plays a crucial role', 'overall,',
+];
+
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+export function computeStylometricAIScore(documentText: string): number {
+  const text = documentText.trim();
+  if (!text) return 0;
+
+  const wordCount = text.split(/\s+/).filter(Boolean).length || 1;
+
+  // Signal 1: AI-vocabulary fingerprint density, normalized per 1000 words.
+  const lowerText = text.toLowerCase();
+  let fingerprintHits = 0;
+  for (const phrase of AI_VOCABULARY_FINGERPRINTS) {
+    const re = new RegExp(`\\b${escapeRegExp(phrase)}`, 'gi');
+    fingerprintHits += (lowerText.match(re) || []).length;
+  }
+  const fingerprintDensity = fingerprintHits / (wordCount / 1000);
+  const fingerprintScore = Math.min(1, fingerprintDensity / 8);
+
+  // Signal 2 & 3 need real sentences (skip fragments from headers/lists).
+  const sentences = text
+    .split(/(?<=[.!?])\s+/)
+    .map(s => s.trim())
+    .filter(s => s.split(/\s+/).length > 2);
+
+  let uniformityScore = 0;
+  let repeatedOpenerScore = 0;
+  if (sentences.length >= 4) {
+    const lengths = sentences.map(s => s.split(/\s+/).length);
+    const mean = lengths.reduce((a, b) => a + b, 0) / lengths.length;
+    const variance = lengths.reduce((a, b) => a + (b - mean) ** 2, 0) / lengths.length;
+    const stdDev = Math.sqrt(variance);
+    const coefficientOfVariation = mean > 0 ? stdDev / mean : 0;
+    // Human legal/business prose typically has CoV > ~0.4; tight, uniform
+    // AI-generated paragraphs often sit below ~0.3.
+    uniformityScore = coefficientOfVariation < 0.3 ? 1 - coefficientOfVariation / 0.3 : 0;
+
+    const openers = sentences.map(s => s.split(/\s+/).slice(0, 2).join(' ').toLowerCase());
+    const counts = new Map<string, number>();
+    for (const o of openers) counts.set(o, (counts.get(o) ?? 0) + 1);
+    const maxRepeat = Math.max(...counts.values());
+    repeatedOpenerScore = Math.min(1, Math.max(0, (maxRepeat - 1) / (sentences.length * 0.3)));
+  }
+
+  const score = fingerprintScore * 0.5 + uniformityScore * 0.3 + repeatedOpenerScore * 0.2;
+  return Math.round(Math.max(0, Math.min(1, score)) * 100) / 100;
 }
 
 /**
- * Run AI detection on a single document and return the score.
- * Used by the humanization retry loop.
+ * Score a single document for AI-writing patterns via deterministic
+ * stylometrics (see computeStylometricAIScore). Used by the humanization
+ * retry loop. Kept async for call-site compatibility — no LLM call is made.
  */
 export async function getAIDetectionScore(documentText: string): Promise<number> {
-  const anthropic = getAnthropic();
-  const model = await getGenerationModel();
-
-  const response = await anthropic.messages.create({
-    model,
-    max_tokens: 500,
-    system: `You are an AI detection tool. Analyze the following text and estimate how likely it was written by an AI.
-
-Respond with ONLY a JSON object in this exact format:
-{"ai_score": 0.0-1.0, "reasoning": "brief explanation"}
-
-Where ai_score is 0.0 (definitely human) to 1.0 (definitely AI).
-Consider: repetitive phrasing, formal structure, lack of personal voice, formulaic transitions.`,
-    messages: [{ role: 'user', content: `Analyze this document for AI writing patterns:\n\n${documentText.slice(0, 3000)}` }],
-  });
-
-  const respContent = response.content[0];
-  if (respContent.type === 'text') {
-    const match = respContent.text.match(/"ai_score"\s*:\s*([0-9.]+)/);
-    if (match) {
-      return parseFloat(match[1]);
-    }
-  }
-  // Default to 0 if parsing fails — don't block pipeline
-  return 0;
+  return computeStylometricAIScore(documentText);
 }
 
 // ---------------------------------------------------------------------------
@@ -1035,6 +1630,10 @@ const MIN_WORD_COUNTS: Record<string, number> = {
   resume_principal: 400,
   resume_spouse: 150,
   gift_letter: 300,
+  financial_assets_portfolio: 300,
+  org_chart: 150,
+  corporate_documents_guide: 150,
+  lease_premises_summary: 150,
 };
 
 const MAX_PAGE_ESTIMATES: Record<string, number> = {
@@ -1055,6 +1654,10 @@ const MAX_PAGE_ESTIMATES: Record<string, number> = {
   resume_principal: 3,
   resume_spouse: 2,
   gift_letter: 1,
+  financial_assets_portfolio: 3,
+  org_chart: 1,
+  corporate_documents_guide: 1,
+  lease_premises_summary: 1,
 };
 
 const FORBIDDEN_LEGAL_PHRASES = [
@@ -1364,6 +1967,33 @@ const REQUIRED_ELEMENTS: Record<DocumentType, string[]> = {
     'gift_amount',
     'irrevocability',
   ],
+  financial_assets_portfolio: [
+    'source_description',
+    'amount',
+    'timeline',
+    'documentation_mentioned',
+  ],
+  org_chart: [
+    'business_name',
+    'business_ownership',
+    'applicant_name',
+  ],
+  corporate_documents_guide: [
+    'business_name',
+    'documentation_mentioned',
+  ],
+  lease_premises_summary: [
+    'business_name',
+    'amount',
+    'timeline',
+  ],
+  // Partnership — Investor 2
+  cover_letter_p2:          ['applicant_name', 'business_name', 'investment_amount', 'treaty_country'],
+  source_of_funds_p2:       ['source_description', 'timeline', 'amount'],
+  declaration_p2:           ['applicant_name', 'treaty_country', 'investment_amount'],
+  qualifications_p2:        ['applicant_background', 'experience', 'education'],
+  nonimmigrant_intent_p2:   ['home_country_ties', 'return_intent'],
+  resume_p2:                ['applicant_name', 'employment', 'education'],
 };
 
 function extractKeyElements(text: string): string[] {
@@ -1422,6 +2052,17 @@ export function runGapAnalysis(documents: GeneratedDocument[]): GapAnalysisResul
     resume_principal: [],
     resume_spouse: [],
     gift_letter: [],
+    financial_assets_portfolio: [],
+    org_chart: [],
+    corporate_documents_guide: [],
+    lease_premises_summary: [],
+    // Partnership — Investor 2
+    cover_letter_p2: [],
+    source_of_funds_p2: [],
+    declaration_p2: [],
+    qualifications_p2: [],
+    nonimmigrant_intent_p2: [],
+    resume_p2: [],
   };
 
   const recommendations: string[] = [];
@@ -1519,46 +2160,24 @@ const AI_DETECTION_THRESHOLD = 0.35;
 export async function runAIDetectionAudit(
   documents: GeneratedDocument[]
 ): Promise<void> {
-  const anthropic = getAnthropic();
+  const supabase = getSupabase();
 
   for (const doc of documents) {
     if (!doc.content_text) continue;
 
     try {
-      const model = await getGenerationModel();
-      const response = await anthropic.messages.create({
-        model,
-        max_tokens: 500,
-        system: `You are an AI detection tool. Analyze the following text and estimate how likely it was written by an AI.
+      const aiScore = computeStylometricAIScore(doc.content_text);
+      const passed = aiScore < AI_DETECTION_THRESHOLD;
 
-Respond with ONLY a JSON object in this exact format:
-{"ai_score": 0.0-1.0, "reasoning": "brief explanation"}
-
-Where ai_score is 0.0 (definitely human) to 1.0 (definitely AI).
-Consider: repetitive phrasing, formal structure, lack of personal voice, formulaic transitions.`,
-        messages: [{ role: 'user', content: `Analyze this document for AI writing patterns:\n\n${doc.content_text.slice(0, 3000)}` }],
-      });
-
-      const content = response.content[0];
-      if (content.type === 'text') {
-        const match = content.text.match(/"ai_score"\s*:\s*([0-9.]+)/);
-        if (match) {
-          const aiScore = parseFloat(match[1]);
-          const passed = aiScore < AI_DETECTION_THRESHOLD;
-
-          // Update document with AI detection results
-          const supabase = getSupabase();
-          await supabase
-            .from('generated_documents')
-            .update({
-              ai_detection_score: aiScore,
-              ai_detection_passed: passed,
-              updated_at: new Date().toISOString(),
-            })
-            .eq('job_id', doc.job_id)
-            .eq('document_type', doc.document_type);
-        }
-      }
+      await supabase
+        .from('generated_documents')
+        .update({
+          ai_detection_score: aiScore,
+          ai_detection_passed: passed,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('job_id', doc.job_id)
+        .eq('document_type', doc.document_type);
     } catch (err) {
       console.error(`AI detection failed for ${doc.document_type}:`, err);
       // Non-fatal - continue
@@ -1622,45 +2241,12 @@ export async function runGenerationPipeline(
     });
   };
 
-  // Polling function to wait for document approval
+  // CIC-P.4: Async client certification model — no server-side blocking.
+  // Documents are delivered to awaiting_client status immediately; clients
+  // certify via POST /api/dashboard/certify-document. The pipeline continues.
   const waitForApproval = async (
-    docType: DocumentType,
-    maxWaitMs = 300000 // 5 minutes max
+    _docType: DocumentType
   ): Promise<{ approved: boolean; revisionRequested: boolean }> => {
-    const startTime = Date.now();
-    const pollInterval = 2000; // 2 seconds
-    let warningSent = false;
-
-    while (Date.now() - startTime < maxWaitMs) {
-      const elapsedMs = Date.now() - startTime;
-      const elapsedSeconds = Math.floor(elapsedMs / 1000);
-
-      // At 4 minutes, log warning before auto-approve
-      if (elapsedSeconds >= 240 && !warningSent) {
-        console.warn(`[generation-engine] Approval timeout warning for ${docType} — auto-approving in 60s`);
-        warningSent = true;
-      }
-
-      const { data: doc } = await supabase
-        .from('generated_documents')
-        .select('status')
-        .eq('job_id', jobId)
-        .eq('document_type', docType)
-        .single();
-
-      if (doc?.status === 'approved') {
-        return { approved: true, revisionRequested: false };
-      }
-      if (doc?.status === 'revision_requested') {
-        return { approved: false, revisionRequested: true };
-      }
-
-      // Wait before next poll
-      await new Promise(resolve => setTimeout(resolve, pollInterval));
-    }
-
-    // Timeout - auto-approve to not hang forever
-    console.warn(`[generation-engine] Auto-approving ${docType} after timeout`);
     return { approved: true, revisionRequested: false };
   };
 
@@ -1678,11 +2264,21 @@ export async function runGenerationPipeline(
     'net_worth_statement',
     'resume_principal',
     'gift_letter',
+    'org_chart',
+    'corporate_documents_guide',
   ];
 
   const generatedDocs: GeneratedDocument[] = [];
 
   try {
+    // Fetch the job row to read client-supplied regen note (if this is a regen run)
+    const { data: jobRow } = await supabase
+      .from('document_generation_jobs')
+      .select('client_regen_note')
+      .eq('id', jobId)
+      .maybeSingle();
+    const clientRegenNote = (jobRow?.client_regen_note as string | null) ?? null;
+
     // Mark job running
     await updateJob({
       status: 'running',
@@ -1710,6 +2306,15 @@ export async function runGenerationPipeline(
 
     const caseBrief = caseBriefRow.case_brief_json as CaseBrief;
 
+    // CIC-2.2 — fetch Case Theory once for the whole pipeline run.
+    // Passed to verifyCaseTheoryCompliance() after each document is generated.
+    // Null when case_theory doesn't exist yet (sparse account) — verifier treats null as pass.
+    const { data: caseTheoryForVerifier } = await supabase
+      .from('case_theory')
+      .select('narrative, numbers_strategy, dimension_verdicts, directives')
+      .eq('application_id', applicationId)
+      .maybeSingle();
+
     // Get voice profile separately
     const { data: voiceProfileRow } = await supabase
       .from('applicant_voice_profile')
@@ -1726,7 +2331,7 @@ export async function runGenerationPipeline(
       .from('answers')
       .select('question_key, answer_value')
       .eq('application_id', applicationId)
-      .in('question_key', ['M3-L-01', 'M3-F-05']);
+      .in('question_key', ['M3-L-01', 'M3-F-05', 'M3-F-NEW-01']);
 
     const condAnswerMap: Record<string, string> = {};
     for (const row of (condAnswerRows ?? [])) {
@@ -1741,6 +2346,72 @@ export async function runGenerationPipeline(
     }
     if (typeof condAnswerMap['M3-F-05'] === 'string' && condAnswerMap['M3-F-05'].includes('property-sale')) {
       conditionalDocTypes.push('property_portfolio');
+    }
+    // WS6.1 — Investment Evidence generates only when at-risk is genuinely contested:
+    // funds partially deployed or committed-but-unspent (escrow-style arrangements).
+    // Fully-deployed cases rely on SOF §V instead of a redundant standalone document.
+    if (condAnswerMap['M3-F-NEW-01'] === 'partial' || condAnswerMap['M3-F-NEW-01'] === 'no') {
+      conditionalDocTypes.push('investment_proof');
+    }
+    // WS6.1 — Financial Assets Portfolio generates when fund sources include securities/
+    // registered plans/crypto (RRSP, TFSA, LIRA/pension, cryptocurrency). Mirrors the
+    // trigger in /api/generate/start/route.ts — this pipeline executor had its own
+    // independent conditionalDocTypes computation that was missed when that route was
+    // wired in Session 119o, so financial_assets_portfolio was never actually generated
+    // despite the step counter accounting for it. Fixed here.
+    if (
+      typeof condAnswerMap['M3-F-05'] === 'string' &&
+      ['rrsp', 'tfsa', 'lira', 'crypto'].some(v => (condAnswerMap['M3-F-05'] as string).includes(v))
+    ) {
+      conditionalDocTypes.push('financial_assets_portfolio');
+    }
+    // WS6.1 — Lease/Premises Summary generates only for physical-location businesses,
+    // detected deterministically by the presence of an uploaded lease agreement (rather
+    // than a new intake question) — mirrors the trigger in start/route.ts.
+    const { data: leaseDoc } = await supabase
+      .from('uploaded_documents')
+      .select('id')
+      .eq('application_id', applicationId)
+      .eq('doc_type', 'lease_agreement')
+      .limit(1)
+      .maybeSingle();
+    if (leaseDoc) {
+      conditionalDocTypes.push('lease_premises_summary');
+    }
+
+    // Sprint F-P: Add Investor 2 document types for complete_partnership buyers
+    const { data: partnershipPayment } = await supabase
+      .from('payments')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('payment_type', 'complete_partnership')
+      .eq('status', 'completed')
+      .limit(1)
+      .maybeSingle();
+
+    const isPartnership = !!partnershipPayment;
+
+    if (isPartnership) {
+      // cover_letter_p2 retired — the shared cover_letter now covers both
+      // investors jointly (see JOINT_PARTNERSHIP_DOC_TYPES above).
+      conditionalDocTypes.push(
+        'source_of_funds_p2', 'declaration_p2',
+        'qualifications_p2', 'nonimmigrant_intent_p2', 'resume_p2'
+      );
+    }
+
+    // Load P2-* answers once for the whole pipeline run (empty map for solo applications)
+    const p2Answers: Record<string, string> = {};
+    if (isPartnership) {
+      const { data: p2Rows } = await supabase
+        .from('answers')
+        .select('question_key, answer_value')
+        .eq('application_id', applicationId)
+        .like('question_key', 'P2-%');
+      for (const row of (p2Rows ?? [])) {
+        const r = row as Record<string, string>;
+        if (r.question_key && r.answer_value) p2Answers[r.question_key] = r.answer_value;
+      }
     }
 
     const DOCUMENT_TYPES = [...CORE_DOCUMENT_TYPES, ...conditionalDocTypes];
@@ -1795,11 +2466,28 @@ export async function runGenerationPipeline(
         });
     }
 
+    // C2: Load already-approved docs from a prior interrupted run so we skip re-generating them
+    const { data: existingApproved } = await supabase
+      .from('generated_documents')
+      .select('document_type, content_text, verifier_result')
+      .eq('job_id', jobId)
+      .eq('status', 'approved');
+    const approvedSet = new Set((existingApproved ?? []).map(d => d.document_type as string));
+    for (const d of existingApproved ?? []) {
+      generatedDocs.push(d as unknown as GeneratedDocument);
+    }
+
     // Steps 2-9: Generate each document with sequential approval
     for (let i = 0; i < DOCUMENT_TYPES.length; i++) {
       const stepNum = i + 2;
       const docType = DOCUMENT_TYPES[i];
       const docLabel = DOCUMENT_TYPE_LABELS[docType];
+
+      // C2: Skip docs already approved in a previous run
+      if (approvedSet.has(docType)) {
+        emitStep(stepNum, 'complete');
+        continue;
+      }
 
       let documentApproved = false;
       let revisionLoopCount = 0;
@@ -1832,7 +2520,93 @@ export async function runGenerationPipeline(
           .eq('document_type', docType);
 
         try {
-          const payload = await buildGenerationPayload(applicationId, docType, caseBrief);
+          const payload = await buildGenerationPayload(applicationId, docType, caseBrief, DOCUMENT_TYPES);
+
+          // Sprint F-P: Inject Partner 2 context for _p2 document types
+          const isP2Doc = docType.endsWith('_p2');
+          if (isP2Doc && Object.keys(p2Answers).length > 0) {
+            const p2Name       = p2Answers['P2-NAME']       ?? personLabel('P2');
+            const p2Nation     = p2Answers['P2-NATIONALITY'] ?? '';
+            const p2Shares     = p2Answers['P2-SHARES']     ?? '';
+            const p2Invest     = p2Answers['P2-INVEST']     ?? '';
+            const p2Role       = p2Answers['P2-ROLE']       ?? '';
+            const p2Sof        = p2Answers['P2-SOF']        ?? '';
+            const p2Quals      = p2Answers['P2-QUALS']      ?? '';
+            const p2Intent     = p2Answers['P2-INTENT']     ?? '';
+            const p1Name = (caseBrief as unknown as Record<string, unknown>).principal_name as string || personLabel('P1');
+
+            const p2Block = `
+⚠️ PARTNERSHIP APPLICATION — INVESTOR 2 DOCUMENT
+This is a partnership E-2 application with two investors: ${p1Name} (Investor 1) and ${p2Name} (Investor 2).
+This specific document is generated for INVESTOR 2 ONLY. Use the following data for Investor 2 — do NOT use Investor 1's personal information for personal sections.
+
+INVESTOR 2 DATA:
+- Full legal name: ${p2Name}
+- Nationality / Treaty country: ${p2Nation}
+- Ownership share: ${p2Shares}
+- Personal investment amount: $${p2Invest}
+- Management role and day-to-day activities: ${p2Role}
+- Source of funds narrative: ${p2Sof}
+- Professional background and qualifications: ${p2Quals}
+- Home country ties / non-immigrant intent: ${p2Intent}
+
+The business is a joint venture between both investors. When referencing the business, you may note that ${p1Name} is the co-investor and ${p2Name} is Investor 2. The Business Plan was prepared for both investors jointly.
+Generate the document using Investor 2's identity, name, nationality, source of funds, qualifications, and intent data above.
+
+---
+
+`;
+            payload.system_prompt = p2Block + payload.system_prompt;
+
+            // Override module_3_answers so field-level extraction picks up P2 data
+            payload.module_3_answers = {
+              ...payload.module_3_answers,
+              'P2-NAME': p2Name,
+              'P2-NATIONALITY': p2Nation,
+              'P2-SHARES': p2Shares,
+              'P2-INVEST': p2Invest,
+              'P2-ROLE': p2Role,
+              'P2-SOF': p2Sof,
+              'P2-QUALS': p2Quals,
+              'P2-INTENT': p2Intent,
+            };
+          }
+
+          // WS5 5.2 — joint-context block for the 8 documents shared across a
+          // complete_partnership case. Only the _p2-suffixed docs got a context
+          // block before this; the shared docs were written in single-investor
+          // voice with unguided P2-* leakage. Applies to the same CORE
+          // document types the spec calls out (Business Plan, Substantiality
+          // Memo, Non-Marginality Rebuttal, Fund Flow Chronology, Net Worth
+          // Statement, DS-160 Reference, Gift Letter, Property Portfolio).
+          if (isPartnership && !isP2Doc && JOINT_PARTNERSHIP_DOC_TYPES.has(docType) && Object.keys(p2Answers).length > 0) {
+            const p1Name = (caseBrief as unknown as Record<string, unknown>).principal_name as string || personLabel('P1');
+            const p1Nationality = (caseBrief as unknown as Record<string, unknown>).treaty_country as string
+              ?? (caseBrief as unknown as Record<string, unknown>).nationality as string
+              ?? null;
+            const p2Name = p2Answers['P2-NAME'] ?? personLabel('P2');
+            const p2Nation = p2Answers['P2-NATIONALITY'] ?? '';
+            const p2Shares = p2Answers['P2-SHARES'] ?? '';
+            const p2Invest = p2Answers['P2-INVEST'] ?? '';
+            const p2Role = p2Answers['P2-ROLE'] ?? '';
+
+            const nationality = computeEnterpriseNationality(
+              p1Name, p1Nationality, null,
+              p2Name, p2Nation || null, p2Shares || null,
+            );
+            const jointBlock = buildJointPartnershipBlock(
+              p1Name, p2Name, p2Nation, p2Shares, p2Invest, p2Role, nationality,
+            );
+            payload.system_prompt = jointBlock + payload.system_prompt;
+          }
+
+          // Prepend client regen note (if this is a client-requested regeneration)
+          if (clientRegenNote && payload.case_theory_brief !== undefined) {
+            const noteBlock = `CLIENT REVISION REQUEST:\nThe client reviewed the previous draft and requested changes with this note:\n"${clientRegenNote}"\nAddress this feedback directly in the regenerated document.\n`;
+            payload.case_theory_brief = noteBlock + (payload.case_theory_brief ?? '');
+          } else if (clientRegenNote) {
+            payload.case_theory_brief = `CLIENT REVISION REQUEST:\nThe client reviewed the previous draft and requested changes with this note:\n"${clientRegenNote}"\nAddress this feedback directly in the regenerated document.\n`;
+          }
 
           // Validate required context before calling API
           const validation = validateContext(
@@ -1857,38 +2631,90 @@ export async function runGenerationPipeline(
 
           const content = await callClaudeAPI(payload);
 
-          const wc = countWords(content);
-          const pages = estimatePages(wc);
+          // H2 — Deterministic figure provenance check (free, no LLM).
+          // Runs before the LLM verifier so orphan figures are surfaced immediately.
+          const provenanceResult = checkFigureProvenance(content, caseTheoryForVerifier?.numbers_strategy);
+          const provenanceBrief = provenanceResult.clean ? '' : provenanceResult.correctionBrief;
+          if (!provenanceResult.clean) {
+            console.warn(`[PROVENANCE] ${provenanceResult.orphans.length} orphan figure(s) in ${docType} draft — injecting correction brief`);
+          }
 
-          // Parse content into JSON sections if applicable
-          let contentJson: Record<string, unknown> | null = null;
-          const jsonMatch = content.match(/```json\s*\n([\s\S]*?)\n```/);
-          if (jsonMatch) {
-            try {
-              contentJson = JSON.parse(jsonMatch[1]);
-            } catch {
-              contentJson = { full_text: content };
+          // CIC-2.2 — verifier loop. Runs before the draft reaches the client.
+          // Max 3 attempts: if verifier fails, regenerate with corrective feedback and re-verify.
+          // Null verifier result (no case_theory, or verifier LLM failed) → treat as pass.
+          const MAX_VERIFIER_RETRIES = 3;
+          let finalContent = content;
+          let verifierResult: VerifierResult | null = null;
+          let verifierAttempts = 0;
+          let currentPayload = provenanceBrief
+            ? { ...payload, case_theory_brief: provenanceBrief + (payload.case_theory_brief ? '\n\n' + payload.case_theory_brief : '') }
+            : payload;
+
+          if (caseTheoryForVerifier) {
+            for (let attempt = 0; attempt < MAX_VERIFIER_RETRIES; attempt++) {
+              verifierAttempts++;
+              verifierResult = await verifyCaseTheoryCompliance(
+                docType,
+                finalContent,
+                caseTheoryForVerifier,
+                userId,
+              );
+
+              // null = verifier LLM failed (not the same as a pass).
+              // Log it and ship the draft — we never block the client on a verifier outage —
+              // but record verifier_attempts so the dashboard can flag "unverified" documents.
+              if (verifierResult === null) {
+                console.warn(`[VERIFIER] LLM failed on attempt ${attempt + 1} for ${docType} — shipping unverified draft`);
+                break;
+              }
+
+              if (verifierResult.overall !== 'fail') break;
+
+              if (attempt < MAX_VERIFIER_RETRIES - 1) {
+                // Regenerate with corrective feedback prepended to the user message.
+                // buildGenerationPayload already fetched everything; we just need to
+                // override the userMessage with corrective context — done by adding
+                // the correction brief to the payload as a special override field.
+                const correctionPayload = {
+                  ...currentPayload,
+                  case_theory_brief: verifierResult.correctionBrief
+                    + (currentPayload.case_theory_brief
+                      ? '\n\n' + currentPayload.case_theory_brief
+                      : ''),
+                };
+                finalContent = await callClaudeAPI(correctionPayload);
+                currentPayload = correctionPayload;
+              }
             }
+          }
+
+          const finalWc    = countWords(finalContent);
+          const finalPages = estimatePages(finalWc);
+
+          // Re-parse JSON sections from the final (possibly retried) content
+          let finalContentJson: Record<string, unknown> | null = null;
+          const finalJsonMatch = finalContent.match(/```json\s*\n([\s\S]*?)\n```/);
+          if (finalJsonMatch) {
+            try { finalContentJson = JSON.parse(finalJsonMatch[1]); }
+            catch { finalContentJson = { full_text: finalContent }; }
           } else {
             try {
-              const parsed = JSON.parse(content);
-              if (typeof parsed === 'object' && parsed !== null) {
-                contentJson = parsed;
-              }
-            } catch {
-              contentJson = { full_text: content };
-            }
+              const parsed = JSON.parse(finalContent);
+              if (typeof parsed === 'object' && parsed !== null) finalContentJson = parsed;
+            } catch { finalContentJson = { full_text: finalContent }; }
           }
 
           // Save the generated document with 'awaiting_approval' status — frontend polls for approval
           await supabase
             .from('generated_documents')
             .update({
-              content_text: content,
-              content_json: contentJson,
-              word_count: wc,
-              page_estimate: pages,
+              content_text: finalContent,
+              content_json: finalContentJson,
+              word_count: finalWc,
+              page_estimate: finalPages,
               status: 'awaiting_approval',
+              verifier_result: verifierResult ?? null,
+              verifier_attempts: verifierAttempts,
               updated_at: new Date().toISOString(),
             })
             .eq('job_id', jobId)
@@ -1901,10 +2727,10 @@ export async function runGenerationPipeline(
             user_id: userId,
             document_type: docType,
             status: 'awaiting_approval',
-            content_json: contentJson,
-            content_text: content,
-            word_count: wc,
-            page_estimate: pages,
+            content_json: finalContentJson,
+            content_text: finalContent,
+            word_count: finalWc,
+            page_estimate: finalPages,
             revision_count: revisionLoopCount,
             revision_notes: [],
             ai_detection_score: null,
@@ -1922,7 +2748,7 @@ export async function runGenerationPipeline(
           emitStep(stepNum, 'complete');
 
           // Emit awaiting approval state - this pauses generation
-          await emitAwaitingApproval(docType, content, stepNum);
+          await emitAwaitingApproval(docType, finalContent, stepNum);
 
           // Wait for user approval or revision request
           const { approved, revisionRequested } = await waitForApproval(docType);
@@ -2041,6 +2867,73 @@ export async function runGenerationPipeline(
           ),
           notes: 'Excessive repetition detected between documents',
         });
+
+      // E8/WS2.8 — this used to be log-only, so a flagged near-duplicate pair
+      // shipped to the client unchanged. Regenerate the second document in
+      // each pair (deduped, one attempt each) with an explicit instruction to
+      // diverge from its sibling's language while keeping the same facts.
+      const regeneratedTypes = new Set<DocumentType>();
+      for (const pair of repetitionResult.duplicate_pairs) {
+        if (regeneratedTypes.has(pair.doc2)) continue;
+        regeneratedTypes.add(pair.doc2);
+
+        const docToFix = generatedDocs.find(d => d.document_type === pair.doc2);
+        if (!docToFix || !docToFix.content_text) continue;
+
+        try {
+          const regenPayload = await buildGenerationPayload(applicationId, pair.doc2, caseBrief, DOCUMENT_TYPES);
+          const distinctivenessBrief = `CRITICAL: Your previous draft of this document was ${Math.round(pair.similarity * 100)}% textually similar to the ${DOCUMENT_TYPE_LABELS[pair.doc1]}. Every document in this package must cover its assigned ground in distinct language — do not reuse the same sentences, phrasing, or paragraph structure as the other document. Keep the same facts and figures, but write this one independently.`;
+          const correctedContent = await callClaudeAPI({
+            ...regenPayload,
+            case_theory_brief: distinctivenessBrief + (regenPayload.case_theory_brief ? '\n\n' + regenPayload.case_theory_brief : ''),
+          });
+
+          const wc = countWords(correctedContent);
+          const pages = estimatePages(wc);
+          let correctedJson: Record<string, unknown> | null = null;
+          const jsonMatch = correctedContent.match(/```json\s*\n([\s\S]*?)\n```/);
+          if (jsonMatch) {
+            try { correctedJson = JSON.parse(jsonMatch[1]); }
+            catch { correctedJson = { full_text: correctedContent }; }
+          } else {
+            try {
+              const parsed = JSON.parse(correctedContent);
+              if (typeof parsed === 'object' && parsed !== null) correctedJson = parsed;
+            } catch { correctedJson = { full_text: correctedContent }; }
+          }
+
+          await supabase
+            .from('generated_documents')
+            .update({
+              content_text: correctedContent,
+              content_json: correctedJson,
+              word_count: wc,
+              page_estimate: pages,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('job_id', jobId)
+            .eq('document_type', pair.doc2);
+
+          docToFix.content_text = correctedContent;
+          docToFix.content_json = correctedJson;
+          docToFix.word_count = wc;
+          docToFix.page_estimate = pages;
+
+          await supabase
+            .from('document_generation_log')
+            .insert({
+              application_id: applicationId,
+              document_type: pair.doc2,
+              stage: 'repetition_check',
+              attempt_number: 2,
+              passed: true,
+              flagged_sections: [],
+              notes: `Regenerated after ${Math.round(pair.similarity * 100)}% similarity with ${pair.doc1}`,
+            });
+        } catch (err) {
+          console.error(`[REPETITION] Regeneration failed for ${pair.doc2}:`, err);
+        }
+      }
     }
 
     emitQualityStep(1, 'complete');
@@ -2050,12 +2943,17 @@ export async function runGenerationPipeline(
     emitQualityStep(2, 'running');
     await updateJob({ current_step: Q + 2, current_step_label: QUALITY_LABELS[2] });
 
-    const consistencyResult = checkConsistency(generatedDocs);
+    const consistencyResult = await runCanonicalConsistencySweep(applicationId, userId);
 
-    // Auto-correct unambiguous issues (e.g., different spacing)
+    // Persist sweep result on the generation job and log any issues
+    await updateJob({ consistency_result: consistencyResult });
+
     if (!consistencyResult.passed) {
-      for (const issue of consistencyResult.issues) {
-        // Log the issue
+      const allIssues = [
+        ...consistencyResult.phase1Issues.map(i => ({ field: i.field, type: 'canonical', severity: i.severity })),
+        ...consistencyResult.phase2SemanticIssues.map(i => ({ field: i.documentType, type: 'semantic', issue: i.issue })),
+      ];
+      for (const issue of allIssues) {
         await supabase
           .from('document_generation_log')
           .insert({
@@ -2065,7 +2963,36 @@ export async function runGenerationPipeline(
             attempt_number: 1,
             passed: false,
             flagged_sections: [issue],
-            notes: `Consistency issue: ${issue.field}`,
+            notes: `CIC-P.2 consistency issue: ${issue.field}`,
+          });
+      }
+    }
+
+    // WS3.1 — deterministic exhibit-citation provenance sweep, folded into
+    // the same quality step rather than a new numbered step (adding one
+    // would renumber every QUALITY_LABELS index downstream).
+    const exhibitRegistryForSweep = await buildExhibitRegistry(applicationId);
+    const exhibitConsistencyResult = checkExhibitConsistency(
+      exhibitRegistryForSweep,
+      generatedDocs
+        .filter(d => d.content_text)
+        .map(d => ({ documentType: d.document_type, contentText: d.content_text as string })),
+    );
+
+    await updateJob({ exhibit_consistency_result: exhibitConsistencyResult });
+
+    if (!exhibitConsistencyResult.clean) {
+      for (const issue of exhibitConsistencyResult.orphanCitations) {
+        await supabase
+          .from('document_generation_log')
+          .insert({
+            application_id: applicationId,
+            document_type: issue.documentType,
+            stage: 'exhibit_consistency_check',
+            attempt_number: 1,
+            passed: false,
+            flagged_sections: [issue.citation],
+            notes: `WS3.1 orphan exhibit citation: ${issue.citation} does not resolve to any uploaded document`,
           });
       }
     }
@@ -2110,9 +3037,18 @@ export async function runGenerationPipeline(
       let actualAttempts = 0;
       let finalScore: number | null = null;
 
+      // E4 — humanization rewrites verified content with no post-check today.
+      // Baseline the figures already present in the CIC-verified draft so we
+      // can tell "pre-existing orphan" apart from "orphan humanization just
+      // introduced" — only the latter should block shipping the rewrite.
+      const preHumanizeOrphanValues = new Set(
+        checkFigureProvenance(doc.content_text, caseTheoryForVerifier?.numbers_strategy)
+          .orphans.map(o => o.normalized)
+      );
+
       for (let attempt = 1; attempt <= HUMANIZATION_MAX_ATTEMPTS; attempt++) {
         try {
-          const humanized = await humanizeDocument(currentText, voiceProfile, lastFeedback);
+          const humanized = await humanizeDocument(currentText, voiceProfile, lastFeedback, doc.document_type);
           const wc = countWords(humanized);
           const pages = estimatePages(wc);
           actualAttempts = attempt;
@@ -2128,12 +3064,19 @@ export async function runGenerationPipeline(
             { caseBrief: caseBriefData, investmentTotal }
           );
 
+          // E4 — re-run the deterministic figure check post-humanization. The
+          // rewrite pass can (and does) mangle a verified $250,000 into "a
+          // quarter million" or worse, silently invent a nearby number.
+          const postHumanizeProvenance = checkFigureProvenance(humanized, caseTheoryForVerifier?.numbers_strategy);
+          const newOrphans = postHumanizeProvenance.orphans.filter(o => !preHumanizeOrphanValues.has(o.normalized));
+          const figuresPassed = newOrphans.length === 0;
+
           const aiPassed = aiScore < DETECTION_THRESHOLD;
           const qualityPassed = qualityResult.passed;
           finalScore = aiScore;
 
-          if ((aiPassed && qualityPassed) || attempt === HUMANIZATION_MAX_ATTEMPTS) {
-            // Passed both checks or last attempt — accept this version
+          if (aiPassed && qualityPassed && figuresPassed) {
+            // Passed every check — accept this version
             await supabase
               .from('generated_documents')
               .update({
@@ -2148,17 +3091,40 @@ export async function runGenerationPipeline(
               })
               .eq('job_id', jobId)
               .eq('document_type', doc.document_type);
-
-            if (!aiPassed || !qualityPassed) {
-              const reasons = [];
-              if (!aiPassed) reasons.push(`AI score ${aiScore} (threshold ${DETECTION_THRESHOLD})`);
-              if (!qualityPassed) reasons.push(`quality gate: ${qualityResult.failures.join(', ')}`);
-              console.warn(`[HUMANIZE] ${doc.document_type}: max attempts reached — ${reasons.join('; ')} — flagged for review`);
-            }
             break;
           }
 
-          // Build feedback combining AI detection and quality gate issues for next attempt
+          if (attempt === HUMANIZATION_MAX_ATTEMPTS) {
+            // Last attempt: never ship a rewrite that introduced hallucinated
+            // figures — fall back to the last figure-clean (pre-humanization)
+            // text instead of the cosmetically nicer but factually wrong one.
+            const safeText = figuresPassed ? humanized : currentText;
+            const safeWc = countWords(safeText);
+            await supabase
+              .from('generated_documents')
+              .update({
+                content_text: safeText,
+                word_count: safeWc,
+                page_estimate: estimatePages(safeWc),
+                ai_detection_score: aiScore,
+                ai_detection_passed: aiPassed,
+                quality_gate_passed: qualityPassed,
+                quality_gate_notes: qualityPassed ? [] : qualityResult.failures,
+                updated_at: new Date().toISOString(),
+              })
+              .eq('job_id', jobId)
+              .eq('document_type', doc.document_type);
+
+            const reasons = [];
+            if (!aiPassed) reasons.push(`AI score ${aiScore} (threshold ${DETECTION_THRESHOLD})`);
+            if (!qualityPassed) reasons.push(`quality gate: ${qualityResult.failures.join(', ')}`);
+            if (!figuresPassed) reasons.push(`${newOrphans.length} new orphan figure(s) introduced by humanization — reverted to pre-humanization text`);
+            console.warn(`[HUMANIZE] ${doc.document_type}: max attempts reached — ${reasons.join('; ')} — flagged for review`);
+            break;
+          }
+
+          // Build feedback combining AI detection, quality gate, and figure
+          // provenance issues for next attempt
           const feedbackParts: string[] = [];
           if (!aiPassed) {
             feedbackParts.push(`AI detection score: ${aiScore} (threshold: ${DETECTION_THRESHOLD}). The text still reads as AI-generated. Focus on: more varied sentence lengths, removing formal transitions, adding personal voice from the voice profile.`);
@@ -2166,10 +3132,13 @@ export async function runGenerationPipeline(
           if (!qualityPassed) {
             feedbackParts.push(`Quality gate failures: ${qualityResult.failures.join('; ')}. Address each issue above.`);
           }
+          if (!figuresPassed) {
+            feedbackParts.push(`${postHumanizeProvenance.correctionBrief}\n\nThese figures were correct in the previous draft — you introduced or altered them while rewriting for tone. Restate every number EXACTLY as it appeared before; only change surrounding wording.`);
+          }
           lastFeedback = feedbackParts.join('\n\n');
           currentText = humanized;
 
-          console.log(`[HUMANIZE] ${doc.document_type}: attempt ${attempt} AI=${aiScore} quality=${qualityPassed ? 'pass' : 'fail'} — retrying`);
+          console.log(`[HUMANIZE] ${doc.document_type}: attempt ${attempt} AI=${aiScore} quality=${qualityPassed ? 'pass' : 'fail'} figures=${figuresPassed ? 'pass' : 'fail'} — retrying`);
         } catch (err) {
           console.error(`[HUMANIZE] ${doc.document_type} attempt ${attempt} failed:`, err);
           actualAttempts = attempt;
@@ -2218,8 +3187,9 @@ export async function runGenerationPipeline(
         clean = clean.replace(/\*\*([^*]+)\*\*/g, '$1');  // Remove bold
         clean = clean.replace(/\*([^*]+)\*/g, '$1');  // Remove italic
         clean = clean.replace(/`{1,3}[^`]*`{1,3}/g, '');  // Remove code blocks
-        clean = clean.replace(/^\s*[-*+]\s+/gm, '');  // Remove list markers
-        clean = clean.replace(/^\s*\d+\.\s+/gm, '');  // Remove numbered lists
+        // NOTE: numbered/bulleted list markers are intentionally preserved —
+        // they are legitimate document structure (resumes, chronologies,
+        // itemized breakdowns), not AI-generation artifacts.
 
         // Clean up multiple blank lines
         clean = clean.replace(/\n{3,}/g, '\n\n');
@@ -2276,7 +3246,7 @@ export async function runGenerationPipeline(
       // Re-prompt once if quality gate fails
       if (!qualityResult.passed) {
         try {
-          const payload = await buildGenerationPayload(applicationId, doc.document_type, caseBrief);
+          const payload = await buildGenerationPayload(applicationId, doc.document_type, caseBrief, DOCUMENT_TYPES);
           const failureInstructions = [
             'CRITICAL: Your previous output failed the quality check. Fix these issues:',
             ...qualityResult.failures.map(f => `  - ${f}`),
@@ -2297,8 +3267,8 @@ export async function runGenerationPipeline(
             messages: [{ role: 'user', content: 'Regenerate the document now.' }],
           });
 
-          const retryContent = retryResponse.content[0];
-          if (retryContent.type === 'text') {
+          const retryContent = retryResponse.content.find((b): b is Anthropic.TextBlock => b.type === 'text');
+          if (retryContent) {
             const wc = countWords(retryContent.text);
             const pages = estimatePages(wc);
 
@@ -2424,10 +3394,11 @@ export async function runGenerationPipeline(
       }
     }
 
-    // CONSISTENCY_FIELDS cross-document validation (Spec4 Stage 4)
-    // Reuses consistencyResult from Step 9 above — no duplicate call
+    // CIC-P.2 canonical consistency validation (Spec4 Stage 4)
+    // Reuses consistencyResult from quality step 2 above — no duplicate call
     if (!consistencyResult.passed) {
-      console.warn(`[QUALITY] Cross-document consistency issues:`, consistencyResult.issues);
+      const issueCount = consistencyResult.phase1Issues.length + consistencyResult.phase2SemanticIssues.length;
+      console.warn(`[QUALITY] Cross-document consistency issues (${issueCount}):`, consistencyResult.summary);
       _allQualityPassed = false;
 
       // Log consistency issues to pipeline_log
@@ -2436,7 +3407,7 @@ export async function runGenerationPipeline(
           .from('generation_pipeline_log')
           .update({
             stage4_completed: true,
-            stage4_issues_found: consistencyResult.issues.length,
+            stage4_issues_found: issueCount,
             stage4_completed_at: new Date().toISOString(),
           })
           .eq('application_id', applicationId)

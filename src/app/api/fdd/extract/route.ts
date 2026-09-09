@@ -1,8 +1,13 @@
 import { NextRequest } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { createServiceClient } from '@/lib/supabase-service';
+import { checkRateLimit } from '@/lib/rate-limit';
+import { isKillSwitchEnabled } from '@/lib/kill-switch';
 import { extractFddText, extractFdd } from '@/lib/fdd-extraction-engine';
 import type { FddSSEEvent } from '@/types/fdd';
+import { captureApiError } from '@/lib/capture-error';
+import { fddExtractRequestSchema } from '@/lib/api-schemas';
+import { logDocumentAccess } from '@/lib/document-access-log';
 
 // POST /api/fdd/extract — SSE stream
 // Body: { fdd_id: string }
@@ -27,21 +32,34 @@ export async function POST(request: NextRequest) {
           return;
         }
 
-        const body = await request.json();
-        const { fdd_id } = body as { fdd_id: string };
-
-        if (!fdd_id) {
-          send({ event: 'error', data: { message: 'Missing fdd_id' } });
+        const rl = await checkRateLimit(user.id, 'fdd');
+        if (!rl.allowed) {
+          send({ event: 'error', data: { message: 'Rate limit exceeded. Please wait before extracting another FDD.' } });
           controller.close();
           return;
         }
+
+        if (await isKillSwitchEnabled()) {
+          send({ event: 'error', data: { message: 'AI features are temporarily unavailable. Please try again shortly.' } });
+          controller.close();
+          return;
+        }
+
+        const rawBody = await request.json();
+        const parsed = fddExtractRequestSchema.safeParse(rawBody);
+        if (!parsed.success) {
+          send({ event: 'error', data: { message: 'Missing or invalid fdd_id' } });
+          controller.close();
+          return;
+        }
+        const { fdd_id } = parsed.data;
 
         const serviceClient = createServiceClient();
 
         // Fetch the FDD record (verify ownership)
         const { data: fddRecord, error: fetchError } = await serviceClient
           .from('fdd_analyses')
-          .select('*')
+          .select('extraction_status, storage_path, target_state, file_purged_at')
           .eq('id', fdd_id)
           .eq('user_id', user.id)
           .single();
@@ -54,6 +72,12 @@ export async function POST(request: NextRequest) {
 
         if (fddRecord.extraction_status === 'extracted') {
           send({ event: 'error', data: { message: 'This FDD has already been extracted' } });
+          controller.close();
+          return;
+        }
+
+        if (fddRecord.file_purged_at) {
+          send({ event: 'error', data: { message: 'This FDD file was removed under our data-retention policy. Re-upload it to analyze again.' } });
           controller.close();
           return;
         }
@@ -80,6 +104,14 @@ export async function POST(request: NextRequest) {
         }
 
         const buffer = Buffer.from(await fileData.arrayBuffer());
+
+        await logDocumentAccess({
+          userId: user.id,
+          documentId: fdd_id,
+          documentTable: 'fdd_analyses',
+          action: 'extract',
+          docType: 'fdd',
+        });
 
         // Extract PDF text
         const { text, pageCount, isScanned } = await extractFddText(buffer);
@@ -165,7 +197,7 @@ export async function POST(request: NextRequest) {
           },
         });
       } catch (error) {
-        console.error('[fdd/extract] Pipeline error:', error);
+        captureApiError(error, { route: 'fdd/extract', userId: user?.id });
         send({
           event: 'error',
           data: { message: error instanceof Error ? error.message : 'Extraction failed' },

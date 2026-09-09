@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { createBrowserSupabaseClient } from '@/lib/supabase';
+import { resolvePrimaryApplicationId } from '@/lib/resolve-application';
 
 type ScreenState = 'intro' | 'question' | 'completion' | 'resume';
 
@@ -36,13 +37,8 @@ export default function TabCPage() {
         return;
       }
 
-      const { data: existingApp } = await supabase
-        .from('applications')
-        .select('id')
-        .eq('user_id', authUser.id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
+      const existingAppId = await resolvePrimaryApplicationId(supabase, authUser.id);
+      const existingApp = existingAppId ? { id: existingAppId } : null;
 
       if (existingApp) {
         setApplicationId(existingApp.id);
@@ -84,7 +80,7 @@ export default function TabCPage() {
           .select('answer_value')
           .eq('application_id', existingApp.id)
           .eq('question_key', 'QC-CONFIRMED')
-          .single();
+          .maybeSingle();
 
         if (confirmData?.answer_value === 'true') {
           setLetterConfirmed(true);
@@ -109,7 +105,7 @@ export default function TabCPage() {
       application_id: applicationId,
       question_key: 'QC-CONFIRMED',
       answer_value: confirmed ? 'true' : 'false',
-    }, { onConflict: 'application_id,question_key' });
+    }, { onConflict: 'application_id,question_key,family_member_id' });
 
     setLetterConfirmed(confirmed);
     setNeedsReview(!confirmed);

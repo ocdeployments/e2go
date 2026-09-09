@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { useAutosaveFlush } from '@/lib/use-autosave-flush';
 import { useTrackSectionVisit } from "@/hooks/useTrackSectionVisit";
 import { createBrowserSupabaseClient } from '@/lib/supabase';
 import CaseFileShell from '@/components/apply/CaseFileShell';
@@ -13,8 +14,12 @@ import { useFieldQuality, getQualityBadgeStyle } from '@/hooks/useFieldQuality';
 import OptionButton from '@/components/apply/questions/OptionButton';
 import PreFillBadge from '@/components/apply/questions/PreFillBadge';
 import AdvisoryBlock from '@/components/apply/questions/AdvisoryBlock';
+import CurrencyInput from '@/components/apply/questions/CurrencyInput';
 import RiskFlag from '@/components/apply/questions/RiskFlag';
 import ClusterDivider from '@/components/apply/questions/ClusterDivider';
+import { useRouter } from 'next/navigation';
+import { useApplicationGate } from '@/hooks/useApplicationGate';
+import ApplicationNotReadyScreen from '@/components/apply/ApplicationNotReadyScreen';
 
 interface TiesAnswer {
   value: string;
@@ -51,7 +56,6 @@ const PROPERTY_QUESTIONS: QuestionField[] = [
     { value: 'business', label: 'Business in home country' },
     { value: 'none', label: 'No significant property' },
   ]},
-  { key: 'M3-T-02', type: 'textarea', label: 'List your major assets in your home country. Include approximate values.', helperText: 'Property deeds, vehicle registrations, investment statements.' },
   { key: 'M3-T-03', type: 'single', label: 'Do you own your primary residence?', options: [
     { value: 'yes', label: 'Yes — owned outright or with mortgage' },
     { value: 'no', label: 'No — renting' },
@@ -111,35 +115,30 @@ const ALL_QUESTION_SETS = [
 export default function TiesPage() {
   useTrackSectionVisit("ties");
   const { qualityMap, checkFieldQuality } = useFieldQuality();
+  const router = useRouter();
+  const { status: gateStatus, applicationId: gateAppId, retry } = useApplicationGate();
 
   const [loading, setLoading] = useState(true);
   const [activeClusterId, setActiveClusterId] = useState('cluster-1');
   const [answers, setAnswers] = useState<Record<string, TiesAnswer>>({});
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [applicationId, setApplicationId] = useState<string | null>(null);
+  const [assetRows, setAssetRows] = useState<Array<{ description: string; value: string }>>([{ description: '', value: '' }]);
   const debounceRef = useRef<Record<string, NodeJS.Timeout>>({});
+  const flushRef = useRef<Record<string, () => void>>({});
+  useAutosaveFlush(debounceRef, flushRef);
 
   useEffect(() => {
+    if (gateStatus !== 'ready' || !gateAppId) return;
     const loadData = async () => {
       try {
         const supabase = createBrowserSupabaseClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) { setLoading(false); return; }
-
-        const { data: apps } = await supabase
-          .from('applications')
-          .select('id')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(1);
-
-        if (!apps || apps.length === 0) { setLoading(false); return; }
-        setApplicationId(apps[0].id);
+        setApplicationId(gateAppId);
 
         const { data: existingAnswers } = await supabase
           .from('answers')
           .select('question_key, answer_value')
-          .eq('application_id', apps[0].id);
+          .eq('application_id', gateAppId);
 
         if (existingAnswers) {
           const answerMap: Record<string, TiesAnswer> = {};
@@ -149,12 +148,23 @@ export default function TiesPage() {
             }
           });
           setAnswers(answerMap);
+
+          // Parse saved asset list into structured rows
+          const rawAssets = answerMap['M3-T-02']?.value || '';
+          if (rawAssets) {
+            const parsed = rawAssets.split('\n').filter(Boolean).map((line) => {
+              const match = line.match(/^(.+?)\s*—\s*approx\.\s*\$(.+)$/);
+              if (match) return { description: match[1].trim(), value: match[2].replace(/,/g, '').trim() };
+              return { description: line.trim(), value: '' };
+            });
+            if (parsed.length > 0) setAssetRows(parsed);
+          }
         }
         setLoading(false);
       } catch { setLoading(false); }
     };
     loadData();
-  }, []);
+  }, [gateStatus, gateAppId]);
 
   const saveAnswer = useCallback(async (key: string, value: string) => {
     if (!applicationId) return;
@@ -173,9 +183,44 @@ export default function TiesPage() {
 
   const handleAnswerChange = useCallback((key: string, value: string) => {
     setAnswers((prev) => ({ ...prev, [key]: { value, source: prev[key]?.source ?? null } }));
+    flushRef.current[key] = () => saveAnswer(key, value);
     if (debounceRef.current[key]) clearTimeout(debounceRef.current[key]);
-    debounceRef.current[key] = setTimeout(() => saveAnswer(key, value), 800);
+    debounceRef.current[key] = setTimeout(() => { saveAnswer(key, value); delete flushRef.current[key]; }, 800);
   }, [saveAnswer]);
+
+  const serializeAssets = useCallback((rows: Array<{ description: string; value: string }>) => {
+    return rows
+      .filter((r) => r.description || r.value)
+      .map((r) => `${r.description}${r.value ? ` — approx. $${Number(r.value).toLocaleString('en-US')}` : ''}`)
+      .join('\n');
+  }, []);
+
+  const handleAssetChange = useCallback((index: number, field: 'description' | 'value', val: string) => {
+    setAssetRows((prev) => {
+      const next = prev.map((row, i) => i === index ? { ...row, [field]: val } : row);
+      const serialized = serializeAssets(next);
+      flushRef.current['M3-T-02'] = () => saveAnswer('M3-T-02', serialized);
+      if (debounceRef.current['M3-T-02']) clearTimeout(debounceRef.current['M3-T-02']);
+      debounceRef.current['M3-T-02'] = setTimeout(() => { saveAnswer('M3-T-02', serialized); delete flushRef.current['M3-T-02']; }, 800);
+      return next;
+    });
+  }, [saveAnswer, serializeAssets]);
+
+  const addAssetRow = useCallback(() => {
+    setAssetRows((prev) => [...prev, { description: '', value: '' }]);
+  }, []);
+
+  const removeAssetRow = useCallback((index: number) => {
+    setAssetRows((prev) => {
+      const next = prev.filter((_, i) => i !== index);
+      const final = next.length > 0 ? next : [{ description: '', value: '' }];
+      const serialized = serializeAssets(final);
+      flushRef.current['M3-T-02'] = () => saveAnswer('M3-T-02', serialized);
+      if (debounceRef.current['M3-T-02']) clearTimeout(debounceRef.current['M3-T-02']);
+      debounceRef.current['M3-T-02'] = setTimeout(() => { saveAnswer('M3-T-02', serialized); delete flushRef.current['M3-T-02']; }, 800);
+      return final;
+    });
+  }, [saveAnswer, serializeAssets]);
 
   const clusterStatuses = CLUSTERS.map((cluster) => {
     const set = ALL_QUESTION_SETS.find((s) => s.cluster === cluster.number);
@@ -270,7 +315,16 @@ export default function TiesPage() {
     </div>
   );
 
-  if (loading) {
+  if (gateStatus === 'no-user') {
+    router.push('/login');
+    return null;
+  }
+
+  if (gateStatus === 'not-ready') {
+    return <ApplicationNotReadyScreen onRetry={retry} />;
+  }
+
+  if (loading || gateStatus === 'loading') {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#0a0a0a]">
         <p className="text-sm" style={{ color: 'rgba(245,240,232,0.68)', fontFamily: "'DM Sans', sans-serif" }}>Loading...</p>
@@ -308,6 +362,70 @@ export default function TiesPage() {
           <SimulatorNudge section="ties" />
           <ClusterDivider label="Property & assets" />
           {renderQuestions(PROPERTY_QUESTIONS)}
+
+          {/* Structured asset list */}
+          <div className="mt-6">
+            <QuestionLabel>List your major assets in your home country</QuestionLabel>
+            <HelperText>Property deeds, vehicle registrations, investment statements. Include approximate value for each.</HelperText>
+            <div className="mt-3 space-y-2">
+              {assetRows.map((row, i) => (
+                <div key={i} className="flex gap-2 items-center">
+                  <div className="flex-1">
+                    <TextInput
+                      value={row.description}
+                      onChange={(v) => handleAssetChange(i, 'description', v)}
+                      placeholder="e.g. Primary residence, RRSP, Vehicle"
+                    />
+                  </div>
+                  <div style={{ width: '160px', flexShrink: 0 }}>
+                    <CurrencyInput
+                      value={row.value}
+                      onChange={(v) => handleAssetChange(i, 'value', v)}
+                      placeholder="Approx. value"
+                    />
+                  </div>
+                  {assetRows.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeAssetRow(i)}
+                      style={{
+                        width: '30px',
+                        height: '30px',
+                        flexShrink: 0,
+                        border: '1px solid rgba(245,240,232,0.12)',
+                        color: 'rgba(245,240,232,0.45)',
+                        background: 'transparent',
+                        cursor: 'pointer',
+                        fontSize: '16px',
+                        lineHeight: 1,
+                      }}
+                      aria-label="Remove asset"
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={addAssetRow}
+              style={{
+                marginTop: '10px',
+                fontFamily: "'DM Sans', sans-serif",
+                fontSize: '11px',
+                fontWeight: 400,
+                letterSpacing: '0.06em',
+                color: 'rgba(201,168,76,0.75)',
+                border: '1px solid rgba(201,168,76,0.22)',
+                background: 'transparent',
+                padding: '6px 14px',
+                cursor: 'pointer',
+              }}
+            >
+              + Add another asset
+            </button>
+          </div>
 
           {answers['M3-T-01']?.value?.includes('none') && (
             <RiskFlag>Lack of property ties is one of the strongest indicators of immigrant intent. If you do not own property in your home country, you need strong ties from other categories — family, financial obligations, community involvement — to counterbalance this.</RiskFlag>

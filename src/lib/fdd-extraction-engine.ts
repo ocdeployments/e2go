@@ -4,13 +4,12 @@
 // Splits FDD text into Item-targeted sections, runs 4 focused LLM passes,
 // merges results. Uses Anthropic directly for large-context reliability.
 
-import Anthropic from '@anthropic-ai/sdk';
 import { sanitizeForPrompt } from '@/lib/prompt-sanitizer';
+import { callFDDModel } from '@/lib/llm-client';
 import { REGISTRATION_STATES } from '@/types/fdd';
 import type { FddExtractedFields, FddFieldMeta, FddStaleStatus, FddRegistrationStatus } from '@/types/fdd';
 
-const ANTHROPIC_MODEL = 'claude-sonnet-4-6';
-const MAX_CHUNK_CHARS = 80_000;  // ~60K tokens — safe for Sonnet 4.6
+const MAX_CHUNK_CHARS = 80_000;  // ~60K tokens — safe chunk size across the FDD model chain
 
 // ============================================================================
 // PDF text extraction (no truncation — FDDs need full text)
@@ -113,20 +112,9 @@ export function splitFddIntoSections(text: string): FddSections {
 // ============================================================================
 
 async function callAnthropic(system: string, user: string, maxTokens = 4000): Promise<string> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) throw new Error('ANTHROPIC_API_KEY not set');
-
-  const client = new Anthropic({ apiKey });
-  const response = await client.messages.create({
-    model: ANTHROPIC_MODEL,
-    max_tokens: maxTokens,
-    system,
-    messages: [{ role: 'user', content: user }],
-  });
-
-  const block = response.content[0];
-  if (block.type !== 'text') throw new Error('Anthropic returned non-text block');
-  return block.text;
+  const result = await callFDDModel({ system, user, max_tokens: maxTokens, route: 'fdd-extraction' });
+  if (!result) throw new Error('FDD model chain (Opus/Sonnet/GLM) returned no result');
+  return result.content;
 }
 
 function parseJsonFromLlm(raw: string): Record<string, FddFieldMeta> {
@@ -163,6 +151,12 @@ For each field, return an object with:
 - "_page": page number where found (integer or null)
 - "_quote": exact source text up to 150 chars (string or null)
 - "_conf": "high" | "medium" | "low" | "not_disclosed"
+- "_provenance": "verbatim" | "estimated" — "verbatim" if the value is stated or directly
+  computable from numbers stated in the document; "estimated" ONLY for the specific fields
+  below that are explicitly marked as industry-norm estimates when the FDD doesn't disclose
+  the figure. Never use "estimated" for any other field — if a field isn't disclosed, set
+  value to null, _conf to "not_disclosed", and _provenance to "verbatim" (there is nothing to
+  estimate).
 
 If a field is not present, set value to null and _conf to "not_disclosed".
 Do not fabricate values. Do not infer beyond what the text states.
@@ -201,6 +195,7 @@ Extract these fields and return as a single JSON object:
   "registered_states_list": { "value": ["CA","NY",...] or [], ... },
   "state_addendum_present": { "value": true/false, ... },
   "state_addendum_key_differences": { "value": "summary or null", ... },
+  "accepts_nonimmigrant_visa_holders": { "value": true/false or null, "_quote": "quote the specific eligibility/citizenship/visa-status language if the FDD states one — most FDDs say nothing on this, in which case value is null and _conf is not_disclosed", ... },
   "executive_franchise_experience_years": { "value": integer, ... },
   "executive_prior_brands": { "value": integer, ... },
   "active_litigation_count": { "value": integer, ... },
@@ -228,7 +223,7 @@ Extract these fields and return as a single JSON object:
   "component_franchise_fee": { "value": integer USD, ... },
   "component_training_travel": { "value": "...", ... },
   "working_capital_months_covered": { "value": integer, ... },
-  "estimated_cogs_pct": { "value": float e.g. 0.30, "_conf": "medium", "_quote": "Industry estimate for [category]: ~30% COGS", "_page": null }
+  "estimated_cogs_pct": { "value": float e.g. 0.30, "_conf": "medium", "_quote": "Industry estimate for [category]: ~30% COGS", "_page": null, "_provenance": "estimated" }
 }`;
 
   const raw = await callAnthropic(CHUNK_A_SYSTEM, userPrompt, 5000);
@@ -251,10 +246,10 @@ Extract these fields and return as a single JSON object:
   "field_support_visits": { "value": "description of frequency", ... },
   "training_location": { "value": "city/state or 'franchisee location'", ... },
   "typical_fte_employees": { "value": integer, ... },
-  "opening_day_employees": { "value": integer, "_conf": "medium", "_quote": "estimate from staffing description", "_page": null },
+  "opening_day_employees": { "value": integer, "_conf": "medium", "_quote": "estimate from staffing description", "_page": null, "_provenance": "estimated" },
   "investor_role": { "value": "active owner-operator|semi-passive|passive", ... },
   "investor_hours_per_week": { "value": integer or null, ... },
-  "typical_time_to_open_months": { "value": integer, "_conf": "medium", "_quote": "estimate from training + build-out timeline", "_page": null },
+  "typical_time_to_open_months": { "value": integer, "_conf": "medium", "_quote": "estimate from training + build-out timeline", "_page": null, "_provenance": "estimated" },
   "territory_type": { "value": "exclusive|protected|none", ... },
   "territory_definition": { "value": "how territory is defined", ... },
   "ecommerce_carve_out": { "value": true/false, ... },
@@ -375,8 +370,22 @@ function computeDerivedFields(
         _page: null,
         _quote: `Calculated from effective date: ${effectiveDateMeta.value}`,
         _conf: 'high',
+        _provenance: 'derived',
       };
     }
+  }
+
+  // accepts_nonimmigrant_visa_holders — only fall back to "not assessed" if extraction
+  // genuinely found nothing; most FDDs never disclose this, but if Chunk A found real
+  // eligibility/citizenship language, that verbatim finding must not be overwritten here.
+  const visaHoldersMeta = fields['accepts_nonimmigrant_visa_holders'];
+  if (!visaHoldersMeta || visaHoldersMeta.value === null || visaHoldersMeta.value === undefined) {
+    derived['accepts_nonimmigrant_visa_holders'] = {
+      value: null,
+      _page: null,
+      _quote: 'Not assessed — most FDDs do not address visa/citizenship status; confirm directly with the franchisor',
+      _conf: 'not_disclosed',
+    };
   }
 
   // State registration check
@@ -387,13 +396,6 @@ function computeDerivedFields(
       Array.isArray(registeredList) &&
       registeredList.some((s: string) => s.toUpperCase() === targetState.toUpperCase());
 
-    derived['accepts_nonimmigrant_visa_holders'] = {
-      value: null,
-      _page: null,
-      _quote: 'Cannot be determined from FDD — confirm directly with franchisor',
-      _conf: 'not_disclosed',
-    };
-
     if (isRegistrationState) {
       derived['_registration_state_flag'] = {
         value: isRegistered,
@@ -402,6 +404,7 @@ function computeDerivedFields(
           ? `${targetState} is a registration state — franchisor appears registered`
           : `${targetState} is a registration state — registration not confirmed in FDD`,
         _conf: isRegistered ? 'high' : 'medium',
+        _provenance: 'derived',
       } as FddFieldMeta;
     }
   }
@@ -416,6 +419,7 @@ function computeDerivedFields(
       _page: null,
       _quote: `Gap = ${Math.round(gap * 100)}% — ${gap > 0.3 ? 'HIGH variability' : 'normal variability'}`,
       _conf: 'high',
+      _provenance: 'derived',
     };
   }
 
@@ -427,9 +431,10 @@ function computeDerivedFields(
       _page: null,
       _quote: `Item 19 data from ${fiscalYear} — COVID period may distort performance`,
       _conf: 'high',
+      _provenance: 'derived',
     };
   } else if (typeof fiscalYear === 'number') {
-    derived['covid_period_flag'] = { value: false, _page: null, _quote: null, _conf: 'high' };
+    derived['covid_period_flag'] = { value: false, _page: null, _quote: null, _conf: 'high', _provenance: 'derived' };
   }
 
   // Total ongoing fee pct
@@ -442,6 +447,7 @@ function computeDerivedFields(
       _page: null,
       _quote: `Royalty ${Math.round((royalty || 0) * 100)}% + marketing ${Math.round((typeof mktg === 'number' ? mktg : 0) * 100)}%`,
       _conf: 'high',
+      _provenance: 'derived',
     };
   }
 

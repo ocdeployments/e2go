@@ -11,25 +11,43 @@ interface PaymentInfo {
 }
 
 const PAYMENT_TYPE_NAMES: Record<string, string> = {
+  // Current USD model (src/lib/pricing-tier.ts)
+  foundation:                 'Foundation',
+  investor_ready:             'Investor Ready',
+  visa_ready:                 'Visa Ready',
+  interview_prep:             'Interview Ready',
+  loyalty_upgrade:            'Loyalty Upgrade',
+  fdd_analysis_addon:         'FDD Analysis',
+  market_analysis_addon:      'Market Analysis',
+  fdd_market_bundle_addon:    'FDD + Market Analysis',
+  simulator_3pack:            'Simulator Session Pack',
+  renewal:                    'Application Renewal',
+  // Retired model — still shown on past customers' receipts
   complete:                   'Complete — Build & Document',
   complete_partnership:       'Complete — Partnership',
-  interview_prep:             'Interview Prep',
   interview_prep_partnership: 'Interview Prep — Partnership',
-  fdd_intelligence:         'FDD Intelligence',
-  fdd_intelligence_loyalty: 'FDD Intelligence (Loyalty)',
-  simulator_3pack:          'Simulator Session Pack',
-  renewal:                  'Application Renewal',
+  fdd_intelligence:           'FDD Intelligence',
+  fdd_intelligence_loyalty:   'FDD Intelligence (Loyalty)',
 };
 
 const PAYMENT_TYPE_NEXT_STEP: Record<string, { label: string; href: string }> = {
-  complete:                   { label: 'Begin Your Application', href: '/apply/module1' },
-  complete_partnership:       { label: 'Begin Your Application', href: '/apply/module1' },
+  // Current USD model
+  foundation:                 { label: 'Begin Your Application', href: '/onboarding' },
+  investor_ready:             { label: 'Begin Your Application', href: '/onboarding' },
+  visa_ready:                 { label: 'Begin Your Application', href: '/onboarding' },
   interview_prep:             { label: 'Go to Simulator',        href: '/simulator' },
+  loyalty_upgrade:            { label: 'Go to Dashboard',        href: '/dashboard' },
+  fdd_analysis_addon:         { label: 'View FDD Analysis',      href: '/fdd' },
+  market_analysis_addon:      { label: 'View Market Analysis',   href: '/dashboard' },
+  fdd_market_bundle_addon:    { label: 'View FDD Analysis',      href: '/fdd' },
+  simulator_3pack:            { label: 'Go to Simulator',        href: '/simulator' },
+  renewal:                    { label: 'Continue Application',   href: '/apply/module1' },
+  // Retired model
+  complete:                   { label: 'Begin Your Application', href: '/onboarding' },
+  complete_partnership:       { label: 'Begin Your Application', href: '/onboarding' },
   interview_prep_partnership: { label: 'Go to Simulator',        href: '/simulator' },
-  fdd_intelligence:         { label: 'View FDD Analysis',      href: '/fdd' },
-  fdd_intelligence_loyalty: { label: 'View FDD Analysis',      href: '/fdd' },
-  simulator_3pack:          { label: 'Go to Simulator',        href: '/simulator' },
-  renewal:                  { label: 'Continue Application',   href: '/apply/module1' },
+  fdd_intelligence:           { label: 'View FDD Analysis',      href: '/fdd' },
+  fdd_intelligence_loyalty:   { label: 'View FDD Analysis',      href: '/fdd' },
 };
 
 function SuccessContent() {
@@ -135,9 +153,11 @@ function SuccessContent() {
     );
   }
 
-  const paymentType = payment?.payment_type || 'complete';
+  const paymentType = payment?.payment_type || '';
   const tierName = PAYMENT_TYPE_NAMES[paymentType] || 'e2go Purchase';
   const nextStep = PAYMENT_TYPE_NEXT_STEP[paymentType] || { label: 'Go to Dashboard', href: '/dashboard' };
+  // Full-application packages unlock the whole platform; add-ons and utilities don't.
+  const isFullApplicationPackage = ['foundation', 'investor_ready', 'visa_ready', 'complete', 'complete_partnership'].includes(paymentType);
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-6">
@@ -153,7 +173,7 @@ function SuccessContent() {
         </h1>
 
         <p className="text-[rgba(245,240,232,0.70)] mb-8" style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 300 }}>
-          {paymentType === 'complete'
+          {isFullApplicationPackage
             ? 'Your application is ready. You now have full access to your E-2 visa preparation.'
             : 'Your purchase is confirmed and ready to use.'}
         </p>
