@@ -1,4 +1,5 @@
-import { readFileSync, existsSync } from 'fs';
+import { readFileSync, existsSync, readdirSync } from 'fs';
+import { createHash } from 'crypto';
 import { join } from 'path';
 import Anthropic from '@anthropic-ai/sdk';
 import { synthesizeInvestorProfile, formatInvestorProfileContext } from './investor-profile-synthesizer';
@@ -30,6 +31,68 @@ import { callDocGenFallback } from './llm-client';
 import { personLabel } from './person-code';
 
 const PROMPTS_DIR = join(process.cwd(), 'prompts', 'v1', 'documents');
+const UNIVERSAL_PROMPT_PATH = join(process.cwd(), 'prompts', 'v1', '_universal_system_prompt.md');
+
+// The shared rule book every document prompt is built on. Read once from
+// _universal_system_prompt.md and memoized — change the rule book there, never
+// by pasting principles back into the per-document files.
+let _universalCoreCache: string | null = null;
+function loadUniversalCore(): string {
+  if (_universalCoreCache === null) {
+    _universalCoreCache = readFileSync(UNIVERSAL_PROMPT_PATH, 'utf-8').trim();
+  }
+  return _universalCoreCache;
+}
+
+// Defensive: strip a stale "## UNIVERSAL SYSTEM PROMPT" section (heading through
+// the next horizontal rule) from a per-document file so the shared core can
+// never be duplicated into a prompt. Document files should not contain this
+// section anymore — universal-prompt.test.ts enforces that — but a bad merge
+// should degrade to "core appears once", not "core appears twice".
+function stripLegacyUniversalSection(body: string): string {
+  return body.replace(
+    /^##\s*UNIVERSAL SYSTEM PROMPT\s*\n[\s\S]*?\n---\s*\n/m,
+    ''
+  );
+}
+
+// Rule-book version stamp. Bump BY HAND whenever a generation prompt or a
+// quality-gate rule changes, so an old package and a new one are distinguishable
+// after the fact. Recorded once per job as a `document_generation_log` row
+// (stage: 'rulebook_version') — see runGenerationPipeline. No schema change.
+export const RULEBOOK_VERSION = '2026-09-09';
+
+// sha256 over the sorted, concatenated contents of every prompts/v1/**/*.md
+// file (the universal core plus all 21 document prompts). Memoized — the corpus
+// does not change within a process. Lets us tell whether two jobs ran against a
+// byte-identical rule book even if RULEBOOK_VERSION was not bumped.
+let _promptCorpusHashCache: string | null = null;
+function getPromptCorpusHash(): string {
+  if (_promptCorpusHashCache === null) {
+    const root = join(process.cwd(), 'prompts', 'v1');
+    const files: string[] = [];
+    const walk = (dir: string): void => {
+      for (const entry of readdirSync(dir, { withFileTypes: true }).sort((a, b) =>
+        a.name.localeCompare(b.name)
+      )) {
+        const full = join(dir, entry.name);
+        if (entry.isDirectory()) walk(full);
+        else if (entry.isFile() && entry.name.endsWith('.md')) files.push(full);
+      }
+    };
+    walk(root);
+    files.sort();
+    const hash = createHash('sha256');
+    for (const file of files) {
+      hash.update(file.slice(root.length));
+      hash.update('\0');
+      hash.update(readFileSync(file));
+      hash.update('\0');
+    }
+    _promptCorpusHashCache = hash.digest('hex');
+  }
+  return _promptCorpusHashCache;
+}
 
 // WS5 5.2 — the documents shared across a complete_partnership case that
 // need the joint-context block (business_plan, visa_category [Substantiality
@@ -494,7 +557,8 @@ export async function loadPrompt(documentType: DocumentType): Promise<string> {
   if (!existsSync(filePath)) {
     throw new Error(`Prompt file not found: ${filePath}`);
   }
-  return readFileSync(filePath, 'utf-8');
+  const docBody = stripLegacyUniversalSection(readFileSync(filePath, 'utf-8'));
+  return `${loadUniversalCore()}\n\n${docBody}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -1660,12 +1724,30 @@ const MAX_PAGE_ESTIMATES: Record<string, number> = {
   lease_premises_summary: 1,
 };
 
-const FORBIDDEN_LEGAL_PHRASES = [
-  'qualifies',
-  'eligible',
-  'meets the standard',
-  'is substantial',
-];
+// Legal-boundary gate (see prompts/v1/_universal_system_prompt.md principle 8).
+// A raw substring match on "qualifies" / "eligible" / "is substantial" fired on
+// perfectly correct sentences ("the business is eligible for SBA 7(a)
+// financing", "the property qualifies for the capital-gains exemption", "a
+// qualified accountant prepared the statements"). These three checks replace it:
+//
+//  1. LEGAL_CONCLUSION_HARD_RE — phrasing that is a legal conclusion regardless
+//     of subject ("meets the standard", "satisfies the requirements"). Always
+//     flagged unless negated ("does not meet the requirements").
+//  2. LEGAL_CONCLUSION_SUBJECT_RE — the sentence is about THIS applicant or the
+//     E-2 legal test. Only then do "qualifies" / "eligible" / "is substantial"
+//     count as forbidden conclusions.
+//  3. LEGAL_CONCLUSION_BENIGN_RE — collocations that are never a conclusion
+//     about the applicant (tax/loan eligibility, "qualified accountant", …).
+const LEGAL_CONCLUSION_HARD_RE =
+  /\b(?:meets?|satisf(?:y|ies|ied)|fulfil(?:l|s|led)?)\s+(?:all\s+|both\s+)?(?:the\s+|these\s+|those\s+|its\s+)?(?:e-?2\s+)?(?:legal\s+)?(?:standards?|requirements?|criteria|thresholds?)\b|\b(?:is|are|was|were|remains?|being)\s+substantial\b/gi;
+const LEGAL_CONCLUSION_NEGATION_RE =
+  /\b(does not|do not|doesn't|don't|did not|didn't|cannot|can't|will not|won't|would not|no longer|fails? to|not yet)\b/i;
+const LEGAL_CONCLUSION_SUBJECT_RE =
+  /\b(applicant|investor|petitioner|beneficiary|the principal|treaty investor|e-?2\b|9\s*fam|substantiality|non-?marginality|marginality|nonimmigrant intent|the investment|this investment|the enterprise|the business|the company)\b/i;
+const LEGAL_CONCLUSION_BENIGN_RE =
+  /\b(eligible\s+(for\s+(a\s+|an\s+|the\s+)?(tax|mortgage|loan|financing|grant|sba|refund|rebate|deduction|exemption|credit|reimbursement|discount|subsidy|incentive)|dependents?|to\s+apply|to\s+enrol|to\s+enroll|to\s+participate|to\s+claim)|qualif(?:y|ies|ied)\s+(for\s+(a\s+|an\s+|the\s+)?(tax|mortgage|loan|financing|grant|sba|refund|rebate|deduction|exemption|credit|discount|subsidy|incentive)|as\s+a\s+qualified)|qualified\s+(accountant|professional|personnel|individual|intermediary|appraiser|plan|retirement|opinion|audit|report))\b/i;
+const LEGAL_CONCLUSION_CONTEXT_RE =
+  /\b(qualif(?:y|ies|ied)|eligible|(?:is|are|was|were|remains?|being)\s+substantial)\b/i;
 
 const PROHIBITED_VOCAB = [
   'guaranteed',
@@ -1765,9 +1847,32 @@ export function runQualityGate(
 
   let hasLegalConclusions = false;
   const lowerContent = content.toLowerCase();
-  for (const phrase of FORBIDDEN_LEGAL_PHRASES) {
-    if (lowerContent.includes(phrase)) {
-      hasLegalConclusions = true;
+  const flaggedLegalPhrases = new Set<string>();
+  for (const rawSentence of content.split(/(?<=[.!?])\s+|\n+/)) {
+    const sentence = rawSentence.trim();
+    if (!sentence) continue;
+
+    // HARD_RE is /g — a sentence can carry more than one hard conclusion
+    // ("is substantial and meets the standard"); flag each independently.
+    for (const hard of sentence.matchAll(LEGAL_CONCLUSION_HARD_RE)) {
+      const idx = hard.index ?? 0;
+      const preceding = sentence.slice(Math.max(0, idx - 48), idx);
+      if (!LEGAL_CONCLUSION_NEGATION_RE.test(preceding)) {
+        flaggedLegalPhrases.add(hard[0].toLowerCase().replace(/\s+/g, ' '));
+      }
+    }
+
+    if (
+      LEGAL_CONCLUSION_SUBJECT_RE.test(sentence) &&
+      !LEGAL_CONCLUSION_BENIGN_RE.test(sentence)
+    ) {
+      const ctx = sentence.match(LEGAL_CONCLUSION_CONTEXT_RE);
+      if (ctx) flaggedLegalPhrases.add(ctx[0].toLowerCase().replace(/\s+/g, ' '));
+    }
+  }
+  if (flaggedLegalPhrases.size > 0) {
+    hasLegalConclusions = true;
+    for (const phrase of flaggedLegalPhrases) {
       failures.push(`Contains forbidden legal conclusion: "${phrase}"`);
     }
   }
@@ -2286,6 +2391,36 @@ export async function runGenerationPipeline(
       current_step: 1,
       current_step_label: GENERATION_STEP_LABELS[1],
     });
+
+    // Gap 2 — stamp this job with the rule book that produced it. One row per
+    // job, no schema change (reuses document_generation_log columns). Lets us
+    // tell after the fact whether a package was built against an old prompt set.
+    {
+      const corpusHash = getPromptCorpusHash();
+      const { error: rulebookLogError } = await supabase
+        .from('document_generation_log')
+        .insert({
+          application_id: applicationId,
+          document_type: 'all',
+          stage: 'rulebook_version',
+          attempt_number: 1,
+          passed: true,
+          flagged_sections: [`corpus:${corpusHash}`],
+          notes: JSON.stringify({
+            rulebook_version: RULEBOOK_VERSION,
+            prompt_corpus_hash: corpusHash,
+            job_id: jobId,
+          }),
+        });
+      if (rulebookLogError) {
+        // Non-fatal: the package can still be produced without the stamp, but
+        // record loudly that provenance is now incomplete for this job.
+        console.error(
+          '[ENGINE] rulebook_version log insert failed:',
+          JSON.stringify(rulebookLogError)
+        );
+      }
+    }
 
     // Step 1: Load case brief
     emitStep(1, 'running');
