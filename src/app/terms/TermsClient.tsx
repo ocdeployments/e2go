@@ -69,7 +69,7 @@ export default function TermsOfServicePage() {
           Terms of Service
         </h1>
         <p style={{ ...bodyText, fontSize: "13px", color: "rgba(245,240,232,0.76)", marginBottom: "8px" }}>
-          Last updated: June 2026
+          Last updated: September 2026
         </p>
         <p style={{ ...bodyText, fontSize: "13px", color: "rgba(245,240,232,0.76)", marginBottom: "32px" }}>
           Company: Prodigal Son IT Solutions LLC, a Texas limited liability company, doing business as e2go
