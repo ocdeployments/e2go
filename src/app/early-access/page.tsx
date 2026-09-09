@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import FaqWidget from '@/components/landing/FaqWidget';
+import { searchTreatyCountries, TREATY_COUNTRIES } from '@/lib/treaty-countries';
 
 const TIMELINES = [
   { value: 'asap', label: 'As soon as possible' },
@@ -36,13 +37,27 @@ export default function EarlyAccessPage() {
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [country, setCountry] = useState('');
+  const [countrySearch, setCountrySearch] = useState('');
+  const [countryOpen, setCountryOpen] = useState(false);
+  const [countryHighlight, setCountryHighlight] = useState(-1);
   const [filingTimeline, setFilingTimeline] = useState('');
   const [company, setCompany] = useState(''); // honeypot
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const canSubmit = email.trim() && name.trim() && country.trim() && filingTimeline;
+  const canSubmit = email.trim() && name.trim() && TREATY_COUNTRIES.includes(country) && filingTimeline;
+
+  const filteredCountries = countrySearch.trim()
+    ? searchTreatyCountries(countrySearch, 8)
+    : TREATY_COUNTRIES;
+
+  function selectCountry(c: string) {
+    setCountry(c);
+    setCountrySearch(c);
+    setCountryOpen(false);
+    setCountryHighlight(-1);
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -125,17 +140,66 @@ export default function EarlyAccessPage() {
             />
           </div>
 
-          <div>
+          <div style={{ position: 'relative' }}>
             <label style={labelStyle}>Country of residence</label>
             <input
               type="text"
-              value={country}
-              onChange={e => setCountry(e.target.value)}
-              placeholder="E.g. United Kingdom"
+              value={countrySearch}
+              onChange={e => {
+                setCountrySearch(e.target.value);
+                setCountry('');
+                setCountryOpen(true);
+                setCountryHighlight(-1);
+              }}
+              onFocus={() => setCountryOpen(true)}
+              onBlur={() => setTimeout(() => setCountryOpen(false), 120)}
+              onKeyDown={e => {
+                if (e.key === 'ArrowDown') {
+                  e.preventDefault();
+                  setCountryOpen(true);
+                  setCountryHighlight(prev => Math.min(prev + 1, filteredCountries.length - 1));
+                } else if (e.key === 'ArrowUp') {
+                  e.preventDefault();
+                  setCountryHighlight(prev => Math.max(prev - 1, 0));
+                } else if (e.key === 'Enter' && countryOpen && countryHighlight >= 0) {
+                  e.preventDefault();
+                  selectCountry(filteredCountries[countryHighlight]);
+                } else if (e.key === 'Escape') {
+                  setCountryOpen(false);
+                }
+              }}
+              placeholder="Search your country of residence…"
+              autoComplete="off"
               required
               maxLength={100}
               style={inputStyle}
             />
+            {countryOpen && filteredCountries.length > 0 && (
+              <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 20, marginTop: '4px', maxHeight: '220px', overflowY: 'auto', background: '#111', border: '1px solid rgba(245,240,232,0.12)' }}>
+                {filteredCountries.map((c, idx) => (
+                  <div
+                    key={c}
+                    onMouseDown={e => e.preventDefault()}
+                    onClick={() => selectCountry(c)}
+                    style={{
+                      padding: '9px 14px',
+                      fontFamily: "'DM Sans', sans-serif",
+                      fontSize: '13px',
+                      color: '#f5f0e8',
+                      cursor: 'pointer',
+                      background: idx === countryHighlight ? 'rgba(201,168,76,0.15)' : country === c ? 'rgba(201,168,76,0.08)' : 'transparent',
+                    }}
+                  >
+                    {c}
+                  </div>
+                ))}
+              </div>
+            )}
+            {countryOpen && countrySearch.trim() && filteredCountries.length === 0 && (
+              <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 20, marginTop: '4px', padding: '10px 14px', background: '#111', border: '1px solid rgba(245,240,232,0.12)', fontSize: '12px', color: 'rgba(245,240,232,0.68)', fontFamily: "'DM Sans', sans-serif", lineHeight: 1.5 }}>
+                No match in the E-2 treaty country list — early access is limited to treaty countries.
+              </div>
+            )}
           </div>
 
           <div>
