@@ -2,11 +2,14 @@
  * WS4 / CPU Intelligence Pack — 4B Funds intelligence (D4, D7)
  *
  * D4 — Risk-rank fund sources; allocate documentation depth by risk, not
- *      dollars. The live intake (M3-F-05) only captures WHICH source types
- *      an applicant used, not per-transaction amounts or dates, so this
- *      computes a blended risk tier from the selected types — not the full
- *      per-deposit seasoning/round-trip checks (D5/D6), which need new
- *      intake fields this codebase does not yet collect.
+ *      dollars. The live intake captures WHICH source types an applicant used
+ *      (M3-F-05) and, as of rule-book gap 4, a per-source dollar amount
+ *      (companion key M3-F-05-AMOUNTS, a JSON object { "<sourceKey>": <number> }
+ *      — see pre-generation-validation.ts). This module still computes a blended
+ *      risk tier from the selected TYPES only; weighting the tier by each
+ *      source's dollar exposure is now possible but out of scope here. It is
+ *      still not the full per-deposit seasoning/round-trip check (D5/D6), which
+ *      needs per-transaction dates this codebase does not collect.
  *
  * D7 — Desperation ratio: investment ÷ pre-investment net worth. Over ~80%
  *      invites "what do you live on, and what do you return to?" — when
@@ -17,7 +20,8 @@
  * (round-trip / layering detection across accounts) are CONFIRMED BLOCKED,
  * not unimplemented: they require per-transaction deposit date/amount data
  * that no Module 3 intake field collects today (M3-F-05 captures source
- * TYPE only). Building deterministic logic against nonexistent data would
+ * TYPE, and M3-F-05-AMOUNTS a per-source total — but neither carries
+ * per-deposit dates). Building deterministic logic against nonexistent data would
  * mean fabricating the very signal these directives exist to detect —
  * against the project's own never-fabricate rule. Building the real thing
  * requires a new intake surface (a transaction ledger, e.g. "list each
