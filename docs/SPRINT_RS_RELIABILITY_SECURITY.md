@@ -67,7 +67,7 @@ Legend — **Status:** `TODO` / `WIP` / `DONE` / `BLOCKED (needs Romy)`
 | # | Task | Gap | Kind | Status |
 |---|---|---|---|---|
 | **RS-1** | Turn the webhook dedup row into a claim, not a receipt | G-13 | code + migration | BLOCKED (needs Romy) |
-| **RS-2** | Wrap the event switch in an error boundary | G-14 | code | TODO |
+| **RS-2** | Wrap the event switch in an error boundary | G-14 | code | DONE |
 | **RS-3** | Bind the middleware's Supabase errors; fail open with an alert | G-15 | code | TODO |
 | **RS-4** | Paid-but-locked-out reconciliation cron | G-13, G-14, G-15 | infra | TODO |
 
@@ -167,22 +167,34 @@ it's a brand-new column, not a rename).
 
 ---
 
-### RS-2 · Wrap the event switch in an error boundary
-**Gap G-14 · code · TODO · 0.5 eng-day**
+### RS-2 · RESOLVED — the event switch now has an error boundary and answers 500 on failure
+**Gap G-14 · code · DONE · 2026-09-10**
 
-The only `try/catch` in the 417-line webhook route wraps `constructEvent`.
-Wrap the whole `switch (event.type)` block. On any thrown error (not just a
-`captureApiError`-reported one — an actual throw, like the unguarded
-`redis.del` calls at lines 228 and 391), mark the dedup row `failed` per RS-1
-and return a 500 so Stripe's own retry does the recovery.
+The only `try/catch` in the 417-line webhook route wrapped `constructEvent`
+only. RS-1 already had to wrap the whole `switch (event.type)` block in
+try/catch and track a `handlerFailed` flag so it could finalize the RS-1
+dedup claim to `failed` — so RS-2's own remaining scope was just the last
+step: the route still answered `200` unconditionally, even on a `failed`
+claim, which meant Stripe never actually retried. It now returns `500` when
+`handlerFailed` is true, so Stripe's own redelivery — not application
+code — is what recovers a half-applied payment.
 
 > **Exit** — point `UPSTASH_REDIS_REST_URL` at a dead host and complete a
-> checkout. The client ends up unlocked (either the throw doesn't reach the
-> critical path, or the retry recovers it) — never half-applied.
+> checkout. Confirmed via `webhook-error-boundary.test.ts`: the payment/
+> application writes before the `redis.del` throw still complete (no
+> half-applied payment), the dedup claim is left `failed`, the route answers
+> `500`, and a simulated redelivery reclaims the claim and finishes once
+> Redis recovers.
 >
-> **Test** — `src/app/api/stripe/__tests__/webhook-error-boundary.test.ts`:
-> a thrown error anywhere inside a handler is caught, the dedup row is left in
-> a re-triable state (RS-1), and the route responds 500.
+> **Test** — `src/app/api/stripe/__tests__/webhook-error-boundary.test.ts`
+> (3 tests, exercising Gap G-14's own evidence — the unguarded
+> `redis.del(...)` call in `checkout.session.completed` — directly): a dead
+> Redis host throwing there is caught, prior writes already ran, the claim
+> is left `failed`, and the route responds `500`; a redelivery after that
+> reclaims the claim and succeeds once Redis recovers; the throw no longer
+> escapes the route unhandled. Also updated the two `webhook-dedup-claim.test.ts`
+> failure-path assertions from `200` (a placeholder RS-1 had left, noting
+> "RS-2 changes this to 500") to the now-correct `500`.
 
 ---
 
