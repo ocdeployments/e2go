@@ -146,10 +146,9 @@ export async function POST(request: NextRequest) {
         }
 
         /**
-         * Keyed on user_id — application_lifecycle has no application_id
-         * column, and this update used to filter on one. It errored on every
-         * payment, so payment_completed_at has never been written and every
-         * funnel figure derived from it is wrong.
+         * application_lifecycle is a client-funnel table, one row per
+         * user_id, not per application — scoping by user_id is correct here,
+         * not a stand-in for a missing application_id column.
          */
         const { error: lifecycleError } = await supabase
           .from('application_lifecycle')
