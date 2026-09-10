@@ -5,13 +5,14 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Turnstile } from "@marsidev/react-turnstile";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
+import { safeRedirect } from "@/lib/safe-redirect";
 import AuthImageSlider from "@/components/auth/AuthImageSlider";
 
 const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_CF_TURNSTILE_SITE_KEY ?? '';
 
 function SignupForm() {
   const searchParams = useSearchParams();
-  const next = searchParams.get("next") || "/dashboard";
+  const next = safeRedirect(searchParams.get("next"), "/dashboard");
 
   const [status, setStatus] = useState<string>('idle');
   const [errorMessage, setErrorMessage] = useState("");
