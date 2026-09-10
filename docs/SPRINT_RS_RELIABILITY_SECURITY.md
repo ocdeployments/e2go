@@ -91,7 +91,7 @@ Legend — **Status:** `TODO` / `WIP` / `DONE` / `BLOCKED (needs Romy)`
 
 | # | Task | Gap | Kind | Status |
 |---|---|---|---|---|
-| **RS-10** | Reconcile the two retention notices; add the three-email purge sequence | G-19 | code + migration | TODO |
+| **RS-10** | Reconcile the two retention notices; add the three-email purge sequence | G-19 | code + migration | DONE 2026-09-10 |
 | **RS-11** | Accessibility floor — axe CI gate + keyboard reachability | G-20 | code | TODO |
 
 ### Phase 5 — Standing hardening
@@ -344,48 +344,61 @@ behind the existing admin auth check used elsewhere in `src/app/api/admin/`.
 
 ## Phase 4 — Trust: product and legal
 
-### RS-10 · Reconcile the two retention notices; add the three-email purge sequence
-**Gap G-19 · code + migration · TODO · 1.5 eng-days — decision received from Romy, 2026-09-10**
+### RS-10 · RESOLVED — retention notices reconciled; three-email purge sequence shipped
+**Gap G-19 · code + migration · DONE · 2026-09-10**
 
-`apply/module1/page.tsx:388` promises 90 days after visa outcome;
-`privacy/PrivacyClient.tsx:43,67` and the retention cron itself say 30 days
-after package generation or 90 days after upload, whichever is first. Rewrite
-the Module 1 notice to state the real schedule and distinguish *application
-data* (which the platform doesn't purge on this timeline) from *uploaded
-files* (which it does).
+`apply/module1/page.tsx:388` promised 90 days after visa outcome;
+`privacy/PrivacyClient.tsx:43,67` and the retention cron itself said 30 days
+after package generation or 90 days after upload, whichever is first. The
+Module 1 notice now states the real schedule and distinguishes *application
+data* (not purged on this timeline) from *uploaded files* (which are).
 
-**Confirmed decision — replace the single warning email with three:**
-1. **On generation** — sent the moment the package is built, stating the purge
-   date (generation + 30 days). New trigger alongside the existing DR-4
-   generation-complete email, not a replacement for it.
-2. **T-minus-3 days** — a reminder with a confirm-to-keep link. Confirming
-   sets a retention hold on that application's files so the scheduled purge in
-   `cron/data-retention/route.ts` skips them. This needs a new boolean/
-   timestamp column (e.g. `applications.retention_hold_at` or a dedicated
-   table) — **verify against the live schema before naming it**, and check
-   with whoever lands the DR-1 `generation_resume_log` migration first so the
-   two don't collide in the same migration window.
-3. **On completion** — sent after the purge actually runs, confirming what was
-   deleted.
+**Delivered — the single warning email replaced with three:**
+1. **On generation** — fires from `generation-engine.ts` the moment the
+   package is built, stating the purge date (generation + 30 days), alongside
+   the existing DR-4 generation-complete email, not in place of it.
+2. **T-minus-3 days** — `sendRetentionReminders` in `src/lib/retention-cron.ts`
+   sends a reminder with a confirm-to-keep link
+   (`/retention/confirm-hold` → `POST /api/retention/confirm-hold`).
+   Confirming stamps `applications.retention_hold_at`, and
+   `purgeExpiredFiles` skips any application in that set before removing a
+   file, regardless of age. Guarded by `retention_reminder_sent_at` so a
+   missed cron run can't double-send.
+3. **On completion** — `sendRetentionCompletions` fires after a run's actual
+   purges, per application, using the per-app counts `purgeExpiredFiles`
+   collects; guarded by `retention_purge_notice_sent_at`.
 
-Email address and contact preferences survive the purge regardless of outcome
-— route the "keep contact" default through the existing
-`/api/email/unsubscribe` flow (`src/lib/emails/unsubscribe.ts`) rather than a
-new opt-out mechanism.
+Email address and contact preferences survive the purge regardless of
+outcome — the confirm-to-keep and unsubscribe links both post through
+existing signed-link infrastructure (`retention-hold-token.ts`,
+`src/lib/emails/unsubscribe.ts`), no new opt-out mechanism.
 
-> **Exit** — the Module 1 notice and the privacy policy state the same 30-day
-> schedule. A file 3 days from its purge date has produced a confirm-to-keep
-> reminder; confirming it means the cron does not purge that file on
-> schedule; a purged file has produced a completion email; the client's
-> contact record is unchanged by the purge either way.
+While making the cron's purge/reminder/completion logic unit-testable, an
+export directly from `cron/data-retention/route.ts` tripped Next's
+typed-routes constraint (a route file may only export the HTTP-method
+whitelist) — the three functions were moved into the new
+`src/lib/retention-cron.ts`, matching the existing plain-lib-module pattern
+(`retention-sequence.ts`, `partnership-hold.ts`), with `route.ts` importing
+them back in.
+
+> **Exit** — done: the Module 1 notice and the privacy policy state the same
+> 30/90-day schedule. A file 3 days from its purge date produces a
+> confirm-to-keep reminder; confirming it sets `retention_hold_at`, and the
+> cron does not purge that application's files on schedule; a purged file
+> produces a completion email; the client's contact record is unchanged by
+> the purge either way.
 >
-> **Test** — `src/lib/emails/__tests__/retention-sequence.test.ts`: each of
-> the three templates renders with a realistic payload, correct dates, a
-> working confirm-to-keep link, no unresolved placeholders;
-> `src/app/api/cron/__tests__/data-retention-hold.test.ts`: a file with an
-> active retention hold is excluded from the purge pass; a snapshot/text
-> assertion that the Module 1 copy and privacy policy copy state matching day
-> counts.
+> **Test** — `src/lib/emails/__tests__/retention-sequence.test.ts` (19
+> tests): each of the three templates renders with a realistic payload,
+> correct dates, a working confirm-to-keep link verified via a real HMAC
+> round-trip, no unresolved placeholders, suppression-list handling, and
+> timestamp-column stamping on success.
+> `src/app/api/cron/__tests__/data-retention-hold.test.ts` (4 tests): a
+> document belonging to an application with an active retention hold is
+> excluded from `purgeExpiredFiles` (not removed, not stamped, not counted)
+> while an equally old document on an unheld application is still purged in
+> the same run; a text assertion confirms the Module 1 and privacy-policy
+> copy state matching day counts.
 
 ---
 
@@ -448,10 +461,9 @@ visible rather than only inferred from a spend anomaly later.
 
 Nothing is currently blocked. Both open decisions this sprint carried were
 resolved 2026-09-10: RS-10's three-email retention sequence (confirm-to-keep
-hold, retained-contact-info rule) was specified by Romy — only a mechanical
-schema-column name is left, to be picked after checking the live schema and
-coordinating with DR-1's in-flight migration; and RS-7 turned out not to be a
-bug at all — see the task section above.
+hold, retained-contact-info rule) was specified by Romy, built against
+`applications.retention_hold_at`, and shipped — see the task section above;
+and RS-7 turned out not to be a bug at all — see the task section above.
 
 Everything else is unblocked and can start in sequence, independent of Sprint
 DR — confirm against DR's current WIP state before touching `src/types/generation.ts`
