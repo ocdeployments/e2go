@@ -2441,6 +2441,40 @@ export async function runGenerationPipeline(
 
     const caseBrief = caseBriefRow.case_brief_json as CaseBrief;
 
+    // The case brief is scoring-only — assembleCaseBrief() never writes the
+    // applicant / business identity or the investment figure. Downstream context
+    // (validateContext, buildGenerationPayload's gap context, the canonical
+    // consistency sweep) reads those off the brief, so enrich it here from the
+    // application record and Module 3 before anything consumes it.
+    {
+      const briefRec = caseBrief as unknown as Record<string, unknown>;
+      const { data: appRow, error: appRowError } = await supabase
+        .from('applications')
+        .select('principal_name, business_name, business_category')
+        .eq('id', applicationId)
+        .single();
+      if (appRowError) {
+        console.error('[generation] could not load application row for brief enrichment:', appRowError);
+      }
+      if (appRow) {
+        if (!briefRec.applicant_name && appRow.principal_name) briefRec.applicant_name = appRow.principal_name;
+        if (!briefRec.principal_name && appRow.principal_name) briefRec.principal_name = appRow.principal_name;
+        if (!briefRec.business_name && appRow.business_name) briefRec.business_name = appRow.business_name;
+        if (!briefRec.business_category && appRow.business_category) briefRec.business_category = appRow.business_category;
+      }
+      if (!briefRec.investment) {
+        const { data: investAns } = await supabase
+          .from('answers')
+          .select('answer_value')
+          .eq('application_id', applicationId)
+          .eq('question_key', 'M3-F-02')
+          .is('family_member_id', null)
+          .maybeSingle();
+        const investNum = Number(String(investAns?.answer_value ?? '').replace(/[^0-9.]/g, ''));
+        if (Number.isFinite(investNum) && investNum > 0) briefRec.investment = investNum;
+      }
+    }
+
     // CIC-2.2 — fetch Case Theory once for the whole pipeline run.
     // Passed to verifyCaseTheoryCompliance() after each document is generated.
     // Null when case_theory doesn't exist yet (sparse account) — verifier treats null as pass.
@@ -3389,28 +3423,29 @@ Generate the document using Investor 2's identity, name, nationality, source of 
             'Rewrite the document addressing all failures above.',
           ].join('\n');
 
-          const model = await getGenerationModel();
-          const retryArchetype = (caseBrief as unknown as Record<string, unknown>)?.archetype as string ?? 'unknown';
-          const retryArchetypeGuidance = buildArchetypeGuidance(retryArchetype, doc.document_type);
-          const retrySystemPrompt = retryArchetypeGuidance
-            ? `${payload.system_prompt}\n\n---\n\n${retryArchetypeGuidance}\n\n${failureInstructions}`
-            : `${payload.system_prompt}\n\n${failureInstructions}`;
-          const retryResponse = await getAnthropic().messages.create({
-            model,
-            max_tokens: 4000,
-            system: retrySystemPrompt,
-            messages: [{ role: 'user', content: 'Regenerate the document now.' }],
-          });
+          // Route through callClaudeAPI (same as every other regeneration site)
+          // rather than a bare messages.create — it needs the full case brief,
+          // module 3 answers, investment breakdown and exhibit registry to
+          // rewrite the document at all. A previous version of this retry
+          // called the SDK directly with just a system prompt and the literal
+          // user message "Regenerate the document now.", so it had no case
+          // data to regenerate from and Claude correctly refused — that
+          // refusal text was what got persisted as content_text.
+          const retryPayload: GenerationPayload = {
+            ...payload,
+            case_theory_brief: failureInstructions
+              + (payload.case_theory_brief ? '\n\n' + payload.case_theory_brief : ''),
+          };
+          const retryContentText = await callClaudeAPI(retryPayload);
 
-          const retryContent = retryResponse.content.find((b): b is Anthropic.TextBlock => b.type === 'text');
-          if (retryContent) {
-            const wc = countWords(retryContent.text);
+          if (retryContentText) {
+            const wc = countWords(retryContentText);
             const pages = estimatePages(wc);
 
             await supabase
               .from('generated_documents')
               .update({
-                content_text: retryContent.text,
+                content_text: retryContentText,
                 word_count: wc,
                 page_estimate: pages,
                 updated_at: new Date().toISOString(),
@@ -3420,7 +3455,7 @@ Generate the document using Investor 2's identity, name, nationality, source of 
 
             // Re-run quality gate
             const retryQuality = runQualityGate(
-              { ...doc, content_text: retryContent.text },
+              { ...doc, content_text: retryContentText },
               doc.document_type,
               { caseBrief: caseBriefData, investmentTotal }
             );
