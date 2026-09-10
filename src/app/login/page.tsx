@@ -5,11 +5,12 @@ import { motion, AnimatePresence } from "motion/react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
+import { safeRedirect } from "@/lib/safe-redirect";
 import GenerationProgress from "@/components/ui/GenerationProgress";
 
 function LoginForm() {
   const searchParams = useSearchParams();
-  const next = searchParams.get("next") || "/case-profile";
+  const next = safeRedirect(searchParams.get("next"), "/case-profile");
 
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState("");
@@ -156,7 +157,7 @@ function LoginForm() {
           }
         }
       } else {
-        window.location.href = next ?? '/case-profile';
+        window.location.href = next;
       }
     } catch (err) {
       if (!timedOut) {
