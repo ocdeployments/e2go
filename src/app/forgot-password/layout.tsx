@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Forgot Password | E2go.app",
+  title: "Forgot Password",
   description: "Reset your E2go.app account password.",
   robots: { index: false, follow: false },
 };

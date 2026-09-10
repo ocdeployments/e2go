@@ -3,7 +3,7 @@ import Link from "next/link";
 import Breadcrumb from "@/components/Breadcrumb";
 
 export const metadata: Metadata = {
-  title: "What is the E-2 Treaty Investor Visa? | E2go.app",
+  title: "What is the E-2 Treaty Investor Visa?",
   description: "A plain-language guide to E-2 eligibility, investment requirements, and renewal options.",
   robots: { index: true, follow: true },
 };

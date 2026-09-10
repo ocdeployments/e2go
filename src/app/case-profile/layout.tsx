@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Nav from "@/components/Nav";
 
 export const metadata: Metadata = {
-  title: "My Case | E2go.app",
+  title: "My Case",
   description: "Your complete E-2 case record — investor profile, business details, investment, and intelligence.",
   robots: { index: false, follow: false },
 };

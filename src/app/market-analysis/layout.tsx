@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Nav from '@/components/Nav';
 
 export const metadata: Metadata = {
-  title: 'Market Analysis | E2go.app',
+  title: 'Market Analysis',
   description: 'Territory market analysis for your E-2 business — live Census demographics, competitor density, and a five-dimension market score.',
   robots: { index: false, follow: false },
 };
