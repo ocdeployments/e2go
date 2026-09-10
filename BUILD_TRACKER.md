@@ -6,9 +6,34 @@
 
 ## Session 145 — Partnership door closed, Canada bias swept, delivery gaps documented and sequenced (September 10, 2026)
 
-**Branch:** dev. **18 commits, one file each — not yet pushed**, pending Romy's go-ahead (plus this session's 4 documentation commits). `npx tsc --noEmit` clean; `npx jest` 19 suites / 273 tests; `npm run build` clean.
+**Branch:** dev. **23 commits, one file each, all pushed** to `origin/dev` (head `aa806f2`). `npx tsc --noEmit` clean; `npx jest` 19 suites / 273 tests; `npm run build` clean; `npx playwright test` 27 security specs.
 
 Romy's instruction: *"close the partnership door this week and fix the Canada labels now. document all these issues and make a sprint plan to rectify close all these gaps. make sure we make this bullet proof."* All four delivered.
+
+### Next agent — start here
+
+Read this section before touching anything. Session 145 ended with the work committed and pushed; what follows is the state you are inheriting and the order to act in.
+
+**Where the work lives.** `docs/DELIVERY_RELIABILITY_GAPS.md` owns *what is broken* (G-01…G-12, each with file:line evidence). `docs/SPRINT_DR_DELIVERY_RELIABILITY.md` owns *what we do about it* (DR-1…DR-22 across 8 phases). Respect that split — do not restate gap evidence in the sprint doc or fix sequencing in the register. Both are indexed in `docs/DOC_INDEX.md`.
+
+**Start at DR-1, not at the easiest task.** The sprint is ordered by what hurts a paying client soonest. Phases 1–2 (DR-1…DR-5, 6–7 days) are the launch gate: until they land, a paid client can be silently stranded mid-generation with no recovery path, and reloading the page makes it permanently worse. Everything after Phase 2 is about not regressing and not under-delivering.
+
+**Two decisions are still open and they block the top of the list.** Do not pick either on your own; ask Romy.
+
+| Decision | Recommendation on the table | Blocks |
+|---|---|---|
+| **2** — durable execution shape: queue, checkpointed resume, or `waitUntil()` + segmentation | Checkpointed resume now; it reuses the resume logic already in the engine for roughly half the effort of a queue | DR-1 |
+| **3** — partial-package policy: 19 of 20 documents succeeded, hold or release with the gap flagged? | Hold and notify Romy while volume is low | DR-6 |
+
+Also unanswered: the real E-2 consulate list (DR-11), the domain review of the six Canada-assuming coaching passages (DR-13), and partnership tier pricing (DR-18). **These were deliberately not guessed at.** A wrong consulate in front of a client is worse than a free-text box, and vague coaching is worse than coaching with a false premise. Leave them open rather than inventing content.
+
+**A task whose named test does not exist is not Done.** Every DR task carries an exit criterion that is a demonstration — a deliberate kill, a fault injection, a real persona buying a real tier — and a named test file. That rule is what makes this sprint falsifiable rather than aspirational; do not relax it to close a task faster.
+
+**Do not lift the partnership hold on its own.** `src/lib/partnership-hold.ts` fails open on a database error by design — a transient fault must never block a paying solo applicant. Its doc comment couples its removal to the partnership tier existing. Removing the hold without building the tier (DR-18) re-opens the exact defect Session 145 closed: partnership clients paying the solo price and receiving no `*_p2` documents.
+
+**Standing constraints that bit in earlier sessions.** Branch is `dev`, never `main`. One file per commit. Confirm the branch *before* committing, not after. Stop the dev server before running a production build in the same session. The live Supabase schema is the only source of truth — not `docs/schema_complete.sql`, not the migrations. `supabase-js` does not throw: always read `{ data, error }`. Do not push without Romy's explicit go-ahead.
+
+**Loose end you did not create.** A brand-capitalisation sweep (`e2go` → `E2go.app`) appeared in the working tree during the Session 145 push, touching 14 files across `src/app/` and `src/lib/emails/`. It is uncommitted and is not Session 145 work. `COMPANY_DBA` in `src/lib/emails/company.ts` renders in email footers as the legal d/b/a string, so that one line is a legal-entity assertion, not styling. Confirm with Romy before committing or reverting any of it.
 
 ### 1. The partnership door — it was wired to a value that never occurs
 
