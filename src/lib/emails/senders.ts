@@ -25,6 +25,18 @@ export const EMAIL_SENDER = 'e2go <notifications@e2go.app>';
 export const SUPPORT_REPLY_TO = 'support@e2go.app';
 
 /**
+ * From: for mail written in the founder's own voice rather than the
+ * system's — currently just the early-access welcome. Deliberately not
+ * EMAIL_SENDER: a personal note from Romy reads wrong coming from
+ * "notifications@", and info@e2go.app is the address he checks himself, so a
+ * reply actually reaches him instead of a queue.
+ */
+export const FOUNDER_EMAIL_SENDER = 'Romy at e2go <info@e2go.app>';
+
+/** Reply-To paired with FOUNDER_EMAIL_SENDER. */
+export const FOUNDER_REPLY_TO = 'info@e2go.app';
+
+/**
  * Reply-To for an internal alert about a specific person.
  *
  * Falls back to support when the triggering address is missing or a
