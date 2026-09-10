@@ -75,7 +75,7 @@ const sections: Section[] = [
         key: 'QF-05',
         type: 'textarea',
         label: 'List the wire transfers — dates, amounts, and recipient accounts',
-        helperText: 'Example: "Wire 1: May 3, 2026 — $45,000 USD from RBC account to Subway Corporation franchise fee account." Include every significant transfer.',
+        helperText: 'Example: "Wire 1: May 3, 2026 — $45,000 USD from my personal account to Subway Corporation franchise fee account." Include every significant transfer.',
         required: false,
         privacy_category: 'amber',
       },
@@ -88,7 +88,7 @@ const sections: Section[] = [
       {
         key: 'QF-06',
         type: 'select',
-        label: 'Do you have bank statements showing the investment funds leaving your Canadian account?',
+        label: 'Do you have bank statements showing the investment funds leaving your home-country account?',
         helperText: 'The bank statement chain shows funds accumulating over time, then being deployed. Gaps in this chain raise officer questions.',
         options: [
           { value: '12-plus', label: 'Yes — 12+ months of statements covering the full timeline' },
