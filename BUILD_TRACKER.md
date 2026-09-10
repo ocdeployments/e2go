@@ -6,7 +6,7 @@
 
 ## Session 143 — First real generation job: verified Gaps 1–3 live, fixed two bugs it exposed (September 9, 2026)
 
-**Branch:** dev. Two commits, `b30a8f4` and `2376e29` — **not yet pushed**, pending Romy's call on the deferred findings below. `npx jest` 18/18 suites green (pre-commit hook, both commits); `npm run build` clean.
+**Branch:** dev. Four commits, `b30a8f4`, `2376e29`, `b846bf3`, `6f8ca3c` — **not yet pushed**, pending Romy's go-ahead. `npx jest` 18/18 suites green (pre-commit hook, every commit); `npm run build` clean.
 
 **Context:** Romy — *"run one real generation job now that it's pushed."* Session 142 closed four rule-book gaps but never ran a full LLM job end-to-end (no Redis egress in that sandbox). This session ran one for real against `test-uk@example.com` (James Windsor — UK citizen, $195,000 into a Texas home-care franchise), generating all 15 document types.
 
@@ -50,9 +50,28 @@ Hit the same corruption as before (`Cannot find module './9085.js'` etc.) mid-se
 ### Commit sequence (2, one file each, `dev`)
 `b30a8f4` `src/lib/generation-engine.ts` (case-brief enrichment + quality-gate retry now routes through `callClaudeAPI`) · `2376e29` `scripts/run-persona-generation.mjs` (`.env.local` quote-stripping fix).
 
+### Follow-up (same session) — placeholder-leak block + gift_letter NOT APPLICABLE fix
+Romy's decision on the two open findings above: **fix the placeholder leak now, before pushing** (wire it into the same `quality_gate_passed`/`'blocked'` mechanism Gap 3 uses); **fix the `gift_letter` false positive now, defer the rest** of the calibration findings (page-length, disclaimers, required-elements generally, Cover Letter phrase, Business Plan brevity — still untouched).
+
+**Placeholder-leak check, now blocking.** New `findPlaceholderLeaks()` in `src/lib/generation-engine.ts` — a generic single-bracket regex (`BRACKET_PLACEHOLDER_LEAK_REGEX`) catches any `[...]` the existing narrow `LLM_REFERENCE_BRACKET_REGEX` missed (that one only matches specific authorship-artifact phrasings like `[from Tab X]`, not ad hoc markers like `[DATE REQUIRED]`). Not a blanket ban, though — several document prompts declare their own "BRACKET RULE" sanctioning specific placeholders on purpose:
+- `cover_letter` / `nonimmigrant_intent`: `[Date]` and `[Consulate address]` permitted (client fills in before mailing / once the interview is scheduled).
+- `visa_category`: `[Date]` permitted.
+- `gift_letter` and `qualifications`: exempted from this check entirely — `gift_letter`'s prompt directs the model to bracket-placeholder any donor detail missing from the case data, already surfaced separately via the applicant-facing "COMPLETE-BEFORE-SUBMITTING" checklist (`checklist-builder.ts`); `qualifications` permits a bracket as a section-heading device around the business type, not a missing-data marker.
+Every other document type (including `resume_principal`, the actual site of the live bug) has no bracket rule at all, so any bracket in its output is now flagged and blocks the gate: `has_template_placeholders: true`, a `failures` entry, `quality_gate_passed: false` → `'blocked'` status.
+
+**`gift_letter` NOT APPLICABLE false positive, fixed.** New `isNotApplicableSentinel()` detects the exact `NOT APPLICABLE — ...` one-line sentinel gift_letter's prompt uses when no gift/inheritance funds were involved, and short-circuits `runQualityGate()` to pass outright — skipping the word-count, disclaimer, name-consistency and required-elements checks that otherwise assume a full narrative and would all fire on a valid nine-word response. Also applied inside the separate Spec4 Stage 5 "REQUIRED_ELEMENTS completeness" loop (its own `elementPatterns` map, checked independently of the main gate), which is what was actually producing the "Missing required elements: donor_name, gift_amount, irrevocability" hold.
+
+**Broader root cause found but deliberately left unfixed (per Romy's "defer the rest"):** the Stage 5 `elementPatterns` map is missing entries for several other document types' required elements too — not just gift_letter's three — meaning those documents' required-elements checks likely fail unconditionally regardless of content. Also confirmed via exhaustive grep: gift_letter.md's own prompt claims "the generation engine will omit this document from the package" when NOT APPLICABLE — that omission behavior does not exist anywhere in the codebase; the fix here makes the document pass the gate, it does not make it disappear from the package. Both flagged for a future session, not built.
+
+Covered by three new tests in `src/lib/__tests__/generation-engine.test.ts` reproducing the literal live bug content (leaked resume brackets, cover_letter's permitted brackets staying clean, gift_letter's N/A sentinel passing outright). `npx tsc --noEmit` clean; `npx jest` 18/18 suites, 250/250 tests (pre-commit hook, both commits); `npm run build` clean (`.next` collision-safe: dev server stopped first, restarted after). Two commits, one file each: `b846bf3` (`src/lib/generation-engine.ts`), `6f8ca3c` (`src/lib/__tests__/generation-engine.test.ts`).
+
+**Unrelated discovery, not mine, not committed:** `src/app/api/early-access/route.ts` carries a pre-existing uncommitted change (not present at this session's start, not made by me this session) — switches the welcome-email send from fire-and-forget to `await`ed, with a comment about serverless teardown risk. Left alone and excluded from both commits above per "one file per commit — never bundle unrelated changes"; flagged to Romy to decide (commit separately, discard, or investigate) rather than acted on unilaterally.
+
 ### Next priorities
-- Decide scope on the placeholder-leak gap (most concerning — bypasses certification blocking) and the quality-gate calibration findings (`gift_letter` false positive, page-length/disclaimer/required-element thresholds).
-- Push `b30a8f4` + `2376e29` to `origin/dev` once Romy has weighed in.
+- Report the `early-access/route.ts` discovery to Romy and get a decision on it.
+- Get Romy's go-ahead to push `b30a8f4`, `2376e29`, `b846bf3`, `6f8ca3c` to `origin/dev`.
+- Broader quality-gate calibration issues remain deferred: page-length overages, missing legal disclaimers, missing required elements generally (the `elementPatterns` gap above), Cover Letter's missing "direct and develop" phrase, Business Plan brevity.
+- The unimplemented gift_letter "omit from package when NOT APPLICABLE" promise — not built, needs a decision on whether to implement or reword the prompt.
 
 ---
 
