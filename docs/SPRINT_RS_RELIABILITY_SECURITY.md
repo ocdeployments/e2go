@@ -83,7 +83,7 @@ Legend — **Status:** `TODO` / `WIP` / `DONE` / `BLOCKED (needs Romy)`
 
 | # | Task | Gap | Kind | Status |
 |---|---|---|---|---|
-| **RS-8** | Close the open redirect — one helper, four sinks | G-17 | code | TODO |
+| **RS-8** | Close the open redirect — one helper, four sinks | G-17 | code | DONE |
 | **RS-9** | Branded error / not-found pages; fix `global-error.tsx` | G-18 | code | TODO |
 | **RS-13** | Stop exposing Stripe test-mode status publicly | G-25 | code | TODO |
 
@@ -427,26 +427,32 @@ touches the file.
 ## Phase 3 — Trust: security surface
 
 ### RS-8 · Close the open redirect — one helper, four sinks
-**Gap G-17 · code · TODO · 0.5 eng-day**
+**Gap G-17 · code · DONE · 2026-09-10**
 
-`login/page.tsx` (:114, :159) assigns `?next=` straight to
-`window.location.href`; `auth/callback/route.ts` (:50) and `signup/page.tsx`
-(:106) build `` `${origin}${next}` ``, which still allows a protocol-relative
-`//evil.example`; `terms-required/page.tsx` (:58) pushes the raw value through
-the router.
+`login/page.tsx` assigned `?next=` straight to `window.location.href`;
+`auth/callback/route.ts` and `signup/page.tsx` built `` `${origin}${next}` ``,
+which still allowed a protocol-relative `//evil.example`; `terms-required/page.tsx`
+pushed the raw value through the router.
 
-Add `src/lib/safe-redirect.ts` exporting one function: accept a string,
-return it unchanged only if it starts with exactly one `/` (not `//`, not
-`/\`), otherwise return the route's own default. Use it at all four sinks.
+Added `src/lib/safe-redirect.ts` exporting one function, `safeRedirect(next,
+fallback)`: returns `next` unchanged only if it starts with exactly one `/`
+(not `//`, not `/\`), otherwise returns the caller's own default. Wired it in
+at all four sinks — `login/page.tsx`, `auth/callback/route.ts`,
+`signup/page.tsx`, `terms-required/page.tsx` — each now computing `next` via
+`safeRedirect(searchParams.get("next"), <route default>)` before the value
+ever reaches `window.location.href`, the `${origin}${next}` template, or
+`router.push`.
 
-> **Exit** — `/login?next=https://evil.example`, `/login?next=//evil.example`,
-> and the equivalent on `/signup`, `/auth/callback`, `/terms-required` all land
-> the user on an in-app default, never on `evil.example`.
+> **Exit** — done: `/login?next=https://evil.example`,
+> `/login?next=//evil.example`, and the equivalent on `/signup`,
+> `/auth/callback`, `/terms-required` all land the user on an in-app default,
+> never on `evil.example`.
 >
-> **Test** — `src/lib/__tests__/safe-redirect.test.ts`: table-driven over
-> `https://evil.example`, `//evil.example`, `/\evil.example`, `javascript:...`,
-> a legitimate `/dashboard`, and a legitimate `/apply/module2` — only the
-> legitimate relative paths pass through unchanged.
+> **Test** — done: `src/lib/__tests__/safe-redirect.test.ts`, table-driven over
+> `https://evil.example`, `http://evil.example`, `//evil.example`,
+> `/\evil.example`, `javascript:alert(1)`, a bare `evil.example`, `null`,
+> `undefined`, `''`, and legitimate `/dashboard` / `/apply/module2` paths — 11/11
+> passing. Full suite (28 suites, 336 tests) green after all four sink changes.
 
 ---
 
