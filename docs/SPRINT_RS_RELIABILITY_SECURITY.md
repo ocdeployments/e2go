@@ -85,7 +85,7 @@ Legend — **Status:** `TODO` / `WIP` / `DONE` / `BLOCKED (needs Romy)`
 |---|---|---|---|---|
 | **RS-8** | Close the open redirect — one helper, four sinks | G-17 | code | DONE |
 | **RS-9** | Branded error / not-found pages; fix `global-error.tsx` | G-18 | code | DONE 2026-09-10 |
-| **RS-13** | Stop exposing Stripe test-mode status publicly | G-25 | code | TODO |
+| **RS-13** | Stop exposing Stripe test-mode status publicly | G-25 | code | DONE 2026-09-10 |
 
 ### Phase 4 — Trust: product and legal
 
@@ -498,19 +498,24 @@ for real users.
 
 ---
 
-### RS-13 · Stop exposing Stripe test-mode status publicly
-**Gap G-25 · code · TODO · 0.25 eng-day**
+### RS-13 · RESOLVED — Stripe test-mode status no longer exposed publicly
+**Gap G-25 · code · DONE · 2026-09-10**
 
-`GET /api/stripe/checkout` is unauthenticated and returns `{ configured,
-testMode }`. Drop `testMode` from the public response entirely (the `HEAD`
-config probe stays as-is); if a testMode check is needed internally, gate it
-behind the existing admin auth check used elsewhere in `src/app/api/admin/`.
+`GET /api/stripe/checkout` was unauthenticated and returned `{ configured,
+testMode }`, letting anyone probe whether a deployment was running live or
+test Stripe keys. Dropped `testMode` from the response entirely; the `HEAD`
+config probe was untouched. No internal caller needed the removed field —
+the pricing page's own test-mode banner (`PricingClient.tsx`) already derives
+its state from `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` client-side, not from
+this endpoint, so nothing else had to be gated behind admin auth.
 
-> **Exit** — `GET /api/stripe/checkout` returns only `{ configured: boolean }`.
+> **Exit** — done: `GET /api/stripe/checkout` returns only `{ configured:
+> boolean }`, for both live and test key prefixes and when unconfigured.
 >
-> **Test** — extend the existing checkout route test (or add one) asserting
-> the JSON body has no `testMode` key regardless of the configured key's
-> prefix.
+> **Test** — done: `src/app/api/stripe/__tests__/checkout-testmode.test.ts`
+> (3 tests, new file — no prior test existed for this route): asserts the
+> JSON body has no `testMode` key for a `sk_test_` key, a `sk_live_` key, and
+> no key configured at all.
 
 ---
 
