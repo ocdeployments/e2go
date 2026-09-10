@@ -215,36 +215,20 @@ export async function POST(request: NextRequest) {
         }
 
       } else if (tierId === 'simulator_3pack' && applicationId && userId) {
-        // Grant 3 additional simulator sessions
-        const { data: currentApp, error: packReadError } = await supabase
-          .from('applications')
-          .select('simulator_sessions_purchased')
-          .eq('id', applicationId)
-          .single();
+        // Grant 3 additional simulator sessions atomically (RS-6, Gap G-21) —
+        // a select-then-update here loses updates under concurrent/redelivered events
+        const { error: packGrantError } = await supabase.rpc('increment_simulator_sessions', {
+          p_application_id: applicationId,
+          p_amount: 3,
+        });
 
-        if (packReadError) {
-          captureAndFail(packReadError, {
+        if (packGrantError) {
+          captureAndFail(packGrantError, {
             route: 'stripe/webhook',
-            stage: 'simulator-pack-read',
+            stage: 'simulator-pack-grant',
             eventId: event.id,
             applicationId,
           });
-        } else if (currentApp) {
-          const { error: packGrantError } = await supabase
-            .from('applications')
-            .update({
-              simulator_sessions_purchased: (currentApp.simulator_sessions_purchased ?? 2) + 3,
-            })
-            .eq('id', applicationId);
-
-          if (packGrantError) {
-            captureAndFail(packGrantError, {
-              route: 'stripe/webhook',
-              stage: 'simulator-pack-grant',
-              eventId: event.id,
-              applicationId,
-            });
-          }
         }
       }
       // investor_ready, loyalty_upgrade, interview_prep, renewal, and the FDD/market
@@ -381,36 +365,19 @@ export async function POST(request: NextRequest) {
           }
 
         } else if (tierId === 'simulator_3pack' && payment.application_id) {
-          // Deduct 3 sessions from the pack that was refunded
-          const { data: currentApp, error: packReadError } = await supabase
-            .from('applications')
-            .select('simulator_sessions_purchased')
-            .eq('id', payment.application_id)
-            .single();
+          // Deduct 3 sessions from the refunded pack atomically (RS-6, Gap G-21)
+          const { error: packRevokeError } = await supabase.rpc('increment_simulator_sessions', {
+            p_application_id: payment.application_id,
+            p_amount: -3,
+          });
 
-          if (packReadError) {
-            captureAndFail(packReadError, {
+          if (packRevokeError) {
+            captureAndFail(packRevokeError, {
               route: 'stripe/webhook',
-              stage: 'refund-simulator-pack-read',
+              stage: 'refund-simulator-pack-revoke',
               eventId: event.id,
               applicationId: payment.application_id,
             });
-          } else if (currentApp) {
-            const { error: packRevokeError } = await supabase
-              .from('applications')
-              .update({
-                simulator_sessions_purchased: Math.max(0, (currentApp.simulator_sessions_purchased ?? 0) - 3),
-              })
-              .eq('id', payment.application_id);
-
-            if (packRevokeError) {
-              captureAndFail(packRevokeError, {
-                route: 'stripe/webhook',
-                stage: 'refund-simulator-pack-revoke',
-                eventId: event.id,
-                applicationId: payment.application_id,
-              });
-            }
           }
         }
 
