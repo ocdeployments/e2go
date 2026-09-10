@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Nav from "@/components/Nav";
 
 export const metadata: Metadata = {
-  title: "Dashboard | E2go.app",
+  title: "Dashboard",
   description: "Your E2go.app dashboard. Track your E-2 visa application progress.",
   robots: { index: false, follow: false },
 };

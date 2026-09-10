@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import TermsClient from "./TermsClient";
 
 export const metadata: Metadata = {
-  title: "Terms of Service | E2go.app",
+  title: "Terms of Service",
   description: "E2go.app Terms of Service. Read our terms regarding the use of our E-2 visa preparation platform, subscriptions, and legal disclaimers.",
   openGraph: {
     title: "Terms of Service | E2go.app",

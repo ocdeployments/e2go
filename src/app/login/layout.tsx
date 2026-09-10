@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Sign In | E2go.app",
+  title: "Sign In",
   description: "Sign in to your E2go.app account to continue your E-2 visa application.",
   robots: { index: false, follow: false },
 };

@@ -16,6 +16,18 @@
 ## Branch: dev — never commit directly to main.
 ## Build must be clean before every push: npm run build
 
+## BRAND NAME — always "E2go.app" in every user-facing string.
+## Never E2Go, E2GO, e2GO, e2go (bare), or any other casing. Applies to:
+## titles/metadata, the logo, email subject lines + body copy, buttons,
+## toasts/errors, aria-labels, Terms/Privacy, LLM system prompts, API
+## X-Title headers, ops-alert messages — anything a human reads.
+## Split-logo JSX (`e2go<span>.app</span>`) → recase only the first node
+## to "E2go", never touch the sibling ".app" span.
+## Exception: URLs, email addresses, storage/localStorage keys, env vars,
+## and code identifiers stay lowercase "e2go" / "e2go.app" — do not
+## recase those. When adding new user-facing strings, write "E2go.app"
+## from the start; don't rely on a later cleanup pass.
+
 ## DATABASE — the live Supabase schema is the ONLY source of truth.
 ## Not docs/schema_complete.sql. Not the migration files. Both are known to
 ## disagree with production: `CREATE TABLE IF NOT EXISTS` silently no-ops
