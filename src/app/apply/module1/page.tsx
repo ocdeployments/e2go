@@ -385,7 +385,7 @@ export default function Module1Page() {
 
             <div className="border-l-[3px] border-[#C9A84C] bg-[rgba(201,168,76,0.04)] p-6 mb-8">
               <p className="text-[14px] text-[#f5f0e8]/80 leading-relaxed">
-                <span className="text-[#C9A84C] font-medium">Data Retention Notice:</span> Your application data is retained until 90 days after your visa outcome is confirmed, then permanently deleted. You can download your complete record at any time.
+                <span className="text-[#C9A84C] font-medium">Data Retention Notice:</span> Your application data and generated documents are kept for as long as your account is open. Uploaded supporting files (bank statements, business documents, and similar) are automatically deleted 30 days after your document package is generated, or 90 days after upload if no package has been generated — whichever comes first; we&apos;ll email you before that happens. You can download your complete record, or delete any file sooner, at any time.
               </p>
             </div>
 
