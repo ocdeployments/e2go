@@ -1,5 +1,6 @@
 'use server'
 import { createClient } from '@supabase/supabase-js'
+import { validatePassword } from '@/lib/password-policy'
 
 /**
  * Creates a Supabase auth account from a verified email.
@@ -19,6 +20,11 @@ export async function createAccountFromVerifiedEmail({
   lastName: string;
   quizSessionId: string;
 }) {
+  const passwordError = validatePassword(password, email)
+  if (passwordError) {
+    return { error: passwordError }
+  }
+
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
