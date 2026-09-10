@@ -454,5 +454,11 @@ export async function POST(request: NextRequest) {
     captureApiError(claimFinalizeError, { route: 'stripe/webhook', stage: 'dedup-claim-finalize', eventId: event.id, handlerFailed });
   }
 
+  // RS-2 (Gap G-14): a 500 here is what makes Stripe's own retry the recovery
+  // path for a failed claim — a 200 would tell Stripe the event is done.
+  if (handlerFailed) {
+    return NextResponse.json({ error: 'Webhook handler failed' }, { status: 500 });
+  }
+
   return NextResponse.json({ received: true });
 }
