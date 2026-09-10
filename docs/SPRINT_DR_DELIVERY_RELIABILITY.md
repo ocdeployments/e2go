@@ -74,7 +74,7 @@ Legend — **Status:** `TODO` / `WIP` / `DONE` / `BLOCKED (needs Romy)`
 
 | # | Task | Gap | Kind | Status |
 |---|---|---|---|---|
-| **DR-1** | Durable execution for the generation pipeline | G-01 | infra | **BLOCKED (Decision 2)** |
+| **DR-1** | Durable execution for the generation pipeline | G-01 | infra | TODO |
 | **DR-2** | One status vocabulary, and a client that can re-attach *and* restart | G-02 | code | TODO |
 
 ### Phase 2 — Visibility and recovery · **blocks launch**
@@ -89,7 +89,7 @@ Legend — **Status:** `TODO` / `WIP` / `DONE` / `BLOCKED (needs Romy)`
 
 | # | Task | Gap | Kind | Status |
 |---|---|---|---|---|
-| **DR-6** | Per-document quarantine — one failure stops one document | G-04 | code | **BLOCKED (Decision 3)** |
+| **DR-6** | Per-document quarantine — one failure stops one document | G-04 | code | TODO |
 | **DR-7** | Scope the resume set to the application, not the job | G-05 | code | TODO |
 | **DR-8** | Guarantee one row per (application, document type) | G-05 | migration | TODO |
 | **DR-9** | "Auto-approved after max revisions" becomes a blocking condition | G-10 | code | TODO |
@@ -137,35 +137,47 @@ Legend — **Status:** `TODO` / `WIP` / `DONE` / `BLOCKED (needs Romy)`
 ## Phase 1 — Survivability
 
 ### DR-1 · Durable execution for the generation pipeline
-**Gap G-01 · infra · BLOCKED on Decision 2 · 3–4 eng-days · Romy: 1h decision**
+**Gap G-01 · infra · TODO · 3–4 eng-days**
 
-Move the pipeline off fire-and-forget. Three viable shapes, in descending order
-of preference:
+**Decision 2 — resolved September 10, 2026 (Session 146).** Romy: go with
+checkpointed resume for now, but it must be monitored — record every
+resume-recovery attempt (success and failure) somewhere queryable, so a rising
+failure rate is visible and the decision to move to a durable queue is made from
+evidence, not guesswork. Not paged/alerted on individually — reviewed, and safe
+to ignore day-to-day as long as the failure rate stays low.
 
-- **(a) A durable queue** — a job row plus a worker the platform cannot reclaim
-  mid-flight. Right long-term answer, most work.
-- **(b) A checkpointed resumable run** — a scheduled invocation picks up any job
-  whose `updated_at` is stale and continues it from the already-approved set.
-  Reuses the resume logic that already exists; roughly half the effort of (a).
-  **Recommended for now.**
-- **(c) At minimum, `waitUntil()` plus segmenting the run** so no single
-  invocation exceeds the ceiling. Cheapest, most likely to need redoing.
+A scheduled invocation picks up any job whose `updated_at` is stale and
+continues it from the already-approved set (see DR-7 — the resume set must be
+scoped to the application, not the job, for this to actually work on a retry).
+Reuses the resume logic that already exists in the engine.
+
+**New requirement folded into this task — resume telemetry.** Every checkpoint
+pickup writes a row (table or reuses `document_generation_log`, whichever fits
+the existing schema) recording: which job, how many documents were already
+approved when picked up, how many were regenerated, and the outcome
+(`resumed_to_completion` / `resumed_still_failing` / `resume_error`). This is
+what lets us later decide, from real numbers, whether checkpointed resume is
+holding up or whether it's time to build the durable queue (option (a),
+deferred, not chosen now).
 
 Awaiting the pipeline is **not** an option: three nested retry loops (one Claude
 retry, three verifier retries, three humanization attempts) across 15–25
 documents put a full run comfortably past the 300-second ceiling.
 
-Whichever shape, the invariant holds: **a job in flight always has something that
-will finish it or fail it.**
+The invariant holds: **a job in flight always has something that will finish it
+or fail it.**
 
 > **Exit** — kill the instance at document 3 of 20, walk away, and the package
 > still completes, or fails loudly, with no human intervention. Demonstrated by a
 > deliberate kill against a real environment, not by reasoning about the code.
+> The resume-telemetry row for that run is queryable afterward and correctly
+> labeled.
 >
 > **Test** — `src/lib/__tests__/generation-resume.test.ts`: given a job row with
 > a stale `updated_at` and a partially-populated approved set, the resumer picks
-> it up, regenerates only the un-approved documents, and terminates the job in a
-> terminal state. A job with a fresh `updated_at` is left alone.
+> it up, regenerates only the un-approved documents, terminates the job in a
+> terminal state, and writes exactly one telemetry row with the correct outcome.
+> A job with a fresh `updated_at` is left alone and writes nothing.
 
 ---
 
@@ -266,7 +278,7 @@ exit).
 ## Phase 3 — Containment inside a run
 
 ### DR-6 · Per-document quarantine — one failure stops one document
-**Gap G-04 · code · BLOCKED on Decision 3 · 1.5 eng-days**
+**Gap G-04 · code · TODO · 1.5 eng-days (+ ~0.5 eng-day for the client-messaging piece below)**
 
 Today any throw inside the per-document loop marks that document failed, calls
 `fail()` on the job and `return`s out of the **entire pipeline**
@@ -274,23 +286,43 @@ Today any throw inside the per-document loop marks that document failed, calls
 single API retry takes down a run that was 22 documents deep.
 
 Replace with: mark the document failed, **continue**, and report the failed set
-at the end. The delivery gate already knows how to hold a package for review —
-that is the right destination for a partial run, rather than losing nineteen good
-documents to one bad one.
+at the end.
 
-**Decision 3 gates the last step:** when 19 of 20 succeed, does the client get a
-held package (recommended — notify us, release manually while volume is low) or a
-released package with the gap flagged and a free regeneration? Build the
-quarantine either way; the disposition branch waits on the answer.
+**Decision 3 — resolved September 10, 2026 (Session 146).** Romy: always release
+the successful documents so the client has something in hand; the failed ones
+get worked on separately. The client must be told, in the package itself, what's
+missing, why, and what happens next — and if the failure is because generation
+needs more information from the client (not a system fault), the client is asked
+for it directly rather than left to guess.
+
+Concretely, this is **release-with-flag**, not hold-and-notify:
+
+1. When 19 of 20 succeed, the package delivers immediately with the 19 documents.
+2. The 20th shows in the client's package view as its own state — not silently
+   missing, not mixed in with "still generating" — with **a specific reason**
+   (system fault vs. missing information) and **a next action**:
+   - *System fault* (e.g. the LLM call kept failing): "we're regenerating this
+     automatically / our team has been notified" — no client action needed.
+   - *Missing information*: the client sees what's needed to complete it (reuses
+     the same "what's needed" language DR-17 already builds for correctly-omitted
+     documents) and a way to supply it.
+3. Internally, this still notifies us (Sentry, same as a held package would have)
+   — "release to the client" does not mean "stop tracking it."
+
+The delivery gate's existing hold mechanism is repurposed for *why a document
+isn't in the package yet*, not for blocking the whole package.
 
 > **Exit** — fault-inject a hard failure on one document mid-run: the other 19
-> survive, the package is held for review naming the failed document, and a retry
-> regenerates **only that one**.
+> are delivered to the client immediately, the package view names the 20th
+> document, states the reason and next action, we get notified internally, and a
+> retry regenerates **only that one**.
 >
 > **Test** — `src/lib/__tests__/generation-quarantine.test.ts`: a per-document
-> throw leaves the loop running, the job reaches a terminal state, the failed
-> document is named in the job's failure summary, and the 19 successes retain
-> `approved`.
+> throw leaves the loop running, the job reaches a terminal state, the 19
+> successes retain `approved` and are deliverable independently of the 20th, the
+> failed document carries a reason code (`system_fault` | `needs_information`),
+> and the client-facing manifest surfaces that reason and next action rather than
+> omitting the document silently.
 
 ---
 

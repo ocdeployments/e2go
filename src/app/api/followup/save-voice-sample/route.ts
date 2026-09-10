@@ -162,8 +162,8 @@ ${voiceSampleText}`;
     }
 
     /**
-     * Keyed on user_id. application_lifecycle has no application_id column, so
-     * this update errored and neither flag was ever written.
+     * application_lifecycle is a client-funnel table, one row per user_id,
+     * not per application — scoping by user_id is correct here.
      */
     const { error: lifecycleError } = await supabase
       .from('application_lifecycle')

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { captureApiError } from '@/lib/capture-error';
+import { daysAgo, BUCKET, purgeExpiredFiles, sendRetentionReminders, sendRetentionCompletions } from '@/lib/retention-cron';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
@@ -21,13 +22,18 @@ export const maxDuration = 300;
  *  3. Dormancy report — logs accounts with no login for 24 months so they can
  *     be reviewed for deletion. (Auto-deletion of dormant paid accounts needs
  *     product sign-off before it is enabled here.)
+ *
+ * Document retention also drives the three-email retention-notice sequence
+ * (RS-10 / Gap G-19): a reminder 3 days before an application's files are
+ * due to be purged, with a confirm-to-keep link that sets
+ * applications.retention_hold_at (checked here before any file is removed);
+ * and a completion email once files have actually been purged for that
+ * application. The first email in the sequence fires from
+ * generation-engine.ts when the package is built, not from this cron.
  */
 
 const GRACE_DAYS = 30;
-const FILE_MAX_AGE_DAYS = 90; // hard cap: delete raw file 90 days after upload
-const FILE_POST_PACKAGE_DAYS = 30; // delete raw file 30 days after package generated
 const DORMANT_MONTHS = 24;
-const BUCKET = 'application-documents';
 const IDENTITY_REDACT_GRACE_DAYS = 1; // redact identity extracted_json 1 cron cycle after fields accepted
 
 // Identity documents whose extracted_json holds raw PII (passport number, DOB,
@@ -49,10 +55,6 @@ function getSupabaseAdmin(): SupabaseClient {
   return createClient(url, key, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
-}
-
-function daysAgo(n: number): string {
-  return new Date(Date.now() - n * 24 * 60 * 60 * 1000).toISOString();
 }
 
 /**
@@ -134,103 +136,6 @@ async function purgeDeletedAccounts(supabase: SupabaseClient) {
       captureApiError(err, { route: 'cron/data-retention', stage: 'purge-account', userId });
       result.errors.push(`purge-account ${userId}: ${(err as Error).message}`);
     }
-  }
-
-  return result;
-}
-
-async function purgeExpiredFiles(supabase: SupabaseClient) {
-  const result = { appDocs: 0, fddDocs: 0, errors: [] as string[] };
-
-  // Applications whose package was generated more than 30 days ago.
-  const { data: oldPackages } = await supabase
-    .from('generated_documents')
-    .select('application_id, created_at')
-    .lt('created_at', daysAgo(FILE_POST_PACKAGE_DAYS));
-  const packagedApps = new Set(
-    (oldPackages ?? []).map((r) => r.application_id as string).filter(Boolean),
-  );
-
-  // Candidate application_documents whose file is still present.
-  const { data: appDocs, error: appErr } = await supabase
-    .from('application_documents')
-    .select('id, application_id, storage_path, created_at')
-    .is('file_purged_at', null);
-
-  if (appErr) {
-    captureApiError(appErr, { route: 'cron/data-retention', stage: 'fetch-app-docs' });
-    result.errors.push(`fetch-app-docs: ${appErr.message}`);
-  }
-
-  const hardCap = daysAgo(FILE_MAX_AGE_DAYS);
-  for (const doc of appDocs ?? []) {
-    const tooOld = (doc.created_at as string) < hardCap;
-    const packaged = packagedApps.has(doc.application_id as string);
-    if (!tooOld && !packaged) continue;
-    if (!doc.storage_path) {
-      await supabase
-        .from('application_documents')
-        .update({ file_purged_at: new Date().toISOString() })
-        .eq('id', doc.id);
-      result.appDocs += 1;
-      continue;
-    }
-    const { error: rmErr } = await supabase.storage
-      .from(BUCKET)
-      .remove([doc.storage_path as string]);
-    if (rmErr && !/not found/i.test(rmErr.message)) {
-      captureApiError(rmErr, { route: 'cron/data-retention', stage: 'rm-app-doc', docId: doc.id });
-      result.errors.push(`rm-app-doc ${doc.id}: ${rmErr.message}`);
-      continue;
-    }
-    const { error: updErr } = await supabase
-      .from('application_documents')
-      .update({ file_purged_at: new Date().toISOString() })
-      .eq('id', doc.id);
-    if (updErr) {
-      captureApiError(updErr, { route: 'cron/data-retention', stage: 'stamp-app-doc', docId: doc.id });
-      result.errors.push(`stamp-app-doc ${doc.id}: ${updErr.message}`);
-      continue;
-    }
-    result.appDocs += 1;
-  }
-
-  // FDD PDFs — same rule, keyed off upload age and package age.
-  const { data: fddDocs, error: fddErr } = await supabase
-    .from('fdd_analyses')
-    .select('id, application_id, storage_path, created_at')
-    .is('file_purged_at', null);
-
-  if (fddErr) {
-    captureApiError(fddErr, { route: 'cron/data-retention', stage: 'fetch-fdd-docs' });
-    result.errors.push(`fetch-fdd-docs: ${fddErr.message}`);
-  }
-
-  for (const doc of fddDocs ?? []) {
-    const tooOld = (doc.created_at as string) < hardCap;
-    const packaged =
-      !!doc.application_id && packagedApps.has(doc.application_id as string);
-    if (!tooOld && !packaged) continue;
-    if (doc.storage_path) {
-      const { error: rmErr } = await supabase.storage
-        .from(BUCKET)
-        .remove([doc.storage_path as string]);
-      if (rmErr && !/not found/i.test(rmErr.message)) {
-        captureApiError(rmErr, { route: 'cron/data-retention', stage: 'rm-fdd-doc', docId: doc.id });
-        result.errors.push(`rm-fdd-doc ${doc.id}: ${rmErr.message}`);
-        continue;
-      }
-    }
-    const { error: updErr } = await supabase
-      .from('fdd_analyses')
-      .update({ file_purged_at: new Date().toISOString() })
-      .eq('id', doc.id);
-    if (updErr) {
-      captureApiError(updErr, { route: 'cron/data-retention', stage: 'stamp-fdd-doc', docId: doc.id });
-      result.errors.push(`stamp-fdd-doc ${doc.id}: ${updErr.message}`);
-      continue;
-    }
-    result.fddDocs += 1;
   }
 
   return result;
@@ -318,16 +223,20 @@ export async function GET(request: NextRequest) {
   try {
     const accounts = await purgeDeletedAccounts(supabase);
     const files = await purgeExpiredFiles(supabase);
+    const reminders = await sendRetentionReminders(supabase);
+    const completions = await sendRetentionCompletions(supabase, files.purgedByApp);
     const identity = await redactAcceptedIdentityDocs(supabase);
     const dormant = await reportDormant(supabase);
 
     console.log(
       `[cron/data-retention] accounts purged=${accounts.purged}/${accounts.scanned}, ` +
         `files purged app=${files.appDocs} fdd=${files.fddDocs}, ` +
+        `retention reminders sent=${reminders.sent}, completions sent=${completions.sent}, ` +
         `identity extracted_json redacted=${identity.redacted}, dormant=${dormant.dormant}`,
     );
 
-    return NextResponse.json({ ok: true, accounts, files, identity, dormant });
+    const { purgedByApp: _purgedByApp, ...filesSummary } = files;
+    return NextResponse.json({ ok: true, accounts, files: filesSummary, reminders, completions, identity, dormant });
   } catch (err) {
     captureApiError(err, { route: 'cron/data-retention', stage: 'run' });
     return NextResponse.json({ error: 'Retention run failed' }, { status: 500 });

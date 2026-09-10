@@ -1,5 +1,11 @@
 {
-  "extends": ["next/core-web-vitals", "next/typescript"],
+  "extends": [
+    "next/core-web-vitals",
+    "next/typescript"
+  ],
+  "plugins": [
+    "local-rules"
+  ],
   "rules": {
     "@typescript-eslint/no-unused-vars": [
       "error",
@@ -8,6 +14,110 @@
         "varsIgnorePattern": "^_",
         "caughtErrorsIgnorePattern": "^_"
       }
-    ]
-  }
+    ],
+    "local-rules/require-supabase-error-check": "warn"
+  },
+  "overrides": [
+    {
+      "files": [
+        "src/middleware.ts",
+        "src/app/api/**/*.ts",
+        "src/app/api/**/*.tsx",
+        "src/lib/**/*.ts",
+        "src/lib/**/*.tsx"
+      ],
+      "rules": {
+        "local-rules/require-supabase-error-check": "error"
+      }
+    },
+    {
+      "files": [
+        "src/app/api/account/restore/route.ts",
+        "src/app/api/admin/cost-summary/route.ts",
+        "src/app/api/admin/flag-user/route.ts",
+        "src/app/api/admin/health-detail/route.ts",
+        "src/app/api/admin/promo-codes/\\[id\\]/route.ts",
+        "src/app/api/admin/promo-codes/route.ts",
+        "src/app/api/admin/send-email/route.ts",
+        "src/app/api/admin/settings/route.ts",
+        "src/app/api/admin/stuck-jobs/route.ts",
+        "src/app/api/admin/tier-override/route.ts",
+        "src/app/api/apply/parse-document/route.ts",
+        "src/app/api/apply/section-completion/route.ts",
+        "src/app/api/case/completion/route.ts",
+        "src/app/api/checkout/initiate/route.ts",
+        "src/app/api/consent/log/route.ts",
+        "src/app/api/cron/health-watchdog/route.ts",
+        "src/app/api/cron/payment-reconciliation/route.ts",
+        "src/app/api/dashboard/certify-document/route.ts",
+        "src/app/api/dashboard/change-impact/route.ts",
+        "src/app/api/dashboard/consistency-sweep/route.ts",
+        "src/app/api/dashboard/outcome/route.ts",
+        "src/app/api/dashboard/package-manifest/route.ts",
+        "src/app/api/dashboard/request-regeneration/route.ts",
+        "src/app/api/documents/extract/route.ts",
+        "src/app/api/documents/gap-report/route.ts",
+        "src/app/api/documents/resolve-discrepancy/route.ts",
+        "src/app/api/email/results/route.ts",
+        "src/app/api/email/schedule/route.ts",
+        "src/app/api/fdd/questions/route.ts",
+        "src/app/api/fdd/score/route.ts",
+        "src/app/api/fdd/upload/route.ts",
+        "src/app/api/followup/completion-summary/route.ts",
+        "src/app/api/followup/generate-questions/route.ts",
+        "src/app/api/franchise/brand-view/route.ts",
+        "src/app/api/gap-analysis/run/route.ts",
+        "src/app/api/gap-analysis/semantic-eval/route.ts",
+        "src/app/api/generate/acknowledge/route.ts",
+        "src/app/api/generate/confirm/route.ts",
+        "src/app/api/generate/documents/\\[applicationId\\]/route.ts",
+        "src/app/api/generate/download/\\[applicationId\\]/route.ts",
+        "src/app/api/generate/progress/\\[jobId\\]/route.ts",
+        "src/app/api/generate/revise/\\[applicationId\\]/route.ts",
+        "src/app/api/generate/start/route.ts",
+        "src/app/api/generate/validate/\\[applicationId\\]/route.ts",
+        "src/app/api/market-analysis/pdf/route.ts",
+        "src/app/api/market-analysis/route.ts",
+        "src/app/api/nps/submit/route.ts",
+        "src/app/api/partner/accept/route.ts",
+        "src/app/api/partner/invite/route.ts",
+        "src/app/api/partner2/intake/route.ts",
+        "src/app/api/profile/outcomes-consent/route.ts",
+        "src/app/api/promo/validate/route.ts",
+        "src/app/api/renewal/baseline/route.ts",
+        "src/app/api/renewal/generate/route.ts",
+        "src/app/api/renewal/intake/route.ts",
+        "src/app/api/simulator/evaluate/route.ts",
+        "src/app/api/simulator/outcome/route.ts",
+        "src/app/api/simulator/prep-kit/pdf/route.ts",
+        "src/app/api/simulator/prep-kit/route.ts",
+        "src/app/api/simulator/quick-start/route.ts",
+        "src/app/api/simulator/section-nudge/route.ts",
+        "src/app/api/stripe/create-checkout/route.ts",
+        "src/app/api/stripe/grant-simulator-sessions/route.ts",
+        "src/app/api/support/submit/route.ts",
+        "src/lib/analysis-engine.ts",
+        "src/lib/case-intelligence-core.ts",
+        "src/lib/case-profile.ts",
+        "src/lib/cic-change-impact.ts",
+        "src/lib/cic-consistency-sweep.ts",
+        "src/lib/cic-fdd-seed.ts",
+        "src/lib/email-scheduler.ts",
+        "src/lib/emails/retention-sequence.ts",
+        "src/lib/entitlements.ts",
+        "src/lib/exhibit-registry.ts",
+        "src/lib/gap-analysis-enrichment.ts",
+        "src/lib/generation-engine.ts",
+        "src/lib/person-code.ts",
+        "src/lib/quiz-nurture-scheduler.ts",
+        "src/lib/resolve-application.ts",
+        "src/lib/retention-cron.ts",
+        "src/lib/simulator-engine.ts",
+        "src/middleware.ts"
+      ],
+      "rules": {
+        "local-rules/require-supabase-error-check": "warn"
+      }
+    }
+  ]
 }

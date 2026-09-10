@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { Ratelimit } from '@upstash/ratelimit';
 import { Redis } from '@upstash/redis';
+import { captureApiError } from '@/lib/capture-error';
 
 // ---------------------------------------------------------------------------
 // Redis — shared instance for rate limiting AND middleware caching
@@ -413,28 +414,39 @@ export async function middleware(req: NextRequest) {
 
     if (!access) {
       // Cache miss — fetch soft-delete status and payment status in parallel
-      const [{ data: apps }, { data: profile }] = await Promise.all([
+      const [{ data: apps, error: appsError }, { data: profile, error: profileError }] = await Promise.all([
         supabase.from('applications').select('payment_status, source').eq('user_id', user.id),
         supabase.from('profiles').select('deleted_at').eq('id', user.id).maybeSingle(),
       ]);
 
-      if (profile?.deleted_at) {
+      let lookupFailed = false;
+      if (appsError || profileError) {
+        captureApiError(appsError ?? profileError, {
+          route: 'middleware',
+          stage: 'payment-gate-lookup',
+          userId: user.id,
+          pathname,
+        });
+        lookupFailed = true;
+      }
+
+      if (!lookupFailed && profile?.deleted_at) {
         // Soft-deleted — cache with long TTL and redirect
         access = { full: false, sim: false, fdd: false, deleted: true };
         await safeCacheSet(accessCacheKey(user.id), access, 86400);
         return NextResponse.redirect(new URL('/account-recovery', req.url));
       }
 
-      const hasFullAccess = apps?.some(
+      const hasFullAccess = !lookupFailed && (apps?.some(
         a => a.payment_status === 'paid' && a.source !== 'simulator_standalone'
-      ) ?? false;
+      ) ?? false);
 
-      const hasSimulatorAccess = apps?.some(a => a.source === 'simulator_standalone') ?? false;
+      const hasSimulatorAccess = !lookupFailed && (apps?.some(a => a.source === 'simulator_standalone') ?? false);
 
       // Pre-fetch FDD status so /fdd route checks also skip the DB on cache hit
       let hasFddAccess = false;
-      if (!hasFullAccess) {
-        const { data: fddPayment } = await supabase
+      if (!lookupFailed && !hasFullAccess) {
+        const { data: fddPayment, error: fddError } = await supabase
           .from('payments')
           .select('id')
           .eq('user_id', user.id)
@@ -442,12 +454,30 @@ export async function middleware(req: NextRequest) {
           .eq('status', 'completed')
           .limit(1)
           .maybeSingle();
-        hasFddAccess = !!fddPayment;
+        if (fddError) {
+          captureApiError(fddError, {
+            route: 'middleware',
+            stage: 'fdd-payment-lookup',
+            userId: user.id,
+            pathname,
+          });
+          lookupFailed = true;
+        } else {
+          hasFddAccess = !!fddPayment;
+        }
       }
 
-      access = { full: hasFullAccess, sim: hasSimulatorAccess, fdd: hasFddAccess };
-
-      await safeCacheSet(accessCacheKey(user.id), access, CACHE_TTL_SECONDS);
+      if (lookupFailed) {
+        // RS-3 (Gap G-15): a Supabase error returns data: null, indistinguishable
+        // from "no paid applications" — deriving access from it fails CLOSED and
+        // locks out a paying customer on a transient DB blip. Fail open for
+        // this request instead, and skip the cache write so the next request
+        // re-checks rather than caching a false negative for 30 minutes.
+        access = { full: true, sim: true, fdd: true };
+      } else {
+        access = { full: hasFullAccess, sim: hasSimulatorAccess, fdd: hasFddAccess };
+        await safeCacheSet(accessCacheKey(user.id), access, CACHE_TTL_SECONDS);
+      }
     }
 
     if (access.deleted) {
@@ -495,14 +525,27 @@ export async function middleware(req: NextRequest) {
     termsAccepted = cachedTerms === 1;
 
     if (!termsAccepted) {
-      const { data: acceptance } = await supabase
+      const { data: acceptance, error: acceptanceError } = await supabase
         .from('terms_acceptance')
         .select('terms_version')
         .eq('user_id', user.id)
         .eq('terms_version', TERMS_VERSION)
         .single();
 
-      if (acceptance) {
+      if (acceptanceError && acceptanceError.code !== 'PGRST116') {
+        // RS-3 (Gap G-15): PGRST116 ("no rows") is the expected shape for a
+        // user who genuinely hasn't accepted yet — anything else is a real
+        // Supabase failure. Fail open rather than bouncing a user to
+        // /terms-required on a transient DB blip, and don't cache a failure
+        // as if it were an acceptance.
+        captureApiError(acceptanceError, {
+          route: 'middleware',
+          stage: 'terms-acceptance-lookup',
+          userId: user.id,
+          pathname,
+        });
+        termsAccepted = true;
+      } else if (acceptance) {
         termsAccepted = true;
         await safeCacheSet(termsCacheKey(user.id, TERMS_VERSION), 1, CACHE_TTL_SECONDS);
       }

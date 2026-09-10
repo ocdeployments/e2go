@@ -61,21 +61,50 @@ export async function POST(request: NextRequest) {
 
   // H3: Idempotency — INSERT first; unique constraint on stripe_event_id catches duplicates atomically.
   // No SELECT+INSERT race: the DB enforces uniqueness, not application logic.
+  //
+  // RS-1 (Gap G-13): this row is a claim, not a receipt. It goes in as
+  // 'processing' before any handler logic runs, and only becomes 'completed'
+  // once the switch below finishes without a captured error or a thrown
+  // exception. A redelivery that lands on a 'processing' or 'failed' row
+  // means the previous attempt never finished — reclaim it and re-run
+  // instead of reporting a false duplicate.
   const { error: dedupError } = await supabase
     .from('processed_webhook_events')
-    .insert({ stripe_event_id: event.id, processed_at: new Date().toISOString() });
+    .insert({ stripe_event_id: event.id, processed_at: new Date().toISOString(), status: 'processing' });
 
   if (dedupError) {
     if (dedupError.code === '23505') {
-      // Duplicate delivery — already processed
-      return NextResponse.json({ received: true, duplicate: true });
+      const { data: existing, error: statusLookupError } = await supabase
+        .from('processed_webhook_events')
+        .select('status')
+        .eq('stripe_event_id', event.id)
+        .maybeSingle();
+
+      if (statusLookupError) {
+        captureApiError(statusLookupError, { route: 'stripe/webhook', stage: 'dedup-status-lookup', eventId: event.id });
+        return NextResponse.json({ received: true });
+      }
+      if (existing?.status === 'completed') {
+        // Already fully processed — genuine duplicate delivery.
+        return NextResponse.json({ received: true, duplicate: true });
+      }
+      // status is 'processing' or 'failed' (or the row vanished) — fall
+      // through and re-run the handler; the claim is reclaimed below.
+    } else {
+      // DB error — log and return 200 to avoid Stripe retry storm
+      captureApiError(dedupError, { route: 'stripe/webhook', stage: 'dedup-insert', eventId: event.id, eventType: event.type });
+      return NextResponse.json({ received: true });
     }
-    // DB error — log and return 200 to avoid Stripe retry storm
-    captureApiError(dedupError, { route: 'stripe/webhook', stage: 'dedup-insert', eventId: event.id, eventType: event.type });
-    return NextResponse.json({ received: true });
   }
 
-  switch (event.type) {
+  let handlerFailed = false;
+  const captureAndFail = (err: unknown, context: { route: string; [key: string]: unknown }) => {
+    handlerFailed = true;
+    captureApiError(err, context);
+  };
+
+  try {
+    switch (event.type) {
     case 'checkout.session.completed': {
       const session = event.data.object as Stripe.Checkout.Session;
       const applicationId = session.metadata?.applicationId;
@@ -92,7 +121,7 @@ export async function POST(request: NextRequest) {
           .eq('id', promoRedemptionId);
 
         if (promoCompleteError) {
-          captureApiError(promoCompleteError, {
+          captureAndFail(promoCompleteError, {
             route: 'stripe/webhook',
             stage: 'promo-redemption-complete',
             eventId: event.id,
@@ -113,7 +142,7 @@ export async function POST(request: NextRequest) {
         .eq('stripe_session_id', session.id);
 
       if (paymentCompleteError) {
-        captureApiError(paymentCompleteError, {
+        captureAndFail(paymentCompleteError, {
           route: 'stripe/webhook',
           stage: 'payment-complete-stamp',
           eventId: event.id,
@@ -136,7 +165,7 @@ export async function POST(request: NextRequest) {
           .eq('user_id', userId);
 
         if (unlockError) {
-          captureApiError(unlockError, {
+          captureAndFail(unlockError, {
             route: 'stripe/webhook',
             stage: 'application-unlock',
             eventId: event.id,
@@ -146,10 +175,9 @@ export async function POST(request: NextRequest) {
         }
 
         /**
-         * Keyed on user_id — application_lifecycle has no application_id
-         * column, and this update used to filter on one. It errored on every
-         * payment, so payment_completed_at has never been written and every
-         * funnel figure derived from it is wrong.
+         * application_lifecycle is a client-funnel table, one row per
+         * user_id, not per application — scoping by user_id is correct here,
+         * not a stand-in for a missing application_id column.
          */
         const { error: lifecycleError } = await supabase
           .from('application_lifecycle')
@@ -157,7 +185,7 @@ export async function POST(request: NextRequest) {
           .eq('user_id', userId);
 
         if (lifecycleError) {
-          captureApiError(lifecycleError, {
+          captureAndFail(lifecycleError, {
             route: 'stripe/webhook',
             stage: 'lifecycle-payment-stamp',
             eventId: event.id,
@@ -177,7 +205,7 @@ export async function POST(request: NextRequest) {
           .eq('user_id', userId);
 
         if (fddUnlockError) {
-          captureApiError(fddUnlockError, {
+          captureAndFail(fddUnlockError, {
             route: 'stripe/webhook',
             stage: 'fdd-unlock',
             eventId: event.id,
@@ -195,7 +223,7 @@ export async function POST(request: NextRequest) {
           .single();
 
         if (packReadError) {
-          captureApiError(packReadError, {
+          captureAndFail(packReadError, {
             route: 'stripe/webhook',
             stage: 'simulator-pack-read',
             eventId: event.id,
@@ -210,7 +238,7 @@ export async function POST(request: NextRequest) {
             .eq('id', applicationId);
 
           if (packGrantError) {
-            captureApiError(packGrantError, {
+            captureAndFail(packGrantError, {
               route: 'stripe/webhook',
               stage: 'simulator-pack-grant',
               eventId: event.id,
@@ -238,7 +266,7 @@ export async function POST(request: NextRequest) {
         .eq('stripe_session_id', session.id);
 
       if (expireError) {
-        captureApiError(expireError, {
+        captureAndFail(expireError, {
           route: 'stripe/webhook',
           stage: 'session-expired-stamp',
           eventId: event.id,
@@ -258,7 +286,7 @@ export async function POST(request: NextRequest) {
           .eq('status', 'pending');
 
         if (promoExpireError) {
-          captureApiError(promoExpireError, {
+          captureAndFail(promoExpireError, {
             route: 'stripe/webhook',
             stage: 'promo-redemption-expire',
             eventId: event.id,
@@ -280,7 +308,7 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (paymentLookupError) {
-        captureApiError(paymentLookupError, {
+        captureAndFail(paymentLookupError, {
           route: 'stripe/webhook',
           stage: 'refund-payment-lookup',
           eventId: event.id,
@@ -295,7 +323,7 @@ export async function POST(request: NextRequest) {
           .eq('id', payment.id);
 
         if (refundStampError) {
-          captureApiError(refundStampError, {
+          captureAndFail(refundStampError, {
             route: 'stripe/webhook',
             stage: 'refund-payment-stamp',
             eventId: event.id,
@@ -323,7 +351,7 @@ export async function POST(request: NextRequest) {
             .eq('id', payment.application_id);
 
           if (revokeError) {
-            captureApiError(revokeError, {
+            captureAndFail(revokeError, {
               route: 'stripe/webhook',
               stage: 'refund-application-revoke',
               eventId: event.id,
@@ -343,7 +371,7 @@ export async function POST(request: NextRequest) {
             .eq('user_id', payment.user_id);
 
           if (fddRevokeError) {
-            captureApiError(fddRevokeError, {
+            captureAndFail(fddRevokeError, {
               route: 'stripe/webhook',
               stage: 'refund-fdd-revoke',
               eventId: event.id,
@@ -361,7 +389,7 @@ export async function POST(request: NextRequest) {
             .single();
 
           if (packReadError) {
-            captureApiError(packReadError, {
+            captureAndFail(packReadError, {
               route: 'stripe/webhook',
               stage: 'refund-simulator-pack-read',
               eventId: event.id,
@@ -376,7 +404,7 @@ export async function POST(request: NextRequest) {
               .eq('id', payment.application_id);
 
             if (packRevokeError) {
-              captureApiError(packRevokeError, {
+              captureAndFail(packRevokeError, {
                 route: 'stripe/webhook',
                 stage: 'refund-simulator-pack-revoke',
                 eventId: event.id,
@@ -402,7 +430,7 @@ export async function POST(request: NextRequest) {
         .eq('stripe_payment_intent_id', paymentIntent.id);
 
       if (failedStampError) {
-        captureApiError(failedStampError, {
+        captureAndFail(failedStampError, {
           route: 'stripe/webhook',
           stage: 'payment-failed-stamp',
           eventId: event.id,
@@ -411,6 +439,25 @@ export async function POST(request: NextRequest) {
       }
       break;
     }
+    }
+  } catch (err) {
+    handlerFailed = true;
+    captureApiError(err, { route: 'stripe/webhook', stage: 'handler-exception', eventId: event.id, eventType: event.type });
+  }
+
+  const { error: claimFinalizeError } = await supabase
+    .from('processed_webhook_events')
+    .update({ status: handlerFailed ? 'failed' : 'completed' })
+    .eq('stripe_event_id', event.id);
+
+  if (claimFinalizeError) {
+    captureApiError(claimFinalizeError, { route: 'stripe/webhook', stage: 'dedup-claim-finalize', eventId: event.id, handlerFailed });
+  }
+
+  // RS-2 (Gap G-14): a 500 here is what makes Stripe's own retry the recovery
+  // path for a failed claim — a 200 would tell Stripe the event is done.
+  if (handlerFailed) {
+    return NextResponse.json({ error: 'Webhook handler failed' }, { status: 500 });
   }
 
   return NextResponse.json({ received: true });

@@ -46,6 +46,13 @@ export type GenerationJobStatus =
   | 'failed'
   | 'partial';
 
+// The single source of truth for "this job is in flight" — /start, /run, and
+// the checkpointed-resume cron all check against this instead of maintaining
+// their own (previously divergent) status lists.
+export const IN_FLIGHT_STATUSES: readonly GenerationJobStatus[] =
+  ['queued', 'running', 'awaiting_approval'] as const;
+export type InFlightStatus = typeof IN_FLIGHT_STATUSES[number];
+
 export type DocumentStatus =
   | 'queued'
   | 'generating'
@@ -227,6 +234,26 @@ export interface GenerationLogEntry {
   passed: boolean | null;
   flagged_sections: string[];
   notes: string | null;
+  created_at: string;
+}
+
+// The outcome of one checkpointed-resume pickup — recorded so a rising
+// failure rate is visible from a query, not from reading server logs.
+export type ResumeOutcome =
+  | 'resumed_to_completion'
+  | 'resumed_still_failing'
+  | 'resume_error';
+
+export interface GenerationResumeLogEntry {
+  id: string;
+  job_id: string;
+  application_id: string;
+  picked_up_status: GenerationJobStatus;
+  stale_for_seconds: number;
+  approved_count: number;
+  regenerated_count: number;
+  outcome: ResumeOutcome;
+  error_message: string | null;
   created_at: string;
 }
 
