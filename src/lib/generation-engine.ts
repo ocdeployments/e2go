@@ -2070,7 +2070,7 @@ interface GapAnalysisResult {
   recommendations: string[];
 }
 
-const REQUIRED_ELEMENTS: Record<DocumentType, string[]> = {
+export const REQUIRED_ELEMENTS: Record<DocumentType, string[]> = {
   cover_letter: [
     'applicant_name',
     'business_name',
@@ -2190,6 +2190,124 @@ const REQUIRED_ELEMENTS: Record<DocumentType, string[]> = {
   nonimmigrant_intent_p2:   ['home_country_ties', 'return_intent'],
   resume_p2:                ['applicant_name', 'employment', 'education'],
 };
+
+// Searchable content patterns for every element name used in REQUIRED_ELEMENTS
+// above. This map was previously built inline inside the Stage 5 completeness
+// loop and covered only 24 of the 45 element names in use — the other 21 had
+// no pattern at all, so `patterns.some(...)` ran against an empty array and
+// reported the element missing no matter what the document actually said.
+// Because a Stage 5 miss writes `quality_gate_passed: false`, and a false gate
+// renders as a blocking 'blocked' / "HELD FOR E2GO REVIEW" status, eight
+// document types (visa_category, nonimmigrant_intent, marginality_rebuttal,
+// declaration_spouse, net_worth_statement, property_portfolio, gift_letter,
+// nonimmigrant_intent_p2) could never be delivered to a client regardless of
+// their content, and no package could ever reach packageReady.
+//
+// Patterns are deliberately broad: this is a completeness smoke test for
+// "did the model address this topic at all", not a substantive review. False
+// negatives (a real gap slipping through) are recoverable downstream; false
+// positives block delivery outright, which is the failure mode that shipped.
+// REQUIRED_ELEMENT_COVERAGE in the test suite fails if this map ever falls
+// behind REQUIRED_ELEMENTS again.
+export const REQUIRED_ELEMENT_PATTERNS: Record<string, RegExp[]> = {
+  // Cover letter
+  applicant_name: [/applicant/i, /i,\s/i],
+  business_name: [/llc|business|company|enterprise/i],
+  investment_amount: [/\$[\d,]+/],
+  treaty_country: [/treaty|bilateral|friendship/i],
+  consulate_post: [/consulat|embassy|visa/i],
+  // Source of funds
+  source_description: [/source|origin|fund|source of/i],
+  timeline: [/date|timeline|chronolog|when|period/i],
+  amount: [/\$[\d,]+/],
+  documentation_mentioned: [/document|evidence|support|record/i],
+  // Investment proof
+  at_risk_amount: [/at.risk|invested|committed|placed/i],
+  funds_movement: [/transfer|wire|mov|sent|deposit/i],
+  business_ownership: [/owner|member|interest|equity/i],
+  // Business plan
+  business_description: [/business|service|product|operat/i],
+  market_analysis: [/market|customer|competitor|demand/i],
+  financial_projections: [/revenue|profit|forecast|project/i],
+  job_creation: [/job|employ|hiring|position|worker/i],
+  // Qualifications
+  applicant_background: [/background|career|professional/i],
+  experience: [/experience|year|work|manag/i],
+  education: [/educat|degree|university|college|bachelor/i],
+  relevant_skills: [/skill|qualif|train|certif/i],
+  // DS-160
+  personal_information: [/name|birth|nation|address/i],
+  travel_history: [/travel|visit|country|traveled/i],
+  family_information: [/spouse|child|family|depend/i],
+  employment: [/employ|work|job|position|occup/i],
+  // Substantiality memorandum (visa_category)
+  investment_substantiality: [/substantial/i],
+  proportionality_ratio: [/proportion|ratio|percent|%/i],
+  total_enterprise_cost: [/total(?:\s+\S+){0,3}\s+cost|cost of establish|capitaliz/i],
+  committed_vs_reserved: [/commit|irrevocab|reserve|escrow|at.risk|deploy/i],
+  // Non-immigrant intent
+  home_country_ties: [/\btie[sd]?\b|home country|residence|famil|propert/i],
+  return_intent: [/return|depart|nonimmigrant|non-immigrant|temporar|intend/i],
+  departure_plan: [/depart|leave the united states|return to|upon expir|wind.down|exit|sell my interest|hand (?:over|off)|succession/i],
+  // Marginality rebuttal
+  employment_projections: [/employ|hire|hiring|staff|headcount|position|worker|payroll/i],
+  market_evidence: [/market|demand|industry|census|population|competitor|growth/i],
+  revenue_projections: [/revenue|income|sales|forecast|project|receipts/i],
+  // Spouse documents
+  spouse_name: [/spouse|husband|wife|married/i],
+  derivative_status: [/derivativ|depend|accompany|e-2s|principal applicant/i],
+  // Net worth statement
+  total_assets: [/total\s+assets|assets?\s*(?:summary|total)|gross assets/i],
+  total_liabilities: [/total\s+liabilit|liabilit(?:ies|y)\s*(?:summary|total)|no liabilit/i],
+  net_worth: [/net\s+worth/i],
+  // Property portfolio
+  property_location: [/locat|address|street|city|county|situated|jurisdiction|propert/i],
+  ownership: [/own|title|deed|freehold|leasehold|sole|joint|regist/i],
+  estimated_value: [/\$[\d,]+|valuat|apprais|market value|estimated value/i],
+  // Gift letter
+  donor_name: [/donor|gifted by|relationship|my (?:father|mother|parent|brother|sister|aunt|uncle)/i],
+  gift_amount: [/\$[\d,]+/],
+  irrevocability: [/irrevocab|no repayment|not a loan|no expectation of repayment|no obligation to repay/i],
+};
+
+// Returns the required elements this document's text never addresses.
+//
+// Fails OPEN on an element with no pattern: an unmapped element is skipped
+// rather than reported missing, so a future addition to REQUIRED_ELEMENTS
+// cannot silently block delivery the way the original 21 gaps did. The
+// REQUIRED_ELEMENT_COVERAGE test is what actually catches the omission.
+export function findMissingRequiredElements(
+  content: string,
+  documentType: DocumentType,
+  applicantName?: string | null
+): string[] {
+  const requiredElements = REQUIRED_ELEMENTS[documentType];
+  if (!requiredElements || !content) return [];
+
+  const lowerContent = content.toLowerCase();
+  // The applicant_name patterns are a proxy for "this document identifies the
+  // applicant", and the proxy misses documents that name the person without
+  // ever using the word "applicant" (org_chart is the live example — it names
+  // James Windsor eight times and was blocked anyway). When the case brief
+  // gives us the real name, check for that instead of the proxy.
+  const nameTokens = (applicantName || '')
+    .toLowerCase()
+    .split(/\s+/)
+    .filter(t => t.replace(/[^a-z]/g, '').length >= 3);
+  const missing: string[] = [];
+
+  for (const element of requiredElements) {
+    if (element === 'applicant_name' && nameTokens.length > 0) {
+      if (!nameTokens.some(t => lowerContent.includes(t))) missing.push(element);
+      continue;
+    }
+    const patterns = REQUIRED_ELEMENT_PATTERNS[element];
+    if (!patterns || patterns.length === 0) continue; // fail open — see above
+    if (!patterns.some(p => p.test(lowerContent))) missing.push(element);
+  }
+
+  return missing;
+}
 
 function extractKeyElements(text: string): string[] {
   const lower = text.toLowerCase();
@@ -3585,57 +3703,19 @@ Generate the document using Investor 2's identity, name, nationality, source of 
 
     // REQUIRED_ELEMENTS completeness check (Spec4 Stage 5)
     for (const doc of generatedDocs) {
-      const requiredElements = REQUIRED_ELEMENTS[doc.document_type];
-      if (!requiredElements || !doc.content_text) continue;
+      if (!doc.content_text) continue;
       // A correct "NOT APPLICABLE — ..." sentinel (currently gift_letter with
       // no gift/inheritance funds) structurally cannot contain donor_name /
       // gift_amount / irrevocability — checking for them is a false positive.
       if (isNotApplicableSentinel(doc.content_text)) continue;
 
-      const lowerContent = doc.content_text.toLowerCase();
-      const missingElements: string[] = [];
-
-      for (const element of requiredElements) {
-        // Map element names to searchable patterns
-        const elementPatterns: Record<string, RegExp[]> = {
-          // Cover letter
-          applicant_name: [/applicant/i, /i,\s/i],
-          business_name: [/llc|business|company|enterprise/i],
-          investment_amount: [/\$[\d,]+/],
-          treaty_country: [/treaty|bilateral|friendship/i],
-          consulate_post: [/consulat|embassy|visa/i],
-          // Source of funds
-          source_description: [/source|origin|fund|source of/i],
-          timeline: [/date|timeline|chronolog|when|period/i],
-          amount: [/\$[\d,]+/],
-          documentation_mentioned: [/document|evidence|support|record/i],
-          // Investment proof
-          at_risk_amount: [/at.risk|invested|committed|placed/i],
-          funds_movement: [/transfer|wire|mov|sent|deposit/i],
-          business_ownership: [/owner|member|interest|equity/i],
-          // Business plan
-          business_description: [/business|service|product|operat/i],
-          market_analysis: [/market|customer|competitor|demand/i],
-          financial_projections: [/revenue|profit|forecast|project/i],
-          job_creation: [/job|employ|hiring|position|worker/i],
-          // Qualifications
-          applicant_background: [/background|career|professional/i],
-          experience: [/experience|year|work|manag/i],
-          education: [/educat|degree|university|college|bachelor/i],
-          relevant_skills: [/skill|qualif|train|certif/i],
-          // DS-160
-          personal_information: [/name|birth|nation|address/i],
-          travel_history: [/travel|visit|country|traveled/i],
-          family_information: [/spouse|child|family|depend/i],
-          employment: [/employ|work|job|position|occup/i],
-        };
-
-        const patterns = elementPatterns[element] || [];
-        const found = patterns.some(p => p.test(lowerContent));
-        if (!found) {
-          missingElements.push(element);
-        }
-      }
+      const missingElements = findMissingRequiredElements(
+        doc.content_text,
+        doc.document_type,
+        (caseBriefData.applicant_name as string) ||
+          (caseBriefData.principal_name as string) ||
+          null
+      );
 
       if (missingElements.length > 0) {
         console.warn(`[QUALITY] ${doc.document_type}: missing required elements: ${missingElements.join(', ')}`);
