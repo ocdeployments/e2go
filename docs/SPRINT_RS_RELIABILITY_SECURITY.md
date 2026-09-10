@@ -77,7 +77,7 @@ Legend — **Status:** `TODO` / `WIP` / `DONE` / `BLOCKED (needs Romy)`
 |---|---|---|---|---|
 | **RS-5** | ESLint gate on unbound Supabase errors | G-16 | code | TODO |
 | **RS-6** | Atomic increment for the simulator pack grant | G-21 | migration | TODO |
-| **RS-7** | Fix the payment-lifecycle stamp's scoping | G-22 | migration | **BLOCKED (needs Romy — schema call)** |
+| **RS-7** | ~~Fix the payment-lifecycle stamp's scoping~~ — resolved, not a bug | G-22 | — | DONE 2026-09-10 |
 
 ### Phase 3 — Trust: security surface
 
@@ -251,26 +251,31 @@ read-modify-write.
 
 ---
 
-### RS-7 · Fix the payment-lifecycle stamp's scoping
-**Gap G-22 · migration · TODO · 0.5 eng-day (+ Romy: schema decision)**
+### RS-7 · RESOLVED — the payment-lifecycle stamp's scoping was correct all along
+**Gap G-22 · — · DONE · 2026-09-10**
 
-`application_lifecycle.payment_completed_at` is updated keyed on `user_id`
-alone, because the column it used to filter on (`application_id`) doesn't
-exist on that table — so it stamps every application the user owns, not just
-the one that was paid for. **Blocked on Romy**: does `application_lifecycle`
-get an `application_id` column added (verify against the live schema first,
-per the standing rule), or does this table intentionally track
-user-level rather than application-level lifecycle, in which case the fix is
-to rename the field and stop implying per-application precision? Either answer
-is fine; guessing which one is not.
+Re-investigated after Romy pushed back on the premise: a user who buys two
+packages is still one person, and should have one user_id — which is exactly
+what `application_lifecycle` tracks. Checked the schema
+(`docs/schema_complete.sql:84–104`) and all 24 call sites: it's a flat,
+one-row-per-client funnel table (`quiz_completed_at`, `payment_completed_at`,
+`module1_started_at` … `module5_completed_at`), confirmed independently in two
+places as "one row per client, not a stream of events"
+(`lifecycle-timeline.ts:4`, `admin/revenue/page.tsx:78`). It was never an
+application-scoped table missing a foreign key — `user_id` is the correct and
+only key it should have.
 
-> **Exit** — a user with two applications pays for one; only that
-> application's lifecycle stamp updates.
+No schema change, no code behavior change. The only real defect was
+documentation: three in-code comments (webhook route, and the two
+`followup/` routes) described the `user_id`-only scoping as a broken
+workaround for a missing `application_id` column. Reworded all three to state
+the design plainly instead of reading as an open bug to the next person who
+touches the file.
+
+> **Exit** — done: `docs/RELIABILITY_SECURITY_GAPS.md` G-22 moved to
+> "Verified sound," and the three misleading comments are corrected.
 >
-> **Test** — `src/app/api/stripe/__tests__/lifecycle-stamp-scope.test.ts`:
-> asserts the update is scoped to the specific application (or, if Romy chooses
-> the rename path, that the field name and any consumers agree it's
-> user-level).
+> **Test** — none needed; no behavior changed.
 
 ---
 
@@ -433,24 +438,20 @@ visible rather than only inferred from a spend anomaly later.
 | Phase | Tasks | Eng-days |
 |---|---|---|
 | 1 — Money and access | RS-1…RS-4 | ~3 |
-| 2 — Structural blindness | RS-5…RS-7 | ~2 (+ Romy decision on RS-7) |
+| 2 — Structural blindness | RS-5…RS-7 | ~1.5 |
 | 3 — Trust: security surface | RS-8, RS-9, RS-13 | ~1.75 |
 | 4 — Trust: product/legal | RS-10, RS-11 | ~3 |
 | 5 — Standing hardening | RS-12 | 0.5 |
-| **Total** | 13 tasks | **~10.25 eng-days** |
+| **Total** | 13 tasks | **~9.75 eng-days** |
 
 ## Blocked on Romy
 
-| Task | Needs |
-|---|---|
-| RS-7 | Schema decision: add `application_lifecycle.application_id`, or rename the field to reflect it's genuinely user-level |
-
-RS-10's decision arrived 2026-09-10 (see task section above) — the three-email
-sequence, the confirm-to-keep hold, and the retained-contact-info rule are
-specified; only the schema-column question is open, and it's mechanical (pick
-a name after checking the live schema, coordinate with DR-1's in-flight
-migration), not a product call. RS-7 is the only remaining item genuinely
-blocked on a decision.
+Nothing is currently blocked. Both open decisions this sprint carried were
+resolved 2026-09-10: RS-10's three-email retention sequence (confirm-to-keep
+hold, retained-contact-info rule) was specified by Romy — only a mechanical
+schema-column name is left, to be picked after checking the live schema and
+coordinating with DR-1's in-flight migration; and RS-7 turned out not to be a
+bug at all — see the task section above.
 
 Everything else is unblocked and can start in sequence, independent of Sprint
 DR — confirm against DR's current WIP state before touching `src/types/generation.ts`
