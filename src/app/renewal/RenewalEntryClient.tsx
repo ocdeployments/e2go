@@ -111,7 +111,7 @@ export default function RenewalEntryClient({ hasPurchased }: Props) {
             </div>
             <h3 style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: '18px', color: '#f5f0e8', fontWeight: 400, marginBottom: '8px' }}>Path A — Consular Renewal</h3>
             <p style={{ fontSize: '13px', color: 'rgba(245,240,232,0.55)', lineHeight: 1.65 }}>
-              5-year stamp renewal at your U.S. consulate — typically Toronto for Canadian investors. Full interview with consular officer.
+              5-year stamp renewal at the U.S. consulate in your home country. Full interview with consular officer.
             </p>
           </div>
           <div style={{ background: 'rgba(245,240,232,0.03)', border: '1px solid rgba(245,240,232,0.08)', borderRadius: '8px', padding: '24px' }}>
@@ -138,7 +138,7 @@ export default function RenewalEntryClient({ hasPurchased }: Props) {
               'Business performance review — actual vs. projected (Template 6)',
               'Updated cover letter naming your current role and business achievements',
               'Condensed 5-page business plan update for renewal submission',
-              'Current Canadian ties narrative — pre-populated where possible',
+              'Current home-country ties narrative — pre-populated where possible',
               'Path-specific checklist: consulate binder OR USCIS I-129 reference sheet',
             ].map((item, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
