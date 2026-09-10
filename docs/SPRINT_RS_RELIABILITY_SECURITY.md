@@ -75,7 +75,7 @@ Legend — **Status:** `TODO` / `WIP` / `DONE` / `BLOCKED (needs Romy)`
 
 | # | Task | Gap | Kind | Status |
 |---|---|---|---|---|
-| **RS-5** | ESLint gate on unbound Supabase errors | G-16 | code | TODO |
+| **RS-5** | ESLint gate on unbound Supabase errors | G-16 | code | DONE 2026-09-10 |
 | **RS-6** | Atomic increment for the simulator pack grant | G-21 | migration | TODO |
 | **RS-7** | ~~Fix the payment-lifecycle stamp's scoping~~ — resolved, not a bug | G-22 | — | DONE 2026-09-10 |
 
@@ -297,8 +297,41 @@ under a failure mode none of us anticipated.
 
 ## Phase 2 — Structural blindness
 
-### RS-5 · ESLint gate on unbound Supabase errors
-**Gap G-16 · code · TODO · 1 eng-day**
+### RS-5 · RESOLVED — ESLint gate on unbound Supabase errors
+**Gap G-16 · code · DONE · 2026-09-10**
+
+Custom rule `local-rules/require-supabase-error-check` (`eslint-local-rules/`)
+flags `const { data } = await supabase...` (also `.rpc`/`.auth`/`.storage`/
+`.functions`) with no `error` binding. Wired into `.eslintrc.json`:
+error-level in `src/middleware.ts` + `src/app/api/**` + `src/lib/**`
+(the strict zone), warn-level everywhere else, with a ~74-file grandfather
+list downgrading the strict zone's pre-existing 264 violations back to warn
+so they don't block the build until attrition-fixed file by file.
+
+**Bug found and fixed this session:** six grandfather-list entries are
+dynamic-route paths with `[id]`/`[applicationId]`/`[jobId]` segments —
+`minimatch` (which `overrides[].files` glob-matches against) parses `[...]`
+as a character class, not a literal bracket, so those six entries silently
+failed to match and fell through to the strict-zone `"error"` override
+instead of being grandfathered to `"warn"`. Fixed by escaping the brackets
+(`\\[id\\]`) in all six entries. Confirmed via direct ESLint Node-API
+severity checks before and after (severity 2 → 1) for all six files.
+
+> **Exit** — demonstrated: a route with `const { data } = await supabase...`
+> and no `error` returns ESLint exit code 1 (`next build` runs ESLint by
+> default; `next.config.mjs` has no `ignoreDuringBuilds`).
+>
+> **Test** — `eslint-local-rules/__tests__/require-supabase-error-check.test.ts`,
+> 5 cases via the ESLint Node API against the real `.eslintrc.json`: unbound
+> destructure fails in `src/app/api/**` and `src/lib/**`, warns (doesn't fail)
+> in a plain page component, passes clean when `error` is bound in both
+> zones, and a regression case pinned to the bracket bug (a real grandfathered
+> `[id]` route warns, not errors).
+
+Full `npx jest` (321/321) and `npm run build` (200 pages) clean with this
+change in place. Not yet fixing the 264 pre-existing warn-level violations —
+per the task scope, that's attrition work for whichever session next touches
+each file.
 
 264 call sites destructure `const { data } = await supabase...` with no
 `error` binding — the exact pattern that produced Sprint S's 44 broken
