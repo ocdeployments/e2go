@@ -102,7 +102,7 @@ export async function POST(req: NextRequest) {
                         </tr>` : ""}
                       </table>
                       <div style="font-size:11px;color:rgba(245,240,232,0.68);border-top:1px solid rgba(201,168,76,0.1);padding-top:16px;">
-                        This notification was sent automatically by e2go.
+                        This notification was sent automatically by E2go.app.
                       </div>
                     </td>
                   </tr>

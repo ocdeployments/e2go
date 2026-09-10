@@ -158,7 +158,7 @@ export function buildResultsEmail(
     'Weeks become months. Months become a year.',
     'And the move you have been planning quietly stays a plan.',
     '',
-    'e2go.app — document preparation tool, not a law firm.',
+    'E2go.app — document preparation tool, not a law firm.',
     companyFooterLine(),
   ].join('\n');
 

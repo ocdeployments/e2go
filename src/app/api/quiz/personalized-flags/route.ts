@@ -99,7 +99,7 @@ Return ONLY a valid JSON object mapping each FLAG code to a personalized 2-sente
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
         'HTTP-Referer': 'https://e2go.app',
-        'X-Title': 'e2go Quiz Results',
+        'X-Title': 'E2go.app Quiz Results',
       },
       body: JSON.stringify({
         model: 'xiaomi/mimo-v2.5',

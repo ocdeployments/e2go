@@ -21,7 +21,7 @@ function getBaseHtml(content: string): string {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>e2go</title>
+  <title>E2go.app</title>
 </head>
 <body style="margin: 0; padding: 0; background-color: #0a0a0a; font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #0a0a0a; min-height: 100vh;">
@@ -30,7 +30,7 @@ function getBaseHtml(content: string): string {
         <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 520px; background-color: #0a0a0a;">
           <tr>
             <td style="padding: 0 0 32px 0; border-bottom: 1px solid rgba(201,168,76,0.15);">
-              <span style="font-family: 'Cormorant Garamond', serif; font-size: 24px; font-weight: 300; color: #C9A84C;">e2go</span><span style="font-family: 'Cormorant Garamond', serif; font-size: 24px; font-weight: 300; color: #f5f0e8;">.app</span>
+              <span style="font-family: 'Cormorant Garamond', serif; font-size: 24px; font-weight: 300; color: #C9A84C;">E2go</span><span style="font-family: 'Cormorant Garamond', serif; font-size: 24px; font-weight: 300; color: #f5f0e8;">.app</span>
             </td>
           </tr>
           <tr>
@@ -41,11 +41,11 @@ function getBaseHtml(content: string): string {
           <tr>
             <td style="padding: 32px 0 0 0; border-top: 1px solid rgba(201,168,76,0.15);">
               <p style="font-size: 12px; color: rgba(245,240,232,0.72); margin: 0 0 8px 0; line-height: 1.6;">
-                e2go.app — document preparation tool, not a law firm.<br>
+                E2go.app — document preparation tool, not a law firm.<br>
                 Your data is handled per our <a href="${appUrl}/privacy" style="color: #C9A84C; text-decoration: none;">privacy policy</a>.
               </p>
               <p style="font-size: 11px; color: rgba(245,240,232,0.68); margin: 0 0 8px 0; line-height: 1.6;">
-                To unsubscribe: <a href="${appUrl}/unsubscribe" style="color: rgba(245,240,232,0.72); text-decoration: underline;"> unsubscribe</a> | e2go.app | support@e2go.app
+                To unsubscribe: <a href="${appUrl}/unsubscribe" style="color: rgba(245,240,232,0.72); text-decoration: underline;"> unsubscribe</a> | E2go.app | support@e2go.app
               </p>
               <p style="font-size: 11px; color: rgba(245,240,232,0.55); margin: 0; line-height: 1.6;">
                 ${companyFooterLine()}
@@ -136,7 +136,7 @@ export async function sendClock2Day60(data: Clock2EmailData): Promise<boolean> {
       A reminder about your application data
     </h1>
     <p style="font-size: 15px; color: rgba(245,240,232,0.75); line-height: 1.6; margin: 0 0 24px 0;">
-      Your e2go application data will be permanently deleted in 30 days. Download your complete record now to keep it safe.
+      Your E2go.app application data will be permanently deleted in 30 days. Download your complete record now to keep it safe.
     </p>
     <p style="margin: 0 0 32px 0;">
       ${getButtonHtml('Download my record →', downloadUrl)}

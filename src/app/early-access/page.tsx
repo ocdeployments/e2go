@@ -91,7 +91,7 @@ export default function EarlyAccessPage() {
             You&apos;re on the list
           </h1>
           <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '13px', color: 'rgba(245,240,232,0.68)', lineHeight: 1.7 }}>
-            Thanks for your interest in E2Go. We&apos;ll reach out to {email} as early access opens up.
+            Thanks for your interest in E2go.app. We&apos;ll reach out to {email} as early access opens up.
           </p>
         </div>
       </main>
@@ -106,10 +106,10 @@ export default function EarlyAccessPage() {
           Early access
         </span>
         <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '28px', fontWeight: 300, color: '#f5f0e8', marginBottom: '8px' }}>
-          Get early access to E2Go
+          Get early access to E2go.app
         </h1>
         <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '13px', color: 'rgba(245,240,232,0.68)', lineHeight: 1.7, marginBottom: '36px' }}>
-          Leave your details and we&apos;ll let you know as soon as you can start building your E-2 visa application with E2Go.
+          Leave your details and we&apos;ll let you know as soon as you can start building your E-2 visa application with E2go.app.
         </p>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>

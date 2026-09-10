@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
                 </tr>
               </table>
               <p style="font-size: 11px; color: rgba(245,240,232,0.3); margin-top: 32px;">
-                E2Go Franchise Navigator &mdash; automated notification
+                E2go.app Franchise Navigator &mdash; automated notification
               </p>
             </div>
           `,

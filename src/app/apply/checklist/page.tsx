@@ -112,7 +112,7 @@ export default function ChecklistPage() {
         <div className="max-w-5xl mx-auto text-center">
           <p className="text-sm text-[#f5f0e8]/50">
             This tool is a self-service preparation guide and does not constitute legal advice.
-            e2go.app is not a law firm.
+            E2go.app is not a law firm.
           </p>
         </div>
       </footer>

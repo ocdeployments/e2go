@@ -78,7 +78,7 @@ export default function RenewalEntryClient({ hasPurchased }: Props) {
           My case
         </Link>
         <span style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#C9A84C', fontSize: '16px', letterSpacing: '0.04em' }}>
-          e2go
+          E2go.app
         </span>
         <div style={{ width: '80px' }} />
       </nav>

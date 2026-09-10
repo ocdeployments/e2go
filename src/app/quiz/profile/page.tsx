@@ -202,7 +202,7 @@ export default function QuizProfilePage() {
         }}
       >
         <div style={{ fontSize: "17px", color: "#C9A84C", fontWeight: 300 }}>
-          e2go<span style={{ color: "rgba(245,240,232,0.9)" }}>.app</span>
+          E2go<span style={{ color: "rgba(245,240,232,0.9)" }}>.app</span>
         </div>
         <div
           style={{

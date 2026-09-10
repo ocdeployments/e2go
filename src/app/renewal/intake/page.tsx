@@ -264,7 +264,7 @@ export default function RenewalIntakePage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           {saving && <span style={{ fontSize: '12px', color: 'rgba(245,240,232,0.3)' }}>Saving…</span>}
           {!saving && savedAt && <span style={{ fontSize: '12px', color: 'rgba(245,240,232,0.3)' }}>Saved</span>}
-          <span style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#C9A84C', fontSize: '16px', letterSpacing: '0.04em' }}>e2go</span>
+          <span style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#C9A84C', fontSize: '16px', letterSpacing: '0.04em' }}>E2go.app</span>
         </div>
       </nav>
 

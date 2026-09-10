@@ -24,7 +24,7 @@ export async function buildMarketAnalysisPdf(a: TerritoryAnalysis): Promise<Uint
   const doc = await PDFDocument.create();
   doc.setTitle(`Territory Market Analysis — ${a.target_zip}`);
   doc.setSubject('Franchise territory market analysis');
-  doc.setProducer('e2go.app');
+  doc.setProducer('E2go.app');
 
   const fonts = await embedFonts(doc);
 

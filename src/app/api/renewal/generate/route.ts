@@ -134,7 +134,7 @@ ${appointmentLines}
 CONSULATE BINDER — ARRANGE IN THIS ORDER
   Tab 1:  DS-160 confirmation page + interview appointment letter
   Tab 2:  Valid passport (and prior passport with E-2 stamps if available)
-  Tab 3:  e2go cover letter (updated for renewal)
+  Tab 3:  E2go.app cover letter (updated for renewal)
   Tab 4:  Template 6 — Actual vs. Projected Performance table
   Tab 5:  3 years of business tax returns (most recent year on top)
   Tab 6:  Current business bank statements (3 months)

@@ -130,7 +130,7 @@ function EmailGate({ onBackToQuiz }: { onBackToQuiz: () => void }) {
   return (
     <div className="min-h-screen flex" style={{ background: "#0a0a0a" }}>
       <div className="w-full flex flex-col items-center justify-center p-8" style={{ maxWidth: "480px", margin: "0 auto" }}>
-        <div style={{ fontSize: "17px", color: "#C9A84C", fontWeight: 300, marginBottom: "48px" }}>e2go<span style={{ color: "rgba(245,240,232,0.9)" }}>.app</span></div>
+        <div style={{ fontSize: "17px", color: "#C9A84C", fontWeight: 300, marginBottom: "48px" }}>E2go<span style={{ color: "rgba(245,240,232,0.9)" }}>.app</span></div>
         {sent ? (
           <>
             <div style={{ width: "48px", height: "48px", border: "2px solid #5DCAA5", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "24px" }}><span style={{ color: "#5DCAA5", fontSize: "20px" }}>✓</span></div>
@@ -148,7 +148,7 @@ function EmailGate({ onBackToQuiz }: { onBackToQuiz: () => void }) {
               <input id="results-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" required style={{ width: "100%", padding: "14px 16px", background: "rgba(201,168,76,0.04)", border: "1px solid rgba(201,168,76,0.2)", color: "#f5f0e8", fontSize: "14px", fontFamily: "'DM Sans', sans-serif", borderRadius: 0, outline: "none", marginBottom: "16px", boxSizing: "border-box" as const }} />
               <label style={{ display: "flex", alignItems: "flex-start", gap: "10px", marginBottom: "24px", cursor: "pointer" }}>
                 <input type="checkbox" checked={caslConsent} onChange={(e) => setCaslConsent(e.target.checked)} style={{ marginTop: "3px", accentColor: "#C9A84C", width: "16px", height: "16px" }} />
-                <span style={{ fontSize: "12px", color: "rgba(245,240,232,0.72)", lineHeight: 1.5 }}>I consent to receiving email from e2go.app. You can unsubscribe at any time. View our <a href="/terms" style={{ color: "#C9A84C", textDecoration: "underline" }}>Terms of Service</a>.</span>
+                <span style={{ fontSize: "12px", color: "rgba(245,240,232,0.72)", lineHeight: 1.5 }}>I consent to receiving email from E2go.app. You can unsubscribe at any time. View our <a href="/terms" style={{ color: "#C9A84C", textDecoration: "underline" }}>Terms of Service</a>.</span>
               </label>
               <button type="submit" disabled={sending || !email || !caslConsent} style={{ width: "100%", padding: "14px", background: "#C9A84C", border: "none", color: "#0a0a0a", fontSize: "13px", fontWeight: 500, cursor: sending || !email || !caslConsent ? "not-allowed" : "pointer", letterSpacing: "0.08em", textTransform: "uppercase" as const, fontFamily: "'DM Sans', sans-serif", borderRadius: 0, opacity: sending || !email || !caslConsent ? 0.5 : 1 }}>
                 {sending ? "Sending..." : "Send my results"}
@@ -558,20 +558,20 @@ function ResultsPageInner() {
       a: "There is no hard dollar floor — E-2 uses a proportionality test. In practice, applications below $75,000 are very difficult to approve. The most successful applications show that the investment is substantial relative to the total cost of the enterprise and that the funds are clearly committed. For franchise buyers, most well-structured applications fall between $100,000 and $500,000. Your investment level and business type are both accounted for in your score above.",
     },
     {
-      q: "Can e2go replace an immigration attorney?",
-      a: "No, and we are explicit about this. e2go is a document preparation and case management platform — we help you organize, write, and strengthen your application file. A licensed attorney provides legal strategy, handles complex situations (prior denials, 221(g) processing, security checks), and can represent you if needed. For straightforward applications with strong investment and clean funds, e2go prepares the documents at a fraction of attorney fees. Attorney review alongside e2go is always an option.",
+      q: "Can E2go.app replace an immigration attorney?",
+      a: "No, and we are explicit about this. E2go.app is a document preparation and case management platform — we help you organize, write, and strengthen your application file. A licensed attorney provides legal strategy, handles complex situations (prior denials, 221(g) processing, security checks), and can represent you if needed. For straightforward applications with strong investment and clean funds, E2go.app prepares the documents at a fraction of attorney fees. Attorney review alongside E2go.app is always an option.",
     },
     {
       q: "What if my application is flagged or gets a 221(g)?",
-      a: "A 221(g) is an administrative hold — not a denial. It is a request for additional documents or a security clearance check. The most common requests are for source of funds documentation, business plan clarification, or an organizational chart. e2go builds all of these proactively. If you receive a 221(g), your Gap Analysis case file identifies which evidence categories to strengthen and exactly what to add. Most 221(g) cases resolve within 4–8 weeks of providing the requested documents.",
+      a: "A 221(g) is an administrative hold — not a denial. It is a request for additional documents or a security clearance check. The most common requests are for source of funds documentation, business plan clarification, or an organizational chart. E2go.app builds all of these proactively. If you receive a 221(g), your Gap Analysis case file identifies which evidence categories to strengthen and exactly what to add. Most 221(g) cases resolve within 4–8 weeks of providing the requested documents.",
     },
     {
       q: "I've sold property in my home country — will that affect my case?",
-      a: "Yes, it can — but it is manageable. Selling your primary residence is a signal officers may interpret as immigrant intent. It is not disqualifying, but it requires a clear counter-narrative: demonstrable ties that remain after the sale (family, investments, accounts, professional obligations), a credible E-2 renewal plan, and an explicit non-immigrant intent statement. e2go's Ties Section and Interview Simulator both address this pattern directly.",
+      a: "Yes, it can — but it is manageable. Selling your primary residence is a signal officers may interpret as immigrant intent. It is not disqualifying, but it requires a clear counter-narrative: demonstrable ties that remain after the sale (family, investments, accounts, professional obligations), a credible E-2 renewal plan, and an explicit non-immigrant intent statement. E2go.app's Ties Section and Interview Simulator both address this pattern directly.",
     },
     {
       q: `How long does the ${consulate.name} process take?`,
-      a: `From submission to interview is currently ${timelineWeeks.weeksMin}–${timelineWeeks.weeksMax} weeks for a well-prepared application at ${consulate.name}. ${consulate.intel} Preparation inside e2go typically takes 2–4 weeks depending on case complexity. Your interview window is ${timeline}. Most approvals are issued the same day as the interview, with the passport returned within 5–7 business days.`,
+      a: `From submission to interview is currently ${timelineWeeks.weeksMin}–${timelineWeeks.weeksMax} weeks for a well-prepared application at ${consulate.name}. ${consulate.intel} Preparation inside E2go.app typically takes 2–4 weeks depending on case complexity. Your interview window is ${timeline}. Most approvals are issued the same day as the interview, with the passport returned within 5–7 business days.`,
     },
     {
       q: "What's included in the $1,495 package?",
@@ -595,7 +595,7 @@ function ResultsPageInner() {
 
       {/* Nav */}
       <div style={{ padding: "18px 40px", borderBottom: "1px solid rgba(201,168,76,0.1)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div style={{ fontSize: "17px", color: "#C9A84C", fontWeight: 300 }}>e2go<span style={{ color: "rgba(245,240,232,0.9)" }}>.app</span></div>
+        <div style={{ fontSize: "17px", color: "#C9A84C", fontWeight: 300 }}>E2go<span style={{ color: "rgba(245,240,232,0.9)" }}>.app</span></div>
         <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
           {isLoggedIn && <Link href="/dashboard" style={{ fontSize: "11px", color: "rgba(201,168,76,0.85)", letterSpacing: "0.08em", textTransform: "uppercase", textDecoration: "none" }}>Dashboard</Link>}
           <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.65)", letterSpacing: "0.08em", textTransform: "uppercase" }}>Eligibility result</div>
@@ -628,7 +628,7 @@ function ResultsPageInner() {
             <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "20px", fontWeight: 300, color: "#f5f0e8", marginBottom: "4px" }}>{band.label.split(" — ")[0]}</div>
             <div style={{ fontSize: "10.5px", color: "rgba(245,240,232,0.4)", lineHeight: 1.5 }}>
               {missedPoints > 0
-                ? `${missedPoints} points addressable — e2go targets every evidence gap`
+                ? `${missedPoints} points addressable — E2go.app targets every evidence gap`
                 : "Maximum score — your profile is in the strongest eligibility band"}
             </div>
           </div>
@@ -1237,7 +1237,7 @@ function ResultsPageInner() {
                     disabled={checkoutLoading}
                     style={{ display: "block", padding: "17px 30px", background: checkoutLoading ? "rgba(201,168,76,0.6)" : "#C9A84C", color: "#0a0a0a", fontSize: "12px", fontWeight: 600, letterSpacing: "0.08em", fontFamily: "'DM Sans', sans-serif", border: "none", cursor: checkoutLoading ? "not-allowed" : "pointer", textAlign: "center" as const, whiteSpace: "nowrap" as const }}
                   >
-                    {checkoutLoading ? "Preparing checkout…" : "Build My Case with E2Go"}
+                    {checkoutLoading ? "Preparing checkout…" : "Build My Case with E2go.app"}
                   </button>
                 )}
                 {checkoutError && (
@@ -1383,7 +1383,7 @@ function ResultsPageInner() {
       {/* Disclaimer */}
       <div style={{ padding: "24px 40px", borderTop: "1px solid rgba(201,168,76,0.06)", marginTop: "12px" }}>
         <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.42)", lineHeight: 1.6, maxWidth: "960px", margin: "0 auto" }}>
-          This assessment is based solely on the answers you provided and does not constitute legal advice. e2go.app is a self-service preparation tool, not a law firm. Consular decisions involve factors beyond the scope of any preparation tool. For legal advice, consult a qualified U.S. immigration attorney.
+          This assessment is based solely on the answers you provided and does not constitute legal advice. E2go.app is a self-service preparation tool, not a law firm. Consular decisions involve factors beyond the scope of any preparation tool. For legal advice, consult a qualified U.S. immigration attorney.
         </div>
       </div>
     </div>

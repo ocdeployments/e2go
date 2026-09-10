@@ -110,7 +110,7 @@ function PartnerAccessInner() {
               {"You've been invited."}
             </h1>
             <p style={{ margin: "0 0 20px", fontSize: "14px", color: "rgba(245,240,232,0.7)", lineHeight: 1.7 }}>
-              Your business partner has granted you access to the E2go Interview Prep simulator — personalised to your joint E-2 case.
+              Your business partner has granted you access to the E2go.app Interview Prep simulator — personalised to your joint E-2 case.
             </p>
 
             <div style={{ padding: "14px 16px", background: "rgba(201,168,76,0.05)", borderLeft: "3px solid rgba(201,168,76,0.4)", marginBottom: "28px" }}>

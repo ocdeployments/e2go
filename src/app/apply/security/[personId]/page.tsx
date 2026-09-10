@@ -85,7 +85,7 @@ export default function SecurityBackgroundPage({ params }: { params: { personId:
         </p>
 
         <AdvisoryBlock>
-          These questions mirror the DS-160 Security and Background pages. Answer honestly and completely — a misrepresentation here can independently jeopardize the visa, even if unrelated to the E-2 case itself. This section is self-attested; it cannot be filled from uploaded documents. If you are unsure how to answer any question, stop and consult a qualified immigration attorney before submitting — e2go is not a law firm and does not provide legal advice.
+          These questions mirror the DS-160 Security and Background pages. Answer honestly and completely — a misrepresentation here can independently jeopardize the visa, even if unrelated to the E-2 case itself. This section is self-attested; it cannot be filled from uploaded documents. If you are unsure how to answer any question, stop and consult a qualified immigration attorney before submitting — E2go.app is not a law firm and does not provide legal advice.
         </AdvisoryBlock>
 
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', margin: '28px 0' }}>

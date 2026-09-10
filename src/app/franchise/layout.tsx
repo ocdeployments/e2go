@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Nav from "@/components/Nav";
 
 export const metadata: Metadata = {
-  title: "Franchise Navigator | e2go",
+  title: "Franchise Navigator | E2go.app",
   description: "Match with vetted franchise brands and territories for your E-2 visa case.",
   robots: { index: false, follow: false },
 };

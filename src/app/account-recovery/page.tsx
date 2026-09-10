@@ -119,7 +119,7 @@ export default function AccountRecoveryPage() {
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       <div style={{ maxWidth: '520px', width: '100%' }}>
         <div style={{ fontSize: '17px', color: '#C9A84C', marginBottom: '48px', fontWeight: 300 }}>
-          e2go<span style={{ color: '#f5f0e8' }}>.app</span>
+          E2go<span style={{ color: '#f5f0e8' }}>.app</span>
         </div>
 
         <div style={{ width: '48px', height: '48px', border: '1px solid rgba(201,168,76,0.3)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '28px' }}>

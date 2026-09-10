@@ -104,7 +104,7 @@ export async function GET(
       const blocked = manifest.tabs.filter(t => t.status === 'blocked');
       if (blocked.length > 0) {
         reasons.push(
-          `${blocked.length} document(s) held for e2go review: ` +
+          `${blocked.length} document(s) held for E2go.app review: ` +
           blocked.map(t => `${t.label} (${t.blockedReason ?? 'quality gate'})`).join('; ')
         );
       }

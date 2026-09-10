@@ -154,7 +154,7 @@ function SuccessContent() {
   }
 
   const paymentType = payment?.payment_type || '';
-  const tierName = PAYMENT_TYPE_NAMES[paymentType] || 'e2go Purchase';
+  const tierName = PAYMENT_TYPE_NAMES[paymentType] || 'E2go.app Purchase';
   const nextStep = PAYMENT_TYPE_NEXT_STEP[paymentType] || { label: 'Go to Dashboard', href: '/dashboard' };
   // Full-application packages unlock the whole platform; add-ons and utilities don't.
   const isFullApplicationPackage = ['foundation', 'investor_ready', 'visa_ready', 'complete', 'complete_partnership'].includes(paymentType);

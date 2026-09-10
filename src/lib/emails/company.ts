@@ -9,7 +9,7 @@
  */
 
 export const COMPANY_LEGAL_NAME = 'Prodigal Son IT Solutions LLC';
-export const COMPANY_DBA = 'e2go';
+export const COMPANY_DBA = 'E2go.app';
 
 /**
  * TODO(romy): set this to the registered-agent (or virtual-mailbox) street

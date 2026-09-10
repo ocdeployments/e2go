@@ -282,7 +282,7 @@ export default function Partner2Page() {
           </svg>
           My case
         </Link>
-        <span style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#C9A84C', fontSize: '16px', letterSpacing: '0.04em' }}>e2go</span>
+        <span style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#C9A84C', fontSize: '16px', letterSpacing: '0.04em' }}>E2go.app</span>
         <div style={{ width: '80px' }} />
       </nav>
 
