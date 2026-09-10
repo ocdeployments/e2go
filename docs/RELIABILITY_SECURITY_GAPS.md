@@ -347,14 +347,29 @@ list at the moment they came back to re-check something before their interview.
 - `src/app/privacy/PrivacyClient.tsx:43, :67` — 30 days post-package / 90 days post-upload
 - `src/app/api/cron/data-retention/route.ts:27–28` — `FILE_POST_PACKAGE_DAYS = 30`, `FILE_MAX_AGE_DAYS = 90`
 
-**Fix:** rewrite the Module 1 notice to state what the system actually does — and
-distinguish *application data* from *uploaded files*, which is the ambiguity the
-two notices are sitting on. Then send a warning email seven days before a purge and
-surface the deletion date in the Documents area, so the purge is a policy the client
-saw coming rather than a loss they discover.
+**Fix (decision confirmed by Romy, 2026-09-10):** rewrite the Module 1 notice to
+state what the system actually does — 30 days after the document package is
+generated — and distinguish *application data* from *uploaded files*, which is the
+ambiguity the two notices are sitting on. Then send three emails instead of one
+silent purge:
 
-**Proof:** the two notices state the same schedule; a file within 7 days of purge
-has produced an email.
+1. **On generation** — sent the moment the document package is built, stating the
+   purge date (generation date + 30 days).
+2. **T-minus-3 days** — a reminder that the files will be deleted in 3 days, with a
+   confirm-to-keep action; confirming sets a retention hold so the scheduled purge
+   is skipped for that file.
+3. **On completion** — sent after the purge has actually run, confirming what was
+   deleted.
+
+The client's email address and contact preferences are retained for future
+correspondence regardless of the document purge — this is a separate lifecycle from
+the account itself and is untouched unless the client unsubscribes through the
+existing `/api/email/unsubscribe` flow.
+
+**Proof:** a file 3 days from its purge date has produced a reminder with a working
+confirm-to-keep link; confirming it means the file is not purged on schedule; a
+purged file has produced a completion email; the client's contact record and
+subscription status are unchanged by the purge either way.
 
 ---
 
