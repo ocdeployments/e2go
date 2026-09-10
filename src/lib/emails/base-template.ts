@@ -31,7 +31,7 @@ export function getBaseHtml(content: string, preheader?: string, recipient?: str
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>e2go</title>
+  <title>E2go.app</title>
 </head>
 <body style="margin: 0; padding: 0; background-color: #0a0a0a; font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
   ${preheader ? `<div style="display: none; max-height: 0; overflow: hidden; opacity: 0;">${preheader}</div>` : ''}
@@ -41,7 +41,7 @@ export function getBaseHtml(content: string, preheader?: string, recipient?: str
         <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 520px; background-color: #0a0a0a;">
           <tr>
             <td style="padding: 0 0 32px 0; border-bottom: 1px solid rgba(201,168,76,0.15);">
-              <span style="font-family: 'Cormorant Garamond', Georgia, serif; font-size: 24px; font-weight: 300; color: #C9A84C;">e2go</span><span style="font-family: 'Cormorant Garamond', Georgia, serif; font-size: 24px; font-weight: 300; color: #f5f0e8;">.app</span>
+              <span style="font-family: 'Cormorant Garamond', Georgia, serif; font-size: 24px; font-weight: 300; color: #C9A84C;">E2go</span><span style="font-family: 'Cormorant Garamond', Georgia, serif; font-size: 24px; font-weight: 300; color: #f5f0e8;">.app</span>
             </td>
           </tr>
           <tr>
@@ -52,11 +52,11 @@ export function getBaseHtml(content: string, preheader?: string, recipient?: str
           <tr>
             <td style="padding: 32px 0 0 0; border-top: 1px solid rgba(201,168,76,0.15);">
               <p style="font-size: 12px; color: rgba(245,240,232,0.72); margin: 0 0 8px 0; line-height: 1.6;">
-                e2go.app — document preparation tool, not a law firm.<br>
+                E2go.app — document preparation tool, not a law firm.<br>
                 Your data is handled per our <a href="${appUrl}/privacy" style="color: #C9A84C; text-decoration: none;">privacy policy</a>.
               </p>
               <p style="font-size: 11px; color: rgba(245,240,232,0.68); margin: 0 0 8px 0; line-height: 1.6;">
-                To unsubscribe: <a href="${unsubHref}" style="color: rgba(245,240,232,0.72); text-decoration: underline;">unsubscribe</a> | e2go.app | support@e2go.app
+                To unsubscribe: <a href="${unsubHref}" style="color: rgba(245,240,232,0.72); text-decoration: underline;">unsubscribe</a> | E2go.app | support@e2go.app
               </p>
               <p style="font-size: 11px; color: rgba(245,240,232,0.55); margin: 0; line-height: 1.6;">
                 ${companyFooterLine()}

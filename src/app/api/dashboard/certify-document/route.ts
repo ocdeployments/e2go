@@ -83,7 +83,7 @@ export async function POST(request: Request) {
       notes.find(n => /forbidden legal conclusion/i.test(n)) ?? notes[0] ?? 'quality gate not passed';
     return NextResponse.json(
       {
-        error: 'This document is held for e2go review and cannot be certified yet.',
+        error: 'This document is held for E2go.app review and cannot be certified yet.',
         reason,
         held: true,
       },

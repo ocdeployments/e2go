@@ -63,7 +63,7 @@ function UnsubscribeInner() {
             </h1>
             <p className="mb-8" style={{ color: "rgba(245,240,232,0.6)", lineHeight: 1.6 }}>
               We will not email you again. Anything you have already prepared on
-              e2go stays where it is — nothing has been deleted.
+              E2go.app stays where it is — nothing has been deleted.
             </p>
           </>
         ) : state === "error" || !hasToken ? (
@@ -118,7 +118,7 @@ function UnsubscribeInner() {
             href="/"
             style={{ color: "rgba(245,240,232,0.72)", fontSize: "13px", textDecoration: "underline" }}
           >
-            Return to e2go
+            Return to E2go.app
           </Link>
         </div>
       </div>

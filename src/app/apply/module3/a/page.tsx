@@ -11,6 +11,7 @@ import { createBrowserSupabaseClient } from '@/lib/supabase';
 import { ApplicationProvider, useApplication } from '@/contexts/ApplicationContext';
 import TabPage from '@/components/module3/TabPage';
 import tabQuestions from '@/data/module3/tab-a.json';
+import { TREATY_COUNTRIES } from '@/lib/treaty-countries';
 import { getPreFill } from '@/lib/prefill';
 import { FieldConfig, Section } from '@/types/module3';
 import { resolvePrimaryApplicationId } from '@/lib/resolve-application';
@@ -21,11 +22,22 @@ interface QuestionConfig {
   question: string;
   tooltip: string;
   options?: { value: string; label: string; helperText?: string }[];
+  optionsSource?: 'treaty_countries';
   required: boolean;
   sensitivity?: 'high' | 'medium' | 'low';
   privacy_category?: 'red' | 'amber' | 'green' | 'required';
   skip_advisory?: string;
   warningTriggers?: { value: string; message: string }[];
+}
+
+// Options for country questions come from the treaty list rather than the JSON so
+// the intake never hardcodes a single nationality. Values are the country names
+// the quiz writes to Q0-01, which is what getPreFill() hands back for M3-A-05.
+function resolveOptions(q: QuestionConfig): { value: string; label: string; helperText?: string }[] | undefined {
+  if (q.optionsSource === 'treaty_countries') {
+    return TREATY_COUNTRIES.map((country) => ({ value: country, label: country }));
+  }
+  return q.options;
 }
 
 function transformQuestionsToSections(questions: QuestionConfig[]): Section[] {
@@ -64,7 +76,7 @@ function transformQuestionsToSections(questions: QuestionConfig[]): Section[] {
       label: q.question,
       helperText: q.tooltip,
       required: q.required,
-      options: q.options?.map(opt => ({
+      options: resolveOptions(q)?.map(opt => ({
         value: opt.value,
         label: opt.label,
         helperText: opt.helperText,

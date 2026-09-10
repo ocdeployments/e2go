@@ -85,7 +85,7 @@ export async function GET(request: NextRequest) {
       const lastThree = (recentRuns ?? []).map(r => r.status);
       if (lastThree.length === 3 && lastThree.every(s => s === 'failed')) {
         results.consecutive_failures.push(jobName);
-        const subject = `[e2go OPS] Cron "${jobName}" failed 3 times in a row`;
+        const subject = `[E2go.app OPS] Cron "${jobName}" failed 3 times in a row`;
         const body    = `Job: ${jobName}\nLast 3 statuses: ${lastThree.join(', ')}\nTime: ${new Date().toISOString()}\n\nCheck /admin/system-status for details.`;
         await sendAlert(subject, body);
         results.alerts_sent.push(jobName);
@@ -135,7 +135,7 @@ export async function GET(request: NextRequest) {
 
             if (Date.now() - lastAlertTs > oneDayMs) {
               await sendAlert(
-                `[e2go OPS] ⚠ OpenRouter balance low — $${balance.toFixed(2)} remaining`,
+                `[E2go.app OPS] ⚠ OpenRouter balance low — $${balance.toFixed(2)} remaining`,
                 `OpenRouter balance: $${balance.toFixed(2)}\nThreshold: $${threshold}\n\nTop up at https://openrouter.ai/credits\nTime: ${new Date().toISOString()}`
               );
               await admin.from('app_settings')
@@ -175,7 +175,7 @@ export async function GET(request: NextRequest) {
         .eq('id', logId);
     }
 
-    await sendAlert('[e2go OPS] health-watchdog cron failed', `Error: ${errMsg}\nTime: ${new Date().toISOString()}`);
+    await sendAlert('[E2go.app OPS] health-watchdog cron failed', `Error: ${errMsg}\nTime: ${new Date().toISOString()}`);
     return NextResponse.json({ error: errMsg }, { status: 500 });
   }
 }

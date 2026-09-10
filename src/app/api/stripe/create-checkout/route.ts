@@ -6,6 +6,7 @@ import Stripe from 'stripe';
 import { captureApiError } from '@/lib/capture-error';
 import { getUserEntitlements, hasLoyaltyEligibility } from '@/lib/entitlements';
 import { validatePromoCode, reservePromoRedemption, getStripeCouponId } from '@/lib/promo-codes';
+import { resolvePartnershipHold, isPackageTier, PARTNERSHIP_HOLD_MESSAGE } from '@/lib/partnership-hold';
 
 function getSupabase() {
   return createClient(
@@ -131,6 +132,24 @@ export async function POST(request: NextRequest) {
         .maybeSingle();
       if (ownershipError || !ownedApp) {
         return NextResponse.json({ error: 'Application not found' }, { status: 404 });
+      }
+    }
+
+    // Partnership cases are held out of checkout until the partnership tier
+    // exists — see src/lib/partnership-hold.ts. This route excludes
+    // foundation_partnership / interview_prep_partnership from VALID_TIER_IDS,
+    // so without this a two-investor case would buy the solo package and
+    // receive a package missing all six _p2 documents.
+    if (isPackageTier(tierId)) {
+      const hold = await resolvePartnershipHold(supabase, user.id);
+      if (hold.lookupError) {
+        captureApiError(new Error(`Partnership hold lookup failed: ${hold.lookupError}`), { route: 'stripe/create-checkout', stage: 'partnership-hold', userId: user.id, tierId });
+      }
+      if (hold.onHold) {
+        return NextResponse.json(
+          { error: PARTNERSHIP_HOLD_MESSAGE, code: 'partnership_hold', partnershipHold: true, applicationType: hold.applicationType },
+          { status: 409 }
+        );
       }
     }
 

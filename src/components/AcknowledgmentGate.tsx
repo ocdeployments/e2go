@@ -16,7 +16,7 @@ const ACKNOWLEDGMENTS = [
   },
   {
     id: "service-type",
-    text: "I understand that these documents were prepared using e2go.app, a document preparation service. e2go.app is not a law firm and has not provided legal advice.",
+    text: "I understand that these documents were prepared using E2go.app, a document preparation service. E2go.app is not a law firm and has not provided legal advice.",
   },
   {
     id: "false-info",
@@ -28,7 +28,7 @@ const ACKNOWLEDGMENTS = [
   },
   {
     id: "attorney-review",
-    text: "I recommend — and e2go.app strongly encourages — that I have these documents reviewed by a licensed U.S. immigration attorney before submission.",
+    text: "I recommend — and E2go.app strongly encourages — that I have these documents reviewed by a licensed U.S. immigration attorney before submission.",
   },
 ];
 

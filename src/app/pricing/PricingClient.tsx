@@ -253,7 +253,7 @@ export default function PricingPage() {
         <div className="flex justify-between items-center h-16 px-4 md:px-8 max-w-6xl mx-auto">
           <Link href="/" className="flex items-center gap-2">
             <span className="text-xl font-bold" style={{ color: "#C9A84C", fontFamily: "'Cormorant Garamond', serif", fontWeight: 300 }}>
-              e2go<span style={{ color: "#f5f0e8" }}>.app</span>
+              E2go<span style={{ color: "#f5f0e8" }}>.app</span>
             </span>
           </Link>
           <div className="flex items-center gap-4">

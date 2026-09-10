@@ -153,7 +153,7 @@ export default function Nav() {
         {/* Logo */}
         <Link href={user ? "/case-profile" : "/"} style={{ textDecoration: "none" }}>
           <span className="text-xl font-medium tracking-tight text-[#f5f0e8]" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
-            e2go<span className="text-[#C9A84C]">.app</span>
+            E2go<span className="text-[#C9A84C]">.app</span>
           </span>
         </Link>
 

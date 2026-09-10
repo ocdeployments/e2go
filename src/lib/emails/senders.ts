@@ -19,7 +19,7 @@
  */
 
 /** From: on everything. One sender, so recipients learn to recognise it. */
-export const EMAIL_SENDER = 'e2go <notifications@e2go.app>';
+export const EMAIL_SENDER = 'E2go.app <notifications@e2go.app>';
 
 /** Where client replies should land. Matches the address in the footer. */
 export const SUPPORT_REPLY_TO = 'support@e2go.app';
@@ -31,7 +31,7 @@ export const SUPPORT_REPLY_TO = 'support@e2go.app';
  * "notifications@", and info@e2go.app is the address he checks himself, so a
  * reply actually reaches him instead of a queue.
  */
-export const FOUNDER_EMAIL_SENDER = 'Romy at e2go <info@e2go.app>';
+export const FOUNDER_EMAIL_SENDER = 'Romy at E2go.app <info@e2go.app>';
 
 /** Reply-To paired with FOUNDER_EMAIL_SENDER. */
 export const FOUNDER_REPLY_TO = 'info@e2go.app';

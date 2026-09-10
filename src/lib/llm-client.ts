@@ -177,7 +177,7 @@ async function callOpenRouterModel(model: string, options: LLMOptions, timeoutMs
         'Content-Type':  'application/json',
         'Authorization': `Bearer ${apiKey}`,
         'HTTP-Referer':  'https://e2go.app',
-        'X-Title':       'e2go Interview Simulator',
+        'X-Title':       'E2go.app Interview Simulator',
       },
       body: JSON.stringify({
         model,

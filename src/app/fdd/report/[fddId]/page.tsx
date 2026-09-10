@@ -806,7 +806,7 @@ function ImportModal({ fddId, onClose }: ImportModalProps) {
                 Built for E-2 applicants
               </h2>
               <p className="text-white/55 text-sm leading-relaxed mb-6">
-                E2Go is designed for E-2 treaty investor applicants. The case file import connects your FDD analysis to your E-2 application — so your investment figures, territory data, and compatibility scores flow directly into your documents.
+                E2go.app is designed for E-2 treaty investor applicants. The case file import connects your FDD analysis to your E-2 application — so your investment figures, territory data, and compatibility scores flow directly into your documents.
               </p>
               <p className="text-white/40 text-sm leading-relaxed mb-6">
                 Since your account isn&apos;t linked to an E-2 application yet, this feature isn&apos;t available. The rest of the FDD analysis — scoring, territory maps, and due diligence questions — works without one.

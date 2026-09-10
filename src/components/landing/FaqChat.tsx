@@ -413,7 +413,7 @@ const FaqChat = forwardRef<FaqChatHandle, FaqChatProps>(function FaqChat(
           </button>
         </div>
         <p className="text-[10px] text-[rgba(245,240,232,0.65)] mt-2.5">
-          Informational only — not legal advice. e2go is not a law firm.
+          Informational only — not legal advice. E2go.app is not a law firm.
         </p>
       </div>
     </div>

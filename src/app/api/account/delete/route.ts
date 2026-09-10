@@ -57,17 +57,17 @@ export async function POST() {
         from: EMAIL_SENDER,
         replyTo: SUPPORT_REPLY_TO,
         to: userEmail,
-        subject: 'Your e2go account is scheduled for deletion',
+        subject: 'Your E2go.app account is scheduled for deletion',
         html: `
           <div style="font-family: 'DM Sans', Arial, sans-serif; background: #0a0a0a; color: #f5f0e8; padding: 40px; max-width: 560px; margin: 0 auto;">
-            <div style="font-size: 17px; color: #C9A84C; margin-bottom: 32px; font-weight: 300;">e2go<span style="color: #f5f0e8;">.app</span></div>
+            <div style="font-size: 17px; color: #C9A84C; margin-bottom: 32px; font-weight: 300;">E2go<span style="color: #f5f0e8;">.app</span></div>
 
             <h1 style="font-family: Georgia, serif; font-weight: 300; font-size: 26px; color: #f5f0e8; margin-bottom: 16px; line-height: 1.25;">
               Account deletion scheduled
             </h1>
 
             <p style="color: rgba(245,240,232,0.65); font-size: 14px; line-height: 1.7; margin-bottom: 24px;">
-              We received your request to delete your e2go account. Your account and all associated data
+              We received your request to delete your E2go.app account. Your account and all associated data
               will be permanently removed on <strong style="color: #f5f0e8;">${purgeDate.toDateString()}</strong>.
             </p>
 

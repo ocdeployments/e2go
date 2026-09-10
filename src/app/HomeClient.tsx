@@ -16,7 +16,7 @@ export default function HomeClient() {
         <div className="px-4 md:px-10 lg:px-16">
           <div className="flex items-center justify-between h-16 md:h-20">
             <Link href="/" className="font-['Cormorant_Garamond',Georgia,serif] text-xl md:text-2xl font-light text-[#C9A84C]">
-              e2go<span className="text-[rgba(245,240,232,0.8)]">.app</span>
+              E2go<span className="text-[rgba(245,240,232,0.8)]">.app</span>
             </Link>
             <div className="hidden md:flex items-center gap-7">
               {[["/learn","Learn"],["/pricing","Pricing"],["/simulator","Simulator"]].map(([href,label]) => (
@@ -113,7 +113,7 @@ export default function HomeClient() {
             </h1>
             <p className="text-sm md:text-base text-[rgba(245,240,232,0.76)] leading-relaxed max-w-xl mb-3"
               style={{textShadow:'0 1px 10px rgba(0,0,0,0.95)'}}>
-              Consultants give you Zoom calls. Lawyers give you invoices. e2go gets you
+              Consultants give you Zoom calls. Lawyers give you invoices. E2go.app gets you
               visa-ready — from eligibility check to a complete, consulate-ready
               application package. One platform. No middlemen. A fraction of the cost.
             </p>
@@ -165,7 +165,7 @@ export default function HomeClient() {
           &ldquo;The decision to retain counsel is a personal one on the part of the applicant, and does not affect the applicant&rsquo;s eligibility.&rdquo;
         </p>
         <p className="text-[11px] text-[rgba(245,240,232,0.6)] tracking-wide mt-2.5">
-          — U.S. Mission to Canada. Counsel is optional. e2go is for applicants who want structured help with their case — and would rather spend thousands on their business or family than on legal fees.
+          — U.S. Mission to Canada. Counsel is optional. E2go.app is for applicants who want structured help with their case — and would rather spend thousands on their business or family than on legal fees.
         </p>
       </div>
 
@@ -182,7 +182,7 @@ export default function HomeClient() {
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-0">
           {[
-            { q: "I had spoken to two consultants and walked away more confused than when I started. e2go was the first thing that actually explained what the consulate needed to see and why.", a: "Marco T.", c: "Italy", t: "Franchise applicant" },
+            { q: "I had spoken to two consultants and walked away more confused than when I started. E2go.app was the first thing that actually explained what the consulate needed to see and why.", a: "Marco T.", c: "Italy", t: "Franchise applicant" },
             { q: "The source of funds section alone would have taken days with a consultant. The engine asked me the right questions and built the narrative from my answers.", a: "Aisha K.", c: "United Kingdom", t: "Solo applicant" },
             { q: "I downloaded the package on a Friday. By Monday I had reviewed every document. My consultant said it was the cleanest first draft she had ever seen from a self-prepared applicant.", a: "David L.", c: "Canada", t: "Partnership applicant" },
           ].map((t,i) => (
@@ -223,9 +223,9 @@ export default function HomeClient() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8 md:mb-10">
           <div>
             <div className="font-['Cormorant_Garamond',Georgia,serif] text-xl font-light text-[#C9A84C] mb-2">
-              e2go<span className="text-[rgba(245,240,232,0.76)]">.app</span>
+              E2go<span className="text-[rgba(245,240,232,0.76)]">.app</span>
             </div>
-            <p className="text-xs text-[rgba(245,240,232,0.65)] leading-relaxed">© 2026 Prodigal Son IT Solutions LLC, d/b/a e2go. All rights reserved.</p>
+            <p className="text-xs text-[rgba(245,240,232,0.65)] leading-relaxed">© 2026 Prodigal Son IT Solutions LLC, d/b/a E2go.app. All rights reserved.</p>
           </div>
           <div className="flex flex-wrap gap-x-6 gap-y-2 md:justify-end">
             {[["/learn","Learn"],["/pricing","Pricing"],["/simulator","Simulator"],["/support","Support"]].map(([href,label]) => (
@@ -236,10 +236,10 @@ export default function HomeClient() {
         {/* Legal — the closing word: full width, last thing on the page */}
         <div className="border-t border-[rgba(201,168,76,0.08)] pt-6">
           <p className="text-[10px] text-[rgba(245,240,232,0.65)] leading-relaxed max-w-4xl">
-            e2go.app is a self-service document-preparation platform — not a law firm. It does
+            E2go.app is a self-service document-preparation platform — not a law firm. It does
             not provide legal advice, legal representation, or immigration services, and no
             attorney–client relationship is formed by using it. All generated documents are
-            drafts you must review before submission. Franchise brokers in the e2go network are
+            drafts you must review before submission. Franchise brokers in the E2go.app network are
             compensated by the franchisor, not by you. If you would like an attorney
             recommendation we can point you in the right direction — that decision is yours.
           </p>

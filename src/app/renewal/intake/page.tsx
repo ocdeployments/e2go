@@ -70,11 +70,11 @@ const PATH_QUESTIONS: Array<{
     { value: 'yes-new', label: 'Yes — new passport (different number)' },
   ]},
   { key: 'RQ-12', type: 'textarea', label: 'Have there been any changes to your family composition?', helperText: 'New dependants, children aging out of status, spouse changes. Write "No changes" if unchanged.' },
-  { key: 'RQ-13', type: 'textarea', label: 'Describe your current Canadian ties', helperText: 'Property owned, bank accounts, family members remaining in Canada, professional memberships, tax residency. Be specific.' },
-  { key: 'RQ-14', type: 'single', label: 'Have you maintained Canadian bank accounts?', options: [
+  { key: 'RQ-13', type: 'textarea', label: 'Describe your current ties to your home country', helperText: 'Property owned, bank accounts, family members remaining there, professional memberships, tax residency. Be specific.' },
+  { key: 'RQ-14', type: 'single', label: 'Have you maintained bank accounts in your home country?', options: [
     { value: 'yes-active', label: 'Yes — actively used' },
     { value: 'yes-dormant', label: 'Yes — open but dormant' },
-    { value: 'no', label: 'No — closed all Canadian accounts' },
+    { value: 'no', label: 'No — closed all home-country accounts' },
   ]},
   { key: 'RQ-15', type: 'single', label: 'Have you had any U.S. immigration issues since your original E-2 was granted?', options: [
     { value: 'no', label: 'No immigration issues' },
@@ -264,7 +264,7 @@ export default function RenewalIntakePage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           {saving && <span style={{ fontSize: '12px', color: 'rgba(245,240,232,0.3)' }}>Saving…</span>}
           {!saving && savedAt && <span style={{ fontSize: '12px', color: 'rgba(245,240,232,0.3)' }}>Saved</span>}
-          <span style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#C9A84C', fontSize: '16px', letterSpacing: '0.04em' }}>e2go</span>
+          <span style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#C9A84C', fontSize: '16px', letterSpacing: '0.04em' }}>E2go.app</span>
         </div>
       </nav>
 

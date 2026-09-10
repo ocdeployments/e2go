@@ -4,7 +4,7 @@ import { createSupabaseServerClient } from '@/lib/supabase-server';
 import SectionLayout, { type SectionStep } from '@/components/SectionLayout';
 
 export const metadata: Metadata = {
-  title: 'Gap Analysis | e2go',
+  title: 'Gap Analysis | E2go.app',
   description: 'Identify gaps in your E-2 visa case and get targeted recommendations.',
   robots: { index: false, follow: false },
 };

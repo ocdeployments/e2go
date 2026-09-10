@@ -42,14 +42,9 @@
     "type": "single",
     "question": "What is your country of citizenship?",
     "tooltip": "Your nationality. For E-2, you must be a citizen of a treaty country.",
-    "options": [
-      { "value": "CA", "label": "Canada", "helperText": "Default selection" }
-    ],
+    "optionsSource": "treaty_countries",
     "privacy_category": "required",
-    "required": true,
-    "warningTriggers": [
-      { "value": "CA", "message": "Canadian citizens are eligible for E-2 visa through the U.S.-Canada treaty." }
-    ]
+    "required": true
   },
   {
     "key": "M3-A-06",
@@ -58,7 +53,7 @@
     "tooltip": "E-2 treaty investors may hold dual citizenship. Additional nationalities may require extra documentation.",
     "options": [
       { "value": "yes", "label": "Yes — I am a citizen of another country" },
-      { "value": "no", "label": "No — I am only a citizen of Canada" }
+      { "value": "no", "label": "No — I hold only one citizenship" }
     ],
     "privacy_category": "green",
     "required": true
@@ -74,8 +69,8 @@
   {
     "key": "M3-A-09",
     "type": "text",
-    "question": "Current home address in Canada",
-    "tooltip": "Include street, city, province, and postal code. Pre-fills your DS-160.",
+    "question": "Current home address in your country of residence",
+    "tooltip": "Include street, city, state or province, and postal code. Pre-fills your DS-160.",
     "privacy_category": "amber",
     "skip_advisory": "Appears on the DS-160. You can fill it directly on the government form if you prefer.",
     "required": true
@@ -84,7 +79,7 @@
     "key": "M3-A-10",
     "type": "single",
     "question": "How long have you lived at this address?",
-    "tooltip": "The consulate may request proof of residence history. Longer residence strengthens your Canadian ties.",
+    "tooltip": "The consulate may request proof of residence history. Longer residence strengthens your ties to your home country.",
     "options": [
       { "value": "less_than_1", "label": "Less than 1 year" },
       { "value": "1_to_2", "label": "1–2 years" },
@@ -98,7 +93,7 @@
     "key": "M3-A-11",
     "type": "text",
     "question": "Primary phone number",
-    "tooltip": "Include country code (+1 for Canada).",
+    "tooltip": "Include your country dialling code (for example +1, +33, +44).",
     "privacy_category": "green",
     "required": true
   },

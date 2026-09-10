@@ -16,7 +16,7 @@ function buildInviteEmail(params: {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Partner Interview Prep Access — E2go</title>
+  <title>Partner Interview Prep Access — E2go.app</title>
 </head>
 <body style="margin:0; padding:0; background-color:#e0dbd0; font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#e0dbd0;">
@@ -47,7 +47,7 @@ function buildInviteEmail(params: {
           <tr>
             <td style="padding:0 40px 18px;">
               <p style="margin:0; font-size:14px; color:#3a3a3a; line-height:1.75; font-family:Arial,sans-serif;">
-                Your business partner has purchased the E2go Interview Prep add-on for your joint E-2 application — and has included you in their access.
+                Your business partner has purchased the E2go.app Interview Prep add-on for your joint E-2 application — and has included you in their access.
               </p>
             </td>
           </tr>
@@ -66,7 +66,7 @@ function buildInviteEmail(params: {
                 <tr>
                   <td style="padding:14px 18px;">
                     <p style="margin:0; font-size:13px; color:#5a4a1a; line-height:1.7; font-family:Georgia,'Times New Roman',serif; font-style:italic;">
-                      Accept the invitation below. If you don't have an E2go account, you'll be prompted to create one — the access will be waiting for you when you log in.
+                      Accept the invitation below. If you don't have an E2go.app account, you'll be prompted to create one — the access will be waiting for you when you log in.
                     </p>
                   </td>
                 </tr>
@@ -205,7 +205,7 @@ export async function POST(request: NextRequest) {
         from: EMAIL_SENDER,
         replyTo: SUPPORT_REPLY_TO,
         to: partnerEmail,
-        subject: `${senderName} has granted you Interview Prep access on E2go`,
+        subject: `${senderName} has granted you Interview Prep access on E2go.app`,
         html: buildInviteEmail({ senderName, partnerEmail, acceptUrl }),
       });
     } catch (err) {

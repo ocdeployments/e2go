@@ -41,7 +41,7 @@ const REFERRAL_CATEGORIES = [
   { id: "franchise", title: "Franchise Consultant", help: "Help finding an E-2 compatible business", data: "Budget and category preferences" },
   { id: "immigration", title: "Immigration Consultant", help: "For complex cases that need legal guidance", data: "Application status and risk flags" },
   { id: "banking", title: "Cross-border Banking", help: "Opening your U.S. business bank account", data: "Business type and formation state" },
-  { id: "accountant", title: "Cross-border Accountant", help: "Canadian departure tax and U.S. filings", data: "Investment amount and source of funds" },
+  { id: "accountant", title: "Cross-border Accountant", help: "Home-country departure tax and U.S. filings", data: "Investment amount and source of funds" },
   { id: "business_formation", title: "Business Formation", help: "LLC registration and EIN application", data: "Target state and business structure" },
 ];
 
@@ -514,7 +514,7 @@ export default function Module1Page() {
               Connect you with the right experts
             </h1>
             <p className="text-[#f5f0e8]/60 text-[16px] leading-relaxed mb-8 max-w-2xl">
-              At key points in your journey, we can introduce you to specialists who work with E-2 investors. Each introduction is your choice — we will never share your details without asking first. e2go may receive a referral fee.
+              At key points in your journey, we can introduce you to specialists who work with E-2 investors. Each introduction is your choice — we will never share your details without asking first. E2go.app may receive a referral fee.
             </p>
 
             <div className="space-y-4 mb-8">

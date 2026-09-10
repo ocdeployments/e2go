@@ -213,7 +213,7 @@ export async function buildPackageManifest(applicationId: string): Promise<Packa
           blockedReason =
             (genDoc.quality_gate_notes ?? []).find(n => /forbidden legal conclusion/i.test(n)) ??
             (genDoc.quality_gate_notes ?? [])[0] ??
-            'Held for e2go review';
+            'Held for E2go.app review';
         } else if (clientCertified) {
           status = 'certified';
         } else if (genDoc.status === 'awaiting_approval' || genDoc.status === 'approved') {

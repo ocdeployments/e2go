@@ -135,7 +135,7 @@ const PAPER_TRAIL_QUESTIONS: QuestionField[] = [
     { value: 'in-progress', label: 'In progress' },
     { value: 'no', label: 'No — not yet started' },
   ]},
-  { key: 'M3-B-WIRE', type: 'single', label: 'Have you confirmed with your Canadian bank that they can process an international wire?', options: [
+  { key: 'M3-B-WIRE', type: 'single', label: 'Have you confirmed with your bank that it can process an international wire to the U.S.?', options: [
     { value: 'yes', label: 'Yes — confirmed' },
     { value: 'no', label: 'No — not yet' },
   ]},

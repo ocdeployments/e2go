@@ -132,7 +132,7 @@ export default function FaqWidgetHome() {
           <div className="shrink-0 flex items-center justify-between px-5 pt-4 pb-3.5 border-b border-[rgba(201,168,76,0.12)]">
             <span className="flex items-center gap-2.5 text-[11px] tracking-[0.16em] uppercase text-[rgba(201,168,76,0.9)]">
               <span className="e2-livedot w-[7px] h-[7px] rounded-full bg-[#C9A84C]" />
-              Ask e2go
+              Ask E2go.app
             </span>
             <span className="text-[10px] tracking-[0.12em] uppercase text-[rgba(245,240,232,0.72)]">
               Free · instant answer
@@ -147,7 +147,7 @@ export default function FaqWidgetHome() {
         <div className="flex items-center justify-between mb-2.5">
           <span className="flex items-center gap-2 text-[11px] tracking-[0.16em] uppercase text-[rgba(201,168,76,0.85)]">
             <span className="e2-livedot w-[6px] h-[6px] rounded-full bg-[#C9A84C]" />
-            Ask e2go
+            Ask E2go.app
           </span>
           <span className="text-[10px] tracking-[0.12em] uppercase text-[rgba(245,240,232,0.68)]">
             Free · instant
@@ -174,7 +174,7 @@ export default function FaqWidgetHome() {
           </button>
         </div>
         <p className="text-[10px] text-[rgba(245,240,232,0.65)] mt-3">
-          Informational only — not legal advice. e2go is not a law firm.
+          Informational only — not legal advice. E2go.app is not a law firm.
         </p>
       </div>
 
@@ -192,7 +192,7 @@ export default function FaqWidgetHome() {
         ref={sheetRef}
         role="dialog"
         aria-modal="true"
-        aria-label="Ask e2go"
+        aria-label="Ask E2go.app"
         className={`md:hidden fixed inset-x-0 bottom-0 z-[60] bg-[#0a0a0a] border-t-2 border-[#C9A84C] transition-transform duration-300 ease-out ${
           sheetOpen ? "translate-y-0" : "translate-y-full"
         }`}
@@ -204,7 +204,7 @@ export default function FaqWidgetHome() {
         {/* Sheet header */}
         <div className="flex items-center justify-between px-5 py-3">
           <p className="text-[10px] tracking-[0.18em] uppercase text-[rgba(201,168,76,0.7)]">
-            Ask e2go
+            Ask E2go.app
           </p>
           <button
             onClick={closeSheet}

@@ -268,7 +268,7 @@ export default function DocumentsReviewPage() {
     // Gap 3 — a doc that failed the legal-boundary quality gate is held for
     // e2go review. This beats every other badge, including CERTIFIED.
     if (doc.quality_gate_passed === false) {
-      return <span className={`${base} border-red-500/40 text-red-400`}>HELD FOR E2GO REVIEW</span>;
+      return <span className={`${base} border-red-500/40 text-red-400`}>HELD FOR E2go.app REVIEW</span>;
     }
     if (isCertified(doc)) {
       return <span className={`${base} border-[#22c55e]/40 text-[#22c55e]`}>CERTIFIED</span>;
@@ -693,7 +693,7 @@ export default function DocumentsReviewPage() {
                 },
                 {
                   key: "nolawyer" as const,
-                  text: "I understand e2go has prepared these documents to support my application, not guarantee its approval",
+                  text: "I understand E2go.app has prepared these documents to support my application, not guarantee its approval",
                 },
                 {
                   key: "reviewed" as const,
@@ -709,7 +709,7 @@ export default function DocumentsReviewPage() {
                 },
                 {
                   key: "outcomes_consent" as const,
-                  text: "I consent to e2go using my anonymised case outcome (approved / denied / RFE) to improve guidance for future E-2 applicants. No personal details are shared. I can withdraw consent at any time in Settings.",
+                  text: "I consent to E2go.app using my anonymised case outcome (approved / denied / RFE) to improve guidance for future E-2 applicants. No personal details are shared. I can withdraw consent at any time in Settings.",
                 },
               ].map(({ key, text }) => (
                 <label key={key} className="flex cursor-pointer items-start gap-3">

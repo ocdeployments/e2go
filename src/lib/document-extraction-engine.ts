@@ -425,7 +425,7 @@ async function callExtractionAPI(
       'Content-Type': 'application/json',
       Authorization: `Bearer ${OPENROUTER_API_KEY}`,
       'HTTP-Referer': process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
-      'X-Title': 'e2go.app-document-extraction',
+      'X-Title': 'E2go.app-document-extraction',
     },
     body: JSON.stringify({
       model: EXTRACTION_MODEL,

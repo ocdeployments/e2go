@@ -62,7 +62,7 @@ const ENTITY_QUESTIONS: QuestionField[] = [
     { value: 'not-formed', label: 'Not yet formed' },
   ]},
   { key: 'M3-E-03', type: 'text', label: 'State of registration', required: true },
-  { key: 'M3-E-04', type: 'text', label: 'EIN (Employer Identification Number)', helperText: 'Canadian applicants can get an EIN without a US Social Security Number by calling the IRS International Line: +1 (267) 941-1099. Have your LLC formation documents ready.' },
+  { key: 'M3-E-04', type: 'text', label: 'EIN (Employer Identification Number)', helperText: 'Applicants without a US Social Security Number can get an EIN by calling the IRS International Line: +1 (267) 941-1099. Have your LLC formation documents ready.' },
   { key: 'M3-E-05', type: 'text', label: 'Date entity formed' },
   { key: 'M3-E-06', type: 'text', label: 'Ownership percentage (%)', required: true },
   { key: 'M3-E-13', type: 'single', label: 'How is your ownership stake documented?', required: true, options: [
@@ -446,7 +446,7 @@ export default function BusinessPage() {
           )}
 
           <AdvisoryBlock>
-            Every US LLC must have a registered agent in the state of registration — a person or company with a physical US address who can receive legal documents on behalf of the business. Canadian investors cannot serve as their own registered agent before moving. Commercial registered agent services cost $50–$200/year.
+            Every US LLC must have a registered agent in the state of registration — a person or company with a physical US address who can receive legal documents on behalf of the business. Investors living outside the U.S. cannot serve as their own registered agent before moving. Commercial registered agent services cost $50–$200/year.
           </AdvisoryBlock>
         </div>
       )}

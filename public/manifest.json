@@ -1,6 +1,6 @@
 {
-  "name": "E2go — E-2 Visa Preparation",
-  "short_name": "E2go",
+  "name": "E2go.app — E-2 Visa Preparation",
+  "short_name": "E2go.app",
   "description": "Prepare your E-2 Treaty Investor visa application",
   "start_url": "/",
   "display": "standalone",

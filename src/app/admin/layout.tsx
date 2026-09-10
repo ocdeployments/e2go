@@ -3,8 +3,8 @@ import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 
 export const metadata: Metadata = {
-  title: "Admin Dashboard | e2go",
-  description: "e2go administrative dashboard.",
+  title: "Admin Dashboard | E2go.app",
+  description: "E2go.app administrative dashboard.",
   robots: { index: false, follow: false },
 };
 

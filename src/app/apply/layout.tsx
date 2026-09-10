@@ -4,7 +4,7 @@ import SectionLayout, { type SectionStep } from "@/components/SectionLayout";
 import Nav from "@/components/Nav";
 
 export const metadata: Metadata = {
-  title: "Application Workspace | e2go",
+  title: "Application Workspace | E2go.app",
   description: "Complete your E-2 visa application package.",
   robots: { index: false, follow: false },
 };

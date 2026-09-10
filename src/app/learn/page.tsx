@@ -4,10 +4,10 @@ import Breadcrumb from "@/components/Breadcrumb";
 import FaqWidget from "@/components/landing/FaqWidget";
 
 export const metadata: Metadata = {
-  title: "Learn About the E-2 Visa — Articles & Answers | e2go",
+  title: "Learn About the E-2 Visa — Articles & Answers | E2go.app",
   description: "E-2 Treaty Investor Visa guides, answers, and resources. Read articles on requirements, process, and timelines — or ask a question and get an instant answer.",
   openGraph: {
-    title: "Learn About the E-2 Visa — Articles & Answers | e2go",
+    title: "Learn About the E-2 Visa — Articles & Answers | E2go.app",
     description: "E-2 Treaty Investor Visa guides, answers, and resources. Articles plus instant AI-powered answers.",
     type: "website",
     url: "https://e2go.app/learn",

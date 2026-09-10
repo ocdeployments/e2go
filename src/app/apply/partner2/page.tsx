@@ -33,7 +33,7 @@ const QUESTIONS: Array<{
   {
     key: 'P2-NATIONALITY',
     label: 'Nationality / Treaty country',
-    placeholder: 'e.g. Canadian',
+    placeholder: 'e.g. Canadian, French, Japanese',
     type: 'text',
     helper: 'Investor 2 must be a citizen of a country with an E-2 treaty with the United States.',
   },
@@ -75,9 +75,9 @@ const QUESTIONS: Array<{
   {
     key: 'P2-INTENT',
     label: 'Home country ties / non-immigrant intent',
-    placeholder: 'Describe Investor 2\'s ties to Canada — property, family, accounts, professional licences, other assets…',
+    placeholder: 'Describe Investor 2\'s ties to their home country — property, family, accounts, professional licences, other assets…',
     type: 'textarea',
-    helper: 'Evidence that Investor 2 intends to return to Canada when the E-2 status ends.',
+    helper: 'Evidence that Investor 2 intends to return home when the E-2 status ends.',
   },
 ];
 
@@ -282,7 +282,7 @@ export default function Partner2Page() {
           </svg>
           My case
         </Link>
-        <span style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#C9A84C', fontSize: '16px', letterSpacing: '0.04em' }}>e2go</span>
+        <span style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#C9A84C', fontSize: '16px', letterSpacing: '0.04em' }}>E2go.app</span>
         <div style={{ width: '80px' }} />
       </nav>
 

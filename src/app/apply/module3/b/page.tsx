@@ -564,7 +564,7 @@ export default function TabBPage() {
         <header className="fixed top-1 left-0 right-0 z-50" style={{ backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', background: 'rgba(6,13,31,0.8)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
           <div className="flex justify-between items-center h-16 px-4 md:px-8 max-w-3xl mx-auto">
             <div onClick={() => router.push('/')} className="flex items-center gap-2 cursor-pointer">
-              <span className="text-xl font-bold" style={{ color: 'var(--gold)', fontFamily: "'Cormorant Garamond', serif" }}>e2go.app</span>
+              <span className="text-xl font-bold" style={{ color: 'var(--gold)', fontFamily: "'Cormorant Garamond', serif" }}>E2go.app</span>
             </div>
             <div className="text-sm" style={{ color: 'rgba(240,237,230,0.65)' }}>Tab B</div>
           </div>
@@ -583,13 +583,13 @@ export default function TabBPage() {
             </h1>
 
             <p className="mb-6" style={{ color: 'rgba(240,237,230,0.65)', fontSize: '16px', lineHeight: '24px' }}>
-              We&apos;ve built your personalised list from your answers — covering everything you need to gather, plus a preview of what e2go will generate for you.
+              We&apos;ve built your personalised list from your answers — covering everything you need to gather, plus a preview of what E2go.app will generate for you.
             </p>
 
             <div className="flex flex-wrap justify-center gap-2 mb-8">
               <span className="px-3 py-1 rounded-full text-xs" style={{ background: 'rgba(201,168,76,0.15)', color: 'var(--gold)', border: '1px solid rgba(201,168,76,0.3)' }}>Built from your answers</span>
               <span className="px-3 py-1 rounded-full text-xs" style={{ background: 'rgba(201,168,76,0.15)', color: 'var(--gold)', border: '1px solid rgba(201,168,76,0.3)' }}>Organised by binder tab</span>
-              <span className="px-3 py-1 rounded-full text-xs" style={{ background: 'rgba(201,168,76,0.15)', color: 'var(--gold)', border: '1px solid rgba(201,168,76,0.3)' }}>★ e2go generates 8 documents</span>
+              <span className="px-3 py-1 rounded-full text-xs" style={{ background: 'rgba(201,168,76,0.15)', color: 'var(--gold)', border: '1px solid rgba(201,168,76,0.3)' }}>★ E2go.app generates 8 documents</span>
             </div>
 
             <button
@@ -624,7 +624,7 @@ export default function TabBPage() {
         <header className="fixed top-1 left-0 right-0 z-50" style={{ backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', background: 'rgba(6,13,31,0.8)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
           <div className="flex justify-between items-center h-16 px-4 md:px-8 max-w-3xl mx-auto">
             <div onClick={() => router.push('/')} className="flex items-center gap-2 cursor-pointer">
-              <span className="text-xl font-bold" style={{ color: 'var(--gold)', fontFamily: "'Cormorant Garamond', serif" }}>e2go.app</span>
+              <span className="text-xl font-bold" style={{ color: 'var(--gold)', fontFamily: "'Cormorant Garamond', serif" }}>E2go.app</span>
             </div>
             <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--gold)' }}>
               {saveStatus === 'saving' ? (
@@ -682,7 +682,7 @@ export default function TabBPage() {
         <header className="fixed top-1 left-0 right-0 z-50" style={{ backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', background: 'rgba(6,13,31,0.8)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
           <div className="flex justify-between items-center h-16 px-4 md:px-8 max-w-3xl mx-auto">
             <div onClick={() => router.push('/')} className="flex items-center gap-2 cursor-pointer">
-              <span className="text-xl font-bold" style={{ color: 'var(--gold)', fontFamily: "'Cormorant Garamond', serif" }}>e2go.app</span>
+              <span className="text-xl font-bold" style={{ color: 'var(--gold)', fontFamily: "'Cormorant Garamond', serif" }}>E2go.app</span>
             </div>
             <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--gold)' }}>
               {saveStatus === 'saving' ? (
@@ -728,7 +728,7 @@ export default function TabBPage() {
               ))}
             </ul>
             <p className="text-sm" style={{ color: 'rgba(240,237,230,0.45)', fontSize: '13px' }}>
-              Most pharmacies offer same-day U.S. visa photos. In Canada: Shoppers Drug Mart, London Drugs, Costco.
+              Most pharmacies and photo shops offer same-day U.S. visa photos. In Canada: Shoppers Drug Mart, London Drugs, Costco.
             </p>
           </div>
 
@@ -766,7 +766,7 @@ export default function TabBPage() {
         <header className="fixed top-1 left-0 right-0 z-50" style={{ backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', background: 'rgba(6,13,31,0.8)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
           <div className="flex justify-between items-center h-16 px-4 md:px-8 max-w-3xl mx-auto">
             <div onClick={() => router.push('/')} className="flex items-center gap-2 cursor-pointer">
-              <span className="text-xl font-bold" style={{ color: 'var(--gold)', fontFamily: "'Cormorant Garamond', serif" }}>e2go.app</span>
+              <span className="text-xl font-bold" style={{ color: 'var(--gold)', fontFamily: "'Cormorant Garamond', serif" }}>E2go.app</span>
             </div>
             <div className="flex items-center gap-2 text-sm">
               <span style={{ color: 'var(--gold)' }}>✓ Saved</span>
@@ -862,10 +862,10 @@ function ChecklistView({ items, onCheck }: { items: ChecklistItem[]; onCheck: (i
       <div>
         <div className="mb-3">
           <h3 className="text-xs uppercase font-semibold mb-0.5" style={{ letterSpacing: '0.08em', color: 'rgba(201,168,76,0.7)' }}>
-            ★ e2go Generates For You
+            ★ E2go.app Generates For You
           </h3>
           <p className="text-xs" style={{ color: 'rgba(240,237,230,0.3)', fontSize: '12px' }}>
-            These 8 documents are written by e2go from your answers — you do not need to gather them
+            These 8 documents are written by E2go.app from your answers — you do not need to gather them
           </p>
         </div>
         <div className="space-y-2">

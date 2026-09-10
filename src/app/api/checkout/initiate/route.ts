@@ -5,6 +5,7 @@ import { createSupabaseServerClient } from '@/lib/supabase-server';
 import Stripe from 'stripe';
 import { captureApiError } from '@/lib/capture-error';
 import { validatePromoCode, reservePromoRedemption, getStripeCouponId } from '@/lib/promo-codes';
+import { resolvePartnershipHold, isPackageTier, PARTNERSHIP_HOLD_MESSAGE } from '@/lib/partnership-hold';
 
 // This route is the first-purchase entry point from /results — Foundation only.
 // Partnership pricing is not yet confirmed (see foundation_partnership in
@@ -71,6 +72,22 @@ export async function POST(request: NextRequest) {
 
   const supabase = getSupabase();
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+
+  // Partnership cases are held out of checkout until the partnership tier
+  // exists — see src/lib/partnership-hold.ts. Selling them a solo package
+  // would take full payment for a package missing all six _p2 documents.
+  if (isPackageTier(tierId)) {
+    const hold = await resolvePartnershipHold(supabase, user.id);
+    if (hold.lookupError) {
+      captureApiError(new Error(`Partnership hold lookup failed: ${hold.lookupError}`), { route: 'checkout/initiate', stage: 'partnership-hold', userId: user.id, tierId });
+    }
+    if (hold.onHold) {
+      return NextResponse.json(
+        { error: PARTNERSHIP_HOLD_MESSAGE, partnershipHold: true, applicationType: hold.applicationType },
+        { status: 409 }
+      );
+    }
+  }
 
   let applicationId: string | null = null;
 

@@ -26,7 +26,7 @@ export function ComparisonSection() {
             color: '#C9A84C',
             marginBottom: '16px',
           }}>
-            Why e2go
+            Why E2go.app
           </p>
           <h2 style={{
             fontFamily: '"Cormorant Garamond", serif',
@@ -47,7 +47,7 @@ export function ComparisonSection() {
             margin: 0,
             lineHeight: 1.7,
           }}>
-            The E-2 visa application isn&rsquo;t complicated — it&rsquo;s scattered. e2go
+            The E-2 visa application isn&rsquo;t complicated — it&rsquo;s scattered. E2go.app
             pulls it into one place: your eligibility, your answers, your assessment,
             then 15+ documents drafted from your own words — each one gap-analysed,
             denial-risk checked, consulate-ordered. No months of meetings — first the
@@ -81,7 +81,7 @@ export function ComparisonSection() {
                 display: 'inline-block',
                 marginBottom: '16px',
               }}>
-                The e2go path
+                The E2go.app path
               </span>
               <h3 style={{
                 fontFamily: '"Cormorant Garamond", serif',
@@ -634,7 +634,7 @@ const featureGroups: FeatureGroup[] = [
       { name: 'Eligibility quiz', note: 'score out of 100' },
       { name: 'Risk flags + timeline estimate' },
       { name: 'Denial-risk engine', note: '15 factors across 6 categories' },
-      { name: 'Ask e2go knowledge base', note: 'instant answers from real E-2 rules' },
+      { name: 'Ask E2go.app knowledge base', note: 'instant answers from real E-2 rules' },
     ],
   },
   {

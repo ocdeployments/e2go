@@ -284,7 +284,7 @@ export default function ConsulateBriefing({ consulate, onContinue }: Props) {
         >
           {isUnknownConsulate
             ? 'Review the document list and page estimates below before we begin. You will have a chance to verify your investment figures on the next screen.'
-            : `Different consulates have different page limits and formatting rules. Below is exactly what e2go will generate for your ${config.displayName} submission, and what you will need to collect separately.`}
+            : `Different consulates have different page limits and formatting rules. Below is exactly what E2go.app will generate for your ${config.displayName} submission, and what you will need to collect separately.`}
         </p>
 
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
@@ -357,7 +357,7 @@ export default function ConsulateBriefing({ consulate, onContinue }: Props) {
             marginBottom: '12px',
           }}
         >
-          ★ Documents e2go generates
+          ★ Documents E2go.app generates
         </div>
 
         <div style={{ border: '1px solid rgba(201,168,76,0.15)' }}>
