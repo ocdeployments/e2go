@@ -68,7 +68,7 @@ Legend — **Status:** `TODO` / `WIP` / `DONE` / `BLOCKED (needs Romy)`
 |---|---|---|---|---|
 | **RS-1** | Turn the webhook dedup row into a claim, not a receipt | G-13 | code + migration | BLOCKED (needs Romy) |
 | **RS-2** | Wrap the event switch in an error boundary | G-14 | code | DONE |
-| **RS-3** | Bind the middleware's Supabase errors; fail open with an alert | G-15 | code | TODO |
+| **RS-3** | Bind the middleware's Supabase errors; fail open with an alert | G-15 | code | DONE |
 | **RS-4** | Paid-but-locked-out reconciliation cron | G-13, G-14, G-15 | infra | TODO |
 
 ### Phase 2 — Structural blindness
@@ -198,25 +198,42 @@ code — is what recovers a half-applied payment.
 
 ---
 
-### RS-3 · Bind the middleware's Supabase errors; fail open with an alert
-**Gap G-15 · code · TODO · 0.5 eng-day**
+### RS-3 · RESOLVED — the three Supabase call sites now bind `error` and fail open with a Sentry alert
+**Gap G-15 · code · DONE · 2026-09-10**
 
-Three call sites in `src/middleware.ts` (the applications/profile pair at
-:416–419, the FDD lookup at :437, the terms-acceptance lookup at :498)
-destructure `data` only. Bind `error` on all three. On a bound error: grant
-access for this request (matching the documented fail-open policy already in
-`src/lib/partnership-hold.ts`), send a Sentry alert tagged with the user and
-route, and — critically — do not write the failure into the Redis access
-cache, so the next request re-checks rather than caching a false negative for
-30 minutes.
+Three call sites in `src/middleware.ts` — the applications/profile pair
+(payment gate cache-miss path), the FDD payment lookup, and the
+terms-acceptance lookup — destructured `data` only. A Supabase
+timeout/5xx/schema-drift returns `data: null`, indistinguishable from "no
+paid applications" or "terms not accepted," so the middleware derived access
+from the null and failed CLOSED — locking a paying customer out on a
+transient DB blip rather than letting them through.
+
+All three now bind `error`. The payment-gate pair and the FDD lookup share a
+single `lookupFailed` flag: on either erroring, `access` is forced to
+`{ full: true, sim: true, fdd: true }` for that request, `captureApiError` is
+called (tagged `route: 'middleware'`, a `stage` naming the site, the user id,
+and the pathname), and the 30-minute access-cache write is skipped entirely
+— matching the fail-open policy already documented in
+`src/lib/partnership-hold.ts`. The terms-acceptance site needed one more
+distinction: it queries with `.single()`, which returns a `PGRST116` ("no
+rows") error for the ordinary case of a user who genuinely hasn't accepted
+yet — that specific code is left alone (still redirects to
+`/terms-required`, no alert), while any other error code fails open and
+skips the terms-cache write the same way.
 
 > **Exit** — force the applications query to error for a paid user; they reach
 > their case, not `/results`. A Sentry event fires. The next request (once the
-> DB recovers) reads correctly rather than serving the cached failure.
+> DB recovers) reads correctly rather than serving a cached failure — because
+> none was ever cached.
 >
-> **Test** — `src/__tests__/middleware-fail-open.test.ts`: a Supabase error on
-> any of the three queries results in access being granted for that request,
-> an alert call being made, and nothing written to the access cache.
+> **Test** — `src/__tests__/middleware-fail-open.test.ts` (4 tests): a
+> Supabase error on the applications/profile pair, the FDD lookup, or the
+> terms-acceptance lookup each grants access for that request, calls
+> `captureApiError` with the right `stage`, and writes nothing to the
+> relevant cache; a genuine `PGRST116` on the terms lookup still redirects to
+> `/terms-required` with no alert, proving the fix didn't blur "not accepted
+> yet" into "the database is broken."
 
 ---
 
@@ -518,11 +535,11 @@ RS-10's three-email retention sequence and RS-7 were both resolved
 2026-09-10 — see the task section above; nothing further is blocked on
 those.
 
-Everything else (RS-2, RS-3, RS-4, and Phases 2-5) is unblocked and can start
-in sequence, independent of Sprint DR — confirmed 2026-09-10 that Session
-146's Sprint DR Phase 1 work (DR-1/DR-2/DR-7) touches
-`src/types/generation.ts`, `docs/SPRINT_DR_DELIVERY_RELIABILITY.md`, and a
-new `generation_resume_log` migration/lib, not the webhook route or
-middleware — no file overlap with RS-1/RS-2/RS-3 confirmed at commit time,
-but re-check DR's current WIP state before starting RS-2 (same webhook
-route) since that may have changed.
+RS-2 and RS-3 were both resolved 2026-09-10 — see the task sections above.
+Everything remaining (RS-4 and Phases 2-5) is unblocked and can start in
+sequence, independent of Sprint DR — confirmed 2026-09-10 that Session 146's
+Sprint DR Phase 1 work (DR-1/DR-2/DR-7) touches `src/types/generation.ts`,
+`docs/SPRINT_DR_DELIVERY_RELIABILITY.md`, and a new `generation_resume_log`
+migration/lib, not the webhook route or middleware — no file overlap with
+RS-1/RS-2/RS-3 confirmed at commit time, but re-check DR's current WIP state
+before starting RS-4 since that may have changed.
