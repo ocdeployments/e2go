@@ -66,7 +66,7 @@ Legend — **Status:** `TODO` / `WIP` / `DONE` / `BLOCKED (needs Romy)`
 
 | # | Task | Gap | Kind | Status |
 |---|---|---|---|---|
-| **RS-1** | Turn the webhook dedup row into a claim, not a receipt | G-13 | code | TODO |
+| **RS-1** | Turn the webhook dedup row into a claim, not a receipt | G-13 | code + migration | BLOCKED (needs Romy) |
 | **RS-2** | Wrap the event switch in an error boundary | G-14 | code | TODO |
 | **RS-3** | Bind the middleware's Supabase errors; fail open with an alert | G-15 | code | TODO |
 | **RS-4** | Paid-but-locked-out reconciliation cron | G-13, G-14, G-15 | infra | TODO |
@@ -109,33 +109,61 @@ before-launch-day check against provider status, not a sprint task.
 
 ## Phase 1 — Money and access
 
-### RS-1 · Turn the webhook dedup row into a claim, not a receipt
-**Gap G-13 · code · TODO · 1 eng-day**
+### RS-1 · Code and tests done — BLOCKED (needs Romy) on the migration
+**Gap G-13 · code + migration · BLOCKED (needs Romy) · code shipped 2026-09-10**
 
-The insert-first-catch-duplicates design is the right idempotency pattern — the
-bug is *when* the row counts as done. Today it's written before any handler
-runs, so `constructEvent` succeeding is treated as the event being fully
-handled.
+The insert-first-catch-duplicates design was the right idempotency pattern —
+the bug was *when* the row counted as done. It was written before any handler
+ran, so `constructEvent` succeeding was treated as the event being fully
+handled, and a redelivery after a partial failure returned `duplicate: true`
+forever with the client still locked out.
 
-Change `processed_webhook_events` to carry a status: insert as `processing`
-before the switch, flip to `completed` only after the handler returns without
-error, and delete the row (or mark it `failed`) if the handler throws or any of
-its `captureApiError` calls fire on a step that leaves access ungranted. A
-redelivered event that finds a `processing` or `failed` row re-runs the
-handler; only a `completed` row short-circuits.
+**Delivered:** `processed_webhook_events` now carries a `status`
+(`processing` / `completed` / `failed`, migration
+`20260910160000_webhook_dedup_status.sql`; historical rows default to
+`completed` since they predate this column and were written under the old
+succeed-or-nothing semantics). The route inserts as `processing` before the
+switch runs. Every `captureApiError` call inside the switch (all 16 sites,
+across all four event types — not just the checkout-completed unlock path)
+now goes through a local `captureAndFail` wrapper that also flips a
+`handlerFailed` flag, and the whole switch is wrapped in a `try/catch` that
+sets the same flag on a thrown exception (e.g. the unguarded `redis.del`
+calls). After the switch, the row is updated to `completed` only if
+`handlerFailed` is still `false` — otherwise `failed`. On a `23505` conflict,
+the existing row's status is looked up first: `completed` short-circuits as a
+genuine duplicate exactly as before; `processing` or `failed` means the prior
+attempt never finished, so the handler is reclaimed and re-run rather than
+short-circuited. Reprocessing is safe because every downstream write in the
+switch is an idempotent `UPDATE ... WHERE id = ...`, not an `INSERT`.
 
-This directly enables RS-4 — the reconciliation cron needs a way to tell "still
-being handled" from "genuinely done" from "we lost this one."
+This directly enables RS-4 — the reconciliation cron needs a way to tell
+"still being handled" from "genuinely done" from "we lost this one."
+
+RS-1 does not change the route's response code — every path still returns
+`200` (`{ received: true }`), including a `failed` claim. That's RS-2's job
+(wrap-and-return-500), which is otherwise now a small change since the
+try/catch and `handlerFailed` tracking RS-2 needs already exist here.
+
+**Migration note:** `20260910160000_webhook_dedup_status.sql` has not been
+applied to the live database yet — per the live-schema-is-truth rule, Romy
+needs to run it in the Supabase Dashboard SQL Editor before this deploys.
+Until then the route's `status` column reference will fail against
+production (the local/CI schema-drift check has nothing to catch this since
+it's a brand-new column, not a rename).
 
 > **Exit** — break the `applications` update, complete a real checkout, then
-> replay the event from the Stripe dashboard. Today: `duplicate: true`, client
-> stays locked out forever. After the fix: the replay re-runs the handler and
-> unlocks them.
+> replay the event from the Stripe dashboard. Before the fix: `duplicate:
+> true`, client stays locked out forever. After the fix: the replay re-runs
+> the handler and unlocks them (verified in the named test below, not against
+> live Stripe).
 >
-> **Test** — `src/app/api/stripe/__tests__/webhook-dedup-claim.test.ts`: a
-> handler that throws leaves no `completed` row and a redelivered event with the
-> same id re-invokes the handler; a handler that succeeds leaves a `completed`
-> row and a redelivery short-circuits without re-running side effects.
+> **Test** — `src/app/api/stripe/__tests__/webhook-dedup-claim.test.ts` (6
+> tests, `stripe` and `@supabase/supabase-js` mocked): a clean run marks the
+> claim `completed`; a duplicate with an existing `completed` row
+> short-circuits without re-running the handler; a redelivery of a row stuck
+> in `processing` or `failed` reclaims and re-runs it to `completed`; a
+> captured handler error and a thrown exception both mark the claim `failed`
+> instead of `completed`.
 
 ---
 
@@ -459,12 +487,30 @@ visible rather than only inferred from a spend anomaly later.
 
 ## Blocked on Romy
 
-Nothing is currently blocked. Both open decisions this sprint carried were
-resolved 2026-09-10: RS-10's three-email retention sequence (confirm-to-keep
-hold, retained-contact-info rule) was specified by Romy, built against
-`applications.retention_hold_at`, and shipped — see the task section above;
-and RS-7 turned out not to be a bug at all — see the task section above.
+**RS-1 needs its migration applied.** `supabase/migrations/20260910160000_webhook_dedup_status.sql`
+(adds `processed_webhook_events.status`) is written, committed, and confirmed
+against the live schema (`processed_webhook_events.status` does not yet
+exist live — verified via a direct REST query 2026-09-10), but not applied.
+Per the same CLI/network wall Session 146 hit for `generation_resume_log`
+(no DB password cached, and this sandbox appears to have no egress to the
+Postgres pooler on port 5432 regardless), the Dashboard SQL Editor is the
+path: paste the migration's `ALTER TABLE` statement, run it, then tell the
+next session so `audit-schema-drift.py --refresh` can confirm and RS-1's
+status can move from BLOCKED to DONE. **Do not deploy the RS-1 code commits
+(`35570ae`, `fd713c6`, `048dc09`) ahead of the migration** — the route now
+writes/reads `processed_webhook_events.status` unconditionally, so it would
+break every Stripe webhook delivery (42703) if it goes live before the
+column exists.
 
-Everything else is unblocked and can start in sequence, independent of Sprint
-DR — confirm against DR's current WIP state before touching `src/types/generation.ts`
-or the webhook route, since DR-1/DR-2 may have open edits there.
+RS-10's three-email retention sequence and RS-7 were both resolved
+2026-09-10 — see the task section above; nothing further is blocked on
+those.
+
+Everything else (RS-2, RS-3, RS-4, and Phases 2-5) is unblocked and can start
+in sequence, independent of Sprint DR — confirmed 2026-09-10 that Session
+146's Sprint DR Phase 1 work (DR-1/DR-2/DR-7) touches
+`src/types/generation.ts`, `docs/SPRINT_DR_DELIVERY_RELIABILITY.md`, and a
+new `generation_resume_log` migration/lib, not the webhook route or
+middleware — no file overlap with RS-1/RS-2/RS-3 confirmed at commit time,
+but re-check DR's current WIP state before starting RS-2 (same webhook
+route) since that may have changed.
