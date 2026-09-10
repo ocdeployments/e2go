@@ -105,14 +105,19 @@ export async function GET(request: NextRequest) {
           .maybeSingle();
         const threshold = Number(thresholdSetting?.value ?? 20);
 
-        const orRes = await fetch('https://openrouter.ai/api/v1/auth/key', {
+        // /auth/key returns the per-key spend limit, not the account credit
+        // balance — this key has no limit set (limit: null), so treating a
+        // missing limit as 0 turned "balance" into -usage and grew forever
+        // negative. /credits is the account-level endpoint: what's actually
+        // left to spend.
+        const orRes = await fetch('https://openrouter.ai/api/v1/credits', {
           headers: { Authorization: `Bearer ${orKey}` },
         });
         if (orRes.ok) {
-          const orData = await orRes.json() as { data?: { usage?: number; limit?: number } };
-          const usage  = orData.data?.usage  ?? 0;
-          const limit  = orData.data?.limit  ?? 0;
-          const balance = limit - usage;
+          const orData = await orRes.json() as { data?: { total_credits?: number; total_usage?: number } };
+          const totalCredits = orData.data?.total_credits ?? 0;
+          const totalUsage   = orData.data?.total_usage   ?? 0;
+          const balance = totalCredits - totalUsage;
 
           // Store current balance so admin page can display it
           await admin.from('app_settings')
