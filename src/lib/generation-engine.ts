@@ -1808,6 +1808,75 @@ interface QualityGateOptions {
   investmentTotal?: number | null;
 }
 
+// ---------------------------------------------------------------------------
+// Generic single-bracket placeholder leak check.
+//
+// LLM_REFERENCE_BRACKET_REGEX above only catches a narrow set of authorship
+// artifacts ("[from Tab X]", "[insert here]"). It does not catch the ad hoc
+// unfilled-data markers a model invents when a document prompt gives it no
+// guidance for missing data — e.g. resume_principal producing "[DATE
+// REQUIRED]", "[AMOUNT NOT PROVIDED]", "[CONFIRM WITH APPLICANT]", "[Phone on
+// file]". Those leaked straight through the quality gate (confirmed live,
+// Session 143) because nothing checked for a generic "[...]" left in the text.
+//
+// Some document types' own prompts *intentionally* sanction specific bracket
+// placeholders (see each prompt's "BRACKET RULE") — those are not leaks and
+// must stay permitted:
+//   - cover_letter, nonimmigrant_intent: "[Date]" and "[Consulate address]"
+//     (client fills these in before mailing / once the interview is scheduled)
+//   - visa_category: "[Date]" only
+// Two document types are exempted from this check entirely rather than
+// allowlisted, because their bracket usage is a different, already-handled
+// pattern rather than a "missing/incomplete data" signal:
+//   - gift_letter: its prompt directs the model to use bracket placeholders
+//     for any donor detail absent from the case data — an intentional
+//     "applicant must supply this" flow already surfaced by the
+//     COMPLETE-BEFORE-SUBMITTING checklist (checklist-builder.ts), not a
+//     defect to hold for review.
+//   - qualifications: its prompt permits a bracket around the business type
+//     as a section-heading style device (a real value, not a "TBD" token).
+// Every other document type has no bracket rule in its prompt at all, so any
+// bracket found in its output is unauthorized — flag it.
+const BRACKET_PLACEHOLDER_LEAK_EXEMPT_TYPES: ReadonlySet<DocumentType> = new Set([
+  'gift_letter',
+  'qualifications',
+]);
+
+const PERMITTED_BRACKET_PLACEHOLDERS: Partial<Record<DocumentType, RegExp[]>> = {
+  cover_letter: [/^date$/i, /^consulate address$/i],
+  nonimmigrant_intent: [/^date$/i, /^consulate address$/i],
+  visa_category: [/^date$/i],
+};
+
+const BRACKET_PLACEHOLDER_LEAK_REGEX = /\[([^\[\]]+)\]/g;
+
+function findPlaceholderLeaks(content: string, documentType: DocumentType): string[] {
+  if (BRACKET_PLACEHOLDER_LEAK_EXEMPT_TYPES.has(documentType)) return [];
+
+  const permitted = PERMITTED_BRACKET_PLACEHOLDERS[documentType] || [];
+  const leaks = new Set<string>();
+
+  BRACKET_PLACEHOLDER_LEAK_REGEX.lastIndex = 0;
+  let match: RegExpExecArray | null;
+  while ((match = BRACKET_PLACEHOLDER_LEAK_REGEX.exec(content)) !== null) {
+    const inner = match[1].trim();
+    const isPermitted = permitted.some(re => re.test(inner));
+    if (!isPermitted) leaks.add(match[0]);
+  }
+  return Array.from(leaks);
+}
+
+// A document type's prompt may instruct the model to output a single-line
+// "NOT APPLICABLE — ..." sentinel when the document doesn't apply to this
+// case (currently only gift_letter, when no gift/inheritance funds were
+// used). That sentinel is correct, complete output — not an incomplete
+// narrative — so it must be exempt from checks that assume a full document
+// (word count, legal disclaimer, name consistency, required-elements).
+function isNotApplicableSentinel(content: string): boolean {
+  const trimmed = content.trim();
+  return /^not applicable\b/i.test(trimmed) && trimmed.split(/\s+/).length <= 20;
+}
+
 export function runQualityGate(
   document: GeneratedDocument,
   documentType: DocumentType,
@@ -1817,6 +1886,21 @@ export function runQualityGate(
   const wordCount = content.split(/\s+/).filter(Boolean).length;
   const pageEstimate = Math.ceil(wordCount / WORDS_PER_PAGE);
   const failures: string[] = [];
+
+  // A correct "NOT APPLICABLE — ..." sentinel is complete output, not a
+  // truncated narrative — skip every check below that assumes a full
+  // document (they would otherwise all fire on a valid one-line response).
+  if (isNotApplicableSentinel(content)) {
+    return {
+      passed: true,
+      failures: [],
+      word_count: wordCount,
+      page_estimate: pageEstimate,
+      has_unverified_markers: false,
+      has_template_placeholders: false,
+      has_legal_conclusions: false,
+    };
+  }
 
   const minWords = MIN_WORD_COUNTS[documentType] || 400;
   if (wordCount < minWords) {
@@ -1843,6 +1927,12 @@ export function runQualityGate(
   LLM_REFERENCE_BRACKET_REGEX.lastIndex = 0;
   if (hasLLMReferenceBrackets) {
     failures.push('Contains LLM reference placeholders (e.g. [from Tab ...], [insert here]) — use actual data values');
+  }
+
+  const placeholderLeaks = findPlaceholderLeaks(content, documentType);
+  const hasPlaceholderLeak = placeholderLeaks.length > 0;
+  if (hasPlaceholderLeak) {
+    failures.push(`Contains unfilled placeholder(s): ${placeholderLeaks.join(', ')}`);
   }
 
   let hasLegalConclusions = false;
@@ -1954,7 +2044,7 @@ export function runQualityGate(
     word_count: wordCount,
     page_estimate: pageEstimate,
     has_unverified_markers: hasUnverifiedMarkers,
-    has_template_placeholders: hasTemplatePlaceholders,
+    has_template_placeholders: hasTemplatePlaceholders || hasPlaceholderLeak,
     has_legal_conclusions: hasLegalConclusions,
   };
 }
@@ -3497,6 +3587,10 @@ Generate the document using Investor 2's identity, name, nationality, source of 
     for (const doc of generatedDocs) {
       const requiredElements = REQUIRED_ELEMENTS[doc.document_type];
       if (!requiredElements || !doc.content_text) continue;
+      // A correct "NOT APPLICABLE — ..." sentinel (currently gift_letter with
+      // no gift/inheritance funds) structurally cannot contain donor_name /
+      // gift_amount / irrevocability — checking for them is a false positive.
+      if (isNotApplicableSentinel(doc.content_text)) continue;
 
       const lowerContent = doc.content_text.toLowerCase();
       const missingElements: string[] = [];
