@@ -23,6 +23,7 @@ export type ManifestTabStatus =
   | 'awaiting_client'  // generated, verifier passed, waiting for client to certify
   | 'generating'       // generation pipeline is running
   | 'draft'            // generated but not yet through verifier
+  | 'blocked'          // generated but failed the legal-boundary quality gate — held for e2go review
   | 'uploaded'         // client-provided document is in uploaded_documents
   | 'outstanding';     // required but not yet provided or generated
 
@@ -45,6 +46,8 @@ export interface ManifestTab {
   uploadedDocType?: string;
   fileName?: string;
   uploadedAt?: string;
+  // Set when status === 'blocked' — the first quality-gate failure to show the client
+  blockedReason?: string;
 }
 
 export interface PackageManifest {
@@ -54,6 +57,7 @@ export interface PackageManifest {
   certifiedCount: number;
   uploadedCount: number;
   outstandingCount: number;
+  blockedCount: number;  // generated docs held for e2go review after a quality-gate failure
   packageReady: boolean; // true when zero outstanding and all generated docs certified
 }
 
@@ -116,7 +120,7 @@ export async function buildPackageManifest(applicationId: string): Promise<Packa
   const [genResult, uploadResult, answerResult] = await Promise.all([
     supabase
       .from('generated_documents')
-      .select('document_type, status, client_certified, certified_at, verifier_result')
+      .select('document_type, status, client_certified, certified_at, verifier_result, quality_gate_passed, quality_gate_notes')
       .eq('application_id', applicationId),
     supabase
       .from('uploaded_documents')
@@ -129,8 +133,14 @@ export async function buildPackageManifest(applicationId: string): Promise<Packa
       .in('question_key', ['M3-L-01', 'M3-F-05']),
   ]);
 
+  // supabase-js does not throw — a missing column comes back as { data: null, error: 42703 }.
+  // Surface it loudly rather than silently rendering an empty manifest.
+  if (genResult.error) console.error('[MANIFEST] generated_documents query failed:', JSON.stringify(genResult.error));
+  if (uploadResult.error) console.error('[MANIFEST] uploaded_documents query failed:', JSON.stringify(uploadResult.error));
+  if (answerResult.error) console.error('[MANIFEST] answers query failed:', JSON.stringify(answerResult.error));
+
   // Index generated docs by document_type
-  type GenDocRow = { document_type: string; status: string; client_certified: boolean | null; certified_at: string | null; verifier_result: Record<string, unknown> | null };
+  type GenDocRow = { document_type: string; status: string; client_certified: boolean | null; certified_at: string | null; verifier_result: Record<string, unknown> | null; quality_gate_passed: boolean | null; quality_gate_notes: string[] | null };
   const genDocs = new Map<string, GenDocRow>();
   for (const row of (genResult.data ?? [])) {
     genDocs.set((row as GenDocRow).document_type, row as GenDocRow);
@@ -188,13 +198,23 @@ export async function buildPackageManifest(applicationId: string): Promise<Packa
       let status: ManifestTabStatus = 'outstanding';
       let clientCertified = false;
       let verifierOverall: ManifestTab['verifierOverall'] = null;
+      let blockedReason: string | undefined;
 
       if (genDoc) {
         clientCertified = Boolean(genDoc.client_certified);
         const vr = genDoc.verifier_result as { overall?: string } | null;
         verifierOverall = (vr?.overall as ManifestTab['verifierOverall']) ?? null;
 
-        if (clientCertified) {
+        if (genDoc.quality_gate_passed === false) {
+          // Gap 3 — a doc that fails the legal-boundary gate is held for e2go
+          // review. This beats every other status (including client_certified):
+          // it must not appear as deliverable and the package stays un-ready.
+          status = 'blocked';
+          blockedReason =
+            (genDoc.quality_gate_notes ?? []).find(n => /forbidden legal conclusion/i.test(n)) ??
+            (genDoc.quality_gate_notes ?? [])[0] ??
+            'Held for e2go review';
+        } else if (clientCertified) {
           status = 'certified';
         } else if (genDoc.status === 'awaiting_approval' || genDoc.status === 'approved') {
           status = 'awaiting_client';
@@ -218,6 +238,7 @@ export async function buildPackageManifest(applicationId: string): Promise<Packa
         documentType: template.documentType,
         clientCertified,
         verifierOverall,
+        blockedReason,
       });
       continue;
     }
@@ -248,9 +269,13 @@ export async function buildPackageManifest(applicationId: string): Promise<Packa
   const certifiedCount  = tabs.filter(t => t.status === 'certified').length;
   const uploadedCount   = tabs.filter(t => t.status === 'uploaded').length;
   const outstandingCount = tabs.filter(t => t.status === 'outstanding').length;
-  // Package is ready when: no outstanding items AND all generated docs are certified
+  const blockedCount    = tabs.filter(t => t.status === 'blocked').length;
+  // Package is ready when: no outstanding items, nothing blocked, AND all
+  // generated docs are certified. A 'blocked' tab is neither 'certified' nor
+  // 'outstanding', so it is called out explicitly here.
   const generatedTabs   = tabs.filter(t => t.source === 'generated');
-  const packageReady    = outstandingCount === 0 && generatedTabs.every(t => t.status === 'certified');
+  const packageReady    = outstandingCount === 0 && blockedCount === 0 &&
+    generatedTabs.every(t => t.status === 'certified');
 
   return {
     applicationId,
@@ -259,6 +284,7 @@ export async function buildPackageManifest(applicationId: string): Promise<Packa
     certifiedCount,
     uploadedCount,
     outstandingCount,
+    blockedCount,
     packageReady,
   };
 }

@@ -112,9 +112,13 @@ export async function POST(req: NextRequest) {
     return jsonResponse({ error: 'Something went wrong — please try again.' }, 500);
   }
 
-  // Best-effort: a failed welcome email should never fail a signup that
-  // already succeeded in the database.
-  sendEarlyAccessWelcomeEmail(name, email).catch((e) =>
+  // Awaited deliberately: sendEarlyAccessWelcomeEmail() already catches its
+  // own errors and returns false rather than throwing, so a failed send still
+  // can't fail this response. A fire-and-forget call here isn't safe — this
+  // project has no waitUntil()/after() keeping background work alive past the
+  // response, so the serverless function can (and did, in production) get
+  // torn down before an un-awaited send ever reached Resend.
+  await sendEarlyAccessWelcomeEmail(name, email).catch((e) =>
     captureApiError(e, { route: 'early-access', stage: 'welcome-email', email })
   );
 

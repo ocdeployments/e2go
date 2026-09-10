@@ -101,8 +101,15 @@ export async function GET(
       if (manifest.outstandingCount > 0) {
         reasons.push(`${manifest.outstandingCount} required item(s) still outstanding`);
       }
+      const blocked = manifest.tabs.filter(t => t.status === 'blocked');
+      if (blocked.length > 0) {
+        reasons.push(
+          `${blocked.length} document(s) held for e2go review: ` +
+          blocked.map(t => `${t.label} (${t.blockedReason ?? 'quality gate'})`).join('; ')
+        );
+      }
       const uncertified = manifest.tabs.filter(
-        t => t.source === 'generated' && t.status !== 'certified'
+        t => t.source === 'generated' && t.status !== 'certified' && t.status !== 'blocked'
       );
       if (uncertified.length > 0) {
         reasons.push(`${uncertified.length} generated document(s) not yet certified by client`);
@@ -113,6 +120,7 @@ export async function GET(
           reasons,
           certifiedCount: manifest.certifiedCount,
           outstandingCount: manifest.outstandingCount,
+          blockedCount: manifest.blockedCount,
           totalTabs: manifest.totalTabs,
         },
         { status: 403 }

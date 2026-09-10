@@ -23,7 +23,7 @@ const raw = readFileSync('.env.local', 'utf8');
 const vars = {};
 for (const line of raw.split('\n')) {
   const m = line.match(/^([^#=]+)=(.*)$/);
-  if (m) vars[m[1].trim()] = m[2].trim();
+  if (m) vars[m[1].trim()] = m[2].trim().replace(/^["']|["']$/g, '');
 }
 
 const SUPABASE_URL = vars.NEXT_PUBLIC_SUPABASE_URL;

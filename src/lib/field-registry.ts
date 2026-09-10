@@ -181,6 +181,7 @@ const INVESTMENT_SNAPSHOT_FIELDS = fields('investment_snapshot', '/apply/investm
   ['M3-F-NEW-01', 'Are funds actually spent on business expenses?'],
   ['M3-F-NET', 'Approximate net worth'],
   ['M3-F-05', 'Source of funds', true],
+  ['M3-F-05-AMOUNTS', 'Amount per fund source', false],
   ['M3-F-SRC', 'Source of funds narrative'],
   ['M3-F-09', 'Franchise fee'],
   ['M3-F-10', 'Franchise investment range (low)'],

@@ -1,4 +1,5 @@
-import { readFileSync, existsSync } from 'fs';
+import { readFileSync, existsSync, readdirSync } from 'fs';
+import { createHash } from 'crypto';
 import { join } from 'path';
 import Anthropic from '@anthropic-ai/sdk';
 import { synthesizeInvestorProfile, formatInvestorProfileContext } from './investor-profile-synthesizer';
@@ -30,6 +31,68 @@ import { callDocGenFallback } from './llm-client';
 import { personLabel } from './person-code';
 
 const PROMPTS_DIR = join(process.cwd(), 'prompts', 'v1', 'documents');
+const UNIVERSAL_PROMPT_PATH = join(process.cwd(), 'prompts', 'v1', '_universal_system_prompt.md');
+
+// The shared rule book every document prompt is built on. Read once from
+// _universal_system_prompt.md and memoized — change the rule book there, never
+// by pasting principles back into the per-document files.
+let _universalCoreCache: string | null = null;
+function loadUniversalCore(): string {
+  if (_universalCoreCache === null) {
+    _universalCoreCache = readFileSync(UNIVERSAL_PROMPT_PATH, 'utf-8').trim();
+  }
+  return _universalCoreCache;
+}
+
+// Defensive: strip a stale "## UNIVERSAL SYSTEM PROMPT" section (heading through
+// the next horizontal rule) from a per-document file so the shared core can
+// never be duplicated into a prompt. Document files should not contain this
+// section anymore — universal-prompt.test.ts enforces that — but a bad merge
+// should degrade to "core appears once", not "core appears twice".
+function stripLegacyUniversalSection(body: string): string {
+  return body.replace(
+    /^##\s*UNIVERSAL SYSTEM PROMPT\s*\n[\s\S]*?\n---\s*\n/m,
+    ''
+  );
+}
+
+// Rule-book version stamp. Bump BY HAND whenever a generation prompt or a
+// quality-gate rule changes, so an old package and a new one are distinguishable
+// after the fact. Recorded once per job as a `document_generation_log` row
+// (stage: 'rulebook_version') — see runGenerationPipeline. No schema change.
+export const RULEBOOK_VERSION = '2026-09-09';
+
+// sha256 over the sorted, concatenated contents of every prompts/v1/**/*.md
+// file (the universal core plus all 21 document prompts). Memoized — the corpus
+// does not change within a process. Lets us tell whether two jobs ran against a
+// byte-identical rule book even if RULEBOOK_VERSION was not bumped.
+let _promptCorpusHashCache: string | null = null;
+function getPromptCorpusHash(): string {
+  if (_promptCorpusHashCache === null) {
+    const root = join(process.cwd(), 'prompts', 'v1');
+    const files: string[] = [];
+    const walk = (dir: string): void => {
+      for (const entry of readdirSync(dir, { withFileTypes: true }).sort((a, b) =>
+        a.name.localeCompare(b.name)
+      )) {
+        const full = join(dir, entry.name);
+        if (entry.isDirectory()) walk(full);
+        else if (entry.isFile() && entry.name.endsWith('.md')) files.push(full);
+      }
+    };
+    walk(root);
+    files.sort();
+    const hash = createHash('sha256');
+    for (const file of files) {
+      hash.update(file.slice(root.length));
+      hash.update('\0');
+      hash.update(readFileSync(file));
+      hash.update('\0');
+    }
+    _promptCorpusHashCache = hash.digest('hex');
+  }
+  return _promptCorpusHashCache;
+}
 
 // WS5 5.2 — the documents shared across a complete_partnership case that
 // need the joint-context block (business_plan, visa_category [Substantiality
@@ -494,7 +557,8 @@ export async function loadPrompt(documentType: DocumentType): Promise<string> {
   if (!existsSync(filePath)) {
     throw new Error(`Prompt file not found: ${filePath}`);
   }
-  return readFileSync(filePath, 'utf-8');
+  const docBody = stripLegacyUniversalSection(readFileSync(filePath, 'utf-8'));
+  return `${loadUniversalCore()}\n\n${docBody}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -1660,12 +1724,30 @@ const MAX_PAGE_ESTIMATES: Record<string, number> = {
   lease_premises_summary: 1,
 };
 
-const FORBIDDEN_LEGAL_PHRASES = [
-  'qualifies',
-  'eligible',
-  'meets the standard',
-  'is substantial',
-];
+// Legal-boundary gate (see prompts/v1/_universal_system_prompt.md principle 8).
+// A raw substring match on "qualifies" / "eligible" / "is substantial" fired on
+// perfectly correct sentences ("the business is eligible for SBA 7(a)
+// financing", "the property qualifies for the capital-gains exemption", "a
+// qualified accountant prepared the statements"). These three checks replace it:
+//
+//  1. LEGAL_CONCLUSION_HARD_RE — phrasing that is a legal conclusion regardless
+//     of subject ("meets the standard", "satisfies the requirements"). Always
+//     flagged unless negated ("does not meet the requirements").
+//  2. LEGAL_CONCLUSION_SUBJECT_RE — the sentence is about THIS applicant or the
+//     E-2 legal test. Only then do "qualifies" / "eligible" / "is substantial"
+//     count as forbidden conclusions.
+//  3. LEGAL_CONCLUSION_BENIGN_RE — collocations that are never a conclusion
+//     about the applicant (tax/loan eligibility, "qualified accountant", …).
+const LEGAL_CONCLUSION_HARD_RE =
+  /\b(?:meets?|satisf(?:y|ies|ied)|fulfil(?:l|s|led)?)\s+(?:all\s+|both\s+)?(?:the\s+|these\s+|those\s+|its\s+)?(?:e-?2\s+)?(?:legal\s+)?(?:standards?|requirements?|criteria|thresholds?)\b|\b(?:is|are|was|were|remains?|being)\s+substantial\b/gi;
+const LEGAL_CONCLUSION_NEGATION_RE =
+  /\b(does not|do not|doesn't|don't|did not|didn't|cannot|can't|will not|won't|would not|no longer|fails? to|not yet)\b/i;
+const LEGAL_CONCLUSION_SUBJECT_RE =
+  /\b(applicant|investor|petitioner|beneficiary|the principal|treaty investor|e-?2\b|9\s*fam|substantiality|non-?marginality|marginality|nonimmigrant intent|the investment|this investment|the enterprise|the business|the company)\b/i;
+const LEGAL_CONCLUSION_BENIGN_RE =
+  /\b(eligible\s+(for\s+(a\s+|an\s+|the\s+)?(tax|mortgage|loan|financing|grant|sba|refund|rebate|deduction|exemption|credit|reimbursement|discount|subsidy|incentive)|dependents?|to\s+apply|to\s+enrol|to\s+enroll|to\s+participate|to\s+claim)|qualif(?:y|ies|ied)\s+(for\s+(a\s+|an\s+|the\s+)?(tax|mortgage|loan|financing|grant|sba|refund|rebate|deduction|exemption|credit|discount|subsidy|incentive)|as\s+a\s+qualified)|qualified\s+(accountant|professional|personnel|individual|intermediary|appraiser|plan|retirement|opinion|audit|report))\b/i;
+const LEGAL_CONCLUSION_CONTEXT_RE =
+  /\b(qualif(?:y|ies|ied)|eligible|(?:is|are|was|were|remains?|being)\s+substantial)\b/i;
 
 const PROHIBITED_VOCAB = [
   'guaranteed',
@@ -1726,6 +1808,75 @@ interface QualityGateOptions {
   investmentTotal?: number | null;
 }
 
+// ---------------------------------------------------------------------------
+// Generic single-bracket placeholder leak check.
+//
+// LLM_REFERENCE_BRACKET_REGEX above only catches a narrow set of authorship
+// artifacts ("[from Tab X]", "[insert here]"). It does not catch the ad hoc
+// unfilled-data markers a model invents when a document prompt gives it no
+// guidance for missing data — e.g. resume_principal producing "[DATE
+// REQUIRED]", "[AMOUNT NOT PROVIDED]", "[CONFIRM WITH APPLICANT]", "[Phone on
+// file]". Those leaked straight through the quality gate (confirmed live,
+// Session 143) because nothing checked for a generic "[...]" left in the text.
+//
+// Some document types' own prompts *intentionally* sanction specific bracket
+// placeholders (see each prompt's "BRACKET RULE") — those are not leaks and
+// must stay permitted:
+//   - cover_letter, nonimmigrant_intent: "[Date]" and "[Consulate address]"
+//     (client fills these in before mailing / once the interview is scheduled)
+//   - visa_category: "[Date]" only
+// Two document types are exempted from this check entirely rather than
+// allowlisted, because their bracket usage is a different, already-handled
+// pattern rather than a "missing/incomplete data" signal:
+//   - gift_letter: its prompt directs the model to use bracket placeholders
+//     for any donor detail absent from the case data — an intentional
+//     "applicant must supply this" flow already surfaced by the
+//     COMPLETE-BEFORE-SUBMITTING checklist (checklist-builder.ts), not a
+//     defect to hold for review.
+//   - qualifications: its prompt permits a bracket around the business type
+//     as a section-heading style device (a real value, not a "TBD" token).
+// Every other document type has no bracket rule in its prompt at all, so any
+// bracket found in its output is unauthorized — flag it.
+const BRACKET_PLACEHOLDER_LEAK_EXEMPT_TYPES: ReadonlySet<DocumentType> = new Set([
+  'gift_letter',
+  'qualifications',
+]);
+
+const PERMITTED_BRACKET_PLACEHOLDERS: Partial<Record<DocumentType, RegExp[]>> = {
+  cover_letter: [/^date$/i, /^consulate address$/i],
+  nonimmigrant_intent: [/^date$/i, /^consulate address$/i],
+  visa_category: [/^date$/i],
+};
+
+const BRACKET_PLACEHOLDER_LEAK_REGEX = /\[([^\[\]]+)\]/g;
+
+function findPlaceholderLeaks(content: string, documentType: DocumentType): string[] {
+  if (BRACKET_PLACEHOLDER_LEAK_EXEMPT_TYPES.has(documentType)) return [];
+
+  const permitted = PERMITTED_BRACKET_PLACEHOLDERS[documentType] || [];
+  const leaks = new Set<string>();
+
+  BRACKET_PLACEHOLDER_LEAK_REGEX.lastIndex = 0;
+  let match: RegExpExecArray | null;
+  while ((match = BRACKET_PLACEHOLDER_LEAK_REGEX.exec(content)) !== null) {
+    const inner = match[1].trim();
+    const isPermitted = permitted.some(re => re.test(inner));
+    if (!isPermitted) leaks.add(match[0]);
+  }
+  return Array.from(leaks);
+}
+
+// A document type's prompt may instruct the model to output a single-line
+// "NOT APPLICABLE — ..." sentinel when the document doesn't apply to this
+// case (currently only gift_letter, when no gift/inheritance funds were
+// used). That sentinel is correct, complete output — not an incomplete
+// narrative — so it must be exempt from checks that assume a full document
+// (word count, legal disclaimer, name consistency, required-elements).
+function isNotApplicableSentinel(content: string): boolean {
+  const trimmed = content.trim();
+  return /^not applicable\b/i.test(trimmed) && trimmed.split(/\s+/).length <= 20;
+}
+
 export function runQualityGate(
   document: GeneratedDocument,
   documentType: DocumentType,
@@ -1735,6 +1886,21 @@ export function runQualityGate(
   const wordCount = content.split(/\s+/).filter(Boolean).length;
   const pageEstimate = Math.ceil(wordCount / WORDS_PER_PAGE);
   const failures: string[] = [];
+
+  // A correct "NOT APPLICABLE — ..." sentinel is complete output, not a
+  // truncated narrative — skip every check below that assumes a full
+  // document (they would otherwise all fire on a valid one-line response).
+  if (isNotApplicableSentinel(content)) {
+    return {
+      passed: true,
+      failures: [],
+      word_count: wordCount,
+      page_estimate: pageEstimate,
+      has_unverified_markers: false,
+      has_template_placeholders: false,
+      has_legal_conclusions: false,
+    };
+  }
 
   const minWords = MIN_WORD_COUNTS[documentType] || 400;
   if (wordCount < minWords) {
@@ -1763,11 +1929,40 @@ export function runQualityGate(
     failures.push('Contains LLM reference placeholders (e.g. [from Tab ...], [insert here]) — use actual data values');
   }
 
+  const placeholderLeaks = findPlaceholderLeaks(content, documentType);
+  const hasPlaceholderLeak = placeholderLeaks.length > 0;
+  if (hasPlaceholderLeak) {
+    failures.push(`Contains unfilled placeholder(s): ${placeholderLeaks.join(', ')}`);
+  }
+
   let hasLegalConclusions = false;
   const lowerContent = content.toLowerCase();
-  for (const phrase of FORBIDDEN_LEGAL_PHRASES) {
-    if (lowerContent.includes(phrase)) {
-      hasLegalConclusions = true;
+  const flaggedLegalPhrases = new Set<string>();
+  for (const rawSentence of content.split(/(?<=[.!?])\s+|\n+/)) {
+    const sentence = rawSentence.trim();
+    if (!sentence) continue;
+
+    // HARD_RE is /g — a sentence can carry more than one hard conclusion
+    // ("is substantial and meets the standard"); flag each independently.
+    for (const hard of sentence.matchAll(LEGAL_CONCLUSION_HARD_RE)) {
+      const idx = hard.index ?? 0;
+      const preceding = sentence.slice(Math.max(0, idx - 48), idx);
+      if (!LEGAL_CONCLUSION_NEGATION_RE.test(preceding)) {
+        flaggedLegalPhrases.add(hard[0].toLowerCase().replace(/\s+/g, ' '));
+      }
+    }
+
+    if (
+      LEGAL_CONCLUSION_SUBJECT_RE.test(sentence) &&
+      !LEGAL_CONCLUSION_BENIGN_RE.test(sentence)
+    ) {
+      const ctx = sentence.match(LEGAL_CONCLUSION_CONTEXT_RE);
+      if (ctx) flaggedLegalPhrases.add(ctx[0].toLowerCase().replace(/\s+/g, ' '));
+    }
+  }
+  if (flaggedLegalPhrases.size > 0) {
+    hasLegalConclusions = true;
+    for (const phrase of flaggedLegalPhrases) {
       failures.push(`Contains forbidden legal conclusion: "${phrase}"`);
     }
   }
@@ -1849,7 +2044,7 @@ export function runQualityGate(
     word_count: wordCount,
     page_estimate: pageEstimate,
     has_unverified_markers: hasUnverifiedMarkers,
-    has_template_placeholders: hasTemplatePlaceholders,
+    has_template_placeholders: hasTemplatePlaceholders || hasPlaceholderLeak,
     has_legal_conclusions: hasLegalConclusions,
   };
 }
@@ -2287,6 +2482,36 @@ export async function runGenerationPipeline(
       current_step_label: GENERATION_STEP_LABELS[1],
     });
 
+    // Gap 2 — stamp this job with the rule book that produced it. One row per
+    // job, no schema change (reuses document_generation_log columns). Lets us
+    // tell after the fact whether a package was built against an old prompt set.
+    {
+      const corpusHash = getPromptCorpusHash();
+      const { error: rulebookLogError } = await supabase
+        .from('document_generation_log')
+        .insert({
+          application_id: applicationId,
+          document_type: 'all',
+          stage: 'rulebook_version',
+          attempt_number: 1,
+          passed: true,
+          flagged_sections: [`corpus:${corpusHash}`],
+          notes: JSON.stringify({
+            rulebook_version: RULEBOOK_VERSION,
+            prompt_corpus_hash: corpusHash,
+            job_id: jobId,
+          }),
+        });
+      if (rulebookLogError) {
+        // Non-fatal: the package can still be produced without the stamp, but
+        // record loudly that provenance is now incomplete for this job.
+        console.error(
+          '[ENGINE] rulebook_version log insert failed:',
+          JSON.stringify(rulebookLogError)
+        );
+      }
+    }
+
     // Step 1: Load case brief
     emitStep(1, 'running');
     await updateJob({ current_step: 1, current_step_label: GENERATION_STEP_LABELS[1] });
@@ -2305,6 +2530,40 @@ export async function runGenerationPipeline(
     }
 
     const caseBrief = caseBriefRow.case_brief_json as CaseBrief;
+
+    // The case brief is scoring-only — assembleCaseBrief() never writes the
+    // applicant / business identity or the investment figure. Downstream context
+    // (validateContext, buildGenerationPayload's gap context, the canonical
+    // consistency sweep) reads those off the brief, so enrich it here from the
+    // application record and Module 3 before anything consumes it.
+    {
+      const briefRec = caseBrief as unknown as Record<string, unknown>;
+      const { data: appRow, error: appRowError } = await supabase
+        .from('applications')
+        .select('principal_name, business_name, business_category')
+        .eq('id', applicationId)
+        .single();
+      if (appRowError) {
+        console.error('[generation] could not load application row for brief enrichment:', appRowError);
+      }
+      if (appRow) {
+        if (!briefRec.applicant_name && appRow.principal_name) briefRec.applicant_name = appRow.principal_name;
+        if (!briefRec.principal_name && appRow.principal_name) briefRec.principal_name = appRow.principal_name;
+        if (!briefRec.business_name && appRow.business_name) briefRec.business_name = appRow.business_name;
+        if (!briefRec.business_category && appRow.business_category) briefRec.business_category = appRow.business_category;
+      }
+      if (!briefRec.investment) {
+        const { data: investAns } = await supabase
+          .from('answers')
+          .select('answer_value')
+          .eq('application_id', applicationId)
+          .eq('question_key', 'M3-F-02')
+          .is('family_member_id', null)
+          .maybeSingle();
+        const investNum = Number(String(investAns?.answer_value ?? '').replace(/[^0-9.]/g, ''));
+        if (Number.isFinite(investNum) && investNum > 0) briefRec.investment = investNum;
+      }
+    }
 
     // CIC-2.2 — fetch Case Theory once for the whole pipeline run.
     // Passed to verifyCaseTheoryCompliance() after each document is generated.
@@ -3254,28 +3513,29 @@ Generate the document using Investor 2's identity, name, nationality, source of 
             'Rewrite the document addressing all failures above.',
           ].join('\n');
 
-          const model = await getGenerationModel();
-          const retryArchetype = (caseBrief as unknown as Record<string, unknown>)?.archetype as string ?? 'unknown';
-          const retryArchetypeGuidance = buildArchetypeGuidance(retryArchetype, doc.document_type);
-          const retrySystemPrompt = retryArchetypeGuidance
-            ? `${payload.system_prompt}\n\n---\n\n${retryArchetypeGuidance}\n\n${failureInstructions}`
-            : `${payload.system_prompt}\n\n${failureInstructions}`;
-          const retryResponse = await getAnthropic().messages.create({
-            model,
-            max_tokens: 4000,
-            system: retrySystemPrompt,
-            messages: [{ role: 'user', content: 'Regenerate the document now.' }],
-          });
+          // Route through callClaudeAPI (same as every other regeneration site)
+          // rather than a bare messages.create — it needs the full case brief,
+          // module 3 answers, investment breakdown and exhibit registry to
+          // rewrite the document at all. A previous version of this retry
+          // called the SDK directly with just a system prompt and the literal
+          // user message "Regenerate the document now.", so it had no case
+          // data to regenerate from and Claude correctly refused — that
+          // refusal text was what got persisted as content_text.
+          const retryPayload: GenerationPayload = {
+            ...payload,
+            case_theory_brief: failureInstructions
+              + (payload.case_theory_brief ? '\n\n' + payload.case_theory_brief : ''),
+          };
+          const retryContentText = await callClaudeAPI(retryPayload);
 
-          const retryContent = retryResponse.content.find((b): b is Anthropic.TextBlock => b.type === 'text');
-          if (retryContent) {
-            const wc = countWords(retryContent.text);
+          if (retryContentText) {
+            const wc = countWords(retryContentText);
             const pages = estimatePages(wc);
 
             await supabase
               .from('generated_documents')
               .update({
-                content_text: retryContent.text,
+                content_text: retryContentText,
                 word_count: wc,
                 page_estimate: pages,
                 updated_at: new Date().toISOString(),
@@ -3285,7 +3545,7 @@ Generate the document using Investor 2's identity, name, nationality, source of 
 
             // Re-run quality gate
             const retryQuality = runQualityGate(
-              { ...doc, content_text: retryContent.text },
+              { ...doc, content_text: retryContentText },
               doc.document_type,
               { caseBrief: caseBriefData, investmentTotal }
             );
@@ -3327,6 +3587,10 @@ Generate the document using Investor 2's identity, name, nationality, source of 
     for (const doc of generatedDocs) {
       const requiredElements = REQUIRED_ELEMENTS[doc.document_type];
       if (!requiredElements || !doc.content_text) continue;
+      // A correct "NOT APPLICABLE — ..." sentinel (currently gift_letter with
+      // no gift/inheritance funds) structurally cannot contain donor_name /
+      // gift_amount / irrevocability — checking for them is a false positive.
+      if (isNotApplicableSentinel(doc.content_text)) continue;
 
       const lowerContent = doc.content_text.toLowerCase();
       const missingElements: string[] = [];

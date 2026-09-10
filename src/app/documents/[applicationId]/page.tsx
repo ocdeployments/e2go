@@ -265,6 +265,11 @@ export default function DocumentsReviewPage() {
 
   const getStatusBadge = (doc: GeneratedDocument) => {
     const base = "text-[10px] font-medium uppercase tracking-wider px-2 py-0.5 border";
+    // Gap 3 — a doc that failed the legal-boundary quality gate is held for
+    // e2go review. This beats every other badge, including CERTIFIED.
+    if (doc.quality_gate_passed === false) {
+      return <span className={`${base} border-red-500/40 text-red-400`}>HELD FOR E2GO REVIEW</span>;
+    }
     if (isCertified(doc)) {
       return <span className={`${base} border-[#22c55e]/40 text-[#22c55e]`}>CERTIFIED</span>;
     }
@@ -539,7 +544,23 @@ export default function DocumentsReviewPage() {
                 </div>
 
                 <div className="flex gap-2">
-                  {isCertified(doc) ? (
+                  {doc.quality_gate_passed === false ? (
+                    /* Gap 3 — held for e2go review: client cannot certify. */
+                    <button
+                      onClick={() => {
+                        openModal(doc);
+                        setRegenForm((prev) => ({
+                          ...prev,
+                          open: true,
+                          documentType: doc.document_type,
+                        }));
+                      }}
+                      className="border border-red-500/30 px-4 py-2 text-xs font-medium uppercase tracking-wider text-red-400/80 transition-colors hover:border-red-500/50"
+                      style={{ fontFamily: "'DM Sans', sans-serif" }}
+                    >
+                      Request New Draft
+                    </button>
+                  ) : isCertified(doc) ? (
                     /* Already certified — only regen available */
                     <button
                       onClick={() => {

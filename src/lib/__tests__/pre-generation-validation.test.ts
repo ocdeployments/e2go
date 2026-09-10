@@ -6,6 +6,8 @@ describe('validateForGeneration', () => {
     'M3-F-02': 185000, // Total invested
     'M3-F-03': 296000, // Total business cost
     'M3-F-05': ['savings', 'property-sale'],
+    // Companion key (rule-book gap 4): per-source dollar amounts, sums to M3-F-02.
+    'M3-F-05-AMOUNTS': JSON.stringify({ savings: 120000, 'property-sale': 65000 }),
     'M3-F-NET': 400000,
     'M3-F-09': 'Golden Era Barbershop',
     'business_type': 'franchise',
@@ -49,6 +51,52 @@ describe('validateForGeneration', () => {
 
     it('includes total business cost', () => {
       expect(result.investmentBreakdown.totalBusinessCost).toBe(296000);
+    });
+
+    it('reconciles per-source fund amounts against the total', () => {
+      expect(result.fundSources.sourcesSum).toBe(185000);
+      expect(result.fundSources.sourcesMatchTotal).toBe(true);
+      expect(result.fundSources.sources.map((s) => s.amount)).toEqual([120000, 65000]);
+    });
+  });
+
+  describe('fund sources sum mismatch (rule-book gap 4)', () => {
+    it('fails when per-source amounts do not sum to the total investment', () => {
+      const answers = {
+        ...chenAnswers,
+        'M3-F-05-AMOUNTS': JSON.stringify({ savings: 120000, 'property-sale': 40000 }), // sums to 160000, not 185000
+      };
+      const result = validateForGeneration(answers);
+      expect(result.readyForGeneration).toBe(false);
+      expect(result.blockingGaps.some((g) => g.id === 'fund_sources_sum_mismatch')).toBe(true);
+    });
+
+    it('passes within $1 tolerance', () => {
+      const answers = {
+        ...chenAnswers,
+        'M3-F-05-AMOUNTS': JSON.stringify({ savings: 120000.5, 'property-sale': 65000 }), // 185000.50 vs 185000
+      };
+      const result = validateForGeneration(answers);
+      expect(result.fundSources.sourcesMatchTotal).toBe(true);
+      expect(result.blockingGaps.some((g) => g.id === 'fund_sources_sum_mismatch')).toBe(false);
+    });
+
+    it('skips the check for legacy apps with no per-source amounts', () => {
+      const answers = { ...chenAnswers };
+      delete answers['M3-F-05-AMOUNTS'];
+      const result = validateForGeneration(answers);
+      expect(result.fundSources.sourcesMatchTotal).toBe(true);
+      expect(result.blockingGaps.some((g) => g.id === 'fund_sources_sum_mismatch')).toBe(false);
+    });
+
+    it('tolerates an already-parsed object', () => {
+      const answers = {
+        ...chenAnswers,
+        'M3-F-05-AMOUNTS': { savings: 120000, 'property-sale': 65000 },
+      };
+      const result = validateForGeneration(answers);
+      expect(result.fundSources.sourcesSum).toBe(185000);
+      expect(result.fundSources.sourcesMatchTotal).toBe(true);
     });
   });
 

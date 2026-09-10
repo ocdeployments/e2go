@@ -504,6 +504,83 @@ export default function InvestmentPage() {
           <ClusterDivider label="Where the money came from" />
           {renderQuestions(SOURCE_OF_FUNDS_QUESTIONS)}
 
+          {/* Per-source amounts (M3-F-05-AMOUNTS) — companion to the M3-F-05
+              multi-select. Lets pre-generation validation check that the
+              sources actually sum to the total invested (M3-F-02). */}
+          {(() => {
+            const sourceOptions = SOURCE_OF_FUNDS_QUESTIONS[0].options ?? [];
+            let selected: string[] = [];
+            try {
+              const p = JSON.parse(answers['M3-F-05']?.value || '[]');
+              if (Array.isArray(p)) selected = p.filter((v): v is string => typeof v === 'string');
+            } catch { /* no sources selected yet */ }
+            if (selected.length === 0) return null;
+
+            const amounts: Record<string, number> = {};
+            try {
+              const p = JSON.parse(answers['M3-F-05-AMOUNTS']?.value || '{}');
+              if (p && typeof p === 'object' && !Array.isArray(p)) {
+                for (const [k, v] of Object.entries(p)) {
+                  const n = Number(v);
+                  if (Number.isFinite(n)) amounts[k] = n;
+                }
+              }
+            } catch { /* nothing entered yet */ }
+
+            const setAmount = (sourceKey: string, raw: string) => {
+              const next: Record<string, number> = {};
+              // keep only still-selected sources, drop empty entries
+              for (const s of selected) {
+                if (s === sourceKey) continue;
+                if (amounts[s] !== undefined) next[s] = amounts[s];
+              }
+              const n = Number(raw);
+              if (raw.trim() !== '' && Number.isFinite(n) && n > 0) next[sourceKey] = n;
+              handleAnswerChange('M3-F-05-AMOUNTS', JSON.stringify(next));
+            };
+
+            const enteredSum = selected.reduce((acc, s) => acc + (amounts[s] ?? 0), 0);
+            const total = Number(answers['M3-F-02']?.value) || 0;
+            const anyEntered = selected.some((s) => amounts[s] !== undefined);
+            const diff = total - enteredSum;
+            const withinTolerance = Math.abs(diff) <= 1;
+
+            return (
+              <div className="mt-6">
+                <QuestionLabel>Amount from each source (USD)</QuestionLabel>
+                <HelperText>
+                  {`Enter the amount contributed by each source. The total should match your total invested to date${total > 0 ? ` (USD ${total.toLocaleString('en-US')})` : ''}.`}
+                </HelperText>
+                <div className="mt-3 flex flex-col gap-3">
+                  {selected.map((s) => {
+                    const opt = sourceOptions.find((o) => o.value === s);
+                    return (
+                      <div key={s}>
+                        <span style={{ fontSize: '12px', color: 'rgba(245,240,232,0.72)' }}>
+                          {opt?.label ?? s}
+                        </span>
+                        <CurrencyInput
+                          value={amounts[s] !== undefined ? String(amounts[s]) : ''}
+                          onChange={(val) => setAmount(s, val)}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+                {anyEntered && total > 0 && (
+                  <div
+                    className="mt-3"
+                    style={{ fontSize: '12px', lineHeight: 1.5, color: withinTolerance ? 'rgba(120,190,140,0.9)' : 'rgba(220,150,150,0.95)' }}
+                  >
+                    {withinTolerance
+                      ? `Sources entered total USD ${enteredSum.toLocaleString('en-US')} — matches your total invested.`
+                      : `Sources entered total USD ${enteredSum.toLocaleString('en-US')}, which is USD ${Math.abs(diff).toLocaleString('en-US')} ${diff > 0 ? 'short of' : 'above'} your total invested of USD ${total.toLocaleString('en-US')}. Adjust the amounts so they reconcile before generating documents.`}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
           {answers['M3-F-05']?.value?.includes('rrsp') && (
             <AdvisoryBlock>RRSP withdrawals generate a T4RSP slip and are taxable. You need: (1) proof of RRSP account, (2) withdrawal confirmation, (3) T4RSP slip, (4) bank statement showing deposit, (5) wire confirmation to US account. Consult a CPA about withholding tax implications.</AdvisoryBlock>
           )}

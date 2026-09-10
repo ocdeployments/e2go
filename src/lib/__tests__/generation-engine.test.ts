@@ -229,6 +229,75 @@ She directed HR operations for 47 staff across three office locations.
   });
 
   // ---------------------------------------------------------------------------
+  // Test 5b: runQualityGate — catches leaked ad hoc placeholder brackets
+  // (Session 143: resume_principal shipped "[DATE REQUIRED]",
+  // "[AMOUNT NOT PROVIDED]", "[CONFIRM WITH APPLICANT]" etc. undetected)
+  // ---------------------------------------------------------------------------
+  it("should detect leaked ad hoc placeholder brackets for a document type with no bracket rule", () => {
+    const content = `
+Mr. John Doe currently resides at [Phone on file] and can be reached via
+[Email on file]. He was born on [Date of birth on file with application]
+and has worked in operations management since [DATE REQUIRED], earning
+approximately [AMOUNT NOT PROVIDED] annually. [CONFIRM WITH APPLICANT]
+whether this employment is still current.
+    `.trim();
+
+    const doc = makeMockDocument("resume_principal", content);
+    const result = runQualityGate(doc, "resume_principal");
+
+    expect(result.has_template_placeholders).toBe(true);
+    expect(result.passed).toBe(false);
+    expect(result.failures.some((f) => f.includes("unfilled placeholder"))).toBe(true);
+  });
+
+  // ---------------------------------------------------------------------------
+  // Test 5c: runQualityGate — permits the specific brackets a document's own
+  // prompt sanctions ("[Date]" / "[Consulate address]" for cover_letter)
+  // ---------------------------------------------------------------------------
+  it("should not flag a document's own explicitly-permitted bracket placeholders", () => {
+    const sentence =
+      "Ms. Mitchell dedicated her career to operational excellence spanning " +
+      "over eight years in senior management roles across multiple locations. ";
+    const disclaimer =
+      "This document does not constitute legal advice; e2go is not a law firm.";
+    const pillarSentences =
+      "Ms. Mitchell has committed $185,000 in at-risk capital, funds that were " +
+      "transferred and deployed to establish the enterprise. The business will " +
+      "employ five full-time staff within its first year, creating jobs that " +
+      "generate a substantial economic contribution. This letter is dated " +
+      "[Date] and will be mailed to the officer at [Consulate address].";
+
+    const content = [
+      ...Array.from({ length: 43 }, () => sentence),
+      pillarSentences,
+      disclaimer,
+    ].join("\n");
+
+    const doc = makeMockDocument("cover_letter", content);
+    const result = runQualityGate(doc, "cover_letter");
+
+    expect(result.has_template_placeholders).toBe(false);
+    expect(result.failures.some((f) => f.includes("unfilled placeholder"))).toBe(false);
+  });
+
+  // ---------------------------------------------------------------------------
+  // Test 5d: runQualityGate — a correct "NOT APPLICABLE" sentinel passes
+  // outright (Session 143: gift_letter's valid N/A response was held for
+  // "Missing required elements: donor_name, gift_amount, irrevocability")
+  // ---------------------------------------------------------------------------
+  it("should pass a document's correct NOT APPLICABLE sentinel without holding it", () => {
+    const doc = makeMockDocument(
+      "gift_letter",
+      "NOT APPLICABLE — No gift funds used in this investment."
+    );
+
+    const result = runQualityGate(doc, "gift_letter");
+
+    expect(result.passed).toBe(true);
+    expect(result.failures).toEqual([]);
+  });
+
+  // ---------------------------------------------------------------------------
   // Test 6: checkConsistency — catches investment amount mismatch
   // ---------------------------------------------------------------------------
   it("should detect inconsistency in investment_amount_usd across documents", () => {

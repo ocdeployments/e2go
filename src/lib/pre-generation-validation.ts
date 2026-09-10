@@ -163,11 +163,29 @@ export function validateForGeneration(
     0
   );
 
+  // Extract per-source amounts (M3-F-05-AMOUNTS companion key, added Sprint —
+  // rule-book gap 4). Value is a JSON object { "<sourceKey>": <number> }, but
+  // tolerate an already-parsed object and legacy apps that never stored it.
+  const fundSourceAmountsRaw = answers['M3-F-05-AMOUNTS'] ?? answers['QF-05-AMOUNTS'];
+  const fundSourceAmounts: Record<string, number> = {};
+  {
+    let parsed: unknown = fundSourceAmountsRaw;
+    if (typeof fundSourceAmountsRaw === 'string' && fundSourceAmountsRaw.trim() !== '') {
+      try { parsed = JSON.parse(fundSourceAmountsRaw); } catch { parsed = null; }
+    }
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      for (const [k, v] of Object.entries(parsed as Record<string, unknown>)) {
+        const n = getNumber(v);
+        if (n !== null) fundSourceAmounts[k] = n;
+      }
+    }
+  }
+
   // Extract fund source items
   const sources: FundSourceItem[] = fundSourceTypes.map((type) => ({
     key: type,
     label: FUND_SOURCE_LABELS[type] || type,
-    amount: null, // Individual fund source amounts not stored separately
+    amount: fundSourceAmounts[type] ?? null,
   }));
 
   const sourcesSum = sources.reduce(
