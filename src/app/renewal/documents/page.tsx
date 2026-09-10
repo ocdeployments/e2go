@@ -181,7 +181,7 @@ export default function RenewalDocumentsPage() {
         {/* Header */}
         <div style={{ marginBottom: '40px' }}>
           <div style={{ fontSize: '8px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(201,168,76,0.5)', fontFamily: "'DM Sans', sans-serif", marginBottom: '10px' }}>
-            Renewal Package · {intake?.path === 'uscis' ? 'Path B — USCIS I-129' : `Path A — ${intake?.documents?.consulate ?? 'Toronto, Canada'} Consulate`}
+            Renewal Package · {intake?.path === 'uscis' ? 'Path B — USCIS I-129' : `Path A — ${intake?.documents?.consulate ?? 'Home-country'} Consulate`}
           </div>
           <h1 style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontWeight: 300, fontSize: '36px', color: '#f5f0e8', lineHeight: 1.2, marginBottom: '12px' }}>
             Your renewal documents
