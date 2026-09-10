@@ -41,7 +41,7 @@ const REFERRAL_CATEGORIES = [
   { id: "franchise", title: "Franchise Consultant", help: "Help finding an E-2 compatible business", data: "Budget and category preferences" },
   { id: "immigration", title: "Immigration Consultant", help: "For complex cases that need legal guidance", data: "Application status and risk flags" },
   { id: "banking", title: "Cross-border Banking", help: "Opening your U.S. business bank account", data: "Business type and formation state" },
-  { id: "accountant", title: "Cross-border Accountant", help: "Canadian departure tax and U.S. filings", data: "Investment amount and source of funds" },
+  { id: "accountant", title: "Cross-border Accountant", help: "Home-country departure tax and U.S. filings", data: "Investment amount and source of funds" },
   { id: "business_formation", title: "Business Formation", help: "LLC registration and EIN application", data: "Target state and business structure" },
 ];
 
