@@ -191,7 +191,7 @@ describe('Stripe webhook dedup claim lifecycle (RS-1 / Gap G-13)', () => {
 
     const res = await POST(fakeRequest());
 
-    expect(res.status).toBe(200); // RS-2 changes this to 500; RS-1 only fixes the claim state
+    expect(res.status).toBe(500); // RS-2 (Gap G-14): a failed claim now gets a 500 so Stripe retries
     expect(dedupUpdates).toEqual([{ status: 'failed' }]);
   });
 
@@ -204,7 +204,7 @@ describe('Stripe webhook dedup claim lifecycle (RS-1 / Gap G-13)', () => {
 
     const res = await POST(fakeRequest());
 
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(500);
     expect(dedupUpdates).toEqual([{ status: 'failed' }]);
   });
 });
