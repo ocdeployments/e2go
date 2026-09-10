@@ -91,7 +91,7 @@ Legend — **Status:** `TODO` / `WIP` / `DONE` / `BLOCKED (needs Romy)`
 
 | # | Task | Gap | Kind | Status |
 |---|---|---|---|---|
-| **RS-10** | Reconcile the two retention notices; add a purge-warning email | G-19 | code | TODO |
+| **RS-10** | Reconcile the two retention notices; add the three-email purge sequence | G-19 | code + migration | TODO |
 | **RS-11** | Accessibility floor — axe CI gate + keyboard reachability | G-20 | code | TODO |
 
 ### Phase 5 — Standing hardening
@@ -339,26 +339,48 @@ behind the existing admin auth check used elsewhere in `src/app/api/admin/`.
 
 ## Phase 4 — Trust: product and legal
 
-### RS-10 · Reconcile the two retention notices; add a purge-warning email
-**Gap G-19 · code · TODO · 1 eng-day (+ Romy: 30min copy sign-off)**
+### RS-10 · Reconcile the two retention notices; add the three-email purge sequence
+**Gap G-19 · code + migration · TODO · 1.5 eng-days — decision received from Romy, 2026-09-10**
 
 `apply/module1/page.tsx:388` promises 90 days after visa outcome;
 `privacy/PrivacyClient.tsx:43,67` and the retention cron itself say 30 days
 after package generation or 90 days after upload, whichever is first. Rewrite
 the Module 1 notice to state the real schedule and distinguish *application
 data* (which the platform doesn't purge on this timeline) from *uploaded
-files* (which it does). Add a warning email sent 7 days before a file's purge
-date, using the existing Resend helper pattern from Sprint DR's DR-4, and
-surface the purge date next to each file in the Documents area.
+files* (which it does).
 
-> **Exit** — the Module 1 notice and the privacy policy state the same
-> schedule. A file 7 days from its purge date has a warning email sent and a
-> visible countdown in the Documents UI.
+**Confirmed decision — replace the single warning email with three:**
+1. **On generation** — sent the moment the package is built, stating the purge
+   date (generation + 30 days). New trigger alongside the existing DR-4
+   generation-complete email, not a replacement for it.
+2. **T-minus-3 days** — a reminder with a confirm-to-keep link. Confirming
+   sets a retention hold on that application's files so the scheduled purge in
+   `cron/data-retention/route.ts` skips them. This needs a new boolean/
+   timestamp column (e.g. `applications.retention_hold_at` or a dedicated
+   table) — **verify against the live schema before naming it**, and check
+   with whoever lands the DR-1 `generation_resume_log` migration first so the
+   two don't collide in the same migration window.
+3. **On completion** — sent after the purge actually runs, confirming what was
+   deleted.
+
+Email address and contact preferences survive the purge regardless of outcome
+— route the "keep contact" default through the existing
+`/api/email/unsubscribe` flow (`src/lib/emails/unsubscribe.ts`) rather than a
+new opt-out mechanism.
+
+> **Exit** — the Module 1 notice and the privacy policy state the same 30-day
+> schedule. A file 3 days from its purge date has produced a confirm-to-keep
+> reminder; confirming it means the cron does not purge that file on
+> schedule; a purged file has produced a completion email; the client's
+> contact record is unchanged by the purge either way.
 >
-> **Test** — `src/lib/emails/__tests__/retention-warning-email.test.ts`:
-> renders with a realistic payload, contains the correct purge date and a
-> working link, no unresolved placeholders; a snapshot/text assertion that the
-> Module 1 copy and privacy policy copy state matching day counts.
+> **Test** — `src/lib/emails/__tests__/retention-sequence.test.ts`: each of
+> the three templates renders with a realistic payload, correct dates, a
+> working confirm-to-keep link, no unresolved placeholders;
+> `src/app/api/cron/__tests__/data-retention-hold.test.ts`: a file with an
+> active retention hold is excluded from the purge pass; a snapshot/text
+> assertion that the Module 1 copy and privacy policy copy state matching day
+> counts.
 
 ---
 
@@ -413,16 +435,22 @@ visible rather than only inferred from a spend anomaly later.
 | 1 — Money and access | RS-1…RS-4 | ~3 |
 | 2 — Structural blindness | RS-5…RS-7 | ~2 (+ Romy decision on RS-7) |
 | 3 — Trust: security surface | RS-8, RS-9, RS-13 | ~1.75 |
-| 4 — Trust: product/legal | RS-10, RS-11 | ~2.5 (+ Romy copy) |
+| 4 — Trust: product/legal | RS-10, RS-11 | ~3 |
 | 5 — Standing hardening | RS-12 | 0.5 |
-| **Total** | 13 tasks | **~9.75 eng-days** |
+| **Total** | 13 tasks | **~10.25 eng-days** |
 
 ## Blocked on Romy
 
 | Task | Needs |
 |---|---|
 | RS-7 | Schema decision: add `application_lifecycle.application_id`, or rename the field to reflect it's genuinely user-level |
-| RS-10 | 30-minute sign-off on the reconciled retention copy before it ships |
+
+RS-10's decision arrived 2026-09-10 (see task section above) — the three-email
+sequence, the confirm-to-keep hold, and the retained-contact-info rule are
+specified; only the schema-column question is open, and it's mechanical (pick
+a name after checking the live schema, coordinate with DR-1's in-flight
+migration), not a product call. RS-7 is the only remaining item genuinely
+blocked on a decision.
 
 Everything else is unblocked and can start in sequence, independent of Sprint
 DR — confirm against DR's current WIP state before touching `src/types/generation.ts`
