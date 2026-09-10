@@ -34,7 +34,7 @@
     "question": "Which of the following wire transfer or payment records do you currently have?",
     "section": "Wire Transfer Evidence",
     "options": [
-      "Wire transfer confirmation from Canadian bank",
+      "Wire transfer confirmation from your home-country bank",
       "Wire transfer confirmation received by U.S. recipient",
       "Franchise fee payment receipt",
       "Attorney trust account receipt",
@@ -56,7 +56,7 @@
   },
   "QF-06": {
     "type": "select",
-    "question": "Do you have bank statements showing the investment funds leaving your Canadian account?",
+    "question": "Do you have bank statements showing the investment funds leaving your home-country account?",
     "section": "Bank Statement Chain",
     "options": [
       "Yes — 12+ months of statements covering the full timeline",
