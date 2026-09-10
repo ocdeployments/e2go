@@ -42,7 +42,7 @@ Three themes:
 
 - **Money and access** (G-13…G-15) — three independent ways a paying client ends
   up looking at a buy button.
-- **Structural blindness** (G-16, G-21, G-22) — the codebase still cannot see its
+- **Structural blindness** (G-16, G-21) — the codebase still cannot see its
   own database failures.
 - **Trust and finish** (G-17…G-20, G-23…G-25) — an open redirect on the login
   page, no error pages at all, a retention promise that contradicts itself, and
@@ -63,7 +63,7 @@ Three themes:
 | G-19 | Two different retention promises; files vanish months early, unannounced | Serious | Open |
 | G-20 | Accessibility floor — 3 ARIA roles across the whole app | Serious | Open |
 | G-21 | Simulator pack grant loses a purchase under concurrency | Structural | Open |
-| G-22 | Payment timestamp stamps every application a user owns | Structural | Open |
+| G-22 | ~~Payment timestamp stamps every application a user owns~~ — not a gap, see below | — | Resolved 2026-09-10 |
 | G-23 | Rate limits become per-instance during an Upstash outage | Structural | Open |
 | G-24 | The business plan has no second provider — by choice, but unguarded | Structural | Open |
 | G-25 | The platform tells the public whether it is in Stripe test mode | Structural | Open |
@@ -236,26 +236,44 @@ arithmetic in the handler.
 
 ---
 
-### G-22 — The payment timestamp stamps every application the user owns
+### G-22 — RESOLVED: `application_lifecycle` is user-level by design, not an application-scoping bug
 
-**Severity:** Structural · **Status:** Open
+**Severity:** — · **Status:** Resolved 2026-09-10 — not a gap
 
-The lifecycle stamp is keyed on `user_id` alone. The in-code comment explains why:
-it used to filter on an `application_id` column that does not exist, so it errored
-on every payment and `payment_completed_at` was never written at all. The filter
-was removed rather than replaced.
+Originally flagged as a defect: the lifecycle stamp is keyed on `user_id` alone,
+so a user with more than one `applications` row would have all of them read as
+"paid" the moment any one was. That's true, but it assumes `application_lifecycle`
+is meant to track individual applications. It isn't.
 
-Both halves are a data problem. Historically the column has no valid values.
-Currently, a user with more than one application has **all** of them marked
-paid-at the moment any one is. Every funnel number derived from that column is
-wrong, and wrong specifically for repeat and multi-case clients.
+Checked every reference to the table (24 call sites) and the schema itself:
 
-**Evidence:** `src/app/api/stripe/webhook/route.ts:149–166`
+- `docs/schema_complete.sql:84–104` — one row per `user_id`, columns are a flat
+  funnel: `quiz_started_at`, `quiz_completed_at`, `account_created_at`,
+  `payment_completed_at`, `module1_started_at` … `module5_completed_at`,
+  `outcome`. There is no room in the shape for more than one case per person —
+  it was never a per-application table with a missing foreign key.
+- `src/lib/lifecycle-timeline.ts:4` — "`application_lifecycle` holds one row per
+  client, not a stream of events."
+- `src/app/admin/revenue/page.tsx:78` — the same statement, independently, in a
+  different consumer.
+- Every read site (`admin/page.tsx`, `admin/users/[userId]/page.tsx`,
+  `gap-analysis/layout.tsx`, `onboarding/page.tsx`, `email-scheduler.ts`, …)
+  queries it `.eq('user_id', ...)` expecting exactly one row back.
 
-**Fix:** a schema decision, not a code patch. Verify `application_lifecycle`
-against the **live** database before adding anything —
-`set -a && . ./.env.local; set +a && python3 scripts/audit-schema-drift.py --refresh`.
-Treat existing `payment_completed_at` values as unusable.
+This is a client-funnel table — *did this person reach payment, and when* — not
+a per-case operational record. For the confirmed two-application scenario
+(simulator-standalone + a later full package, see the "why two applications"
+note this session), a single `payment_completed_at` is the correct semantic:
+the funnel question is "has this client paid," and they have. Nothing here
+produces a wrong answer to the question the table is actually asked.
+
+**What was real and got fixed anyway:** the in-code comments (webhook route,
+`followup/save-voice-sample`, `followup/completion-summary`) describe the
+`user_id`-only scoping as a historical workaround for a missing
+`application_id` column, which reads as an open defect to the next person who
+touches the file. Reworded to state plainly that the table is user-level by
+design — see `src/app/api/stripe/webhook/route.ts:149` and the two `followup/`
+routes. No schema change, no code behavior change.
 
 ---
 
@@ -464,6 +482,7 @@ Recorded so a later sweep does not re-open them.
 | Webhook idempotency | The atomic-insert design is the right one — the bug is *when* the row is written, not how (G-13). |
 | Redis in middleware | `safeCacheGet`/`safeCacheSet` with try/catch and a circuit breaker. The correct fail-open pattern. |
 | Cross-user scoping | The application and FDD unlocks are scoped `.eq('user_id', userId)`, defeating a spoofed id in session metadata. |
+| `application_lifecycle` scoping (G-22) | User-level funnel table by design — one row per client (`docs/schema_complete.sql:84–104`, confirmed independently in `lifecycle-timeline.ts` and `admin/revenue/page.tsx`). Scoping payment/module stamps by `user_id` is correct; stale comments calling it a missing-column workaround were reworded. |
 | API auth coverage | Only 5 unguarded routes, all legitimately public; 7 of 76 service-role routes without user scoping, all legitimate. |
 | Identity documents | The in-memory-only carve-out holds — `/api/documents` rejects identity types, `file_path` stays `''`. |
 
