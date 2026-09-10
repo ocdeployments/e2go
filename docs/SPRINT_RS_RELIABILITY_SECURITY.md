@@ -69,7 +69,7 @@ Legend — **Status:** `TODO` / `WIP` / `DONE` / `BLOCKED (needs Romy)`
 | **RS-1** | Turn the webhook dedup row into a claim, not a receipt | G-13 | code + migration | BLOCKED (needs Romy) |
 | **RS-2** | Wrap the event switch in an error boundary | G-14 | code | DONE |
 | **RS-3** | Bind the middleware's Supabase errors; fail open with an alert | G-15 | code | DONE |
-| **RS-4** | Paid-but-locked-out reconciliation cron | G-13, G-14, G-15 | infra | TODO |
+| **RS-4** | Paid-but-locked-out reconciliation cron | G-13, G-14, G-15 | infra | DONE |
 
 ### Phase 2 — Structural blindness
 
@@ -237,17 +237,46 @@ skips the terms-cache write the same way.
 
 ---
 
-### RS-4 · Paid-but-locked-out reconciliation cron
-**Gaps G-13, G-14, G-15 (backstop) · infra · TODO · 1 eng-day**
+### RS-4 · RESOLVED — a fifth daily cron cross-checks Stripe's ledger against ours
+**Gaps G-13, G-14, G-15 (backstop) · infra · DONE · 2026-09-10**
 
 None of the four existing crons (`rebuild-profiles`, `health-watchdog`,
-`quiz-nurture`, `data-retention`) ever ask Stripe's side of the ledger. Add one
-that lists recent Stripe `checkout.session.completed` events (or queries
-`payments` where `status = 'completed'`) and cross-checks that the
-corresponding `applications.payment_status` is `'paid'`. Anything that
-disagrees for more than 15 minutes raises a Sentry alert naming the
-application and the Stripe event id — the exact number the incident that
-motivated this sprint would have been caught by immediately.
+`quiz-nurture`, `data-retention`) ever asked Stripe's side of the ledger — a
+half-applied webhook (the dedup claim race, the unguarded throw, or a
+middleware read that failed closed) could in principle leave Stripe showing a
+completed payment while our own tables didn't reflect it, with nothing to
+notice.
+
+`src/lib/payment-reconciliation.ts` exports `reconcilePayments(stripe,
+supabase, sinceUnixSeconds)`, a pure function over injected clients. It pages
+through every Stripe checkout session created since the cutoff
+(`has_more`/`starting_after`, not `autoPagingEach`, so a fake `.list()` can
+return plain pages in tests), keeps only sessions with `status: 'complete'`
+and `payment_status: 'paid'`, and skips anything created within the last 15
+minutes — Stripe's own webhook delivery latency, not a bug, and flagging it
+would just be noise. For each remaining session it looks up the matching
+`payments` row by `stripe_session_id`: no row, or a status that's neither
+`completed` nor `refunded`, is a `payment-not-recorded` mismatch. A
+`refunded` payment is left alone — that's the legitimate refund-revoke path,
+not a bug. For the tiers that actually flip `applications.payment_status`
+(`complete`, `complete_partnership`, `foundation`, `visa_ready` — the exact
+list the webhook's own unlock/refund-revoke conditions use, deliberately
+hardcoded here rather than reusing `entitlements.ts`'s per-feature tiers or
+`partnership-hold.ts`'s `PACKAGE_TIER_IDS`, since both answer a different
+question), it also checks the application row itself; still not `'paid'` is
+an `application-not-unlocked` mismatch. Every mismatch fires a Sentry alert
+via `captureApiError`, tagged with the reason, session id, application id,
+user id, and tier id — a lookup error is captured and skipped, not counted as
+a mismatch, since it says nothing about whether Stripe and our tables agree.
+
+`src/app/api/cron/payment-reconciliation/route.ts` is the thin wrapper:
+`CRON_SECRET` Bearer auth, a `cron_log` row opened `running` and closed
+`success`/`failed` with `rows_processed` and a `mismatches` count, then a call
+into `reconcilePayments()` — the same shape as `data-retention`'s and
+`health-watchdog`'s routes. It runs daily via `vercel.json`'s 5th cron entry
+(`0 5 * * *`, the Hobby plan's once-daily cap already used by the other four
+crons at their own distinct hours) with a 26-hour lookback so a delayed run
+never leaves a gap.
 
 This is the backstop for RS-1/RS-2/RS-3: even after those land, this is the net
 under a failure mode none of us anticipated.
@@ -256,10 +285,13 @@ under a failure mode none of us anticipated.
 > after a real completed Stripe payment; the cron's next run raises an alert
 > naming that application within one run cycle.
 >
-> **Test** — `src/app/api/cron/__tests__/payment-reconciliation.test.ts`: a
-> completed Stripe payment with a mismatched local status triggers an alert; a
-> consistent pair does not; a payment younger than the grace window is not
-> flagged (avoids a false positive on the webhook's own normal latency).
+> **Test** — `src/app/api/cron/__tests__/payment-reconciliation.test.ts` (7
+> tests): a completed Stripe payment with no `payments` row, and a recorded
+> payment whose application was never unlocked, each raise a mismatch/alert; a
+> consistent pair, a legitimately refunded payment, and a payment for a tier
+> that never gates `applications.payment_status` are all left alone; a
+> session inside the 15-minute grace window and a session that never
+> completed are both skipped before the comparison even runs.
 
 ---
 
@@ -535,11 +567,13 @@ RS-10's three-email retention sequence and RS-7 were both resolved
 2026-09-10 — see the task section above; nothing further is blocked on
 those.
 
-RS-2 and RS-3 were both resolved 2026-09-10 — see the task sections above.
-Everything remaining (RS-4 and Phases 2-5) is unblocked and can start in
-sequence, independent of Sprint DR — confirmed 2026-09-10 that Session 146's
-Sprint DR Phase 1 work (DR-1/DR-2/DR-7) touches `src/types/generation.ts`,
-`docs/SPRINT_DR_DELIVERY_RELIABILITY.md`, and a new `generation_resume_log`
-migration/lib, not the webhook route or middleware — no file overlap with
-RS-1/RS-2/RS-3 confirmed at commit time, but re-check DR's current WIP state
-before starting RS-4 since that may have changed.
+RS-2, RS-3, and RS-4 were all resolved 2026-09-10 — see the task sections
+above. Phase 1 is now complete except for RS-1, which only needs Romy to run
+its migration. Everything remaining (Phases 2-5) is unblocked and can start
+in sequence, independent of Sprint DR — confirmed 2026-09-10 that Session
+146's Sprint DR Phase 1 work (DR-1/DR-2/DR-7) touches
+`src/types/generation.ts`, `docs/SPRINT_DR_DELIVERY_RELIABILITY.md`, and a
+new `generation_resume_log` migration/lib, not the webhook route or
+middleware — no file overlap with RS-1/RS-2/RS-3/RS-4 confirmed at commit
+time, but re-check DR's current WIP state before starting Phase 2 since that
+may have changed.
