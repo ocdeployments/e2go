@@ -10,6 +10,7 @@ import DocumentPackagePreview from "@/components/results/DocumentPackagePreview"
 import DocumentTabPreview from "@/components/results/DocumentTabPreview";
 import PromoCodeInput from "@/components/PromoCodeInput";
 import type { CaseProfile } from "@/types/case-profile";
+import { isPartnershipApplicationType } from "@/lib/partnership-hold";
 
 interface ResultData {
   outcome: string;
@@ -1148,7 +1149,10 @@ function ResultsPageInner() {
 
         {/* ─── PRICING CARD ─────────────────────────────────────────────────────── */}
         {(() => {
-          const isPartnership = data.application_type === "complete_partnership";
+          // The quiz writes "partnership" / "spousal_partnership"; the old
+          // "complete_partnership" comparison was a payment_type and never matched,
+          // so every partnership case saw the solo price and a live checkout button.
+          const isPartnership = isPartnershipApplicationType(data.application_type);
           const packageLabel = isPartnership ? "Foundation — Partnership" : "Foundation";
           const packageSubline = isPartnership ? "two investors · one-time" : "one-time · no subscription";
           return (
@@ -1254,7 +1258,7 @@ function ResultsPageInner() {
         })()}
 
         {/* ─── ADD-ONS ───────────────────────────────────────────────────────── */}
-        {data.application_type !== "complete_partnership" && (
+        {!isPartnershipApplicationType(data.application_type) && (
           <div style={{ padding: "52px 0", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
             <div style={{ fontSize: "9px", letterSpacing: "0.16em", textTransform: "uppercase" as const, color: "rgba(201,168,76,0.6)", marginBottom: "8px" }}>Add-ons</div>
             <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "28px", fontWeight: 300, color: "#f5f0e8", marginBottom: "10px" }}>Need more than the Foundation filing?</div>
