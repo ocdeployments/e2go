@@ -38,7 +38,7 @@ function fakeSupabase(opts: {
       if (table === 'processed_webhook_events') {
         return {
           insert: async (_row: Row) => ({ error: null }),
-          update: (fields: Row) => ({
+          update: (_fields: Row) => ({
             eq: async () => ({ error: null }),
           }),
         };
