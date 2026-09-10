@@ -76,7 +76,7 @@ Legend — **Status:** `TODO` / `WIP` / `DONE` / `BLOCKED (needs Romy)`
 | # | Task | Gap | Kind | Status |
 |---|---|---|---|---|
 | **RS-5** | ESLint gate on unbound Supabase errors | G-16 | code | DONE 2026-09-10 |
-| **RS-6** | Atomic increment for the simulator pack grant | G-21 | migration | TODO |
+| **RS-6** | Atomic increment for the simulator pack grant | G-21 | migration | WIP — migration pending live apply |
 | **RS-7** | ~~Fix the payment-lifecycle stamp's scoping~~ — resolved, not a bug | G-22 | — | DONE 2026-09-10 |
 
 ### Phase 3 — Trust: security surface
@@ -353,22 +353,43 @@ middleware, via RS-1–RS-3).
 
 ---
 
-### RS-6 · Atomic increment for the simulator pack grant
-**Gap G-21 · migration · TODO · 0.5 eng-day**
+### RS-6 · WIP — atomic increment shipped in code, migration pending live apply
+**Gap G-21 · migration · WIP · 0.5 eng-day**
 
-`simulator_sessions_purchased` is granted via select-then-update in the
-webhook — two interleaved grants (a double-click, a redelivered event slipping
-past dedup) net one grant instead of two. Replace with a Postgres RPC
-(`increment_simulator_sessions(application_id, amount)`) that does the
-increment atomically in SQL, and call that from the webhook instead of the
-read-modify-write.
+`simulator_sessions_purchased` was granted (and refunded) via select-then-
+update in the webhook — two interleaved grants (a double-click, a redelivered
+event slipping past dedup) net one grant instead of two, and the refund/revoke
+site had the identical shape.
+
+**Delivered:** a Postgres RPC `increment_simulator_sessions(p_application_id,
+p_amount)` (migration `20260910170000_increment_simulator_sessions.sql`) does
+a single atomic `UPDATE ... SET simulator_sessions_purchased = GREATEST(0,
+COALESCE(simulator_sessions_purchased, 2) + p_amount)`. The webhook's grant
+site now calls it with `p_amount: 3`; the refund/revoke site (same race
+shape, brought into scope here since it's the identical bug in the same file)
+now calls it with `p_amount: -3` — both replacing their prior
+select-then-update.
+
+**Migration NOT yet confirmed live** — per the live-schema-is-truth rule,
+this cannot be marked DONE until applied and verified directly via PostgREST
+(`POST /rest/v1/rpc/increment_simulator_sessions`) or
+`scripts/audit-schema-drift.py --refresh`. Needs Romy to paste
+`20260910170000_increment_simulator_sessions.sql` into the Supabase Dashboard
+SQL Editor (the sandbox has no cached `SUPABASE_ACCESS_TOKEN`/DB password for
+`supabase migration repair`, a known non-blocking limitation — see "Blocked
+on Romy" below). Do not deploy the webhook route change ahead of the
+migration — it would call an RPC that doesn't exist yet and every
+`simulator_3pack` grant/refund would fail closed (`captureAndFail` → 500,
+Stripe retries, no silent data loss, but no grants go through either).
 
 > **Exit** — fire two `simulator_3pack` grant events concurrently against the
 > same application; the count rises by 6, not 3.
 >
 > **Test** — `src/app/api/stripe/__tests__/simulator-pack-atomic.test.ts`:
-> mocks two concurrent grant calls and asserts the RPC is invoked with the
-> correct increment rather than a read-then-write round trip.
+> drives the real POST handler and asserts the RPC is invoked with a fixed
+> delta (never a `.from('applications').select(...)` read) for both the grant
+> and refund paths, and that two concurrent grant events each independently
+> fire their own `+3` RPC call. Passing.
 
 ---
 
@@ -580,7 +601,19 @@ visible rather than only inferred from a spend anomaly later.
 
 ## Blocked on Romy
 
-Nothing is currently blocked. **RS-1's migration is confirmed live** —
+**RS-6's migration needs to be applied.** Paste
+`supabase/migrations/20260910170000_increment_simulator_sessions.sql` into
+the Supabase Dashboard SQL Editor (this sandbox has no cached
+`SUPABASE_ACCESS_TOKEN`/DB password, so `supabase migration repair` can't
+apply it directly — a known, recurring, non-blocking limitation). It adds a
+`CREATE OR REPLACE FUNCTION increment_simulator_sessions(...)` RPC — safe to
+run any time, idempotent, and additive only. The webhook code that calls it
+is already committed on `dev` but should not reach production ahead of the
+migration (see RS-6's detail section above): deploy the migration first, then
+confirm it live via PostgREST or `audit-schema-drift.py --refresh` before
+merging/deploying the `dev` code that calls it.
+
+**RS-1's migration is confirmed live** —
 `supabase/migrations/20260910160000_webhook_dedup_status.sql` (adds
 `processed_webhook_events.status`) was applied 2026-09-10; verified directly
 via PostgREST (`GET /rest/v1/processed_webhook_events?select=status&limit=1`
