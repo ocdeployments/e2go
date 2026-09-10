@@ -58,6 +58,7 @@
     "dotenv": "^17.4.2",
     "eslint": "^8",
     "eslint-config-next": "14.2.35",
+    "eslint-plugin-local-rules": "file:./eslint-local-rules",
     "husky": "^8.0.0",
     "jest": "^30.4.2",
     "postcss": "^8",
