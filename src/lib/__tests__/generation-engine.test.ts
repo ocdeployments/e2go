@@ -1,6 +1,9 @@
 import {
   buildGenerationPayload,
   checkConsistency,
+  findMissingRequiredElements,
+  REQUIRED_ELEMENTS,
+  REQUIRED_ELEMENT_PATTERNS,
   runQualityGate,
 } from "../generation-engine";
 import type { CaseBrief } from "@/types/analysis";
@@ -410,5 +413,115 @@ moved the funds from her Canadian account to the LLC's business account.
     expect(result.passed).toBe(false);
     expect(result.failures.some((f) => f.includes("Word count"))).toBe(true);
     expect(result.word_count).toBeLessThan(1200);
+  });
+});
+// ---------------------------------------------------------------------------
+// REQUIRED_ELEMENTS completeness check (Spec4 Stage 5)
+//
+// Regression cover for the pattern-coverage gap: 21 of 45 element names had no
+// entry in the pattern map, so `patterns.some(...)` tested an empty array and
+// reported the element missing regardless of content. A Stage 5 miss writes
+// `quality_gate_passed: false`, which renders as a blocking 'blocked' /
+// "HELD FOR E2GO REVIEW" status — so eight document types were structurally
+// undeliverable and no package could reach packageReady.
+// ---------------------------------------------------------------------------
+describe("Generation Engine — required-element completeness", () => {
+  it("has a search pattern for every element name used in REQUIRED_ELEMENTS", () => {
+    const inUse = new Set<string>();
+    for (const elements of Object.values(REQUIRED_ELEMENTS)) {
+      for (const element of elements) inUse.add(element);
+    }
+
+    const uncovered = [...inUse].filter(
+      (element) => !REQUIRED_ELEMENT_PATTERNS[element]?.length
+    );
+
+    // An uncovered element is not merely untested — it is reported missing on
+    // every document that requires it, blocking delivery unconditionally.
+    expect(uncovered).toEqual([]);
+  });
+
+  it.each([
+    ["visa_category", 4],
+    ["nonimmigrant_intent", 3],
+    ["marginality_rebuttal", 3],
+    ["declaration_spouse", 2],
+    ["net_worth_statement", 3],
+    ["property_portfolio", 3],
+    ["gift_letter", 3],
+    ["nonimmigrant_intent_p2", 2],
+  ])(
+    "still flags every required element of %s when the content addresses none of them",
+    (documentType, expectedCount) => {
+      const missing = findMissingRequiredElements(
+        "The weather in Austin is pleasant this time of year. Nothing else to report.",
+        documentType as DocumentType
+      );
+      expect(missing).toHaveLength(expectedCount);
+    }
+  );
+
+  it("passes a substantiality memorandum that addresses all four elements", () => {
+    // Condensed from the real Session 143 output for test-uk@example.com,
+    // which the pre-fix check blocked on all four of its elements.
+    const content = `
+SUBSTANTIALITY MEMORANDUM
+This memorandum analyzes the substantiality of Mr. Windsor's investment and
+the proportionality of his committed capital relative to the total cost of
+establishing the enterprise. Mr. Windsor has committed $195,000. The total
+cost of establishing the enterprise is $195,000, a ratio of 100 percent.
+    `.trim();
+
+    expect(findMissingRequiredElements(content, "visa_category")).toEqual([]);
+  });
+
+  it("passes a net worth statement that reports assets, liabilities and net worth", () => {
+    const content = `
+CONSOLIDATED NET WORTH STATEMENT
+II. ASSET SUMMARY — Total assets: $412,500.
+III. LIABILITY SUMMARY — Total liabilities: $88,000.
+IV. Net worth as of May 12, 2025: $324,500.
+    `.trim();
+
+    expect(findMissingRequiredElements(content, "net_worth_statement")).toEqual(
+      []
+    );
+  });
+
+  it("credits a document that names the applicant without using the word 'applicant'", () => {
+    // org_chart names James Windsor eight times and never says "applicant" —
+    // the /applicant/i proxy blocked it on every real run.
+    const content = `
+ORGANIZATIONAL STRUCTURE & MANAGEMENT AUTHORITY EXHIBIT
+Assisting Hands Home Care East Austin LLC is a Texas limited liability
+company. James Windsor holds 100% membership interest and serves as
+Chief Executive Officer / Owner-Operator.
+    `.trim();
+
+    expect(findMissingRequiredElements(content, "org_chart")).toContain(
+      "applicant_name"
+    );
+    expect(
+      findMissingRequiredElements(content, "org_chart", "James Windsor")
+    ).toEqual([]);
+  });
+
+  it("fails open on an element that has no pattern rather than blocking delivery", () => {
+    // Simulates the next engineer adding a required element and forgetting the
+    // pattern. The drift test above is what catches that; the runtime must not
+    // block delivery in the meantime.
+    const original = REQUIRED_ELEMENTS.cover_letter;
+    REQUIRED_ELEMENTS.cover_letter = [
+      "applicant_name",
+      "an_element_nobody_mapped",
+    ];
+
+    try {
+      expect(
+        findMissingRequiredElements("Sworn by the applicant.", "cover_letter")
+      ).toEqual([]);
+    } finally {
+      REQUIRED_ELEMENTS.cover_letter = original;
+    }
   });
 });
