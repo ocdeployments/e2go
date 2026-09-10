@@ -84,7 +84,7 @@ Legend — **Status:** `TODO` / `WIP` / `DONE` / `BLOCKED (needs Romy)`
 | # | Task | Gap | Kind | Status |
 |---|---|---|---|---|
 | **RS-8** | Close the open redirect — one helper, four sinks | G-17 | code | DONE |
-| **RS-9** | Branded error / not-found pages; fix `global-error.tsx` | G-18 | code | TODO |
+| **RS-9** | Branded error / not-found pages; fix `global-error.tsx` | G-18 | code | DONE 2026-09-10 |
 | **RS-13** | Stop exposing Stripe test-mode status publicly | G-25 | code | TODO |
 
 ### Phase 4 — Trust: product and legal
@@ -456,24 +456,45 @@ ever reaches `window.location.href`, the `${origin}${next}` template, or
 
 ---
 
-### RS-9 · Branded error / not-found pages; fix `global-error.tsx`
-**Gap G-18 · code · TODO · 1 eng-day**
+### RS-9 · RESOLVED — branded error/not-found pages shipped, `global-error.tsx` fixed
+**Gap G-18 · code · DONE · 2026-09-10**
 
-Add root `src/app/not-found.tsx` and `src/app/error.tsx` in Obsidian Gold, each
-naming a concrete next action (return to dashboard, contact support with a
-real `mailto:`/link). Add segment-level `error.tsx` under `/apply`,
-`/documents`, and `/generate` — the three places a client has in-progress work
-that a raw stack trace would otherwise erase without explanation. Fix
-`global-error.tsx`'s `fontFamily: 'sans-serif'` to the locked type stack and
-give "contact support" a working link.
+Added `src/components/ui/BrandedMessagePage.tsx`, a shared Obsidian Gold
+presentational shell (icon, heading, description, a primary action link, an
+optional secondary link, and a children slot for a reset button) so the five
+new boundary files don't each hand-roll the same markup.
 
-> **Exit** — visiting `/apply/does-not-exist` and forcing a throw inside
+Built on it: root `src/app/not-found.tsx` (dashboard + `mailto:support@e2go.app`
+links) and root `src/app/error.tsx` (adds a `reset()` "Try again" button,
+reports to Sentry via `useEffect`). Added matching segment-level `error.tsx`
+under `/apply`, `/documents`, and `/generate` — the three places a client has
+in-progress work that a raw stack trace would otherwise erase without
+explanation — each with copy naming what's preserved (saved progress /
+generated documents / application data) so the message isn't generic across
+all three.
+
+Fixed `global-error.tsx` (can't use the shared component — it replaces the
+root layout entirely, so it stays self-contained): swapped `fontFamily:
+'sans-serif'` for the locked `'DM Sans'` / `'Cormorant Garamond'` stack and
+added a working `mailto:support@e2go.app` link next to the existing "Try
+again" button.
+
+Added `src/app/documents/debug-error/page.tsx` as a Playwright-only trigger
+for the `/documents` error boundary: it throws only when the
+`x-playwright-test` header is present (already sent by every request in
+`playwright.config.ts`) and otherwise calls `notFound()`, so it's a plain 404
+for real users.
+
+> **Exit** — done: visiting `/apply/does-not-exist` and forcing a throw inside
 > `/documents` both render a branded page with a working next step, not Next's
-> default.
+> default. (Both routes sit behind middleware's payment/auth gate even when
+> the sub-path doesn't exist, so both are exercised signed-in.)
 >
-> **Test** — Playwright spec `not-found-and-error-pages.spec.ts`: asserts the
-> root 404 and a forced-error route both render the app's fonts/palette and
-> contain a working link, not Next's default boundary.
+> **Test** — done: `tests/regression/not-found-and-error-pages.spec.ts`, 2/2
+> passing — logs in, then asserts the root 404 (`/apply/does-not-exist`) and
+> the `/documents` segment error page each render the Cormorant Garamond
+> heading font, the `#0a0a0a` background, and a working "Return to dashboard"
+> link; the error-page case also asserts the "Try again" reset button.
 
 ---
 
