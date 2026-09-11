@@ -4,6 +4,47 @@
 
 ---
 
+## Status update — September 10, 2026
+
+This doc predates the K-sprint dashboard rebuild (`/dashboard` → `/case-profile`),
+the pricing-tier restructure, and several other rebuilds — most of the 49 issue
+codes below no longer apply to the current code. A full code-level re-audit
+(background agent, this session) found:
+
+- **34 FIXED** — already resolved by intervening work, no action needed.
+- **8 SUPERSEDED / OBSOLETE** — the described UI no longer exists; it was
+  replaced by a different pattern that resolves the underlying complaint
+  (e.g. E-3-03/04/06, E-5-04/05, E-2-05).
+- **1 UNCLEAR** — E-5-03 (strength badges on `/case-profile`) needs a live
+  spot-check, not just a static read, to confirm whether omitting them was
+  deliberate.
+- **6 STILL OPEN** — genuine, still-reproducing gaps, prioritized below.
+- **3 OPQs** — still need Romy's decision (unchanged; see bottom of doc).
+
+**STILL OPEN, highest impact first:**
+1. **E-7-06** — FDD territory tool only accepts one zip code
+   (`src/app/fdd/upload/page.tsx:369-375`, single 5-digit input, no
+   add/remove multi-zip pattern). Revenue-adjacent (paid FDD add-on).
+2. **E-5-06** — Locked `/case-profile` cards have no upsell CTA.
+   `CardGrid.tsx`'s `CardTile` greys out locked cards correctly but
+   `onClick={locked ? undefined : onClick}` makes them a dead click —
+   no "Unlock with [tier]" path from inside the case file.
+3. **E-3-05** — The results-page flags-detail section is dead-coded off:
+   `{(false as boolean) && flagsToShow.length > 0 && (...)}` in
+   `src/app/results/page.tsx`. Promises "areas flagged below," renders nothing.
+4. **E-5-08** — No hover-to-learn / detail panel for locked case-profile
+   cards (compounds #2 — no in-context education before the upsell ask).
+5. **E-3-09** — No quiz→case file→documents→interview→submit journey
+   visualization on the results page (weakens "what happens after I pay").
+6. **E-1-01** — Login error text still generic ("Invalid email or password")
+   for an unknown email. Lowest priority — the dead-end itself is already
+   fixed (recovery/signup links render inline); this is copy polish only.
+
+Original issue table preserved below for reference/evidence; do not re-fix
+anything marked FIXED/SUPERSEDED above without re-verifying live first.
+
+---
+
 ## E-1 · Critical Breaks (Dead ends / Broken flows)
 *Fix before anything else — these block the conversion funnel entirely.*
 
