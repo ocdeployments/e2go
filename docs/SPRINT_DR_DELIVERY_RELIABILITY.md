@@ -709,4 +709,4 @@ paying client and their package.
 | Consulate list | The real E-2 consulate options for `M3-I-11`, or approval to source them from the existing consulate intelligence report. | DR-11 |
 | Interview KB review | Domain review of the six Canada-assuming coaching passages. | DR-13 |
 | Pricing call | Partnership tier price, so the Stripe Price IDs can be created. | DR-18 |
-| Push approval | 18 commits sit on `dev`, unpushed. | everything downstream |
+| ~~Push approval~~ | ~~18 commits sit on `dev`, unpushed.~~ **Resolved** — confirmed September 10, 2026 (Session continuation): all 18 commits (`5cd3dc5`…`364ab25`) were already on `origin/dev` prior to this check (`git merge-base --is-ancestor` against the pre-session remote tip `6b9335e` confirms it). Not a live blocker. | ~~everything downstream~~ |
