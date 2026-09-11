@@ -72,7 +72,7 @@ Every link is current code, not hypothesis.
 |---|---|---|---|
 | **G-01** | Un-awaited pipeline on a platform that reclaims the instance | CRITICAL | OPEN → DR-1 |
 | **G-02** | The idempotency guard becomes a permanent lock on a dead job | CRITICAL | OPEN → DR-2 |
-| **G-03** | Partnership clients receive no second-investor documents at all | CRITICAL | **MITIGATED** — door closed, Session 145 |
+| **G-03** | Partnership clients receive no second-investor documents at all | CRITICAL | **MITIGATED** — door closed (Session 145), tier deferred by decision (2026-09-11) |
 | **G-04** | A single document failure aborts the whole run | CRITICAL | OPEN → DR-6 |
 | **G-05** | Retry re-generates everything and orphans the previous run's rows | CRITICAL | OPEN → DR-7, DR-8 |
 | **G-06** | No observability on the one thing that matters | SERIOUS | OPEN → DR-3, DR-4 |
@@ -115,7 +115,7 @@ idempotency block · `generate/[applicationId]/page.tsx:354–371`.
 ---
 
 ### G-03 — Partnership clients receive no second-investor documents
-**CRITICAL · MITIGATED (Session 145) — underlying tier still missing**
+**CRITICAL · MITIGATED (Session 145) — underlying tier deferred by decision, 2026-09-11**
 
 All six `*_p2` documents — plus the P2 answer load, plus the joint cover-letter
 prompt shaping — are gated on a completed payment of type `complete_partnership`.
@@ -162,8 +162,19 @@ are not held.
 **Still open:** the partnership tier itself does not exist. Removing the hold is
 the same change that adds the Stripe Price IDs, adds the tier to `VALID_TIER_IDS`
 and `entitlements.ts`, and re-gates `isPartnership` in the pipeline on the
-entitlement rather than on `complete_partnership`. → **DR-18** (blocked on Romy's
-pricing call).
+entitlement rather than on `complete_partnership`. → **DR-18** (deferred to
+post-launch by product decision, 2026-09-11 — Romy chose to launch solo-only
+rather than block launch on a partnership-surcharge pricing call).
+
+**Demand capture while deferred:** partnership applicants now see a "Coming
+Soon" state in the application flow (`src/app/apply/module1/page.tsx`) with a
+"Notify me" button (`ComingSoonNotifyButton`, `interestType="partnership"`)
+that writes to `coming_soon_interest` and pages Romy via `sendOpsAlert()` on
+each new lead, so interest isn't lost while the tier is paused. Renewal — a
+separate, fully-priced, previously-purchasable flow (`STRIPE_PRICE_RENEWAL`) —
+was paused for the same launch-scope reason and gets the identical treatment;
+see `src/app/renewal/RenewalEntryClient.tsx`. Admin view of captured interest:
+`/admin/coming-soon-interest`.
 
 ---
 
