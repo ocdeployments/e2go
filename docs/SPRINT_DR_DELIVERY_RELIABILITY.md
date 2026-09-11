@@ -197,7 +197,12 @@ or fail it.**
 ---
 
 ### DR-2 · One status vocabulary, and a client that can re-attach *and* restart
-**Gap G-02 · code · TODO · 0.5 eng-day**
+**Gap G-02 · code · DONE · 2026-09-10**
+
+Shipped: `src/lib/generation-job-status.ts` exports `IN_FLIGHT_STATUSES` /
+`isInFlightStatus` / `isStaleQueuedJob`; both `/start` and `/run` import it
+instead of spelling out the list; `generate/[applicationId]/page.tsx:367–373`
+re-issues `/run` on every attach, not just for brand-new jobs.
 
 Three defects, one task because they are the same bug seen from three sides:
 
@@ -225,7 +230,11 @@ Three defects, one task because they are the same bug seen from three sides:
 ## Phase 2 — Visibility and recovery
 
 ### DR-3 · Watchdog every 10 minutes, reaping `queued` too, alerting to Sentry
-**Gap G-06 · infra · TODO · 0.5 eng-day**
+**Gap G-06 · infra · DONE · 2026-09-10**
+
+Shipped: `src/app/api/cron/health-watchdog/route.ts` reaps both `running` and
+`queued`, calls `Sentry.captureMessage` on every paid-client reap;
+`vercel.json` schedule changed from `0 3 * * *` to `*/10 * * * *`.
 
 `cron/health-watchdog` currently runs **daily at 03:00 UTC** and filters on
 `status = 'running'` only. Change three things: schedule to every 10–15 minutes;
@@ -342,7 +351,12 @@ isn't in the package yet*, not for blocking the whole package.
 ---
 
 ### DR-7 · Scope the resume set to the application, not the job
-**Gap G-05 · code · TODO · 0.5 eng-day**
+**Gap G-05 · code · DONE · 2026-09-10**
+
+Shipped: `generation-engine.ts:2846–2854` scopes the already-approved lookup
+by `.eq('application_id', applicationId)` instead of `job_id`. Covered by
+`src/lib/__tests__/generation-resume.test.ts` (`describe('DR-7 — resume set
+scoped to application_id, not job_id')`).
 
 `generation-engine.ts:2846–2851` scopes the already-approved set with
 `.eq('job_id', jobId)`. Because `/start` mints a **new** job on retry, that set is
