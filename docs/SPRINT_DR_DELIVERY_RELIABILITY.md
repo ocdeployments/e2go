@@ -89,10 +89,10 @@ Legend — **Status:** `TODO` / `WIP` / `DONE` / `BLOCKED (needs Romy)`
 
 | # | Task | Gap | Kind | Status |
 |---|---|---|---|---|
-| **DR-6** | Per-document quarantine — one failure stops one document | G-04 | code | TODO |
+| **DR-6** | Per-document quarantine — one failure stops one document | G-04 | code | DONE |
 | **DR-7** | Scope the resume set to the application, not the job | G-05 | code | DONE |
 | **DR-8** | Guarantee one row per (application, document type) | G-05 | migration | TODO |
-| **DR-9** | "Auto-approved after max revisions" becomes a blocking condition | G-10 | code | TODO |
+| **DR-9** | "Auto-approved after max revisions" becomes a blocking condition | G-10 | code | DONE |
 
 ### Phase 4 — The last mile · **pre-first-client**
 
@@ -302,9 +302,23 @@ exit).
 ## Phase 3 — Containment inside a run
 
 ### DR-6 · Per-document quarantine — one failure stops one document
-**Gap G-04 · code · TODO · 1.5 eng-days (+ ~0.5 eng-day for the client-messaging piece below)**
+**Gap G-04 · code · DONE · 2026-09-10**
 
-Today any throw inside the per-document loop marks that document failed, calls
+Shipped: the per-document catch block (`generation-engine.ts`, inside
+`runGenerationPipeline`'s per-document loop) no longer calls `fail()`/`return`.
+A thrown error — including a `validateContext` miss, now surfaced via a new
+`DocumentQuarantineError` carrying a `system_fault` | `needs_information`
+reason code — sets `status: 'failed'` + `quality_gate_passed: false` +
+`quality_gate_notes` naming the reason and next action on that document only,
+reports to Sentry, and `break`s out of the revision `while` loop so the outer
+per-document `for` loop continues to the next document. Setting
+`quality_gate_passed: false` reuses the same gate `cic-package-manifest.ts`
+already treats as `blocked` (outranks `client_certified`) and the
+Acknowledgment Gate already turns into job status `partial` instead of
+`completed` — no new manifest logic or status enum value was needed. Covered
+by `src/lib/__tests__/generation-quarantine.test.ts`.
+
+Previously: any throw inside the per-document loop marks that document failed, calls
 `fail()` on the job and `return`s out of the **entire pipeline**
 (`generation-engine.ts:3161–3175`). One transient Anthropic 529 that outlives the
 single API retry takes down a run that was 22 documents deep.
@@ -399,16 +413,23 @@ of bug as G-11.
 ---
 
 ### DR-9 · "Auto-approved after max revisions" becomes a blocking condition
-**Gap G-10 · code · TODO · 0.5 eng-day**
+**Gap G-10 · code · DONE · 2026-09-10**
 
-`generation-engine.ts:3177–3190` marks a document `approved` after three failed
-revision rounds with the note "Auto-approved after max revisions" — and ships it.
-The note lives in `quality_gate_notes` where nothing reads it as a warning. The
-platform's answer to *"I couldn't get this right"* is currently to deliver it
-anyway.
+Shipped: the post-revision-loop block (guarded by `!documentFailed`, so it
+doesn't double-handle a document DR-6 already quarantined in the same
+iteration) no longer sets `status: 'approved'`. It sets `quality_gate_passed:
+false` with a `quality_gate_notes` entry explaining it exceeded max revisions
+without client approval, and fires `Sentry.captureMessage` naming the job,
+application, document, and revision count. This reuses the exact gate DR-6
+uses — `cic-package-manifest.ts`'s `blocked` status and the Acknowledgment
+Gate's job-status `partial` — so no new manifest or job-status logic was
+needed. Covered by the extended `src/lib/__tests__/generation-engine.test.ts`
+(`describe('Generation Engine — DR-9 max-revisions hold-for-review')`).
 
-Make it a first-class state: the document is flagged, the package is **held for
-e2go review** (the same gate Session 142 built), and we are alerted.
+Previously: a document was marked `approved` after three failed revision
+rounds with the note "Auto-approved after max revisions" — and shipped. The
+note lived in `quality_gate_notes` where nothing read it as a warning. The
+platform's answer to *"I couldn't get this right"* was to deliver it anyway.
 
 > **Exit** — force three revision failures on one document: the package does not
 > auto-deliver, the review surface names the document and the reason, and Sentry
