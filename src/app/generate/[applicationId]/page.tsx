@@ -231,6 +231,11 @@ export default function GenerateProgressPage() {
         } else if (msg.status === "awaiting_approval") {
           updateStepStatus(stepNum, "running");
           setOverallProgress(Math.round((stepNum / 23) * 100));
+        } else if (msg.status === "stalled") {
+          // DR-5: the job itself is still queued/running server-side — leave
+          // step status and progress where they were so a retry (or DR-1's
+          // cron resume) picking it back up doesn't visibly rewind anything.
+          setAwaitingApproval(false);
         } else {
           updateStepStatus(stepNum, "running");
           setOverallProgress(Math.round((stepNum / 23) * 100));
@@ -504,6 +509,7 @@ export default function GenerateProgressPage() {
 
   const isComplete = jobStatus === "completed";
   const isFailed = jobStatus === "failed" && !errorMessage.includes("retry");
+  const isStalled = jobStatus === "stalled";
   const isGenerating = jobStatus === "running" || jobStatus === "awaiting_approval";
   const isQualityPhase = approvedDocuments >= 8 && !isComplete;
 
@@ -534,7 +540,7 @@ export default function GenerateProgressPage() {
           }
         </h1>
 
-        {!isComplete && !isFailed && applicationData.businessName && (
+        {!isComplete && !isFailed && !isStalled && applicationData.businessName && (
           <p
             className="mt-2 text-[13px] text-white/50"
             style={{ fontFamily: "'DM Sans', sans-serif" }}
@@ -545,7 +551,7 @@ export default function GenerateProgressPage() {
           </p>
         )}
 
-        {!isComplete && !isFailed && applicationData.consulate && (
+        {!isComplete && !isFailed && !isStalled && applicationData.consulate && (
           <p
             className="mt-1 text-[12px] text-white/35"
             style={{ fontFamily: "'DM Sans', sans-serif" }}
@@ -671,7 +677,7 @@ export default function GenerateProgressPage() {
           </div>
 
           {/* PRE-GENERATION CONFIRMATION STATE */}
-          {!isGenerating && !isComplete && !isFailed && !confirming && (
+          {!isGenerating && !isComplete && !isFailed && !isStalled && !confirming && (
             <>
               {validationLoading && (
                 <div className="flex flex-col items-center justify-center min-h-[400px]">
@@ -1048,6 +1054,36 @@ export default function GenerateProgressPage() {
                 style={{ fontFamily: "'DM Sans', sans-serif" }}
               >
                 Retry Generation
+              </button>
+            </div>
+          )}
+
+          {/* STALLED STATE (DR-5) — the job hasn't updated in over ten
+              minutes. A background resume may still pick it up, but the
+              client shouldn't sit on a frozen bar with no explanation. */}
+          {isStalled && (
+            <div className="flex flex-col items-center justify-center min-h-[400px]">
+              <h2
+                className="text-xl italic text-[#C9A84C] mb-4"
+                style={{ fontFamily: "'Cormorant Garamond', serif" }}
+              >
+                This is taking longer than expected
+              </h2>
+
+              <p
+                className="text-sm text-white/50 mb-8 max-w-md text-center"
+                style={{ fontFamily: "'DM Sans', sans-serif" }}
+              >
+                Your generation hasn&apos;t progressed in over ten minutes. It may
+                resume on its own — if it doesn&apos;t, restart it below.
+              </p>
+
+              <button
+                onClick={startGeneration}
+                className="border border-[#C9A84C] px-6 py-3 text-sm font-medium uppercase tracking-wider text-[#C9A84C] transition-colors hover:bg-[#C9A84C]/10"
+                style={{ fontFamily: "'DM Sans', sans-serif" }}
+              >
+                Restart Generation
               </button>
             </div>
           )}
