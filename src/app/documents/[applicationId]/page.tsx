@@ -85,8 +85,12 @@ export default function DocumentsReviewPage() {
     outcomes_consent: false, // D6 — consent to share anonymised outcome for learning
   });
   const [downloadState, setDownloadState] = useState<
-    "locked" | "ready" | "downloading" | "complete"
+    "locked" | "ready" | "downloading" | "complete" | "error"
   >("locked");
+  const [downloadMessage, setDownloadMessage] = useState<{
+    tone: "warning" | "error";
+    text: string;
+  } | null>(null);
 
   // Derived
   const allAcknowledged = Object.values(acknowledgments).every(Boolean);
@@ -740,15 +744,59 @@ export default function DocumentsReviewPage() {
                   downloadState === "locked" || downloadState === "downloading"
                 }
                 onClick={async () => {
-                  if (downloadState !== "ready") return;
+                  if (downloadState !== "ready" && downloadState !== "error") return;
                   setDownloadState("downloading");
+                  setDownloadMessage(null);
                   try {
                     const token = await getAuthToken();
                     const res = await fetch(
                       `/api/generate/download/${applicationId}`,
                       { headers: token ? { Authorization: `Bearer ${token}` } : {} }
                     );
-                    if (!res.ok) throw new Error("Download failed");
+
+                    if (!res.ok) {
+                      // DR-4 follow-up: a failed build now returns specifics
+                      // (which document(s), why) instead of a bare 500 — show
+                      // them instead of a generic "Download failed."
+                      const body = await res.json().catch(() => null) as {
+                        error?: string;
+                        failedDocuments?: { type: string; label: string }[];
+                        supportMessage?: string;
+                      } | null;
+                      const names = body?.failedDocuments?.map((d) => d.label).join(", ");
+                      const text = body?.error
+                        ? `${body.error}${names ? ` (${names})` : ""}${
+                            body.supportMessage ? ` ${body.supportMessage}` : ""
+                          }`
+                        : "Download failed. Please try again in a little while, or contact support if it keeps happening.";
+                      setDownloadMessage({ tone: "error", text });
+                      setDownloadState("error");
+                      return;
+                    }
+
+                    // A 200 can still be a partial package — some documents
+                    // failed to build but the rest shipped. Tell the client
+                    // which ones rather than letting them find out by opening
+                    // the package and counting.
+                    const failedHeader = res.headers.get("X-Failed-Documents");
+                    if (failedHeader) {
+                      try {
+                        const failed = JSON.parse(decodeURIComponent(failedHeader)) as {
+                          type: string;
+                          label: string;
+                        }[];
+                        const names = failed.map((d) => d.label).join(", ");
+                        setDownloadMessage({
+                          tone: "warning",
+                          text: `Your package downloaded, but ${failed.length} document${
+                            failed.length === 1 ? "" : "s"
+                          } couldn't be included (${names}). We've been notified automatically — try again shortly, or contact support if it persists.`,
+                        });
+                      } catch {
+                        // malformed header shouldn't block the otherwise-successful download
+                      }
+                    }
+
                     const blob = await res.blob();
                     const url = window.URL.createObjectURL(blob);
                     const a = document.createElement("a");
@@ -762,7 +810,11 @@ export default function DocumentsReviewPage() {
                     window.URL.revokeObjectURL(url);
                     setDownloadState("complete");
                   } catch {
-                    setDownloadState("ready");
+                    setDownloadMessage({
+                      tone: "error",
+                      text: "Download failed. Please try again in a little while, or contact support if it keeps happening.",
+                    });
+                    setDownloadState("error");
                   }
                 }}
                 className={`border px-8 py-3 text-sm font-medium uppercase tracking-wider transition-all duration-300 ${
@@ -772,6 +824,8 @@ export default function DocumentsReviewPage() {
                     ? "cursor-wait border-[#C9A84C] bg-[#C9A84C]/10 text-[#C9A84C]"
                     : downloadState === "complete"
                     ? "cursor-default border-[#22c55e] bg-[#22c55e]/10 text-[#22c55e]"
+                    : downloadState === "error"
+                    ? "cursor-pointer border-[#e05252] bg-[#e05252]/10 text-[#e05252] hover:bg-[#e05252]/20"
                     : "cursor-pointer border-[#C9A84C] bg-[#C9A84C] text-[#0a0a0a] hover:bg-[#d4b35c]"
                 }`}
                 style={{ fontFamily: "'DM Sans', sans-serif" }}
@@ -780,13 +834,24 @@ export default function DocumentsReviewPage() {
                 {downloadState === "downloading" && "Preparing your package…"}
                 {downloadState === "complete" && "Package downloaded"}
                 {downloadState === "ready" && "Download your embassy package"}
+                {downloadState === "error" && "Try downloading again"}
               </button>
-              {downloadState === "complete" && (
+              {downloadState === "complete" && !downloadMessage && (
                 <p
                   className="mt-3 text-xs text-[#22c55e]"
                   style={{ fontFamily: "'DM Sans', sans-serif" }}
                 >
                   Your package has been downloaded. Keep it secure.
+                </p>
+              )}
+              {downloadMessage && (
+                <p
+                  className={`mt-3 text-xs ${
+                    downloadMessage.tone === "error" ? "text-[#e05252]" : "text-[#C9A84C]"
+                  }`}
+                  style={{ fontFamily: "'DM Sans', sans-serif" }}
+                >
+                  {downloadMessage.text}
                 </p>
               )}
             </div>
