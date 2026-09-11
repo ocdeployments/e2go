@@ -605,15 +605,24 @@ converted to buttons:
   keyboard user would ever tab to; the real dismiss action is already a
   button (or Escape).
 
-The axe scan itself caught two real WCAG AA violations, both on ephemeral
+The axe scan itself caught real WCAG AA violations, all on ephemeral
 loading-state text rendered before data fetches complete: `/results`'s
 "Loading your result..." (gold text at 60% opacity, 3.71:1 contrast) and
 `/documents`'s "Loading documents…" (white text at 30% opacity, 2.61:1
-contrast) — both below the 4.5:1 floor. Fixed by raising to 75%/50% opacity
-respectively (~5.2:1 / ~5.3:1). Not a comprehensive contrast pass — plenty of
-other `white/30`-class muted text exists elsewhere in the app (e.g. badges and
-labels on `/documents` after it finishes loading) that this spec didn't
-happen to catch, since axe only saw whatever was on screen when the scan ran.
+contrast) — both below the 4.5:1 floor. Initially fixed by raising to 75%/50%
+opacity respectively, but the 50% figure for `/documents` was a miscalculated
+guess, not a measured value: once the accessibility-axe spec's own flake was
+fixed (see below) and the scan reliably reached this loading state, axe
+measured `white/50` on `#0a0a0a` at 4.11:1 — still failing. Corrected to 70%
+opacity (matching the already-passing `text-sm text-white/70` convention used
+elsewhere on this page), along with two other `white/50`-on-`text-sm`
+instances on the same page (the application-id/credits line and outstanding
+document labels) carrying the identical violation, caught by grepping for the
+pattern rather than by axe (they only render post-load, which the spec's own
+race — see below — had been masking). Not a comprehensive contrast pass —
+`white/30`-class muted text exists elsewhere in the app (`/apply/calendar`,
+`/apply/module3`, `/market-analysis`, `/generate`) that this spec's routes
+don't cover; left untouched as out of scope for RS-11.
 
 **CI/local-hook architecture note**: this spec lives in `tests/regression/`
 like the rest of the Playwright suite, not a new GitHub Actions job — GitHub
@@ -623,22 +632,27 @@ spec included) is gated by the local Husky `pre-push` hook
 floor is enforced before every push, same as every other Playwright spec —
 consistent with, not a departure from, the existing setup.
 
-**Known pre-existing flake, unrelated to this work**: running the full
-Playwright suite locally with concurrent workers intermittently times out
-one unrelated spec at its shared `login()` helper (`#login-email` not
-interactable within 30s) — reproduced three times across three different
-specs (`accessibility-axe`, `not-found-and-error-pages`,
-`parse-document-auto-type`), never twice on the same spec, and it persisted
-even at `--workers=2`. Server logs show `[middleware] Redis rate-limit
-unavailable ... falling back to in-memory: fetch failed` on nearly every
-request, suggesting the local Upstash Redis endpoint is unreachable from this
-machine and every rate-limited request eats a fetch-timeout before falling
-back — adding latency that occasionally pushes a `/login` navigation past the
-30s test timeout under load. This is pre-existing local test-environment
-flakiness (not caused by any RS-11 change — none of the 16 converted files
-touch middleware, auth, or rate-limiting), and each individual spec passes
-reliably in isolation. Flagged here rather than fixed, since diagnosing
-Redis reachability is out of RS-11's scope.
+**Correction — this was a self-inflicted regression, not a pre-existing
+flake.** An earlier version of this doc described the full-suite login
+timeouts below as pre-existing local flakiness unrelated to RS-11. That
+conclusion was wrong. The actual mechanism: `src/middleware.ts` caps `/login`
+at 5 requests per 15 minutes per IP, active whenever `next start` runs in
+production mode (which is how the Playwright `webServer` runs it). Before
+RS-11, the suite's other two login-consuming specs (`not-found-and-error-pages`,
+2 calls; `parse-document-auto-type`, 1 call) totaled 3 — safely under the
+cap. This spec's original version called `login()` once per test (3 tests,
+3 calls), pushing a full run's total to 6 — over the limit. Whichever test's
+`/login` navigation happened to land 6th (scheduling varies under
+`fullyParallel`) got a `429`, which surfaced identically to a slow/broken
+locator (`#login-email` never interactable) since the response body was
+never inspected. Fixed by consolidating this spec's 3 logins into 1 shared
+login (`test.describe.configure({ mode: 'serial' })` + `beforeAll`),
+bringing the suite total back to 4. A second, unrelated bug surfaced once
+that fix was in place — `browser.newPage()`'s context can't host the second
+page `AxeBuilder.analyze()` opens internally — fixed by switching to an
+explicit `browser.newContext()`. Validated with 3 consecutive full-suite
+runs, 32/32 passing each. See the `tests/regression/accessibility-axe.spec.ts`
+commit history for the fix commits.
 
 > **Exit** — the axe check passes with zero criticals/serious violations on
 > `/results` and `/documents`; tabbing to an interactive element on
