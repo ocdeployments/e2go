@@ -25,6 +25,7 @@
 
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
+import { captureApiError } from "./capture-error";
 
 export type RateLimitProfile = 'faq' | 'evaluate' | 'coaching' | 'tts' | 'transcribe' | 'generate' | 'fdd' | 'fdd-analysis' | 'semantic-eval' | 'parse-doc' | 'notification' | 'gap-analysis-run' | 'resend-results' | 'promo-validate' | 'early-access-submit';
 
@@ -107,11 +108,56 @@ function windowMs(window: string): number {
 
 const memoryCounters = new Map<string, { count: number; resetAt: number }>();
 
+/**
+ * RS-12 (Gap G-23): the per-identifier fallback above is correct for
+ * availability but multiplies the effective ceiling by live instance count
+ * during an Upstash outage — each instance tracks its own counters, so N
+ * instances give every caller N× the intended cap. That's tolerable for
+ * cheap profiles but not for the LLM-backed ones, where cost scales directly
+ * with request count. These profiles get an additional hard ceiling on
+ * TOTAL requests per instance (summed across every caller), so a single
+ * instance can't be driven past a fixed, bounded cost no matter how many
+ * distinct identifiers hit it during the outage.
+ */
+const COST_CRITICAL_PROFILES: ReadonlySet<RateLimitProfile> = new Set([
+  'generate',       // generation: doc gen (Anthropic)
+  'fdd',            // extraction: FDD extract + score pipeline
+  'fdd-analysis',   // extraction: FDD report/territory/compare + market analysis
+  'parse-doc',      // extraction: document parse/comprehension
+  'evaluate',       // simulator: gap-analysis scoring
+]);
+
+const FALLBACK_INSTANCE_CAP = 15;
+const fallbackInstanceCounters = new Map<RateLimitProfile, { count: number; resetAt: number }>();
+
+/** Hard per-instance ceiling for cost-critical profiles, enforced only while the in-memory fallback is active. */
+function checkFallbackInstanceCap(profile: RateLimitProfile): boolean {
+  if (!COST_CRITICAL_PROFILES.has(profile)) return true;
+
+  const { window } = PROFILES[profile];
+  const now = Date.now();
+  const record = fallbackInstanceCounters.get(profile);
+
+  if (!record || now > record.resetAt) {
+    fallbackInstanceCounters.set(profile, { count: 1, resetAt: now + windowMs(window) });
+    return true;
+  }
+
+  if (record.count >= FALLBACK_INSTANCE_CAP) return false;
+  record.count += 1;
+  return true;
+}
+
 function memoryLimit(profile: RateLimitProfile, identifier: string): RateLimitResult {
   const { requests, window } = PROFILES[profile];
   const key = `${profile}:${identifier}`;
   const now = Date.now();
   const record = memoryCounters.get(key);
+
+  if (!checkFallbackInstanceCap(profile)) {
+    const capRecord = fallbackInstanceCounters.get(profile)!;
+    return { allowed: false, remaining: 0, reset: Math.ceil((capRecord.resetAt - now) / 1000) };
+  }
 
   if (!record || now > record.resetAt) {
     const resetAt = now + windowMs(window);
@@ -144,6 +190,16 @@ function redisAvailable(): boolean {
   return Date.now() >= redisDownUntil;
 }
 
+/**
+ * RS-12: fires once per outage, not once per request. `fallbackAlertSent`
+ * latches true the first time a request hits the catch block below and
+ * resets only when a request reaches Redis successfully again — every other
+ * request during the outage either hits the circuit breaker (short-circuits
+ * before the catch block runs) or hits the same still-down Redis (caught,
+ * but the flag is already set), so neither re-fires the alert.
+ */
+let fallbackAlertSent = false;
+
 export interface RateLimitResult {
   allowed: boolean;
   remaining: number;
@@ -162,6 +218,7 @@ export async function checkRateLimit(
   try {
     result = await limiter.limit(identifier);
     redisDownUntil = 0;
+    fallbackAlertSent = false;
     // `limit()` settles its background work (multi-region sync, analytics) on
     // `pending`. Upstash requires the caller to handle it explicitly on edge
     // runtimes; left unhandled a dead Redis produces an unhandled rejection
@@ -173,6 +230,10 @@ export async function checkRateLimit(
     // instance, and no route goes down because the cache is gone.
     redisDownUntil = Date.now() + REDIS_COOLDOWN_MS;
     console.error(`[rate-limit] Redis error on ${profile} — falling back to in-memory:`, err instanceof Error ? err.message : err);
+    if (!fallbackAlertSent) {
+      fallbackAlertSent = true;
+      captureApiError(err, { route: 'rate-limit', stage: 'fallback-activated', profile });
+    }
     return memoryLimit(profile, identifier);
   }
 
