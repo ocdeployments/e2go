@@ -464,7 +464,7 @@ function ResultsPageInner() {
   if (loading || verificationState === "loading") {
     return (
       <div style={{ background: "#0a0a0a", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'DM Sans', sans-serif" }}>
-        <div style={{ color: "rgba(201,168,76,0.6)", fontSize: "13px", letterSpacing: "0.08em", textTransform: "uppercase" }}>Loading your result...</div>
+        <div style={{ color: "rgba(201,168,76,0.75)", fontSize: "13px", letterSpacing: "0.08em", textTransform: "uppercase" }}>Loading your result...</div>
       </div>
     );
   }
