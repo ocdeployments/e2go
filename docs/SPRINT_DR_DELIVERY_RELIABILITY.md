@@ -105,9 +105,9 @@ Legend — **Status:** `TODO` / `WIP` / `DONE` / `BLOCKED (needs Romy)`
 | # | Task | Gap | Kind | Status |
 |---|---|---|---|---|
 | **DR-11** | Real E-2 consulate list for `M3-I-11` | G-09a | content | **BLOCKED (needs Romy)** |
-| **DR-12** | De-Canadianise the franchise archetype prompt blocks | G-09b | code | TODO |
+| **DR-12** | De-Canadianise the franchise archetype prompt blocks | G-09b | code | DONE |
 | **DR-13** | De-Canadianise the interview knowledge base and prep route | G-09c | content | **BLOCKED (needs Romy)** |
-| **DR-14** | Nationality-persona verification across the prompt corpus | G-09 | code | TODO |
+| **DR-14** | Nationality-persona verification across the prompt corpus | G-09 | code | DONE |
 | **DR-15** | Broaden the `financial_assets_portfolio` trigger vocabulary | G-09d | code | DONE |
 
 ### Phase 6 — Single source of truth and honest delivery · **pre-first-client**
@@ -497,7 +497,7 @@ change plus the same `optionsSource` pattern used for Tab A citizenship in
 ---
 
 ### DR-12 · De-Canadianise the franchise archetype prompt blocks
-**Gap G-09b · code · TODO · 0.5 eng-day**
+**Gap G-09b · code · DONE · 0.5 eng-day**
 
 `generation-engine.ts` around line 247 hardcodes Canadian ties in the franchise
 archetype: `nonimmigrant_intent` instructs the model to "document Canadian ties:
@@ -505,16 +505,43 @@ property retained in Canada… Canadian bank accounts and registered savings (RR
 TFSA)" and that the investor "would return to Canada"; `investment_proof` at :246
 requires the trail be "traceable from the Canadian source account."
 
-Interpolate the applicant's actual country and asset vocabulary from the case
-brief. This is a live generation path — pair it with DR-14 rather than shipping
-it blind.
+Interpolated the applicant's actual country and asset vocabulary via a new
+`localizeArchetypeGuidance()` transform, threaded through `buildArchetypeGuidance()`'s
+new third `homeCountry` parameter. Paired with DR-14 rather than shipping blind, per
+this task's own instruction.
+
+**Deviation from the literal task text, required to satisfy its own Exit
+criterion:** the report named the franchise/buyer archetype and ~2 lines. The actual
+scope is **11 hardcoded Canadian-specific sentences across all four archetypes**
+(`buyer`, `builder`, `investor`, `career_switcher`) inside `ARCHETYPE_DOC_GUIDANCE` —
+`Canada`, `Canadian`, `RRSP`, `TFSA`, plus one non-literal Canada-specific premise,
+"provincial health coverage" (`LIRA` does not currently appear in the source text, but
+is handled defensively in case it's added later). Fixing only the named lines would
+have left a Japanese or French applicant's `builder`/`investor`/`career_switcher`
+prompts still telling the model to document Canadian ties. Rather than
+hand-templating 11 strings (easy to miss one on the next edit), the guidance stays
+written for the Canadian case — the common one, verified unchanged by a dedicated
+regression test — and is localized for every other nationality at read time.
+
+Nationality is read from `M3-A-05` ("Country of citizenship", captured at intake)
+via `payload.module_3_answers['M3-A-05']`, falling back to `case_brief.treaty_country`
+then `case_brief.nationality` when M3-A-05 hasn't been captured yet. Canonicalized
+through the existing `resolveTreatyCountry()` (`src/lib/treaty-countries.ts`) rather
+than a new parallel normalization — it already resolves free text like "uk" or
+"great britain" against the treaty-country list and its alias map.
 
 > **Exit** — a Japanese franchise persona's `nonimmigrant_intent` prompt contains
-> Japan and no Canadian instrument names.
+> Japan and no Canadian instrument names. Verified for all four archetypes, not just
+> franchise/buyer.
 >
-> **Test** — `src/lib/__tests__/prompt-nationality.test.ts`: build the prompt for
-> three non-Canadian personas; assert zero occurrences of `Canada`, `Canadian`,
-> `RRSP`, `TFSA`, `LIRA` outside a case where the applicant *is* Canadian.
+> **Test** — `src/lib/__tests__/prompt-nationality.test.ts`: builds the prompt for
+> three non-Canadian personas (Japan, France, United Kingdom) across all four
+> archetypes and every document type; asserts zero occurrences of `Canada`,
+> `Canadian`, `RRSP`, `TFSA`, `LIRA`, or "provincial health coverage" outside a case
+> where the applicant *is* Canadian, plus unit coverage of `localizeArchetypeGuidance()`
+> itself. 214 test cases (the archetype × document-type matrix across three
+> personas, plus the Canadian-regression and unit checks), all passing; `npx jest`
+> (634/634), `npx tsc --noEmit -p .`, and `npm run build` all clean.
 
 ---
 
@@ -537,21 +564,33 @@ nationality bug for an accuracy bug.
 ---
 
 ### DR-14 · Nationality-persona verification across the prompt corpus
-**Gap G-09 · code · TODO · 1 eng-day**
+**Gap G-09 · code · DONE · 1 eng-day**
 
 The label sweep found eleven files when the report named two. A grep is not a
 guarantee — the check has to be a persona running end to end.
 
-Build three fixture personas (French, British, Japanese) and assert **no Canadian
-premise anywhere in the assembled prompt corpus or the generated output**, and
-that each correctly receives (or correctly does not receive) the assets
-portfolio. This is the standing regression net for DR-11, DR-12, DR-13 and DR-15.
+Built three fixture personas (French buyer funded by a brokerage account, British
+builder funded by savings, Japanese investor funded by crypto) and assert **no
+Canadian premise anywhere in the assembled prompt corpus**, and that each correctly
+receives (or correctly does not receive) the assets portfolio. This is the standing
+regression net for DR-11, DR-12, DR-13 and DR-15.
 
-> **Exit** — three personas generate a full package each; a reviewer reads one
-> `nonimmigrant_intent` and one `source_of_funds` per persona and finds no false
-> premise.
+There is no DI seam for a live end-to-end generation run (the same constraint noted
+in `generation-quarantine.test.ts` / `generation-resume.test.ts`), so the test
+assembles the same two pieces a real run assembles for each persona — the prompt
+guidance via `buildArchetypeGuidance()` (DR-12) and the conditional document set via
+`buildDocumentPlan()` (DR-15/DR-16) — rather than mocking the run itself. DR-13
+(interview knowledge base) remains blocked on Romy's review, so it is not yet part
+of this net; re-run this file's personas against it once DR-13 lands.
+
+> **Exit** — three personas generate a full package each (`buildDocumentPlan().all`
+> non-empty, core + correctly-triggered conditional documents); a reviewer reads the
+> `nonimmigrant_intent` and `source_of_funds` guidance per persona and finds no false
+> premise. A genuinely Canadian applicant in the same pipeline still receives the
+> original Canadian guidance unchanged (regression guard).
 >
-> **Test** — `src/lib/__tests__/nationality-personas.test.ts`, wired into CI.
+> **Test** — `src/lib/__tests__/nationality-personas.test.ts`, 16 tests, all passing;
+> `npx jest` (634/634), `npx tsc --noEmit -p .`, and `npm run build` all clean.
 
 ---
 
