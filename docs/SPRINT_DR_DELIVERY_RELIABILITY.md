@@ -1151,19 +1151,59 @@ gap.
 ## Phase 8 — Prove it, then keep proving it
 
 ### DR-20 · The delivery test matrix
-**All gaps · code · TODO · 2 eng-days · ~$200–400 LLM**
+**All gaps · code · TODO · ~4 eng-days · ~$300–500 LLM**
 
-Run end to end against a real environment:
-**solo / spousal / partnership × franchise / independent × three nationalities ×
-funded-vs-partial.** Measure, per cell: completion rate, wall-clock duration, LLM
-cost per package, and **file count delivered versus tier promise**.
+Design finalized and approved by Romy September 11, 2026 — full plan at
+`.claude/plans/wobbly-bubbling-plum.md`. Nothing below has been built, migrated,
+seeded, or run yet; this section describes what's designed, not what's done.
 
-> **Exit** — a published completion rate over the matrix, with a target, a
-> measured number, and named failures. A matrix with no failures listed and no
-> target stated does not count as passed.
+Run the real generation pipeline end to end against **36 cells** — solo / spousal /
+partnership × franchise / independent × Japan / Canada / South Korea ×
+funded / partial-funding. There is no separate staging Supabase project
+(`vercel env pull` confirms Development and Production point at the same project),
+so isolation is enforced by convention instead of infrastructure: every fixture
+uses a greppable `dr20-<cell>@e2go-test.internal` email pattern, and a new
+`payments.is_test_fixture` column (idempotent migration, `ADD COLUMN IF NOT EXISTS`)
+is excluded — via one shared helper, not three copies — from the three real readers
+of `payments.status = 'completed'` that a fabricated partnership payment would
+otherwise corrupt: `health-watchdog`'s `isPaidUser()` (would page Romy over a test
+job), `admin/revenue/page.tsx` (would inflate reported revenue), and
+`payment-reconciliation.ts` (would trip a Stripe-ledger-mismatch alert).
+
+Per cell, only raw pre-analysis inputs are seeded — the ~222-key Module 3 answer
+set (as individual authenticated POSTs to `/api/answers`, since the route takes one
+key/value pair per call, not a batch), uploaded documents, a voice sample, and
+follow-up responses, plus a direct `payments`/`family_members` insert for
+partnership/spousal cells only. Everything downstream is **derived by calling the
+app's own routes for real**, not hand-authored: `case_theory`, `document_intelligence`,
+and `case_model` are produced organically by `buildCaseIntelligence`/
+`generateCaseTheory` as answers land; `case_brief_json` comes from a real call to
+`/api/analysis/run`; the document package comes from a real call to
+`/api/generate/run`. All of it authenticated the same way
+`run-persona-generation.mjs` already does — a server-minted magic link, exchanged,
+then real HTTP calls — so the actual ownership/auth checks in `/api/answers` and
+friends are exercised, not bypassed. Measured per cell: completion, wall-clock
+duration (analysis + generation), LLM cost (cache-aware), and file count delivered
+versus `buildDocumentPlan`'s tier promise.
+
+Named, accepted gaps in this run (not fixture shortcuts to quietly patch around):
+the `property_portfolio`/`financial_assets_portfolio` conditional docs are never
+triggered — the funding axis holds the fund-source string constant so it doesn't
+also flip those two document-plan cells — and the 3 already-known bugs (stale
+`M3-A-08`/`M3-A-09` mapping, `M3-F-09` LLC gate, unwired `archetype`) are reproduced
+exactly as real users hit them, per Romy's decision not to fix them as part of this
+task.
+
+> **Exit** — a published completion rate over the 36 cells, with a target
+> (proposed: 100%, since fixtures are complete by design — Romy can override before
+> the run), a measured number, and named failures. A matrix with no failures listed
+> and no target stated does not count as passed.
 >
-> **Test** — `scripts/delivery-matrix.mjs` plus a committed results table in this
-> file, dated.
+> **Test** — `scripts/seed-delivery-matrix.mjs` (checkpointed/resumable per-cell
+> seeding via the real pipeline) and `scripts/delivery-matrix.mjs` (drives real
+> generation, produces the dated results table committed to this file), plus
+> `scripts/teardown-delivery-matrix.mjs` to remove the 36 synthetic accounts once
+> Romy has reviewed results. None of the three exist yet.
 
 ---
 
@@ -1227,8 +1267,8 @@ not been watched against a real stalled job in production.
 | 5 — Nationality neutrality | DR-11…DR-15 | 3 | 2h content |
 | 6 — Single source of truth | DR-16, DR-17 | 2 | 1h copy |
 | 7 — Partnership + integrity | DR-18, DR-19 | 2.5 | deferred — DR-18 post-launch |
-| 8 — Proof | DR-20…DR-22 | 5 | 4h · $200–400 LLM |
-| | | **~22.5–23.5 days** | **~10h + LLM spend** |
+| 8 — Proof | DR-20…DR-22 | 7 | 4h · $300–500 LLM |
+| | | **~24.5–25.5 days** | **~10h + LLM spend** |
 
 **Phases 1–2 alone (6–7 days) are the launch gate.** They take the platform from
 *"a paid client can be silently stranded with no recovery"* to *"every failure is
