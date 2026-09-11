@@ -3,8 +3,8 @@
  * Source of truth: docs/PATHWAY_LIBRARY.md
  * This file contains pure data — no logic. The pathway-engine.ts reads from here.
  *
- * Every pathway is legally grounded in U.S. immigration law and Toronto
- * consulate practice. None of these are loopholes — they are standard
+ * Every pathway is legally grounded in U.S. immigration law and consular
+ * practice. None of these are loopholes — they are standard
  * attorney-recommended structures that non-obvious to applicants.
  */
 
@@ -93,11 +93,11 @@ export const PATHWAY_LIBRARY: PathwayDefinition[] = [
       'Treaty spouse must hold genuine equity (at least 50%) and have actual management authority',
       'Treaty spouse must be able to articulate their business role credibly at the consular interview',
       'Investment must be in the treaty spouse\'s name or clearly attributable to them',
-      'Treaty spouse must be physically present in the U.S. — remote management from Canada does not qualify',
+      'Treaty spouse must be physically present in the U.S. — remote management from their home country does not qualify',
     ],
     tradeoffs: [
       'If the officer perceives the treaty spouse as a "visa holder of convenience" with no real role, the application will be denied',
-      'The treaty spouse must be prepared to discuss the business in detail at the Toronto interview',
+      'The treaty spouse must be prepared to discuss the business in detail at their consular interview',
       'Requires careful role documentation: organizational chart, operating agreement, decision log',
     ],
     timeline: '3–6 months',
@@ -176,19 +176,19 @@ export const PATHWAY_LIBRARY: PathwayDefinition[] = [
     impact: 'transformative',
     headline: 'U.S. immigration does not recognize common-law relationships — your partner will not receive E-2S status unless you are legally married or restructure.',
     whoThisHelps: 'Your common-law partner',
-    rationale: 'Many Canadian couples are in common-law relationships recognized under provincial law but not by U.S. immigration. Without a legal marriage, your partner has no automatic derivative status and no U.S. work authorization — regardless of how long you have been together. This pathway surfaces three solutions.',
+    rationale: 'Many couples are in common-law relationships recognized in their home country but not by U.S. immigration. Without a legal marriage, your partner has no automatic derivative status and no U.S. work authorization — regardless of how long you have been together. This pathway surfaces three solutions.',
     mechanism: [
-      'Option A — Formalize the marriage: Legally marry before filing the E-2 application. The U.S. Consulate in Toronto accepts Canadian civil marriages. This is the cleanest and simplest path.',
+      'Option A — Formalize the marriage: Legally marry before filing the E-2 application. Your consulate accepts civil marriages performed in your home country. This is the cleanest and simplest path.',
       'Option B — Partner as co-investor: Your partner contributes their own capital (at least 50% ownership) and applies for their own E-2 principal visa. Their investment must be their own funds, not a gift from you.',
       'Option C — Partner as treaty employee: If your partner holds treaty nationality and qualifies for an executive, supervisory, or essential-skills role in your business, they can apply as an E-2 Treaty Employee.',
     ],
     requirements: [
-      'Option A: Legal marriage ceremony registered with a Canadian government authority; common-law declarations do not qualify',
+      'Option A: Legal marriage ceremony registered with a government authority in your home country; common-law declarations do not qualify',
       'Option B: Partner\'s investment must be their own funds; formal partnership agreement required',
       'Option C: Partner must be a treaty national and hold a qualifying role',
     ],
     tradeoffs: [
-      'Option A is not always feasible on short timelines (though Canadian civil marriages can be arranged quickly)',
+      'Option A is not always feasible on short timelines (though civil marriages can often be arranged quickly)',
       'Option B requires the partner to have independent investment capital',
       'Option C requires a role that can withstand officer scrutiny',
       'Without any of these options, your partner cannot accompany you to the U.S. on your E-2',
@@ -220,7 +220,7 @@ export const PATHWAY_LIBRARY: PathwayDefinition[] = [
     tradeoffs: [
       'Choosing a lower-cost business to improve proportionality may limit revenue potential',
       'Home equity loans carry personal financial risk if the business fails',
-      'Toronto consulate has shown skepticism below $100K for service businesses and $150K for franchise/physical-location businesses — proportionality must be compelling',
+      'Consular officers have shown skepticism below $100K for service businesses and $150K for franchise/physical-location businesses — proportionality must be compelling',
     ],
     timeline: 'Immediate',
     requiresAttorney: false,
@@ -271,7 +271,7 @@ export const PATHWAY_LIBRARY: PathwayDefinition[] = [
       'Non-treaty investor may need separate visa arrangement (B-1 business visits, TN if applicable, or long-term planning toward E-2 through naturalization)',
     ],
     requirements: [
-      'Family member must genuinely hold treaty country citizenship (Canadian passport verifiable)',
+      'Family member must genuinely hold treaty country citizenship (treaty-country passport verifiable)',
       'Family member\'s investment must be their own funds, properly documented',
       'Family member must have an active, documented role in the business',
       'If dual citizenship: always apply under the treaty country nationality — the non-treaty citizenship is irrelevant to E-2',
@@ -316,9 +316,9 @@ export const PATHWAY_LIBRARY: PathwayDefinition[] = [
     title: 'Develop-and-direct restructure for passive investors',
     category: 'business_model',
     impact: 'significant',
-    headline: 'The E-2 requires you to genuinely develop and direct the business from the U.S. — hiring a full-time manager to run everything while you remain in Canada does not qualify.',
+    headline: 'The E-2 requires you to genuinely develop and direct the business from the U.S. — hiring a full-time manager to run everything while you remain in your home country does not qualify.',
     whoThisHelps: 'You',
-    rationale: '"Develop and direct" does not mean you must perform daily operational tasks — but it does require genuine strategic authority and physical U.S. presence. Hiring a general manager is fine as long as the GM reports to you and you retain final authority on major decisions. An investor who simply wires money and stays in Canada will be denied.',
+    rationale: '"Develop and direct" does not mean you must perform daily operational tasks — but it does require genuine strategic authority and physical U.S. presence. Hiring a general manager is fine as long as the GM reports to you and you retain final authority on major decisions. An investor who simply wires money and stays in their home country will be denied.',
     mechanism: [
       'Retain the GM role or a formal C-suite title (President, CEO, Director of Operations)',
       'Document your decision-making authority: hiring/firing, capital allocation, expansion decisions',
@@ -328,13 +328,13 @@ export const PATHWAY_LIBRARY: PathwayDefinition[] = [
       'Your organizational chart shows you above the GM, not the reverse',
     ],
     requirements: [
-      'You must actually relocate to and reside in the U.S. — not manage remotely from Canada',
+      'You must actually relocate to and reside in the U.S. — not manage remotely from your home country',
       'You must be reachable for and involved in major business decisions',
       'Your role must be documented in the operating agreement as the controlling executive',
     ],
     tradeoffs: [
-      'A 100% absentee structure — investor in Canada, manager runs everything — will be denied',
-      'You must be credibly prepared to discuss your management role at the Toronto interview',
+      'A 100% absentee structure — investor abroad, manager runs everything — will be denied',
+      'You must be credibly prepared to discuss your management role at your consular interview',
       'Requires genuine personal involvement, which may conflict with a passive investment mindset',
     ],
     timeline: 'Immediate',
