@@ -6,10 +6,18 @@ interface ServiceStatus { status: 'ok' | 'error' | 'warn'; latency_ms?: number; 
 interface StuckJob { id: string; application_id: string; current_step_label: string; created_at: string; updated_at: string }
 interface ActiveJob { id: string; application_id: string; current_step: number; total_steps: number; current_step_label: string; updated_at: string }
 interface CronEntry { started_at: string; status: string; error?: string | null }
+interface DailyGenerationStats {
+  started_today: number;
+  completed_today: number;
+  failed_today: number;
+  duration_p50_ms: number | null;
+  duration_p95_ms: number | null;
+  in_flight_count: number;
+}
 interface HealthDetail {
   timestamp: string;
   services: { database: ServiceStatus; openrouter: ServiceStatus; stripe: ServiceStatus };
-  generation: { active_jobs: ActiveJob[]; stuck_jobs: StuckJob[]; stuck_count: number };
+  generation: { active_jobs: ActiveJob[]; stuck_jobs: StuckJob[]; stuck_count: number; daily: DailyGenerationStats };
   crons: Record<string, CronEntry>;
   llm: { latency_p95_ms: number | null; latency_avg_ms: number | null; recent_calls: number };
   settings: { kill_switch_enabled: boolean; maintenance_mode: boolean; kill_switch_message: string };
@@ -17,6 +25,15 @@ interface HealthDetail {
 
 const STATUS_COLOR = { ok: '#4ade80', warn: '#fbbf24', error: '#f87171' };
 const STATUS_LABEL = { ok: 'Operational', warn: 'Degraded', error: 'Down' };
+
+function formatDuration(ms: number | null): string {
+  if (ms == null) return '—';
+  const totalMinutes = Math.round(ms / 60_000);
+  if (totalMinutes < 1) return '<1m';
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+}
 
 function ServiceCard({ name, s }: { name: string; s: ServiceStatus }) {
   const color = STATUS_COLOR[s.status];
@@ -150,7 +167,23 @@ export default function SystemStatusPage() {
           </div>
 
           {/* Generation jobs */}
-          <div style={s}>Generation Pipeline</div>
+          <div style={s}>Generation Pipeline — Today</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(140px,1fr))', gap: 10, marginBottom: 8 }}>
+            {[
+              { label: 'Started today', value: String(data.generation.daily.started_today) },
+              { label: 'Completed today', value: String(data.generation.daily.completed_today) },
+              { label: 'Failed today', value: String(data.generation.daily.failed_today) },
+              { label: 'Duration p50', value: formatDuration(data.generation.daily.duration_p50_ms) },
+              { label: 'Duration p95', value: formatDuration(data.generation.daily.duration_p95_ms) },
+              { label: 'In flight now', value: String(data.generation.daily.in_flight_count) },
+            ].map(m => (
+              <div key={m.label} style={{ border: '1px solid rgba(201,168,76,0.1)', padding: '12px 14px' }}>
+                <div style={{ fontSize: 9, color: 'rgba(245,240,232,0.68)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>{m.label}</div>
+                <div style={{ fontSize: 22, color: '#C9A84C', fontFamily: "'Cormorant Garamond',serif" }}>{m.value}</div>
+              </div>
+            ))}
+          </div>
+
           {data.generation.active_jobs.length === 0 && data.generation.stuck_jobs.length === 0 && (
             <div style={{ fontSize: 12, color: 'rgba(245,240,232,0.68)', padding: '8px 0' }}>No active generation jobs.</div>
           )}
