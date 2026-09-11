@@ -362,13 +362,19 @@ export default function GenerateProgressPage() {
         if (currentStep >= 15) {
           setCurrentQualityStep(currentStep);
         }
-      } else {
-        await fetch(`/api/generate/run/${newJobId}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId }),
-        });
       }
+
+      // DR-2: always re-issue /run on attach, not just for brand-new jobs.
+      // /run is idempotent — a genuinely running job returns 200 immediately,
+      // a stale queued one gets claimed and actually restarted. Without this,
+      // re-opening a tab on an in-flight job (data.existing === true) never
+      // called /run at all, and a job stuck at 'queued' had nothing left to
+      // ever start it.
+      await fetch(`/api/generate/run/${newJobId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId }),
+      });
 
       connectSSE(newJobId);
     } catch (err) {
