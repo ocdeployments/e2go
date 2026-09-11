@@ -99,6 +99,7 @@ Legend — **Status:** `TODO` / `WIP` / `DONE` / `BLOCKED (needs Romy)`
 | # | Task | Gap | Kind | Status |
 |---|---|---|---|---|
 | **DR-10** | Budget and bound the download route | G-08 | infra | DONE* |
+| **DR-23** | Isolate a document that fails to *build* at download time, and page ops when it happens | G-13 | code | DONE |
 
 ### Phase 5 — Nationality neutrality · **pre-first-client**
 
@@ -603,6 +604,74 @@ for it at current package sizes.
 
 ---
 
+### DR-23 · Isolate a document that fails to *build* at download time, and page ops when it happens
+**Gap G-13 · code · DONE · 2026-09-11 (Session 146 cont.)**
+
+DR-6/G-04 quarantines a document that fails during *generation* — writing
+`content_text` to the DB. It does nothing for a document whose `content_text`
+is stored fine but throws when the download route re-builds it into a `.docx`:
+`buildDocument()` (malformed content) or `Packer.toBuffer()` (a corrupt run)
+failing on any one of the ~29 files threw straight through
+`generate/download/[applicationId]/route.ts`'s per-tab loop into its single
+top-level `catch`, failing the **entire** ZIP — including the other 25+
+documents that built fine — with a generic 500. The only notification was
+whatever Sentry capture already existed on that top-level catch: passive, and
+nobody watches it live. This is the question that surfaced the gap: *if the
+audit ever finds a document is missing or broken, what actually happens next —
+who finds out, and what does the client see in the meantime?* Before this
+task, the honest answer was "nobody, automatically, and a generic error."
+
+Shipped, in `src/lib/document-build-safety.ts` (a plain lib module, not
+exported from `route.ts` — Next's App Router route-file type-checking only
+permits a fixed allow-list of exports (`GET`, `runtime`, `maxDuration`, …), so
+these had to live outside the route to be both callable and independently
+testable):
+
+- **`buildDocumentSafely()`** — wraps one document's `buildDocument()` +
+  `Packer.toBuffer()` call in a try/catch (a `Packer.toBuffer()` rejection is
+  awaited, so an async failure can't become an unhandled rejection the way an
+  earlier draft of this function would have let it). Returns `{ok:true,
+  buffer}` or `{ok:false, failure}`; the route's per-tab loop now collects
+  failures into an array and keeps going instead of throwing.
+- **`buildFailureNoteText()`** — when the package is partial, a plain-text
+  note goes into the ZIP naming which document(s) are missing and why the
+  client should try again or contact support with their application ID.
+  Deliberately does not include the raw error string in client-facing text.
+- **`alertDocumentBuildFailures()`** — pages ops via `sendOpsAlert()` (the
+  same real, awaited Resend call DR-3/G-06 built for the health watchdog) with
+  the application ID, the failed document(s), and the underlying error for
+  diagnosis — an active page, not passive Sentry capture nobody watches live.
+  Fires on every build failure, partial or total.
+
+The route now has two failure shapes, both client-visible and both alerted:
+**total** (every document in the package failed to build) returns a 500 with
+a structured `{error, failedDocuments, applicationId, supportMessage}` body
+instead of a generic message; **partial** (some documents failed) still
+returns a 200 with the ZIP, plus `X-Partial-Package` / `X-Failed-Document-Count`
+/ `X-Failed-Documents` response headers so the client sees exactly what's
+missing. Both `documents/[applicationId]/page.tsx` and
+`generate/[applicationId]/page.tsx` parse these shapes and show a specific,
+actionable message — never silence, never a generic "something went wrong."
+
+> **Exit** — force one document's build to throw (bad `content_text` or a
+> `Packer.toBuffer()` rejection); the other ~28 documents still download in a
+> real ZIP, the client sees which one is missing and what to do next, and an
+> ops alert fires with the application ID and the underlying error.
+>
+> **Test** — `src/lib/__tests__/document-build-safety.test.ts` (9 tests):
+> `buildDocumentSafely` succeeds normally, catches a synchronous throw from
+> `buildDocument()`, catches an async rejection from `Packer.toBuffer()`, and
+> isolates a failing call from a sibling call that succeeds; `buildFailureNoteText`
+> names the failed document and the application ID without leaking the raw
+> error; `alertDocumentBuildFailures` pages ops with the right content.
+> `src/lib/__tests__/ops-alert.test.ts` (4 tests) covers the underlying
+> `sendOpsAlert()` send/fallback/error-capture paths it depends on. Every test
+> touching this path mocks `@/lib/ops-alert` or `global.fetch` —
+> `RESEND_API_KEY` is live in `.env.local`, which `next/jest` loads into the
+> test environment, so an unmocked call would send a real email.
+
+---
+
 ## Phase 5 — Nationality neutrality
 
 Session 145 fixed the labels. These five are what it deliberately deferred, with
@@ -997,12 +1066,12 @@ not been watched against a real stalled job in production.
 | 1 — Survivability | DR-1, DR-2 | 3.5–4.5 | 1h decision |
 | 2 — Visibility and recovery | DR-3, DR-4, DR-5 | 2.5 | 1h copy |
 | 3 — Containment | DR-6…DR-9 | 3 | 1h decision |
-| 4 — Last mile | DR-10 | 1 | — |
+| 4 — Last mile | DR-10, DR-23 | 1.5 | — |
 | 5 — Nationality neutrality | DR-11…DR-15 | 3 | 2h content |
 | 6 — Single source of truth | DR-16, DR-17 | 2 | 1h copy |
 | 7 — Partnership + integrity | DR-18, DR-19 | 2.5 | pricing call |
 | 8 — Proof | DR-20…DR-22 | 5 | 4h · $200–400 LLM |
-| | | **~22–23 days** | **~10h + LLM spend** |
+| | | **~22.5–23.5 days** | **~10h + LLM spend** |
 
 **Phases 1–2 alone (6–7 days) are the launch gate.** They take the platform from
 *"a paid client can be silently stranded with no recovery"* to *"every failure is
