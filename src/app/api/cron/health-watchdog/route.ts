@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import * as Sentry from '@sentry/nextjs';
 import { captureApiError } from '@/lib/capture-error';
+import { sendResetAfterFailureEmail } from '@/lib/emails/generation-emails';
 
 // DR-3 (Gap G-06): runs every 10 minutes via Vercel cron — daily was the
 // failure, not the 30-minute staleness threshold. Reaps BOTH stale 'running'
@@ -95,6 +96,30 @@ export async function GET(request: NextRequest) {
 
       results.stuck_jobs_failed++;
       console.log(`[health-watchdog] Marked stuck job ${job.id} (was ${job.status}) as failed`);
+
+      // DR-4 (Gap G-06): the client's tab shows the same frozen progress bar
+      // it showed before the reap — tell them by email that the run was
+      // reset and how to restart it. Non-fatal: a failed send must never
+      // stop the reap loop from processing the rest of the stuck jobs.
+      try {
+        const { data: profile } = await admin
+          .from('profiles')
+          .select('email')
+          .eq('id', job.user_id)
+          .maybeSingle();
+
+        if (profile?.email) {
+          const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+          await sendResetAfterFailureEmail({
+            supabase: admin,
+            applicationId: job.application_id,
+            email: profile.email,
+            applicationLink: `${appUrl}/generate/${job.application_id}`,
+          });
+        }
+      } catch (notifyErr) {
+        captureApiError(notifyErr, { route: 'cron/health-watchdog', stage: 'reset-email', jobId: job.id });
+      }
 
       if (await isPaidUser(admin, job.user_id)) {
         results.paid_client_reaps.push(job.id);

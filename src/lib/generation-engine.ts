@@ -33,6 +33,7 @@ import { resolveTreatyCountry } from './treaty-countries';
 import { callDocGenFallback } from './llm-client';
 import { personLabel } from './person-code';
 import { sendRetentionNoticeEmail } from './emails/retention-sequence';
+import { sendPackageReadyEmail } from './emails/generation-emails';
 
 const PROMPTS_DIR = join(process.cwd(), 'prompts', 'v1', 'documents');
 const UNIVERSAL_PROMPT_PATH = join(process.cwd(), 'prompts', 'v1', '_universal_system_prompt.md');
@@ -3908,6 +3909,33 @@ Generate the document using Investor 2's identity, name, nationality, source of 
       status: jobFinalStatus,
       completed_at: new Date().toISOString(),
     });
+
+    // DR-4 (Gap G-06): a run this long should not tether the client to an
+    // open tab — tell them by email that it's done. Only on a full
+    // 'completed' run, not 'partial' (a partial run still needs the
+    // per-document quarantine UI, not a "ready" message). Failure here must
+    // never fail the pipeline — the documents are already generated.
+    if (jobFinalStatus === 'completed') {
+      try {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('email')
+          .eq('id', userId)
+          .maybeSingle();
+
+        if (profile?.email) {
+          const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+          await sendPackageReadyEmail({
+            supabase,
+            applicationId,
+            email: profile.email,
+            applicationLink: `${appUrl}/generate/${applicationId}`,
+          });
+        }
+      } catch (notifyErr) {
+        console.error('[ENGINE] package-ready email failed:', notifyErr);
+      }
+    }
 
     // RS-10 (Gap G-19): notify the client when their uploaded files are
     // scheduled to be purged (30 days from now — see cron/data-retention).
