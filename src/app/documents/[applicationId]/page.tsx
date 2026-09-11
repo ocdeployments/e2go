@@ -310,7 +310,7 @@ export default function DocumentsReviewPage() {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#0a0a0a]">
-        <p className="text-sm text-white/30" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+        <p className="text-sm text-white/50" style={{ fontFamily: "'DM Sans', sans-serif" }}>
           Loading documents…
         </p>
       </div>
