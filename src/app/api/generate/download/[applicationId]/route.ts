@@ -19,7 +19,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { Packer } from 'docx';
 import JSZip from 'jszip';
-import { buildDocument } from '@/lib/docx-builder';
 import { buildChecklist } from '@/lib/checklist-builder';
 import { buildCoverPage } from '@/lib/docx-cover-builder';
 import { buildTableOfContents } from '@/lib/docx-toc-builder';
@@ -35,6 +34,12 @@ import { buildExhibitRegistry } from '@/lib/exhibit-registry';
 import type { DocumentType } from '@/types/generation';
 import { captureApiError } from '@/lib/capture-error';
 import { selectLatestDocumentRows, type DedupableDocumentRow } from '@/lib/document-dedupe';
+import {
+  buildDocumentSafely,
+  buildFailureNoteText,
+  alertDocumentBuildFailures,
+  type DocumentBuildFailure,
+} from '@/lib/document-build-safety';
 
 // DR-10 (Gap G-08): this route assembles a cover page, TOC, a divider per
 // tab, one .docx per generated document, and a closing checklist — each
@@ -274,6 +279,7 @@ export async function GET(
     zip.file('01_Table_of_Contents.docx', Buffer.from(tocBuffer));
 
     // 7c. For each tab in TAB_ORDER: divider + all documents assigned to that tab
+    const buildFailures: DocumentBuildFailure[] = [];
     for (const tabLetter of TAB_ORDER) {
       const tabEntry = TAB_SECTION_TITLES[tabLetter];
       if (!tabEntry) continue;
@@ -305,23 +311,58 @@ export async function GET(
           const docLastName = isP2Doc && coInvestor?.last_name ? coInvestor.last_name : lastName;
           const personCode = isP2Doc ? (coInvestor?.person_code ?? 'P2') : 'P1';
 
-          const docx = buildDocument({
+          const result = await buildDocumentSafely({
             contentText: docContent.content_text,
             documentType: docType,
             lastName: docLastName,
             caseCode,
             personCode,
+            applicationId,
           });
-          const docBuffer = await Packer.toBuffer(docx);
+
+          if (!result.ok) {
+            // Isolated: one bad document is skipped, not fatal to the rest
+            // of the package — see buildDocumentSafely's comment above.
+            buildFailures.push(result.failure);
+            continue;
+          }
+
           const displayName = DOC_DISPLAY_NAMES[docType];
           const codeSegment = caseCode ? `${caseCode}_` : '';
           const personSegment = personCode !== 'P1' ? `${personCode}_` : '';
           zip.file(
             `Tab_${tabLetter}_${codeSegment}${personSegment}${displayName}.docx`,
-            Buffer.from(docBuffer)
+            Buffer.from(result.buffer)
           );
         }
       }
+    }
+
+    // 7c-ii. Every attempted document failed to build — there is nothing of
+    // substance to deliver. Page ops immediately and tell the client exactly
+    // which documents and why, rather than handing back a package that's
+    // just a cover page and an empty checklist.
+    if (includedDocTypes.length > 0 && buildFailures.length === includedDocTypes.length) {
+      await alertDocumentBuildFailures(applicationId, buildFailures);
+      return NextResponse.json(
+        {
+          error: 'None of your documents could be prepared for download right now.',
+          failedDocuments: buildFailures.map((f) => ({ type: f.documentType, label: f.label })),
+          applicationId,
+          supportMessage:
+            "This is on our side. Our team has been notified automatically. If this persists, contact support and reference this application ID.",
+        },
+        { status: 500 }
+      );
+    }
+
+    if (buildFailures.length > 0) {
+      zip.file('!! SOME DOCUMENTS COULD NOT BE INCLUDED.txt', buildFailureNoteText(applicationId, buildFailures));
+      // Fire-and-forget from the response's perspective, but awaited here so
+      // a cold serverless instance doesn't get torn down before the Resend
+      // call leaves the function (see generation-emails.ts's note on the
+      // same failure mode with an un-awaited send).
+      await alertDocumentBuildFailures(applicationId, buildFailures);
     }
 
     // 7d. Checklist (last file)
@@ -344,6 +385,21 @@ export async function GET(
     // 8. Generate ZIP as arraybuffer and return
     const zipBlob = await zip.generateAsync({ type: 'arraybuffer' });
 
+    // DR-4 follow-up: the frontend can't see inside the ZIP, so a partial
+    // package needs to announce itself via headers — the client still gets
+    // every document that built successfully, plus an honest "N missing,
+    // here's why, here's what to do" message instead of silence.
+    const partialHeaders: Record<string, string> =
+      buildFailures.length > 0
+        ? {
+            'X-Partial-Package': 'true',
+            'X-Failed-Document-Count': String(buildFailures.length),
+            'X-Failed-Documents': encodeURIComponent(
+              JSON.stringify(buildFailures.map((f) => ({ type: f.documentType, label: f.label })))
+            ),
+          }
+        : {};
+
     return new NextResponse(zipBlob as ArrayBuffer, {
       status: 200,
       headers: {
@@ -351,6 +407,7 @@ export async function GET(
         'Content-Disposition':
           `attachment; filename="E2_Application_Package${caseCode ? `_${caseCode}` : ''}.zip"`,
         'Cache-Control': 'no-store, no-cache, must-revalidate',
+        ...partialHeaders,
       },
     });
   } catch (err) {
