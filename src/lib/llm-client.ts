@@ -97,13 +97,13 @@ const MODEL_COSTS: Record<string, { in: number; out: number }> = {
   'claude-opus-4-8':           { in: 15.00, out: 75.00 },
 };
 
-function calcCost(model: string, tokensIn: number, tokensOut: number): number {
+export function calcCost(model: string, tokensIn: number, tokensOut: number): number {
   const rates = MODEL_COSTS[model];
   if (!rates) return 0;
   return (tokensIn * rates.in + tokensOut * rates.out) / 1_000_000;
 }
 
-function logCost(entry: {
+export function logCost(entry: {
   userId?: string;
   task: string;
   route?: string;
