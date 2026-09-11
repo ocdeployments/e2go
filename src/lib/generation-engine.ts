@@ -29,6 +29,7 @@ import { buildExhibitRegistry, formatExhibitRegistryText, checkExhibitConsistenc
 import { buildDeterministicDocumentIndex } from './docx-package-constants';
 import { computeEnterpriseNationality, buildJointPartnershipBlock } from './partnership-analysis';
 import { buildDocumentPlan } from './document-plan';
+import { resolveTreatyCountry } from './treaty-countries';
 import { callDocGenFallback } from './llm-client';
 import { personLabel } from './person-code';
 import { sendRetentionNoticeEmail } from './emails/retention-sequence';
@@ -234,7 +235,7 @@ function getDocDCodeFilter(documentType: string): string[] | 'all' | undefined {
 // Each archetype has different emphasis, risk patterns, and strengths to feature.
 // ---------------------------------------------------------------------------
 
-const ARCHETYPE_DOC_GUIDANCE: Record<string, Record<string, string>> = {
+export const ARCHETYPE_DOC_GUIDANCE: Record<string, Record<string, string>> = {
   buyer: {
     cover_letter: `ARCHETYPE: FRANCHISE BUYER
 Emphasise: the franchisor's proven business model, E-2 approval track record if known, and the investor's role as the active operator directing day-to-day functions. The franchise fee and build-out costs are at-risk capital — state this explicitly. Reference the Franchise Disclosure Document (FDD) Item 7 as investment substantiation. Non-marginality proof: cite the FDD's AUV (Average Unit Volume) projections and staffing models. Develop-and-direct: the investor must run the location, not be a passive royalty recipient.`,
@@ -381,10 +382,38 @@ Career switchers sometimes receive financial support from family to supplement e
   },
 };
 
-function buildArchetypeGuidance(archetype: string, documentType: string): string {
+/**
+ * DR-12 (Gap G-09b): the guidance blocks above were written against a
+ * Canadian applicant and hardcode Canada/RRSP/TFSA in 11 places across all
+ * four archetypes, not just the franchise/buyer text the sprint literally
+ * named — a Japanese or French applicant's prompt was telling the model to
+ * document Canadian ties regardless of who was actually applying. Rather
+ * than hand-templating 11 strings (error-prone, easy to miss one on the next
+ * edit), the guidance stays written for the Canadian case — the common one —
+ * and this pass localizes it for every other nationality by substituting the
+ * applicant's actual country and generic account-type language for the
+ * Canada-specific instrument names. See prompt-nationality.test.ts.
+ */
+export function localizeArchetypeGuidance(text: string, homeCountry: string | null): string {
+  if (!text) return text;
+  if (homeCountry?.trim().toLowerCase() === 'canada') return text;
+
+  const country = homeCountry?.trim() || "the applicant's home country";
+  return text
+    .replace(/\bCanadian\b/g, `${country}-based`)
+    .replace(/\bCanada\b/g, country)
+    .replace(/\bRRSP\b/g, 'registered retirement plan')
+    .replace(/\bTFSA\b/g, 'tax-advantaged savings account')
+    .replace(/\bLIRA\b/g, 'locked-in retirement account')
+    .replace(/\bprovincial health coverage\b/gi, `${country} health coverage`);
+}
+
+export function buildArchetypeGuidance(archetype: string, documentType: string, homeCountry: string | null = null): string {
   const archetypeMap = ARCHETYPE_DOC_GUIDANCE[archetype];
   if (!archetypeMap) return '';
-  return archetypeMap[documentType] ?? '';
+  const raw = archetypeMap[documentType] ?? '';
+  if (!raw) return '';
+  return localizeArchetypeGuidance(raw, homeCountry);
 }
 
 function buildKBContext(documentType: string, consulatePost: string): string {
@@ -1219,6 +1248,18 @@ export async function callClaudeAPI(payload: GenerationPayload): Promise<string>
 
   const caseBriefObj = payload.case_brief as Record<string, unknown>;
   const archetype = (caseBriefObj?.archetype as string) ?? 'unknown';
+  // DR-12: M3-A-05 ("Country of citizenship") is the actual intake answer;
+  // case_brief's treaty_country/nationality are untyped fallbacks used
+  // elsewhere (e.g. computeEnterpriseNationality above) when M3-A-05 hasn't
+  // been captured yet for this applicant. resolveTreatyCountry canonicalizes
+  // free text ("uk", "great britain") to the name buildArchetypeGuidance
+  // interpolates into the prompt.
+  const rawNationality =
+    (payload.module_3_answers?.['M3-A-05'] as string | undefined) ??
+    (caseBriefObj?.treaty_country as string | undefined) ??
+    (caseBriefObj?.nationality as string | undefined) ??
+    null;
+  const homeCountry = resolveTreatyCountry(rawNationality) ?? (rawNationality?.trim() || null);
   const staticKBContext = buildKBContext(payload.document_type, payload.consulate_post);
   const dynamicKBContext = await fetchFAQKBContext(payload.document_type, payload.consulate_post, archetype);
 
@@ -1272,7 +1313,7 @@ export async function callClaudeAPI(payload: GenerationPayload): Promise<string>
     'Output the document text only.',
   ].join('\n');
 
-  const archetypeGuidance = buildArchetypeGuidance(archetype, payload.document_type);
+  const archetypeGuidance = buildArchetypeGuidance(archetype, payload.document_type, homeCountry);
   const enrichedSystemPrompt = archetypeGuidance
     ? `${payload.system_prompt}\n\n---\n\n${archetypeGuidance}`
     : payload.system_prompt;
