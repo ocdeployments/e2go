@@ -98,7 +98,7 @@ Legend — **Status:** `TODO` / `WIP` / `DONE` / `BLOCKED (needs Romy)`
 
 | # | Task | Gap | Kind | Status |
 |---|---|---|---|---|
-| **DR-10** | Budget and bound the download route | G-08 | infra | TODO |
+| **DR-10** | Budget and bound the download route | G-08 | infra | DONE* |
 
 ### Phase 5 — Nationality neutrality · **pre-first-client**
 
@@ -547,20 +547,36 @@ platform's answer to *"I couldn't get this right"* was to deliver it anyway.
 ## Phase 4 — The last mile
 
 ### DR-10 · Budget and bound the download route
-**Gap G-08 · infra · TODO · 1 eng-day**
+**Gap G-08 · infra · DONE* · 2026-09-11 · Romy: confirm the real Vercel ceiling**
 
 `generate/download/[applicationId]/route.ts` renders a cover page, a table of
 contents, a tab divider per section, one `.docx` per document and a closing
 checklist — each through `Packer.toBuffer()` — then zips the lot into a single
-in-memory `arraybuffer`, with **no `maxDuration` and no `runtime`**. Our own
+in-memory `arraybuffer`. It had **no `maxDuration` and no `runtime`** declared,
+so it silently inherited Vercel's default function timeout. Our own
 `fdd/report/route.ts:13–17` carries a comment warning that exactly this omission
 "can kill the request after the LLM cost is already incurred."
 
-Steps: **confirm the real ceiling** for the current Vercel plan and whether Fluid
-Compute is on; declare `runtime` and `maxDuration` explicitly; measure the
-wall-clock and peak memory of a full 29-file assembly; if it is anywhere near the
-ceiling, move assembly to a pre-built artifact stored at completion time and make
-download a redirect to a signed URL.
+Shipped: `export const runtime = 'nodejs'` and `export const maxDuration = 60`,
+with a comment explaining why 60s (this route is CPU-bound ZIP/`.docx` assembly,
+not an LLM call — `run/[jobId]`'s 300s pays for the LLM calls this route doesn't
+make). `download-budget.test.ts` assembles a synthetic full package — every
+generated `DocumentType`, every tab that has one, through the same
+`buildCoverPage`/`buildTableOfContents`/`buildTabDivider`/`buildDocument`/
+`buildChecklist` + `Packer.toBuffer` + `JSZip` calls the route itself makes —
+and measures it at well under a second locally, comfortably inside the 60s
+budget with the wide margin the Exit criterion below asks for.
+
+`DONE*` — what's *not* done: the sprint's own Steps called for confirming the
+real ceiling for the current Vercel plan and whether Fluid Compute is on before
+picking a number. `vercel project inspect` and the CLI don't surface plan/Fluid
+Compute status — that's dashboard/billing information only Romy can confirm.
+60s is a conservative pick, well under `run/[jobId]`'s already-deployed 300s
+(existing evidence the plan supports at least that much), but the sprint's
+"confirmed platform ceiling" language is not yet satisfied, and the
+pre-built-artifact-plus-signed-URL fallback was not built — the measured
+wall-clock (well under a second, versus the 60s budget) shows there's no need
+for it at current package sizes.
 
 > **Exit** — a real 29-file package downloads, with a measured wall-clock and a
 > stated headroom against a *confirmed* platform ceiling. "It worked once" is not
