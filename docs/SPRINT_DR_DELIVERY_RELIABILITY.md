@@ -74,7 +74,7 @@ Legend — **Status:** `TODO` / `WIP` / `DONE` / `BLOCKED (needs Romy)`
 
 | # | Task | Gap | Kind | Status |
 |---|---|---|---|---|
-| **DR-1** | Durable execution for the generation pipeline | G-01 | infra | TODO |
+| **DR-1** | Durable execution for the generation pipeline | G-01 | infra | DONE* |
 | **DR-2** | One status vocabulary, and a client that can re-attach *and* restart | G-02 | code | DONE |
 
 ### Phase 2 — Visibility and recovery · **blocks launch**
@@ -137,7 +137,22 @@ Legend — **Status:** `TODO` / `WIP` / `DONE` / `BLOCKED (needs Romy)`
 ## Phase 1 — Survivability
 
 ### DR-1 · Durable execution for the generation pipeline
-**Gap G-01 · infra · TODO · 3–4 eng-days**
+**Gap G-01 · infra · DONE\* · 3–4 eng-days**
+
+**\*Implemented, two items outside this sandbox before it's fully live:**
+1. **The `generation_resume_log` migration (already committed,
+   `20260910130000_generation_resume_log.sql`) has not been applied to
+   production.** Romy needs to run it via the Supabase Dashboard SQL Editor —
+   telemetry writes will fail until it exists there.
+2. **The literal Exit demonstration (kill the instance at document 3 of 20,
+   walk away) has not been performed against a real environment** — this
+   sandbox can't do that. `tsc`/`jest`/`build` gates are clean and the named
+   test (8/8) covers the pickup/claim/telemetry logic, but the live kill-test
+   is still outstanding.
+
+Code landed: `src/lib/generation-resume.ts` (stale-detection, optimistic-claim,
+resume, telemetry), `src/app/api/cron/generation-resume/route.ts` (runs every
+10 minutes, `vercel.json`), test file below.
 
 **Decision 2 — resolved September 10, 2026 (Session 146).** Romy: go with
 checkpointed resume for now, but it must be monitored — record every
