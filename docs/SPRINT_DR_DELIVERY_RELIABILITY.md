@@ -122,7 +122,7 @@ Legend — **Status:** `TODO` / `WIP` / `DONE` / `BLOCKED (needs Romy)`
 
 | # | Task | Gap | Kind | Status |
 |---|---|---|---|---|
-| **DR-18** | Build the partnership tier and remove the hold | G-03 | decision | **BLOCKED (pricing call)** |
+| **DR-18** | Build the partnership tier and remove the hold | G-03 | decision | **DEFERRED (post-launch)** |
 | **DR-19** | Stop asserting `application_type: 'solo'` at checkout | G-09e | code | DONE |
 
 ### Phase 8 — Prove it, then keep proving it · **standing**
@@ -916,18 +916,39 @@ than alarming.
 ## Phase 7 — Partnership tier and data integrity
 
 ### DR-18 · Build the partnership tier and remove the hold
-**Gap G-03 · decision · BLOCKED (pricing call) · 2 eng-days after pricing**
+**Gap G-03 · decision · DEFERRED (post-launch) · 2 eng-days once resumed**
+
+**2026-09-11 — resolved by product decision, not by pricing.** Romy chose to
+launch solo-only and build partnership afterward, rather than block launch on
+a partnership-surcharge pricing call. Partnership (and, separately, Renewal —
+see below) are now explicitly "Coming Soon" in the UI: the module1 application-
+type toggle shows partnership as disabled with a Coming Soon badge, the
+`partnership-hold.ts` support-contact message was reworded to reflect an
+intentional pause rather than an imminent unlock, and a `coming_soon_interest`
+table (migration `20260911180000_coming_soon_interest.sql`) + `/api/coming-soon-interest`
+route + `ComingSoonNotifyButton` component capture interest from any logged-in
+user who hits either Coming Soon state, paging Romy via `sendOpsAlert()` so
+demand isn't lost while both are paused. Admin view: `/admin/coming-soon-interest`.
 
 The door is closed (Session 145) — partnership applicants now get a 409 and a
-support-contact message instead of a solo package at the solo price. Opening it
-properly means, **in one change**: create the Stripe Price IDs for the
-partnership variants; add them to `VALID_TIER_IDS` and `entitlements.ts`; re-gate
-`isPartnership` in the pipeline on the **entitlement** rather than on the legacy
-`complete_partnership` payment type; and delete `src/lib/partnership-hold.ts`
-along with its two route guards and the `results/page.tsx` branch.
+support-contact message instead of a solo package at the solo price. Whenever
+this is resumed, opening it properly means, **in one change**: create the
+Stripe Price IDs for the partnership variants; add them to `VALID_TIER_IDS` and
+`entitlements.ts`; re-gate `isPartnership` in the pipeline on the **entitlement**
+rather than on the legacy `complete_partnership` payment type; and delete
+`src/lib/partnership-hold.ts` along with its two route guards and the
+`results/page.tsx` branch.
 
 `partnership-hold.ts`'s doc comment states this coupling explicitly so the hold
 cannot be removed without the tier being built.
+
+**Renewal note:** Renewal already has a live Stripe price (`STRIPE_PRICE_RENEWAL`)
+and was previously purchasable, but is paused for the same launch-scope reason.
+`RenewalEntryClient.tsx`'s purchase CTA was replaced with the same Coming Soon +
+notify treatment (existing renewal customers with a completed purchase are
+unaffected — `renewal/page.tsx` still routes them straight to their intake).
+Re-enabling renewal at launch is just restoring the purchase CTA; it isn't
+gated on anything else in this sprint.
 
 > **Exit** — a partnership test persona buys the live tier and receives **all six
 > P2 documents plus a joint cover letter naming both investors** — or cannot buy
@@ -1069,7 +1090,7 @@ not been watched against a real stalled job in production.
 | 4 — Last mile | DR-10, DR-23 | 1.5 | — |
 | 5 — Nationality neutrality | DR-11…DR-15 | 3 | 2h content |
 | 6 — Single source of truth | DR-16, DR-17 | 2 | 1h copy |
-| 7 — Partnership + integrity | DR-18, DR-19 | 2.5 | pricing call |
+| 7 — Partnership + integrity | DR-18, DR-19 | 2.5 | deferred — DR-18 post-launch |
 | 8 — Proof | DR-20…DR-22 | 5 | 4h · $200–400 LLM |
 | | | **~22.5–23.5 days** | **~10h + LLM spend** |
 
@@ -1089,5 +1110,5 @@ paying client and their package.
 | Decision 3 | Partial-package policy — 19 of 20 succeeded: hold entirely, or release with the gap flagged and a free regeneration? Recommendation: hold and notify while volume is low. | DR-6 |
 | Consulate list | The real E-2 consulate options for `M3-I-11`, or approval to source them from the existing consulate intelligence report. | DR-11 |
 | Interview KB review | Domain review of the six Canada-assuming coaching passages. | DR-13 |
-| Pricing call | Partnership tier price, so the Stripe Price IDs can be created. | DR-18 |
+| ~~Pricing call~~ | ~~Partnership tier price, so the Stripe Price IDs can be created.~~ **Resolved** — September 11, 2026: Romy chose to defer the partnership tier (and renewal) to post-launch rather than price it now. Both show "Coming Soon" with interest capture (`coming_soon_interest`); no longer blocking. | ~~DR-18~~ |
 | ~~Push approval~~ | ~~18 commits sit on `dev`, unpushed.~~ **Resolved** — confirmed September 10, 2026 (Session continuation): all 18 commits (`5cd3dc5`…`364ab25`) were already on `origin/dev` prior to this check (`git merge-base --is-ancestor` against the pre-session remote tip `6b9335e` confirms it). Not a live blocker. | ~~everything downstream~~ |
