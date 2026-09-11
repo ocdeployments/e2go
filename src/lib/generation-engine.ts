@@ -30,7 +30,7 @@ import { buildDeterministicDocumentIndex } from './docx-package-constants';
 import { computeEnterpriseNationality, buildJointPartnershipBlock } from './partnership-analysis';
 import { buildDocumentPlan } from './document-plan';
 import { resolveTreatyCountry } from './treaty-countries';
-import { callDocGenFallback } from './llm-client';
+import { callDocGenFallback, calcCost, logCost } from './llm-client';
 import { personLabel } from './person-code';
 import { sendRetentionNoticeEmail } from './emails/retention-sequence';
 import { sendPackageReadyEmail } from './emails/generation-emails';
@@ -1154,7 +1154,10 @@ function formatLabeledAnswers(answers: Record<string, unknown>): string {
     .join('\n\n');
 }
 
-export async function callClaudeAPI(payload: GenerationPayload): Promise<string> {
+export async function callClaudeAPI(
+  payload: GenerationPayload,
+  meta?: { userId?: string; route?: string }
+): Promise<string> {
   const anthropic = getAnthropic();
   const docLabel = DOCUMENT_TYPE_LABELS[payload.document_type];
 
@@ -1321,6 +1324,7 @@ export async function callClaudeAPI(payload: GenerationPayload): Promise<string>
 
   async function attempt(): Promise<string> {
     const model = await getGenerationModel();
+    const t0 = Date.now();
     const response = await anthropic.messages.create({
       model,
       max_tokens: getDocTokenBudget(payload.document_type),
@@ -1337,6 +1341,20 @@ export async function callClaudeAPI(payload: GenerationPayload): Promise<string>
 
     // Check for deprecation warnings
     await checkDeprecationWarning(response);
+
+    const tokensIn = response.usage.input_tokens;
+    const tokensOut = response.usage.output_tokens;
+    logCost({
+      userId: meta?.userId,
+      task: 'docgen',
+      route: meta?.route ?? payload.document_type,
+      provider: 'anthropic',
+      model,
+      tokensIn,
+      tokensOut,
+      costUsd: calcCost(model, tokensIn, tokensOut),
+      latencyMs: Date.now() - t0,
+    });
 
     const content = response.content.find((b): b is Anthropic.TextBlock => b.type === 'text');
     if (!content) {
@@ -1363,7 +1381,8 @@ export async function callClaudeAPI(payload: GenerationPayload): Promise<string>
           user: `${stableBlock}\n${variableBlock}`,
           max_tokens: getDocTokenBudget(payload.document_type),
           temperature: GENERATION_TEMPERATURE,
-          route: 'doc-generation',
+          route: meta?.route ?? 'doc-generation',
+          userId: meta?.userId,
         });
         if (fallback) {
           console.warn(`[generation-engine] ${payload.document_type} generated via OpenRouter fallback (${fallback.model})`);
@@ -1424,7 +1443,8 @@ export async function humanizeDocument(
   rawContent: string,
   voiceProfile: string,
   previousFeedback?: string,
-  documentType?: DocumentType
+  documentType?: DocumentType,
+  meta?: { userId?: string }
 ): Promise<string> {
   const anthropic = getAnthropic();
 
@@ -1442,6 +1462,7 @@ export async function humanizeDocument(
   ].join('\n');
 
   const model = await getGenerationModel();
+  const t0 = Date.now();
   try {
     const response = await anthropic.messages.create({
       model,
@@ -1458,6 +1479,20 @@ export async function humanizeDocument(
 
     // Check for deprecation warnings
     await checkDeprecationWarning(response);
+
+    const tokensIn = response.usage.input_tokens;
+    const tokensOut = response.usage.output_tokens;
+    logCost({
+      userId: meta?.userId,
+      task: 'docgen',
+      route: 'doc-humanization',
+      provider: 'anthropic',
+      model,
+      tokensIn,
+      tokensOut,
+      costUsd: calcCost(model, tokensIn, tokensOut),
+      latencyMs: Date.now() - t0,
+    });
 
     const content = response.content.find((b): b is Anthropic.TextBlock => b.type === 'text');
     if (!content) {
@@ -1479,6 +1514,7 @@ export async function humanizeDocument(
         max_tokens: getDocTokenBudget(documentType),
         temperature: HUMANIZATION_TEMPERATURE,
         route: 'doc-humanization',
+        userId: meta?.userId,
       });
       if (fallback) {
         console.warn(`[generation-engine] ${documentType} humanized via OpenRouter fallback (${fallback.model})`);
@@ -3008,7 +3044,7 @@ Generate the document using Investor 2's identity, name, nationality, source of 
             throw new DocumentQuarantineError(errorMsg, 'needs_information');
           }
 
-          const content = await callClaudeAPI(payload);
+          const content = await callClaudeAPI(payload, { userId, route: 'doc-generation' });
 
           // H2 — Deterministic figure provenance check (free, no LLM).
           // Runs before the LLM verifier so orphan figures are surfaced immediately.
@@ -3061,7 +3097,7 @@ Generate the document using Investor 2's identity, name, nationality, source of 
                       ? '\n\n' + currentPayload.case_theory_brief
                       : ''),
                 };
-                finalContent = await callClaudeAPI(correctionPayload);
+                finalContent = await callClaudeAPI(correctionPayload, { userId, route: 'doc-generation-verifier-retry' });
                 currentPayload = correctionPayload;
               }
             }
@@ -3292,7 +3328,7 @@ Generate the document using Investor 2's identity, name, nationality, source of 
           const correctedContent = await callClaudeAPI({
             ...regenPayload,
             case_theory_brief: distinctivenessBrief + (regenPayload.case_theory_brief ? '\n\n' + regenPayload.case_theory_brief : ''),
-          });
+          }, { userId, route: 'doc-generation-dedup-retry' });
 
           const wc = countWords(correctedContent);
           const pages = estimatePages(wc);
@@ -3454,7 +3490,7 @@ Generate the document using Investor 2's identity, name, nationality, source of 
 
       for (let attempt = 1; attempt <= HUMANIZATION_MAX_ATTEMPTS; attempt++) {
         try {
-          const humanized = await humanizeDocument(currentText, voiceProfile, lastFeedback, doc.document_type);
+          const humanized = await humanizeDocument(currentText, voiceProfile, lastFeedback, doc.document_type, { userId });
           const wc = countWords(humanized);
           const pages = estimatePages(wc);
           actualAttempts = attempt;
@@ -3673,7 +3709,7 @@ Generate the document using Investor 2's identity, name, nationality, source of 
             case_theory_brief: failureInstructions
               + (payload.case_theory_brief ? '\n\n' + payload.case_theory_brief : ''),
           };
-          const retryContentText = await callClaudeAPI(retryPayload);
+          const retryContentText = await callClaudeAPI(retryPayload, { userId, route: 'doc-generation-quality-retry' });
 
           if (retryContentText) {
             const wc = countWords(retryContentText);
