@@ -2844,11 +2844,14 @@ export async function runGenerationPipeline(
         });
     }
 
-    // C2: Load already-approved docs from a prior interrupted run so we skip re-generating them
+    // C2/DR-7: Load already-approved docs from a prior interrupted run so we skip
+    // re-generating them. Scoped by application_id, not job_id — /start mints a
+    // new job on every retry, so a job_id scope always sees zero approved docs
+    // on a retry and regenerates all 15-25 documents at full LLM cost.
     const { data: existingApproved } = await supabase
       .from('generated_documents')
       .select('document_type, content_text, verifier_result')
-      .eq('job_id', jobId)
+      .eq('application_id', applicationId)
       .eq('status', 'approved');
     const approvedSet = new Set((existingApproved ?? []).map(d => d.document_type as string));
     for (const d of existingApproved ?? []) {
