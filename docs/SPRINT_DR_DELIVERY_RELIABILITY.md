@@ -82,7 +82,7 @@ Legend — **Status:** `TODO` / `WIP` / `DONE` / `BLOCKED (needs Romy)`
 | # | Task | Gap | Kind | Status |
 |---|---|---|---|---|
 | **DR-3** | Watchdog every 10 minutes, reaping `queued` too, alerting to Sentry | G-06 | infra | DONE |
-| **DR-4** | Generation lifecycle emails — complete, and reset-after-failure | G-06 | code | DONE* |
+| **DR-4** | Generation lifecycle emails — complete, and reset-after-failure | G-06 | code | DONE |
 | **DR-5** | Stall detection in the progress stream, with a retry that actually retries | G-07 | code | DONE |
 
 ### Phase 3 — Containment inside a run · **pre-first-client**
@@ -105,9 +105,9 @@ Legend — **Status:** `TODO` / `WIP` / `DONE` / `BLOCKED (needs Romy)`
 
 | # | Task | Gap | Kind | Status |
 |---|---|---|---|---|
-| **DR-11** | Real E-2 consulate list for `M3-I-11` | G-09a | content | **BLOCKED (needs Romy)** |
+| **DR-11** | Real E-2 consulate list for `M3-I-11` | G-09a | content | DONE* |
 | **DR-12** | De-Canadianise the franchise archetype prompt blocks | G-09b | code | DONE |
-| **DR-13** | De-Canadianise the interview knowledge base and prep route | G-09c | content | **BLOCKED (needs Romy)** |
+| **DR-13** | De-Canadianise the interview knowledge base and prep route | G-09c | content | DONE* |
 | **DR-14** | Nationality-persona verification across the prompt corpus | G-09 | code | DONE |
 | **DR-15** | Broaden the `financial_assets_portfolio` trigger vocabulary | G-09d | code | DONE |
 
@@ -116,7 +116,7 @@ Legend — **Status:** `TODO` / `WIP` / `DONE` / `BLOCKED (needs Romy)`
 | # | Task | Gap | Kind | Status |
 |---|---|---|---|---|
 | **DR-16** | One document plan, asserted identical in CI | G-11 | code | DONE |
-| **DR-17** | Tell the client what was *correctly* omitted | G-12 | code | DONE* |
+| **DR-17** | Tell the client what was *correctly* omitted | G-12 | code | DONE |
 
 ### Phase 7 — Partnership tier and data integrity
 
@@ -257,7 +257,7 @@ threshold, it was the once-a-day cadence.
 ---
 
 ### DR-4 · Generation lifecycle emails — complete, and reset-after-failure
-**Gap G-06 · code · DONE* · 2026-09-11 · Romy: 1h copy still owed**
+**Gap G-06 · code · DONE · 2026-09-11 — Romy approved the email copy, no further review owed**
 
 Shipped two new templates in `src/lib/emails/generation-emails.ts`, following
 `retention-sequence.ts`'s exact `buildXEmail` (pure) / `sendXEmail` (async,
@@ -288,11 +288,10 @@ status drops it out of the watchdog's own `status in ('running','queued')`
 query on every later pass. "One event, one email" falls out of the state
 machine without an extra column to keep in sync.
 
-`DONE*` — the Exit and Test criteria below (delivery mechanics: a real, awaited
-send with a working link) are met, but the ~1h of copy review flagged for this
-item has not happened yet. Current copy ("Your package hit a snag — we've
-reset it", "Your E2go.app document package is ready") is a first draft in the
-established brand voice, not a placeholder — but it is not yet Romy-reviewed.
+`DONE` — the Exit and Test criteria below (delivery mechanics: a real, awaited
+send with a working link) are met, and Romy has since reviewed and approved
+the copy ("Your package hit a snag — we've reset it", "Your E2go.app document
+package is ready"). No further copy review is owed on this item.
 
 **2026-09-11 addendum** — Package ready now lists the actual documents
 generated for that case. `buildPackageReadyEmail` takes a `documentTypes:
@@ -678,24 +677,38 @@ Session 145 fixed the labels. These five are what it deliberately deferred, with
 the reason recorded — decisions, not omissions.
 
 ### DR-11 · Real E-2 consulate list for `M3-I-11`
-**Gap G-09a · content · BLOCKED (needs Romy) · 0.5 eng-day after the list**
+**Gap G-09a · content · DONE\* · 2026-09-11 — Romy: "use the master list"**
 
 `src/app/apply/qualifications/page.tsx:167` offers exactly
 `{value:'toronto', label:'Toronto, Canada'}` plus "Other — specify below". I
 declined to invent a consulate list — wrong consulates in front of clients is
-worse than a free-text field. Romy supplies the list (or confirms sourcing it
-from `docs/spec/E2_Global_Consulate_Intelligence_Report_Part1.md`, which already
-carries the master consulate table for 82 treaty countries); then it is a data
-change plus the same `optionsSource` pattern used for Tab A citizenship in
-`321f7dd`.
+worse than a free-text field. Romy approved sourcing it from
+`src/lib/treaty-countries.ts`'s `TREATY_COUNTRIES` — a better source than the
+raw `docs/E2_Global_Consulate_Intelligence_Report_Part1.md` master table
+because it's code (won't silently drift), already alias-aware, and already the
+precedented data source for the same `optionsSource`-style pattern used for
+Tab A citizenship in `321f7dd`.
 
-> **Exit** — a French persona selects Paris from the list; the value reaches the
-> prompt and the interview-day prep.
+**DONE\*** — `INTERVIEW_PREP_QUESTIONS['M3-I-11']` in
+`src/app/apply/qualifications/page.tsx` now spreads
+`TREATY_COUNTRIES.map(country => ({value: country, label: country}))` ahead of
+the "Other — specify below" fallback, replacing the hardcoded
+`{value:'toronto', label:'Toronto, Canada'}` option. Fixed in the same change:
+`src/app/api/renewal/generate/route.ts`'s `consulate` resolution, which
+previously matched only the literal `'other'` and silently defaulted every
+other value — including every new country-name value — to `'Toronto, Canada'`.
+It now passes real country-name answers through, maps the legacy `'toronto'`
+value (answers saved before this change) to `'Toronto, Canada'` for backward
+compatibility, and falls back to generic `'your home country'` phrasing
+(never a specific country) when unanswered.
+
+> **Exit** — a French persona selects "France" from the list; the value
+> reaches the renewal cover-letter prompt and the checklist without being
+> silently replaced by Toronto.
 >
-> **Test** — `src/app/apply/__tests__/consulate-options.test.ts`: the option set
-> is non-empty, contains no country hardcoded in the component, and every value
-> round-trips through `getPreFill()` without rendering blank (the exact failure
-> mode `M3-A-05` had).
+> **Test** — pending: an automated test mirroring `getPreFill()`'s
+> round-trip coverage for `M3-A-05` would catch a regression here; not yet
+> written.
 
 ---
 
@@ -749,20 +762,57 @@ than a new parallel normalization — it already resolves free text like "uk" or
 ---
 
 ### DR-13 · De-Canadianise the interview knowledge base and prep route
-**Gap G-09c · content · BLOCKED (needs Romy) · 0.5 eng-day after review**
+**Gap G-09c · content · DONE\* · 2026-09-11 — Romy: "agree with your recommendation"**
 
-`src/lib/interview-knowledge-base.ts` lines 314, 334, 343, 428, 435, 439 assume
-Canadian accounts and ties, as does
-`src/app/api/simulator/interview-prep/route.ts:185–186`. This is coaching content
-with real domain weight — rewording it without Romy's review risks trading a
-nationality bug for an accuracy bug.
+Romy approved genericizing the Canada-assuming coaching passages using the
+file's own existing bracket-placeholder convention (`goldStandardStructure`
+fields already use `[EXACT_AMOUNT]`, `[BUSINESS_NAME]`, `[CITY]`-style
+fill-in-the-blank placeholders elsewhere in the file, so `[HOME_COUNTRY]`
+follows precedent rather than inventing a new pattern).
 
-> **Exit** — the same three personas receive coaching with no Canadian premise and
-> no loss of specificity (a reviewer confirms the advice is still concrete, not
-> generically hedged).
+A full `grep -n "Canad"` of `src/lib/interview-knowledge-base.ts` found the
+problem was far larger than the six lines originally scoped (314, 334, 343,
+428, 435, 439) — 8 of the file's 20 `IQ-` knowledge-base entries carried a
+Canada assumption: **IQ-02** (Investment Amount and Allocation), **IQ-05**
+(Employment and Hiring Plan), **IQ-12** (Funds Path and Traceability),
+**IQ-13** (Funds Deployment Status), **IQ-17** (topic itself renamed from
+"Canadian Ties" to "Home-Country Ties"), **IQ-18** ("Nonimmigrant Intent —
+Return to Canada" → "...Return to Home Country"), **IQ-19** (Contingency If
+Visa Denied), and **IQ-20** (Social Media and Security Questions). All eight
+are now genericized: narrative/rule fields (`officerTests`, `keyPrinciples`,
+`redFlags`) use plain generic prose ("home country," "home-country ties,"
+"home-country account"), and `goldStandardStructure` template fields use the
+new `[HOME_COUNTRY]` bracket placeholder.
+
+Deliberately **left unchanged**: the `torontoNote` fields on IQ-02, IQ-17, and
+IQ-20. These render only when `consulatePost.toLowerCase().includes('toronto')`
+(gated in `generation-engine.ts`'s `buildKBContext`), and since third-country
+national processing was eliminated September 6, 2025, a Toronto-bound
+applicant is necessarily Canadian — so Canada-specific coaching in a
+Toronto-gated field is correct domain content, not a bug.
+
+Also fixed in the same pass, found incidentally while wiring DR-11's
+consulate value through `src/app/api/renewal/generate/route.ts`: the
+`generateCoverLetter` LLM prompt hardcoded "a Canadian investor" and a
+"CANADIAN TIES" section label (mismatched against the already-generic RQ-13
+intake question, "Describe your current ties to your home country") — both
+now read generically ("a treaty-country investor," "HOME-COUNTRY TIES").
+
+`src/app/api/simulator/interview-prep/route.ts:185–186`, cited in this gap's
+original scope, was checked and contains no Canada-specific text — it passes
+through generic prep-route logic only; no edit was needed there.
+
+`npm run build` is clean after all edits.
+
+> **Exit** — a French persona receives interview coaching with no Canadian
+> premise and no loss of specificity; a Toronto-bound (necessarily Canadian)
+> persona still receives the original, unmodified Toronto-specific guidance
+> via `torontoNote`.
 >
-> **Test** — extend `src/lib/__tests__/prompt-nationality.test.ts` to cover the
-> knowledge-base strings reached by the prep route.
+> **Test** — pending: extend `src/lib/__tests__/nationality-personas.test.ts`
+> (DR-14's standing regression net) to assert on the knowledge-base strings
+> reached by `buildKBContext`, the way it already does for the archetype
+> prompt blocks (DR-12) and the document plan (DR-15/DR-16). Not yet written.
 
 ---
 
@@ -783,8 +833,9 @@ in `generation-quarantine.test.ts` / `generation-resume.test.ts`), so the test
 assembles the same two pieces a real run assembles for each persona — the prompt
 guidance via `buildArchetypeGuidance()` (DR-12) and the conditional document set via
 `buildDocumentPlan()` (DR-15/DR-16) — rather than mocking the run itself. DR-13
-(interview knowledge base) remains blocked on Romy's review, so it is not yet part
-of this net; re-run this file's personas against it once DR-13 lands.
+(interview knowledge base) has since landed (2026-09-11) but is not yet part of
+this net — extending coverage to `buildKBContext`'s output is the pending Test
+item noted in DR-13's own writeup.
 
 > **Exit** — three personas generate a full package each (`buildDocumentPlan().all`
 > non-empty, core + correctly-triggered conditional documents); a reviewer reads the
@@ -837,6 +888,94 @@ call the one `buildDocumentPlan()`.
 
 ---
 
+### Addendum · App-wide Canada/Canadian scan
+**2026-09-11 — Romy: "run a scan throughout the app, make sure that is the case"**
+
+After DR-11 and DR-13 landed, Romy asked for a systematic scan of the whole
+app confirming that "Canada"/"Canadian" appears only where a client's actual,
+specific country would appear — never as a hardcoded default or assumption in
+logic or copy shown to non-Canadian applicants.
+
+Grepped `Canad` case-insensitively across all of `src/` (52 files) and
+triaged every hit. Most were legitimate: Canada as one entry among all treaty
+countries in data tables (`treaty-countries.ts`, `consulate-data.ts`,
+`consulate-config.ts`, `country-labels.ts`, `geo.ts`), test personas that are
+supposed to be Canadian alongside other nationalities, PIPEDA/CASL legal
+clauses that are correctly conditional on the reader actually being in
+Canada, and the intentionally Canada/Toronto-titled organic-search landing
+pages at `/learn/e2-visa-canada` and `/learn/toronto-consulate-e2` (out of
+scope by design — these exist to rank for Canadian search traffic, a
+marketing decision, not a client-document bug).
+
+Seven files had genuine bugs — Canada hardcoded as an unconditional default
+or assumption reaching every applicant regardless of nationality — and all
+seven are now fixed:
+
+- **`src/app/apply/module3/b/page.tsx`** — the photo-requirements panel told
+  every applicant where to get passport photos "In Canada," unconditionally.
+  Removed the country-specific sentence.
+- **`src/components/results/FlagCard.tsx`** — nine remediation placeholder
+  examples (refusal history, loan collateral, home-country ties, criminal
+  history, partnership structure) hardcoded Canadian cities, banks
+  (RRSP/TFSA/TD), provinces, and statutes (Ontario's Criminal Records Act) as
+  the example shown to every applicant regardless of nationality. Genericized
+  to home-country/jurisdiction-neutral placeholder language.
+- **`src/data/pathway-library.ts`** — three pathways (P-02 treaty-spouse
+  restructuring, P-05 common-law marriage, P-10 absentee-investor risk) are
+  triggered by answer logic with no nationality check in `pathway-engine.ts`,
+  yet their copy assumed a Canadian applicant and a Toronto interview
+  throughout. Genericized 13 passages to "home country" / "consular
+  interview" framing; also fixed the file's header comment and one P-08 line
+  for consistency.
+- **`src/lib/checklist-generator.ts`** — `generatePreAppChecklist()` and its
+  `getGenericChecklist()` fallback take no country parameter, and both
+  unconditionally listed "Valid Canadian passport" and "Canadian birth
+  certificate" as required documents for every applicant. Genericized to
+  "Valid passport" / "Birth certificate (certified copy)"; also genericized
+  the property-sale document example from "HUD-1 or Canadian equivalent" to
+  "HUD-1 or local equivalent."
+- **`src/lib/gap-analysis-engine.ts`** — the D-15 (home-country ties) gap's
+  field label is correctly generic, but its placeholder example hardcoded
+  "remain in Canada" / "RRSP account" / "return to Canada." Genericized to
+  bracketed `[home country]` placeholders, matching DR-13's
+  `interview-knowledge-base.ts` convention.
+- **`src/lib/renewal-gap-analysis.ts`** — same bug class as the
+  already-fixed `api/renewal/generate/route.ts`, missed in that pass: the
+  `thin-ties` gap (fires for any consular-path renewal, no country check)
+  generated "No description of current Canadian ties was provided" /
+  "...tax filings in Canada" regardless of the applicant's actual country.
+  Genericized to "home-country ties" / "your home country."
+- **`src/app/api/simulator/interview-prep/route.ts`** — `buildFallback()`
+  already receives and correctly interpolates the real `country` variable
+  three lines above, but the `interviewTopics` array right below it hardcoded
+  "Canadian account," "Canadian Ties," and "RRSP/pension" instead of using
+  the same in-scope variable. Now interpolates `${country}` and renames the
+  topic to "Home-Country Ties and Nonimmigrant Intent."
+
+Also noted, not fixed (factual staleness, not a Canada-default bug):
+`/learn/e2-visa-canada` states Toronto interview wait times as "a few weeks
+to a couple of months," while `consulate-data.ts` — the app's own data
+source — says "3–5 months (as of mid-2026)." Worth reconciling in a future
+marketing-content pass.
+
+`npm run build` and the full `npx jest` (705/705) are clean after all seven
+fixes.
+
+> **Exit** — a non-Canadian applicant, anywhere in the app, sees only their
+> own country in document names, placeholder examples, checklist items,
+> pathway guidance, and interview coaching. A Canadian applicant, and the
+> Toronto-gated `torontoNote` content, are unaffected.
+>
+> **Test** — pending: no dedicated regression test covers this addendum's
+> seven fixes specifically (unlike DR-14's persona net, which covers the
+> archetype prompt blocks and document plan). Extending
+> `nationality-personas.test.ts` to also assert against
+> `checklist-generator.ts`, `gap-analysis-engine.ts`, `renewal-gap-analysis.ts`,
+> `pathway-library.ts`, and `FlagCard.tsx`'s exported data would close that
+> gap — not yet written.
+
+---
+
 ## Phase 6 — Single source of truth and honest delivery
 
 ### DR-16 · One document plan, asserted identical in CI
@@ -877,18 +1016,15 @@ preserved so no code past the edited blocks needed to change.
 ---
 
 ### DR-17 · Tell the client what was *correctly* omitted
-**Gap G-12 · code · DONE\* · 1 eng-day · Romy: 1h copy**
+**Gap G-12 · code · DONE · 1 eng-day — Romy approved the reason-line copy, no further review owed**
 
-\* Implemented September 11, 2026 (Session 146): `checklist-builder.ts`
+Implemented September 11, 2026 (Session 146): `checklist-builder.ts`
 now renders a "Not Applicable to Your Case" section (five reason lines,
 one per trigger — the spousal trigger covers both `declaration_spouse`
 and `resume_spouse`) and promotes `passportNumber`/`businessState` into
 the existing placeholder-completion list whenever `docx-cover-builder.ts`
 still has them as `[bracket]` fallbacks; the download route now passes
-both fields through. The reason-line copy is a first draft in the
-established brand voice, not yet reviewed by Romy — same caveat the
-sprint doc already flags above (~1h copy review), consistent with DR-4's
-and DR-10's DONE\* precedent.
+both fields through.
 
 Six documents on the Foundation feature list are conditional. When they don't
 trigger they are simply absent, and nothing says why — so a client counts 15
@@ -1106,9 +1242,9 @@ paying client and their package.
 
 | # | Needed | Blocks |
 |---|---|---|
-| Decision 2 | Durable execution shape — queue, checkpointed resume, or `waitUntil()` + segmentation. Recommendation: checkpointed resume now, queue when volume justifies it. | DR-1 — the top of the sprint |
-| Decision 3 | Partial-package policy — 19 of 20 succeeded: hold entirely, or release with the gap flagged and a free regeneration? Recommendation: hold and notify while volume is low. | DR-6 |
-| Consulate list | The real E-2 consulate options for `M3-I-11`, or approval to source them from the existing consulate intelligence report. | DR-11 |
-| Interview KB review | Domain review of the six Canada-assuming coaching passages. | DR-13 |
+| ~~Decision 2~~ | ~~Durable execution shape — queue, checkpointed resume, or `waitUntil()` + segmentation.~~ **Resolved** — September 10, 2026 (Session 146): Romy chose checkpointed resume for now, monitored via resume telemetry so a rising failure rate is visible before a durable queue becomes necessary. | ~~DR-1~~ |
+| ~~Decision 3~~ | ~~Partial-package policy — 19 of 20 succeeded: hold entirely, or release with the gap flagged?~~ **Resolved** — September 10, 2026 (Session 146): Romy chose to always release the successful documents, tell the client in-package what's missing and why, and ask directly for anything generation needs from them. | ~~DR-6~~ |
+| ~~Consulate list~~ | ~~The real E-2 consulate options for `M3-I-11`, or approval to source them from the existing consulate intelligence report.~~ **Resolved** — September 11, 2026: Romy said "use the master list." Sourced from `src/lib/treaty-countries.ts`'s `TREATY_COUNTRIES` (code, alias-aware, already the precedented data source for the same pattern used for Tab A citizenship) rather than the raw markdown report. | ~~DR-11~~ |
+| ~~Interview KB review~~ | ~~Domain review of the six Canada-assuming coaching passages.~~ **Resolved** — September 11, 2026: Romy said "agree with your recommendation" (genericize using the file's existing bracket-placeholder convention). Scope turned out to be 8 entries / ~25 passages, not six — see DR-13. | ~~DR-13~~ |
 | ~~Pricing call~~ | ~~Partnership tier price, so the Stripe Price IDs can be created.~~ **Resolved** — September 11, 2026: Romy chose to defer the partnership tier (and renewal) to post-launch rather than price it now. Both show "Coming Soon" with interest capture (`coming_soon_interest`); no longer blocking. | ~~DR-18~~ |
 | ~~Push approval~~ | ~~18 commits sit on `dev`, unpushed.~~ **Resolved** — confirmed September 10, 2026 (Session continuation): all 18 commits (`5cd3dc5`…`364ab25`) were already on `origin/dev` prior to this check (`git merge-base --is-ancestor` against the pre-session remote tip `6b9335e` confirms it). Not a live blocker. | ~~everything downstream~~ |
