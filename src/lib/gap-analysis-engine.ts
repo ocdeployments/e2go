@@ -1399,9 +1399,9 @@ export const D_CODE_REMEDIATION: DCodeRemediation[] = [
     lowRiskWhen: '≥ 3 specific home-country ties documented AND return intent stated',
     fields: [
       { key: 'M3-D-05', label: 'Your ties to your home country (be specific)', inputType: 'textarea',
-        placeholder: 'e.g. Property: 3-bedroom home at [address], owned outright. Family: spouse and two children remain in Canada. Pension: RRSP account with [bank], value $X.' },
+        placeholder: 'e.g. Property: 3-bedroom home at [address], owned outright. Family: spouse and two children remain in [home country]. Pension: retirement account with [bank], value $X.' },
       { key: 'M3-A-23', label: 'Intent to return to your home country after the E-2 period', inputType: 'textarea',
-        placeholder: 'e.g. I intend to operate the business for 5 years then return to Canada where I retain property and family ties.' },
+        placeholder: 'e.g. I intend to operate the business for 5 years then return to [home country] where I retain property and family ties.' },
     ],
     docs: [],
   },
