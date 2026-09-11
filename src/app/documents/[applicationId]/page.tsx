@@ -310,7 +310,7 @@ export default function DocumentsReviewPage() {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#0a0a0a]">
-        <p className="text-sm text-white/50" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+        <p className="text-sm text-white/70" style={{ fontFamily: "'DM Sans', sans-serif" }}>
           Loading documents…
         </p>
       </div>
@@ -405,7 +405,7 @@ export default function DocumentsReviewPage() {
             Your Application Package
           </h1>
           <div
-            className="flex flex-wrap items-center gap-4 text-sm text-white/50"
+            className="flex flex-wrap items-center gap-4 text-sm text-white/70"
             style={{ fontFamily: "'DM Sans', sans-serif" }}
           >
             <span>Application {applicationId.slice(0, 8)}</span>
@@ -653,7 +653,7 @@ export default function DocumentsReviewPage() {
                       {t.tabNumber}
                     </span>
                     <div>
-                      <p className="text-sm text-white/50">{t.label}</p>
+                      <p className="text-sm text-white/70">{t.label}</p>
                       <p className="text-xs text-white/25 leading-snug">{t.description}</p>
                     </div>
                   </div>
