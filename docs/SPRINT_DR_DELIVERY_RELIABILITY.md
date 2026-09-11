@@ -293,6 +293,21 @@ item has not happened yet. Current copy ("Your package hit a snag — we've
 reset it", "Your E2go.app document package is ready") is a first draft in the
 established brand voice, not a placeholder — but it is not yet Romy-reviewed.
 
+**2026-09-11 addendum** — Package ready now lists the actual documents
+generated for that case. `buildPackageReadyEmail` takes a `documentTypes:
+DocumentType[]` parameter; the call site in `runGenerationPipeline` passes
+`DOCUMENT_TYPES` (`documentPlan.all` — core types plus only the conditional
+types this case's own answers triggered), so two cases with different
+documents get genuinely different email copy, not one fixed list. Every type
+rendered is checked in tests against `DOC_DISPLAY_NAMES`
+(`docx-package-constants.ts`), the same map the download route uses to name
+files in the real ZIP, so nothing listed can be a document the package could
+never actually contain. Copy deliberately says "generated for your case," not
+"available to download" — `buildPackageManifest`'s `packageReady` gate
+(`cic-package-manifest.ts`) still requires a separate, manual client
+certification step before a download is actually possible, and that has not
+happened yet at the moment this email sends.
+
 > **Exit** — a completed run and a reaped run each put a real email in a real
 > inbox, sent from the deployed environment, not from a local script.
 >
