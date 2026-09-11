@@ -5,6 +5,7 @@ import { checkRateLimit } from '@/lib/rate-limit';
 import { isKillSwitchEnabled } from '@/lib/kill-switch';
 import { captureApiError } from '@/lib/capture-error';
 import { generateStartRequestSchema } from '@/lib/api-schemas';
+import { IN_FLIGHT_STATUSES, isStaleQueuedJob } from '@/lib/generation-job-status';
 
 function getSupabase() {
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
@@ -86,14 +87,22 @@ export async function POST(request: Request) {
     // Check no active job already running for this application
     const { data: existingJob } = await supabase
       .from('document_generation_jobs')
-      .select('id, status, current_step, total_steps, current_step_label')
+      .select('id, status, current_step, total_steps, current_step_label, updated_at')
       .eq('application_id', applicationId)
-      .in('status', ['queued', 'running'])
+      .in('status', IN_FLIGHT_STATUSES)
       .order('created_at', { ascending: false })
       .limit(1)
       .single();
 
-    if (existingJob) {
+    // DR-2: a queued job whose /run invocation never happened (tab closed
+    // between /start and /run, or the invocation that would have run it died)
+    // has nothing keeping it moving. It is not a lock on new attempts — fall
+    // through and let a fresh job be created below.
+    const existingIsStaleQueue = existingJob
+      ? isStaleQueuedJob(existingJob.status, existingJob.updated_at)
+      : false;
+
+    if (existingJob && !existingIsStaleQueue) {
       return NextResponse.json({
         jobId: existingJob.id,
         message: 'An active generation job already exists',
