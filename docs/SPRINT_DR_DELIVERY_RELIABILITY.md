@@ -130,7 +130,7 @@ Legend — **Status:** `TODO` / `WIP` / `DONE` / `BLOCKED (needs Romy)`
 |---|---|---|---|---|
 | **DR-20** | The delivery test matrix | all | code | TODO |
 | **DR-21** | Three chaos drills, green | G-01, G-04, G-08 | code | TODO |
-| **DR-22** | The generation ops dashboard | G-06 | code | TODO |
+| **DR-22** | The generation ops dashboard | G-06 | code | DONE* |
 
 ---
 
@@ -946,7 +946,7 @@ The three drills that map to the three CRITICAL delivery failures:
 ---
 
 ### DR-22 · The generation ops dashboard
-**Gap G-06 · code · TODO · 1.5 eng-days**
+**Gap G-06 · code · DONE\* · 1.5 eng-days**
 
 One surface answering: *how many paid generations started today, how many
 completed, at what p50/p95 duration, and which are in flight right now?* This is
@@ -958,6 +958,20 @@ the number to have open on the morning the first ten clients arrive.
 > **Test** — `src/lib/__tests__/generation-metrics.test.ts`: the aggregate query
 > returns correct counts and percentiles over a fixture set, including jobs in
 > non-terminal states.
+
+\* Implemented September 11, 2026 (Session 146): `generation-metrics.ts` adds
+`computeGenerationMetrics()`, a pure aggregation over
+`document_generation_jobs` rows (verified against the live schema, not
+migration files) giving started/completed/failed-today counts, p50/p95
+completion duration, and an in-flight list that includes jobs still running
+from a prior day. `health-detail/route.ts` wires this in with one additional
+query; `system-status/page.tsx` renders the six numbers next to the existing
+active/stuck job lists. The Test criterion is met (9 fixture tests, including
+non-terminal states). The Exit criterion's "a deliberately stalled job appears
+on it within 15 minutes" half is a live-production observation that cannot be
+verified from this session — the in-flight list already covers this by
+construction (any `queued`/`running` row appears regardless of age), but has
+not been watched against a real stalled job in production.
 
 ---
 
