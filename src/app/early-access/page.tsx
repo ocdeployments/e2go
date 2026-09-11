@@ -177,11 +177,17 @@ export default function EarlyAccessPage() {
             {countryOpen && filteredCountries.length > 0 && (
               <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 20, marginTop: '4px', maxHeight: '220px', overflowY: 'auto', background: '#111', border: '1px solid rgba(245,240,232,0.12)' }}>
                 {filteredCountries.map((c, idx) => (
-                  <div
+                  <button
                     key={c}
+                    type="button"
                     onMouseDown={e => e.preventDefault()}
                     onClick={() => selectCountry(c)}
                     style={{
+                      display: 'block',
+                      width: '100%',
+                      textAlign: 'left',
+                      font: 'inherit',
+                      border: 'none',
                       padding: '9px 14px',
                       fontFamily: "'DM Sans', sans-serif",
                       fontSize: '13px',
@@ -191,7 +197,7 @@ export default function EarlyAccessPage() {
                     }}
                   >
                     {c}
-                  </div>
+                  </button>
                 ))}
               </div>
             )}
