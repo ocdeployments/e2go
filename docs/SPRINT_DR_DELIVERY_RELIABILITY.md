@@ -83,7 +83,7 @@ Legend — **Status:** `TODO` / `WIP` / `DONE` / `BLOCKED (needs Romy)`
 |---|---|---|---|---|
 | **DR-3** | Watchdog every 10 minutes, reaping `queued` too, alerting to Sentry | G-06 | infra | TODO |
 | **DR-4** | Generation lifecycle emails — complete, and reset-after-failure | G-06 | code | TODO |
-| **DR-5** | Stall detection in the progress stream, with a retry that actually retries | G-07 | code | TODO |
+| **DR-5** | Stall detection in the progress stream, with a retry that actually retries | G-07 | code | DONE |
 
 ### Phase 3 — Containment inside a run · **pre-first-client**
 
@@ -280,22 +280,55 @@ function, and a real submission never reached Resend at all.
 ---
 
 ### DR-5 · Stall detection in the progress stream, with a retry that actually retries
-**Gap G-07 · code · TODO · 1 eng-day**
+**Gap G-07 · code · DONE · 2026-09-11**
 
-`generate/progress/[jobId]/route.ts` polls every 2s and terminates only on
-`completed`/`failed`. Add: a comparison of `updated_at` against the wall clock,
-emitting a `stalled` event past ten minutes; an explicit `maxDuration` on the
-route so the platform's default cut is a decision rather than a surprise; and a
-client-side stalled state offering a retry button that **re-issues `/run`** (see
-DR-2 — a retry that only re-attaches the SSE stream is the trap door, not the
-exit).
+`generate/progress/[jobId]/route.ts` polled every 2s but only ever looked at
+`status` — a job stuck at `running` with a frozen `updated_at` (a crashed
+invocation, an Anthropic call that never resolves) streamed the same "still
+working" message forever, with no signal telling the client to reconnect.
+
+Rather than choosing a second, independently-picked "how long is too long"
+threshold, extracted the decision into `src/lib/progress-stall.ts` and had it
+reuse DR-1's `isStaleForResume()` — the exact predicate the generation-resume
+cron already uses to decide a job is dead (`queued`/`running` only, no update
+in ten minutes). The SSE stream's "tell the user" threshold and the cron's
+"actually resume it" threshold now structurally cannot drift apart, the same
+way DR-8's `selectLatestDocumentRows()` and DR-16's `buildDocumentPlan()`
+closed off similar two-callers-diverging risks.
+
+`resolveProgressStatus(status, updatedAt)` returns `'stalled'` in place of the
+real status once a job goes stale while still nominally in flight;
+`awaiting_approval` is never reported stalled, since the client is waiting on
+the user there, not the pipeline — `isStaleForResume`'s own guard handles
+this. `isTerminalJobStatus(status)` is now the only thing that closes the
+stream (`completed`/`failed`); `stalled` is reported, not terminal, so the
+interval keeps polling and a background cron resume — or the client's own
+retry — can move `updated_at` forward again on a later tick without the
+client having to reconnect from scratch. Added `export const maxDuration =
+300` to the route (matching `/api/generate/run/[jobId]/route.ts`'s existing
+convention) so the platform's default cutoff is a decision, not a surprise;
+the client's `connectSSE()` already reconnects with backoff on any drop, so a
+mid-run cutoff just opens a fresh stream rather than losing state.
+
+Client-side, `generate/[applicationId]/page.tsx` gained an `isStalled` flag
+and a stalled-state card (reusing the existing FAILURE STATE block's styling)
+whose "Restart Generation" button calls the same `startGeneration()` used by
+the failure state's retry — which per DR-2 always re-issues `POST
+/api/generate/run/[jobId]` before reconnecting, satisfying this task's
+explicit requirement that the retry restart the pipeline rather than just
+re-attach the stream. Also updated the three existing JSX gates
+(`businessName`/`consulate` subtitles, the pre-generation confirmation panel)
+to exclude `isStalled`, since none of them previously accounted for it.
 
 > **Exit** — freeze a job's `updated_at`; within ten minutes the UI says so and
 > offers a retry; pressing it restarts the pipeline and the bar moves.
 >
-> **Test** — `src/app/api/generate/__tests__/progress-stall.test.ts`: a job whose
-> `updated_at` is 11 minutes old emits `stalled`; one 9 minutes old does not; a
-> `completed` job closes the stream.
+> **Test** — `src/app/api/generate/__tests__/progress-stall.test.ts` (14
+> tests): a job whose `updated_at` is 11 minutes old emits `stalled`; one 9
+> minutes old (and one exactly at the 10-minute boundary) does not; a
+> `completed` or `failed` job never reports `stalled` regardless of staleness
+> and always closes the stream; `awaiting_approval` never reports `stalled`
+> no matter how old.
 
 ---
 
