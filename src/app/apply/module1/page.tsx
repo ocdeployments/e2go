@@ -5,6 +5,7 @@ import { useTrackSectionVisit } from "@/hooks/useTrackSectionVisit";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
+import ComingSoonNotifyButton from "@/components/ComingSoonNotifyButton";
 
 interface QuizSession {
   id: string;
@@ -100,7 +101,9 @@ export default function Module1Page() {
       }
 
       setQuizSession(session);
-      setApplicationType(session.application_type || "solo");
+      // Partnership applications are paused (Coming Soon) — never auto-select
+      // it even if the quiz classified this case as a partnership.
+      setApplicationType("solo");
       setPartnerName(session.partner_name || "");
       setPartnerEmail(session.partner_email || "");
 
@@ -303,22 +306,33 @@ export default function Module1Page() {
                 Application Type <span className="text-[#C9A84C]">*</span>
               </label>
               <div className="space-y-3">
-                {(["solo", "partnership"] as const).map((type) => (
-                  <button
-                    key={type}
-                    onClick={() => setApplicationType(type)}
-                    className={`w-full text-left p-4 border transition-all duration-200 ${
-                      applicationType === type
-                        ? "border-[#C9A84C] bg-[rgba(201,168,76,0.06)]"
-                        : "border-[rgba(201,168,76,0.2)] hover:border-[rgba(201,168,76,0.4)]"
-                    }`}
-                  >
-                    <div className="text-[15px] font-medium text-[#f5f0e8] capitalize mb-1">{type}</div>
-                    <div className="text-[13px] text-[#f5f0e8]/50">
-                      {type === "solo" ? "One investor applying alone" : "Two or more investors applying together"}
+                <button
+                  onClick={() => setApplicationType("solo")}
+                  className={`w-full text-left p-4 border transition-all duration-200 ${
+                    applicationType === "solo"
+                      ? "border-[#C9A84C] bg-[rgba(201,168,76,0.06)]"
+                      : "border-[rgba(201,168,76,0.2)] hover:border-[rgba(201,168,76,0.4)]"
+                  }`}
+                >
+                  <div className="text-[15px] font-medium text-[#f5f0e8] capitalize mb-1">Solo</div>
+                  <div className="text-[13px] text-[#f5f0e8]/50">One investor applying alone</div>
+                </button>
+
+                {/* Partnership applications are paused for launch — see partnership-hold.ts */}
+                <div className="w-full text-left p-4 border border-[rgba(201,168,76,0.1)] flex items-start justify-between gap-4">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-[15px] font-medium text-[#f5f0e8]/40 capitalize">Partnership</span>
+                      <span className="text-[9px] font-medium uppercase tracking-[0.1em] text-[#C9A84C]/70 border border-[#C9A84C]/30 rounded-full px-2 py-0.5">
+                        Coming Soon
+                      </span>
                     </div>
-                  </button>
-                ))}
+                    <div className="text-[13px] text-[#f5f0e8]/30">
+                      Two or more investors applying together — not yet available. Let us know you&apos;re interested and we&apos;ll reach out.
+                    </div>
+                  </div>
+                  <ComingSoonNotifyButton interestType="partnership" />
+                </div>
               </div>
             </div>
 
