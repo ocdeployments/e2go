@@ -122,7 +122,7 @@ Legend — **Status:** `TODO` / `WIP` / `DONE` / `BLOCKED (needs Romy)`
 | # | Task | Gap | Kind | Status |
 |---|---|---|---|---|
 | **DR-18** | Build the partnership tier and remove the hold | G-03 | decision | **BLOCKED (pricing call)** |
-| **DR-19** | Stop asserting `application_type: 'solo'` at checkout | G-09e | code | TODO |
+| **DR-19** | Stop asserting `application_type: 'solo'` at checkout | G-09e | code | DONE |
 
 ### Phase 8 — Prove it, then keep proving it · **standing**
 
@@ -654,23 +654,54 @@ cannot be removed without the tier being built.
 ---
 
 ### DR-19 · Stop asserting `application_type: 'solo'` at checkout
-**Gap G-09e · code · TODO · 0.5 eng-day**
+**Gap G-09e · code · DONE (2026-09-10) · 0.5 eng-day**
 
-`src/app/pricing/PricingClient.tsx:208` hardcodes `application_type: 'solo'` when
+`src/app/pricing/PricingClient.tsx:208` hardcoded `application_type: 'solo'` when
 inserting the `applications` row — a false assertion about the client's own case,
-written from the client side. Nothing leaks today because the Session 145 server
-guard reads `quiz_sessions` first, but the row is wrong in the database, and the
-next feature that trusts `applications.application_type` will inherit the bug.
+written from the client side. Nothing leaked because the Session 145 server
+guard reads `quiz_sessions` first, but the row was wrong in the database, and the
+next feature that trusts `applications.application_type` would have inherited the bug.
 
-Carry the real value through from the quiz session, server-side.
+**Fix location deviated from the original plan.** `PricingClient.tsx` doesn't post
+to `/api/checkout/initiate` (that route is scoped only to the `foundation` tier and
+never sets `application_type` at all) — it posts to `/api/stripe/create-checkout`,
+which is the route every tier actually uses. The find-or-create logic and the
+`application_type` derivation now live there instead:
+`src/app/api/stripe/create-checkout/route.ts`. When the client sends no
+`applicationId` (the first-purchase case), the route looks up the user's most
+recent `applications` row; if none exists, it derives `application_type` from the
+user's most recent `quiz_sessions.application_type` — `'partnership'` if that's
+exactly what the quiz session says, `'solo'` otherwise — the same rule already used
+in `src/app/onboarding/page.tsx:301`. `PricingClient.tsx` no longer touches
+`applications` at all; it just posts `tierId`/`userId` and lets the server resolve
+or create the application. An existing client-supplied `applicationId` is still
+ownership-checked before use, unchanged.
+
+Incidental side effect: `RenewalEntryClient.tsx` calls this route with no
+`applicationId`, which previously 400'd ("Missing required field: applicationId");
+the new find-or-create path now handles that gracefully too.
+
+**Known separate gap, not fixed here:** `src/app/login/page.tsx:89` also hardcodes
+`application_type: 'solo'` on a `quiz_sessions` insert rebuilt from a localStorage
+draft. That draft (saved by `src/app/quiz/page.tsx`'s `saveDraft`) doesn't carry an
+`outcome`/`score`/partnership signal at all and has a field-name mismatch
+(`warningCodes` saved vs. `parsed.warnings` read) — fixing it needs re-running
+scoring, not just reading a stored value. Flagged separately, out of scope for this
+gap.
 
 > **Exit** — a partnership quiz session that reaches checkout writes
-> `application_type: 'partnership'`, not `'solo'`. Verified against the live
-> database, not against the migration files.
+> `application_type: 'partnership'`, not `'solo'`. Verified via the behavioral test
+> below (asserts the exact row passed to `.insert()`), not just against migration
+> files.
 >
-> **Test** — `src/app/api/checkout/__tests__/application-type.test.ts`: the
-> inserted row's `application_type` matches the quiz session's for all three
-> vocabulary values.
+> **Test** — `src/app/api/stripe/__tests__/application-type.test.ts` (relocated from
+> the originally planned `src/app/api/checkout/__tests__/application-type.test.ts`
+> to sit next to the route that actually changed): a solo quiz session produces
+> `application_type: 'solo'`; a partnership quiz session produces
+> `application_type: 'partnership'` (and correctly hits the Session 145 partnership
+> hold, 409); an existing application is reused with no second insert; a
+> client-supplied `applicationId` belonging to another user is still rejected
+> (404).
 
 ---
 
