@@ -98,7 +98,7 @@ Legend — **Status:** `TODO` / `WIP` / `DONE` / `BLOCKED (needs Romy)`
 
 | # | Task | Gap | Kind | Status |
 |---|---|---|---|---|
-| **RS-12** | Hard per-instance cap on the rate-limit fallback, plus an alert | G-23 | code | TODO |
+| **RS-12** | Hard per-instance cap on the rate-limit fallback, plus an alert | G-23 | code | DONE 2026-09-10 |
 
 **G-24** (business plan has no second provider) carries no task here by design —
 the exclusion is intentional and correct. It's noted on Sprint DR's DR-6
@@ -667,25 +667,42 @@ commit history for the fix commits.
 
 ## Phase 5 — Standing hardening
 
-### RS-12 · Hard per-instance cap on the rate-limit fallback, plus an alert
-**Gap G-23 · code · TODO · 0.5 eng-day**
+### RS-12 · RESOLVED — a hard per-instance cap and a fallback-activation alert on the rate-limit fallback
+**Gap G-23 · code · DONE · 2026-09-10**
 
 `src/lib/rate-limit.ts`'s documented in-memory fallback is correct for
 availability but multiplies the effective ceiling by live instance count
-during an Upstash outage — and the routes it protects are LLM-backed, i.e.
-expensive. Add a hard per-instance ceiling specifically for cost-critical
-profiles (generation, extraction, simulator) that applies even in fallback
-mode, and fire a Sentry alert the moment the fallback engages so an outage is
-visible rather than only inferred from a spend anomaly later.
+during an Upstash outage — each instance keeps its own tally, so N instances
+give every caller N× the intended cap. That's tolerable for cheap profiles
+but not for the LLM-backed ones, where cost scales directly with request
+count.
+
+Added `COST_CRITICAL_PROFILES` (`generate`, `fdd`, `fdd-analysis`,
+`parse-doc`, `evaluate` — mapping the task's "generation, extraction,
+simulator" wording onto the actual `RateLimitProfile` values) and a
+`FALLBACK_INSTANCE_CAP` of 15: a hard ceiling on *total* fallback requests
+per instance for those profiles, summed across every identifier rather than
+per-user, so a single instance can't be driven past a fixed, bounded cost no
+matter how many distinct callers hit it during the outage. It sits in front
+of the existing per-identifier `memoryLimit()` check, not instead of it.
+Separately, a `fallbackAlertSent` latch fires `captureApiError` (tagged
+`route: 'rate-limit'`, `stage: 'fallback-activated'`, the `profile`) the
+first time a request hits the Redis-error catch block, then stays latched
+until a request reaches Redis successfully again — so a sustained outage
+serving thousands of requests alerts once, not once per request, while a
+second, later outage still alerts again.
 
 > **Exit** — with Upstash unreachable, the cost-critical routes still refuse
 > requests past the hard per-instance cap, and a Sentry event fires on the
 > first fallback activation.
 >
-> **Test** — `src/lib/__tests__/rate-limit-fallback-cap.test.ts`: simulates an
-> unreachable Upstash client, asserts the in-memory path enforces the hard cap
-> on a cost-critical profile, and asserts the alert fires exactly once per
-> outage window (not once per request).
+> **Test** — `src/lib/__tests__/rate-limit-fallback-cap.test.ts` (6 tests):
+> simulates an unreachable Upstash client, asserts the in-memory path enforces
+> the hard cap on a cost-critical profile even across 20 distinct identifiers
+> while leaving non-cost-critical profiles and the existing per-identifier cap
+> unaffected, and asserts the alert fires exactly once per outage window (not
+> once per request) but fires again on a fresh outage after a recovery in
+> between.
 
 ---
 
