@@ -115,7 +115,7 @@ Legend — **Status:** `TODO` / `WIP` / `DONE` / `BLOCKED (needs Romy)`
 | # | Task | Gap | Kind | Status |
 |---|---|---|---|---|
 | **DR-16** | One document plan, asserted identical in CI | G-11 | code | DONE |
-| **DR-17** | Tell the client what was *correctly* omitted | G-12 | code | TODO |
+| **DR-17** | Tell the client what was *correctly* omitted | G-12 | code | DONE* |
 
 ### Phase 7 — Partnership tier and data integrity
 
@@ -793,7 +793,18 @@ preserved so no code past the edited blocks needed to change.
 ---
 
 ### DR-17 · Tell the client what was *correctly* omitted
-**Gap G-12 · code · TODO · 1 eng-day · Romy: 1h copy**
+**Gap G-12 · code · DONE\* · 1 eng-day · Romy: 1h copy**
+
+\* Implemented September 11, 2026 (Session 146): `checklist-builder.ts`
+now renders a "Not Applicable to Your Case" section (five reason lines,
+one per trigger — the spousal trigger covers both `declaration_spouse`
+and `resume_spouse`) and promotes `passportNumber`/`businessState` into
+the existing placeholder-completion list whenever `docx-cover-builder.ts`
+still has them as `[bracket]` fallbacks; the download route now passes
+both fields through. The reason-line copy is a first draft in the
+established brand voice, not yet reviewed by Romy — same caveat the
+sprint doc already flags above (~1h copy review), consistent with DR-4's
+and DR-10's DONE\* precedent.
 
 Six documents on the Foundation feature list are conditional. When they don't
 trigger they are simply absent, and nothing says why — so a client counts 15
