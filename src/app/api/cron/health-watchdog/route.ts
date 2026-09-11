@@ -1,13 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import * as Sentry from '@sentry/nextjs';
 import { captureApiError } from '@/lib/capture-error';
 
-// Runs every 5 minutes via Vercel cron.
-// 1. Marks generation jobs stuck > 30 min as failed
+// DR-3 (Gap G-06): runs every 10 minutes via Vercel cron — daily was the
+// failure, not the 30-minute staleness threshold. Reaps BOTH stale 'running'
+// and stale 'queued' jobs (a job that never got its /run call is exactly the
+// permanently-locked case a daily sweep misses for up to 24h).
+// 1. Marks generation jobs stuck > 30 min (running or queued) as failed
 // 2. Logs its own run to cron_log
 // 3. Checks for cron consecutive failures and alerts via Resend
 
 export const dynamic = 'force-dynamic';
+
+async function isPaidUser(admin: SupabaseClient, userId: string | null | undefined): Promise<boolean> {
+  if (!userId) return false;
+  const { count, error } = await admin
+    .from('payments')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .eq('status', 'completed');
+  if (error) {
+    captureApiError(error, { route: 'cron/health-watchdog', stage: 'is-paid-check', userId });
+    return false;
+  }
+  return (count ?? 0) > 0;
+}
 
 function getAdmin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL;
@@ -40,27 +58,34 @@ export async function GET(request: NextRequest) {
   let   logId = '';
 
   // Open cron_log row
-  const { data: logRow } = await admin
+  const { data: logRow, error: logInsertError } = await admin
     .from('cron_log')
     .insert({ job_name: 'health-watchdog', status: 'running' })
     .select('id')
     .single();
+  if (logInsertError) {
+    captureApiError(logInsertError, { route: 'cron/health-watchdog', stage: 'log-insert' });
+  }
   logId = logRow?.id ?? '';
 
   const results = {
     stuck_jobs_failed:     0,
+    paid_client_reaps:     [] as string[],
     consecutive_failures:  [] as string[],
     alerts_sent:           [] as string[],
   };
 
   try {
-    // ── 1. Find and fail stuck generation jobs ──────────────────────────────
+    // ── 1. Find and fail stuck generation jobs (running OR queued) ──────────
     const stuckCutoff = new Date(Date.now() - 30 * 60 * 1000).toISOString();
-    const { data: stuckJobs } = await admin
+    const { data: stuckJobs, error: stuckJobsError } = await admin
       .from('document_generation_jobs')
-      .select('id, application_id')
-      .eq('status', 'running')
+      .select('id, application_id, user_id, status')
+      .in('status', ['running', 'queued'])
       .lt('updated_at', stuckCutoff);
+    if (stuckJobsError) {
+      captureApiError(stuckJobsError, { route: 'cron/health-watchdog', stage: 'find-stuck' });
+    }
 
     for (const job of stuckJobs ?? []) {
       await admin
@@ -69,18 +94,29 @@ export async function GET(request: NextRequest) {
         .eq('id', job.id);
 
       results.stuck_jobs_failed++;
-      console.log(`[health-watchdog] Marked stuck job ${job.id} as failed`);
+      console.log(`[health-watchdog] Marked stuck job ${job.id} (was ${job.status}) as failed`);
+
+      if (await isPaidUser(admin, job.user_id)) {
+        results.paid_client_reaps.push(job.id);
+        Sentry.captureMessage(
+          `[E2go.app] health-watchdog reaped a paid client's stuck generation job`,
+          { level: 'warning', extra: { jobId: job.id, applicationId: job.application_id, wasStatus: job.status } }
+        );
+      }
     }
 
     // ── 2. Check cron consecutive failures ─────────────────────────────────
     const CRON_JOBS = ['rebuild-profiles', 'email-scheduler'];
     for (const jobName of CRON_JOBS) {
-      const { data: recentRuns } = await admin
+      const { data: recentRuns, error: recentRunsError } = await admin
         .from('cron_log')
         .select('status')
         .eq('job_name', jobName)
         .order('started_at', { ascending: false })
         .limit(3);
+      if (recentRunsError) {
+        captureApiError(recentRunsError, { route: 'cron/health-watchdog', stage: 'recent-runs', jobName });
+      }
 
       const lastThree = (recentRuns ?? []).map(r => r.status);
       if (lastThree.length === 3 && lastThree.every(s => s === 'failed')) {
@@ -98,11 +134,14 @@ export async function GET(request: NextRequest) {
     const orKey = process.env.OPENROUTER_API_KEY;
     if (orKey) {
       try {
-        const { data: thresholdSetting } = await admin
+        const { data: thresholdSetting, error: thresholdError } = await admin
           .from('app_settings')
           .select('value')
           .eq('key', 'openrouter_reload_threshold')
           .maybeSingle();
+        if (thresholdError) {
+          captureApiError(thresholdError, { route: 'cron/health-watchdog', stage: 'or-threshold' });
+        }
         const threshold = Number(thresholdSetting?.value ?? 20);
 
         // /auth/key returns the per-key spend limit, not the account credit
@@ -125,11 +164,14 @@ export async function GET(request: NextRequest) {
 
           if (balance < threshold) {
             // Only send one alert per 24h to avoid spam
-            const { data: lastAlert } = await admin
+            const { data: lastAlert, error: lastAlertError } = await admin
               .from('app_settings')
               .select('value')
               .eq('key', 'openrouter_low_balance_alerted_at')
               .maybeSingle();
+            if (lastAlertError) {
+              captureApiError(lastAlertError, { route: 'cron/health-watchdog', stage: 'or-last-alert' });
+            }
             const lastAlertTs = lastAlert?.value ? Number(lastAlert.value) : 0;
             const oneDayMs = 24 * 3600 * 1000;
 
