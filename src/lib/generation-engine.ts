@@ -2,6 +2,7 @@ import { readFileSync, existsSync, readdirSync } from 'fs';
 import { createHash } from 'crypto';
 import { join } from 'path';
 import Anthropic from '@anthropic-ai/sdk';
+import * as Sentry from '@sentry/nextjs';
 import { synthesizeInvestorProfile, formatInvestorProfileContext } from './investor-profile-synthesizer';
 import { scoreCase, type GapCategory, type CpuGapContext, type LedgerFact } from './gap-analysis-engine';
 import { createClient } from '@supabase/supabase-js';
@@ -2503,6 +2504,16 @@ export async function runAIDetectionAudit(
 // 4g. Main orchestrator
 // ---------------------------------------------------------------------------
 
+// DR-6 (Gap G-04): tags a per-document failure with why it happened, so the
+// catch block in the generation loop can quarantine it with an honest reason
+// code instead of guessing from the error message.
+class DocumentQuarantineError extends Error {
+  constructor(message: string, public readonly reasonCode: 'system_fault' | 'needs_information') {
+    super(message);
+    this.name = 'DocumentQuarantineError';
+  }
+}
+
 export async function runGenerationPipeline(
   applicationId: string,
   userId: string,
@@ -2871,6 +2882,7 @@ export async function runGenerationPipeline(
       }
 
       let documentApproved = false;
+      let documentFailed = false;
       let revisionLoopCount = 0;
       const maxRevisions = 3;
 
@@ -2997,17 +3009,7 @@ Generate the document using Investor 2's identity, name, nationality, source of 
           );
           if (!validation.valid) {
             const errorMsg = `Missing required data: ${validation.missingFields.join(', ')}. Complete Module 3 before generating.`;
-            await supabase
-              .from('generated_documents')
-              .update({
-                status: 'failed',
-                error_message: errorMsg,
-                updated_at: new Date().toISOString(),
-              })
-              .eq('job_id', jobId)
-              .eq('document_type', docType);
-            await fail(stepNum, errorMsg);
-            return;
+            throw new DocumentQuarantineError(errorMsg, 'needs_information');
           }
 
           const content = await callClaudeAPI(payload);
@@ -3163,33 +3165,60 @@ Generate the document using Investor 2's identity, name, nationality, source of 
             await updateJob({ status: 'running' });
           }
         } catch (err) {
+          // DR-6 (Gap G-04) / Decision 3 — release-with-flag: a single document's
+          // failure must not abort the other 15-25 documents already generated or
+          // in progress. Quarantine this document only, release everything else
+          // immediately, and surface a reason + next action in the manifest
+          // (quality_gate_passed: false is the same gate buildPackageManifest()
+          // already treats as 'blocked', which the Acknowledgment Gate below
+          // already turns into job status 'partial' instead of 'completed').
+          const msg = err instanceof Error ? err.message : 'Unknown error';
+          const reasonCode: 'system_fault' | 'needs_information' =
+            err instanceof DocumentQuarantineError ? err.reasonCode : 'system_fault';
+          const nextAction = reasonCode === 'needs_information'
+            ? 'Complete the missing intake fields, then regenerate this document from your dashboard.'
+            : 'Our team has been notified and will regenerate this document — no action needed from you.';
+
           await supabase
             .from('generated_documents')
             .update({
               status: 'failed',
+              error_message: msg,
+              quality_gate_passed: false,
+              quality_gate_notes: [`${reasonCode}: ${nextAction}`],
               updated_at: new Date().toISOString(),
             })
             .eq('job_id', jobId)
             .eq('document_type', docType);
 
-          const msg = err instanceof Error ? err.message : 'Unknown error';
-          await fail(stepNum, `Failed to generate ${docLabel}: ${msg}`);
-          return;
+          console.error(`[ENGINE] Quarantined ${docLabel} (${docType}) — ${reasonCode}: ${msg}`);
+          emitStep(stepNum, 'failed');
+          Sentry.captureException(err, { extra: { jobId, applicationId, docType, reasonCode, stage: 'document-generation' } });
+
+          documentFailed = true;
+          break;
         }
       }
 
-      if (!documentApproved && revisionLoopCount >= maxRevisions) {
-        // Max revisions reached - auto-approve to continue
+      if (!documentApproved && !documentFailed && revisionLoopCount >= maxRevisions) {
+        // DR-9 (Gap G-10): was a silent auto-approve that shipped an unreviewed
+        // draft to the client. Held for e2go review instead, via the same
+        // quality_gate_passed gate DR-6 uses above.
         await supabase
           .from('generated_documents')
           .update({
-            status: 'approved',
-            approved_at: new Date().toISOString(),
-            quality_gate_notes: ['Auto-approved after max revisions'],
+            quality_gate_passed: false,
+            quality_gate_notes: ['Exceeded max revisions without client approval — held for e2go review'],
             updated_at: new Date().toISOString(),
           })
           .eq('job_id', jobId)
           .eq('document_type', docType);
+
+        console.error(`[ENGINE] ${docLabel} (${docType}) exceeded max revisions — held for e2go review`);
+        Sentry.captureMessage(
+          `[E2go.app] Document held for review after max revisions: ${docLabel}`,
+          { level: 'warning', extra: { jobId, applicationId, docType, revisionLoopCount } }
+        );
       }
 
       // Resume job for next document
