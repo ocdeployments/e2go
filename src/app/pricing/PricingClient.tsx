@@ -188,37 +188,9 @@ export default function PricingPage() {
       return;
     }
 
-    // Create or get application
-    const { data: existingApp } = await supabase
-      .from('applications')
-      .select('id')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    let applicationId = existingApp?.id;
-
-    if (!applicationId) {
-      // Create a new application record
-      const { data: newApp, error: appError } = await supabase
-        .from('applications')
-        .insert({
-          user_id: user.id,
-          application_type: 'solo',
-          status: 'pending',
-        })
-        .select('id')
-        .single();
-
-      if (appError) {
-        setError('Failed to create application. Please try again.');
-        return;
-      }
-      applicationId = newApp.id;
-    }
-
-    // Initiate Stripe checkout
+    // DR-19 (Gap G-09e): no applicationId is sent here. The server finds or
+    // creates the application and derives application_type from the user's
+    // quiz session — the browser must not assert it (see create-checkout/route.ts).
     setIsProcessingPayment(true);
     try {
       const response = await fetch('/api/stripe/create-checkout', {
@@ -226,7 +198,6 @@ export default function PricingPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           tierId: id,
-          applicationId,
           userId: user.id,
           ...(promoCode ? { promoCode } : {}),
         }),
