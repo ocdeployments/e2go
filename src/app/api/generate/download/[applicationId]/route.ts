@@ -332,6 +332,8 @@ export async function GET(
       })),
       applicantName,
       includedTabs,
+      passportNumber,
+      businessState,
     });
     const checklistBuffer = await Packer.toBuffer(checklistDoc);
     zip.file(
