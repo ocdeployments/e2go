@@ -36,6 +36,20 @@ import type { DocumentType } from '@/types/generation';
 import { captureApiError } from '@/lib/capture-error';
 import { selectLatestDocumentRows, type DedupableDocumentRow } from '@/lib/document-dedupe';
 
+// DR-10 (Gap G-08): this route assembles a cover page, TOC, a divider per
+// tab, one .docx per generated document, and a closing checklist — each
+// through Packer.toBuffer() — then zips the lot in memory. It previously
+// carried neither, so it inherited Vercel's default function timeout. Unlike
+// fdd/report/route.ts (an LLM call, budgeted at 150s), this work is entirely
+// CPU-bound: src/app/api/generate/__tests__/download-budget.test.ts measures
+// a full package assembly (every generated-document type, all tabs) at well
+// under a second locally, so 60s leaves wide headroom without approaching
+// run/[jobId]'s 300s (that route pays for the LLM calls this one doesn't).
+// Still owed: confirming the *actual* ceiling for the current Vercel plan
+// and whether Fluid Compute is on (sprint doc DR-10) — flagged for Romy.
+export const runtime = 'nodejs';
+export const maxDuration = 60;
+
 // DOC_DISPLAY_NAMES has exactly one entry per DocumentType — deriving
 // VALID_DOC_TYPES from it keeps this list from silently drifting out of
 // sync with the type (a hand-maintained subset here previously excluded
