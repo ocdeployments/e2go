@@ -28,6 +28,7 @@ import { computeCaseFinancials, formatCaseFinancialsText, formatRevenueRampChart
 import { buildExhibitRegistry, formatExhibitRegistryText, checkExhibitConsistency } from './exhibit-registry';
 import { buildDeterministicDocumentIndex } from './docx-package-constants';
 import { computeEnterpriseNationality, buildJointPartnershipBlock } from './partnership-analysis';
+import { buildDocumentPlan } from './document-plan';
 import { callDocGenFallback } from './llm-client';
 import { personLabel } from './person-code';
 import { sendRetentionNoticeEmail } from './emails/retention-sequence';
@@ -2575,24 +2576,6 @@ export async function runGenerationPipeline(
     return { approved: true, revisionRequested: false };
   };
 
-  const CORE_DOCUMENT_TYPES: DocumentType[] = [
-    'cover_letter',
-    'source_of_funds',
-    'business_plan',
-    'qualifications',
-    'ds160_reference',
-    'visa_category',
-    'nonimmigrant_intent',
-    'marginality_rebuttal',
-    'declaration_principal',
-    'fund_flow_chronology',
-    'net_worth_statement',
-    'resume_principal',
-    'gift_letter',
-    'org_chart',
-    'corporate_documents_guide',
-  ];
-
   const generatedDocs: GeneratedDocument[] = [];
 
   try {
@@ -2715,12 +2698,33 @@ export async function runGenerationPipeline(
     emitStep(1, 'complete');
     await updateJob({ current_step: 1, current_step_label: GENERATION_STEP_LABELS[1] });
 
-    // Determine conditional documents based on case file answers
-    const { data: condAnswerRows } = await supabase
-      .from('answers')
-      .select('question_key, answer_value')
-      .eq('application_id', applicationId)
-      .in('question_key', ['M3-L-01', 'M3-F-05', 'M3-F-NEW-01']);
+    // DR-16 (Gap G-11): conditional documents are derived from case file
+    // answers via the same buildDocumentPlan() that /api/generate/start uses
+    // to size the progress bar and pre-insert document rows, so the two
+    // can't drift apart again (see src/lib/document-plan.ts for the history
+    // of the drift this replaced).
+    const [{ data: condAnswerRows }, { data: leaseDoc }, { data: partnershipPayment }] = await Promise.all([
+      supabase
+        .from('answers')
+        .select('question_key, answer_value')
+        .eq('application_id', applicationId)
+        .in('question_key', ['M3-L-01', 'M3-F-05', 'M3-F-NEW-01']),
+      supabase
+        .from('uploaded_documents')
+        .select('id')
+        .eq('application_id', applicationId)
+        .eq('doc_type', 'lease_agreement')
+        .limit(1)
+        .maybeSingle(),
+      supabase
+        .from('payments')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('payment_type', 'complete_partnership')
+        .eq('status', 'completed')
+        .limit(1)
+        .maybeSingle(),
+    ]);
 
     const condAnswerMap: Record<string, string> = {};
     for (const row of (condAnswerRows ?? [])) {
@@ -2728,66 +2732,16 @@ export async function runGenerationPipeline(
         (row as Record<string, string>).answer_value;
     }
 
-    const conditionalDocTypes: DocumentType[] = [];
-    if (condAnswerMap['M3-L-01'] === 'yes') {
-      conditionalDocTypes.push('declaration_spouse');
-      conditionalDocTypes.push('resume_spouse');
-    }
-    if (typeof condAnswerMap['M3-F-05'] === 'string' && condAnswerMap['M3-F-05'].includes('property-sale')) {
-      conditionalDocTypes.push('property_portfolio');
-    }
-    // WS6.1 — Investment Evidence generates only when at-risk is genuinely contested:
-    // funds partially deployed or committed-but-unspent (escrow-style arrangements).
-    // Fully-deployed cases rely on SOF §V instead of a redundant standalone document.
-    if (condAnswerMap['M3-F-NEW-01'] === 'partial' || condAnswerMap['M3-F-NEW-01'] === 'no') {
-      conditionalDocTypes.push('investment_proof');
-    }
-    // WS6.1 — Financial Assets Portfolio generates when fund sources include securities/
-    // registered plans/crypto (RRSP, TFSA, LIRA/pension, cryptocurrency). Mirrors the
-    // trigger in /api/generate/start/route.ts — this pipeline executor had its own
-    // independent conditionalDocTypes computation that was missed when that route was
-    // wired in Session 119o, so financial_assets_portfolio was never actually generated
-    // despite the step counter accounting for it. Fixed here.
-    if (
-      typeof condAnswerMap['M3-F-05'] === 'string' &&
-      ['rrsp', 'tfsa', 'lira', 'crypto'].some(v => (condAnswerMap['M3-F-05'] as string).includes(v))
-    ) {
-      conditionalDocTypes.push('financial_assets_portfolio');
-    }
-    // WS6.1 — Lease/Premises Summary generates only for physical-location businesses,
-    // detected deterministically by the presence of an uploaded lease agreement (rather
-    // than a new intake question) — mirrors the trigger in start/route.ts.
-    const { data: leaseDoc } = await supabase
-      .from('uploaded_documents')
-      .select('id')
-      .eq('application_id', applicationId)
-      .eq('doc_type', 'lease_agreement')
-      .limit(1)
-      .maybeSingle();
-    if (leaseDoc) {
-      conditionalDocTypes.push('lease_premises_summary');
-    }
-
-    // Sprint F-P: Add Investor 2 document types for complete_partnership buyers
-    const { data: partnershipPayment } = await supabase
-      .from('payments')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('payment_type', 'complete_partnership')
-      .eq('status', 'completed')
-      .limit(1)
-      .maybeSingle();
-
     const isPartnership = !!partnershipPayment;
 
-    if (isPartnership) {
-      // cover_letter_p2 retired — the shared cover_letter now covers both
-      // investors jointly (see JOINT_PARTNERSHIP_DOC_TYPES above).
-      conditionalDocTypes.push(
-        'source_of_funds_p2', 'declaration_p2',
-        'qualifications_p2', 'nonimmigrant_intent_p2', 'resume_p2'
-      );
-    }
+    const documentPlan = buildDocumentPlan({
+      spouseIncluded: condAnswerMap['M3-L-01'] === 'yes',
+      fundSources: condAnswerMap['M3-F-05'],
+      investmentDeploymentStatus: condAnswerMap['M3-F-NEW-01'],
+      hasLeaseAgreement: !!leaseDoc,
+      isPartnership,
+    });
+    const conditionalDocTypes: DocumentType[] = documentPlan.conditional;
 
     // Load P2-* answers once for the whole pipeline run (empty map for solo applications)
     const p2Answers: Record<string, string> = {};
@@ -2803,7 +2757,7 @@ export async function runGenerationPipeline(
       }
     }
 
-    const DOCUMENT_TYPES = [...CORE_DOCUMENT_TYPES, ...conditionalDocTypes];
+    const DOCUMENT_TYPES = documentPlan.all;
     const Q = DOCUMENT_TYPES.length + 2;
     const effectiveTotalSteps = 1 + DOCUMENT_TYPES.length + 9;
     await updateJob({ total_steps: effectiveTotalSteps });

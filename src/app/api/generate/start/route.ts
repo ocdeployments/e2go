@@ -6,6 +6,7 @@ import { isKillSwitchEnabled } from '@/lib/kill-switch';
 import { captureApiError } from '@/lib/capture-error';
 import { generateStartRequestSchema } from '@/lib/api-schemas';
 import { IN_FLIGHT_STATUSES, isStaleQueuedJob } from '@/lib/generation-job-status';
+import { buildDocumentPlan } from '@/lib/document-plan';
 
 function getSupabase() {
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
@@ -113,8 +114,11 @@ export async function POST(request: Request) {
       });
     }
 
-    // Determine conditional doc types from intake answers
-    const [{ data: condAnswers }, { data: partnerPayment }] = await Promise.all([
+    // DR-16 (Gap G-11): conditional doc types are derived from intake answers
+    // via the same buildDocumentPlan() the generation engine uses, so this
+    // step count and pre-inserted row set can't drift from what actually
+    // generates. See src/lib/document-plan.ts.
+    const [{ data: condAnswers }, { data: partnerPayment }, { data: leaseDoc }] = await Promise.all([
       supabase
         .from('answers')
         .select('question_key, answer_value')
@@ -128,6 +132,13 @@ export async function POST(request: Request) {
         .eq('status', 'completed')
         .limit(1)
         .maybeSingle(),
+      supabase
+        .from('uploaded_documents')
+        .select('id')
+        .eq('application_id', applicationId)
+        .eq('doc_type', 'lease_agreement')
+        .limit(1)
+        .maybeSingle(),
     ]);
 
     const condMap: Record<string, string> = {};
@@ -136,60 +147,15 @@ export async function POST(request: Request) {
         (row as Record<string, string>).answer_value;
     }
 
-    const conditionalDocTypes: string[] = [];
-    if (condMap['M3-L-01'] === 'yes') {
-      conditionalDocTypes.push('declaration_spouse', 'resume_spouse');
-    }
-    if (typeof condMap['M3-F-05'] === 'string' && condMap['M3-F-05'].includes('property-sale')) {
-      conditionalDocTypes.push('property_portfolio');
-    }
-    // WS6.1 — Investment Evidence generates only when at-risk is genuinely contested:
-    // funds partially deployed or committed-but-unspent (escrow-style arrangements).
-    // Fully-deployed cases rely on SOF §V instead of a redundant standalone document.
-    if (condMap['M3-F-NEW-01'] === 'partial' || condMap['M3-F-NEW-01'] === 'no') {
-      conditionalDocTypes.push('investment_proof');
-    }
-    // WS6.1 — Financial Assets Portfolio generates when fund sources include securities/
-    // registered plans/crypto (RRSP, TFSA, LIRA/pension, cryptocurrency) — the case where
-    // there's a non-real-estate financial asset trail to document beyond SOF §V.
-    if (
-      typeof condMap['M3-F-05'] === 'string' &&
-      ['rrsp', 'tfsa', 'lira', 'crypto'].some(v => (condMap['M3-F-05'] as string).includes(v))
-    ) {
-      conditionalDocTypes.push('financial_assets_portfolio');
-    }
-    // WS6.1 — Lease/Premises Summary generates only for physical-location businesses,
-    // detected deterministically by the presence of an uploaded lease agreement rather
-    // than a new intake question.
-    const { data: leaseDoc } = await supabase
-      .from('uploaded_documents')
-      .select('id')
-      .eq('application_id', applicationId)
-      .eq('doc_type', 'lease_agreement')
-      .limit(1)
-      .maybeSingle();
-    if (leaseDoc) {
-      conditionalDocTypes.push('lease_premises_summary');
-    }
+    const plan = buildDocumentPlan({
+      spouseIncluded: condMap['M3-L-01'] === 'yes',
+      fundSources: condMap['M3-F-05'],
+      investmentDeploymentStatus: condMap['M3-F-NEW-01'],
+      hasLeaseAgreement: !!leaseDoc,
+      isPartnership: !!partnerPayment,
+    });
 
-    // Sprint F-P: Add Investor 2 documents for complete_partnership buyers.
-    // cover_letter_p2 retired — the shared cover_letter now covers both
-    // investors jointly (see JOINT_PARTNERSHIP_DOC_TYPES in generation-engine.ts).
-    if (partnerPayment) {
-      conditionalDocTypes.push(
-        'source_of_funds_p2', 'declaration_p2',
-        'qualifications_p2', 'nonimmigrant_intent_p2', 'resume_p2'
-      );
-    }
-
-    const coreDocTypes = [
-      'cover_letter', 'source_of_funds', 'business_plan', 'qualifications',
-      'ds160_reference', 'visa_category', 'nonimmigrant_intent',
-      'marginality_rebuttal', 'declaration_principal', 'fund_flow_chronology',
-      'net_worth_statement', 'resume_principal', 'gift_letter',
-      'org_chart', 'corporate_documents_guide',
-    ];
-    const allDocTypes = [...coreDocTypes, ...conditionalDocTypes];
+    const allDocTypes: string[] = plan.all;
     const totalSteps = 1 + allDocTypes.length + 9;
 
     // Create job
