@@ -110,28 +110,63 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid tier' }, { status: 400 });
     }
 
-    if (REQUIRES_APPLICATION_ID.has(tierId) && !applicationId) {
-      return NextResponse.json(
-        { error: `Missing required field: applicationId for ${tierId}` },
-        { status: 400 }
-      );
-    }
-
     const supabase = getSupabase();
 
     // applicationId comes from the client and flows into Stripe metadata, which
     // the webhook and verify-payment routes later trust to unlock document
     // generation — so it must be proven to belong to this user right here,
     // before it's used for anything else in this route.
-    if (applicationId) {
+    let resolvedApplicationId: string | null = applicationId ?? null;
+
+    if (resolvedApplicationId) {
       const { data: ownedApp, error: ownershipError } = await supabase
         .from('applications')
         .select('id')
-        .eq('id', applicationId)
+        .eq('id', resolvedApplicationId)
         .eq('user_id', user.id)
         .maybeSingle();
       if (ownershipError || !ownedApp) {
         return NextResponse.json({ error: 'Application not found' }, { status: 404 });
+      }
+    } else if (REQUIRES_APPLICATION_ID.has(tierId)) {
+      // DR-19 (Gap G-09e): find-or-create server-side instead of trusting a
+      // client-asserted application_type. A first-purchase client (e.g.
+      // PricingClient) sends no applicationId at all, so this is also where
+      // application_type gets set for a brand-new application — derived from
+      // the quiz session the user actually completed (same pattern as
+      // src/app/onboarding/page.tsx), never from anything the browser sends.
+      const { data: existingApp } = await supabase
+        .from('applications')
+        .select('id')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (existingApp) {
+        resolvedApplicationId = existingApp.id;
+      } else {
+        const { data: quizSession } = await supabase
+          .from('quiz_sessions')
+          .select('application_type')
+          .eq('user_id', user.id)
+          .order('id', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        const derivedType = quizSession?.application_type === 'partnership' ? 'partnership' : 'solo';
+
+        const { data: newApp, error: insertError } = await supabase
+          .from('applications')
+          .insert({ user_id: user.id, application_type: derivedType, status: 'pending' })
+          .select('id')
+          .single();
+
+        if (insertError || !newApp) {
+          captureApiError(insertError ?? new Error('applications insert returned no record'), { route: 'stripe/create-checkout', stage: 'create-application', userId: user.id, tierId });
+          return NextResponse.json({ error: 'Failed to initialize application' }, { status: 500 });
+        }
+        resolvedApplicationId = newApp.id;
       }
     }
 
@@ -183,7 +218,7 @@ export async function POST(request: NextRequest) {
 
     // Loyalty upgrade (Foundation -> Visa Ready): only before Phase B documents exist
     if (tierId === 'loyalty_upgrade') {
-      const eligible = applicationId ? await hasLoyaltyEligibility(user.id, applicationId, supabase) : false;
+      const eligible = resolvedApplicationId ? await hasLoyaltyEligibility(user.id, resolvedApplicationId, supabase) : false;
       if (!eligible) {
         return NextResponse.json(
           { error: 'Loyalty upgrade pricing is not available for this account' },
@@ -247,7 +282,7 @@ export async function POST(request: NextRequest) {
         validation.promoCode,
         user.id,
         email,
-        applicationId ?? null,
+        resolvedApplicationId,
         `pending:${randomUUID()}`,
         supabase
       );
@@ -270,7 +305,7 @@ export async function POST(request: NextRequest) {
         customer_email: email,
         ...(couponId ? { discounts: [{ coupon: couponId }] } : {}),
         metadata: {
-          applicationId: applicationId ?? '',
+          applicationId: resolvedApplicationId ?? '',
           fddId: fddId ?? '',
           userId: user.id,
           tierId,
@@ -301,7 +336,7 @@ export async function POST(request: NextRequest) {
     }
 
     const { error: insertError } = await supabase.from('payments').insert({
-      application_id: applicationId ?? null,
+      application_id: resolvedApplicationId,
       user_id: user.id,
       stripe_session_id: session.id,
       stripe_price_id: priceId,
@@ -312,7 +347,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (insertError) {
-      captureApiError(insertError, { route: 'stripe/create-checkout', stage: 'pending-payment-insert', userId: user.id, applicationId, tierId });
+      captureApiError(insertError, { route: 'stripe/create-checkout', stage: 'pending-payment-insert', userId: user.id, applicationId: resolvedApplicationId, tierId });
     }
 
     return NextResponse.json({ url: session.url, sessionId: session.id });

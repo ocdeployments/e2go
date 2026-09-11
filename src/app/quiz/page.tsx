@@ -1012,21 +1012,24 @@ function QuizInner() {
             Question {cur + 1} of {visibleQuestions.length}
           </div>
         </div>
-        <div
-          style={{ fontSize: "11px", color: "rgba(245,240,232,0.78)", letterSpacing: "0.07em", textTransform: "uppercase", cursor: "pointer", transition: "color 0.15s" }}
+        <button
+          type="button"
+          style={{ background: "none", border: "none", padding: 0, fontSize: "11px", color: "rgba(245,240,232,0.78)", letterSpacing: "0.07em", textTransform: "uppercase", cursor: "pointer", transition: "color 0.15s" }}
           onClick={() => setShowEmailGate(true)}
           onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(245,240,232,0.85)")}
           onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(245,240,232,0.78)")}
         >
           Save & exit
-        </div>
+        </button>
       </div>
 
       {/* Section tabs */}
       <div style={{ display: "flex", gap: 0, padding: "0 clamp(16px, 5vw, 40px)", borderBottom: "1px solid rgba(201,168,76,0.08)", overflowX: "auto", whiteSpace: "nowrap" }}>
         {SECTIONS.map((s, i) => (
-          <div
+          <button
             key={s}
+            type="button"
+            disabled={i >= q.section_index}
             onClick={
               i < q.section_index
                 ? () => {
@@ -1043,6 +1046,8 @@ function QuizInner() {
             onMouseEnter={i < q.section_index ? (e) => (e.currentTarget.style.color = "rgba(245,240,232,0.65)") : undefined}
             onMouseLeave={i < q.section_index ? (e) => (e.currentTarget.style.color = "rgba(245,240,232,0.74)") : undefined}
             style={{
+              background: "none",
+              border: "none",
               fontSize: "10px",
               letterSpacing: "0.1em",
               textTransform: "uppercase",
@@ -1050,13 +1055,14 @@ function QuizInner() {
               padding: "10px 0",
               marginRight: "18px",
               borderBottom: `2px solid ${i === q.section_index ? "#C9A84C" : i < q.section_index ? "rgba(201,168,76,0.25)" : "transparent"}`,
+              borderRadius: 0,
               transition: "all 0.2s",
               whiteSpace: "nowrap",
               cursor: i < q.section_index ? "pointer" : "default",
             }}
           >
             {s}
-          </div>
+          </button>
         ))}
       </div>
 
@@ -1139,8 +1145,9 @@ function QuizInner() {
             {filteredCountries.length > 0 && (
               <div style={{ display: "flex", flexDirection: "column", gap: "4px", marginBottom: "20px", background: "#0a0a0a", border: "1px solid rgba(201,168,76,0.2)", zIndex: 50, position: "relative" }}>
                 {filteredCountries.map((c, idx) => (
-                  <div
+                  <button
                     key={c}
+                    type="button"
                     id={`country-option-${idx}`}
                     onClick={() => {
                       // Fix C: Treaty country validation
@@ -1162,10 +1169,10 @@ function QuizInner() {
                       e.currentTarget.style.background = highlightedIdx === idx ? "rgba(201,168,76,0.15)" : selectedCountry === c ? "rgba(201,168,76,0.08)" : "#0a0a0a";
                       e.currentTarget.style.color = "#f5f0e8";
                     }}
-                    style={{ padding: "10px 14px", background: highlightedIdx === idx ? "rgba(201,168,76,0.15)" : selectedCountry === c ? "rgba(201,168,76,0.08)" : "#0a0a0a", border: `1px solid ${selectedCountry === c ? "rgba(201,168,76,0.4)" : "rgba(201,168,76,0.1)"}`, color: "#f5f0e8", fontSize: "13px", cursor: "pointer", transition: "all 0.12s", borderRadius: 0 }}
+                    style={{ width: "100%", textAlign: "left", font: "inherit", padding: "10px 14px", background: highlightedIdx === idx ? "rgba(201,168,76,0.15)" : selectedCountry === c ? "rgba(201,168,76,0.08)" : "#0a0a0a", border: `1px solid ${selectedCountry === c ? "rgba(201,168,76,0.4)" : "rgba(201,168,76,0.1)"}`, color: "#f5f0e8", fontSize: "13px", cursor: "pointer", transition: "all 0.12s", borderRadius: 0 }}
                   >
                     {c}
-                  </div>
+                  </button>
                 ))}
               </div>
             )}

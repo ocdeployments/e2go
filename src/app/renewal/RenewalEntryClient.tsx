@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import ComingSoonNotifyButton from '@/components/ComingSoonNotifyButton';
 
 interface Props {
   hasPurchased: boolean;
@@ -11,10 +12,11 @@ interface Props {
 export default function RenewalEntryClient({ hasPurchased }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState(hasPurchased);
-  const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // If already purchased but no intake yet, create one then redirect
+  // If already purchased but no intake yet, create one then redirect —
+  // existing renewal customers keep working even though new purchases
+  // are paused (Coming Soon) below.
   useEffect(() => {
     if (!hasPurchased) return;
     (async () => {
@@ -32,28 +34,6 @@ export default function RenewalEntryClient({ hasPurchased }: Props) {
       }
     })();
   }, [hasPurchased, router]);
-
-  async function handlePurchase() {
-    setCheckoutLoading(true);
-    setError(null);
-    try {
-      const res = await fetch('/api/stripe/create-checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          tierId: 'renewal',
-          successUrl: `${window.location.origin}/renewal?session_id={CHECKOUT_SESSION_ID}`,
-          cancelUrl: `${window.location.origin}/renewal`,
-        }),
-      });
-      if (!res.ok) throw new Error('Checkout failed');
-      const { url } = await res.json();
-      if (url) window.location.href = url;
-    } catch {
-      setError('Could not start checkout. Please try again or contact support@e2go.app.');
-      setCheckoutLoading(false);
-    }
-  }
 
   if (loading) {
     return (
@@ -158,28 +138,16 @@ export default function RenewalEntryClient({ hasPurchased }: Props) {
           </p>
         )}
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <button
-            onClick={handlePurchase}
-            disabled={checkoutLoading}
-            style={{
-              background: checkoutLoading ? 'rgba(201,168,76,0.5)' : '#C9A84C',
-              color: '#0a0a0a',
-              border: 'none',
-              borderRadius: '6px',
-              padding: '14px 28px',
-              fontSize: '14px',
-              fontWeight: 600,
-              fontFamily: "'DM Sans', sans-serif",
-              cursor: checkoutLoading ? 'not-allowed' : 'pointer',
-              letterSpacing: '0.01em',
-            }}
-          >
-            {checkoutLoading ? 'Opening checkout…' : 'Get started — $497'}
-          </button>
-          <span style={{ fontSize: '12px', color: 'rgba(245,240,232,0.35)' }}>
-            One-time purchase · Instant access
-          </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', background: 'rgba(201,168,76,0.04)', border: '1px solid rgba(201,168,76,0.15)', borderRadius: '8px', padding: '20px 24px' }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ display: 'inline-block', fontSize: '9px', fontWeight: 500, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(201,168,76,0.7)', border: '1px solid rgba(201,168,76,0.3)', borderRadius: '999px', padding: '2px 8px', marginBottom: '8px' }}>
+              Coming Soon
+            </div>
+            <p style={{ fontSize: '13px', color: 'rgba(245,240,232,0.55)', lineHeight: 1.6, margin: 0 }}>
+              Renewal isn&apos;t open for new purchases yet — we&apos;re launching new applications first. Let us know you&apos;re interested and we&apos;ll reach out.
+            </p>
+          </div>
+          <ComingSoonNotifyButton interestType="renewal" />
         </div>
 
         <p style={{ fontSize: '12px', color: 'rgba(245,240,232,0.3)', marginTop: '24px' }}>

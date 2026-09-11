@@ -4,6 +4,15 @@
 **Audience:** the next agent. This document is self-contained — you do not need the
 originating conversation. Read this top to bottom before touching anything.
 
+**Status: CLOSED — September 10, 2026.** All four phases shipped and verified:
+L-1 (Session 121, commit `e056793`), L-2/L-3 (Session 125, commit `3d70ea9`),
+L-4 (Session 125, commit `2545883`), plus later live-testing fixes
+(`f70b447` paper-white PDF, `50c0cc2` purpose-built PDF export). See
+`BUILD_TRACKER.md` Session 125 entry for full verification detail. The two
+bugs spun off out-of-scope during L-3/L-4 live testing (`interview_prep_kits`
+cache PGRST204, D-15's hardcoded "Canada" string) are tracked separately —
+confirm their status before assuming either is still open.
+
 ---
 
 ## 0. State of the tree when this was written

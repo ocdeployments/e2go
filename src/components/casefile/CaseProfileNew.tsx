@@ -8,6 +8,7 @@ import type { DocTypeValue } from "@/components/apply/DocumentImportHub";
 import DocumentImportHub from "@/components/apply/DocumentImportHub";
 import ControlPanel from "@/components/casefile/ControlPanel";
 import PartnerInvitePanel from "@/components/dashboard/PartnerInvitePanel";
+import ComingSoonNotifyButton from "@/components/ComingSoonNotifyButton";
 import CaseHeader from "@/components/casefile/CaseHeader";
 import CardGrid from "@/components/casefile/CardGrid";
 import CardDrawer from "@/components/casefile/CardDrawer";
@@ -137,18 +138,16 @@ export default function CaseProfileNew() {
         <div style={{ background: "rgba(201,168,76,0.04)", border: "1px solid rgba(201,168,76,0.15)", padding: "24px" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px" }}>
             <div>
-              <div style={{ fontSize: "8px", letterSpacing: "0.18em", textTransform: "uppercase", color: "rgba(201,168,76,0.5)", fontFamily: "'DM Sans', sans-serif", marginBottom: "4px" }}>Renewal</div>
-              <div style={{ fontSize: "18px", fontFamily: "'Cormorant Garamond', Georgia, serif", fontWeight: 300, color: CREAM, lineHeight: 1.2, marginBottom: "4px" }}>Renewal Package</div>
-              <div style={{ fontSize: "11px", fontFamily: "'DM Sans', sans-serif", color: "rgba(245,240,232,0.4)", lineHeight: 1.6 }}>
-                Prepare your E-2 renewal application — actual vs. projected performance, updated cover letter, current ties narrative, and path-specific checklist.
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+                <div style={{ fontSize: "8px", letterSpacing: "0.18em", textTransform: "uppercase", color: "rgba(201,168,76,0.5)", fontFamily: "'DM Sans', sans-serif" }}>Renewal</div>
+                <div style={{ fontSize: "9px", fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", color: "rgba(201,168,76,0.7)", border: "1px solid rgba(201,168,76,0.3)", borderRadius: "999px", padding: "2px 8px" }}>Coming Soon</div>
+              </div>
+              <div style={{ fontSize: "18px", fontFamily: "'Cormorant Garamond', Georgia, serif", fontWeight: 300, color: "rgba(245,240,232,0.5)", lineHeight: 1.2, marginBottom: "4px" }}>Renewal Package</div>
+              <div style={{ fontSize: "11px", fontFamily: "'DM Sans', sans-serif", color: "rgba(245,240,232,0.35)", lineHeight: 1.6 }}>
+                Not yet available — we&apos;re launching new applications first. Let us know you&apos;re interested and we&apos;ll reach out.
               </div>
             </div>
-            <a
-              href="/renewal"
-              style={{ flexShrink: 0, background: "rgba(201,168,76,0.12)", border: "1px solid rgba(201,168,76,0.3)", borderRadius: "6px", padding: "8px 16px", color: GOLD, fontSize: "12px", fontFamily: "'DM Sans', sans-serif", fontWeight: 500, textDecoration: "none", whiteSpace: "nowrap", letterSpacing: "0.02em" }}
-            >
-              Open →
-            </a>
+            <ComingSoonNotifyButton interestType="renewal" />
           </div>
         </div>
 

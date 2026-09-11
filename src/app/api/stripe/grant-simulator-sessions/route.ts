@@ -111,10 +111,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ granted: false, reason: 'No applicationId in metadata' });
     }
 
-    // Grant 3 sessions: increment simulator_sessions_purchased
+    // applicationId comes from Stripe session metadata, not directly from the
+    // caller, but confirm it actually belongs to this user before granting.
     const { data: app, error: fetchErr } = await supabase
       .from('applications')
-      .select('simulator_sessions_purchased')
+      .select('id')
       .eq('id', applicationId)
       .eq('user_id', user.id)
       .single();
@@ -124,13 +125,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Application not found' }, { status: 404 });
     }
 
-    const newPurchased = (app.simulator_sessions_purchased ?? 2) + 3;
+    // Grant 3 sessions atomically (RS-6, Gap G-21) — a select-then-update
+    // here raced with the webhook's own grant for the same checkout session.
+    const { data: newPurchasedResult, error: grantErr } = await supabase.rpc('increment_simulator_sessions', {
+      p_application_id: applicationId,
+      p_amount: 3,
+    });
 
-    await supabase
-      .from('applications')
-      .update({ simulator_sessions_purchased: newPurchased })
-      .eq('id', applicationId)
-      .eq('user_id', user.id);
+    if (grantErr) {
+      captureApiError(grantErr, { route: 'stripe/grant-simulator-sessions', stage: 'grant-simulator-sessions-rpc', userId: user.id, applicationId });
+      return NextResponse.json({ error: 'Failed to grant sessions' }, { status: 500 });
+    }
+
+    const newPurchased = (newPurchasedResult as number) ?? 5;
 
     // Mark payment as completed (upsert-style: update if exists, or insert if missing)
     if (existingPayment) {

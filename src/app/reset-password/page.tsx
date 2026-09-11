@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
+import { validatePassword, PASSWORD_REQUIREMENTS_HINT } from "@/lib/password-policy";
 
 export default function ResetPassword() {
   const [password, setPassword] = useState("");
@@ -10,12 +11,14 @@ export default function ResetPassword() {
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [error, setError] = useState("");
   const [hasSession, setHasSession] = useState<boolean | null>(null);
+  const [userEmail, setUserEmail] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     const supabase = createBrowserSupabaseClient();
     void (async () => {
       const { data } = await supabase.auth.getUser();
       setHasSession(!!data.user);
+      setUserEmail(data.user?.email);
     })();
   }, []);
 
@@ -23,8 +26,9 @@ export default function ResetPassword() {
     e.preventDefault();
     setError("");
 
-    if (password.length < 8) {
-      setError("Password must be at least 8 characters.");
+    const passwordError = validatePassword(password, userEmail);
+    if (passwordError) {
+      setError(passwordError);
       return;
     }
     if (password !== confirmPassword) {
@@ -110,13 +114,14 @@ export default function ResetPassword() {
         <form onSubmit={handleReset} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
           <input
             type="password"
-            placeholder="New password (min. 8 characters)"
+            placeholder="New password"
             value={password}
             onChange={e => setPassword(e.target.value)}
             required
             minLength={8}
             style={{ width: "100%", padding: "12px", background: "#0a0a0a", border: "1px solid rgba(201,168,76,0.3)", color: "#f5f0e8", fontFamily: "'DM Sans', sans-serif", fontSize: "14px", borderRadius: 0, outline: "none", boxSizing: "border-box" as const }}
           />
+          <p style={{ fontSize: "12px", color: "rgba(245,240,232,0.45)", fontFamily: "'DM Sans', sans-serif", margin: "-4px 0 0" }}>{PASSWORD_REQUIREMENTS_HINT}</p>
           <input
             type="password"
             placeholder="Confirm new password"

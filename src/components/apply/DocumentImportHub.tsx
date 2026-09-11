@@ -1197,10 +1197,11 @@ export default function DocumentImportHub({ applicationId, onFieldsApplied, defa
 
                       // ── Non-conflict field: checkbox ──
                       return (
-                        <div
+                        <button
                           key={entryKey}
-                          className="flex items-start gap-3 border-b py-3 cursor-pointer"
-                          style={{ borderColor: 'rgba(201,168,76,0.07)' }}
+                          type="button"
+                          className="flex items-start gap-3 border-b py-3 cursor-pointer w-full text-left"
+                          style={{ borderColor: 'rgba(201,168,76,0.07)', background: 'none', font: 'inherit' }}
                           onClick={() => toggleAccepted(entryKey)}
                         >
                           <div
@@ -1232,7 +1233,7 @@ export default function DocumentImportHub({ applicationId, onFieldsApplied, defa
                               {field.sources[0]?.value}
                             </p>
                           </div>
-                        </div>
+                        </button>
                       );
                     })}
                   </div>

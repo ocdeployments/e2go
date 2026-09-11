@@ -464,40 +464,57 @@ export default function InterviewDayPage() {
                 )}
               </div>
 
-              {section.items.map((item) => (
-                <div
-                  key={item.id}
-                  style={S.checkRow}
-                  onClick={() => !isDontBring && toggle(item.id)}
-                >
-                  {!isDontBring ? (
-                    <div style={S.checkbox(!!checked[item.id], item.critical)}>
-                      {checked[item.id] && (
-                        <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
-                          <path d="M1 4L3.5 6.5L9 1" stroke={gold} strokeWidth="1.5" strokeLinecap="square" />
-                        </svg>
-                      )}
-                    </div>
-                  ) : (
-                    <div style={{ width: 18, height: 18, flexShrink: 0, marginTop: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', color: red, fontSize: 14 }}>✕</div>
-                  )}
-
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'baseline', flexWrap: 'wrap', gap: 4 }}>
-                      <span style={isDontBring ? { fontSize: 14, color: text, lineHeight: 1.4 } : S.itemLabel(!!checked[item.id])}>
-                        {item.label}
-                      </span>
-                      {item.tab && <span style={S.tabBadge}>{item.tab}</span>}
-                      {item.critical && !isDontBring && (
-                        <span style={{ fontSize: 9, color: red, border: `1px solid ${red}40`, padding: '2px 5px', letterSpacing: '0.08em' }}>REQUIRED</span>
-                      )}
-                    </div>
-                    {item.detail && (
-                      <div style={S.itemDetail}>{item.detail}</div>
+              {section.items.map((item) => {
+                const rowContent = (
+                  <>
+                    {!isDontBring ? (
+                      <div style={S.checkbox(!!checked[item.id], item.critical)}>
+                        {checked[item.id] && (
+                          <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                            <path d="M1 4L3.5 6.5L9 1" stroke={gold} strokeWidth="1.5" strokeLinecap="square" />
+                          </svg>
+                        )}
+                      </div>
+                    ) : (
+                      <div style={{ width: 18, height: 18, flexShrink: 0, marginTop: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', color: red, fontSize: 14 }}>✕</div>
                     )}
-                  </div>
-                </div>
-              ))}
+
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'baseline', flexWrap: 'wrap', gap: 4 }}>
+                        <span style={isDontBring ? { fontSize: 14, color: text, lineHeight: 1.4 } : S.itemLabel(!!checked[item.id])}>
+                          {item.label}
+                        </span>
+                        {item.tab && <span style={S.tabBadge}>{item.tab}</span>}
+                        {item.critical && !isDontBring && (
+                          <span style={{ fontSize: 9, color: red, border: `1px solid ${red}40`, padding: '2px 5px', letterSpacing: '0.08em' }}>REQUIRED</span>
+                        )}
+                      </div>
+                      {item.detail && (
+                        <div style={S.itemDetail}>{item.detail}</div>
+                      )}
+                    </div>
+                  </>
+                );
+
+                if (isDontBring) {
+                  return (
+                    <div key={item.id} style={S.checkRow}>
+                      {rowContent}
+                    </div>
+                  );
+                }
+
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    style={{ ...S.checkRow, width: '100%', textAlign: 'left', font: 'inherit', background: 'none', border: 'none', borderBottom: S.checkRow.borderBottom, cursor: 'pointer' }}
+                    onClick={() => toggle(item.id)}
+                  >
+                    {rowContent}
+                  </button>
+                );
+              })}
             </div>
           );
         })}

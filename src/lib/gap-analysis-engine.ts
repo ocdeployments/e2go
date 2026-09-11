@@ -6,6 +6,7 @@
 // Pure function — no API calls, no async. Pass raw DB rows in, get scored result out.
 
 import { synthesizeInvestorProfile, type InvestorProfile } from './investor-profile-synthesizer';
+import { resolveCountryLabel } from './country-labels';
 import {
   asScoreLevel,
   isBelowAdequate,
@@ -779,9 +780,10 @@ function scoreDenialFactors(
     factors.push({ code: 'D-14', name: 'Business type does not qualify (marginal by design)', frequency: 'Common', risk, finding, mitigation, categoryId: 'business_plan' });
   }
 
-  // D-15 — 214(b) — officer not convinced applicant will return to Canada
+  // D-15 — 214(b) — officer not convinced applicant will return to their home country
   {
-    const canadianTies = getAnswer(am, 'QD-05', 'M3-D-05', 'QD-05-REVISED', 'M3-D-05-REVISED');
+    const homeCountry = resolveCountryLabel(getAnswer(am, 'Q0-TC', 'Q0-01')) ?? 'their home country';
+    const homeTies = getAnswer(am, 'QD-05', 'M3-D-05', 'QD-05-REVISED', 'M3-D-05-REVISED');
     const priorDenial = getAnswer(am, 'QA-23', 'M3-A-23');
     const hasPriorDenial = priorDenial?.toLowerCase().includes('yes');
     let risk: DenialRiskFactor['risk'];
@@ -789,32 +791,32 @@ function scoreDenialFactors(
     let mitigation: string | null = null;
 
     const tiesKeywords = ['real estate', 'property', 'pension', 'retirement', 'family', 'spouse', 'children', 'business', 'rrsp'];
-    const tiesCount = canadianTies
-      ? tiesKeywords.filter(kw => canadianTies.toLowerCase().includes(kw)).length
+    const tiesCount = homeTies
+      ? tiesKeywords.filter(kw => homeTies.toLowerCase().includes(kw)).length
       : 0;
 
     if (tiesCount >= 3 && !hasPriorDenial) {
       risk = 'low';
-      finding = `Multiple Canadian ties documented (${tiesCount} categories): ${canadianTies!.substring(0, 80)}.`;
+      finding = `Multiple ties to ${homeCountry} documented (${tiesCount} categories): ${homeTies!.substring(0, 80)}.`;
     } else if (tiesCount >= 1) {
       risk = hasPriorDenial ? 'high' : 'moderate';
       finding = hasPriorDenial
-        ? `Prior visa denial + limited documented Canadian ties — 214(b) intent is a heightened risk.`
-        : `Some Canadian ties documented but coverage could be stronger.`;
-      mitigation = 'Document ALL Canadian ties: real estate you own, RRSP/pension accounts, immediate family members remaining in Canada, Canadian business interests retained.';
-    } else if (canadianTies) {
+        ? `Prior visa denial + limited documented ties to ${homeCountry} — 214(b) intent is a heightened risk.`
+        : `Some ties to ${homeCountry} documented but coverage could be stronger.`;
+      mitigation = `Document ALL ties to ${homeCountry}: real estate you own, pension/retirement accounts, immediate family members remaining there, business interests retained.`;
+    } else if (homeTies) {
       risk = 'moderate';
-      finding = 'Canadian ties answer on file but no specific, verifiable ties documented.';
+      finding = `Ties-to-${homeCountry} answer on file but no specific, verifiable ties documented.`;
       mitigation = 'Replace vague ties statements with specific, verifiable items: property address, pension account type, family members\' names and relationship.';
     } else {
       risk = hasPriorDenial ? 'high' : 'moderate';
       finding = hasPriorDenial
-        ? 'Prior visa denial + no documented Canadian ties — high 214(b) risk.'
-        : 'No Canadian ties documented. Officer will assess immigrant intent without any supporting evidence.';
-      mitigation = 'Document specific Canadian ties in the cover letter. If ties are weak, discuss this with an attorney before the interview — officers probe this heavily.';
+        ? `Prior visa denial + no documented ties to ${homeCountry} — high 214(b) risk.`
+        : `No ties to ${homeCountry} documented. Officer will assess immigrant intent without any supporting evidence.`;
+      mitigation = `Document specific ties to ${homeCountry} in the cover letter. If ties are weak, discuss this with an attorney before the interview — officers probe this heavily.`;
     }
 
-    factors.push({ code: 'D-15', name: '214(b) — officer not convinced applicant will return to Canada', frequency: 'Moderate', risk, finding, mitigation, categoryId: 'business_plan' });
+    factors.push({ code: 'D-15', name: '214(b) — officer not convinced applicant will return home', frequency: 'Moderate', risk, finding, mitigation, categoryId: 'business_plan' });
   }
 
   return factors;
@@ -1397,9 +1399,9 @@ export const D_CODE_REMEDIATION: DCodeRemediation[] = [
     lowRiskWhen: '≥ 3 specific home-country ties documented AND return intent stated',
     fields: [
       { key: 'M3-D-05', label: 'Your ties to your home country (be specific)', inputType: 'textarea',
-        placeholder: 'e.g. Property: 3-bedroom home at [address], owned outright. Family: spouse and two children remain in Canada. Pension: RRSP account with [bank], value $X.' },
+        placeholder: 'e.g. Property: 3-bedroom home at [address], owned outright. Family: spouse and two children remain in [home country]. Pension: retirement account with [bank], value $X.' },
       { key: 'M3-A-23', label: 'Intent to return to your home country after the E-2 period', inputType: 'textarea',
-        placeholder: 'e.g. I intend to operate the business for 5 years then return to Canada where I retain property and family ties.' },
+        placeholder: 'e.g. I intend to operate the business for 5 years then return to [home country] where I retain property and family ties.' },
     ],
     docs: [],
   },

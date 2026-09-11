@@ -2,6 +2,7 @@ import { readFileSync, existsSync, readdirSync } from 'fs';
 import { createHash } from 'crypto';
 import { join } from 'path';
 import Anthropic from '@anthropic-ai/sdk';
+import * as Sentry from '@sentry/nextjs';
 import { synthesizeInvestorProfile, formatInvestorProfileContext } from './investor-profile-synthesizer';
 import { scoreCase, type GapCategory, type CpuGapContext, type LedgerFact } from './gap-analysis-engine';
 import { createClient } from '@supabase/supabase-js';
@@ -27,9 +28,12 @@ import { computeCaseFinancials, formatCaseFinancialsText, formatRevenueRampChart
 import { buildExhibitRegistry, formatExhibitRegistryText, checkExhibitConsistency } from './exhibit-registry';
 import { buildDeterministicDocumentIndex } from './docx-package-constants';
 import { computeEnterpriseNationality, buildJointPartnershipBlock } from './partnership-analysis';
-import { callDocGenFallback } from './llm-client';
+import { buildDocumentPlan } from './document-plan';
+import { resolveTreatyCountry } from './treaty-countries';
+import { callDocGenFallback, calcCost, logCost } from './llm-client';
 import { personLabel } from './person-code';
 import { sendRetentionNoticeEmail } from './emails/retention-sequence';
+import { sendPackageReadyEmail } from './emails/generation-emails';
 
 const PROMPTS_DIR = join(process.cwd(), 'prompts', 'v1', 'documents');
 const UNIVERSAL_PROMPT_PATH = join(process.cwd(), 'prompts', 'v1', '_universal_system_prompt.md');
@@ -232,7 +236,7 @@ function getDocDCodeFilter(documentType: string): string[] | 'all' | undefined {
 // Each archetype has different emphasis, risk patterns, and strengths to feature.
 // ---------------------------------------------------------------------------
 
-const ARCHETYPE_DOC_GUIDANCE: Record<string, Record<string, string>> = {
+export const ARCHETYPE_DOC_GUIDANCE: Record<string, Record<string, string>> = {
   buyer: {
     cover_letter: `ARCHETYPE: FRANCHISE BUYER
 Emphasise: the franchisor's proven business model, E-2 approval track record if known, and the investor's role as the active operator directing day-to-day functions. The franchise fee and build-out costs are at-risk capital — state this explicitly. Reference the Franchise Disclosure Document (FDD) Item 7 as investment substantiation. Non-marginality proof: cite the FDD's AUV (Average Unit Volume) projections and staffing models. Develop-and-direct: the investor must run the location, not be a passive royalty recipient.`,
@@ -379,10 +383,38 @@ Career switchers sometimes receive financial support from family to supplement e
   },
 };
 
-function buildArchetypeGuidance(archetype: string, documentType: string): string {
+/**
+ * DR-12 (Gap G-09b): the guidance blocks above were written against a
+ * Canadian applicant and hardcode Canada/RRSP/TFSA in 11 places across all
+ * four archetypes, not just the franchise/buyer text the sprint literally
+ * named — a Japanese or French applicant's prompt was telling the model to
+ * document Canadian ties regardless of who was actually applying. Rather
+ * than hand-templating 11 strings (error-prone, easy to miss one on the next
+ * edit), the guidance stays written for the Canadian case — the common one —
+ * and this pass localizes it for every other nationality by substituting the
+ * applicant's actual country and generic account-type language for the
+ * Canada-specific instrument names. See prompt-nationality.test.ts.
+ */
+export function localizeArchetypeGuidance(text: string, homeCountry: string | null): string {
+  if (!text) return text;
+  if (homeCountry?.trim().toLowerCase() === 'canada') return text;
+
+  const country = homeCountry?.trim() || "the applicant's home country";
+  return text
+    .replace(/\bCanadian\b/g, `${country}-based`)
+    .replace(/\bCanada\b/g, country)
+    .replace(/\bRRSP\b/g, 'registered retirement plan')
+    .replace(/\bTFSA\b/g, 'tax-advantaged savings account')
+    .replace(/\bLIRA\b/g, 'locked-in retirement account')
+    .replace(/\bprovincial health coverage\b/gi, `${country} health coverage`);
+}
+
+export function buildArchetypeGuidance(archetype: string, documentType: string, homeCountry: string | null = null): string {
   const archetypeMap = ARCHETYPE_DOC_GUIDANCE[archetype];
   if (!archetypeMap) return '';
-  return archetypeMap[documentType] ?? '';
+  const raw = archetypeMap[documentType] ?? '';
+  if (!raw) return '';
+  return localizeArchetypeGuidance(raw, homeCountry);
 }
 
 function buildKBContext(documentType: string, consulatePost: string): string {
@@ -1122,7 +1154,10 @@ function formatLabeledAnswers(answers: Record<string, unknown>): string {
     .join('\n\n');
 }
 
-export async function callClaudeAPI(payload: GenerationPayload): Promise<string> {
+export async function callClaudeAPI(
+  payload: GenerationPayload,
+  meta?: { userId?: string; route?: string }
+): Promise<string> {
   const anthropic = getAnthropic();
   const docLabel = DOCUMENT_TYPE_LABELS[payload.document_type];
 
@@ -1217,6 +1252,18 @@ export async function callClaudeAPI(payload: GenerationPayload): Promise<string>
 
   const caseBriefObj = payload.case_brief as Record<string, unknown>;
   const archetype = (caseBriefObj?.archetype as string) ?? 'unknown';
+  // DR-12: M3-A-05 ("Country of citizenship") is the actual intake answer;
+  // case_brief's treaty_country/nationality are untyped fallbacks used
+  // elsewhere (e.g. computeEnterpriseNationality above) when M3-A-05 hasn't
+  // been captured yet for this applicant. resolveTreatyCountry canonicalizes
+  // free text ("uk", "great britain") to the name buildArchetypeGuidance
+  // interpolates into the prompt.
+  const rawNationality =
+    (payload.module_3_answers?.['M3-A-05'] as string | undefined) ??
+    (caseBriefObj?.treaty_country as string | undefined) ??
+    (caseBriefObj?.nationality as string | undefined) ??
+    null;
+  const homeCountry = resolveTreatyCountry(rawNationality) ?? (rawNationality?.trim() || null);
   const staticKBContext = buildKBContext(payload.document_type, payload.consulate_post);
   const dynamicKBContext = await fetchFAQKBContext(payload.document_type, payload.consulate_post, archetype);
 
@@ -1270,13 +1317,14 @@ export async function callClaudeAPI(payload: GenerationPayload): Promise<string>
     'Output the document text only.',
   ].join('\n');
 
-  const archetypeGuidance = buildArchetypeGuidance(archetype, payload.document_type);
+  const archetypeGuidance = buildArchetypeGuidance(archetype, payload.document_type, homeCountry);
   const enrichedSystemPrompt = archetypeGuidance
     ? `${payload.system_prompt}\n\n---\n\n${archetypeGuidance}`
     : payload.system_prompt;
 
   async function attempt(): Promise<string> {
     const model = await getGenerationModel();
+    const t0 = Date.now();
     const response = await anthropic.messages.create({
       model,
       max_tokens: getDocTokenBudget(payload.document_type),
@@ -1293,6 +1341,22 @@ export async function callClaudeAPI(payload: GenerationPayload): Promise<string>
 
     // Check for deprecation warnings
     await checkDeprecationWarning(response);
+
+    const tokensIn = response.usage.input_tokens;
+    const tokensOut = response.usage.output_tokens;
+    const cacheWriteTokens = response.usage.cache_creation_input_tokens ?? 0;
+    const cacheReadTokens = response.usage.cache_read_input_tokens ?? 0;
+    logCost({
+      userId: meta?.userId,
+      task: 'docgen',
+      route: meta?.route ?? payload.document_type,
+      provider: 'anthropic',
+      model,
+      tokensIn: tokensIn + cacheWriteTokens + cacheReadTokens,
+      tokensOut,
+      costUsd: calcCost(model, tokensIn, tokensOut, cacheWriteTokens, cacheReadTokens),
+      latencyMs: Date.now() - t0,
+    });
 
     const content = response.content.find((b): b is Anthropic.TextBlock => b.type === 'text');
     if (!content) {
@@ -1319,7 +1383,8 @@ export async function callClaudeAPI(payload: GenerationPayload): Promise<string>
           user: `${stableBlock}\n${variableBlock}`,
           max_tokens: getDocTokenBudget(payload.document_type),
           temperature: GENERATION_TEMPERATURE,
-          route: 'doc-generation',
+          route: meta?.route ?? 'doc-generation',
+          userId: meta?.userId,
         });
         if (fallback) {
           console.warn(`[generation-engine] ${payload.document_type} generated via OpenRouter fallback (${fallback.model})`);
@@ -1380,7 +1445,8 @@ export async function humanizeDocument(
   rawContent: string,
   voiceProfile: string,
   previousFeedback?: string,
-  documentType?: DocumentType
+  documentType?: DocumentType,
+  meta?: { userId?: string }
 ): Promise<string> {
   const anthropic = getAnthropic();
 
@@ -1398,6 +1464,7 @@ export async function humanizeDocument(
   ].join('\n');
 
   const model = await getGenerationModel();
+  const t0 = Date.now();
   try {
     const response = await anthropic.messages.create({
       model,
@@ -1414,6 +1481,22 @@ export async function humanizeDocument(
 
     // Check for deprecation warnings
     await checkDeprecationWarning(response);
+
+    const tokensIn = response.usage.input_tokens;
+    const tokensOut = response.usage.output_tokens;
+    const cacheWriteTokens = response.usage.cache_creation_input_tokens ?? 0;
+    const cacheReadTokens = response.usage.cache_read_input_tokens ?? 0;
+    logCost({
+      userId: meta?.userId,
+      task: 'docgen',
+      route: 'doc-humanization',
+      provider: 'anthropic',
+      model,
+      tokensIn: tokensIn + cacheWriteTokens + cacheReadTokens,
+      tokensOut,
+      costUsd: calcCost(model, tokensIn, tokensOut, cacheWriteTokens, cacheReadTokens),
+      latencyMs: Date.now() - t0,
+    });
 
     const content = response.content.find((b): b is Anthropic.TextBlock => b.type === 'text');
     if (!content) {
@@ -1435,6 +1518,7 @@ export async function humanizeDocument(
         max_tokens: getDocTokenBudget(documentType),
         temperature: HUMANIZATION_TEMPERATURE,
         route: 'doc-humanization',
+        userId: meta?.userId,
       });
       if (fallback) {
         console.warn(`[generation-engine] ${documentType} humanized via OpenRouter fallback (${fallback.model})`);
@@ -2503,6 +2587,16 @@ export async function runAIDetectionAudit(
 // 4g. Main orchestrator
 // ---------------------------------------------------------------------------
 
+// DR-6 (Gap G-04): tags a per-document failure with why it happened, so the
+// catch block in the generation loop can quarantine it with an honest reason
+// code instead of guessing from the error message.
+class DocumentQuarantineError extends Error {
+  constructor(message: string, public readonly reasonCode: 'system_fault' | 'needs_information') {
+    super(message);
+    this.name = 'DocumentQuarantineError';
+  }
+}
+
 export async function runGenerationPipeline(
   applicationId: string,
   userId: string,
@@ -2563,24 +2657,6 @@ export async function runGenerationPipeline(
   ): Promise<{ approved: boolean; revisionRequested: boolean }> => {
     return { approved: true, revisionRequested: false };
   };
-
-  const CORE_DOCUMENT_TYPES: DocumentType[] = [
-    'cover_letter',
-    'source_of_funds',
-    'business_plan',
-    'qualifications',
-    'ds160_reference',
-    'visa_category',
-    'nonimmigrant_intent',
-    'marginality_rebuttal',
-    'declaration_principal',
-    'fund_flow_chronology',
-    'net_worth_statement',
-    'resume_principal',
-    'gift_letter',
-    'org_chart',
-    'corporate_documents_guide',
-  ];
 
   const generatedDocs: GeneratedDocument[] = [];
 
@@ -2704,12 +2780,33 @@ export async function runGenerationPipeline(
     emitStep(1, 'complete');
     await updateJob({ current_step: 1, current_step_label: GENERATION_STEP_LABELS[1] });
 
-    // Determine conditional documents based on case file answers
-    const { data: condAnswerRows } = await supabase
-      .from('answers')
-      .select('question_key, answer_value')
-      .eq('application_id', applicationId)
-      .in('question_key', ['M3-L-01', 'M3-F-05', 'M3-F-NEW-01']);
+    // DR-16 (Gap G-11): conditional documents are derived from case file
+    // answers via the same buildDocumentPlan() that /api/generate/start uses
+    // to size the progress bar and pre-insert document rows, so the two
+    // can't drift apart again (see src/lib/document-plan.ts for the history
+    // of the drift this replaced).
+    const [{ data: condAnswerRows }, { data: leaseDoc }, { data: partnershipPayment }] = await Promise.all([
+      supabase
+        .from('answers')
+        .select('question_key, answer_value')
+        .eq('application_id', applicationId)
+        .in('question_key', ['M3-L-01', 'M3-F-05', 'M3-F-NEW-01']),
+      supabase
+        .from('uploaded_documents')
+        .select('id')
+        .eq('application_id', applicationId)
+        .eq('doc_type', 'lease_agreement')
+        .limit(1)
+        .maybeSingle(),
+      supabase
+        .from('payments')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('payment_type', 'complete_partnership')
+        .eq('status', 'completed')
+        .limit(1)
+        .maybeSingle(),
+    ]);
 
     const condAnswerMap: Record<string, string> = {};
     for (const row of (condAnswerRows ?? [])) {
@@ -2717,66 +2814,16 @@ export async function runGenerationPipeline(
         (row as Record<string, string>).answer_value;
     }
 
-    const conditionalDocTypes: DocumentType[] = [];
-    if (condAnswerMap['M3-L-01'] === 'yes') {
-      conditionalDocTypes.push('declaration_spouse');
-      conditionalDocTypes.push('resume_spouse');
-    }
-    if (typeof condAnswerMap['M3-F-05'] === 'string' && condAnswerMap['M3-F-05'].includes('property-sale')) {
-      conditionalDocTypes.push('property_portfolio');
-    }
-    // WS6.1 — Investment Evidence generates only when at-risk is genuinely contested:
-    // funds partially deployed or committed-but-unspent (escrow-style arrangements).
-    // Fully-deployed cases rely on SOF §V instead of a redundant standalone document.
-    if (condAnswerMap['M3-F-NEW-01'] === 'partial' || condAnswerMap['M3-F-NEW-01'] === 'no') {
-      conditionalDocTypes.push('investment_proof');
-    }
-    // WS6.1 — Financial Assets Portfolio generates when fund sources include securities/
-    // registered plans/crypto (RRSP, TFSA, LIRA/pension, cryptocurrency). Mirrors the
-    // trigger in /api/generate/start/route.ts — this pipeline executor had its own
-    // independent conditionalDocTypes computation that was missed when that route was
-    // wired in Session 119o, so financial_assets_portfolio was never actually generated
-    // despite the step counter accounting for it. Fixed here.
-    if (
-      typeof condAnswerMap['M3-F-05'] === 'string' &&
-      ['rrsp', 'tfsa', 'lira', 'crypto'].some(v => (condAnswerMap['M3-F-05'] as string).includes(v))
-    ) {
-      conditionalDocTypes.push('financial_assets_portfolio');
-    }
-    // WS6.1 — Lease/Premises Summary generates only for physical-location businesses,
-    // detected deterministically by the presence of an uploaded lease agreement (rather
-    // than a new intake question) — mirrors the trigger in start/route.ts.
-    const { data: leaseDoc } = await supabase
-      .from('uploaded_documents')
-      .select('id')
-      .eq('application_id', applicationId)
-      .eq('doc_type', 'lease_agreement')
-      .limit(1)
-      .maybeSingle();
-    if (leaseDoc) {
-      conditionalDocTypes.push('lease_premises_summary');
-    }
-
-    // Sprint F-P: Add Investor 2 document types for complete_partnership buyers
-    const { data: partnershipPayment } = await supabase
-      .from('payments')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('payment_type', 'complete_partnership')
-      .eq('status', 'completed')
-      .limit(1)
-      .maybeSingle();
-
     const isPartnership = !!partnershipPayment;
 
-    if (isPartnership) {
-      // cover_letter_p2 retired — the shared cover_letter now covers both
-      // investors jointly (see JOINT_PARTNERSHIP_DOC_TYPES above).
-      conditionalDocTypes.push(
-        'source_of_funds_p2', 'declaration_p2',
-        'qualifications_p2', 'nonimmigrant_intent_p2', 'resume_p2'
-      );
-    }
+    const documentPlan = buildDocumentPlan({
+      spouseIncluded: condAnswerMap['M3-L-01'] === 'yes',
+      fundSources: condAnswerMap['M3-F-05'],
+      investmentDeploymentStatus: condAnswerMap['M3-F-NEW-01'],
+      hasLeaseAgreement: !!leaseDoc,
+      isPartnership,
+    });
+    const conditionalDocTypes: DocumentType[] = documentPlan.conditional;
 
     // Load P2-* answers once for the whole pipeline run (empty map for solo applications)
     const p2Answers: Record<string, string> = {};
@@ -2792,7 +2839,7 @@ export async function runGenerationPipeline(
       }
     }
 
-    const DOCUMENT_TYPES = [...CORE_DOCUMENT_TYPES, ...conditionalDocTypes];
+    const DOCUMENT_TYPES = documentPlan.all;
     const Q = DOCUMENT_TYPES.length + 2;
     const effectiveTotalSteps = 1 + DOCUMENT_TYPES.length + 9;
     await updateJob({ total_steps: effectiveTotalSteps });
@@ -2844,11 +2891,14 @@ export async function runGenerationPipeline(
         });
     }
 
-    // C2: Load already-approved docs from a prior interrupted run so we skip re-generating them
+    // C2/DR-7: Load already-approved docs from a prior interrupted run so we skip
+    // re-generating them. Scoped by application_id, not job_id — /start mints a
+    // new job on every retry, so a job_id scope always sees zero approved docs
+    // on a retry and regenerates all 15-25 documents at full LLM cost.
     const { data: existingApproved } = await supabase
       .from('generated_documents')
       .select('document_type, content_text, verifier_result')
-      .eq('job_id', jobId)
+      .eq('application_id', applicationId)
       .eq('status', 'approved');
     const approvedSet = new Set((existingApproved ?? []).map(d => d.document_type as string));
     for (const d of existingApproved ?? []) {
@@ -2868,6 +2918,7 @@ export async function runGenerationPipeline(
       }
 
       let documentApproved = false;
+      let documentFailed = false;
       let revisionLoopCount = 0;
       const maxRevisions = 3;
 
@@ -2994,20 +3045,10 @@ Generate the document using Investor 2's identity, name, nationality, source of 
           );
           if (!validation.valid) {
             const errorMsg = `Missing required data: ${validation.missingFields.join(', ')}. Complete Module 3 before generating.`;
-            await supabase
-              .from('generated_documents')
-              .update({
-                status: 'failed',
-                error_message: errorMsg,
-                updated_at: new Date().toISOString(),
-              })
-              .eq('job_id', jobId)
-              .eq('document_type', docType);
-            await fail(stepNum, errorMsg);
-            return;
+            throw new DocumentQuarantineError(errorMsg, 'needs_information');
           }
 
-          const content = await callClaudeAPI(payload);
+          const content = await callClaudeAPI(payload, { userId, route: 'doc-generation' });
 
           // H2 — Deterministic figure provenance check (free, no LLM).
           // Runs before the LLM verifier so orphan figures are surfaced immediately.
@@ -3060,7 +3101,7 @@ Generate the document using Investor 2's identity, name, nationality, source of 
                       ? '\n\n' + currentPayload.case_theory_brief
                       : ''),
                 };
-                finalContent = await callClaudeAPI(correctionPayload);
+                finalContent = await callClaudeAPI(correctionPayload, { userId, route: 'doc-generation-verifier-retry' });
                 currentPayload = correctionPayload;
               }
             }
@@ -3160,33 +3201,60 @@ Generate the document using Investor 2's identity, name, nationality, source of 
             await updateJob({ status: 'running' });
           }
         } catch (err) {
+          // DR-6 (Gap G-04) / Decision 3 — release-with-flag: a single document's
+          // failure must not abort the other 15-25 documents already generated or
+          // in progress. Quarantine this document only, release everything else
+          // immediately, and surface a reason + next action in the manifest
+          // (quality_gate_passed: false is the same gate buildPackageManifest()
+          // already treats as 'blocked', which the Acknowledgment Gate below
+          // already turns into job status 'partial' instead of 'completed').
+          const msg = err instanceof Error ? err.message : 'Unknown error';
+          const reasonCode: 'system_fault' | 'needs_information' =
+            err instanceof DocumentQuarantineError ? err.reasonCode : 'system_fault';
+          const nextAction = reasonCode === 'needs_information'
+            ? 'Complete the missing intake fields, then regenerate this document from your dashboard.'
+            : 'Our team has been notified and will regenerate this document — no action needed from you.';
+
           await supabase
             .from('generated_documents')
             .update({
               status: 'failed',
+              error_message: msg,
+              quality_gate_passed: false,
+              quality_gate_notes: [`${reasonCode}: ${nextAction}`],
               updated_at: new Date().toISOString(),
             })
             .eq('job_id', jobId)
             .eq('document_type', docType);
 
-          const msg = err instanceof Error ? err.message : 'Unknown error';
-          await fail(stepNum, `Failed to generate ${docLabel}: ${msg}`);
-          return;
+          console.error(`[ENGINE] Quarantined ${docLabel} (${docType}) — ${reasonCode}: ${msg}`);
+          emitStep(stepNum, 'failed');
+          Sentry.captureException(err, { extra: { jobId, applicationId, docType, reasonCode, stage: 'document-generation' } });
+
+          documentFailed = true;
+          break;
         }
       }
 
-      if (!documentApproved && revisionLoopCount >= maxRevisions) {
-        // Max revisions reached - auto-approve to continue
+      if (!documentApproved && !documentFailed && revisionLoopCount >= maxRevisions) {
+        // DR-9 (Gap G-10): was a silent auto-approve that shipped an unreviewed
+        // draft to the client. Held for e2go review instead, via the same
+        // quality_gate_passed gate DR-6 uses above.
         await supabase
           .from('generated_documents')
           .update({
-            status: 'approved',
-            approved_at: new Date().toISOString(),
-            quality_gate_notes: ['Auto-approved after max revisions'],
+            quality_gate_passed: false,
+            quality_gate_notes: ['Exceeded max revisions without client approval — held for e2go review'],
             updated_at: new Date().toISOString(),
           })
           .eq('job_id', jobId)
           .eq('document_type', docType);
+
+        console.error(`[ENGINE] ${docLabel} (${docType}) exceeded max revisions — held for e2go review`);
+        Sentry.captureMessage(
+          `[E2go.app] Document held for review after max revisions: ${docLabel}`,
+          { level: 'warning', extra: { jobId, applicationId, docType, revisionLoopCount } }
+        );
       }
 
       // Resume job for next document
@@ -3264,7 +3332,7 @@ Generate the document using Investor 2's identity, name, nationality, source of 
           const correctedContent = await callClaudeAPI({
             ...regenPayload,
             case_theory_brief: distinctivenessBrief + (regenPayload.case_theory_brief ? '\n\n' + regenPayload.case_theory_brief : ''),
-          });
+          }, { userId, route: 'doc-generation-dedup-retry' });
 
           const wc = countWords(correctedContent);
           const pages = estimatePages(wc);
@@ -3426,7 +3494,7 @@ Generate the document using Investor 2's identity, name, nationality, source of 
 
       for (let attempt = 1; attempt <= HUMANIZATION_MAX_ATTEMPTS; attempt++) {
         try {
-          const humanized = await humanizeDocument(currentText, voiceProfile, lastFeedback, doc.document_type);
+          const humanized = await humanizeDocument(currentText, voiceProfile, lastFeedback, doc.document_type, { userId });
           const wc = countWords(humanized);
           const pages = estimatePages(wc);
           actualAttempts = attempt;
@@ -3645,7 +3713,7 @@ Generate the document using Investor 2's identity, name, nationality, source of 
             case_theory_brief: failureInstructions
               + (payload.case_theory_brief ? '\n\n' + payload.case_theory_brief : ''),
           };
-          const retryContentText = await callClaudeAPI(retryPayload);
+          const retryContentText = await callClaudeAPI(retryPayload, { userId, route: 'doc-generation-quality-retry' });
 
           if (retryContentText) {
             const wc = countWords(retryContentText);
@@ -3881,6 +3949,34 @@ Generate the document using Investor 2's identity, name, nationality, source of 
       status: jobFinalStatus,
       completed_at: new Date().toISOString(),
     });
+
+    // DR-4 (Gap G-06): a run this long should not tether the client to an
+    // open tab — tell them by email that it's done. Only on a full
+    // 'completed' run, not 'partial' (a partial run still needs the
+    // per-document quarantine UI, not a "ready" message). Failure here must
+    // never fail the pipeline — the documents are already generated.
+    if (jobFinalStatus === 'completed') {
+      try {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('email')
+          .eq('id', userId)
+          .maybeSingle();
+
+        if (profile?.email) {
+          const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+          await sendPackageReadyEmail({
+            supabase,
+            applicationId,
+            email: profile.email,
+            applicationLink: `${appUrl}/generate/${applicationId}`,
+            documentTypes: DOCUMENT_TYPES,
+          });
+        }
+      } catch (notifyErr) {
+        console.error('[ENGINE] package-ready email failed:', notifyErr);
+      }
+    }
 
     // RS-10 (Gap G-19): notify the client when their uploaded files are
     // scheduled to be purged (30 days from now — see cron/data-retention).

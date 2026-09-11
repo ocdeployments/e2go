@@ -8,6 +8,7 @@ import { INTERVIEW_KNOWLEDGE_BASE } from '@/lib/interview-knowledge-base';
 import { uploadedDocTypeLabel, summarizeExtractedJson } from '@/lib/uploaded-doc-labels';
 import type { GapAnalysisResult } from '@/lib/gap-analysis-engine';
 import { captureApiError } from '@/lib/capture-error';
+import { COUNTRY_LABELS } from '@/lib/country-labels';
 
 const CONSULATE_LABELS: Record<string, string> = {
   toronto: 'Toronto, Canada',
@@ -16,26 +17,6 @@ const CONSULATE_LABELS: Record<string, string> = {
   seoul: 'Seoul, South Korea',
   mumbai: 'Mumbai, India',
   other: 'Other',
-};
-
-/**
- * Legacy decoder. The simulator's quick-start form used to store the treaty
- * country as a slug; it now stores the same display name the quiz does, which
- * falls through the lookup below unchanged. This map only exists to render
- * applications answered before that change — including 'hungary', which the
- * old form offered even though Hungary has no E-2 treaty.
- */
-const COUNTRY_LABELS: Record<string, string> = {
-  canada: 'Canada', united_kingdom: 'United Kingdom', australia: 'Australia',
-  japan: 'Japan', south_korea: 'South Korea', germany: 'Germany',
-  france: 'France', italy: 'Italy', spain: 'Spain', netherlands: 'Netherlands',
-  switzerland: 'Switzerland', sweden: 'Sweden', belgium: 'Belgium',
-  norway: 'Norway', denmark: 'Denmark', finland: 'Finland', ireland: 'Ireland',
-  austria: 'Austria', poland: 'Poland', czech_republic: 'Czech Republic',
-  hungary: 'Hungary', romania: 'Romania', mexico: 'Mexico',
-  colombia: 'Colombia', argentina: 'Argentina', chile: 'Chile',
-  turkey: 'Turkey', israel: 'Israel', jordan: 'Jordan',
-  thailand: 'Thailand', pakistan: 'Pakistan', other: 'Other',
 };
 
 const BIZ_TYPE_LABELS: Record<string, string> = {
@@ -182,11 +163,11 @@ function buildFallback(
       'Will personally develop and direct all business operations',
     ],
     interviewTopics: [
-      { topic: 'Investment Amount & Substantiality', likelihood: 'high', coachNote: 'Have the exact figure and breakdown by category. Confirm funds are irrevocably committed and at risk — not in a Canadian account.' },
-      { topic: 'Source of Funds — Traceability', likelihood: 'high', coachNote: 'Know every source, amount, and date. Walk the officer through the chronological path: source → Canadian account → US business account.' },
+      { topic: 'Investment Amount & Substantiality', likelihood: 'high', coachNote: `Have the exact figure and breakdown by category. Confirm funds are irrevocably committed and at risk — not still sitting in a ${country} account.` },
+      { topic: 'Source of Funds — Traceability', likelihood: 'high', coachNote: `Know every source, amount, and date. Walk the officer through the chronological path: source → ${country} account → US business account.` },
       { topic: 'Your Role — Develop and Direct', likelihood: 'high', coachNote: 'Lead with your operational title (not just "Owner"). Name 3-4 specific daily decisions. Establish you are the operating manager, not a passive investor.' },
       { topic: 'Employment and Hiring Plan', likelihood: 'high', coachNote: 'State Year 1 hires by role, start date, and whether full-time. Non-marginality depends on credible US job creation.' },
-      { topic: 'Canadian Ties and Nonimmigrant Intent', likelihood: 'medium', coachNote: 'Prepare specific, verifiable ties: property owned, family remaining, RRSP/pension active, provincial health coverage maintained.' },
+      { topic: 'Home-Country Ties and Nonimmigrant Intent', likelihood: 'medium', coachNote: `Prepare specific, verifiable ties: property owned, family remaining, retirement savings active, health coverage maintained in ${country}.` },
     ],
     categoryScores: gapResult.categories.map(c => ({ id: c.id, name: c.name, score: c.score, weight: c.weight, priority: c.priority, gaps: c.gaps, actions: c.actions, evidence: c.evidence })),
     denialRisks: gapResult.denialFactors.filter(f => f.risk !== 'low').map(f => ({ code: f.code, name: f.name, risk: f.risk, finding: f.finding, mitigation: f.mitigation })),

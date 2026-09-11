@@ -78,10 +78,10 @@ export const INTERVIEW_KNOWLEDGE_BASE: InterviewQuestionKnowledge[] = [
       'Saying funds are "in the business account" but not yet deployed',
       'Inability to account for a significant portion of the investment',
       'Rounded numbers that don\'t match Tab F documentation',
-      'Describing funds as still in Canada or not yet transferred',
+      'Describing funds as still in the home country or not yet transferred',
     ],
     goldStandardStructure:
-      'My total investment is [EXACT_AMOUNT] USD, fully deployed. The allocation is: [FRANCHISE_FEE] to the franchise fee, [BUILDOUT] to build-out and renovations, [EQUIPMENT] to equipment and fixtures, [WORKING_CAPITAL] in working capital, and [PROFESSIONAL_FEES] to professional fees and licenses. All funds have been transferred from Canada and are committed — wire transfer confirmations are in Tab F.',
+      'My total investment is [EXACT_AMOUNT] USD, fully deployed. The allocation is: [FRANCHISE_FEE] to the franchise fee, [BUILDOUT] to build-out and renovations, [EQUIPMENT] to equipment and fixtures, [WORKING_CAPITAL] in working capital, and [PROFESSIONAL_FEES] to professional fees and licenses. All funds have been transferred from [HOME_COUNTRY] and are committed — wire transfer confirmations are in Tab F.',
     torontoNote:
       'Toronto officers check the investment breakdown against Tab F and Tab H. Verbal answers must match documented allocation within a few thousand dollars; discrepancies trigger follow-up questions.',
   },
@@ -149,7 +149,7 @@ export const INTERVIEW_KNOWLEDGE_BASE: InterviewQuestionKnowledge[] = [
       'Current employee count (acknowledge honestly even if zero)',
       'Specific Year 1 hires: roles, count, timeline by month — not "eventually"',
       'Whether positions are full-time or part-time',
-      'That employees will be U.S. workers (not Canadian transfers)',
+      'That employees will be U.S. workers (not transfers from the investor\'s home country)',
       'Logical connection between revenue milestones and hiring timeline',
     ],
     redFlags: [
@@ -311,7 +311,7 @@ export const INTERVIEW_KNOWLEDGE_BASE: InterviewQuestionKnowledge[] = [
     officerTests:
       'Complete paper trail — every account the money passed through. Gaps create administrative processing.',
     keyPrinciples: [
-      'Chronological narrative: source → intermediate Canadian accounts → U.S. business account',
+      'Chronological narrative: source → intermediate home-country accounts → U.S. business account',
       'Wire transfer amounts and dates',
       'No unexplained stops along the way',
       'Bank names and account types for each leg of the journey',
@@ -331,20 +331,20 @@ export const INTERVIEW_KNOWLEDGE_BASE: InterviewQuestionKnowledge[] = [
     topic: 'Funds Deployment Status',
     frequency: 'common',
     officerTests:
-      'That the investment is genuinely at risk — funds still in a Canadian account do not qualify.',
+      'That the investment is genuinely at risk — funds still in a home-country account do not qualify.',
     keyPrinciples: [
       'Majority of funds deployed (in U.S. business account or spent)',
       'If some remain uncommitted, explain why and when they will be deployed',
       'Investment is "irrevocably committed" — not contingent on visa approval',
     ],
     redFlags: [
-      '"Most of it is still in Canada, I\'m waiting for the visa"',
+      '"Most of it is still in my home country, I\'m waiting for the visa"',
       'Significant portion described as "committed" but not transferred',
-      'Working capital sitting in a Canadian account',
+      'Working capital sitting in a home-country account',
       'Franchise fee not yet paid',
     ],
     goldStandardStructure:
-      'All [AMOUNT] of my investment has been deployed. [AMOUNT_1] was wired to the U.S. business account and used for [EXPENSES]. [AMOUNT_2] was paid directly to [FRANCHISOR/VENDOR] for [PURPOSE]. Nothing remains in Canada — the funds are irrevocably committed and at risk.',
+      'All [AMOUNT] of my investment has been deployed. [AMOUNT_1] was wired to the U.S. business account and used for [EXPENSES]. [AMOUNT_2] was paid directly to [FRANCHISOR/VENDOR] for [PURPOSE]. Nothing remains in [HOME_COUNTRY] — the funds are irrevocably committed and at risk.',
   },
 
   {
@@ -418,25 +418,25 @@ export const INTERVIEW_KNOWLEDGE_BASE: InterviewQuestionKnowledge[] = [
   {
     id: 'IQ-17',
     simulatorIds: ['WP-05'],
-    topic: 'Canadian Ties',
+    topic: 'Home-Country Ties',
     frequency: 'always',
     officerTests:
-      'Nonimmigrant intent — the investor must have genuine reasons to return to Canada when E-2 status ends.',
+      'Nonimmigrant intent — the investor must have genuine reasons to return to the home country when E-2 status ends.',
     keyPrinciples: [
-      'Property (own or maintain a home, rental property, or substantial lease in Canada)',
-      'Family (parents, siblings, extended family remaining in Canada)',
-      'Financial ties (Canadian bank accounts open, Canadian investments, RRSP/TFSA)',
-      'Provincial health coverage maintenance',
+      'Property (own or maintain a home, rental property, or substantial lease in the home country)',
+      'Family (parents, siblings, extended family remaining in the home country)',
+      'Financial ties (home-country bank accounts open, home-country investments, retirement/savings accounts)',
+      'Local health coverage maintenance',
       'Professional ties (memberships, licenses retained)',
     ],
     redFlags: [
-      'Sold Canadian home before the interview',
+      'Sold home-country residence before the interview',
       'All family members relocating to the U.S.',
-      'All Canadian accounts closed',
+      'All home-country accounts closed',
       '"I don\'t really have ties — I plan to make the U.S. my home"',
     ],
     goldStandardStructure:
-      'I maintain several substantial ties to Canada. [PROPERTY TIE: I own my home in [CITY], which I am maintaining / I have a rental property in [CITY] generating income]. My [FAMILY TIE: parents / siblings] remain in Canada. My Canadian bank accounts at [BANK] remain active, and I maintain my [PROVINCIAL] health coverage. I also [ADDITIONAL TIE].',
+      'I maintain several substantial ties to [HOME_COUNTRY]. [PROPERTY TIE: I own my home in [CITY], which I am maintaining / I have a rental property in [CITY] generating income]. My [FAMILY TIE: parents / siblings] remain in [HOME_COUNTRY]. My bank accounts at [BANK] remain active, and I maintain my health coverage there. I also [ADDITIONAL TIE].',
     torontoNote:
       'CRITICAL: Selling your Canadian home before the E-2 interview is among the most common triggers for a 214(b) immigrant intent finding at Toronto. Documented consulate experience confirms officers specifically ask about this. Maintain the Canadian home until after the visa is approved.',
   },
@@ -444,13 +444,13 @@ export const INTERVIEW_KNOWLEDGE_BASE: InterviewQuestionKnowledge[] = [
   {
     id: 'IQ-18',
     simulatorIds: ['UQ-09'],
-    topic: 'Nonimmigrant Intent — Return to Canada',
+    topic: 'Nonimmigrant Intent — Return to Home Country',
     frequency: 'very_common',
     officerTests:
       'Whether the investor understands and accepts the nonimmigrant nature of the E-2. A framing question — must show E-2 is not a permanent residency strategy.',
     keyPrinciples: [
       'Explicitly acknowledge: "The E-2 is a nonimmigrant visa — I understand that"',
-      'State a concrete scenario that would cause return to Canada',
+      'State a concrete scenario that would cause return to the home country',
       'Do NOT volunteer any mention of green card plans',
       'Do NOT suggest indefinite stay intent',
     ],
@@ -460,7 +460,7 @@ export const INTERVIEW_KNOWLEDGE_BASE: InterviewQuestionKnowledge[] = [
       'Unable to name any circumstance that would cause you to return',
     ],
     goldStandardStructure:
-      'I understand the E-2 is a nonimmigrant visa. My focus is on building [BUSINESS_NAME] into a successful business. If the business were no longer viable, or if I were no longer eligible for E-2 status, I would return to Canada — my home and family ties remain there. I have no plans to pursue permanent residency.',
+      'I understand the E-2 is a nonimmigrant visa. My focus is on building [BUSINESS_NAME] into a successful business. If the business were no longer viable, or if I were no longer eligible for E-2 status, I would return to [HOME_COUNTRY] — my home and family ties remain there. I have no plans to pursue permanent residency.',
   },
 
   {
@@ -469,20 +469,20 @@ export const INTERVIEW_KNOWLEDGE_BASE: InterviewQuestionKnowledge[] = [
     topic: 'Contingency If Visa Denied',
     frequency: 'common',
     officerTests:
-      'Two tests simultaneously: (1) investor has Canadian presence to return to, and (2) the business investment is real and will not simply be abandoned.',
+      'Two tests simultaneously: (1) investor has a home-country presence to return to, and (2) the business investment is real and will not simply be abandoned.',
     keyPrinciples: [
       'Acknowledge the investment is real and already made',
       'State the preservation plan (manage remotely, engage local manager, work with franchisor)',
       'Confirm the plan to refile or pursue alternative pathway',
-      'Confirm Canadian base to return to',
+      'Confirm home-country base to return to',
     ],
     redFlags: [
       '"Everything would fall apart" (implies investment was contingent on visa approval)',
       '"I would just stay here on a tourist visa" (immigration violation)',
-      'No mention of returning to Canada',
+      'No mention of returning to the home country',
     ],
     goldStandardStructure:
-      'The investment has already been made — the business is real regardless of today\'s outcome. If the visa is not approved, I would [SPECIFIC PLAN: manage the business remotely from Canada with a local operations manager / work with the franchisor to maintain operations]. I would then refile with my attorney, addressing any concerns raised. My home in [CITY] is available to return to.',
+      'The investment has already been made — the business is real regardless of today\'s outcome. If the visa is not approved, I would [SPECIFIC PLAN: manage the business remotely from [HOME_COUNTRY] with a local operations manager / work with the franchisor to maintain operations]. I would then refile with my attorney, addressing any concerns raised. My home in [CITY] is available to return to.',
   },
 
   {
@@ -495,7 +495,7 @@ export const INTERVIEW_KNOWLEDGE_BASE: InterviewQuestionKnowledge[] = [
     keyPrinciples: [
       'Know every social media account listed on DS-160 — and confirm the disclosure is complete',
       'Be prepared to explain any business-related or public content in search results',
-      'For the safety question: answer honestly and briefly ("No, I have not feared for my safety in Canada")',
+      'For the safety question: answer honestly and briefly ("No, I have not feared for my safety in my home country")',
       'Know what appears when you Google yourself before the interview',
     ],
     redFlags: [
@@ -504,7 +504,7 @@ export const INTERVIEW_KNOWLEDGE_BASE: InterviewQuestionKnowledge[] = [
       'Hesitation on the safety question',
     ],
     goldStandardStructure:
-      'My social media accounts are [LIST — matches DS-160 exactly]. [For search result questions: That post/article is about [ACCURATE EXPLANATION]. / For safety question: No, I have not — Canada is my home and I have always felt safe there.]',
+      'My social media accounts are [LIST — matches DS-160 exactly]. [For search result questions: That post/article is about [ACCURATE EXPLANATION]. / For safety question: No, I have not — [HOME_COUNTRY] is my home and I have always felt safe there.]',
     torontoNote:
       'As of May 2026, Toronto officers are conducting active social media vetting during the interview — they may search your name at the window. They are also required to ask the personal safety screening question. Prepare for both. Review your public posts before the interview for any content that could be read as immigrant intent.',
   },

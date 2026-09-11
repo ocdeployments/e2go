@@ -3,11 +3,12 @@ import { cookies } from 'next/headers';
 import { NextResponse, type NextRequest } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { extractGeo, COUNTRY_NAMES } from '@/lib/geo';
+import { safeRedirect } from '@/lib/safe-redirect';
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get('code');
-  const next = requestUrl.searchParams.get('next') ?? '/case-profile';
+  const next = safeRedirect(requestUrl.searchParams.get('next'), '/case-profile');
   const origin = requestUrl.origin;
 
   if (code) {

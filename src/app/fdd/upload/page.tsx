@@ -386,27 +386,21 @@ export default function FddUploadPage() {
               <label className="block text-xs text-white/40 uppercase tracking-widest mb-3">
                 FDD PDF
               </label>
-              <div
-                className={`relative border-2 border-dashed rounded-xl p-10 text-center cursor-pointer transition-all ${
+              <button
+                type="button"
+                className={`relative w-full border-2 border-dashed rounded-xl p-10 text-center cursor-pointer transition-all ${
                   dragOver
                     ? 'border-[#C9A84C] bg-[#C9A84C]/5'
                     : selectedFile
                     ? 'border-[#C9A84C]/40 bg-[#C9A84C]/5'
                     : 'border-white/10 hover:border-white/20'
                 }`}
+                style={{ font: 'inherit' }}
                 onDragOver={e => { e.preventDefault(); setDragOver(true); }}
                 onDragLeave={() => setDragOver(false)}
                 onDrop={handleDrop}
                 onClick={() => fileInputRef.current?.click()}
               >
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".pdf"
-                  className="hidden"
-                  onChange={e => { if (e.target.files?.[0]) handleFileSelect(e.target.files[0]); }}
-                />
-
                 {selectedFile ? (
                   <div>
                     <div className="text-[#C9A84C] text-2xl mb-2">✓</div>
@@ -422,7 +416,14 @@ export default function FddUploadPage() {
                     <p className="text-white/30 text-xs">PDF only · up to 50MB</p>
                   </div>
                 )}
-              </div>
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf"
+                className="hidden"
+                onChange={e => { if (e.target.files?.[0]) handleFileSelect(e.target.files[0]); }}
+              />
             </div>
 
             {errorMsg && (

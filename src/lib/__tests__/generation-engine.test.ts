@@ -1,3 +1,5 @@
+import fs from "fs";
+import path from "path";
 import {
   buildGenerationPayload,
   checkConsistency,
@@ -523,5 +525,63 @@ Chief Executive Officer / Owner-Operator.
     } finally {
       REQUIRED_ELEMENTS.cover_letter = original;
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// DR-9 (Gap G-10): max-revisions hold-for-review, not silent auto-approve.
+//
+// Before this fix, a document that exhausted its revision budget without
+// client approval was silently flipped to status: 'approved' with a note
+// nobody but an engineer reading the DB would ever see — an unreviewed
+// draft shipped to the client as if it were final. The fix holds it via
+// the same quality_gate_passed: false gate DR-6 uses, which
+// buildPackageManifest() already turns into 'blocked' and the
+// Acknowledgment Gate already turns into job status 'partial'.
+//
+// As with DR-7 (generation-resume.test.ts), runGenerationPipeline() has no
+// DI seam and makes live Anthropic/Supabase calls throughout, so this is a
+// structural check against the source rather than a full pipeline mock.
+// ---------------------------------------------------------------------------
+describe("Generation Engine — DR-9 max-revisions hold-for-review", () => {
+  function readEngineSource(): string {
+    return fs.readFileSync(
+      path.join(process.cwd(), "src/lib/generation-engine.ts"),
+      "utf8"
+    );
+  }
+
+  function getMaxRevisionsBlock(src: string): string {
+    const match = src.match(
+      /if \(!documentApproved && !documentFailed && revisionLoopCount >= maxRevisions\) \{[\s\S]*?\n {6}\}/
+    );
+    expect(match).not.toBeNull();
+    return match![0];
+  }
+
+  it("no longer auto-approves a document that exhausted its revision budget", () => {
+    const block = getMaxRevisionsBlock(readEngineSource());
+    expect(block).not.toMatch(/status:\s*'approved'/);
+    expect(block).not.toMatch(/Auto-approved after max revisions/);
+  });
+
+  it("holds the document for review via quality_gate_passed: false instead", () => {
+    const block = getMaxRevisionsBlock(readEngineSource());
+    expect(block).toMatch(/quality_gate_passed:\s*false/);
+    expect(block).toMatch(/held for e2go review/i);
+  });
+
+  it("skips the max-revisions hold when the document was already quarantined by DR-6 in the same iteration", () => {
+    const src = readEngineSource();
+    expect(src).toMatch(
+      /if \(!documentApproved && !documentFailed && revisionLoopCount >= maxRevisions\)/
+    );
+  });
+
+  it("fires a Sentry warning naming the job, application, and document", () => {
+    const block = getMaxRevisionsBlock(readEngineSource());
+    expect(block).toMatch(/Sentry\.captureMessage\(/);
+    expect(block).toMatch(/level:\s*'warning'/);
+    expect(block).toMatch(/jobId,\s*applicationId,\s*docType,\s*revisionLoopCount/);
   });
 });

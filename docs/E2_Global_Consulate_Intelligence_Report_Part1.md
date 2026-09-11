@@ -1,7 +1,7 @@
 # E-2 Treaty Investor Visa — Global Consulate Intelligence Report
 ## Part 1: Master Reference Table
 
-**Document:** `docs/spec/E2_Global_Consulate_Intelligence_Report.md`
+**Document:** `docs/E2_Global_Consulate_Intelligence_Report_Part1.md`
 **Version:** 1.0 — May 2026
 **Sources:** U.S. Department of State (travel.state.gov), U.S. Embassy & Consulate official websites, State Department Global Visa Wait Times tool
 **Status:** Living document — items marked 🗓️ require annual review
@@ -174,4 +174,4 @@ As of **September 6, 2025**, the U.S. Department of State eliminated the practic
 
 *End of Part 1 — Master Reference Table*
 *Next: Part 2 — Detailed Consulate Profiles (High & Medium Volume Posts)*
-*File: `docs/spec/E2_Global_Consulate_Intelligence_Report_Part1.md`*
+*File: `docs/E2_Global_Consulate_Intelligence_Report_Part1.md`*

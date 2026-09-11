@@ -169,7 +169,7 @@ async function generateCoverLetter(answers: RenewalAnswers, businessName: string
     'na': 'does not apply to this business model',
   };
 
-  const prompt = `You are a senior U.S. immigration attorney drafting an E-2 visa renewal cover letter for a Canadian investor.
+  const prompt = `You are a senior U.S. immigration attorney drafting an E-2 visa renewal cover letter for a treaty-country investor.
 
 INVESTOR: ${applicantName || 'the applicant'}
 BUSINESS: ${businessName || 'the business'}
@@ -190,7 +190,7 @@ ADDITIONAL INVESTMENT SINCE ORIGINAL: $${answers['RQ-06'] ?? '0'}
 CURRENT ROLE:
 ${answers['RQ-09'] ?? 'Not provided.'}
 
-CANADIAN TIES:
+HOME-COUNTRY TIES:
 ${answers['RQ-13'] ?? 'Not provided.'}
 
 PROMISE VS. DELIVERY (cite these exact figures where relevant — do not invent others):
@@ -203,7 +203,7 @@ Write a formal E-2 renewal cover letter (600–800 words). The letter must:
 1. Open by identifying the applicant, business, and that this is a renewal of E-2 treaty investor status
 2. Summarise business performance — growth since original application, current profitability status, employees. Where the promise-vs-delivery figures above are available, state the original projection next to the actual result explicitly (an officer checks this first).
 3. Address the develop-and-direct element — investor's active management role (use the current role description above)
-4. Address non-immigrant intent — Canadian ties retained (use the ties section above)
+4. Address non-immigrant intent — home-country ties retained (use the ties section above)
 5. Where a HIGH risk flag applies (ownership change, immigration issue, marginality), acknowledge it directly and frame the explanation using only the facts provided — officers read omission as concealment
 6. Close with a request for renewal and statement of continued compliance
 
@@ -369,10 +369,15 @@ export async function POST(request: NextRequest) {
 
   try {
     // Consulate from the original application's interview-prep answers
-    // (M3-I-11/M3-I-12); defaults to Toronto, the historical hardcoded post.
-    const consulate = (consulateChoice === 'other' && consulateOther.trim())
+    // (M3-I-11/M3-I-12). M3-I-11 now stores a treaty-country name; 'toronto'
+    // is the legacy value from before that option list existed. Never
+    // default to a specific country — an unanswered case falls back to
+    // generic phrasing instead of assuming Canada.
+    const consulate = consulateChoice === 'other' && consulateOther.trim()
       ? consulateOther.trim()
-      : 'Toronto, Canada';
+      : consulateChoice === 'toronto'
+        ? 'Toronto, Canada'
+        : consulateChoice.trim() || 'your home country';
 
     const reconciliation = computeRenewalReconciliation(projections, answers);
     const gaps = computeRenewalGaps(answers, reconciliation, intake.path);

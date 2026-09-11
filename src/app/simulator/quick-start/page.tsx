@@ -1021,12 +1021,13 @@ function SelectInput({ value, onChange, placeholder, options }: { value: string;
 
 function DropZone({ isDragging, onDragOver, onDragLeave, onDrop, onClick }: { isDragging: boolean; onDragOver: (e: React.DragEvent) => void; onDragLeave: (e: React.DragEvent) => void; onDrop: (e: React.DragEvent) => void; onClick: () => void }) {
   return (
-    <div
+    <button
+      type="button"
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
       onDrop={onDrop}
       onClick={onClick}
-      style={{ padding: '28px 20px', border: `1px dashed ${isDragging ? '#C9A84C' : 'rgba(201,168,76,0.2)'}`, background: isDragging ? 'rgba(201,168,76,0.04)' : 'transparent', cursor: 'pointer', textAlign: 'center' as const, transition: 'border-color 0.15s, background 0.15s' }}
+      style={{ display: 'block', width: '100%', font: 'inherit', padding: '28px 20px', border: `1px dashed ${isDragging ? '#C9A84C' : 'rgba(201,168,76,0.2)'}`, background: isDragging ? 'rgba(201,168,76,0.04)' : 'transparent', cursor: 'pointer', textAlign: 'center' as const, transition: 'border-color 0.15s, background 0.15s' }}
     >
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(201,168,76,0.4)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ margin: '0 auto 10px', display: 'block' }}>
         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
@@ -1039,7 +1040,7 @@ function DropZone({ isDragging, onDragOver, onDragLeave, onDrop, onClick }: { is
       <p style={{ fontSize: '11px', color: 'rgba(245,240,232,0.65)' }}>
         PDF or DOCX — cover letter and/or business plan
       </p>
-    </div>
+    </button>
   );
 }
 

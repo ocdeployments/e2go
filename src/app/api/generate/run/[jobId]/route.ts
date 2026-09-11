@@ -5,6 +5,7 @@ import { runGenerationPipeline } from '@/lib/generation-engine';
 import { checkRateLimit } from '@/lib/rate-limit';
 import type { GenerationStep } from '@/types/generation';
 import { captureApiError } from '@/lib/capture-error';
+import { IN_FLIGHT_STATUSES } from '@/lib/generation-job-status';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -61,9 +62,12 @@ export async function POST(
       );
     }
 
-    // Idempotent: return 200 for any non-failed job status
-    // React Strict Mode may call this endpoint twice; both calls succeed
-    if (job.status === 'running' || job.status === 'pending' || job.status === 'processing' || job.status === 'awaiting_approval') {
+    // Idempotent: return 200 for any non-failed job status already being
+    // driven by a live invocation. React Strict Mode may call this endpoint
+    // twice; both calls succeed. 'queued' is deliberately excluded here — it
+    // is handled below with an atomic claim instead of a plain status check,
+    // since nothing is yet driving a queued job forward.
+    if (IN_FLIGHT_STATUSES.includes(job.status as typeof IN_FLIGHT_STATUSES[number]) && job.status !== 'queued') {
       return NextResponse.json(
         { jobId, message: 'Generation already in progress', status: job.status },
         { status: 200 }
@@ -75,6 +79,31 @@ export async function POST(
         { jobId, message: 'Generation already completed', status: job.status },
         { status: 200 }
       );
+    }
+
+    // DR-2: a 'queued' job has no in-progress guard of its own — two /run
+    // calls racing on the same queued job (a client re-attach plus the DR-1
+    // resume cron, say) must not both start the pipeline. Claim it with a
+    // conditional update; only the caller that actually flips the row wins.
+    if (job.status === 'queued') {
+      const { data: claimed, error: claimError } = await supabase
+        .from('document_generation_jobs')
+        .update({ status: 'running', updated_at: new Date().toISOString() })
+        .eq('id', jobId)
+        .eq('status', 'queued')
+        .select('id')
+        .maybeSingle();
+
+      if (claimError) {
+        captureApiError(claimError, { route: 'generate/run', stage: 'claim-queued', jobId });
+      }
+
+      if (!claimed) {
+        return NextResponse.json(
+          { jobId, message: 'Generation already in progress', status: 'running' },
+          { status: 200 }
+        );
+      }
     }
 
     // job.status === 'failed' or other states allow restart (continue below)

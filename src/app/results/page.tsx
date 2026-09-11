@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import Link from "next/link";
 import { createAccountFromVerifiedEmail } from "../actions/create-account";
+import { validatePassword, PASSWORD_REQUIREMENTS_HINT } from "@/lib/password-policy";
 import flagExplanations from "../../data/flag_explanations.json";
 import FlagCard, { FLAG_REMEDIATION } from "@/components/results/FlagCard";
 import DocumentPackagePreview from "@/components/results/DocumentPackagePreview";
@@ -176,7 +177,8 @@ function NameCaptureForm({ email, quizSessionId, onSuccess, onDismiss }: { email
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); setError(null);
     if (!firstName || !lastName || !newPassword) { setError("All fields are required."); return; }
-    if (newPassword.length < 8) { setError("Password must be at least 8 characters."); return; }
+    const passwordError = validatePassword(newPassword, email);
+    if (passwordError) { setError(passwordError); return; }
     if (newPassword !== confirmNewPassword) { setError("Passwords do not match."); return; }
     setCreating(true);
     try {
@@ -213,7 +215,8 @@ function NameCaptureForm({ email, quizSessionId, onSuccess, onDismiss }: { email
           <input type="text" placeholder="First name" value={firstName} onChange={(e) => setFirstName(e.target.value)} required style={{ padding: "12px 14px", background: "rgba(201,168,76,0.04)", border: "1px solid rgba(201,168,76,0.15)", color: "#f5f0e8", fontSize: "14px", fontFamily: "'DM Sans', sans-serif", borderRadius: 0, outline: "none" }} />
           <input type="text" placeholder="Last name" value={lastName} onChange={(e) => setLastName(e.target.value)} required style={{ padding: "12px 14px", background: "rgba(201,168,76,0.04)", border: "1px solid rgba(201,168,76,0.15)", color: "#f5f0e8", fontSize: "14px", fontFamily: "'DM Sans', sans-serif", borderRadius: 0, outline: "none" }} />
         </div>
-        <input type="password" placeholder="Password (min 8 characters)" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required style={{ width: "100%", padding: "12px 14px", background: "rgba(201,168,76,0.04)", border: "1px solid rgba(201,168,76,0.15)", color: "#f5f0e8", fontSize: "14px", fontFamily: "'DM Sans', sans-serif", borderRadius: 0, outline: "none", marginBottom: "12px", boxSizing: "border-box" as const }} />
+        <input type="password" placeholder="Password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required style={{ width: "100%", padding: "12px 14px", background: "rgba(201,168,76,0.04)", border: "1px solid rgba(201,168,76,0.15)", color: "#f5f0e8", fontSize: "14px", fontFamily: "'DM Sans', sans-serif", borderRadius: 0, outline: "none", marginBottom: "6px", boxSizing: "border-box" as const }} />
+        <div style={{ fontSize: "12px", color: "rgba(245,240,232,0.45)", marginBottom: "12px" }}>{PASSWORD_REQUIREMENTS_HINT}</div>
         <input type="password" placeholder="Confirm password" value={confirmNewPassword} onChange={(e) => setConfirmNewPassword(e.target.value)} required style={{ width: "100%", padding: "12px 14px", background: "rgba(201,168,76,0.04)", border: "1px solid rgba(201,168,76,0.15)", color: "#f5f0e8", fontSize: "14px", fontFamily: "'DM Sans', sans-serif", borderRadius: 0, outline: "none", marginBottom: "20px", boxSizing: "border-box" as const }} />
         {error && <div style={{ padding: "10px 14px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", fontSize: "13px", color: "rgba(245,240,232,0.7)", marginBottom: "16px", lineHeight: 1.5 }}>{error}</div>}
         <button type="submit" disabled={creating} style={{ width: "100%", padding: "13px", background: "#C9A84C", border: "none", color: "#0a0a0a", fontSize: "13px", fontWeight: 500, cursor: creating ? "not-allowed" : "pointer", letterSpacing: "0.08em", textTransform: "uppercase" as const, fontFamily: "'DM Sans', sans-serif", borderRadius: 0, opacity: creating ? 0.5 : 1 }}>
@@ -461,7 +464,7 @@ function ResultsPageInner() {
   if (loading || verificationState === "loading") {
     return (
       <div style={{ background: "#0a0a0a", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'DM Sans', sans-serif" }}>
-        <div style={{ color: "rgba(201,168,76,0.6)", fontSize: "13px", letterSpacing: "0.08em", textTransform: "uppercase" }}>Loading your result...</div>
+        <div style={{ color: "rgba(201,168,76,0.75)", fontSize: "13px", letterSpacing: "0.08em", textTransform: "uppercase" }}>Loading your result...</div>
       </div>
     );
   }

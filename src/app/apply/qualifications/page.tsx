@@ -19,6 +19,7 @@ import ClusterDivider from '@/components/apply/questions/ClusterDivider';
 import { useRouter } from 'next/navigation';
 import { useApplicationGate } from '@/hooks/useApplicationGate';
 import ApplicationNotReadyScreen from '@/components/apply/ApplicationNotReadyScreen';
+import { TREATY_COUNTRIES } from '@/lib/treaty-countries';
 
 interface QualAnswer {
   value: string;
@@ -164,7 +165,7 @@ const VISA_HISTORY_QUESTIONS: QuestionField[] = [
 
 const INTERVIEW_PREP_QUESTIONS: QuestionField[] = [
   { key: 'M3-I-11', type: 'single', label: 'Which U.S. consulate will you attend for your E-2 interview?', options: [
-    { value: 'toronto', label: 'Toronto, Canada' },
+    ...TREATY_COUNTRIES.map((country) => ({ value: country, label: country })),
     { value: 'other', label: 'Other — specify below' },
   ]},
   { key: 'M3-I-12', type: 'text', label: 'Other consulate location' },

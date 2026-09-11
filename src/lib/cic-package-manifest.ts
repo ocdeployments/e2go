@@ -17,6 +17,7 @@
 import { createServiceClient as serviceClient } from '@/lib/supabase-service';
 import type { DocumentType } from '@/types/generation';
 import { DOCUMENT_TYPE_LABELS } from '@/types/generation';
+import { selectLatestDocumentRows } from '@/lib/document-dedupe';
 
 export type ManifestTabStatus =
   | 'certified'        // client approved this generated document
@@ -120,7 +121,7 @@ export async function buildPackageManifest(applicationId: string): Promise<Packa
   const [genResult, uploadResult, answerResult] = await Promise.all([
     supabase
       .from('generated_documents')
-      .select('document_type, status, client_certified, certified_at, verifier_result, quality_gate_passed, quality_gate_notes')
+      .select('document_type, status, created_at, client_certified, certified_at, verifier_result, quality_gate_passed, quality_gate_notes')
       .eq('application_id', applicationId),
     supabase
       .from('uploaded_documents')
@@ -139,12 +140,12 @@ export async function buildPackageManifest(applicationId: string): Promise<Packa
   if (uploadResult.error) console.error('[MANIFEST] uploaded_documents query failed:', JSON.stringify(uploadResult.error));
   if (answerResult.error) console.error('[MANIFEST] answers query failed:', JSON.stringify(answerResult.error));
 
-  // Index generated docs by document_type
-  type GenDocRow = { document_type: string; status: string; client_certified: boolean | null; certified_at: string | null; verifier_result: Record<string, unknown> | null; quality_gate_passed: boolean | null; quality_gate_notes: string[] | null };
-  const genDocs = new Map<string, GenDocRow>();
-  for (const row of (genResult.data ?? [])) {
-    genDocs.set((row as GenDocRow).document_type, row as GenDocRow);
-  }
+  // Index generated docs by document_type. A retried application can have
+  // more than one row per document_type (see document-dedupe.ts) — pick the
+  // one that actually reflects a completed/in-progress run, never an
+  // abandoned retry's untouched 'queued' placeholder.
+  type GenDocRow = { document_type: string; status: string; created_at: string; client_certified: boolean | null; certified_at: string | null; verifier_result: Record<string, unknown> | null; quality_gate_passed: boolean | null; quality_gate_notes: string[] | null };
+  const genDocs = selectLatestDocumentRows((genResult.data ?? []) as GenDocRow[]);
 
   // Index uploaded docs by doc_type (may have multiple per type — take most recent)
   type UploadRow = { doc_type: string; file_name: string; created_at: string; extraction_status: string };

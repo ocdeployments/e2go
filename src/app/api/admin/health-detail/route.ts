@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { computeGenerationMetrics, type GenerationJobRow } from '@/lib/generation-metrics';
 
 export const dynamic = 'force-dynamic';
 
@@ -51,11 +52,13 @@ export async function GET() {
   const now   = new Date();
   const stuckThresholdMs = 30 * 60 * 1000; // 30 minutes
   const stuckCutoff = new Date(Date.now() - stuckThresholdMs).toISOString();
+  const todayStartIso = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())).toISOString();
 
   const [
     dbRes,
     activeJobsRes,
     stuckJobsRes,
+    dailyJobsRes,
     recentCronsRes,
     recentCostRes,
     settingsRes,
@@ -75,6 +78,14 @@ export async function GET() {
       .select('id, application_id, current_step_label, created_at, updated_at')
       .eq('status', 'running')
       .lt('updated_at', stuckCutoff),
+
+    // DR-22: today's throughput — jobs created today, plus any still-running
+    // job regardless of when it started (so a multi-day stall still counts
+    // as in flight).
+    admin
+      .from('document_generation_jobs')
+      .select('id, status, created_at, started_at, completed_at')
+      .or(`created_at.gte.${todayStartIso},status.in.(queued,running)`),
 
     // Last run for each cron job
     admin
@@ -115,6 +126,9 @@ export async function GET() {
   // Settings map
   const settings = Object.fromEntries((settingsRes.data ?? []).map(r => [r.key, r.value]));
 
+  // DR-22: daily throughput + in-flight
+  const dailyMetrics = computeGenerationMetrics((dailyJobsRes.data ?? []) as GenerationJobRow[], now);
+
   // Probe external services (lightweight)
   const [openrouterProbe, stripeWebhookProbe] = await Promise.all([
     probeLLM('https://openrouter.ai/api/v1/chat/completions', process.env.OPENROUTER_API_KEY ?? '', {
@@ -146,6 +160,14 @@ export async function GET() {
       active_jobs:  activeJobsRes.data  ?? [],
       stuck_jobs:   stuckJobsRes.data   ?? [],
       stuck_count:  stuckJobsRes.data?.length ?? 0,
+      daily: {
+        started_today:      dailyMetrics.startedToday,
+        completed_today:    dailyMetrics.completedToday,
+        failed_today:       dailyMetrics.failedToday,
+        duration_p50_ms:    dailyMetrics.durationP50Ms,
+        duration_p95_ms:    dailyMetrics.durationP95Ms,
+        in_flight_count:    dailyMetrics.inFlight.length,
+      },
     },
     crons:   cronLatest,
     llm: {

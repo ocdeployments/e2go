@@ -72,7 +72,7 @@ Every link is current code, not hypothesis.
 |---|---|---|---|
 | **G-01** | Un-awaited pipeline on a platform that reclaims the instance | CRITICAL | OPEN → DR-1 |
 | **G-02** | The idempotency guard becomes a permanent lock on a dead job | CRITICAL | OPEN → DR-2 |
-| **G-03** | Partnership clients receive no second-investor documents at all | CRITICAL | **MITIGATED** — door closed, Session 145 |
+| **G-03** | Partnership clients receive no second-investor documents at all | CRITICAL | **MITIGATED** — door closed (Session 145), tier deferred by decision (2026-09-11) |
 | **G-04** | A single document failure aborts the whole run | CRITICAL | OPEN → DR-6 |
 | **G-05** | Retry re-generates everything and orphans the previous run's rows | CRITICAL | OPEN → DR-7, DR-8 |
 | **G-06** | No observability on the one thing that matters | SERIOUS | OPEN → DR-3, DR-4 |
@@ -115,7 +115,7 @@ idempotency block · `generate/[applicationId]/page.tsx:354–371`.
 ---
 
 ### G-03 — Partnership clients receive no second-investor documents
-**CRITICAL · MITIGATED (Session 145) — underlying tier still missing**
+**CRITICAL · MITIGATED (Session 145) — underlying tier deferred by decision, 2026-09-11**
 
 All six `*_p2` documents — plus the P2 answer load, plus the joint cover-letter
 prompt shaping — are gated on a completed payment of type `complete_partnership`.
@@ -162,8 +162,19 @@ are not held.
 **Still open:** the partnership tier itself does not exist. Removing the hold is
 the same change that adds the Stripe Price IDs, adds the tier to `VALID_TIER_IDS`
 and `entitlements.ts`, and re-gates `isPartnership` in the pipeline on the
-entitlement rather than on `complete_partnership`. → **DR-18** (blocked on Romy's
-pricing call).
+entitlement rather than on `complete_partnership`. → **DR-18** (deferred to
+post-launch by product decision, 2026-09-11 — Romy chose to launch solo-only
+rather than block launch on a partnership-surcharge pricing call).
+
+**Demand capture while deferred:** partnership applicants now see a "Coming
+Soon" state in the application flow (`src/app/apply/module1/page.tsx`) with a
+"Notify me" button (`ComingSoonNotifyButton`, `interestType="partnership"`)
+that writes to `coming_soon_interest` and pages Romy via `sendOpsAlert()` on
+each new lead, so interest isn't lost while the tier is paused. Renewal — a
+separate, fully-priced, previously-purchasable flow (`STRIPE_PRICE_RENEWAL`) —
+was paused for the same launch-scope reason and gets the identical treatment;
+see `src/app/renewal/RenewalEntryClient.tsx`. Admin view of captured interest:
+`/admin/coming-soon-interest`.
 
 ---
 
@@ -347,6 +358,39 @@ the omission was correct.
 **Evidence:** `pricing-tier.ts` `PRICING_TIERS.foundation.features` ·
 `generate/start/route.ts` conditional block · `isNotApplicableSentinel()` in
 `generation-engine.ts`.
+
+---
+
+### G-13 — A document that fails to *build* at download time takes the whole ZIP down, silently
+
+**SERIOUS · CLOSED (Session 146 cont.)**
+
+DR-6/G-04 quarantines a document that fails during *generation* (writing
+`content_text` to the DB). It does nothing for a document whose stored
+`content_text` is fine but throws when `generate/download/[applicationId]/
+route.ts` re-builds it into a `.docx` at download time — `buildDocument()` or
+`Packer.toBuffer()` failing on a single tab was uncaught, so it threw through
+the route's per-tab loop into the one top-level `catch`, failing the **entire**
+ZIP (even the other 25+ documents that built fine) with a generic 500. The only
+notification was whatever Sentry capture already existed on that top-level
+catch — passive, and nobody watches it live. The client saw a failed download
+and got no explanation of what happened or what to do next.
+
+**Closed:** `buildDocumentSafely()` (`src/lib/document-build-safety.ts`) wraps
+each document's build individually — a failure is skipped, not fatal, and the
+rest of the package still reaches the client. A partial package gets a
+plain-text note in the ZIP (`buildFailureNoteText`) naming what's missing
+without leaking the raw error, and both the partial-failure and total-failure
+paths now call `alertDocumentBuildFailures()`, which pages ops in real time via
+`sendOpsAlert()` (a real, awaited Resend call — the same active-alert
+mechanism DR-3/G-06 built for the health watchdog) rather than relying on
+someone checking Sentry. Both frontend download pages
+(`documents/[applicationId]/page.tsx`, `generate/[applicationId]/page.tsx`)
+parse the structured error/partial-success response and show the client a
+specific message with a next action, instead of a generic failure or silence.
+
+**Evidence:** `generate/download/[applicationId]/route.ts` — see DR-23 in
+`SPRINT_DR_DELIVERY_RELIABILITY.md` for the full writeup and tests.
 
 ---
 

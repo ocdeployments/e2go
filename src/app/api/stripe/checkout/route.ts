@@ -12,10 +12,8 @@ export async function HEAD() {
 
 export async function GET() {
   const secretKey = process.env.STRIPE_SECRET_KEY;
-  const testMode = secretKey?.startsWith('sk_test_') || false;
 
   return NextResponse.json({
     configured: !!secretKey,
-    testMode,
   });
 }

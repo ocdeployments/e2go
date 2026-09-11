@@ -5,13 +5,15 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Turnstile } from "@marsidev/react-turnstile";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
+import { safeRedirect } from "@/lib/safe-redirect";
 import AuthImageSlider from "@/components/auth/AuthImageSlider";
+import { validatePassword, PASSWORD_REQUIREMENTS_HINT } from "@/lib/password-policy";
 
 const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_CF_TURNSTILE_SITE_KEY ?? '';
 
 function SignupForm() {
   const searchParams = useSearchParams();
-  const next = searchParams.get("next") || "/dashboard";
+  const next = safeRedirect(searchParams.get("next"), "/dashboard");
 
   const [status, setStatus] = useState<string>('idle');
   const [errorMessage, setErrorMessage] = useState("");
@@ -59,9 +61,10 @@ function SignupForm() {
       return;
     }
 
-    if (password.length < 8) {
+    const passwordError = validatePassword(password, email);
+    if (passwordError) {
       setStatus('error');
-      setErrorMessage("Password must be at least 8 characters");
+      setErrorMessage(passwordError);
       return;
     }
 
@@ -283,6 +286,7 @@ function SignupForm() {
                     style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(201,168,76,0.2)", borderRadius: 0, color: "#f5f0e8" }}
                     placeholder="Min. 8 characters"
                   />
+                  <p style={{ fontSize: "12px", color: "rgba(245,240,232,0.45)", marginTop: "4px" }}>{PASSWORD_REQUIREMENTS_HINT}</p>
                 </div>
 
                 <div>

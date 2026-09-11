@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import type { SSEProgressMessage } from '@/types/generation';
 import { captureApiError } from '@/lib/capture-error';
+import { resolveProgressStatus, isTerminalJobStatus } from '@/lib/progress-stall';
 
 function getSupabase() {
   return createClient(
@@ -13,6 +14,11 @@ function getSupabase() {
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+// DR-5: an explicit budget so a platform default isn't a surprise. The
+// client's EventSource reconnects with backoff on any drop (see
+// connectSSE() in generate/[applicationId]/page.tsx), so a mid-run cutoff
+// here just opens a fresh stream rather than losing progress.
+export const maxDuration = 300;
 
 export async function GET(
   request: NextRequest,
@@ -42,7 +48,7 @@ export async function GET(
         try {
           const { data: job, error } = await supabase
             .from('document_generation_jobs')
-            .select('status, current_step, current_step_label, total_steps, error_message')
+            .select('status, current_step, current_step_label, total_steps, error_message, updated_at')
             .eq('id', jobId)
             .eq('user_id', user.id)
             .single();
@@ -94,11 +100,12 @@ export async function GET(
            * while the documents generated correctly behind it.
            */
           const totalDocuments = job.total_steps ?? 13;
+          const outgoingStatus = resolveProgressStatus(job.status, job.updated_at);
 
           send({
             step: job.current_step,
             stepLabel: job.current_step_label || '',
-            status: job.status,
+            status: outgoingStatus,
             documentsComplete: count || 0,
             totalDocuments,
             awaitingApproval: job.status === 'awaiting_approval',
@@ -107,7 +114,11 @@ export async function GET(
             error: job.error_message || undefined,
           });
 
-          if (job.status === 'completed' || job.status === 'failed') {
+          // Stalled is reported, not terminal — a DR-1 cron resume (or the
+          // client's own reconnect-triggered /run re-issue) can still move
+          // updated_at forward, at which point the next tick reports the
+          // real status again instead of 'stalled'.
+          if (isTerminalJobStatus(job.status)) {
             clearInterval(interval);
             controller.close();
             closed = true;

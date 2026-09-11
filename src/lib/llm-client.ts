@@ -97,13 +97,27 @@ const MODEL_COSTS: Record<string, { in: number; out: number }> = {
   'claude-opus-4-8':           { in: 15.00, out: 75.00 },
 };
 
-function calcCost(model: string, tokensIn: number, tokensOut: number): number {
+// Anthropic prompt-caching (ephemeral, 5-min TTL) multiplies the base input
+// rate: a cache write costs 1.25x, a cache read costs 0.1x. Callers that use
+// cache_control (generation-engine.ts's docgen/humanization calls) must pass
+// cacheWriteTokens/cacheReadTokens or the cost is silently undercounted —
+// those tokens are billed separately from response.usage.input_tokens.
+export function calcCost(
+  model: string,
+  tokensIn: number,
+  tokensOut: number,
+  cacheWriteTokens = 0,
+  cacheReadTokens = 0,
+): number {
   const rates = MODEL_COSTS[model];
   if (!rates) return 0;
-  return (tokensIn * rates.in + tokensOut * rates.out) / 1_000_000;
+  const base = tokensIn * rates.in + tokensOut * rates.out;
+  const cacheWrite = cacheWriteTokens * rates.in * 1.25;
+  const cacheRead = cacheReadTokens * rates.in * 0.1;
+  return (base + cacheWrite + cacheRead) / 1_000_000;
 }
 
-function logCost(entry: {
+export function logCost(entry: {
   userId?: string;
   task: string;
   route?: string;

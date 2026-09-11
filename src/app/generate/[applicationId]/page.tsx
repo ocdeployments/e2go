@@ -103,6 +103,10 @@ export default function GenerateProgressPage() {
   const [acknowledged, setAcknowledged] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [downloaded, setDownloaded] = useState(false);
+  const [downloadMessage, setDownloadMessage] = useState<{
+    tone: "warning" | "error";
+    text: string;
+  } | null>(null);
   const previewRef = useRef<HTMLDivElement>(null);
   const generationStarted = useRef(false);
 
@@ -147,12 +151,51 @@ export default function GenerateProgressPage() {
   // Download handler — streams the ZIP from the API
   const handleDownload = async () => {
     setDownloading(true);
+    setDownloadMessage(null);
     try {
       const res = await fetch(`/api/generate/download/${applicationId}`);
+
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: 'Download failed' }));
-        throw new Error(err.error || `HTTP ${res.status}`);
+        // DR-4 follow-up: a failed build now returns specifics (which
+        // document(s), why) instead of a bare 500 — show them instead of
+        // a generic "Download failed."
+        const body = (await res.json().catch(() => null)) as {
+          error?: string;
+          failedDocuments?: { type: string; label: string }[];
+          supportMessage?: string;
+        } | null;
+        const names = body?.failedDocuments?.map((d) => d.label).join(', ');
+        const text = body?.error
+          ? `${body.error}${names ? ` (${names})` : ''}${
+              body.supportMessage ? ` ${body.supportMessage}` : ''
+            }`
+          : 'Download failed. Please try again in a little while, or contact support if it keeps happening.';
+        setDownloadMessage({ tone: 'error', text });
+        return;
       }
+
+      // A 200 can still be a partial package — some documents failed to
+      // build but the rest shipped. Tell the client which ones rather
+      // than letting them find out by opening the package and counting.
+      const failedHeader = res.headers.get('X-Failed-Documents');
+      if (failedHeader) {
+        try {
+          const failed = JSON.parse(decodeURIComponent(failedHeader)) as {
+            type: string;
+            label: string;
+          }[];
+          const names = failed.map((d) => d.label).join(', ');
+          setDownloadMessage({
+            tone: 'warning',
+            text: `Your package downloaded, but ${failed.length} document${
+              failed.length === 1 ? '' : 's'
+            } couldn't be included (${names}). We've been notified automatically — try again shortly, or contact support if it persists.`,
+          });
+        } catch {
+          // malformed header shouldn't block the otherwise-successful download
+        }
+      }
+
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -170,7 +213,10 @@ export default function GenerateProgressPage() {
       }
     } catch (err) {
       console.error('[DOWNLOAD] Error:', err);
-      setErrorMessage(err instanceof Error ? err.message : 'Download failed. Please try again.');
+      setDownloadMessage({
+        tone: 'error',
+        text: 'Download failed. Please try again in a little while, or contact support if it keeps happening.',
+      });
     } finally {
       setDownloading(false);
     }
@@ -231,6 +277,11 @@ export default function GenerateProgressPage() {
         } else if (msg.status === "awaiting_approval") {
           updateStepStatus(stepNum, "running");
           setOverallProgress(Math.round((stepNum / 23) * 100));
+        } else if (msg.status === "stalled") {
+          // DR-5: the job itself is still queued/running server-side — leave
+          // step status and progress where they were so a retry (or DR-1's
+          // cron resume) picking it back up doesn't visibly rewind anything.
+          setAwaitingApproval(false);
         } else {
           updateStepStatus(stepNum, "running");
           setOverallProgress(Math.round((stepNum / 23) * 100));
@@ -362,13 +413,19 @@ export default function GenerateProgressPage() {
         if (currentStep >= 15) {
           setCurrentQualityStep(currentStep);
         }
-      } else {
-        await fetch(`/api/generate/run/${newJobId}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId }),
-        });
       }
+
+      // DR-2: always re-issue /run on attach, not just for brand-new jobs.
+      // /run is idempotent — a genuinely running job returns 200 immediately,
+      // a stale queued one gets claimed and actually restarted. Without this,
+      // re-opening a tab on an in-flight job (data.existing === true) never
+      // called /run at all, and a job stuck at 'queued' had nothing left to
+      // ever start it.
+      await fetch(`/api/generate/run/${newJobId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId }),
+      });
 
       connectSSE(newJobId);
     } catch (err) {
@@ -498,6 +555,7 @@ export default function GenerateProgressPage() {
 
   const isComplete = jobStatus === "completed";
   const isFailed = jobStatus === "failed" && !errorMessage.includes("retry");
+  const isStalled = jobStatus === "stalled";
   const isGenerating = jobStatus === "running" || jobStatus === "awaiting_approval";
   const isQualityPhase = approvedDocuments >= 8 && !isComplete;
 
@@ -528,7 +586,7 @@ export default function GenerateProgressPage() {
           }
         </h1>
 
-        {!isComplete && !isFailed && applicationData.businessName && (
+        {!isComplete && !isFailed && !isStalled && applicationData.businessName && (
           <p
             className="mt-2 text-[13px] text-white/50"
             style={{ fontFamily: "'DM Sans', sans-serif" }}
@@ -539,7 +597,7 @@ export default function GenerateProgressPage() {
           </p>
         )}
 
-        {!isComplete && !isFailed && applicationData.consulate && (
+        {!isComplete && !isFailed && !isStalled && applicationData.consulate && (
           <p
             className="mt-1 text-[12px] text-white/35"
             style={{ fontFamily: "'DM Sans', sans-serif" }}
@@ -665,7 +723,7 @@ export default function GenerateProgressPage() {
           </div>
 
           {/* PRE-GENERATION CONFIRMATION STATE */}
-          {!isGenerating && !isComplete && !isFailed && !confirming && (
+          {!isGenerating && !isComplete && !isFailed && !isStalled && !confirming && (
             <>
               {validationLoading && (
                 <div className="flex flex-col items-center justify-center min-h-[400px]">
@@ -988,6 +1046,17 @@ export default function GenerateProgressPage() {
                   Preparing application package…
                 </p>
               )}
+
+              {downloadMessage && (
+                <p
+                  className={`text-xs mt-4 max-w-md text-center ${
+                    downloadMessage.tone === "error" ? "text-[#ef4444]" : "text-[#C9A84C]"
+                  }`}
+                  style={{ fontFamily: "'DM Sans', sans-serif" }}
+                >
+                  {downloadMessage.text}
+                </p>
+              )}
             </div>
           )}
 
@@ -1011,11 +1080,23 @@ export default function GenerateProgressPage() {
 
               <button
                 onClick={handleDownload}
-                className="border border-[#C9A84C] px-6 py-3 text-sm font-medium uppercase tracking-wider text-[#C9A84C] transition-colors hover:bg-[#C9A84C]/10"
+                disabled={downloading}
+                className="border border-[#C9A84C] px-6 py-3 text-sm font-medium uppercase tracking-wider text-[#C9A84C] transition-colors hover:bg-[#C9A84C]/10 disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{ fontFamily: "'DM Sans', sans-serif" }}
               >
-                Download Again
+                {downloading ? 'Preparing…' : 'Download Again'}
               </button>
+
+              {downloadMessage && (
+                <p
+                  className={`text-xs mt-4 max-w-md text-center ${
+                    downloadMessage.tone === "error" ? "text-[#ef4444]" : "text-[#C9A84C]"
+                  }`}
+                  style={{ fontFamily: "'DM Sans', sans-serif" }}
+                >
+                  {downloadMessage.text}
+                </p>
+              )}
             </div>
           )}
 
@@ -1042,6 +1123,36 @@ export default function GenerateProgressPage() {
                 style={{ fontFamily: "'DM Sans', sans-serif" }}
               >
                 Retry Generation
+              </button>
+            </div>
+          )}
+
+          {/* STALLED STATE (DR-5) — the job hasn't updated in over ten
+              minutes. A background resume may still pick it up, but the
+              client shouldn't sit on a frozen bar with no explanation. */}
+          {isStalled && (
+            <div className="flex flex-col items-center justify-center min-h-[400px]">
+              <h2
+                className="text-xl italic text-[#C9A84C] mb-4"
+                style={{ fontFamily: "'Cormorant Garamond', serif" }}
+              >
+                This is taking longer than expected
+              </h2>
+
+              <p
+                className="text-sm text-white/50 mb-8 max-w-md text-center"
+                style={{ fontFamily: "'DM Sans', sans-serif" }}
+              >
+                Your generation hasn&apos;t progressed in over ten minutes. It may
+                resume on its own — if it doesn&apos;t, restart it below.
+              </p>
+
+              <button
+                onClick={startGeneration}
+                className="border border-[#C9A84C] px-6 py-3 text-sm font-medium uppercase tracking-wider text-[#C9A84C] transition-colors hover:bg-[#C9A84C]/10"
+                style={{ fontFamily: "'DM Sans', sans-serif" }}
+              >
+                Restart Generation
               </button>
             </div>
           )}

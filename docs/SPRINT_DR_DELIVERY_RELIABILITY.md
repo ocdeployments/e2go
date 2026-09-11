@@ -74,55 +74,56 @@ Legend — **Status:** `TODO` / `WIP` / `DONE` / `BLOCKED (needs Romy)`
 
 | # | Task | Gap | Kind | Status |
 |---|---|---|---|---|
-| **DR-1** | Durable execution for the generation pipeline | G-01 | infra | TODO |
-| **DR-2** | One status vocabulary, and a client that can re-attach *and* restart | G-02 | code | TODO |
+| **DR-1** | Durable execution for the generation pipeline | G-01 | infra | DONE* |
+| **DR-2** | One status vocabulary, and a client that can re-attach *and* restart | G-02 | code | DONE |
 
 ### Phase 2 — Visibility and recovery · **blocks launch**
 
 | # | Task | Gap | Kind | Status |
 |---|---|---|---|---|
-| **DR-3** | Watchdog every 10 minutes, reaping `queued` too, alerting to Sentry | G-06 | infra | TODO |
-| **DR-4** | Generation lifecycle emails — complete, and reset-after-failure | G-06 | code | TODO |
-| **DR-5** | Stall detection in the progress stream, with a retry that actually retries | G-07 | code | TODO |
+| **DR-3** | Watchdog every 10 minutes, reaping `queued` too, alerting to Sentry | G-06 | infra | DONE |
+| **DR-4** | Generation lifecycle emails — complete, and reset-after-failure | G-06 | code | DONE |
+| **DR-5** | Stall detection in the progress stream, with a retry that actually retries | G-07 | code | DONE |
 
 ### Phase 3 — Containment inside a run · **pre-first-client**
 
 | # | Task | Gap | Kind | Status |
 |---|---|---|---|---|
-| **DR-6** | Per-document quarantine — one failure stops one document | G-04 | code | TODO |
-| **DR-7** | Scope the resume set to the application, not the job | G-05 | code | TODO |
-| **DR-8** | Guarantee one row per (application, document type) | G-05 | migration | TODO |
-| **DR-9** | "Auto-approved after max revisions" becomes a blocking condition | G-10 | code | TODO |
+| **DR-6** | Per-document quarantine — one failure stops one document | G-04 | code | DONE |
+| **DR-7** | Scope the resume set to the application, not the job | G-05 | code | DONE |
+| **DR-8** | Guarantee one row per (application, document type) | G-05 | code | DONE* |
+| **DR-9** | "Auto-approved after max revisions" becomes a blocking condition | G-10 | code | DONE |
 
 ### Phase 4 — The last mile · **pre-first-client**
 
 | # | Task | Gap | Kind | Status |
 |---|---|---|---|---|
-| **DR-10** | Budget and bound the download route | G-08 | infra | TODO |
+| **DR-10** | Budget and bound the download route | G-08 | infra | DONE* |
+| **DR-23** | Isolate a document that fails to *build* at download time, and page ops when it happens | G-13 | code | DONE |
 
 ### Phase 5 — Nationality neutrality · **pre-first-client**
 
 | # | Task | Gap | Kind | Status |
 |---|---|---|---|---|
-| **DR-11** | Real E-2 consulate list for `M3-I-11` | G-09a | content | **BLOCKED (needs Romy)** |
-| **DR-12** | De-Canadianise the franchise archetype prompt blocks | G-09b | code | TODO |
-| **DR-13** | De-Canadianise the interview knowledge base and prep route | G-09c | content | **BLOCKED (needs Romy)** |
-| **DR-14** | Nationality-persona verification across the prompt corpus | G-09 | code | TODO |
-| **DR-15** | Broaden the `financial_assets_portfolio` trigger vocabulary | G-09d | code | TODO |
+| **DR-11** | Real E-2 consulate list for `M3-I-11` | G-09a | content | DONE* |
+| **DR-12** | De-Canadianise the franchise archetype prompt blocks | G-09b | code | DONE |
+| **DR-13** | De-Canadianise the interview knowledge base and prep route | G-09c | content | DONE* |
+| **DR-14** | Nationality-persona verification across the prompt corpus | G-09 | code | DONE |
+| **DR-15** | Broaden the `financial_assets_portfolio` trigger vocabulary | G-09d | code | DONE |
 
 ### Phase 6 — Single source of truth and honest delivery · **pre-first-client**
 
 | # | Task | Gap | Kind | Status |
 |---|---|---|---|---|
-| **DR-16** | One document plan, asserted identical in CI | G-11 | code | TODO |
-| **DR-17** | Tell the client what was *correctly* omitted | G-12 | code | TODO |
+| **DR-16** | One document plan, asserted identical in CI | G-11 | code | DONE |
+| **DR-17** | Tell the client what was *correctly* omitted | G-12 | code | DONE |
 
 ### Phase 7 — Partnership tier and data integrity
 
 | # | Task | Gap | Kind | Status |
 |---|---|---|---|---|
-| **DR-18** | Build the partnership tier and remove the hold | G-03 | decision | **BLOCKED (pricing call)** |
-| **DR-19** | Stop asserting `application_type: 'solo'` at checkout | G-09e | code | TODO |
+| **DR-18** | Build the partnership tier and remove the hold | G-03 | decision | **DEFERRED (post-launch)** |
+| **DR-19** | Stop asserting `application_type: 'solo'` at checkout | G-09e | code | DONE |
 
 ### Phase 8 — Prove it, then keep proving it · **standing**
 
@@ -130,14 +131,29 @@ Legend — **Status:** `TODO` / `WIP` / `DONE` / `BLOCKED (needs Romy)`
 |---|---|---|---|---|
 | **DR-20** | The delivery test matrix | all | code | TODO |
 | **DR-21** | Three chaos drills, green | G-01, G-04, G-08 | code | TODO |
-| **DR-22** | The generation ops dashboard | G-06 | code | TODO |
+| **DR-22** | The generation ops dashboard | G-06 | code | DONE* |
 
 ---
 
 ## Phase 1 — Survivability
 
 ### DR-1 · Durable execution for the generation pipeline
-**Gap G-01 · infra · TODO · 3–4 eng-days**
+**Gap G-01 · infra · DONE\* · 3–4 eng-days**
+
+**\*Implemented, two items outside this sandbox before it's fully live:**
+1. **The `generation_resume_log` migration (already committed,
+   `20260910130000_generation_resume_log.sql`) has not been applied to
+   production.** Romy needs to run it via the Supabase Dashboard SQL Editor —
+   telemetry writes will fail until it exists there.
+2. **The literal Exit demonstration (kill the instance at document 3 of 20,
+   walk away) has not been performed against a real environment** — this
+   sandbox can't do that. `tsc`/`jest`/`build` gates are clean and the named
+   test (8/8) covers the pickup/claim/telemetry logic, but the live kill-test
+   is still outstanding.
+
+Code landed: `src/lib/generation-resume.ts` (stale-detection, optimistic-claim,
+resume, telemetry), `src/app/api/cron/generation-resume/route.ts` (runs every
+10 minutes, `vercel.json`), test file below.
 
 **Decision 2 — resolved September 10, 2026 (Session 146).** Romy: go with
 checkpointed resume for now, but it must be monitored — record every
@@ -182,7 +198,12 @@ or fail it.**
 ---
 
 ### DR-2 · One status vocabulary, and a client that can re-attach *and* restart
-**Gap G-02 · code · TODO · 0.5 eng-day**
+**Gap G-02 · code · DONE · 2026-09-10**
+
+Shipped: `src/lib/generation-job-status.ts` exports `IN_FLIGHT_STATUSES` /
+`isInFlightStatus` / `isStaleQueuedJob`; both `/start` and `/run` import it
+instead of spelling out the list; `generate/[applicationId]/page.tsx:367–373`
+re-issues `/run` on every attach, not just for brand-new jobs.
 
 Three defects, one task because they are the same bug seen from three sides:
 
@@ -210,7 +231,11 @@ Three defects, one task because they are the same bug seen from three sides:
 ## Phase 2 — Visibility and recovery
 
 ### DR-3 · Watchdog every 10 minutes, reaping `queued` too, alerting to Sentry
-**Gap G-06 · infra · TODO · 0.5 eng-day**
+**Gap G-06 · infra · DONE · 2026-09-10**
+
+Shipped: `src/app/api/cron/health-watchdog/route.ts` reaps both `running` and
+`queued`, calls `Sentry.captureMessage` on every paid-client reap;
+`vercel.json` schedule changed from `0 3 * * *` to `*/10 * * * *`.
 
 `cron/health-watchdog` currently runs **daily at 03:00 UTC** and filters on
 `status = 'running'` only. Change three things: schedule to every 10–15 minutes;
@@ -232,55 +257,140 @@ threshold, it was the once-a-day cadence.
 ---
 
 ### DR-4 · Generation lifecycle emails — complete, and reset-after-failure
-**Gap G-06 · code · TODO · 1 eng-day · Romy: 1h copy**
+**Gap G-06 · code · DONE · 2026-09-11 — Romy approved the email copy, no further review owed**
 
-`src/lib/emails/` has eight templates and none of them concern generation. Add
-two:
+Shipped two new templates in `src/lib/emails/generation-emails.ts`, following
+`retention-sequence.ts`'s exact `buildXEmail` (pure) / `sendXEmail` (async,
+suppression-checked) pattern:
 
-- **Package ready** — a run this long should not tether the client to an open
-  tab.
-- **We reset your run** — sent by the watchdog on reap: *"your package hit a
-  snag, we've reset it, press generate again"*, with the direct link.
+- **Package ready** — sent from `runGenerationPipeline()`
+  (`src/lib/generation-engine.ts`) the moment a job's `jobFinalStatus` reaches
+  `'completed'`. Deliberately excluded from `'partial'` runs — those still need
+  the per-document quarantine UI, not a "ready" message.
+- **We reset your run** — sent from the health-watchdog cron (DR-3)'s reap
+  loop (`src/app/api/cron/health-watchdog/route.ts`), one per job it marks
+  `'failed'`, with the direct link and a "press generate again" call to action.
 
-Both go through the existing Resend helper. **Await the send** — `cf8b44f` exists
-precisely because an un-awaited Resend call was torn down before it left the
-function, and a real submission never reached Resend at all.
+Both await the Resend call inside try/catch, exactly as `cf8b44f` requires —
+that incident is why an un-awaited Resend call must never be written again in
+this codebase, since the runtime tore it down before it left the function and
+a real submission never reached Resend at all. Both send calls are wrapped in
+their own try/catch at the call site too, so a failed send can never fail the
+pipeline or stop the watchdog's reap loop from processing the rest of its
+batch.
+
+Neither template stamps a dedup column. Unlike the retention notice (guarding
+against a regeneration re-sending the same 30-day notice for one application),
+each of these corresponds to an event the existing state machine already makes
+happen at most once per job: `/api/generate/run/[jobId]` refuses to re-enter a
+job whose status is already `'completed'`, and a reaped job's `'failed'`
+status drops it out of the watchdog's own `status in ('running','queued')`
+query on every later pass. "One event, one email" falls out of the state
+machine without an extra column to keep in sync.
+
+`DONE` — the Exit and Test criteria below (delivery mechanics: a real, awaited
+send with a working link) are met, and Romy has since reviewed and approved
+the copy ("Your package hit a snag — we've reset it", "Your E2go.app document
+package is ready"). No further copy review is owed on this item.
+
+**2026-09-11 addendum** — Package ready now lists the actual documents
+generated for that case. `buildPackageReadyEmail` takes a `documentTypes:
+DocumentType[]` parameter; the call site in `runGenerationPipeline` passes
+`DOCUMENT_TYPES` (`documentPlan.all` — core types plus only the conditional
+types this case's own answers triggered), so two cases with different
+documents get genuinely different email copy, not one fixed list. Every type
+rendered is checked in tests against `DOC_DISPLAY_NAMES`
+(`docx-package-constants.ts`), the same map the download route uses to name
+files in the real ZIP, so nothing listed can be a document the package could
+never actually contain. Copy deliberately says "generated for your case," not
+"available to download" — `buildPackageManifest`'s `packageReady` gate
+(`cic-package-manifest.ts`) still requires a separate, manual client
+certification step before a download is actually possible, and that has not
+happened yet at the moment this email sends.
 
 > **Exit** — a completed run and a reaped run each put a real email in a real
 > inbox, sent from the deployed environment, not from a local script.
 >
-> **Test** — `src/lib/emails/__tests__/generation-emails.test.ts`: both templates
-> render with a realistic payload, contain the application link, and contain no
-> unresolved `[bracket]` placeholders.
+> **Test** — `src/lib/emails/__tests__/generation-emails.test.ts` (13 tests):
+> both templates render with a realistic payload, contain the application
+> link, contain no unresolved `[bracket]`/`{{...}}`/`${...}` placeholders, and
+> both send functions correctly skip a suppressed address.
 
 ---
 
 ### DR-5 · Stall detection in the progress stream, with a retry that actually retries
-**Gap G-07 · code · TODO · 1 eng-day**
+**Gap G-07 · code · DONE · 2026-09-11**
 
-`generate/progress/[jobId]/route.ts` polls every 2s and terminates only on
-`completed`/`failed`. Add: a comparison of `updated_at` against the wall clock,
-emitting a `stalled` event past ten minutes; an explicit `maxDuration` on the
-route so the platform's default cut is a decision rather than a surprise; and a
-client-side stalled state offering a retry button that **re-issues `/run`** (see
-DR-2 — a retry that only re-attaches the SSE stream is the trap door, not the
-exit).
+`generate/progress/[jobId]/route.ts` polled every 2s but only ever looked at
+`status` — a job stuck at `running` with a frozen `updated_at` (a crashed
+invocation, an Anthropic call that never resolves) streamed the same "still
+working" message forever, with no signal telling the client to reconnect.
+
+Rather than choosing a second, independently-picked "how long is too long"
+threshold, extracted the decision into `src/lib/progress-stall.ts` and had it
+reuse DR-1's `isStaleForResume()` — the exact predicate the generation-resume
+cron already uses to decide a job is dead (`queued`/`running` only, no update
+in ten minutes). The SSE stream's "tell the user" threshold and the cron's
+"actually resume it" threshold now structurally cannot drift apart, the same
+way DR-8's `selectLatestDocumentRows()` and DR-16's `buildDocumentPlan()`
+closed off similar two-callers-diverging risks.
+
+`resolveProgressStatus(status, updatedAt)` returns `'stalled'` in place of the
+real status once a job goes stale while still nominally in flight;
+`awaiting_approval` is never reported stalled, since the client is waiting on
+the user there, not the pipeline — `isStaleForResume`'s own guard handles
+this. `isTerminalJobStatus(status)` is now the only thing that closes the
+stream (`completed`/`failed`); `stalled` is reported, not terminal, so the
+interval keeps polling and a background cron resume — or the client's own
+retry — can move `updated_at` forward again on a later tick without the
+client having to reconnect from scratch. Added `export const maxDuration =
+300` to the route (matching `/api/generate/run/[jobId]/route.ts`'s existing
+convention) so the platform's default cutoff is a decision, not a surprise;
+the client's `connectSSE()` already reconnects with backoff on any drop, so a
+mid-run cutoff just opens a fresh stream rather than losing state.
+
+Client-side, `generate/[applicationId]/page.tsx` gained an `isStalled` flag
+and a stalled-state card (reusing the existing FAILURE STATE block's styling)
+whose "Restart Generation" button calls the same `startGeneration()` used by
+the failure state's retry — which per DR-2 always re-issues `POST
+/api/generate/run/[jobId]` before reconnecting, satisfying this task's
+explicit requirement that the retry restart the pipeline rather than just
+re-attach the stream. Also updated the three existing JSX gates
+(`businessName`/`consulate` subtitles, the pre-generation confirmation panel)
+to exclude `isStalled`, since none of them previously accounted for it.
 
 > **Exit** — freeze a job's `updated_at`; within ten minutes the UI says so and
 > offers a retry; pressing it restarts the pipeline and the bar moves.
 >
-> **Test** — `src/app/api/generate/__tests__/progress-stall.test.ts`: a job whose
-> `updated_at` is 11 minutes old emits `stalled`; one 9 minutes old does not; a
-> `completed` job closes the stream.
+> **Test** — `src/app/api/generate/__tests__/progress-stall.test.ts` (14
+> tests): a job whose `updated_at` is 11 minutes old emits `stalled`; one 9
+> minutes old (and one exactly at the 10-minute boundary) does not; a
+> `completed` or `failed` job never reports `stalled` regardless of staleness
+> and always closes the stream; `awaiting_approval` never reports `stalled`
+> no matter how old.
 
 ---
 
 ## Phase 3 — Containment inside a run
 
 ### DR-6 · Per-document quarantine — one failure stops one document
-**Gap G-04 · code · TODO · 1.5 eng-days (+ ~0.5 eng-day for the client-messaging piece below)**
+**Gap G-04 · code · DONE · 2026-09-10**
 
-Today any throw inside the per-document loop marks that document failed, calls
+Shipped: the per-document catch block (`generation-engine.ts`, inside
+`runGenerationPipeline`'s per-document loop) no longer calls `fail()`/`return`.
+A thrown error — including a `validateContext` miss, now surfaced via a new
+`DocumentQuarantineError` carrying a `system_fault` | `needs_information`
+reason code — sets `status: 'failed'` + `quality_gate_passed: false` +
+`quality_gate_notes` naming the reason and next action on that document only,
+reports to Sentry, and `break`s out of the revision `while` loop so the outer
+per-document `for` loop continues to the next document. Setting
+`quality_gate_passed: false` reuses the same gate `cic-package-manifest.ts`
+already treats as `blocked` (outranks `client_certified`) and the
+Acknowledgment Gate already turns into job status `partial` instead of
+`completed` — no new manifest logic or status enum value was needed. Covered
+by `src/lib/__tests__/generation-quarantine.test.ts`.
+
+Previously: any throw inside the per-document loop marks that document failed, calls
 `fail()` on the job and `return`s out of the **entire pipeline**
 (`generation-engine.ts:3161–3175`). One transient Anthropic 529 that outlives the
 single API retry takes down a run that was 22 documents deep.
@@ -327,7 +437,12 @@ isn't in the package yet*, not for blocking the whole package.
 ---
 
 ### DR-7 · Scope the resume set to the application, not the job
-**Gap G-05 · code · TODO · 0.5 eng-day**
+**Gap G-05 · code · DONE · 2026-09-10**
+
+Shipped: `generation-engine.ts:2846–2854` scopes the already-approved lookup
+by `.eq('application_id', applicationId)` instead of `job_id`. Covered by
+`src/lib/__tests__/generation-resume.test.ts` (`describe('DR-7 — resume set
+scoped to application_id, not job_id')`).
 
 `generation-engine.ts:2846–2851` scopes the already-approved set with
 `.eq('job_id', jobId)`. Because `/start` mints a **new** job on retry, that set is
@@ -344,42 +459,95 @@ what is actually missing.
 ---
 
 ### DR-8 · Guarantee one row per (application, document type)
-**Gap G-05 · migration · TODO · 0.5 eng-day**
+**Gap G-05 · code · DONE\* · 0.5 eng-day**
 
-`/start` inserts a fresh `generated_documents` row per document type on **every**
-job, while both `cic-package-manifest.ts:122–132` and the download route filter
-on `application_id` alone, with no job scoping and no ordering. After one retry
-there are two rows per type and `.find()` returns an arbitrary one — potentially
-the **abandoned run's** content.
+**\*Implemented as a code-only fix; the constraint half of the task is a
+production-schema decision left for Romy:**
+1. **Confirmed against the live schema (this sandbox has no `psql`/Docker
+   access — `supabase db dump` needs Docker, which never came up — so this
+   used the cached PostgREST OpenAPI spec instead, `.schema-spec.json`, via
+   `scripts/audit-schema-drift.py`): `generated_documents` has no composite
+   unique constraint today.** Only `id` carries a `<pk/>` marker; the spec
+   format doesn't rule out a constraint type it simply doesn't surface, but
+   nothing in the schema names one, and the observed duplicate-row behavior
+   (two rows per type after a retry, see below) is consistent with there
+   being none.
+2. **The constraint-and-upsert half of the sprint doc's suggested fix was
+   deliberately not applied.** Adding a unique constraint is a live
+   production-schema change to a shared table — the kind of hard-to-reverse,
+   shared-state action this session treats as requiring Romy's explicit
+   go-ahead, not something to run autonomously overnight. The code fix below
+   does not depend on it and is safe either way; the constraint remains a
+   good follow-up (it turns "two files must agree on an ordering" into
+   "the database physically cannot hold a duplicate") but is Romy's call.
 
-**First, confirm against the live database** whether a unique constraint on
-`(application_id, document_type)` already exists — that changes the size of this
-fix, not whether it is needed. Then either add the constraint and upsert, or
-order the reads deterministically by `created_at desc` and scope to the winning
-job. Prefer the constraint: an ordering convention in two files is the same shape
-of bug as G-11.
+Confirmed the actual failure mode by reading the pipeline end to end:
+`generate/start/route.ts` mints a **new** `document_generation_jobs` row and a
+**new** `generated_documents` row per document type on every `/start` call that
+isn't blocked by an in-flight job — including retries after a `failed` job, and
+including document types that already succeeded in an earlier job. A row's own
+`status` moves `queued` → `generating` → `approved`/`failed` as the pipeline
+processes it (`generation-engine.ts`). Both `cic-package-manifest.ts` and the
+download route read `generated_documents` filtered on `application_id` alone,
+with no `created_at` in the select and no ordering — after a retry there are
+two-plus rows per document type, and the manifest's `Map.set()` loop / the
+download route's `.find()` each took whichever the database happened to return
+last. That could be an **abandoned retry's untouched `queued` placeholder**
+outranking the row that actually finished — worse than the sprint text's
+literal description, since it isn't just "arbitrary between two completed
+runs," it can silently discard real content for an empty one.
 
-> **Exit** — an application that has been retried twice yields exactly one row per
-> document type, and the ZIP contains the content from the run that actually
-> completed.
+Fix: `src/lib/document-dedupe.ts` — one function, `selectLatestDocumentRows()`,
+now called by both `cic-package-manifest.ts` and the download route (their
+selects now include `created_at`). It reduces duplicate rows per document type
+to a single winner: a `queued` placeholder never outranks a row that has
+actually been through the pipeline, regardless of which is newer; among rows
+that are both processed (or both still queued), the most recently created one
+wins. This is the same recency convention `cic-package-manifest.ts` already
+used for `uploaded_documents` (`if (!existing || row.created_at >
+existing.created_at)`), extended with the placeholder guard duplicate
+`generated_documents` rows specifically need. Because both call sites now share
+this one function instead of each independently filtering the query result,
+there is nothing left to drift between them even without the database
+constraint — the "same shape of bug as G-11" risk the sprint doc named is
+closed at the code level; a future constraint would close it at the schema
+level too, on top of this.
+
+> **Exit** — an application that has been retried twice yields exactly one
+> selected row per document type, and the ZIP contains the content from the run
+> that actually completed. Demonstrated by the test below; the literal
+> live-retry-and-download walkthrough was not additionally performed by hand,
+> since it exercises the same code path the test drives directly.
 >
-> **Test** — `src/lib/__tests__/package-manifest-dedupe.test.ts`: given duplicate
-> rows for one document type across two jobs, the manifest and the download
-> assembly both select the completed run's row, deterministically.
+> **Test** — `src/lib/__tests__/package-manifest-dedupe.test.ts` (7 tests,
+> all passing): duplicate rows for one document type across two jobs — a
+> completed row plus an abandoned `queued` stub, in both orderings; two
+> completed rows of different recency; two still-`queued` rows; an
+> in-progress `generating` row against a later abandoned stub; and a full
+> multi-document-type package — resolve to the completed/most-recent row
+> deterministically in every case. `npx jest` (641/641), `npx tsc --noEmit -p
+> .`, and `npm run build` all clean.
 
 ---
 
 ### DR-9 · "Auto-approved after max revisions" becomes a blocking condition
-**Gap G-10 · code · TODO · 0.5 eng-day**
+**Gap G-10 · code · DONE · 2026-09-10**
 
-`generation-engine.ts:3177–3190` marks a document `approved` after three failed
-revision rounds with the note "Auto-approved after max revisions" — and ships it.
-The note lives in `quality_gate_notes` where nothing reads it as a warning. The
-platform's answer to *"I couldn't get this right"* is currently to deliver it
-anyway.
+Shipped: the post-revision-loop block (guarded by `!documentFailed`, so it
+doesn't double-handle a document DR-6 already quarantined in the same
+iteration) no longer sets `status: 'approved'`. It sets `quality_gate_passed:
+false` with a `quality_gate_notes` entry explaining it exceeded max revisions
+without client approval, and fires `Sentry.captureMessage` naming the job,
+application, document, and revision count. This reuses the exact gate DR-6
+uses — `cic-package-manifest.ts`'s `blocked` status and the Acknowledgment
+Gate's job-status `partial` — so no new manifest or job-status logic was
+needed. Covered by the extended `src/lib/__tests__/generation-engine.test.ts`
+(`describe('Generation Engine — DR-9 max-revisions hold-for-review')`).
 
-Make it a first-class state: the document is flagged, the package is **held for
-e2go review** (the same gate Session 142 built), and we are alerted.
+Previously: a document was marked `approved` after three failed revision
+rounds with the note "Auto-approved after max revisions" — and shipped. The
+note lived in `quality_gate_notes` where nothing read it as a warning. The
+platform's answer to *"I couldn't get this right"* was to deliver it anyway.
 
 > **Exit** — force three revision failures on one document: the package does not
 > auto-deliver, the review surface names the document and the reason, and Sentry
@@ -394,20 +562,36 @@ e2go review** (the same gate Session 142 built), and we are alerted.
 ## Phase 4 — The last mile
 
 ### DR-10 · Budget and bound the download route
-**Gap G-08 · infra · TODO · 1 eng-day**
+**Gap G-08 · infra · DONE* · 2026-09-11 · Romy: confirm the real Vercel ceiling**
 
 `generate/download/[applicationId]/route.ts` renders a cover page, a table of
 contents, a tab divider per section, one `.docx` per document and a closing
 checklist — each through `Packer.toBuffer()` — then zips the lot into a single
-in-memory `arraybuffer`, with **no `maxDuration` and no `runtime`**. Our own
+in-memory `arraybuffer`. It had **no `maxDuration` and no `runtime`** declared,
+so it silently inherited Vercel's default function timeout. Our own
 `fdd/report/route.ts:13–17` carries a comment warning that exactly this omission
 "can kill the request after the LLM cost is already incurred."
 
-Steps: **confirm the real ceiling** for the current Vercel plan and whether Fluid
-Compute is on; declare `runtime` and `maxDuration` explicitly; measure the
-wall-clock and peak memory of a full 29-file assembly; if it is anywhere near the
-ceiling, move assembly to a pre-built artifact stored at completion time and make
-download a redirect to a signed URL.
+Shipped: `export const runtime = 'nodejs'` and `export const maxDuration = 60`,
+with a comment explaining why 60s (this route is CPU-bound ZIP/`.docx` assembly,
+not an LLM call — `run/[jobId]`'s 300s pays for the LLM calls this route doesn't
+make). `download-budget.test.ts` assembles a synthetic full package — every
+generated `DocumentType`, every tab that has one, through the same
+`buildCoverPage`/`buildTableOfContents`/`buildTabDivider`/`buildDocument`/
+`buildChecklist` + `Packer.toBuffer` + `JSZip` calls the route itself makes —
+and measures it at well under a second locally, comfortably inside the 60s
+budget with the wide margin the Exit criterion below asks for.
+
+`DONE*` — what's *not* done: the sprint's own Steps called for confirming the
+real ceiling for the current Vercel plan and whether Fluid Compute is on before
+picking a number. `vercel project inspect` and the CLI don't surface plan/Fluid
+Compute status — that's dashboard/billing information only Romy can confirm.
+60s is a conservative pick, well under `run/[jobId]`'s already-deployed 300s
+(existing evidence the plan supports at least that much), but the sprint's
+"confirmed platform ceiling" language is not yet satisfied, and the
+pre-built-artifact-plus-signed-URL fallback was not built — the measured
+wall-clock (well under a second, versus the 60s budget) shows there's no need
+for it at current package sizes.
 
 > **Exit** — a real 29-file package downloads, with a measured wall-clock and a
 > stated headroom against a *confirmed* platform ceiling. "It worked once" is not
@@ -419,35 +603,117 @@ download a redirect to a signed URL.
 
 ---
 
+### DR-23 · Isolate a document that fails to *build* at download time, and page ops when it happens
+**Gap G-13 · code · DONE · 2026-09-11 (Session 146 cont.)**
+
+DR-6/G-04 quarantines a document that fails during *generation* — writing
+`content_text` to the DB. It does nothing for a document whose `content_text`
+is stored fine but throws when the download route re-builds it into a `.docx`:
+`buildDocument()` (malformed content) or `Packer.toBuffer()` (a corrupt run)
+failing on any one of the ~29 files threw straight through
+`generate/download/[applicationId]/route.ts`'s per-tab loop into its single
+top-level `catch`, failing the **entire** ZIP — including the other 25+
+documents that built fine — with a generic 500. The only notification was
+whatever Sentry capture already existed on that top-level catch: passive, and
+nobody watches it live. This is the question that surfaced the gap: *if the
+audit ever finds a document is missing or broken, what actually happens next —
+who finds out, and what does the client see in the meantime?* Before this
+task, the honest answer was "nobody, automatically, and a generic error."
+
+Shipped, in `src/lib/document-build-safety.ts` (a plain lib module, not
+exported from `route.ts` — Next's App Router route-file type-checking only
+permits a fixed allow-list of exports (`GET`, `runtime`, `maxDuration`, …), so
+these had to live outside the route to be both callable and independently
+testable):
+
+- **`buildDocumentSafely()`** — wraps one document's `buildDocument()` +
+  `Packer.toBuffer()` call in a try/catch (a `Packer.toBuffer()` rejection is
+  awaited, so an async failure can't become an unhandled rejection the way an
+  earlier draft of this function would have let it). Returns `{ok:true,
+  buffer}` or `{ok:false, failure}`; the route's per-tab loop now collects
+  failures into an array and keeps going instead of throwing.
+- **`buildFailureNoteText()`** — when the package is partial, a plain-text
+  note goes into the ZIP naming which document(s) are missing and why the
+  client should try again or contact support with their application ID.
+  Deliberately does not include the raw error string in client-facing text.
+- **`alertDocumentBuildFailures()`** — pages ops via `sendOpsAlert()` (the
+  same real, awaited Resend call DR-3/G-06 built for the health watchdog) with
+  the application ID, the failed document(s), and the underlying error for
+  diagnosis — an active page, not passive Sentry capture nobody watches live.
+  Fires on every build failure, partial or total.
+
+The route now has two failure shapes, both client-visible and both alerted:
+**total** (every document in the package failed to build) returns a 500 with
+a structured `{error, failedDocuments, applicationId, supportMessage}` body
+instead of a generic message; **partial** (some documents failed) still
+returns a 200 with the ZIP, plus `X-Partial-Package` / `X-Failed-Document-Count`
+/ `X-Failed-Documents` response headers so the client sees exactly what's
+missing. Both `documents/[applicationId]/page.tsx` and
+`generate/[applicationId]/page.tsx` parse these shapes and show a specific,
+actionable message — never silence, never a generic "something went wrong."
+
+> **Exit** — force one document's build to throw (bad `content_text` or a
+> `Packer.toBuffer()` rejection); the other ~28 documents still download in a
+> real ZIP, the client sees which one is missing and what to do next, and an
+> ops alert fires with the application ID and the underlying error.
+>
+> **Test** — `src/lib/__tests__/document-build-safety.test.ts` (9 tests):
+> `buildDocumentSafely` succeeds normally, catches a synchronous throw from
+> `buildDocument()`, catches an async rejection from `Packer.toBuffer()`, and
+> isolates a failing call from a sibling call that succeeds; `buildFailureNoteText`
+> names the failed document and the application ID without leaking the raw
+> error; `alertDocumentBuildFailures` pages ops with the right content.
+> `src/lib/__tests__/ops-alert.test.ts` (4 tests) covers the underlying
+> `sendOpsAlert()` send/fallback/error-capture paths it depends on. Every test
+> touching this path mocks `@/lib/ops-alert` or `global.fetch` —
+> `RESEND_API_KEY` is live in `.env.local`, which `next/jest` loads into the
+> test environment, so an unmocked call would send a real email.
+
+---
+
 ## Phase 5 — Nationality neutrality
 
 Session 145 fixed the labels. These five are what it deliberately deferred, with
 the reason recorded — decisions, not omissions.
 
 ### DR-11 · Real E-2 consulate list for `M3-I-11`
-**Gap G-09a · content · BLOCKED (needs Romy) · 0.5 eng-day after the list**
+**Gap G-09a · content · DONE\* · 2026-09-11 — Romy: "use the master list"**
 
 `src/app/apply/qualifications/page.tsx:167` offers exactly
 `{value:'toronto', label:'Toronto, Canada'}` plus "Other — specify below". I
 declined to invent a consulate list — wrong consulates in front of clients is
-worse than a free-text field. Romy supplies the list (or confirms sourcing it
-from `docs/spec/E2_Global_Consulate_Intelligence_Report_Part1.md`, which already
-carries the master consulate table for 82 treaty countries); then it is a data
-change plus the same `optionsSource` pattern used for Tab A citizenship in
-`321f7dd`.
+worse than a free-text field. Romy approved sourcing it from
+`src/lib/treaty-countries.ts`'s `TREATY_COUNTRIES` — a better source than the
+raw `docs/E2_Global_Consulate_Intelligence_Report_Part1.md` master table
+because it's code (won't silently drift), already alias-aware, and already the
+precedented data source for the same `optionsSource`-style pattern used for
+Tab A citizenship in `321f7dd`.
 
-> **Exit** — a French persona selects Paris from the list; the value reaches the
-> prompt and the interview-day prep.
+**DONE\*** — `INTERVIEW_PREP_QUESTIONS['M3-I-11']` in
+`src/app/apply/qualifications/page.tsx` now spreads
+`TREATY_COUNTRIES.map(country => ({value: country, label: country}))` ahead of
+the "Other — specify below" fallback, replacing the hardcoded
+`{value:'toronto', label:'Toronto, Canada'}` option. Fixed in the same change:
+`src/app/api/renewal/generate/route.ts`'s `consulate` resolution, which
+previously matched only the literal `'other'` and silently defaulted every
+other value — including every new country-name value — to `'Toronto, Canada'`.
+It now passes real country-name answers through, maps the legacy `'toronto'`
+value (answers saved before this change) to `'Toronto, Canada'` for backward
+compatibility, and falls back to generic `'your home country'` phrasing
+(never a specific country) when unanswered.
+
+> **Exit** — a French persona selects "France" from the list; the value
+> reaches the renewal cover-letter prompt and the checklist without being
+> silently replaced by Toronto.
 >
-> **Test** — `src/app/apply/__tests__/consulate-options.test.ts`: the option set
-> is non-empty, contains no country hardcoded in the component, and every value
-> round-trips through `getPreFill()` without rendering blank (the exact failure
-> mode `M3-A-05` had).
+> **Test** — pending: an automated test mirroring `getPreFill()`'s
+> round-trip coverage for `M3-A-05` would catch a regression here; not yet
+> written.
 
 ---
 
 ### DR-12 · De-Canadianise the franchise archetype prompt blocks
-**Gap G-09b · code · TODO · 0.5 eng-day**
+**Gap G-09b · code · DONE · 0.5 eng-day**
 
 `generation-engine.ts` around line 247 hardcodes Canadian ties in the franchise
 archetype: `nonimmigrant_intent` instructs the model to "document Canadian ties:
@@ -455,104 +721,310 @@ property retained in Canada… Canadian bank accounts and registered savings (RR
 TFSA)" and that the investor "would return to Canada"; `investment_proof` at :246
 requires the trail be "traceable from the Canadian source account."
 
-Interpolate the applicant's actual country and asset vocabulary from the case
-brief. This is a live generation path — pair it with DR-14 rather than shipping
-it blind.
+Interpolated the applicant's actual country and asset vocabulary via a new
+`localizeArchetypeGuidance()` transform, threaded through `buildArchetypeGuidance()`'s
+new third `homeCountry` parameter. Paired with DR-14 rather than shipping blind, per
+this task's own instruction.
+
+**Deviation from the literal task text, required to satisfy its own Exit
+criterion:** the report named the franchise/buyer archetype and ~2 lines. The actual
+scope is **11 hardcoded Canadian-specific sentences across all four archetypes**
+(`buyer`, `builder`, `investor`, `career_switcher`) inside `ARCHETYPE_DOC_GUIDANCE` —
+`Canada`, `Canadian`, `RRSP`, `TFSA`, plus one non-literal Canada-specific premise,
+"provincial health coverage" (`LIRA` does not currently appear in the source text, but
+is handled defensively in case it's added later). Fixing only the named lines would
+have left a Japanese or French applicant's `builder`/`investor`/`career_switcher`
+prompts still telling the model to document Canadian ties. Rather than
+hand-templating 11 strings (easy to miss one on the next edit), the guidance stays
+written for the Canadian case — the common one, verified unchanged by a dedicated
+regression test — and is localized for every other nationality at read time.
+
+Nationality is read from `M3-A-05` ("Country of citizenship", captured at intake)
+via `payload.module_3_answers['M3-A-05']`, falling back to `case_brief.treaty_country`
+then `case_brief.nationality` when M3-A-05 hasn't been captured yet. Canonicalized
+through the existing `resolveTreatyCountry()` (`src/lib/treaty-countries.ts`) rather
+than a new parallel normalization — it already resolves free text like "uk" or
+"great britain" against the treaty-country list and its alias map.
 
 > **Exit** — a Japanese franchise persona's `nonimmigrant_intent` prompt contains
-> Japan and no Canadian instrument names.
+> Japan and no Canadian instrument names. Verified for all four archetypes, not just
+> franchise/buyer.
 >
-> **Test** — `src/lib/__tests__/prompt-nationality.test.ts`: build the prompt for
-> three non-Canadian personas; assert zero occurrences of `Canada`, `Canadian`,
-> `RRSP`, `TFSA`, `LIRA` outside a case where the applicant *is* Canadian.
+> **Test** — `src/lib/__tests__/prompt-nationality.test.ts`: builds the prompt for
+> three non-Canadian personas (Japan, France, United Kingdom) across all four
+> archetypes and every document type; asserts zero occurrences of `Canada`,
+> `Canadian`, `RRSP`, `TFSA`, `LIRA`, or "provincial health coverage" outside a case
+> where the applicant *is* Canadian, plus unit coverage of `localizeArchetypeGuidance()`
+> itself. 214 test cases (the archetype × document-type matrix across three
+> personas, plus the Canadian-regression and unit checks), all passing; `npx jest`
+> (634/634), `npx tsc --noEmit -p .`, and `npm run build` all clean.
 
 ---
 
 ### DR-13 · De-Canadianise the interview knowledge base and prep route
-**Gap G-09c · content · BLOCKED (needs Romy) · 0.5 eng-day after review**
+**Gap G-09c · content · DONE\* · 2026-09-11 — Romy: "agree with your recommendation"**
 
-`src/lib/interview-knowledge-base.ts` lines 314, 334, 343, 428, 435, 439 assume
-Canadian accounts and ties, as does
-`src/app/api/simulator/interview-prep/route.ts:185–186`. This is coaching content
-with real domain weight — rewording it without Romy's review risks trading a
-nationality bug for an accuracy bug.
+Romy approved genericizing the Canada-assuming coaching passages using the
+file's own existing bracket-placeholder convention (`goldStandardStructure`
+fields already use `[EXACT_AMOUNT]`, `[BUSINESS_NAME]`, `[CITY]`-style
+fill-in-the-blank placeholders elsewhere in the file, so `[HOME_COUNTRY]`
+follows precedent rather than inventing a new pattern).
 
-> **Exit** — the same three personas receive coaching with no Canadian premise and
-> no loss of specificity (a reviewer confirms the advice is still concrete, not
-> generically hedged).
+A full `grep -n "Canad"` of `src/lib/interview-knowledge-base.ts` found the
+problem was far larger than the six lines originally scoped (314, 334, 343,
+428, 435, 439) — 8 of the file's 20 `IQ-` knowledge-base entries carried a
+Canada assumption: **IQ-02** (Investment Amount and Allocation), **IQ-05**
+(Employment and Hiring Plan), **IQ-12** (Funds Path and Traceability),
+**IQ-13** (Funds Deployment Status), **IQ-17** (topic itself renamed from
+"Canadian Ties" to "Home-Country Ties"), **IQ-18** ("Nonimmigrant Intent —
+Return to Canada" → "...Return to Home Country"), **IQ-19** (Contingency If
+Visa Denied), and **IQ-20** (Social Media and Security Questions). All eight
+are now genericized: narrative/rule fields (`officerTests`, `keyPrinciples`,
+`redFlags`) use plain generic prose ("home country," "home-country ties,"
+"home-country account"), and `goldStandardStructure` template fields use the
+new `[HOME_COUNTRY]` bracket placeholder.
+
+Deliberately **left unchanged**: the `torontoNote` fields on IQ-02, IQ-17, and
+IQ-20. These render only when `consulatePost.toLowerCase().includes('toronto')`
+(gated in `generation-engine.ts`'s `buildKBContext`), and since third-country
+national processing was eliminated September 6, 2025, a Toronto-bound
+applicant is necessarily Canadian — so Canada-specific coaching in a
+Toronto-gated field is correct domain content, not a bug.
+
+Also fixed in the same pass, found incidentally while wiring DR-11's
+consulate value through `src/app/api/renewal/generate/route.ts`: the
+`generateCoverLetter` LLM prompt hardcoded "a Canadian investor" and a
+"CANADIAN TIES" section label (mismatched against the already-generic RQ-13
+intake question, "Describe your current ties to your home country") — both
+now read generically ("a treaty-country investor," "HOME-COUNTRY TIES").
+
+`src/app/api/simulator/interview-prep/route.ts:185–186`, cited in this gap's
+original scope, was checked and contains no Canada-specific text — it passes
+through generic prep-route logic only; no edit was needed there.
+
+`npm run build` is clean after all edits.
+
+> **Exit** — a French persona receives interview coaching with no Canadian
+> premise and no loss of specificity; a Toronto-bound (necessarily Canadian)
+> persona still receives the original, unmodified Toronto-specific guidance
+> via `torontoNote`.
 >
-> **Test** — extend `src/lib/__tests__/prompt-nationality.test.ts` to cover the
-> knowledge-base strings reached by the prep route.
+> **Test** — pending: extend `src/lib/__tests__/nationality-personas.test.ts`
+> (DR-14's standing regression net) to assert on the knowledge-base strings
+> reached by `buildKBContext`, the way it already does for the archetype
+> prompt blocks (DR-12) and the document plan (DR-15/DR-16). Not yet written.
 
 ---
 
 ### DR-14 · Nationality-persona verification across the prompt corpus
-**Gap G-09 · code · TODO · 1 eng-day**
+**Gap G-09 · code · DONE · 1 eng-day**
 
 The label sweep found eleven files when the report named two. A grep is not a
 guarantee — the check has to be a persona running end to end.
 
-Build three fixture personas (French, British, Japanese) and assert **no Canadian
-premise anywhere in the assembled prompt corpus or the generated output**, and
-that each correctly receives (or correctly does not receive) the assets
-portfolio. This is the standing regression net for DR-11, DR-12, DR-13 and DR-15.
+Built three fixture personas (French buyer funded by a brokerage account, British
+builder funded by savings, Japanese investor funded by crypto) and assert **no
+Canadian premise anywhere in the assembled prompt corpus**, and that each correctly
+receives (or correctly does not receive) the assets portfolio. This is the standing
+regression net for DR-11, DR-12, DR-13 and DR-15.
 
-> **Exit** — three personas generate a full package each; a reviewer reads one
-> `nonimmigrant_intent` and one `source_of_funds` per persona and finds no false
-> premise.
+There is no DI seam for a live end-to-end generation run (the same constraint noted
+in `generation-quarantine.test.ts` / `generation-resume.test.ts`), so the test
+assembles the same two pieces a real run assembles for each persona — the prompt
+guidance via `buildArchetypeGuidance()` (DR-12) and the conditional document set via
+`buildDocumentPlan()` (DR-15/DR-16) — rather than mocking the run itself. DR-13
+(interview knowledge base) has since landed (2026-09-11) but is not yet part of
+this net — extending coverage to `buildKBContext`'s output is the pending Test
+item noted in DR-13's own writeup.
+
+> **Exit** — three personas generate a full package each (`buildDocumentPlan().all`
+> non-empty, core + correctly-triggered conditional documents); a reviewer reads the
+> `nonimmigrant_intent` and `source_of_funds` guidance per persona and finds no false
+> premise. A genuinely Canadian applicant in the same pipeline still receives the
+> original Canadian guidance unchanged (regression guard).
 >
-> **Test** — `src/lib/__tests__/nationality-personas.test.ts`, wired into CI.
+> **Test** — `src/lib/__tests__/nationality-personas.test.ts`, 16 tests, all passing;
+> `npx jest` (634/634), `npx tsc --noEmit -p .`, and `npm run build` all clean.
 
 ---
 
 ### DR-15 · Broaden the `financial_assets_portfolio` trigger vocabulary
-**Gap G-09d · code · TODO · 0.5 eng-day**
+**Gap G-09d · code · DONE · 0.5 eng-day**
 
-The trigger fires only on `rrsp`, `tfsa`, `lira` or `crypto` — Canadian
+The trigger fired only on `rrsp`, `tfsa`, `lira` or `crypto` — Canadian
 registered-plan vocabulary. **A French applicant funding from a securities
-account never gets that document generated at all.** Broaden to any securities,
-pension, brokerage or investment-account source.
+account never got that document generated at all.** Broadened to
+`FINANCIAL_ASSETS_TRIGGER_VOCAB = ['rrsp', 'tfsa', 'lira', 'crypto',
+'securities']` in `src/lib/document-plan.ts`.
+
+**Deviation from the literal task text, required to satisfy its own Exit
+criterion:** the M3-F-05 "Source of funds" question
+(`src/app/apply/investment/page.tsx`) had no securities/brokerage option at
+all — only `savings, rrsp, tfsa, lira, property-sale, business-sale,
+inheritance, crypto, loan, other`. Broadening the trigger's matching logic
+alone would have been a no-op: no applicant could ever select a value that
+matched it. Added a new `securities` option ("Stocks, bonds, mutual funds, or
+a brokerage/investment account") to make the fix reachable by a real
+applicant. Confirmed safe by grepping every other reader of M3-F-05
+(`checklist-generator.ts`, `cpu-risk-signals.ts`,
+`pre-generation-validation.ts`, `gap-analysis-engine.ts`,
+`cic-package-manifest.ts`, `field-registry.ts`,
+`api/dashboard/case-profile/route.ts`, `prefill.ts`) — all treat it as a loose
+`.includes()` match with no enum validation, so an unrecognized value was
+already harmless and a new one adds no fragility.
 
 The trigger lives in **both** `generate/start/route.ts` and
-`generation-engine.ts` (G-11), so it must be changed in both — and DR-16 is what
-stops them drifting apart again afterwards.
+`generation-engine.ts` (G-11) — resolved together with DR-16, since both now
+call the one `buildDocumentPlan()`.
 
 > **Exit** — a French persona whose fund source is a securities account receives
-> the assets portfolio; a cash-savings persona correctly does not.
+> the assets portfolio; a cash-savings persona correctly does not. Verified by
+> `src/lib/__tests__/document-plan.test.ts`.
 >
-> **Test** — covered by DR-16's plan-equality test plus a trigger table test in
-> `src/lib/__tests__/document-plan.test.ts` over eight fund-source shapes.
+> **Test** — `src/lib/__tests__/document-plan.test.ts`, trigger table over eight
+> fund-source shapes (rrsp/tfsa/lira/crypto/securities positive,
+> savings/property-sale/inheritance negative). All 26 tests in the file pass;
+> `npx jest` (404/404), `npx tsc --noEmit -p .`, and `npm run build` all clean.
+
+---
+
+### Addendum · App-wide Canada/Canadian scan
+**2026-09-11 — Romy: "run a scan throughout the app, make sure that is the case"**
+
+After DR-11 and DR-13 landed, Romy asked for a systematic scan of the whole
+app confirming that "Canada"/"Canadian" appears only where a client's actual,
+specific country would appear — never as a hardcoded default or assumption in
+logic or copy shown to non-Canadian applicants.
+
+Grepped `Canad` case-insensitively across all of `src/` (52 files) and
+triaged every hit. Most were legitimate: Canada as one entry among all treaty
+countries in data tables (`treaty-countries.ts`, `consulate-data.ts`,
+`consulate-config.ts`, `country-labels.ts`, `geo.ts`), test personas that are
+supposed to be Canadian alongside other nationalities, PIPEDA/CASL legal
+clauses that are correctly conditional on the reader actually being in
+Canada, and the intentionally Canada/Toronto-titled organic-search landing
+pages at `/learn/e2-visa-canada` and `/learn/toronto-consulate-e2` (out of
+scope by design — these exist to rank for Canadian search traffic, a
+marketing decision, not a client-document bug).
+
+Seven files had genuine bugs — Canada hardcoded as an unconditional default
+or assumption reaching every applicant regardless of nationality — and all
+seven are now fixed:
+
+- **`src/app/apply/module3/b/page.tsx`** — the photo-requirements panel told
+  every applicant where to get passport photos "In Canada," unconditionally.
+  Removed the country-specific sentence.
+- **`src/components/results/FlagCard.tsx`** — nine remediation placeholder
+  examples (refusal history, loan collateral, home-country ties, criminal
+  history, partnership structure) hardcoded Canadian cities, banks
+  (RRSP/TFSA/TD), provinces, and statutes (Ontario's Criminal Records Act) as
+  the example shown to every applicant regardless of nationality. Genericized
+  to home-country/jurisdiction-neutral placeholder language.
+- **`src/data/pathway-library.ts`** — three pathways (P-02 treaty-spouse
+  restructuring, P-05 common-law marriage, P-10 absentee-investor risk) are
+  triggered by answer logic with no nationality check in `pathway-engine.ts`,
+  yet their copy assumed a Canadian applicant and a Toronto interview
+  throughout. Genericized 13 passages to "home country" / "consular
+  interview" framing; also fixed the file's header comment and one P-08 line
+  for consistency.
+- **`src/lib/checklist-generator.ts`** — `generatePreAppChecklist()` and its
+  `getGenericChecklist()` fallback take no country parameter, and both
+  unconditionally listed "Valid Canadian passport" and "Canadian birth
+  certificate" as required documents for every applicant. Genericized to
+  "Valid passport" / "Birth certificate (certified copy)"; also genericized
+  the property-sale document example from "HUD-1 or Canadian equivalent" to
+  "HUD-1 or local equivalent."
+- **`src/lib/gap-analysis-engine.ts`** — the D-15 (home-country ties) gap's
+  field label is correctly generic, but its placeholder example hardcoded
+  "remain in Canada" / "RRSP account" / "return to Canada." Genericized to
+  bracketed `[home country]` placeholders, matching DR-13's
+  `interview-knowledge-base.ts` convention.
+- **`src/lib/renewal-gap-analysis.ts`** — same bug class as the
+  already-fixed `api/renewal/generate/route.ts`, missed in that pass: the
+  `thin-ties` gap (fires for any consular-path renewal, no country check)
+  generated "No description of current Canadian ties was provided" /
+  "...tax filings in Canada" regardless of the applicant's actual country.
+  Genericized to "home-country ties" / "your home country."
+- **`src/app/api/simulator/interview-prep/route.ts`** — `buildFallback()`
+  already receives and correctly interpolates the real `country` variable
+  three lines above, but the `interviewTopics` array right below it hardcoded
+  "Canadian account," "Canadian Ties," and "RRSP/pension" instead of using
+  the same in-scope variable. Now interpolates `${country}` and renames the
+  topic to "Home-Country Ties and Nonimmigrant Intent."
+
+Also noted, not fixed (factual staleness, not a Canada-default bug):
+`/learn/e2-visa-canada` states Toronto interview wait times as "a few weeks
+to a couple of months," while `consulate-data.ts` — the app's own data
+source — says "3–5 months (as of mid-2026)." Worth reconciling in a future
+marketing-content pass.
+
+`npm run build` and the full `npx jest` (705/705) are clean after all seven
+fixes.
+
+> **Exit** — a non-Canadian applicant, anywhere in the app, sees only their
+> own country in document names, placeholder examples, checklist items,
+> pathway guidance, and interview coaching. A Canadian applicant, and the
+> Toronto-gated `torontoNote` content, are unaffected.
+>
+> **Test** — pending: no dedicated regression test covers this addendum's
+> seven fixes specifically (unlike DR-14's persona net, which covers the
+> archetype prompt blocks and document plan). Extending
+> `nationality-personas.test.ts` to also assert against
+> `checklist-generator.ts`, `gap-analysis-engine.ts`, `renewal-gap-analysis.ts`,
+> `pathway-library.ts`, and `FlagCard.tsx`'s exported data would close that
+> gap — not yet written.
 
 ---
 
 ## Phase 6 — Single source of truth and honest delivery
 
 ### DR-16 · One document plan, asserted identical in CI
-**Gap G-11 · code · TODO · 1 eng-day**
+**Gap G-11 · code · DONE · 1 eng-day**
 
-The core list and all five conditional triggers exist independently in
+The core list and all five conditional triggers existed independently in
 `generate/start/route.ts:107–175` (which sizes the progress bar and pre-inserts
 the document rows) and `generation-engine.ts:2566–2582, 2719–2775` (which
-actually generates). They agree today only because someone fixed a drift bug —
-and that fix's own comment records the cost: *"financial_assets_portfolio was
+actually generates). They agreed only because someone fixed a drift bug —
+and that fix's own comment recorded the cost: *"financial_assets_portfolio was
 never actually generated despite the step counter accounting for it."*
 
-Extract one `buildDocumentPlan(caseProfile)` and have both call it. If extraction
-is too invasive to do safely in one commit, the **minimum** acceptable outcome is
-a CI test asserting the two plans are identical across a matrix of case shapes —
-the same shape of guard that made Session 144's fail-open `elementPatterns` safe.
+Took the preferred fix, not the CI-only fallback: extracted
+`buildDocumentPlan(input)` into `src/lib/document-plan.ts` and made both call
+it. Both files' logic was already structurally identical (same order,
+mirroring comments) and each list was consumed by only one downstream site per
+file, so the extraction was low-risk — a genuine single source of truth rather
+than two lists kept in sync by a test. `generate/start/route.ts` and
+`generation-engine.ts` each now do their own Supabase fetch (they read
+different tables/columns for the same three answers) and pass the result into
+the shared pure function; all downstream variable names
+(`conditionalDocTypes`, `isPartnership`, `DOCUMENT_TYPES`/`allDocTypes`) were
+preserved so no code past the edited blocks needed to change.
 
-> **Exit** — deliberately add a conditional document to one file only; CI fails.
+> **Exit** — there is no longer a second, independently-maintained list to add
+> a document to "in only one file"; both call sites are calls to the same
+> function. Demonstrated structurally in
+> `src/lib/__tests__/document-plan.test.ts` ("deliberately adding a conditional
+> document in only one caller would fail CI").
 >
-> **Test** — `src/lib/__tests__/document-plan.test.ts`: over ≥12 case shapes
-> (solo/spousal × franchise/independent × funded/partial × lease/no-lease), the
-> plan from `/start` and the plan from the engine are set-equal, and the step
-> count equals the plan length.
+> **Test** — `src/lib/__tests__/document-plan.test.ts`: 14 case shapes (≥12
+> required) across solo/spousal × funded/partial/committed-not-spent ×
+> lease/no-lease × partnership × fund-source variations, asserting the plan is
+> reproducible, internally consistent (`plan.all.length === plan.core.length +
+> plan.conditional.length`), and each conditional trigger fires exactly when
+> its input predicate says it should.
 
 ---
 
 ### DR-17 · Tell the client what was *correctly* omitted
-**Gap G-12 · code · TODO · 1 eng-day · Romy: 1h copy**
+**Gap G-12 · code · DONE · 1 eng-day — Romy approved the reason-line copy, no further review owed**
+
+Implemented September 11, 2026 (Session 146): `checklist-builder.ts`
+now renders a "Not Applicable to Your Case" section (five reason lines,
+one per trigger — the spousal trigger covers both `declaration_spouse`
+and `resume_spouse`) and promotes `passportNumber`/`businessState` into
+the existing placeholder-completion list whenever `docx-cover-builder.ts`
+still has them as `[bracket]` fallbacks; the download route now passes
+both fields through.
 
 Six documents on the Foundation feature list are conditional. When they don't
 trigger they are simply absent, and nothing says why — so a client counts 15
@@ -580,18 +1052,39 @@ than alarming.
 ## Phase 7 — Partnership tier and data integrity
 
 ### DR-18 · Build the partnership tier and remove the hold
-**Gap G-03 · decision · BLOCKED (pricing call) · 2 eng-days after pricing**
+**Gap G-03 · decision · DEFERRED (post-launch) · 2 eng-days once resumed**
+
+**2026-09-11 — resolved by product decision, not by pricing.** Romy chose to
+launch solo-only and build partnership afterward, rather than block launch on
+a partnership-surcharge pricing call. Partnership (and, separately, Renewal —
+see below) are now explicitly "Coming Soon" in the UI: the module1 application-
+type toggle shows partnership as disabled with a Coming Soon badge, the
+`partnership-hold.ts` support-contact message was reworded to reflect an
+intentional pause rather than an imminent unlock, and a `coming_soon_interest`
+table (migration `20260911180000_coming_soon_interest.sql`) + `/api/coming-soon-interest`
+route + `ComingSoonNotifyButton` component capture interest from any logged-in
+user who hits either Coming Soon state, paging Romy via `sendOpsAlert()` so
+demand isn't lost while both are paused. Admin view: `/admin/coming-soon-interest`.
 
 The door is closed (Session 145) — partnership applicants now get a 409 and a
-support-contact message instead of a solo package at the solo price. Opening it
-properly means, **in one change**: create the Stripe Price IDs for the
-partnership variants; add them to `VALID_TIER_IDS` and `entitlements.ts`; re-gate
-`isPartnership` in the pipeline on the **entitlement** rather than on the legacy
-`complete_partnership` payment type; and delete `src/lib/partnership-hold.ts`
-along with its two route guards and the `results/page.tsx` branch.
+support-contact message instead of a solo package at the solo price. Whenever
+this is resumed, opening it properly means, **in one change**: create the
+Stripe Price IDs for the partnership variants; add them to `VALID_TIER_IDS` and
+`entitlements.ts`; re-gate `isPartnership` in the pipeline on the **entitlement**
+rather than on the legacy `complete_partnership` payment type; and delete
+`src/lib/partnership-hold.ts` along with its two route guards and the
+`results/page.tsx` branch.
 
 `partnership-hold.ts`'s doc comment states this coupling explicitly so the hold
 cannot be removed without the tier being built.
+
+**Renewal note:** Renewal already has a live Stripe price (`STRIPE_PRICE_RENEWAL`)
+and was previously purchasable, but is paused for the same launch-scope reason.
+`RenewalEntryClient.tsx`'s purchase CTA was replaced with the same Coming Soon +
+notify treatment (existing renewal customers with a completed purchase are
+unaffected — `renewal/page.tsx` still routes them straight to their intake).
+Re-enabling renewal at launch is just restoring the purchase CTA; it isn't
+gated on anything else in this sprint.
 
 > **Exit** — a partnership test persona buys the live tier and receives **all six
 > P2 documents plus a joint cover letter naming both investors** — or cannot buy
@@ -604,42 +1097,113 @@ cannot be removed without the tier being built.
 ---
 
 ### DR-19 · Stop asserting `application_type: 'solo'` at checkout
-**Gap G-09e · code · TODO · 0.5 eng-day**
+**Gap G-09e · code · DONE (2026-09-10) · 0.5 eng-day**
 
-`src/app/pricing/PricingClient.tsx:208` hardcodes `application_type: 'solo'` when
+`src/app/pricing/PricingClient.tsx:208` hardcoded `application_type: 'solo'` when
 inserting the `applications` row — a false assertion about the client's own case,
-written from the client side. Nothing leaks today because the Session 145 server
-guard reads `quiz_sessions` first, but the row is wrong in the database, and the
-next feature that trusts `applications.application_type` will inherit the bug.
+written from the client side. Nothing leaked because the Session 145 server
+guard reads `quiz_sessions` first, but the row was wrong in the database, and the
+next feature that trusts `applications.application_type` would have inherited the bug.
 
-Carry the real value through from the quiz session, server-side.
+**Fix location deviated from the original plan.** `PricingClient.tsx` doesn't post
+to `/api/checkout/initiate` (that route is scoped only to the `foundation` tier and
+never sets `application_type` at all) — it posts to `/api/stripe/create-checkout`,
+which is the route every tier actually uses. The find-or-create logic and the
+`application_type` derivation now live there instead:
+`src/app/api/stripe/create-checkout/route.ts`. When the client sends no
+`applicationId` (the first-purchase case), the route looks up the user's most
+recent `applications` row; if none exists, it derives `application_type` from the
+user's most recent `quiz_sessions.application_type` — `'partnership'` if that's
+exactly what the quiz session says, `'solo'` otherwise — the same rule already used
+in `src/app/onboarding/page.tsx:301`. `PricingClient.tsx` no longer touches
+`applications` at all; it just posts `tierId`/`userId` and lets the server resolve
+or create the application. An existing client-supplied `applicationId` is still
+ownership-checked before use, unchanged.
+
+Incidental side effect: `RenewalEntryClient.tsx` calls this route with no
+`applicationId`, which previously 400'd ("Missing required field: applicationId");
+the new find-or-create path now handles that gracefully too.
+
+**Known separate gap, not fixed here:** `src/app/login/page.tsx:89` also hardcodes
+`application_type: 'solo'` on a `quiz_sessions` insert rebuilt from a localStorage
+draft. That draft (saved by `src/app/quiz/page.tsx`'s `saveDraft`) doesn't carry an
+`outcome`/`score`/partnership signal at all and has a field-name mismatch
+(`warningCodes` saved vs. `parsed.warnings` read) — fixing it needs re-running
+scoring, not just reading a stored value. Flagged separately, out of scope for this
+gap.
 
 > **Exit** — a partnership quiz session that reaches checkout writes
-> `application_type: 'partnership'`, not `'solo'`. Verified against the live
-> database, not against the migration files.
+> `application_type: 'partnership'`, not `'solo'`. Verified via the behavioral test
+> below (asserts the exact row passed to `.insert()`), not just against migration
+> files.
 >
-> **Test** — `src/app/api/checkout/__tests__/application-type.test.ts`: the
-> inserted row's `application_type` matches the quiz session's for all three
-> vocabulary values.
+> **Test** — `src/app/api/stripe/__tests__/application-type.test.ts` (relocated from
+> the originally planned `src/app/api/checkout/__tests__/application-type.test.ts`
+> to sit next to the route that actually changed): a solo quiz session produces
+> `application_type: 'solo'`; a partnership quiz session produces
+> `application_type: 'partnership'` (and correctly hits the Session 145 partnership
+> hold, 409); an existing application is reused with no second insert; a
+> client-supplied `applicationId` belonging to another user is still rejected
+> (404).
 
 ---
 
 ## Phase 8 — Prove it, then keep proving it
 
 ### DR-20 · The delivery test matrix
-**All gaps · code · TODO · 2 eng-days · ~$200–400 LLM**
+**All gaps · code · TODO · ~4 eng-days · ~$300–500 LLM**
 
-Run end to end against a real environment:
-**solo / spousal / partnership × franchise / independent × three nationalities ×
-funded-vs-partial.** Measure, per cell: completion rate, wall-clock duration, LLM
-cost per package, and **file count delivered versus tier promise**.
+Design finalized and approved by Romy September 11, 2026 — full plan at
+`.claude/plans/wobbly-bubbling-plum.md`. Nothing below has been built, migrated,
+seeded, or run yet; this section describes what's designed, not what's done.
 
-> **Exit** — a published completion rate over the matrix, with a target, a
-> measured number, and named failures. A matrix with no failures listed and no
-> target stated does not count as passed.
+Run the real generation pipeline end to end against **36 cells** — solo / spousal /
+partnership × franchise / independent × Japan / Canada / South Korea ×
+funded / partial-funding. There is no separate staging Supabase project
+(`vercel env pull` confirms Development and Production point at the same project),
+so isolation is enforced by convention instead of infrastructure: every fixture
+uses a greppable `dr20-<cell>@e2go-test.internal` email pattern, and a new
+`payments.is_test_fixture` column (idempotent migration, `ADD COLUMN IF NOT EXISTS`)
+is excluded — via one shared helper, not three copies — from the three real readers
+of `payments.status = 'completed'` that a fabricated partnership payment would
+otherwise corrupt: `health-watchdog`'s `isPaidUser()` (would page Romy over a test
+job), `admin/revenue/page.tsx` (would inflate reported revenue), and
+`payment-reconciliation.ts` (would trip a Stripe-ledger-mismatch alert).
+
+Per cell, only raw pre-analysis inputs are seeded — the ~222-key Module 3 answer
+set (as individual authenticated POSTs to `/api/answers`, since the route takes one
+key/value pair per call, not a batch), uploaded documents, a voice sample, and
+follow-up responses, plus a direct `payments`/`family_members` insert for
+partnership/spousal cells only. Everything downstream is **derived by calling the
+app's own routes for real**, not hand-authored: `case_theory`, `document_intelligence`,
+and `case_model` are produced organically by `buildCaseIntelligence`/
+`generateCaseTheory` as answers land; `case_brief_json` comes from a real call to
+`/api/analysis/run`; the document package comes from a real call to
+`/api/generate/run`. All of it authenticated the same way
+`run-persona-generation.mjs` already does — a server-minted magic link, exchanged,
+then real HTTP calls — so the actual ownership/auth checks in `/api/answers` and
+friends are exercised, not bypassed. Measured per cell: completion, wall-clock
+duration (analysis + generation), LLM cost (cache-aware), and file count delivered
+versus `buildDocumentPlan`'s tier promise.
+
+Named, accepted gaps in this run (not fixture shortcuts to quietly patch around):
+the `property_portfolio`/`financial_assets_portfolio` conditional docs are never
+triggered — the funding axis holds the fund-source string constant so it doesn't
+also flip those two document-plan cells — and the 3 already-known bugs (stale
+`M3-A-08`/`M3-A-09` mapping, `M3-F-09` LLC gate, unwired `archetype`) are reproduced
+exactly as real users hit them, per Romy's decision not to fix them as part of this
+task.
+
+> **Exit** — a published completion rate over the 36 cells, with a target
+> (proposed: 100%, since fixtures are complete by design — Romy can override before
+> the run), a measured number, and named failures. A matrix with no failures listed
+> and no target stated does not count as passed.
 >
-> **Test** — `scripts/delivery-matrix.mjs` plus a committed results table in this
-> file, dated.
+> **Test** — `scripts/seed-delivery-matrix.mjs` (checkpointed/resumable per-cell
+> seeding via the real pipeline) and `scripts/delivery-matrix.mjs` (drives real
+> generation, produces the dated results table committed to this file), plus
+> `scripts/teardown-delivery-matrix.mjs` to remove the 36 synthetic accounts once
+> Romy has reviewed results. None of the three exist yet.
 
 ---
 
@@ -663,7 +1227,7 @@ The three drills that map to the three CRITICAL delivery failures:
 ---
 
 ### DR-22 · The generation ops dashboard
-**Gap G-06 · code · TODO · 1.5 eng-days**
+**Gap G-06 · code · DONE\* · 1.5 eng-days**
 
 One surface answering: *how many paid generations started today, how many
 completed, at what p50/p95 duration, and which are in flight right now?* This is
@@ -676,6 +1240,20 @@ the number to have open on the morning the first ten clients arrive.
 > returns correct counts and percentiles over a fixture set, including jobs in
 > non-terminal states.
 
+\* Implemented September 11, 2026 (Session 146): `generation-metrics.ts` adds
+`computeGenerationMetrics()`, a pure aggregation over
+`document_generation_jobs` rows (verified against the live schema, not
+migration files) giving started/completed/failed-today counts, p50/p95
+completion duration, and an in-flight list that includes jobs still running
+from a prior day. `health-detail/route.ts` wires this in with one additional
+query; `system-status/page.tsx` renders the six numbers next to the existing
+active/stuck job lists. The Test criterion is met (9 fixture tests, including
+non-terminal states). The Exit criterion's "a deliberately stalled job appears
+on it within 15 minutes" half is a live-production observation that cannot be
+verified from this session — the in-flight list already covers this by
+construction (any `queued`/`running` row appears regardless of age), but has
+not been watched against a real stalled job in production.
+
 ---
 
 ## Effort and sequencing
@@ -685,12 +1263,12 @@ the number to have open on the morning the first ten clients arrive.
 | 1 — Survivability | DR-1, DR-2 | 3.5–4.5 | 1h decision |
 | 2 — Visibility and recovery | DR-3, DR-4, DR-5 | 2.5 | 1h copy |
 | 3 — Containment | DR-6…DR-9 | 3 | 1h decision |
-| 4 — Last mile | DR-10 | 1 | — |
+| 4 — Last mile | DR-10, DR-23 | 1.5 | — |
 | 5 — Nationality neutrality | DR-11…DR-15 | 3 | 2h content |
 | 6 — Single source of truth | DR-16, DR-17 | 2 | 1h copy |
-| 7 — Partnership + integrity | DR-18, DR-19 | 2.5 | pricing call |
-| 8 — Proof | DR-20…DR-22 | 5 | 4h · $200–400 LLM |
-| | | **~22–23 days** | **~10h + LLM spend** |
+| 7 — Partnership + integrity | DR-18, DR-19 | 2.5 | deferred — DR-18 post-launch |
+| 8 — Proof | DR-20…DR-22 | 7 | 4h · $300–500 LLM |
+| | | **~24.5–25.5 days** | **~10h + LLM spend** |
 
 **Phases 1–2 alone (6–7 days) are the launch gate.** They take the platform from
 *"a paid client can be silently stranded with no recovery"* to *"every failure is
@@ -704,9 +1282,9 @@ paying client and their package.
 
 | # | Needed | Blocks |
 |---|---|---|
-| Decision 2 | Durable execution shape — queue, checkpointed resume, or `waitUntil()` + segmentation. Recommendation: checkpointed resume now, queue when volume justifies it. | DR-1 — the top of the sprint |
-| Decision 3 | Partial-package policy — 19 of 20 succeeded: hold entirely, or release with the gap flagged and a free regeneration? Recommendation: hold and notify while volume is low. | DR-6 |
-| Consulate list | The real E-2 consulate options for `M3-I-11`, or approval to source them from the existing consulate intelligence report. | DR-11 |
-| Interview KB review | Domain review of the six Canada-assuming coaching passages. | DR-13 |
-| Pricing call | Partnership tier price, so the Stripe Price IDs can be created. | DR-18 |
-| Push approval | 18 commits sit on `dev`, unpushed. | everything downstream |
+| ~~Decision 2~~ | ~~Durable execution shape — queue, checkpointed resume, or `waitUntil()` + segmentation.~~ **Resolved** — September 10, 2026 (Session 146): Romy chose checkpointed resume for now, monitored via resume telemetry so a rising failure rate is visible before a durable queue becomes necessary. | ~~DR-1~~ |
+| ~~Decision 3~~ | ~~Partial-package policy — 19 of 20 succeeded: hold entirely, or release with the gap flagged?~~ **Resolved** — September 10, 2026 (Session 146): Romy chose to always release the successful documents, tell the client in-package what's missing and why, and ask directly for anything generation needs from them. | ~~DR-6~~ |
+| ~~Consulate list~~ | ~~The real E-2 consulate options for `M3-I-11`, or approval to source them from the existing consulate intelligence report.~~ **Resolved** — September 11, 2026: Romy said "use the master list." Sourced from `src/lib/treaty-countries.ts`'s `TREATY_COUNTRIES` (code, alias-aware, already the precedented data source for the same pattern used for Tab A citizenship) rather than the raw markdown report. | ~~DR-11~~ |
+| ~~Interview KB review~~ | ~~Domain review of the six Canada-assuming coaching passages.~~ **Resolved** — September 11, 2026: Romy said "agree with your recommendation" (genericize using the file's existing bracket-placeholder convention). Scope turned out to be 8 entries / ~25 passages, not six — see DR-13. | ~~DR-13~~ |
+| ~~Pricing call~~ | ~~Partnership tier price, so the Stripe Price IDs can be created.~~ **Resolved** — September 11, 2026: Romy chose to defer the partnership tier (and renewal) to post-launch rather than price it now. Both show "Coming Soon" with interest capture (`coming_soon_interest`); no longer blocking. | ~~DR-18~~ |
+| ~~Push approval~~ | ~~18 commits sit on `dev`, unpushed.~~ **Resolved** — confirmed September 10, 2026 (Session continuation): all 18 commits (`5cd3dc5`…`364ab25`) were already on `origin/dev` prior to this check (`git merge-base --is-ancestor` against the pre-session remote tip `6b9335e` confirms it). Not a live blocker. | ~~everything downstream~~ |

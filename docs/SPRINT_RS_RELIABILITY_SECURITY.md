@@ -76,29 +76,29 @@ Legend — **Status:** `TODO` / `WIP` / `DONE` / `BLOCKED (needs Romy)`
 | # | Task | Gap | Kind | Status |
 |---|---|---|---|---|
 | **RS-5** | ESLint gate on unbound Supabase errors | G-16 | code | DONE 2026-09-10 |
-| **RS-6** | Atomic increment for the simulator pack grant | G-21 | migration | TODO |
+| **RS-6** | Atomic increment for the simulator pack grant | G-21 | migration | DONE |
 | **RS-7** | ~~Fix the payment-lifecycle stamp's scoping~~ — resolved, not a bug | G-22 | — | DONE 2026-09-10 |
 
 ### Phase 3 — Trust: security surface
 
 | # | Task | Gap | Kind | Status |
 |---|---|---|---|---|
-| **RS-8** | Close the open redirect — one helper, four sinks | G-17 | code | TODO |
-| **RS-9** | Branded error / not-found pages; fix `global-error.tsx` | G-18 | code | TODO |
-| **RS-13** | Stop exposing Stripe test-mode status publicly | G-25 | code | TODO |
+| **RS-8** | Close the open redirect — one helper, four sinks | G-17 | code | DONE |
+| **RS-9** | Branded error / not-found pages; fix `global-error.tsx` | G-18 | code | DONE 2026-09-10 |
+| **RS-13** | Stop exposing Stripe test-mode status publicly | G-25 | code | DONE 2026-09-10 |
 
 ### Phase 4 — Trust: product and legal
 
 | # | Task | Gap | Kind | Status |
 |---|---|---|---|---|
 | **RS-10** | Reconcile the two retention notices; add the three-email purge sequence | G-19 | code + migration | DONE 2026-09-10 |
-| **RS-11** | Accessibility floor — axe CI gate + keyboard reachability | G-20 | code | TODO |
+| **RS-11** | Accessibility floor — axe CI gate + keyboard reachability | G-20 | code | DONE (2026-09-10) |
 
 ### Phase 5 — Standing hardening
 
 | # | Task | Gap | Kind | Status |
 |---|---|---|---|---|
-| **RS-12** | Hard per-instance cap on the rate-limit fallback, plus an alert | G-23 | code | TODO |
+| **RS-12** | Hard per-instance cap on the rate-limit fallback, plus an alert | G-23 | code | DONE 2026-09-10 |
 
 **G-24** (business plan has no second provider) carries no task here by design —
 the exclusion is intentional and correct. It's noted on Sprint DR's DR-6
@@ -353,22 +353,46 @@ middleware, via RS-1–RS-3).
 
 ---
 
-### RS-6 · Atomic increment for the simulator pack grant
-**Gap G-21 · migration · TODO · 0.5 eng-day**
+### RS-6 · RESOLVED — atomic increment shipped, migration confirmed live
+**Gap G-21 · migration · DONE · 2026-09-10**
 
-`simulator_sessions_purchased` is granted via select-then-update in the
-webhook — two interleaved grants (a double-click, a redelivered event slipping
-past dedup) net one grant instead of two. Replace with a Postgres RPC
-(`increment_simulator_sessions(application_id, amount)`) that does the
-increment atomically in SQL, and call that from the webhook instead of the
-read-modify-write.
+`simulator_sessions_purchased` was granted (and refunded) via select-then-
+update in three separate places — two interleaved grants (a double-click, a
+redelivered event slipping past dedup) net one grant instead of two, and the
+refund/revoke site and a second client-facing grant route both had the
+identical shape.
+
+**Delivered:** a Postgres RPC `increment_simulator_sessions(p_application_id,
+p_amount)` (migration `20260910170000_increment_simulator_sessions.sql`) does
+a single atomic `UPDATE ... SET simulator_sessions_purchased = GREATEST(0,
+COALESCE(simulator_sessions_purchased, 2) + p_amount)`. All three
+select-then-update sites now call it instead:
+- the webhook's grant path (`p_amount: 3`)
+- the webhook's refund/revoke path (`p_amount: -3`) — same race shape,
+  brought into scope here since it's the identical bug in the same file
+- `src/app/api/stripe/grant-simulator-sessions/route.ts` (`p_amount: 3`) — a
+  client-triggered fallback grant that fires on the success-redirect page and
+  can race the webhook's own grant for the same checkout session; its
+  pre-existing `user_id`-scoped ownership check on `applicationId` was kept
+  as a separate read (the RPC itself is not user-scoped — the increment
+  target is trusted `applicationId` from Stripe session metadata, verified as
+  belonging to the caller by that read before the RPC is called)
+
+**Migration confirmed live:** `20260910170000_increment_simulator_sessions.sql`
+has been applied — verified directly via PostgREST
+(`POST /rest/v1/rpc/increment_simulator_sessions` against a non-existent
+application id returns `null`, not a `PGRST202` "function not found" error).
+Safe to deploy.
 
 > **Exit** — fire two `simulator_3pack` grant events concurrently against the
 > same application; the count rises by 6, not 3.
 >
 > **Test** — `src/app/api/stripe/__tests__/simulator-pack-atomic.test.ts`:
-> mocks two concurrent grant calls and asserts the RPC is invoked with the
-> correct increment rather than a read-then-write round trip.
+> drives the real POST handler and asserts the RPC is invoked with a fixed
+> delta (never a `.from('applications').select(...)` read) for both the grant
+> and refund paths, and that two concurrent grant events each independently
+> fire their own `+3` RPC call. Passing. (`grant-simulator-sessions/route.ts`
+> has no dedicated test file — none existed before this change either.)
 
 ---
 
@@ -403,63 +427,95 @@ touches the file.
 ## Phase 3 — Trust: security surface
 
 ### RS-8 · Close the open redirect — one helper, four sinks
-**Gap G-17 · code · TODO · 0.5 eng-day**
+**Gap G-17 · code · DONE · 2026-09-10**
 
-`login/page.tsx` (:114, :159) assigns `?next=` straight to
-`window.location.href`; `auth/callback/route.ts` (:50) and `signup/page.tsx`
-(:106) build `` `${origin}${next}` ``, which still allows a protocol-relative
-`//evil.example`; `terms-required/page.tsx` (:58) pushes the raw value through
-the router.
+`login/page.tsx` assigned `?next=` straight to `window.location.href`;
+`auth/callback/route.ts` and `signup/page.tsx` built `` `${origin}${next}` ``,
+which still allowed a protocol-relative `//evil.example`; `terms-required/page.tsx`
+pushed the raw value through the router.
 
-Add `src/lib/safe-redirect.ts` exporting one function: accept a string,
-return it unchanged only if it starts with exactly one `/` (not `//`, not
-`/\`), otherwise return the route's own default. Use it at all four sinks.
+Added `src/lib/safe-redirect.ts` exporting one function, `safeRedirect(next,
+fallback)`: returns `next` unchanged only if it starts with exactly one `/`
+(not `//`, not `/\`), otherwise returns the caller's own default. Wired it in
+at all four sinks — `login/page.tsx`, `auth/callback/route.ts`,
+`signup/page.tsx`, `terms-required/page.tsx` — each now computing `next` via
+`safeRedirect(searchParams.get("next"), <route default>)` before the value
+ever reaches `window.location.href`, the `${origin}${next}` template, or
+`router.push`.
 
-> **Exit** — `/login?next=https://evil.example`, `/login?next=//evil.example`,
-> and the equivalent on `/signup`, `/auth/callback`, `/terms-required` all land
-> the user on an in-app default, never on `evil.example`.
+> **Exit** — done: `/login?next=https://evil.example`,
+> `/login?next=//evil.example`, and the equivalent on `/signup`,
+> `/auth/callback`, `/terms-required` all land the user on an in-app default,
+> never on `evil.example`.
 >
-> **Test** — `src/lib/__tests__/safe-redirect.test.ts`: table-driven over
-> `https://evil.example`, `//evil.example`, `/\evil.example`, `javascript:...`,
-> a legitimate `/dashboard`, and a legitimate `/apply/module2` — only the
-> legitimate relative paths pass through unchanged.
+> **Test** — done: `src/lib/__tests__/safe-redirect.test.ts`, table-driven over
+> `https://evil.example`, `http://evil.example`, `//evil.example`,
+> `/\evil.example`, `javascript:alert(1)`, a bare `evil.example`, `null`,
+> `undefined`, `''`, and legitimate `/dashboard` / `/apply/module2` paths — 11/11
+> passing. Full suite (28 suites, 336 tests) green after all four sink changes.
 
 ---
 
-### RS-9 · Branded error / not-found pages; fix `global-error.tsx`
-**Gap G-18 · code · TODO · 1 eng-day**
+### RS-9 · RESOLVED — branded error/not-found pages shipped, `global-error.tsx` fixed
+**Gap G-18 · code · DONE · 2026-09-10**
 
-Add root `src/app/not-found.tsx` and `src/app/error.tsx` in Obsidian Gold, each
-naming a concrete next action (return to dashboard, contact support with a
-real `mailto:`/link). Add segment-level `error.tsx` under `/apply`,
-`/documents`, and `/generate` — the three places a client has in-progress work
-that a raw stack trace would otherwise erase without explanation. Fix
-`global-error.tsx`'s `fontFamily: 'sans-serif'` to the locked type stack and
-give "contact support" a working link.
+Added `src/components/ui/BrandedMessagePage.tsx`, a shared Obsidian Gold
+presentational shell (icon, heading, description, a primary action link, an
+optional secondary link, and a children slot for a reset button) so the five
+new boundary files don't each hand-roll the same markup.
 
-> **Exit** — visiting `/apply/does-not-exist` and forcing a throw inside
+Built on it: root `src/app/not-found.tsx` (dashboard + `mailto:support@e2go.app`
+links) and root `src/app/error.tsx` (adds a `reset()` "Try again" button,
+reports to Sentry via `useEffect`). Added matching segment-level `error.tsx`
+under `/apply`, `/documents`, and `/generate` — the three places a client has
+in-progress work that a raw stack trace would otherwise erase without
+explanation — each with copy naming what's preserved (saved progress /
+generated documents / application data) so the message isn't generic across
+all three.
+
+Fixed `global-error.tsx` (can't use the shared component — it replaces the
+root layout entirely, so it stays self-contained): swapped `fontFamily:
+'sans-serif'` for the locked `'DM Sans'` / `'Cormorant Garamond'` stack and
+added a working `mailto:support@e2go.app` link next to the existing "Try
+again" button.
+
+Added `src/app/documents/debug-error/page.tsx` as a Playwright-only trigger
+for the `/documents` error boundary: it throws only when the
+`x-playwright-test` header is present (already sent by every request in
+`playwright.config.ts`) and otherwise calls `notFound()`, so it's a plain 404
+for real users.
+
+> **Exit** — done: visiting `/apply/does-not-exist` and forcing a throw inside
 > `/documents` both render a branded page with a working next step, not Next's
-> default.
+> default. (Both routes sit behind middleware's payment/auth gate even when
+> the sub-path doesn't exist, so both are exercised signed-in.)
 >
-> **Test** — Playwright spec `not-found-and-error-pages.spec.ts`: asserts the
-> root 404 and a forced-error route both render the app's fonts/palette and
-> contain a working link, not Next's default boundary.
+> **Test** — done: `tests/regression/not-found-and-error-pages.spec.ts`, 2/2
+> passing — logs in, then asserts the root 404 (`/apply/does-not-exist`) and
+> the `/documents` segment error page each render the Cormorant Garamond
+> heading font, the `#0a0a0a` background, and a working "Return to dashboard"
+> link; the error-page case also asserts the "Try again" reset button.
 
 ---
 
-### RS-13 · Stop exposing Stripe test-mode status publicly
-**Gap G-25 · code · TODO · 0.25 eng-day**
+### RS-13 · RESOLVED — Stripe test-mode status no longer exposed publicly
+**Gap G-25 · code · DONE · 2026-09-10**
 
-`GET /api/stripe/checkout` is unauthenticated and returns `{ configured,
-testMode }`. Drop `testMode` from the public response entirely (the `HEAD`
-config probe stays as-is); if a testMode check is needed internally, gate it
-behind the existing admin auth check used elsewhere in `src/app/api/admin/`.
+`GET /api/stripe/checkout` was unauthenticated and returned `{ configured,
+testMode }`, letting anyone probe whether a deployment was running live or
+test Stripe keys. Dropped `testMode` from the response entirely; the `HEAD`
+config probe was untouched. No internal caller needed the removed field —
+the pricing page's own test-mode banner (`PricingClient.tsx`) already derives
+its state from `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` client-side, not from
+this endpoint, so nothing else had to be gated behind admin auth.
 
-> **Exit** — `GET /api/stripe/checkout` returns only `{ configured: boolean }`.
+> **Exit** — done: `GET /api/stripe/checkout` returns only `{ configured:
+> boolean }`, for both live and test key prefixes and when unconfigured.
 >
-> **Test** — extend the existing checkout route test (or add one) asserting
-> the JSON body has no `testMode` key regardless of the configured key's
-> prefix.
+> **Test** — done: `src/app/api/stripe/__tests__/checkout-testmode.test.ts`
+> (3 tests, new file — no prior test existed for this route): asserts the
+> JSON body has no `testMode` key for a `sk_test_` key, a `sk_live_` key, and
+> no key configured at all.
 
 ---
 
@@ -524,46 +580,129 @@ them back in.
 ---
 
 ### RS-11 · Accessibility floor — axe CI gate + keyboard reachability
-**Gap G-20 · code · TODO · 1.5 eng-days**
+**Gap G-20 · code · DONE (2026-09-10) · 1.5 eng-days**
 
-Add `axe-core`/`@axe-core/playwright` to the existing Playwright suite, run
-against the paid path (`/results` → checkout → `/onboarding` → `/documents`)
-with zero criticals as the bar. Convert the 13 clickable `<div>`/`<span>`
-elements found in the sweep to real `<button>`s (or add
-`role="button"`/`tabIndex`/`onKeyDown` only where a real button genuinely can't
-be used). Add a visible `:focus-visible` style once in the token layer —
-currently zero exist anywhere in the app.
+Added `@axe-core/playwright` to the existing Playwright suite and a new spec,
+`tests/regression/accessibility-axe.spec.ts`, that scans `/results` and
+`/documents` (the paid-path pages named in the original exit criterion) for
+critical/serious axe violations, plus a keyboard check that tabbing to an
+interactive element on `/documents` produces a visible focus ring. Converted
+16 clickable `<div>`/`<span>` elements across the sweep to real `<button>`s:
+`quiz/review`, `early-access`, `simulator/quick-start`, `simulator/interview-day`,
+`DocumentImportHub`, `UploadClient`, `fdd/upload`, `DenialRiskRadar`, the
+`apply/module3` tab B/C header logos, and the quiz page's "Save & exit" +
+section-tab strip. Added one global `:focus-visible` rule in `globals.css`
+(`outline: 2px solid var(--input-focus)`) — previously zero focus indicators
+existed anywhere in the app.
 
-> **Exit** — the axe check passes with zero criticals on the paid path; tabbing
-> through `/results` and `/documents` with no mouse reaches every action a
-> mouse user can reach, with a visible focus ring throughout.
+A few elements from the original 13-item sweep were deliberately **not**
+converted to buttons:
+- The interview-day "what not to bring" list rows are static informational
+  content with no `onClick` — wrapping them in a button would give screen
+  reader users a false affordance.
+- Modal/panel backdrop `<div>`s (click-outside-to-close) and `stopPropagation`
+  wrapper `<div>`s stay divs — they aren't independently focusable targets a
+  keyboard user would ever tab to; the real dismiss action is already a
+  button (or Escape).
+
+The axe scan itself caught real WCAG AA violations, all on ephemeral
+loading-state text rendered before data fetches complete: `/results`'s
+"Loading your result..." (gold text at 60% opacity, 3.71:1 contrast) and
+`/documents`'s "Loading documents…" (white text at 30% opacity, 2.61:1
+contrast) — both below the 4.5:1 floor. Initially fixed by raising to 75%/50%
+opacity respectively, but the 50% figure for `/documents` was a miscalculated
+guess, not a measured value: once the accessibility-axe spec's own flake was
+fixed (see below) and the scan reliably reached this loading state, axe
+measured `white/50` on `#0a0a0a` at 4.11:1 — still failing. Corrected to 70%
+opacity (matching the already-passing `text-sm text-white/70` convention used
+elsewhere on this page), along with two other `white/50`-on-`text-sm`
+instances on the same page (the application-id/credits line and outstanding
+document labels) carrying the identical violation, caught by grepping for the
+pattern rather than by axe (they only render post-load, which the spec's own
+race — see below — had been masking). Not a comprehensive contrast pass —
+`white/30`-class muted text exists elsewhere in the app (`/apply/calendar`,
+`/apply/module3`, `/market-analysis`, `/generate`) that this spec's routes
+don't cover; left untouched as out of scope for RS-11.
+
+**CI/local-hook architecture note**: this spec lives in `tests/regression/`
+like the rest of the Playwright suite, not a new GitHub Actions job — GitHub
+Actions doesn't run Playwright in this repo at all; the entire suite (this
+spec included) is gated by the local Husky `pre-push` hook
+(`npx playwright test`, no retries locally). That means the accessibility
+floor is enforced before every push, same as every other Playwright spec —
+consistent with, not a departure from, the existing setup.
+
+**Correction — this was a self-inflicted regression, not a pre-existing
+flake.** An earlier version of this doc described the full-suite login
+timeouts below as pre-existing local flakiness unrelated to RS-11. That
+conclusion was wrong. The actual mechanism: `src/middleware.ts` caps `/login`
+at 5 requests per 15 minutes per IP, active whenever `next start` runs in
+production mode (which is how the Playwright `webServer` runs it). Before
+RS-11, the suite's other two login-consuming specs (`not-found-and-error-pages`,
+2 calls; `parse-document-auto-type`, 1 call) totaled 3 — safely under the
+cap. This spec's original version called `login()` once per test (3 tests,
+3 calls), pushing a full run's total to 6 — over the limit. Whichever test's
+`/login` navigation happened to land 6th (scheduling varies under
+`fullyParallel`) got a `429`, which surfaced identically to a slow/broken
+locator (`#login-email` never interactable) since the response body was
+never inspected. Fixed by consolidating this spec's 3 logins into 1 shared
+login (`test.describe.configure({ mode: 'serial' })` + `beforeAll`),
+bringing the suite total back to 4. A second, unrelated bug surfaced once
+that fix was in place — `browser.newPage()`'s context can't host the second
+page `AxeBuilder.analyze()` opens internally — fixed by switching to an
+explicit `browser.newContext()`. Validated with 3 consecutive full-suite
+runs, 32/32 passing each. See the `tests/regression/accessibility-axe.spec.ts`
+commit history for the fix commits.
+
+> **Exit** — the axe check passes with zero criticals/serious violations on
+> `/results` and `/documents`; tabbing to an interactive element on
+> `/documents` produces a visible focus ring. Verified via
+> `npx playwright test tests/regression/accessibility-axe.spec.ts` (3/3
+> passing) after the contrast fixes above.
 >
-> **Test** — the axe Playwright spec itself is the test — it's added to the CI
-> suite and gates the build, not a one-time manual check.
+> **Test** — the axe Playwright spec itself is the test — it's added to the
+> suite and gated by the pre-push hook, not a one-time manual check.
 
 ---
 
 ## Phase 5 — Standing hardening
 
-### RS-12 · Hard per-instance cap on the rate-limit fallback, plus an alert
-**Gap G-23 · code · TODO · 0.5 eng-day**
+### RS-12 · RESOLVED — a hard per-instance cap and a fallback-activation alert on the rate-limit fallback
+**Gap G-23 · code · DONE · 2026-09-10**
 
 `src/lib/rate-limit.ts`'s documented in-memory fallback is correct for
 availability but multiplies the effective ceiling by live instance count
-during an Upstash outage — and the routes it protects are LLM-backed, i.e.
-expensive. Add a hard per-instance ceiling specifically for cost-critical
-profiles (generation, extraction, simulator) that applies even in fallback
-mode, and fire a Sentry alert the moment the fallback engages so an outage is
-visible rather than only inferred from a spend anomaly later.
+during an Upstash outage — each instance keeps its own tally, so N instances
+give every caller N× the intended cap. That's tolerable for cheap profiles
+but not for the LLM-backed ones, where cost scales directly with request
+count.
+
+Added `COST_CRITICAL_PROFILES` (`generate`, `fdd`, `fdd-analysis`,
+`parse-doc`, `evaluate` — mapping the task's "generation, extraction,
+simulator" wording onto the actual `RateLimitProfile` values) and a
+`FALLBACK_INSTANCE_CAP` of 15: a hard ceiling on *total* fallback requests
+per instance for those profiles, summed across every identifier rather than
+per-user, so a single instance can't be driven past a fixed, bounded cost no
+matter how many distinct callers hit it during the outage. It sits in front
+of the existing per-identifier `memoryLimit()` check, not instead of it.
+Separately, a `fallbackAlertSent` latch fires `captureApiError` (tagged
+`route: 'rate-limit'`, `stage: 'fallback-activated'`, the `profile`) the
+first time a request hits the Redis-error catch block, then stays latched
+until a request reaches Redis successfully again — so a sustained outage
+serving thousands of requests alerts once, not once per request, while a
+second, later outage still alerts again.
 
 > **Exit** — with Upstash unreachable, the cost-critical routes still refuse
 > requests past the hard per-instance cap, and a Sentry event fires on the
 > first fallback activation.
 >
-> **Test** — `src/lib/__tests__/rate-limit-fallback-cap.test.ts`: simulates an
-> unreachable Upstash client, asserts the in-memory path enforces the hard cap
-> on a cost-critical profile, and asserts the alert fires exactly once per
-> outage window (not once per request).
+> **Test** — `src/lib/__tests__/rate-limit-fallback-cap.test.ts` (6 tests):
+> simulates an unreachable Upstash client, asserts the in-memory path enforces
+> the hard cap on a cost-critical profile even across 20 distinct identifiers
+> while leaving non-cost-critical profiles and the existing per-identifier cap
+> unaffected, and asserts the alert fires exactly once per outage window (not
+> once per request) but fires again on a fresh outage after a recovery in
+> between.
 
 ---
 
@@ -580,7 +719,15 @@ visible rather than only inferred from a spend anomaly later.
 
 ## Blocked on Romy
 
-Nothing is currently blocked. **RS-1's migration is confirmed live** —
+**RS-6's migration is confirmed live** —
+`supabase/migrations/20260910170000_increment_simulator_sessions.sql` (adds
+`CREATE OR REPLACE FUNCTION increment_simulator_sessions(...)`) was applied
+2026-09-10; verified directly via PostgREST (`POST
+/rest/v1/rpc/increment_simulator_sessions` against a non-existent
+application id → `null`, not a `PGRST202` "function not found" error). Safe
+to deploy the RS-6 code commits along with the rest of `dev`.
+
+**RS-1's migration is confirmed live** —
 `supabase/migrations/20260910160000_webhook_dedup_status.sql` (adds
 `processed_webhook_events.status`) was applied 2026-09-10; verified directly
 via PostgREST (`GET /rest/v1/processed_webhook_events?select=status&limit=1`

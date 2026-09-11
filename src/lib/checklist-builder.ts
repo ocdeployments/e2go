@@ -25,8 +25,7 @@ import { TAB_SECTION_TITLES } from '@/lib/docx-package-constants';
 const BRACKET_PLACEHOLDER_REGEX = /\[[^\[\]]+\]/g;
 
 interface PlaceholderItem {
-  documentType: DocumentType;
-  documentLabel: string;
+  groupLabel: string;
   placeholder: string;
 }
 
@@ -49,8 +48,7 @@ function extractPlaceholders(
     const placeholder = match[0].slice(1, -1).trim();
     if (placeholder) {
       items.push({
-        documentType,
-        documentLabel: docLabel,
+        groupLabel: docLabel,
         placeholder,
       });
     }
@@ -68,13 +66,67 @@ interface ChecklistBuilderOptions {
   documents: DocumentEntry[];
   applicantName?: string;
   includedTabs?: string[];
+  /** Cover-page field (docx-cover-builder.ts) — may still be a bracket placeholder. */
+  passportNumber?: string;
+  /** Cover-page field (docx-cover-builder.ts) — may still be a bracket placeholder. */
+  businessState?: string;
 }
+
+/**
+ * DR-17 (Gap G-12): the six conditional document types from
+ * document-plan.ts's buildDocumentPlan, grouped by the single trigger that
+ * fires them. A minimal solo persona (no spouse, no property-sale funds,
+ * funds fully deployed, no securities/registered-plan/crypto funds, no
+ * lease) fires none of these five triggers, so all six document types stay
+ * absent — reported here as five reason lines (the spousal trigger alone
+ * covers two document types: declaration_spouse + resume_spouse).
+ */
+interface ConditionalDocumentGroup {
+  documentTypes: DocumentType[];
+  reason: string;
+}
+
+const CONDITIONAL_DOCUMENT_GROUPS: ConditionalDocumentGroup[] = [
+  {
+    documentTypes: ['declaration_spouse', 'resume_spouse'],
+    reason: 'No spouse or common-law partner was included on this application.',
+  },
+  {
+    documentTypes: ['property_portfolio'],
+    reason: 'Your investment funds were not reported as coming from the sale of property.',
+  },
+  {
+    documentTypes: ['investment_proof'],
+    reason:
+      'Your investment funds are already fully deployed into the business, so separate evidence of at-risk funds is not required.',
+  },
+  {
+    documentTypes: ['financial_assets_portfolio'],
+    reason:
+      'Your investment funds were not reported as coming from securities, a registered retirement account, or cryptocurrency.',
+  },
+  {
+    documentTypes: ['lease_premises_summary'],
+    reason: 'No lease agreement was uploaded for this business.',
+  },
+];
+
+function findNonTriggeredGroups(
+  presentTypes: ReadonlySet<DocumentType>
+): ConditionalDocumentGroup[] {
+  return CONDITIONAL_DOCUMENT_GROUPS.filter(
+    (group) => !group.documentTypes.some((dt) => presentTypes.has(dt))
+  );
+}
+
+/** A cover-page field (docx-cover-builder.ts's own fallback shape) still unfilled. */
+const BRACKET_VALUE_REGEX = /^\[(.+)\]$/;
 
 /**
  * Build COMPLETE-BEFORE-SUBMITTING.docx from all document placeholders.
  */
 export function buildChecklist(options: ChecklistBuilderOptions): Document {
-  const { documents, includedTabs } = options;
+  const { documents, includedTabs, passportNumber, businessState } = options;
   const allPlaceholders: PlaceholderItem[] = [];
 
   for (const doc of documents) {
@@ -83,6 +135,20 @@ export function buildChecklist(options: ChecklistBuilderOptions): Document {
       allPlaceholders.push(...items);
     }
   }
+
+  // DR-17: the cover page (docx-cover-builder.ts) is built separately from
+  // `documents` and is never scanned above, so a bracket left there —
+  // passport number / business state, neither collected at intake — would
+  // otherwise reach the client unannounced in the first file they open.
+  for (const value of [passportNumber, businessState]) {
+    const match = value?.trim().match(BRACKET_VALUE_REGEX);
+    if (match) {
+      allPlaceholders.push({ groupLabel: 'Cover Page', placeholder: match[1].trim() });
+    }
+  }
+
+  const presentTypes = new Set(documents.map((d) => d.document_type));
+  const nonTriggeredGroups = findNonTriggeredGroups(presentTypes);
 
   const children: Paragraph[] = [];
 
@@ -159,6 +225,67 @@ export function buildChecklist(options: ChecklistBuilderOptions): Document {
     );
   }
 
+  // DR-17: name every correctly-omitted conditional document and why, so a
+  // client counting files against the full Foundation feature list doesn't
+  // mistake a correct omission for a short-changed package.
+  if (nonTriggeredGroups.length > 0) {
+    children.push(
+      new Paragraph({
+        heading: HeadingLevel.HEADING_2,
+        spacing: { before: 120, after: 120 },
+        children: [
+          new TextRun({
+            text: 'Not Applicable to Your Case',
+            bold: true,
+            font: 'Century Schoolbook',
+            size: 28,
+          }),
+        ],
+      })
+    );
+    children.push(
+      new Paragraph({
+        spacing: { after: 160 },
+        children: [
+          new TextRun({
+            text: 'The documents below are part of the full E-2 package but do not apply to your case, and are correctly not included:',
+            font: 'Century Schoolbook',
+            size: 22,
+            italics: true,
+          }),
+        ],
+      })
+    );
+    for (const group of nonTriggeredGroups) {
+      const label = group.documentTypes.map((dt) => DOCUMENT_TYPE_LABELS[dt]).join(' & ');
+      children.push(
+        new Paragraph({
+          spacing: { after: 100 },
+          indent: { left: convertInchesToTwip(0.5) },
+          children: [
+            new TextRun({
+              text: `${label} — `,
+              bold: true,
+              font: 'Century Schoolbook',
+              size: 22,
+            }),
+            new TextRun({
+              text: group.reason,
+              font: 'Century Schoolbook',
+              size: 22,
+            }),
+          ],
+        })
+      );
+    }
+    children.push(
+      new Paragraph({
+        spacing: { after: 200 },
+        children: [],
+      })
+    );
+  }
+
   if (allPlaceholders.length === 0) {
     // No placeholders found — all documents are complete
     children.push(
@@ -176,12 +303,12 @@ export function buildChecklist(options: ChecklistBuilderOptions): Document {
       })
     );
   } else {
-    // Group by document type
-    const grouped = new Map<DocumentType, PlaceholderItem[]>();
+    // Group by document (or, for cover-page fields, by "Cover Page")
+    const grouped = new Map<string, PlaceholderItem[]>();
     for (const item of allPlaceholders) {
-      const existing = grouped.get(item.documentType) || [];
+      const existing = grouped.get(item.groupLabel) || [];
       existing.push(item);
-      grouped.set(item.documentType, existing);
+      grouped.set(item.groupLabel, existing);
     }
 
     // Summary line
@@ -199,17 +326,15 @@ export function buildChecklist(options: ChecklistBuilderOptions): Document {
     );
 
     // Grouped list
-    for (const [docType, items] of grouped) {
-      const docLabel = DOCUMENT_TYPE_LABELS[docType];
-
-      // Document type header
+    for (const [groupLabel, items] of grouped) {
+      // Document (or cover-page field) header
       children.push(
         new Paragraph({
           heading: HeadingLevel.HEADING_2,
           spacing: { before: 240, after: 120 },
           children: [
             new TextRun({
-              text: docLabel,
+              text: groupLabel,
               bold: true,
               font: 'Century Schoolbook',
               size: 28, // 14pt

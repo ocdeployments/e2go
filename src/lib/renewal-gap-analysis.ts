@@ -158,10 +158,10 @@ export function computeRenewalGaps(
         severity: 'medium',
         title: 'Home-country ties are missing or thin',
         finding: ties.length === 0
-          ? 'No description of current Canadian ties was provided.'
+          ? 'No description of current home-country ties was provided.'
           : `The ties description provided is very brief (${ties.length} characters).`,
         officerConcern: 'A consular renewal re-tests nonimmigrant intent. After years in the U.S., the officer expects concrete evidence of retained ties.',
-        action: 'List specifics: property owned, active bank accounts, family members, professional memberships, tax filings in Canada.',
+        action: 'List specifics: property owned, active bank accounts, family members, professional memberships, tax filings in your home country.',
       });
     }
   }

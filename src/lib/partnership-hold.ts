@@ -14,6 +14,12 @@ import type { SupabaseClient } from '@supabase/supabase-js';
  * price and receives the solo package. Until the partnership tier ships, they
  * are held out of checkout and routed to the team instead.
  *
+ * 2026-09-11: product decision to launch solo-only and build partnership
+ * afterward (docs/SPRINT_DR_DELIVERY_RELIABILITY.md DR-18), not just a
+ * pricing gap — so this is now an intentional pause, not a stopgap. Interest
+ * is captured via coming_soon_interest (see ComingSoonNotifyButton) so demand
+ * isn't lost while it's paused.
+ *
  * Remove this hold in the same change that adds the partnership Price IDs and
  * makes the pipeline recognise the new payment_type.
  */
@@ -30,9 +36,9 @@ export const PACKAGE_TIER_IDS = [
 ] as const;
 
 export const PARTNERSHIP_HOLD_MESSAGE =
-  'Your case is a two-investor partnership, which needs a package we price individually. ' +
-  'Email support@e2go.app and our team will confirm your pricing and open checkout for you — ' +
-  'usually within one business day.';
+  "Partnership applications aren't open yet — we're launching solo applications first and will " +
+  "build partnership support afterward. Use the \"Notify me\" option on your application to let us " +
+  'know you\'re interested, or email support@e2go.app with questions.';
 
 export function isPartnershipApplicationType(value: string | null | undefined): boolean {
   if (!value) return false;
