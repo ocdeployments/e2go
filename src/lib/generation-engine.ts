@@ -3930,6 +3930,7 @@ Generate the document using Investor 2's identity, name, nationality, source of 
             applicationId,
             email: profile.email,
             applicationLink: `${appUrl}/generate/${applicationId}`,
+            documentTypes: DOCUMENT_TYPES,
           });
         }
       } catch (notifyErr) {

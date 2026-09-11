@@ -33,6 +33,16 @@
  * reviewed by Romy (sprint doc flags ~1h of copy review for this item) —
  * the Exit/Test criteria concern delivery mechanics (a real send that lands,
  * awaited, with a working link), not final wording.
+ *
+ * The package-ready email lists the actual documents generated for this
+ * case — documentPlan.all from generation-engine.ts, the same per-case plan
+ * (core types + only the conditional types this case actually triggered)
+ * that drove the run, not a hardcoded list of every possible document type.
+ * Every DocumentType it can contain has an entry in both
+ * DOCUMENT_TYPE_LABELS (the human-facing name rendered here) and
+ * docx-package-constants.ts's DOC_DISPLAY_NAMES (the name the download
+ * route gives it inside the ZIP) — see generation-emails.test.ts's
+ * "every listed document is part of the real downloadable package" check.
  */
 
 import { Resend } from 'resend';
@@ -41,6 +51,8 @@ import { getBaseHtml, getButtonHtml } from './base-template';
 import { companyFooterLine } from './company';
 import { EMAIL_SENDER, SUPPORT_REPLY_TO } from './senders';
 import { captureApiError } from '@/lib/capture-error';
+import type { DocumentType } from '@/types/generation';
+import { DOCUMENT_TYPE_LABELS } from '@/types/generation';
 
 export interface GenerationEmailContent {
   subject: string;
@@ -51,23 +63,51 @@ export interface GenerationEmailContent {
 const CONTACT_SURVIVES_LINE =
   'Your application and everything already generated are unaffected — this only concerns the run itself.';
 
+/** documentTypes → human-readable labels, in the order the pipeline generated them. Exported for tests. */
+export function documentTypesToLabels(documentTypes: DocumentType[]): string[] {
+  return documentTypes.map((dt) => DOCUMENT_TYPE_LABELS[dt]).filter(Boolean);
+}
+
+function renderDocumentListHtml(labels: string[]): string {
+  const items = labels
+    .map(
+      (label) =>
+        `<li style="margin: 0 0 4px 0;">${label}</li>`
+    )
+    .join('\n');
+  return `
+<ul style="font-size: 14px; color: rgba(245,240,232,0.82); line-height: 1.6; margin: 0 0 18px 0; padding: 0 0 0 20px;">
+${items}
+</ul>`;
+}
+
+function renderDocumentListText(labels: string[]): string {
+  return labels.map((label) => `  - ${label}`).join('\n');
+}
+
 // ---------------------------------------------------------------------------
 // 1. Package ready — sent on a completed generation run
 // ---------------------------------------------------------------------------
 
 export function buildPackageReadyEmail(
   applicationLink: string,
+  documentTypes: DocumentType[],
   recipient?: string,
 ): GenerationEmailContent {
   const subject = 'Your E2go.app document package is ready';
-  const preheader = 'Every document has been generated — review and download whenever you are ready.';
+  const preheader = 'Every document has been generated — review whenever you are ready.';
+  const labels = documentTypesToLabels(documentTypes);
 
   const content = `
 <h1 style="font-family: 'Cormorant Garamond', Georgia, serif; font-size: 26px; font-weight: 300; color: #f5f0e8; margin: 0 0 20px 0; line-height: 1.3;">
   Your document package is ready.
 </h1>
 <p style="font-size: 15px; color: rgba(245,240,232,0.82); line-height: 1.65; margin: 0 0 18px 0;">
-  Every document in your E-2 package has been generated and is waiting for your review. You do not need to keep this tab open — it will be here whenever you come back.
+  We generated the following ${labels.length} document${labels.length === 1 ? '' : 's'} for your case:
+</p>
+${renderDocumentListHtml(labels)}
+<p style="font-size: 15px; color: rgba(245,240,232,0.82); line-height: 1.65; margin: 0 0 18px 0;">
+  They are waiting for your review. You do not need to keep this tab open — it will be here whenever you come back.
 </p>
 <p style="margin: 0 0 12px 0;">
   ${getButtonHtml('Review my package &rarr;', applicationLink)}
@@ -80,7 +120,11 @@ export function buildPackageReadyEmail(
   const text = [
     'Your document package is ready.',
     '',
-    'Every document in your E-2 package has been generated and is waiting for your review. You do not need to keep this tab open — it will be here whenever you come back.',
+    `We generated the following ${labels.length} document${labels.length === 1 ? '' : 's'} for your case:`,
+    '',
+    renderDocumentListText(labels),
+    '',
+    'They are waiting for your review. You do not need to keep this tab open — it will be here whenever you come back.',
     '',
     `Review my package: ${applicationLink}`,
     '',
@@ -98,10 +142,11 @@ export interface SendPackageReadyArgs {
   applicationId: string;
   email: string;
   applicationLink: string;
+  documentTypes: DocumentType[];
 }
 
 export async function sendPackageReadyEmail(args: SendPackageReadyArgs): Promise<boolean> {
-  const { supabase, applicationId, email, applicationLink } = args;
+  const { supabase, applicationId, email, applicationLink, documentTypes } = args;
 
   const { data: suppressed, error: suppressionError } = await supabase
     .from('email_suppressions')
@@ -113,7 +158,7 @@ export async function sendPackageReadyEmail(args: SendPackageReadyArgs): Promise
   }
   if (suppressed) return false;
 
-  const { subject, html, text } = buildPackageReadyEmail(applicationLink, email);
+  const { subject, html, text } = buildPackageReadyEmail(applicationLink, documentTypes, email);
 
   if (!process.env.RESEND_API_KEY) {
     console.log(`[EMAIL] Would send package-ready email to ${email}: ${subject}`);
