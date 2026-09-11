@@ -81,8 +81,8 @@ Legend — **Status:** `TODO` / `WIP` / `DONE` / `BLOCKED (needs Romy)`
 
 | # | Task | Gap | Kind | Status |
 |---|---|---|---|---|
-| **DR-3** | Watchdog every 10 minutes, reaping `queued` too, alerting to Sentry | G-06 | infra | TODO |
-| **DR-4** | Generation lifecycle emails — complete, and reset-after-failure | G-06 | code | TODO |
+| **DR-3** | Watchdog every 10 minutes, reaping `queued` too, alerting to Sentry | G-06 | infra | DONE |
+| **DR-4** | Generation lifecycle emails — complete, and reset-after-failure | G-06 | code | DONE* |
 | **DR-5** | Stall detection in the progress stream, with a retry that actually retries | G-07 | code | DONE |
 
 ### Phase 3 — Containment inside a run · **pre-first-client**
@@ -256,26 +256,50 @@ threshold, it was the once-a-day cadence.
 ---
 
 ### DR-4 · Generation lifecycle emails — complete, and reset-after-failure
-**Gap G-06 · code · TODO · 1 eng-day · Romy: 1h copy**
+**Gap G-06 · code · DONE* · 2026-09-11 · Romy: 1h copy still owed**
 
-`src/lib/emails/` has eight templates and none of them concern generation. Add
-two:
+Shipped two new templates in `src/lib/emails/generation-emails.ts`, following
+`retention-sequence.ts`'s exact `buildXEmail` (pure) / `sendXEmail` (async,
+suppression-checked) pattern:
 
-- **Package ready** — a run this long should not tether the client to an open
-  tab.
-- **We reset your run** — sent by the watchdog on reap: *"your package hit a
-  snag, we've reset it, press generate again"*, with the direct link.
+- **Package ready** — sent from `runGenerationPipeline()`
+  (`src/lib/generation-engine.ts`) the moment a job's `jobFinalStatus` reaches
+  `'completed'`. Deliberately excluded from `'partial'` runs — those still need
+  the per-document quarantine UI, not a "ready" message.
+- **We reset your run** — sent from the health-watchdog cron (DR-3)'s reap
+  loop (`src/app/api/cron/health-watchdog/route.ts`), one per job it marks
+  `'failed'`, with the direct link and a "press generate again" call to action.
 
-Both go through the existing Resend helper. **Await the send** — `cf8b44f` exists
-precisely because an un-awaited Resend call was torn down before it left the
-function, and a real submission never reached Resend at all.
+Both await the Resend call inside try/catch, exactly as `cf8b44f` requires —
+that incident is why an un-awaited Resend call must never be written again in
+this codebase, since the runtime tore it down before it left the function and
+a real submission never reached Resend at all. Both send calls are wrapped in
+their own try/catch at the call site too, so a failed send can never fail the
+pipeline or stop the watchdog's reap loop from processing the rest of its
+batch.
+
+Neither template stamps a dedup column. Unlike the retention notice (guarding
+against a regeneration re-sending the same 30-day notice for one application),
+each of these corresponds to an event the existing state machine already makes
+happen at most once per job: `/api/generate/run/[jobId]` refuses to re-enter a
+job whose status is already `'completed'`, and a reaped job's `'failed'`
+status drops it out of the watchdog's own `status in ('running','queued')`
+query on every later pass. "One event, one email" falls out of the state
+machine without an extra column to keep in sync.
+
+`DONE*` — the Exit and Test criteria below (delivery mechanics: a real, awaited
+send with a working link) are met, but the ~1h of copy review flagged for this
+item has not happened yet. Current copy ("Your package hit a snag — we've
+reset it", "Your E2go.app document package is ready") is a first draft in the
+established brand voice, not a placeholder — but it is not yet Romy-reviewed.
 
 > **Exit** — a completed run and a reaped run each put a real email in a real
 > inbox, sent from the deployed environment, not from a local script.
 >
-> **Test** — `src/lib/emails/__tests__/generation-emails.test.ts`: both templates
-> render with a realistic payload, contain the application link, and contain no
-> unresolved `[bracket]` placeholders.
+> **Test** — `src/lib/emails/__tests__/generation-emails.test.ts` (13 tests):
+> both templates render with a realistic payload, contain the application
+> link, contain no unresolved `[bracket]`/`{{...}}`/`${...}` placeholders, and
+> both send functions correctly skip a suppressed address.
 
 ---
 
