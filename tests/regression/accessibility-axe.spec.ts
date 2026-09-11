@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import type { BrowserContext, Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
 // RS-11 (Gap G-20): the app had zero accessibility CI coverage — clickable
@@ -13,7 +14,7 @@ import AxeBuilder from '@axe-core/playwright';
 // the same account the not-found/error-page regression spec uses to reach
 // /documents past the payment gate.
 
-async function login(page: import('@playwright/test').Page) {
+async function login(page: Page) {
   await page.goto('/login');
   await page.locator('#login-email').fill('test-uk@example.com');
   await page.locator('#login-password').fill('TestUK2026!');
@@ -24,8 +25,34 @@ async function login(page: import('@playwright/test').Page) {
 const CRITICAL_IMPACTS = ['critical', 'serious'];
 
 test.describe('accessibility floor — axe scan', () => {
-  test('/results has no critical or serious axe violations', async ({ page }) => {
+  // The login route is rate-limited to 5 attempts per 15 minutes per IP
+  // (src/middleware.ts). Logging in once per test here — 3 tests, all from
+  // the same localhost IP — combined with the other regression specs'
+  // login() calls pushed a single full Playwright run over that limit, so
+  // one test's /login page would be rate-limited rather than actually slow,
+  // and no amount of extra timeout ever let it through. Sharing one
+  // authenticated page across the file's tests keeps this file's login
+  // count at 1 instead of 3.
+  test.describe.configure({ mode: 'serial' });
+
+  let context: BrowserContext;
+  let page: Page;
+
+  // AxeBuilder.analyze() opens a second page in the same context to run
+  // axe.finishRun() — browser.newPage() marks its context as single-page-only
+  // (Playwright throws "Please use browser.newContext()" if anything else
+  // tries to open a page in it), so this needs an explicit context.
+  test.beforeAll(async ({ browser }) => {
+    context = await browser.newContext();
+    page = await context.newPage();
     await login(page);
+  });
+
+  test.afterAll(async () => {
+    await context.close();
+  });
+
+  test('/results has no critical or serious axe violations', async () => {
     await page.goto('/results');
 
     const results = await new AxeBuilder({ page }).analyze();
@@ -34,8 +61,7 @@ test.describe('accessibility floor — axe scan', () => {
     expect(blocking, JSON.stringify(blocking, null, 2)).toEqual([]);
   });
 
-  test('/documents has no critical or serious axe violations', async ({ page }) => {
-    await login(page);
+  test('/documents has no critical or serious axe violations', async () => {
     await page.goto('/documents');
 
     const results = await new AxeBuilder({ page }).analyze();
@@ -44,8 +70,7 @@ test.describe('accessibility floor — axe scan', () => {
     expect(blocking, JSON.stringify(blocking, null, 2)).toEqual([]);
   });
 
-  test('tabbing to an interactive element shows a visible focus ring', async ({ page }) => {
-    await login(page);
+  test('tabbing to an interactive element shows a visible focus ring', async () => {
     await page.goto('/documents');
 
     await page.keyboard.press('Tab');
