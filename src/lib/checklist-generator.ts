@@ -39,7 +39,7 @@ export function generatePreAppChecklist(quizData: QuizData | null): ChecklistIte
   // ALWAYS include
   items.push({
     id: "passport",
-    document: "Valid Canadian passport",
+    document: "Valid passport",
     condition: "always",
     source: "always",
     prefillNote: null,
@@ -165,7 +165,7 @@ export function generatePreAppChecklist(quizData: QuizData | null): ChecklistIte
   });
   items.push({
     id: "birth_cert",
-    document: "Canadian birth certificate (certified copy)",
+    document: "Birth certificate (certified copy)",
     condition: "always",
     source: "always",
     prefillNote: null,
@@ -251,7 +251,7 @@ export function generatePreAppChecklist(quizData: QuizData | null): ChecklistIte
   if (fundSources.includes("property")) {
     items.push({
       id: "property_sale_statement",
-      document: "Real estate closing statement (HUD-1 or Canadian equivalent) showing net sale proceeds",
+      document: "Real estate closing statement (HUD-1 or local equivalent) showing net sale proceeds",
       condition: "if_property_sale",
       source: "pre-filled",
       prefillNote: "Property sale was selected as a funding source in your case file.",
@@ -331,7 +331,7 @@ function getGenericChecklist(): ChecklistItem[] {
   return [
     {
       id: "passport",
-      document: "Valid Canadian passport",
+      document: "Valid passport",
       condition: "always",
       source: "always",
       prefillNote: null,
@@ -349,7 +349,7 @@ function getGenericChecklist(): ChecklistItem[] {
     },
     {
       id: "birth_cert",
-      document: "Canadian birth certificate (certified copy)",
+      document: "Birth certificate (certified copy)",
       condition: "always",
       source: "always",
       prefillNote: null,
