@@ -80,6 +80,7 @@ const SOURCE_OF_FUNDS_QUESTIONS: QuestionField[] = [
     { value: 'rrsp', label: 'RRSP' },
     { value: 'tfsa', label: 'TFSA' },
     { value: 'lira', label: 'LIRA or pension' },
+    { value: 'securities', label: 'Stocks, bonds, mutual funds, or a brokerage/investment account' },
     { value: 'property-sale', label: 'Sale of property' },
     { value: 'business-sale', label: 'Sale of a business' },
     { value: 'inheritance', label: 'Inheritance or gift' },
