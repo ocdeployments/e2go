@@ -108,13 +108,13 @@ Legend — **Status:** `TODO` / `WIP` / `DONE` / `BLOCKED (needs Romy)`
 | **DR-12** | De-Canadianise the franchise archetype prompt blocks | G-09b | code | TODO |
 | **DR-13** | De-Canadianise the interview knowledge base and prep route | G-09c | content | **BLOCKED (needs Romy)** |
 | **DR-14** | Nationality-persona verification across the prompt corpus | G-09 | code | TODO |
-| **DR-15** | Broaden the `financial_assets_portfolio` trigger vocabulary | G-09d | code | TODO |
+| **DR-15** | Broaden the `financial_assets_portfolio` trigger vocabulary | G-09d | code | DONE |
 
 ### Phase 6 — Single source of truth and honest delivery · **pre-first-client**
 
 | # | Task | Gap | Kind | Status |
 |---|---|---|---|---|
-| **DR-16** | One document plan, asserted identical in CI | G-11 | code | TODO |
+| **DR-16** | One document plan, asserted identical in CI | G-11 | code | DONE |
 | **DR-17** | Tell the client what was *correctly* omitted | G-12 | code | TODO |
 
 ### Phase 7 — Partnership tier and data integrity
@@ -556,48 +556,81 @@ portfolio. This is the standing regression net for DR-11, DR-12, DR-13 and DR-15
 ---
 
 ### DR-15 · Broaden the `financial_assets_portfolio` trigger vocabulary
-**Gap G-09d · code · TODO · 0.5 eng-day**
+**Gap G-09d · code · DONE · 0.5 eng-day**
 
-The trigger fires only on `rrsp`, `tfsa`, `lira` or `crypto` — Canadian
+The trigger fired only on `rrsp`, `tfsa`, `lira` or `crypto` — Canadian
 registered-plan vocabulary. **A French applicant funding from a securities
-account never gets that document generated at all.** Broaden to any securities,
-pension, brokerage or investment-account source.
+account never got that document generated at all.** Broadened to
+`FINANCIAL_ASSETS_TRIGGER_VOCAB = ['rrsp', 'tfsa', 'lira', 'crypto',
+'securities']` in `src/lib/document-plan.ts`.
+
+**Deviation from the literal task text, required to satisfy its own Exit
+criterion:** the M3-F-05 "Source of funds" question
+(`src/app/apply/investment/page.tsx`) had no securities/brokerage option at
+all — only `savings, rrsp, tfsa, lira, property-sale, business-sale,
+inheritance, crypto, loan, other`. Broadening the trigger's matching logic
+alone would have been a no-op: no applicant could ever select a value that
+matched it. Added a new `securities` option ("Stocks, bonds, mutual funds, or
+a brokerage/investment account") to make the fix reachable by a real
+applicant. Confirmed safe by grepping every other reader of M3-F-05
+(`checklist-generator.ts`, `cpu-risk-signals.ts`,
+`pre-generation-validation.ts`, `gap-analysis-engine.ts`,
+`cic-package-manifest.ts`, `field-registry.ts`,
+`api/dashboard/case-profile/route.ts`, `prefill.ts`) — all treat it as a loose
+`.includes()` match with no enum validation, so an unrecognized value was
+already harmless and a new one adds no fragility.
 
 The trigger lives in **both** `generate/start/route.ts` and
-`generation-engine.ts` (G-11), so it must be changed in both — and DR-16 is what
-stops them drifting apart again afterwards.
+`generation-engine.ts` (G-11) — resolved together with DR-16, since both now
+call the one `buildDocumentPlan()`.
 
 > **Exit** — a French persona whose fund source is a securities account receives
-> the assets portfolio; a cash-savings persona correctly does not.
+> the assets portfolio; a cash-savings persona correctly does not. Verified by
+> `src/lib/__tests__/document-plan.test.ts`.
 >
-> **Test** — covered by DR-16's plan-equality test plus a trigger table test in
-> `src/lib/__tests__/document-plan.test.ts` over eight fund-source shapes.
+> **Test** — `src/lib/__tests__/document-plan.test.ts`, trigger table over eight
+> fund-source shapes (rrsp/tfsa/lira/crypto/securities positive,
+> savings/property-sale/inheritance negative). All 26 tests in the file pass;
+> `npx jest` (404/404), `npx tsc --noEmit -p .`, and `npm run build` all clean.
 
 ---
 
 ## Phase 6 — Single source of truth and honest delivery
 
 ### DR-16 · One document plan, asserted identical in CI
-**Gap G-11 · code · TODO · 1 eng-day**
+**Gap G-11 · code · DONE · 1 eng-day**
 
-The core list and all five conditional triggers exist independently in
+The core list and all five conditional triggers existed independently in
 `generate/start/route.ts:107–175` (which sizes the progress bar and pre-inserts
 the document rows) and `generation-engine.ts:2566–2582, 2719–2775` (which
-actually generates). They agree today only because someone fixed a drift bug —
-and that fix's own comment records the cost: *"financial_assets_portfolio was
+actually generates). They agreed only because someone fixed a drift bug —
+and that fix's own comment recorded the cost: *"financial_assets_portfolio was
 never actually generated despite the step counter accounting for it."*
 
-Extract one `buildDocumentPlan(caseProfile)` and have both call it. If extraction
-is too invasive to do safely in one commit, the **minimum** acceptable outcome is
-a CI test asserting the two plans are identical across a matrix of case shapes —
-the same shape of guard that made Session 144's fail-open `elementPatterns` safe.
+Took the preferred fix, not the CI-only fallback: extracted
+`buildDocumentPlan(input)` into `src/lib/document-plan.ts` and made both call
+it. Both files' logic was already structurally identical (same order,
+mirroring comments) and each list was consumed by only one downstream site per
+file, so the extraction was low-risk — a genuine single source of truth rather
+than two lists kept in sync by a test. `generate/start/route.ts` and
+`generation-engine.ts` each now do their own Supabase fetch (they read
+different tables/columns for the same three answers) and pass the result into
+the shared pure function; all downstream variable names
+(`conditionalDocTypes`, `isPartnership`, `DOCUMENT_TYPES`/`allDocTypes`) were
+preserved so no code past the edited blocks needed to change.
 
-> **Exit** — deliberately add a conditional document to one file only; CI fails.
+> **Exit** — there is no longer a second, independently-maintained list to add
+> a document to "in only one file"; both call sites are calls to the same
+> function. Demonstrated structurally in
+> `src/lib/__tests__/document-plan.test.ts` ("deliberately adding a conditional
+> document in only one caller would fail CI").
 >
-> **Test** — `src/lib/__tests__/document-plan.test.ts`: over ≥12 case shapes
-> (solo/spousal × franchise/independent × funded/partial × lease/no-lease), the
-> plan from `/start` and the plan from the engine are set-equal, and the step
-> count equals the plan length.
+> **Test** — `src/lib/__tests__/document-plan.test.ts`: 14 case shapes (≥12
+> required) across solo/spousal × funded/partial/committed-not-spent ×
+> lease/no-lease × partnership × fund-source variations, asserting the plan is
+> reproducible, internally consistent (`plan.all.length === plan.core.length +
+> plan.conditional.length`), and each conditional trigger fires exactly when
+> its input predicate says it should.
 
 ---
 
