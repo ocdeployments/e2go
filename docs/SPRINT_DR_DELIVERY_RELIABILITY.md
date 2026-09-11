@@ -75,7 +75,7 @@ Legend — **Status:** `TODO` / `WIP` / `DONE` / `BLOCKED (needs Romy)`
 | # | Task | Gap | Kind | Status |
 |---|---|---|---|---|
 | **DR-1** | Durable execution for the generation pipeline | G-01 | infra | TODO |
-| **DR-2** | One status vocabulary, and a client that can re-attach *and* restart | G-02 | code | TODO |
+| **DR-2** | One status vocabulary, and a client that can re-attach *and* restart | G-02 | code | DONE |
 
 ### Phase 2 — Visibility and recovery · **blocks launch**
 
@@ -90,7 +90,7 @@ Legend — **Status:** `TODO` / `WIP` / `DONE` / `BLOCKED (needs Romy)`
 | # | Task | Gap | Kind | Status |
 |---|---|---|---|---|
 | **DR-6** | Per-document quarantine — one failure stops one document | G-04 | code | TODO |
-| **DR-7** | Scope the resume set to the application, not the job | G-05 | code | TODO |
+| **DR-7** | Scope the resume set to the application, not the job | G-05 | code | DONE |
 | **DR-8** | Guarantee one row per (application, document type) | G-05 | migration | TODO |
 | **DR-9** | "Auto-approved after max revisions" becomes a blocking condition | G-10 | code | TODO |
 
