@@ -91,7 +91,7 @@ Legend — **Status:** `TODO` / `WIP` / `DONE` / `BLOCKED (needs Romy)`
 |---|---|---|---|---|
 | **DR-6** | Per-document quarantine — one failure stops one document | G-04 | code | DONE |
 | **DR-7** | Scope the resume set to the application, not the job | G-05 | code | DONE |
-| **DR-8** | Guarantee one row per (application, document type) | G-05 | migration | TODO |
+| **DR-8** | Guarantee one row per (application, document type) | G-05 | code | DONE* |
 | **DR-9** | "Auto-approved after max revisions" becomes a blocking condition | G-10 | code | DONE |
 
 ### Phase 4 — The last mile · **pre-first-client**
@@ -387,28 +387,74 @@ what is actually missing.
 ---
 
 ### DR-8 · Guarantee one row per (application, document type)
-**Gap G-05 · migration · TODO · 0.5 eng-day**
+**Gap G-05 · code · DONE\* · 0.5 eng-day**
 
-`/start` inserts a fresh `generated_documents` row per document type on **every**
-job, while both `cic-package-manifest.ts:122–132` and the download route filter
-on `application_id` alone, with no job scoping and no ordering. After one retry
-there are two rows per type and `.find()` returns an arbitrary one — potentially
-the **abandoned run's** content.
+**\*Implemented as a code-only fix; the constraint half of the task is a
+production-schema decision left for Romy:**
+1. **Confirmed against the live schema (this sandbox has no `psql`/Docker
+   access — `supabase db dump` needs Docker, which never came up — so this
+   used the cached PostgREST OpenAPI spec instead, `.schema-spec.json`, via
+   `scripts/audit-schema-drift.py`): `generated_documents` has no composite
+   unique constraint today.** Only `id` carries a `<pk/>` marker; the spec
+   format doesn't rule out a constraint type it simply doesn't surface, but
+   nothing in the schema names one, and the observed duplicate-row behavior
+   (two rows per type after a retry, see below) is consistent with there
+   being none.
+2. **The constraint-and-upsert half of the sprint doc's suggested fix was
+   deliberately not applied.** Adding a unique constraint is a live
+   production-schema change to a shared table — the kind of hard-to-reverse,
+   shared-state action this session treats as requiring Romy's explicit
+   go-ahead, not something to run autonomously overnight. The code fix below
+   does not depend on it and is safe either way; the constraint remains a
+   good follow-up (it turns "two files must agree on an ordering" into
+   "the database physically cannot hold a duplicate") but is Romy's call.
 
-**First, confirm against the live database** whether a unique constraint on
-`(application_id, document_type)` already exists — that changes the size of this
-fix, not whether it is needed. Then either add the constraint and upsert, or
-order the reads deterministically by `created_at desc` and scope to the winning
-job. Prefer the constraint: an ordering convention in two files is the same shape
-of bug as G-11.
+Confirmed the actual failure mode by reading the pipeline end to end:
+`generate/start/route.ts` mints a **new** `document_generation_jobs` row and a
+**new** `generated_documents` row per document type on every `/start` call that
+isn't blocked by an in-flight job — including retries after a `failed` job, and
+including document types that already succeeded in an earlier job. A row's own
+`status` moves `queued` → `generating` → `approved`/`failed` as the pipeline
+processes it (`generation-engine.ts`). Both `cic-package-manifest.ts` and the
+download route read `generated_documents` filtered on `application_id` alone,
+with no `created_at` in the select and no ordering — after a retry there are
+two-plus rows per document type, and the manifest's `Map.set()` loop / the
+download route's `.find()` each took whichever the database happened to return
+last. That could be an **abandoned retry's untouched `queued` placeholder**
+outranking the row that actually finished — worse than the sprint text's
+literal description, since it isn't just "arbitrary between two completed
+runs," it can silently discard real content for an empty one.
 
-> **Exit** — an application that has been retried twice yields exactly one row per
-> document type, and the ZIP contains the content from the run that actually
-> completed.
+Fix: `src/lib/document-dedupe.ts` — one function, `selectLatestDocumentRows()`,
+now called by both `cic-package-manifest.ts` and the download route (their
+selects now include `created_at`). It reduces duplicate rows per document type
+to a single winner: a `queued` placeholder never outranks a row that has
+actually been through the pipeline, regardless of which is newer; among rows
+that are both processed (or both still queued), the most recently created one
+wins. This is the same recency convention `cic-package-manifest.ts` already
+used for `uploaded_documents` (`if (!existing || row.created_at >
+existing.created_at)`), extended with the placeholder guard duplicate
+`generated_documents` rows specifically need. Because both call sites now share
+this one function instead of each independently filtering the query result,
+there is nothing left to drift between them even without the database
+constraint — the "same shape of bug as G-11" risk the sprint doc named is
+closed at the code level; a future constraint would close it at the schema
+level too, on top of this.
+
+> **Exit** — an application that has been retried twice yields exactly one
+> selected row per document type, and the ZIP contains the content from the run
+> that actually completed. Demonstrated by the test below; the literal
+> live-retry-and-download walkthrough was not additionally performed by hand,
+> since it exercises the same code path the test drives directly.
 >
-> **Test** — `src/lib/__tests__/package-manifest-dedupe.test.ts`: given duplicate
-> rows for one document type across two jobs, the manifest and the download
-> assembly both select the completed run's row, deterministically.
+> **Test** — `src/lib/__tests__/package-manifest-dedupe.test.ts` (7 tests,
+> all passing): duplicate rows for one document type across two jobs — a
+> completed row plus an abandoned `queued` stub, in both orderings; two
+> completed rows of different recency; two still-`queued` rows; an
+> in-progress `generating` row against a later abandoned stub; and a full
+> multi-document-type package — resolve to the completed/most-recent row
+> deterministically in every case. `npx jest` (641/641), `npx tsc --noEmit -p
+> .`, and `npm run build` all clean.
 
 ---
 
