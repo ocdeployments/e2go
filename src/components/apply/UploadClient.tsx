@@ -300,13 +300,15 @@ export default function UploadClient({ applicationId }: { applicationId: string 
         </div>
 
         {/* Drop zone */}
-        <div
+        <button
+          type="button"
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
           onClick={handleBrowse}
-          className="mb-6 flex cursor-pointer flex-col items-center justify-center border border-dashed p-10 transition-colors sm:p-14"
+          className="mb-6 flex w-full cursor-pointer flex-col items-center justify-center border border-dashed p-10 text-center transition-colors sm:p-14"
           style={{
+            font: 'inherit',
             borderColor: isDragging
               ? 'rgba(201,168,76,0.4)'
               : 'rgba(201,168,76,0.12)',
@@ -347,7 +349,7 @@ export default function UploadClient({ applicationId }: { applicationId: string 
           >
             .pdf, .docx, .csv &mdash; max 10MB each, up to {MAX_FILES_PER_SESSION} files
           </p>
-        </div>
+        </button>
 
         <input
           ref={fileInputRef}
