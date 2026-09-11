@@ -10,7 +10,7 @@
     },
     {
       "path": "/api/cron/health-watchdog",
-      "schedule": "0 3 * * *"
+      "schedule": "*/10 * * * *"
     },
     {
       "path": "/api/cron/generation-resume",
