@@ -171,13 +171,17 @@ export default function QuizReview() {
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                   {grouped[section].map(item => (
-                    <div
+                    <button
                       key={item.id}
+                      type="button"
                       onClick={() => handleJumpToQuestion(item.id)}
                       style={{
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "space-between",
+                        width: "100%",
+                        textAlign: "left",
+                        font: "inherit",
                         padding: "12px 16px",
                         marginLeft: item.is_sub ? "20px" : "0",
                         border: "1px solid rgba(201,168,76,0.1)",
@@ -206,7 +210,7 @@ export default function QuizReview() {
                       <div style={{ fontSize: "11px", color: "rgba(245,240,232,0.55)", letterSpacing: "0.04em", flexShrink: 0, marginLeft: "16px" }}>
                         Change →
                       </div>
-                    </div>
+                    </button>
                   ))}
                 </div>
               </div>
