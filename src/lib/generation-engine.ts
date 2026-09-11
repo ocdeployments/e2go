@@ -1344,15 +1344,17 @@ export async function callClaudeAPI(
 
     const tokensIn = response.usage.input_tokens;
     const tokensOut = response.usage.output_tokens;
+    const cacheWriteTokens = response.usage.cache_creation_input_tokens ?? 0;
+    const cacheReadTokens = response.usage.cache_read_input_tokens ?? 0;
     logCost({
       userId: meta?.userId,
       task: 'docgen',
       route: meta?.route ?? payload.document_type,
       provider: 'anthropic',
       model,
-      tokensIn,
+      tokensIn: tokensIn + cacheWriteTokens + cacheReadTokens,
       tokensOut,
-      costUsd: calcCost(model, tokensIn, tokensOut),
+      costUsd: calcCost(model, tokensIn, tokensOut, cacheWriteTokens, cacheReadTokens),
       latencyMs: Date.now() - t0,
     });
 
@@ -1482,15 +1484,17 @@ export async function humanizeDocument(
 
     const tokensIn = response.usage.input_tokens;
     const tokensOut = response.usage.output_tokens;
+    const cacheWriteTokens = response.usage.cache_creation_input_tokens ?? 0;
+    const cacheReadTokens = response.usage.cache_read_input_tokens ?? 0;
     logCost({
       userId: meta?.userId,
       task: 'docgen',
       route: 'doc-humanization',
       provider: 'anthropic',
       model,
-      tokensIn,
+      tokensIn: tokensIn + cacheWriteTokens + cacheReadTokens,
       tokensOut,
-      costUsd: calcCost(model, tokensIn, tokensOut),
+      costUsd: calcCost(model, tokensIn, tokensOut, cacheWriteTokens, cacheReadTokens),
       latencyMs: Date.now() - t0,
     });
 
