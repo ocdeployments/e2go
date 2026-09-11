@@ -34,6 +34,7 @@ import { buildPackageManifest } from '@/lib/cic-package-manifest';
 import { buildExhibitRegistry } from '@/lib/exhibit-registry';
 import type { DocumentType } from '@/types/generation';
 import { captureApiError } from '@/lib/capture-error';
+import { selectLatestDocumentRows, type DedupableDocumentRow } from '@/lib/document-dedupe';
 
 // DOC_DISPLAY_NAMES has exactly one entry per DocumentType — deriving
 // VALID_DOC_TYPES from it keeps this list from silently drifting out of
@@ -133,18 +134,25 @@ export async function GET(
       .update({ downloaded_at: new Date().toISOString() })
       .eq('application_id', applicationId);
 
-    // 4. Read all 6 documents
-    const { data: documents, error: docsError } = await supabase
+    // 4. Read all documents. A retried application can have more than one
+    // row per document_type (see document-dedupe.ts) — dedupe here so the
+    // ZIP is built from the run that actually completed, not whichever
+    // duplicate row the database happened to return first.
+    const { data: rawDocuments, error: docsError } = await supabase
       .from('generated_documents')
-      .select('document_type, content_text')
+      .select('document_type, content_text, status, created_at')
       .eq('application_id', applicationId);
 
-    if (docsError || !documents || documents.length === 0) {
+    if (docsError || !rawDocuments || rawDocuments.length === 0) {
       return NextResponse.json(
         { error: 'No generated documents found' },
         { status: 404 }
       );
     }
+
+    type DocRow = DedupableDocumentRow & { content_text: string | null };
+    const documentsByType = selectLatestDocumentRows(rawDocuments as DocRow[]);
+    const documents = Array.from(documentsByType.values());
 
     // 5. Fetch applicant data for cover page and dividers
     //    Sources confirmed via live schema (Session 8):
@@ -277,9 +285,7 @@ export async function GET(
 
       // Build each document in this tab
       for (const docType of docsForTab) {
-        const docContent = documents.find(
-          (d) => d.document_type === docType
-        );
+        const docContent = documentsByType.get(docType);
         if (docContent?.content_text) {
           const isP2Doc = docType.endsWith('_p2');
           const docLastName = isP2Doc && coInvestor?.last_name ? coInvestor.last_name : lastName;
