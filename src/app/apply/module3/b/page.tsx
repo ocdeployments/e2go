@@ -728,7 +728,7 @@ export default function TabBPage() {
               ))}
             </ul>
             <p className="text-sm" style={{ color: 'rgba(240,237,230,0.45)', fontSize: '13px' }}>
-              Most pharmacies and photo shops offer same-day U.S. visa photos. In Canada: Shoppers Drug Mart, London Drugs, Costco.
+              Most pharmacies and photo shops offer same-day U.S. visa photos.
             </p>
           </div>
 
