@@ -141,8 +141,8 @@ ${doc.content_text}
 APPLICANT'S REVISION REQUEST (${changeTypeLabel}):
 ${description.trim()}`;
 
-    const rawText = await callClaudeAPI(payload);
-    const humanizedText = await humanizeDocument(rawText, payload.voice_profile || '', undefined, payload.document_type);
+    const rawText = await callClaudeAPI(payload, { userId: user.id, route: 'doc-revision' });
+    const humanizedText = await humanizeDocument(rawText, payload.voice_profile || '', undefined, payload.document_type, { userId: user.id });
 
     const revisionNote: RevisionNote = {
       timestamp: new Date().toISOString(),
