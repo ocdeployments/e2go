@@ -101,9 +101,10 @@ export default function DenialRiskRadar({
               transition: 'border-color 0.15s, background 0.15s',
             }}>
               {/* Clickable header — toggles expand */}
-              <div
+              <button
+                type="button"
                 onClick={() => setExpanded(isOpen ? null : f.code)}
-                style={{ cursor: 'pointer' }}
+                style={{ cursor: 'pointer', display: 'block', width: '100%', textAlign: 'left', font: 'inherit', background: 'none', border: 'none', padding: 0 }}
               >
                 {/* Code + risk badge */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
@@ -134,7 +135,7 @@ export default function DenialRiskRadar({
                     </span>
                   )}
                 </div>
-              </div>
+              </button>
 
               {/* Expanded panel — clicks inside do NOT collapse the card */}
               {isOpen && (
