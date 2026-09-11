@@ -563,9 +563,9 @@ export default function TabBPage() {
 
         <header className="fixed top-1 left-0 right-0 z-50" style={{ backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', background: 'rgba(6,13,31,0.8)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
           <div className="flex justify-between items-center h-16 px-4 md:px-8 max-w-3xl mx-auto">
-            <div onClick={() => router.push('/')} className="flex items-center gap-2 cursor-pointer">
+            <button type="button" onClick={() => router.push('/')} className="flex items-center gap-2 cursor-pointer" style={{ background: 'none', border: 'none', padding: 0 }}>
               <span className="text-xl font-bold" style={{ color: 'var(--gold)', fontFamily: "'Cormorant Garamond', serif" }}>E2go.app</span>
-            </div>
+            </button>
             <div className="text-sm" style={{ color: 'rgba(240,237,230,0.65)' }}>Tab B</div>
           </div>
         </header>
@@ -623,9 +623,9 @@ export default function TabBPage() {
 
         <header className="fixed top-1 left-0 right-0 z-50" style={{ backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', background: 'rgba(6,13,31,0.8)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
           <div className="flex justify-between items-center h-16 px-4 md:px-8 max-w-3xl mx-auto">
-            <div onClick={() => router.push('/')} className="flex items-center gap-2 cursor-pointer">
+            <button type="button" onClick={() => router.push('/')} className="flex items-center gap-2 cursor-pointer" style={{ background: 'none', border: 'none', padding: 0 }}>
               <span className="text-xl font-bold" style={{ color: 'var(--gold)', fontFamily: "'Cormorant Garamond', serif" }}>E2go.app</span>
-            </div>
+            </button>
             <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--gold)' }}>
               {saveStatus === 'saving' ? (
                 <>
@@ -681,9 +681,9 @@ export default function TabBPage() {
 
         <header className="fixed top-1 left-0 right-0 z-50" style={{ backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', background: 'rgba(6,13,31,0.8)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
           <div className="flex justify-between items-center h-16 px-4 md:px-8 max-w-3xl mx-auto">
-            <div onClick={() => router.push('/')} className="flex items-center gap-2 cursor-pointer">
+            <button type="button" onClick={() => router.push('/')} className="flex items-center gap-2 cursor-pointer" style={{ background: 'none', border: 'none', padding: 0 }}>
               <span className="text-xl font-bold" style={{ color: 'var(--gold)', fontFamily: "'Cormorant Garamond', serif" }}>E2go.app</span>
-            </div>
+            </button>
             <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--gold)' }}>
               {saveStatus === 'saving' ? (
                 <>
@@ -765,9 +765,9 @@ export default function TabBPage() {
 
         <header className="fixed top-1 left-0 right-0 z-50" style={{ backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', background: 'rgba(6,13,31,0.8)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
           <div className="flex justify-between items-center h-16 px-4 md:px-8 max-w-3xl mx-auto">
-            <div onClick={() => router.push('/')} className="flex items-center gap-2 cursor-pointer">
+            <button type="button" onClick={() => router.push('/')} className="flex items-center gap-2 cursor-pointer" style={{ background: 'none', border: 'none', padding: 0 }}>
               <span className="text-xl font-bold" style={{ color: 'var(--gold)', fontFamily: "'Cormorant Garamond', serif" }}>E2go.app</span>
-            </div>
+            </button>
             <div className="flex items-center gap-2 text-sm">
               <span style={{ color: 'var(--gold)' }}>✓ Saved</span>
             </div>
@@ -901,8 +901,9 @@ function ChecklistView({ items, onCheck }: { items: ChecklistItem[]; onCheck: (i
 
 function ChecklistCard({ item, onCheck }: { item: ChecklistItem; onCheck: (id: string, checked: boolean) => void }) {
   return (
-    <div
-      className="glass p-4 flex items-start gap-3 cursor-pointer transition-all"
+    <button
+      type="button"
+      className="glass p-4 flex items-start gap-3 cursor-pointer transition-all w-full text-left"
       style={{
         background: item.checked ? 'rgba(13,148,136,0.1)' : 'rgba(255,255,255,0.05)',
         backdropFilter: 'blur(16px)',
@@ -933,6 +934,6 @@ function ChecklistCard({ item, onCheck }: { item: ChecklistItem; onCheck: (id: s
         </div>
         <p style={{ color: 'rgba(240,237,230,0.45)', fontSize: '13px' }}>{item.obtainLocation}</p>
       </div>
-    </div>
+    </button>
   );
 }
