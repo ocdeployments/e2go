@@ -350,6 +350,39 @@ the omission was correct.
 
 ---
 
+### G-13 — A document that fails to *build* at download time takes the whole ZIP down, silently
+
+**SERIOUS · CLOSED (Session 146 cont.)**
+
+DR-6/G-04 quarantines a document that fails during *generation* (writing
+`content_text` to the DB). It does nothing for a document whose stored
+`content_text` is fine but throws when `generate/download/[applicationId]/
+route.ts` re-builds it into a `.docx` at download time — `buildDocument()` or
+`Packer.toBuffer()` failing on a single tab was uncaught, so it threw through
+the route's per-tab loop into the one top-level `catch`, failing the **entire**
+ZIP (even the other 25+ documents that built fine) with a generic 500. The only
+notification was whatever Sentry capture already existed on that top-level
+catch — passive, and nobody watches it live. The client saw a failed download
+and got no explanation of what happened or what to do next.
+
+**Closed:** `buildDocumentSafely()` (`src/lib/document-build-safety.ts`) wraps
+each document's build individually — a failure is skipped, not fatal, and the
+rest of the package still reaches the client. A partial package gets a
+plain-text note in the ZIP (`buildFailureNoteText`) naming what's missing
+without leaking the raw error, and both the partial-failure and total-failure
+paths now call `alertDocumentBuildFailures()`, which pages ops in real time via
+`sendOpsAlert()` (a real, awaited Resend call — the same active-alert
+mechanism DR-3/G-06 built for the health watchdog) rather than relying on
+someone checking Sentry. Both frontend download pages
+(`documents/[applicationId]/page.tsx`, `generate/[applicationId]/page.tsx`)
+parse the structured error/partial-success response and show the client a
+specific message with a next action, instead of a generic failure or silence.
+
+**Evidence:** `generate/download/[applicationId]/route.ts` — see DR-23 in
+`SPRINT_DR_DELIVERY_RELIABILITY.md` for the full writeup and tests.
+
+---
+
 ## What the client actually receives
 
 The assembly layer is the most finished part of the system. Recorded here so the
