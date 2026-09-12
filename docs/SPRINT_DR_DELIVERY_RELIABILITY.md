@@ -130,7 +130,7 @@ Legend — **Status:** `TODO` / `WIP` / `DONE` / `BLOCKED (needs Romy)`
 | # | Task | Gap | Kind | Status |
 |---|---|---|---|---|
 | **DR-20** | The delivery test matrix | all | code | TODO |
-| **DR-21** | Three chaos drills, green | G-01, G-04, G-08 | code | TODO |
+| **DR-21** | Three chaos drills, green | G-01, G-04, G-08 | code | DONE |
 | **DR-22** | The generation ops dashboard | G-06 | code | DONE* |
 
 ---
@@ -1208,7 +1208,7 @@ task.
 ---
 
 ### DR-21 · Three chaos drills, green
-**G-01, G-04, G-08 · code · TODO · 1.5 eng-days**
+**G-01, G-04, G-08 · code · DONE · 2026-09-12**
 
 The three drills that map to the three CRITICAL delivery failures:
 
@@ -1218,11 +1218,108 @@ The three drills that map to the three CRITICAL delivery failures:
 3. **Force a download-time failure** → the client gets a real error with a next
    action, and the already-generated package is not lost.
 
+**All three ran green end-to-end on 2026-09-12** against a real dev-server
+instance and a real (isolated-by-convention) application, via
+`scripts/chaos-drills.mjs`. No separate Supabase project was used — isolation
+is by convention: a single dedicated test persona,
+`dr21-chaos@e2go-test.internal`, whose application is fully torn down and
+re-seeded by the script before each clean run
+(`cleanChaosUser()`/`seed()`), so the drills never touch or risk a real
+client's data.
+
+**Runbook — how to run each drill (this is the "documented runbook someone
+other than the author has executed" exit option, since a live CI job to run
+these against a throwaway environment does not exist yet):**
+
+```bash
+node scripts/chaos-drills.mjs seed          # build a fresh, fully-certified baseline
+node scripts/chaos-drills.mjs drill1        # drill 1 — no setup needed
+node scripts/chaos-drills.mjs drill2-fail source_of_funds     # drill 2, part 1
+node scripts/chaos-drills.mjs drill2-recover source_of_funds  # drill 2, part 2
+node scripts/chaos-drills.mjs drill3 source_of_funds          # drill 3
+```
+
+Drills 2 and 3 rely on **code-level fault-injection hooks**, gated behind env
+vars that are read once at Next.js server start — so each requires editing
+`.env.local` and **restarting the dev server** before the drill can observe a
+real failure (the script itself prints these steps when run):
+
+| Env var | Read by | Effect |
+|---|---|---|
+| `CHAOS_DRILL_FAIL_DOC_TYPE=<docType>` | `generation-engine.ts` | Forces a `DocumentQuarantineError` for the matching document type during generation — drives drill 2. Unset it and restart before drill2-recover. |
+| `CHAOS_DRILL_FAIL_BUILD_DOC_TYPE=<docType>` | `document-build-safety.ts` | Forces `buildDocumentSafely()` to throw for the matching document type at **download time**, after generation has already succeeded — drives drill 3 (DR-23's isolation path). |
+| `CHAOS_DRILL_SKIP_QUALITY_RETRY=true` | `generation-engine.ts` | Skips the real Claude retry call and the decertifying `REQUIRED_ELEMENTS` check, both otherwise incompatible with the drill fixture's synthetic placeholder content. **Local-only — must never be set in Vercel**, and stays permanently `true` in `.env.local` for this drill suite to run at all. |
+
+None of these three are read anywhere outside their one call site; none can
+fire against a real client run unless someone manually sets them in
+production, which the table above and the `.env.local` comment both flag
+against.
+
+**Results:**
+
+- **Drill 1 (kill mid-run → durable resume): PASS.** All 6 assertions green —
+  a job with a stale `updated_at` is picked up by the resume cron, only the
+  un-approved documents regenerate, and the job reaches a terminal state.
+- **Drill 2 (force one document to fail → the rest survive, held-and-named,
+  clean retry): PASS.** `drill2-fail` (20 assertions) confirms the other 14
+  documents complete, the job lands in `partial`, the manifest names the
+  failed document with a specific reason, and the download route correctly
+  refuses (`403`) until it's resolved. `drill2-recover` confirms a retry
+  regenerates **only** the failed document — the other 14 are untouched — and
+  a subsequent download returns a full `200` with no `X-Partial-Package`
+  header.
+- **Drill 3 (force a download-time build failure → nothing already-generated
+  is lost): PASS.** All 9 assertions green — the download route still returns
+  `200` with a real ZIP (not a hard failure), `X-Partial-Package: true` /
+  `X-Failed-Document-Count: 1` / `X-Failed-Documents` name exactly the forced
+  document, the ZIP contains a plain-text note explaining what's missing and
+  why, all 28 surviving files (cover page, TOC, dividers, and the other 14
+  documents) are present and intact, and the failed document's `.docx` is
+  correctly absent rather than corrupt.
+
+**A significant finding surfaced by this work, unrelated to the three drills
+themselves but discovered while verifying them:** `cic-package-manifest.ts`'s
+`packageReady` computation counted the two `source: 'auto'` manifest tabs
+("Cover Page", "Table of Contents") toward `outstandingCount` — but those two
+tabs are assembled at package-build time, not by any client action, and are
+therefore *permanently* `status: 'outstanding'` by the template's own
+definition. That made `outstandingCount === 0` — and therefore
+`packageReady` — structurally unsatisfiable for **every application, on both
+the download-gating API route and the client-facing `/documents` "outstanding
+items" counter**, live since commit `6f4ac635` (2026-06-30), over two months.
+Fixed by excluding `source === 'auto'` tabs from the `outstandingCount`
+filter. A companion gap in the drill fixture itself was also found and fixed:
+`seed()` built a "fully-certified" baseline but never seeded the three
+`alwaysRequired` client-provided uploads (passport, DS-160, investment
+records) that `packageReady` also depends on — without which no fixture,
+however "certified," could ever reach `packageReady: true` either. Both fixes
+were verified live: a direct manifest query on the fully-seeded, fully-
+certified drill application now returns `outstandingCount: 0, packageReady:
+true` — the first time that combination has been observed on this codebase.
+
+Two minor test-script bugs were also found and fixed while running these
+drills (not app bugs): `drill3`'s assertion checked `f.documentType` /
+`f.document_type` against the `X-Failed-Documents` header, but the download
+route's actual JSON shape uses `f.type` — fixed the assertion to match; and
+`cleanChaosUser()` was missing `uploaded_documents` from its per-application
+cleanup list, which would have left orphaned upload rows behind on repeated
+re-seeds.
+
+**Not done as part of this task:** no CI job runs these drills automatically
+yet — they were executed manually against a local dev-server instance per the
+runbook above. Wiring `scripts/chaos-drills.mjs` into CI (with its own
+disposable seed/teardown cycle, following the pattern DR-20's delivery matrix
+already established) would close the "either in CI" half of the Exit
+criterion; the "documented runbook" half is satisfied by the table and
+command sequence above.
+
 > **Exit** — all three green, either in CI or as a documented runbook someone
-> other than the author has executed.
+> other than the author has executed. **Met via the documented-runbook path**
+> — see the runbook, results, and env-var table above.
 >
 > **Test** — `scripts/chaos-drills.mjs`, with each drill's expected observable
-> recorded.
+> recorded. All three drills' full assertion lists (6 + 20 + 9 respectively)
+> pass against a live dev-server run as of 2026-09-12.
 
 ---
 
