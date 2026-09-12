@@ -9,7 +9,7 @@ import { safeRedirect } from "@/lib/safe-redirect";
 import AuthImageSlider from "@/components/auth/AuthImageSlider";
 import { validatePassword, PASSWORD_REQUIREMENTS_HINT } from "@/lib/password-policy";
 
-const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_CF_TURNSTILE_SITE_KEY ?? '';
+const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? '';
 
 function SignupForm() {
   const searchParams = useSearchParams();
@@ -74,58 +74,43 @@ function SignupForm() {
       return;
     }
 
-    // Verify CAPTCHA if Turnstile is configured
-    if (TURNSTILE_SITE_KEY) {
-      if (!captchaToken) {
-        setStatus('error');
-        setErrorMessage("Please complete the security check before continuing.");
-        return;
-      }
-      try {
-        const captchaRes = await fetch('/api/auth/verify-captcha', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token: captchaToken }),
-        });
-        const captchaData = await captchaRes.json() as { ok: boolean; error?: string };
-        if (!captchaData.ok) {
-          setStatus('error');
-          setErrorMessage(captchaData.error ?? 'Security check failed. Please try again.');
-          setCaptchaToken(null);
-          return;
-        }
-      } catch {
-        // Network failure — allow through (CAPTCHA is defense-in-depth)
-      }
+    // CAPTCHA is required client-side only when Turnstile is configured —
+    // the authoritative check happens server-side in /api/auth/signup below.
+    if (TURNSTILE_SITE_KEY && !captchaToken) {
+      setStatus('error');
+      setErrorMessage("Please complete the security check before continuing.");
+      return;
     }
 
     try {
-      const supabase = createBrowserSupabaseClient();
-
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}${next}`,
-          data: {
-            first_name: firstName.trim(),
-            last_name: lastName.trim(),
-          },
-        },
+      const res = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          password,
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+          captchaToken,
+          next,
+        }),
       });
+      const result = await res.json() as { user?: { id: string; email: string } | null; error?: string };
 
-      if (error) {
+      if (!res.ok) {
         setStatus('error');
-        setErrorMessage(error.message);
+        setErrorMessage(result.error ?? 'Unable to create your account. Please try again.');
+        setCaptchaToken(null);
         return;
       }
 
       // Upsert profile with first_name, last_name, and CASL consent
-      if (data.user) {
+      if (result.user) {
+        const supabase = createBrowserSupabaseClient();
         const { error: profileError } = await supabase
           .from('profiles')
           .upsert({
-            id: data.user.id,
+            id: result.user.id,
             first_name: firstName.trim(),
             last_name: lastName.trim(),
             email: email,
