@@ -3,6 +3,8 @@ import { createClient } from '@supabase/supabase-js';
 import { buildPackageManifest } from '@/lib/cic-package-manifest';
 import { captureApiError } from '@/lib/capture-error';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: Request) {
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
