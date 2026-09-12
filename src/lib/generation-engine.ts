@@ -2949,6 +2949,17 @@ export async function runGenerationPipeline(
           .eq('document_type', docType);
 
         try {
+          // DR-21 chaos drill 2 (per-document quarantine): fires before any LLM
+          // cost is incurred. CHAOS_DRILL_FAIL_DOC_TYPE must never be set in a
+          // deployed (Vercel) environment — it is a local-only fault-injection
+          // switch for scripts/chaos-drills.mjs, read the same way each request.
+          if (process.env.CHAOS_DRILL_FAIL_DOC_TYPE === docType) {
+            throw new DocumentQuarantineError(
+              `Chaos drill: forced failure injected for ${docType}`,
+              'system_fault'
+            );
+          }
+
           const payload = await buildGenerationPayload(applicationId, docType, caseBrief, DOCUMENT_TYPES);
 
           // Sprint F-P: Inject Partner 2 context for _p2 document types
@@ -3215,17 +3226,24 @@ Generate the document using Investor 2's identity, name, nationality, source of 
             ? 'Complete the missing intake fields, then regenerate this document from your dashboard.'
             : 'Our team has been notified and will regenerate this document — no action needed from you.';
 
-          await supabase
+          // generated_documents has no error_message column (that's on
+          // document_generation_jobs) — an UPDATE naming it would be rejected
+          // in full by PostgREST, silently leaving the row stuck at
+          // 'generating'. The raw message is preserved via Sentry/console
+          // below; quality_gate_notes carries the client-safe reason.
+          const { error: quarantineError } = await supabase
             .from('generated_documents')
             .update({
               status: 'failed',
-              error_message: msg,
               quality_gate_passed: false,
               quality_gate_notes: [`${reasonCode}: ${nextAction}`],
               updated_at: new Date().toISOString(),
             })
             .eq('job_id', jobId)
             .eq('document_type', docType);
+          if (quarantineError) {
+            console.error(`[ENGINE] Failed to persist quarantine status for ${docType}:`, JSON.stringify(quarantineError));
+          }
 
           console.error(`[ENGINE] Quarantined ${docLabel} (${docType}) — ${reasonCode}: ${msg}`);
           emitStep(stepNum, 'failed');
@@ -3689,8 +3707,17 @@ Generate the document using Investor 2's identity, name, nationality, source of 
         investmentTotal,
       });
 
-      // Re-prompt once if quality gate fails
-      if (!qualityResult.passed) {
+      // Re-prompt once if quality gate fails. DR-21 chaos drills (scripts/chaos-drills.mjs)
+      // seed synthetic, deliberately-generic placeholder content directly as 'approved' to
+      // avoid real generation cost — that content can never satisfy this gate's structural
+      // checks (word count, legal disclaimer, applicant name, cover-letter officer pillars),
+      // so every resumed chaos-drill run would otherwise force a real, sequential Claude API
+      // retry per document. CHAOS_DRILL_SKIP_QUALITY_RETRY skips only the retry call, not the
+      // check itself, so real generations still get the retry as designed; it must never be
+      // set in a deployed (Vercel) environment — it is a local-only fault-injection switch.
+      if (!qualityResult.passed && process.env.CHAOS_DRILL_SKIP_QUALITY_RETRY === 'true') {
+        // no-op — leave the document's existing quality_gate_passed/content_text as seeded
+      } else if (!qualityResult.passed) {
         try {
           const payload = await buildGenerationPayload(applicationId, doc.document_type, caseBrief, DOCUMENT_TYPES);
           const failureInstructions = [
@@ -3787,6 +3814,16 @@ Generate the document using Investor 2's identity, name, nationality, source of 
       );
 
       if (missingElements.length > 0) {
+        // Same DR-21 chaos-drill mismatch as the Quality Gate step above: this
+        // check unconditionally re-runs against every document in the full set,
+        // including already-approved/certified ones from a resumed job, and
+        // synthetic placeholder content can never contain a real applicant name,
+        // business name, or investment figure. Skip the decertifying side effect
+        // (but still just a no-op, never set in a deployed environment).
+        if (process.env.CHAOS_DRILL_SKIP_QUALITY_RETRY === 'true') {
+          continue;
+        }
+
         console.warn(`[QUALITY] ${doc.document_type}: missing required elements: ${missingElements.join(', ')}`);
 
         // Log as quality gate failure
