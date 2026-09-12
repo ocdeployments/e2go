@@ -3,8 +3,7 @@ import { createSupabaseServerClient } from "@/lib/supabase-server";
 import { createServiceClient } from "@/lib/supabase-service";
 import { Redis } from "@upstash/redis";
 import { captureApiError } from "@/lib/capture-error";
-
-const TERMS_VERSION = "1.0";
+import { TERMS_VERSION } from "@/lib/terms-version";
 
 const redis = process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
   ? new Redis({ url: process.env.UPSTASH_REDIS_REST_URL, token: process.env.UPSTASH_REDIS_REST_TOKEN })
