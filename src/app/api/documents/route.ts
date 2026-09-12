@@ -3,6 +3,9 @@ import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { createServiceClient } from '@/lib/supabase-service';
 import { captureApiError } from '@/lib/capture-error';
 import { checkRateLimit } from '@/lib/rate-limit';
+import { isKillSwitchEnabled } from '@/lib/kill-switch';
+import { extractTextFromBuffer } from '@/lib/text-extraction';
+import { callLLM } from '@/lib/llm-client';
 import {
   validateFileBatch,
   getFileTypeFromExtension,
@@ -11,6 +14,7 @@ import {
 } from '@/lib/document-validation';
 import {
   type ApplicationDocument,
+  type UploadFileType,
   MAX_FILES_PER_SESSION,
   ACCEPTED_MIME_TYPES,
 } from '@/types/document-upload';
@@ -27,6 +31,47 @@ const IDENTITY_DOC_TYPES = new Set([
   'national_id',
   'government_id',
 ]);
+
+const IDENTITY_REJECTION_MESSAGE =
+  'Identity documents (passport, birth certificate, marriage certificate) are not stored. ' +
+  'Upload them through the intake screen instead — we read the details and immediately discard the file.';
+
+// Content-based backstop for the client-declared-type check above (G-4): a
+// mislabeled or relabeled identity-document scan would otherwise sail through
+// as, say, a "bank statement" and be stored as a raw file — the exact thing
+// this route exists to prevent. Reuses the same LLM-classification pattern as
+// detectDocumentType() in /api/apply/parse-document and classifyDocument() in
+// document-extraction-engine.ts. Text-extractable PDFs/DOCX only — a scanned
+// (image-only) PDF has no text to classify and passes through unchecked, same
+// blind spot every other content check in this codebase already has.
+async function detectIdentityDocumentContent(
+  text: string,
+  userId: string
+): Promise<boolean> {
+  const validTypes = [...IDENTITY_DOC_TYPES, 'none'].join(' | ');
+  const result = await callLLM({
+    task:       'extract',
+    route:      '/api/documents',
+    userId,
+    max_tokens: 20,
+    messages: [
+      {
+        role: 'system',
+        content:
+          'You are a document classifier for an immigration platform. Reply with ONLY one of the provided strings — nothing else.',
+      },
+      {
+        role: 'user',
+        content:
+          `Does this document's content look like a government-issued identity document (a passport, birth certificate, marriage certificate, driver's license, national ID, or other government ID)? ` +
+          `Reply with ONLY one of: ${validTypes}\n\n${text.slice(0, 2000)}`,
+      },
+    ],
+  });
+
+  const detected = (result ?? 'none').trim().toLowerCase().replace(/[^a-z_]/g, '');
+  return IDENTITY_DOC_TYPES.has(detected);
+}
 
 // POST /api/documents — Upload one or more files
 export async function POST(request: NextRequest) {
@@ -103,11 +148,7 @@ export async function POST(request: NextRequest) {
     );
     if (identityDoc) {
       return NextResponse.json(
-        {
-          error:
-            'Identity documents (passport, birth certificate, marriage certificate) are not stored. ' +
-            'Upload them through the intake screen instead — we read the details and immediately discard the file.',
-        },
+        { error: IDENTITY_REJECTION_MESSAGE },
         { status: 400 }
       );
     }
@@ -143,6 +184,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // AI features (including the identity-content backstop below) may be
+    // disabled; uploads still proceed on the client-declared-type check alone.
+    const contentCheckEnabled = !(await isKillSwitchEnabled());
+
     // Upload each file to Supabase Storage and create DB record
     const uploaded: ApplicationDocument[] = [];
 
@@ -163,6 +208,27 @@ export async function POST(request: NextRequest) {
           { error: `${file.name}: file content does not match its declared type. Please upload the original file without renaming.` },
           { status: 400 }
         );
+      }
+
+      // Content-based identity-document backstop (G-4) — catches a
+      // mislabeled/relabeled scan the client-declared-type check above can't.
+      // Fails open on extraction/LLM errors so an outage never blocks a
+      // legitimate financial-document upload; errors are captured for
+      // visibility instead.
+      if (contentCheckEnabled && (fileType === 'pdf' || fileType === 'docx')) {
+        try {
+          const extraction = await extractTextFromBuffer(buffer, fileType as UploadFileType, file.name);
+          if (!extraction.isScanned && extraction.text.trim()) {
+            const isIdentityDoc = await detectIdentityDocumentContent(extraction.text, user.id);
+            if (isIdentityDoc) {
+              return NextResponse.json({ error: IDENTITY_REJECTION_MESSAGE }, { status: 400 });
+            }
+          }
+        } catch (contentCheckErr) {
+          captureApiError(contentCheckErr, {
+            route: 'documents', stage: 'identity-content-check', userId: user.id, applicationId, fileName: file.name,
+          });
+        }
       }
 
       const safeFilename = sanitizeFilename(file.name);
