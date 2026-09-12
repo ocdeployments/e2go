@@ -9,7 +9,7 @@ import { IN_FLIGHT_STATUSES } from '@/lib/generation-job-status';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-export const maxDuration = 300; // 5 minutes
+export const maxDuration = 800; // Vercel Pro standard max
 
 function getSupabase() {
   return createClient(
