@@ -1,0 +1,81 @@
+name: Database Backup
+
+# BC-12 (independent backup path). Supabase free tier has no PITR and no
+# automated backups (confirmed 2026-09-12) — this workflow is the app's only
+# recovery path if the Supabase project is lost or corrupted.
+#
+# Runs on GitHub's own runners (not Vercel) because pg_dump is not available
+# in Vercel's serverless runtime. Retention: 7 daily + 4 weekly, rotated in
+# R2 by this workflow — anything older is deleted automatically.
+
+on:
+  schedule:
+    # Daily 05:00 UTC — after data-retention's 04:00 UTC Vercel cron finishes.
+    - cron: '0 5 * * *'
+  workflow_dispatch: {}
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install postgresql-client and awscli
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+          pip install --quiet awscli
+
+      - name: Dump database
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          DATE=$(date -u +%Y-%m-%d)
+          DOW=$(date -u +%u) # 1=Monday .. 7=Sunday
+          pg_dump "$DATABASE_URL" --no-owner --no-privileges -F c -f "backup-${DATE}.dump"
+          echo "DATE=${DATE}" >> "$GITHUB_ENV"
+          echo "DOW=${DOW}" >> "$GITHUB_ENV"
+          echo "FILE=backup-${DATE}.dump" >> "$GITHUB_ENV"
+
+      - name: Upload to R2 and rotate old backups
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
+        run: |
+          set -e
+          ENDPOINT="https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
+
+          aws s3 cp "${FILE}" "s3://${R2_BUCKET_NAME}/daily/${FILE}" --endpoint-url "$ENDPOINT"
+
+          # Sunday's daily backup is also promoted to the weekly set.
+          if [ "$DOW" = "7" ]; then
+            aws s3 cp "${FILE}" "s3://${R2_BUCKET_NAME}/weekly/${FILE}" --endpoint-url "$ENDPOINT"
+          fi
+
+          rotate() {
+            local prefix="$1"
+            local keep="$2"
+            local keys
+            keys=$(aws s3api list-objects-v2 --bucket "$R2_BUCKET_NAME" --prefix "$prefix" \
+              --endpoint-url "$ENDPOINT" --query 'sort_by(Contents, &Key)[].Key' --output text)
+            local total
+            total=$(echo "$keys" | wc -w)
+            local excess=$((total - keep))
+            if [ "$excess" -gt 0 ]; then
+              echo "$keys" | tr '\t' '\n' | head -n "$excess" | while read -r key; do
+                [ -n "$key" ] && aws s3 rm "s3://${R2_BUCKET_NAME}/${key}" --endpoint-url "$ENDPOINT"
+              done
+            fi
+          }
+
+          rotate "daily/" 7
+          rotate "weekly/" 4
+
+      - name: Log run to cron_log
+        if: always()
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          STATUS="success"
+          if [ "${{ job.status }}" != "success" ]; then STATUS="failed"; fi
+          psql "$DATABASE_URL" -c "INSERT INTO cron_log (job_name, status, completed_at, metadata) VALUES ('db-backup', '${STATUS}', now(), jsonb_build_object('file', '${FILE:-unknown}', 'run_id', '${{ github.run_id }}'));"
