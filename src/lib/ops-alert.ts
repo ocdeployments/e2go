@@ -17,10 +17,14 @@ import { captureApiError } from './capture-error';
 export async function sendOpsAlert(subject: string, body: string): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY;
   const from = process.env.RESEND_FROM ?? 'ops@e2go.app';
-  const to = process.env.OPS_ALERT_EMAIL ?? 'romyjames@gmail.com';
+  const to = process.env.OPS_ALERT_EMAIL ?? 'ops@e2go.app';
 
   if (!apiKey) {
-    console.log(`[OPS ALERT] (RESEND_API_KEY not set, not sent) ${subject}\n${body}`);
+    captureApiError(new Error('sendOpsAlert: RESEND_API_KEY not set, alert not sent'), {
+      route: 'ops-alert',
+      stage: 'missing-api-key',
+      subject,
+    });
     return;
   }
 
