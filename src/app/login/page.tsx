@@ -4,9 +4,12 @@ import { useState, Suspense } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { Turnstile } from "@marsidev/react-turnstile";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import { safeRedirect } from "@/lib/safe-redirect";
 import GenerationProgress from "@/components/ui/GenerationProgress";
+
+const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? '';
 
 function LoginForm() {
   const searchParams = useSearchParams();
@@ -17,11 +20,20 @@ function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setStatus('loading');
     setErrorMessage("");
+
+    // CAPTCHA is required client-side only when Turnstile is configured —
+    // the authoritative check happens server-side in /api/auth/login below.
+    if (TURNSTILE_SITE_KEY && !captchaToken) {
+      setStatus('error');
+      setErrorMessage("Please complete the security check before continuing.");
+      return;
+    }
 
     // Safety net: if anything in the auth flow hangs (e.g. GoTrueClient lock held
     // by a stale token-refresh from a prior navigation), surface a useful error.
@@ -42,17 +54,27 @@ function LoginForm() {
       ]);
       if (timedOut) return;
 
-      const { data: signInData, error } = await supabase.auth.signInWithPassword({ email, password });
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, captchaToken }),
+      });
       if (timedOut) return;
 
-      if (error) {
+      const result = await res.json() as { user?: { id: string; email: string } | null; error?: string };
+
+      if (!res.ok) {
         setStatus('error');
-        setErrorMessage("Invalid email or password");
+        setErrorMessage(result.error ?? "Invalid email or password");
+        setCaptchaToken(null);
         return;
       }
 
-      const user = signInData?.user;
-      const session = signInData?.session;
+      // The proxy route's Set-Cookie response lands on this fetch, so the
+      // browser's @supabase/ssr client already sees the new session here.
+      const { data: sessionData } = await supabase.auth.getSession();
+      const user = sessionData?.session?.user;
+      const session = sessionData?.session;
 
       // If "Remember me" is checked, persist session for 30 days
       if (rememberMe && session) {
@@ -338,9 +360,22 @@ function LoginForm() {
                   </Link>
                 </div>
 
+                {/* Cloudflare Turnstile — only renders when site key is configured */}
+                {TURNSTILE_SITE_KEY && (
+                  <div className="flex justify-center">
+                    <Turnstile
+                      siteKey={TURNSTILE_SITE_KEY}
+                      onSuccess={(token) => setCaptchaToken(token)}
+                      onExpire={() => setCaptchaToken(null)}
+                      onError={() => setCaptchaToken(null)}
+                      options={{ theme: 'dark', size: 'normal' }}
+                    />
+                  </div>
+                )}
+
                 <motion.button
                   type="submit"
-                  disabled={status === 'loading'}
+                  disabled={status === 'loading' || (!!TURNSTILE_SITE_KEY && !captchaToken)}
                   whileTap={{ scale: 0.98 }}
                   className="w-full font-medium py-3"
                   style={{ background: "#C9A84C", color: "#0a0a0a", borderRadius: 0, transition: 'opacity 0.15s', opacity: status === 'loading' ? 0.7 : 1 }}
