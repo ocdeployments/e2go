@@ -110,6 +110,7 @@ jobs:
           cat > .env.local << 'EOF'
           NEXT_PUBLIC_SUPABASE_URL=https://placeholder.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder_anon_key
+          SUPABASE_SERVICE_ROLE_KEY=placeholder_service_role_key
           OPENROUTER_API_KEY=placeholder
           ANTHROPIC_API_KEY=placeholder
           MINIMAX_MODEL=minimax/minimax-m2.5
