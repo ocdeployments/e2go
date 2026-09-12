@@ -269,7 +269,12 @@ export async function buildPackageManifest(applicationId: string): Promise<Packa
 
   const certifiedCount  = tabs.filter(t => t.status === 'certified').length;
   const uploadedCount   = tabs.filter(t => t.status === 'uploaded').length;
-  const outstandingCount = tabs.filter(t => t.status === 'outstanding').length;
+  // 'auto' tabs (Cover Page, Table of Contents) are assembled at package-build
+  // time, not by the client — they are permanently 'outstanding' by template
+  // definition above and there is no action a client can take to change that.
+  // Counting them here would make outstandingCount (and therefore
+  // packageReady) unsatisfiable forever, for every application.
+  const outstandingCount = tabs.filter(t => t.status === 'outstanding' && t.source !== 'auto').length;
   const blockedCount    = tabs.filter(t => t.status === 'blocked').length;
   // Package is ready when: no outstanding items, nothing blocked, AND all
   // generated docs are certified. A 'blocked' tab is neither 'certified' nor
