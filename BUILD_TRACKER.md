@@ -65,17 +65,32 @@ Full 16-item register, each tagged CRITICAL/HIGH/MEDIUM/LOW with file/line citat
 
 **Sprint doc updated:** `docs/SPRINT_DR_DELIVERY_RELIABILITY.md`'s DR-20 section now names the real-pipeline design, the `is_test_fixture` mitigation, the three nationalities, and the named accepted gaps, with a revised estimate (~4 eng-days, ~$300–500 LLM, up from the original stub's 2 days/$200–400 now that analysis-stage cost and the full seeding harness are accounted for); the Phase 8 effort-and-sequencing row updated to match. **DR-20's task-table status stays `TODO`** — this doc's own Gates section says no task is Done on reasoning, and no migration, script, seed, or run exists yet.
 
+## Session 151 (cont.) — pilot cell verified, then a `case_theory` concurrent-build race found and closed before scaling (September 12, 2026)
+
+**Branch:** dev, pushed to `origin/dev` (`fb142cb..707e32b`). Picked up Session 151's plan at Step 0/1: `payments.is_test_fixture` migration + `scripts/seed-delivery-matrix.mjs` already existed on disk from work between sessions; this session ran and hardened the seed script against one pilot cell before scaling to the full 36, per the plan's own instruction not to trust the harness at volume without checking a single cell's output first.
+
+**Pilot cell audit:** ran `scripts/seed-delivery-matrix.mjs` for one cell end-to-end and inspected the resulting `case_theory`, `document_intelligence`, and `case_brief_json` rows directly against the live schema rather than trusting a 200 response — this is the same class of failure the project's schema-drift doctrine warns about (a route can silently no-op or write an incomplete row and still return success). Found and fixed two real bugs in the seed script's cleanup/resume-analysis logging along the way (`fb142cb`, prior commit this session). All three artifacts came back genuinely complete for the pilot cell.
+
+**Race condition found during the audit, not by inspection of the seed script itself but by re-reading `buildCaseIntelligence`'s locking logic while verifying `case_theory` freshness:** the per-application build lock (`case_intelligence_locks`, `acquire_case_intelligence_lock` RPC) had a 30-second TTL, but `generateCaseTheory`'s LLM call carries a 90-second timeout — so a lock could go stale and be legitimately stolen by a second caller while the first build was still genuinely in flight, producing two concurrent builds against the same application. The final `case_theory` write was an unconditional upsert (`onConflict: 'application_id'`, last write wins), so whichever build finished last won regardless of which one captured the fresher answer snapshot. Not DR-20-specific — this is a live bug in the fire-and-forget path shared by `/api/answers`, `/api/apply/parse-document`, and `/api/simulator/outcome` — but it was DR-20's pilot-cell verification that surfaced it, and scaling to 36 cells' worth of concurrent seeding would have hit it constantly.
+
+**Fix, two-pronged (defense in depth), two commits, one file each:**
+- `2f5ea11` — `supabase/migrations/20260912170000_case_theory_ordering_guard.sql`: adds `case_theory.model_snapshot_at` and a new `upsert_case_theory_if_newer` RPC that only applies a write when its snapshot is not older than what's already stored. Applied live via `supabase db push --linked` (Romy's explicit go-ahead, auto-mode classifier blocks direct DB-affecting commands) and verified against the live schema.
+- `707e32b` — `src/lib/case-intelligence-core.ts`: raises `LOCK_TTL_S` from 30 to 120 (clears the 90s LLM timeout with margin) and threads a `modelSnapshotAt` captured at lock-acquisition time through `generateCaseTheory` into the new conditional-write RPC, so even a lock that's stolen by a deploy restart or similar can no longer let a late-finishing stale build clobber a fresher result.
+
+Both commits passed the full pre-commit `npx jest` (705/705) and pre-push `npm run build` + 32 Playwright security tests. Verified via `scripts/audit-schema-drift.py --refresh` (no drift) and a deliberate RPC test call (409 FK violation on dummy UUIDs — confirms the RPC reaches real insert logic, not a bug).
+
+**Not yet done — scaling to the full matrix.** This session verified one cell and fixed one architectural bug; it did not seed the remaining 35 cells or build the matrix runner. `docs/SPRINT_DR_DELIVERY_RELIABILITY.md`'s DR-20 status stays `TODO`.
+
 ### Next agent — start here
 
-Work through the plan file's Build plan, in order, each its own commit per this project's one-file-per-commit rule:
-0. `payments.is_test_fixture` migration (verify against live schema first, per this project's schema-drift rule) + the one shared exclusion helper, wired into `health-watchdog/route.ts`'s `isPaidUser()`, `admin/revenue/page.tsx`, and `payment-reconciliation.ts`.
-1. `scripts/seed-delivery-matrix.mjs` — read the plan's "Answer submission mechanics" section closely before writing this: `/api/answers` takes one key/value pair per call, each save fire-and-forget triggers `buildCaseIntelligence` under a 30-second per-application Postgres lock, and the seeding script has to confirm the *last* answer's fire-and-forget call actually completed (not just that 222 POSTs returned 200) before treating a cell as seeded.
-2. `scripts/delivery-matrix.mjs` — pilot on 2-3 cells (one per nationality) before scaling to all 36, gated by the cost circuit breaker.
-3. Dated results table appended to `docs/SPRINT_DR_DELIVERY_RELIABILITY.md`.
-4. UI/UX walkthrough via the magic-link login technique (`reference_test_persona_login.md` in memory) across 2-3 representative personas.
-5. `scripts/teardown-delivery-matrix.mjs`.
+Step 0 (migration) and Step 1 (`seed-delivery-matrix.mjs`, now race-fix-hardened) are functionally done. Continue the plan file's Build plan:
+2. `scripts/delivery-matrix.mjs` — pilot on 2-3 cells (one per nationality) before scaling to all 36, gated by the cost circuit breaker. The pilot-cell verification this session already exercised the seed half of one cell manually; this script still needs to be written.
+3. Scale seeding to the remaining 35 cells.
+4. Dated results table appended to `docs/SPRINT_DR_DELIVERY_RELIABILITY.md`.
+5. UI/UX walkthrough via the magic-link login technique (`reference_test_persona_login.md` in memory) across 2-3 representative personas.
+6. `scripts/teardown-delivery-matrix.mjs`.
 
-**Also present in the working tree, not this session's scope:** `src/lib/generation-engine.ts` and `src/lib/llm-client.ts` show as modified in `git status` — a prior session's cache-token cost-accounting fix that was never committed. Not touched this session; confirm with Romy before committing or discarding.
+**Also present in the working tree, not this session's scope:** `src/lib/generation-engine.ts` and `src/lib/document-build-safety.ts` show as modified in `git status` — not touched this session; confirm with Romy before committing or discarding.
 
 ---
 
