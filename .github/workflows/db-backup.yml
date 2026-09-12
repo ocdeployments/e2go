@@ -27,6 +27,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y postgresql-client-17
           pip install --quiet awscli
+          echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
 
       - name: Dump database
         env:
@@ -82,4 +83,4 @@ jobs:
         run: |
           STATUS="success"
           if [ "${{ job.status }}" != "success" ]; then STATUS="failed"; fi
-          psql "$DATABASE_URL" -c "INSERT INTO cron_log (job_name, status, completed_at, metadata) VALUES ('db-backup', '${STATUS}', now(), jsonb_build_object('file', '${FILE:-unknown}', 'run_id', '${{ github.run_id }}'));"
+          psql "$DATABASE_URL" -c "INSERT INTO public.cron_log (job_name, status, completed_at, metadata) VALUES ('db-backup', '${STATUS}', now(), jsonb_build_object('file', '${FILE:-unknown}', 'run_id', '${{ github.run_id }}'));"
