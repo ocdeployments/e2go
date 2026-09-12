@@ -63,7 +63,7 @@ Legend — **Status:** `TODO` / `WIP` / `DONE` / `BLOCKED (needs Romy)`
 | **BC-1** | Decide: disclose Zhipu AI + Xiaomi + direct-Anthropic as sub-processors in the Privacy Policy and `DATA_RETENTION_POLICY.md`, **or** remove them from the fallback chain and accept the availability hit | G-1 | decision | 0.5 day once decided | TODO |
 | **BC-2** | Add an active alert (reuse `ops-alert.ts`, don't invent a second channel) to every `payment-reconciliation.ts` mismatch | G-7 | code | 0.5 day | DONE 2026-09-12 |
 | **BC-3** | Add `Sentry.captureException` + an active alert to `generation-engine.ts`'s top-level `fail()` handler — today it's `console.error` only | G-7 | code | 0.5 day | DONE 2026-09-12 |
-| **BC-4** | Verify Supabase project plan tier + PITR status/window + Storage bucket versioning directly in the dashboard | G-2 | manual (Romy) | 15 min | TODO |
+| **BC-4** | Verify Supabase project plan tier + PITR status/window + Storage bucket versioning directly in the dashboard | G-2 | manual (Romy) | 15 min | DONE 2026-09-12 — free plan, no PITR, no automated backups |
 
 **Why these four first:** BC-1 is a live legal exposure, not a risk of one — every day it's undecided is another day of undisclosed processing. BC-2/BC-3 close the two silent-failure paths on the payment and generation pipelines, the two things the business cannot function without, and are small, mechanical, low-risk code changes (call an existing function from a new call site). BC-4 is a 15-minute dashboard check that determines whether G-2 needs BC-9 (below) at all — do it before scoping any backup engineering work.
 
@@ -77,8 +77,8 @@ Legend — **Status:** `TODO` / `WIP` / `DONE` / `BLOCKED (needs Romy)`
 | **BC-8** | Make identity-document rejection classify by file content (magic bytes / structure), not the client-declared `type_${key}` field | G-4 | code | 1.5 days | TODO |
 | **BC-9** | Fix `outcomes_consent`: send it in the download-gate request, persist it server-side with a timestamp, and split it out of the 5 mandatory legal-disclaimer checkboxes into its own genuinely optional control | G-3 | code + migration | 1 day | TODO |
 | **BC-10** | Fix `health-watchdog`'s consecutive-failure watchlist: add `generation-resume`, `payment-reconciliation`, `data-retention`; remove the nonexistent `'email-scheduler'` entry | G-7 | code | 0.5 day | DONE 2026-09-12 |
-| **BC-11** | Change `OPS_ALERT_EMAIL`'s default away from a personal Gmail address to a dedicated ops address/distribution list; make both alert paths fail loudly (a second Sentry capture, not just `console.log`) if `RESEND_API_KEY` is unset | G-8 | code + decision | 0.5 day | TODO |
-| **BC-12** | If BC-4 finds PITR inadequate or unconfirmed: scope and build an independent logical backup — needs a new `DATABASE_URL`/pooler credential (currently doesn't exist, see G-2), a scheduled export, and an off-Supabase storage destination (S3/R2 — decision needed) | G-2 | infra + code | 2-3 days, size depends on BC-4's answer | BLOCKED (needs BC-4) |
+| **BC-11** | Change `OPS_ALERT_EMAIL`'s default away from a personal Gmail address to a dedicated ops address/distribution list; make both alert paths fail loudly (a second Sentry capture, not just `console.log`) if `RESEND_API_KEY` is unset | G-8 | code + decision | 0.5 day | DONE 2026-09-12 — `ops@e2go.app` created, default updated in both alert paths |
+| **BC-12** | BC-4 confirmed: free plan, no PITR, no automated backups — this is now a real, active gap, not a hypothetical. Build an independent logical backup: needs a new `DATABASE_URL`/pooler credential (currently doesn't exist, see G-2), a scheduled export, and an off-Supabase storage destination. Romy chose Cloudflare R2 (no egress fees, S3-compatible tooling) over S3 (would need a new AWS account) | G-2 | infra + code | 2-3 days | IN PROGRESS — destination decided (R2), credential + export pipeline not yet built |
 
 ### Phase 2 — Harden · this quarter
 
@@ -104,11 +104,9 @@ Legend — **Status:** `TODO` / `WIP` / `DONE` / `BLOCKED (needs Romy)`
 
 ## Blocked on Romy
 
-- **BC-1** (sub-processor disclosure vs. removal) — a legal/product call this session should not make unilaterally.
-- **BC-4** (Supabase dashboard check) — needs dashboard login; no `SUPABASE_ACCESS_TOKEN` is available to this session or the CLI to check via the Management API.
+- **BC-1** (sub-processor disclosure vs. removal) — a legal/product call this session should not make unilaterally. Corrected finding (2026-09-12): actual document-text sub-processors are OpenRouter (gateway for both document pipelines) and Zhipu AI/`z-ai` (fallback-only, FDD pipeline) — Xiaomi/mimo never touches document content in either pipeline, so it should not be on the disclosure list. Still open, still Romy's call.
 - **BC-5 / BC-6 / BC-7** — GitHub org/repo settings changes.
-- **BC-11** — whose inbox/distribution list should real production alerts land in.
-- **BC-12**'s storage destination (S3 vs. R2 vs. a second Supabase project) if it turns out to be needed.
+- **BC-12** — R2 vs. S3 decided (R2); still needs Romy to actually provision the R2 bucket + API token (walkthrough in progress, Option B: step-by-step).
 
 ## Explicitly not in this sprint
 
@@ -135,7 +133,8 @@ Same discipline as the audit report this sprint is built from: score the plan be
 
 ## Next agent — start here
 
-1. **BC-2, BC-3, and BC-10 are DONE** (2026-09-12) — `src/lib/payment-reconciliation.ts` now calls `sendOpsAlert()` on every mismatch; `generation-engine.ts`'s `fail()` handler now calls `Sentry.captureException` + `sendOpsAlert()`; `health-watchdog`'s `CRON_JOBS` watchlist now reads `['generation-resume', 'payment-reconciliation', 'data-retention']` and `data-retention/route.ts` now writes `cron_log` rows (insert `running` → update `success`/`failed`) so that entry isn't a silent no-op. `tsc`/`jest` (705 tests)/`npm run build` all clean at each commit. Not yet pushed to `origin/dev` — confirm with Romy before pushing.
+1. **BC-2, BC-3, BC-4, BC-10, and BC-11 are DONE** (2026-09-12). BC-2/3/10 as before (see git log). BC-4: confirmed via Supabase dashboard — free plan, no PITR, no automated backups. BC-11: Romy created `ops@e2go.app`; `src/lib/ops-alert.ts` and `src/app/api/cron/health-watchdog/route.ts` both default `OPS_ALERT_EMAIL` to it now and call `captureApiError()` (not just `console.log`) when `RESEND_API_KEY` is unset. `tsc`/`jest` (705 tests)/`npm run build` all clean at each commit. Not yet pushed to `origin/dev` — confirm with Romy before pushing.
 2. **New finding, not yet actioned:** `rebuild-profiles` was already on the old watchlist but its route (`src/app/api/cron/rebuild-profiles/route.ts`) never writes to `cron_log` either — that check has likely never fired. It was dropped from the watchlist in the BC-10 commit rather than left in as a false sense of coverage. Instrumenting it and re-adding it is a small follow-up (mirror the `data-retention` pattern) but is not itself part of BC-10's original scope — flag to Romy or pick up as a quick add-on.
-3. BC-1 and BC-4 still need Romy directly — surface them as decisions/checks, not code. Nothing else in Phase 0 remains.
-4. Once BC-4's answer is in, revisit Phase 1's effort estimates (still provisional) before starting BC-5 onward. BC-11 (ops alert destination + fail-loudly behavior) is next up — its fail-loudly half is `code`, its destination-address half is `decision`, keep them separate.
+3. **BC-1 corrected finding** (2026-09-12): re-traced actual call sites in `llm-client.ts`, `document-extraction-engine.ts`, `fdd-extraction-engine.ts` instead of trusting the prior audit's list. Real document-text sub-processors: OpenRouter (gateway) + Zhipu AI/`z-ai/glm-5.2` (FDD fallback tier only). Xiaomi/mimo does not process document content in either pipeline — drop it from the disclosure question. Still needs Romy's disclose-vs-remove decision.
+4. **BC-12 in progress**: Romy chose Cloudflare R2 over S3 (no egress fees, no new AWS account needed) and asked for a step-by-step walkthrough (Option B). Next steps: (a) provision an R2 bucket + API token in the Cloudflare dashboard, (b) generate a Supabase `DATABASE_URL`/pooler credential (doesn't exist yet, per gap G-2), (c) build the scheduled export job and wire it to `cron_log` like the other crons, (d) decide retention window for the backups themselves. Not started — pick up here.
+5. BC-5 through BC-7 (GitHub settings) remain TODO and still need Romy directly.
