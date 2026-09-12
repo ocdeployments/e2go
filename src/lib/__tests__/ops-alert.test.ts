@@ -48,15 +48,14 @@ describe('sendOpsAlert (DR-4 follow-up active alerting)', () => {
     expect(body.html).toContain('Test body');
   });
 
-  it('falls back to console logging without sending when RESEND_API_KEY is unset — never silently drops the alert', async () => {
+  it('fails loudly via captureApiError (not just console.log) when RESEND_API_KEY is unset — never silently drops the alert', async () => {
     delete process.env.RESEND_API_KEY;
-    const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
 
     await sendOpsAlert('Test subject', 'Test body');
 
     expect(fetchSpy).not.toHaveBeenCalled();
-    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Test subject'));
-    consoleSpy.mockRestore();
+    expect(mockCaptureApiError).toHaveBeenCalledTimes(1);
+    expect((mockCaptureApiError.mock.calls[0][0] as Error).message).toContain('RESEND_API_KEY not set');
   });
 
   it('captures the error (for later debugging) when Resend responds with a non-ok status', async () => {
