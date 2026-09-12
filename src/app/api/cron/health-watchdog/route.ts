@@ -3,6 +3,7 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import * as Sentry from '@sentry/nextjs';
 import { captureApiError } from '@/lib/capture-error';
 import { sendResetAfterFailureEmail } from '@/lib/emails/generation-emails';
+import { TEST_FIXTURE_COLUMN, TEST_FIXTURE_EXCLUDED_VALUE } from '@/lib/test-fixture-payments';
 
 // DR-3 (Gap G-06): runs every 10 minutes via Vercel cron — daily was the
 // failure, not the 30-minute staleness threshold. Reaps BOTH stale 'running'
@@ -20,7 +21,8 @@ async function isPaidUser(admin: SupabaseClient, userId: string | null | undefin
     .from('payments')
     .select('id', { count: 'exact', head: true })
     .eq('user_id', userId)
-    .eq('status', 'completed');
+    .eq('status', 'completed')
+    .eq(TEST_FIXTURE_COLUMN, TEST_FIXTURE_EXCLUDED_VALUE);
   if (error) {
     captureApiError(error, { route: 'cron/health-watchdog', stage: 'is-paid-check', userId });
     return false;

@@ -70,9 +70,11 @@ function fakeSupabase(opts: {
         return {
           select: () => ({
             eq: (_col: string, userId: string) => ({
-              eq: async () => ({
-                count: opts.paidUserIds?.has(userId) ? 1 : 0,
-                error: null,
+              eq: () => ({
+                eq: async () => ({
+                  count: opts.paidUserIds?.has(userId) ? 1 : 0,
+                  error: null,
+                }),
               }),
             }),
           }),
