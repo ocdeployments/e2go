@@ -565,6 +565,29 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL('/case-profile', req.url));
   }
 
+  // ---------------------------------------------------------------------------
+  // Skew Protection — pin long-lived multi-step flows to one deployment
+  // ---------------------------------------------------------------------------
+  // Vercel's framework-managed skew protection covers client navigations and
+  // prefetches, but not hard-refreshes/address-bar loads or custom fetch()
+  // calls — the gap that matters for /apply's multi-step intake and
+  // /generate's polling flow, where a mid-flow deploy can otherwise mix
+  // stale client code with a new server version. The __vdpl cookie pins the
+  // whole session to the deployment that started it.
+  const deploymentId = process.env.VERCEL_DEPLOYMENT_ID;
+  if (
+    process.env.VERCEL_SKEW_PROTECTION_ENABLED === '1' &&
+    deploymentId &&
+    !req.cookies.get('__vdpl') &&
+    (pathname.startsWith('/apply') || pathname.startsWith('/generate/'))
+  ) {
+    supabaseResponse.cookies.set('__vdpl', deploymentId, {
+      path: '/',
+      httpOnly: true,
+      sameSite: 'strict',
+    });
+  }
+
   return supabaseResponse;
 }
 

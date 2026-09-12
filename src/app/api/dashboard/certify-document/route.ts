@@ -19,6 +19,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import type { DocumentType } from '@/types/generation';
 import { captureApiError } from '@/lib/capture-error';
+import { selectLatestDocumentRows, type DedupableDocumentRow } from '@/lib/document-dedupe';
 
 interface CertifyBody {
   applicationId: string;
@@ -61,18 +62,31 @@ export async function POST(request: Request) {
 
   if (!app) return new NextResponse('Not found', { status: 404 });
 
-  // Fetch existing locked_passages to merge, plus the quality-gate verdict
-  const { data: existing, error: existingError } = await supabase
+  // Fetch existing locked_passages to merge, plus the quality-gate verdict.
+  // A retried application can have more than one generated_documents row for
+  // this document_type (see document-dedupe.ts) — dedupe here the same way
+  // cic-package-manifest.ts and the download route do, so this route acts on
+  // the row that actually reflects the current run, not an abandoned retry.
+  type CertifyDocRow = DedupableDocumentRow & {
+    id: string;
+    locked_passages: string[] | null;
+    quality_gate_passed: boolean | null;
+    quality_gate_notes: string[] | null;
+  };
+  const { data: candidates, error: existingError } = await supabase
     .from('generated_documents')
-    .select('locked_passages, quality_gate_passed, quality_gate_notes')
+    .select('id, status, created_at, locked_passages, quality_gate_passed, quality_gate_notes')
     .eq('application_id', applicationId)
-    .eq('document_type', documentType)
-    .maybeSingle();
+    .eq('document_type', documentType);
 
   if (existingError) {
     captureApiError(existingError, { route: 'dashboard/certify-document', userId: user.id, applicationId, documentType });
     return NextResponse.json({ error: 'Failed to load document' }, { status: 500 });
   }
+
+  const existing = selectLatestDocumentRows(
+    (candidates ?? []).map((row) => ({ ...row, document_type: documentType })) as CertifyDocRow[]
+  ).get(documentType);
 
   // Gap 3 — a document that failed the legal-boundary quality gate is held for
   // e2go review and cannot be certified by the client. Detect-and-block, not
@@ -91,7 +105,11 @@ export async function POST(request: Request) {
     );
   }
 
-  const existingLocks = (existing?.locked_passages as string[] | null) ?? [];
+  if (!existing) {
+    return NextResponse.json({ error: 'Document not found' }, { status: 404 });
+  }
+
+  const existingLocks = existing.locked_passages ?? [];
   const newLocks = lockedPassages ?? [];
   const mergedLocks = Array.from(new Set([...existingLocks, ...newLocks]));
 
@@ -102,8 +120,7 @@ export async function POST(request: Request) {
       certified_at: new Date().toISOString(),
       locked_passages: mergedLocks,
     })
-    .eq('application_id', applicationId)
-    .eq('document_type', documentType);
+    .eq('id', existing.id);
 
   if (error) {
     captureApiError(error, { route: 'dashboard/certify-document', userId: user.id, applicationId, documentType });
