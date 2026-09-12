@@ -4,6 +4,7 @@ import type { NextRequest } from 'next/server';
 import { Ratelimit } from '@upstash/ratelimit';
 import { Redis } from '@upstash/redis';
 import { captureApiError } from '@/lib/capture-error';
+import { TERMS_VERSION } from '@/lib/terms-version';
 
 // ---------------------------------------------------------------------------
 // Redis — shared instance for rate limiting AND middleware caching
@@ -517,7 +518,6 @@ export async function middleware(req: NextRequest) {
   // Terms acceptance gate — /apply routes only
   // Cached in Upstash Redis for 30 min; invalidated by /api/auth/accept-terms
   // ---------------------------------------------------------------------------
-  const TERMS_VERSION = '1.0';
   if (user && pathname.startsWith('/apply')) {
     let termsAccepted = false;
 
