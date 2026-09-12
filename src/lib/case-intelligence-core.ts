@@ -588,7 +588,8 @@ function parseCaseTheory(raw: string): ParsedCaseTheory | null {
 export async function generateCaseTheory(
   applicationId: string,
   userId: string,
-  caseModel: CaseModelResult
+  caseModel: CaseModelResult,
+  modelSnapshotAt: string
 ): Promise<CaseTheoryOutcome> {
   const totalFacts = DIMENSIONS.reduce((sum, d) => sum + caseModel.dimensions[d].length, 0);
   if (totalFacts === 0) {
@@ -672,21 +673,22 @@ export async function generateCaseTheory(
   const parsed = parseCaseTheory(raw);
   if (!parsed) return { status: 'failed', dimensionsCovered: 0, directiveCount: 0 };
 
-  await supabase.from('case_theory').upsert(
-    {
-      application_id: applicationId,
-      user_id: userId,
-      narrative: parsed.narrative,
-      transferable_skills: parsed.transferableSkills,
-      numbers_strategy: parsed.numbersStrategy,
-      dimension_verdicts: parsed.dimensionVerdicts,
-      directives: parsed.directives,
-      doctrine_citations: doctrineChunks.map((c) => ({ kbChunkId: c.id, sourceFile: c.sourceFile, dimension: c.dimension })),
-      source_fingerprint: sourceFingerprint,
-      built_at: new Date().toISOString(),
-    },
-    { onConflict: 'application_id' }
-  );
+  // Conditional write: a build whose lock was stolen mid-run (H6 lock TTL vs this
+  // call's 90s LLM timeout) can finish after a fresher build already landed. The RPC
+  // only applies this write if modelSnapshotAt is not older than what's stored, so a
+  // late-finishing stale build can no longer clobber a fresher result.
+  await supabase.rpc('upsert_case_theory_if_newer', {
+    p_application_id: applicationId,
+    p_user_id: userId,
+    p_model_snapshot_at: modelSnapshotAt,
+    p_narrative: parsed.narrative,
+    p_transferable_skills: parsed.transferableSkills,
+    p_numbers_strategy: parsed.numbersStrategy,
+    p_dimension_verdicts: parsed.dimensionVerdicts,
+    p_directives: parsed.directives,
+    p_doctrine_citations: doctrineChunks.map((c) => ({ kbChunkId: c.id, sourceFile: c.sourceFile, dimension: c.dimension })),
+    p_source_fingerprint: sourceFingerprint,
+  });
 
   return {
     status: 'complete',
@@ -720,8 +722,11 @@ export async function buildCaseIntelligence(
   const supabase = serviceClient();
 
   // H6: Per-application build lock — prevents concurrent CPU builds for the same application.
-  // Upsert a lock row; if another build holds the lock (locked_at within 30s), skip this run.
-  const LOCK_TTL_S = 30;
+  // Upsert a lock row; if another build holds the lock (locked_at within the TTL), skip this run.
+  // TTL must clear generateCaseTheory's 90s LLM timeout plus assembleCaseModel's own work,
+  // or a still-running build's lock goes stale and gets stolen by a new caller — the root
+  // cause of the case_theory race this constant (and the ordering guard below) fix.
+  const LOCK_TTL_S = 120;
   const { data: lockRows } = await supabase.rpc('acquire_case_intelligence_lock', {
     p_application_id: applicationId,
     p_ttl_seconds: LOCK_TTL_S,
@@ -731,6 +736,11 @@ export async function buildCaseIntelligence(
     console.info(`[CIC] buildCaseIntelligence skipped — lock held for ${applicationId}`);
     return { status: 'skipped', applicationId };
   }
+
+  // Ordering guard: even if the lock is ever stolen from a still-running build (e.g. a
+  // deploy restarts mid-build and abandons the lock), the case_theory write below is only
+  // applied if this snapshot is not older than what's already stored.
+  const modelSnapshotAt = new Date().toISOString();
 
   // CIC-P.5: snapshot the current dimension_verdicts BEFORE re-reasoning
   // so we can compare after and detect which documents are now stale.
@@ -745,7 +755,7 @@ export async function buildCaseIntelligence(
   }
 
   const model = await assembleCaseModel(applicationId, userId);
-  const theory = await generateCaseTheory(applicationId, userId, model);
+  const theory = await generateCaseTheory(applicationId, userId, model, modelSnapshotAt);
 
   // CIC-P.5: compute and persist the change impact report if this was doc-triggered
   if (triggeredByDocType && theory.status === 'complete') {
