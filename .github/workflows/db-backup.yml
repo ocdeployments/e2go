@@ -62,7 +62,7 @@ jobs:
             local keep="$2"
             local keys
             keys=$(aws s3api list-objects-v2 --bucket "$R2_BUCKET_NAME" --prefix "$prefix" \
-              --endpoint-url "$ENDPOINT" --query 'sort_by(Contents, &Key)[].Key' --output text)
+              --endpoint-url "$ENDPOINT" --query 'sort_by(Contents || `[]`, &Key)[].Key' --output text)
             local total
             total=$(echo "$keys" | wc -w)
             local excess=$((total - keep))
