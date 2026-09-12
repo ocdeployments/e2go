@@ -18,6 +18,13 @@ import type {
 import { captureApiError } from '@/lib/capture-error';
 import { logDocumentAccess } from '@/lib/document-access-log';
 
+// This route loops over a client-supplied documentIds list, making 2
+// sequential LLM calls (classify + extract) per document with no per-call
+// timeout of its own — total duration scales with however many documents
+// the user selects. It previously had no maxDuration at all, so it
+// inherited Vercel's unconfigured default rather than the plan max.
+export const maxDuration = 800;
+
 function _getSupabase() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
