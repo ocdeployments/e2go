@@ -19,7 +19,7 @@ function fakeSupabase(opts: {
   appDocs?: Array<{ id: string; application_id: string; storage_path: string | null; created_at: string }>;
 }) {
   const updatedAppDocIds = new Set<string>();
-  const removedPaths: string[] = [];
+  const archivedPaths: string[] = [];
 
   const client = {
     from(table: string) {
@@ -64,20 +64,22 @@ function fakeSupabase(opts: {
     },
     storage: {
       from: (_bucket: string) => ({
-        remove: async (paths: string[]) => {
-          removedPaths.push(...paths);
+        move: async (from: string, to: string) => {
+          archivedPaths.push(to);
+          void from;
           return { error: null };
         },
+        remove: async () => ({ error: null }),
       }),
     },
   };
 
-  return { supabase: client as unknown as SupabaseClient, updatedAppDocIds, removedPaths };
+  return { supabase: client as unknown as SupabaseClient, updatedAppDocIds, archivedPaths };
 }
 
 describe('purgeExpiredFiles — retention hold exclusion (RS-10 / Gap G-19)', () => {
   it('excludes a document belonging to an application with an active hold', async () => {
-    const { supabase, updatedAppDocIds, removedPaths } = fakeSupabase({
+    const { supabase, updatedAppDocIds, archivedPaths } = fakeSupabase({
       heldAppIds: ['held-app'],
       appDocs: [
         {
@@ -93,12 +95,12 @@ describe('purgeExpiredFiles — retention hold exclusion (RS-10 / Gap G-19)', ()
 
     expect(result.appDocs).toBe(0);
     expect(updatedAppDocIds.size).toBe(0);
-    expect(removedPaths).toHaveLength(0);
+    expect(archivedPaths).toHaveLength(0);
     expect(result.purgedByApp.has('held-app')).toBe(false);
   });
 
   it('purges an equally old document whose application has no hold', async () => {
-    const { supabase, updatedAppDocIds, removedPaths } = fakeSupabase({
+    const { supabase, updatedAppDocIds, archivedPaths } = fakeSupabase({
       heldAppIds: [],
       appDocs: [
         {
@@ -114,7 +116,7 @@ describe('purgeExpiredFiles — retention hold exclusion (RS-10 / Gap G-19)', ()
 
     expect(result.appDocs).toBe(1);
     expect(updatedAppDocIds.has('doc-free')).toBe(true);
-    expect(removedPaths).toEqual(['free-app/bank-statement.pdf']);
+    expect(archivedPaths).toEqual(['_archive/free-app/bank-statement.pdf']);
     expect(result.purgedByApp.get('free-app')).toBe(1);
   });
 
