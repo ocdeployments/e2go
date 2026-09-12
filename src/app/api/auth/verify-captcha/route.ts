@@ -1,21 +1,15 @@
 /**
  * POST /api/auth/verify-captcha
  *
- * Validates a Cloudflare Turnstile token server-side before allowing signup.
- * If TURNSTILE_SECRET_KEY is not configured, returns ok=true (graceful
- * degradation — CAPTCHA is optional until keys are provisioned).
+ * Instant client-side CAPTCHA feedback on the signup form (shows a "verified"
+ * checkmark before submission). Not the authoritative check — the real gate
+ * is the server-side verifyTurnstile() call inside /api/auth/signup, which
+ * cannot be bypassed by skipping this pre-check.
  */
 import { NextRequest, NextResponse } from 'next/server';
-import { captureApiError } from '@/lib/capture-error';
+import { verifyTurnstile } from '@/lib/turnstile';
 
 export async function POST(request: NextRequest) {
-  const secretKey = process.env.TURNSTILE_SECRET_KEY;
-
-  // Not configured — skip CAPTCHA check (degrade gracefully)
-  if (!secretKey) {
-    return NextResponse.json({ ok: true, skipped: true });
-  }
-
   let token: string;
   try {
     const body = await request.json();
@@ -24,34 +18,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: false, error: 'Invalid request' }, { status: 400 });
   }
 
-  if (!token) {
-    return NextResponse.json({ ok: false, error: 'Missing CAPTCHA token' }, { status: 400 });
-  }
-
-  // Verify with Cloudflare's siteverify endpoint
   const ip = request.headers.get('CF-Connecting-IP') ?? request.headers.get('x-forwarded-for')?.split(',')[0].trim() ?? '';
+  const result = await verifyTurnstile(token, ip, { route: 'auth/verify-captcha' });
 
-  const form = new FormData();
-  form.append('secret', secretKey);
-  form.append('response', token);
-  if (ip) form.append('remoteip', ip);
-
-  try {
-    const res = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
-      method: 'POST',
-      body: form,
-    });
-    const data = await res.json() as { success: boolean; 'error-codes'?: string[] };
-
-    if (!data.success) {
-      console.warn('[verify-captcha] Turnstile rejected token:', data['error-codes']);
-      return NextResponse.json({ ok: false, error: 'CAPTCHA verification failed. Please try again.' }, { status: 400 });
-    }
-
-    return NextResponse.json({ ok: true });
-  } catch (err) {
-    captureApiError(err, { route: 'auth/verify-captcha' });
-    // On network failure, allow through — CAPTCHA is defense-in-depth, not a gate
-    return NextResponse.json({ ok: true, skipped: true });
+  if (!result.ok) {
+    return NextResponse.json({ ok: false, error: result.error }, { status: 400 });
   }
+
+  return NextResponse.json({ ok: true, skipped: result.skipped });
 }
