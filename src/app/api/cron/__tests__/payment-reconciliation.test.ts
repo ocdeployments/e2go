@@ -46,7 +46,9 @@ function fakeSupabase(opts: {
         return {
           select: () => ({
             eq: () => ({
-              maybeSingle: async () => ({ data: opts.payment ?? null, error: null }),
+              eq: () => ({
+                maybeSingle: async () => ({ data: opts.payment ?? null, error: null }),
+              }),
             }),
           }),
         };

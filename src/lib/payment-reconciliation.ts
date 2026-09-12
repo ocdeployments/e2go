@@ -1,6 +1,7 @@
 import type Stripe from 'stripe';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { captureApiError } from '@/lib/capture-error';
+import { TEST_FIXTURE_COLUMN, TEST_FIXTURE_EXCLUDED_VALUE } from '@/lib/test-fixture-payments';
 
 /**
  * RS-4 (Gaps G-13, G-14, G-15 backstop): none of the existing crons ever ask
@@ -83,6 +84,7 @@ export async function reconcilePayments(
       .from('payments')
       .select('status')
       .eq('stripe_session_id', session.id)
+      .eq(TEST_FIXTURE_COLUMN, TEST_FIXTURE_EXCLUDED_VALUE)
       .maybeSingle();
 
     if (paymentError) {
