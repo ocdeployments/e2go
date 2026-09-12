@@ -41,6 +41,13 @@ export async function buildDocumentSafely(args: {
 }): Promise<{ ok: true; buffer: Buffer } | { ok: false; failure: DocumentBuildFailure }> {
   const { applicationId, ...buildArgs } = args;
   try {
+    // DR-21 chaos drill 3 (download-time build isolation): CHAOS_DRILL_FAIL_BUILD_DOC_TYPE
+    // must never be set in a deployed (Vercel) environment — it is a local-only
+    // fault-injection switch for scripts/chaos-drills.mjs.
+    if (process.env.CHAOS_DRILL_FAIL_BUILD_DOC_TYPE === buildArgs.documentType) {
+      throw new Error(`Chaos drill: forced build failure injected for ${buildArgs.documentType}`);
+    }
+
     const docx = buildDocument(buildArgs);
     const buffer = await Packer.toBuffer(docx);
     return { ok: true, buffer: Buffer.from(buffer) };
