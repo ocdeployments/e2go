@@ -133,7 +133,7 @@ export async function GET(request: NextRequest) {
     }
 
     // ── 2. Check cron consecutive failures ─────────────────────────────────
-    const CRON_JOBS = ['rebuild-profiles', 'email-scheduler'];
+    const CRON_JOBS = ['generation-resume', 'payment-reconciliation', 'data-retention'];
     for (const jobName of CRON_JOBS) {
       const { data: recentRuns, error: recentRunsError } = await admin
         .from('cron_log')
