@@ -9,6 +9,13 @@ import { captureApiError } from '@/lib/capture-error';
 import { fddExtractRequestSchema } from '@/lib/api-schemas';
 import { logDocumentAccess } from '@/lib/document-access-log';
 
+// extractFdd() (fdd-extraction-engine.ts) runs 5 sequential Anthropic calls,
+// each budgeted up to FDD_TIMEOUT_MS (120s) — worst case ~600s before this
+// route's own response is even sent. Without this, the route inherited
+// Vercel's unconfigured default and could be killed mid-extraction after
+// the LLM cost was already incurred.
+export const maxDuration = 800;
+
 // POST /api/fdd/extract — SSE stream
 // Body: { fdd_id: string }
 export async function POST(request: NextRequest) {
