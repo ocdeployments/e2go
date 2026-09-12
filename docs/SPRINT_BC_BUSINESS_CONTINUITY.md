@@ -61,8 +61,8 @@ Legend — **Status:** `TODO` / `WIP` / `DONE` / `BLOCKED (needs Romy)`
 | # | Task | Gap | Kind | Effort | Status |
 |---|---|---|---|---|---|
 | **BC-1** | Decide: disclose Zhipu AI + Xiaomi + direct-Anthropic as sub-processors in the Privacy Policy and `DATA_RETENTION_POLICY.md`, **or** remove them from the fallback chain and accept the availability hit | G-1 | decision | 0.5 day once decided | TODO |
-| **BC-2** | Add an active alert (reuse `ops-alert.ts`, don't invent a second channel) to every `payment-reconciliation.ts` mismatch | G-7 | code | 0.5 day | TODO |
-| **BC-3** | Add `Sentry.captureException` + an active alert to `generation-engine.ts`'s top-level `fail()` handler — today it's `console.error` only | G-7 | code | 0.5 day | TODO |
+| **BC-2** | Add an active alert (reuse `ops-alert.ts`, don't invent a second channel) to every `payment-reconciliation.ts` mismatch | G-7 | code | 0.5 day | DONE 2026-09-12 |
+| **BC-3** | Add `Sentry.captureException` + an active alert to `generation-engine.ts`'s top-level `fail()` handler — today it's `console.error` only | G-7 | code | 0.5 day | DONE 2026-09-12 |
 | **BC-4** | Verify Supabase project plan tier + PITR status/window + Storage bucket versioning directly in the dashboard | G-2 | manual (Romy) | 15 min | TODO |
 
 **Why these four first:** BC-1 is a live legal exposure, not a risk of one — every day it's undecided is another day of undisclosed processing. BC-2/BC-3 close the two silent-failure paths on the payment and generation pipelines, the two things the business cannot function without, and are small, mechanical, low-risk code changes (call an existing function from a new call site). BC-4 is a 15-minute dashboard check that determines whether G-2 needs BC-9 (below) at all — do it before scoping any backup engineering work.
@@ -135,6 +135,6 @@ Same discipline as the audit report this sprint is built from: score the plan be
 
 ## Next agent — start here
 
-1. Surface BC-1 and BC-4 to Romy as decisions/checks, not code — do not proceed to BC-2/BC-3 assuming an answer.
-2. BC-2 and BC-3 can start in parallel with the above — they don't depend on any decision, are small, and close the two most consequential silent-failure paths in the codebase.
-3. Hold Phase 1 effort estimates as provisional until BC-4's answer is in.
+1. **BC-2 and BC-3 are DONE** (2026-09-12) — `src/lib/payment-reconciliation.ts` now calls `sendOpsAlert()` on every mismatch; `generation-engine.ts`'s `fail()` handler now calls `Sentry.captureException` + `sendOpsAlert()`. `tsc`/`jest` (705 tests)/`npm run build` all clean at each commit. Not yet pushed to `origin/dev` — confirm with Romy before pushing.
+2. BC-1 and BC-4 still need Romy directly — surface them as decisions/checks, not code. Nothing else in Phase 0 remains.
+3. Once BC-4's answer is in, revisit Phase 1's effort estimates (still provisional) before starting BC-5 onward.
