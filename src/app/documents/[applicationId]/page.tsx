@@ -82,8 +82,13 @@ export default function DocumentsReviewPage() {
     reviewed: false,
     attorney: false,
     responsible: false,
-    outcomes_consent: false, // D6 — consent to share anonymised outcome for learning
   });
+  // D6 — consent to share anonymised outcome for learning. Genuinely optional:
+  // tracked separately from the mandatory legal acknowledgments above so it
+  // can never gate the download, and persisted immediately on toggle rather
+  // than only living in local state (BC-9).
+  const [outcomesConsent, setOutcomesConsent] = useState(false);
+  const [savingConsent, setSavingConsent] = useState(false);
   const [downloadState, setDownloadState] = useState<
     "locked" | "ready" | "downloading" | "complete" | "error"
   >("locked");
@@ -100,6 +105,32 @@ export default function DocumentsReviewPage() {
   useEffect(() => {
     setDownloadState(canDownload ? "ready" : "locked");
   }, [canDownload]);
+
+  // D6 — load the outcome-consent preference already on file (set at signup,
+  // via the nav banner, or a prior visit here) so this checkbox never
+  // contradicts what's actually persisted.
+  useEffect(() => {
+    fetch("/api/profile/outcomes-consent")
+      .then((r) => r.json())
+      .then((d: { outcomes_consent: boolean | null }) => {
+        setOutcomesConsent(d.outcomes_consent === true);
+      })
+      .catch(() => {/* non-blocking; checkbox just starts unchecked */});
+  }, []);
+
+  async function setOutcomesConsentPersisted(consent: boolean): Promise<void> {
+    setOutcomesConsent(consent);
+    setSavingConsent(true);
+    try {
+      await fetch("/api/profile/outcomes-consent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ consent }),
+      });
+    } finally {
+      setSavingConsent(false);
+    }
+  }
 
   // ─── Data fetching ──────────────────────────────────────────────────────────
 
@@ -711,10 +742,6 @@ export default function DocumentsReviewPage() {
                   key: "responsible" as const,
                   text: "I accept full responsibility for the accuracy of the information I provided",
                 },
-                {
-                  key: "outcomes_consent" as const,
-                  text: "I consent to E2go.app using my anonymised case outcome (approved / denied / RFE) to improve guidance for future E-2 applicants. No personal details are shared. I can withdraw consent at any time in Settings.",
-                },
               ].map(({ key, text }) => (
                 <label key={key} className="flex cursor-pointer items-start gap-3">
                   <input
@@ -736,6 +763,28 @@ export default function DocumentsReviewPage() {
                   </span>
                 </label>
               ))}
+            </div>
+
+            {/* D6 — genuinely optional; never gates canDownload/downloadState */}
+            <div className="mt-6 border-t border-[#C9A84C]/10 pt-6">
+              <label className="flex cursor-pointer items-start gap-3">
+                <input
+                  type="checkbox"
+                  checked={outcomesConsent}
+                  disabled={savingConsent}
+                  onChange={(e) => setOutcomesConsentPersisted(e.target.checked)}
+                  className="mt-1 h-4 w-4 accent-[#C9A84C]"
+                />
+                <span
+                  className="text-sm text-white/50"
+                  style={{ fontFamily: "'DM Sans', sans-serif" }}
+                >
+                  Optional — I consent to E2go.app using my anonymised case outcome
+                  (approved / denied / RFE) to improve guidance for future E-2
+                  applicants. No personal details are shared. I can withdraw
+                  consent at any time in Settings.
+                </span>
+              </label>
             </div>
 
             <div className="mt-8 text-center">
