@@ -21,6 +21,7 @@
  *   node scripts/chaos-drills.mjs drill2-fail <docType>
  *   node scripts/chaos-drills.mjs drill2-recover <docType>
  *   node scripts/chaos-drills.mjs drill3 <docType>
+ *   node scripts/chaos-drills.mjs drill4
  *
  * docType defaults to 'source_of_funds' for drill2/drill3 if omitted.
  */
@@ -464,6 +465,45 @@ async function drill3(docType = DEFAULT_DRILL_DOC_TYPE) {
   log(`\ndrill3: PASS — download-time failure for ${docType} produced a real 200 + partial ZIP, nothing lost.\n`);
 }
 
+// ── drill4: payment-reconciliation catches a Stripe/DB mismatch ────────
+
+async function drill4() {
+  log('\n=== drill4: payment-reconciliation cron must catch a Stripe/DB mismatch ===\n');
+  log('  RUNBOOK STEP (manual, required before this drill observes a real mismatch):');
+  log('    1. In .env.local, set:');
+  const { userId, application } = await requireChaosPersona();
+  log(`         CHAOS_DRILL_FORCE_PAYMENT_MISMATCH_APP_ID=${application.id}`);
+  log(`         CHAOS_DRILL_FORCE_PAYMENT_MISMATCH_USER_ID=${userId}`);
+  log('    2. Restart the dev server: npm run dev');
+  log('    3. Re-run this command once the server is back up.');
+  log('    Note: if RESEND_API_KEY is set locally, this also sends a real ops alert email.\n');
+
+  // No payments row exists for the synthetic session id this drill injects
+  // (route.ts derives it from applicationId, but the id itself is never
+  // written anywhere), so reconcilePayments() must always see it as
+  // unmatched — this is what exercises the 'payment-not-recorded' branch
+  // wired to sendOpsAlert (BC-2/BC-3).
+  const syntheticSessionId = `cs_test_chaos_drill_${application.id}`;
+  const existing = await dbSelect('payments', `?stripe_session_id=eq.${syntheticSessionId}&select=id`);
+  assert(existing.length === 0, `no pre-existing payments row for synthetic session ${syntheticSessionId}`);
+
+  const cronRes = await apiFetch('/api/cron/payment-reconciliation', { method: 'GET', bearer: CRON_SECRET });
+  if (cronRes.status !== 200) {
+    throw new Error(`/api/cron/payment-reconciliation failed (${cronRes.status}): ${cronRes.text.slice(0, 500)}` +
+      (cronRes.status === 503 ? ' — is STRIPE_SECRET_KEY set in .env.local?' : ''));
+  }
+  ok(`/api/cron/payment-reconciliation -> 200 (checked ${cronRes.json?.checked}, mismatches ${cronRes.json?.mismatches})`);
+  assert((cronRes.json?.mismatches ?? 0) >= 1, `cron reported at least one mismatch (got ${cronRes.json?.mismatches})`);
+
+  const logRows = await dbSelect('cron_log', `?job_name=eq.payment-reconciliation&order=created_at.desc&limit=1&select=status,metadata`);
+  const logRow = logRows[0];
+  assert(!!logRow, 'a cron_log row exists for payment-reconciliation');
+  assert(logRow.status === 'success', `cron_log row has status='success' (got '${logRow?.status}') — the mismatch was caught, not a crash`);
+  assert((logRow.metadata?.mismatches ?? 0) >= 1, `cron_log metadata records the mismatch count (got ${JSON.stringify(logRow.metadata)})`);
+
+  log('\ndrill4: PASS — a Stripe/DB payment mismatch was detected and logged without the cron itself failing.\n');
+}
+
 // ── CLI ──────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -475,8 +515,9 @@ async function main() {
       case 'drill2-fail': await drill2Fail(arg || DEFAULT_DRILL_DOC_TYPE); break;
       case 'drill2-recover': await drill2Recover(arg || DEFAULT_DRILL_DOC_TYPE); break;
       case 'drill3': await drill3(arg || DEFAULT_DRILL_DOC_TYPE); break;
+      case 'drill4': await drill4(); break;
       default:
-        console.error('Usage: node scripts/chaos-drills.mjs <seed|drill1|drill2-fail|drill2-recover|drill3> [docType]');
+        console.error('Usage: node scripts/chaos-drills.mjs <seed|drill1|drill2-fail|drill2-recover|drill3|drill4> [docType]');
         process.exit(1);
     }
   } catch (err) {
