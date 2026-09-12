@@ -3,6 +3,7 @@ import { createHash } from 'crypto';
 import { join } from 'path';
 import Anthropic from '@anthropic-ai/sdk';
 import * as Sentry from '@sentry/nextjs';
+import { sendOpsAlert } from './ops-alert';
 import { synthesizeInvestorProfile, formatInvestorProfileContext } from './investor-profile-synthesizer';
 import { scoreCase, type GapCategory, type CpuGapContext, type LedgerFact } from './gap-analysis-engine';
 import { createClient } from '@supabase/supabase-js';
@@ -2622,6 +2623,14 @@ export async function runGenerationPipeline(
   const fail = async (stepNum: number, error: string) => {
     console.error(`Pipeline failed at step ${stepNum}:`, error);
     emitStep(stepNum, 'failed');
+    Sentry.captureException(new Error(`Generation pipeline failed at step ${stepNum}: ${error}`), {
+      tags: { route: 'generation-engine', stage: GENERATION_STEP_LABELS[stepNum] ?? `step-${stepNum}` },
+      extra: { applicationId, userId, jobId, stepNum, error },
+    });
+    await sendOpsAlert(
+      `Document generation failed — application ${applicationId}`,
+      `Pipeline failed at step ${stepNum} (${GENERATION_STEP_LABELS[stepNum] ?? 'unknown step'}).\n\napplicationId: ${applicationId}\nuserId: ${userId}\njobId: ${jobId}\n\nerror: ${error}`
+    );
     await updateJob({
       status: 'failed',
       error_message: error,

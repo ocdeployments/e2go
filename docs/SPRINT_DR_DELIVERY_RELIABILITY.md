@@ -129,7 +129,7 @@ Legend — **Status:** `TODO` / `WIP` / `DONE` / `BLOCKED (needs Romy)`
 
 | # | Task | Gap | Kind | Status |
 |---|---|---|---|---|
-| **DR-20** | The delivery test matrix | all | code | TODO |
+| **DR-20** | The delivery test matrix | all | code | TODO (1/36 cells piloted) |
 | **DR-21** | Three chaos drills, green | G-01, G-04, G-08 | code | DONE |
 | **DR-22** | The generation ops dashboard | G-06 | code | DONE* |
 
@@ -1151,11 +1151,43 @@ gap.
 ## Phase 8 — Prove it, then keep proving it
 
 ### DR-20 · The delivery test matrix
-**All gaps · code · TODO · ~4 eng-days · ~$300–500 LLM**
+**All gaps · code · TODO (1/36 cells piloted) · ~4 eng-days · ~$300–500 LLM**
 
 Design finalized and approved by Romy September 11, 2026 — full plan at
-`.claude/plans/wobbly-bubbling-plum.md`. Nothing below has been built, migrated,
-seeded, or run yet; this section describes what's designed, not what's done.
+`.claude/plans/wobbly-bubbling-plum.md`. `payments.is_test_fixture` migration and
+`scripts/seed-delivery-matrix.mjs` exist and were exercised against one pilot
+cell September 12, 2026 (see below); `scripts/delivery-matrix.mjs`, the remaining
+35 cells, the results table, the UI/UX walkthrough, and
+`scripts/teardown-delivery-matrix.mjs` are still not built or run.
+
+**Pilot cell verification (September 12, 2026):** before scaling to all 36 cells,
+ran the seed script for one cell and checked `case_theory`, `document_intelligence`,
+and `case_brief_json` directly against the live schema rather than trusting a 200
+response, per this project's schema-drift doctrine. All three came back genuinely
+complete. Two real bugs in the seed script's cleanup/resume-analysis logging were
+found and fixed in the process (commit `fb142cb`).
+
+**Concurrent-build race found and fixed, not fixture-specific — a live bug in the
+shared fire-and-forget path (`/api/answers`, `/api/apply/parse-document`,
+`/api/simulator/outcome`):** `buildCaseIntelligence`'s per-application lock had a
+30-second TTL, shorter than `generateCaseTheory`'s 90-second LLM timeout, so a
+second caller could legitimately steal the lock and run a fully concurrent build
+while the first was still in flight. The final `case_theory` upsert was
+unconditional (last write wins), so a slower build with a staler answer snapshot
+could overwrite a faster, fresher one. Scaling DR-20's seeding to 36 concurrent
+cells would have hit this constantly, which is how the pilot surfaced it. Fixed
+via two commits, pushed to `origin/dev`:
+- `2f5ea11` — `supabase/migrations/20260912170000_case_theory_ordering_guard.sql`:
+  adds `case_theory.model_snapshot_at` + `upsert_case_theory_if_newer` RPC, so a
+  write is only applied if its snapshot is not older than what's already stored.
+  Applied live via `supabase db push --linked` and verified against the live schema.
+- `707e32b` — `src/lib/case-intelligence-core.ts`: raises the lock TTL to 120s and
+  threads a `modelSnapshotAt` through `generateCaseTheory` into the new
+  conditional-write RPC — defense in depth, so even a lock stolen after a deploy
+  restart can't let a late-finishing stale build clobber a fresher result.
+
+Both commits: full `npx jest` (705/705) and `npm run build` + 32 Playwright
+security tests clean; verified with `scripts/audit-schema-drift.py --refresh`.
 
 Run the real generation pipeline end to end against **36 cells** — solo / spousal /
 partnership × franchise / independent × Japan / Canada / South Korea ×
@@ -1200,10 +1232,11 @@ task.
 > and no target stated does not count as passed.
 >
 > **Test** — `scripts/seed-delivery-matrix.mjs` (checkpointed/resumable per-cell
-> seeding via the real pipeline) and `scripts/delivery-matrix.mjs` (drives real
-> generation, produces the dated results table committed to this file), plus
-> `scripts/teardown-delivery-matrix.mjs` to remove the 36 synthetic accounts once
-> Romy has reviewed results. None of the three exist yet.
+> seeding via the real pipeline, built and piloted on 1 cell) and
+> `scripts/delivery-matrix.mjs` (drives real generation, produces the dated
+> results table committed to this file), plus `scripts/teardown-delivery-matrix.mjs`
+> to remove the 36 synthetic accounts once Romy has reviewed results. The latter
+> two do not exist yet.
 
 ---
 

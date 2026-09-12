@@ -3,6 +3,7 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import * as Sentry from '@sentry/nextjs';
 import { captureApiError } from '@/lib/capture-error';
 import { sendResetAfterFailureEmail } from '@/lib/emails/generation-emails';
+import { TEST_FIXTURE_COLUMN, TEST_FIXTURE_EXCLUDED_VALUE } from '@/lib/test-fixture-payments';
 
 // DR-3 (Gap G-06): runs every 10 minutes via Vercel cron — daily was the
 // failure, not the 30-minute staleness threshold. Reaps BOTH stale 'running'
@@ -20,7 +21,8 @@ async function isPaidUser(admin: SupabaseClient, userId: string | null | undefin
     .from('payments')
     .select('id', { count: 'exact', head: true })
     .eq('user_id', userId)
-    .eq('status', 'completed');
+    .eq('status', 'completed')
+    .eq(TEST_FIXTURE_COLUMN, TEST_FIXTURE_EXCLUDED_VALUE);
   if (error) {
     captureApiError(error, { route: 'cron/health-watchdog', stage: 'is-paid-check', userId });
     return false;
@@ -38,8 +40,15 @@ function getAdmin() {
 async function sendAlert(subject: string, body: string) {
   const apiKey = process.env.RESEND_API_KEY;
   const from   = process.env.RESEND_FROM ?? 'ops@e2go.app';
-  const to     = process.env.OPS_ALERT_EMAIL ?? 'romyjames@gmail.com';
-  if (!apiKey) return;
+  const to     = process.env.OPS_ALERT_EMAIL ?? 'ops@e2go.app';
+  if (!apiKey) {
+    captureApiError(new Error('health-watchdog sendAlert: RESEND_API_KEY not set, alert not sent'), {
+      route: 'cron/health-watchdog',
+      stage: 'missing-api-key',
+      subject,
+    });
+    return;
+  }
 
   await fetch('https://api.resend.com/emails', {
     method: 'POST',
@@ -131,7 +140,7 @@ export async function GET(request: NextRequest) {
     }
 
     // ── 2. Check cron consecutive failures ─────────────────────────────────
-    const CRON_JOBS = ['rebuild-profiles', 'email-scheduler'];
+    const CRON_JOBS = ['generation-resume', 'payment-reconciliation', 'data-retention'];
     for (const jobName of CRON_JOBS) {
       const { data: recentRuns, error: recentRunsError } = await admin
         .from('cron_log')

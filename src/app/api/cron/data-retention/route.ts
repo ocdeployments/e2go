@@ -220,6 +220,16 @@ export async function GET(request: NextRequest) {
 
   const supabase = getSupabaseAdmin();
 
+  const { data: logRow, error: logInsertError } = await supabase
+    .from('cron_log')
+    .insert({ job_name: 'data-retention', status: 'running' })
+    .select('id')
+    .single();
+  if (logInsertError) {
+    captureApiError(logInsertError, { route: 'cron/data-retention', stage: 'cron-log-insert' });
+  }
+  const logId = logRow?.id ?? '';
+
   try {
     const accounts = await purgeDeletedAccounts(supabase);
     const files = await purgeExpiredFiles(supabase);
@@ -235,10 +245,31 @@ export async function GET(request: NextRequest) {
         `identity extracted_json redacted=${identity.redacted}, dormant=${dormant.dormant}`,
     );
 
+    if (logId) {
+      await supabase
+        .from('cron_log')
+        .update({
+          status: 'success',
+          completed_at: new Date().toISOString(),
+          rows_processed: accounts.purged + files.appDocs + files.fddDocs,
+          metadata: { accounts, files: { appDocs: files.appDocs, fddDocs: files.fddDocs }, reminders, completions, identity, dormant },
+        })
+        .eq('id', logId);
+    }
+
     const { purgedByApp: _purgedByApp, ...filesSummary } = files;
     return NextResponse.json({ ok: true, accounts, files: filesSummary, reminders, completions, identity, dormant });
   } catch (err) {
     captureApiError(err, { route: 'cron/data-retention', stage: 'run' });
+
+    if (logId) {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      await supabase
+        .from('cron_log')
+        .update({ status: 'failed', completed_at: new Date().toISOString(), error: errMsg })
+        .eq('id', logId);
+    }
+
     return NextResponse.json({ error: 'Retention run failed' }, { status: 500 });
   }
 }

@@ -1,6 +1,8 @@
 import type Stripe from 'stripe';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { captureApiError } from '@/lib/capture-error';
+import { sendOpsAlert } from '@/lib/ops-alert';
+import { TEST_FIXTURE_COLUMN, TEST_FIXTURE_EXCLUDED_VALUE } from '@/lib/test-fixture-payments';
 
 /**
  * RS-4 (Gaps G-13, G-14, G-15 backstop): none of the existing crons ever ask
@@ -83,6 +85,7 @@ export async function reconcilePayments(
       .from('payments')
       .select('status')
       .eq('stripe_session_id', session.id)
+      .eq(TEST_FIXTURE_COLUMN, TEST_FIXTURE_EXCLUDED_VALUE)
       .maybeSingle();
 
     if (paymentError) {
@@ -136,6 +139,16 @@ export async function reconcilePayments(
       userId: mismatch.userId,
       tierId: mismatch.tierId,
     });
+  }
+
+  if (mismatches.length > 0) {
+    const body = mismatches
+      .map((m) => `- session ${m.sessionId} / application ${m.applicationId ?? 'unknown'} / user ${m.userId ?? 'unknown'} / tier ${m.tierId ?? 'unknown'}: ${m.reason}`)
+      .join('\n');
+    await sendOpsAlert(
+      `Payment reconciliation found ${mismatches.length} mismatch(es)`,
+      `Stripe's ledger disagrees with our records for ${mismatches.length} checkout session(s):\n\n${body}`
+    );
   }
 
   return { checked, mismatches };

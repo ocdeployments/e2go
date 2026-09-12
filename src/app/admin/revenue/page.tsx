@@ -3,6 +3,7 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import { TEST_FIXTURE_COLUMN, TEST_FIXTURE_EXCLUDED_VALUE } from '@/lib/test-fixture-payments';
 
 export const dynamic = 'force-dynamic';
 
@@ -110,7 +111,7 @@ export default async function RevenuePage() {
     { count: quizCount },
     { count: genCompleted },
   ] = await Promise.all([
-    admin.from('payments').select('id, user_id, tier, payment_type, amount_cents, amount_paid, status, created_at').eq('status', 'completed').order('created_at', { ascending: true }),
+    admin.from('payments').select('id, user_id, tier, payment_type, amount_cents, amount_paid, status, created_at').eq('status', 'completed').eq(TEST_FIXTURE_COLUMN, TEST_FIXTURE_EXCLUDED_VALUE).order('created_at', { ascending: true }),
     admin.from('application_lifecycle').select('user_id, updated_at, quiz_completed_at, module3_started_at'),
     admin.from('quiz_sessions').select('id', { count: 'exact', head: true }),
     admin.from('document_generation_jobs').select('id', { count: 'exact', head: true }).eq('status', 'completed'),

@@ -181,10 +181,15 @@ function textContainsAny(text: string, keywords: string[]): boolean {
 
 /**
  * Helper: extract Tab J answers as a single text blob for keyword scanning.
+ *
+ * qj-/QA- were the legacy question-key prefixes this was originally written
+ * against; the live intake (field-registry.ts) has since moved to M3-* keys,
+ * so without that prefix every real application's answers were invisible to
+ * this scan and the experience/education dimensions fell through to ABSENT.
  */
 function getTabJText(answers: Record<string, unknown>): string {
   return Object.entries(answers)
-    .filter(([key]) => key.startsWith('qj-') || key.startsWith('QA-'))
+    .filter(([key]) => key.startsWith('qj-') || key.startsWith('QA-') || key.startsWith('M3-'))
     .map(([, value]) => String(value))
     .join(' ');
 }
