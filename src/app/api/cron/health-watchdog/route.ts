@@ -40,8 +40,15 @@ function getAdmin() {
 async function sendAlert(subject: string, body: string) {
   const apiKey = process.env.RESEND_API_KEY;
   const from   = process.env.RESEND_FROM ?? 'ops@e2go.app';
-  const to     = process.env.OPS_ALERT_EMAIL ?? 'romyjames@gmail.com';
-  if (!apiKey) return;
+  const to     = process.env.OPS_ALERT_EMAIL ?? 'ops@e2go.app';
+  if (!apiKey) {
+    captureApiError(new Error('health-watchdog sendAlert: RESEND_API_KEY not set, alert not sent'), {
+      route: 'cron/health-watchdog',
+      stage: 'missing-api-key',
+      subject,
+    });
+    return;
+  }
 
   await fetch('https://api.resend.com/emails', {
     method: 'POST',
