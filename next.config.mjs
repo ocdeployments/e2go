@@ -23,8 +23,8 @@ const nextConfig = {
     // correct hardening; stripping it in dev breaks the dev server entirely.
     const isDev = process.env.NODE_ENV !== 'production';
     const mainScriptSrc = isDev
-      ? "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://openrouter.ai https://api.anthropic.com;"
-      : "script-src 'self' 'unsafe-inline' https://openrouter.ai https://api.anthropic.com;";
+      ? "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://openrouter.ai https://api.anthropic.com https://challenges.cloudflare.com;"
+      : "script-src 'self' 'unsafe-inline' https://openrouter.ai https://api.anthropic.com https://challenges.cloudflare.com;";
     return [
       {
         // Keystatic admin — looser CSP so the UI works
@@ -42,7 +42,7 @@ const nextConfig = {
         headers: [
           {
             key: 'Content-Security-Policy',
-            value: `default-src 'self'; ${mainScriptSrc} style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co https://openrouter.ai https://api.anthropic.com; img-src 'self' data: https:; frame-ancestors 'none';`,
+            value: `default-src 'self'; ${mainScriptSrc} style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co https://openrouter.ai https://api.anthropic.com https://challenges.cloudflare.com; img-src 'self' data: https:; frame-src https://challenges.cloudflare.com; frame-ancestors 'none';`,
           },
           {
             key: 'X-Frame-Options',

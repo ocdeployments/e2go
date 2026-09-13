@@ -28,6 +28,38 @@ function getStripe(): Stripe | null {
   return new Stripe(secretKey, { apiVersion: '2026-05-27.dahlia' });
 }
 
+/**
+ * DR-21 chaos drill 4 (BC-19): a "Stripe shows paid, our records don't"
+ * mismatch can't be rehearsed by touching the real Stripe account (that's
+ * exactly the kind of live-third-party action docs/RUNBOOKS.md Runbook 2
+ * rules out for an agent session), so this appends one synthetic completed
+ * session to whatever the real Stripe account returns, scoped to the chaos
+ * persona's own applicationId/userId. Same escape-hatch shape as
+ * CHAOS_DRILL_FAIL_DOC_TYPE / CHAOS_DRILL_FAIL_BUILD_DOC_TYPE: read via
+ * process.env in this server process, so scripts/chaos-drills.mjs cannot
+ * flip it itself and prints a runbook step instead.
+ */
+function withChaosDrillMismatch(stripe: Stripe): Stripe {
+  const applicationId = process.env.CHAOS_DRILL_FORCE_PAYMENT_MISMATCH_APP_ID;
+  const userId = process.env.CHAOS_DRILL_FORCE_PAYMENT_MISMATCH_USER_ID;
+  if (!applicationId || !userId) return stripe;
+
+  const realList = stripe.checkout.sessions.list.bind(stripe.checkout.sessions);
+  stripe.checkout.sessions.list = (async (params: Stripe.RequestOptions) => {
+    const page = await realList(params as never);
+    const synthetic = {
+      id: `cs_test_chaos_drill_${applicationId}`,
+      status: 'complete',
+      payment_status: 'paid',
+      created: Math.floor(Date.now() / 1000) - 20 * 60,
+      metadata: { applicationId, userId, tierId: 'foundation' },
+    } as unknown as Stripe.Checkout.Session;
+    return { ...page, data: [...page.data, synthetic] };
+  }) as typeof stripe.checkout.sessions.list;
+
+  return stripe;
+}
+
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get('authorization');
   const cronSecret = process.env.CRON_SECRET;
@@ -42,6 +74,7 @@ export async function GET(request: NextRequest) {
     });
     return NextResponse.json({ error: 'Stripe not configured' }, { status: 503 });
   }
+  withChaosDrillMismatch(stripe);
 
   const supabase = getSupabaseAdmin();
 

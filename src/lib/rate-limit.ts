@@ -21,13 +21,14 @@
  *   notification  — 3 req / 60 min    (admin-inbox notifications, e.g. franchise referral)
  *   promo-validate — 20 req / 10 min  (promo code pre-check; keyed per-user, generous enough for legitimate retries/typos)
  *   early-access-submit — 5 req / 60 min (public lead-capture form; keyed per-IP, publicly-postable link)
+ *   auth           — 8 req / 10 min    (login + signup proxy routes; keyed per-IP, pre-session so no user id yet)
  */
 
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 import { captureApiError } from "./capture-error";
 
-export type RateLimitProfile = 'faq' | 'evaluate' | 'coaching' | 'tts' | 'transcribe' | 'generate' | 'fdd' | 'fdd-analysis' | 'semantic-eval' | 'parse-doc' | 'notification' | 'gap-analysis-run' | 'resend-results' | 'promo-validate' | 'early-access-submit';
+export type RateLimitProfile = 'faq' | 'evaluate' | 'coaching' | 'tts' | 'transcribe' | 'generate' | 'fdd' | 'fdd-analysis' | 'semantic-eval' | 'parse-doc' | 'notification' | 'gap-analysis-run' | 'resend-results' | 'promo-validate' | 'early-access-submit' | 'auth';
 
 const PROFILES: Record<RateLimitProfile, { requests: number; window: string }> = {
   faq:                { requests: 10,  window: '10 m' },
@@ -48,6 +49,7 @@ const PROFILES: Record<RateLimitProfile, { requests: number; window: string }> =
   'resend-results':   { requests: 3,   window: '60 m' },
   'promo-validate':   { requests: 20,  window: '10 m' },
   'early-access-submit': { requests: 5, window: '60 m' },
+  auth:                  { requests: 8, window: '10 m' },
 };
 
 const limiters = new Map<RateLimitProfile, Ratelimit>();

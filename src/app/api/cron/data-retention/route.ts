@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { captureApiError } from '@/lib/capture-error';
-import { daysAgo, BUCKET, purgeExpiredFiles, sendRetentionReminders, sendRetentionCompletions } from '@/lib/retention-cron';
+import { daysAgo, BUCKET, purgeExpiredFiles, sendRetentionReminders, sendRetentionCompletions, sweepArchivedFiles } from '@/lib/retention-cron';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
@@ -106,17 +106,29 @@ async function purgeDeletedAccounts(supabase: SupabaseClient) {
   for (const profile of doomed ?? []) {
     const userId = profile.id as string;
     try {
-      // 1. Sweep every Storage object the user owns.
+      // 1. Archive every Storage object the user owns (BC-16 / G-10) rather
+      //    than removing it outright — moved under _archive/ and hard-deleted
+      //    by sweepArchivedFiles only after the recovery window elapses. The
+      //    profiles/auth.users row is about to be deleted below, so track the
+      //    pending sweep in archived_account_purges instead of on that row.
       const objects = await listAllObjects(supabase, userId);
       if (objects.length > 0) {
-        // Supabase caps removals per call; chunk to be safe.
-        for (let i = 0; i < objects.length; i += 100) {
-          const chunk = objects.slice(i, i + 100);
-          const { error: rmErr } = await supabase.storage.from(BUCKET).remove(chunk);
-          if (rmErr) {
-            captureApiError(rmErr, { route: 'cron/data-retention', stage: 'storage-remove', userId });
-            result.errors.push(`storage-remove ${userId}: ${rmErr.message}`);
+        const archivePrefix = `_archive/${userId}`;
+        for (const path of objects) {
+          const archivePath = `_archive/${path}`;
+          const { error: mvErr } = await supabase.storage.from(BUCKET).move(path, archivePath);
+          if (mvErr && !/not found/i.test(mvErr.message)) {
+            captureApiError(mvErr, { route: 'cron/data-retention', stage: 'archive-account-object', userId });
+            result.errors.push(`archive-account-object ${userId}: ${mvErr.message}`);
           }
+        }
+        const { error: logErr } = await supabase.from('archived_account_purges').insert({
+          user_id_hint: userId,
+          storage_prefix: archivePrefix,
+        });
+        if (logErr) {
+          captureApiError(logErr, { route: 'cron/data-retention', stage: 'log-archived-account-purge', userId });
+          result.errors.push(`log-archived-account-purge ${userId}: ${logErr.message}`);
         }
       }
 
@@ -233,6 +245,7 @@ export async function GET(request: NextRequest) {
   try {
     const accounts = await purgeDeletedAccounts(supabase);
     const files = await purgeExpiredFiles(supabase);
+    const archiveSweep = await sweepArchivedFiles(supabase);
     const reminders = await sendRetentionReminders(supabase);
     const completions = await sendRetentionCompletions(supabase, files.purgedByApp);
     const identity = await redactAcceptedIdentityDocs(supabase);
@@ -240,7 +253,8 @@ export async function GET(request: NextRequest) {
 
     console.log(
       `[cron/data-retention] accounts purged=${accounts.purged}/${accounts.scanned}, ` +
-        `files purged app=${files.appDocs} fdd=${files.fddDocs}, ` +
+        `files archived app=${files.appDocs} fdd=${files.fddDocs}, ` +
+        `archive sweep hard-deleted app=${archiveSweep.appDocs} fdd=${archiveSweep.fddDocs} accounts=${archiveSweep.accountPrefixes}, ` +
         `retention reminders sent=${reminders.sent}, completions sent=${completions.sent}, ` +
         `identity extracted_json redacted=${identity.redacted}, dormant=${dormant.dormant}`,
     );
@@ -252,13 +266,13 @@ export async function GET(request: NextRequest) {
           status: 'success',
           completed_at: new Date().toISOString(),
           rows_processed: accounts.purged + files.appDocs + files.fddDocs,
-          metadata: { accounts, files: { appDocs: files.appDocs, fddDocs: files.fddDocs }, reminders, completions, identity, dormant },
+          metadata: { accounts, files: { appDocs: files.appDocs, fddDocs: files.fddDocs }, archiveSweep, reminders, completions, identity, dormant },
         })
         .eq('id', logId);
     }
 
     const { purgedByApp: _purgedByApp, ...filesSummary } = files;
-    return NextResponse.json({ ok: true, accounts, files: filesSummary, reminders, completions, identity, dormant });
+    return NextResponse.json({ ok: true, accounts, files: filesSummary, archiveSweep, reminders, completions, identity, dormant });
   } catch (err) {
     captureApiError(err, { route: 'cron/data-retention', stage: 'run' });
 
