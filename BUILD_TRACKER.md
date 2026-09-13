@@ -6,6 +6,48 @@
 
 ---
 
+## LAUNCH READINESS CHECKLIST (added September 12, 2026 — post-Sprint-BC)
+
+Sprint BC (BC-13→BC-19, business continuity / DR) is now fully closed — see Session 152 below. This checklist is the next layer: pre-launch stabilization + post-launch integrity checks, covering what Sprint BC does not (Sprint BC was backups/DR/runbooks; this is app-level correctness, abuse protection, and ongoing monitoring). Not yet started unless marked done.
+
+### A. Pre-launch freeze and verify
+- [ ] Tag current `main` as `v1.0-rc1`; `dev` accepts launch-blocking fixes only from here — no new features until launch
+- [ ] Run `scripts/audit-schema-drift.py --refresh` against production, fix every drift item found
+- [ ] Turn schema-drift audit into a CI gate (fails build on drift) instead of a manual command
+- [ ] Convert `local-rules/require-supabase-error-check` from warn to error, or sweep the ~60 files currently only warning
+- [ ] End-to-end smoke test: signup → intake → document upload → generation → download → deletion
+- [ ] End-to-end smoke test: Stripe checkout with a real test-mode card
+- [ ] End-to-end smoke test: partnership/P2 flow
+- [ ] Confirm data-retention cron (30/90-day purge) runs and doesn't touch active users' files
+- [ ] BC-12 final step: merge PR #7 (`rotate()` fix), re-run `db-backup.yml`, confirm all 4 steps green end-to-end
+- [ ] Restore drill: pull a real R2 backup, `pg_restore` into a scratch DB, confirm it's queryable
+- [ ] Pin exact versions for load-bearing deps (Stripe, Supabase, Next.js) — no `^`/`~`
+- [ ] Decide on Dependabot: security-alerts-only vs. none — currently no `.github/dependabot.yml`
+- [ ] Diff `vercel env pull` output against the actual Vercel dashboard production env (known prior gap: Stripe pricing var)
+- [ ] Enable branch protection on `main` (confirmed currently NONE via GitHub API — no PR requirement, no required status checks, no force-push block)
+
+### B. Launch-blocking decisions (need Romy's call, not unilateral)
+- [ ] D6 consent UI (signup + terms-update prompts) — launch-blocking or deferrable?
+- [ ] BC-1 (Zhipu/OpenRouter disclosure) — still open, must not be resolved unilaterally
+- [ ] BC-5/6/7 (GitHub repo/org settings) — need Romy directly
+
+### C. Pre-launch hardening (new gaps found in this review, not covered by Sprint BC)
+- [ ] Add rate limiting to `/api/documents/extract`, `/api/fdd/extract`, `/api/generate` (highest-cost LLM routes, currently unprotected from abuse/runaway-client cost exposure)
+- [ ] Confirm and test the Vercel rollback path (promote-previous-deployment) once, before an incident forces you to learn it live
+- [ ] Write `RUNBOOK.md` (or extend `docs/RUNBOOKS.md`) with solo-founder continuity info: where backups live, how to restore, how to rotate a compromised key, how to roll back a bad deploy, who to call for Supabase/Vercel/Stripe support
+
+### D. Post-launch, ongoing
+- [ ] Mirror the pre-push hook checks (`tsc --noEmit`, `jest`, `build`, `playwright`) as a required GitHub Actions status check on every PR
+- [ ] Confirm real-time error alerting (Sentry or Vercel alerts) is wired to a channel checked daily
+- [ ] Daily/weekly scheduled schema-drift check against production, alerting on drift
+- [ ] Close the `rebuild-profiles` cron_log gap (flagged, unresolved) — needed as a canary that scheduled jobs actually ran
+- [ ] Monthly/quarterly actual restore drill (not just "the backup workflow went green")
+- [ ] Second-look review policy (even self-review after a cooldown) for anything touching Stripe webhooks, pricing, or document retention
+- [ ] Quarterly reminder to rotate R2/Supabase/Stripe keys; review `gh secret list` for stale entries
+- [ ] One dashboard/digest answering: last successful backup timestamp, last cron_log entries per job, last deploy, current error rate
+
+---
+
 ## Session 152 — Business-continuity/DR audit, self-scored, mitigation sprint written and self-scored — planning only, no code (September 12, 2026)
 
 **Branch:** dev. **Docs-only session, nothing committed.** Three files touched: this file, plus two new files — `docs/BUSINESS_CONTINUITY_GAPS.md` and `docs/SPRINT_BC_BUSINESS_CONTINUITY.md`. No code, migration, or infra change was made.
