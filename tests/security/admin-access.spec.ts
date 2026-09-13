@@ -4,7 +4,6 @@ test.describe('Admin Access Control', () => {
   test('Unauthenticated user redirected from /admin', async ({ page }) => {
     await page.context().clearCookies();
     await page.goto('http://localhost:3001/admin');
-    await page.waitForLoadState('networkidle');
     expect(page.url()).not.toMatch(/\/admin/);
   });
 
@@ -18,7 +17,6 @@ test.describe('Admin Access Control', () => {
     const routes = ['/dashboard', '/score', '/simulator', '/apply/overview'];
     for (const route of routes) {
       await page.goto(`http://localhost:3001${route}`);
-      await page.waitForLoadState('networkidle');
       expect(page.url()).not.toMatch(new RegExp(route));
     }
   });
@@ -26,7 +24,6 @@ test.describe('Admin Access Control', () => {
   test('Apply story (gated module) redirects unauthenticated users', async ({ page }) => {
     await page.context().clearCookies();
     await page.goto('http://localhost:3001/apply/story');
-    await page.waitForLoadState('networkidle');
     expect(page.url()).not.toMatch(/\/apply\/story/);
   });
 });
