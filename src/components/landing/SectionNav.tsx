@@ -23,7 +23,9 @@ interface NavSection {
 
 const SECTIONS: NavSection[] = [
   { id: "compare", label: "Compare" },
-  { id: "reviews", label: "Reviews" },
+  // "Reviews" removed 2026-09-13 with the testimonials section it scrolled to
+  // (see HomeClient.tsx) — the quotes there were never real. Restore only when
+  // consented, documented testimonials exist to scroll to.
 ];
 
 export default function SectionNav() {

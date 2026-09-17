@@ -175,27 +175,25 @@ export default function HomeClient() {
       </div>
 
       {/* ── TESTIMONIALS ── */}
-      <section id="reviews" className="scroll-mt-28 md:scroll-mt-36 px-4 md:px-10 lg:px-16 py-16 md:py-24 bg-[rgba(201,168,76,0.01)] border-y border-[rgba(201,168,76,0.08)]">
-        <p className="text-[10px] tracking-[0.18em] uppercase text-[rgba(201,168,76,0.6)] mb-3">From applicants</p>
-        <h2 className="font-['Cormorant_Garamond',Georgia,serif] text-3xl md:text-5xl font-light text-[#f5f0e8] mb-10 md:mb-12 leading-tight">
-          What preparation actually feels like.
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-0">
-          {[
-            { q: "I had spoken to two consultants and walked away more confused than when I started. E2go.app was the first thing that actually explained what the consulate needed to see and why.", a: "Marco T.", c: "Italy", t: "Franchise applicant" },
-            { q: "The source of funds section alone would have taken days with a consultant. The engine asked me the right questions and built the narrative from my answers.", a: "Aisha K.", c: "United Kingdom", t: "Solo applicant" },
-            { q: "I downloaded the package on a Friday. By Monday I had reviewed every document. My consultant said it was the cleanest first draft she had ever seen from a self-prepared applicant.", a: "David L.", c: "Canada", t: "Partnership applicant" },
-          ].map((t,i) => (
-            <div key={i} className="p-6 md:p-8 border-b md:border-b-0 md:border-r border-[rgba(201,168,76,0.08)] last:border-0 relative overflow-hidden bg-[rgba(201,168,76,0.012)]">
-              <div className="absolute top-[-14px] left-[12px] font-['Cormorant_Garamond',Georgia,serif] text-[160px] font-light leading-none text-[rgba(201,168,76,0.04)] pointer-events-none select-none">&ldquo;</div>
-              <p className="font-['Cormorant_Garamond',Georgia,serif] text-base md:text-lg font-light italic text-[rgba(245,240,232,0.76)] leading-relaxed mb-5 relative z-10">&ldquo;{t.q}&rdquo;</p>
-              <div className="w-5 h-px bg-[rgba(201,168,76,0.45)] mb-3" />
-              <div className="text-xs text-[rgba(245,240,232,0.76)]">— {t.a}</div>
-              <div className="text-[10px] text-[rgba(201,168,76,0.55)] tracking-widest uppercase mt-1">{t.c} · {t.t}</div>
-            </div>
-          ))}
-        </div>
-      </section>
+      {/* ── TESTIMONIALS: REMOVED 2026-09-13 ──
+          This section carried three quotes attributed to named applicants
+          ("Marco T., Italy", "Aisha K., United Kingdom", "David L., Canada")
+          under the heading "From applicants". They were placeholder copy
+          written during the landing redesign — see
+          docs/sessions/SESSION_LANDING_REDESIGN (1).md:435 — and no customer,
+          consent record, or source ever existed behind them.
+
+          Presenting invented quotes as real customer endorsements is deceptive
+          advertising under FTC 16 CFR Part 255, and since the 2024 Rule on
+          Consumer Reviews and Testimonials (16 CFR Part 465) it carries civil
+          penalties per violation. The risk is sharper in immigration
+          advertising than almost anywhere else.
+
+          Do not restore these. Real testimonials come from the founding-cohort
+          programme, captured with consent via NpsModal + the outcome flow, and
+          require typicality disclosure when used. The "Reviews" entry that
+          scrolled here was removed from landing/SectionNav.tsx at the same
+          time. */}
 
       {/* ── FINAL CTA ── */}
       <section className="px-4 md:px-10 lg:px-16 py-20 md:py-32 text-center">
