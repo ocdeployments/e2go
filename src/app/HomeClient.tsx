@@ -148,8 +148,8 @@ export default function HomeClient() {
       <SectionNav />
 
       {/* ── PROOF BAR ── */}
-      <div className="border-y border-[rgba(201,168,76,0.08)] py-4 px-4 md:px-10 text-center">
-        <p className="text-xs text-[rgba(245,240,232,0.65)] tracking-wide">
+      <div className="border-y border-[rgba(201,168,76,0.08)] py-5 px-4 md:px-10 text-center">
+        <p className="text-sm md:text-base text-[rgba(245,240,232,0.75)] tracking-wide">
           Trusted by E-2 applicants from Canada, the UK, Germany, Australia, Japan, and 77 other treaty countries.
         </p>
       </div>
@@ -157,14 +157,14 @@ export default function HomeClient() {
       {/* ── CONFIDENCE STRIP ── addresses the "don't I need a lawyer?" doubt
           early, using the U.S. Mission to Canada's own wording. Framed as
           "optional, not disqualifying" — never as legal advice. */}
-      <div className="border-b border-[rgba(201,168,76,0.08)] py-5 px-4 md:px-10 text-center">
-        <p className="text-[10px] tracking-[0.18em] uppercase text-[rgba(201,168,76,0.6)] mb-2">
+      <div className="border-b border-[rgba(201,168,76,0.08)] py-6 px-4 md:px-10 text-center">
+        <p className="text-xs tracking-[0.18em] uppercase text-[rgba(201,168,76,0.7)] mb-3">
           No lawyer required to qualify
         </p>
-        <p className="font-['Cormorant_Garamond',Georgia,serif] text-lg md:text-xl font-light italic text-[rgba(245,240,232,0.82)] leading-relaxed max-w-2xl mx-auto">
+        <p className="font-['Cormorant_Garamond',Georgia,serif] text-xl md:text-2xl font-light italic text-[rgba(245,240,232,0.88)] leading-relaxed max-w-2xl mx-auto">
           &ldquo;The decision to retain counsel is a personal one on the part of the applicant, and does not affect the applicant&rsquo;s eligibility.&rdquo;
         </p>
-        <p className="text-[11px] text-[rgba(245,240,232,0.6)] tracking-wide mt-2.5">
+        <p className="text-sm text-[rgba(245,240,232,0.68)] tracking-wide mt-3 max-w-2xl mx-auto">
           — U.S. Mission to Canada. Counsel is optional. E2go.app is for applicants who want structured help with their case — and would rather spend thousands on their business or family than on legal fees.
         </p>
       </div>
