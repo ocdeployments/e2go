@@ -263,6 +263,7 @@ function isExistingGatedPath(pathname: string): boolean {
     pathname === '/simulator' || pathname.startsWith('/simulator/') ||
     pathname === '/login' ||
     pathname === '/signup' ||
+    pathname === '/api/auth/login' ||
     pathname === '/api/quiz/submit' ||
     pathname === '/api/email/results' ||
     pathname.startsWith('/api/generate/') ||
@@ -287,8 +288,8 @@ export async function middleware(req: NextRequest) {
 
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() || 'unknown-ip';
 
-  // Rate limit login route
-  if ((pathname === '/login' || pathname === '/api/auth/v1/token') && process.env.NODE_ENV === 'production') {
+  // Rate limit login attempts — the actual credential-check endpoint, not the page load.
+  if (pathname === '/api/auth/login' && req.method === 'POST' && process.env.NODE_ENV === 'production') {
     const allowed = await enforceLimit({ limiter: loginLimiter, ip, name: 'login', limit: 5, windowMs: 15 * 60 * 1000 });
     if (!allowed) {
       await logRateLimitHit('login', pathname, ip);
