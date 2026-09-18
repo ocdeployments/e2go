@@ -88,3 +88,7 @@ docs/generated-output/
 
 # ad-hoc scratch dir — local drafts only, never commit
 /scratchpad/
+
+# demo-studio — recorded footage, rendered cards, cut films.
+# Regenerable from scenes + manifests; large and binary. Never commit.
+/demo-studio/build/
