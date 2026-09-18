@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
       email,
       password,
       options: {
-        emailRedirectTo: `${siteUrl}${safeNext}`,
+        emailRedirectTo: `${siteUrl}/auth/callback?next=${encodeURIComponent(safeNext)}`,
         data: {
           first_name: firstName.trim(),
           last_name: lastName.trim(),
