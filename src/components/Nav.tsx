@@ -155,7 +155,7 @@ export default function Nav() {
           <span className="text-xl font-medium tracking-tight text-[#f5f0e8]" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
             E2go<span className="text-[#C9A84C]">.app</span>
           </span>
-          <span className="hidden sm:block text-[9px] tracking-[0.08em] uppercase mt-0.5" style={{ color: "rgba(201,168,76,0.55)" }}>
+          <span className="hidden sm:block text-[9px] tracking-[0.08em] uppercase mt-0.5" style={{ color: "rgba(201,168,76,0.75)" }}>
             E-2 Visa Prep, Simplified.
           </span>
         </Link>
