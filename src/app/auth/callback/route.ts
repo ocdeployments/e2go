@@ -52,6 +52,42 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // Code missing or expired — send back with error flag
-  return NextResponse.redirect(`${origin}/forgot-password?error=expired`);
+  // No `code` query param — Supabase may still have handed us tokens in the
+  // URL fragment (implicit-grant style), which the server never sees. Ship a
+  // tiny client-side shim to check for that before giving up as expired.
+  const fallback = `${origin}/forgot-password?error=expired`;
+  const html = `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Signing in…</title></head>
+<body>
+<script>
+(function () {
+  var hash = window.location.hash.startsWith('#') ? window.location.hash.slice(1) : '';
+  var params = new URLSearchParams(hash);
+  var accessToken = params.get('access_token');
+  var refreshToken = params.get('refresh_token');
+  var next = ${JSON.stringify(next)};
+  var origin = ${JSON.stringify(origin)};
+  var fallback = ${JSON.stringify(fallback)};
+
+  if (!accessToken || !refreshToken) {
+    window.location.replace(fallback);
+    return;
+  }
+
+  fetch('/api/auth/set-session', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ access_token: accessToken, refresh_token: refreshToken }),
+  })
+    .then(function (res) {
+      window.location.replace(res.ok ? origin + next : fallback);
+    })
+    .catch(function () {
+      window.location.replace(fallback);
+    });
+})();
+</script>
+</body></html>`;
+
+  return new NextResponse(html, { headers: { 'Content-Type': 'text/html' } });
 }
