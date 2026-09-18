@@ -36,6 +36,7 @@ function SignupForm() {
 
   // Cloudflare Turnstile CAPTCHA
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaLoadError, setCaptchaLoadError] = useState(false);
 
   const handleTermsScroll = () => {
     const el = termsBoxRef.current;
@@ -205,6 +206,12 @@ function SignupForm() {
               {status === 'error' && (
                 <div className="p-3 text-sm mb-4" style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.3)", color: "#fca5a5", borderRadius: 0 }}>
                   {errorMessage}
+                  {errorMessage.includes('already exists') && (
+                    <>
+                      {' '}
+                      <Link href="/login" style={{ color: "#C9A84C", textDecoration: "underline" }}>Sign in →</Link>
+                    </>
+                  )}
                 </div>
               )}
 
@@ -449,25 +456,33 @@ function SignupForm() {
                   <div className="flex justify-center">
                     <Turnstile
                       siteKey={TURNSTILE_SITE_KEY}
-                      onSuccess={(token) => setCaptchaToken(token)}
+                      onSuccess={(token) => { setCaptchaToken(token); setCaptchaLoadError(false); }}
                       onExpire={() => setCaptchaToken(null)}
-                      onError={() => setCaptchaToken(null)}
+                      onError={() => { setCaptchaToken(null); setCaptchaLoadError(true); }}
                       options={{ theme: 'dark', size: 'normal' }}
                     />
                   </div>
                 )}
 
+                {captchaLoadError && (
+                  <div className="p-3 text-sm" style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.3)", color: "#fca5a5" }}>
+                    The security check couldn&apos;t load, so the Create Account button below is disabled. This is
+                    usually caused by an ad blocker, privacy extension, or VPN blocking Cloudflare — try disabling
+                    it or switching networks, then refresh this page.
+                  </div>
+                )}
+
                 <button
                   type="submit"
-                  className="w-full font-medium py-3 transition-colors"
+                  className="w-full font-medium py-3 transition-colors disabled:cursor-not-allowed"
                   disabled={!hasScrolledTerms || !termsAccepted || (!!TURNSTILE_SITE_KEY && !captchaToken)}
                   style={{
-                    background: (!hasScrolledTerms || !termsAccepted)
+                    background: (!hasScrolledTerms || !termsAccepted || (!!TURNSTILE_SITE_KEY && !captchaToken))
                       ? 'rgba(201,168,76,0.3)'
                       : '#C9A84C',
                     color: "#0a0a0a",
                     borderRadius: 0,
-                    cursor: (!hasScrolledTerms || !termsAccepted)
+                    cursor: (!hasScrolledTerms || !termsAccepted || (!!TURNSTILE_SITE_KEY && !captchaToken))
                       ? 'not-allowed'
                       : 'pointer',
                   }}
