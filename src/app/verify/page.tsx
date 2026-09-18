@@ -14,6 +14,7 @@ import AuthImageSlider from "@/components/auth/AuthImageSlider";
 type TokenResult = {
   valid: boolean;
   email?: string;
+  full_name?: string | null;
   outcome?: string;
   result_json?: Record<string, unknown>;
   quiz_session_id?: string;
@@ -55,6 +56,15 @@ function VerifyPageInner() {
       // Store result in localStorage for results page
       if (result.result_json) {
         localStorage.setItem("e2go_quiz_result", JSON.stringify(result.result_json));
+      }
+      // The results page's client-side quiz_sessions lookup is blocked by RLS
+      // for anonymous callers (no SELECT policy), so carry the verified
+      // email/name through localStorage instead of relying on that query.
+      if (result.email) {
+        localStorage.setItem("e2go_quiz_identity", JSON.stringify({
+          email: result.email,
+          full_name: result.full_name || null,
+        }));
       }
 
       setVerifiedData(result);
