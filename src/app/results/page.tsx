@@ -1206,10 +1206,10 @@ function ResultsPageInner() {
                 )}
               </div>
 
-              {/* Unified what's included list — two explicit columns, no grid wrapping */}
-              <div style={{ flex: 1, minWidth: "240px", display: "flex", gap: "20px" }}>
+              {/* Unified what's included list — two explicit columns, stacks on narrow viewports */}
+              <div style={{ flex: 1, minWidth: "240px", display: "flex", flexWrap: "wrap" as const, gap: "20px" }}>
                 {/* Left column */}
-                <div style={{ flex: 1, display: "flex", flexDirection: "column" as const, gap: "6px" }}>
+                <div style={{ flex: 1, minWidth: "200px", display: "flex", flexDirection: "column" as const, gap: "6px" }}>
                   {([
                     { icon: "✓", color: "#5DCAA5", text: "Eligibility assessment", dim: true },
                     { icon: "✓", color: "#5DCAA5", text: flagsToShow.length > 0 ? `${flagsToShow.length} risk area${flagsToShow.length > 1 ? "s" : ""} identified` : "Clean profile", dim: true },
@@ -1224,7 +1224,7 @@ function ResultsPageInner() {
                   ))}
                 </div>
                 {/* Right column */}
-                <div style={{ flex: 1, display: "flex", flexDirection: "column" as const, gap: "6px" }}>
+                <div style={{ flex: 1, minWidth: "200px", display: "flex", flexDirection: "column" as const, gap: "6px" }}>
                   {([
                     { icon: "→", color: "#C9A84C", text: "Gap Analysis — 6 categories", dim: false },
                     { icon: "→", color: "#C9A84C", text: "Page limits enforced", dim: false },
