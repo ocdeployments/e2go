@@ -42,7 +42,7 @@ const nextConfig = {
         headers: [
           {
             key: 'Content-Security-Policy',
-            value: `default-src 'self'; ${mainScriptSrc} style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co https://openrouter.ai https://api.anthropic.com https://challenges.cloudflare.com; img-src 'self' data: https:; frame-src https://challenges.cloudflare.com; frame-ancestors 'none';`,
+            value: `default-src 'self'; ${mainScriptSrc} worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co https://openrouter.ai https://api.anthropic.com https://challenges.cloudflare.com; img-src 'self' data: https:; frame-src https://challenges.cloudflare.com; frame-ancestors 'none';`,
           },
           {
             key: 'X-Frame-Options',
