@@ -163,7 +163,6 @@ export async function POST(request: NextRequest) {
   let session: Stripe.Checkout.Session;
   try {
     session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
       line_items: [{ price: priceId, quantity: 1 }],
       mode: 'payment',
       success_url: `${appUrl}/onboarding?payment=success`,
