@@ -65,8 +65,8 @@ flow that surfaces upload UI pre-payment. Not yet confirmed either way.
 
 ## UAT-03 — Checkout 503s: "This pricing tier is not yet configured"
 
-**Status:** root-caused, fix blocked on a sandboxed write to Stripe — needs Romy or
-a permission change to complete
+**Status:** RESOLVED — verified end-to-end in production (redirects to Stripe
+hosted checkout, $990.00 Foundation line item renders correctly)
 **File:** `src/app/api/checkout/initiate/route.ts:66-71`
 
 Reported live on `/results`: clicking "Build My Case with E2go.app" on the
@@ -106,12 +106,32 @@ Vercel (`STRIPE_PRICE_COMPLETE`, `STRIPE_PRICE_INTERVIEW_PREP`,
 them since `VALID_TIERS` narrowed to `['foundation']`. Not cleaning these up now;
 noting so they aren't mistaken for live config later.
 
-**Also found while reproducing this locally:** even with a correctly-configured
-`STRIPE_PRICE_FOUNDATION` (local `.env.local` has one), `/api/checkout/initiate`
-still 500s locally with a generic `{"error":"Failed to create checkout session"}` —
-a different, separate failure from the Vercel one above, root cause not yet
-investigated. Worth checking once Vercel's price object exists, in case it's not
-purely a missing-config issue.
+**Second bug found while reproducing this locally, now also fixed:** even with a
+correctly-configured `STRIPE_PRICE_FOUNDATION`, `/api/checkout/initiate` still
+500d with a generic `{"error":"Failed to create checkout session"}` — a separate
+failure from the missing-price-object issue above. Root-caused via
+`vercel logs <url> --status-code 500 --expand`: Stripe's "Managed Payments"
+feature (enabled by default on this test account, `acct_1UBLbNLXsLouj9LH`)
+rejects `checkout.sessions.create()` calls two ways:
+1. It rejects an explicit `payment_method_types: ['card']` param outright.
+2. Once that's removed, it then requires every line item's Stripe Product to
+   have a `tax_code` set — which none of ours do.
+
+Fix: pass `managed_payments: { enabled: false }` in the session-create call
+(Stripe's own documented escape hatch — see the error message at
+https://docs.stripe.com/payments/managed-payments/eligibility#product-tax-code-requirements)
+instead of configuring tax codes on every product. Removed the now-redundant
+`payment_method_types: ['card']` param at the same time (Managed Payments
+handles method selection itself; the param is invalid regardless of the
+`enabled` flag). Applied to **both** checkout routes in the codebase —
+`src/app/api/checkout/initiate/route.ts` (Foundation) and
+`src/app/api/stripe/create-checkout/route.ts` (add-on tiers) — since both had
+the identical bug. Verified live: clicking "Build My Case with E2go.app" on
+`/results` as a real authenticated test persona now redirects to Stripe's
+hosted checkout page showing "e2go — Foundation, $990.00" with Apple Pay and
+card entry both rendering. Full commit sequence: `9068c48`/`d3f6ef9` (removed
+`payment_method_types`) then `712eb9f`/`5ad3e29` (added
+`managed_payments: { enabled: false }`, the actual fix for this second bug).
 
 ---
 
