@@ -21,6 +21,7 @@ function LoginForm() {
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaLoadError, setCaptchaLoadError] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -366,11 +367,19 @@ function LoginForm() {
                   <div className="flex justify-center">
                     <Turnstile
                       siteKey={TURNSTILE_SITE_KEY}
-                      onSuccess={(token) => setCaptchaToken(token)}
+                      onSuccess={(token) => { setCaptchaToken(token); setCaptchaLoadError(false); }}
                       onExpire={() => setCaptchaToken(null)}
-                      onError={() => setCaptchaToken(null)}
+                      onError={() => { setCaptchaToken(null); setCaptchaLoadError(true); }}
                       options={{ theme: 'dark', size: 'normal' }}
                     />
+                  </div>
+                )}
+
+                {captchaLoadError && (
+                  <div className="p-3 text-sm" style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.3)", color: "#fca5a5" }}>
+                    The security check couldn&apos;t load, so the Sign In button below is disabled. This is usually
+                    caused by an ad blocker, privacy extension, or VPN blocking Cloudflare — try disabling it or
+                    switching networks, then refresh this page.
                   </div>
                 )}
 
@@ -378,7 +387,7 @@ function LoginForm() {
                   type="submit"
                   disabled={status === 'loading' || (!!TURNSTILE_SITE_KEY && !captchaToken)}
                   whileTap={{ scale: 0.98 }}
-                  className="w-full font-medium py-3"
+                  className="w-full font-medium py-3 disabled:cursor-not-allowed disabled:opacity-40"
                   style={{ background: "#C9A84C", color: "#0a0a0a", borderRadius: 0, transition: 'opacity 0.15s', opacity: status === 'loading' ? 0.7 : 1 }}
                 >
                   {status === 'loading' ? 'Signing in…' : 'Sign In'}
