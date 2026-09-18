@@ -131,7 +131,7 @@ function EmailGate({ onBackToQuiz }: { onBackToQuiz: () => void }) {
   return (
     <div className="min-h-screen flex" style={{ background: "#0a0a0a" }}>
       <div className="w-full flex flex-col items-center justify-center p-8" style={{ maxWidth: "480px", margin: "0 auto" }}>
-        <div style={{ fontSize: "17px", color: "#C9A84C", fontWeight: 300, marginBottom: "4px" }}>E2go<span style={{ color: "rgba(245,240,232,0.9)" }}>.app</span></div>
+        <Link href="/" style={{ display: "inline-block", textDecoration: "none", fontSize: "17px", color: "#C9A84C", fontWeight: 300, marginBottom: "4px" }}>E2go<span style={{ color: "rgba(245,240,232,0.9)" }}>.app</span></Link>
         <div style={{ fontSize: "9px", color: "rgba(201,168,76,0.55)", marginBottom: "48px", letterSpacing: "0.08em", textTransform: "uppercase" }}>E-2 Visa Prep, Simplified.</div>
         {sent ? (
           <>
@@ -600,7 +600,7 @@ function ResultsPageInner() {
       {/* Nav */}
       <div style={{ padding: "18px 40px", borderBottom: "1px solid rgba(201,168,76,0.1)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div>
-          <div style={{ fontSize: "17px", color: "#C9A84C", fontWeight: 300 }}>E2go<span style={{ color: "rgba(245,240,232,0.9)" }}>.app</span></div>
+          <Link href="/" style={{ display: "inline-block", textDecoration: "none", fontSize: "17px", color: "#C9A84C", fontWeight: 300 }}>E2go<span style={{ color: "rgba(245,240,232,0.9)" }}>.app</span></Link>
           <div className="hidden sm:block" style={{ fontSize: "9px", color: "rgba(201,168,76,0.55)", letterSpacing: "0.08em", textTransform: "uppercase" }}>E-2 Visa Prep, Simplified.</div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
