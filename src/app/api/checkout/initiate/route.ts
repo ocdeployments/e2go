@@ -165,6 +165,7 @@ export async function POST(request: NextRequest) {
     session = await stripe.checkout.sessions.create({
       line_items: [{ price: priceId, quantity: 1 }],
       mode: 'payment',
+      managed_payments: { enabled: false },
       success_url: `${appUrl}/onboarding?payment=success`,
       cancel_url: `${appUrl}/results`,
       ...(customerEmail ? { customer_email: customerEmail } : {}),
