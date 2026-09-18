@@ -19,6 +19,7 @@ export async function POST(req: Request) {
   let outcome: string;
   let result_json: Record<string, unknown>;
   let franchise_interest: boolean;
+  let full_name: string | null;
 
   const supabaseAuth = await createSupabaseServerClient();
   const { data: { user } } = await supabaseAuth.auth.getUser();
@@ -29,6 +30,7 @@ export async function POST(req: Request) {
     outcome = body.outcome;
     result_json = body.result_json;
     franchise_interest = body.franchise_interest ?? false;
+    full_name = body.full_name ?? null;
   } else {
     // ── Path B: anonymous quiz-completion flow ──
     // Validate quiz_session_id: must be valid UUID, exist in DB, and be fresh
@@ -38,7 +40,7 @@ export async function POST(req: Request) {
 
     const { data: session, error: sessionError } = await supabase
       .from('quiz_sessions')
-      .select('id, email, outcome, result_json, franchise_interest, completed_at')
+      .select('id, email, outcome, result_json, franchise_interest, full_name, completed_at')
       .eq('id', quiz_session_id)
       .single();
 
@@ -58,6 +60,7 @@ export async function POST(req: Request) {
     outcome = session.outcome;
     result_json = session.result_json as Record<string, unknown>;
     franchise_interest = session.franchise_interest ?? false;
+    full_name = session.full_name ?? null;
   }
 
   const sent = await sendResultsEmail({
@@ -67,6 +70,7 @@ export async function POST(req: Request) {
     result_json,
     franchise_interest,
     quiz_session_id: quiz_session_id || null,
+    full_name,
   });
 
   if (!sent) {
