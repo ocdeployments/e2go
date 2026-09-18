@@ -701,7 +701,7 @@ function QuizInner() {
   const handleMultiContinue = useCallback(() => {
     if (multiSel.length === 0 || !q) return;
 
-    // Mutual exclusion enforcement for Q0-06 and Q0-10
+    // Mutual exclusion enforcement for Q0-06, Q0-08f, and Q0-10
     let effectiveSel = [...multiSel];
     if (q.id === "Q0-10") {
       const noneIdx = q.options.length - 1;
@@ -712,6 +712,11 @@ function QuizInner() {
       const loanIdx = q.options.length - 1;
       if (effectiveSel.includes(loanIdx) && effectiveSel.length > 1) {
         effectiveSel = [loanIdx]; // Business loan = hard stop, alone
+      }
+    } else if (q.id === "Q0-08f") {
+      const noPreferenceIdx = q.options.length - 1;
+      if (effectiveSel.includes(noPreferenceIdx) && effectiveSel.length > 1) {
+        effectiveSel = [noPreferenceIdx]; // "No preference" wins
       }
     }
 
