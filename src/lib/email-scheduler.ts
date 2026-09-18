@@ -201,6 +201,17 @@ async function logEmailSent(
   });
 }
 
+/**
+ * Cutoff guard for the clock1 inactivity cron (Sprint infra Fix 5).
+ *
+ * Without it, turning the cron on fires the day-60/67/74/81 email at once
+ * for every application that had already gone stale before the scheduler
+ * ever ran — a landmine, not a nurture sequence. Set
+ * EMAIL_SCHEDULER_ACTIVATED_AT (ISO timestamp) once, at the moment the cron
+ * is actually enabled; only applications that go inactive on or after that
+ * moment become eligible. Leaving it unset disables the sweep entirely
+ * rather than defaulting to "process everything."
+ */
 export async function checkInactivityAndSendEmails(): Promise<{
   processed: number;
   emailsSent: number;
@@ -212,12 +223,20 @@ export async function checkInactivityAndSendEmails(): Promise<{
     errors: [] as string[]
   };
 
+  const activatedAt = process.env.EMAIL_SCHEDULER_ACTIVATED_AT;
+  if (!activatedAt) {
+    console.log('[EMAIL] Inactivity sweep skipped: EMAIL_SCHEDULER_ACTIVATED_AT not set');
+    return result;
+  }
+
   // Find applications that are inactive (no activity in 60+ days)
   // AND still in progress (not completed) AND paid
+  // AND went inactive on or after the cron's activation cutoff (no backlog)
   const { data: applications, error } = await getSupabase()
     .from('applications')
     .select('id, user_id, last_activity_at, payment_status, module_3_complete, outcome')
     .eq('payment_status', 'paid')
+    .gte('last_activity_at', activatedAt)
     .eq('module_3_complete', false)
     .is('outcome', null)
     .lte('last_activity_at', new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString());
