@@ -200,7 +200,7 @@ function QuizInner() {
   const searchParams = useSearchParams();
   const [supabase] = useState(() => createBrowserSupabaseClient());
   const [loggedInUser, setLoggedInUser] = useState<{ id: string; email: string } | null>(null);
-  const [authChecked, setAuthChecked] = useState(true);
+  const [authChecked, setAuthChecked] = useState(false);
   const authCheckTimeout = useRef<NodeJS.Timeout | null>(null);
 
   const [cur, setCur] = useState(0);
