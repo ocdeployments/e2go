@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { createBrowserSupabaseClient } from '@/lib/supabase';
 
 const supabase = createBrowserSupabaseClient();
@@ -118,8 +119,11 @@ export default function AccountRecoveryPage() {
     <main style={{ background: '#0a0a0a', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'DM Sans', sans-serif", padding: '40px' }}>
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       <div style={{ maxWidth: '520px', width: '100%' }}>
-        <div style={{ fontSize: '17px', color: '#C9A84C', marginBottom: '48px', fontWeight: 300 }}>
+        <Link href="/" style={{ display: 'inline-block', textDecoration: 'none', fontSize: '17px', color: '#C9A84C', marginBottom: '4px', fontWeight: 300 }}>
           E2go<span style={{ color: '#f5f0e8' }}>.app</span>
+        </Link>
+        <div style={{ fontSize: '9px', color: 'rgba(201,168,76,0.55)', marginBottom: '48px', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+          E-2 Visa Prep, Simplified.
         </div>
 
         <div style={{ width: '48px', height: '48px', border: '1px solid rgba(201,168,76,0.3)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '28px' }}>

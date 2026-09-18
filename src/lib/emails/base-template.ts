@@ -13,6 +13,20 @@ import { companyFooterLine } from './company';
 const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
 /**
+ * Brand tagline, set under the lockup in every email.
+ *
+ * There is one of these for all mail, so it has to still be true on a receipt
+ * and on an ops alert, not just on the results email.
+ *
+ * Avoid "consultant" or "advisor": both are regulated titles in immigration —
+ * California registers and bonds immigration consultants, and Texas (where
+ * the entity is registered) has its own rules for immigration service
+ * providers — and either word would contradict the "document preparation
+ * tool, not a law firm" line printed in the footer of the same email.
+ */
+export const BRAND_TAGLINE = 'E-2 Visa Prep, Simplified.';
+
+/**
  * Wrap body content in the branded shell.
  *
  * @param content   Body HTML — table rows or block elements, already styled.
@@ -32,6 +46,7 @@ export function getBaseHtml(content: string, preheader?: string, recipient?: str
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>E2go.app</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
 </head>
 <body style="margin: 0; padding: 0; background-color: #0a0a0a; font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
   ${preheader ? `<div style="display: none; max-height: 0; overflow: hidden; opacity: 0;">${preheader}</div>` : ''}
@@ -42,6 +57,7 @@ export function getBaseHtml(content: string, preheader?: string, recipient?: str
           <tr>
             <td style="padding: 0 0 32px 0; border-bottom: 1px solid rgba(201,168,76,0.15);">
               <span style="font-family: 'Cormorant Garamond', Georgia, serif; font-size: 24px; font-weight: 300; color: #C9A84C;">E2go</span><span style="font-family: 'Cormorant Garamond', Georgia, serif; font-size: 24px; font-weight: 300; color: #f5f0e8;">.app</span>
+              <div style="font-family: 'Cormorant Garamond', Georgia, serif; font-size: 13px; font-style: italic; font-weight: 300; color: #afaba5; line-height: 1.5; margin: 10px 0 0 0;">${BRAND_TAGLINE}</div>
             </td>
           </tr>
           <tr>

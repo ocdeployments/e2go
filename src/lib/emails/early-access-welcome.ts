@@ -23,6 +23,9 @@ import { getBaseHtml, getButtonHtml } from './base-template';
 import { companyFooterLine } from './company';
 import { FOUNDER_EMAIL_SENDER, FOUNDER_REPLY_TO } from './senders';
 import { captureApiError } from '@/lib/capture-error';
+import { unsubscribeHeaders } from './unsubscribe';
+
+const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
 export interface EarlyAccessWelcomeEmailContent {
   subject: string;
@@ -37,122 +40,135 @@ export function buildEarlyAccessWelcomeEmail(
 ): EarlyAccessWelcomeEmailContent {
   const firstName = name.trim().split(/\s+/)[0] || 'there';
 
-  const subject = "The E-2 lawyer quoted me $15,000. Here's what I did instead.";
-  const preheader = "One founder, six months, about 2,000 hours — no lawyer required.";
+  const subject = "Meet E2go.app—the simpler way to prepare for your E-2 journey";
+  const preheader = "How my family's E-2 journey led to the platform you're about to try.";
 
-  const heading = `Welcome, ${firstName} — and congratulations on taking the first step toward your E-2.`;
+  const heading = `Hi ${firstName}, congratulations on taking the first step toward your E-2 journey.`;
 
   const content = `
 <h1 style="font-family: 'Cormorant Garamond', Georgia, serif; font-size: 28px; font-weight: 300; color: #f5f0e8; margin: 0 0 20px 0; line-height: 1.25;">
   ${heading}
 </h1>
 <p style="font-size: 15px; color: rgba(245,240,232,0.82); line-height: 1.65; margin: 0 0 18px 0;">
-  I'm Romy. Before your early access lands, I want to tell you exactly why E2go.app exists — it started with my own E-2 filing, and it very nearly went sideways.
+  I'm Romy, founder of E2go.app. Before your early access opens, I want to tell you how my family's E-2 journey led to the platform you're about to try.
 </p>
 <p style="font-size: 15px; color: rgba(245,240,232,0.75); line-height: 1.65; margin: 0 0 18px 0;">
-  The hardest part wasn't the paperwork — it was finding a straight answer. The information was scattered across forums, Reddit threads and social media, with no single reliable source. I called a few consultants who turned out to be brokers selling the American dream over Zoom, charging for advice that should have been free if you knew where to look. Eventually I stopped paying for that and went to find the answers myself.
+  My family of four arrived in the United States on an E-2 visa in August 2026. Getting there meant navigating scattered Facebook and Reddit advice, immigration seminars, consultant calls, broker introductions, and lawyer quotes of up to $15,000.
 </p>
 <p style="font-size: 15px; color: rgba(245,240,232,0.75); line-height: 1.65; margin: 0 0 18px 0;">
-  I pulled everything from official sources, organized my documents, and checked them against what the consulate actually expects — including the specific factors that make a case weaker. Then I quoted six or seven immigration lawyers: $6,000 to $15,000, and couldn't see what any of them would add to a case I'd already built. So I filed it myself, did the interview, and got the visa. (My path was a franchise — a comparatively simpler filing than most E-2 cases — and that mattered.)
+  After around ten hours of meetings and $250 toward a $6,000 consultant fee, I stopped and asked: what exactly am I paying for?
+</p>
+<p style="font-size: 15px; color: rgba(245,240,232,0.75); line-height: 1.65; margin: 0 0 18px 0;">
+  So I went directly to the source: consular guidance, USCIS materials, and the E-2 rules themselves. I built my own case, completed the interview, and received the visa.
+</p>
+<p style="font-size: 15px; color: rgba(245,240,232,0.82); line-height: 1.65; margin: 0 0 18px 0;">
+  That experience became E2go.app.
+</p>
+<p style="font-size: 15px; color: rgba(245,240,232,0.75); line-height: 1.65; margin: 0 0 18px 0;">
+  E2go.app replaces much of the fragmented, administrative work that often sits between an applicant, a consultant, a franchise broker, and an immigration lawyer.
+</p>
+<p style="font-size: 15px; color: rgba(245,240,232,0.75); line-height: 1.65; margin: 0 0 18px 0;">
+  Traditionally, an applicant may pay a consultant to assess their starting point, coordinate referrals, introduce franchise-broker options, answer process questions, and act as the central point of contact. E2go.app gives you a structured place to understand the process, organize your information, explore franchise options through no-client-fee introductions, and build your preparation package in one place.
+</p>
+<p style="font-size: 15px; color: rgba(245,240,232,0.75); line-height: 1.65; margin: 0 0 18px 0;">
+  It also reduces the administrative burden often placed on the applicant. Rather than repeatedly providing the same background, business, and financial information to different people, you build one organized case file. That information can then support draft preparation for core documents, so a lawyer reviewing the file can focus on legal judgment and strategy rather than rebuilding the package from scratch.
+</p>
+<p style="font-size: 15px; color: rgba(245,240,232,0.75); line-height: 1.65; margin: 0 0 18px 0;">
+  The value is not in claiming to replace a lawyer. The value is in helping you avoid paying separately for fragmented coordination, repeated intake, referrals, and document-collection work before you know what professional help you actually need.
 </p>
 <p style="font-size: 15px; color: rgba(245,240,232,0.82); line-height: 1.65; margin: 0 0 8px 0;">
-  That process became E2go.app. Here's exactly how it works, start to finish:
+  What E2go.app helps you do:
 </p>
 <p style="font-size: 15px; color: rgba(245,240,232,0.75); line-height: 1.6; margin: 0 0 10px 0;">
-  <strong style="color: #C9A84C; font-weight: 600;">1. Free eligibility check.</strong> A denial-risk score across 15 factors, before you spend a dollar or talk to anyone.
+  <strong style="color: #C9A84C; font-weight: 600;">Check readiness factors</strong> before spending money.
 </p>
 <p style="font-size: 15px; color: rgba(245,240,232,0.75); line-height: 1.6; margin: 0 0 10px 0;">
-  <strong style="color: #C9A84C; font-weight: 600;">2. One case file.</strong> Everything you give us lives in a single place — no scattered folders, no repeating yourself on intake calls.
+  <strong style="color: #C9A84C; font-weight: 600;">Keep your answers, evidence, and documents</strong> in one organized case file.
 </p>
 <p style="font-size: 15px; color: rgba(245,240,232,0.75); line-height: 1.6; margin: 0 0 10px 0;">
-  <strong style="color: #C9A84C; font-weight: 600;">3. Documents drafted from your words.</strong> Cover letter, business plan, source of funds, personal statement — built from what you actually tell us, not a template with your name dropped in.
+  <strong style="color: #C9A84C; font-weight: 600;">Create drafts for core case materials</strong> from the information you provide — not generic templates.
 </p>
 <p style="font-size: 15px; color: rgba(245,240,232,0.75); line-height: 1.6; margin: 0 0 10px 0;">
-  <strong style="color: #C9A84C; font-weight: 600;">4. Checked against consulate expectations.</strong> The same standard I checked my own case against, before anything gets called "done."
+  <strong style="color: #C9A84C; font-weight: 600;">Work through structured quality checks</strong> before you finalize your package.
 </p>
 <p style="font-size: 15px; color: rgba(245,240,232,0.75); line-height: 1.6; margin: 0 0 10px 0;">
-  <strong style="color: #C9A84C; font-weight: 600;">5. A 15-step quality review.</strong> Every document passes through 15 separate checks before you ever see the draft — that's the checks-and-balances layer no forum thread gives you.
+  <strong style="color: #C9A84C; font-weight: 600;">Explore franchise options</strong> through no-client-fee broker introductions.
 </p>
 <p style="font-size: 15px; color: rgba(245,240,232,0.75); line-height: 1.6; margin: 0 0 18px 0;">
-  <strong style="color: #C9A84C; font-weight: 600;">6. A finished package.</strong> Ready to submit yourself, or hand a lawyer for a two-hour review instead of a twenty-hour build.
-</p>
-<p style="font-size: 15px; color: rgba(245,240,232,0.82); line-height: 1.65; margin: 0 0 8px 0;">
-  If you want extra help along the way, three add-ons are available:
-</p>
-<p style="font-size: 15px; color: rgba(245,240,232,0.75); line-height: 1.6; margin: 0 0 10px 0;">
-  <strong style="color: #C9A84C; font-weight: 600;">Interview practice.</strong> A spoken mock interview, right in your browser — the officer's questions are read aloud and you answer out loud into your mic, pulled from real consular interview transcripts, then scored and coached afterward.
-</p>
-<p style="font-size: 15px; color: rgba(245,240,232,0.75); line-height: 1.6; margin: 0 0 10px 0;">
-  <strong style="color: #C9A84C; font-weight: 600;">FDD review.</strong> If you're going the franchise route, we read the entire Franchise Disclosure Document and score it against the specific factors that decide whether a franchise makes for a strong E-2 case.
-</p>
-<p style="font-size: 15px; color: rgba(245,240,232,0.75); line-height: 1.6; margin: 0 0 18px 0;">
-  <strong style="color: #C9A84C; font-weight: 600;">Market analysis.</strong> A data-backed read on the territory and demand for the franchise you're considering, so you're not guessing at whether it can actually support a viable business.
+  <strong style="color: #C9A84C; font-weight: 600;">Prepare a finished, organized package</strong> for your own use or for focused attorney review.
 </p>
 <p style="font-size: 15px; color: rgba(245,240,232,0.75); line-height: 1.65; margin: 0 0 18px 0;">
-  E2go.app won't be free. But even at full price, it cuts what I paid in lawyer quotes by more than 90%. And if the franchise route interests you the way it interested me, we'll connect you with vetted franchise brokers — at no cost to you.
+  Optional add-ons include interview practice, franchise FDD review, and market analysis.
 </p>
 <p style="font-size: 15px; color: rgba(245,240,232,0.75); line-height: 1.65; margin: 0 0 18px 0;">
-  On your information: identity documents are never stored — they're read once and discarded. Financial and business documents live in a private, access-restricted vault, automatically deleted once your package is done, and visible to no one but you.
+  Franchise-broker referrals are free. E2go.app does not charge for the introduction, and our partner brokers do not charge you to connect with franchise opportunities you choose to explore.
 </p>
 <p style="font-size: 15px; color: rgba(245,240,232,0.75); line-height: 1.65; margin: 0 0 18px 0;">
-  One honest note: E2go.app isn't a law firm, doesn't file for you, and doesn't replace an attorney if your case carries real risk. Nobody can guarantee a visa — including me. What I can promise is the tool I wish I'd had.
+  E2go.app is not a law firm, does not provide legal advice, does not file applications on your behalf, and cannot guarantee a visa outcome. It is designed to help you understand the process, organize your information, and prepare your materials before deciding whether you need legal support. Government E-2 guidance and application requirements remain the controlling standards for every applicant.
 </p>
 <p style="font-size: 15px; color: rgba(245,240,232,0.75); line-height: 1.65; margin: 0 0 18px 0;">
-  One thing you don't have to wait for: head to E2go.app right now and try <strong style="color: #C9A84C; font-weight: 600;">Ask E2go.app</strong>, the free, instant chat built right into the homepage. Ask it anything about the E-2 process and see for yourself what it already knows — a small preview of the same intelligence that will be drafting and reviewing your documents.
+  Try <strong style="color: #C9A84C; font-weight: 600;">Ask E2go.app</strong>, the free chat on our homepage, and ask it anything about the E-2 process.
 </p>
 <p style="margin: 0 0 12px 0;">
   ${getButtonHtml('See what E2go.app actually does &rarr;', 'https://e2go.app')}
 </p>
 <p style="font-size: 13px; color: rgba(245,240,232,0.68); line-height: 1.6; margin: 0 0 32px 0;">
-  No action needed from you right now — I'll email the moment your access opens.
+  I'll email you as soon as early access opens.
 </p>
 <p style="font-family: 'Cormorant Garamond', Georgia, serif; font-size: 15px; font-style: italic; color: rgba(245,240,232,0.7); margin: 0 0 20px 0;">
-  — Romy, founder, E2go.app
+  — Romy, founder, E2go.app<br>E-2 Visa Prep, Simplified.
 </p>
 <p style="font-size: 13px; color: rgba(245,240,232,0.68); line-height: 1.6; margin: 0;">
-  P.S. Reply and tell me where you are in the process — I read every reply myself, and it shapes what ships before your invite arrives.
+  P.S. Reply and tell me where you are in the process. I read every reply myself.
 </p>
 `.trim();
 
   const text = [
     heading,
     '',
-    "I'm Romy. Before your early access lands, I want to tell you exactly why E2go.app exists — it started with my own E-2 filing, and it very nearly went sideways.",
+    "I'm Romy, founder of E2go.app. Before your early access opens, I want to tell you how my family's E-2 journey led to the platform you're about to try.",
     '',
-    "The hardest part wasn't the paperwork — it was finding a straight answer. The information was scattered across forums, Reddit threads and social media, with no single reliable source. I called a few consultants who turned out to be brokers selling the American dream over Zoom, charging for advice that should have been free if you knew where to look. Eventually I stopped paying for that and went to find the answers myself.",
+    'My family of four arrived in the United States on an E-2 visa in August 2026. Getting there meant navigating scattered Facebook and Reddit advice, immigration seminars, consultant calls, broker introductions, and lawyer quotes of up to $15,000.',
     '',
-    "I pulled everything from official sources, organized my documents, and checked them against what the consulate actually expects — including the specific factors that make a case weaker. Then I quoted six or seven immigration lawyers: $6,000 to $15,000, and couldn't see what any of them would add to a case I'd already built. So I filed it myself, did the interview, and got the visa. (My path was a franchise — a comparatively simpler filing than most E-2 cases — and that mattered.)",
+    'After around ten hours of meetings and $250 toward a $6,000 consultant fee, I stopped and asked: what exactly am I paying for?',
     '',
-    "That process became E2go.app. Here's exactly how it works, start to finish:",
+    'So I went directly to the source: consular guidance, USCIS materials, and the E-2 rules themselves. I built my own case, completed the interview, and received the visa.',
     '',
-    '1. Free eligibility check. A denial-risk score across 15 factors, before you spend a dollar or talk to anyone.',
-    '2. One case file. Everything you give us lives in a single place — no scattered folders, no repeating yourself on intake calls.',
-    '3. Documents drafted from your words. Cover letter, business plan, source of funds, personal statement — built from what you actually tell us, not a template with your name dropped in.',
-    '4. Checked against consulate expectations. The same standard I checked my own case against, before anything gets called "done."',
-    "5. A 15-step quality review. Every document passes through 15 separate checks before you ever see the draft — that's the checks-and-balances layer no forum thread gives you.",
-    '6. A finished package. Ready to submit yourself, or hand a lawyer for a two-hour review instead of a twenty-hour build.',
+    'That experience became E2go.app.',
     '',
-    'If you want extra help along the way, three add-ons are available:',
+    'E2go.app replaces much of the fragmented, administrative work that often sits between an applicant, a consultant, a franchise broker, and an immigration lawyer.',
     '',
-    "Interview practice. A spoken mock interview, right in your browser — the officer's questions are read aloud and you answer out loud into your mic, pulled from real consular interview transcripts, then scored and coached afterward.",
-    "FDD review. If you're going the franchise route, we read the entire Franchise Disclosure Document and score it against the specific factors that decide whether a franchise makes for a strong E-2 case.",
-    "Market analysis. A data-backed read on the territory and demand for the franchise you're considering, so you're not guessing at whether it can actually support a viable business.",
+    'Traditionally, an applicant may pay a consultant to assess their starting point, coordinate referrals, introduce franchise-broker options, answer process questions, and act as the central point of contact. E2go.app gives you a structured place to understand the process, organize your information, explore franchise options through no-client-fee introductions, and build your preparation package in one place.',
     '',
-    "E2go.app won't be free. But even at full price, it cuts what I paid in lawyer quotes by more than 90%. And if the franchise route interests you the way it interested me, we'll connect you with vetted franchise brokers — at no cost to you.",
+    'It also reduces the administrative burden often placed on the applicant. Rather than repeatedly providing the same background, business, and financial information to different people, you build one organized case file. That information can then support draft preparation for core documents, so a lawyer reviewing the file can focus on legal judgment and strategy rather than rebuilding the package from scratch.',
     '',
-    "On your information: identity documents are never stored — they're read once and discarded. Financial and business documents live in a private, access-restricted vault, automatically deleted once your package is done, and visible to no one but you.",
+    'The value is not in claiming to replace a lawyer. The value is in helping you avoid paying separately for fragmented coordination, repeated intake, referrals, and document-collection work before you know what professional help you actually need.',
     '',
-    "One honest note: E2go.app isn't a law firm, doesn't file for you, and doesn't replace an attorney if your case carries real risk. Nobody can guarantee a visa — including me. What I can promise is the tool I wish I'd had.",
+    'What E2go.app helps you do:',
     '',
-    "One thing you don't have to wait for: head to E2go.app right now and try Ask E2go.app, the free, instant chat built right into the homepage. Ask it anything about the E-2 process and see for yourself what it already knows — a small preview of the same intelligence that will be drafting and reviewing your documents.",
+    '- Check readiness factors before spending money.',
+    '- Keep your answers, evidence, and documents in one organized case file.',
+    '- Create drafts for core case materials from the information you provide — not generic templates.',
+    '- Work through structured quality checks before you finalize your package.',
+    '- Explore franchise options through no-client-fee broker introductions.',
+    '- Prepare a finished, organized package for your own use or for focused attorney review.',
+    '',
+    'Optional add-ons include interview practice, franchise FDD review, and market analysis.',
+    '',
+    'Franchise-broker referrals are free. E2go.app does not charge for the introduction, and our partner brokers do not charge you to connect with franchise opportunities you choose to explore.',
+    '',
+    'E2go.app is not a law firm, does not provide legal advice, does not file applications on your behalf, and cannot guarantee a visa outcome. It is designed to help you understand the process, organize your information, and prepare your materials before deciding whether you need legal support. Government E-2 guidance and application requirements remain the controlling standards for every applicant.',
+    '',
+    'Try Ask E2go.app, the free chat on our homepage, and ask it anything about the E-2 process.',
     '',
     'See what E2go.app actually does: https://e2go.app',
     '',
-    "No action needed from you right now — I'll email the moment your access opens.",
+    "I'll email you as soon as early access opens.",
     '',
     '— Romy, founder, E2go.app',
+    'E-2 Visa Prep, Simplified.',
     '',
-    "P.S. Reply and tell me where you are in the process — I read every reply myself, and it shapes what ships before your invite arrives.",
+    'P.S. Reply and tell me where you are in the process. I read every reply myself.',
     '',
     'E2go.app — document preparation tool, not a law firm.',
     companyFooterLine(),
@@ -183,6 +199,7 @@ export async function sendEarlyAccessWelcomeEmail(name: string, email: string): 
       subject,
       html,
       text,
+      headers: unsubscribeHeaders(email, appUrl),
     });
     if (error) {
       captureApiError(error, { route: 'emails/early-access-welcome', stage: 'resend-send', email });

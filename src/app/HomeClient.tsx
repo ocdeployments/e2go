@@ -15,8 +15,13 @@ export default function HomeClient() {
       <nav className="sticky top-0 z-50 bg-[#0a0a0a] border-b border-[rgba(201,168,76,0.1)]">
         <div className="px-4 md:px-10 lg:px-16">
           <div className="flex items-center justify-between h-16 md:h-20">
-            <Link href="/" className="font-['Cormorant_Garamond',Georgia,serif] text-xl md:text-2xl font-light text-[#C9A84C]">
-              E2go<span className="text-[rgba(245,240,232,0.8)]">.app</span>
+            <Link href="/" className="flex flex-col justify-center leading-none">
+              <span className="font-['Cormorant_Garamond',Georgia,serif] text-xl md:text-2xl font-light text-[#C9A84C]">
+                E2go<span className="text-[rgba(245,240,232,0.8)]">.app</span>
+              </span>
+              <span className="hidden sm:block text-[9px] tracking-[0.08em] uppercase mt-0.5" style={{ color: "rgba(201,168,76,0.55)" }}>
+                E-2 Visa Prep, Simplified.
+              </span>
             </Link>
             <div className="hidden md:flex items-center gap-7">
               {[["/learn","Learn"],["/pricing","Pricing"],["/simulator","Simulator"]].map(([href,label]) => (
@@ -220,9 +225,10 @@ export default function HomeClient() {
       <footer className="border-t border-[rgba(201,168,76,0.08)] px-4 md:px-10 lg:px-16 py-10 md:py-14">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8 md:mb-10">
           <div>
-            <div className="font-['Cormorant_Garamond',Georgia,serif] text-xl font-light text-[#C9A84C] mb-2">
+            <div className="font-['Cormorant_Garamond',Georgia,serif] text-xl font-light text-[#C9A84C] mb-1">
               E2go<span className="text-[rgba(245,240,232,0.76)]">.app</span>
             </div>
+            <p className="text-[10px] tracking-[0.08em] uppercase mb-3" style={{ color: "rgba(201,168,76,0.55)" }}>E-2 Visa Prep, Simplified.</p>
             <p className="text-xs text-[rgba(245,240,232,0.65)] leading-relaxed">© 2026 Prodigal Son IT Solutions LLC, d/b/a E2go.app. All rights reserved.</p>
           </div>
           <div className="flex flex-wrap gap-x-6 gap-y-2 md:justify-end">

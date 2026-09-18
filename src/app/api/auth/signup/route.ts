@@ -88,6 +88,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
+    // Supabase Auth returns a fake success (no error) for an email that
+    // already has a confirmed account, to avoid leaking which emails are
+    // registered. It's distinguishable here: identities comes back empty
+    // instead of containing the new email/password identity.
+    if (data.user && data.user.identities && data.user.identities.length === 0) {
+      return NextResponse.json(
+        { error: 'An account with this email already exists. Please sign in instead.' },
+        { status: 409 }
+      );
+    }
+
     return NextResponse.json({
       user: data.user ? { id: data.user.id, email: data.user.email } : null,
     });

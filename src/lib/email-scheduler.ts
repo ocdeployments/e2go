@@ -83,8 +83,13 @@ function getSectionDisplayName(section: string | null | undefined): string {
  * straight off applications, where neither column exists, so every query
  * errored and the paid lifecycle mail has never sent a single email.
  *
- * Returns a map keyed on user_id. Anyone whose profile cannot be resolved is
- * absent from it, and the caller skips them rather than sending to undefined.
+ * Returns a map keyed on user_id. Anyone whose profile cannot be resolved,
+ * or whose address is in email_suppressions (unsubscribed, bounced, etc.),
+ * is absent from it, and the caller skips them rather than sending to
+ * undefined. This is the single choke point every Clock 1/Clock 2 send goes
+ * through, so it's the one place that has to check suppression — neither
+ * clock filtered against it before, meaning an unsubscribed user kept
+ * getting inactivity and post-outcome nurture mail.
  */
 async function loadRecipients(
   userIds: string[]
@@ -103,10 +108,30 @@ async function loadRecipients(
     return recipients;
   }
 
-  for (const row of data ?? []) {
-    if (!row.email) continue;
+  const rows = (data ?? []).filter((row) => row.email);
+  const emails = Array.from(new Set(rows.map((row) => (row.email as string).toLowerCase())));
+
+  const suppressed = new Set<string>();
+  if (emails.length > 0) {
+    const { data: suppressions, error: suppressionError } = await getSupabase()
+      .from('email_suppressions')
+      .select('email')
+      .in('email', emails);
+
+    if (suppressionError) {
+      console.error('[EMAIL] failed to load suppressions:', suppressionError);
+    } else {
+      for (const row of suppressions ?? []) {
+        suppressed.add((row.email as string).toLowerCase());
+      }
+    }
+  }
+
+  for (const row of rows) {
+    const email = row.email as string;
+    if (suppressed.has(email.toLowerCase())) continue;
     recipients.set(row.id as string, {
-      email: row.email as string,
+      email,
       name: (row.full_name as string | null) || undefined,
     });
   }

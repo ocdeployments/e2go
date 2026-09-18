@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback, useRef, useMemo, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import quizData from "@/data/module0_questions.json";
 import { TREATY_COUNTRIES, searchTreatyCountries } from "@/lib/treaty-countries";
@@ -215,6 +216,7 @@ function QuizInner() {
   const [warnMsg, setWarnMsg] = useState<string | null>(null);
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
   const [email, setEmail] = useState("");
+  const [fullName, setFullName] = useState("");
   const [caslConsent, setCaslConsent] = useState(false);
   const [consentFocused, setConsentFocused] = useState(false);
   const [showEmailGate, setShowEmailGate] = useState(false);
@@ -699,7 +701,7 @@ function QuizInner() {
   const handleMultiContinue = useCallback(() => {
     if (multiSel.length === 0 || !q) return;
 
-    // Mutual exclusion enforcement for Q0-06 and Q0-10
+    // Mutual exclusion enforcement for Q0-06, Q0-08f, and Q0-10
     let effectiveSel = [...multiSel];
     if (q.id === "Q0-10") {
       const noneIdx = q.options.length - 1;
@@ -710,6 +712,11 @@ function QuizInner() {
       const loanIdx = q.options.length - 1;
       if (effectiveSel.includes(loanIdx) && effectiveSel.length > 1) {
         effectiveSel = [loanIdx]; // Business loan = hard stop, alone
+      }
+    } else if (q.id === "Q0-08f") {
+      const noPreferenceIdx = q.options.length - 1;
+      if (effectiveSel.includes(noPreferenceIdx) && effectiveSel.length > 1) {
+        effectiveSel = [noPreferenceIdx]; // "No preference" wins
       }
     }
 
@@ -767,6 +774,7 @@ function QuizInner() {
   // Handle email submit
   const handleEmailSubmit = useCallback(async () => {
     if (!email || !EMAIL_RE.test(email)) return;
+    const trimmedName = fullName.trim();
     setIsSaving(true);
     setSaveError(null);
 
@@ -785,6 +793,7 @@ function QuizInner() {
           id: sessionId,
           user_id: null,
           email,
+          full_name: trimmedName || null,
           outcome: resultData.outcome || "PROCEED",
           score: resultData.score || 80,
           hard_stop_codes: resultData.hard_stops_triggered || [],
@@ -826,7 +835,7 @@ function QuizInner() {
     } finally {
       setIsSaving(false);
     }
-  }, [email, caslConsent, supabase]);
+  }, [email, fullName, caslConsent, supabase]);
 
   // Derived
   const pct = Math.round(((cur + 1) / visibleQuestions.length) * 100);
@@ -877,7 +886,10 @@ function QuizInner() {
     return (
       <div style={{ background: "#0a0a0a", minHeight: "100vh", fontFamily: "'DM Sans', system-ui, sans-serif", color: "#f5f0e8", maxWidth: "100%", margin: "0 auto" }}>
         <div style={{ padding: "clamp(12px, 4vw, 18px) clamp(16px, 5vw, 40px)", borderBottom: "1px solid rgba(201,168,76,0.1)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div style={{ fontSize: "17px", color: "#C9A84C", fontWeight: 300 }}>E2go<span style={{ color: "rgba(245,240,232,0.9)" }}>.app</span></div>
+          <div>
+            <Link href="/" style={{ display: "inline-block", textDecoration: "none", fontSize: "17px", color: "#C9A84C", fontWeight: 300 }}>E2go<span style={{ color: "rgba(245,240,232,0.9)" }}>.app</span></Link>
+            <div className="hidden sm:block" style={{ fontSize: "9px", color: "rgba(201,168,76,0.55)", letterSpacing: "0.08em", textTransform: "uppercase" }}>E-2 Visa Prep, Simplified.</div>
+          </div>
         </div>
         <div style={{ padding: "clamp(32px, 5vw, 56px) clamp(16px, 5vw, 40px)", maxWidth: "560px" }}>
           <div style={{ width: "44px", height: "44px", border: "1px solid rgba(220,60,60,0.3)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "24px", color: "rgba(220,60,60,0.65)", fontSize: "20px" }}>✕</div>
@@ -919,14 +931,17 @@ function QuizInner() {
     return (
       <div style={{ background: "#0a0a0a", minHeight: "100vh", fontFamily: "'DM Sans', system-ui, sans-serif", color: "#f5f0e8", maxWidth: "100%", margin: "0 auto" }}>
         <div style={{ padding: "clamp(12px, 4vw, 18px) clamp(16px, 5vw, 40px)", borderBottom: "1px solid rgba(201,168,76,0.1)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div style={{ fontSize: "17px", color: "#C9A84C", fontWeight: 300 }}>E2go<span style={{ color: "rgba(245,240,232,0.9)" }}>.app</span></div>
+          <div>
+            <Link href="/" style={{ display: "inline-block", textDecoration: "none", fontSize: "17px", color: "#C9A84C", fontWeight: 300 }}>E2go<span style={{ color: "rgba(245,240,232,0.9)" }}>.app</span></Link>
+            <div className="hidden sm:block" style={{ fontSize: "9px", color: "rgba(201,168,76,0.55)", letterSpacing: "0.08em", textTransform: "uppercase" }}>E-2 Visa Prep, Simplified.</div>
+          </div>
         </div>
         <div style={{ padding: "clamp(32px, 5vw, 56px) clamp(16px, 5vw, 40px)", maxWidth: "480px" }}>
           {emailSent ? (
             /* Confirmation screen after email submitted */
             <>
               <div style={{ width: "44px", height: "44px", border: "1px solid rgba(93,202,165,0.3)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "24px", color: "#5DCAA5", fontSize: "20px" }}>✓</div>
-              <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "32px", fontWeight: 300, color: "#f5f0e8", marginBottom: "12px", lineHeight: 1.3 }}>Check your email</div>
+              <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "32px", fontWeight: 300, color: "#f5f0e8", marginBottom: "12px", lineHeight: 1.3 }}>{fullName.trim() ? `Check your email, ${fullName.trim().split(/\s+/)[0]}` : "Check your email"}</div>
               <div style={{ fontSize: "14px", color: "rgba(245,240,232,0.78)", lineHeight: 1.7, marginBottom: "28px" }}>
                 We sent a link to <span style={{ color: "#C9A84C" }}>{email}</span>. Click it to view your full results.
               </div>
@@ -940,6 +955,15 @@ function QuizInner() {
               <div style={{ fontSize: "10px", letterSpacing: "0.18em", textTransform: "uppercase", color: "rgba(201,168,76,0.6)", marginBottom: "16px" }}>Your results are ready</div>
               <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "32px", fontWeight: 300, color: "#f5f0e8", marginBottom: "8px", lineHeight: 1.3 }}>Enter your email and we&apos;ll send you a link to view them.</div>
               <div style={{ fontSize: "14px", color: "rgba(245,240,232,0.74)", marginBottom: "32px", lineHeight: 1.6 }}>Your full eligibility result is waiting. We&apos;ll email you a secure link.</div>
+              <label htmlFor="quiz-full-name" className="sr-only">Full name</label>
+              <input
+                id="quiz-full-name"
+                type="text"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="Your full name"
+                style={{ width: "100%", padding: "13px 16px", background: "rgba(201,168,76,0.02)", border: "1px solid rgba(201,168,76,0.2)", color: "#f5f0e8", fontSize: "14px", fontFamily: "'DM Sans', sans-serif", borderRadius: 0, outline: "none", marginBottom: "12px" }}
+              />
               <label htmlFor="quiz-email" className="sr-only">Email address</label>
               <input
                 id="quiz-email"
@@ -1003,7 +1027,10 @@ function QuizInner() {
     <div style={{ background: "#0a0a0a", minHeight: "100vh", fontFamily: "'DM Sans', system-ui, sans-serif", color: "#f5f0e8", maxWidth: "100%", margin: "0 auto" }}>
       {/* Header */}
       <div style={{ padding: "clamp(12px, 4vw, 18px) clamp(16px, 5vw, 40px)", borderBottom: "1px solid rgba(201,168,76,0.1)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div style={{ fontSize: "17px", color: "#C9A84C", fontWeight: 300 }}>E2go<span style={{ color: "rgba(245,240,232,0.9)" }}>.app</span></div>
+        <div>
+          <Link href="/" style={{ display: "inline-block", textDecoration: "none", fontSize: "17px", color: "#C9A84C", fontWeight: 300 }}>E2go<span style={{ color: "rgba(245,240,232,0.9)" }}>.app</span></Link>
+          <div className="hidden sm:block" style={{ fontSize: "9px", color: "rgba(201,168,76,0.55)", letterSpacing: "0.08em", textTransform: "uppercase" }}>E-2 Visa Prep, Simplified.</div>
+        </div>
         <div style={{ flex: 1, maxWidth: "clamp(100px, 30vw, 240px)", margin: "0 clamp(12px, 3vw, 24px)" }}>
           <div style={{ height: "1px", background: "rgba(201,168,76,0.15)" }}>
             <div style={{ height: "100%", background: "#C9A84C", width: `${pct}%`, transition: "width 0.5s cubic-bezier(.4,0,.2,1)" }} />

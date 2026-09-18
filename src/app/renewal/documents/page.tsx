@@ -173,7 +173,7 @@ export default function RenewalDocumentsPage() {
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
           Back to intake
         </Link>
-        <span style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#C9A84C', fontSize: '16px', letterSpacing: '0.04em' }}>E2go.app</span>
+        <Link href="/" style={{ textDecoration: 'none', fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#C9A84C', fontSize: '16px', letterSpacing: '0.04em' }}>E2go.app</Link>
         <Link href="/case-profile" style={{ color: 'rgba(245,240,232,0.4)', fontSize: '12px', textDecoration: 'none' }}>My case</Link>
       </nav>
 
