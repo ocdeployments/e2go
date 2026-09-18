@@ -424,7 +424,7 @@
       "type": "select",
       "section": "investment",
       "section_index": 3,
-      "question": "What is the approximate value of your primary residence equity, if you own property?",
+      "question": "What is the approximate equity in your primary residence.",
       "helper_text": "Property equity is a common secondary source of funds and helps establish overall financial standing.",
       "tooltip": null,
       "is_sub": true,
