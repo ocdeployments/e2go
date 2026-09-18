@@ -434,8 +434,13 @@ function ResultsPageInner() {
       const sessionId = paramSession || cookieSession;
       if (!sessionId) { setVerificationState("unverified"); setLoading(false); return; }
       setQuizSessionId(sessionId);
-      const { data: session } = await supabase.from("quiz_sessions").select("result_json, outcome, email").eq("id", sessionId).single();
-      if (session?.result_json) { setData(session.result_json as ResultData); setQuizEmail(session.email); setVerificationState("verified"); }
+      const { data: session } = await supabase.from("quiz_sessions").select("result_json, outcome, email, full_name").eq("id", sessionId).single();
+      if (session?.result_json) {
+        setData(session.result_json as ResultData);
+        setQuizEmail(session.email);
+        if (session.full_name) setUserName(session.full_name);
+        setVerificationState("verified");
+      }
       else {
         const stored = localStorage.getItem("e2go_quiz_result");
         if (stored) { try { setData(JSON.parse(stored)); setVerificationState("verified"); } catch { setVerificationState("unverified"); } }
