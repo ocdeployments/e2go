@@ -4,7 +4,7 @@ test.describe('Payment Wall Enforcement', () => {
   test('Module 3 redirects unauthenticated users', async ({ page }) => {
     await page.context().clearCookies();
     await page.goto('http://localhost:3001/apply/module3');
-    await page.waitForLoadState('networkidle');
+    await page.waitForURL(/\/login/);
     expect(page.url()).not.toMatch(/\/apply\/module3$/);
   });
 
@@ -12,7 +12,7 @@ test.describe('Payment Wall Enforcement', () => {
     await page.context().clearCookies();
     for (const tab of ['a', 'b', 'c', 'd']) {
       await page.goto(`http://localhost:3001/apply/module3/${tab}`);
-      await page.waitForLoadState('networkidle');
+      await page.waitForURL(/\/login/);
       expect(page.url()).not.toMatch(new RegExp(`/apply/module3/${tab}`));
     }
   });
@@ -34,14 +34,14 @@ test.describe('Payment Wall Enforcement', () => {
   test('Apply overview redirects unauthenticated users', async ({ page }) => {
     await page.context().clearCookies();
     await page.goto('http://localhost:3001/apply/overview');
-    await page.waitForLoadState('networkidle');
+    await page.waitForURL(/\/login/);
     expect(page.url()).not.toMatch(/\/apply\/overview/);
   });
 
   test('Dashboard redirects unauthenticated users', async ({ page }) => {
     await page.context().clearCookies();
     await page.goto('http://localhost:3001/dashboard');
-    await page.waitForLoadState('networkidle');
+    await page.waitForURL(/\/login/);
     expect(page.url()).not.toMatch(/\/dashboard/);
   });
 });
