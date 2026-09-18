@@ -201,8 +201,13 @@ export default function QuizProfilePage() {
           justifyContent: "space-between",
         }}
       >
-        <div style={{ fontSize: "17px", color: "#C9A84C", fontWeight: 300 }}>
-          E2go<span style={{ color: "rgba(245,240,232,0.9)" }}>.app</span>
+        <div>
+          <div style={{ fontSize: "17px", color: "#C9A84C", fontWeight: 300 }}>
+            E2go<span style={{ color: "rgba(245,240,232,0.9)" }}>.app</span>
+          </div>
+          <div style={{ fontSize: "9px", color: "rgba(201,168,76,0.55)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+            E-2 Visa Prep, Simplified.
+          </div>
         </div>
         <div
           style={{

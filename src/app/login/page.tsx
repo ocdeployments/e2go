@@ -269,8 +269,9 @@ function LoginForm() {
       {/* Form panel */}
       <div className="w-full md:w-1/2 flex flex-col">
         <header className="w-full z-50 px-8 py-6" style={{ borderBottom: "1px solid rgba(201,168,76,0.12)" }}>
-          <Link href="/" className="flex items-center gap-2">
+          <Link href="/" className="flex flex-col leading-none">
             <span className="text-xl font-bold" style={{ color: "#C9A84C", fontFamily: "'Cormorant Garamond', serif", fontWeight: 300 }}>E2go<span style={{ color: '#f5f0e8' }}>.app</span></span>
+            <span className="text-[9px] tracking-[0.08em] uppercase mt-0.5" style={{ color: "rgba(201,168,76,0.55)" }}>E-2 Visa Prep, Simplified.</span>
           </Link>
         </header>
 

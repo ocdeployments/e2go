@@ -7,9 +7,12 @@ export default function PrivacyPolicyPage() {
     <div className="min-h-screen flex flex-col" style={{ background: "#0a0a0a" }}>
       <header className="sticky top-0 z-50" style={{ background: "#0a0a0a", borderBottom: "1px solid rgba(201,168,76,0.2)" }}>
         <div className="flex justify-between items-center h-16 px-4 max-w-4xl mx-auto w-full">
-          <Link href="/" className="flex items-center gap-2">
+          <Link href="/" className="flex flex-col leading-none">
             <span className="text-xl font-bold" style={{ color: "#C9A84C", fontFamily: "'Cormorant Garamond', serif", fontWeight: 300 }}>
               E2go<span style={{ color: "#f5f0e8" }}>.app</span>
+            </span>
+            <span className="hidden sm:block text-[9px] tracking-[0.08em] uppercase mt-0.5" style={{ color: "rgba(201,168,76,0.55)" }}>
+              E-2 Visa Prep, Simplified.
             </span>
           </Link>
           <Link href="/" style={{ color: "rgba(245,240,232,0.7)", fontSize: "14px", textDecoration: "none" }}>

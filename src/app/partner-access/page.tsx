@@ -89,8 +89,11 @@ function PartnerAccessInner() {
       }}>
 
         {/* Wordmark */}
-        <p style={{ margin: "0 0 32px", fontSize: "18px", fontWeight: 300, color: "#C9A84C", letterSpacing: "0.04em", fontFamily: "'Cormorant Garamond', serif" }}>
+        <p style={{ margin: "0 0 4px", fontSize: "18px", fontWeight: 300, color: "#C9A84C", letterSpacing: "0.04em", fontFamily: "'Cormorant Garamond', serif" }}>
           E2go<span style={{ color: "#f5f0e8" }}>.app</span>
+        </p>
+        <p style={{ margin: "0 0 32px", fontSize: "9px", fontWeight: 300, color: "rgba(201,168,76,0.55)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+          E-2 Visa Prep, Simplified.
         </p>
 
         {/* LOADING */}

@@ -151,9 +151,12 @@ export default function Nav() {
       <div className="flex justify-between items-center h-16 px-4 md:px-8 max-w-7xl mx-auto">
 
         {/* Logo */}
-        <Link href={user ? "/case-profile" : "/"} style={{ textDecoration: "none" }}>
+        <Link href={user ? "/case-profile" : "/"} style={{ textDecoration: "none" }} className="flex flex-col justify-center leading-none">
           <span className="text-xl font-medium tracking-tight text-[#f5f0e8]" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
             E2go<span className="text-[#C9A84C]">.app</span>
+          </span>
+          <span className="hidden sm:block text-[9px] tracking-[0.08em] uppercase mt-0.5" style={{ color: "rgba(201,168,76,0.55)" }}>
+            E-2 Visa Prep, Simplified.
           </span>
         </Link>
 
