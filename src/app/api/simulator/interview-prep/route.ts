@@ -8,6 +8,7 @@ import { INTERVIEW_KNOWLEDGE_BASE } from '@/lib/interview-knowledge-base';
 import { uploadedDocTypeLabel, summarizeExtractedJson } from '@/lib/uploaded-doc-labels';
 import type { GapAnalysisResult } from '@/lib/gap-analysis-engine';
 import { captureApiError } from '@/lib/capture-error';
+import { checkRateLimit } from '@/lib/rate-limit';
 import { COUNTRY_LABELS } from '@/lib/country-labels';
 
 const CONSULATE_LABELS: Record<string, string> = {
@@ -188,10 +189,12 @@ function buildFallback(
 }
 
 // =============================================================================
-// GET /api/simulator/interview-prep?applicationId=xxx
+// POST /api/simulator/interview-prep?applicationId=xxx
+// POST, not GET: each call spends LLM budget, so a link prefetch, crawler or
+// cross-site <img> must not be able to trigger it.
 // =============================================================================
 
-export async function GET(request: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
     const supabase = await createSupabaseServerClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -199,6 +202,14 @@ export async function GET(request: NextRequest) {
 
     if (await isKillSwitchEnabled()) {
       return NextResponse.json({ error: 'AI features are temporarily unavailable. Please try again shortly.' }, { status: 503 });
+    }
+
+    const limit = await checkRateLimit(user.id, 'interview-prep');
+    if (!limit.allowed) {
+      return NextResponse.json(
+        { error: 'rate_limited', message: 'Too many requests. Please try again later.' },
+        { status: 429, headers: { 'Retry-After': String(limit.reset) } }
+      );
     }
 
     const { searchParams } = new URL(request.url);
