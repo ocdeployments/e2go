@@ -251,6 +251,16 @@ body {
   }
 }
 
+/* iOS Safari zooms the page when a focused field is under 16px. Inline styles
+   set smaller sizes across the app, hence !important. Phones only. */
+@media (max-width: 768px) {
+  input:not([type='checkbox']):not([type='radio']):not([type='range']),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
 /* ── Dashboard two-column layout → single column on mobile ── */
 .dashboard-grid {
   display: grid;
