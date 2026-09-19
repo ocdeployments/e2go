@@ -12,14 +12,14 @@ export const metadata: Metadata = {
     default: "E2go.app — U.S. E-2 Treaty Investor Visa Preparation",
     template: "%s | E2go.app",
   },
-  description: "Prepare your complete E-2 visa application package. All consulate tabs. 82 treaty countries. From $550.",
+  description: "Prepare your complete E-2 visa application package. All consulate tabs. 82 treaty countries. From $990.",
   metadataBase: new URL("https://e2go.app"),
   openGraph: {
     type: "website",
     locale: "en_US",
     siteName: "E2go.app",
     title: "E2go.app — U.S. E-2 Treaty Investor Visa Preparation",
-    description: "Prepare your complete E-2 visa application package. All consulate tabs. 82 treaty countries. From $550.",
+    description: "Prepare your complete E-2 visa application package. All consulate tabs. 82 treaty countries. From $990.",
     images: [
       {
         url: "/og-image.png",

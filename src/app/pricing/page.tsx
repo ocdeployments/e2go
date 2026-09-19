@@ -3,10 +3,10 @@ import PricingClient from "./PricingClient";
 
 export const metadata: Metadata = {
   title: "E2go.app Pricing — E-2 Visa Application Package",
-  description: "Transparent, affordable pricing for your E-2 visa application package. From $550 for solo applicants. 14-day money-back guarantee.",
+  description: "Transparent, affordable pricing for your E-2 visa application package. From $990 for the full Foundation package. 14-day money-back guarantee.",
   openGraph: {
     title: "E2go.app Pricing — E-2 Visa Application Package",
-    description: "Transparent, affordable pricing for your E-2 visa application package. From $550 for solo applicants.",
+    description: "Transparent, affordable pricing for your E-2 visa application package. From $990 for the full Foundation package.",
     type: "website",
     url: "https://e2go.app/pricing",
     images: [
