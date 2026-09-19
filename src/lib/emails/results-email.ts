@@ -102,8 +102,8 @@ export function buildResultsEmail(
     : 'Most people told "not yet" are being told about something they can change. It is better to know which one you are looking at now than after you have spent money finding out.';
 
   const expiryCopy = expiresAt
-    ? `Your link opens once, and it stops working on ${formatExpiry(expiresAt)}. If you miss it, request a new one from the results page — it takes a few seconds.`
-    : 'Your link opens once, and it stops working 24 hours after this email was sent. If you miss it, request a new one from the results page — it takes a few seconds.';
+    ? `Your link stays valid until ${formatExpiry(expiresAt)}. If you miss it, request a new one from the results page — it takes a few seconds.`
+    : 'Your link stays valid for 24 hours after this email was sent. If you miss it, request a new one from the results page — it takes a few seconds.';
 
   const content = `
 <h1 style="font-family: 'Cormorant Garamond', Georgia, serif; font-size: 30px; font-weight: 300; color: #f5f0e8; margin: 0 0 20px 0; line-height: 1.25;">
