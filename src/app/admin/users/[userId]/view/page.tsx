@@ -1,4 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { buildLifecycleTimeline, LIFECYCLE_TIMELINE_COLUMNS } from '@/lib/lifecycle-timeline';
@@ -11,6 +13,22 @@ function getAdmin() {
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     { auth: { autoRefreshToken: false, persistSession: false } }
   );
+}
+
+// Same role gate as ../page.tsx (QA-SEC-03). admin/layout.tsx also redirects non-admins, but a layout and its page render
+// concurrently, so without a check here this page's service-role queries ran and their result was streamed in the body of
+// the redirect response (found by the 2026-09-19 QA run: a logged-in non-admin could read any user's admin view).
+async function requireAdmin() {
+  const cookieStore = await cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { cookies: { getAll: () => cookieStore.getAll(), setAll: () => {} } }
+  );
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) notFound();
+  const { data: profile } = await getAdmin().from('profiles').select('role').eq('id', user.id).single();
+  if (profile?.role !== 'admin') notFound();
 }
 
 function fmtD(iso: string | null) {
@@ -30,6 +48,7 @@ function fmtDT(iso: string | null) {
 }
 
 export default async function UserViewPage({ params }: { params: Promise<{ userId: string }> }) {
+  await requireAdmin();
   const { userId } = await params;
   const admin = getAdmin();
 
