@@ -2,6 +2,7 @@
 // The brain of the interview simulator
 // Generated: June 5, 2026
 
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { createBrowserSupabaseClient } from '@/lib/supabase';
 import { getQuestionKnowledge } from '@/lib/interview-knowledge-base';
 import { asScoreLevel, isBelowAdequate, weakestScore } from '@/lib/case-brief-scores';
@@ -22,6 +23,7 @@ export { analyzeDelivery } from '@/lib/delivery-analysis';
 // that would cause "Multiple GoTrueClient instances detected" warnings and
 // hung auth-token refreshes when two clients race on the same storage key.
 const supabase = createBrowserSupabaseClient();
+const defaultSupabase = supabase;
 
 // =============================================================================
 // HELPERS
@@ -77,8 +79,15 @@ function deriveImmigrantIntentRisk(
 /**
  * Builds a rich context object for the simulator from the user's application data.
  * This context is used to generate personalized questions.
+ *
+ * `supabase` defaults to the browser singleton. Server callers MUST pass their
+ * own session-bound client: the browser client has no session outside a
+ * browser, so RLS hides every row and the build throws "Application not found".
  */
-export async function buildSimulatorContext(applicationId: string): Promise<SimulatorContext> {
+export async function buildSimulatorContext(
+  applicationId: string,
+  supabase: SupabaseClient = defaultSupabase,
+): Promise<SimulatorContext> {
   // Fetch application record
   const { data: application, error: appError } = await supabase
     .from('applications')
