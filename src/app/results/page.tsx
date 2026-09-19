@@ -166,7 +166,7 @@ function EmailGate({ onBackToQuiz }: { onBackToQuiz: () => void }) {
 }
 
 /* ─── Name Capture ───────────────────────────────────────────────────────── */
-function NameCaptureForm({ email, quizSessionId, onSuccess, onDismiss }: { email: string; quizSessionId: string; onSuccess: () => void; onDismiss: () => void }) {
+function NameCaptureForm({ email, onSuccess, onDismiss }: { email: string; onSuccess: () => void; onDismiss: () => void }) {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -183,7 +183,7 @@ function NameCaptureForm({ email, quizSessionId, onSuccess, onDismiss }: { email
     if (newPassword !== confirmNewPassword) { setError("Passwords do not match."); return; }
     setCreating(true);
     try {
-      const result = await createAccountFromVerifiedEmail({ email, password: newPassword, firstName, lastName, quizSessionId });
+      const result = await createAccountFromVerifiedEmail({ password: newPassword, firstName, lastName });
       if (result.error) {
         if (result.error.includes("already") || result.error.includes("exists") || result.error.includes("registered")) setAccountExists(true);
         else setError(result.error);
@@ -745,7 +745,7 @@ function ResultsPageInner() {
         {/* Name capture */}
         {showNameCapture && quizSessionId && quizEmail && (
           <div style={{ paddingTop: "40px" }}>
-            <NameCaptureForm email={quizEmail} quizSessionId={quizSessionId} onSuccess={() => window.location.reload()} onDismiss={() => setNameCaptureDismissed(true)} />
+            <NameCaptureForm email={quizEmail} onSuccess={() => window.location.reload()} onDismiss={() => setNameCaptureDismissed(true)} />
           </div>
         )}
         {verificationState === "verified" && !isLoggedIn && nameCaptureDismissed && (
